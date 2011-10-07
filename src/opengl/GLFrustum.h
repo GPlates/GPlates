@@ -38,6 +38,13 @@ namespace GPlatesOpenGL
 
 	/**
 	 * An array of the six frustum planes that bound a viewing volume.
+	 *
+	 * The *six* frustum planes represented by the current model-view and projection matrices.
+	 *
+	 * These frustum planes are in model-space (before any model-view or projection
+	 * transformations are applied) also called object-space.
+	 *
+	 * The planes can be used for frustum culling (culling objects not visible inside the current view frustum).
 	 */
 	class GLFrustum
 	{

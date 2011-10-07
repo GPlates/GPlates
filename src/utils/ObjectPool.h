@@ -27,11 +27,13 @@
 #define GPLATES_UTILS_OBJECTPOOL_H
 
 #include <exception>
+#include <boost/utility/in_place_factory.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/pool/object_pool.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+#include <loki/ScopeGuard.h>
 
 #include "IntrusiveSinglyLinkedList.h"
 
@@ -46,7 +48,9 @@ namespace GPlatesUtils
 	/**
 	 * A memory pool to add, and release, objects individually.
 	 *
-	 * The pool objects, of type 'ObjectType', must be copy-constructable and copy-assignable.
+	 * The pool objects, of type 'ObjectType', do not need to be copy-constructable or copy-assignable.
+	 * You can use 'add(boost::in_place(a, b, ...))' to create an object directly in the pool
+	 * with no copying (where a, b, etc are the arguments of the object's constructor).
 	 *
 	 * This class uses boost::object_pool in its implementation - it is very close to the speed
 	 * of boost::object_pool (as determined by profiling) and has a faster release method.
@@ -54,8 +58,8 @@ namespace GPlatesUtils
 	 * per object if don't call @a release).
 	 *
 	 * The main reason for using this class instead of using boost::object_pool directly is
-	 * to gain an O(1) release type method instead of the O(N) provided
-	 * by 'boost::object_pool::destroy()'.
+	 * to gain an O(1) release method instead of the O(N) provided by 'boost::object_pool::destroy()'.
+	 * That's because boost::object_pool is designed to allocate individually but deallocate all at once.
 	 *
 	 * If you just need to allocate objects and can destroy them all at the same time then use
 	 * boost::object_pool instead (it's just boost::object_pool::destroy that you need to be wary of).
@@ -107,24 +111,19 @@ namespace GPlatesUtils
 		 */
 		struct ObjectWrapper
 		{
+			/**
+			 * Used to construct using boost::in_place_factory.
+			 *
+			 * It basically means the object's constructor arguments are passed instead
+			 * of an object (which means no copying of objects) and boost::optional just works
+			 * with in-place factories - boost is cool !
+			 */
+			template <class InPlaceFactoryType>
 			explicit
 			ObjectWrapper(
-					const ObjectType &object_) :
-				object(object_)
+					const InPlaceFactoryType &in_place_factory) :
+				object(in_place_factory)
 			{  }
-
-			void
-			assign_object(
-					const ObjectType &object_)
-			{
-				object = object_;
-			}
-
-			void
-			destroy_object()
-			{
-				object = boost::none;
-			}
 
 			boost::optional<ObjectType> object;
 		};
@@ -252,15 +251,43 @@ namespace GPlatesUtils
 		add(
 				const ObjectType &object)
 		{
+			// To re-use the other 'add' method use the boost::in_place_factory to transport 'object'.
+			return add(boost::in_place(object));
+		}
+
+		/**
+		 * Constructs a new object, using the constructor parameters transported by @a in_place_factory,
+		 * at a fixed memory address in this pool and returns a pointer to it.
+		 *
+		 * Use 'add(boost::in_place(a, b, c, ...))' where a, b, c, etc are constructor arguments for type ObjectType.
+		 *
+		 * The returned pointer will not release the object on destruction (it's not an owning pointer).
+		 * It's only purpose to hide an implementation detail to do with 'ObjectType' destruction.
+		 *
+		 * The returned object will remain valid as long as this pool is alive, or until @a clear
+		 * is called, at which point the object will be destroyed and the pointer will be left dangling.
+		 */
+		template <class InPlaceFactoryType>
+		object_ptr_type
+		add(
+				const InPlaceFactoryType &in_place_factory)
+		{
 			if (d_object_free_list.empty())
 			{
 				// Allocate memory and copy construct 'object' into the new memory.
-				ObjectWrapper *const new_object = d_object_pool->construct(object);
-				if (new_object == NULL)
+				ObjectWrapper *const uninitialised_new_object = d_object_pool->malloc();
+				if (uninitialised_new_object == NULL)
 				{
 					// Memory allocation failed before object got a chance to be copy-constructed.
 					throw std::bad_alloc();
 				}
+
+				// Make sure we free the memory in case the object constructor throws an exception.
+				Loki::ScopeGuard free_object_guard =
+						Loki::MakeGuard(&object_pool_type::free, *d_object_pool, uninitialised_new_object);
+				// Construct directly into the un-initialised memory.
+				ObjectWrapper *const new_object = new (uninitialised_new_object) ObjectWrapper(in_place_factory);
+				free_object_guard.Dismiss();
 
 				return object_ptr_type(new_object);
 			}
@@ -274,13 +301,15 @@ namespace GPlatesUtils
 			// same 'next' pointers (inside the 'FreeListNode' object).
 			d_free_list_node_free_list.push_front(&free_list_node);
 
-			// Get the object on the free list.
-			// Note that this object is still alive and has not been destroyed by
-			// the 'release' method.
+			// Get an unused (destroyed) object on the free list.
 			ObjectWrapper *const free_list_object = free_list_node.object_wrapper;
 
 			// Assign the object added by the caller to the free list object.
-			free_list_object->object = object;
+			// The object's constructor parameters are in 'in_place_factory' and
+			// boost::optional will construct/assign a new object using them.
+			// This means no copy-assignment of objects - the assignment operator of boost::optional
+			// just works with in-place factories - boost is cool !
+			free_list_object->object = in_place_factory;
 
 			return object_ptr_type(free_list_object);
 		}
@@ -299,8 +328,29 @@ namespace GPlatesUtils
 		add_with_auto_release(
 				const ObjectType &object)
 		{
+			// Re-use the other 'add_with_auto_release' method use the boost::in_place_factory to transport 'object'.
+			return add_with_auto_release(boost::in_place(object));
+		}
+
+		/**
+		 * A convenience wrapper around @a add and @a release.
+		 *
+		 * Use 'add_with_auto_release(boost::in_place(a, b, c, ...))' where a, b, c, etc
+		 * are constructor arguments for type ObjectType.
+		 *
+		 * This method is the equivalent to @a add and when all returned shared_ptr's are
+		 * destroyed then @a release will be called.
+		 *
+		 * NOTE: You must ensure that this object pool lives longer than any returned shared_ptr's
+		 * otherwise a crash is likely to occur.
+		 */
+		template <class InPlaceFactoryType>
+		shared_object_ptr_type
+		add_with_auto_release(
+				const InPlaceFactoryType &in_place_factory)
+		{
 			// Allocate from the object pool.
-			object_ptr_type object_ptr = add(object);
+			object_ptr_type object_ptr = add(in_place_factory);
 
 			return boost::shared_ptr<ObjectType>(
 					object_ptr.get_ptr(),

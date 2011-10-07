@@ -35,13 +35,13 @@
 
 #include "Colour.h"
 
-#include "opengl/GLBlendState.h"
-#include "opengl/GLCompositeDrawable.h"
-#include "opengl/GLCompositeStateSet.h"
-#include "opengl/GLPointLinePolygonState.h"
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
 #include "opengl/GLRenderer.h"
 #include "opengl/GLStreamPrimitives.h"
 #include "opengl/GLVertex.h"
+#include "opengl/GLVertexArray.h"
 
 #include "presentation/ViewState.h"
 
@@ -60,17 +60,20 @@ namespace
 	const GLfloat RADIUS = 7.0f;
 
 	typedef GPlatesOpenGL::GLColouredVertex vertex_type;
+	typedef GLushort vertex_element_type;
+	typedef GPlatesOpenGL::GLDynamicStreamPrimitives<vertex_type, vertex_element_type> stream_primitives_type;
 
-	boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type>
-	create_stars_drawable(
+
+	void
+	stream_stars(
+			stream_primitives_type &stream,
 			boost::function< double () > &rand,
 			unsigned int num_stars,
 			const GPlatesGui::rgba8_t &colour)
 	{
-		// Add points to a stream.
-		GPlatesOpenGL::GLStreamPrimitives<vertex_type>::non_null_ptr_type stream =
-			GPlatesOpenGL::GLStreamPrimitives<vertex_type>::create();
-		GPlatesOpenGL::GLStreamPoints<vertex_type> stream_points(*stream);
+		bool ok = true;
+
+		stream_primitives_type::Points stream_points(stream);
 		stream_points.begin_points();
 
 		unsigned int points_generated = 0;
@@ -99,48 +102,142 @@ namespace
 			double radius = RADIUS + rand();
 
 			vertex_type vertex(x * radius, y * radius, z * radius, colour);
-			stream_points.add_vertex(vertex);
+			ok = ok && stream_points.add_vertex(vertex);
 
 			++points_generated;
 		}
 
 		stream_points.end_points();
 
-		boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> points_drawable =
-			stream->get_drawable();
-		return points_drawable;
+		// Since we added vertices/indices to a std::vector we shouldn't have run out of space.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				ok,
+				GPLATES_ASSERTION_SOURCE);
 	}
 
 
-	GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type
-	create_state_set(
-			GLfloat size)
+	GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type
+	compile_stars_draw_state(
+			GPlatesOpenGL::GLRenderer &renderer,
+			GPlatesOpenGL::GLVertexArray &vertex_array,
+			boost::function< double () > &rand,
+			const GPlatesGui::rgba8_t &colour)
 	{
-		GPlatesOpenGL::GLCompositeStateSet::non_null_ptr_type composite_state =
-				GPlatesOpenGL::GLCompositeStateSet::create();
+		stream_primitives_type stream;
+
+		std::vector<vertex_type> vertices;
+		std::vector<vertex_element_type> vertex_elements;
+		stream_primitives_type::StreamTarget stream_target(stream);
+
+		stream_target.start_streaming(
+				boost::in_place(boost::ref(vertices)),
+				boost::in_place(boost::ref(vertex_elements)));
+
+		// Stream the small stars.
+		stream_stars(stream, rand, NUM_SMALL_STARS, colour);
+
+		const unsigned int num_small_star_vertices = stream_target.get_num_streamed_vertices();
+		const unsigned int num_small_star_indices = stream_target.get_num_streamed_vertex_elements();
+
+		stream_target.stop_streaming();
+
+		// We re-start streaming so that we can get a separate stream count for the large stars.
+		// However the large stars still get appended onto 'vertices' and 'vertex_elements'.
+		stream_target.start_streaming(
+				boost::in_place(boost::ref(vertices)),
+				boost::in_place(boost::ref(vertex_elements)));
+
+		// Stream the large stars.
+		stream_stars(stream, rand, NUM_LARGE_STARS, colour);
+
+		const unsigned int num_large_star_vertices = stream_target.get_num_streamed_vertices();
+		const unsigned int num_large_star_indices = stream_target.get_num_streamed_vertex_elements();
+
+		stream_target.stop_streaming();
+
+		// We're using 16-bit indices (ie, 65536 vertices) so make sure we've not exceeded that many vertices.
+		// Shouldn't get close really but check to be sure.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				vertices.size() - 1 <= GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::MAX_INDEXABLE_VERTEX,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Set up the vertex element buffer.
+		GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_element_buffer = GPlatesOpenGL::GLBuffer::create(renderer);
+		vertex_element_buffer->gl_buffer_data(
+				renderer,
+				GPlatesOpenGL::GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
+				vertex_elements,
+				GPlatesOpenGL::GLBuffer::USAGE_STATIC_DRAW);
+		// Attached vertex element buffer to the vertex array.
+		vertex_array.set_vertex_element_buffer(
+				renderer,
+				GPlatesOpenGL::GLVertexElementBuffer::create(renderer, vertex_element_buffer));
+
+		// Set up the vertex buffer.
+		GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_buffer = GPlatesOpenGL::GLBuffer::create(renderer);
+		vertex_buffer->gl_buffer_data(
+				renderer,
+				GPlatesOpenGL::GLBuffer::TARGET_ARRAY_BUFFER,
+				vertices,
+				GPlatesOpenGL::GLBuffer::USAGE_STATIC_DRAW);
+		// Attached vertex buffer to the vertex array.
+		GPlatesOpenGL::bind_vertex_buffer_to_vertex_array<vertex_type>(
+				renderer,
+				vertex_array,
+				GPlatesOpenGL::GLVertexBuffer::create(renderer, vertex_buffer));
+
+		// Start compiling draw state that includes OpenGL states and vertex array draw commands.
+		GPlatesOpenGL::GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer);
 
 		// Set the alpha-blend state.
-		GPlatesOpenGL::GLBlendState::non_null_ptr_type blend_state =
-				GPlatesOpenGL::GLBlendState::create();
-		blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		composite_state->add_state_set(blend_state);
+		renderer.gl_enable(GL_BLEND);
+		renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		// Set the anti-aliased point state.
-		GPlatesOpenGL::GLPointState::non_null_ptr_type point_state = GPlatesOpenGL::GLPointState::create();
-		point_state->gl_enable_point_smooth(GL_TRUE).gl_hint_point_smooth(GL_NICEST).gl_point_size(size);
-		composite_state->add_state_set(point_state);
+		renderer.gl_enable(GL_POINT_SMOOTH);
+		renderer.gl_hint(GL_POINT_SMOOTH_HINT, GL_NICEST);
 
-		return composite_state;
+		// Bind the vertex array.
+		vertex_array.gl_bind(renderer);
+
+		// Small stars size.
+		renderer.gl_point_size(SMALL_STARS_SIZE);
+
+		// Draw the small stars.
+		vertex_array.gl_draw_range_elements(
+				renderer,
+				GL_POINTS,
+				0/*start*/,
+				num_small_star_vertices - 1/*end*/,
+				num_small_star_indices/*count*/,
+				GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::type,
+				0/*indices_offset*/);
+
+		// Large stars size.
+		renderer.gl_point_size(LARGE_STARS_SIZE);
+
+		// Draw the large stars.
+		// They come after the small stars in the vertex array.
+		vertex_array.gl_draw_range_elements(
+				renderer,
+				GL_POINTS,
+				num_small_star_vertices/*start*/,
+				num_small_star_vertices + num_large_star_vertices - 1/*end*/,
+				num_large_star_indices/*count*/,
+				GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::type,
+				num_small_star_indices * sizeof(vertex_element_type)/*indices_offset*/);
+
+		return compile_draw_state_scope.get_compiled_draw_state();
 	}
 }
 
 
 GPlatesGui::Stars::Stars(
+		GPlatesOpenGL::GLRenderer &renderer,
 		GPlatesPresentation::ViewState &view_state,
 		const GPlatesGui::Colour &colour) :
 	d_view_state(view_state),
-	d_small_stars_state_set(create_state_set(SMALL_STARS_SIZE)),
-	d_large_stars_state_set(create_state_set(LARGE_STARS_SIZE))
+	d_vertex_array(GPlatesOpenGL::GLVertexArray::create(renderer))
 {
 	// Set up the random number generator.
 	// It generates doubles uniformly from -1.0 to 1.0 inclusive.
@@ -154,8 +251,7 @@ GPlatesGui::Stars::Stars(
 
 	rgba8_t rgba8_colour = Colour::to_rgba8(colour);
 
-	d_small_stars_drawable = create_stars_drawable(rand, NUM_SMALL_STARS, rgba8_colour);
-	d_large_stars_drawable = create_stars_drawable(rand, NUM_LARGE_STARS, rgba8_colour);
+	d_compiled_draw_state = compile_stars_draw_state(renderer, *d_vertex_array, rand, rgba8_colour);
 }
 
 
@@ -165,23 +261,12 @@ GPlatesGui::Stars::paint(
 {
 	if (d_view_state.get_show_stars())
 	{
-		draw_stars(renderer, d_small_stars_drawable, d_small_stars_state_set);
-		draw_stars(renderer, d_large_stars_drawable, d_large_stars_state_set);
+		if (d_compiled_draw_state)
+		{
+			// Make sure we leave the OpenGL state the way it was.
+			GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
+
+			renderer.apply_compiled_draw_state(*d_compiled_draw_state.get());
+		}
 	}
 }
-
-
-void
-GPlatesGui::Stars::draw_stars(
-		GPlatesOpenGL::GLRenderer &renderer,
-		const boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> &stars_drawable,
-		const GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type &state_set)
-{
-	if (stars_drawable)
-	{
-		renderer.push_state_set(state_set);
-		renderer.add_drawable(stars_drawable.get());
-		renderer.pop_state_set();
-	}
-}
-

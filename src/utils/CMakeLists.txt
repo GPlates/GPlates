@@ -13,6 +13,8 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     AnimationSequenceUtils.cc
     AnimationSequenceUtils.h
+    Base2Utils.cc
+    Base2Utils.h
     CallStackTracker.cc
     CallStackTracker.h
     CommandLineParser.cc

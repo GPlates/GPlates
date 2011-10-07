@@ -128,9 +128,8 @@ namespace
 
 		for ( ; it != end ; ++it)
 		{
-			GPlatesViewOperations::RenderedGeometry circle = GPlatesViewOperations::create_rendered_small_circle(
-				PointOnSphere(it->axis_vector()),
-				it->colatitude());
+			GPlatesViewOperations::RenderedGeometry circle =
+					GPlatesViewOperations::create_rendered_small_circle(*it);
 				
 			layer->add_rendered_geometry(circle);
 		}

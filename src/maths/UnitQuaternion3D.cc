@@ -28,6 +28,7 @@
 #include <iostream>
 #include <sstream>
 #include <cmath>
+#include <QDebug>
 
 #include "UnitQuaternion3D.h"
 #include "HighPrecision.h"
@@ -54,8 +55,8 @@ GPlatesMaths::UnitQuaternion3D::renormalise_if_necessary() {
 	if (std::fabs(norm_sqrd - 1.0) > 2.0e-14) {
 		double norm = std::sqrt(norm_sqrd);
 #if 0
-		std::cerr << "Renormalising unit-quat (current deviation from 1.0 = "
-				<< HighPrecision<double>(norm - 1.0) << ")" << std::endl;
+		qWarning() << "Renormalising unit-quat (current deviation from 1.0 = "
+				<< HighPrecision<double>(norm - 1.0) << ")";
 #endif
 
 		double one_on_norm = 1.0 / norm;
@@ -64,8 +65,8 @@ GPlatesMaths::UnitQuaternion3D::renormalise_if_necessary() {
 
 #if 0
 		norm = std::sqrt(get_actual_norm_sqrd().dval());
-		std::cerr << "After renormalisation, deviation from 1.0 = "
-				<< HighPrecision<double>(norm - 1.0) << std::endl;
+		qWarning() << "After renormalisation, deviation from 1.0 = "
+				<< HighPrecision<double>(norm - 1.0);
 #endif
 	}
 }

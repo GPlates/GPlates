@@ -562,7 +562,7 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Returns the number of elements that have been added to this spatial partition so far.
+		 * Returns the maximum depth of this spatial partition (see @a create).
 		 */
 		unsigned int
 		get_maximum_quad_tree_depth() const

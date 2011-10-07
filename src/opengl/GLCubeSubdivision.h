@@ -73,7 +73,7 @@ namespace GPlatesOpenGL
 		 * @a zNear and @a zFar specify the near and far distance (positive) of
 		 * the view frustums generated for each subdivision.
 		 *
-		 * @a throws PreconditionViolationError if @a tile_texel_dimension is not a power-of-two.
+		 * @throws PreconditionViolationError if @a tile_texel_dimension is not a power-of-two.
 		 */
 		static
 		non_null_ptr_type

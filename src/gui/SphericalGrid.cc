@@ -27,60 +27,59 @@
 
 #include <cmath>
 #include <algorithm>
+#include <boost/foreach.hpp>
 #include <opengl/OpenGL.h>
 
 #include "SphericalGrid.h"
 
 #include "Colour.h"
 
-#include "maths/MathsUtils.h"
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
+#include "maths/GreatCircleArc.h"
+#include "maths/SmallCircle.h"
 #include "maths/UnitVector3D.h"
 
-#include "opengl/GLBlendState.h"
-#include "opengl/GLCompositeDrawable.h"
-#include "opengl/GLCompositeStateSet.h"
-#include "opengl/GLPointLinePolygonState.h"
+#include "opengl/GLMatrix.h"
+#include "opengl/GLStreamPrimitives.h"
 #include "opengl/GLRenderer.h"
-#include "opengl/GLUNurbsRenderer.h"
+#include "opengl/GLVertex.h"
+#include "opengl/GLVertexArray.h"
 
 
 namespace
 {
-	const GLfloat WEIGHT = static_cast<GLfloat>(1.0 / sqrt(2.0));
+	typedef GPlatesOpenGL::GLColouredVertex vertex_type;
+	typedef GLushort vertex_element_type;
+	typedef GPlatesOpenGL::GLDynamicStreamPrimitives<vertex_type, vertex_element_type> stream_primitives_type;
 
-	/*
-	 * The offset between successive curve control points.
-	 * [The number of coords in a control point.]
+	/**
+	 * The angular spacing a points along a line of latitude (small circle).
 	 */
-	const GLint STRIDE = 4;
+	const double LINE_OF_LATITUDE_DELTA_LONGITUDE = GPlatesMaths::convert_deg_to_rad(0.5);
 
-	/*
-	 * The degree of the curve + 1.
+	/**
+	 * The angular spacing a points along a line of longitude (great circle).
 	 */
-	const GLint ORDER = 3;
+	const double LINE_OF_LONGITUDE_DELTA_LATITUDE = GPlatesMaths::convert_deg_to_rad(4);
 
 
 	/**
-	 * Creates an OpenGL state set that defines the appearance of the grid lines.
+	 * Sets the OpenGL state set that defines the appearance of the grid lines.
 	 */
-	GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type
-	create_state_set()
+	void
+	set_line_draw_state(
+			GPlatesOpenGL::GLRenderer &renderer)
 	{
-		GPlatesOpenGL::GLCompositeStateSet::non_null_ptr_type composite_state =
-				GPlatesOpenGL::GLCompositeStateSet::create();
-
 		// Set the alpha-blend state.
-		GPlatesOpenGL::GLBlendState::non_null_ptr_type blend_state =
-				GPlatesOpenGL::GLBlendState::create();
-		blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		composite_state->add_state_set(blend_state);
+		renderer.gl_enable(GL_BLEND);
+		renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		// Set the anti-aliased line state.
-		GPlatesOpenGL::GLLineState::non_null_ptr_type line_state = GPlatesOpenGL::GLLineState::create();
-		line_state->gl_enable_line_smooth(GL_TRUE).gl_hint_line_smooth(GL_NICEST).gl_line_width(1.0f);
-		composite_state->add_state_set(line_state);
-
-		return composite_state;
+		renderer.gl_enable(GL_LINE_SMOOTH);
+		renderer.gl_hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+		renderer.gl_line_width(1.0f);
 	}
 
 
@@ -88,76 +87,43 @@ namespace
 	 * Draw a line of latitude for latitude @a lat.
 	 * The angle is in radians.
 	 */
-	GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
-	draw_line_of_lat(
-			const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs,
+	void
+	stream_line_of_lat(
+			stream_primitives_type &stream,
 			const double &lat,
-			const GPlatesGui::Colour &colour)
+			const GPlatesGui::rgba8_t &colour)
 	{
-		// The number of control points.
-		static const GLsizei NUM_CONTROL_POINTS = 9;
+		bool ok = true;
 
-		// Number of knots = order + number of control points.
-		static const GLfloat KNOTS[] = {
-			0.0, 0.0, 0.0,
-			0.25, 0.25,
-			0.5, 0.5,
-			0.75, 0.75,
-			1.0, 1.0, 1.0
-		};
-		boost::shared_array<GLfloat> knots(new GLfloat[sizeof(KNOTS) / sizeof(GLfloat)]);
-		std::copy(KNOTS, KNOTS + sizeof(KNOTS) / sizeof(GLfloat), knots.get());
+		// A small circle at the specified latitude.
+		const GPlatesMaths::SmallCircle small_circle = GPlatesMaths::SmallCircle::create_colatitude(
+				GPlatesMaths::UnitVector3D::zBasis()/*north pole*/,
+				GPlatesMaths::HALF_PI - lat/*colat*/);
 
-		/*
-		 * We want to draw a small circle around the z-axis.
-		 * Calculate the height (above z = 0) and radius of this circle.
-		 */
-		GLfloat height = static_cast<GLfloat>(std::sin(lat));
-		GLfloat radius = static_cast<GLfloat>(std::cos(lat));
+		// Tessellate the small circle.
+		std::vector<GPlatesMaths::PointOnSphere> points;
+		tessellate(points, small_circle, LINE_OF_LATITUDE_DELTA_LONGITUDE);
 
-		GLfloat u_radius = WEIGHT * radius;
-		GLfloat u_height = WEIGHT * height;
+		// Stream the tessellated points.
+		stream_primitives_type::LineLoops stream_line_loops(stream);
+		stream_line_loops.begin_line_loop();
 
-		boost::shared_array<GLfloat> ctrl_points(new GLfloat[NUM_CONTROL_POINTS * STRIDE]);
-		ctrl_points[0 * STRIDE + 0] = radius;
-		ctrl_points[0 * STRIDE + 1] = 0.0f;
-		ctrl_points[0 * STRIDE + 2] = height;
-		ctrl_points[0 * STRIDE + 3] = 1.0f;
-		ctrl_points[1 * STRIDE + 0] = u_radius;
-		ctrl_points[1 * STRIDE + 1] = u_radius;
-		ctrl_points[1 * STRIDE + 2] = u_height;
-		ctrl_points[1 * STRIDE + 3] = WEIGHT;
-		ctrl_points[2 * STRIDE + 0] = 0.0f;
-		ctrl_points[2 * STRIDE + 1] = radius;
-		ctrl_points[2 * STRIDE + 2] = height;
-		ctrl_points[2 * STRIDE + 3] = 1.0f;
-		ctrl_points[3 * STRIDE + 0] = -u_radius;
-		ctrl_points[3 * STRIDE + 1] = u_radius;
-		ctrl_points[3 * STRIDE + 2] = u_height;
-		ctrl_points[3 * STRIDE + 3] = WEIGHT;
-		ctrl_points[4 * STRIDE + 0] = -radius;
-		ctrl_points[4 * STRIDE + 1] = 0.0f;
-		ctrl_points[4 * STRIDE + 2] = height;
-		ctrl_points[4 * STRIDE + 3] = 1.0f;
-		ctrl_points[5 * STRIDE + 0] = -u_radius;
-		ctrl_points[5 * STRIDE + 1] = -u_radius;
-		ctrl_points[5 * STRIDE + 2] = u_height;
-		ctrl_points[5 * STRIDE + 3] = WEIGHT;
-		ctrl_points[6 * STRIDE + 0] = 0.0f;
-		ctrl_points[6 * STRIDE + 1] = -radius;
-		ctrl_points[6 * STRIDE + 2] = height;
-		ctrl_points[6 * STRIDE + 3] = 1.0f;
-		ctrl_points[7 * STRIDE + 0] = u_radius;
-		ctrl_points[7 * STRIDE + 1] = -u_radius;
-		ctrl_points[7 * STRIDE + 2] = u_height;
-		ctrl_points[7 * STRIDE + 3] = WEIGHT;
-		ctrl_points[8 * STRIDE + 0] = radius;
-		ctrl_points[8 * STRIDE + 1] = 0.0f;
-		ctrl_points[8 * STRIDE + 2] = height;
-		ctrl_points[8 * STRIDE + 3] = 1.0f;
+		std::vector<GPlatesMaths::PointOnSphere>::const_iterator points_iter = points.begin();
+		std::vector<GPlatesMaths::PointOnSphere>::const_iterator points_end = points.end();
+		for ( ; points_iter != points_end; ++points_iter)
+		{
+			const vertex_type vertex(points_iter->position_vector(), colour);
 
-		return nurbs->draw_curve(
-				sizeof(KNOTS) / sizeof(GLfloat), knots, STRIDE, ctrl_points, ORDER, GL_MAP1_VERTEX_4, colour);
+			ok = ok && stream_line_loops.add_vertex(vertex);
+		}
+
+		// Close off the loop to the first vertex of the line loop.
+		ok = ok && stream_line_loops.end_line_loop();
+
+		// Since we added vertices/indices to a std::vector we shouldn't have run out of space.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				ok,
+				GPLATES_ASSERTION_SOURCE);
 	}
 
 
@@ -165,98 +131,80 @@ namespace
 	 * Draw a line of longitude for longitude @a lon from the north pole to the south pole.
 	 * The angle is in radians.
 	 */
-	GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
-	draw_line_of_lon(
-			const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs,
+	void
+	stream_line_of_lon(
+			stream_primitives_type &stream,
 			const double &lon,
-			const GPlatesGui::Colour &colour)
+			const GPlatesGui::rgba8_t &colour)
 	{
-		using namespace GPlatesMaths;
+		bool ok = true;
 
-		// The number of control points.
-		static const GLsizei NUM_CONTROL_POINTS = 5;
-
-		// Number of knots = order + number of control points.
-		static const GLfloat KNOTS[] = {
-			0.0, 0.0, 0.0,
-			0.5, 0.5,
-			1.0, 1.0, 1.0
+		// Use two great circle arcs to form the great circle arc from north to south pole.
+		// intersecting at the equator.
+		const GPlatesMaths::PointOnSphere equatorial_point(
+				GPlatesMaths::UnitVector3D(std::cos(lon), std::sin(lon), 0));
+		const GPlatesMaths::GreatCircleArc great_circle_arcs[2] =
+		{
+			GPlatesMaths::GreatCircleArc::create(GPlatesMaths::PointOnSphere::north_pole, equatorial_point),
+			GPlatesMaths::GreatCircleArc::create(equatorial_point, GPlatesMaths::PointOnSphere::south_pole)
 		};
-		boost::shared_array<GLfloat> knots(new GLfloat[sizeof(KNOTS) / sizeof(GLfloat)]);
-		std::copy(KNOTS, KNOTS + sizeof(KNOTS) / sizeof(GLfloat), knots.get());
 
-		/*
-		 * We want to draw a great circle which is bisected by the z-axis.
-		 * 'p' is a point on the perimeter of the great circle.
-		 */
-		GLfloat p_x = static_cast<GLfloat>(std::cos(lon));
-		GLfloat p_y = static_cast<GLfloat>(std::sin(lon));
+		BOOST_FOREACH(const GPlatesMaths::GreatCircleArc &great_circle_arc, great_circle_arcs)
+		{
+			// Tessellate the great circle arc.
+			std::vector<GPlatesMaths::PointOnSphere> points;
+			tessellate(points, great_circle_arc, LINE_OF_LONGITUDE_DELTA_LATITUDE);
 
-#if 0  // This does the same thing as the code below, but *much* slower.
-		PointOnSphere equatorial_pt(
-				Vector3D(p_x, p_y, 0.0).get_normalisation());
+			// Stream the tessellated points.
+			stream_primitives_type::LineStrips stream_line_strips(stream);
+			stream_line_strips.begin_line_strip();
 
-		d_nurbs->draw_great_circle_arc(GreatCircleArc::create(PointOnSphere::north_pole, equatorial_pt));
-		d_nurbs->draw_great_circle_arc(GreatCircleArc::create(equatorial_pt, PointOnSphere::south_pole));
-#endif
+			std::vector<GPlatesMaths::PointOnSphere>::const_iterator points_iter = points.begin();
+			std::vector<GPlatesMaths::PointOnSphere>::const_iterator points_end = points.end();
+			for ( ; points_iter != points_end; ++points_iter)
+			{
+				const vertex_type vertex(points_iter->position_vector(), colour);
 
-		GLfloat u_p_x = WEIGHT * p_x;
-		GLfloat u_p_y = WEIGHT * p_y;
-		GLfloat u_p_z = WEIGHT * static_cast<GLfloat>(1.0);
+				ok = ok && stream_line_strips.add_vertex(vertex);
+			}
 
-		boost::shared_array<GLfloat> ctrl_points(new GLfloat[NUM_CONTROL_POINTS * STRIDE]);
-		// North pole
-		ctrl_points[0 * STRIDE + 0] = 0.0;
-		ctrl_points[0 * STRIDE + 1] = 0.0;
-		ctrl_points[0 * STRIDE + 2] = 1.0;
-		ctrl_points[0 * STRIDE + 3] = 1.0;
-		ctrl_points[1 * STRIDE + 0] = u_p_x;
-		ctrl_points[1 * STRIDE + 1] = u_p_y;
-		ctrl_points[1 * STRIDE + 2] = u_p_z;
-		ctrl_points[1 * STRIDE + 3] = WEIGHT;
-		ctrl_points[2 * STRIDE + 0] = p_x;
-		ctrl_points[2 * STRIDE + 1] = p_y;
-		ctrl_points[2 * STRIDE + 2] = 0.0;
-		ctrl_points[2 * STRIDE + 3] = 1.0;
-		ctrl_points[3 * STRIDE + 0] = u_p_x;
-		ctrl_points[3 * STRIDE + 1] = u_p_y;
-		ctrl_points[3 * STRIDE + 2] = -u_p_z;
-		ctrl_points[3 * STRIDE + 3] = WEIGHT;
-		// South pole
-		ctrl_points[4 * STRIDE + 0] = 0.0;
-		ctrl_points[4 * STRIDE + 1] = 0.0;
-		ctrl_points[4 * STRIDE + 2] = -1.0;
-		ctrl_points[4 * STRIDE + 3] = 1.0;
+			stream_line_strips.end_line_strip();
+		}
 
-		return nurbs->draw_curve(
-				sizeof(KNOTS) / sizeof(GLfloat), knots, STRIDE, ctrl_points, ORDER, GL_MAP1_VERTEX_4, colour);
+		// Since we added vertices/indices to a std::vector we shouldn't have run out of space.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				ok,
+				GPLATES_ASSERTION_SOURCE);
 	}
 
 
-	GPlatesOpenGL::GLTransform::non_null_ptr_type
+	void
 	undo_rotation(
+			GPlatesOpenGL::GLMatrix &transform,
 			const GPlatesMaths::UnitVector3D &axis,
 			double angle_in_deg)
 	{
-		GPlatesOpenGL::GLTransform::non_null_ptr_type transform =
-				GPlatesOpenGL::GLTransform::create(GL_MODELVIEW);
 		// Undo the rotation done in Globe so that the disk always faces the camera.
-		transform->get_matrix().gl_rotate(-angle_in_deg, axis.x().dval(), axis.y().dval(), axis.z().dval());
-		
-		return transform;
+		transform.gl_rotate(-angle_in_deg, axis.x().dval(), axis.y().dval(), axis.z().dval());
 	}
 
 
-	GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
-	create_grid_drawable(
+	GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type
+	compile_grid_draw_state(
+			GPlatesOpenGL::GLRenderer &renderer,
+			GPlatesOpenGL::GLVertexArray &vertex_array,
 			const GPlatesMaths::Real &delta_lat,
 			const GPlatesMaths::Real &delta_lon,
-			const GPlatesGui::Colour &colour)
+			const GPlatesGui::rgba8_t &colour)
 	{
-		GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type nurbs =
-			GPlatesOpenGL::GLUNurbsRenderer::create();
-		GPlatesOpenGL::GLCompositeDrawable::non_null_ptr_type composite_drawable =
-			GPlatesOpenGL::GLCompositeDrawable::create();
+		stream_primitives_type stream;
+
+		std::vector<vertex_type> vertices;
+		std::vector<vertex_element_type> vertex_elements;
+		stream_primitives_type::StreamTarget stream_target(stream);
+		stream_target.start_streaming(
+				boost::in_place(boost::ref(vertices)),
+				boost::in_place(boost::ref(vertex_elements)));
 
 		if (delta_lat != 0.0)
 		{
@@ -264,8 +212,7 @@ namespace
 			GPlatesMaths::Real curr_lat = GPlatesMaths::HALF_PI - delta_lat;
 			while (curr_lat > -GPlatesMaths::HALF_PI)
 			{
-				composite_drawable->add_drawable(
-						draw_line_of_lat(nurbs, curr_lat.dval(), colour));
+				stream_line_of_lat(stream, curr_lat.dval(), colour);
 				curr_lat -= delta_lat;
 			}
 		}
@@ -276,37 +223,82 @@ namespace
 			GPlatesMaths::Real curr_lon = -GPlatesMaths::PI;
 			while (curr_lon < GPlatesMaths::PI)
 			{
-				composite_drawable->add_drawable(
-						draw_line_of_lon(nurbs, curr_lon.dval(), colour));
+				stream_line_of_lon(stream, curr_lon.dval(), colour);
 				curr_lon += delta_lon;
 			}
 		}
 
-		return composite_drawable;
+		stream_target.stop_streaming();
+
+		// We're using 16-bit indices (ie, 65536 vertices) so make sure we've not exceeded that many vertices.
+		// Shouldn't get close really but check to be sure.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				vertices.size() - 1 <= GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::MAX_INDEXABLE_VERTEX,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Streamed triangle strips end up as indexed triangles.
+		const GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type draw_vertex_array =
+				compile_vertex_array_draw_state(
+						renderer, vertex_array, vertices, vertex_elements, GL_LINES);
+
+		// Start compiling draw state that includes line drawing state and the vertex array draw command.
+		GPlatesOpenGL::GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer);
+
+		set_line_draw_state(renderer);
+		renderer.apply_compiled_draw_state(*draw_vertex_array);
+
+		return compile_draw_state_scope.get_compiled_draw_state();
 	}
 
 
-	GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
-	create_circumference_drawable(
-			const GPlatesGui::Colour &colour)
+	GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type
+	compile_circumference_draw_state(
+			GPlatesOpenGL::GLRenderer &renderer,
+			GPlatesOpenGL::GLVertexArray &vertex_array,
+			const GPlatesGui::rgba8_t &colour)
 	{
-		GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type nurbs =
-			GPlatesOpenGL::GLUNurbsRenderer::create();
+		stream_primitives_type stream;
 
-		GPlatesOpenGL::GLCompositeDrawable::non_null_ptr_type circumference_drawable =
-			GPlatesOpenGL::GLCompositeDrawable::create();
-		circumference_drawable->add_drawable(draw_line_of_lon(nurbs, GPlatesMaths::PI / 2.0, colour));
-		circumference_drawable->add_drawable(draw_line_of_lon(nurbs, -GPlatesMaths::PI / 2.0, colour));
+		std::vector<vertex_type> vertices;
+		std::vector<vertex_element_type> vertex_elements;
+		stream_primitives_type::StreamTarget stream_target(stream);
+		stream_target.start_streaming(
+				boost::in_place(boost::ref(vertices)),
+				boost::in_place(boost::ref(vertex_elements)));
 
-		return circumference_drawable;
+		stream_line_of_lon(stream, GPlatesMaths::PI / 2.0, colour);
+		stream_line_of_lon(stream, -GPlatesMaths::PI / 2.0, colour);
+
+		stream_target.stop_streaming();
+
+		// We're using 16-bit indices (ie, 65536 vertices) so make sure we've not exceeded that many vertices.
+		// Shouldn't get close really but check to be sure.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				vertices.size() - 1 <= GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::MAX_INDEXABLE_VERTEX,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Streamed triangle strips end up as indexed triangles.
+		const GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type draw_vertex_array =
+				compile_vertex_array_draw_state(
+						renderer, vertex_array, vertices, vertex_elements, GL_LINES);
+
+		// Start compiling draw state that includes line drawing state and the vertex array draw command.
+		GPlatesOpenGL::GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer);
+
+		set_line_draw_state(renderer);
+		renderer.apply_compiled_draw_state(*draw_vertex_array);
+
+		return compile_draw_state_scope.get_compiled_draw_state();
 	}
 }
 
 
 GPlatesGui::SphericalGrid::SphericalGrid(
+		GPlatesOpenGL::GLRenderer &renderer,
 		const GraticuleSettings &graticule_settings) :
 	d_graticule_settings(graticule_settings),
-	d_state_set(create_state_set())
+	d_grid_vertex_array(GPlatesOpenGL::GLVertexArray::create(renderer)),
+	d_circumference_vertex_array(GPlatesOpenGL::GLVertexArray::create(renderer))
 {  }
 
 
@@ -314,20 +306,24 @@ void
 GPlatesGui::SphericalGrid::paint(
 		GPlatesOpenGL::GLRenderer &renderer)
 {
-	// Check whether we need to create the drawables.
-	if (!d_last_seen_graticule_settings ||
+	// Make sure we leave the OpenGL state the way it was.
+	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	// Check whether we need to compile a new draw state.
+	if (!d_grid_compiled_draw_state ||
+		!d_last_seen_graticule_settings ||
 		*d_last_seen_graticule_settings != d_graticule_settings)
 	{
-		d_grid_drawable = create_grid_drawable(
+		d_grid_compiled_draw_state = compile_grid_draw_state(
+				renderer,
+				*d_grid_vertex_array,
 				d_graticule_settings.get_delta_lat(),
 				d_graticule_settings.get_delta_lon(),
-				d_graticule_settings.get_colour());
+				Colour::to_rgba8(d_graticule_settings.get_colour()));
 		d_last_seen_graticule_settings = d_graticule_settings;
 	}
 
-	renderer.push_state_set(d_state_set);
-	renderer.add_drawable(d_grid_drawable.get());
-	renderer.pop_state_set();
+	renderer.apply_compiled_draw_state(*d_grid_compiled_draw_state.get());
 }
 
 
@@ -337,11 +333,26 @@ GPlatesGui::SphericalGrid::paint_circumference(
 		const GPlatesMaths::UnitVector3D &axis,
 		double angle_in_deg)
 {
-	GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type transform = undo_rotation(axis, angle_in_deg);
-	renderer.push_transform(*transform);
-	renderer.push_state_set(d_state_set);
-	renderer.add_drawable(create_circumference_drawable(d_graticule_settings.get_colour()));
-	renderer.pop_state_set();
-	renderer.pop_transform();
+	// Make sure we leave the OpenGL state the way it was.
+	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	// Check whether we need to compile a new draw state.
+	if (!d_circumference_compiled_draw_state ||
+		!d_last_seen_graticule_settings ||
+		d_last_seen_graticule_settings->get_colour() != d_graticule_settings.get_colour())
+	{
+		d_circumference_compiled_draw_state = compile_circumference_draw_state(
+				renderer,
+				*d_circumference_vertex_array,
+				Colour::to_rgba8(d_graticule_settings.get_colour()));
+		d_last_seen_graticule_settings = d_graticule_settings;
+	}
+
+	GPlatesOpenGL::GLMatrix transform;
+	undo_rotation(transform, axis, angle_in_deg);
+
+	renderer.gl_mult_matrix(GL_MODELVIEW, transform);
+
+	renderer.apply_compiled_draw_state(*d_circumference_compiled_draw_state.get());
 }
 

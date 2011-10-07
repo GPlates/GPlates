@@ -69,44 +69,5 @@ GPlatesGui::QGLWidgetTextRenderer::render_text(
 		float scale) const
 {
 	glColor4fv(colour);
-#if 0
-	// need to change to GL_MODULATE for a moment otherwise the text will be rendered as white
-	// GL_MODULATE is the default OpenGL state so we'll leave it that way when we're finished.
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-#endif
 	d_gl_widget_ptr->renderText(x, y, string, scale_font(font, scale));
 }
-
-
-void
-GPlatesGui::QGLWidgetTextRenderer::render_text(
-		double x,
-		double y,
-		double z,
-		const QString &string,
-		const GPlatesGui::Colour &colour,
-		int x_offset,
-		int y_offset,
-		const QFont &font,
-		float scale) const
-{
-	// Compute screen coordinates.
-	glColor4fv(colour);
-	GLdouble model[16];
-	glGetDoublev(GL_MODELVIEW_MATRIX, model);
-	GLdouble proj[16];
-	glGetDoublev(GL_PROJECTION_MATRIX, proj);
-	GLint view[4];
-	glGetIntegerv(GL_VIEWPORT, view);
-	GLdouble winX, winY, winZ;
-	gluProject(x, y, z, model, proj, view, &winX, &winY, &winZ);
-
-	// Render, with offset (note that OpenGL and Qt y-axes appear to be the reverse of each other).
-	int height = view[3];
-	render_text(
-			static_cast<int>(winX) + x_offset, height - (static_cast<int>(winY) + y_offset),
-			string,
-			colour,
-			scale_font(font, scale));
-}
-

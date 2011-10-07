@@ -72,6 +72,7 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 			this,
 			SLOT(open_draw_style_setting_dlg()));
 	
+	fill_polygons->setCursor(QCursor(Qt::ArrowCursor));
 	QObject::connect(
 			fill_polygons,
 			SIGNAL(clicked()),

@@ -28,16 +28,31 @@
 #define GPLATES_OPENGL_GLRENDERER_H
 
 #include <stack>
+#include <vector>
+#include <boost/noncopyable.hpp>
+#include <boost/operators.hpp>
 #include <boost/optional.hpp>
+#include <boost/shared_array.hpp>
+#include <boost/shared_ptr.hpp>
+#include <opengl/OpenGL.h>
 
-#include "GLDrawable.h"
-#include "GLRenderQueue.h"
-#include "GLRenderTargetType.h"
-#include "GLStateGraph.h"
-#include "GLStateGraphBuilder.h"
-#include "GLStateSet.h"
-#include "GLTransform.h"
-#include "GLTransformState.h"
+#include "GLBufferImpl.h"
+#include "GLBufferObject.h"
+#include "GLCompiledDrawState.h"
+#include "GLContext.h"
+#include "GLDepthRange.h"
+#include "GLFrameBufferObject.h"
+#include "GLMatrix.h"
+#include "GLProgramObject.h"
+#include "GLRendererImpl.h"
+#include "GLState.h"
+#include "GLTexture.h"
+#include "GLVertexArrayObject.h"
+#include "GLVertexElementBufferObject.h"
+#include "GLViewport.h"
+
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
@@ -45,8 +60,13 @@
 
 namespace GPlatesOpenGL
 {
+	class GLStateStore;
+
 	/**
-	 * Handles rendering to render targets.
+	 * Handles OpenGL rendering to render targets (and the main framebuffer).
+	 *
+	 * All OpenGL rendering should go through this interface since it keeps track of OpenGL state
+	 * and allows queuing of draw calls (and OpenGL state associated with each draw call).
 	 */
 	class GLRenderer :
 			public GPlatesUtils::ReferenceCount<GLRenderer>
@@ -58,271 +78,1785 @@ namespace GPlatesOpenGL
 		//! A convenience typedef for a shared pointer to a const @a GLRenderer.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GLRenderer> non_null_ptr_to_const_type;
 
+
 		/**
-		 * Enumerates the ways in which a render target can be used.
+		 * Reports an error using the begin/end block interface of @a GLRenderer.
 		 *
-		 *
-		 * SERIAL:
-		 * A render target about to be pushed will get drawn immediately after
-		 * its parent render target (the one at the top of the current render
-		 * target stack before the new target is pushed) and when it is popped the parent
-		 * render target will resume drawing...
-		 *
-		 * Push render target A
-		 *   Draw D1
-		 *   Push render target B
-		 *     Draw D2
-		 *   Pop render target B
-		 *   Draw D3
-		 *   Push render target B
-		 *     Draw D4
-		 *   Pop render target B
-		 *   Draw D5
-		 * Pop render target A
-		 *
-		 * ...here D1 is drawn to A, D2 to B, D3 to A, D4 to B, and D5 to A, in that order.
-		 *
-		 * Note that although D1, D3 and D5 are drawn to the same render target A they *cannot*
-		 * be reordered if they share the same state (the rendering engine will normally do that
-		 * unless explicitly requested not to) - this is because render targets B and C force
-		 * a serialisation or barrier between D1 and D3 and between D3 and D5.
-		 *
-		 *
-		 * PARALLEL:
-		 * A render target about to be pushed will get drawn in a separate
-		 * render pass than its parent render target (the one at the top of the current render
-		 * target stack before the new target is pushed).
-		 *
-		 * Push render target A
-		 *   Draw D1
-		 *   Push render target B
-		 *     Draw D2
-		 *   Pop render target B
-		 *   Draw D3
-		 *   Push render target C
-		 *     Draw D4
-		 *   Pop render target C
-		 *   Draw D5
-		 * Pop render target A
-		 *
-		 * ...here D2 is drawn to B, D4 to C, and (D1,D3,D5) to A, in that order.
-		 *
-		 * Note that render targets B and C, being at the same level of the push hierarchy, will
-		 * get added to the same render pass and drawn serially with respect to each other.
-		 * Also note that, unlike the serial case, D1, D3 and D5 can be reordered relative to
-		 * each other if they share the same state - this is because render targets B and C
-		 * do *not* form a serialisation or barrier between D1, D3 and D5.
-		 *
-		 *
-		 * 'SERIAL' is best used when a single render target (such as a texture) is rendered to
-		 * multiple times per frame. In contrast 'PARALLEL' is best used when a single render
-		 * target is only rendered to at most once per frame - so 'PARALLEL' is useful when
-		 * you want to cache rendering results over multiple frames to avoid having to
-		 * render the results each frame if the results don't change. 'PARALLEL' also has the
-		 * advantage of requiring fewer render target switches between the main framebuffer and
-		 * the render targets (in the examples above you can picture render target A as the main
-		 * framebuffer). Switches between the main framebuffer and the render targets can be costly
-		 * on some graphics systems (for example those that use pbuffers as they require a full
-		 * OpenGL context switch which is costly) so it makes sense to minimise them where possible.
-		 * A disadvantage of 'PARALLEL' is that it tends to require more memory as the above
-		 * examples show that 'PARALLEL' requires render targets B and C whereas 'SERIAL' only
-		 * requires render target B. In both examples you can imagine the rendered results of
-		 * D2 being used by D3 (as a texture lookup) and D4 being used by D5. In 'PARALLEL'
-		 * we're rendering both D2 and D4 before D1, D3 and D5 but in 'SERIAL' we're rendering
-		 * in strictly serial order D1, D2, D3, D4 and D5 and so D2 and D4 can be rendered to
-		 * the same render target because the results of D2 are used by D3 before D4 is rendered
-		 * and hence D4 can overwrite the results of D2 (ie, render to the same render target).
+		 * This indicates a programming error (like @a AssertionFailureException).
 		 */
-		enum RenderTargetUsageType
+		class GLRendererAPIError :
+				public GPlatesGlobal::PreconditionViolationError
 		{
-			RENDER_TARGET_USAGE_SERIAL,
-			RENDER_TARGET_USAGE_PARALLEL
+		public:
+			enum ErrorType
+			{
+				SHOULD_HAVE_NO_STATE_BLOCKS,
+				SHOULD_HAVE_A_STATE_BLOCK,
+				SHOULD_HAVE_NO_RENDER_TARGET_BLOCKS,
+				SHOULD_HAVE_A_RENDER_TARGET_BLOCK,
+				SHOULD_HAVE_NO_RENDER_QUEUE_BLOCKS,
+				SHOULD_HAVE_A_RENDER_QUEUE_BLOCK,
+				SHOULD_HAVE_NO_COMPILE_DRAW_STATE_BLOCKS,
+				SHOULD_HAVE_A_COMPILE_DRAW_STATE_BLOCK,
+				CANNOT_ENABLE_DEPTH_STENCIL_TEST_IN_RGBA8_RENDER_TARGETS
+			};
+
+			GLRendererAPIError(
+					const GPlatesUtils::CallStack::Trace &exception_source,
+					ErrorType error_type);
+
+			~GLRendererAPIError() throw() { }
+
+		protected:
+			virtual
+			const char *
+			exception_name() const;
+
+			virtual
+			void
+			write_message(
+					std::ostream &os) const;
+
+		private:
+			ErrorType d_error_type;
 		};
 
 
 		/**
-		 * Creates a @a GLRenderer object.
+		 * Creates a @a GLRenderer object
+		 *
+		 * NOTE: Call GLContext::create_renderer instead of calling this directly.
 		 */
 		static
 		non_null_ptr_type
 		create(
-				const GLRenderQueue::non_null_ptr_type &render_queue)
+				const GLContext::non_null_ptr_type &context,
+				const boost::shared_ptr<GLStateStore> &state_store)
 		{
-			return non_null_ptr_type(new GLRenderer(render_queue));
+			return non_null_ptr_type(new GLRenderer(context, state_store));
 		}
 
 
 		/**
-		 * Push a new render target.
+		 * Returns the @a GLContext passed into the constructor.
 		 *
-		 * NOTE: This creates a new blank state graph and transform state.
-		 * So any state set prior to this push no longer applies after the push.
+		 * Note that a shared pointer is not returned to avoid possibility of cycle shared references
+		 * leading to memory leaks (@a GLContext owns a few resources which should not own it).
+		 */
+		GLContext &
+		get_context() const
+		{
+			return *d_context;
+		}
+
+
+		/**
+		 * Call this method before using 'this' renderer.
+		 * Note: This method calls GLContext::begin_render.
+		 *
+		 * NOTE: This should only be called when you know the full OpenGL state is set to the default OpenGL state.
+		 * This is the assumption that this renderer is making.
+		 *
+		 * @a default_viewport represents the viewport of the window currently attached to the OpenGL context.
+		 *
+		 * It's possible for one or more windows to share an OpenGL context.
+		 * However the window dimensions will differ and so, in a sense, the default viewport
+		 * is not really the default OpenGL state (like other default states) but is the default
+		 * for the current @a begin_render / @a end_render pair in which all rendering, in that scope,
+		 * is direct at *one* of the windows.
 		 */
 		void
-		push_render_target(
-				const GLRenderTargetType::non_null_ptr_type &render_target_type,
-				RenderTargetUsageType render_target_usage);
+		begin_render(
+				const GLViewport &default_viewport);
 
 		/**
-		 * Pop most recently pushed render target and associated state.
+		 * Call this method after using 'this' renderer and before it is destroyed.
+		 * Note: This method calls GLContext::end_render.
 		 *
-		 * NOTE: The state graph and transform state prior to the most recent push will be restored.
+		 * This sets the OpenGL state back to the default OpenGL state.
 		 *
-		 * @throws PreconditionViolationError if there's no currently pushed render target.
+		 * @throws PreconditionViolationError if:
+		 *  - the number of begin calls of a particular type (such as state blocks) does not equal
+		 *    the number of end calls.
 		 */
 		void
-		pop_render_target();
+		end_render();
+
+		/**
+		 * RAII class to call @a begin_render and @a end_render over a scope.
+		 */
+		class RenderScope :
+				private boost::noncopyable
+		{
+		public:
+			RenderScope(
+					GLRenderer &renderer,
+					const GLViewport &default_viewport);
+
+			~RenderScope();
+
+			//! Opportunity to end rendering before the scope exits (when destructor is called).
+			void
+			end_render();
+
+		private:
+			GLRenderer &d_renderer;
+			bool d_called_end_render;
+		};
+
+
+		////////////////////////////////////////////////////////////////////
+		// METHODS TO CONTROL SCOPING (SUCH AS SAVE/RESTORE STATE BLOCKS) //
+		////////////////////////////////////////////////////////////////////
 
 
 		/**
-		 * Pushes a state set and sets the new state on the current render operations target.
+		 * Begin a new 2D render target to render into a RGBA8 texture (without using a depth/stencil buffer).
+		 *
+		 * This simulates a true off-screen RGBA8 render target, when the GL_EXT_framebuffer_object
+		 * OpenGL extension is not present, by rendering to the main framebuffer instead.
+		 * Although if the GL_EXT_framebuffer_object extension is available then it will be used.
+		 *
+		 * The texture should have been initialised with GLTexture::gl_tex_image_2D or GLTexture::gl_tex_image_3D.
+		 * Rendering is by default to the level 0 mipmap of the texture.
+		 *
+		 * @a render_target_viewport specifies the region of the render-texture that you will limit
+		 * rendering to - by default this is the entire texture. A stencil rectangle is specified
+		 * internally for this viewport and also 'glViewport' is set internally for this render target.
+		 * You can still change 'glScissor' and 'glViewport' if you wish but they should both be within
+		 * the bounds specified by @a render_target_viewport (this is because if the main framebuffer
+		 * is used for render-targets then only that region of the framebuffer is saved/restored).
+		 *
+		 * This uses the texture target GL_TEXTURE_2D. If you want other texture targets then use
+		 * @a GLFrameBufferObject instead (along with @a gl_bind_frame_buffer to make it active).
+		 *
+		 * NOTE: A depth/stencil buffer is not provided and so depth and stencil test must be turned off.
+		 * This is because if a framebuffer object is used internally it won't have a depth/stencil buffer.
+		 * And if the main framebuffer is used then we don't want to overwrite its depth/stencil buffer.
+		 * In general GPlates surface layer rendering does not need a depth buffer.
+		 * If you want an off-screen render target with a depth buffer then use @a GLFrameBufferObject.
+		 * And you can use @a gl_bind_frame_buffer to make it active.
+		 *
+		 * This begin / end render target block is also an implicit state block.
+		 * See @a begin_state_block / @a end_state_block (they are called internally by this render target block).
+		 *
+		 * If @a reset_to_default_state is true then this block starts off in the default OpenGL state.
+		 * However, when the matching @a end_rgba8_render_target_2D is called then the state will be
+		 * restored to what it was before @a begin_rgba8_render_target_2D was called.
+		 * Unlike state blocks, the default value for @a reset_to_default_state is to reset to the default state.
+		 * This is because the state required for render targets is usually fairly independent of the
+		 * state outside the render target scope.
+		 *
+		 * NOTE: Render target 2D blocks can be nested.
+		 *
+		 * NOTE: Render target 2D blocks can also be nested in other blocks types (such as state blocks,
+		 * render queue blocks, compiled draw state blocks) and vice versa.
+		 * However if a render target 2D block is nested *inside* a render queue block then any
+		 * rendering done within the render target 2D block is *not* queued (instead it is rendered
+		 * immediately - unless the render target 2D block, in turn, has a render queue block within it).
+		 * This, in turn, means a render target 2D block nested *inside* a compile draw state block
+		 * will *not* compile its draw commands into the compiled draw state.
+		 *
+		 * NOTE: For floating-point render targets (textures) you should use framebuffer objects directly
+		 * which require the GL_EXT_framebuffer_object extension to be available.
+		 * And you can use @a gl_bind_frame_buffer to make them active.
+		 * This method is meant to support RGBA8 rendering for *all* graphics card (even those
+		 * that don't support the GL_EXT_framebuffer_object extension).
+		 *
+		 * @throws GLRendererAPIError if:
+		 *  - @a texture has not been initialised, or
+		 *  - @a depth or stencil testing is enabled.
 		 */
 		void
-		push_state_set(
-				const GLStateSet::non_null_ptr_to_const_type &state_set);
-
+		begin_rgba8_render_target_2D(
+				const GLTexture::shared_ptr_to_const_type &texture,
+				boost::optional<GLViewport> render_target_viewport = boost::none,
+				GLint level = 0,
+				bool reset_to_default_state = true);
 
 		/**
-		 * Pops most recent state set and sets the new state on the current render operations target.
+		 * Ends the current 2D render target.
 		 *
-		 * @throws PreconditionViolationError if there's no currently pushed render target.
+		 * Note that render target blocks can be nested.
+		 *
+		 * @throws @a GLRendererAPIError if:
+		 *  - there is no current render target block, or
+		 *  - there are render-queue and state blocks that were not nested properly.
 		 */
 		void
-		pop_state_set();
+		end_rgba8_render_target_2D();
 
 
 		/**
-		 * Pushes @a transform onto the stack indicated by its @a get_matrix_mode method -
-		 * the stack is in the current render operations target.
+		 * Returns the maximum render target dimensions when using @a begin_rgba8_render_target_2D /
+		 * @a end_rgba8_render_target_2D (values returned as power-of-two dimensions).
 		 *
-		 * @throws PreconditionViolationError if there's no currently pushed render target.
+		 * This is mainly in case the 'GL_EXT_framebuffer_object' extension is not available and
+		 * we fallback to the main framebuffer as a render-target. In which case the dimensions
+		 * of the main framebuffer become the limit (rounded down to the nearest power-of-two).
+		 *
+		 * If 'GL_EXT_framebuffer_object' is supported then this effectively becomes the minimum of
+		 * the maximum texture dimensions and maximum viewport dimensions.
+		 *
+		 * NOTE: Must be called between @a begin_render and @a end_render but not necessarily
+		 * between @a begin_rgba8_render_target_2D and @a end_rgba8_render_target_2D.
+		 *
+		 * NOTE: The dimensions can change from one render to the next (if main framebuffer used
+		 * as render target and the window is resized). So ideally this should be called every render.
 		 */
 		void
-		push_transform(
-				const GLTransform &transform);
+		get_max_rgba8_render_target_dimensions(
+				unsigned int &max_render_target_width,
+				unsigned int &max_render_target_height) const;
 
 
 		/**
-		 * Pops the most recently pushed transform off its corresponding matrix stack in
-		 * the current render operations target.
+		 * RAII class to call @a begin_rgba8_render_target_2D and @a end_rgba8_render_target_2D over a scope.
+		 */
+		class Rgba8RenderTarget2DScope :
+				private boost::noncopyable
+		{
+		public:
+			Rgba8RenderTarget2DScope(
+					GLRenderer &renderer,
+					const GLTexture::shared_ptr_to_const_type &texture,
+					boost::optional<GLViewport> render_target_viewport = boost::none,
+					GLint level = 0,
+					bool reset_to_default_state = true);
+
+			~Rgba8RenderTarget2DScope();
+
+		private:
+			GLRenderer &d_renderer;
+		};
+
+
+		/**
+		 * Begins a new state block.
 		 *
-		 * @throws PreconditionViolationError if there's no currently pushed render target.
+		 * All state set between a @a begin_state_block and @a end_state_block pair will
+		 * be reverted when @a end_state_block is called.
+		 *
+		 * If @a reset_to_default_state is true then this state block starts off in the default OpenGL state.
+		 * However, when the matching @a end_state_block is called, the state will be restored to
+		 * what it was before @a begin_state_block was called.
+		 * The default value for @a reset_to_default_state is *not* to reset to the default state.
+		 *
+		 * NOTE: State blocks can be nested.
+		 *
+		 * NOTE: State blocks can also be nested in other blocks types (such as render target blocks,
+		 * render queue blocks, compiled draw state blocks) and vice versa.
+		 *
+		 * @throws @a GLRendererAPIError if @a begin_render not yet called.
 		 */
 		void
-		pop_transform();
-
-
-		/**
-		 * Returns the transform state of the currently pushed render target.
-		 *
-		 * @throws PreconditionViolationError if there's no currently pushed render target.
-		 */
-		const GLTransformState &
-		get_transform_state() const;
+		begin_state_block(
+				bool reset_to_default_state = false);
 
 		/**
-		 * Returns the transform state of the currently pushed render target.
+		 * Ends the current state block.
 		 *
-		 * @throws PreconditionViolationError if there's no currently pushed render target.
-		 */
-		GLTransformState &
-		get_transform_state();
-
-
-		/**
-		 * Adds a drawable to the current render operations target.
+		 * All state set between a @a begin_state_block and @a end_state_block pair will be reverted
+		 * when this method returns. In other words, the state will be what it was just before
+		 * the matching @a begin_state_block call was made.
 		 *
-		 * It will later be drawn using the current state and model-view and projection matrices
-		 * (of the transform state of the current render target).
+		 * NOTE: State blocks can be nested.
 		 *
-		 * @throws PreconditionViolationError if there's no currently pushed render target.
+		 * @throws @a GLRendererAPIError if there is no current state block.
 		 */
 		void
-		add_drawable(
-				const GLDrawable::non_null_ptr_to_const_type &drawable);
+		end_state_block();
+
+		/**
+		 * RAII class to call @a begin_state_block and @a end_state_block over a scope.
+		 */
+		class StateBlockScope :
+				private boost::noncopyable
+		{
+		public:
+			explicit
+			StateBlockScope(
+					GLRenderer &renderer,
+					bool reset_to_default_state = false);
+
+			~StateBlockScope();
+
+		private:
+			GLRenderer &d_renderer;
+		};
+
+
+		/**
+		 * Begins queueing draw calls to a new render queue.
+		 *
+		 * This queues all draw calls (except in nested render target 2D blocks - see above) into
+		 * a queue that is emitted when @a end_render_queue_block is called.
+		 *
+		 * The primary reason for having render queues is to avoid costly main framebuffer updates
+		 * when the GL_EXT_framebuffer_object extension is not available and the main framebuffer is
+		 * used to simulate render targets.
+		 *
+		 * For example:
+		 * 
+		 *   begin_render_queue_block
+		 *   
+		 *     begin_rgba8_render_target_2D A
+		 *       draw to render target (immediately)
+		 *     end_rgba8_render_target_2D
+		 *     
+		 *     draw X using render texture A (queued)
+		 *     
+		 *     begin_rgba8_render_target_2D B
+		 *       draw to render target (immediately)
+		 *     end_rgba8_render_target_2D
+		 *     
+		 *     draw Y using render texture B (queued)
+		 *     
+		 *   end_render_queue_block (both X and Y are drawn now)
+		 *
+		 * ...in the above the queueing of draw calls X and Y means render targets A and B do not
+		 * need to save/restore the main framebuffer when they've finished using it as a render target.
+		 * Each render target will still copy from the main framebuffer to the render texture but
+		 * there doesn't need to be a save of the main framebuffer before the render target or a
+		 * restore after the render target.
+		 *
+		 * NOTE: Render queue blocks can be nested.
+		 * In this case (aside from render target 2D blocks) the queued draw calls are emitted
+		 * when the outermost render queue block (of the current render target block) exits scope.
+		 *
+		 * NOTE: Render queue blocks can also be nested in other blocks types (such as state blocks,
+		 * compile draw state blocks, render target blocks) and vice versa.
+		 *
+		 * However a render target 2D block nested *inside* a render queue block will *not*
+		 * queue its draw commands into the render queue.
+		 * This is by design since a render target block could stream vertices through a single
+		 * vertex buffer and emit multiple draw calls as it does this - if we queued those draw
+		 * calls then they'd all draw the last set of vertices (currently) in the vertex buffer.
+		 * Granted that this can also happen in situations that don't use a render target block.
+		 *
+		 * WARNING: So in general, as noted above, this is something to be careful of. That is mixing
+		 * streaming to vertex buffers with queued rendering can lead to unexpected or undesired results.
+		 *
+		 * @throws @a GLRendererAPIError if @a begin_render not yet called.
+		 */
+		void
+		begin_render_queue_block();
+
+		/**
+		 * Ends the current render queue block.
+		 *
+		 * @throws @a GLRendererAPIError if there is no current render queue block.
+		 */
+		void
+		end_render_queue_block();
+
+		/**
+		 * RAII class to call @a begin_render_queue_block and @a end_render_queue_block over a scope.
+		 */
+		class RenderQueueBlockScope :
+				private boost::noncopyable
+		{
+		public:
+			explicit
+			RenderQueueBlockScope(
+					GLRenderer &renderer);
+
+			~RenderQueueBlockScope();
+
+		private:
+			GLRenderer &d_renderer;
+		};
+
+
+		/**
+		 * Begins compiling a draw state.
+		 *
+		 * All renderer set state calls and draw calls will be compiled to a draw state
+		 * instead of rendered to OpenGL.
+		 *
+		 * If a valid @a compiled_draw_state is passed in then compilation will continue into it,
+		 * otherwise a new compiled draw state will be created.
+		 * Note that @a end_compile_draw_state will return the @a compiled_draw_state object
+		 * (in the former case) or the newly created one (in the latter case).
+		 *
+		 * All state set between a @a begin_compile_draw_state and @a end_compile_draw_state pair will
+		 * be reverted when @a end_compile_draw_state is called (so that compilation doesn't
+		 * interfere with any state set outside of compilation).
+		 * Also all draw calls are not rendered but instead compiled into the draw state.
+		 *
+		 * NOTE: Only state that is set while compiling the draw state is stored.
+		 * Any currently active state (ie, before @a begin_compile_draw_state) is not compiled into the draw state.
+		 * So whenever the compiled draw state is *applied* (see @a apply_compiled_draw_state)
+		 * it effectively adds to state that is already active at the time it is applied and hence
+		 * depends on the context in which it is applied.
+		 *
+		 * NOTE: Compile draw state blocks can be nested.
+		 *
+		 * NOTE: Compile draw state blocks can also be nested in other blocks types (such as state blocks,
+		 * render queue blocks, render target blocks) and vice versa.
+		 * However a render target 2D block nested *inside* a compile draw state block will *not*
+		 * compile its draw commands into the compiled draw state.
+		 * Also a compile draw state block can be nested in a render queue block without any effect
+		 * on the compiled draw state.
+		 *
+		 * NOTE: It is also possible to call @a apply_compiled_draw_state while compiling another
+		 * draw state in order to generate hierarchical compiled draw states.
+		 *
+		 * @throws @a GLRendererAPIError if @a begin_render not yet called.
+		 */
+		void
+		begin_compile_draw_state(
+				boost::optional<GLCompiledDrawState::non_null_ptr_type> compiled_draw_state = boost::none);
+
+		/**
+		 * Ends compilation of a draw state and returns the compiled draw state (which is either
+		 * a new compile draw state or the compile draw state passed into @a begin_compile_draw_state).
+		 *
+		 * All renderer set state class and draws calls since @a begin_compile_draw_state are
+		 * compiled into the returned compiled draw state.
+		 *
+		 * The returned compiled draw state can be applied by calling @a apply_compiled_draw_state.
+		 *
+		 * NOTE: The implementation of compiled draw states is such that they can be used across
+		 * different OpenGL contexts - this is primarily due to the way @a GLVertexArrayObject is
+		 * implemented (normally native OpenGL vertex array objects cannot be shared across contexts).
+		 */
+		GLCompiledDrawState::non_null_ptr_type
+		end_compile_draw_state();
+
+		/**
+		 * RAII class to call @a begin_compile_draw_state and @a end_compile_draw_state over a scope.
+		 */
+		class CompileDrawStateScope :
+				private boost::noncopyable
+		{
+		public:
+			explicit
+			CompileDrawStateScope(
+					GLRenderer &renderer,
+					boost::optional<GLCompiledDrawState::non_null_ptr_type> compiled_draw_state = boost::none);
+
+			~CompileDrawStateScope();
+
+			/**
+			 * Returns the compiled draw state (which is also the one passed into constructor if
+			 * one was passed in, otherwise a new compiled draw state).
+			 *
+			 * This method will also call 'GLRenderer::end_compile_draw_state()' if necessary.
+			 */
+			GLCompiledDrawState::non_null_ptr_type
+			get_compiled_draw_state();
+
+		private:
+			GLRenderer &d_renderer;
+			boost::optional<GLCompiledDrawState::non_null_ptr_type> d_compiled_draw_state;
+		};
+
+		/**
+		 * Creates an empty compiled draw state that contains no state changes or draw commands.
+		 *
+		 * This is useful when you want to postpone compilation (or do incremental compilation).
+		 * In other words you start out with an empty compiled draw state and then later ask
+		 * a renderer to compile some state into it or modify some state in it.
+		 *
+		 * NOTE: It is *not* necessary to call this method to compile a draw state.
+		 * You can just call @a begin_compile_draw_state and @a end_compile_draw_state since
+		 * @a end_compile_draw_state returns a compiled draw state.
+		 */
+		GLCompiledDrawState::non_null_ptr_type
+		create_empty_compiled_draw_state();
+
+
+		///////////////////////////////////////////////////////////////////////////////////
+		// METHODS THAT READ OR WRITE TO THE CURRENT FRAMEBUFFER AND/OR SET OPENGL STATE //
+		///////////////////////////////////////////////////////////////////////////////////
+
+
+		/**
+		 * Applies the current renderer state directly to OpenGL.
+		 *
+		 * Only differences in state between the current state and @a d_last_applied_state need be applied.
+		 */
+
+
+		/**
+		 * Applies the specified compiled draw state.
+		 *
+		 * This renders draw calls compiled into the compiled draw state (if any) and applies
+		 * any state changes (compiled into draw state).
+		 *
+		 * NOTE: This applies only the OpenGL states that were compiled - any OpenGL states not compiled
+		 * will use the currently active OpenGL state (eg, if the blend state was compiled but not
+		 * depth state then the current depth state is used and the compiled blend state is used).
+		 *
+		 * NOTE: This method can be called while compiling another draw state in order to
+		 * generate hierarchical compiled draw states.
+		 *
+		 * NOTE: A compiled draw state does not need any referenced objects (such as bound buffers, textures,
+		 * etc) to remain alive when it is applied because they are kept alive by the compiled draw state.
+		 * For example, if a compiled draw state binds a texture but then all (other) references to
+		 * that texture are destroyed then the texture will still exist and will still be bound when
+		 * the compiled draw state is applied.
+		 */
+		void
+		apply_compiled_draw_state(
+				const GLCompiledDrawState &compiled_draw_state);
+
+		/**
+		 * Clears the current framebuffer.
+		 *
+		 * @a clear_mask is the same as the argument to the OpenGL function 'glClear()'.
+		 * That is a bitwise combination of GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, etc.
+		 */
+		void
+		gl_clear(
+				GLbitfield clear_mask);
+
+		/**
+		 * Performs same function as the glCopyTexSubImage1D OpenGL function.
+		 *
+		 * NOTE: The target of the copy is the texture bound to texture unit @a texture_unit.
+		 * So you first need to bind a texture on that unit using @a gl_bind_texture.
+		 *
+		 * @throws PreconditionViolationError if @a texture is not initialised.
+		 */
+		void
+		gl_copy_tex_sub_image_1D(
+				GLenum texture_unit,
+				GLenum texture_target,
+				GLint level,
+				GLint xoffset,
+				GLint x,
+				GLint y,
+				GLsizei width);
+
+		/**
+		 * Performs same function as the glCopyTexSubImage2D OpenGL function.
+		 *
+		 * NOTE: The target of the copy is the texture bound to texture unit @a texture_unit.
+		 * So you first need to bind a texture on that unit using @a gl_bind_texture.
+		 *
+		 * @throws PreconditionViolationError if @a texture is not initialised.
+		 */
+		void
+		gl_copy_tex_sub_image_2D(
+				GLenum texture_unit,
+				GLenum texture_target,
+				GLint level,
+				GLint xoffset,
+				GLint yoffset,
+				GLint x,
+				GLint y,
+				GLsizei width,
+				GLsizei height);
+
+		/**
+		 * Performs same function as the glCopyTexSubImage3D OpenGL function.
+		 *
+		 * NOTE: The GL_EXT_copy_texture extension must be available.
+		 *
+		 * NOTE: The target of the copy is the texture bound to texture unit @a texture_unit.
+		 * So you first need to bind a texture on that unit using @a gl_bind_texture.
+		 *
+		 * @throws PreconditionViolationError if @a texture is not initialised.
+		 */
+		void
+		gl_copy_tex_sub_image_3D(
+				GLenum texture_unit,
+				GLenum texture_target,
+				GLint level,
+				GLint xoffset,
+				GLint yoffset,
+				GLint zoffset,
+				GLint x,
+				GLint y,
+				GLsizei width,
+				GLsizei height);
+
+
+		///////////////////////////////////
+		// METHODS THAT SET OPENGL STATE //
+		///////////////////////////////////
+
+
+		/**
+		 * Binds the specified framebuffer object - requires the GL_EXT_framebuffer_object extension.
+		 */
+		void
+		gl_bind_frame_buffer(
+				const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object)
+		{
+			get_current_state()->set_bind_frame_buffer(frame_buffer_object);
+		}
+
+		/**
+		 * Unbinds any currently bound framebuffer object - the *main* framebuffer is now targeted.
+		 */
+		void
+		gl_unbind_frame_buffer()
+		{
+			get_current_state()->set_unbind_frame_buffer();
+		}
+
+
+		/**
+		 * Binds the specified shader program object - requires the GL_ARB_shader_objects extension.
+		 */
+		void
+		gl_bind_program_object(
+				const GLProgramObject::shared_ptr_to_const_type &program_object)
+		{
+			get_current_state()->set_bind_program_object(program_object);
+		}
+
+		/**
+		 * Unbinds any currently bound shader program object - the fixed-function pipeline is now used exclusively.
+		 */
+		void
+		gl_unbind_program_object()
+		{
+			get_current_state()->set_unbind_program_object();
+		}
+
+
+		/**
+		 * Binds a texture to the specified texture unit.
+		 *
+		 * NOTE: @a texture must be initialised.
+		 */
+		void
+		gl_bind_texture(
+				const GLTexture::shared_ptr_to_const_type &texture_object,
+				GLenum texture_unit,
+				GLenum texture_target)
+		{
+			get_current_state()->set_bind_texture(texture_object, texture_unit, texture_target);
+		}
+
+		/**
+		 * Unbinds any currently bound texture object on the specified texture unit and texture target.
+		 */
+		void
+		gl_unbind_texture(
+				GLenum texture_unit,
+				GLenum texture_target)
+		{
+			get_current_state()->set_unbind_texture(texture_unit, texture_target);
+		}
+
+
+		//! Sets the OpenGL colour mask.
+		void
+		gl_color_mask(
+				GLboolean red = GL_TRUE,
+				GLboolean green = GL_TRUE,
+				GLboolean blue = GL_TRUE,
+				GLboolean alpha = GL_TRUE)
+		{
+			get_current_state()->set_color_mask(red, green, blue, alpha);
+		}
+
+		//! Sets the OpenGL depth mask.
+		void
+		gl_depth_mask(
+				GLboolean flag = GL_TRUE)
+		{
+			get_current_state()->set_depth_mask(flag);
+		}
+
+		//! Sets the OpenGL stencil mask.
+		void
+		gl_stencil_mask(
+				GLuint stencil = ~GLuint(0)/*all ones*/)
+		{
+			get_current_state()->set_stencil_mask(stencil);
+		}
+
+		//! Sets the OpenGL clear colour.
+		void
+		gl_clear_color(
+				GLclampf red = GLclampf(0.0),
+				GLclampf green = GLclampf(0.0),
+				GLclampf blue = GLclampf(0.0),
+				GLclampf alpha = GLclampf(0.0))
+		{
+			get_current_state()->set_clear_color(red, green, blue, alpha);
+		}
+
+		//! Sets the OpenGL clear depth value.
+		void
+		gl_clear_depth(
+				GLclampd depth = GLclampd(1.0))
+		{
+			get_current_state()->set_clear_depth(depth);
+		}
+
+		//! Sets the OpenGL clear stencil value.
+		void
+		gl_clear_stencil(
+				GLint stencil = 0)
+		{
+			get_current_state()->set_clear_stencil(stencil);
+		}
+
+		/**
+		 * Sets the current scissor rectangle (GL_SCISSOR_TEST also needs to be enabled).
+		 *
+		 * If the GL_ARB_viewport_array extension is supported then all scissor rectangles are set
+		 * to the same parameters in accordance with that extension.
+		 * For hardware that does not support this extension there is only one scissor rectangle.
+		 */
+		void
+		gl_scissor(
+				GLint x,
+				GLint y,
+				GLsizei width,
+				GLsizei height)
+		{
+			get_current_state()->set_scissor(GLViewport(x, y, width, height), d_default_viewport.get());
+		}
+
+		/**
+		 * Sets all scissor rectangles to the parameters specified in @a all_scissor_rectangles.
+		 *
+		 * NOTE: @a all_scissor_rectangles must contain exactly 'GLContext::get_parameters().viewport.gl_max_viewports' rectangles.
+		 *
+		 * If the GL_ARB_viewport_array extension is not available then only one scissor rectangle is available.
+		 *
+		 * @throws PreconditionViolationError if:
+		 *  all_scissor_rectangles.size() != GLContext::get_parameters().viewport.gl_max_viewports
+		 */
+		void
+		gl_scissor_array(
+				const std::vector<GLViewport> &all_scissor_rectangles)
+		{
+			get_current_state()->set_scissor_array(all_scissor_rectangles, d_default_viewport.get());
+		}
+
+		/**
+		 * Sets the current viewport.
+		 *
+		 * If the GL_ARB_viewport_array extension is supported then all viewports are set to
+		 * the same parameters in accordance with that extension.
+		 * For hardware that does not support this extension there is only one viewport.
+		 */
+		void
+		gl_viewport(
+				GLint x,
+				GLint y,
+				GLsizei width,
+				GLsizei height)
+		{
+			get_current_state()->set_viewport(GLViewport(x, y, width, height), d_default_viewport.get());
+		}
+
+		/**
+		 * Sets all viewports to the parameters specified in @a all_viewports.
+		 *
+		 * NOTE: @a all_viewports must contain exactly 'GLContext::get_parameters().viewport.gl_max_viewports' viewports.
+		 *
+		 * If the GL_ARB_viewport_array extension is not available then only one viewport is available.
+		 *
+		 * NOTE: With the GL_ARB_viewport_array the viewport parameters can be *floating-point* but
+		 * we keep them as integers here for simplicity (for now).
+		 *
+		 * @throws PreconditionViolationError if:
+		 *  all_viewports.size() != GLContext::get_parameters().viewport.gl_max_viewports
+		 */
+		void
+		gl_viewport_array(
+				const std::vector<GLViewport> &all_viewports)
+		{
+			get_current_state()->set_viewport_array(all_viewports, d_default_viewport.get());
+		}
+
+		/**
+		 * Sets the depth range for the current viewport.
+		 *
+		 * If the GL_ARB_viewport_array extension is supported then all viewports are set to
+		 * the same parameters in accordance with that extension.
+		 * For hardware that does not support this extension there is only one viewport.
+		 */
+		void
+		gl_depth_range(
+				GLclampd zNear = 0.0,
+				GLclampd zFar = 1.0)
+		{
+			get_current_state()->set_depth_range(GLDepthRange(zNear, zFar));
+		}
+
+		/**
+		 * Sets depth ranges of all viewports to the parameters specified in @a all_depth_ranges.
+		 *
+		 * NOTE: @a all_depth_ranges must contain exactly 'GLContext::get_parameters().viewport.gl_max_viewports' viewports.
+		 *
+		 * If the GL_ARB_viewport_array extension is not available then only one viewport/depth-range is available.
+		 *
+		 * @throws PreconditionViolationError if:
+		 *  all_depth_ranges.size() != GLContext::get_parameters().viewport.gl_max_viewports
+		 */
+		void
+		gl_depth_range_array(
+				const std::vector<GLDepthRange> &all_depth_ranges)
+		{
+			get_current_state()->set_depth_range_array(all_depth_ranges);
+		}
+
+		/**
+		 * Enable/disable the specified capability.
+		 *
+		 * NOTE: For enabling/disabling texturing use @a gl_enable_texture instead.
+		 *
+		 * Also note that only a subset of the capabilities are currently supported in the
+		 * implementation although it is easy to add more as needed (see 'GLStateSetKeys::get_enable_key').
+		 */
+		void
+		gl_enable(
+				GLenum cap,
+				bool enable = true)
+		{
+			get_current_state()->set_enable(cap, enable);
+		}
+
+		//! Enable/disable texturing for the specified target and texture unit.
+		void
+		gl_enable_texture(
+				GLenum texture_unit,
+				GLenum texture_target,
+				bool enable = true)
+		{
+			get_current_state()->set_enable_texture(texture_unit, texture_target, enable);
+		}
+
+		//! Sets the point size.
+		void
+		gl_point_size(
+				GLfloat size = GLfloat(1))
+		{
+			get_current_state()->set_point_size(size);
+		}
+
+		//! Sets the line width.
+		void
+		gl_line_width(
+				GLfloat width = GLfloat(1))
+		{
+			get_current_state()->set_line_width(width);
+		}
+
+		void
+		gl_polygon_mode(
+				GLenum face = GL_FRONT_AND_BACK,
+				GLenum mode = GL_FILL)
+		{
+			get_current_state()->set_polygon_mode(face, mode);
+		}
+
+		void
+		gl_front_face(
+				GLenum mode = GL_CCW)
+		{
+			get_current_state()->set_front_face(mode);
+		}
+
+		void
+		gl_cull_face(
+				GLenum mode = GL_BACK)
+		{
+			get_current_state()->set_cull_face(mode);
+		}
+
+		void
+		gl_polygon_offset(
+				GLfloat factor = GLfloat(0),
+				GLfloat units = GLfloat(0))
+		{
+			get_current_state()->set_polygon_offset(factor, units);
+		}
+
+		/**
+		 * Specify a hint.
+		 *
+		 * Also note that only a subset of the hints are currently supported in the
+		 * implementation although it is easy to add more as needed (see 'GLStateSetKeys::get_hint_key').
+		 */
+		void
+		gl_hint(
+				GLenum target,
+				GLenum mode)
+		{
+			get_current_state()->set_hint(target, mode);
+		}
+
+		//! Sets the alpha test function.
+		void
+		gl_alpha_func(
+				GLenum func = GL_ALWAYS,
+				GLclampf ref = GLclampf(0))
+		{
+			get_current_state()->set_alpha_func(func, ref);
+		}
+
+		//! Sets the depth function.
+		void
+		gl_depth_func(
+				GLenum func = GL_LESS)
+		{
+			get_current_state()->set_depth_func(func);
+		}
+
+		//! Sets the alpha-blend function (NOTE: you'll also want to enable blending).
+		void
+		gl_blend_func(
+				GLenum sfactor = GL_ONE,
+				GLenum dfactor = GL_ZERO)
+		{
+			get_current_state()->set_blend_func(sfactor, dfactor);
+		}
+
+		/**
+		 * Sets the specified texture environment state to the specified parameter on the specified texture unit.
+		 *
+		 * NOTE: 'ParamType' should be one of GLint, GLfloat, std::vector<GLint> or std::vector<GLfloat>.
+		 * These correspond to the OpenGL functions 'glTexEnvi', 'glTexEnvf', 'glTexEnviv' and 'glTexEnvfv'.
+		 */
+		template <typename ParamType>
+		void
+		gl_tex_env(
+				GLenum texture_unit,
+				GLenum target,
+				GLenum pname,
+				const ParamType &param)
+		{
+			get_current_state()->set_tex_env(texture_unit, target, pname, param);
+		}
+
+		/**
+		 * Sets the specified texture coordinate generation state to the specified parameter on the specified texture unit.
+		 *
+		 * NOTE: 'ParamType' should be one of GLint, GLfloat, GLdouble, std::vector<GLint>, std::vector<GLfloat> or std::vector<GLdouble>.
+		 * These correspond to the OpenGL functions 'glTexGeni', 'glTexGenf', 'glTexGend', 'glTexGeniv', 'glTexGenfv' and 'glTexGendv'.
+		 */
+		template <typename ParamType>
+		void
+		gl_tex_gen(
+				GLenum texture_unit,
+				GLenum coord,
+				GLenum pname,
+				const ParamType &param)
+		{
+			get_current_state()->set_tex_gen(texture_unit, coord, pname, param);
+		}
+
+		/**
+		 * Loads the specified matrix into the specified matrix mode.
+		 *
+		 * Valid values for @a mode are GL_MODELVIEW and GL_PROJECTION.
+		 *
+		 * NOTE: Use @a gl_load_texture_matrix for texture matrices (GL_TEXTURE matrix mode).
+		 */
+		void
+		gl_load_matrix(
+				GLenum mode,
+				const GLMatrix &matrix)
+		{
+			get_current_state()->set_load_matrix(mode, matrix);
+		}
+
+		/**
+		 * Loads the specified matrix into the texture matrix (GL_TEXTURE) for the specified texture unit.
+		 */
+		void
+		gl_load_texture_matrix(
+				GLenum texture_unit,
+				const GLMatrix &texture_matrix)
+		{
+			get_current_state()->set_load_texture_matrix(texture_unit, texture_matrix);
+		}
+
+		/**
+		 * Post-multiplies the current matrix (for @a mode) by @a matrix.
+		 *
+		 * If there is no current matrix loaded this is the same as calling @a gl_load_matrix.
+		 *
+		 * Note that you can use @a StateBlockScope to push/pop render state (including matrix state).
+		 */
+		void
+		gl_mult_matrix(
+				GLenum mode,
+				const GLMatrix &matrix);
+
+		/**
+		 * Post-multiplies the current texture matrix (GL_TEXTURE) on the specified texture unit by @a texture_matrix.
+		 *
+		 * If there is no current matrix loaded this is the same as calling @a gl_load_texture_matrix.
+		 *
+		 * Note that you can use @a StateBlockScope to push/pop render state (including matrix state).
+		 */
+		void
+		gl_mult_texture_matrix(
+				GLenum texture_unit,
+				const GLMatrix &texture_matrix);
+
+
+		/////////////////////////////////////////////////////////////////////////////////////////////
+		//                                                                                         //
+		// The following methods are 'get' methods.                                                //
+		//                                                                                         //
+		// NOTE: Mostly only those required by the renderer framework implementation are provided. //
+		//                                                                                         //
+		/////////////////////////////////////////////////////////////////////////////////////////////
+
+
+		/**
+		 * Returns the current viewport at index @a viewport_index (default index is zero).
+		 *
+		 * If there's only one viewport set (via @a gl_viewport) then use the default index of zero.
+		 *
+		 * NOTE: @a viewport_index must be less than 'GLContext::get_parameters().viewport.gl_max_viewports'.
+		 * NOTE: And must be called between @a begin_render and @a end_render as usual.
+		 */
+		const GLViewport &
+		gl_get_viewport(
+				unsigned int viewport_index = 0) const;
+
+
+		/**
+		 * Returns the current matrix for the specified matrix mode, or identity if not set.
+		 *
+		 * Valid values for @a mode are GL_MODELVIEW and GL_PROJECTION.
+		 *
+		 * NOTE: Use @a gl_get_texture_matrix for texture matrices (GL_TEXTURE matrix mode).
+		 */
+		const GLMatrix &
+		gl_get_matrix(
+				GLenum mode) const;
+
+		/**
+		 * Returns the current texture matrix for the specified texture unit, or identity if not set.
+		 */
+		const GLMatrix &
+		gl_get_texture_matrix(
+				GLenum texture_unit) const;
 
 	private:
 		/**
-		 * Keeps track of all state used to render into a render target.
+		 * Used to begin/end rendering and manage framebuffer objects.
 		 */
-		struct RenderTargetState
-		{
-			//! Constructor.
-			RenderTargetState(
-					const GLRenderTargetType::non_null_ptr_type &render_target_type,
-					RenderTargetUsageType render_target_usage);
-
-
-			/**
-			 * Used to keep track of the transformation state (includes
-			 * model-view, projection and texture matrices and the viewport).
-			 *
-			 * These help us with culling and level-of-detail selection.
-			 *
-			 * Also allows us to calculate matrices with double-precision and output the
-			 * final concatenated matrix for each transform node in the render graph.
-			 */
-			GLTransformState::non_null_ptr_type d_transform_state;
-
-			/**
-			 * Used to assemble the OpenGL state of visible nodes in the render graph.
-			 *
-			 * The state is not applied directly to OpenGL yet - that is done by the
-			 * render queue when it is rendered.
-			 */
-			GLStateGraphBuilder::non_null_ptr_type d_state_graph_builder;
-
-			/**
-			 * The state graph that will get stored with a @a GLRenderTarget since
-			 * the render target has @a GLRenderOperation objects associated with it that
-			 * reference state graph nodes.
-			 */
-			GLStateGraph::non_null_ptr_type d_state_graph;
-
-			/**
-			 * The type of render target (frame buffer or texture target).
-			 */
-			GLRenderTargetType::non_null_ptr_type d_render_target_type;
-
-			/**
-			 * Whether this render target should be used in serial or parallel.
-			 */
-			RenderTargetUsageType d_render_target_usage;
-
-			/**
-			 * All render operations are added to this target.
-			 *
-			 * It is optional because we only want to create it if the client
-			 * adds a drawable to the target.
-			 */
-			boost::optional<GLRenderOperationsTarget::non_null_ptr_type> d_render_operations_target;
-		};
-
-		//! Typedef for a stack of render target states.
-		typedef std::stack<RenderTargetState> render_target_state_stack_type;
-
+		GLContext::non_null_ptr_type d_context;
 
 		/**
-		 * Stack of currently pushed render targets.
+		 * The viewport of the window currently attached to the OpenGL context.
 		 */
-		render_target_state_stack_type d_render_target_state_stack;
+		boost::optional<GLViewport> d_default_viewport;
 
 		/**
-		 * References the current top of the render target state stack.
+		 * Used to efficiently allocate @a GLState objects.
 		 */
-		RenderTargetState *d_current_render_target_state;
+		boost::shared_ptr<GLStateStore> d_state_store;
 
 		/**
-		 * The output of our visitation goes here and eventually gets returned to the caller.
+		 * Represents the default OpenGL state.
+		 *
+		 * Typically it won't have any states set which means it's the default state.
+		 * One exception is the default viewport which represents the dimensions of the window
+		 * currently attached to the OpenGL context.
+		 *
+		 * NOTE: This must be declared after @a d_state_set_store and @a d_state_set_keys.
 		 */
-		GLRenderQueue::non_null_ptr_type d_render_queue;
+		GLState::shared_ptr_type d_default_state;
+
+		/**
+		 * Represents the actual OpenGL state (as it was last applied to OpenGL).
+		 *
+		 * NOTE: This must be declared after @a d_state_set_store and @a d_state_set_keys.
+		 */
+		GLState::shared_ptr_type d_last_applied_state;
+
+		/**
+		 * The current draw count for draw calls that modify any framebuffers.
+		 *
+		 * Only used when the GL_EXT_framebuffer_object extension is not available and hence
+		 * the main framebuffer is being used for render targets.
+		 */
+		GLRendererImpl::frame_buffer_draw_count_type d_current_frame_buffer_draw_count;
+
+		/**
+		 * The framebuffer object to use for RGBA8 render targets (if GL_EXT_framebuff_object supported).
+		 */
+		boost::optional<GLFrameBufferObject::shared_ptr_type> d_rgba8_framebuffer_object;
+
+		/**
+		 * Used to cache results of 'glCheckFramebufferStatus' as an optimisation since it's expensive to call.
+		 */
+		GLRendererImpl::frame_buffer_state_to_status_map_type d_rgba8_framebuffer_object_status_map;
+
+		/**
+		 * Stack of currently render target blocks.
+		 *
+		 * The first block pushed always represents the main framebuffer.
+		 * Subsequent blocks represent render-to-texture targets.
+		 */
+		GLRendererImpl::render_target_block_stack_type d_render_target_block_stack;
 
 
 		//! Constructor.
-		explicit
 		GLRenderer(
-				const GLRenderQueue::non_null_ptr_type &render_queue);
+				const GLContext::non_null_ptr_type &context,
+				const boost::shared_ptr<GLStateStore> &state_store);
+
+
+		/**
+		 * Returns the current 'const' render target block.
+		 */
+		const GLRendererImpl::RenderTargetBlock &
+		get_current_render_target_block() const
+		{
+			// There should be at least the state block pushed in 'begin_render'.
+			GPlatesGlobal::Assert<GLRendererAPIError>(
+					!d_render_target_block_stack.empty(),
+					GPLATES_ASSERTION_SOURCE,
+					GLRendererAPIError::SHOULD_HAVE_A_RENDER_TARGET_BLOCK);
+
+			return d_render_target_block_stack.top();
+		}
+
+		/**
+		 * Returns the current 'non-const' render target block.
+		 */
+		GLRendererImpl::RenderTargetBlock &
+		get_current_render_target_block()
+		{
+			// There should be at least the state block pushed in 'begin_render'.
+			GPlatesGlobal::Assert<GLRendererAPIError>(
+					!d_render_target_block_stack.empty(),
+					GPLATES_ASSERTION_SOURCE,
+					GLRendererAPIError::SHOULD_HAVE_A_RENDER_TARGET_BLOCK);
+
+			return d_render_target_block_stack.top();
+		}
+
+
+		/**
+		 * Returns the current 'const' state block.
+		 */
+		const GLRendererImpl::StateBlock &
+		get_current_state_block() const
+		{
+			const GLRendererImpl::RenderTargetBlock &current_render_target_block = get_current_render_target_block();
+
+			// There should be at least the state block pushed in the current render target block.
+			GPlatesGlobal::Assert<GLRendererAPIError>(
+					!current_render_target_block.state_block_stack.empty(),
+					GPLATES_ASSERTION_SOURCE,
+					GLRendererAPIError::SHOULD_HAVE_A_STATE_BLOCK);
+
+			return current_render_target_block.state_block_stack.top();
+		}
+
+		/**
+		 * Returns the current 'non-const' state block.
+		 */
+		GLRendererImpl::StateBlock &
+		get_current_state_block()
+		{
+			GLRendererImpl::RenderTargetBlock &current_render_target_block = get_current_render_target_block();
+
+			// There should be at least the state block pushed in the current render target block.
+			GPlatesGlobal::Assert<GLRendererAPIError>(
+					!current_render_target_block.state_block_stack.empty(),
+					GPLATES_ASSERTION_SOURCE,
+					GLRendererAPIError::SHOULD_HAVE_A_STATE_BLOCK);
+
+			return current_render_target_block.state_block_stack.top();
+		}
+
+
+		/**
+		 * Returns the 'const' state of the current state block of the current render target block.
+		 */
+		inline
+		GLState::shared_ptr_to_const_type
+		get_current_state() const
+		{
+			return get_current_state_block().get_current_state();
+		}
+
+		/**
+		 * Returns the 'non-const' state of the current state block of the current render target block.
+		 */
+		inline
+		const GLState::shared_ptr_type &
+		get_current_state()
+		{
+			return get_current_state_block().get_current_state();
+		}
+
+
+		/**
+		 * Clones the state of the current state block (top of stack).
+		 */
+		inline
+		GLState::shared_ptr_type
+		clone_current_state()
+		{
+			return get_current_state()->clone();
+		}
+
+		/**
+		 * When compiled draw state is applied it may need to be updated to work with the current
+		 * OpenGL context if it is a different context than when the draw state was compiled.
+		 */
+		void
+		update_compiled_draw_state_for_current_context(
+				GLState &compiled_state_change);
+
+		/**
+		 * Renders a render operation containing a drawable and a state.
+		 *
+		 * The render operation can be queued for later rendering in certain situations.
+		 */
+		void
+		draw(
+				const GLRendererImpl::RenderOperation &render_operation);
+
+		void
+		begin_rgba8_main_framebuffer_2D(
+				GLRendererImpl::RenderTextureTarget &render_texture_target);
+
+		void
+		end_rgba8_main_framebuffer_2D(
+				const GLRendererImpl::RenderTextureTarget &render_texture_target);
+
+		bool
+		begin_rgba8_framebuffer_object_2D(
+				GLRendererImpl::RenderTextureTarget &render_texture_target);
+
+		void
+		end_rgba8_framebuffer_object_2D(
+				const boost::optional<GLRendererImpl::RenderTextureTarget> &parent_render_texture_target);
+
+		bool
+		check_rgba8_framebuffer_object_2D_completeness(
+				const GLRendererImpl::RenderTextureTarget &render_texture_target);
+
+		void
+		begin_render_target_block_internal(
+				bool reset_to_default_state,
+				const boost::optional<GLRendererImpl::RenderTextureTarget> &render_texture_target = boost::none);
+
+		void
+		end_render_target_block_internal();
+
+		void
+		begin_state_block_internal(
+				const GLRendererImpl::StateBlock &state_block);
+
+		void
+		begin_render_queue_block_internal(
+				const GLRendererImpl::RenderQueue::non_null_ptr_type &render_queue);
+
+		GLRendererImpl::RenderQueue::non_null_ptr_type
+		end_render_queue_block_internal();
+
+		/**
+		 * Performs same function as the glDrawElements OpenGL function.
+		 *
+		 * This overload uses the bound vertex element buffer object for obtaining vertex indices.
+		 */
+		void
+		gl_draw_elements(
+				GLenum mode,
+				GLsizei count,
+				GLenum type,
+				GLint indices_offset);
+
+		/**
+		 * Performs same function as the glDrawElements OpenGL function.
+		 *
+		 * This overload uses client memory (no bound objects) for obtaining vertex indices.
+		 */
+		void
+		gl_draw_elements(
+				GLenum mode,
+				GLsizei count,
+				GLenum type,
+				GLint indices_offset,
+				const GLBufferImpl::shared_ptr_to_const_type &vertex_element_buffer_impl);
+
+	public:
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	//
+	// NOTE: This public grouping is placed at the bottom of the class so that it's less noticeable.
+	// These functions either:
+	//  1) aren't generally needed by general clients (only needed to help build an OpenGL framework), or
+	//  2) are handled better (more transparently) using OpenGL framework objects outside of GLRenderer
+	//     such as GLVertexArray which, in turn, calls some of these GLRenderer methods.
+	//
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+		/**
+		 * Applies the current renderer state immediately to OpenGL instead of waiting until the next
+		 * un-queued draw command (or any command that writes to, or reads from, the current framebuffer).
+		 *
+		 * Normally it's better to *not* apply immediately because it allows the opportunity to
+		 * remove redundant state changes between draw calls.
+		 *
+		 * NOTE: This method should *not* be used in general rendering.
+		 * Currently it is not actually used anywhere.
+		 */
+		void
+		apply_current_state_to_opengl();
+
+
+		/**
+		 * Performs same function as the glDrawRangeElements OpenGL function.
+		 *
+		 * This overload uses the bound vertex element buffer object for obtaining vertex indices.
+		 *
+		 * NOTE: If the GL_EXT_draw_range_elements extension is not present then reverts to
+		 * using @a gl_draw_elements instead (ie, @a start and @a end are effectively ignored).
+		 */
+		void
+		gl_draw_range_elements(
+				GLenum mode,
+				GLuint start,
+				GLuint end,
+				GLsizei count,
+				GLenum type,
+				GLint indices_offset);
+
+		/**
+		 * Performs same function as the glDrawRangeElements OpenGL function.
+		 *
+		 * This overload uses client memory (no bound objects) for obtaining vertex indices.
+		 *
+		 * NOTE: If the GL_EXT_draw_range_elements extension is not present then reverts to
+		 * using @a gl_draw_elements instead (ie, @a start and @a end are effectively ignored).
+		 */
+		void
+		gl_draw_range_elements(
+				GLenum mode,
+				GLuint start,
+				GLuint end,
+				GLsizei count,
+				GLenum type,
+				GLint indices_offset,
+				const GLBufferImpl::shared_ptr_to_const_type &vertex_element_buffer_impl);
+
+
+		/**
+		 * Sets the currently active texture unit.
+		 *
+		 * NOTE: This is a detail that clients shouldn't have to worry about - in other words
+		 * they should be able to specify the texture unit in any public methods that involves
+		 * textures and not have to explicitly set the active texture unit beforehand.
+		 *
+		 * However there are some situations where it needs to be set such as specifying a texture
+		 * coordinate array for a texture unit or calling @a gl_copy_tex_image_2D (that
+		 * copies to the texture currently bound on the active texture unit).
+		 *
+		 * @throws PreconditionViolationError if @a active_texture is not in the half-open range:
+		 *   [GL_TEXTURE0,
+		 *    GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_units_ARB).
+		 */
+		void
+		gl_active_texture(
+				GLenum active_texture)
+		{
+			get_current_state()->set_active_texture(active_texture);
+		}
+
+		/**
+		 * Sets the currently active texture unit targeted by vertex texture coordinate arrays.
+		 *
+		 * NOTE: This is a detail that clients shouldn't have to worry about - in other words
+		 * they should be able to specify the texture unit in any public methods that involves
+		 * textures and not have to explicitly set the active texture unit beforehand.
+		 *
+		 * @throws PreconditionViolationError if @a client_active_texture is not in the half-open range:
+		 *   [GL_TEXTURE0,
+		 *    GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_units_ARB).
+		 */
+		void
+		gl_client_active_texture(
+				GLenum client_active_texture)
+		{
+			get_current_state()->set_client_active_texture(client_active_texture);
+		}
+
+		/**
+		 * Specifies which matrix stack is the target for matrix operations.
+		 */
+		void
+		gl_matrix_mode(
+				GLenum mode)
+		{
+			get_current_state()->set_matrix_mode(mode);
+		}
+
+		/**
+		 * Binds the specified framebuffer object and applies directly to OpenGL - requires the GL_EXT_framebuffer_object extension.
+		 *
+		 * NOTE: Should only be used by the implementation of @a GLFrameBufferObject - since it makes *direct*
+		 * calls to OpenGL. Ensures the object is bound immediately in OpenGL instead of the next draw call.
+		 */
+		void
+		gl_bind_frame_buffer_and_apply(
+				const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object)
+		{
+			get_current_state()->set_bind_frame_buffer_and_apply(frame_buffer_object, *d_last_applied_state);
+		}
+
+		/**
+		 * Binds the specified shader program object and applies directly to OpenGL - requires the GL_ARB_shader_objects extension.
+		 *
+		 * NOTE: Should only be used by the implementation of @a GLProgramObject - since it makes *direct*
+		 * calls to OpenGL. Ensures the object is bound immediately in OpenGL instead of the next draw call.
+		 */
+		void
+		gl_bind_program_object_and_apply(
+				const GLProgramObject::shared_ptr_to_const_type &program_object)
+		{
+			get_current_state()->set_bind_program_object_and_apply(program_object, *d_last_applied_state);
+		}
+
+		/**
+		 * Binds a texture to the specified texture unit and applies directly to OpenGL.
+		 *
+		 * NOTE: Should only be used by the implementation of @a GLTexture - since it makes *direct*
+		 * calls to OpenGL. Ensures the object is bound immediately in OpenGL instead of the next draw call.
+		 *
+		 * NOTE: @a texture must be initialised.
+		 */
+		void
+		gl_bind_texture_and_apply(
+				const GLTexture::shared_ptr_to_const_type &texture_object,
+				GLenum texture_unit,
+				GLenum texture_target)
+		{
+			get_current_state()->set_bind_texture_and_apply(texture_object, texture_unit, texture_target, *d_last_applied_state);
+		}
+
+		/**
+		 * Binds a vertex array object - requires the GL_ARB_vertex_array_object extension.
+		 */
+		void
+		gl_bind_vertex_array_object(
+				const GLVertexArrayObject::shared_ptr_to_const_type &vertex_array_object);
+
+		/**
+		 * Same as @a gl_bind_vertex_array_object but also applies binding directly to OpenGL.
+		 *
+		 * NOTE: Should only be used by the implementation of @a GLVertexArrayObject - since it makes *direct*
+		 * calls to OpenGL. Ensures the object is bound immediately in OpenGL instead of the next draw call.
+		 */
+		void
+		gl_bind_vertex_array_object_and_apply(
+				const GLVertexArrayObject::shared_ptr_to_const_type &vertex_array_object);
+
+		/**
+		 * Unbinds any currently bound vertex array object.
+		 */
+		void
+		gl_unbind_vertex_array_object()
+		{
+			get_current_state()->set_unbind_vertex_array_object();
+		}
+
+		/**
+		 * Binds a vertex element buffer object - requires the GL_ARB_vertex_buffer_object extension.
+		 */
+		void
+		gl_bind_vertex_element_buffer_object(
+				const GLVertexElementBufferObject::shared_ptr_to_const_type &vertex_element_buffer_object)
+		{
+			gl_bind_buffer_object(
+					vertex_element_buffer_object->get_buffer_object(),
+					GLVertexElementBufferObject::get_target_type());
+		}
+
+		/**
+		 * Unbinds any currently bound vertex element buffer object.
+		 */
+		void
+		gl_unbind_vertex_element_buffer_object()
+		{
+			gl_unbind_buffer_object(GLVertexElementBufferObject::get_target_type());
+		}
+
+		/**
+		 * Binds a vertex buffer object - requires the GL_ARB_vertex_buffer_object extension.
+		 */
+		void
+		gl_bind_vertex_buffer_object(
+				const GLVertexBufferObject::shared_ptr_to_const_type &vertex_buffer_object)
+		{
+			gl_bind_buffer_object(
+					vertex_buffer_object->get_buffer_object(),
+					GLVertexBufferObject::get_target_type());
+		}
+
+		/**
+		 * Unbinds any currently bound vertex buffer object.
+		 */
+		void
+		gl_unbind_vertex_buffer_object()
+		{
+			gl_unbind_buffer_object(GLVertexBufferObject::get_target_type());
+		}
+
+		/**
+		 * Binds a buffer object to the specified target - requires the GL_ARB_vertex_buffer_object extension.
+		 */
+		void
+		gl_bind_buffer_object(
+				const GLBufferObject::shared_ptr_to_const_type &buffer_object,
+				GLenum target)
+		{
+			get_current_state()->set_bind_buffer_object(buffer_object, target);
+		}
+
+		/**
+		 * Same as @a gl_bind_buffer_object but also applies binding directly to OpenGL.
+		 */
+		void
+		gl_bind_buffer_object_and_apply(
+				const GLBufferObject::shared_ptr_to_const_type &buffer_object,
+				GLenum target)
+		{
+			get_current_state()->set_bind_buffer_object_and_apply(buffer_object, target, *d_last_applied_state);
+		}
+
+		/**
+		 * Unbinds any buffer object currently bound to the specified target.
+		 */
+		void
+		gl_unbind_buffer_object(
+				GLenum target)
+		{
+			get_current_state()->set_unbind_buffer_object(target);
+		}
+
+		/**
+		 * Enables the specified (@a array) vertex array (in the fixed-function pipeline).
+		 *
+		 * @a array should be one of GL_VERTEX_ARRAY, GL_COLOR_ARRAY, or GL_NORMAL_ARRAY.
+		 *
+		 * NOTE: Use @a gl_enable_client_texture_state for GL_TEXTURE_COORD_ARRAY.
+		 */
+		void
+		gl_enable_client_state(
+				GLenum array,
+				bool enable = true)
+		{
+			get_current_state()->set_enable_client_state(array, enable);
+		}
+
+		/**
+		 * Enables the vertex attribute array GL_TEXTURE_COORD_ARRAY (in the fixed-function pipeline)
+		 * on the specified texture unit.
+		 */
+		void
+		gl_enable_client_texture_state(
+				GLenum texture_unit,
+				bool enable = true)
+		{
+			get_current_state()->set_enable_client_texture_state(texture_unit, enable);
+		}
+
+		/**
+		 * Specify the source of vertex position data (from a buffer object).
+		 */
+		void
+		gl_vertex_pointer(
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset,
+				GLBufferObject::shared_ptr_to_const_type vertex_buffer_object)
+		{
+			get_current_state()->set_vertex_pointer(
+					size, type, stride, offset, vertex_buffer_object);
+		}
+
+		/**
+		 * Specify the source of vertex position data (from client memory).
+		 */
+		void
+		gl_vertex_pointer(
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset,
+				GLBufferImpl::shared_ptr_to_const_type vertex_buffer_impl)
+		{
+			get_current_state()->set_vertex_pointer(
+					size, type, stride, offset, vertex_buffer_impl);
+		}
+
+		/**
+		 * Specify the source of vertex color data (from a buffer object).
+		 */
+		void
+		gl_color_pointer(
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset,
+				GLBufferObject::shared_ptr_to_const_type vertex_buffer_object)
+		{
+			get_current_state()->set_color_pointer(size, type, stride, offset, vertex_buffer_object);
+		}
+
+		/**
+		 * Specify the source of vertex color data (from client memory).
+		 */
+		void
+		gl_color_pointer(
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset,
+				GLBufferImpl::shared_ptr_to_const_type vertex_buffer_impl)
+		{
+			get_current_state()->set_color_pointer(size, type, stride, offset, vertex_buffer_impl);
+		}
+
+		/**
+		 * Specify the source of vertex normal data (from a buffer object).
+		 */
+		void
+		gl_normal_pointer(
+				GLenum type,
+				GLsizei stride,
+				GLint offset,
+				GLBufferObject::shared_ptr_to_const_type vertex_buffer_object)
+		{
+			get_current_state()->set_normal_pointer(type, stride, offset, vertex_buffer_object);
+		}
+
+		/**
+		 * Specify the source of vertex normal data (from client memory).
+		 */
+		void
+		gl_normal_pointer(
+				GLenum type,
+				GLsizei stride,
+				GLint offset,
+				GLBufferImpl::shared_ptr_to_const_type vertex_buffer_impl)
+		{
+			get_current_state()->set_normal_pointer(type, stride, offset, vertex_buffer_impl);
+		}
+
+		/**
+		 * Specify the source of vertex texture coordinate data (from a buffer object).
+		 */
+		void
+		gl_tex_coord_pointer(
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset,
+				GLBufferObject::shared_ptr_to_const_type vertex_buffer_object,
+				GLenum texture_unit)
+		{
+			get_current_state()->set_tex_coord_pointer(size, type, stride, offset, vertex_buffer_object, texture_unit);
+		}
+
+		/**
+		 * Specify the source of vertex texture coordinate data (from client memory).
+		 */
+		void
+		gl_tex_coord_pointer(
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset,
+				GLBufferImpl::shared_ptr_to_const_type vertex_buffer_impl,
+				GLenum texture_unit)
+		{
+			get_current_state()->set_tex_coord_pointer(size, type, stride, offset, vertex_buffer_impl, texture_unit);
+		}
+
+		/**
+		 * Enables the specified *generic* vertex attribute array (for use in a shader program).
+		 *
+		 * These *generic* attribute arrays can be used in addition to the non-generic arrays or instead of.
+		 * These *generic* attributes can only be accessed by shader programs (see @a GLProgramObject).
+		 * The non-generic arrays can be accessed by both the fixed-function pipeline and shader programs.
+		 * Although starting with OpenGL 3 the non-generic arrays are deprecated/removed from the core OpenGL profile.
+		 * But graphics vendors support compatibility profiles so using them in a pre version 3 way is still ok.
+		 *
+		 * Note that, as dictated by OpenGL, @a attribute_index must be in the half-closed range
+		 * [0, GL_MAX_VERTEX_ATTRIBS_ARB).
+		 * You can get GL_MAX_VERTEX_ATTRIBS_ARB from 'GLContext::get_parameters().shader.gl_max_vertex_attribs'.
+		 *
+		 * NOTE: The 'GL_ARB_vertex_shader' extension must be supported.
+		 */
+		void
+		gl_enable_vertex_attrib_array(
+				GLuint attribute_index,
+				bool enable = true)
+		{
+			get_current_state()->set_enable_vertex_attrib_array(attribute_index, enable);
+		}
+
+		/**
+		 * Specify the source of *generic* vertex attribute array (for use in a shader program "from a buffer object").
+		 *
+		 * See comment in @a gl_enable_vertex_attrib_array for details and restrictions.
+		 */
+		void
+		gl_vertex_attrib_pointer(
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
+				GLboolean normalized,
+				GLsizei stride,
+				GLint offset,
+				GLBufferObject::shared_ptr_to_const_type vertex_buffer_object)
+		{
+			get_current_state()->set_vertex_attrib_pointer(
+					attribute_index, size, type, normalized, stride, offset, vertex_buffer_object);
+		}
+
+		/**
+		 * Specify the source of *generic* vertex attribute array (for use in a shader program "from client memory").
+		 *
+		 * See comment in @a gl_enable_vertex_attrib_array for details and restrictions.
+		 */
+		void
+		gl_vertex_attrib_pointer(
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
+				GLboolean normalized,
+				GLsizei stride,
+				GLint offset,
+				GLBufferImpl::shared_ptr_to_const_type vertex_buffer_impl)
+		{
+			get_current_state()->set_vertex_attrib_pointer(
+					attribute_index, size, type, normalized, stride, offset, vertex_buffer_impl);
+		}
 	};
+
+
+	/**
+	 * Creates a compiled draw state that specifies no bound vertex element buffer, no bound
+	 * vertex attribute arrays (vertex buffers) and no enabled client vertex attribute state.
+	 *
+	 * This function also makes state change detection in the renderer more efficient when
+	 * binding vertex arrays (implementation detail: because the individual immutable GLStateSet
+	 * objects, that specify unbound/disabled state, are shared by multiple vertex arrays resulting
+	 * in a simple pointer comparison versus a virtual function call with comparison logic).
+	 *
+	 * So this function is built into @a GLVertexArray.
+	 */
+	GLCompiledDrawState::non_null_ptr_type
+	create_unbound_vertex_array_compiled_draw_state(
+			GLRenderer &renderer);
 }
 
 #endif // GPLATES_OPENGL_GLRENDERER_H

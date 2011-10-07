@@ -32,18 +32,10 @@
 #include <boost/optional.hpp>
 #include <boost/scoped_array.hpp>
 
-#include "GLClearBuffers.h"
-#include "GLClearBuffersState.h"
-#include "GLCompositeStateSet.h"
-#include "GLMaskBuffersState.h"
+#include "GLCompiledDrawState.h"
 #include "GLMultiResolutionRasterSource.h"
-#include "GLResourceManager.h"
-#include "GLStateSet.h"
 #include "GLTexture.h"
-#include "GLTextureUtils.h"
-#include "GLVertexArrayDrawable.h"
 #include "GLViewport.h"
-#include "GLViewportState.h"
 
 #include "global/PointerTraits.h"
 
@@ -65,6 +57,8 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesOpenGL
 {
+	class GLRenderer;
+
 	/**
 	 * An arbitrary dimension source of RGBA data made accessible by a proxied raster.
 	 */
@@ -93,9 +87,9 @@ namespace GPlatesOpenGL
 		static
 		boost::optional<non_null_ptr_type>
 		create(
+				GLRenderer &renderer,
 				const double &reconstruction_time,
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &age_grid_raster,
-				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
 				unsigned int tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION);
 
 
@@ -124,7 +118,7 @@ namespace GPlatesOpenGL
 
 
 		virtual
-		void
+		cache_handle_type
 		load_tile(
 				unsigned int level,
 				unsigned int texel_x_offset,
@@ -132,8 +126,7 @@ namespace GPlatesOpenGL
 				unsigned int texel_width,
 				unsigned int texel_height,
 				const GLTexture::shared_ptr_type &target_texture,
-				GLRenderer &renderer,
-				GLRenderer::RenderTargetUsageType render_target_usage);
+				GLRenderer &renderer);
 
 
 		/**
@@ -247,11 +240,6 @@ namespace GPlatesOpenGL
 		unsigned int d_tile_texel_dimension;
 
 		/**
-		 * Used to create new texture resources.
-		 */
-		GLTextureResourceManager::shared_ptr_type d_texture_resource_manager;
-
-		/**
 		 * Texture cache for the actual floating-point age values read from a proxied raster.
 		 */
 		GPlatesUtils::ObjectCache<GLTexture>::shared_ptr_type d_age_grid_texture_cache;
@@ -269,20 +257,14 @@ namespace GPlatesOpenGL
 		//
 		// Various state used when rendering to age grid mask render texture.
 		//
-		GLClearBuffersState::non_null_ptr_type d_clear_buffers_state;
-		GLClearBuffers::non_null_ptr_type d_clear_buffers;
-		GLMaskBuffersState::non_null_ptr_type d_mask_alpha_channel_state;
-		GLViewport d_viewport;
-		GLViewportState::non_null_ptr_type d_viewport_state;
 
 		// Used to draw a textured full-screen quad into render texture.
-		GLVertexArrayDrawable::non_null_ptr_type d_full_screen_quad_drawable;
+		GLCompiledDrawState::non_null_ptr_to_const_type d_full_screen_quad_drawable;
 
-		// The composite state sets used for each of the three render passes required to
-		// render an age grid mask.
-		GLCompositeStateSet::non_null_ptr_type d_first_render_pass_state;
-		GLCompositeStateSet::non_null_ptr_type d_second_render_pass_state;
-		GLCompositeStateSet::non_null_ptr_type d_third_render_pass_state;
+		// The states used for each of the three render passes required to render an age grid mask.
+		GLCompiledDrawState::non_null_ptr_type d_first_render_pass_state;
+		GLCompiledDrawState::non_null_ptr_type d_second_render_pass_state;
+		GLCompiledDrawState::non_null_ptr_type d_third_render_pass_state;
 
 
 		// The minimum and maximum age grid values in the raster.
@@ -300,6 +282,7 @@ namespace GPlatesOpenGL
 
 
 		GLAgeGridMaskSource(
+				GLRenderer &renderer,
 				const double &reconstruction_time,
 				const GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type &
 						proxy_raster_resolver,
@@ -307,8 +290,7 @@ namespace GPlatesOpenGL
 				unsigned int raster_height,
 				unsigned int tile_texel_dimension,
 				double min_age_in_raster,
-				double max_age_in_raster,
-				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager);
+				double max_age_in_raster);
 
 		void
 		initialise_level_of_detail_pyramid();
@@ -321,12 +303,14 @@ namespace GPlatesOpenGL
 
 		bool
 		should_reload_high_and_low_byte_age_textures(
+				GLRenderer &renderer,
 				Tile &tile,
 				GLTexture::shared_ptr_type &high_byte_age_texture,
 				GLTexture::shared_ptr_type &low_byte_age_texture);
 
 		bool
 		load_age_grid_into_high_and_low_byte_tile(
+				GLRenderer &renderer,
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &age_grid_tile,
 				GLTexture::shared_ptr_type &high_byte_age_texture,
 				GLTexture::shared_ptr_type &low_byte_age_texture,
@@ -336,6 +320,7 @@ namespace GPlatesOpenGL
 		template <typename RealType>
 		void
 		load_age_grid_into_high_and_low_byte_tile(
+				GLRenderer &renderer,
 				const RealType *age_grid_tile,
 				GLTexture::shared_ptr_type &high_byte_age_texture,
 				GLTexture::shared_ptr_type &low_byte_age_texture,
@@ -344,21 +329,21 @@ namespace GPlatesOpenGL
 
 		void
 		render_age_grid_mask(
+				GLRenderer &renderer,
 				const GLTexture::shared_ptr_type &target_texture,
 				const GLTexture::shared_ptr_type &high_byte_age_texture,
-				const GLTexture::shared_ptr_type &low_byte_age_texture,
-				GLRenderer &renderer,
-				GLRenderer::RenderTargetUsageType render_target_usage);
+				const GLTexture::shared_ptr_type &low_byte_age_texture);
 
 		void
 		render_age_grid_intermediate_mask(
+				GLRenderer &renderer,
 				const GLTexture::shared_ptr_type &intermediate_texture,
 				const GLTexture::shared_ptr_type &high_byte_age_texture,
-				const GLTexture::shared_ptr_type &low_byte_age_texture,
-				GLRenderer &renderer);
+				const GLTexture::shared_ptr_type &low_byte_age_texture);
 
 		void
 		create_tile_texture(
+				GLRenderer &renderer,
 				const GLTexture::shared_ptr_type &texture);
 
 		/**

@@ -31,9 +31,8 @@
 
 #include "GLIntersect.h"
 #include "GLRenderer.h"
-#include "GLTransformState.h"
+#include "GLProjectionUtils.h"
 #include "GLVertex.h"
-#include "GLVertexArrayDrawable.h"
 
 #include "app-logic/GeometryUtils.h"
 
@@ -48,23 +47,22 @@
 
 
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::GLReconstructedStaticPolygonMeshes(
+		GLRenderer &renderer,
 		const polygon_mesh_seq_type &polygon_meshes,
 		const geometries_seq_type &present_day_geometries,
 		const reconstructions_spatial_partition_type::non_null_ptr_to_const_type &reconstructions_spatial_partition,
 		const cube_subdivision_projection_transforms_cache_type::non_null_ptr_type &cube_subdivision_projection_transforms_cache,
 		const cube_subdivision_loose_bounds_cache_type::non_null_ptr_type &cube_subdivision_loose_bounds_cache,
-		const cube_subdivision_bounding_polygons_cache_type::non_null_ptr_type &cube_subdivision_bounding_polygons_cache,
-		const GLVertexBufferResourceManager::shared_ptr_type &vertex_buffer_resource_manager) :
+		const cube_subdivision_bounding_polygons_cache_type::non_null_ptr_type &cube_subdivision_bounding_polygons_cache) :
 	d_cube_subdivision_projection_transforms_cache(cube_subdivision_projection_transforms_cache),
 	d_cube_subdivision_loose_bounds_cache(cube_subdivision_loose_bounds_cache),
 	d_cube_subdivision_bounding_polygons_cache(cube_subdivision_bounding_polygons_cache),
-	d_vertex_buffer_resource_manager(vertex_buffer_resource_manager),
 	d_present_day_polygon_meshes_node_intersections(polygon_meshes.size()),
 	d_reconstructions_spatial_partition(reconstructions_spatial_partition)
 {
 	//PROFILE_FUNC();
 
-	create_polygon_mesh_drawables(polygon_meshes);
+	create_polygon_mesh_drawables(renderer, polygon_meshes);
 
 	find_present_day_polygon_mesh_node_intersections(present_day_geometries, polygon_meshes);
 }
@@ -83,7 +81,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::update(
 
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::ReconstructedPolygonMeshTransformsGroups::non_null_ptr_to_const_type
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_meshes(
-		const GLTransformState &transform_state)
+		GLRenderer &renderer)
 {
 	PROFILE_FUNC();
 
@@ -113,7 +111,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 			d_reconstructions_spatial_partition->begin_root_elements(),
 			d_reconstructions_spatial_partition->end_root_elements(),
 			true/*active_reconstructions_only*/,
-			// At the root level everthing is considered visible...
+			// At the root level everything is considered visible...
 			true/*visible*/);
 	if (d_active_or_inactive_reconstructions_spatial_partition)
 	{
@@ -128,8 +126,11 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 				true/*visible*/);
 	}
 
-	// Get the view frustum planes.
-	const GLFrustum &frustum_planes = transform_state.get_current_frustum_planes_in_model_space();
+	const GLMatrix &model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
+	const GLMatrix &projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
+
+	// First get the view frustum planes.
+	const GLFrustum frustum_planes(model_view_transform, projection_transform);
 
 	// Traverse reconstructed feature geometries of the quad trees of the cube faces.
 	for (unsigned int face = 0; face < 6; ++face)
@@ -246,12 +247,14 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::get_reconstructed_polygon_mes
 			// The current quad sub-tree at this node is not visible in the view frustum.
 			visible = false;
 		}
-
-		// Update the frustum plane mask so we only test against those planes that
-		// the current quad tree render node intersects. The node is entirely inside
-		// the planes with a zero bit and so its child nodes are also entirely inside
-		// those planes too and so they won't need to test against them.
-		frustum_plane_mask = out_frustum_plane_mask.get();
+		else
+		{
+			// Update the frustum plane mask so we only test against those planes that
+			// the current quad tree render node intersects. The node is entirely inside
+			// the planes with a zero bit and so its child nodes are also entirely inside
+			// those planes too and so they won't need to test against them.
+			frustum_plane_mask = out_frustum_plane_mask.get();
+		}
 	}
 
 	// Add the polygon meshes of the current quad tree node to the visible list.
@@ -359,7 +362,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::add_reconstructed_polygon_mes
 
 		// This is the drawable for the present day polygon mesh that corresponds to the
 		// current reconstructed feature geometry.
-		const boost::optional<GLDrawable::non_null_ptr_to_const_type> &present_day_polygon_mesh_drawable =
+		const boost::optional<GLCompiledDrawState::non_null_ptr_to_const_type> &present_day_polygon_mesh_drawable =
 				d_present_day_polygon_mesh_drawables[present_day_geometry_index];
 		if (!present_day_polygon_mesh_drawable)
 		{
@@ -406,7 +409,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::add_reconstructed_polygon_mes
 			// Convert the finite rotation from a unit quaternion to a matrix so we can feed it to OpenGL.
 			const GPlatesMaths::UnitQuaternion3D &quat_rotation =
 					reconstruct_method_finite_rotation->get_finite_rotation().unit_quat();
-			GLTransform::non_null_ptr_type rotation_transform = GLTransform::create(GL_MODELVIEW, quat_rotation);
+			GLTransform::non_null_ptr_type rotation_transform = GLTransform::create(quat_rotation);
 
 			// Add a new transform group to the client's sequence.
 			reconstructed_polygon_mesh_transform_groups.push_back(
@@ -446,6 +449,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::add_reconstructed_polygon_mes
 
 void
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables(
+		GLRenderer &renderer,
 		const polygon_mesh_seq_type &polygon_meshes)
 {
 	PROFILE_FUNC();
@@ -501,26 +505,16 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 		}
 	}
 
-	// If we don't have any polygon meshes for some reason then just return.
-	if (all_polygon_meshes_vertices.empty() || all_polygon_meshes_indices.empty())
-	{
-		return;
-	}
-
 	// Create a single OpenGL vertex array to contain the vertices of *all* polygon meshes.
-	d_polygon_meshes_vertex_array = GLVertexArray::create(
-			all_polygon_meshes_vertices,
-			GLArray::USAGE_STATIC,
-			d_vertex_buffer_resource_manager);
-
-	// Create a single OpenGL vertex array to contain the vertex indices of *all* polygon meshes.
-	// Note that this vertex element array is never used to draw - it just contains the indices.
-	// Each polygon mesh drawable will creates its own vertex element array that shares the
-	// indices of this array.
-	d_polygon_meshes_vertex_element_array = GLVertexElementArray::create(
-					all_polygon_meshes_indices,
-					GLArray::USAGE_STATIC,
-					d_vertex_buffer_resource_manager);
+	d_polygon_meshes_vertex_array = GLVertexArray::create(renderer);
+	// Store the vertices/indices in a new vertex buffer and vertex element buffer that is then
+	// bound to the vertex array.
+	// If we don't have any polygon meshes for some reason then just don't store them in the vertex array.
+	if (!all_polygon_meshes_vertices.empty() && !all_polygon_meshes_indices.empty())
+	{
+		set_vertex_array_data(
+				renderer, *d_polygon_meshes_vertex_array, all_polygon_meshes_vertices, all_polygon_meshes_indices);
+	}
 
 
 	// The polygon mesh drawables must map to the input polygon meshes.
@@ -538,33 +532,25 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 			const boost::optional<GPlatesMaths::PolygonMesh::non_null_ptr_to_const_type> &polygon_mesh_opt,
 			polygon_meshes)
 	{
-		boost::optional<GLDrawable::non_null_ptr_to_const_type> polygon_mesh_drawable;
+		boost::optional<GLCompiledDrawState::non_null_ptr_to_const_type> polygon_mesh_drawable;
 
 		// There might be no polygon mesh for the current slot.
 		if (polygon_mesh_opt)
 		{
 			const GPlatesMaths::PolygonMesh::non_null_ptr_to_const_type &polygon_mesh = polygon_mesh_opt.get();
 
-			// Create a vertex element array that shares the same indices as the other polygon meshes.
-			const GLVertexElementArray::shared_ptr_type polygon_mesh_vertex_element_array =
-					GLVertexElementArray::create(
-							d_polygon_meshes_vertex_element_array->get_array_data(),
-							GL_UNSIGNED_INT);
-
 			// Specify what to draw for the current polygon mesh.
 			const GLuint num_vertices_in_polygon_mesh = polygon_mesh->get_vertices().size();
 			const GLuint num_triangles_in_polygon_mesh = polygon_mesh->get_triangles().size();
-			polygon_mesh_vertex_element_array->gl_draw_range_elements_EXT(
+			polygon_mesh_drawable = compile_vertex_array_draw_state(
+					renderer,
+					*d_polygon_meshes_vertex_array,
 					GL_TRIANGLES,
 					polygon_mesh_base_vertex_index/*start*/,
 					polygon_mesh_base_vertex_index + num_vertices_in_polygon_mesh - 1/*end*/,
 					3 * num_triangles_in_polygon_mesh/*count*/,
+					GL_UNSIGNED_INT,
 					sizeof(GLuint) * 3 * polygon_mesh_base_triangle_index/*indices_offset*/);
-
-			// Create the drawable.
-			polygon_mesh_drawable = GLVertexArrayDrawable::create(
-							d_polygon_meshes_vertex_array,
-							polygon_mesh_vertex_element_array);
 
 			// Update the base vertex index for the next polygon mesh.
 			polygon_mesh_base_vertex_index += num_vertices_in_polygon_mesh;

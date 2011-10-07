@@ -15,35 +15,28 @@ set(srcs
     GLAgeGridCoverageSource.h
     GLAgeGridMaskSource.cc
     GLAgeGridMaskSource.h
-    GLArray.cc
-    GLArray.h
-    GLBindTextureState.cc
-    GLBindTextureState.h
-    GLBlendState.h
-    GLClearBuffers.h
-    GLClearBuffersState.h
-    GLCompositeDrawable.cc
-    GLCompositeDrawable.h
-    GLCompositeStateSet.cc
-    GLCompositeStateSet.h
+    GLBuffer.cc
+    GLBuffer.h
+    GLBufferImpl.cc
+    GLBufferImpl.h
+    GLBufferObject.cc
+    GLBufferObject.h
+    GLCompiledDrawState.cc
+    GLCompiledDrawState.h
     GLContext.cc
     GLContext.h
     GLCubeSubdivision.cc
     GLCubeSubdivision.h
     GLCubeSubdivisionCache.h
-    GLCullVisitor.cc
-    GLCullVisitor.h
-    GLDepthRangeState.h
-    GLDrawable.h
-    GLEnterOrLeaveStateSet.h
-    GLFragmentTestStates.h
+    GLDepthRange.h
+    GLFrameBufferObject.cc
+    GLFrameBufferObject.h
     GLFrustum.cc
     GLFrustum.h
     GLIntersect.cc
     GLIntersect.h
     GLIntersectPrimitives.cc
     GLIntersectPrimitives.h
-    GLMaskBuffersState.h
     GLMatrix.cc
     GLMatrix.h
     GLMultiResolutionCubeMesh.cc
@@ -54,94 +47,67 @@ set(srcs
     GLMultiResolutionFilledPolygons.h
     GLMultiResolutionRaster.cc
     GLMultiResolutionRaster.h
-    GLMultiResolutionRasterNode.h
     GLMultiResolutionRasterSource.h
-    GLMultiResolutionReconstructedRasterNode.h
     GLMultiResolutionStaticPolygonReconstructedRaster.cc
     GLMultiResolutionStaticPolygonReconstructedRaster.h
-    GLPointLinePolygonState.cc
-    GLPointLinePolygonState.h
+    GLObject.h
+    GLObjectResource.h
+    GLObjectResourceManager.h
+    GLProgramObject.cc
+    GLProgramObject.h
+    GLProjectionUtils.cc
+    GLProjectionUtils.h
     GLProxiedRasterSource.cc
     GLProxiedRasterSource.h
-    GLRasterProxy.cc
-    GLRasterProxy.h
     GLReconstructedStaticPolygonMeshes.cc
     GLReconstructedStaticPolygonMeshes.h
     GLRenderer.cc
     GLRenderer.h
-    GLRenderGraph.cc
-    GLRenderGraph.h
-    GLRenderGraphDrawableNode.cc
-    GLRenderGraphDrawableNode.h
-    GLRenderGraphInternalNode.cc
-    GLRenderGraphInternalNode.h
-    GLRenderGraphNode.h
-    GLRenderGraphVisitor.h
-    GLRenderOperation.h
-    GLRenderOperationsTarget.cc
-    GLRenderOperationsTarget.h
-    GLRenderPass.cc
-    GLRenderPass.h
-    GLRenderQueue.cc
-    GLRenderQueue.h
-    GLRenderTarget.cc
-    GLRenderTarget.h
-    GLRenderTargetFactory.h
-    GLRenderTargetManager.cc
-    GLRenderTargetManager.h
-    GLRenderTargetType.h
-    GLResource.h
-    GLResourceManager.h
-    GLShadeModelState.h
+    GLRendererImpl.h
+    GLShaderObject.cc
+    GLShaderObject.h
     GLState.cc
     GLState.h
-    GLStateGraph.cc
-    GLStateGraph.h
-    GLStateGraphBuilder.cc
-    GLStateGraphBuilder.h
-    GLStateGraphNode.cc
-    GLStateGraphNode.h
     GLStateSet.h
+    GLStateSetKeys.cc
+    GLStateSetKeys.h
+    GLStateSets.cc
+    GLStateSets.h
+    GLStateSetStore.h
+    GLStateStore.cc
+    GLStateStore.h
     GLStreamPrimitives.h
-    GLText2DDrawable.cc
-    GLText2DDrawable.h
-    GLText3DNode.cc
-    GLText3DNode.h
+    GLStreamPrimitiveWriters.h
+    GLText.cc
+    GLText.h
     GLTexture.cc
     GLTexture.h
-    GLTextureEnvironmentState.cc
-    GLTextureEnvironmentState.h
-    GLTextureResource.h
-    GLTextureTransformState.cc
-    GLTextureTransformState.h
     GLTextureUtils.cc
     GLTextureUtils.h
-    GLTransform.cc
     GLTransform.h
-    GLTransformState.cc
-    GLTransformState.h
-    GLUNurbsRenderer.cc
-    GLUNurbsRenderer.h
-    GLUNurbsRendererDrawable.cc
-    GLUNurbsRendererDrawable.h
-    GLUQuadric.cc
-    GLUQuadric.h
-    GLUQuadricDrawable.cc
-    GLUQuadricDrawable.h
     GLUtils.cc
     GLUtils.h
     GLVertex.cc
     GLVertex.h
     GLVertexArray.cc
     GLVertexArray.h
-    GLVertexArrayDrawable.h
-    GLVertexBufferResource.cc
-    GLVertexBufferResource.h
-    GLVertexElementArray.cc
-    GLVertexElementArray.h
+    GLVertexArrayImpl.cc
+    GLVertexArrayImpl.h
+    GLVertexArrayObject.cc
+    GLVertexArrayObject.h
+    GLVertexBuffer.cc
+    GLVertexBuffer.h
+    GLVertexBufferImpl.cc
+    GLVertexBufferImpl.h
+    GLVertexBufferObject.cc
+    GLVertexBufferObject.h
+    GLVertexElementBuffer.cc
+    GLVertexElementBuffer.h
+    GLVertexElementBufferImpl.cc
+    GLVertexElementBufferImpl.h
+    GLVertexElementBufferObject.cc
+    GLVertexElementBufferObject.h
     GLViewport.h
-    GLViewportNode.h
-    GLViewportState.h
     OpenGL.h
     OpenGLBadAllocException.h
     OpenGLException.h

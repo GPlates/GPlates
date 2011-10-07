@@ -28,16 +28,20 @@
 #ifndef GPLATES_MATHS_GREATCIRCLEARC_H
 #define GPLATES_MATHS_GREATCIRCLEARC_H
 
-#include <utility>  /* std::pair */
 #include <functional>  /* std::unary_function */
+#include <utility>  /* std::pair */
+#include <vector>
 #include <boost/optional.hpp>  /* boost::optional */
 #include <boost/none.hpp>  /* boost::none */
 
 #include "PointOnSphere.h"
 
+#include "global/PointerTraits.h"
+
 namespace GPlatesMaths
 {
 	class FiniteRotation;
+	class PolylineOnSphere;
 
 
 	/** 
@@ -257,6 +261,24 @@ namespace GPlatesMaths
 			return arc.is_zero_length();
 		}
 	};
+
+
+	/**
+	 * Uniformly subdivides a great circle arc into smaller great circle arcs and appends the
+	 * sequence of subdivided points to @a tessellation_points.
+	 *
+	 * The subdivided arcs have a maximum angular extent of @a max_segment_angular_extent radians.
+	 * Each arc will extend the same angle (*uniform* subdivision) which will be less than or equal to
+	 * @a max_segment_angular_extent radians.
+	 *
+	 * Note that if @a great_circle_arc already subtends an angle less than
+	 * @a max_segment_angular_extent radians then only the great circle arc end points are appended.
+	 */
+	void
+	tessellate(
+			std::vector<PointOnSphere> &tessellation_points,
+			const GreatCircleArc &great_circle_arc,
+			const real_t &max_segment_angular_extent);
 
 
 	/**

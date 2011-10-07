@@ -30,6 +30,8 @@
 
 #include "maths/PointOnSphere.h"
 
+#include "utils/Base2Utils.h"
+
 
 GPlatesOpenGL::GLCubeSubdivision::GLCubeSubdivision(
 		std::size_t tile_texel_dimension,
@@ -41,7 +43,7 @@ GPlatesOpenGL::GLCubeSubdivision::GLCubeSubdivision(
 {
 	// Tile dimension should be a power-of-two.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			(tile_texel_dimension & (tile_texel_dimension - 1)) == 0,
+			GPlatesUtils::Base2::is_power_of_two(tile_texel_dimension),
 			GPLATES_ASSERTION_SOURCE);
 }
 
@@ -51,7 +53,7 @@ GPlatesOpenGL::GLCubeSubdivision::get_view_transform(
 		GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face) const
 {
 	// Start off with an identify view matrix.
-	GLTransform::non_null_ptr_type view = GLTransform::create(GL_MODELVIEW);
+	GLTransform::non_null_ptr_type view = GLTransform::create();
 	GLMatrix &view_matrix = view->get_matrix();
 
 	// The view looks out from the centre of the globe along the face normal.
@@ -90,7 +92,7 @@ GPlatesOpenGL::GLCubeSubdivision::get_projection_transform(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Start off with an identify projection matrix.
-	GLTransform::non_null_ptr_type projection = GLTransform::create(GL_PROJECTION);
+	GLTransform::non_null_ptr_type projection = GLTransform::create();
 	GLMatrix &projection_matrix = projection->get_matrix();
 
 	//

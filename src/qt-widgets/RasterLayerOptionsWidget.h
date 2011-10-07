@@ -93,6 +93,14 @@ namespace GPlatesQtWidgets
 		void
 		handle_use_default_palette_button_clicked();
 
+		void
+		handle_opacity_spinbox_changed(
+				double value);
+
+		void
+		handle_intensity_spinbox_changed(
+				double value);
+
 	private:
 
 		explicit

@@ -46,6 +46,8 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesOpenGL
 {
+	class GLRenderer;
+
 	/**
 	 * An arbitrary dimension source of RGBA data extracted from the coverage of an age grid
 	 * raster into an RGBA image that contains white colour and the coverage in the alpha channel.
@@ -109,7 +111,7 @@ namespace GPlatesOpenGL
 
 
 		virtual
-		void
+		cache_handle_type
 		load_tile(
 				unsigned int level,
 				unsigned int texel_x_offset,
@@ -117,8 +119,7 @@ namespace GPlatesOpenGL
 				unsigned int texel_width,
 				unsigned int texel_height,
 				const GLTexture::shared_ptr_type &target_texture,
-				GLRenderer &renderer,
-				GLRenderer::RenderTargetUsageType render_target_usage);
+				GLRenderer &renderer);
 
 	private:
 		/**

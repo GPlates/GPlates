@@ -1244,7 +1244,7 @@ namespace GPlatesFileIO
 						d_reader_thread->set_cache_coverages(any_coverages);
 
 						// Start the thread and wait until its event loop has started up.
-						qDebug() << "Using threaded mipmap reader...";
+						//qDebug() << "Using threaded mipmap reader...";
 						d_reader_thread->start();
 						d_reader_thread->get_mutex().lock();
 

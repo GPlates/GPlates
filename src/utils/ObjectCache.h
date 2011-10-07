@@ -28,12 +28,14 @@
 #define GPLATES_UTILS_OBJECTCACHE_H
 
 #include <cstddef> // For std::size_t
+#include <exception>
 #include <memory> // For std::auto_ptr
 #include <boost/checked_delete.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/pool/object_pool.hpp>
 #include <boost/optional.hpp>
+#include <boost/pool/object_pool.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <QDebug>
@@ -50,18 +52,56 @@
 namespace GPlatesUtils
 {
 	/**
-	 * Maintains a limited number of objects in a cache that can be recycled for
-	 * future cache requests.
+	 * Maintains a limited (although expandable) number of objects in a cache that can be recycled
+	 * for future cache requests.
 	 *
-	 * It takes the burden of having to explicitly release objects and it does this by reusing
-	 * the least-recently allocated objects for subsequent allocation requests.
-	 * The flip-side, however, is the client is responsible for checking object references,
-	 * before using an object, to see if the object has been recycled (stolen) by the cache.
+	 * There are two usage patterns:
+	 *  - non-volatile allocation, and
+	 *  - volatile allocation.
 	 *
-	 * It is different to an object 'pool' in that a pool requires you to explicitly release
-	 * an object before it can be reused for a future allocation. An object 'cache' can reuse
-	 * an object that has not been explicitly released (although you can also explicitly release
-	 * an object back to the cache by destroying the volatile object - see below).
+	 * The main difference is a volatile allocation can be reused by the cache *before* the allocation is
+	 * released by the client whereas a non-volatile allocation can *not* be reused until it is released.
+	 *
+	 *
+	 * Non-volatile allocation
+	 * -----------------------
+	 * Non-volatile allocation is similar to an object 'pool'.
+	 * The main difference is...
+	 *  - An object pool calls an object's destructor when it is returned.
+	 *    * Which means the object is destroyed but it's memory is not released.
+	 *  - A (non-volatile) object cache will *not* call an object's destructor when it is returned.
+	 *    * Which means the object's memory is not released *and* the object is not destroyed.
+	 *    * Which means the client may need to clear or re-initialise the object when it is reused.
+	 * ...this is useful for pool objects that own other objects (eg, allocated on the heap).
+	 * Destroying the pool object would deallocate the heap object whereas not destroying the pool
+	 * object means that, in addition to the pool memory, the heap allocation can be reused (although
+	 * it may need to be re-initialised - which is what 'return_object_to_cache_function_type' is for).
+	 *
+	 * An example (non-volatile) usage:
+	 *
+	 *  ObjectCache<MyObjectType>::shared_ptr_type my_object_cache = ObjectCache<MyObjectType>::create();
+	 *  boost::optional< boost::shared_ptr<MyObjectType> > object = my_object_cache->allocate_object();
+	 *  if (!object)
+	 *  {
+	 *  	// No unused object so create a new one...
+	 *      std::auto_ptr new_object = ...; // Create a new object.
+	 *  	object = my_object_cache->allocate_object(new_object);
+	 *  }
+	 *
+	 *
+	 * Volatile allocation
+	 * -------------------
+	 * Volatile allocation means an object 'cache' can reuse an object that has *not* been explicitly
+	 * released (although you can also explicitly release an object back to the cache by destroying
+	 * the volatile object - see below).
+	 *
+	 * With volatile allocation the flip-side is the client is responsible for checking object
+	 * references, before using an object, to see if the object has been recycled (stolen) by the cache.
+	 *
+	 * Volatile allocation (in an object 'cache') is different to an object 'pool' in that a pool
+	 * requires you to explicitly release an object before it can be reused for a future allocation.
+	 * The (volatile) cache takes the burden of having to explicitly release objects and it does
+	 * this by reusing the least-recently allocated objects for subsequent allocation requests.
 	 *
 	 * The object cache allocates 'volatile' objects which are like weak references to
 	 * the real objects you're caching.
@@ -82,19 +122,18 @@ namespace GPlatesUtils
 	 * Once all shared_ptr's to that object are destroyed then that object is available for recycling.
 	 * Step (2) can fail if all currently created real objects are held by client shared_ptr's.
 	 *
-	 * So in general the object cache works under the assumption that clients only retain
-	 * shared_ptr's to the real objects temporarily otherwise the cache will continue to grow
-	 * in size to fit the number of objects held by clients - in which case an object pool
-	 * would have been sufficient.
+	 * So in general the object cache, in the volatile usage pattern, works under the assumption that
+	 * clients only retain shared_ptr's to the real objects temporarily otherwise the cache will
+	 * continue to grow in size to fit the number of objects held by clients - in which case an
+	 * object pool (or the non-volatile usage pattern of object cache) would have been sufficient.
 	 *
-	 * So the object cache is suited to situations where you have a larger number of objects
+	 * So the (volatile) object cache is suited to situations where you have a larger number of objects
 	 * but only a subset of them are used at any time - this is a smaller 'working' set of objects
 	 * - instead of creating a large number of objects you only create enough for the 'working' set.
 	 *
-	 * An example usage:
+	 * An example (volatile) usage:
 	 *
-	 *  ObjectCache<MyObjectType>::shared_ptr_type my_object_cache =
-	 *      ObjectCache<MyObjectType>::create(10);
+	 *  ObjectCache<MyObjectType>::shared_ptr_type my_object_cache = ObjectCache<MyObjectType>::create();
 	 *  boost::shared_ptr<ObjectCache<MyObjectType>::VolatileObject> volatile_object =
 	 *      my_object_cache->allocate_volatile_object();
 	 *
@@ -109,7 +148,6 @@ namespace GPlatesUtils
 	 *      }
 	 *      // else might also want to initialise recycled object to a specific state.
 	 *  }
-	 *  ... // Use 'object'.
 	 */
 	template <typename ObjectType>
 	class ObjectCache :
@@ -128,24 +166,73 @@ namespace GPlatesUtils
 		typedef boost::weak_ptr<object_cache_type> weak_ptr_type;
 		typedef boost::weak_ptr<const object_cache_type> weak_ptr_to_const_type;
 
+		//! Typedef for the object type managed by this cache.
+		typedef ObjectType object_type;
+
+		//! Typedef for a shared pointer to the object type managed by this cache.
+		typedef boost::shared_ptr<object_type> object_shared_ptr_type;
+
+		/**
+		 * Typedef for a function to call on a 'object_type' object when it is returned to the cache.
+		 *
+		 * Function takes a reference to a 'object_type' object.
+		 */
+		typedef boost::function<void (object_type &)> return_object_to_cache_function_type;
+
 
 		/**
 		 * Creates a @a ObjectCache object.
 		 *
-		 * @a max_num_objects is a soft limit on the number of objects in the cache.
-		 * If that limit will be exceeded then, to prevent that, the least-recently used object
-		 * will be recycled if it is not being referenced.
+		 * @a min_num_objects is the minimum number of objects in the cache before any objects
+		 * can be recycled. If that limit will be exceeded then, to prevent that, the least-recently
+		 * used object will be recycled if it is not being referenced.
 		 * Otherwise the limit may have to be exceeded.
 		 *
-		 * NOTE: The default maximum number of objects is one which means the cache will grow
-		 * in size to accommodate the maximum cached object requests over time.
+		 * NOTE: The default minimum number of objects is one which means the cache will grow in size to
+		 * accommodate the largest number of strong (non-volatile) references to cached objects at any particular time.
 		 */
 		static
 		shared_ptr_type
 		create(
-				std::size_t max_num_objects = 1)
+				std::size_t min_num_objects = 1)
 		{
-			return shared_ptr_type(new ObjectCache(max_num_objects));
+			return shared_ptr_type(new ObjectCache(min_num_objects));
+		}
+
+
+		/**
+		 * Returns the minimum number of objects in the cache before recycling can happen.
+		 */
+		std::size_t
+		get_min_num_objects() const
+		{
+			return d_min_num_objects;
+		}
+
+		/**
+		 * Sets the minimum number of objects in the cache before recycling can happen.
+		 */
+		void
+		set_min_num_objects(
+				std::size_t min_num_objects)
+		{
+			d_min_num_objects = min_num_objects;
+		}
+
+
+		/**
+		 * Returns the number of cached objects that are currently being used.
+		 *
+		 * These are objects that clients have non-volatile references to and hence cannot be
+		 * recycled until clients destroy those references.
+		 * Clients might also have volatile references but objects referenced by these can be
+		 * recycled at any time since the client is not really considered to be actively using
+		 * them (if they were they'd have non-volatile references to them).
+		 */
+		std::size_t
+		get_current_num_objects_in_use() const
+		{
+			return d_num_objects_in_use;
 		}
 
 
@@ -154,6 +241,9 @@ namespace GPlatesUtils
 
 	private:
 		using boost::enable_shared_from_this<object_cache_type>::shared_from_this;
+
+		//! Typedef for a shared pointer to the object type managed by this cache.
+		typedef boost::weak_ptr<object_type> object_weak_ptr_type;
 
 		// Forward declaration.
 		struct ObjectInfo;
@@ -177,19 +267,20 @@ namespace GPlatesUtils
 		{
 		public:
 			ObjectDeleter(
-					const typename object_cache_type::shared_ptr_type &object_cache_,
-					typename object_seq_type::Node *cached_object_iter_) :
+					const shared_ptr_type &object_cache_,
+					typename object_seq_type::Node *cached_object_iter_,
+					const return_object_to_cache_function_type &return_object_to_cache_function_) :
 				d_object_cache(object_cache_),
-				d_cached_object_iter(cached_object_iter_)
+				d_cached_object_iter(cached_object_iter_),
+				d_return_object_to_cache_function(return_object_to_cache_function_)
 			{  }
 
 			void
 			operator()(
-					ObjectType *cached_object)
+					object_type *cached_object)
 			{
 				// See if the object cache still exists (hasn't been destroyed yet).
-				const typename object_cache_type::shared_ptr_type object_cache_shared_ptr =
-						d_object_cache.lock();
+				const shared_ptr_type object_cache_shared_ptr = d_object_cache.lock();
 				if (!object_cache_shared_ptr)
 				{
 					// The object cache no longer exists so just delete the cached object.
@@ -211,15 +302,40 @@ namespace GPlatesUtils
 					// At this point, in fact just before this method was called, the only
 					// reference to the cached object is 'cached_object', otherwise we
 					// wouldn't be here.
+
+					// Since the the object is being returned to the cache we should call the
+					// client callback function if they provided one.
+					if (d_return_object_to_cache_function)
+					{
+						// If an exception is thrown in the callback then unfortunately we have to
+						// lump it since exceptions cannot leave destructors.
+						// But we log the exception and the location it was emitted.
+						try
+						{
+							d_return_object_to_cache_function(*cached_object);
+						}
+						catch (std::exception &exc)
+						{
+							qWarning() << "ObjectCache: return to cache callback exception: " << exc.what();
+						}
+						catch (...)
+						{
+							qWarning() << "ObjectCache: return to cache callback exception: Unknown error";
+						}
+					}
+
 					// Since 'cached_object' was originally passed into the object cache as a
 					// 'std::auto_ptr' we know it was allocated with global 'new' but we
 					// don't want to 'delete' it yet - instead we return it to the
 					// object cache wrapped in a brand new shared_ptr - with its own
 					// reference count - because it's a cached object and clients may later
 					// want to access it some more.
-					const boost::shared_ptr<ObjectType> return_cached_object(
+					const object_shared_ptr_type return_cached_object(
 							cached_object,
-							ObjectDeleter(object_cache_shared_ptr, d_cached_object_iter));
+							ObjectDeleter(
+									object_cache_shared_ptr,
+									d_cached_object_iter,
+									d_return_object_to_cache_function));
 
 					// The cached object was in use by clients and all clients have just
 					// finished using it so now we can return it to its non-in-use status
@@ -246,10 +362,17 @@ namespace GPlatesUtils
 			 * cached objects out there - those references should be able to be stored anywhere
 			 * for however long and not be linked to the lifetime of the object cache.
 			 */
-			typename object_cache_type::weak_ptr_type d_object_cache;
+			weak_ptr_type d_object_cache;
 
 			//! Keep a reference to the cached object.
 			typename object_seq_type::Node *d_cached_object_iter;
+
+			/**
+			 * Optional function to call when an object is returned to the cache.
+			 *
+			 * NOTE: It does not get called when destroyed the object (such as when object cache is destroyed).
+			 */
+			return_object_to_cache_function_type d_return_object_to_cache_function;
 		};
 
 		/**
@@ -259,7 +382,7 @@ namespace GPlatesUtils
 		{
 			explicit
 			ObjectInfo(
-					const boost::shared_ptr<ObjectType> &not_in_use_object_ = boost::shared_ptr<ObjectType>()) :
+					const object_shared_ptr_type &not_in_use_object_ = object_shared_ptr_type()) :
 				volatile_object(NULL),
 				is_object_in_use(false),
 				not_in_use_object(not_in_use_object_)
@@ -282,7 +405,7 @@ namespace GPlatesUtils
 			 * The object is not currently is use by clients (no one has a shared_ptr)
 			 * so we retain ownership using an shared_ptr until the next client comes along.
 			 */
-			boost::shared_ptr<ObjectType> not_in_use_object;
+			object_shared_ptr_type not_in_use_object;
 
 			/**
 			 * If the object is in use by clients (they have a shared_ptr) then
@@ -290,7 +413,7 @@ namespace GPlatesUtils
 			 * zero when the last client has finished and the shared_ptr custom deleter
 			 * will switch us back over to using a shared_ptr instead of a weak_ptr.
 			 */
-			boost::weak_ptr<ObjectType> in_use_object;
+			object_weak_ptr_type in_use_object;
 		};
 
 		// Make a friend so can access 'ObjectInfo' which is private.
@@ -325,12 +448,12 @@ namespace GPlatesUtils
 			 * it references to be recycled unless you want to ensure it is not recycled
 			 * (for example if you know you're going to use it again soon).
 			 */
-			boost::shared_ptr<ObjectType>
+			object_shared_ptr_type
 			get_cached_object()
 			{
 				if (!d_object_info_iter)
 				{
-					return boost::shared_ptr<ObjectType>();
+					return object_shared_ptr_type();
 				}
 
 				return d_object_cache->return_cached_object_to_client(*d_object_info_iter);
@@ -345,7 +468,7 @@ namespace GPlatesUtils
 			 * If returns false/NULL then no objects were available for recycling and
 			 * @a set_cached_object must be called.
 			 */
-			boost::shared_ptr<ObjectType>
+			object_shared_ptr_type
 			recycle_an_unused_object()
 			{
 				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -356,7 +479,7 @@ namespace GPlatesUtils
 				d_object_info_iter = d_object_cache->recycle_an_unused_object();
 				if (!d_object_info_iter)
 				{
-					return boost::shared_ptr<ObjectType>();
+					return object_shared_ptr_type();
 				}
 
 				connect_to_cached_object();
@@ -371,20 +494,28 @@ namespace GPlatesUtils
 			 * NOTE: This should only be called if @a recycle_an_unused_object failed.
 			 *
 			 * The new object @a created_object is returned as a smart_ptr with a custom deleter
-			 * that is used to notify the object cache when there are no externals references.
+			 * that is used to notify the object cache when there are no external references.
 			 *
 			 * The returned shared_ptr is guaranteed to be non-NULL.
+			 *
+			 * NOTE: You can optionally specify a function, that accepts a reference to object_type,
+			 * that gets called every time @a created_object is returned to the cache (after having been used).
+			 * For example you might want to reset the object's state so that subsequent allocations
+			 * will get that object in its default state.
 			 */
-			boost::shared_ptr<ObjectType>
+			object_shared_ptr_type
 			set_cached_object(
-					std::auto_ptr<ObjectType> created_object)
+					std::auto_ptr<object_type> created_object,
+					const return_object_to_cache_function_type &return_object_to_cache_function =
+							return_object_to_cache_function_type())
 			{
 				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 						!d_object_info_iter,
 						GPLATES_ASSERTION_SOURCE);
 
 				// Store the newly created object in the object cache.
-				d_object_info_iter = &d_object_cache->add_cached_object(created_object);
+				d_object_info_iter =
+						&d_object_cache->add_cached_object(created_object, return_object_to_cache_function);
 
 				connect_to_cached_object();
 
@@ -465,7 +596,7 @@ namespace GPlatesUtils
 			}
 
 			// Make friend so can construct.
-			friend class ObjectCache<ObjectType>;
+			friend class ObjectCache<object_type>;
 		};
 
 		//! Typedef for a volatile object managed by this cache.
@@ -481,14 +612,14 @@ namespace GPlatesUtils
 		 * The returned shared_ptr ensure the object cache lives as long as there are
 		 * volatile objects referencing it.
 		 */
-		boost::shared_ptr<volatile_object_type>
+		volatile_object_ptr_type
 		allocate_volatile_object()
 		{
 			// Allocate from the object pool.
 			typename volatile_object_pool_type::object_ptr_type volatile_object_ptr =
 					d_volatile_object_pool.add(volatile_object_type(this));
 
-			return boost::shared_ptr<volatile_object_type>(
+			return volatile_object_ptr_type(
 					volatile_object_ptr.get_ptr(),
 					// Return to the object pool when no more shared_ptr's
 					ReturnVolatileObjectToPoolDeleter(
@@ -506,7 +637,7 @@ namespace GPlatesUtils
 		 * Returns boost::none if no unused objects are available in which case you'll need to
 		 * call the other overload of @a allocate_object that accepts a newly created object.
 		 */
-		boost::optional< boost::shared_ptr<ObjectType> >
+		boost::optional<object_shared_ptr_type>
 		allocate_object()
 		{
 			// Attempt to recycle an unused object.
@@ -526,13 +657,21 @@ namespace GPlatesUtils
 		 *
 		 * NOTE: You should call the other overload of @a allocate_object first to see if there's
 		 * any unused objects, otherwise the cache will continue to grow in size unnecessarily.
+		 *
+		 * NOTE: You can optionally specify a function, that accepts a reference to object_type,
+		 * that gets called every time @a new_object is returned to the cache (after having been used).
+		 * For example you might want to reset the object's state so that subsequent allocations
+		 * will get that object in its default state.
 		 */
-		boost::shared_ptr<ObjectType>
+		object_shared_ptr_type
 		allocate_object(
-				std::auto_ptr<ObjectType> new_object)
+				std::auto_ptr<object_type> new_object,
+				const return_object_to_cache_function_type &return_object_to_cache_function =
+						return_object_to_cache_function_type())
 		{
 			// Store the newly created object in the object cache.
-			typename object_seq_type::Node &object_info_iter = add_cached_object(new_object);
+			typename object_seq_type::Node &object_info_iter =
+					add_cached_object(new_object, return_object_to_cache_function);
 
 			return return_cached_object_to_client(object_info_iter);
 		}
@@ -551,7 +690,7 @@ namespace GPlatesUtils
 		{
 			ReturnVolatileObjectToPoolDeleter(
 					typename volatile_object_pool_type::object_ptr_type volatile_object_ptr_,
-					const typename object_cache_type::shared_ptr_type &object_cache_,
+					const shared_ptr_type &object_cache_,
 					volatile_object_pool_type &volatile_object_pool_) :
 				volatile_object_ptr(volatile_object_ptr_),
 				object_cache(object_cache_),
@@ -578,7 +717,7 @@ namespace GPlatesUtils
 			 *
 			 * This is so requests via the volatile object don't crash because there's no object cache.
 			 */
-			typename object_cache_type::shared_ptr_type object_cache;
+			shared_ptr_type object_cache;
 
 			/**
 			 * The object pool to return the volatile object to.
@@ -620,15 +759,24 @@ namespace GPlatesUtils
 		object_seq_type d_objects_not_in_use;
 
 		std::size_t d_num_objects_allocated;
-		std::size_t d_max_num_objects;
+		std::size_t d_min_num_objects;
+
+		/**
+		 * The current number of objects in use by clients (volatile references).
+		 *
+		 * NOTE: This is the number of objects in the @a d_objects_in_use list and should be
+		 * kept in sync with it.
+		 */
+		std::size_t d_num_objects_in_use;
 
 
 		//! Constructor.
 		explicit
 		ObjectCache(
-				std::size_t max_num_objects) :
+				std::size_t min_num_objects) :
 			d_num_objects_allocated(0),
-			d_max_num_objects(max_num_objects)
+			d_min_num_objects(min_num_objects),
+			d_num_objects_in_use(0)
 		{  }
 
 
@@ -640,7 +788,7 @@ namespace GPlatesUtils
 		{
 			// If we've not yet allocated the maximum number of objects then
 			// don't attempt to recycle yet.
-			if (d_num_objects_allocated < d_max_num_objects)
+			if (d_num_objects_allocated < d_min_num_objects)
 			{
 				return NULL;
 			}
@@ -675,20 +823,23 @@ namespace GPlatesUtils
 		 */
 		typename object_seq_type::Node &
 		add_cached_object(
-				std::auto_ptr<ObjectType> new_object)
+				std::auto_ptr<object_type> new_object,
+				const return_object_to_cache_function_type &return_object_to_cache_function)
 		{
 			// Allocate a list node from our pool.
 			typename object_seq_type::Node *cached_object_iter =
 					d_object_seq_node_pool.construct(ObjectInfo());
 
 			// Transfer ownership of new object into a cached shared_ptr with a custom deleter.
-			const boost::shared_ptr<ObjectType> cached_object(
+			const object_shared_ptr_type cached_object(
 					// Transfer ownership of the object itself
 					new_object.release(),
 					// The smart_ptr custom deleter for the object
 					ObjectDeleter(
 							shared_from_this(),
-							cached_object_iter));
+							cached_object_iter,
+							// Optional function to call when the object is returned to the cache...
+							return_object_to_cache_function));
 
 			// Set the cached object in the list node.
 			// After returning from this method the list node should be the only one
@@ -705,7 +856,7 @@ namespace GPlatesUtils
 		}
 
 
-		boost::shared_ptr<ObjectType>
+		object_shared_ptr_type
 		return_cached_object_to_client(
 				typename object_seq_type::Node &cached_object_iter)
 		{
@@ -719,19 +870,20 @@ namespace GPlatesUtils
 				// If it does fail then an exception is thrown - meaning it's a bug.
 				// Note that the custom deleter in the weak_ptr should also get shared
 				// with the returned shared_ptr.
-				return boost::shared_ptr<ObjectType>(cached_object_info.in_use_object);
+				return object_shared_ptr_type(cached_object_info.in_use_object);
 			}
 			// ...else we need to setup some state before returning our first reference to a client...
 
 			// The cached object to return.
 			// NOTE: This is a copy of the shared_ptr in the list - this is important because
 			// we are going to reset the one in the list after making the copy.
-			const boost::shared_ptr<ObjectType> cached_object = cached_object_info.not_in_use_object;
+			const object_shared_ptr_type cached_object = cached_object_info.not_in_use_object;
 
 			// Move the cached object list node to the end of the 'objects in use' list -
 			// this also removes it from the 'objects not in use' list.
 			// All lists are ordered least-recently to most-recently.
 			splice<ObjectInfo>(d_objects_in_use.end(), cached_object_iter);
+			++d_num_objects_in_use;
 
 			// The list node remains valid even after the splice.
 			cached_object_info.is_object_in_use = true;
@@ -750,7 +902,7 @@ namespace GPlatesUtils
 
 		void
 		return_cached_object_from_clients(
-				const boost::shared_ptr<ObjectType> &cached_object,
+				const object_shared_ptr_type &cached_object,
 				typename object_seq_type::Node *cached_object_iter)
 		{
 			ObjectInfo &cached_object_info = cached_object_iter->element();
@@ -760,8 +912,10 @@ namespace GPlatesUtils
 					GPLATES_ASSERTION_SOURCE);
 
 			// Move the list node to the end of the 'objects not in use' list.
+			// this also removes it from the 'objects in use' list.
 			// All lists are ordered least-recently to most-recently.
 			splice<ObjectInfo>(d_objects_not_in_use.end(), *cached_object_iter);
+			--d_num_objects_in_use;
 
 			// The list node remains valid even after the splice.
 			cached_object_info.is_object_in_use = false;

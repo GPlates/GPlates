@@ -125,6 +125,8 @@ set(srcs
     HTMLColourNames.h
     ImportMenu.cc
     ImportMenu.h
+    LayerPainter.cc
+    LayerPainter.h
     LogFilterModel.cc
     LogFilterModel.h
     Map.cc

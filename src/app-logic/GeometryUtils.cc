@@ -79,11 +79,9 @@ namespace
 	public:
 		GetGeometryOnSpherePoints(
 				std::vector<GPlatesMaths::PointOnSphere> &points,
-				bool reverse_points,
-				bool get_edges) :
+				bool reverse_points) :
 			d_point_seq(points),
-			d_reverse_points(reverse_points),
-			d_get_edges(get_edges)
+			d_reverse_points(reverse_points)
 		{  }
 
 
@@ -101,6 +99,9 @@ namespace
 		visit_multi_point_on_sphere(
 				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
 		{
+			// Avoid excessive re-allocations when the number of points is large.
+			d_point_seq.reserve(multi_point_on_sphere->number_of_points());
+
 			if (d_reverse_points)
 			{
 				std::reverse_copy(
@@ -123,20 +124,15 @@ namespace
 		visit_polygon_on_sphere(
 				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 		{
+			// Avoid excessive re-allocations when the number of points is large.
+			d_point_seq.reserve(polygon_on_sphere->number_of_vertices());
+
 			if (d_reverse_points)
 			{
 				std::reverse_copy(
 						polygon_on_sphere->vertex_begin(),
 						polygon_on_sphere->vertex_end(),
 						std::back_inserter(d_point_seq));
-
-				if (d_get_edges) 
-				{ 
-					std::copy(
-							--(polygon_on_sphere->vertex_begin()),
-							--(polygon_on_sphere->vertex_begin()),
-							std::back_inserter(d_point_seq));
-				}
 			}
 			else
 			{
@@ -144,14 +140,6 @@ namespace
 						polygon_on_sphere->vertex_begin(),
 						polygon_on_sphere->vertex_end(),
 						std::back_inserter(d_point_seq));
-
-				if (d_get_edges) 
-				{ 
-					std::copy(
-							polygon_on_sphere->vertex_begin(),
-							polygon_on_sphere->vertex_begin(),
-							std::back_inserter(d_point_seq));
-				}
 			}
 
 		}
@@ -162,6 +150,9 @@ namespace
 		visit_polyline_on_sphere(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 		{
+			// Avoid excessive re-allocations when the number of points is large.
+			d_point_seq.reserve(polyline_on_sphere->number_of_vertices());
+
 			if (d_reverse_points)
 			{
 				std::reverse_copy(
@@ -184,9 +175,6 @@ namespace
 
 		//! Whether to reverse the visiting geometry points before appending.
 		bool d_reverse_points;
-
-		//! Whether to get the final edge for a polygon: 0,1,2...N,0
-		bool d_get_edges;
 	};
 
 
@@ -419,23 +407,12 @@ namespace
 }
 
 void
-GPlatesAppLogic::GeometryUtils::get_geometry_edges(
-		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
-		std::vector<GPlatesMaths::PointOnSphere> &points,
-		bool reverse_points)
-{
-	GetGeometryOnSpherePoints get_geometry_on_sphere_points(points, reverse_points, true);
-
-	geometry_on_sphere.accept_visitor(get_geometry_on_sphere_points);
-}
-
-void
 GPlatesAppLogic::GeometryUtils::get_geometry_points(
 		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
 		std::vector<GPlatesMaths::PointOnSphere> &points,
 		bool reverse_points)
 {
-	GetGeometryOnSpherePoints get_geometry_on_sphere_points(points, reverse_points, false);
+	GetGeometryOnSpherePoints get_geometry_on_sphere_points(points, reverse_points);
 
 	geometry_on_sphere.accept_visitor(get_geometry_on_sphere_points);
 }

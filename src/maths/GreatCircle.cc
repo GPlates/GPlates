@@ -26,8 +26,10 @@
  */
 
 #include <sstream>
+
 #include "GreatCircle.h"
 #include "IndeterminateResultException.h"
+#include "Rotation.h"
 
 
 GPlatesMaths::GreatCircle::GreatCircle (const PointOnSphere &p1,
@@ -75,4 +77,44 @@ GPlatesMaths::GreatCircle::calc_normal(const UnitVector3D &u1,
 				oss.str().c_str());
 	}
 	return v.get_normalisation();
+}
+
+
+void
+GPlatesMaths::tessellate(
+		std::vector<PointOnSphere> &tessellation_points,
+		const GreatCircle &great_circle,
+		const real_t &max_segment_angular_extent)
+{
+	//
+	// Note: Using static_cast<int> instead of static_cast<unsigned int> since
+	// Visual Studio optimises for 'int' and not 'unsigned int'.
+	//
+	// The '+1' is to round up instead of down.
+	// It also means we don't need to test for the case of only one segment.
+	const int num_segments = 1 + static_cast<int>(2 * PI / max_segment_angular_extent.dval());
+	const double segment_angular_extent = 2 * PI / num_segments;
+
+	// Create the rotation to generate segment points.
+	const Rotation segment_rotation =
+			Rotation::create(great_circle.axis_vector(), segment_angular_extent);
+
+	// Generate the segment points.
+	const int num_initial_tessellation_points = tessellation_points.size();
+	tessellation_points.reserve(num_initial_tessellation_points + num_segments + 1);
+	// Generate the first point on the great circle - it could be anywhere along the great circle
+	// so generate a point perpendicular to the great circle's rotation axis.
+	const PointOnSphere start_point(generate_perpendicular(great_circle.axis_vector()));
+	tessellation_points.push_back(start_point);
+	for (int n = 0; n < num_segments - 1; ++n)
+	{
+		const PointOnSphere &segment_start_point = tessellation_points[num_initial_tessellation_points + n];
+		const PointOnSphere segment_end_point(segment_rotation * segment_start_point.position_vector());
+
+		tessellation_points.push_back(segment_end_point);
+	}
+
+	// The final point is the same as the initial point.
+	// It is implicit - we don't actually add it.
+	// If the caller needs a closed loop they can close it explicitly.
 }

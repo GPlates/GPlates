@@ -98,6 +98,8 @@ set(srcs
     Rotation.h
     SmallCircle.cc
     SmallCircle.h
+    SmallCircleArc.cc
+    SmallCircleArc.h
     SmallCircleBounds.cc
     SmallCircleBounds.h
     SmallCircleCoverageMesh.cc

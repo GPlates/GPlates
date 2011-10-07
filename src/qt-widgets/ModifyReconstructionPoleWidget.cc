@@ -788,9 +788,6 @@ void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 {
 	
-	static const GPlatesModel::PropertyName vgp_prop_name =
-		GPlatesModel::PropertyName::create_gpml("polePosition");
-
 	d_reconstructed_feature_geometries.clear();
 	populate_initial_geometries();
 

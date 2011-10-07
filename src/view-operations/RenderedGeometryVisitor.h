@@ -102,6 +102,17 @@ namespace GPlatesViewOperations
 		visit_rendered_polygon_on_sphere(
 				const RenderedPolygonOnSphere &)
 		{  }
+
+		/**
+		 * This rendered geometry is a composite object as opposed to the others.
+		 *
+		 * It wraps/associates a @a GPlatesAppLogic::ReconstructionGeometry object with a rendered geometry.
+		 */
+		virtual
+		void
+		visit_rendered_reconstruction_geometry(
+				const RenderedReconstructionGeometry &)
+		{  }
 		
 		virtual
 		void
@@ -109,18 +120,16 @@ namespace GPlatesViewOperations
 				const RenderedResolvedRaster &)
 		{  }
 
+		/**
+		 * Note that this is not the same as a polyline with a symbol decoration.
+		 *
+		 * This is a single direction arrow that does not 
+		 */
 		virtual
 		void
 		visit_rendered_direction_arrow(
 				const RenderedDirectionArrow &)
 		{  }
-
-		virtual
-		void
-		visit_rendered_reconstruction_geometry(
-				const RenderedReconstructionGeometry &)
-		{  }
-		
 		
 		virtual
 		void
@@ -133,7 +142,7 @@ namespace GPlatesViewOperations
 		visit_rendered_small_circle_arc(
 			const RenderedSmallCircleArc &)
 		{  }		
-		
+
 		virtual
 		void
 		visit_rendered_square_symbol(

@@ -49,6 +49,7 @@
 #include "maths/PolygonOnSphere.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/SmallCircle.h"
+#include "maths/SmallCircleArc.h"
 
 #include "property-values/Georeferencing.h"
 #include "property-values/GpmlRasterBandNames.h"
@@ -184,7 +185,8 @@ namespace GPlatesViewOperations
 		RenderedGeometry
 		create_rendered_resolved_raster(
 				const GPlatesAppLogic::resolved_raster_non_null_ptr_to_const_type &resolved_raster,
-				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette);
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
+				const GPlatesGui::Colour &raster_modulate_colour = GPlatesGui::Colour::get_white());
 
 		/**
 		 * Creates a single direction arrow consisting of an arc line segment on the globe's surface
@@ -336,33 +338,30 @@ namespace GPlatesViewOperations
 	 */
 	RenderedGeometry
 	create_rendered_small_circle(
-		const GPlatesMaths::PointOnSphere &centre,
-		const GPlatesMaths::Real &radius_in_radians,
-		const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
-		float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);						
+			const GPlatesMaths::SmallCircle &small_circle,
+			const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+			float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);						
 	
 	/**
 	 * Creates a @a RenderedGeometry for a @a SmallCircleArc.
 	 */
 	RenderedGeometry
 	create_rendered_small_circle_arc(
-		const GPlatesMaths::PointOnSphere &centre,
-		const GPlatesMaths::PointOnSphere &start_point,
-		const GPlatesMaths::Real &arc_length_in_radians,
-		const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
-		float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);				
+			const GPlatesMaths::SmallCircleArc &small_circle_arc,
+			const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+			float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);				
 
 	/**
 	 * Creates a @a RenderedGeometry for an @a Ellipse.                                                                  
 	 */
 	RenderedGeometry
 	create_rendered_ellipse(
-		const GPlatesMaths::PointOnSphere &centre,
-		const GPlatesMaths::Real &semi_major_axis_radians,
-		const GPlatesMaths::Real &semi_minor_axis_radians,
-		const GPlatesMaths::GreatCircle &axis,
-		const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
-		float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
+			const GPlatesMaths::PointOnSphere &centre,
+			const GPlatesMaths::Real &semi_major_axis_radians,
+			const GPlatesMaths::Real &semi_minor_axis_radians,
+			const GPlatesMaths::GreatCircle &axis,
+			const GPlatesGui::ColourProxy &colour = RenderedGeometryFactory::DEFAULT_COLOUR,
+			float line_width_hint = RenderedGeometryFactory::DEFAULT_LINE_WIDTH_HINT);
 
 
 	/**

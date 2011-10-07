@@ -29,10 +29,12 @@
 #include <boost/optional.hpp>
 
 #include "GreatCircleArc.h"
-#include "Vector3D.h"
 #include "FiniteRotation.h"
 #include "IndeterminateResultException.h"
 #include "IndeterminateArcRotationAxisException.h"
+#include "PolylineOnSphere.h"
+#include "Rotation.h"
+#include "Vector3D.h"
 
 
 namespace
@@ -353,6 +355,55 @@ GPlatesMaths::GreatCircleArc::get_closest_point(
 	}
 
 	return start_point().get_non_null_pointer();
+}
+
+void
+GPlatesMaths::tessellate(
+		std::vector<PointOnSphere> &tessellation_points,
+		const GreatCircleArc &great_circle_arc,
+		const real_t &max_segment_angular_extent)
+{
+	const PointOnSphere &start_point = great_circle_arc.start_point();
+	const PointOnSphere &end_point = great_circle_arc.end_point();
+
+	// If there's no rotation axis...
+	if (great_circle_arc.is_zero_length())
+	{
+		tessellation_points.push_back(start_point);
+		tessellation_points.push_back(end_point);
+	}
+
+	// The angular extent of the great circle arc being subdivided.
+	const double gca_angular_extent = acos(great_circle_arc.dot_of_endpoints()).dval();
+
+	//
+	// Note: Using static_cast<int> instead of static_cast<unsigned int> since
+	// Visual Studio optimises for 'int' and not 'unsigned int'.
+	//
+	// The '+1' is to round up instead of down.
+	// It also means we don't need to test for the case of only one segment.
+	const int num_segments = 1 + static_cast<int>(gca_angular_extent / max_segment_angular_extent.dval());
+	const double segment_angular_extent = gca_angular_extent / num_segments;
+
+	// Create the rotation to generate segment points.
+	const Rotation segment_rotation =
+			Rotation::create(great_circle_arc.rotation_axis(), segment_angular_extent);
+
+	// Generate the segment points.
+	const int num_initial_tessellation_points = tessellation_points.size();
+	tessellation_points.reserve(num_initial_tessellation_points + num_segments + 1);
+	tessellation_points.push_back(start_point);
+	for (int n = 0; n < num_segments - 1; ++n)
+	{
+		const PointOnSphere &segment_start_point = tessellation_points[num_initial_tessellation_points + n];
+		const PointOnSphere segment_end_point(segment_rotation * segment_start_point.position_vector());
+
+		tessellation_points.push_back(segment_end_point);
+	}
+
+	// The final point added is the original arc's end point.
+	// This avoids numerical error in the final point due to accumulated rotations.
+	tessellation_points.push_back(end_point);
 }
 
 bool

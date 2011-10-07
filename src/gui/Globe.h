@@ -28,6 +28,7 @@
 #ifndef GPLATES_GUI_GLOBE_H
 #define GPLATES_GUI_GLOBE_H
 
+#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "Colour.h"
@@ -46,7 +47,7 @@
 #include "maths/Rotation.h"
 
 #include "opengl/GLContext.h"
-#include "opengl/GLUNurbsRenderer.h"
+#include "opengl/GLMatrix.h"
 
 #include "presentation/VisualLayers.h"
 
@@ -56,7 +57,6 @@
 namespace GPlatesOpenGL
 {
 	class GLRenderer;
-	class GLTransform;
 }
 
 namespace GPlatesPresentation
@@ -76,6 +76,11 @@ namespace GPlatesGui
 	class Globe
 	{
 	public:
+		/**
+		 * Typedef for an opaque object that caches a particular painting.
+		 */
+		typedef boost::shared_ptr<void> cache_handle_type;
+
 
 		Globe(
 				GPlatesPresentation::ViewState &view_state,
@@ -97,6 +102,15 @@ namespace GPlatesGui
 
 		~Globe()
 		{  }
+
+		/**
+		 * Initialise any OpenGL state.
+		 *
+		 * This method is called when the OpenGL context is first bound (and hence we can make OpenGL calls).
+		 */
+		void
+		initialiseGL(
+				GPlatesOpenGL::GLRenderer &renderer);
 
 		SimpleGlobeOrientation &
 		orientation()
@@ -127,15 +141,15 @@ namespace GPlatesGui
 		 *        Value should be one when earth fills viewport and proportionately greater
 		 *        than one when viewport shows only part of the globe.
 		 */
-		void
+		cache_handle_type
 		paint(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const double &viewport_zoom_factor,
 				float scale,
-				const GPlatesOpenGL::GLTransform &projection_transform_include_half_globe,
-				const GPlatesOpenGL::GLTransform &projection_transform_include_full_globe,
-				const GPlatesOpenGL::GLTransform &projection_transform_include_stars);
-		
+				const GPlatesOpenGL::GLMatrix &projection_transform_include_half_globe,
+				const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
+				const GPlatesOpenGL::GLMatrix &projection_transform_include_stars);
+
 		/*
 		 * A special version of the globe's paint() method more suitable for vector output.
 		 *
@@ -147,7 +161,6 @@ namespace GPlatesGui
 		 */
 		void
 		paint_vector_output(
-				const boost::shared_ptr<GPlatesOpenGL::GLContext::SharedState> &gl_context_shared_state,
 				GPlatesOpenGL::GLRenderer &renderer,
 				const double &viewport_zoom_factor,
 				float scale);
@@ -170,29 +183,32 @@ namespace GPlatesGui
 		const GPlatesPresentation::VisualLayers &d_visual_layers;
 
 		/**
-		 * The GLUNurbsRenderer used to draw large GreatCircleArcs.
-		 */
-		GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type d_nurbs_renderer;
-
-		/**
 		 * Stars in the background, behind the Earth.
+		 *
+		 * It's optional since it can't be constructed until @a initialiseGL is called (valid OpenGL context).
 		 */
-		Stars d_stars;
+		boost::optional<Stars> d_stars;
 
 		/**
 		 * The solid earth.
+		 *
+		 * It's optional since it can't be constructed until @a initialiseGL is called (valid OpenGL context).
 		 */
-		OpaqueSphere d_sphere;
+		boost::optional<OpaqueSphere> d_sphere;
 
 		/**
 		 * Assists with rendering when @a d_sphere is translucent.
+		 *
+		 * It's optional since it can't be constructed until @a initialiseGL is called (valid OpenGL context).
 		 */
-		OpaqueSphere d_black_sphere;
+		boost::optional<OpaqueSphere> d_black_sphere;
 
 		/**
 		 * Lines of lat and lon on surface of earth.
+		 *
+		 * It's optional since it can't be constructed until @a initialiseGL is called (valid OpenGL context).
 		 */
-		SphericalGrid d_grid;
+		boost::optional<SphericalGrid> d_grid;
 
 		/**
 		 * The accumulated orientation of the globe.
@@ -205,18 +221,11 @@ namespace GPlatesGui
 		GlobeRenderedGeometryCollectionPainter d_rendered_geom_collection_painter;
 
 		/**
-		 * Create a transform to transform the view according to the current globe orientation.
+		 * Calculate tranform to ransform the view according to the current globe orientation.
 		 */
-		GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
-		get_globe_orientation_transform() const;
-
-		/**
-		 * Create a @a GLStateSet for a rendered layer.
-		 */
-		GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type
-		get_rendered_layer_state(
-				GLboolean depth_test_flag = GL_TRUE,
-				GLboolean depth_write_flag = GL_FALSE) const;
+		void
+		get_globe_orientation_transform(
+				GPlatesOpenGL::GLMatrix &transform) const;
 	};
 }
 

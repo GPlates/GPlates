@@ -40,21 +40,13 @@
 
 #include "GLMultiResolutionFilledPolygons.h"
 
-#include "GLBlendState.h"
-#include "GLCompositeStateSet.h"
 #include "GLContext.h"
-#include "GLDepthRangeState.h"
-#include "GLFragmentTestStates.h"
 #include "GLIntersect.h"
 #include "GLMatrix.h"
-#include "GLPointLinePolygonState.h"
 #include "GLRenderer.h"
-#include "GLTextureEnvironmentState.h"
-#include "GLTextureTransformState.h"
-#include "GLTransformState.h"
+#include "GLProjectionUtils.h"
 #include "GLUtils.h"
 #include "GLVertex.h"
-#include "GLViewportState.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -70,78 +62,40 @@ namespace GPlatesOpenGL
 	{
 		//! The inverse of log(2.0).
 		const float INVERSE_LOG2 = 1.0 / std::log(2.0);
-
-		/**
-		 * Sorts filled polygon drawables by transform.
-		 */
-		struct SortFilledDrawables
-		{
-			bool
-			operator()(
-					const GLMultiResolutionFilledPolygons::filled_polygon_type::non_null_ptr_to_const_type &lhs,
-					const GLMultiResolutionFilledPolygons::filled_polygon_type::non_null_ptr_to_const_type &rhs) const
-			{
-				return lhs->get_transform() < rhs->get_transform();
-			}
-		};
 	}
 }
 
 
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::GLMultiResolutionFilledPolygons(
+		GLRenderer &renderer,
 		const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh,
 		const cube_subdivision_projection_transforms_cache_type::non_null_ptr_type &cube_subdivision_projection_transforms_cache,
-		const cube_subdivision_bounds_cache_type::non_null_ptr_type &cube_subdivision_bounds_cache,
-		const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
-		const GLVertexBufferResourceManager::shared_ptr_type &vertex_buffer_resource_manager) :
+		const cube_subdivision_bounds_cache_type::non_null_ptr_type &cube_subdivision_bounds_cache) :
 	d_cube_subdivision_projection_transforms_cache(cube_subdivision_projection_transforms_cache),
 	d_cube_subdivision_bounds_cache(cube_subdivision_bounds_cache),
-	d_texture_resource_manager(texture_resource_manager),
-	d_vertex_buffer_resource_manager(vertex_buffer_resource_manager),
 	d_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create()),
 	d_tile_texel_dimension(cube_subdivision_projection_transforms_cache->get_tile_texel_dimension()),
-	// We probably don't need too large a texture - just want to fit a reasonable number of
-	// 256x256 tile textures inside it to minimise render target switching.
-	// Each filled polygon gets its own 256x256 section so 4096x4096 is 256 polygons per render target.
-	d_polygon_stencil_texel_dimension(4096),
-	d_clear_buffers_state(GLClearBuffersState::create()),
-	d_clear_buffers(GLClearBuffers::create()),
 	d_multi_resolution_cube_mesh(multi_resolution_cube_mesh)
 {
-	// Setup for clearing the render target colour buffer.
-	d_clear_buffers_state->gl_clear_color(); // Clear colour to all zeros.
-	d_clear_buffers->gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
+	create_polygon_stencil_texture(renderer);
 
-	// Our polygon stencil texture should be big enough to cover a regular tile.
-	if (d_polygon_stencil_texel_dimension < d_tile_texel_dimension)
-	{
-		d_polygon_stencil_texel_dimension = d_tile_texel_dimension;
-	}
-	// But it can't be larger than the maximum texture dimension for the current system.
-	//
-	// NOTE: An OpenGL context must be active at this point.
-	if (d_polygon_stencil_texel_dimension >
-		boost::numeric_cast<unsigned int>(GLContext::get_texture_parameters().gl_max_texture_size))
-	{
-		d_polygon_stencil_texel_dimension = GLContext::get_texture_parameters().gl_max_texture_size;
-	}
+	create_polygons_vertex_array(renderer);
 
-	// NOTE: An OpenGL context must be active at this point.
-	create_polygon_stencil_texture();
-
-	// NOTE: An OpenGL context must be active at this point.
-	create_polygon_stencil_quads_vertex_and_index_arrays();
+	create_polygon_stencil_quads_vertex_array(renderer);
 }
 
 
 unsigned int
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::get_level_of_detail(
-		const GLTransformState &transform_state) const
+		const GLViewport &viewport,
+		const GLMatrix &model_view_transform,
+		const GLMatrix &projection_transform) const
 {
 	// Get the minimum size of a pixel in the current viewport when projected
 	// onto the unit sphere (in model space).
 	const double min_pixel_size_on_unit_sphere =
-			transform_state.get_min_pixel_size_on_unit_sphere();
+			GLProjectionUtils::get_min_pixel_size_on_unit_sphere(
+					viewport, model_view_transform, projection_transform);
 
 	//
 	// Calculate the level-of-detail.
@@ -195,20 +149,37 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::get_level_of_detail(
 void
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::render(
 		GLRenderer &renderer,
-		const filled_polygons_spatial_partition_type &filled_polygons_spatial_partition)
+		const filled_polygons_type &filled_polygons)
 {
 	PROFILE_FUNC();
+
+	// Make sure we leave the OpenGL state the way it was.
+	GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	// If there are no filled polygons to render then return early.
+	if (filled_polygons.d_polygon_vertex_elements.empty())
+	{
+		return;
+	}
 
 // 	g_num_tiles_rendered = 0;
 // 	g_num_render_target_switches = 0;
 // 	g_num_polygons_rendered = 0;
 
+	// First write the vertices/indices of the filled polygons gathered by the client into
+	// our vertex buffer and vertex element buffer.
+	write_filled_polygon_meshes_to_vertex_array(renderer, filled_polygons);
+
 	// Get the level-of-detail based on the size of viewport pixels projected onto the globe.
-	// We'll try to render of this level of detail if our quad tree is deep enough.
-	const unsigned int render_level_of_detail = get_level_of_detail(renderer.get_transform_state());
+	const unsigned int render_level_of_detail = get_level_of_detail(
+			renderer.gl_get_viewport(),
+			renderer.gl_get_matrix(GL_MODELVIEW),
+			renderer.gl_get_matrix(GL_PROJECTION));
 
 	// Get the view frustum planes.
-	const GLFrustum &frustum_planes = renderer.get_transform_state().get_current_frustum_planes_in_model_space();
+	const GLFrustum frustum_planes(
+			renderer.gl_get_matrix(GL_MODELVIEW),
+			renderer.gl_get_matrix(GL_PROJECTION));
 
 	//
 	// Traverse the source raster cube quad tree and the spatial partition of reconstructed polygon meshes.
@@ -229,7 +200,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render(
 		// This is so we know which polygon meshes to draw for each source raster tile.
 		filled_polygons_intersecting_nodes_type
 				filled_polygons_intersecting_nodes(
-						filled_polygons_spatial_partition,
+						*filled_polygons.d_filled_polygons_spatial_partition,
 						cube_face);
 
 		// Get the child projection transforms node.
@@ -248,7 +219,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render(
 		render_quad_tree(
 				renderer,
 				mesh_quad_tree_root_node,
-				filled_polygons_spatial_partition,
+				*filled_polygons.d_filled_polygons_spatial_partition,
 				filled_polygons_spatial_partition_node_list,
 				filled_polygons_intersecting_nodes,
 				projection_transforms_cache_root_node,
@@ -545,19 +516,17 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::get_filled_polygons_intersecting
 }
 
 
-GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_tile_state_set(
+void
+GPlatesOpenGL::GLMultiResolutionFilledPolygons::set_tile_state(
+		GLRenderer &renderer,
 		const GLTexture::shared_ptr_to_const_type &tile_texture,
 		const GLTransform &projection_transform,
 		const GLTransform &view_transform,
 		bool clip_to_tile_frustum)
 {
-	// The composite state to return to the caller.
-	GLCompositeStateSet::non_null_ptr_type tile_state_set = GLCompositeStateSet::create();
-
 	// State for the tile texture.
 	GLUtils::set_frustum_texture_state(
-			*tile_state_set,
+			renderer,
 			tile_texture,
 			projection_transform.get_matrix(),
 			view_transform.get_matrix(),
@@ -569,15 +538,35 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_tile_state_set(
 	// we need to use a clip texture.
 	if (clip_to_tile_frustum)
 	{
-		// State for the clip texture.
-		GLUtils::set_frustum_texture_state(
-				*tile_state_set,
-				d_multi_resolution_cube_mesh->get_clip_texture(),
-				projection_transform.get_matrix(),
-				view_transform.get_matrix(),
-				1/*texture_unit*/,
-				GL_MODULATE,
-				GLTextureUtils::get_clip_texture_clip_space_to_texture_space_transform());
+		// NOTE: If two texture units are not supported then just don't clip to the tile.
+		// It'll look worse but at least it'll still work mostly and will only be noticeable
+		// if they zoom in far enough (which is when this code gets activated).
+		if (GLContext::get_parameters().texture.gl_max_texture_units >= 2)
+		{
+			// State for the clip texture.
+			GLUtils::set_frustum_texture_state(
+					renderer,
+					d_multi_resolution_cube_mesh->get_clip_texture(),
+					projection_transform.get_matrix(),
+					view_transform.get_matrix(),
+					1/*texture_unit*/,
+					GL_MODULATE,
+					GLTextureUtils::get_clip_texture_clip_space_to_texture_space_transform());
+		}
+		else
+		{
+			// Only emit warning message once.
+			static bool emitted_warning = false;
+			if (!emitted_warning)
+			{
+				qWarning() <<
+						"High zoom levels of filled polygons NOT supported by this OpenGL system - \n"
+						"  requires two texture units - visual results will be incorrect.\n"
+						"  Most graphics hardware for over a decade supports this -\n"
+						"  most likely software renderer fallback has occurred - possibly via remote desktop software.";
+				emitted_warning = true;
+			}
+		}
 	}
 
 	// NOTE: We don't set alpha-blending (or alpha-testing) state here because we
@@ -592,12 +581,8 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_tile_state_set(
 #if 0
 	// Used to render as wire-frame meshes instead of filled textured meshes for
 	// visualising mesh density.
-	GLPolygonState::non_null_ptr_type polygon_state = GLPolygonState::create();
-	polygon_state->gl_polygon_mode(GL_FRONT_AND_BACK, GL_LINE);
-	tile_state_set->add_state_set(polygon_state);
+	renderer.gl_polygon_mode(GL_FRONT_AND_BACK, GL_LINE);
 #endif
-
-	return tile_state_set;
 }
 
 
@@ -610,6 +595,9 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_tile_to_scene(
 		const cube_subdivision_projection_transforms_cache_type::node_reference_type &projection_transforms_cache_node)
 {
 	PROFILE_FUNC();
+
+	// Make sure we leave the OpenGL state the way it was.
+	GLRenderer::StateBlockScope save_restore_state(renderer);
 
 	// Sort the reconstructed polygon meshes by transform.
 	filled_polygon_seq_type transformed_sorted_filled_drawables;
@@ -636,7 +624,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_tile_to_scene(
 					projection_transforms_cache_node.get_cube_face());
 
 	// Get an unused tile texture from our texture cache.
-	const GLTexture::shared_ptr_to_const_type tile_texture = allocate_tile_texture();
+	const GLTexture::shared_ptr_to_const_type tile_texture = allocate_tile_texture(renderer);
 
 	// Render the filled polygons to the tile texture.
 	render_filled_polygons_to_tile_texture(
@@ -647,27 +635,21 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_tile_to_scene(
 			*view_transform);
 
 	// Get the mesh covering the current quad tree node tile.
-	GLDrawable::non_null_ptr_to_const_type mesh_drawable = mesh_quad_tree_node.get_mesh_drawable();
+	GLCompiledDrawState::non_null_ptr_to_const_type mesh_drawable = mesh_quad_tree_node.get_mesh_drawable();
 
 	// See if we've traversed deep enough in the cube mesh quad tree to require using a clip
 	// texture - this occurs because the cube mesh has nodes only to a certain depth.
 	const bool clip_to_tile_frustum = mesh_quad_tree_node.get_clip_texture_clip_space_transform();
 
 	// Prepare for rendering the current tile.
-	const GLStateSet::non_null_ptr_to_const_type tile_state_set =
-			create_tile_state_set(
-					tile_texture,
-					*projection_transform,
-					*view_transform,
-					clip_to_tile_frustum);
+	set_tile_state(
+			renderer,
+			tile_texture,
+			*projection_transform,
+			*view_transform,
+			clip_to_tile_frustum);
 
-	// Push the tile state set.
-	renderer.push_state_set(tile_state_set);
-
-	renderer.add_drawable(mesh_drawable);
-
-	// Pop the tile state set.
-	renderer.pop_state_set();
+	renderer.apply_compiled_draw_state(*mesh_drawable);
 }
 
 
@@ -679,23 +661,90 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 		const GLTransform &projection_transform,
 		const GLTransform &view_transform)
 {
-	// Push a render target that will render the individual filled polygons to the tile texture.
-	// We can render to the target in parallel because we're only going to render to it once per frame.
-	// Note that even though the texture is cached we're not actually re-using it from frame to frame.
-	renderer.push_render_target(
-			GLTextureRenderTargetType::create(
-					tile_texture, d_tile_texel_dimension, d_tile_texel_dimension),
-			GLRenderer::RENDER_TARGET_USAGE_PARALLEL);
+	//PROFILE_FUNC();
 
 	//++g_num_tiles_rendered;
+
+	// Begin a render target that will render the individual filled polygons to the tile texture.
+	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(renderer, tile_texture);
+
+	// The viewport for the tile texture.
+	renderer.gl_viewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension);
+
+	// Set the alpha-blend state since filled polygon could have a transparent colour.
+	renderer.gl_enable(GL_BLEND);
+	renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Set the alpha-test state to reject pixels where alpha is zero (they make no
+	// change or contribution to the render target) - this is an optimisation.
+	renderer.gl_enable(GL_ALPHA_TEST);
+	renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
+
+	// Set up texture state to use the polygon stencil texture to render to the tile texture.
+	GLUtils::set_full_screen_quad_texture_state(
+			renderer,
+			d_polygon_stencil_texture,
+			0/*texture_unit*/,
+			GL_REPLACE);
+
+#if 0
+	// Used to render as wire-frame meshes instead of filled textured meshes for
+	// visualising mesh density.
+	renderer.gl_polygon_mode(GL_FRONT_AND_BACK, GL_POINT);
+
+	// Set the anti-aliased line state.
+	renderer.gl_line_width(10.0f);
+	renderer.gl_point_size(10.0f);
+	//renderer.gl_enable(GL_LINE_SMOOTH);
+	//renderer.gl_hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+#endif
+
+	// Bind the vertex array used to copy the polygon stencil texture into the tile texture.
+	// We only need to bind it once - note that 'render_filled_polygons_to_polygon_stencil_texture'
+	// has its own render target and hence its own state so it doesn't interfere with our state here
+	// (ie, this binding will get rebound as needed when the nested render target block goes out of scope).
+	d_polygon_stencil_quads_vertex_array->gl_bind(renderer);
 
 	// We clear this tile's render texture just before we render the polygon stencil texture to it.
 	// This reduces the number of render target switches by one since no drawables are added
 	// to the tile's render target until after switching back from the polygon stencil render target.
 	bool cleared_tile_render_target = false;
 
+	// Get the maximum render target dimensions in case the main framebuffer is used as a render-target.
+	// Ie, if we're limited to the current dimensions of the main framebuffer (the current window).
+	unsigned int render_target_width;
+	unsigned int render_target_height;
+	renderer.get_max_rgba8_render_target_dimensions(render_target_width, render_target_height);
+	if (render_target_width < d_tile_texel_dimension)
+	{
+		render_target_width = d_tile_texel_dimension;
+	}
+	if (render_target_height < d_tile_texel_dimension)
+	{
+		render_target_height = d_tile_texel_dimension;
+	}
+	if (render_target_width > d_polygon_stencil_texture->get_width().get())
+	{
+		render_target_width = d_polygon_stencil_texture->get_width().get();
+	}
+	if (render_target_height > d_polygon_stencil_texture->get_height().get())
+	{
+		render_target_height = d_polygon_stencil_texture->get_height().get();
+	}
+
+	// If framebuffer objects are supported then naturally our render target dimensions will
+	// match the polygon stencil texture dimensions (that's how FBO's work), but if we're
+	// falling back to the main framebuffer as a render-target. In this case our polygon stencil
+	// quads vertex array can't be used fully (because it's populated assuming the render target
+	// dimension is the polygon stencil texture dimension). We can however use the first row
+	// of quads without problem so we'll make the render target height one tile in size.
+	if (render_target_width != d_polygon_stencil_texture->get_width().get())
+	{
+		render_target_height = d_tile_texel_dimension;
+	}
+
 	const unsigned int num_polygons_per_stencil_texture_render =
-			d_polygon_stencil_texel_dimension * d_polygon_stencil_texel_dimension /
+			render_target_width * render_target_height /
 					(d_tile_texel_dimension * d_tile_texel_dimension);
 
 	unsigned int num_polygons_left_to_render = transformed_sorted_filled_drawables.size();
@@ -713,52 +762,52 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 		// Render the filled polygons to the current tile render target.
 		render_filled_polygons_to_polygon_stencil_texture(
 				renderer,
+				render_target_width,
+				render_target_height,
 				filled_drawables_iter,
 				filled_drawables_group_end,
 				projection_transform,
 				view_transform);
 
+		// We delay clearing of the tile render target until after the first rendering to the
+		// polygon stencil texture - this is an optimisation only in case the main framebuffer is
+		// being for render targets.
 		if (!cleared_tile_render_target)
 		{
-			// Create a state set to set the viewport.
-			const GLViewport viewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension);
-			GLViewportState::non_null_ptr_type viewport_state = GLViewportState::create(viewport);
-			// Push the viewport state set.
-			renderer.push_state_set(viewport_state);
-			// Let the transform state know of the new viewport.
-			renderer.get_transform_state().set_viewport(viewport);
-
 			// Clear the colour buffer of the render target.
-			renderer.push_state_set(d_clear_buffers_state);
-			renderer.add_drawable(d_clear_buffers);
-			renderer.pop_state_set();
+			renderer.gl_clear_color(); // Clear colour to all zeros.
+			renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
 
 			cleared_tile_render_target = true;
 		}
 
+		//PROFILE_BLOCK("d_polygon_stencil_quads_vertex_array->gl_draw_range_elements");
+
 		// Render the filled polygons, in the stencil texture, to the current tile render target.
-		render_filled_polygons_from_polygon_stencil_texture(
+		//
+		// Draw as many quads as there were polygons rendered into the larger polygon stencil texture.
+		const unsigned int num_quad_vertices = 4 * num_polygons_in_group;
+		d_polygon_stencil_quads_vertex_array->gl_draw_range_elements(
 				renderer,
-				num_polygons_in_group);
+				GL_QUADS,
+				0/*start*/,
+				num_quad_vertices - 1/*end*/,
+				num_quad_vertices/*count*/,
+				GLVertexElementTraits<stencil_quad_vertex_element_type>::type,
+				0/*indices_offset*/);
 
 		// Advance to the next group of polygons.
 		filled_drawables_iter = filled_drawables_group_end;
 		num_polygons_left_to_render -= num_polygons_in_group;
 	}
-
-	// Pop the viewport state set.
-	if (cleared_tile_render_target)
-	{
-		renderer.pop_state_set();
-	}
-
-	renderer.pop_render_target();
 }
 
 
 void
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_polygon_stencil_texture(
 		GLRenderer &renderer,
+		unsigned int render_target_width,
+		unsigned int render_target_height,
 		const filled_polygon_seq_type::const_iterator begin_filled_drawables,
 		const filled_polygon_seq_type::const_iterator end_filled_drawables,
 		const GLTransform &projection_transform,
@@ -766,61 +815,52 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_polygo
 {
 	//PROFILE_FUNC();
 
-	// Push a render target that we'll render to the polygon stencil texture.
-	// We render in serial because the stencil texture will be used immediately afterwards.
-	renderer.push_render_target(
-			GLTextureRenderTargetType::create(
-					d_polygon_stencil_texture,
-					d_polygon_stencil_texel_dimension,
-					d_polygon_stencil_texel_dimension),
-			GLRenderer::RENDER_TARGET_USAGE_SERIAL);
+	// Begin a render target that will render the individual filled polygons to the tile texture.
+	// This is also an implicit state block (saves/restores state).
+	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(
+			renderer,
+			d_polygon_stencil_texture,
+			// Limit rendering to a part of the polygon stencil texture if it's too big for render-target...
+			GLViewport(0, 0, render_target_width, render_target_height));
 
 	//++g_num_render_target_switches;
 
 	// Clear the entire colour buffer of the render target.
 	// Clears the entire render target regardless of the current viewport.
-	const GLClearBuffersState::non_null_ptr_type clear_buffers_state = GLClearBuffersState::create();
-	const GLClearBuffers::non_null_ptr_type clear_buffers = GLClearBuffers::create();
+	renderer.gl_clear_color(); // All zeros.
 	// Clear only the colour buffer.
-	clear_buffers->gl_clear(GL_COLOR_BUFFER_BIT);
-	renderer.push_state_set(clear_buffers_state);
-	renderer.add_drawable(clear_buffers);
-	renderer.pop_state_set();
-
-	// The composite state.
-	GLCompositeStateSet::non_null_ptr_type polygon_stencil_state = GLCompositeStateSet::create();
+	renderer.gl_clear(GL_COLOR_BUFFER_BIT);
 
 	// Alpha-blend state set to invert destination alpha (and colour) every time a pixel
 	// is rendered (this means we get 1 where a pixel is covered by an odd number of triangles
 	// and 0 by an even number of triangles).
-	GLBlendState::non_null_ptr_type blend_state = GLBlendState::create();
-	blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_ONE_MINUS_DST_ALPHA, GL_ZERO);
-	polygon_stencil_state->add_state_set(blend_state);
+	renderer.gl_enable(GL_BLEND);
+	renderer.gl_blend_func(GL_ONE_MINUS_DST_ALPHA, GL_ZERO);
 
 #if 0
 	// Used to render as wire-frame meshes instead of filled textured meshes for
 	// visualising mesh density.
-	GLPolygonState::non_null_ptr_type polygon_state = GLPolygonState::create();
-	polygon_state->gl_polygon_mode(GL_FRONT_AND_BACK, GL_LINE);
-	polygon_stencil_state->add_state_set(polygon_state);
+	renderer.gl_polygon_mode(GL_FRONT_AND_BACK, GL_LINE);
 
 	// Set the anti-aliased line state.
-	GPlatesOpenGL::GLLineState::non_null_ptr_type line_state = GPlatesOpenGL::GLLineState::create();
-	line_state->gl_line_width(4.0f);
-	//line_state->gl_enable_line_smooth(GL_TRUE).gl_hint_line_smooth(GL_NICEST);
-	polygon_stencil_state->add_state_set(line_state);
+	renderer.gl_line_width(4.0f);
+	//renderer.gl_enable(GL_LINE_SMOOTH);
+	//renderer.gl_hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 #endif
 
-	renderer.push_state_set(polygon_stencil_state);
+	renderer.gl_mult_matrix(GL_MODELVIEW, view_transform.get_matrix());
+	renderer.gl_mult_matrix(GL_PROJECTION, projection_transform.get_matrix());
 
-	renderer.push_transform(projection_transform);
-	renderer.push_transform(view_transform);
+	const GLMatrix view_matrix = renderer.gl_get_matrix(GL_MODELVIEW);
 
+	// Bind the vertex array before using it to draw.
+	d_polygons_vertex_array->gl_bind(renderer);
+
+	// Start off with the identity model transform and change as needed.
 	boost::optional<GPlatesAppLogic::ReconstructMethodFiniteRotation::non_null_ptr_to_const_type> current_finite_rotation;
-	boost::optional<GLTransform::non_null_ptr_type> current_transform;
 
-	const unsigned int num_viewports_along_stencil_texture_side =
-			d_polygon_stencil_texel_dimension / d_tile_texel_dimension;
+	const unsigned int num_viewports_along_stencil_texture_width =
+			render_target_width / d_tile_texel_dimension;
 
 	// Render each filled polygon to a separate viewport within the polygon stencil texture.
 	unsigned int viewport_x_offset = 0;
@@ -829,147 +869,73 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_polygo
 		filled_drawables_iter != end_filled_drawables;
 		++filled_drawables_iter)
 	{
-		const filled_polygon_type &filled_drawable = **filled_drawables_iter;
+		const filled_polygon_type &filled_drawable = *filled_drawables_iter;
 
 		// The viewport subsection of the render target for the current filled polygon.
-		const GLViewport viewport(
+		renderer.gl_viewport(
 				viewport_x_offset * d_tile_texel_dimension,
 				viewport_y_offset * d_tile_texel_dimension,
 				d_tile_texel_dimension,
 				d_tile_texel_dimension);
 
-		// Push the viewport state set.
-		renderer.push_state_set(GLViewportState::create(viewport));
-
-		// Get the current filled polygon's finite rotation transform.
-		const boost::optional<GPlatesAppLogic::ReconstructMethodFiniteRotation::non_null_ptr_to_const_type> &
-				finite_rotation = filled_drawable.get_transform();
-
-		// If the current filled polygon has a finite rotation and it's different to the last one...
-		if (finite_rotation)
+		// If the finite rotation has changed then set update it in the renderer...
+		if (filled_drawable.d_transform != current_finite_rotation)
 		{
-			if (finite_rotation.get() != current_finite_rotation)
+			renderer.gl_load_matrix(GL_MODELVIEW, view_matrix);
+
+			if (filled_drawable.d_transform)
 			{
 				// Convert the finite rotation from a unit quaternion to a matrix so we can feed it to OpenGL.
-				const GPlatesMaths::UnitQuaternion3D &quat_rotation = finite_rotation.get()->get_finite_rotation().unit_quat();
-				current_transform = GLTransform::create(GL_MODELVIEW, quat_rotation);
+				const GPlatesMaths::UnitQuaternion3D &quat_rotation =
+						filled_drawable.d_transform.get()->get_finite_rotation().unit_quat();
+
+				// Multiply in the model transform.
+				renderer.gl_mult_matrix(GL_MODELVIEW, GLMatrix(quat_rotation));
 			}
-		}
-		else
-		{
-			current_transform = boost::none;
+
+			current_finite_rotation = filled_drawable.d_transform;
 		}
 
-		// Transform filled polygon if necessary.
-		if (current_transform)
-		{
-			renderer.push_transform(*current_transform.get());
-		}
+		//PROFILE_BLOCK("d_polygons_vertex_array->gl_draw_range_elements");
 
 		// Render the current filled polygon.
-		renderer.add_drawable(filled_drawable.get_drawable().get());
+		d_polygons_vertex_array->gl_draw_range_elements(
+				renderer,
+				GL_TRIANGLES,
+				filled_drawable.d_drawable.start,
+				filled_drawable.d_drawable.end,
+				filled_drawable.d_drawable.count,
+				GLVertexElementTraits<polygon_vertex_element_type>::type,
+				filled_drawable.d_drawable.indices_offset);
+
 		//++g_num_polygons_rendered;
 
-		if (current_transform)
-		{
-			renderer.pop_transform();
-		}
-
-		current_finite_rotation = finite_rotation;
-
-		renderer.pop_state_set(); // Pop the viewport state.
-
 		// Move to the next row of viewport subsections if we have to.
-		if (++viewport_x_offset == num_viewports_along_stencil_texture_side)
+		if (++viewport_x_offset == num_viewports_along_stencil_texture_width)
 		{
 			viewport_x_offset = 0;
 			++viewport_y_offset;
 		}
 	}
 
-	renderer.pop_transform(); // Pop view transform.
-	renderer.pop_transform(); // Pop projection transform.
-
-	renderer.pop_state_set(); // Pop the polygon stencil state.
-
-	renderer.pop_render_target();
-
 	//++g_num_render_target_switches;
 }
 
 
 void
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_from_polygon_stencil_texture(
-		GLRenderer &renderer,
-		const unsigned int num_polygons_in_group)
-{
-	//PROFILE_FUNC();
-
-	// The composite state.
-	GLCompositeStateSet::non_null_ptr_type polygon_stencil_state = GLCompositeStateSet::create();
-
-	// Set the alpha-blend state in case raster is semi-transparent.
-	GPlatesOpenGL::GLBlendState::non_null_ptr_type blend_state =
-			GPlatesOpenGL::GLBlendState::create();
-	blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	polygon_stencil_state->add_state_set(blend_state);
-
-	// Set the alpha-test state to reject pixels where alpha is zero (they make no
-	// change or contribution to the render target) - this is an optimisation.
-	GPlatesOpenGL::GLAlphaTestState::non_null_ptr_type alpha_test_state =
-			GPlatesOpenGL::GLAlphaTestState::create();
-	alpha_test_state->gl_enable(GL_TRUE).gl_alpha_func(GL_GREATER, GLclampf(0));
-	polygon_stencil_state->add_state_set(alpha_test_state);
-
-	GLUtils::set_full_screen_quad_texture_state(
-			*polygon_stencil_state,
-			d_polygon_stencil_texture,
-			0/*texture_unit*/,
-			GL_REPLACE);
-
-	renderer.push_state_set(polygon_stencil_state);
-
-	// Create a vertex element array that shares the same indices as full array.
-	const GLVertexElementArray::shared_ptr_type partial_polygon_stencil_quads_vertex_element_array =
-			GLVertexElementArray::create(
-					d_polygon_stencil_quads_vertex_element_array->get_array_data(),
-					GL_UNSIGNED_SHORT);
-
-	// But we'll limit the number of quads we draw to the number of polygons that were rendered
-	// into the larger polygon stencil texture.
-	const unsigned int num_quad_vertices = 4 * num_polygons_in_group;
-	partial_polygon_stencil_quads_vertex_element_array->gl_draw_range_elements_EXT(
-			GL_QUADS,
-			0/*start*/,
-			num_quad_vertices - 1/*end*/,
-			num_quad_vertices/*count*/,
-			0/*indices_offset*/);
-
-	// Create a drawable for the partial quads and add it to the renderer.
-	//
-	// NOTE: We leave the model-view and projection matrices as identity as that is what we
-	// we need to draw full-screen quads.
-	renderer.add_drawable(
-			GLVertexArrayDrawable::create(
-					d_polygon_stencil_quads_vertex_array,
-					partial_polygon_stencil_quads_vertex_element_array));
-
-	renderer.pop_state_set(); // Pop the polygon stencil state.
-}
-
-
-void
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::get_filled_polygons(
-		filled_polygon_seq_type &transformed_sorted_filled_drawables,
+		filled_polygon_seq_type &transform_sorted_filled_drawables,
 		filled_polygons_spatial_partition_type::element_const_iterator begin_root_filled_polygons,
 		filled_polygons_spatial_partition_type::element_const_iterator end_root_filled_polygons,
 		const filled_polygons_spatial_partition_node_list_type &filled_polygons_intersecting_node_list)
 {
+	//PROFILE_FUNC();
+
 	// Add the reconstructed polygon meshes in the root of the spatial partition.
 	// These are the meshes that were too large to insert in any face of the cube quad tree partition.
 	// Add the reconstructed polygon meshes of the current node.
-	add_filled_polygons(
-			transformed_sorted_filled_drawables,
+	transform_sorted_filled_drawables.insert(
+			transform_sorted_filled_drawables.end(),
 			begin_root_filled_polygons,
 			end_root_filled_polygons);
 
@@ -984,52 +950,32 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::get_filled_polygons(
 				filled_polygons_node_iter->node_reference;
 
 		// Add the reconstructed polygon meshes of the current node.
-		add_filled_polygons(
-				transformed_sorted_filled_drawables,
+		transform_sorted_filled_drawables.insert(
+				transform_sorted_filled_drawables.end(),
 				node_reference.begin(),
 				node_reference.end());
 	}
 
 	// Sort the sequence of filled drawables by transform.
 	std::sort(
-			transformed_sorted_filled_drawables.begin(),
-			transformed_sorted_filled_drawables.end(),
+			transform_sorted_filled_drawables.begin(),
+			transform_sorted_filled_drawables.end(),
 			SortFilledDrawables());
 }
 
 
-void
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::add_filled_polygons(
-		filled_polygon_seq_type &transform_sorted_filled_drawables,
-		filled_polygons_spatial_partition_type::element_const_iterator begin_filled_polygons,
-		filled_polygons_spatial_partition_type::element_const_iterator end_filled_polygons)
-{
-	// Iterate over the reconstructed polygon meshes.
-	filled_polygons_spatial_partition_type::element_const_iterator
-			filled_polygons_iter = begin_filled_polygons;
-	for ( ; filled_polygons_iter != end_filled_polygons; ++filled_polygons_iter)
-	{
-		const filled_polygon_type::non_null_ptr_type &filled_polygon = *filled_polygons_iter;
-		if (filled_polygon->get_drawable())
-		{
-			transform_sorted_filled_drawables.push_back(filled_polygon);
-		}
-	}
-}
-
-
 GPlatesOpenGL::GLTexture::shared_ptr_to_const_type
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::allocate_tile_texture()
+GPlatesOpenGL::GLMultiResolutionFilledPolygons::allocate_tile_texture(
+		GLRenderer &renderer)
 {
 	// Get an unused tile texture from the cache if there is one.
-	boost::optional< boost::shared_ptr<GLTexture> > tile_texture = d_texture_cache->allocate_object();
+	boost::optional<GLTexture::shared_ptr_type> tile_texture = d_texture_cache->allocate_object();
 	if (!tile_texture)
 	{
 		// No unused texture so create a new one...
-		tile_texture = d_texture_cache->allocate_object(
-				GLTexture::create_as_auto_ptr(d_texture_resource_manager));
+		tile_texture = d_texture_cache->allocate_object(GLTexture::create_as_auto_ptr(renderer));
 
-		create_tile_texture(tile_texture.get());
+		create_tile_texture(renderer, tile_texture.get());
 	}
 
 	return tile_texture.get();
@@ -1039,37 +985,30 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 
 void
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_tile_texture(
+		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &texture)
 {
 	PROFILE_FUNC();
-
-	// Bind the texture so its the current texture.
-	// Here we actually make a direct OpenGL call to bind the texture to the currently
-	// active texture unit. It doesn't matter what the current texture unit is because
-	// the only reason we're binding the texture object is so we can set its state =
-	// so that subsequent binds of this texture object, when we render the scene graph,
-	// will set that state to OpenGL.
-	texture->gl_bind_texture(GL_TEXTURE_2D);
 
 	//
 	// No mipmaps needed so we specify no mipmap filtering.
 	// We're not using mipmaps because our cube mapping does not have much distortion
 	// unlike global rectangular lat/lon rasters that squash near the poles.
 	//
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
 	if (GLEW_EXT_texture_edge_clamp)
 	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	}
 	else
 	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	}
 
 	// Specify anisotropic filtering if it's supported since we are not using mipmaps
@@ -1077,13 +1016,13 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_tile_texture(
 	// the angle we are looking at them and anisotropic filtering will help here.
 	if (GLEW_EXT_texture_filter_anisotropic)
 	{
-		const GLfloat anisotropy = GLContext::get_texture_parameters().gl_texture_max_anisotropy_EXT;
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+		const GLfloat anisotropy = GLContext::get_parameters().texture.gl_texture_max_anisotropy;
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
 
 	// Create the texture but don't load any data into it.
 	// Leave it uninitialised because we will be rendering into it to initialise it.
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
+	texture->gl_tex_image_2D(renderer, GL_TEXTURE_2D, 0, GL_RGBA8,
 			d_tile_texel_dimension, d_tile_texel_dimension,
 			0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
@@ -1093,43 +1032,77 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_tile_texture(
 
 
 void
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_polygon_stencil_texture()
+GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_polygon_stencil_texture(
+		GLRenderer &renderer)
 {
-	d_polygon_stencil_texture = GLTexture::create(d_texture_resource_manager);
+	//
+	// The texture dimensions of the single polygon stencil rendering texture.
+	//
+	// This is ideally much larger than the cube quad tree node tile textures to
+	// minimise render target switching.
+	//
+	// We probably don't need too large a texture - just want to fit a reasonable number of
+	// 256x256 tile textures inside it to minimise render target switching.
+	// Each filled polygon gets its own 256x256 section so 4096x4096 is 256 polygons per render target.
+	//
+	unsigned int polygon_stencil_texel_width = 4096;
+	unsigned int polygon_stencil_texel_height = 4096;
 
-	// Bind the texture so its the current texture.
-	// Here we actually make a direct OpenGL call to bind the texture to the currently
-	// active texture unit. It doesn't matter what the current texture unit is because
-	// the only reason we're binding the texture object is so we can set its state =
-	// so that subsequent binds of this texture object, when we render the scene graph,
-	// will set that state to OpenGL.
-	d_polygon_stencil_texture->gl_bind_texture(GL_TEXTURE_2D);
+	// Our polygon stencil texture should be big enough to cover a regular tile.
+	if (polygon_stencil_texel_width < d_tile_texel_dimension)
+	{
+		polygon_stencil_texel_width = d_tile_texel_dimension;
+	}
+	if (polygon_stencil_texel_height < d_tile_texel_dimension)
+	{
+		polygon_stencil_texel_height = d_tile_texel_dimension;
+	}
+	// But it can't be larger than the maximum texture dimension for the current system.
+	if (polygon_stencil_texel_width > GLContext::get_parameters().texture.gl_max_texture_size)
+	{
+		polygon_stencil_texel_width = GLContext::get_parameters().texture.gl_max_texture_size;
+	}
+	if (polygon_stencil_texel_height > GLContext::get_parameters().texture.gl_max_texture_size)
+	{
+		polygon_stencil_texel_height = GLContext::get_parameters().texture.gl_max_texture_size;
+	}
+	// And it can't be larger than the maximum viewport dimensions for the current system.
+	if (polygon_stencil_texel_width > GLContext::get_parameters().viewport.gl_max_viewport_width)
+	{
+		polygon_stencil_texel_width = GLContext::get_parameters().viewport.gl_max_viewport_width;
+	}
+	if (polygon_stencil_texel_height > GLContext::get_parameters().viewport.gl_max_viewport_height)
+	{
+		polygon_stencil_texel_height = GLContext::get_parameters().viewport.gl_max_viewport_height;
+	}
+
+	d_polygon_stencil_texture = GLTexture::create(renderer);
 
 	//
 	// No mipmaps needed so we specify no mipmap filtering.
 	// We're not using mipmaps because we simply render with one-to-one texel-to-pixel
 	// mapping (using a full screen quad in a render target).
 	//
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	d_polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	d_polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
 	if (GLEW_EXT_texture_edge_clamp)
 	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		d_polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		d_polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	}
 	else
 	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		d_polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		d_polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	}
 
 	// Create the texture but don't load any data into it.
 	// Leave it uninitialised because we will be rendering into it to initialise it.
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
-			d_polygon_stencil_texel_dimension, d_polygon_stencil_texel_dimension,
+	d_polygon_stencil_texture->gl_tex_image_2D(renderer, GL_TEXTURE_2D, 0, GL_RGBA8,
+			polygon_stencil_texel_width, polygon_stencil_texel_height,
 			0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
 	// Check there are no OpenGL errors.
@@ -1140,18 +1113,65 @@ ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
 void
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_polygon_stencil_quads_vertex_and_index_arrays()
+GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_polygons_vertex_array(
+		GLRenderer &renderer)
 {
-	const unsigned int num_quads_along_polygon_stencil_dimension =
-			d_polygon_stencil_texel_dimension / d_tile_texel_dimension;
+	d_polygons_vertex_array = GLVertexArray::create(renderer);
 
-	const double scale_uv = 1.0 / num_quads_along_polygon_stencil_dimension;
+	// Set up the vertex element buffer.
+	GLBuffer::shared_ptr_type vertex_element_buffer_data = GLBuffer::create(renderer);
+	d_polygons_vertex_element_buffer = GLVertexElementBuffer::create(renderer, vertex_element_buffer_data);
+	// Attach vertex element buffer to the vertex array.
+	d_polygons_vertex_array->set_vertex_element_buffer(renderer, d_polygons_vertex_element_buffer);
+
+	// Set up the vertex buffer.
+	GLBuffer::shared_ptr_type vertex_buffer_data = GLBuffer::create(renderer);
+	d_polygons_vertex_buffer = GLVertexBuffer::create(renderer, vertex_buffer_data);
+	// Attach vertex buffer to the vertex array.
+	bind_vertex_buffer_to_vertex_array<polygon_vertex_type>(renderer, *d_polygons_vertex_array, d_polygons_vertex_buffer);
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionFilledPolygons::write_filled_polygon_meshes_to_vertex_array(
+		GLRenderer &renderer,
+		const filled_polygons_type &filled_polygons)
+{
+	GLBuffer::shared_ptr_type vertex_element_buffer_data = d_polygons_vertex_element_buffer->get_buffer();
+	vertex_element_buffer_data->gl_buffer_data(
+			renderer,
+			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
+			filled_polygons.d_polygon_vertex_elements,
+			// It's not 'stream' because filled polygons can be accessed more than once per 'render' call...
+			GLBuffer::USAGE_DYNAMIC_DRAW);
+
+	GLBuffer::shared_ptr_type vertex_buffer_data = d_polygons_vertex_buffer->get_buffer();
+	vertex_buffer_data->gl_buffer_data(
+			renderer,
+			GLBuffer::TARGET_ARRAY_BUFFER,
+			filled_polygons.d_polygon_vertices,
+			// It's not 'stream' because filled polygons can be accessed more than once per 'render' call...
+			GLBuffer::USAGE_DYNAMIC_DRAW);
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_polygon_stencil_quads_vertex_array(
+		GLRenderer &renderer)
+{
+	const unsigned int num_quads_along_polygon_stencil_width =
+			d_polygon_stencil_texture->get_width().get() / d_tile_texel_dimension;
+	const unsigned int num_quads_along_polygon_stencil_height =
+			d_polygon_stencil_texture->get_height().get() / d_tile_texel_dimension;
+
+	const double scale_u = 1.0 / num_quads_along_polygon_stencil_width;
+	const double scale_v = 1.0 / num_quads_along_polygon_stencil_height;
 
 	const unsigned int num_quad_vertices =
-			4 * num_quads_along_polygon_stencil_dimension * num_quads_along_polygon_stencil_dimension;
+			4 * num_quads_along_polygon_stencil_width * num_quads_along_polygon_stencil_height;
 
 	// The vertices for the quads.
-	std::vector<GLTexturedVertex> quad_vertices;
+	std::vector<stencil_quad_vertex_type> quad_vertices;
 	quad_vertices.reserve(num_quad_vertices);
 
 	// We're using 'GLushort' vertex indices which are 16-bit - make sure we don't overflow them.
@@ -1159,30 +1179,30 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_polygon_stencil_quads_ver
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			num_quad_vertices <= (1 << 16),
 			GPLATES_ASSERTION_SOURCE);
-	std::vector<GLushort> quad_indices;
+	std::vector<stencil_quad_vertex_element_type> quad_indices;
 	quad_indices.reserve(num_quad_vertices);
 
-	for (unsigned int y = 0; y < num_quads_along_polygon_stencil_dimension; ++y)
+	for (unsigned int y = 0; y < num_quads_along_polygon_stencil_width; ++y)
 	{
-		for (unsigned int x = 0; x < num_quads_along_polygon_stencil_dimension; ++x)
+		for (unsigned int x = 0; x < num_quads_along_polygon_stencil_height; ++x)
 		{
 			// Add four vertices for the current quad.
-			const double u0 = x * scale_uv;
-			const double v0 = y * scale_uv;
-			const double u1 = u0 + scale_uv;
-			const double v1 = v0 + scale_uv;
+			const double u0 = x * scale_u;
+			const double v0 = y * scale_v;
+			const double u1 = u0 + scale_u;
+			const double v1 = v0 + scale_v;
 
-			const GLushort quad_base_vertex_index = quad_vertices.size();
+			const stencil_quad_vertex_element_type quad_base_vertex_index = quad_vertices.size();
 
 			//
 			//  x,  y, z, u, v
 			//
 			// Note that the (x,y,z) positions of each quad are the same since they overlap
 			// when rendering (blending) into a tile's render texture.
-			quad_vertices.push_back(GLTexturedVertex(-1, -1, 0, u0, v0));
-			quad_vertices.push_back(GLTexturedVertex(1, -1, 0, u1, v0));
-			quad_vertices.push_back(GLTexturedVertex(1,  1, 0, u1, v1));
-			quad_vertices.push_back(GLTexturedVertex(-1,  1, 0, u0, v1));
+			quad_vertices.push_back(stencil_quad_vertex_type(-1, -1, 0, u0, v0));
+			quad_vertices.push_back(stencil_quad_vertex_type(1, -1, 0, u1, v0));
+			quad_vertices.push_back(stencil_quad_vertex_type(1,  1, 0, u1, v1));
+			quad_vertices.push_back(stencil_quad_vertex_type(-1,  1, 0, u0, v1));
 
 			quad_indices.push_back(quad_base_vertex_index);
 			quad_indices.push_back(quad_base_vertex_index + 1);
@@ -1193,47 +1213,8 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_polygon_stencil_quads_ver
 
 	// Create a single OpenGL vertex array to contain the vertices of all 256x256 polygon stencil
 	// quads that fit inside the polygon stencil texture.
-	d_polygon_stencil_quads_vertex_array = GLVertexArray::create(
-			quad_vertices,
-			GLArray::USAGE_STATIC,
-			d_vertex_buffer_resource_manager);
-
-	// Create the associated vertex indices array.
-	d_polygon_stencil_quads_vertex_element_array = GLVertexElementArray::create(
-			quad_indices,
-			GLArray::USAGE_STATIC,
-			d_vertex_buffer_resource_manager);
-}
-
-
-void
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::FilledPolygon::initialise_drawable(
-		const std::vector<coloured_vertex_type> &triangles_vertices,
-		const std::vector<GLuint> &triangles_vertex_indices)
-{
-	//PROFILE_FUNC();
-
-	// NOTE: These are plain system memory vertex arrays (we don't pass in the vertex buffer
-	// resource manager) and hence are cheaper to create but not as fast. We want cheap to
-	// create because we throw them away after they are rendered.
-	// TODO: Use streaming vertex buffer objects.
-
-	// Create a vertex array.
-	GPlatesOpenGL::GLVertexArray::shared_ptr_type vertex_array =
-			GPlatesOpenGL::GLVertexArray::create(triangles_vertices);
-
-	// Create a vertex element array.
-	GPlatesOpenGL::GLVertexElementArray::shared_ptr_type vertex_element_array =
-			GPlatesOpenGL::GLVertexElementArray::create(triangles_vertex_indices);
-
-	// Specify what to draw.
-	vertex_element_array->gl_draw_range_elements_EXT(
-			GL_TRIANGLES,
-			0/*start*/,
-			triangles_vertices.size() - 1/*end*/,
-			triangles_vertex_indices.size()/*count*/,
-			0 /*indices_offset*/);
-
-	// Create a drawable using the vertex array and vertex element array.
-	d_drawable = GPlatesOpenGL::GLVertexArrayDrawable::create(vertex_array, vertex_element_array);
+	d_polygon_stencil_quads_vertex_array = GLVertexArray::create(renderer);
+	// Store the vertices/indices in a new vertex buffer and vertex element buffer that is then
+	// bound to the vertex array.
+	set_vertex_array_data(renderer, *d_polygon_stencil_quads_vertex_array, quad_vertices, quad_indices);
 }

@@ -29,6 +29,9 @@
 #define _GPLATES_MATHS_HIGHPRECISION_H_
 
 #include <ostream>
+#include <sstream>
+#include <QDebug>
+#include <QTextStream>
 
 
 namespace GPlatesMaths
@@ -81,6 +84,9 @@ namespace GPlatesMaths
 	}
 
 
+	/**
+	 * Write to standard stream.
+	 */
 	template< typename T >
 	inline
 	std::ostream &
@@ -90,6 +96,44 @@ namespace GPlatesMaths
 	{
 		hp.write_to(os);
 		return os;
+	}
+
+
+	/**
+	 * Write using qDebug(), qWarning(), qCritical() or qFatal().
+	 */
+	template< typename T >
+	inline
+	QDebug
+	operator <<(
+			QDebug dbg,
+			const HighPrecision< T > &hp)
+	{
+		std::ostringstream output_string_stream;
+		output_string_stream << hp;
+
+		dbg.nospace() << QString::fromStdString(output_string_stream.str());
+
+		return dbg.space();
+	}
+
+
+	/**
+	 * Write to a QTextStream.
+	 */
+	template< typename T >
+	inline
+	QTextStream &
+	operator <<(
+			QTextStream &stream,
+			const HighPrecision< T > &hp)
+	{
+		std::ostringstream output_string_stream;
+		output_string_stream << hp;
+
+		stream << QString::fromStdString(output_string_stream.str());
+
+		return stream;
 	}
 }
 

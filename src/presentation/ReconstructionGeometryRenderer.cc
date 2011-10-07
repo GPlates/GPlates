@@ -176,6 +176,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 		const RasterVisualLayerParams &params)
 {
 	d_render_params.raster_colour_palette = params.get_colour_palette();
+	d_render_params.raster_modulate_colour = params.get_modulate_colour();
 }
 
 
@@ -254,6 +255,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::end_render(
 
 	// Now transfer ownership of the rendered geometries spatial partition to
 	// the rendered geometry layer.
+	//
+	// NOTE: It's important to add rendered geometries as a spatial partition because it gives
+	// spatial locality to each geometry which makes some types of rendering faster such as
+	// filled polygons (which are actually rendered as multi-resolution cube rasters).
 	rendered_geometry_layer.add_rendered_geometries(d_rendered_geometries_spatial_partition.get());
 
 	// Release our shared reference to the spatial partition.
@@ -379,7 +384,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesViewOperations::RenderedGeometry rendered_resolved_raster =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
 					rr,
-					d_render_params.raster_colour_palette);
+					d_render_params.raster_colour_palette,
+					d_render_params.raster_modulate_colour);
 
 
 	// Create a RenderedGeometry for storing the ReconstructionGeometry and
@@ -440,8 +446,9 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_small_circle = 
 				GPlatesViewOperations::create_rendered_small_circle(
-						*pole_point,
-						GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_a95),
+						GPlatesMaths::SmallCircle::create_colatitude(
+								pole_point->position_vector(),
+								GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_a95)),
 						GPlatesGui::ColourProxy(rvgp));
 
 		// The circle/ellipse geometries are not (currently) queryable, so we

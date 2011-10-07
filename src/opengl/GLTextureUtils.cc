@@ -38,13 +38,121 @@
 
 #include "GLTextureUtils.h"
 
+#include "GLRenderer.h"
 #include "GLUtils.h"
 
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
+
+#include "utils/Base2Utils.h"
 #include "utils/Profile.h"
 
 
 void
-GPlatesOpenGL::GLTextureUtils::load_colour_into_texture(
+GPlatesOpenGL::GLTextureUtils::initialise_texture_object_1D(
+		GLRenderer &renderer,
+		const GLTexture::shared_ptr_type &texture_object,
+		GLenum target,
+		GLint internalformat,
+		GLsizei width,
+		GLint border,
+		bool mipmapped)
+{
+	// And dimensions should be a power-of-two.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPlatesUtils::Base2::is_power_of_two(width),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Generate level zero and the mip levels if requested.
+	GLint level = 0;
+	do
+	{
+		// Initialise the texture memory but provide no image data.
+		texture_object->gl_tex_image_1D(
+				renderer, target, level, internalformat, width, border,
+				GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+		width >>= 1;
+		++level;
+	}
+	while (mipmapped && width);
+}
+
+
+void
+GPlatesOpenGL::GLTextureUtils::initialise_texture_object_2D(
+		GLRenderer &renderer,
+		const GLTexture::shared_ptr_type &texture_object,
+		GLenum target,
+		GLint internalformat,
+		GLsizei width,
+		GLsizei height,
+		GLint border,
+		bool mipmapped)
+{
+	// And dimensions should be a power-of-two.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPlatesUtils::Base2::is_power_of_two(width) &&
+				GPlatesUtils::Base2::is_power_of_two(height),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Generate level zero and the mip levels if requested.
+	GLint level = 0;
+	do
+	{
+		// Initialise the texture memory but provide no image data.
+		texture_object->gl_tex_image_2D(
+				renderer, target, level, internalformat, width, height, border,
+				GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+		width >>= 1;
+		height >>= 1;
+		++level;
+	}
+	while (mipmapped && width && height);
+}
+
+
+void
+GPlatesOpenGL::GLTextureUtils::initialise_texture_object_3D(
+		GLRenderer &renderer,
+		const GLTexture::shared_ptr_type &texture_object,
+		GLenum target,
+		GLint internalformat,
+		GLsizei width,
+		GLsizei height,
+		GLsizei depth,
+		GLint border,
+		bool mipmapped)
+{
+	// And dimensions should be a power-of-two.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPlatesUtils::Base2::is_power_of_two(width) &&
+				GPlatesUtils::Base2::is_power_of_two(height) &&
+				GPlatesUtils::Base2::is_power_of_two(depth),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Generate level zero and the mip levels if requested.
+	GLint level = 0;
+	do
+	{
+		// Initialise the texture memory but provide no image data.
+		texture_object->gl_tex_image_3D(
+				renderer, target, level, internalformat, width, height, depth, border,
+				GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+		width >>= 1;
+		height >>= 1;
+		depth >>= 1;
+		++level;
+	}
+	while (mipmapped && width && height && depth);
+}
+
+
+void
+GPlatesOpenGL::GLTextureUtils::load_colour_into_texture_2D(
+		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &texture,
 		const GPlatesGui::rgba8_t &colour,
 		unsigned int texel_width,
@@ -64,7 +172,8 @@ GPlatesOpenGL::GLTextureUtils::load_colour_into_texture(
 	}
 
 	// Load image into texture...
-	load_rgba8_image_into_texture(
+	load_rgba8_image_into_texture_2D(
+			renderer,
 			texture,
 			image_data_storage.get(),
 			texel_width, texel_height,
@@ -73,7 +182,8 @@ GPlatesOpenGL::GLTextureUtils::load_colour_into_texture(
 
 
 void
-GPlatesOpenGL::GLTextureUtils::load_rgba8_image_into_texture(
+GPlatesOpenGL::GLTextureUtils::load_rgba8_image_into_texture_2D(
+		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &texture,
 		const void *image,
 		unsigned int image_width,
@@ -88,17 +198,9 @@ GPlatesOpenGL::GLTextureUtils::load_rgba8_image_into_texture(
 	// from CPU memory so its really a client side state (rather than a graphics card state).
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-	// Bind the texture so its the current texture.
-	// Here we actually make a direct OpenGL call to bind the texture to the currently
-	// active texture unit. It doesn't matter what the current texture unit is because
-	// the only reason we're binding the texture object is so we can set its state =
-	// so that subsequent binds of this texture object, when we render the scene graph,
-	// will set that state to OpenGL.
-	texture->gl_bind_texture(GL_TEXTURE_2D);
-
 	// The client has ensured that the texture has been created in OpenGL (eg, by using
 	// glTexImage2D) so we can use the faster glTexSubImage2D that doesn't recreate the texture.
-	glTexSubImage2D(GL_TEXTURE_2D, 0,
+	texture->gl_tex_sub_image_2D(renderer, GL_TEXTURE_2D, 0,
 			texel_u_offset, texel_v_offset, image_width, image_height,
 			GL_RGBA, GL_UNSIGNED_BYTE, image);
 
@@ -110,7 +212,8 @@ GPlatesOpenGL::GLTextureUtils::load_rgba8_image_into_texture(
 
 
 void
-GPlatesOpenGL::GLTextureUtils::load_rgba8_image_into_texture(
+GPlatesOpenGL::GLTextureUtils::load_rgba8_image_into_texture_2D(
+		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &texture,
 		const GPlatesGui::rgba8_t *image,
 		unsigned int image_width,
@@ -118,7 +221,8 @@ GPlatesOpenGL::GLTextureUtils::load_rgba8_image_into_texture(
 		unsigned int texel_u_offset,
 		unsigned int texel_v_offset)
 {
-	load_rgba8_image_into_texture(
+	load_rgba8_image_into_texture_2D(
+			renderer,
 			texture,
 			static_cast<const void *>(image),
 			image_width, image_height,
@@ -127,7 +231,8 @@ GPlatesOpenGL::GLTextureUtils::load_rgba8_image_into_texture(
 
 
 void
-GPlatesOpenGL::GLTextureUtils::load_argb32_qimage_into_texture(
+GPlatesOpenGL::GLTextureUtils::load_argb32_qimage_into_texture_2D(
+		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &texture,
 		const QImage &argb32_qimage,
 		unsigned int texel_u_offset,
@@ -151,7 +256,8 @@ GPlatesOpenGL::GLTextureUtils::load_argb32_qimage_into_texture(
 				argb32_image_width);
 	}
 
-	load_rgba8_image_into_texture(
+	load_rgba8_image_into_texture_2D(
+			renderer,
 			texture,
 			texture_data_storage.get(),
 			argb32_image_width,
@@ -199,27 +305,19 @@ GPlatesOpenGL::GLTextureUtils::draw_text_into_qimage(
 
 
 GPlatesOpenGL::GLTexture::shared_ptr_type
-GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture(
-		const GLTextureResourceManager::shared_ptr_type &texture_resource_manager)
+GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture_2D(
+		GLRenderer &renderer)
 {
-	GLTexture::shared_ptr_type xy_clip_texture = GLTexture::create(texture_resource_manager);
-
-	// Bind the texture so its the current texture.
-	// Here we actually make a direct OpenGL call to bind the texture to the currently
-	// active texture unit. It doesn't matter what the current texture unit is because
-	// the only reason we're binding the texture object is so we can set its state =
-	// so that subsequent binds of this texture object, when we render the scene graph,
-	// will set that state to OpenGL.
-	xy_clip_texture->gl_bind_texture(GL_TEXTURE_2D);
+	GLTexture::shared_ptr_type xy_clip_texture = GLTexture::create(renderer);
 
 	//
 	// We *must* use nearest neighbour filtering otherwise the clip texture won't work.
 	// We are relying on the hard transition from white to black to clip for us.
 	//
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	xy_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	xy_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	xy_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	xy_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
 	//
 	// The clip texture is a 4x4 image where the centre 2x2 texels are 1.0
@@ -237,7 +335,7 @@ GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture(
 	};
 
 	// Create the texture and load the data into it.
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
+	xy_clip_texture->gl_tex_image_2D(renderer, GL_TEXTURE_2D, 0, GL_RGBA8, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
 
 	// Check there are no OpenGL errors.
 	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
@@ -247,27 +345,19 @@ GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture(
 
 
 GPlatesOpenGL::GLTexture::shared_ptr_type
-GPlatesOpenGL::GLTextureUtils::create_z_clip_texture(
-		const GLTextureResourceManager::shared_ptr_type &texture_resource_manager)
+GPlatesOpenGL::GLTextureUtils::create_z_clip_texture_2D(
+		GLRenderer &renderer)
 {
-	GLTexture::shared_ptr_type z_clip_texture = GLTexture::create(texture_resource_manager);
-
-	// Bind the texture so its the current texture.
-	// Here we actually make a direct OpenGL call to bind the texture to the currently
-	// active texture unit. It doesn't matter what the current texture unit is because
-	// the only reason we're binding the texture object is so we can set its state =
-	// so that subsequent binds of this texture object, when we render the scene graph,
-	// will set that state to OpenGL.
-	z_clip_texture->gl_bind_texture(GL_TEXTURE_2D);
+	GLTexture::shared_ptr_type z_clip_texture = GLTexture::create(renderer);
 
 	//
 	// We *must* use nearest neighbour filtering otherwise the clip texture won't work.
 	// We are relying on the hard transition from white to black to clip for us.
 	//
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	z_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	z_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	z_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	z_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
 	//
 	// The clip texture is a 2x1 image where the one texel is white and the other black.
@@ -278,7 +368,7 @@ GPlatesOpenGL::GLTextureUtils::create_z_clip_texture(
 	const GPlatesGui::rgba8_t mask_image[2] = { mask_zero, mask_one };
 
 	// Create the texture and load the data into it.
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
+	z_clip_texture->gl_tex_image_2D(renderer, GL_TEXTURE_2D, 0, GL_RGBA8, 2, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
 
 	// Check there are no OpenGL errors.
 	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);

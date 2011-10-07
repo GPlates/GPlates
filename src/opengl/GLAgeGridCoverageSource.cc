@@ -43,6 +43,7 @@
 #include "property-values/ProxiedRasterResolver.h"
 #include "property-values/RawRasterUtils.h"
 
+#include "utils/Base2Utils.h"
 #include "utils/Profile.h"
 
 
@@ -72,16 +73,14 @@ GPlatesOpenGL::GLAgeGridCoverageSource::create(
 	const unsigned int raster_height = raster_dimensions->second;
 
 	// Make sure our tile size does not exceed the maximum texture size...
-	if (boost::numeric_cast<GLint>(tile_texel_dimension) >
-		GLContext::get_texture_parameters().gl_max_texture_size)
+	if (tile_texel_dimension > GLContext::get_parameters().texture.gl_max_texture_size)
 	{
-		tile_texel_dimension = GLContext::get_texture_parameters().gl_max_texture_size;
+		tile_texel_dimension = GLContext::get_parameters().texture.gl_max_texture_size;
 	}
 
 	// Make sure tile_texel_dimension is a power-of-two.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			tile_texel_dimension > 0 &&
-					(tile_texel_dimension & (tile_texel_dimension - 1)) == 0,
+			tile_texel_dimension > 0 && GPlatesUtils::Base2::is_power_of_two(tile_texel_dimension),
 			GPLATES_ASSERTION_SOURCE);
 
 	return non_null_ptr_type(new GLAgeGridCoverageSource(
@@ -114,7 +113,7 @@ GPlatesOpenGL::GLAgeGridCoverageSource::GLAgeGridCoverageSource(
 }
 
 
-void
+GPlatesOpenGL::GLAgeGridCoverageSource::cache_handle_type
 GPlatesOpenGL::GLAgeGridCoverageSource::load_tile(
 		unsigned int level,
 		unsigned int texel_x_offset,
@@ -122,8 +121,7 @@ GPlatesOpenGL::GLAgeGridCoverageSource::load_tile(
 		unsigned int texel_width,
 		unsigned int texel_height,
 		const GLTexture::shared_ptr_type &target_texture,
-		GLRenderer &renderer,
-		GLRenderer::RenderTargetUsageType render_target_usage)
+		GLRenderer &renderer)
 {
 	PROFILE_BEGIN(proxy_raster, "GLAgeGridCoverageSource: get_coverage_from_level");
 	// Get the region of the raster covered by this tile at the level-of-detail of this tile.
@@ -155,9 +153,10 @@ GPlatesOpenGL::GLAgeGridCoverageSource::load_tile(
 
 		// Create a black raster to load into the texture.
 		const GPlatesGui::rgba8_t black(0, 0, 0, 0);
-		GLTextureUtils::load_colour_into_texture(target_texture, black, texel_width, texel_height);
+		GLTextureUtils::load_colour_into_texture_2D(renderer, target_texture, black, texel_width, texel_height);
 
-		return;
+		// Nothing needs caching.
+		return cache_handle_type();
 	}
 
 	//
@@ -190,9 +189,13 @@ GPlatesOpenGL::GLAgeGridCoverageSource::load_tile(
 	}
 
 	// Load the coverage data into the target texture.
-	GLTextureUtils::load_rgba8_image_into_texture(
+	GLTextureUtils::load_rgba8_image_into_texture_2D(
+			renderer,
 			target_texture,
 			coverage_tile_working_space,
 			texel_width,
 			texel_height);
+
+	// Nothing needs caching.
+	return cache_handle_type();
 }

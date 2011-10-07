@@ -27,7 +27,8 @@
 #ifndef GPLATES_OPENGL_GLMULTIRESOLUTIONRASTERSOURCE_H
 #define GPLATES_OPENGL_GLMULTIRESOLUTIONRASTERSOURCE_H
 
-#include "GLRenderer.h"
+#include <boost/shared_ptr.hpp>
+
 #include "GLTexture.h"
 #include "GLTextureUtils.h"
 
@@ -38,6 +39,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GLRenderer;
+
 	/**
 	 * Interface for an arbitrary dimension source of RGBA data that's used as input
 	 * to a @a GLMultiResolutionRaster.
@@ -51,6 +54,11 @@ namespace GPlatesOpenGL
 
 		//! A convenience typedef for a shared pointer to a const @a GLMultiResolutionRasterSource.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GLMultiResolutionRasterSource> non_null_ptr_to_const_type;
+
+		/**
+		 * Typedef for an opaque tile cache handle.
+		 */
+		typedef boost::shared_ptr<void> cache_handle_type;
 
 
 		/**
@@ -105,8 +113,8 @@ namespace GPlatesOpenGL
 		 * and level.
 		 *
 		 * The caller must ensure that @a target_texture has been created in OpenGL -
-		 * in other words, not only allocated by also created using glTexImage2D
-		 * (you can pass NULL to glTexImage2D to create without loading image data).
+		 * in other words, not only allocated by also created using gl_tex_image_2D
+		 * (you can pass NULL to gl_tex_image_2D to create without loading image data).
 		 *
 		 * @a renderer is provided in case the data needs to be rendered into the texture.
 		 * @a render_target_usage dictates the render target usage if @a target_texture
@@ -150,7 +158,7 @@ namespace GPlatesOpenGL
 		 * Level 3: 0.625 * 0.625
 		 */
 		virtual
-		void
+		cache_handle_type
 		load_tile(
 				unsigned int level,
 				unsigned int texel_x_offset,
@@ -158,8 +166,7 @@ namespace GPlatesOpenGL
 				unsigned int texel_width,
 				unsigned int texel_height,
 				const GLTexture::shared_ptr_type &target_texture,
-				GLRenderer &renderer,
-				GLRenderer::RenderTargetUsageType render_target_usage) = 0;
+				GLRenderer &renderer) = 0;
 
 	protected:
 		GLMultiResolutionRasterSource()

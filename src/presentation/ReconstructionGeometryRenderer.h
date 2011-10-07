@@ -95,8 +95,18 @@ namespace GPlatesPresentation
 			bool fill_polygons;
 			float velocity_ratio_unit_vector_direction_to_globe_radius;
 
+			//
 			// Raster-specific parameters.
+			//
+			//! Raster colour palette.
 			GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette;
+
+			/**
+			 * Raster modulate colour (eg, to control raster opacity/intensity).
+			 *
+			 * TODO: This could be used for general layer transparency.
+			 */
+			GPlatesGui::Colour raster_modulate_colour;
 
 			// VGP-specific parameters.
 			bool vgp_draw_circular_error;

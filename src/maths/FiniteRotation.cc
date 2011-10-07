@@ -502,7 +502,7 @@ GPlatesMaths::operator*(
 		const SmallCircle &s)
 {
 	UnitVector3D axis = r * s.axis_vector();
-	return SmallCircle(axis, s.cos_colatitude());
+	return SmallCircle::create_cosine_colatitude(axis, s.cos_colatitude());
 }
 
 

@@ -28,6 +28,8 @@
 
 #include <opengl/OpenGL.h>
 
+#include "GLVertexBuffer.h"
+
 #include "maths/UnitVector3D.h"
 
 #include "gui/Colour.h"
@@ -35,6 +37,44 @@
 
 namespace GPlatesOpenGL
 {
+	class GLRenderer;
+	class GLVertexArray;
+
+	/**
+	 * Specifies the source of vertex attribute data (vertices) as a vertex buffer and binds
+	 * the attribute data contained within to the vertex array (the internal @a GLVertexArray).
+	 *
+	 * NOTE: It's possible to set multiple vertex buffers if the vertex attribute data is spread
+	 * across multiple vertex streams - in this case 'VertexType' represents the subset of vertex
+	 * attribute data for the specified vertex buffer (stream).
+	 *
+	 * The template parameter 'VertexType' is used to bind the vertex data in the vertex buffer
+	 * as individual vertex attribute arrays.
+	 *
+	 * @a offset is the byte offset from the beginning of the vertex buffer to start retrieving vertices.
+	 * NOTE: The byte offset must satisfy the alignment requirements of the vertex type 'VertexType'.
+	 *
+	 * Note that this method is only necessary if the @a GLVertexArray passed into @a create
+	 * has no vertex buffer(s) bound.
+	 *
+	 * Note that @a vertex_buffer can be initialised with data before *or* after this call.
+	 *
+	 * @a offset is the byte offset in the vertex buffer at which vertices will be read from in draw calls.
+	 * NOTE: The byte offset must satisfy the alignment requirements of the vertex type 'VertexType'.
+	 *
+	 * In order for this function to work with a specific type of vertex it must be specialised for that vertex type.
+	 *
+	 * This unspecialised function is intentionally not defined anywhere.
+	 */
+	template <typename VertexType>
+	void
+	bind_vertex_buffer_to_vertex_array(
+			GLRenderer &renderer,
+			GLVertexArray &vertex_array,
+			const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+			GLint offset = 0);
+
+
 	/**
 	 * A vertex with 3D position.
 	 */
@@ -64,6 +104,17 @@ namespace GPlatesOpenGL
 
 		GLfloat x, y, z;
 	};
+
+	/**
+	 * Binds a @a GLVertexBuffer, containing vertices of type @a GLVertex, to a @a GLVertexArray.
+	 */
+	template <>
+	void
+	bind_vertex_buffer_to_vertex_array<GLVertex>(
+			GLRenderer &renderer,
+			GLVertexArray &vertex_array,
+			const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+			GLint offset);
 
 
 	/**
@@ -99,6 +150,17 @@ namespace GPlatesOpenGL
 		GLfloat x, y, z;
 		GPlatesGui::rgba8_t colour;
 	};
+
+	/**
+	 * Binds a @a GLVertexBuffer, containing vertices of type @a GLColouredVertex, to a @a GLVertexArray.
+	 */
+	template <>
+	void
+	bind_vertex_buffer_to_vertex_array<GLColouredVertex>(
+			GLRenderer &renderer,
+			GLVertexArray &vertex_array,
+			const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+			GLint offset);
 
 
 	/**
@@ -138,6 +200,17 @@ namespace GPlatesOpenGL
 		GLfloat x, y, z;
 		GLfloat u, v;
 	};
+
+	/**
+	 * Binds a @a GLVertexBuffer, containing vertices of type @a GLTexturedVertex, to a @a GLVertexArray.
+	 */
+	template <>
+	void
+	bind_vertex_buffer_to_vertex_array<GLTexturedVertex>(
+			GLRenderer &renderer,
+			GLVertexArray &vertex_array,
+			const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+			GLint offset);
 
 
 	/**
@@ -183,46 +256,16 @@ namespace GPlatesOpenGL
 		GPlatesGui::rgba8_t colour;
 	};
 
-
-	class GLVertexArray;
-
 	/**
-	 * Configures a @a GLVertexArray based on the type of vertices it stores.
-	 *
-	 * In order for this function to work with a specific type of vertex it must be
-	 * specialised for that vertex type.
-	 *
-	 * Unspecialised function intentionally not defined anywhere.
+	 * Binds a @a GLVertexBuffer, containing vertices of type @a GLColouredTexturedVertex, to a @a GLVertexArray.
 	 */
-	template <typename VertexType>
-	void
-	configure_vertex_array(
-			GLVertexArray &vertex_array);
-
-
-	//! Specialisation for @a GLVertex.
 	template <>
 	void
-	configure_vertex_array<GLVertex>(
-			GLVertexArray &vertex_array);
-
-	//! Specialisation for @a GLColouredVertex.
-	template <>
-	void
-	configure_vertex_array<GLColouredVertex>(
-			GLVertexArray &vertex_array);
-
-	//! Specialisation for @a GLTexturedVertex.
-	template <>
-	void
-	configure_vertex_array<GLTexturedVertex>(
-			GLVertexArray &vertex_array);
-
-	//! Specialisation for @a GLTexturedVertex.
-	template <>
-	void
-	configure_vertex_array<GLColouredTexturedVertex>(
-			GLVertexArray &vertex_array);
+	bind_vertex_buffer_to_vertex_array<GLColouredTexturedVertex>(
+			GLRenderer &renderer,
+			GLVertexArray &vertex_array,
+			const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+			GLint offset);
 }
 
 

@@ -396,19 +396,22 @@ namespace
 				rendered_string.get_point_on_sphere(),
 				projection);
 		
+		// TODO: This is temporary until the GLRenderer framework is used for map rendering.
+		GLint viewport[4];
+		glGetIntegerv(GL_VIEWPORT, viewport);
+		const int viewport_height = viewport[3];
+
 		// render drop shadow
 		boost::optional<GPlatesGui::Colour> shadow_colour = rendered_string.get_shadow_colour().get_colour(
 				colour_scheme);
 		if (shadow_colour)
 		{
 			text_renderer.render_text(
-					point.x(),
-					point.y(),
-					0.0,
+					point.x() + rendered_string.get_x_offset() + 1/*right 1px*/,
+					// Note that OpenGL and Qt y-axes appear to be the reverse of each other...
+					viewport_height - (point.y() + rendered_string.get_y_offset()) + 1/*down 1px*/,
 					rendered_string.get_string(),
 					*shadow_colour,
-					rendered_string.get_x_offset() + 1, // right 1px
-					rendered_string.get_y_offset() - 1, // down 1px
 					rendered_string.get_font(),
 					scale);
 		}
@@ -418,13 +421,11 @@ namespace
 		if (colour)
 		{
 			text_renderer.render_text(
-					point.x(),
-					point.y(),
-					0.0,
+					point.x() + rendered_string.get_x_offset(),
+					// Note that OpenGL and Qt y-axes appear to be the reverse of each other...
+					viewport_height - (point.y() + rendered_string.get_y_offset()),
 					rendered_string.get_string(),
 					*colour,
-					rendered_string.get_x_offset(),
-					rendered_string.get_y_offset(),
 					rendered_string.get_font(),
 					scale);
 		}
@@ -846,23 +847,18 @@ namespace
 		GreatCircle great_circle = projection.boundary_great_circle();
 		LatLonPoint central_llp = projection.central_llp();
 		PointOnSphere central_pos = make_point_on_sphere(central_llp);	
-		
-		PointOnSphere centre = rendered_small_circle.get_centre();		
 
-		UnitVector3D axis = generate_perpendicular(centre.position_vector());
-		// Get a point on the small circle by rotating the centre point by the radius angle.
-		Rotation rot_from_centre = Rotation::create(axis, rendered_small_circle.get_radius_in_radians());
-		 					
-		PointOnSphere start_point = rot_from_centre*centre;
-			
-		Rotation rot = Rotation::create(centre.position_vector(),ANGLE_INCREMENT);
-		
-		for (unsigned int i = 0; i < NUM_SEGMENTS ; ++i)
+		std::vector<PointOnSphere> points;
+		tessellate(points, rendered_small_circle.get_small_circle(), ANGLE_INCREMENT);
+
+		for (unsigned int i = 0; i < points.size() - 1; ++i)
 		{
-			PointOnSphere end_point = rot*start_point;
+			const PointOnSphere &start_point = points[i];
+			const PointOnSphere &end_point = points[i + 1];
 			draw_segment(start_point,end_point,projection,great_circle,central_pos);
-			start_point = end_point;
 		}
+		// Close the small circle's loop.
+		draw_segment(points.back(), points.front(), projection, great_circle, central_pos);
 	}	
 	
 	void
@@ -873,22 +869,16 @@ namespace
 		GreatCircle great_circle = projection.boundary_great_circle();
 		LatLonPoint central_llp = projection.central_llp();
 		PointOnSphere central_pos = make_point_on_sphere(central_llp);	
-		
-		PointOnSphere centre = rendered_small_circle_arc.get_centre();
-		PointOnSphere start_point = rendered_small_circle_arc.get_start_point();
-		const double arc_length = rendered_small_circle_arc.get_arc_length_in_radians().dval();
 
-		const double delta_angle = arc_length/NUM_SEGMENTS;
+		std::vector<PointOnSphere> points;
+		tessellate(points, rendered_small_circle_arc.get_small_circle_arc(), ANGLE_INCREMENT);
 
-		Rotation rot = Rotation::create(centre.position_vector(),delta_angle);
-
-		for (double angle = 0; angle < arc_length ; angle += delta_angle)
+		for (unsigned int i = 0; i < points.size() - 1; ++i)
 		{
-			PointOnSphere end_point = rot*start_point;
+			const PointOnSphere &start_point = points[i];
+			const PointOnSphere &end_point = points[i + 1];
 			draw_segment(start_point,end_point,projection,great_circle,central_pos);
-			start_point = end_point;
-		}		
-		
+		}
 	}
 	
 	void

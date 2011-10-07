@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <utility>
 #include <boost/cast.hpp>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
@@ -35,18 +36,10 @@
 
 #include "GLAgeGridMaskSource.h"
 
-#include "GLBindTextureState.h"
-#include "GLBlendState.h"
 #include "GLContext.h"
-#include "GLFragmentTestStates.h"
 #include "GLRenderer.h"
-#include "GLRenderTargetType.h"
-#include "GLTextureEnvironmentState.h"
 #include "GLTextureUtils.h"
 #include "GLUtils.h"
-#include "GLVertexArrayDrawable.h"
-#include "GLViewport.h"
-#include "GLViewportState.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -54,14 +47,15 @@
 #include "property-values/ProxiedRasterResolver.h"
 #include "property-values/RawRasterUtils.h"
 
+#include "utils/Base2Utils.h"
 #include "utils/Profile.h"
 
 
 boost::optional<GPlatesOpenGL::GLAgeGridMaskSource::non_null_ptr_type>
 GPlatesOpenGL::GLAgeGridMaskSource::create(
+		GLRenderer &renderer,
 		const double &reconstruction_time,
 		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &age_grid_raster,
-		const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
 		unsigned int tile_texel_dimension)
 {
 	boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxy_resolver_opt =
@@ -109,31 +103,31 @@ GPlatesOpenGL::GLAgeGridMaskSource::create(
 	}
 
 	// Make sure our tile size does not exceed the maximum texture size...
-	if (boost::numeric_cast<GLint>(tile_texel_dimension) >
-		GLContext::get_texture_parameters().gl_max_texture_size)
+	if (tile_texel_dimension > GLContext::get_parameters().texture.gl_max_texture_size)
 	{
-		tile_texel_dimension = GLContext::get_texture_parameters().gl_max_texture_size;
+		tile_texel_dimension = GLContext::get_parameters().texture.gl_max_texture_size;
 	}
 
 	// Make sure tile_texel_dimension is a power-of-two.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			tile_texel_dimension > 0 &&
-					(tile_texel_dimension & (tile_texel_dimension - 1)) == 0,
+			tile_texel_dimension > 0 && GPlatesUtils::Base2::is_power_of_two(tile_texel_dimension),
 			GPLATES_ASSERTION_SOURCE);
 
-	return non_null_ptr_type(new GLAgeGridMaskSource(
-			reconstruction_time,
-			proxy_resolver_opt.get(),
-			raster_width,
-			raster_height,
-			tile_texel_dimension,
-			min_age_in_raster,
-			max_age_in_raster,
-			texture_resource_manager));
+	return non_null_ptr_type(
+			new GLAgeGridMaskSource(
+					renderer,
+					reconstruction_time,
+					proxy_resolver_opt.get(),
+					raster_width,
+					raster_height,
+					tile_texel_dimension,
+					min_age_in_raster,
+					max_age_in_raster));
 }
 
 
 GPlatesOpenGL::GLAgeGridMaskSource::GLAgeGridMaskSource(
+		GLRenderer &renderer,
 		const double &reconstruction_time,
 		const GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type &
 				proxy_raster_resolver,
@@ -141,33 +135,21 @@ GPlatesOpenGL::GLAgeGridMaskSource::GLAgeGridMaskSource(
 		unsigned int raster_height,
 		unsigned int tile_texel_dimension,
 		double min_age_in_raster,
-		double max_age_in_raster,
-		const GLTextureResourceManager::shared_ptr_type &texture_resource_manager) :
+		double max_age_in_raster) :
 	d_current_reconstruction_time(reconstruction_time),
 	d_proxied_raster_resolver(proxy_raster_resolver),
 	d_raster_width(raster_width),
 	d_raster_height(raster_height),
 	d_tile_texel_dimension(tile_texel_dimension),
-	d_texture_resource_manager(texture_resource_manager),
-	// For the actual age grid values themselves we'll use a bigger cache since these
-	// values don't change as the reconstruction time changes (unlike the age grid mask).
-	d_age_grid_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create(200)),
-	// These textures don't really need a cache as we don't reuse their contents but it's
-	// easy to manage them with a cache.
-	d_intermediate_render_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create()),
-	d_clear_buffers_state(GLClearBuffersState::create()),
-	d_clear_buffers(GLClearBuffers::create()),
-	d_mask_alpha_channel_state(GLMaskBuffersState::create()),
-	// Create a state set for the viewport - we'll a viewport that matches the tile texture size
-	// even though some tiles (around boundary of age grid raster) will use the full tile.
-	// The extra texels will be garbage and what we calculate with them will be garbage but those
-	// texels won't be accessed when rendering *using* the age grid tile so it's ok.
-	d_viewport(0, 0, tile_texel_dimension, tile_texel_dimension),
-	d_viewport_state(GLViewportState::create(d_viewport)),
-	d_full_screen_quad_drawable(GLUtils::create_full_screen_2D_textured_quad()),
-	d_first_render_pass_state(GLCompositeStateSet::create()),
-	d_second_render_pass_state(GLCompositeStateSet::create()),
-	d_third_render_pass_state(GLCompositeStateSet::create()),
+	// Start with smallest size cache and just let the cache grow in size as needed...
+	d_age_grid_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create()),
+	// These textures get reused even inside a single rendering frame so we just need a small number
+	// to give the graphics card some breathing room (in terms of render-texture dependencies)...
+	d_intermediate_render_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create(2)),
+	d_full_screen_quad_drawable(renderer.get_context().get_shared_state()->get_full_screen_2D_textured_quad(renderer)),
+	d_first_render_pass_state(renderer.create_empty_compiled_draw_state()),
+	d_second_render_pass_state(renderer.create_empty_compiled_draw_state()),
+	d_third_render_pass_state(renderer.create_empty_compiled_draw_state()),
 	d_raster_min_age(min_age_in_raster),
 	d_raster_max_age(max_age_in_raster),
 	// Factor to convert floating-point age range to 16-bit integer...
@@ -191,43 +173,54 @@ GPlatesOpenGL::GLAgeGridMaskSource::GLAgeGridMaskSource(
 		low_byte_tile_working_space[n] = white;
 	}
 
-	// Setup for clearing the render target colour buffer.
-	// Clear colour to all ones and alpha channel to zero.
-	d_clear_buffers_state->gl_clear_color(1, 1, 1, 0);
-	// Clear only the colour buffer.
-	d_clear_buffers->gl_clear(GL_COLOR_BUFFER_BIT);
-	// Mask out writing to the colour channels when rendering the age grid mask.
-	d_mask_alpha_channel_state->gl_color_mask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
-
 	//
 	// Setup rendering state for the three age grid mask render passes.
 	//
 
-	// Enable texturing and set the texture function.
-	// It's the same for all three passes.
-	GPlatesOpenGL::GLTextureEnvironmentState::non_null_ptr_type tex_env_state =
-			GPlatesOpenGL::GLTextureEnvironmentState::create();
-	tex_env_state->gl_enable_texture_2D(GL_TRUE);
-	tex_env_state->gl_tex_env_mode(GL_REPLACE);
+	{
+		GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer, d_first_render_pass_state);
 
-	d_first_render_pass_state->add_state_set(tex_env_state);
-	d_second_render_pass_state->add_state_set(tex_env_state);
-	d_third_render_pass_state->add_state_set(tex_env_state);
+		renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+		renderer.gl_enable(GL_BLEND);
+		renderer.gl_blend_func(GL_ONE, GL_ZERO);
+		renderer.gl_enable(GL_ALPHA_TEST);
 
-	// First pass alpha-blend state.
-	GLBlendState::non_null_ptr_type first_pass_blend_state = GLBlendState::create();
-	first_pass_blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_ONE, GL_ZERO);
-	d_first_render_pass_state->add_state_set(first_pass_blend_state);
+		// Draw a full-screen quad.
+		// NOTE: We leave the model-view and projection matrices as identity as that is what we
+		// we need to draw a full-screen quad.
+		renderer.apply_compiled_draw_state(*d_full_screen_quad_drawable);
+	}
 
-	// Second pass alpha-blend state.
-	GLBlendState::non_null_ptr_type second_pass_blend_state = GLBlendState::create();
-	second_pass_blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_ZERO, GL_ZERO);
-	d_second_render_pass_state->add_state_set(second_pass_blend_state);
+	{
+		GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer, d_second_render_pass_state);
 
-	// Third pass alpha-blend state.
-	GLBlendState::non_null_ptr_type third_pass_blend_state = GLBlendState::create();
-	third_pass_blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_ONE, GL_ONE);
-	d_third_render_pass_state->add_state_set(third_pass_blend_state);
+		renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+		renderer.gl_enable(GL_BLEND);
+		renderer.gl_blend_func(GL_ZERO, GL_ZERO);
+		renderer.gl_enable(GL_ALPHA_TEST);
+
+		// Draw a full-screen quad.
+		// NOTE: We leave the model-view and projection matrices as identity as that is what we
+		// we need to draw a full-screen quad.
+		renderer.apply_compiled_draw_state(*d_full_screen_quad_drawable);
+	}
+
+	{
+		GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer, d_third_render_pass_state);
+
+		renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+		renderer.gl_enable(GL_BLEND);
+		renderer.gl_blend_func(GL_ONE, GL_ONE);
+		renderer.gl_enable(GL_ALPHA_TEST);
+
+		// Draw a full-screen quad.
+		// NOTE: We leave the model-view and projection matrices as identity as that is what we
+		// we need to draw a full-screen quad.
+		renderer.apply_compiled_draw_state(*d_full_screen_quad_drawable);
+	}
 
 	initialise_level_of_detail_pyramid();
 }
@@ -254,7 +247,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::update_reconstruction_time(
 }
 
 
-void
+GPlatesOpenGL::GLAgeGridMaskSource::cache_handle_type
 GPlatesOpenGL::GLAgeGridMaskSource::load_tile(
 		unsigned int level,
 		unsigned int texel_x_offset,
@@ -262,8 +255,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_tile(
 		unsigned int texel_width,
 		unsigned int texel_height,
 		const GLTexture::shared_ptr_type &target_texture,
-		GLRenderer &renderer,
-		GLRenderer::RenderTargetUsageType render_target_usage)
+		GLRenderer &renderer)
 {
 	// Get the tile corresponding to the request.
 	Tile &tile = get_tile(level, texel_x_offset, texel_y_offset);
@@ -272,7 +264,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_tile(
 	// from the input age grid raster (eg, if they were recycled by the texture cache).
 	GLTexture::shared_ptr_type high_byte_age_texture, low_byte_age_texture;
 	if (should_reload_high_and_low_byte_age_textures(
-			tile, high_byte_age_texture, low_byte_age_texture))
+			renderer, tile, high_byte_age_texture, low_byte_age_texture))
 	{
 		PROFILE_BEGIN(proxy_raster, "get_region_from_level");
 		// Get the region of the raster covered by this tile at the level-of-detail of this tile.
@@ -304,9 +296,9 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_tile(
 
 			// Create a black raster to load into the texture.
 			const GPlatesGui::rgba8_t black(0, 0, 0, 0);
-			GLTextureUtils::load_colour_into_texture(target_texture, black, texel_width, texel_height);
+			GLTextureUtils::load_colour_into_texture_2D(renderer, target_texture, black, texel_width, texel_height);
 
-			return;
+			return cache_handle_type();
 		}
 
 		// Convert the floating point age values into low and high byte textures so
@@ -314,23 +306,29 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_tile(
 		// of the reconstruction time with the age grid values and generate a binary
 		// mask in the target texture.
 		if (!load_age_grid_into_high_and_low_byte_tile(
+				renderer,
 				raster_region_opt.get(),
-				high_byte_age_texture, low_byte_age_texture,
-				texel_width, texel_height))
+				high_byte_age_texture,
+				low_byte_age_texture,
+				texel_width,
+				texel_height))
 		{
 			// Create a black raster to load into the texture.
 			const GPlatesGui::rgba8_t black(0, 0, 0, 0);
-			GLTextureUtils::load_colour_into_texture(target_texture, black, texel_width, texel_height);
+			GLTextureUtils::load_colour_into_texture_2D(renderer, target_texture, black, texel_width, texel_height);
 
-			return;
+			return cache_handle_type();
 		}
 	}
 
 	// So now we have up to date high and low byte textures so we can render
 	// the age grid mask with them.
-	render_age_grid_mask(
-			target_texture, high_byte_age_texture, low_byte_age_texture,
-			renderer, render_target_usage);
+	render_age_grid_mask(renderer, target_texture, high_byte_age_texture, low_byte_age_texture);
+
+	// Keep the high/low byte age textures alive so they don't get recycled by other tiles.
+	return cache_handle_type(
+			new std::pair<GLTexture::shared_ptr_type, GLTexture::shared_ptr_type>(
+					high_byte_age_texture, low_byte_age_texture));
 }
 
 
@@ -362,6 +360,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::get_tile(
 
 bool
 GPlatesOpenGL::GLAgeGridMaskSource::should_reload_high_and_low_byte_age_textures(
+		GLRenderer &renderer,
 		Tile &tile,
 		GLTexture::shared_ptr_type &high_byte_age_texture,
 		GLTexture::shared_ptr_type &low_byte_age_texture)
@@ -382,10 +381,10 @@ GPlatesOpenGL::GLAgeGridMaskSource::should_reload_high_and_low_byte_age_textures
 		if (!high_byte_age_texture)
 		{
 			high_byte_age_texture = high_byte_age_volatile_texture->set_cached_object(
-					GLTexture::create_as_auto_ptr(d_texture_resource_manager));
+					GLTexture::create_as_auto_ptr(renderer));
 
 			// The texture was just allocated so we need to create it in OpenGL.
-			create_tile_texture(high_byte_age_texture);
+			create_tile_texture(renderer, high_byte_age_texture);
 		}
 	}
 
@@ -400,10 +399,10 @@ GPlatesOpenGL::GLAgeGridMaskSource::should_reload_high_and_low_byte_age_textures
 		if (!low_byte_age_texture)
 		{
 			low_byte_age_texture = low_byte_age_volatile_texture->set_cached_object(
-					GLTexture::create_as_auto_ptr(d_texture_resource_manager));
+					GLTexture::create_as_auto_ptr(renderer));
 
 			// The texture was just allocated so we need to create it in OpenGL.
-			create_tile_texture(low_byte_age_texture);
+			create_tile_texture(renderer, low_byte_age_texture);
 		}
 	}
 
@@ -413,37 +412,19 @@ GPlatesOpenGL::GLAgeGridMaskSource::should_reload_high_and_low_byte_age_textures
 
 void
 GPlatesOpenGL::GLAgeGridMaskSource::create_tile_texture(
+		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &texture)
 {
-	//
-	// NOTE: Direct calls to OpenGL are made below.
-	//
-	// Below we make direct calls to OpenGL once we've bound the texture.
-	// This is in contrast to storing OpenGL commands in the render graph to be
-	// executed later. The reason for this is the calls we make affect the
-	// bound texture object's state and not the general OpenGL state. Texture object's
-	// are one of those places in OpenGL where you can set state and then subsequent
-	// binds of that texture object will set all that state into OpenGL.
-	//
-
-	// Bind the texture so its the current texture.
-	// Here we actually make a direct OpenGL call to bind the texture to the currently
-	// active texture unit. It doesn't matter what the current texture unit is because
-	// the only reason we're binding the texture object is so we can set its state =
-	// so that subsequent binds of this texture object, when we render the scene graph,
-	// will set that state to OpenGL.
-	texture->gl_bind_texture(GL_TEXTURE_2D);
-
 	// No mipmaps needed or anisotropic filtering required.
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
 	// Create the texture in OpenGL - this actually creates the texture without any data.
 	// We'll be getting our raster source to load image data into the texture.
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
+	texture->gl_tex_image_2D(renderer, GL_TEXTURE_2D, 0, GL_RGBA8,
 			d_tile_texel_dimension, d_tile_texel_dimension,
 			0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
@@ -455,6 +436,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::create_tile_texture(
 template <typename RealType>
 void
 GPlatesOpenGL::GLAgeGridMaskSource::load_age_grid_into_high_and_low_byte_tile(
+		GLRenderer &renderer,
 		const RealType *age_grid_tile,
 		GLTexture::shared_ptr_type &high_byte_age_texture,
 		GLTexture::shared_ptr_type &low_byte_age_texture,
@@ -476,12 +458,14 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_age_grid_into_high_and_low_byte_tile(
 	}
 
 	// Load the data into the high and low byte textures.
-	GLTextureUtils::load_rgba8_image_into_texture(
+	GLTextureUtils::load_rgba8_image_into_texture_2D(
+			renderer,
 			high_byte_age_texture,
 			high_byte_tile_working_space,
 			texel_width,
 			texel_height);
-	GLTextureUtils::load_rgba8_image_into_texture(
+	GLTextureUtils::load_rgba8_image_into_texture_2D(
+			renderer,
 			low_byte_age_texture,
 			low_byte_tile_working_space,
 			texel_width,
@@ -491,6 +475,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_age_grid_into_high_and_low_byte_tile(
 
 bool
 GPlatesOpenGL::GLAgeGridMaskSource::load_age_grid_into_high_and_low_byte_tile(
+		GLRenderer &renderer,
 		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &age_grid_tile,
 		GLTexture::shared_ptr_type &high_byte_age_texture,
 		GLTexture::shared_ptr_type &low_byte_age_texture,
@@ -505,9 +490,12 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_age_grid_into_high_and_low_byte_tile(
 	if (float_age_grid_tile)
 	{
 		load_age_grid_into_high_and_low_byte_tile(
+				renderer,
 				float_age_grid_tile.get()->data(),
-				high_byte_age_texture, low_byte_age_texture,
-				texel_width, texel_height);
+				high_byte_age_texture,
+				low_byte_age_texture,
+				texel_width,
+				texel_height);
 
 		return true;
 	}
@@ -518,9 +506,12 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_age_grid_into_high_and_low_byte_tile(
 	if (double_age_grid_tile)
 	{
 		load_age_grid_into_high_and_low_byte_tile(
+				renderer,
 				double_age_grid_tile.get()->data(),
-				high_byte_age_texture, low_byte_age_texture,
-				texel_width, texel_height);
+				high_byte_age_texture,
+				low_byte_age_texture,
+				texel_width,
+				texel_height);
 
 		return true;
 	}
@@ -533,129 +524,90 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_age_grid_into_high_and_low_byte_tile(
 
 void
 GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_mask(
+		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &target_texture,
 		const GLTexture::shared_ptr_type &high_byte_age_texture,
-		const GLTexture::shared_ptr_type &low_byte_age_texture,
-		GLRenderer &renderer,
-		GLRenderer::RenderTargetUsageType render_target_usage)
+		const GLTexture::shared_ptr_type &low_byte_age_texture)
 {
-	// Push a render target that will render to the tile texture.
-	renderer.push_render_target(
-			GLTextureRenderTargetType::create(
-					target_texture, d_tile_texel_dimension, d_tile_texel_dimension),
-			render_target_usage);
-
-	// Push the viewport state set.
-	renderer.push_state_set(d_viewport_state);
-	// Let the transform state know of the new viewport.
-	renderer.get_transform_state().set_viewport(d_viewport);
-
-	// Clear the colour buffer of the render target.
-	GLClearBuffersState::non_null_ptr_type clear_buffers_state = GLClearBuffersState::create();
-	clear_buffers_state->gl_clear_color(1, 1, 1, 1);
-	renderer.push_state_set(clear_buffers_state);
-	renderer.add_drawable(d_clear_buffers);
-	renderer.pop_state_set();
-
-	// Mask writing to the alpha channel.
-	renderer.push_state_set(d_mask_alpha_channel_state);
-
-	//
-	// Set the state converting the age grid intermediate mask to the full mask.
-	//
-
 	// Simply allocate a new texture from the texture cache and fill it with data.
 	// Get an unused tile texture from the cache if there is one.
-	boost::optional< boost::shared_ptr<GLTexture> > intermediate_texture =
+	boost::optional<GLTexture::shared_ptr_type> intermediate_texture =
 			d_intermediate_render_texture_cache->allocate_object();
 	if (!intermediate_texture)
 	{
 		// No unused texture so create a new one...
 		intermediate_texture = d_intermediate_render_texture_cache->allocate_object(
-				GLTexture::create_as_auto_ptr(d_texture_resource_manager));
+				GLTexture::create_as_auto_ptr(renderer));
 
 		// The texture was just allocated so we need to create it in OpenGL.
-		create_tile_texture(intermediate_texture.get());
+		create_tile_texture(renderer, intermediate_texture.get());
 	}
 
 	// Render the high and low byte textures to the intermediate texture.
 	render_age_grid_intermediate_mask(
-			intermediate_texture.get(), high_byte_age_texture, low_byte_age_texture, renderer);
+			renderer, intermediate_texture.get(), high_byte_age_texture, low_byte_age_texture);
 
 
-	// Create a state set that binds the intermediate texture to texture unit 0.
-	GLBindTextureState::non_null_ptr_type bind_age_grid_intermediate_texture = GLBindTextureState::create();
-	bind_age_grid_intermediate_texture->gl_bind_texture(GL_TEXTURE_2D, intermediate_texture.get());
+	// Begin rendering to a 2D render target texture.
+	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(renderer, target_texture);
 
-	GLCompositeStateSet::non_null_ptr_type state_set = GLCompositeStateSet::create();
+	// Viewport that matches the tile texture size even though some tiles (around boundary of age
+	// grid raster) will not use the full tile.
+	// The extra texels will be garbage and what we calculate with them will be garbage but those
+	// texels won't be accessed when rendering *using* the age grid tile so it's ok.
+	renderer.gl_viewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension);
 
-	// Enable texturing and set the texture function.
-	GPlatesOpenGL::GLTextureEnvironmentState::non_null_ptr_type tex_env_state =
-			GPlatesOpenGL::GLTextureEnvironmentState::create();
-	tex_env_state->gl_enable_texture_2D(GL_TRUE);
-	tex_env_state->gl_tex_env_mode(GL_REPLACE);
-	state_set->add_state_set(tex_env_state);
+	renderer.gl_clear_color(1, 1, 1, 1);
+	// Clear only the colour buffer.
+	renderer.gl_clear(GL_COLOR_BUFFER_BIT);
+
+	// Prevent writing to the colour channels.
+	renderer.gl_color_mask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+
+	//
+	// Set the state converting the age grid intermediate mask to the full mask.
+	//
+
+	// Bind the intermediate texture to texture unit 0.
+	renderer.gl_bind_texture(intermediate_texture.get(), GL_TEXTURE0, GL_TEXTURE_2D);
+
+	// Enable texturing and set the texture function to replace on texture unit 0.
+	renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
+	renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
 	// Alpha-test state.
-	GLAlphaTestState::non_null_ptr_type alpha_test_state = GLAlphaTestState::create();
-	alpha_test_state->gl_enable(GL_TRUE).gl_alpha_func(GL_LEQUAL, GLclampf(0));
-	state_set->add_state_set(alpha_test_state);
+	renderer.gl_enable(GL_ALPHA_TEST);
+	renderer.gl_alpha_func(GL_LEQUAL, GLclampf(0));
 
 	// NOTE: We leave the model-view and projection matrices as identity as that is what we
 	// we need to draw a full-screen quad.
-	renderer.push_state_set(state_set);
-	renderer.push_state_set(bind_age_grid_intermediate_texture);
-	renderer.add_drawable(d_full_screen_quad_drawable);
-	renderer.pop_state_set();
-	renderer.pop_state_set();
-
-	// Pop the mask buffers state set.
-	renderer.pop_state_set();
-
-	// Pop the viewport state set.
-	renderer.pop_state_set();
-
-	renderer.pop_render_target();
+	renderer.apply_compiled_draw_state(*d_full_screen_quad_drawable);
 }
 
 
 void
 GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_intermediate_mask(
+		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &intermediate_texture,
 		const GLTexture::shared_ptr_type &high_byte_age_texture,
-		const GLTexture::shared_ptr_type &low_byte_age_texture,
-		GLRenderer &renderer)
+		const GLTexture::shared_ptr_type &low_byte_age_texture)
 {
 	PROFILE_FUNC();
 
-	// Push a render target that will render to the tile texture.
-	// We can render to the target in parallel because we're caching the intermediate texture.
-	renderer.push_render_target(
-			GLTextureRenderTargetType::create(
-					intermediate_texture, d_tile_texel_dimension, d_tile_texel_dimension),
-			GLRenderer::RENDER_TARGET_USAGE_PARALLEL);
+	// Begin rendering to a 2D render target texture.
+	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(renderer, intermediate_texture);
 
-	// Push the viewport state set.
-	renderer.push_state_set(d_viewport_state);
-	// Let the transform state know of the new viewport.
-	renderer.get_transform_state().set_viewport(d_viewport);
+	renderer.gl_viewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension);
+
+	// Setup for clearing the render target colour buffer.
+	// Clear colour to all ones and alpha channel to zero.
+	renderer.gl_clear_color(1, 1, 1, 0);
 
 	// Clear the colour buffer of the render target.
-	renderer.push_state_set(d_clear_buffers_state);
-	renderer.add_drawable(d_clear_buffers);
-	renderer.pop_state_set();
+	renderer.gl_clear(GL_COLOR_BUFFER_BIT);
 
-	// Mask writing to the alpha channel.
-	renderer.push_state_set(d_mask_alpha_channel_state);
-
-
-	// Create a state set that binds the low byte age texture to texture unit 0.
-	GLBindTextureState::non_null_ptr_type bind_low_byte_age_texture = GLBindTextureState::create();
-	bind_low_byte_age_texture->gl_bind_texture(GL_TEXTURE_2D, low_byte_age_texture);
-
-	// Create a state set that binds the high byte age texture to texture unit 0.
-	GLBindTextureState::non_null_ptr_type bind_high_byte_age_texture = GLBindTextureState::create();
-	bind_high_byte_age_texture->gl_bind_texture(GL_TEXTURE_2D, high_byte_age_texture);
+	// Prevent writing to the colour channels.
+	renderer.gl_color_mask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
 
 
 	//
@@ -663,72 +615,39 @@ GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_intermediate_mask(
 	//
 
 	// First pass alpha-test state.
-	GLAlphaTestState::non_null_ptr_type first_pass_alpha_test_state = GLAlphaTestState::create();
-	first_pass_alpha_test_state->gl_enable(GL_TRUE);
 	const GLclampf first_pass_alpha_ref = (1.0 / 255) * d_current_reconstruction_time_low_byte;
-	first_pass_alpha_test_state->gl_alpha_func(GL_GREATER, first_pass_alpha_ref);
-	renderer.push_state_set(first_pass_alpha_test_state);
+	renderer.gl_alpha_func(GL_GREATER, first_pass_alpha_ref);
 
-	// NOTE: We leave the model-view and projection matrices as identity as that is what we
-	// we need to draw a full-screen quad.
-	renderer.push_state_set(d_first_render_pass_state);
-	renderer.push_state_set(bind_low_byte_age_texture);
-	renderer.add_drawable(d_full_screen_quad_drawable);
-	renderer.pop_state_set();
-	renderer.pop_state_set();
+	// Bind the low byte age texture to texture unit 0.
+	renderer.gl_bind_texture(low_byte_age_texture, GL_TEXTURE0, GL_TEXTURE_2D);
 
-	renderer.pop_state_set();
+	renderer.apply_compiled_draw_state(*d_first_render_pass_state);
 
 	//
 	// Set the state for the second render pass and render.
 	//
 
 	// Second pass alpha-test state.
-	GLAlphaTestState::non_null_ptr_type second_pass_alpha_test_state = GLAlphaTestState::create();
-	second_pass_alpha_test_state->gl_enable(GL_TRUE);
 	const GLclampf second_pass_alpha_ref = (1.0 / 255) * d_current_reconstruction_time_high_byte;
-	second_pass_alpha_test_state->gl_alpha_func(GL_NOTEQUAL, second_pass_alpha_ref);
-	renderer.push_state_set(second_pass_alpha_test_state);
+	renderer.gl_alpha_func(GL_NOTEQUAL, second_pass_alpha_ref);
 
-	// NOTE: We leave the model-view and projection matrices as identity as that is what we
-	// we need to draw a full-screen quad.
-	renderer.push_state_set(d_second_render_pass_state);
-	renderer.push_state_set(bind_high_byte_age_texture);
-	renderer.add_drawable(d_full_screen_quad_drawable);
-	renderer.pop_state_set();
-	renderer.pop_state_set();
+	// Bind the high byte age texture to texture unit 0.
+	renderer.gl_bind_texture(high_byte_age_texture, GL_TEXTURE0, GL_TEXTURE_2D);
 
-	renderer.pop_state_set();
+	renderer.apply_compiled_draw_state(*d_second_render_pass_state);
 
 	//
 	// Set the state for the third render pass and render.
 	//
 
 	// Third pass alpha-test state.
-	GLAlphaTestState::non_null_ptr_type third_pass_alpha_test_state = GLAlphaTestState::create();
-	third_pass_alpha_test_state->gl_enable(GL_TRUE);
 	const GLclampf third_pass_alpha_ref = (1.0 / 255) * d_current_reconstruction_time_high_byte;
-	third_pass_alpha_test_state->gl_alpha_func(GL_GREATER, third_pass_alpha_ref);
-	renderer.push_state_set(third_pass_alpha_test_state);
+	renderer.gl_alpha_func(GL_GREATER, third_pass_alpha_ref);
 
-	// NOTE: We leave the model-view and projection matrices as identity as that is what we
-	// we need to draw a full-screen quad.
-	renderer.push_state_set(d_third_render_pass_state);
-	renderer.push_state_set(bind_high_byte_age_texture);
-	renderer.add_drawable(d_full_screen_quad_drawable);
-	renderer.pop_state_set();
-	renderer.pop_state_set();
+	// Bind the high byte age texture to texture unit 0.
+	renderer.gl_bind_texture(high_byte_age_texture, GL_TEXTURE0, GL_TEXTURE_2D);
 
-	renderer.pop_state_set();
-
-
-	// Pop the mask buffers state set.
-	renderer.pop_state_set();
-
-	// Pop the viewport state set.
-	renderer.pop_state_set();
-
-	renderer.pop_render_target();
+	renderer.apply_compiled_draw_state(*d_third_render_pass_state);
 }
 
 

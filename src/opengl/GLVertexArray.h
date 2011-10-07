@@ -27,32 +27,37 @@
 #ifndef GPLATES_OPENGL_GLVERTEXARRAY_H
 #define GPLATES_OPENGL_GLVERTEXARRAY_H
 
-#include <bitset>
-#include <cstddef> // For std::size_t
 #include <memory> // For std::auto_ptr
 #include <vector>
+#include <boost/enable_shared_from_this.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <opengl/OpenGL.h>
 
-#include "GLArray.h"
+#include "GLCompiledDrawState.h"
 #include "GLVertex.h"
-#include "GLVertexBufferResource.h"
+#include "GLVertexBuffer.h"
+#include "GLVertexElementBuffer.h"
 
 
 namespace GPlatesOpenGL
 {
+	class GLRenderer;
+
 	/**
-	 * An OpenGL vertex array.
-	 *
-	 * NOTE: The template function 'configure_vertex_array' (see GLVertex.h) must be
-	 * specialised for the 'VertexType' template type of the @a create and
-	 * @a set_array_data methods.
+	 * An abstraction based on OpenGL vertex array objects (GL_ARB_vertex_array_object extension)
+	 * that behaves like vertex array objects even if the extension is not supported.
 	 */
-	class GLVertexArray
+	class GLVertexArray :
+			public boost::enable_shared_from_this<GLVertexArray>
 	{
 	public:
+		//
+		// Note that the reason boost::shared_ptr is used instead of non_null_intrusive_ptr
+		// is so these objects can be used with GPlatesUtils::ObjectCache.
+		//
+
 		//! A convenience typedef for a shared pointer to a non-const @a GLVertexArray.
 		typedef boost::shared_ptr<GLVertexArray> shared_ptr_type;
 		typedef boost::shared_ptr<const GLVertexArray> shared_ptr_to_const_type;
@@ -62,56 +67,15 @@ namespace GPlatesOpenGL
 		typedef boost::weak_ptr<const GLVertexArray> weak_ptr_to_const_type;
 
 
-		//
-		// The following structures are used in the following methods as an alternative way
-		// to pass function arguments:
-		// @a gl_vertex_pointer
-		// @a gl_color_pointer
-		// @a gl_normal_pointer
-		// @a gl_tex_coord_pointer
-		//
-		struct VertexPointer
-		{
-			GLint size;
-			GLenum type;
-			GLsizei stride;
-			GLint array_offset;
-		};
-		struct ColorPointer
-		{
-			GLint size;
-			GLenum type;
-			GLsizei stride;
-			GLint array_offset;
-		};
-		struct NormalPointer
-		{
-			GLenum type;
-			GLsizei stride;
-			GLint array_offset;
-		};
-		struct TexCoordPointer
-		{
-			GLint size;
-			GLenum type;
-			GLsizei stride;
-			GLint array_offset;
-		};
-
-
 		/**
 		 * Creates a @a GLVertexArray object with no array data.
-		 *
-		 * You'll need to call @a set_array_data.
 		 */
 		static
 		shared_ptr_type
 		create(
-				GLArray::UsageType usage = GLArray::USAGE_STATIC,
-				const boost::optional<GLVertexBufferResourceManager::shared_ptr_type> &
-						vertex_buffer_manager = boost::none)
+				GLRenderer &renderer)
 		{
-			return shared_ptr_type(create_as_auto_ptr(usage, vertex_buffer_manager).release());
+			return shared_ptr_type(create_as_auto_ptr(renderer).release());
 		}
 
 		/**
@@ -120,408 +84,393 @@ namespace GPlatesOpenGL
 		static
 		std::auto_ptr<GLVertexArray>
 		create_as_auto_ptr(
-				GLArray::UsageType usage = GLArray::USAGE_STATIC,
-				const boost::optional<GLVertexBufferResourceManager::shared_ptr_type> &
-						vertex_buffer_manager = boost::none)
-		{
-			return std::auto_ptr<GLVertexArray>(
-					new GLVertexArray(
-							GLArray::create(
-									GLArray::ARRAY_TYPE_VERTICES, usage, vertex_buffer_manager)));
-		}
+				GLRenderer &renderer);
+
+
+		virtual
+		~GLVertexArray()
+		{  }
 
 
 		/**
-		 * Creates a @a GLVertexArray object.
-		 *
-		 * The vertex array data is copied into an internal array.
-		 *
-		 * @a VertexType is the type (or structure) of the vertex data passed in.
-		 * NOTE: we don't keep track of the vertex structure.
-		 *
-		 * If @a configure is true then the client state and attribute pointers are set
-		 * depending on 'VertexType'.
-		 *
-		 * NOTE: The template function 'configure_vertex_array' (see GLVertex.h) must be
-		 * specialised for the 'VertexType' template type of the @a create and
-		 * @a set_array_data methods.
-		 *
-		 * If @a vertex_buffer_manager is specified *and* vertex buffer objects are supported
-		 * then an OpenGL vertex buffer object is used internally to store the vertices.
+		 * Binds this vertex array so that all vertex data is sourced from the vertex buffers,
+		 * specified in this interface, and vertex element data is sourced from the vertex element buffer.
 		 */
-		template <class VertexType>
-		static
-		shared_ptr_type
-		create(
-				const VertexType *vertices,
-				const unsigned int num_vertices,
-				GLArray::UsageType usage = GLArray::USAGE_STATIC,
-				const boost::optional<GLVertexBufferResourceManager::shared_ptr_type> &
-						vertex_buffer_manager = boost::none,
-				bool configure = true)
-		{
-			const shared_ptr_type vertex_array(
-					new GLVertexArray(
-							GLArray::create(
-									vertices, num_vertices,
-									GLArray::ARRAY_TYPE_VERTICES, usage,
-									vertex_buffer_manager)));
-
-			if (configure)
-			{
-				configure_vertex_array<VertexType>(*vertex_array);
-			}
-
-			return vertex_array;
-		}
-
-
-		/**
-		 * Creates a @a GLVertexArray object.
-		 *
-		 * The vertex array data is copied into an internal array.
-		 *
-		 * @a VertexType is the type (or structure) of the vertex data passed in.
-		 * NOTE: we don't keep track of the vertex structure.
-		 *
-		 * If @a configure is true then the client state and attribute pointers are set
-		 * depending on 'VertexType'.
-		 *
-		 * NOTE: The template function 'configure_vertex_array' (see GLVertex.h) must be
-		 * specialised for the 'VertexType' template type of the @a create and
-		 * @a set_array_data methods.
-		 *
-		 * If @a vertex_buffer_manager is specified *and* vertex buffer objects are supported
-		 * then an OpenGL vertex buffer object is used internally to store the vertices.
-		 */
-		template <class VertexType>
-		static
-		shared_ptr_type
-		create(
-				const std::vector<VertexType> &vertices,
-				GLArray::UsageType usage = GLArray::USAGE_STATIC,
-				const boost::optional<GLVertexBufferResourceManager::shared_ptr_type> &
-						vertex_buffer_manager = boost::none,
-				bool configure = true)
-		{
-			return create(&vertices[0], vertices.size(), usage, vertex_buffer_manager, configure);
-		}
-
-
-		/**
-		 * Creates a @a GLVertexArray object that uses the same array data as another @a GLVertexArray.
-		 *
-		 * This is useful when you want to use the same set of vertices in two different ways.
-		 * For example, vertices with (x,y,z) position, colour and texture coordinates can be
-		 * used as (1) position and colour, (2) position, colour and texture coordinates, etc.
-		 * In case (1) the texture coordinates are not needed and simply ignored.
-		 *
-		 * Note that you will need to explicitly enable the appropriate client state and
-		 * explicitly set the appropriate vertex attribute pointers - this is because you are
-		 * choosing to view the same vertex array in a way that is different than the vertex type
-		 * and hence you'll need to specify this.
-		 *
-		 * However note that if you change the array data it will affect all @a GLVertexArray
-		 * instances sharing it.
-		 * NOTE: If you later call @a set_array_data, be careful not to change the VertexType
-		 * because it could mesh up how other @a GLVertexArray instances (that share it) will see it.
-		 */
-		static
-		shared_ptr_type
-		create(
-				const GLArray::non_null_ptr_type &array_data)
-		{
-			return shared_ptr_type(new GLVertexArray(array_data));
-		}
-
-
-		/**
-		 * Returns the array data referenced by us.
-		 */
-		GLArray::non_null_ptr_type
-		get_array_data()
-		{
-			return d_array_data;
-		}
-
-
-		/**
-		 * Specifies the array data to be used for this @a GLVertexArray.
-		 *
-		 * The vertex array data is copied into an internal array.
-		 *
-		 * If @a configure is true then the client state and attribute pointers are set
-		 * depending on 'VertexType'.
-		 *
-		 * NOTE: The template function 'configure_vertex_array' (see GLVertex.h) must be
-		 * specialised for the 'VertexType' template type of the @a create and
-		 * @a set_array_data methods.
-		 */
-		template <class VertexType>
+		virtual
 		void
-		set_array_data(
-				const VertexType *vertices,
-				const unsigned int num_vertices,
-				bool configure = true)
-		{
-			d_array_data->set_array_data(vertices, num_vertices);
-
-			if (configure)
-			{
-				disable_client_state();
-				configure_vertex_array<VertexType>(*this);
-			}
-		}
+		gl_bind(
+				GLRenderer &renderer) const = 0;
 
 
 		/**
-		 * Specifies the array data to be used for this @a GLVertexArray.
+		 * Performs the equivalent of the OpenGL command 'glDrawRangeElements'.
 		 *
-		 * The vertex array data is copied into an internal array.
+		 * NOTE: If the GL_EXT_draw_range_elements extension is not present then reverts to
+		 * using @a gl_draw_elements instead (ie, @a start and @a end are effectively ignored).
 		 *
-		 * This method can be used to set the array data if the @a create overload
-		 * with no data was used to create 'this' object, or this method can be used
-		 * to change the array data.
+		 * @a indices_offset is a byte offset from the start of vertex element buffer set with
+		 * @a set_vertex_element_buffer.
 		 *
-		 * If @a configure is true then the client state and attribute pointers are set
-		 * depending on 'VertexType'.
+		 * This function can be more efficient for OpenGL than @a gl_draw_elements since
+		 * you are guaranteeing that the range of vertex indices is bounded by [start, end].
 		 *
-		 * NOTE: The template function 'configure_vertex_array' (see GLVertex.h) must be
-		 * specialised for the 'VertexType' template type of the @a create and
-		 * @a set_array_data methods.
+		 * @throws @a PreconditionViolationError if a vertex element buffer has not been set
+		 * with @a set_vertex_element_buffer.
 		 */
-		template <class VertexType>
+		virtual
 		void
-		set_array_data(
-				const std::vector<VertexType> &vertices,
-				bool configure = true)
-		{
-			set_array_data(&vertices[0], vertices.size(), configure);
-		}
-
-
-		/**
-		 * Disables all vertex attributes.
-		 */
-		void
-		disable_client_state();
-
-
-		/**
-		 * Selects the current texture unit that a subsequent @a gl_tex_coord_pointer
-		 * should be directed to.
-		 *
-		 * Like the other 'gl*()' methods in this class the same-named call to OpenGL
-		 * is not made here (it is delayed until @a bind is called).
-		 *
-		 * The default texture unit is texture unit 0, in which case it is not necessary
-		 * to call this before calling @a gl_tex_coord_pointer. The default is texture unit 0
-		 * regardless of the currently active unit for some other @a GLVertexArray object.
-		 *
-		 * If the runtime system doesn't support the GL_ARB_multitexture extension
-		 * (and hence only supports one texture unit) then it is not necessary
-		 * to call this function.
-		 */
-		GLVertexArray &
-		gl_client_active_texture_ARB(
-				GLenum texture);
-
-
-		/**
-		 * Call once for each vertex array that you want to enable.
-		 *
-		 * These are the arrays used by @a bind.
-		 * By default they are all disabled for 'this' drawable.
-		 *
-		 * @a array must be one of GL_VERTEX_ARRAY, GL_COLOR_ARRAY,
-		 * GL_NORMAL_ARRAY, or GL_TEXTURE_COORD_ARRAY.
-		 *
-		 * NOTE: not including GL_INDEX_ARRAY since using RGBA mode (and not colour index mode)
-		 * and not including GL_EDGE_FLAG_ARRAY for now.
-		 */
-		GLVertexArray &
-		gl_enable_client_state(
-				GLenum array)
-		{
-			set_enable_disable_client_state(array, true);
-			return *this;
-		}
-
-		/**
-		 * The reverse of @a gl_enable_client_state.
-		 *
-		 * This method is only needed if you have enabled an array and now want to disable it.
-		 */
-		GLVertexArray &
-		gl_disable_client_state(
-				GLenum array)
-		{
-			set_enable_disable_client_state(array, false);
-			return *this;
-		}
-
-
-		/**
-		 * Stores position parameters for the same-named call to OpenGL inside @a bind.
-		 *
-		 * @a array_offset is a byte offset from the start of the vertex array
-		 * (passed into @a create) from which to start retrieving position data.
-		 *
-		 * This should be called if 'GL_VERTEX_ARRAY' was passed to @a gl_enable_client_state.
-		 */
-		GLVertexArray &
-		gl_vertex_pointer(
-				GLint size,
+		gl_draw_range_elements(
+				GLRenderer &renderer,
+				GLenum mode,
+				GLuint start,
+				GLuint end,
+				GLsizei count,
 				GLenum type,
-				GLsizei stride,
-				GLint array_offset)
-		{
-			const VertexPointer vertex_pointer = { size, type, stride, array_offset };
-			return gl_vertex_pointer(vertex_pointer);
-		}
-
-		//! Same as the other overload of @a gl_vertex_pointer except takes arguments in a structure.
-		GLVertexArray &
-		gl_vertex_pointer(
-				const VertexPointer &vp);
+				GLint indices_offset) const = 0;
 
 
 		/**
-		 * Stores colour parameters for the same-named call to OpenGL inside @a bind.
+		 * Clears this vertex array.
 		 *
-		 * @a array_offset is a byte offset from the start of the vertex array
-		 * (passed into @a create) from which to start retrieving colour data.
+		 * This includes the following:
+		 *  - detach vertex element buffer
+		 *  - detach vertex buffers (attribute arrays)
+		 *  - disable vertex attribute arrays (including all texture coord arrays on all texture units)
 		 *
-		 * This should be called if 'GL_COLOR_ARRAY' was passed to @a gl_enable_client_state.
+		 * This method is useful when reusing a vertex array and you don't know what attribute
+		 * arrays were previously enabled on the vertex array for example.
+		 *
+		 * NOTE: The detachments/disables are not  until the next call to @a gl_bind.
 		 */
-		GLVertexArray &
-		gl_color_pointer(
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				GLint array_offset)
-		{
-			const ColorPointer color_pointer = { size, type, stride, array_offset };
-			return gl_color_pointer(color_pointer);
-		}
-
-		//! Same as the other overload of @a gl_color_pointer except takes arguments in a structure.
-		GLVertexArray &
-		gl_color_pointer(
-				const ColorPointer &cp);
-
-
-		/**
-		 * Stores normal parameters for the same-named call to OpenGL inside @a bind.
-		 *
-		 * @a array_offset is a byte offset from the start of the vertex array
-		 * (passed into @a create) from which to start retrieving normal data.
-		 *
-		 * This should be called if 'GL_NORMAL_ARRAY' was passed to @a gl_enable_client_state.
-		 */
-		GLVertexArray &
-		gl_normal_pointer(
-				GLenum type,
-				GLsizei stride,
-				GLint array_offset)
-		{
-			const NormalPointer normal_pointer = { type, stride, array_offset };
-			return gl_normal_pointer(normal_pointer);
-		}
-
-		//! Same as the other overload of @a gl_normal_pointer except takes arguments in a structure.
-		GLVertexArray &
-		gl_normal_pointer(
-				const NormalPointer &np);
-
-
-		/**
-		 * Stores texture coordinates for the same-named call to OpenGL inside @a bind.
-		 *
-		 * Texture coordinates are applied to the current texture unit
-		 * (see @a gl_client_active_texture_ARB).
-		 *
-		 * @a array_offset is a byte offset from the start of the vertex array
-		 * (passed into @a create) from which to start retrieving texture coordinate data.
-		 *
-		 * This should be called if 'GL_TEXTURE_COORD_ARRAY' was passed to @a gl_enable_client_state.
-		 */
-		GLVertexArray &
-		gl_tex_coord_pointer(
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				GLint array_offset)
-		{
-			const TexCoordPointer tex_coord_pointer = { size, type, stride, array_offset };
-			return gl_tex_coord_pointer(tex_coord_pointer);
-		}
-
-		//! Same as the other overload of @a gl_tex_coord_pointer except takes arguments in a structure.
-		GLVertexArray &
-		gl_tex_coord_pointer(
-				const TexCoordPointer &tcp);
-
-
-		/**
-		 * Does the actual enabling/binding of the vertex array pointers to OpenGL.
-		 *
-		 * Takes all the information set up in the above 'gl*()' functions and applies them.
-		 */
+		virtual
 		void
-		bind() const;
+		clear(
+				GLRenderer &renderer) = 0;
 
-	private:
+
 		/**
-		 * The opaque vertex array data.
+		 * Specify the source of vertex element (vertex indices) data.
+		 *
+		 * NOTE: A vertex element buffer needs to be set before any drawing can occur.
 		 */
-		GLArray::non_null_ptr_type d_array_data;
-
-		//! Which texture unit are we currently directing to ?
-		GLenum d_client_active_texture_ARB;
-
-		//
-		// Enable/disable vertex attributes client state.
-		//
-		// This state needs to be stored and executed later (during @a bind) for both
-		// types of vertex array.
-		//
-		bool d_enable_vertex_array;
-		bool d_enable_color_array;
-		bool d_enable_normal_array;
-		// GL_ARB_multitexture supports up 32 textures
-		std::bitset<32> d_enable_texture_coord_array;
-
-		//
-		// Optional vertex attribute pointers.
-		//
-		// Pointers (offsets) to the various vertex attributes.
-		//
-		boost::optional<VertexPointer> d_vertex_pointer;
-		boost::optional<ColorPointer> d_color_pointer;
-		boost::optional<NormalPointer> d_normal_pointer;
-		// GL_ARB_multitexture supports up 32 textures
-		boost::optional<TexCoordPointer> d_tex_coord_pointer[32];
-
-
-		//! Constructor.
-		explicit
-		GLVertexArray(
-				const GLArray::non_null_ptr_type &array_data);
-
-
+		virtual
 		void
-		set_enable_disable_client_state(
+		set_vertex_element_buffer(
+				GLRenderer &renderer,
+				const GLVertexElementBuffer::shared_ptr_to_const_type &vertex_element_buffer) = 0;
+
+
+		//
+		// NOTE: An easier way to use the methods below is to call @a bind_vertex_buffer_to_vertex_array.
+		//
+
+
+		/**
+		 * Enables the specified (@a array) vertex array (in the fixed-function pipeline).
+		 *
+		 * These are the arrays selected for use by @a gl_bind.
+		 * By default they are all disabled.
+		 *
+		 * @a array should be one of GL_VERTEX_ARRAY, GL_COLOR_ARRAY, or GL_NORMAL_ARRAY.
+		 *
+		 * NOTE: not including GL_INDEX_ARRAY since using RGBA mode (and not colour index mode) and
+		 * not including GL_EDGE_FLAG_ARRAY (should be moving more towards generic attributes anyway).
+		 */
+		virtual
+		void
+		set_enable_client_state(
+				GLRenderer &renderer,
 				GLenum array,
-				bool enable);
+				bool enable) = 0;
 
+		/**
+		 * Enables the vertex attribute array GL_TEXTURE_COORD_ARRAY (in the fixed-function pipeline)
+		 * on the specified texture unit.
+		 *
+		 * By default the texture coordinate arrays for all texture units are disabled.
+		 */
+		virtual
 		void
-		bind_client_state() const;
+		set_enable_client_texture_state(
+				GLRenderer &renderer,
+				GLenum texture_unit,
+				bool enable) = 0;
 
+
+		/**
+		 * Specify the source of vertex position data.
+		 *
+		 * NOTE: You still need to call the appropriate @a set_enable_client_state.
+		 *
+		 * @a offset is a byte offset into the vertex buffer at which data will be retrieved.
+		 */
+		virtual
 		void
-		bind_attribute_pointers(
-				const GLubyte *array_data) const;
+		set_vertex_pointer(
+				GLRenderer &renderer,
+				const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset) = 0;
+
+
+		/**
+		 * Specify the source of vertex colour data.
+		 *
+		 * NOTE: You still need to call the appropriate @a set_enable_client_state.
+		 *
+		 * @a offset is a byte offset into the vertex buffer at which data will be retrieved.
+		 */
+		virtual
+		void
+		set_color_pointer(
+				GLRenderer &renderer,
+				const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset) = 0;
+
+
+		/**
+		 * Specify the source of vertex normal data.
+		 *
+		 * NOTE: You still need to call the appropriate @a set_enable_client_state.
+		 *
+		 * @a offset is a byte offset into the vertex buffer at which data will be retrieved.
+		 */
+		virtual
+		void
+		set_normal_pointer(
+				GLRenderer &renderer,
+				const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+				GLenum type,
+				GLsizei stride,
+				GLint offset) = 0;
+
+
+		/**
+		 * Specify the source of vertex texture coordinate data.
+		 *
+		 * NOTE: You still need to call the appropriate @a set_enable_client_texture_state.
+		 *
+		 * @a offset is a byte offset into the vertex buffer at which data will be retrieved.
+		 */
+		virtual
+		void
+		set_tex_coord_pointer(
+				GLRenderer &renderer,
+				const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+				GLenum texture_unit,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset) = 0;
+
+
+		///////////////////////////////////////////////////////////////
+		//
+		// The following methods deal with *generic* vertex attributes.
+		//
+		// NOTE: For these methods the 'GL_ARB_vertex_shader' extension must be supported.
+		//
+		// NOTE: On nVidia hardware the generic attribute indices map onto the built-in attributes
+		// so care should be taken if you mix non-generic with generic. Ideally no mixing should be
+		// done (ie, use *only* the built-in attributes for the fixed-function pipeline and use
+		// either the built-in attributes *only* or the generic attributes *only* for vertex shaders.
+		// This means just within a single vertex array - it's ok to have one vertex array use
+		// non-generic attributes while another uses generic attributes.
+		// See 'GLProgramObject::gl_bind_attrib_location' for more details about nVidia's mapping.
+		//
+		///////////////////////////////////////////////////////////////
+
+
+		/**
+		 * Enables the specified *generic* vertex attribute data at attribute index @a attribute_index.
+		 *
+		 * These are the *generic* attribute arrays selected for use by @a gl_bind.
+		 * They can be used in addition to the non-generic arrays or instead of.
+		 * These *generic* attributes can only be accessed by shader programs (see @a GLProgramObject).
+		 * The non-generic arrays can be accessed by both the fixed-function pipeline and shader programs.
+		 * Although starting with OpenGL 3 the non-generic arrays are deprecated/removed from the core OpenGL profile.
+		 * But graphics vendors support compatibility profiles so using them in a pre version 3 way is still ok.
+		 *
+		 * By default all arrays are disabled.
+		 *
+		 * Note that, as dictated by OpenGL, @a attribute_index must be in the half-closed range
+		 * [0, GL_MAX_VERTEX_ATTRIBS_ARB).
+		 * You can get GL_MAX_VERTEX_ATTRIBS_ARB from 'GLContext::get_parameters().shader.gl_max_vertex_attribs'.
+		 *
+		 * NOTE: The 'GL_ARB_vertex_shader' extension must be supported.
+		 */
+		virtual
+		void
+		set_enable_vertex_attrib_array(
+				GLRenderer &renderer,
+				GLuint attribute_index,
+				bool enable) = 0;
+
+
+		/**
+		 * Specify the source of *generic* vertex attribute data at attribute index @a attribute_index.
+		 *
+		 * The attribute index @a attribute_index should match up with the attribute index bound
+		 * to the shader program object - see 'GLProgramObject::gl_bind_attrib_location()'.
+		 * You can either do this explicitly or implement a specialisation of the template function
+		 * 'bind_vertex_buffer_to_vertex_array()' for your particular vertex structure(s) - see 'GLVertex.h'.
+		 *
+		 * These are the *generic* attribute arrays selected for use by @a gl_bind.
+		 * They can be used in addition to the non-generic arrays or instead of.
+		 * These *generic* attributes can only be accessed by shader programs (see @a GLProgramObject).
+		 * The non-generic arrays can be accessed by both the fixed-function pipeline and shader programs.
+		 * Although starting with OpenGL 3 the non-generic arrays are deprecated/removed from the core OpenGL profile.
+		 * But graphics vendors support compatibility profiles so using them in a pre version 3 way is still ok.
+		 *
+		 * Note that, as dictated by OpenGL, @a attribute_index must be in the half-closed range
+		 * [0, GL_MAX_VERTEX_ATTRIBS_ARB).
+		 * You can get GL_MAX_VERTEX_ATTRIBS_ARB from 'GLContext::get_parameters().shader.gl_max_vertex_attribs'.
+		 *
+		 * NOTE: You still need to call the appropriate @a set_enable_vertex_attrib_array.
+		 *
+		 * @a offset is a byte offset into the vertex buffer at which data will be retrieved.
+		 *
+		 * NOTE: The 'GL_ARB_vertex_shader' extension must be supported.
+		 */
+		virtual
+		void
+		set_vertex_attrib_pointer(
+				GLRenderer &renderer,
+				const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
+				GLboolean normalized,
+				GLsizei stride,
+				GLint offset) = 0;
 	};
+
+
+	/**
+	 * Stores the specified vertices and indices in the specified vertex array.
+	 *
+	 * To do this it creates a vertex buffer using @a vertices and a vertex element buffer
+	 * using @a vertex_elements and attaches the buffers to the vertex array.
+	 *
+	 * This is basically a convenience function for when you just want to create a drawable
+	 * around some vertices (and vertex elements).
+	 *
+	 * NOTE: Since this creates new vertex and vertex element buffers it is not the best way
+	 * to update a vertex array (this is only meant for once-only initialisation of static data).
+	 */
+	template <class VertexType, typename VertexElementType>
+	void
+	set_vertex_array_data(
+			GLRenderer &renderer,
+			GLVertexArray &vertex_array,
+			const std::vector<VertexType> &vertices,
+			const std::vector<VertexElementType> &vertex_elements);
+
+
+	/**
+	 * Compiles a draw state that, whenever applied to a renderer, will bind and draw the vertex array.
+	 *
+	 * The parameters are the same as for 'glDrawRangeElements()'.
+	 *
+	 * NOTE: The caller is responsible for setting the vertices/indices of @a vertex_array.
+	 * See @a set_vertex_array_data for this.
+	 *
+	 * NOTE: The returned compiled draw state does not need @a vertex_array to exist
+	 * when it is applied to a renderer (the internal buffers, or buffer objects, are kept alive
+	 * by the compiled draw state).
+	 */
+	GLCompiledDrawState::non_null_ptr_type
+	compile_vertex_array_draw_state(
+			GLRenderer &renderer,
+			GLVertexArray &vertex_array,
+			GLenum mode,
+			GLuint start,
+			GLuint end,
+			GLsizei count,
+			GLenum type,
+			GLint indices_offset = 0);
+
+
+	/**
+	 * Combines the @a set_vertex_array_data and @a compile_vertex_array_draw_state functions to
+	 * set vertices/indices in the specified vertex array and return a compile draw state that
+	 * will draw those specified vertices/indices.
+	 */
+	template <class VertexType, typename VertexElementType>
+	GLCompiledDrawState::non_null_ptr_type
+	compile_vertex_array_draw_state(
+			GLRenderer &renderer,
+			GLVertexArray &vertex_array,
+			const std::vector<VertexType> &vertices,
+			const std::vector<VertexElementType> &vertex_elements,
+			GLenum mode);
+
+
+	////////////////////
+	// Implementation //
+	////////////////////
+
+
+	template <class VertexType, typename VertexElementType>
+	void
+	set_vertex_array_data(
+			GLRenderer &renderer,
+			GLVertexArray &vertex_array,
+			const std::vector<VertexType> &vertices,
+			const std::vector<VertexElementType> &vertex_elements)
+	{
+		// Set up the vertex element buffer.
+		GLBuffer::shared_ptr_type vertex_element_buffer_data = GLBuffer::create(renderer);
+		vertex_element_buffer_data->gl_buffer_data(
+				renderer,
+				GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
+				vertex_elements,
+				GLBuffer::USAGE_STATIC_DRAW);
+		// Attach vertex element buffer to the vertex array.
+		vertex_array.set_vertex_element_buffer(
+				renderer,
+				GLVertexElementBuffer::create(renderer, vertex_element_buffer_data));
+
+		// Set up the vertex buffer.
+		GLBuffer::shared_ptr_type vertex_buffer_data = GLBuffer::create(renderer);
+		vertex_buffer_data->gl_buffer_data(
+				renderer,
+				GLBuffer::TARGET_ARRAY_BUFFER,
+				vertices,
+				GLBuffer::USAGE_STATIC_DRAW);
+		// Attach vertex buffer to the vertex array.
+		bind_vertex_buffer_to_vertex_array<VertexType>(
+				renderer,
+				vertex_array,
+				GLVertexBuffer::create(renderer, vertex_buffer_data));
+	}
+
+
+	template <class VertexType, typename VertexElementType>
+	GLCompiledDrawState::non_null_ptr_type
+	compile_vertex_array_draw_state(
+			GLRenderer &renderer,
+			GLVertexArray &vertex_array,
+			const std::vector<VertexType> &vertices,
+			const std::vector<VertexElementType> &vertex_elements,
+			GLenum mode)
+	{
+		set_vertex_array_data(renderer, vertex_array, vertices, vertex_elements);
+
+		return compile_vertex_array_draw_state(
+				renderer,
+				vertex_array,
+				mode,
+				0/*start*/,
+				vertices.size() - 1/*end*/,
+				vertex_elements.size()/*count*/,
+				GLVertexElementTraits<VertexElementType>::type);
+	}
 }
 
 #endif // GPLATES_OPENGL_GLVERTEXARRAY_H

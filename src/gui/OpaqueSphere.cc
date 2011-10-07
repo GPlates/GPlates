@@ -31,15 +31,16 @@
 
 #include "OpaqueSphere.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
 #include "maths/MathsUtils.h"
 
-#include "opengl/GLBlendState.h"
-#include "opengl/GLCompositeDrawable.h"
-#include "opengl/GLRenderer.h"
+#include "opengl/GLMatrix.h"
 #include "opengl/GLStreamPrimitives.h"
-#include "opengl/GLTransform.h"
-#include "opengl/GLUQuadric.h"
+#include "opengl/GLRenderer.h"
 #include "opengl/GLVertex.h"
+#include "opengl/GLVertexArray.h"
 
 #include "presentation/ViewState.h"
 
@@ -50,6 +51,9 @@ namespace
 	static const unsigned int NUM_SLICES = 72;
 
 	typedef GPlatesOpenGL::GLColouredVertex vertex_type;
+	typedef GLushort vertex_element_type;
+	typedef GPlatesOpenGL::GLDynamicStreamPrimitives<vertex_type, vertex_element_type> stream_primitives_type;
+
 	typedef std::pair<double, double> double_pair;
 
 
@@ -77,8 +81,9 @@ namespace
 	/**
 	 * Creates a donut-shaped drawable on the z = 0 plane.
 	 */
-	boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type>
-	create_disk_drawable(
+	void
+	stream_disk(
+			stream_primitives_type &stream,
 			double inner_radius,
 			double outer_radius,
 			const std::vector<double_pair> &sin_cos_angles,
@@ -86,9 +91,10 @@ namespace
 			const GPlatesGui::rgba8_t &outer_colour)
 	{
 		static const GLfloat Z_VALUE = 0;
-		GPlatesOpenGL::GLStreamPrimitives<vertex_type>::non_null_ptr_type stream =
-				GPlatesOpenGL::GLStreamPrimitives<vertex_type>::create();
-		GPlatesOpenGL::GLStreamTriangleStrips<vertex_type> stream_triangle_strips(*stream);
+
+		bool ok = true;
+
+		stream_primitives_type::TriangleStrips stream_triangle_strips(stream);
 		stream_triangle_strips.begin_triangle_strip();
 
 		for (std::vector<double_pair>::const_iterator iter = sin_cos_angles.begin();
@@ -105,12 +111,16 @@ namespace
 				Z_VALUE,
 				inner_colour);
 
-			stream_triangle_strips.add_vertex(outer_vertex);
-			stream_triangle_strips.add_vertex(inner_vertex);
+			ok = ok && stream_triangle_strips.add_vertex(outer_vertex);
+			ok = ok && stream_triangle_strips.add_vertex(inner_vertex);
 		}
 
 		stream_triangle_strips.end_triangle_strip();
-		return stream->get_drawable();
+
+		// Since we added vertices/indices to a std::vector we shouldn't have run out of space.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				ok,
+				GPLATES_ASSERTION_SOURCE);
 	}
 
 
@@ -144,8 +154,9 @@ namespace
 	 * value of @a colour is used at the centre of the disk, and as we go outwards,
 	 * the alpha value is modulated by the amount of doughnut in that slice.
 	 */
-	GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
-	create_translucent_sphere_drawable(
+	void
+	stream_translucent_sphere(
+			stream_primitives_type &stream,
 			const GPlatesGui::rgba8_t &colour)
 	{
 		static const unsigned int STEPS = 150;
@@ -180,8 +191,6 @@ namespace
 			alphas[i + 1] = static_cast<boost::uint8_t>(alpha * 255.0);
 		}
 
-		GPlatesOpenGL::GLCompositeDrawable::non_null_ptr_type composite_drawable =
-			GPlatesOpenGL::GLCompositeDrawable::create();
 		std::vector<double_pair> sin_cos_angles = compute_sin_cos_angles(NUM_SLICES);
 
 		for (unsigned int i = 0; i < STEPS; ++i)
@@ -191,41 +200,27 @@ namespace
 			GPlatesGui::rgba8_t outer_colour = colour;
 			outer_colour.alpha = alphas[i + 1];
 
-			boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> disk_drawable =
-				create_disk_drawable(radii[i], radii[i + 1], sin_cos_angles, inner_colour, outer_colour);
-			if (disk_drawable)
-			{
-				composite_drawable->add_drawable(*disk_drawable);
-			}
+			stream_disk(stream, radii[i], radii[i + 1], sin_cos_angles, inner_colour, outer_colour);
 		}
-		
-		return composite_drawable;
 	}
 
 
 	/**
 	 * Draws a disk on the z = 0 plane with a fixed @a colour.
 	 */
-	GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
-	create_opaque_sphere_drawable(
+	void
+	stream_opaque_sphere(
+			stream_primitives_type &stream,
 			const GPlatesGui::rgba8_t &colour)
 	{
-		GPlatesOpenGL::GLCompositeDrawable::non_null_ptr_type composite_drawable =
-			GPlatesOpenGL::GLCompositeDrawable::create();
 		std::vector<double_pair> sin_cos_angles = compute_sin_cos_angles(NUM_SLICES);
-		boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> disk_drawable =
-			create_disk_drawable(0.0, RADIUS, sin_cos_angles, colour, colour);
-		if (disk_drawable)
-		{
-			composite_drawable->add_drawable(*disk_drawable);
-		}
 
-		return composite_drawable;
+		stream_disk(stream, 0.0, RADIUS, sin_cos_angles, colour, colour);
 	}
 
 
 	/**
-	 * Creates a drawable that renders the sphere to the screen.
+	 * Creates a compiled draw state that renders the sphere to the screen.
 	 *
 	 * Note that this actually draws a flat disk on the z = 0 plane instead of an
 	 * actual sphere. This has the advantage that, if we draw to the depth buffer
@@ -234,64 +229,95 @@ namespace
 	 * globe, we avoid any artifacts due to geometries dipping in and out of the
 	 * surface of the globe.
 	 */
-	GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type
-	create_sphere_drawable(
+	GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type
+	compile_sphere_draw_state(
+			GPlatesOpenGL::GLRenderer &renderer,
+			GPlatesOpenGL::GLVertexArray &vertex_array,
 			const GPlatesGui::rgba8_t &colour)
 	{
-		if (colour.alpha == 255)
+		const bool transparent = (colour.alpha < 255);
+
+		stream_primitives_type stream;
+
+		// We'll stream vertices/indices into std::vector's since we don't know
+		// how many vertices there will be.
+		std::vector<vertex_type> vertices;
+		std::vector<vertex_element_type> vertex_elements;
+		stream_primitives_type::StreamTarget stream_target(stream);
+		stream_target.start_streaming(
+				boost::in_place(boost::ref(vertices)),
+				boost::in_place(boost::ref(vertex_elements)));
+
+		if (transparent)
 		{
-			return create_opaque_sphere_drawable(colour);
+			stream_translucent_sphere(stream, colour);
 		}
 		else
 		{
-			return create_translucent_sphere_drawable(colour);
+			stream_opaque_sphere(stream, colour);
 		}
+
+		stream_target.stop_streaming();
+
+		// We're using 16-bit indices (ie, 65536 vertices) so make sure we've not exceeded that many vertices.
+		// Shouldn't get close really but check to be sure.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				vertices.size() - 1 <= GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::MAX_INDEXABLE_VERTEX,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Streamed triangle strips end up as indexed triangles.
+		const GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type draw_vertex_array =
+				compile_vertex_array_draw_state(
+						renderer, vertex_array, vertices, vertex_elements, GL_TRIANGLES);
+
+		// Start compiling draw state that includes alpha blend state and the vertex array draw command.
+		GPlatesOpenGL::GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer);
+
+		if (transparent)
+		{
+			renderer.gl_enable(GL_BLEND);
+			renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		}
+
+		renderer.apply_compiled_draw_state(*draw_vertex_array);
+
+		return compile_draw_state_scope.get_compiled_draw_state();
 	}
 
 
-	GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type
-	create_sphere_state_set()
-	{
-		GPlatesOpenGL::GLBlendState::non_null_ptr_type blend_state =
-			GPlatesOpenGL::GLBlendState::create();
-		blend_state->gl_enable(GL_TRUE).gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		return blend_state;
-	}
-
-
-	GPlatesOpenGL::GLTransform::non_null_ptr_type
+	void
 	undo_rotation(
+			GPlatesOpenGL::GLMatrix &transform,
 			const GPlatesMaths::UnitVector3D &axis,
 			double angle_in_deg)
 	{
-		GPlatesOpenGL::GLTransform::non_null_ptr_type transform =
-				GPlatesOpenGL::GLTransform::create(GL_MODELVIEW);
 		// Undo the rotation done in Globe so that the disk always faces the camera.
-		transform->get_matrix().gl_rotate(-angle_in_deg, axis.x().dval(), axis.y().dval(), axis.z().dval());
+		transform.gl_rotate(-angle_in_deg, axis.x().dval(), axis.y().dval(), axis.z().dval());
+
 		// Rotate the axes so that the z-axis is perpendicular to the screen.
 		// This is because we draw the disk on the z = 0 plane.
-		transform->get_matrix().gl_rotate(90, 0.0, 1.0, 0.0);
-		
-		return transform;
+		transform.gl_rotate(90, 0.0, 1.0, 0.0);
 	}
 }
 
 
 GPlatesGui::OpaqueSphere::OpaqueSphere(
+		GPlatesOpenGL::GLRenderer &renderer,
 		const Colour &colour) :
 	d_view_state(NULL),
 	d_colour(colour),
-	d_drawable(create_sphere_drawable(Colour::to_rgba8(d_colour))),
-	d_state_set(create_sphere_state_set())
+	d_vertex_array(GPlatesOpenGL::GLVertexArray::create(renderer)),
+	d_compiled_draw_state(compile_sphere_draw_state(renderer, *d_vertex_array, Colour::to_rgba8(d_colour)))
 {  }
 
 
 GPlatesGui::OpaqueSphere::OpaqueSphere(
+		GPlatesOpenGL::GLRenderer &renderer,
 		const GPlatesPresentation::ViewState &view_state) :
 	d_view_state(&view_state),
 	d_colour(view_state.get_background_colour()),
-	d_drawable(create_sphere_drawable(Colour::to_rgba8(d_colour))),
-	d_state_set(create_sphere_state_set())
+	d_vertex_array(GPlatesOpenGL::GLVertexArray::create(renderer)),
+	d_compiled_draw_state(compile_sphere_draw_state(renderer, *d_vertex_array, Colour::to_rgba8(d_colour)))
 {  }
 
 
@@ -301,18 +327,19 @@ GPlatesGui::OpaqueSphere::paint(
 		const GPlatesMaths::UnitVector3D &axis,
 		double angle_in_deg)
 {
+	// Make sure we leave the OpenGL state the way it was.
+	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
+
 	// Check whether the view state's background colour has changed.
 	if (d_view_state && d_view_state->get_background_colour() != d_colour)
 	{
 		d_colour = d_view_state->get_background_colour();
-		d_drawable = create_sphere_drawable(Colour::to_rgba8(d_colour));
+		d_compiled_draw_state = compile_sphere_draw_state(renderer, *d_vertex_array, Colour::to_rgba8(d_colour));
 	}
 
-	GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type transform = undo_rotation(axis, angle_in_deg);
-	renderer.push_transform(*transform);
-	renderer.push_state_set(d_state_set);
-	renderer.add_drawable(d_drawable);
-	renderer.pop_state_set();
-	renderer.pop_transform();
-}
+	GPlatesOpenGL::GLMatrix transform;
+	undo_rotation(transform, axis, angle_in_deg);
 
+	renderer.gl_mult_matrix(GL_MODELVIEW, transform);
+	renderer.apply_compiled_draw_state(*d_compiled_draw_state);
+}

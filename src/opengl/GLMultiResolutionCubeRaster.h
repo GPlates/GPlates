@@ -30,12 +30,10 @@
 #include <cstddef> // For std::size_t
 #include <vector>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
-#include "GLClearBuffers.h"
-#include "GLClearBuffersState.h"
 #include "GLCubeSubdivisionCache.h"
 #include "GLMultiResolutionRaster.h"
-#include "GLResourceManager.h"
 #include "GLTexture.h"
 #include "GLTextureUtils.h"
 #include "OpenGLFwd.h"
@@ -51,7 +49,8 @@
 
 namespace GPlatesOpenGL
 {
-	class GLTransformState;
+	class GLRenderer;
+	class GLViewport;
 
 	/**
 	 * A raster that is re-sampled into a multi-resolution cube map (aligned with global axes).
@@ -59,12 +58,52 @@ namespace GPlatesOpenGL
 	class GLMultiResolutionCubeRaster :
 			public GPlatesUtils::ReferenceCount<GLMultiResolutionCubeRaster>
 	{
+	private:
+		/**
+		 * Maintains a tile's texture and source tile cache handle.
+		 */
+		struct TileTexture
+		{
+			explicit
+			TileTexture(
+					GLRenderer &renderer_,
+					const GLMultiResolutionRaster::cache_handle_type &source_cache_handle_ =
+							GLMultiResolutionRaster::cache_handle_type()) :
+				texture(GLTexture::create_as_auto_ptr(renderer_)),
+				source_cache_handle(source_cache_handle_)
+			{  }
+
+			/**
+			 * Clears the source cache.
+			 *
+			 * Called when 'this' tile texture is returned to the cache (so texture can be reused).
+			 */
+			void
+			returned_to_cache()
+			{
+				source_cache_handle.reset();
+			}
+
+			GLTexture::shared_ptr_type texture;
+			GLMultiResolutionRaster::cache_handle_type source_cache_handle;
+		};
+
+		/**
+		 * Typedef for a cache of tile textures.
+		 */
+		typedef GPlatesUtils::ObjectCache<TileTexture> tile_texture_cache_type;
+
 	public:
 		//! A convenience typedef for a shared pointer to a non-const @a GLMultiResolutionCubeRaster.
 		typedef GPlatesUtils::non_null_intrusive_ptr<GLMultiResolutionCubeRaster> non_null_ptr_type;
 
 		//! A convenience typedef for a shared pointer to a const @a GLMultiResolutionCubeRaster.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GLMultiResolutionCubeRaster> non_null_ptr_to_const_type;
+
+		/**
+		 * Typedef for an opaque object that caches a particular tile of this raster.
+		 */
+		typedef boost::shared_ptr<void> cache_handle_type;
 
 		/**
 		 * Typedef for a @a GLCubeSubvision cache of projection transforms.
@@ -135,18 +174,18 @@ namespace GPlatesOpenGL
 			/**
 			 * The texture representation of the raster data for this tile.
 			 */
-			GPlatesUtils::ObjectCache<GLTexture>::volatile_object_ptr_type d_render_texture;
+			tile_texture_cache_type::volatile_object_ptr_type d_tile_texture;
 
 
 			//! Constructor is private so user cannot construct.
 			QuadTreeNode(
 					const GLTransform::non_null_ptr_to_const_type &projection_transform_,
 					const GLTransform::non_null_ptr_to_const_type &view_transform_,
-					const GPlatesUtils::ObjectCache<GLTexture>::volatile_object_ptr_type &render_texture_) :
+					const tile_texture_cache_type::volatile_object_ptr_type &tile_texture_) :
 				d_is_leaf_node(true),
 				d_projection_transform(projection_transform_),
 				d_view_transform(view_transform_),
-				d_render_texture(render_texture_)
+				d_tile_texture(tile_texture_)
 			{  }
 
 			/**
@@ -184,14 +223,12 @@ namespace GPlatesOpenGL
 				const GLMultiResolutionRaster::non_null_ptr_type &source_multi_resolution_raster,
 				const cube_subdivision_projection_transforms_cache_type::non_null_ptr_type &
 						cube_subdivision_projection_transforms_cache,
-				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
 				float source_raster_level_of_detail_bias = 0.0f)
 		{
 			return non_null_ptr_type(
 					new GLMultiResolutionCubeRaster(
 							source_multi_resolution_raster,
 							cube_subdivision_projection_transforms_cache,
-							texture_resource_manager,
 							source_raster_level_of_detail_bias));
 		}
 
@@ -214,16 +251,10 @@ namespace GPlatesOpenGL
 		 *
 		 * The element type of the returned cube quad tree is @a QuadTreeNode.
 		 *
-		 * Since the returned cube quad tree is 'const' is cannot be modified.
+		 * Since the returned cube quad tree is 'const' it cannot be modified.
 		 *
 		 * NOTE: Use the 'get_quad_tree_root_node' method wrapped in 'cube_quad_tree_type' to get
 		 * the root quad tree node of a particular face.
-		 *
-		 * It returns NULL if source raster does not cover any part of the specified cube face.
-		 * The raster should cover at least one face of the cube though.
-		 *
-		 * Note that, unlike child quad tree nodes, NULL will *never* be returned for the
-		 * root quad tree node if the resolution of the source raster is not high enough.
 		 */
 		const cube_quad_tree_type &
 		get_cube_quad_tree() const
@@ -238,14 +269,15 @@ namespace GPlatesOpenGL
 		 * @a renderer is used if the tile's texture is not currently cached and needs
 		 * to be re-rendered from the source raster.
 		 *
-		 * NOTE: The returned shared pointer should only be used for rendering
+		 * NOTE: The returned texture shared pointer should only be used for rendering
 		 * and then discarded. This is because the texture is part of a texture cache
 		 * and so it cannot be recycled if a shared pointer is holding onto it.
 		 */
 		GLTexture::shared_ptr_to_const_type
 		get_tile_texture(
+				GLRenderer &renderer,
 				const QuadTreeNode &tile,
-				GLRenderer &renderer); 
+				cache_handle_type &cache_handle);
 
 	private:
 		/**
@@ -272,14 +304,9 @@ namespace GPlatesOpenGL
 		float d_source_raster_level_of_detail_bias;
 
 		/**
-		 * Used to create new texture resources.
-		 */
-		GLTextureResourceManager::shared_ptr_type d_texture_resource_manager;
-
-		/**
 		 * Cache of tile textures.
 		 */
-		GPlatesUtils::ObjectCache<GLTexture>::shared_ptr_type d_texture_cache;
+		tile_texture_cache_type::shared_ptr_type d_texture_cache;
 
 		/**
 		 * The cube quad tree.
@@ -288,17 +315,10 @@ namespace GPlatesOpenGL
 		 */
 		cube_quad_tree_type::non_null_ptr_type d_cube_quad_tree;
 
-		//
-		// Used to clear the render target colour buffer.
-		//
-		GLClearBuffersState::non_null_ptr_type d_clear_buffers_state;
-		GLClearBuffers::non_null_ptr_type d_clear_buffers;
-
 		//! Constructor.
 		GLMultiResolutionCubeRaster(
 				const GLMultiResolutionRaster::non_null_ptr_type &multi_resolution_raster,
 				const cube_subdivision_projection_transforms_cache_type::non_null_ptr_type &cube_subdivision_projection_transforms_cache,
-				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
 				float source_raster_level_of_detail_bias);
 
 
@@ -311,17 +331,18 @@ namespace GPlatesOpenGL
 		boost::optional<cube_quad_tree_type::node_type::ptr_type>
 		create_quad_tree_node(
 				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
-				GLTransformState &transform_state,
+				const GLViewport &viewport,
 				const cube_subdivision_projection_transforms_cache_type::node_reference_type &projection_transform_quad_tree_node);
 
 		void
 		render_raster_data_into_tile_texture(
 				const QuadTreeNode &tile,
-				const GLTexture::shared_ptr_type &texture,
+				TileTexture &tile_texture,
 				GLRenderer &renderer);
 
 		void
-		create_tile_texture(
+		create_texture(
+				GLRenderer &renderer,
 				const GLTexture::shared_ptr_type &texture);
 	};
 }

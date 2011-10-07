@@ -30,6 +30,8 @@
 
 #include <limits>
 #include <cmath>
+#include <boost/mpl/if.hpp>
+#include <boost/type_traits/is_integral.hpp>
 
 
 namespace GPlatesMaths
@@ -163,23 +165,81 @@ namespace GPlatesMaths
 	static const double HALF_PI = 1.57079632679489661923;
 
 
+	namespace Implementation
+	{
+		template<typename T>
+		inline
+		const T
+		convert_deg_to_rad(
+				const T &value_in_degrees,
+				boost::false_type)
+		{
+			return T((PI / 180.0) * value_in_degrees);
+		}
+
+		inline
+		double
+		convert_deg_to_rad(
+				int value_in_degrees,
+				boost::true_type)
+		{
+			// Avoid integer truncation.
+			return (PI / 180.0) * value_in_degrees;
+		}
+
+
+		template<typename T>
+		inline
+		const T
+		convert_rad_to_deg(
+				const T &value_in_radians,
+				boost::false_type)
+		{
+			return T((180.0 / PI) * value_in_radians);
+		}
+
+		inline
+		double
+		convert_rad_to_deg(
+				int value_in_radians,
+				boost::true_type)
+		{
+			// Avoid integer truncation.
+			return (180.0 / PI) * value_in_radians;
+		}
+	}
+
+	/**
+	 * Converts degrees to radians.
+	 *
+	 * Supports type 'T' of integral, floating-point and 'real_t'.
+	 */
 	template<typename T>
 	inline
-	const T
+	const typename boost::mpl::if_<boost::is_integral<T>, double, T>::type
 	convert_deg_to_rad(
 			const T &value_in_degrees)
 	{
-		return T((PI / 180.0) * value_in_degrees);
+		// Note that we need to handle floating-point truncation if @a value_in_degrees
+		// happens to be an integer literal.
+		return Implementation::convert_deg_to_rad(value_in_degrees, typename boost::is_integral<T>::type());
 	}
 
 
+	/**
+	 * Converts radians to degrees.
+	 *
+	 * Supports type 'T' of integral, floating-point and 'real_t'.
+	 */
 	template<typename T>
 	inline
-	const T
+	const typename boost::mpl::if_<boost::is_integral<T>, double, T>::type
 	convert_rad_to_deg(
 			const T &value_in_radians)
 	{
-		return T((180.0 / PI) * value_in_radians);
+		// Note that we need to handle floating-point truncation if @a value_in_degrees
+		// happens to be an integer literal.
+		return Implementation::convert_rad_to_deg(value_in_radians, typename boost::is_integral<T>::type());
 	}
 
 

@@ -43,6 +43,7 @@ GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::TopologyBoundaryRe
 {
 	setupUi(this);
 
+	fill_polygons->setCursor(QCursor(Qt::ArrowCursor));
 	QObject::connect(
 			fill_polygons,
 			SIGNAL(clicked()),

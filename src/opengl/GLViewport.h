@@ -27,6 +27,7 @@
 #ifndef GPLATES_OPENGL_GLVIEWPORT_H
 #define GPLATES_OPENGL_GLVIEWPORT_H
 
+#include <boost/operators.hpp>
 #include <opengl/OpenGL.h>
 
 
@@ -35,7 +36,8 @@ namespace GPlatesOpenGL
 	/**
 	 * OpenGL viewport parameters.
 	 */
-	class GLViewport
+	class GLViewport :
+			public boost::equality_comparable<GLViewport>
 	{
 	public:
 		//! Constructor.
@@ -45,19 +47,15 @@ namespace GPlatesOpenGL
 				GLsizei width_,
 				GLsizei height_)
 		{
-			gl_viewport(x_, y_, width_, height_);
+			set_viewport(x_, y_, width_, height_);
 		}
 
 
 		/**
-		 * Performs function of similarly named OpenGL function.
-		 *
-		 * This method is useful for changing the viewport parameters.
-		 *
-		 * NOTE: This does not call OpenGL directly - just provides a familiar interface.
+		 * Sets the viewport parameters.
 		 */
 		void
-		gl_viewport(
+		set_viewport(
 				GLint x_,
 				GLint y_,
 				GLsizei width_,
@@ -102,9 +100,21 @@ namespace GPlatesOpenGL
 		 * Returns the viewport parameters as an array of four integers.
 		 */
 		const viewport_type &
-		viewport() const
+		get_viewport() const
 		{
 			return d_viewport.viewport;
+		}
+
+
+		//! Equality operator - and operator!= provided by boost::equality_comparable.
+		bool
+		operator==(
+				const GLViewport &other) const
+		{
+			return d_viewport.x == other.d_viewport.x &&
+				d_viewport.y == other.d_viewport.y &&
+				d_viewport.width == other.d_viewport.width &&
+				d_viewport.height == other.d_viewport.height;
 		}
 
 	private:

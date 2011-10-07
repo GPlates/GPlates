@@ -26,10 +26,12 @@
 #ifndef GPLATES_PRESENTATION_RASTERVISUALLAYERPARAMS_H
 #define GPLATES_PRESENTATION_RASTERVISUALLAYERPARAMS_H
 
+#include <boost/optional.hpp>
 #include <QString>
 
 #include "VisualLayerParams.h"
 
+#include "gui/Colour.h"
 #include "gui/RasterColourPalette.h"
 
 #include "model/FeatureCollectionHandle.h"
@@ -122,6 +124,47 @@ namespace GPlatesPresentation
 		GPlatesPropertyValues::RasterType::Type
 		get_raster_type() const;
 
+		/**
+		 * Sets the opacity of the raster.
+		 */
+		void
+		set_opacity(
+				const double &opacity);
+
+		/**
+		 * Gets the opacity of the raster.
+		 */
+		double
+		get_opacity() const
+		{
+			return d_opacity;
+		}
+
+		/**
+		 * Sets the intensity of the raster.
+		 */
+		void
+		set_intensity(
+				const double &intensity);
+
+		/**
+		 * Gets the intensity of the raster.
+		 */
+		double
+		get_intensity() const
+		{
+			return d_intensity;
+		}
+
+		/**
+		 * Returns the raster modulate colour.
+		 *
+		 * This is a combination of the opacity and intensity as (I, I, I, O) where
+		 * 'I' is intensity and 'O' is opacity.
+		 */
+		GPlatesGui::Colour
+		get_modulate_colour() const;
+
 	protected:
 
 		explicit
@@ -155,6 +198,16 @@ namespace GPlatesPresentation
 		 * The type of raster the last time we examined it.
 		 */
 		GPlatesPropertyValues::RasterType::Type d_raster_type;
+
+		/**
+		 * The opacity of the raster in the range [0,1].
+		 */
+		double d_opacity;
+
+		/**
+		 * The intensity of the raster in the range [0,1].
+		 */
+		double d_intensity;
 	};
 }
 

@@ -35,14 +35,9 @@
 
 #include "maths/UnitVector3D.h"
 
-#include "opengl/GLDrawable.h"
-#include "opengl/GLStateSet.h"
+#include "opengl/GLCompiledDrawState.h"
+#include "opengl/GLVertexArray.h"
 
-
-namespace GPlatesOpenGL
-{
-	class GLRenderer;
-}
 
 namespace GPlatesPresentation
 {
@@ -61,6 +56,7 @@ namespace GPlatesGui
 		 */
 		explicit
 		OpaqueSphere(
+				GPlatesOpenGL::GLRenderer &renderer,
 				const Colour &colour);
 
 		/**
@@ -69,6 +65,7 @@ namespace GPlatesGui
 		 */
 		explicit
 		OpaqueSphere(
+				GPlatesOpenGL::GLRenderer &renderer,
 				const GPlatesPresentation::ViewState &view_state);
 
 		/**
@@ -81,12 +78,11 @@ namespace GPlatesGui
 				double angle_in_deg);
 
 	private:
-
 		const GPlatesPresentation::ViewState *d_view_state;
 		Colour d_colour;
 
-		GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type d_drawable;
-		GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type d_state_set;
+		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_vertex_array;
+		GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type d_compiled_draw_state;
 	};
 }
 

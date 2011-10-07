@@ -58,8 +58,8 @@
 
 #include "model/FeatureHandle.h"
 
-#include "opengl/GLCullVisitor.h"
-#include "opengl/GLRenderTargetType.h"
+#include "opengl/GLContext.h"
+#include "opengl/GLRenderer.h"
 
 #include "presentation/ViewState.h"
 
@@ -204,14 +204,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
 							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*this)))),
 	d_make_context_current(*d_gl_context),
-	d_gl_render_target_manager(GPlatesOpenGL::GLRenderTargetManager::create(d_gl_context)),
-	d_gl_clear_buffers_state(GPlatesOpenGL::GLClearBuffersState::create()),
-	d_gl_clear_buffers(GPlatesOpenGL::GLClearBuffers::create()),
 	d_gl_viewport(0, 0, width(), height()),
-	d_gl_model_view_transform(GPlatesOpenGL::GLTransform::create(GL_MODELVIEW)),
-	d_gl_projection_transform_include_half_globe(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
-	d_gl_projection_transform_include_full_globe(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
-	d_gl_projection_transform_include_stars(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
 	d_gl_persistent_objects(
 			GPlatesGui::PersistentOpenGLObjects::create(
 					d_gl_context, view_state.get_application_state())),
@@ -262,14 +255,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
 							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*this)))),
 	d_make_context_current(*d_gl_context),
-	d_gl_render_target_manager(GPlatesOpenGL::GLRenderTargetManager::create(d_gl_context)),
-	d_gl_clear_buffers_state(GPlatesOpenGL::GLClearBuffersState::create()),
-	d_gl_clear_buffers(GPlatesOpenGL::GLClearBuffers::create()),
 	d_gl_viewport(0, 0, width(), height()),
-	d_gl_model_view_transform(GPlatesOpenGL::GLTransform::create(GL_MODELVIEW)),
-	d_gl_projection_transform_include_half_globe(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
-	d_gl_projection_transform_include_full_globe(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
-	d_gl_projection_transform_include_stars(GPlatesOpenGL::GLTransform::create(GL_PROJECTION)),
 	d_gl_persistent_objects(
 			// Attempt to share OpenGL resources across contexts.
 			// This will depend on whether the two 'GLContext's share any state.
@@ -465,67 +451,33 @@ GPlatesQtWidgets::GlobeCanvas::draw_svg_output()
 {
 	try
 	{
-		// Beginning rendering.
-		d_gl_context->begin_render();
+		GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
 
+		// Start a begin_render/end_render scope.
+		//
+		// By default the current render target of 'renderer' is the main frame buffer (of the window).
+		//
+		// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+		//
+		// Pass in the viewport of the window currently attached to the OpenGL context.
+		GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, d_gl_viewport);
 
-		// Set up a render queue and renderer.
-		GPlatesOpenGL::GLRenderQueue::non_null_ptr_type render_queue = GPlatesOpenGL::GLRenderQueue::create();
-		GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = GPlatesOpenGL::GLRenderer::create(render_queue);
+		// Clear the colour and depth buffers of the main framebuffer.
+		renderer->gl_clear_depth(); // Clear depth to 1.0
+		renderer->gl_clear_color(); // Clear colour to (0,0,0,0).
+		renderer->gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// Push a render target corresponding to the frame buffer (of the window).
-		// This will be the render target that the main scene is rendered to.
-		// It doesn't really matter whether the render target usage is serial or parallel
-		// because the render target is the framebuffer and we're not using the results
-		// of rendering to it (like we would a render texture).
-		renderer->push_render_target(
-				GPlatesOpenGL::GLFrameBufferRenderTargetType::create(),
-				GPlatesOpenGL::GLRenderer::RENDER_TARGET_USAGE_SERIAL);
-
-		// Create a state set to set (and restore) the viewport.
-		// Actually we don't bother restoring the viewport afterwards because once we return
-		// we've finished rendering so a restored viewport wouldn't be used.
-		GPlatesOpenGL::GLViewportState::non_null_ptr_type viewport_state =
-				GPlatesOpenGL::GLViewportState::create(d_gl_viewport);
-		// Push the viewport state set.
-		renderer->push_state_set(viewport_state);
-		// Let the transform state know of the new viewport.
-		// This is necessary since it is used to determine pixel projections in world space
-		// which are in turn used for level-of-detail selection for rasters, etc.
-		renderer->get_transform_state().set_viewport(d_gl_viewport);
-
-		// Clear the colour buffer of the main framebuffer.
-		renderer->push_state_set(d_gl_clear_buffers_state);
-		renderer->add_drawable(d_gl_clear_buffers);
-		renderer->pop_state_set();
-
-		// NOTE: We're pushing 'd_gl_projection_transform_include_half_globe' not 'd_gl_projection_transform_include_full_globe'.
-		renderer->push_transform(*d_gl_projection_transform_include_half_globe);
-		renderer->push_transform(*d_gl_model_view_transform);
+		// NOTE: We're setting 'd_gl_projection_transform_include_half_globe'
+		// not 'd_gl_projection_transform_include_full_globe'.
+		renderer->gl_load_matrix(GL_PROJECTION, d_gl_projection_transform_include_half_globe);
+		renderer->gl_load_matrix(GL_MODELVIEW, d_gl_model_view_transform);
 
 		const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
 		// Paint the globe and its contents.
 		d_globe.paint_vector_output(
-				d_gl_context->get_shared_state(),
 				*renderer,
 				viewport_zoom_factor,
 				calculate_scale());
-
-		renderer->pop_transform(); // 'd_gl_model_view_transform'
-		renderer->pop_transform(); // 'd_gl_projection_transform_include_half_globe'
-
-		// Pop the viewport state set.
-		renderer->pop_state_set();
-
-		// Pop the main framebuffer.
-		renderer->pop_render_target();
-
-		// Now that the renderer has finished adding to the render queue...
-		// Draw the render queue - this is where everything is sent to OpenGL.
-		render_queue->draw(*d_gl_render_target_manager);
-
-		// Finished rendering.
-		d_gl_context->end_render();
 	}
 	catch (const GPlatesGlobal::Exception &e)
 	{
@@ -587,26 +539,35 @@ GPlatesQtWidgets::GlobeCanvas::initializeGL()
 	//
 	// Set up the initial model-view transform.
 	//
-	d_gl_model_view_transform->get_matrix().gl_load_identity();
-	d_gl_model_view_transform->get_matrix().gl_translate(EYE_X, EYE_Y, EYE_Z);
+	d_gl_model_view_transform.gl_load_identity();
+	d_gl_model_view_transform.gl_translate(EYE_X, EYE_Y, EYE_Z);
 	// Set up our universe coordinate system (the standard geometric one):
 	//   Z points up
 	//   Y points right
 	//   X points out of the screen
-	d_gl_model_view_transform->get_matrix().gl_rotate(-90.0, 1.0, 0.0, 0.0);
-	d_gl_model_view_transform->get_matrix().gl_rotate(-90.0, 0.0, 0.0, 1.0);
+	d_gl_model_view_transform.gl_rotate(-90.0, 1.0, 0.0, 0.0);
+	d_gl_model_view_transform.gl_rotate(-90.0, 0.0, 0.0, 1.0);
 
-	// If there ever happens to be two clear calls in the one render graph then this
-	// ensures they don't get grouped together (which would render to second clear obsolete).
-	d_gl_clear_buffers_state->set_enable_render_sub_group();
+	// Beginning rendering so we can clear the framebuffer.
+	// By default the current render target of 'renderer' is the main frame buffer (of the window).
+	//
+	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
 
-	// Setup the OpenGL clear buffer state and drawable.
-	d_gl_clear_buffers_state->gl_clear_depth();
-	d_gl_clear_buffers_state->gl_clear_color(); // Clear colour initially all zeros.
-	d_gl_clear_buffers->gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// Start a begin_render/end_render scope.
+	// Pass in the viewport of the window currently attached to the OpenGL context.
+	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, d_gl_viewport);
 
-	// This is what actually does the clear.
-	clear_canvas();
+	// Shouldn't really need these two calls since they set default state and we should already
+	// be in the default OpenGL state.
+	renderer->gl_clear_depth(); // Clear depth to 1.0
+	renderer->gl_clear_color(); // Clear colour to (0,0,0,0).
+
+	// Do the actual clear operation.
+	renderer->gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// Initialise those parts of globe that require a valid OpenGL context to be bound.
+	d_globe.initialiseGL(*renderer);
 }
 
 
@@ -637,70 +598,51 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 	{
 		//PROFILE_BLOCK("GlobeCanvas::paintGL");
 
-		// Beginning rendering.
-		d_gl_context->begin_render();
+		GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
 
-		// Set up a render queue and renderer.
-		GPlatesOpenGL::GLRenderQueue::non_null_ptr_type render_queue = GPlatesOpenGL::GLRenderQueue::create();
-		GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = GPlatesOpenGL::GLRenderer::create(render_queue);
+		// Start a begin_render/end_render scope.
+		//
+		// By default the current render target of 'renderer' is the main frame buffer (of the window).
+		//
+		// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+		//
+		// Pass in the viewport of the window currently attached to the OpenGL context.
+		GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, d_gl_viewport);
 
-		// Push a render target corresponding to the frame buffer (of the window).
-		// This will be the render target that the main scene is rendered to.
-		// It doesn't really matter whether the render target usage is serial or parallel
-		// because the render target is the framebuffer and we're not using the results
-		// of rendering to it (like we would a render texture).
-		renderer->push_render_target(
-				GPlatesOpenGL::GLFrameBufferRenderTargetType::create(),
-				GPlatesOpenGL::GLRenderer::RENDER_TARGET_USAGE_SERIAL);
+		// Clear the colour and depth buffers of the main framebuffer.
+		renderer->gl_clear_depth(); // Clear depth to 1.0
+		renderer->gl_clear_color(); // Clear colour to (0,0,0,0).
+		renderer->gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// Create a state set to set (and restore) the viewport.
-		// Actually we don't bother restoring the viewport afterwards because once we return
-		// we've finished rendering so a restored viewport wouldn't be used.
-		GPlatesOpenGL::GLViewportState::non_null_ptr_type viewport_state =
-				GPlatesOpenGL::GLViewportState::create(d_gl_viewport);
-		// Push the viewport state set.
-		renderer->push_state_set(viewport_state);
-		// Let the transform state know of the new viewport.
-		// This is necessary since it is used to determine pixel projections in world space
-		// which are in turn used for level-of-detail selection for rasters, etc.
-		renderer->get_transform_state().set_viewport(d_gl_viewport);
-
-		// Clear the colour buffer of the main framebuffer.
-		renderer->push_state_set(d_gl_clear_buffers_state);
-		renderer->add_drawable(d_gl_clear_buffers);
-		renderer->pop_state_set();
-
-		// NOTE: We only push the model-view transform here.
-		// The projection transform is pushed inside the globe renderer.
+		// NOTE: We only set the model-view transform here.
+		// The projection transform is set inside the globe renderer.
 		// This is because there are two projection transforms (with differing far clip planes)
 		// and the choice is determined by the globe renderer.
-		renderer->push_transform(*d_gl_model_view_transform);
+		renderer->gl_load_matrix(GL_MODELVIEW, d_gl_model_view_transform);
 
 		const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
 		const float scale = calculate_scale();
+		//
 		// Paint the globe and its contents.
-		d_globe.paint(
+		//
+		// NOTE: We hold onto the previous frame's cached resources *while* generating the current frame
+		// and then release our hold on the previous frame (by assigning the current frame's cache).
+		// This just prevents a render frame from re-using cached resources of the previous frame
+		// in order to avoid regenerating the same cached resources unnecessarily each frame.
+		// Since the view direction usually differs little from one frame to the next there is a lot
+		// of overlap that we want to reuse (and not recalculate).
+		//
+		d_gl_frame_cache_handle = d_globe.paint(
 				*renderer,
 				viewport_zoom_factor,
 				scale,
-				*d_gl_projection_transform_include_half_globe,
-				*d_gl_projection_transform_include_full_globe,
-				*d_gl_projection_transform_include_stars);
+				d_gl_projection_transform_include_half_globe,
+				d_gl_projection_transform_include_full_globe,
+				d_gl_projection_transform_include_stars);
 
-		renderer->pop_transform(); // 'd_gl_model_view_transform'
-
-		// Pop the viewport state set.
-		renderer->pop_state_set();
-
-		// Pop the main framebuffer.
-		renderer->pop_render_target();
-
-		// Now that the renderer has finished adding to the render queue...
-		// Draw the render queue - this is where everything is sent to OpenGL.
-		render_queue->draw(*d_gl_render_target_manager);
-
-		// Finished rendering.
-		d_gl_context->end_render();
+		// Finished rendering (before scope exit).
+		// OpenGL should now be back in the default OpenGL state.
+		render_scope.end_render();
 
 		// Paint the text overlay.
 		d_text_overlay->paint(
@@ -711,7 +653,7 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 	}
 	catch (const GPlatesGlobal::Exception &e)
 	{
-		std::cerr << e << std::endl;
+		qWarning() << e;
 	}
 
 	// If d_mouse_press_info is not boost::none, then mouse is down.
@@ -937,7 +879,7 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 
 	// Always fill up all of the available space.
 	update_dimensions();
-	d_gl_viewport.gl_viewport(
+	d_gl_viewport.set_viewport(
 			0, 0,
 			static_cast<GLsizei>(d_canvas_screen_width),
 			static_cast<GLsizei>(d_canvas_screen_height));
@@ -952,9 +894,9 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	GLdouble dim_ratio = d_larger_dim / d_smaller_dim;
 	GLdouble larger_dim_clipping = smaller_dim_clipping * dim_ratio;
 
-	d_gl_projection_transform_include_half_globe->get_matrix().gl_load_identity();
-	d_gl_projection_transform_include_full_globe->get_matrix().gl_load_identity();
-	d_gl_projection_transform_include_stars->get_matrix().gl_load_identity();
+	d_gl_projection_transform_include_half_globe.gl_load_identity();
+	d_gl_projection_transform_include_full_globe.gl_load_identity();
+	d_gl_projection_transform_include_stars.gl_load_identity();
 
 	//
 	// Note that the coordinate system, as set up in initialise_render_graph() is:
@@ -972,34 +914,34 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 
 	if (d_canvas_screen_width <= d_canvas_screen_height)
 	{
-		d_gl_projection_transform_include_half_globe->get_matrix().gl_ortho(
+		d_gl_projection_transform_include_half_globe.gl_ortho(
 			-smaller_dim_clipping, smaller_dim_clipping,
 			-larger_dim_clipping, larger_dim_clipping, depth_near_clipping, 
 			depth_far_clipping_include_half_globe);
 
-		d_gl_projection_transform_include_full_globe->get_matrix().gl_ortho(
+		d_gl_projection_transform_include_full_globe.gl_ortho(
 			-smaller_dim_clipping, smaller_dim_clipping,
 			-larger_dim_clipping, larger_dim_clipping, depth_near_clipping, 
 			depth_far_clipping_include_full_globe);
 
-		d_gl_projection_transform_include_stars->get_matrix().gl_ortho(
+		d_gl_projection_transform_include_stars.gl_ortho(
 			-smaller_dim_clipping, smaller_dim_clipping,
 			-larger_dim_clipping, larger_dim_clipping, depth_near_clipping, 
 			depth_far_clipping_include_stars);
 	}
 	else
 	{
-		d_gl_projection_transform_include_half_globe->get_matrix().gl_ortho(
+		d_gl_projection_transform_include_half_globe.gl_ortho(
 			-larger_dim_clipping, larger_dim_clipping,
 			-smaller_dim_clipping, smaller_dim_clipping, depth_near_clipping, 
 			depth_far_clipping_include_half_globe);
 
-		d_gl_projection_transform_include_full_globe->get_matrix().gl_ortho(
+		d_gl_projection_transform_include_full_globe.gl_ortho(
 			-larger_dim_clipping, larger_dim_clipping,
 			-smaller_dim_clipping, smaller_dim_clipping, depth_near_clipping, 
 			depth_far_clipping_include_full_globe);
 
-		d_gl_projection_transform_include_stars->get_matrix().gl_ortho(
+		d_gl_projection_transform_include_stars.gl_ortho(
 			-larger_dim_clipping, larger_dim_clipping,
 			-smaller_dim_clipping, smaller_dim_clipping, depth_near_clipping, 
 			depth_far_clipping_include_stars);
@@ -1056,18 +998,6 @@ GPlatesQtWidgets::GlobeCanvas::get_universe_coord_z(
 }
 
 
-void
-GPlatesQtWidgets::GlobeCanvas::clear_canvas(
-		const QColor& c) 
-{
-	// Set the clear colour.
-	d_gl_clear_buffers_state->gl_clear_color(c.red(), c.green(), c.blue(), c.alpha());
-	// Apply the clear buffers colour (and depth, etc) to OpenGL and
-	// then clear the buffers.
-	draw(d_gl_clear_buffers, d_gl_clear_buffers_state);
-}
-
-
 #if 0
 void
 GPlatesQtWidgets::GlobeCanvas::paintEvent(QPaintEvent *paint_event)
@@ -1083,37 +1013,6 @@ GPlatesQtWidgets::GlobeCanvas::paintEvent(QPaintEvent *paint_event)
 		painter.begin(this);
 
 		painter.setRenderHint(QPainter::Antialiasing);
-	
-		glMatrixMode(GL_PROJECTION);
-		glPushMatrix();
-		glMatrixMode(GL_MODELVIEW);
-		glPushMatrix();
-		glPushAttrib(GL_ALL_ATTRIB_BITS);
-
-		clear_canvas();
-
-		set_view();
-
-		glLoadIdentity();
-		glTranslatef(EYE_X, EYE_Y, EYE_Z);
-
-		// Set up our universe coordinate system (the standard geometric one):
-		//   Z points up
-		//   Y points right
-		//   X points out of the screen
-		glRotatef(-90.0, 1.0, 0.0, 0.0);
-		glRotatef(-90.0, 0.0, 0.0, 1.0);
-
-		// FIXME: Globe uses wrong naming convention for methods.
-		d_globe.Paint();
-
-		glPopAttrib();
-		glMatrixMode(GL_PROJECTION);
-		glPopMatrix();
-		glMatrixMode(GL_MODELVIEW);
-		glPopMatrix();
-
-		draw_colour_legend(&painter,d_globe.texture());
 
 		painter.end();
 

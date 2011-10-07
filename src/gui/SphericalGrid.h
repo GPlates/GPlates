@@ -33,8 +33,8 @@
 
 #include "GraticuleSettings.h"
 
-#include "opengl/GLDrawable.h"
-#include "opengl/GLStateSet.h"
+#include "opengl/GLCompiledDrawState.h"
+#include "opengl/GLVertexArray.h"
 
 
 namespace GPlatesOpenGL
@@ -55,6 +55,7 @@ namespace GPlatesGui
 	public:
 
 		SphericalGrid(
+				GPlatesOpenGL::GLRenderer &renderer,
 				const GraticuleSettings &graticule_settings);
 
 		/**
@@ -74,12 +75,15 @@ namespace GPlatesGui
 				double angle_in_deg);
 
 	private:
-
 		const GraticuleSettings &d_graticule_settings;
-		GPlatesOpenGL::GLStateSet::non_null_ptr_to_const_type d_state_set;
 		
 		boost::optional<GraticuleSettings> d_last_seen_graticule_settings;
-		boost::optional<GPlatesOpenGL::GLDrawable::non_null_ptr_to_const_type> d_grid_drawable;
+
+		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_grid_vertex_array;
+		boost::optional<GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type> d_grid_compiled_draw_state;
+
+		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_circumference_vertex_array;
+		boost::optional<GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type> d_circumference_compiled_draw_state;
 	};
 }
 

@@ -31,9 +31,12 @@
 #include <algorithm>
 #include <iosfwd>
 #include <boost/cstdint.hpp>
+#include <boost/operators.hpp>
 #include <opengl/OpenGL.h>
 #include <QColor>
 #include <QDataStream>
+
+#include "maths/MathsUtils.h"
 
 
 namespace GPlatesGui
@@ -284,7 +287,8 @@ namespace GPlatesGui
 	}
 
 
-	class Colour
+	class Colour :
+			public boost::equality_comparable<Colour>
 	{
 	public:
 		/*
@@ -534,6 +538,23 @@ namespace GPlatesGui
 		 * individual component.
 		 */
 		GLfloat d_rgba[RGBA_SIZE];
+
+
+		/**
+		 * Equality comparison.
+		 * Inequality operator provided by base class boost::equality_comparable.
+		 */
+		friend
+		bool
+		operator==(
+				const Colour &lhs,
+				const Colour &rhs)
+		{
+			return GPlatesMaths::are_almost_exactly_equal(lhs.red(), rhs.red()) &&
+					GPlatesMaths::are_almost_exactly_equal(lhs.green(), rhs.green()) &&
+					GPlatesMaths::are_almost_exactly_equal(lhs.blue(), rhs.blue()) &&
+					GPlatesMaths::are_almost_exactly_equal(lhs.alpha(), rhs.alpha());
+		}
 	};
 
 	std::ostream &

@@ -32,8 +32,9 @@
 #define GPLATES_QTWIDGETS_GLOBECANVAS_H
 
 #include <vector>
-#include <boost/scoped_ptr.hpp>
 #include <boost/optional.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #include <opengl/OpenGL.h>
 #include <QtOpenGL/qgl.h>
 
@@ -47,11 +48,8 @@
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
-#include "opengl/GLClearBuffers.h"
-#include "opengl/GLClearBuffersState.h"
 #include "opengl/GLContext.h"
-#include "opengl/GLRenderTargetManager.h"
-#include "opengl/GLTransform.h"
+#include "opengl/GLMatrix.h"
 #include "opengl/GLViewport.h"
 
 #include "qt-widgets/SceneView.h"
@@ -506,6 +504,11 @@ namespace GPlatesQtWidgets
 			}
 		};
 
+		/**
+		 * Typedef for an opaque object that caches a particular painting.
+		 */
+		typedef boost::shared_ptr<void> cache_handle_type;
+
 
 		GPlatesPresentation::ViewState &d_view_state;
 
@@ -516,22 +519,11 @@ namespace GPlatesQtWidgets
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
 		MakeGLContextCurrent d_make_context_current;
 
-		/**
-		 * Manages render targets and creates them as needed.
-		 */
-		GPlatesOpenGL::GLRenderTargetManager::non_null_ptr_type d_gl_render_target_manager;
-
-		//! The OpenGL frame buffer clear values (colour, depth, etc).
-		GPlatesOpenGL::GLClearBuffersState::non_null_ptr_type d_gl_clear_buffers_state;
-
-		//! An OpenGL drawable to clear the frame buffers (colour, depth, etc).
-		GPlatesOpenGL::GLClearBuffers::non_null_ptr_type d_gl_clear_buffers;
-
 		//! The OpenGL viewport used to render the main scene into this canvas.
 		GPlatesOpenGL::GLViewport d_gl_viewport;
 
 		//! The current model-view transform for regular OpenGL rendering.
-		GPlatesOpenGL::GLTransform::non_null_ptr_type d_gl_model_view_transform;
+		GPlatesOpenGL::GLMatrix d_gl_model_view_transform;
 
 		/**
 		 * The current projection transform for OpenGL rendering of the front visible half of the globe.
@@ -541,7 +533,7 @@ namespace GPlatesQtWidgets
 		 * rasterisation and hence the transformation pipeline is required for clipping
 		 * (ie, the far clip plane).
 		 */
-		GPlatesOpenGL::GLTransform::non_null_ptr_type d_gl_projection_transform_include_half_globe;
+		GPlatesOpenGL::GLMatrix d_gl_projection_transform_include_half_globe;
 
 		/**
 		 * The current projection transform for OpenGL rendering of the full globe.
@@ -549,17 +541,28 @@ namespace GPlatesQtWidgets
 		 * This is used when rendering a transparent globe since the rear half of the globe then
 		 * becomes visible.
 		 */
-		GPlatesOpenGL::GLTransform::non_null_ptr_type d_gl_projection_transform_include_full_globe;
+		GPlatesOpenGL::GLMatrix d_gl_projection_transform_include_full_globe;
 
 		/**
 		 * The current projection transform for rendering stars.
 		 *
 		 * The far clip plane distance is large enough to include the stars.
 		 */
-		GPlatesOpenGL::GLTransform::non_null_ptr_type d_gl_projection_transform_include_stars;
+		GPlatesOpenGL::GLMatrix d_gl_projection_transform_include_stars;
 
 		//! Keeps track of OpenGL objects that persist from one render to another.
 		GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type d_gl_persistent_objects;
+
+		/**
+		 * Enables frame-to-frame caching of persistent OpenGL resources.
+		 *
+		 * There is a certain amount of caching without this already.
+		 * This just prevents a render frame from re-using cached resources of the previous frame
+		 * in order to avoid regenerating the same cached resources unnecessarily each frame.
+		 * We hold onto the previous frame's cached resources *while* generating the current frame and
+		 * then release our hold on the previous frame (and continue this pattern each new frame).
+		 */
+		cache_handle_type d_gl_frame_cache_handle;
 
 		/**
 		 * If the mouse pointer is on the globe, this is the position of the mouse pointer
@@ -656,10 +659,6 @@ namespace GPlatesQtWidgets
 		double
 		get_universe_coord_z(
 				int screen_y) const;
-
-		void
-		clear_canvas(
-				const QColor& color = Qt::black);
 
 		//! Calculates scaling for lines, points and text based on size of canvas
 		float

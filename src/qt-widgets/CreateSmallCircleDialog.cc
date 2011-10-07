@@ -202,9 +202,10 @@ GPlatesQtWidgets::CreateSmallCircleDialog::handle_add()
 			return;
 		}
 
-		Real colat = GPlatesMaths::cos(convert_deg_to_rad(radius));
+		const Real colat = convert_deg_to_rad(radius);
 
-		d_small_circle_manager_ptr->add_circle(GPlatesMaths::SmallCircle(centre.position_vector(),colat));
+		d_small_circle_manager_ptr->add_circle(
+				GPlatesMaths::SmallCircle::create_colatitude(centre.position_vector(), colat));
 		valid_circle_added = true;
 	}
 
@@ -228,9 +229,10 @@ GPlatesQtWidgets::CreateSmallCircleDialog::handle_add()
 					continue;
 				}
 
-				Real colat = GPlatesMaths::cos(convert_deg_to_rad(radius));
+				const Real colat = convert_deg_to_rad(radius);
 
-				d_small_circle_manager_ptr->add_circle(GPlatesMaths::SmallCircle(centre.position_vector(),colat));
+				d_small_circle_manager_ptr->add_circle(
+						GPlatesMaths::SmallCircle::create_colatitude(centre.position_vector(), colat));
 				valid_circle_added = true;
 			}
 		}

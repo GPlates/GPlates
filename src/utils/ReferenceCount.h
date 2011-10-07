@@ -26,8 +26,10 @@
 #ifndef GPLATES_UTILS_REFERENCECOUNT_H
 #define GPLATES_UTILS_REFERENCECOUNT_H
 
-#include <boost/noncopyable.hpp>
+#include <boost/bind.hpp>
 #include <boost/checked_delete.hpp>
+#include <boost/noncopyable.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "global/GPlatesAssert.h"
 #include "global/IntrusivePointerZeroRefCountException.h"
@@ -49,12 +51,39 @@ namespace GPlatesUtils
 	 *
 	 * @a reference_count_derived must point to an object with non-zero reference count.
 	 *
-	 * @a throws @a IntrusivePointerZeroRefCountException if the reference count is zero.
+	 * @throws @a IntrusivePointerZeroRefCountException if the reference count is zero.
 	 */
 	template <class U>
 	GPlatesUtils::non_null_intrusive_ptr<U>
 	get_non_null_pointer(
 			U *reference_count_derived);
+
+	/**
+	 * Creates a boost::shared_ptr to @a reference_count_derived which is assumed to
+	 * derive directly or indirectly from @a ReferenceCount.
+	 *
+	 * The returned shared pointer and any @a non_null_intrusive_ptr pointers currently
+	 * referencing @a reference_count_derived all share ownership of it.
+	 *
+	 * @a reference_count_derived must point to an object with non-zero reference count.
+	 *
+	 * @throws @a IntrusivePointerZeroRefCountException if the reference count is zero.
+	 */
+	template <class U>
+	boost::shared_ptr<U>
+	make_shared_from_intrusive(
+			U *reference_count_derived);
+
+	/**
+	 * Creates a boost::shared_ptr to the object referenced by @a non_null_ptr.
+	 *
+	 * The returned shared pointer and @a non_null_ptr both share ownership of the referenced object.
+	 * This includes any other @a non_null_intrusive_ptr intrusive pointers referencing that same object.
+	 */
+	template <class U>
+	boost::shared_ptr<U>
+	make_shared_from_intrusive(
+			const GPlatesUtils::non_null_intrusive_ptr<U> &non_null_ptr);
 
 
 	/**
@@ -185,6 +214,39 @@ namespace GPlatesUtils
 		// This instance is already managed by intrusive-pointers, so we can simply return
 		// another intrusive-pointer to this instance.
 		return GPlatesUtils::non_null_intrusive_ptr<U>(reference_count_derived);
+	}
+
+
+	template <class U>
+	boost::shared_ptr<U>
+	make_shared_from_intrusive(
+			U *reference_count_derived)
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::IntrusivePointerZeroRefCountException>(
+				reference_count_derived->get_reference_count() != 0,
+				GPLATES_ASSERTION_SOURCE,
+				reference_count_derived);
+
+		intrusive_ptr_add_ref(reference_count_derived);
+
+		return boost::shared_ptr<U>(
+				reference_count_derived,
+				boost::bind(&intrusive_ptr_release<U>, _1));
+	}
+
+
+	template <class U>
+	boost::shared_ptr<U>
+	make_shared_from_intrusive(
+			const GPlatesUtils::non_null_intrusive_ptr<U> &non_null_ptr)
+	{
+		U *reference_count_derived = non_null_ptr.get();
+
+		intrusive_ptr_add_ref(reference_count_derived);
+
+		return boost::shared_ptr<U>(
+				reference_count_derived,
+				boost::bind(&intrusive_ptr_release<U>, _1));
 	}
 }
 

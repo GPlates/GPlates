@@ -66,24 +66,6 @@ namespace GPlatesGui
 				const GPlatesGui::Colour &colour,
 				const QFont &font = QFont(),
 				float scale = 1.0f) const = 0;
-
-		/**
-		 * Renders @a string at position (@a x , @a y , @a z ) in scene coordinates
-		 * using a particular @a colour and @a font.
-		 * No occlusion testing is performed.
-		 */
-		virtual
-		void
-		render_text(
-				double x,
-				double y,
-				double z,
-				const QString &string,
-				const GPlatesGui::Colour &colour,
-				int x_offset = 0,
-				int y_offset = 0,
-				const QFont &font = QFont(),
-				float scale = 1.0f) const = 0;
 	};
 }
 

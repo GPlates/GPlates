@@ -34,15 +34,86 @@
 
 #include "GLMatrix.h"
 #include "GLTexture.h"
-#include "GLTextureResource.h"
 
 #include "gui/Colour.h"
 
 
 namespace GPlatesOpenGL
 {
+	class GLRenderer;
+
 	namespace GLTextureUtils
 	{
+		/**
+		 * Initialises the specified texture object as a 1D texture matching the specified parameters.
+		 *
+		 * NOTE: The dimensions must be a power-of-two.
+		 *
+		 * NOTE: The specified texture will have its level zero initialised (memory allocated for image)
+		 * but the image data will be unspecified.
+		 * If @a mipmapped is true then all mipmap level will also be initialised but unspecified.
+		 *
+		 * NOTE: Other texture parameters (such as filtering, etc) are not specified here so
+		 * you will probably want to explicitly set all that state in the texture object.
+		 */
+		void
+		initialise_texture_object_1D(
+				GLRenderer &renderer,
+				const GLTexture::shared_ptr_type &texture_object,
+				GLenum target,
+				GLint internalformat,
+				GLsizei width,
+				GLint border,
+				bool mipmapped);
+
+		/**
+		 * Initialises the specified texture object as a 2D texture matching the specified parameters.
+		 *
+		 * NOTE: The dimensions must be a power-of-two.
+		 *
+		 * NOTE: The specified texture will have its level zero initialised (memory allocated for image)
+		 * but the image data will be unspecified.
+		 * If @a mipmapped is true then all mipmap level will also be initialised but unspecified.
+		 *
+		 * NOTE: Other texture parameters (such as filtering, etc) are not specified here so
+		 * you will probably want to explicitly set all that state in the texture object.
+		 */
+		void
+		initialise_texture_object_2D(
+				GLRenderer &renderer,
+				const GLTexture::shared_ptr_type &texture_object,
+				GLenum target,
+				GLint internalformat,
+				GLsizei width,
+				GLsizei height,
+				GLint border,
+				bool mipmapped);
+
+		/**
+		 * Initialises the specified texture object as a 3D texture matching the specified parameters.
+		 *
+		 * NOTE: The dimensions must be a power-of-two.
+		 *
+		 * NOTE: The specified texture will have its level zero initialised (memory allocated for image)
+		 * but the image data will be unspecified.
+		 * If @a mipmapped is true then all mipmap level will also be initialised but unspecified.
+		 *
+		 * NOTE: Other texture parameters (such as filtering, etc) are not specified here so
+		 * you will probably want to explicitly set all that state in the texture object.
+		 */
+		void
+		initialise_texture_object_3D(
+				GLRenderer &renderer,
+				const GLTexture::shared_ptr_type &texture_object,
+				GLenum target,
+				GLint internalformat,
+				GLsizei width,
+				GLsizei height,
+				GLsizei depth,
+				GLint border,
+				bool mipmapped);
+
+
 		/**
 		 * Loads the specified region of the RGBA texture with a single colour.
 		 *
@@ -52,7 +123,8 @@ namespace GPlatesOpenGL
 		 * NOTE: This will bind @a texture to whatever the currently active texture unit is.
 		 */
 		void
-		load_colour_into_texture(
+		load_colour_into_texture_2D(
+				GLRenderer &renderer,
 				const GLTexture::shared_ptr_type &texture,
 				const GPlatesGui::rgba8_t &colour,
 				unsigned int texel_width,
@@ -76,7 +148,8 @@ namespace GPlatesOpenGL
 		 * NOTE: This will bind @a texture to whatever the currently active texture unit is.
 		 */
 		void
-		load_rgba8_image_into_texture(
+		load_rgba8_image_into_texture_2D(
+				GLRenderer &renderer,
 				const GLTexture::shared_ptr_type &texture,
 				const void *image,
 				unsigned int image_width,
@@ -96,7 +169,8 @@ namespace GPlatesOpenGL
 		 * NOTE: This will bind @a texture to whatever the currently active texture unit is.
 		 */
 		void
-		load_rgba8_image_into_texture(
+		load_rgba8_image_into_texture_2D(
+				GLRenderer &renderer,
 				const GLTexture::shared_ptr_type &texture,
 				const GPlatesGui::rgba8_t *image,
 				unsigned int image_width,
@@ -114,7 +188,8 @@ namespace GPlatesOpenGL
 		 * NOTE: This will bind @a texture to whatever the currently active texture unit is.
 		 */
 		void
-		load_argb32_qimage_into_texture(
+		load_argb32_qimage_into_texture_2D(
+				GLRenderer &renderer,
 				const GLTexture::shared_ptr_type &texture,
 				const QImage &argb32_qimage,
 				unsigned int texel_u_offset = 0,
@@ -139,16 +214,18 @@ namespace GPlatesOpenGL
 		 * remaining texels black (including alpha channel).
 		 */
 		GLTexture::shared_ptr_type
-		create_xy_clip_texture(
-				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager);
+		create_xy_clip_texture_2D(
+				GLRenderer &renderer);
 
 
 		/**
 		 * Creates a new 2x1 texel clip texture whose first texel is black and second texel white (including alpha channel).
+		 *
+		 * NOTE: The created texture is actually a 2D texture and *not* a 1D texture.
 		 */
 		GLTexture::shared_ptr_type
-		create_z_clip_texture(
-				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager);
+		create_z_clip_texture_2D(
+				GLRenderer &renderer);
 
 
 		/**

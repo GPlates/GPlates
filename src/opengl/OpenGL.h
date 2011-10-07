@@ -67,4 +67,12 @@ extern "C" {
 #define GPLATES_OPENGL_BOOL(b) ((b) != 0)
 #endif
 
+
+/**
+ * Useful when converting a buffer offset to a 'void *' pointer.
+ */
+#ifndef GPLATES_OPENGL_BUFFER_OFFSET
+#define GPLATES_OPENGL_BUFFER_OFFSET(bytes) (reinterpret_cast<GLubyte *>(0) + (bytes))
+#endif
+
 #endif  // GPLATES_OPENGL_OPENGL_H

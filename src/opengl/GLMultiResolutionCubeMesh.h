@@ -28,17 +28,15 @@
 
 #include <vector>
 #include <boost/optional.hpp>
+#include <opengl/OpenGL.h>
 
-#include "GLDrawable.h"
+#include "GLCompiledDrawState.h"
 #include "GLMatrix.h"
 #include "GLTexture.h"
-#include "GLTextureResource.h"
 #include "GLTextureUtils.h"
 #include "GLUtils.h"
 #include "GLVertex.h"
 #include "GLVertexArray.h"
-#include "GLVertexElementArray.h"
-#include "GLVertexBufferResource.h"
 #include "OpenGLFwd.h"
 
 #include "global/GPlatesAssert.h"
@@ -54,7 +52,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLTransformState;
+	class GLRenderer;
 
 	/**
 	 * A mesh that is gridded along the cube subdivision tiles.
@@ -69,11 +67,11 @@ namespace GPlatesOpenGL
 		struct MeshQuadTreeNode
 		{
 			MeshQuadTreeNode(
-					const GLDrawable::non_null_ptr_to_const_type &mesh_drawable_) :
+					const GLCompiledDrawState::non_null_ptr_to_const_type &mesh_drawable_) :
 				mesh_drawable(mesh_drawable_)
 			{  }
 
-			GLDrawable::non_null_ptr_to_const_type mesh_drawable;
+			GLCompiledDrawState::non_null_ptr_to_const_type mesh_drawable;
 		};
 
 		/**
@@ -98,7 +96,7 @@ namespace GPlatesOpenGL
 			/**
 			 * Returns the mesh drawable for this quad tree node.
 			 */
-			GLDrawable::non_null_ptr_to_const_type
+			GLCompiledDrawState::non_null_ptr_to_const_type
 			get_mesh_drawable() const
 			{
 				return d_mesh_drawable;
@@ -144,7 +142,7 @@ namespace GPlatesOpenGL
 			/**
 			 * The mesh drawable.
 			 */
-			GLDrawable::non_null_ptr_to_const_type d_mesh_drawable;
+			GLCompiledDrawState::non_null_ptr_to_const_type d_mesh_drawable;
 
 			/**
 			 * The transform required to transform clip space to texture coordinates for
@@ -166,7 +164,7 @@ namespace GPlatesOpenGL
 
 			//! Constructor for when we *don't* have a mesh quad tree node - ie, deeper than the mesh tree.
 			QuadTreeNode(
-					const GLDrawable::non_null_ptr_to_const_type &mesh_drawable,
+					const GLCompiledDrawState::non_null_ptr_to_const_type &mesh_drawable,
 					const GLUtils::QuadTreeClipSpaceTransform &clip_space_transform) :
 				d_mesh_node(NULL),
 				d_mesh_drawable(mesh_drawable),
@@ -187,13 +185,9 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
-				const GLVertexBufferResourceManager::shared_ptr_type &vertex_buffer_resource_manager)
+				GLRenderer &renderer)
 		{
-			return non_null_ptr_type(
-					new GLMultiResolutionCubeMesh(
-							texture_resource_manager,
-							vertex_buffer_resource_manager));
+			return non_null_ptr_type(new GLMultiResolutionCubeMesh(renderer));
 		}
 
 
@@ -263,10 +257,15 @@ namespace GPlatesOpenGL
 		 * A value of 7 fits in nicely with the size of a 16-bit vertex element array because
 		 * (1<<7) is 128 and 128x128 tiles per cube face where each tile has 4 vertices means
 		 * 65536 vertices which fits exactly into 16-bit vertex indices.
+		 *
 		 * NOTE: 7 is quite dense so using 6 instead (still takes a lot of zoom to get to 6 so
 		 * the clip texture should only be needed for high zoom levels).
+		 *
+		 * NOTE: 6 consumes a bit too much memory due to using a compiled draw state for each mesh
+		 * drawable (adds up to a total of ~150Mb - each GLState consumes a few Kb and there are
+		 * about 32,000 at level 6). Reducing to level 5 brings the memory usage down to ~40Mb.
 		 */
-		static const unsigned int MESH_CUBE_QUAD_TREE_MAXIMUM_DEPTH = 6;
+		static const unsigned int MESH_CUBE_QUAD_TREE_MAXIMUM_DEPTH = 5;
 
 		/**
 		 * The maximum number of mesh tiles across the length of a cube face.
@@ -280,16 +279,6 @@ namespace GPlatesOpenGL
 		static const unsigned int MESH_MAXIMUM_VERTICES_PER_CUBE_FACE_SIDE =
 				MESH_MAXIMUM_TILES_PER_CUBE_FACE_SIDE + 1;
 
-
-		/**
-		 * Used to create to create the clip texture.
-		 */
-		GLTextureResourceManager::shared_ptr_type d_texture_resource_manager;
-
-		/**
-		 * Used for creating vertex arrays and vertex element arrays for the quad tree node meshes.
-		 */
-		GLVertexBufferResourceManager::shared_ptr_type d_vertex_buffer_resource_manager;
 
 		/**
 		 * Texture used to clip parts of a mesh that hang over a tile (in the cube face x/y plane).
@@ -307,11 +296,6 @@ namespace GPlatesOpenGL
 		GLVertexArray::shared_ptr_type d_meshes_vertex_array[6];
 
 		/**
-		 * All mesh drawables within a cube face share a single vertex element array.
-		 */
-		GLVertexElementArray::shared_ptr_type d_meshes_vertex_element_array[6];
-
-		/**
 		 * The cube quad tree containing mesh drawables for the quad tree node tiles.
 		 */
 		mesh_cube_quad_tree_type::non_null_ptr_type d_mesh_cube_quad_tree;
@@ -319,12 +303,13 @@ namespace GPlatesOpenGL
 
 
 		//! Constructor.
+		explicit
 		GLMultiResolutionCubeMesh(
-				const GLTextureResourceManager::shared_ptr_type &texture_resource_manager,
-				const GLVertexBufferResourceManager::shared_ptr_type &vertex_buffer_resource_manager);
+				GLRenderer &renderer);
 
 		void
-		create_mesh_drawables();
+		create_mesh_drawables(
+				GLRenderer &renderer);
 
 		void
 		create_cube_edge_vertices(
@@ -339,6 +324,7 @@ namespace GPlatesOpenGL
 
 		void
 		create_cube_face_vertex_and_index_array(
+				GLRenderer &renderer,
 				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
 				const std::vector<GLVertex> &unique_cube_face_mesh_vertices);
 
@@ -351,10 +337,12 @@ namespace GPlatesOpenGL
 
 		void
 		create_quad_tree_mesh_drawables(
+				GLRenderer &renderer,
 				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face);
 
 		mesh_cube_quad_tree_type::node_type::ptr_type
 		create_quad_tree_mesh_drawables(
+				GLRenderer &renderer,
 				unsigned int &vertex_index,
 				unsigned int &vertex_element_index,
 				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,

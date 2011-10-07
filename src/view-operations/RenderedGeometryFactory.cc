@@ -241,12 +241,14 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polygon_on_spher
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
 		const GPlatesAppLogic::resolved_raster_non_null_ptr_to_const_type &resolved_raster,
-		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette)
+		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
+		const GPlatesGui::Colour &raster_modulate_colour)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(
 			new RenderedResolvedRaster(
 					resolved_raster,
-					raster_colour_palette));
+					raster_colour_palette,
+					raster_modulate_colour));
 
 	return RenderedGeometry(rendered_geom_impl);
 }
@@ -343,39 +345,36 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_g
 
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::create_rendered_small_circle(
-	const GPlatesMaths::PointOnSphere &centre,
-	const GPlatesMaths::Real &radius_in_radians,
-	const GPlatesGui::ColourProxy &colour,
-	const float line_width_hint)
+		const GPlatesMaths::SmallCircle &small_circle,
+		const GPlatesGui::ColourProxy &colour,
+		const float line_width_hint)
 {
-	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedSmallCircle(
-		centre, radius_in_radians, colour, line_width_hint));
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(
+			new RenderedSmallCircle(small_circle, colour, line_width_hint));
 
 	return RenderedGeometry(rendered_geom_impl);
 }
 
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::create_rendered_small_circle_arc(
-	const GPlatesMaths::PointOnSphere &centre,
-	const GPlatesMaths::PointOnSphere &start_point,
-	const GPlatesMaths::Real &arc_length_in_radians,
-	const GPlatesGui::ColourProxy &colour,
-	const float line_width_hint)
+		const GPlatesMaths::SmallCircleArc &small_circle_arc,
+		const GPlatesGui::ColourProxy &colour,
+		const float line_width_hint)
 {
-	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedSmallCircleArc(
-		centre, start_point, arc_length_in_radians, colour, line_width_hint));
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(
+			new RenderedSmallCircleArc(small_circle_arc, colour, line_width_hint));
 
 	return RenderedGeometry(rendered_geom_impl);
 }
 
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::create_rendered_ellipse(
-	const GPlatesMaths::PointOnSphere &centre,
-	const GPlatesMaths::Real &semi_major_axis_radians,
-	const GPlatesMaths::Real &semi_minor_axis_radians,
-	const GPlatesMaths::GreatCircle &axis,
-	const GPlatesGui::ColourProxy &colour,
-	float line_width_hint)
+		const GPlatesMaths::PointOnSphere &centre,
+		const GPlatesMaths::Real &semi_major_axis_radians,
+		const GPlatesMaths::Real &semi_minor_axis_radians,
+		const GPlatesMaths::GreatCircle &axis,
+		const GPlatesGui::ColourProxy &colour,
+		float line_width_hint)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedEllipse(
 		centre,semi_major_axis_radians,semi_minor_axis_radians,axis,colour,line_width_hint));

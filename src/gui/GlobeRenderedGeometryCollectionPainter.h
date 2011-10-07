@@ -32,12 +32,12 @@
 
 #include "ColourScheme.h"
 #include "GlobeVisibilityTester.h"
+#include "LayerPainter.h"
 #include "PersistentOpenGLObjects.h"
 #include "RenderSettings.h"
 #include "TextRenderer.h"
 
 #include "opengl/GLContext.h"
-#include "opengl/GLUNurbsRenderer.h"
 
 #include "presentation/VisualLayers.h"
 
@@ -67,6 +67,11 @@ namespace GPlatesGui
 			private boost::noncopyable
 	{
 	public:
+		/**
+		 * Typedef for an opaque object that caches a particular painting.
+		 */
+		typedef boost::shared_ptr<void> cache_handle_type;
+
 
 		GlobeRenderedGeometryCollectionPainter(
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
@@ -83,11 +88,10 @@ namespace GPlatesGui
 		 * @param render_graph_node the render graph node that all rendering should be attached to.
 		 * @param viewport_zoom_factor is used for rendering view-dependent geometries.
 		 */
-		void
+		cache_handle_type
 		paint(
 				GPlatesOpenGL::GLRenderer &renderer,
-				const double &viewport_zoom_factor,
-				const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs_renderer);
+				const double &viewport_zoom_factor);
 
 		void
 		set_scale(
@@ -115,16 +119,17 @@ namespace GPlatesGui
 		{
 			PaintParams(
 					GPlatesOpenGL::GLRenderer &renderer,
-					const double &viewport_zoom_factor,
-					const GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type &nurbs_renderer) :
+					const double &viewport_zoom_factor) :
 				d_renderer(&renderer),
 				d_inverse_viewport_zoom_factor(1.0 / viewport_zoom_factor),
-				d_nurbs_renderer(nurbs_renderer)
+				d_cache_handle(new std::vector<cache_handle_type>())
 			{  }
 
 			GPlatesOpenGL::GLRenderer *d_renderer;
 			double d_inverse_viewport_zoom_factor;
-			GPlatesOpenGL::GLUNurbsRenderer::non_null_ptr_type d_nurbs_renderer;
+
+			// Cache of rendered geometry layers.
+			boost::shared_ptr<std::vector<cache_handle_type> > d_cache_handle;
 		};
 
 
@@ -145,6 +150,9 @@ namespace GPlatesGui
 
 		//! Used for rendering text on an OpenGL canvas
 		TextRenderer::non_null_ptr_to_const_type d_text_renderer_ptr;
+
+		//! Used to paint the layers.
+		LayerPainter d_layer_painter;
 
 		//! Used for determining whether a particular point on the globe is visible
 		GlobeVisibilityTester d_visibility_tester;

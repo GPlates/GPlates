@@ -108,7 +108,7 @@ namespace GPlatesAppLogic
 		 *
 		 * The reconstruct method type must have been already registered.
 		 *
-		 * @a throws PreconditionViolationError if @a reconstruct_method_type has not been registered.
+		 * @throws PreconditionViolationError if @a reconstruct_method_type has not been registered.
 		 */
 		bool
 		can_reconstruct_feature(
@@ -148,7 +148,7 @@ namespace GPlatesAppLogic
 		 *
 		 * The reconstruct method type must have been already registered.
 		 *
-		 * @a throws PreconditionViolationError if @a reconstruct_method_type has not been registered.
+		 * @throws PreconditionViolationError if @a reconstruct_method_type has not been registered.
 		 */
 		ReconstructMethodInterface::non_null_ptr_type
 		get_reconstruct_method(
@@ -164,7 +164,7 @@ namespace GPlatesAppLogic
 		 *
 		 * The reconstruct method type must have been already registered.
 		 *
-		 * @a throws PreconditionViolationError if @a reconstruct_method_type has not been registered.
+		 * @throws PreconditionViolationError if @a reconstruct_method_type has not been registered.
 		 */
 		ReconstructMethodInterface::non_null_ptr_type
 		create_reconstruct_method(

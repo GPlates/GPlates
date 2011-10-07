@@ -27,7 +27,10 @@
 #ifndef GPLATES_OPENGL_GLMATRIX_H
 #define GPLATES_OPENGL_GLMATRIX_H
 
+#include <boost/operators.hpp>
 #include <opengl/OpenGL.h>
+
+#include "maths/MathsUtils.h"
 
 
 namespace GPlatesMaths
@@ -59,9 +62,14 @@ namespace GPlatesOpenGL
 	 * Any matrix transformations done by @a GLMatrix instead of a quaternion are purely
 	 * view/visual related such as changing the view position, rotating the globe, etc.
 	 */
-	class GLMatrix
+	class GLMatrix :
+			public boost::equality_comparable<GLMatrix>
 	{
 	public:
+		//! The identity matrix.
+		static const GLMatrix IDENTITY;
+
+
 		//! Constructor - creates identity matrix.
 		GLMatrix()
 		{
@@ -233,7 +241,7 @@ namespace GPlatesOpenGL
 		const GLdouble *
 		get_matrix() const
 		{
-			return reinterpret_cast<const GLdouble *>(d_matrix[0]);
+			return reinterpret_cast<const GLdouble *>(d_matrix);
 		}
 
 		/**
@@ -260,6 +268,28 @@ namespace GPlatesOpenGL
 
 
 		matrix_type d_matrix;
+
+
+		//! Equality binary operator.
+		friend
+		bool
+		operator==(
+				const GLMatrix &lhs,
+				const GLMatrix &rhs)
+		{
+			// Compare the two matrices element-by-element.
+			const GLdouble *const lhs_ptr = lhs.get_matrix();
+			const GLdouble *const rhs_ptr = rhs.get_matrix();
+			for (unsigned int n = 0; n < 16; ++n)
+			{
+				if (!GPlatesMaths::are_almost_exactly_equal(lhs_ptr[n], rhs_ptr[n]))
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
 	};
 }
 
