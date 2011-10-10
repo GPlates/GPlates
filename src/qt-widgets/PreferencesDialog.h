@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,8 +27,16 @@
 #define GPLATES_QTWIDGETS_PREFERENCESDIALOG_H
 
 #include <QDialog>
+
+#include "GPlatesDialog.h"
+
 #include "PreferencesDialogUi.h"
 
+
+namespace GPlatesAppLogic
+{
+	class ApplicationState;
+}
 
 namespace GPlatesQtWidgets
 {
@@ -38,9 +46,11 @@ namespace GPlatesQtWidgets
 	 *
 	 * As it only uses a 'Close' button instead of an 'Apply/OK/Cancel' set of buttons,
 	 * it should be used as a modal dialog - exec() it, don't show() it.
+	 * FIXME: As PreferencesDialog has been converted to a GPlatesDialog, we might need
+	 * to ensure this is still the case.
 	 */
 	class PreferencesDialog: 
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_PreferencesDialog 
 	{
 		Q_OBJECT
@@ -49,6 +59,7 @@ namespace GPlatesQtWidgets
 
 		explicit
 		PreferencesDialog(
+				GPlatesAppLogic::ApplicationState &app_state,
 				QWidget *parent_ = NULL);
 
 

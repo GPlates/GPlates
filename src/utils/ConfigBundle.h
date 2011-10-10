@@ -34,6 +34,8 @@
 #include <QStringList>
 #include <QMap>
 
+#include "ConfigInterface.h"
+
 
 namespace GPlatesUtils
 {
@@ -64,14 +66,11 @@ namespace GPlatesUtils
 	 *    the presentation of UI elements, so the user knows when they've changed something.
 	 */
 	class ConfigBundle :
-			public QObject,
-			private boost::noncopyable
+			public ConfigInterface
 	{
 		Q_OBJECT
 
 	public:
-
-		typedef QMap<QString, QVariant> KeyValueMap;
 
 		/**
 		 * Constructor for an empty ConfigBundle.
@@ -80,6 +79,7 @@ namespace GPlatesUtils
 		 * and so should (ideally) be created with a QObject parent that can manage
 		 * the memory.
 		 */
+		explicit
 		ConfigBundle(
 				QObject *_parent);
 
@@ -93,6 +93,7 @@ namespace GPlatesUtils
 		 * If the key does not exist, you will get a "null" QVariant. In most cases
 		 * this will be fine to use and will convert to 0, 0.0, or "" as appropriate.
 		 */
+		virtual
 		QVariant
 		get_value(
 				const QString &key) const;
@@ -103,6 +104,7 @@ namespace GPlatesUtils
 		 *
 		 * A key can exist and can return a value without having been 'set'.
 		 */
+		virtual
 		bool
 		has_been_set(
 				const QString &key) const;
@@ -110,6 +112,7 @@ namespace GPlatesUtils
 		/**
 		 * Fetches default value directly - only useful for user interactions.
 		 */
+		virtual
 		QVariant
 		get_default_value(
 				const QString &key) const;
@@ -123,6 +126,7 @@ namespace GPlatesUtils
 		 * them, use only to sub-divide things. @a exists will return @a false if you
 		 * ask about such key-paths.
 		 */
+		virtual
 		bool
 		exists(
 				const QString &key) const;
@@ -130,6 +134,7 @@ namespace GPlatesUtils
 		/**
 		 * Tests the existence of an assigned default key/value.
 		 */
+		virtual
 		bool
 		default_exists(
 				const QString &key) const;
@@ -138,6 +143,7 @@ namespace GPlatesUtils
 		/**
 		 * Sets new user value, overriding any default that may or may not exist for that key.
 		 */
+		virtual
 		void
 		set_value(
 				const QString &key,
@@ -146,7 +152,10 @@ namespace GPlatesUtils
 
 		/**
 		 * Sets new default value, which may be shadowed by a 'user set' key.
+		 *
+		 * Only applicable for ConfigBundle.
 		 */
+		virtual
 		void
 		set_default_value(
 				const QString &key,
@@ -159,6 +168,7 @@ namespace GPlatesUtils
 		 * If the key supplied is being used as a 'directory' (a common prefix of other
 		 * keys) but there is no actual value set for it, nothing will happen.
 		 */
+		virtual
 		void
 		clear_value(
 				const QString &key);
@@ -170,6 +180,7 @@ namespace GPlatesUtils
 		 * If the key supplied is being used as a 'directory' (a common prefix of other
 		 * keys) then all those keys will be removed.
 		 */
+		virtual
 		void
 		clear_prefix(
 				const QString &prefix);
@@ -181,7 +192,27 @@ namespace GPlatesUtils
 		 *
 		 * This will include key names from the defaults even if no explicitly-set
 		 * value has been assigned by the user.
+		 *
+		 * For example, in the key structure below:-
+		 *    parameters/plateid1/name
+		 *    parameters/plateid1/type
+		 *    parameters/fromage/name
+		 *    parameters/fromage/type
+		 *    parameters/toage/name
+		 *    parameters/toage/type
+		 *    colouring/style
+		 *    colouring/mode
+		 *    callbacks_ok
+		 *
+		 * Calling subkeys() will return the entire list of keys:- 
+		 *    parameters/plateid1/name, parameters/plateid1/type, parameters/fromage/name,
+		 *    parameters/fromage/type, parameters/toage/name, parameters/toage/type,
+		 *    colouring/style, colouring/mode, callbacks_ok.
+		 *
+		 * Calling subkeys("parameters") will return only a subset:-
+		 *    plateid1/name, plateid1/type, fromage/name, fromage/type, toage/name, toage/type.
 		 */
+		virtual
 		QStringList
 		subkeys(
 				const QString &prefix = "") const;
@@ -217,6 +248,7 @@ namespace GPlatesUtils
 		 * This will include key names from the defaults even if no explicitly-set
 		 * value has been assigned by the user.
 		 */
+		virtual
 		QStringList
 		root_entries(
 				const QString &prefix = "") const;
@@ -243,6 +275,7 @@ namespace GPlatesUtils
 		 * explicitly set in the "user" scope - returning the same list of keys
 		 * that @a subkeys(prefix) would have matched.
 		 */
+		virtual
 		KeyValueMap
 		get_keyvalues_as_map(
 				const QString &prefix) const;
@@ -258,16 +291,11 @@ namespace GPlatesUtils
 		 * "relative pathnames" from the given root. All pre-existing keys for that
 		 * prefix are cleared before setting the new values.
 		 */
+		virtual
 		void
 		set_keyvalues_from_map(
 				const QString &prefix,
 				const KeyValueMap &keyvalues);
-
-	signals:
-
-		void
-		key_value_updated(
-				QString key);
 
 	private:
 

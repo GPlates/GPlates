@@ -123,7 +123,6 @@ namespace GPlatesQtWidgets
 	class ManageFeatureCollectionsDialog;
 	class MapView;
 	class MeshDialog;
-	class PreferencesDialog;
 	class PythonConsoleDialog;
 	class ReadErrorAccumulationDialog;
 	class ReconstructionViewWidget;
@@ -434,9 +433,6 @@ namespace GPlatesQtWidgets
 	
 		void
 		pop_up_animate_dialog();
-
-		void
-		pop_up_preferences_dialog();
 
 		void
 		pop_up_configure_text_overlay_dialog();
@@ -842,7 +838,6 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<FeaturePropertiesDialog> d_feature_properties_dialog_ptr;
 		boost::scoped_ptr<ManageFeatureCollectionsDialog> d_manage_feature_collections_dialog_ptr;
 		boost::scoped_ptr<MeshDialog> d_mesh_dialog_ptr;
-		boost::scoped_ptr<PreferencesDialog> d_preferences_dialog_ptr;
 		boost::scoped_ptr<ReadErrorAccumulationDialog> d_read_errors_dialog_ptr;
 		boost::scoped_ptr<SetCameraViewpointDialog> d_set_camera_viewpoint_dialog_ptr;
 		boost::scoped_ptr<SetProjectionDialog> d_set_projection_dialog_ptr;

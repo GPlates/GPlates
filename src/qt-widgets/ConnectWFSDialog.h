@@ -97,6 +97,14 @@ namespace GPlatesQtWidgets
 		void handle_proxy_state_change(int);
 
 	private:
+	
+		/**
+		 * Update the GPlates-wide proxy details based on what
+		 * the proxy widgets are set to.
+		 */
+		void
+		update_global_proxy();
+		
 
 		GPlatesAppLogic::ApplicationState& d_app_state;
 

@@ -34,11 +34,11 @@
 
 namespace GPlatesUtils
 {
-	class ConfigBundle;
+	class ConfigInterface;
 
 	/**
-	 * Given a ConfigBundle and parent widget, create a QTableView that is linked
-	 * to the ConfigBundle; changes in one will be reflected in the other.
+	 * Given a ConfigBundle (or UserPreferences) and parent widget, create a QTableView that
+	 * is linked to the ConfigBundle; changes in one will be reflected in the other.
 	 *
 	 * @param bundle - the bundle of key/value pairs.
 	 * @param parent - a QWidget to serve as the parent for the returned QTableView widget.
@@ -46,8 +46,8 @@ namespace GPlatesUtils
 	 *                 you to insert the widget into a layout somewhere.
 	 */
 	QTableView *
-	link_config_bundle_to_table(
-			ConfigBundle &bundle,
+	link_config_interface_to_table(
+			ConfigInterface &config,
 			QWidget *parent);
 	
 

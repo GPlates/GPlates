@@ -27,9 +27,19 @@
 #include <QtAlgorithms>
 #include <QCoreApplication>
 #include <QSet>
+#include <QList>
 #include <QSettings>
+
+// For magic defaults:-
 #include <QDir>
 #include <QDesktopServices>
+#include <QUrl>
+// Automatic proxy detection needs Qt 4.5, so using a conditional compile (see set_magic_defaults for more info)
+#if QT_VERSION >= 0x040500
+	#include <QNetworkProxyQuery>
+	#include <QNetworkProxyFactory>
+	#include <QNetworkProxy>
+#endif
 
 #include "UserPreferences.h"
 
@@ -39,69 +49,112 @@
 
 #include "utils/ConfigBundle.h"
 #include "utils/ConfigBundleUtils.h"
+#include "utils/NetworkUtils.h"
+#include "utils/Environment.h"
 
 
 namespace
 {
 	/**
-	 * Returns "magic" default preference values that are derived from system calls.
-	 * Returns null QVariant if no such magic key exists.
+	 * Sets "magic" default preference values that are derived from system calls.
 	 */
-	QVariant
-	get_magic_default_value(
-			const QString &key)
+	void
+	set_magic_defaults(
+			QSettings &defaults)
 	{
-		// Yes, an if/else chain is a slightly ugly way to do this, but I want to ensure that
-		// the system calls get invoked *each time* the preference value is asked for, so that
-		// in the case of e.g. user changing their Location and therefore their proxy details
-		// in the middle of a GPlates session, GPlates still works seamlessly. Maybe that's overkill.
-		// FIXME: In fact, yeah, it's probably overkill. Make a note to change this to a member-data
-		// QSettings object that does not correspond to a file or resource, that we can load these
-		// magic key/values into and then merge in with all the other keys. Maybe around the same
-		// time we do the UI for the preferences.
+		////////////////////////////////
+		// PATHS:-
+		////////////////////////////////
 
-		if (key == "paths/python_user_script_dir") {
-			// Get the platform-specific "application user data" dir. Add "scripts/" to that.
-			//   Linux: ~/.local/share/data/GPlates/GPlates/
-			//   Windows 7: C:/Users/*/AppData/Local/GPlates/GPlates/
-			QDir local_scripts_dir(QDesktopServices::storageLocation(QDesktopServices::DataLocation) + "/scripts/");
-			return QVariant(local_scripts_dir.absolutePath());
+		// paths/python_user_script_dir :-
+		//
+		// Get the platform-specific "application user data" dir. Add "scripts/" to that.
+		//   Linux: ~/.local/share/data/GPlates/GPlates/
+		//   Windows 7: C:/Users/*/AppData/Local/GPlates/GPlates/
+		QDir local_scripts_dir(QDesktopServices::storageLocation(QDesktopServices::DataLocation) + "/scripts/");
+		defaults.setValue("paths/python_user_script_dir", QVariant(local_scripts_dir.absolutePath()));
 
-		} else if (key == "paths/python_system_script_dir") {
-			// Going to have to #ifdef this per-platform for now, there's no 'nice' way to query this through Qt.
+		// paths/python_system_script_dir :-
+		//
+		// Going to have to #ifdef this per-platform for now, there's no 'nice' way to query this through Qt.
 #if defined(Q_OS_LINUX)
-			return "/usr/share/gplates/scripts";
+		defaults.setValue("paths/python_system_script_dir", "/usr/share/gplates/scripts");
 
 #elif defined(Q_OS_MAC)
-			// While in theory the place for this would be in "/Library/Application Data" somewhere, we don't use
-			// a .pkg and don't want to "install" stuff - OSX users much prefer drag-n-drop .app bundles. So,
-			// the sample scripts resource would probably best be added to the bundle.
-			QDir app_scripts_dir(QCoreApplication::applicationDirPath() + "/../Resources/scripts/");
-			return QVariant(app_scripts_dir.absolutePath());
+		// While in theory the place for this would be in "/Library/Application Data" somewhere, we don't use
+		// a .pkg and don't want to "install" stuff - OSX users much prefer drag-n-drop .app bundles. So,
+		// the sample scripts resource would probably best be added to the bundle.
+		QDir app_scripts_dir(QCoreApplication::applicationDirPath() + "/../Resources/scripts/");
+		defaults.setValue("paths/python_system_script_dir", QVariant(app_scripts_dir.absolutePath()));
 
 #elif defined(Q_OS_WIN32)
-			// The Windows Installer should drop a scripts/ directory in whatever Program Files area the gplates.exe
-			// file lands in.
-			QDir progfile_scripts_dir(QCoreApplication::applicationDirPath() + "/scripts/");
-			return QVariant(progfile_scripts_dir.absolutePath());
+		// The Windows Installer should drop a scripts/ directory in whatever Program Files area the gplates.exe
+		// file lands in.
+		QDir progfile_scripts_dir(QCoreApplication::applicationDirPath() + "/scripts/");
+		defaults.setValue("paths/python_system_script_dir", QVariant(progfile_scripts_dir.absolutePath()));
 #else
-			return "scripts/";
+		// Er. Look for the current directory?
+		defaults.setValue("paths/python_system_script_dir", "scripts/");
 #endif
 
-		} else if (key == "paths/default_export_dir") {
-			// Get the platform-specific "Documents" dir. 
-			//   Linux and OSX: ~/Documents/
-			return QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation);
+		// paths/default_export_dir :-
+		//
+		// Get the platform-specific "Documents" dir. 
+		//   Linux and OSX: ~/Documents/
+		defaults.setValue("paths/default_export_dir", QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation));
 
-		} else {
-			// No such magic key exists.
-			return QVariant();
+
+		////////////////////////////////
+		// NET:-
+		////////////////////////////////
+		
+		// net/proxy/url :-
+		//
+		// Requires Qt 4.5, which is above our minimum, so I'm putting it in as a conditional
+		// compilation bonus for those that have it. It's only useful on OSX and Windows anyway,
+		// where we're bundling the libraries each time anyway.
+		//
+		// Take any system-supplied proxy information and try to smoosh it into a 'url'
+		// style form that we can store as a string. The user can then override this string
+		// if they want to use a different proxy (or if the system does not supply proxy
+		// information to applications).
+		//
+		// We should probably write some Utils code or something to then extract this url
+		// string whenever it changes and update the global Qt-wide proxy setting.
+		// See also: net/proxy/enabled
+		defaults.setValue("net/proxy/url", "");
+		
+		// GPlates will use information from Qt where it can (OSX Frameworks and Win32 DLLs)
+#if QT_VERSION >= 0x040500
+		QNetworkProxyQuery network_proxy_query(QUrl("http://www.gplates.org"));
+		QList<QNetworkProxy> network_proxy_list = QNetworkProxyFactory::systemProxyForQuery(network_proxy_query);
+		
+		if (network_proxy_list.size() > 0) {
+			QUrl system_proxy_url = GPlatesUtils::NetworkUtils::get_url_for_proxy(network_proxy_list.first());
+			if (system_proxy_url.isValid() && ! system_proxy_url.host().isEmpty() && system_proxy_url.port() > 0) {
+				defaults.setValue("net/proxy/url", system_proxy_url);
+			}
 		}
+#endif
+		
+		// GPlates will override that default with the "http_proxy" environment variable if it is set.
+		QString environment_proxy_url = GPlatesUtils::getenv("http_proxy");
+		if ( ! environment_proxy_url.isEmpty()) {
+			defaults.setValue("net/proxy/url", environment_proxy_url);
+		}
+		
+		// net/proxy/enabled :-
+		//
+		// If we've found a suitable proxy from the system or environment, enable it by default.
+		defaults.setValue("net/proxy/enabled", ! defaults.value("net/proxy/url").toString().isEmpty());
+		
 	}
 }
 
 
-GPlatesAppLogic::UserPreferences::UserPreferences():
+GPlatesAppLogic::UserPreferences::UserPreferences(
+		QObject *_parent):
+	GPlatesUtils::ConfigInterface(_parent),
 	d_defaults(":/DefaultPreferences.conf", QSettings::IniFormat)
 {
 	// Initialise names used to identify our settings and paths in the OS.
@@ -112,6 +165,10 @@ GPlatesAppLogic::UserPreferences::UserPreferences():
 	QCoreApplication::setApplicationName("GPlates");
 	
 	initialise_versioning();
+	
+	// Set some default values that cannot be hardcoded, but are instead generated
+	// at runtime.
+	set_magic_defaults(d_defaults);
 }
 
 
@@ -125,7 +182,7 @@ GPlatesAppLogic::UserPreferences::~UserPreferences()
 
 QVariant
 GPlatesAppLogic::UserPreferences::get_value(
-		const QString &key)
+		const QString &key) const
 {
 	QSettings settings;
 	if ( ! d_key_root.isNull()) {
@@ -141,7 +198,7 @@ GPlatesAppLogic::UserPreferences::get_value(
 
 bool
 GPlatesAppLogic::UserPreferences::has_been_set(
-		const QString &key)
+		const QString &key) const
 {
 	QSettings settings;
 	if ( ! d_key_root.isNull()) {
@@ -153,18 +210,19 @@ GPlatesAppLogic::UserPreferences::has_been_set(
 
 QVariant
 GPlatesAppLogic::UserPreferences::get_default_value(
-		const QString &key)
+		const QString &key) const
 {
 	if (default_exists(key)) {
 		return d_defaults.value(key);
 	} else {
-		return get_magic_default_value(key);
+		return QVariant();
 	}
 }
 
+
 bool
 GPlatesAppLogic::UserPreferences::exists(
-		const QString &key)
+		const QString &key) const
 {
 	QSettings settings;
 	if ( ! d_key_root.isNull()) {
@@ -173,6 +231,15 @@ GPlatesAppLogic::UserPreferences::exists(
 	
 	return settings.contains(key) || default_exists(key);
 }
+
+
+bool
+GPlatesAppLogic::UserPreferences::default_exists(
+		const QString &key) const
+{
+	return d_defaults.contains(key);
+}
+
 
 void
 GPlatesAppLogic::UserPreferences::set_value(
@@ -195,8 +262,9 @@ GPlatesAppLogic::UserPreferences::set_value(
 	}
 }
 
+
 void
-GPlatesAppLogic::UserPreferences::clear_prefix(
+GPlatesAppLogic::UserPreferences::clear_value(
 		const QString &key)
 {
 	QSettings settings;
@@ -204,13 +272,40 @@ GPlatesAppLogic::UserPreferences::clear_prefix(
 		settings.beginGroup(d_key_root);
 	}
 	
+	// We need a bit of a hack to remove a single value and only that value safely
+	// in UserPreferences (leaving potential 'sub keys' alone).
+	// Unlike ConfigBundle, calling settings.remove(key) always removes everything
+	// with that prefix, so we have to emulate removing a single key by removing
+	// and then silently replacing subkeys.
+	KeyValueMap backup = get_keyvalues_as_map(key);
 	settings.remove(key);
+
+	Q_FOREACH(QString subkey, backup.keys()) {
+		QString fullkey = GPlatesUtils::compose_keyname(key, subkey);
+		settings.setValue(fullkey, backup.value(subkey));
+	}
+	
 	emit key_value_updated(key);
 }
 
+
+void
+GPlatesAppLogic::UserPreferences::clear_prefix(
+		const QString &prefix)
+{
+	QSettings settings;
+	if ( ! d_key_root.isNull()) {
+		settings.beginGroup(d_key_root);
+	}
+	
+	settings.remove(prefix);
+	emit key_value_updated(prefix);	// FIXME: Might not be doing what we want, may have to emit multiple signals.
+}
+
+
 QStringList
 GPlatesAppLogic::UserPreferences::subkeys(
-		const QString &prefix)
+		const QString &prefix) const
 {
 	QSettings settings;
 	if ( ! d_key_root.isNull()) {
@@ -227,19 +322,30 @@ GPlatesAppLogic::UserPreferences::subkeys(
 	QSet<QString> keys_default = d_defaults.allKeys().toSet();
 	d_defaults.endGroup();
 
-	// FIXME: Include magic default keys in a better way, see @a get_magic_default_value() above.
-	keys_default.insert("paths/python_user_script_dir");
-	keys_default.insert("paths/python_system_script_dir");
-
 	// and merge them together to get the full list of possible keys.
 	keys.unite(keys_default);
 
-	// TODO: Filter out all the /_description keys we get from the defaults.
-	
 	// And for presentation purposes it would be nice to get that sorted.
 	QStringList list = keys.toList();
 	qSort(list);
 	return list;
+}
+
+
+QStringList
+GPlatesAppLogic::UserPreferences::root_entries(
+		const QString &prefix) const
+{
+	// First get the full 'pathname' keys within that prefix, with the prefix stripped.
+	QStringList keys = subkeys(prefix);
+	
+	// Strip off everything past the first '/', if any.
+	GPlatesUtils::strip_all_except_root(keys);
+	
+	// Push them through a QSet to get rid of duplicates.
+	keys = keys.toSet().toList();
+
+	return keys;
 }
 
 
@@ -273,7 +379,7 @@ GPlatesAppLogic::UserPreferences::insert_keyvalues_from_configbundle(
 
 GPlatesAppLogic::UserPreferences::KeyValueMap
 GPlatesAppLogic::UserPreferences::get_keyvalues_as_map(
-		const QString &prefix)
+		const QString &prefix) const
 {
 	QStringList keys = subkeys(prefix);
 	KeyValueMap map;
@@ -345,14 +451,9 @@ GPlatesAppLogic::UserPreferences::initialise_versioning()
 	
 	// Record the most recent version of GPlates that has been run on the user's machine.
 	// FIXME: Ideally this should not overwrite if existing version >= current version,
-	// and also trigger version upgrade or version sandbox as appropriate.
+	// and also trigger version upgrade or version sandbox as appropriate...
+	// ... which we may not get around to implementing.
 	raw_settings.setValue("version/current", GPlatesGlobal::VersionString);
 }
 
 
-bool
-GPlatesAppLogic::UserPreferences::default_exists(
-		const QString &key)
-{
-	return d_defaults.contains(key);
-}

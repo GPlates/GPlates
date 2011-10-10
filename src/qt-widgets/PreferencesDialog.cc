@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -29,12 +29,34 @@
 
 #include "PreferencesDialog.h"
 
+#include "QtWidgetUtils.h"
+#include "app-logic/ApplicationState.h"
+#include "app-logic/UserPreferences.h"
+#include "utils/ConfigBundleUtils.h"
+#include "gui/ConfigValueDelegate.h"
+
 
 GPlatesQtWidgets::PreferencesDialog::PreferencesDialog(
+		GPlatesAppLogic::ApplicationState &app_state,
 		QWidget *parent_):
-	QDialog(parent_)
+	GPlatesDialog(parent_, Qt::Dialog)
 {
 	setupUi(this);
+	// It is very easy to accidentally leave a QStackedWidget on the wrong page after
+	// editing with the Designer.
+	stack_settings_ui->setCurrentIndex(0);
+	
+	// Connect up our basic signals and slots so the Category UI works.
+	connect(list_categories, SIGNAL(currentRowChanged(int)),
+			stack_settings_ui, SLOT(setCurrentIndex(int)));
+	
+	// Create and install the Table Of Every Preference Imaginable.
+	QTableView *advanced_settings_table_ptr = GPlatesUtils::link_config_interface_to_table(
+			app_state.get_user_preferences(), this);
+	QtWidgetUtils::add_widget_to_placeholder(advanced_settings_table_ptr, advanced_settings_placeholder);
+	
+	GPlatesGui::ConfigValueDelegate *delegate = new GPlatesGui::ConfigValueDelegate(this);
+	advanced_settings_table_ptr->setItemDelegate(delegate);
 }
 
 

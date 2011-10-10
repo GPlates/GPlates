@@ -50,6 +50,7 @@ namespace GPlatesQtWidgets
 	// Forward declarations for our dialogs.
 	////////////////////////////////////////////////
 	class LogDialog;
+	class PreferencesDialog;
 }
 
 namespace GPlatesGui
@@ -64,6 +65,11 @@ namespace GPlatesGui
 	 * methods available. All are parented to ViewportWindow itself, so that Qt knows how the hierarchy
 	 * of windows and dialogs should be logically arranged. However, methods for accessing those
 	 * dialogs should be kept here.
+	 *
+	 * IMPORTANT NOTE: The exact flow of this class isn't quite finalised yet, so don't refactor
+	 *                 everything in ViewportWindow just yet. Specifically, I want a neat way to
+	 *                 ensure that menu action connections can be done without having to #include
+	 *                 the entire dialog in ViewportWindow.cc.
 	 */
 	class Dialogs :
 			public QObject,
@@ -95,6 +101,10 @@ namespace GPlatesGui
 		GPlatesQtWidgets::LogDialog &
 		log_dialog();
 		
+
+		GPlatesQtWidgets::PreferencesDialog &
+		preferences_dialog();
+
 
 		////////////////////////////////////////////////////////////////////////
 

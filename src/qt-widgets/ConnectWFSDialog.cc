@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -37,13 +37,16 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
+#include "app-logic/UserPreferences.h"
 #include "file-io/ArbitraryXmlReader.h"
 #include "file-io/File.h"
 #include "file-io/GeoscimlProfile.h"
 
 #include "maths/LatLonPoint.h"
+#include "utils/NetworkUtils.h"
 
 #include "ConnectWFSDialog.h"
+
 
 GPlatesQtWidgets::ConnectWFSDialog::ConnectWFSDialog(
 		GPlatesAppLogic::ApplicationState& app_state):
@@ -74,17 +77,19 @@ GPlatesQtWidgets::ConnectWFSDialog::ConnectWFSDialog(
 		this, 
 		SLOT(cancelDownload()));
 
-	// Proxy 
+	// Proxy :-
 
-
-	QObject::connect(
-			checkBox_proxy,
-			SIGNAL(stateChanged(int)),
-			this,
-			SLOT(handle_proxy_state_change(int)));
-	checkBox_proxy->setChecked(false);
-	handle_proxy_state_change(Qt::Unchecked);
-	// FIXME: lineEdit_proxy->setText("www-cache.usyd.edu.au");
+	// Fill in defaults from UserPreferences (which themselves might be able to get info from system)
+	checkBox_proxy->setChecked(app_state.get_user_preferences().get_value("net/proxy/enabled").toBool());
+	lineEdit_proxy->setText(app_state.get_user_preferences().get_value("net/proxy/url").toString());
+	// FIXME: We can later move this to a GUI prefs config widget, and with it set the
+	//        GPlates-wide proxy that changes whenever the preference changes. For now, we're
+	//        only using it for WFS, so we only need to update the proxy details prior to a
+	//        WFS request.
+	// Update disabled/enabled checkboxes.
+	QObject::connect(checkBox_proxy, SIGNAL(stateChanged(int)),
+			this, SLOT(handle_proxy_state_change(int)));
+	handle_proxy_state_change(checkBox_proxy->checkState());
 
 	
 	// Query name 
@@ -185,15 +190,8 @@ GPlatesQtWidgets::ConnectWFSDialog::startRequest(QUrl url)
 
 	d_reply = d_qnam.get( QNetworkRequest(url) );
 
-#if 0
 	// Set proxy info if needed 
-	if(checkBox_proxy->isChecked())
-	{
-		d_qnam.setProxy(
-			QNetworkProxy( 0, lineEdit_proxy->text(), spinBox_proxy_port->value() )
-		);
-	}
-#endif
+	update_global_proxy();
 
 	QObject::connect(
 		d_reply, 
@@ -519,15 +517,20 @@ GPlatesQtWidgets::ConnectWFSDialog::handle_apply_valid_time()
 void
 GPlatesQtWidgets::ConnectWFSDialog::handle_proxy_state_change(int state)
 {
-	if(Qt::Unchecked == state)
-	{
-		lineEdit_proxy->setDisabled(true);
-		spinBox_proxy_port->setDisabled(true);
-	}
-	else
-	{
-		lineEdit_proxy->setDisabled(false);
-		spinBox_proxy_port->setDisabled(false);
+	lineEdit_proxy->setDisabled(state == Qt::Unchecked);
+}
+
+
+void
+GPlatesQtWidgets::ConnectWFSDialog::update_global_proxy()
+{
+	if (checkBox_proxy->isChecked()) {
+		QNetworkProxy proxy = GPlatesUtils::NetworkUtils::get_proxy_for_url(lineEdit_proxy->text());
+		qDebug() << "WFS: Using proxy: " << GPlatesUtils::NetworkUtils::get_url_for_proxy(proxy).toString();
+		d_qnam.setProxy(proxy);
+	} else {
+		qDebug() << "WFS: Proxy is disabled.";
+		d_qnam.setProxy( QNetworkProxy(QNetworkProxy::NoProxy) );
 	}
 }
 

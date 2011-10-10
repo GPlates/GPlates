@@ -86,7 +86,7 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 					*d_feature_collection_file_state)),
 	d_serialization_ptr(new Serialization(*this)),
 	d_session_management_ptr(new SessionManagement(*this)),
-	d_user_preferences_ptr(new UserPreferences()),
+	d_user_preferences_ptr(new UserPreferences(NULL)),
 	d_reconstruct_method_registry(new ReconstructMethodRegistry()),
 	d_layer_task_registry(new LayerTaskRegistry()),
 	d_log_model(new LogModel(NULL)),

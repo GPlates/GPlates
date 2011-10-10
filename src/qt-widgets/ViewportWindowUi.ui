@@ -103,6 +103,8 @@
     <addaction name="action_Delete_Feature"/>
     <addaction name="separator"/>
     <addaction name="action_Clear_Placeholder"/>
+    <addaction name="separator"/>
+    <addaction name="action_Preferences"/>
    </widget>
    <widget class="QMenu" name="menu_View">
     <property name="title">
@@ -1458,7 +1460,10 @@
      <normaloff>:/gnome_preferences_desktop_16.png</normaloff>:/gnome_preferences_desktop_16.png</iconset>
    </property>
    <property name="text">
-    <string>Preferences</string>
+    <string>&amp;Preferences</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+,</string>
    </property>
   </action>
   <action name="action_Show_Stars">

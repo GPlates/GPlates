@@ -24,19 +24,38 @@
  */
 
 #include <QRegExp>
+#include <QHeaderView>
 
 #include "ConfigBundleUtils.h"
 
-#include "ConfigBundle.h"
+#include "ConfigInterface.h"
+#include "ConfigModel.h"
 
 
 QTableView *
-GPlatesUtils::link_config_bundle_to_table(
-		ConfigBundle &bundle,
+GPlatesUtils::link_config_interface_to_table(
+		ConfigInterface &config,
 		QWidget *parent)
 {
-	// #### Not implemented yet!
-	return new QTableView(parent);
+	// We allocate the memory for this new table widget, and give it the parent supplied
+	// by the caller so that Qt will handle cleanup of said memory.
+	QTableView *tableview_ptr = new QTableView(parent);
+		
+	// We also create a ConfigModel to act as the intermediary between ConfigBundle and
+	// the table, and parent that to the table view widget so that it also gets cleaned
+	// up when appropriate.
+	ConfigModel *config_model_ptr = new ConfigModel(config, tableview_ptr);
+	
+	// Tell the table to use the model we created.
+	tableview_ptr->setModel(config_model_ptr);
+	
+	// Set some sensible defaults for the QTableView.
+	tableview_ptr->verticalHeader()->hide();
+	tableview_ptr->horizontalHeader()->resizeSections(QHeaderView::ResizeToContents);
+	tableview_ptr->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+	tableview_ptr->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+
+	return tableview_ptr;
 }
 
 

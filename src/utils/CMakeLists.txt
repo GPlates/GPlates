@@ -24,6 +24,9 @@ set(srcs
     ConfigBundle.h
     ConfigBundleUtils.cc
     ConfigBundleUtils.h
+    ConfigInterface.h
+    ConfigModel.cc
+    ConfigModel.h
     CopyConst.h
     Counter64.h
     DeferredCallEvent.cc
@@ -38,6 +41,8 @@ set(srcs
     KeyValueCache.h
     LatLonAreaSampling.h
     Mapper.h
+    NetworkUtils.cc
+    NetworkUtils.h
     non_null_intrusive_ptr.h
     NullIntrusivePointerHandler.cc
     NullIntrusivePointerHandler.h

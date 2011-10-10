@@ -38,7 +38,7 @@
 
 GPlatesUtils::ConfigBundle::ConfigBundle(
 		QObject *_parent):
-	QObject(_parent)
+	ConfigInterface(_parent)
 {  }
 
 

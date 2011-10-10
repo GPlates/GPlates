@@ -42,6 +42,8 @@
 // #includes for all dialogs managed by us.
 ////////////////////////////////////////////////
 #include "qt-widgets/LogDialog.h"
+#include "qt-widgets/PreferencesDialog.h"
+
 
 
 GPlatesGui::Dialogs::Dialogs(
@@ -59,6 +61,9 @@ GPlatesGui::Dialogs::Dialogs(
 
 ////////////////////////////////////////////////////////////////////////
 // Here are all the accessors for dialogs managed by this class.
+//
+// Observe that they use a static member pointer to also hold the
+// instances of those dialogs.
 ////////////////////////////////////////////////////////////////////////
 
 GPlatesQtWidgets::LogDialog &
@@ -87,6 +92,23 @@ GPlatesGui::Dialogs::lazy_pop_up_log_dialog()
 }
 
 
+GPlatesQtWidgets::PreferencesDialog &
+GPlatesGui::Dialogs::preferences_dialog()
+{
+	// The Preferences Dialog gets constructed as soon as it is first needed.
+	// As it it (currently) not lazy-loaded (as e.g. LogDialog is), this will
+	// happen as soon as signal/slot code hooks a menu item to its .pop_up() method.
+	static QPointer<GPlatesQtWidgets::PreferencesDialog> dialog_ptr = new GPlatesQtWidgets::PreferencesDialog(
+			application_state(), &viewport_window());
+
+	// The dialog not existing is a serious error.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			! dialog_ptr.isNull(), GPLATES_ASSERTION_SOURCE);
+	
+	return *dialog_ptr;
+}
+
+
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -94,6 +116,7 @@ GPlatesGui::Dialogs::lazy_pop_up_log_dialog()
 void
 GPlatesGui::Dialogs::close_all_dialogs()
 {
+	// #### FIXME: children() is referring to wrong parent here.
 	Q_FOREACH(QObject *obj, children())
 	{
 		QDialog *dialog = dynamic_cast<QDialog *>(obj);

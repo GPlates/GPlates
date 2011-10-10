@@ -889,9 +889,8 @@ GPlatesQtWidgets::ViewportWindow::connect_edit_menu_actions()
 	menu_Edit->insertAction(action_Clear_Placeholder, clear_action_ptr);
 	menu_Edit->removeAction(action_Clear_Placeholder);
 	// ----
-	// Preferences is beta functionality and not on a menu anywhere yet.
 	QObject::connect(action_Preferences, SIGNAL(triggered()),
-			this, SLOT(pop_up_preferences_dialog()));
+			&(dialogs().preferences_dialog()), SLOT(pop_up()));
 }
 
 
@@ -1486,19 +1485,6 @@ GPlatesQtWidgets::ViewportWindow::pop_up_animate_dialog()
 	}
 
 	QtWidgetUtils::pop_up_dialog(d_animate_dialog_ptr.get());
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_preferences_dialog()
-{
-	if (!d_preferences_dialog_ptr)
-	{
-		d_preferences_dialog_ptr.reset(new PreferencesDialog(this));
-	}
-
-	// PreferencesDialog is modal and should not need the 'raise' hack other dialogs use.
-	d_preferences_dialog_ptr->exec();
 }
 
 
