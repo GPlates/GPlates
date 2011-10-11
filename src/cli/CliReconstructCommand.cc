@@ -69,6 +69,9 @@ namespace
 	//! Option name for anchor plate id with short version.
 	const char *ANCHOR_PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION = "anchor-plate-id,a";
 
+	//! Option name for outputting to a single file with short version.
+	const char *SINGLE_OUTPUT_FILE_OPTION_NAME_WITH_SHORT_OPTION = "single-output-file,s";
+
 
 	/**
 	 * Parses command-line option to get the export file type.
@@ -96,7 +99,8 @@ namespace
 
 GPlatesCli::ReconstructCommand::ReconstructCommand() :
 	d_recon_time(0),
-	d_anchor_plate_id(0)
+	d_anchor_plate_id(0),
+	d_export_single_output_file(true)
 {
 }
 
@@ -153,6 +157,13 @@ GPlatesCli::ReconstructCommand::add_options(
 					&d_anchor_plate_id)->default_value(0),
 			"set anchor plate id (defaults to zero)"
 		)
+		(
+			SINGLE_OUTPUT_FILE_OPTION_NAME_WITH_SHORT_OPTION,
+			boost::program_options::value<bool>(&d_export_single_output_file)->default_value(true),
+			"output to a single file (defaults to 'true')\n"
+			"  NOTE: Only applies if export file type is Shapefile in which case\n"
+			"  'false' will generate a matching output file for each input file."
+		)
 		;
 
 	// The feature collection files can also be specified directly on command-line
@@ -171,6 +182,8 @@ GPlatesCli::ReconstructCommand::run(
 	//
 	// Load the feature collection files
 	//
+
+	qDebug() << "Single: " << d_export_single_output_file;
 
 	FeatureCollectionFileIO::feature_collection_file_seq_type reconstructable_files =
 			file_io.load_files(LOAD_RECONSTRUCTABLE_OPTION_NAME);
@@ -238,8 +251,8 @@ GPlatesCli::ReconstructCommand::run(
 				reconstructable_file_ptrs,
 				d_anchor_plate_id,
 				d_recon_time,
-				true/*export_single_output_file*/,
-				false/*export_per_input_file*/);
+				d_export_single_output_file/*export_single_output_file*/,
+				!d_export_single_output_file/*export_per_input_file*/);
 
 	return 0;
 }

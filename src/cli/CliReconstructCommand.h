@@ -90,6 +90,13 @@ namespace GPlatesCli
 		GPlatesModel::integer_plate_id_type d_anchor_plate_id;
 
 		std::string d_export_filename;
+
+		/**
+		 * Export all reconstruction geometries to a single file.
+		 *
+		 * If this is false then there is an output file for each input file.
+		 */
+		bool d_export_single_output_file;
 	};
 }
 
