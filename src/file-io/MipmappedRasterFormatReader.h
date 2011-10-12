@@ -1175,7 +1175,8 @@ namespace GPlatesFileIO
 				// Do this before setting up the render thread in case we need to throw an exception.
 				d_file.seek(LEVEL_INFO_OFFSET);
 				bool any_coverages = false;
-				quint32 expected_file_size = LEVEL_INFO_OFFSET + LEVEL_INFO_SIZE * num_levels;
+				const quint32 header_size = LEVEL_INFO_OFFSET + LEVEL_INFO_SIZE * num_levels;
+				quint32 expected_file_size = header_size;
 				for (quint32 i = 0; i != num_levels; ++i)
 				{
 					MipmappedRasterFormat::LevelInfo current_level;
@@ -1206,6 +1207,14 @@ namespace GPlatesFileIO
 				{
 					throw FileFormatNotSupportedException(
 							GPLATES_EXCEPTION_SOURCE, "detected a partially written mipmap file");
+				}
+
+				// It seems some older versions of GPlates managed to fail in such a way that the
+				// header was generated with no mipmap data (ie, the mipmap dimensions were 0 x 0).
+				if (expected_file_size == header_size)
+				{
+					throw FileFormatNotSupportedException(
+							GPLATES_EXCEPTION_SOURCE, "detected a mipmap file with header but zero dimension mipmaps");
 				}
 
 				// Set up the reader thread.
