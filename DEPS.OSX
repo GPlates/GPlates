@@ -8,6 +8,7 @@ Table of Contents
  4. Installing OpenGL
  5. Overview of different ways to install non-system dependencies
  6. Installing non-system dependencies using Macports
+ 7. Troubleshooting  
 
 Introduction
 
@@ -117,3 +118,14 @@ instead if one exists (ie, for GDAL, Qt and CMake).
     You may have to use 'sudo port upgrade --enforce-variants gdal +netcdf' if your GDAL is already up to date. 
   • Make sure you don't have multiple installations of the same library.
     For example, /opt/local/include/gdal* and /Library/Frameworks/GDAL.framework.
+	
+Troubleshooting
+
+   • If you are using Mac OS X 10.5, the latest precompiled Qt binary on Qt offcial website probably doesn't work well for you. 
+     You might experience crash during installing Qt or bad library files during compiling gplates.
+     Sometimes, the Qt installed from Macport also doesn't work. The package you created might not be able to 
+	 install gplates sucessfully on other machines. The symptom could be that gplates complains missing menu_nib files during startup. 
+     The solution is to download Qt source code and compile it. You need to set QTDIR env variable to tell cmake where to find Qt.
+   • It seems the OpenCL frameworks on Mac OS X 10.6 and 10.7 are incompatible. So, if gplates complains OpenCL, 
+     you need to make sure you are using the installation package created on the same version Mac OS X.
+	
