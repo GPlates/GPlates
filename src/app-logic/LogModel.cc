@@ -226,7 +226,7 @@ GPlatesAppLogic::LogModel::flush_buffer()
 	d_buffer.clear();
 	
 	beginInsertRows(QModelIndex(), d_log.size(), d_log.size() + compressed.size() - 1);
-	d_log.append(compressed);
+	d_log += compressed;
 	endInsertRows();
 }
 
