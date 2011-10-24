@@ -66,8 +66,8 @@ GPlatesPropertyValues::GpmlArray::directly_modifiable_fields_equal(
 		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type>::const_iterator
 			iter = d_members.begin(),
 			end = d_members.end(),
-			o_iter = other_casted.d_members.begin(),
-			o_end = other_casted.d_members.end();
+			o_iter = other_casted.d_members.begin();
+			//o_end = other_casted.d_members.end();
 
 		if (d_members.size() != other_casted.d_members.size())
 		{

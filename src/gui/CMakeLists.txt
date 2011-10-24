@@ -48,6 +48,8 @@ set(srcs
     Dialogs.h
     DockState.cc
     DockState.h
+    DrawStyleAdapters.cc
+    DrawStyleAdapters.h
     DrawStyleManager.cc
     DrawStyleManager.h
     EnableCanvasTool.cc
@@ -149,11 +151,15 @@ set(srcs
     Mipmapper.h
     OpaqueSphere.cc
     OpaqueSphere.h
+    Palette.cc
+    Palette.h
     PersistentOpenGLObjects.cc
     PersistentOpenGLObjects.h
     PlateIdColourPalettes.cc
     PlateIdColourPalettes.h
     ProjectionException.h
+    PythonConfiguration.cc
+    PythonConfiguration.h
     PythonConsoleHistory.cc
     PythonConsoleHistory.h
     PythonManager.cc

@@ -30,6 +30,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 #include <boost/optional.hpp>
 #include <boost/noncopyable.hpp>
 
@@ -59,6 +60,12 @@ namespace GPlatesGui
 		get_colour(
 				const std::string &name) const;
 
+		const std::map<std::string, std::vector<int> >&
+		get_name_map() const
+		{
+			return d_color_name_table;
+		}
+
 	protected:
 
 		void
@@ -71,6 +78,7 @@ namespace GPlatesGui
 	private:
 
 		std::map<std::string, Colour> colours;
+		std::map<std::string, std::vector<int> > d_color_name_table;
 
 	};
 

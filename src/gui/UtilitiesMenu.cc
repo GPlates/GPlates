@@ -35,8 +35,9 @@
 #include "api/PythonInterpreterLocker.h"
 #include "api/Sleeper.h"
 
-Q_DECLARE_METATYPE( boost::function< void () > )
+#if !defined(GPLATES_NO_PYTHON)
 
+Q_DECLARE_METATYPE( boost::function< void () > )
 
 GPlatesGui::UtilitiesMenu::UtilitiesMenu(
 		QMenu *utilities_menu,
@@ -110,4 +111,5 @@ GPlatesGui::UtilitiesMenu::get_category_menu(
 		return iter->second;
 	}
 }
+#endif
 

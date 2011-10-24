@@ -54,6 +54,8 @@ namespace GPlatesGlobal
 			d_line_num(exception_source.get_line_num())
 		{  }
 
+		~RetrievalFromEmptyContainerException() throw(){}
+
 	protected:
 		virtual
 		const char *

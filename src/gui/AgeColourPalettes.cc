@@ -73,21 +73,21 @@ GPlatesGui::DefaultAgeColourPalette::get_colour(
 	}
 
 	double position = (dval - d_lower_bound) / (d_upper_bound - d_lower_bound);
-	return ColourSpectrum::get_colour_at(position);
+	return ColourSpectrum().get_colour_at(position);
 }
 
 
 GPlatesGui::Colour
 GPlatesGui::DefaultAgeColourPalette::get_background_colour() const
 {
-	return ColourSpectrum::get_colour_at(0.0);
+	return *ColourSpectrum().get_colour_at(0.0);
 }
 
 
 GPlatesGui::Colour
 GPlatesGui::DefaultAgeColourPalette::get_foreground_colour() const
 {
-	return ColourSpectrum::get_colour_at(1.0);
+	return *ColourSpectrum().get_colour_at(1.0);
 }
 
 

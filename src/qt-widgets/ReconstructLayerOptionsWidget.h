@@ -77,6 +77,8 @@ namespace GPlatesQtWidgets
 		const QString &
 		get_title();
 
+		~ReconstructLayerOptionsWidget();
+
 	private slots:
 
 		void

@@ -29,7 +29,7 @@
 #include "QtWidgetUtils.h"
 #include "ViewportWindow.h"
 #include "VisualLayersListView.h"
-
+#include "utils/ComponentManager.h"
 
 GPlatesQtWidgets::VisualLayersWidget::VisualLayersWidget(
 		GPlatesPresentation::VisualLayers &visual_layers,
@@ -68,6 +68,11 @@ GPlatesQtWidgets::VisualLayersWidget::VisualLayersWidget(
 
 	// Hide things for now...
 	control_widget->hide();
+
+	if(GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
+	{
+		colouring_button->hide();
+	}
 }
 
 

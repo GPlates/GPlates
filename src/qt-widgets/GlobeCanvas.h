@@ -119,7 +119,6 @@ namespace GPlatesQtWidgets
 		const GPlatesMaths::PointOnSphere &
 		centre_of_viewport();
 
-		explicit
 		GlobeCanvas(
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
@@ -130,7 +129,6 @@ namespace GPlatesQtWidgets
 	private:
 
 		//! Private constructor for use by clone()
-		explicit
 		GlobeCanvas(
 				GlobeCanvas *existing_globe_canvas,
 				GPlatesPresentation::ViewState &view_state_,

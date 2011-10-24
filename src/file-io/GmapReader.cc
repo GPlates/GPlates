@@ -359,7 +359,7 @@ namespace
 		unsigned int &line_number,
 		GPlatesFileIO::ReadErrorAccumulation &errors)
 	{
-		qint64 last_good_position = input.pos();
+		//qint64 last_good_position = input.pos();
 		
 		VirtualGeomagneticPole vgp;
 		vgp.header = header_line;		
@@ -489,7 +489,7 @@ namespace
 			throw GPlatesFileIO::ReadErrors::GmapFieldFormatError;
 		}
 		vgp.age = *age;
-		last_good_position = input.pos();
+		//last_good_position = input.pos();
 
 		// If we've come this far, we should have enough information to create the feature.
 

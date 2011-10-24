@@ -51,27 +51,19 @@ using namespace boost::python;
 DISABLE_GCC_WARNING("-Wold-style-cast")
 
 QString
-GPlatesApi::PythonUtils::stringify_object(
-		const object &obj,
-		const char *coding)
+GPlatesApi::PythonUtils::to_QString(const object &obj)
 {
-	PythonInterpreterLocker interpreter_locker;
-
-	object decoded;
-	if (PyUnicode_Check(obj.ptr()))
+	try
 	{
-		decoded = obj;
+		PythonInterpreterLocker interpreter_locker;
+		const char* w_str = extract<const char*>(obj);
+		return QString::fromUtf8(w_str);
 	}
-	else if (PyString_Check(obj.ptr()))
+	catch (const error_already_set &)
 	{
-		decoded = obj.attr("decode")(coding, "replace");
+		qWarning() << GPlatesApi::PythonUtils::get_error_message();
 	}
-	else
-	{
-		decoded = str(obj).attr("decode")(coding, "replace");
-	}
-	
-	return GPlatesUtils::make_qstring_from_wstring(extract<std::wstring>(decoded));
+	return QString();
 }
 
 // See above.

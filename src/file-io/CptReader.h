@@ -47,6 +47,8 @@
 #include "gui/ColourPaletteAdapter.h"
 #include "gui/CptColourPalette.h"
 
+#include "global/LogException.h"
+
 #include "maths/Real.h"
 
 #include "utils/Parse.h"
@@ -1187,6 +1189,180 @@ namespace GPlatesFileIO
 
 			return typename GPlatesGui::ColourPalette<IntType>::maybe_null_ptr_type();
 		}
+	};
+
+	class CptParser
+	{
+		public:
+		enum Model
+		{
+			RGB,
+			HSV,
+			CMYK,
+			RGB_HEX, //#00ff00 
+			GREY,
+			GMT_NAME,
+			EMPTY
+		};
+
+		struct ColourData
+		{
+			Model model;
+			std::vector<float> float_array;
+			QString str_data;
+		};
+
+		struct CategoricalEntry
+		{
+			QString key;
+			ColourData data;
+			QString label;
+		};
+
+
+		struct RegularEntry
+		{
+			float key1, key2;
+			ColourData data1, data2;
+			QString label_opt, label;
+		};
+
+		explicit
+		CptParser(const QString& file_path) ;
+
+		std::vector<ColourData>
+		bfn_data() const
+		{
+			std::vector<ColourData> ret;
+			ret.push_back(d_back);
+			ret.push_back(d_fore);
+			ret.push_back(d_nan);
+			return ret;
+		}
+
+		const std::vector<CategoricalEntry>&
+		catagorical_entries()
+		{
+			return	d_categorical_entries;
+		}
+
+		const std::vector<RegularEntry>&
+		regular_entries()
+		{
+			return d_regular_entries;
+		}
+
+	protected:
+		void
+		process_line(const QString& line);
+
+		/*
+		* Process background color, foreground color and NaN color definition.
+		*/
+		void
+		process_bfn(
+				QStringList& tokens,
+				ColourData& data);
+
+		/*
+		* Process regular cpt data.
+		*/
+		void
+		process_regular_line(QStringList& tokens);
+		
+		ColourData
+		read_first_colour_data(QStringList& tokens);
+		
+		ColourData
+		read_second_colour_data(QStringList& tokens);
+
+		/*
+		* Process categorical cpt data.
+		*/
+		void
+		process_categorical_line(QStringList& tokens);
+
+		void
+		process_comment(const QString& line);
+
+		/*
+		Fill examples: 
+			-G128				Solid gray
+			-G127/255/0			Chartreuse, R/G/B-style
+			-G#00ff00			Green, hexadecimal RGB code
+			-G25-0.86-0.82		Chocolate, h-s-v – style
+			-GDarkOliveGreen1	One of the named colors
+			-Gp300/7			Simple diagonal hachure pattern in b/w at 300 dpi
+			-Gp300/7:Bred		Same, but with red lines on white
+			-Gp300/7:BredF-		Now the gaps between red lines are transparent
+			-Gp100/marble.ras	Using user image of marble as the fill at 100 dpi
+		
+		For "fill" specification, see 
+			chapter 4.14
+			<The Generic Mapping Tools>
+			Version 4.5.7
+			Technical Reference and Cookbook by Pål (Paul)Wessel
+		*/
+		ColourData 
+		parse_gmt_fill(const QString& token);
+
+		bool
+		is_gmt_color_name(const QString& name);
+
+		bool
+		is_valid_rgb(float r, float g, float b)
+		{
+			return !(r<0.0 || r>255.0) && !(g<0.0 || g>255.0) && !(b<0.0 || b>255.0);
+		}
+
+		bool
+		is_valid_hsv(float h, float s, float v)
+		{
+			return !(h<0.0 || h>360.0) && !(s<0.0 || s>1.0) && !(v<0.0 || v>1.0);
+		}
+
+		bool
+		is_valid_cmyk(float c, float m, float y, float k)
+		{
+			return !(c<0.0 || c>100.0) && !(m<0.0 || m>100.0) && !(y<0.0 || y>100.0) && !(k<0.0 || k>100.0);
+		}
+
+		/*
+		* Given the raw data in QStringList, parse the data into ColourData.
+		* This function assume the first 3 QString items are color data.
+		* This function will strip off the first 3 QString items after parsing it.
+		* Caller is responsible for giving expected data input.
+		*/
+		void
+		parse_rbg_data(
+				QStringList& tokens, 
+				ColourData& data);
+		/*
+		* Given the raw data in QStringList, parse the data into ColourData.
+		* This function assume the first 3 QString items are color data.
+		* This function will strip off the first 3 QString items after parsing it.
+		* Caller is responsible for giving expected data input.
+		*/
+		void
+		parse_hsv_data(
+				QStringList& tokens, 
+				ColourData& data);
+		/*
+		* Given the raw data in QStringList, parse the data into ColourData.
+		* This function assume the first 4 QString items are color data.
+		* This function will strip off the first 4 QString items after parsing it.
+		* Caller is responsible for giving expected data input.
+		*/
+		void
+		parse_cmyk_data(
+				QStringList& tokens, 
+				ColourData& data);
+		
+
+		Model d_default_model;
+		ColourData d_back, d_fore, d_nan;
+		std::vector<CategoricalEntry> d_categorical_entries;
+		std::vector<RegularEntry> d_regular_entries;
 	};
 }
 

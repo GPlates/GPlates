@@ -321,3 +321,442 @@ GPlatesFileIO::CptReaderInternals::parse_regular_cpt_label(
 	}
 }
 
+
+/************************************************
+* New implementation of cpt reader.
+*************************************************/
+
+GPlatesFileIO::CptParser::CptParser(const QString& file_path) :
+	d_default_model(RGB)
+{
+	QFile file(file_path);
+	if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+	{
+		throw GPlatesGlobal::LogException(
+			GPLATES_EXCEPTION_SOURCE,
+			("Cannot open cpt file: " + file_path));
+	}
+
+	QTextStream in(&file);
+	while (!in.atEnd()) 
+	{
+		QString line = in.readLine().simplified();
+		if(line.length() > 0)
+			process_line(line);
+	}
+}
+
+
+void
+GPlatesFileIO::CptParser::process_line(const QString& line)
+{
+	qDebug() << "Processing: " << line;
+	//we can use finite state machine here,
+	//however, since cpt file is so simple that FSM is a little bit overkilled...
+
+	if(line.startsWith('#'))
+	{
+		process_comment(line);
+		return;
+	}
+
+	QStringList tokens = line.split(' ');
+	if(tokens.length() < 2) // no enough tokens
+	{
+		qWarning() << "Invalid line in cpt file: [" << line << "]";
+		return;
+	}
+
+	if(tokens.length() <= 3) // only could be categorical line
+	{
+		return process_categorical_line(tokens);
+	}
+
+	QString first = tokens.at(0);
+	if(first == "B")
+		process_bfn(tokens,d_back);
+	else if(first == "F")
+		process_bfn(tokens,d_fore);
+	else if(first == "N")
+		process_bfn(tokens,d_nan);
+	else
+		process_regular_line(tokens);
+			
+	return;
+}
+
+
+void
+GPlatesFileIO::CptParser::process_regular_line(QStringList& tokens)
+{
+	RegularEntry entry;
+
+	//strip off annotation fields
+	bool annotation_flag = false;
+	for(int i = 0; i < tokens.length(); )
+	{
+		//annotation begins with ";", until the end of line.
+		if(!annotation_flag && tokens.at(i).simplified().startsWith(";"))
+		{
+			annotation_flag = true;
+		}
+		if(annotation_flag)
+		{
+			entry.label.append(tokens.takeAt(i) + " ");
+		}
+		else
+		{
+			++i;
+		}
+	}
+
+	QString last_token = tokens.last();
+	if(last_token == "L" || last_token == "U" || last_token == "B")
+	{
+		entry.label_opt = last_token;
+		tokens.removeLast();
+	}
+
+	//each of the following steps will remove the token(s) which has(have) been parsed.
+	entry.key1 = tokens.takeFirst().toFloat();
+	entry.data1 = read_first_colour_data(tokens); 
+	entry.key2 = tokens.takeFirst().toFloat();
+	entry.data2 = read_second_colour_data(tokens);
+	
+	d_regular_entries.push_back(entry);
+}
+
+
+GPlatesFileIO::CptParser::ColourData
+GPlatesFileIO::CptParser::read_first_colour_data(QStringList& tokens)
+{
+	ColourData data;
+	QString token = tokens.at(0);
+	if(token == "-")
+	{
+		data.model = EMPTY;
+		tokens.removeFirst();
+		return data;
+	}
+
+	int len = tokens.length();
+	if(len == 3) // the length indicates that the first color is empty, color name or gmt fill.
+	{
+		QString first_token = tokens.takeAt(0);
+		if(is_gmt_color_name(first_token))
+		{
+			data.model = GMT_NAME;
+			data.str_data = first_token;
+		}
+		else
+		{
+			data = parse_gmt_fill(first_token);
+		}
+	}
+	else if(7 == len || 5 == len)// the length indicates rgb or hsv
+	{
+		data.model = d_default_model;
+		if(d_default_model == RGB)
+		{
+			parse_rbg_data(tokens,data);
+		}
+		else if(d_default_model == HSV)
+		{
+			parse_hsv_data(tokens,data);
+		}
+	}
+	else if(9 == len || 6 ==len) // the length indicates cmyk
+	{
+		data.model = CMYK;
+		parse_cmyk_data(tokens,data);
+	}
+	else
+	{
+		throw GPlatesGlobal::LogException(
+			GPLATES_EXCEPTION_SOURCE,
+			("Failed to parse regular cpt line."));
+	}
+	return data;
+}
+
+
+GPlatesFileIO::CptParser::ColourData
+GPlatesFileIO::CptParser::read_second_colour_data(QStringList& tokens)
+{
+	ColourData data;
+	int len = tokens.length();
+	if(len == 1) // the length indicates empty, color name or gmt fill.
+	{
+		QString first_token = tokens.takeAt(0);
+		if(first_token == "-")
+		{
+			data.model = EMPTY;
+		}
+		else if(is_gmt_color_name(first_token))
+		{
+			data.model = GMT_NAME;
+			data.str_data = first_token;
+		}
+		else
+		{
+			data = parse_gmt_fill(first_token);
+		}
+	}
+	else if(3 == len)// the length indicates rgb or hsv
+	{
+		data.model = d_default_model;
+		if(d_default_model == RGB)
+		{
+			parse_rbg_data(tokens,data);
+		}
+		else if(d_default_model == HSV)
+		{
+			parse_hsv_data(tokens,data);
+		}
+	}
+	else if(4 == len) // the length indicates cmyk
+	{
+		data.model = CMYK;
+		parse_cmyk_data(tokens,data);
+	}
+	else
+	{
+		throw GPlatesGlobal::LogException(
+			GPLATES_EXCEPTION_SOURCE,
+			("Failed to parse regular cpt line."));
+	}
+	return data;
+}
+
+
+void
+GPlatesFileIO::CptParser::process_categorical_line(QStringList& tokens)
+{
+	if(tokens.length() < 2)
+		return;
+
+	CategoricalEntry entry;
+	entry.key = tokens.at(0);
+	entry.data = parse_gmt_fill(tokens.at(1));
+	if(tokens.length() == 3)
+	{
+		entry.label = tokens.at(2);
+	}
+	d_categorical_entries.push_back(entry);
+}
+
+void
+GPlatesFileIO::CptParser::process_comment(const QString& line)
+{
+	//remove all spaces
+	QString str = line.toUpper();
+	int i = 0;
+	while( i<str.length() )
+	{
+		if(str.at(i).isSpace())
+			str = str.remove(i,1);
+		else
+			i++;
+	}
+				
+	if(line.endsWith("COLOR_MODEL=HSV"))
+			d_default_model = HSV;
+}
+
+GPlatesFileIO::CptParser::ColourData 
+GPlatesFileIO::CptParser::parse_gmt_fill(const QString& token)
+{
+	if(token.startsWith('p'))
+	{
+		throw GPlatesGlobal::LogException(
+			GPLATES_EXCEPTION_SOURCE,
+			("Do not support pattern yet: " + token));
+	}
+
+	ColourData data;
+
+	//TODO: this function needs to be rewritten.
+	//try QRegExp
+	if (token.contains('/'))
+	{
+		// R/G/B triplet.
+		QStringList subtokens = token.split('/');
+		if (subtokens.size() != 3)
+		{
+			throw GPlatesGlobal::LogException(
+					GPLATES_EXCEPTION_SOURCE,
+					("Failed to parse fill token: " + token));
+		}
+		data.model = RGB;
+		parse_rbg_data(subtokens, data);
+		return data;
+	}
+	else if (token.startsWith('#'))
+	{
+		if (token.length() != 7)
+		{
+			throw GPlatesGlobal::LogException(
+				GPLATES_EXCEPTION_SOURCE,
+				("Failed to parse fill token: " + token));
+		}
+		// Hexadecimal RGB code.
+		data.model = RGB_HEX;
+		data.str_data = token;
+		return data;
+	}
+	else if (token.contains('-'))
+	{
+		// H-S-V triplet.
+		QStringList subtokens = token.split('-');
+		if (subtokens.size() != 3)
+		{
+			throw GPlatesGlobal::LogException(
+				GPLATES_EXCEPTION_SOURCE,
+				("Failed to parse fill token: " + token));
+		}
+		data.model = HSV;
+		parse_hsv_data(subtokens, data);
+		return data;
+	}
+	else
+	{
+		// Try parsing it as a single integer.
+		bool ok;
+		float f = token.toFloat(&ok);
+		if(ok)
+		{
+			data.model = GREY;
+			data.float_array.push_back(f);
+			return data;
+		}
+		else
+		{
+			// See whether it's a GMT colour name.
+			if(is_gmt_color_name(token))
+			{
+				data.model = GMT_NAME;
+				data.str_data = token;
+				return data;
+			}
+		}
+	}
+	return data;
+}
+
+bool
+GPlatesFileIO::CptParser::is_gmt_color_name(const QString& name)
+{
+	//TODO::
+	//move GMTColourNames to somewhere else
+	//file-io should not dependent on gui.
+	const std::map<std::string, std::vector<int> >& name_map =  
+			GPlatesGui::GMTColourNames::instance().get_name_map();
+
+	if(name_map.find(name.toStdString()) != name_map.end())
+		return true;
+	else
+		return false;
+}
+
+void
+GPlatesFileIO::CptParser::parse_rbg_data(
+		QStringList& tokens, 
+		ColourData& data)
+{
+	bool ok_1 = false, ok_2 = false, ok_3 = false;
+	float f_1 = tokens.takeFirst().toFloat(&ok_1);
+	float f_2 = tokens.takeFirst().toFloat(&ok_2);
+	float f_3 = tokens.takeFirst().toFloat(&ok_3);
+	
+	if(!ok_1 || !ok_2 || !ok_3 || !is_valid_rgb(f_1,f_2,f_3))
+	{
+		throw GPlatesGlobal::LogException(
+			GPLATES_EXCEPTION_SOURCE,
+			("invalid RBG data."));
+	}
+	data.float_array.push_back(f_1/255.0);
+	data.float_array.push_back(f_2/255.0);
+	data.float_array.push_back(f_3/255.0);
+}
+
+
+void
+GPlatesFileIO::CptParser::parse_hsv_data(
+		QStringList& tokens, 
+		ColourData& data)
+{
+	bool ok_1 = false, ok_2 = false, ok_3 = false;
+	float f_1 = tokens.takeFirst().toFloat(&ok_1);
+	float f_2 = tokens.takeFirst().toFloat(&ok_2);
+	float f_3 = tokens.takeFirst().toFloat(&ok_3);
+
+	if(!ok_1 || !ok_2 || !ok_3 || !is_valid_hsv(f_1,f_2,f_3))
+	{
+		throw GPlatesGlobal::LogException(
+			GPLATES_EXCEPTION_SOURCE,
+			("invalid HSV data."));
+	}
+	f_3 /= 360.0; 
+
+	data.float_array.push_back(f_1);
+	data.float_array.push_back(f_2);
+	data.float_array.push_back(f_3);
+}
+
+
+void
+GPlatesFileIO::CptParser::parse_cmyk_data(
+		QStringList& tokens, 
+		ColourData& data)
+{
+	bool ok_1 = false, ok_2 = false, ok_3 = false, ok_4 = false;
+	float f_1 = tokens.takeFirst().toFloat(&ok_1);
+	float f_2 = tokens.takeFirst().toFloat(&ok_2);
+	float f_3 = tokens.takeFirst().toFloat(&ok_3);
+	float f_4 = tokens.takeFirst().toFloat(&ok_4);
+	if(!ok_1 || !ok_2 || !ok_3 || !ok_4 || !is_valid_cmyk(f_1,f_2,f_3,f_4))
+	{
+		throw GPlatesGlobal::LogException(
+			GPLATES_EXCEPTION_SOURCE,
+			("invalid CMYK values"));
+	}
+	data.float_array.push_back(f_1/100.0);
+	data.float_array.push_back(f_2/100.0);
+	data.float_array.push_back(f_3/100.0);
+	data.float_array.push_back(f_4/100.0);
+}
+
+void
+GPlatesFileIO::CptParser::process_bfn(
+		QStringList& tokens,
+		ColourData& data)
+{
+	tokens.removeFirst();
+	if(tokens.length() == 3)
+	{
+		if(d_default_model == RGB)
+		{
+			parse_rbg_data(tokens,data);
+		}
+		else if(d_default_model == HSV)
+		{
+			parse_hsv_data(tokens,data);
+		}
+	}
+	else if(tokens.length() == 4)
+	{
+		parse_cmyk_data(tokens,data);
+	}
+	else
+	{
+		throw GPlatesGlobal::LogException(
+			GPLATES_EXCEPTION_SOURCE,
+			("Invalid bfn line."));
+	}
+	data.model = d_default_model;
+}
+
+
+
+
+

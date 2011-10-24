@@ -29,18 +29,17 @@
 #define GPLATES_GUI_FEATURECOLOURPALETTE_H
 
 #include <map>
-
+#include <boost/assign.hpp>
 #include "Colour.h"
 #include "ColourPalette.h"
 #include "ColourPaletteVisitor.h"
 
 #include "model/FeatureType.h"
-
+#include "HTMLColourNames.h"
 
 namespace GPlatesGui
 {
 	class Colour;
-	
 	/**
 	 * FeatureTypeColourPalette maps feature types to colours.
 	 */

@@ -29,43 +29,30 @@
 #define GPLATES_GUI_DRAWSTYLEMANAGER_H
 #include <iostream>
 #include <boost/foreach.hpp>
+#include <boost/ref.hpp>
 #include <map>
 #include <QObject>
 #include <QVariant>
 #include <vector>
-#include "global/python.h"
-#include "api/PythonUtils.h"
-#include "api/PythonInterpreterLocker.h"
 #include "model/FeatureHandle.h"
-#include "gui/PythonManager.h"
-#include "ColourScheme.h"
+#include "DrawStyleAdapters.h"
+#include "app-logic/UserPreferences.h"
 
 namespace GPlatesGui
 {
-	struct DrawStyle
-	{
-		DrawStyle() : dummy(0){}
-		int dummy;
-	};
-
-	class Feature
-	{
-		int dummy;
-	};
-
 	class DrawStyleManager;
 
 	class StyleCatagory
 	{
 		friend class DrawStyleManager;
 	public:
-		const QString
+		const QString&
 		name() const
 		{
 			return d_name;
 		}
 
-		const QString
+		const QString&
 		desc() const
 		{
 			return d_desc;
@@ -82,124 +69,15 @@ namespace GPlatesGui
 		StyleCatagory(
 				const QString& name_ = QString(), 
 				const QString& desc_ = QString()) : 
-			d_name(name_), d_desc(desc_)
+			d_name(name_), 
+			d_desc(desc_)
 		{ }
+
 		unsigned d_id;
 		QString d_name;
 		QString d_desc;
 	};
-
-
-	class StyleAdapter
-	{
-		friend class DrawStyleManager;
-	public:
-		explicit
-		StyleAdapter(const StyleCatagory * cata) :
-			d_catagory(cata)
-		{ }
-
-		virtual
-		const DrawStyle
-		get_style(
-				GPlatesModel::FeatureHandle::weak_ref f) const = 0;
 	
-		virtual
-		const QString
-		name() const = 0;
-
-		const StyleCatagory&
-		catagory()
-		{
-			return *d_catagory;
-		}
-
-		virtual
-		~StyleAdapter() { }
-
-		bool
-		operator==(const StyleAdapter& other)
-		{
-			return d_id == other.d_id;
-		}
-
-	private:
-		const StyleCatagory *d_catagory;
-		unsigned d_id;
-	};
-
-#ifndef GPLATES_NO_PYTHON
-
-	class PythonStyleAdapter : 
-		public StyleAdapter
-	{
-	public:
-		PythonStyleAdapter(
-				const boost::python::object& obj,
-				const StyleCatagory * cata) : 
-			StyleAdapter(cata),	
-			d_obj(obj)
-			{ }
-		
-		const DrawStyle
-		get_style(GPlatesModel::FeatureHandle::weak_ref f) const
-		{
-			GPlatesApi::PythonInterpreterLocker interpreter_locker;
-			Feature f15;
-			DrawStyle ds;
-			d_obj.attr("get_style")(f15,ds);
-			std::cout << "not crashing.... haha " << std::endl;
-			return ds;
-		}
-
-		const QString
-		name() const 
-		{
-			GPlatesApi::PythonInterpreterLocker interpreter_locker;
-			return QString(boost::python::extract<const char*>(d_obj.attr("name")));
-		}
-
-	private:
-		boost::python::object d_obj;
-	};
-
-#endif
-
-	class ColourStyleAdapter : 
-		public StyleAdapter
-	{
-	public:
-		ColourStyleAdapter(
-				boost::shared_ptr<const ColourScheme> scheme,
-				const StyleCatagory * cata,
-				const QString s_name = QString()) : 
-			StyleAdapter(cata),
-			d_name(s_name),
-			d_scheme(scheme)
-			{ }
-		
-		const DrawStyle
-		get_style(GPlatesModel::FeatureHandle::weak_ref f) const
-		{
-			DrawStyle ds;
-			return ds;
-		}
-
-		const QString
-		name() const 
-		{
-			return d_name;
-		}
-
-	private:
-		QString d_name;
-		const boost::shared_ptr<const ColourScheme> d_scheme;
-	};
-
-	const static char COLOUR_PLATE_ID[]     = "Colour by Plate ID";
-	const static char COLOUR_SINGLE[]       = "Colour by Single Colour";
-	const static char COLOUR_FEATURE_AGE[]  = "Colour by Feature Age";
-	const static char COLOUR_FEATURE_TYPE[] = "Colour by Feature Type";
 
 	class DrawStyleManager :
 		public QObject,
@@ -215,48 +93,108 @@ namespace GPlatesGui
 		DrawStyleManager*
 		instance()
 		{
+			//static variable will be initialized only once.
 			static DrawStyleManager* inst = new DrawStyleManager();
 			return inst;
+		}
+
+		/*
+		* This function is not so elegant.
+		* However, we need to avoid using DrawStyleManager after it has been destructed.
+		* This could only happen during GPlates destructing.
+		*/
+		static
+		bool
+		is_alive()
+		{
+			return d_alive_flag;
 		}
 
 		void
 		register_style(
 				StyleAdapter* sa,
-				bool built_in = false)
+				bool built_in = false);
+
+		static
+		bool
+		is_built_in_style(const StyleAdapter& style)
 		{
-			d_styles.push_back(sa); 
-			d_styles.back()->d_id = built_in ? BUILT_IN_OFFSET + d_next_style_id : d_next_style_id;
-			++d_next_style_id;
+			return style.d_id >= BUILT_IN_OFFSET;
 		}
 
-		const StyleAdapter*
-		get_style(unsigned id)
+		bool
+		remove_style(StyleAdapter* style);
+
+		
+		/*
+		* Get the number of how many layers are referencing this style.
+		*/
+		unsigned
+		get_ref_number(const StyleAdapter& style) const;
+
+		
+		void
+		increase_ref(const StyleAdapter& style);
+
+		
+		void
+		decrease_ref(const StyleAdapter& style);
+
+
+		/*
+		* Since the style object contains a boost python object, 
+		* it is necessary to "deep copy" the python object when cloning StyleAdapter.
+		* The template StyleAdapter is a StyleAdapter object which contains a "clean" python object.
+		* The "clean" python object means it has NOT been configured in any way.
+		* It is relatively easy to "deep copy" a "clean" python object.
+		*/
+		void
+		register_template_style(
+				const StyleCatagory* cata,
+				const StyleAdapter* adapter)
 		{
-			BOOST_FOREACH(StyleContainer::value_type s, d_styles)
-			{
-				if(s->d_id == id)
-					return s;
-			}
-			return NULL;
+			d_template_map[cata] = adapter;
 		}
+
+
+		/*
+		* Get all user defined styles.
+		*/
+		std::vector<StyleAdapter*>
+		get_saved_styles(const StyleCatagory& cata);
+
+		/*
+		* Get all built-in styles.
+		*/
+		std::vector<StyleAdapter*>
+		get_built_in_styles(const StyleCatagory& cata);
+
+
+		const StyleAdapter*
+		get_template_style(const StyleCatagory& cata);
+
+
+		const StyleAdapter*
+		default_style();
+
 
 		const StyleCatagory*
 		register_style_catagory(
 				const QString& name,
 				const QString& desc = QString(),
-				bool built_in = false)
-		{
-			StyleCatagory* cata = new StyleCatagory(name,desc);
-			d_catagories.push_back(cata);
-			d_catagories.back()->d_id = built_in ? BUILT_IN_OFFSET + d_next_cata_id : d_next_cata_id ;
-			++d_next_cata_id;
-			return d_catagories.back();
-		}
+				bool built_in = false);
+
 
 		~DrawStyleManager()
 		{
+			save_user_defined_styles();
 			clear_container(d_styles);
 			clear_container(d_catagories);
+			d_alive_flag = false;
+			
+			if(d_use_local_user_pref)
+				delete d_user_prefs;
+			d_user_prefs = NULL;
 		}
 
 		void
@@ -266,24 +204,23 @@ namespace GPlatesGui
 		}
 
 		StyleContainer
-		get_styles(const StyleCatagory& cata)
-		{
-			StyleContainer ret;
-			BOOST_FOREACH(StyleContainer::value_type s, d_styles)
-			{
-				if(s->catagory() == cata)
-				{
-					ret.push_back(s);
-				}
-			}
-			return ret;
-		}
+		get_styles(const StyleCatagory& cata);
 
-		CatagoryContainer
+
+		CatagoryContainer&
 		all_catagories()
 		{
 			return d_catagories;
 		}
+
+				
+		const StyleCatagory*
+		get_catagory(const QString& _name) const;
+
+
+		void
+		save_user_defined_styles();
+
 
 	signals:
 		void
@@ -302,16 +239,28 @@ namespace GPlatesGui
 			container.clear();
 		}
 
-		void
-		init_built_in_styles();
-
 	private:
-		DrawStyleManager();
+		DrawStyleManager(bool local_user_pref=true);
+		DrawStyleManager(const DrawStyleManager&);
+
 		StyleContainer d_styles;
 		CatagoryContainer d_catagories;
+		
 		unsigned d_next_cata_id;
 		unsigned d_next_style_id;
 		const static unsigned BUILT_IN_OFFSET = 0x80000000;
+		
+		typedef std::map<const StyleAdapter*, unsigned> RefenceMap;
+		typedef std::map<const StyleCatagory*, const StyleAdapter*> TemplateMap;
+
+		RefenceMap d_reference_map;
+		TemplateMap d_template_map;
+		const static QString draw_style_prefix;
+		GPlatesAppLogic::UserPreferences* d_user_prefs;
+		GPlatesAppLogic::UserPreferences::KeyValueMap d_values_map;
+
+		static bool d_alive_flag;
+		bool d_use_local_user_pref;
 	};
 }
 

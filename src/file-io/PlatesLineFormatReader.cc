@@ -344,19 +344,19 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			// else, process this boundary node
 
 			// convert type
-			GPlatesGlobal::FeatureTypes feature_type(GPlatesGlobal::UNKNOWN_FEATURE);
+			//GPlatesGlobal::FeatureTypes feature_type(GPlatesGlobal::UNKNOWN_FEATURE);
 
 			switch ( type )
 			{
 				case GPlatesGlobal::POINT_FEATURE:
-					feature_type = GPlatesGlobal::POINT_FEATURE;
+					//feature_type = GPlatesGlobal::POINT_FEATURE;
 					// Fill the vector of GpmlTopologicalSection::non_null_ptr_type
 					topo_section_ptrs_vector.push_back( 
 						create_gpml_topological_point( old_fid ) );
 					break;
 
 				case GPlatesGlobal::LINE_FEATURE:
-					feature_type = GPlatesGlobal::LINE_FEATURE;
+					//feature_type = GPlatesGlobal::LINE_FEATURE;
 					// Fill the vector of GpmlTopologicalSection::non_null_ptr_type
 					topo_section_ptrs_vector.push_back( 
 						create_gpml_topological_line_section( old_fid, use_reverse ) );

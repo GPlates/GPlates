@@ -268,9 +268,6 @@ set(internal_INCLUDE_DIRS
 set(ALL_GPlates_src_subdirs
 	${gui_LIBS} ${presentation_LIBS} ${cli_LIBS} ${app_LIBS} ${util_LIBS} ${unit_test_LIBS} )
 
-if(NOT GPLATES_NO_PYTHON)
-	set(ALL_GPlates_src_subdirs ${ALL_GPlates_src_subdirs} )
-endif(NOT GPLATES_NO_PYTHON)
 #
 # Generate 'global/config.h' file from 'global/config.h.in' and add HAVE_CONFIG_H compiler definition so GPlates will look for it.
 #
@@ -403,12 +400,16 @@ set(GPLATES_MAIN_TARGET gplates)
 if(NOT GPLATES_NO_PYTHON)
 
 	foreach(dir ${ALL_GPlates_src_subdirs})
-		AUX_SOURCE_DIRECTORY(${dir} all_gplates_src)
+		AUX_SOURCE_DIRECTORY(${dir} gplates_lib_src)
+		AUX_SOURCE_DIRECTORY("${CMAKE_CURRENT_BINARY_DIR}/${dir}" gplates_lib_src)
+		#message(STATUS "Adding directory ${dir}")
+		#message(STATUS "Adding directory '${CMAKE_CURRENT_BINARY_DIR}/${dir}' ")
 	endforeach(dir)
 
 	message(STATUS "Adding GPlates Python module.")
 	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}")
-	add_library(gplates_lib STATIC EXCLUDE_FROM_ALL ${all_gplates_src})
+	add_library(gplates_lib STATIC EXCLUDE_FROM_ALL ${gplates_lib_src})
+	
     add_library(pygplates MODULE EXCLUDE_FROM_ALL api/Python.cc )
     add_dependencies(pygplates gplates_lib)
 	add_dependencies(gplates_lib gplates)

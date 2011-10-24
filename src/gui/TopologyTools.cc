@@ -1689,7 +1689,7 @@ GPlatesGui::TopologyTools::draw_interior_geometry()
 	float point_size_hint = GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT;
     float line_width_hint = GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT;
 
-	// check if interior is the active sequnce
+	// check if interior is the active sequence
 	if ( d_topology_tools_widget_ptr->get_sections_combobox_index() != 1 ) // 1 = interior list
 	{
 		// Render the non-active topology sections sequence muted 

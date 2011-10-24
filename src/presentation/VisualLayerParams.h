@@ -109,11 +109,17 @@ namespace GPlatesPresentation
 				const GPlatesAppLogic::Layer &layer)
 		{  }
 
-		virtual
+		void
+		set_style_adaper(
+				const GPlatesGui::StyleAdapter* adapter)
+		{
+			d_style = adapter;
+		}
+
 		const GPlatesGui::StyleAdapter*
 		style_adapter() const
 		{
-			return NULL;
+			return d_style;
 		}
 
 	signals:
@@ -129,7 +135,9 @@ namespace GPlatesPresentation
 		explicit
 		VisualLayerParams(
 				GPlatesAppLogic::LayerTaskParams &layer_task_params) :
+			d_style(NULL),
 			d_layer_task_params(layer_task_params)
+			
 		{  }
 
 		GPlatesAppLogic::LayerTaskParams &
@@ -147,9 +155,11 @@ namespace GPlatesPresentation
 		{
 			emit modified();
 		}
-
+	protected:
+		const GPlatesGui::StyleAdapter* d_style;
 	private:
 		GPlatesAppLogic::LayerTaskParams &d_layer_task_params;
+		
 	};
 }
 

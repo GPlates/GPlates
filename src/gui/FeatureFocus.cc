@@ -27,11 +27,22 @@
 #include <QDebug>
 
 #include "FeatureFocus.h"
-
+#include "PythonManager.h"
+#include "app-logic/ApplicationState.h"
+#include "app-logic/ReconstructGraph.h"
+#include "app-logic/Reconstruction.h"
+#include "app-logic/ReconstructionGeometry.h"
+#include "app-logic/ReconstructUtils.h"
+#include "app-logic/ReconstructionGeometryFinder.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
-
+#include "app-logic/GeometryUtils.h"
+#include "feature-visitors/GeometryFinder.h"
 #include "model/FeatureHandle.h"
 #include "model/WeakReferenceCallback.h"
+#include "presentation/Application.h"
+#include "qt-widgets/ReconstructionViewWidget.h"
+#include "qt-widgets/SceneView.h"
+#include "utils/FeatureUtils.h"
 
 #include "presentation/ViewState.h"
 
@@ -180,6 +191,7 @@ GPlatesGui::FeatureFocus::set_focus(
 	{
 		// None found, we cannot focus this.
 		unset_focus();
+		return; // I guess we need a return here?
 	}
 
 	// Found something, just focus the first one.
@@ -302,5 +314,87 @@ GPlatesGui::FeatureFocus::handle_rendered_geometry_collection_update()
 		// A new ReconstructionGeometry has been found so we should
 		// emit a signal in case clients need to know this.
 		emit focus_changed(*this);
+	}
+}
+
+class ReconstructionGeometryLocator :
+	public GPlatesAppLogic::ConstReconstructionGeometryVisitor
+{
+public:
+	boost::optional<const GPlatesMaths::LatLonPoint>
+	location()
+	{
+		return *d_location;
+	}
+
+protected:
+		void
+		visit(const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
+		{ }
+
+		void
+		visit(const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
+		{
+			std::vector<GPlatesMaths::PointOnSphere> points;
+			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rfg->reconstructed_geometry(),points);
+			if(points.size())
+				d_location =  GPlatesMaths::make_lat_lon_point(points[0]);
+		}
+
+		void
+		visit(const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
+		{ }
+
+		void
+		visit(const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
+		{ }
+
+		void
+		visit(const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
+		{ }
+
+		void
+		visit(const GPlatesUtils::non_null_intrusive_ptr<resolved_raster_type> &rr)
+		{ }
+
+		void
+		visit(const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+		{
+			d_location = GPlatesMaths::make_lat_lon_point(rtb->resolved_topology_geometry()->first_vertex());
+		}
+
+		void
+		visit(const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+		{
+			std::vector<GPlatesMaths::PointOnSphere> points;
+			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rtn->nodes_begin()->get_geometry(),points);
+			if(points.size())
+				d_location =  GPlatesMaths::make_lat_lon_point(points[0]);
+		}
+
+		void
+		visit(const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crr)
+		{ }
+private:
+	boost::optional<GPlatesMaths::LatLonPoint> d_location;
+};
+
+
+boost::optional<const GPlatesMaths::LatLonPoint>
+GPlatesGui::locate_focus()
+{
+	GPlatesPresentation::Application* app = GPlatesPresentation::Application::instance();
+	FeatureFocus& focus = app->get_view_state().get_feature_focus();
+			
+	ReconstructionGeometryLocator locator;
+	GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type geo = focus.associated_reconstruction_geometry();
+	if(geo)
+	{
+		geo->accept_visitor(locator);
+		return locator.location();
+	}
+	else
+	{
+		return boost::none;
 	}
 }

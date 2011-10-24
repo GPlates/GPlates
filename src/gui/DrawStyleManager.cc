@@ -25,125 +25,360 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <algorithm>
-
 #include "app-logic/PropertyExtractors.h"
 #include "global/CompilerWarnings.h"
 #include "AgeColourPalettes.h"
 #include "DrawStyleManager.h"
+#include "DrawStyleAdapters.h"
 #include "FeatureTypeColourPalette.h"
 #include "GenericColourScheme.h"
 #include "HTMLColourNames.h"
 #include "PlateIdColourPalettes.h"
 #include "SingleColourScheme.h"
 
+#include "utils/ConfigBundle.h"
+
 DISABLE_GCC_WARNING("-Wold-style-cast")
 
+bool GPlatesGui::DrawStyleManager::d_alive_flag = false;
 
-GPlatesGui::DrawStyleManager::DrawStyleManager() 
+GPlatesGui::DrawStyleManager::DrawStyleManager(bool local_user_pref) :
+	d_next_cata_id(0),
+	d_next_style_id(0),
+	d_use_local_user_pref(local_user_pref)
 { 
-	init_built_in_styles();
+	d_alive_flag = true;
+
+	//Since DrawStyleManager is a singleton, it is safer to use a local UserPreferences by default.
+	if(d_use_local_user_pref)
+		d_user_prefs = new GPlatesAppLogic::UserPreferences(this);
+	else
+		d_user_prefs = &GPlatesPresentation::Application::instance()->get_application_state().get_user_preferences();
 }
+
 
 void
-GPlatesGui::DrawStyleManager::init_built_in_styles()
+GPlatesGui::DrawStyleManager::register_style(
+		StyleAdapter* sa,
+		bool built_in)
 {
-	using namespace GPlatesAppLogic;
-	const StyleCatagory* plate_id = register_style_catagory(COLOUR_PLATE_ID,"colour by plate id", true);
-	const StyleCatagory* single = register_style_catagory(COLOUR_SINGLE,"single color",true);
-	const StyleCatagory* feature_age = register_style_catagory(COLOUR_FEATURE_AGE, "colour by feature age", true);
-	const StyleCatagory* feature_type = register_style_catagory(COLOUR_FEATURE_TYPE, "colour by feature type", true);
-	
-	
-	register_style( 
-		new ColourStyleAdapter(
-				boost::shared_ptr<ColourScheme>(new GenericColourScheme<PlateIdPropertyExtractor>(
-						DefaultPlateIdColourPalette::create(),
-						PlateIdPropertyExtractor())),
-				plate_id,
-				"Default"));
-
-	register_style(
-		new ColourStyleAdapter(
-				boost::shared_ptr<ColourScheme>(new GenericColourScheme<PlateIdPropertyExtractor>(
-						RegionalPlateIdColourPalette::create(),
-						PlateIdPropertyExtractor())),
-				plate_id,
-				"Group by Region"));
-	
-
-	register_style(
-		new ColourStyleAdapter(
-				boost::shared_ptr<ColourScheme>( 
-						new SingleColourScheme(Colour::get_white())),
-				single,
-				"white"));
-	register_style( 
-		new ColourStyleAdapter(
-				boost::shared_ptr<ColourScheme>( 
-						new SingleColourScheme(Colour::get_black())),
-				single,
-				"black"));
-	register_style( 
-		new ColourStyleAdapter(
-				boost::shared_ptr<ColourScheme>( 
-						new SingleColourScheme(Colour::get_silver())),
-				single,
-				"silver"));
-	register_style( 
-		new ColourStyleAdapter(
-				boost::shared_ptr<ColourScheme>( 
-						new SingleColourScheme(*HTMLColourNames::instance().get_colour("gold"))),
-				single,
-				"gold"));
-	register_style( 
-		new ColourStyleAdapter(
-				boost::shared_ptr<ColourScheme>( 
-						new SingleColourScheme(*HTMLColourNames::instance().get_colour("deepskyblue"))),
-				single,
-				"blue"));
-	register_style(
-		new ColourStyleAdapter(
-				boost::shared_ptr<ColourScheme>( 
-						new SingleColourScheme(*HTMLColourNames::instance().get_colour("deeppink"))),
-				single,
-				"pink"));
-	register_style( 
-		new ColourStyleAdapter(
-				boost::shared_ptr<ColourScheme>( 
-						new SingleColourScheme(*HTMLColourNames::instance().get_colour("chartreuse"))),
-				single,
-				"green"));
-	register_style( 
-		new ColourStyleAdapter(
-				boost::shared_ptr<ColourScheme>( 
-						new SingleColourScheme(*HTMLColourNames::instance().get_colour("darkorange"))),
-				single,
-				"orange"));
-	
-	register_style( 
-		new ColourStyleAdapter(
-				boost::shared_ptr<ColourScheme>(new GenericColourScheme<AgePropertyExtractor>(
-						DefaultAgeColourPalette::create(),
-						AgePropertyExtractor())),
-				feature_age,
-				"Default"));
-
-	register_style( 
-		new ColourStyleAdapter(
-				boost::shared_ptr<ColourScheme>(new GenericColourScheme<AgePropertyExtractor>(
-						MonochromeAgeColourPalette::create(),
-						AgePropertyExtractor())),
-				feature_age,
-				"Monochrome"));
-	
-	register_style(  
-		new ColourStyleAdapter(
-				boost::shared_ptr<ColourScheme>(new GenericColourScheme<FeatureTypePropertyExtractor>(
-						FeatureTypeColourPalette::create(),
-						FeatureTypePropertyExtractor())),
-				feature_type,
-				"Default"));
+	d_styles.push_back(sa); 
+	d_styles.back()->d_id = built_in ? BUILT_IN_OFFSET + d_next_style_id : d_next_style_id;
+	++d_next_style_id;
 }
+
+
+unsigned
+GPlatesGui::DrawStyleManager::get_ref_number(const GPlatesGui::StyleAdapter& style) const
+{
+	RefenceMap::const_iterator it = d_reference_map.find(&style);
+	if(it == d_reference_map.end())
+	{
+		return 0;
+	}
+	else
+	{
+		return it->second;
+	}
+}
+
+		
+void
+GPlatesGui::DrawStyleManager::increase_ref(const GPlatesGui::StyleAdapter& style)
+{
+	RefenceMap::iterator it = d_reference_map.find(&style);
+	if(it == d_reference_map.end())
+	{
+		d_reference_map[&style] = 1;
+	}
+	else
+	{
+		++it->second;
+	}
+}
+
+		
+void
+GPlatesGui::DrawStyleManager::decrease_ref(const GPlatesGui::StyleAdapter& style)
+{
+	RefenceMap::iterator it = d_reference_map.find(&style);
+	if(it == d_reference_map.end())
+	{
+		qWarning() << "Cannot find style.";
+		return;
+	}
+	else
+	{
+		if(it->second <= 1)
+			d_reference_map.erase(it);
+		else
+			--it->second;
+	}
+}
+
+
+const GPlatesGui::StyleAdapter*
+GPlatesGui::DrawStyleManager::get_template_style(const GPlatesGui::StyleCatagory& cata)
+{
+	TemplateMap::const_iterator it = d_template_map.find(&cata);
+	if(it!=d_template_map.end())
+		return it->second;
+	else
+		return NULL;
+}
+
+
+const GPlatesGui::StyleAdapter*
+GPlatesGui::DrawStyleManager::default_style()
+{
+	if(d_styles.empty())
+		return NULL;
+
+	return d_styles[0];
+}
+
+
+const GPlatesGui::StyleCatagory*
+GPlatesGui::DrawStyleManager::register_style_catagory(
+		const QString& name,
+		const QString& desc,
+		bool built_in)
+{
+	StyleCatagory* cata = new StyleCatagory(name,desc);
+	d_catagories.push_back(cata);
+	d_catagories.back()->d_id = built_in ? BUILT_IN_OFFSET + d_next_cata_id : d_next_cata_id ;
+	++d_next_cata_id;
+	return d_catagories.back();
+}
+
+
+bool
+GPlatesGui::DrawStyleManager::remove_style(GPlatesGui::StyleAdapter* style)
+{
+	StyleContainer::iterator it = std::find(d_styles.begin(), d_styles.end(), style);
+	if(it == d_styles.end())
+	{
+		qWarning() << "Cannot find style adapter to remove.";
+		return false;
+	}
+
+	if(style->d_id >= BUILT_IN_OFFSET)
+	{
+		qWarning() << "Cannot remove built-in style.";
+		return false;
+	}
+
+	if(get_ref_number(*style) > 1)
+	{
+		qWarning() << "Cannot remove in-use style.";
+		return false;
+	}
+
+	d_styles.erase(it);
+	delete style;
+	return true;
+}
+
+
+const GPlatesGui::StyleCatagory*
+GPlatesGui::DrawStyleManager::get_catagory(const QString& _name) const
+{
+	BOOST_FOREACH(const GPlatesGui::StyleCatagory* s_cat, d_catagories)
+	{
+		if(s_cat->name() == _name)
+			return s_cat;
+	}
+	return NULL;
+}
+
+
+GPlatesGui::DrawStyleManager::StyleContainer
+GPlatesGui::DrawStyleManager::get_styles(const GPlatesGui::StyleCatagory& cata)
+{
+	StyleContainer ret;
+	BOOST_FOREACH(StyleContainer::value_type s, d_styles)
+	{
+		if(s->catagory() == cata)
+		{
+			ret.push_back(s);
+		}
+	}
+	return ret;
+}
+
+const QString GPlatesGui::DrawStyleManager::draw_style_prefix = "draw_styles/user-defined";
+
+// The BOOST_FOREACH macro in versions of boost before 1.37 uses the same local
+// variable name in each instantiation. Nested BOOST_FOREACH macros therefore
+// cause GCC to warn about shadowed declarations.
+DISABLE_GCC_WARNING("-Wshadow")
+void
+GPlatesGui::DrawStyleManager::save_user_defined_styles()
+{
+	d_user_prefs->clear_prefix(draw_style_prefix);
+
+	BOOST_FOREACH(const StyleContainer::value_type& style, d_styles)
+	{
+		if(is_built_in_style(*style))
+			continue;
+
+		GPlatesUtils::ConfigBundle cfg_bundle(this);
+		const Configuration& cfg = style->configuration();
+		BOOST_FOREACH(const QString& item_name, cfg.all_cfg_item_names())
+		{
+			cfg_bundle.set_value(item_name, cfg.get(item_name)->value());
+		}
+		d_user_prefs->insert_keyvalues_from_configbundle(
+				draw_style_prefix + "/" + style->catagory().name() + "/" + style->name(),
+				cfg_bundle);
+	}
+}
+
+
+std::vector<GPlatesGui::StyleAdapter*>
+GPlatesGui::DrawStyleManager::get_saved_styles(const GPlatesGui::StyleCatagory& cata)
+{
+	std::vector<StyleAdapter*> ret;
+	
+	const StyleAdapter* template_adapter = get_template_style(cata);
+	if(!template_adapter)
+		return ret;
+
+	GPlatesUtils::ConfigBundle* styles_in_catagory = 
+		d_user_prefs->extract_keyvalues_as_configbundle(draw_style_prefix + "/" + cata.name());
+	
+	QSet<QString> style_names;
+	Q_FOREACH(QString subkey, styles_in_catagory->subkeys()) 
+	{
+		subkey = subkey.simplified();
+		style_names.insert(subkey.split("/").first());
+	}
+
+	Q_FOREACH(QString style_name, style_names) 
+	{
+		if(style_name == "paths")//TODO: why "paths" is here?
+			continue;
+
+		GPlatesUtils::ConfigBundle* style_bundle = 
+			d_user_prefs->extract_keyvalues_as_configbundle(draw_style_prefix + "/" + cata.name() + "/" + style_name);
+		StyleAdapter* new_adapter = template_adapter->deep_clone();
+		if(!new_adapter)
+			continue;
+
+		new_adapter->set_name(style_name);
+		Configuration& cfg = new_adapter->configuration();
+
+		Q_FOREACH(QString subkey, style_bundle->subkeys()) 
+		{
+			subkey = subkey.simplified();
+			ConfigurationItem* cfg_item = cfg.get(subkey);
+			if(cfg_item)
+				cfg_item->set_value(style_bundle->get_value(subkey));
+		}
+		ret.push_back(new_adapter);
+	}
+	return ret;
+}
+
+
+namespace
+{
+	using namespace GPlatesGui;
+
+	StyleAdapter*
+	create_built_in_palette_adapter(
+			const QString& cfg_name, 
+			const QString& palette_name,
+			const StyleAdapter* template_adapter)  
+	{ 
+		StyleAdapter* new_adapter = template_adapter->deep_clone();
+		if(!new_adapter) 
+			return NULL;
+
+		new_adapter->set_name(cfg_name);
+		Configuration& cfg = new_adapter->configuration();
+		ConfigurationItem* cfg_item = cfg.get("Palette");
+		//we should be able to find an "Palette" item
+		if(cfg_item)
+		{
+			cfg_item->set_value(palette_name);
+		}
+		else
+		{
+			//if cannot find "Palette" item, try our best...
+			BOOST_FOREACH(const QString& item_name, cfg.all_cfg_item_names())
+			{
+				cfg.get(item_name)->set_value(palette_name);
+			}
+		}
+		return new_adapter;
+	}
+}
+
+std::vector<GPlatesGui::StyleAdapter*>
+GPlatesGui::DrawStyleManager::get_built_in_styles(const GPlatesGui::StyleCatagory& cata) 
+{
+	std::vector<StyleAdapter*> ret;
+	static const char* color_names[] = {"white","blue","black","silver","gold","pink","green","orange"};
+
+	const StyleAdapter* t_adapter = get_template_style(cata);
+	if(!t_adapter)
+		return ret;
+
+	const StyleAdapter& adapter = *t_adapter;
+	if(adapter.name() == "SingleColour")
+	{
+		for(unsigned int i=0; i< sizeof(color_names)/sizeof(char*);i++)
+		{
+			StyleAdapter* new_adapter = adapter.deep_clone();
+			if(!new_adapter)
+				continue;
+
+			new_adapter->set_name(color_names[i]);
+			Configuration& cfg = new_adapter->configuration();
+			ConfigurationItem* cfg_item = cfg.get("Colour");
+			//we should be able to find an "Colour" item
+			if(cfg_item)
+			{
+				cfg_item->set_value(color_names[i]);
+			}
+			else
+			{
+				//if cannot find "Colour" item, try our best...
+				BOOST_FOREACH(const QString& item_name, cfg.all_cfg_item_names())
+				{
+					cfg.get(item_name)->set_value(color_names[i]);
+				}
+			}
+			ret.push_back(new_adapter);
+		}
+	}
+	else if(adapter.name() == "PlateId")
+	{
+		ret.push_back(create_built_in_palette_adapter("Default", "DefaultPlateId", &adapter));
+		ret.push_back(create_built_in_palette_adapter("Region", "Region", &adapter));
+	}
+	else if(adapter.name() == "FeatureAge")
+	{
+		ret.push_back(create_built_in_palette_adapter("Default", "FeatureAgeDefault", &adapter));
+		ret.push_back(create_built_in_palette_adapter("Monochrome", "FeatureAgeMono", &adapter));
+	}
+	else if(adapter.name() == "FeatureType")
+	{
+		ret.push_back(create_built_in_palette_adapter("Default", "FeatureType", &adapter));
+	}
+	else
+	{
+		StyleAdapter* new_adapter = adapter.deep_clone();
+		new_adapter->set_name("Default");
+		ret.push_back(new_adapter);
+	}
+	return ret;
+}
+
+
+
+
 
 
 

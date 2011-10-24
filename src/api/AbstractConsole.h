@@ -26,10 +26,8 @@
 #ifndef GPLATES_API_ABSTRACTCONSOLE_H
 #define GPLATES_API_ABSTRACTCONSOLE_H
 #include <QString>
-
-#if !defined(GPLATES_NO_PYTHON)
-
 #include "global/python.h"
+#if !defined(GPLATES_NO_PYTHON)
 
 namespace GPlatesApi
 {

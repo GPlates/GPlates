@@ -111,7 +111,6 @@ namespace GPlatesQtWidgets
 	class CalculateReconstructionPoleDialog;
 	class ChooseFeatureCollectionDialog;
 	class ColouringDialog;
-	class DrawStyleDialog;
 	class ConnectWFSDialog;
 	class ConfigureGraticulesDialog;
 	class ConfigureTextOverlayDialog;
@@ -487,6 +486,12 @@ namespace GPlatesQtWidgets
 			action_Open_Python_Console->setVisible(false);
 		}
 
+		void
+		set_time(const double time)
+		{
+			d_animation_controller.set_view_time(time);
+		}
+
 	protected:
 	
 		/**
@@ -769,7 +774,7 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_python_console();
-
+		
 	private:
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
@@ -823,13 +828,16 @@ namespace GPlatesQtWidgets
 
 		ReconstructionViewWidget *d_reconstruction_view_widget_ptr;
 
+		/*
+		* Fixme: some of the scoped pointers below are not necessary since
+		* most of the dialogs have a parent which means Qt will handle the memory for us.
+		*/
 		boost::scoped_ptr<AboutDialog> d_about_dialog_ptr;
 		boost::scoped_ptr<AnimateDialog> d_animate_dialog_ptr;
 		boost::scoped_ptr<AssignReconstructionPlateIdsDialog> d_assign_recon_plate_ids_dialog_ptr;
 		boost::scoped_ptr<CalculateReconstructionPoleDialog> d_calculate_reconstruction_pole_dialog_ptr;
 		boost::scoped_ptr<ChooseFeatureCollectionDialog> d_choose_feature_collection_dialog_ptr;
 		boost::scoped_ptr<ColouringDialog> d_colouring_dialog_ptr;
-		boost::scoped_ptr<DrawStyleDialog> d_draw_style_dialog_ptr;
 		boost::scoped_ptr<ConnectWFSDialog> d_connect_wfs_dialog_ptr;
 		boost::scoped_ptr<ConfigureGraticulesDialog> d_configure_graticules_dialog_ptr;
 		boost::scoped_ptr<ConfigureTextOverlayDialog> d_configure_text_overlay_dialog_ptr;
@@ -837,7 +845,7 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<ExportAnimationDialog> d_export_animation_dialog_ptr;
 		boost::scoped_ptr<FeaturePropertiesDialog> d_feature_properties_dialog_ptr;
 		boost::scoped_ptr<ManageFeatureCollectionsDialog> d_manage_feature_collections_dialog_ptr;
-		boost::scoped_ptr<MeshDialog> d_mesh_dialog_ptr;
+		MeshDialog* d_mesh_dialog_ptr;
 		boost::scoped_ptr<ReadErrorAccumulationDialog> d_read_errors_dialog_ptr;
 		boost::scoped_ptr<SetCameraViewpointDialog> d_set_camera_viewpoint_dialog_ptr;
 		boost::scoped_ptr<SetProjectionDialog> d_set_projection_dialog_ptr;

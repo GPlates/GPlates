@@ -124,6 +124,9 @@ namespace GPlatesQtWidgets
 			return label_end_time;
 		}
 
+		bool
+		valid();
+
 	private slots:
 	
 		void

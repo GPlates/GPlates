@@ -46,6 +46,8 @@ namespace GPlatesUtils
 			GPlatesGlobal::PreconditionViolationError(exception_source)
 		{  }
 
+		~NullNonNullIntrusivePointerException() throw(){}
+
 	protected:
 		virtual
 		const char *

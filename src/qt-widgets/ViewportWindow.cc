@@ -178,6 +178,7 @@
 #include "utils/ComponentManager.h"
 #include "utils/DeferredCallEvent.h"
 #include "utils/Profile.h"
+#include "utils/ComponentManager.h"
 #include "gui/PythonManager.h"
 
 #include "view-operations/ActiveGeometryOperation.h"
@@ -748,6 +749,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			SLOT(handle_visual_layer_added(size_t)));
 	
 	set_internal_release_window_title();
+	
+	if(GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
+	{
+		menu_Features->removeAction(action_Manage_Colouring);
+	}
 }
 
 
@@ -1012,11 +1018,13 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 	if(GPlatesUtils::ComponentManager::instance().is_enabled(
 			GPlatesUtils::ComponentManager::Component::python()))
 	{
+#if !defined(GPLATES_NO_PYTHON)
 		d_utilities_menu_ptr = new GPlatesGui::UtilitiesMenu(
 				menu_Utilities,
 				action_Open_Python_Console,
 				get_view_state().get_python_manager(),
 				this);
+#endif
 		// ----
 		QObject::connect(action_Open_Python_Console, SIGNAL(triggered()),
 				this, SLOT(pop_up_python_console()));
@@ -2396,14 +2404,13 @@ GPlatesQtWidgets::ViewportWindow::generate_mesh_cap()
 {
 	if (!d_mesh_dialog_ptr)
 	{
-		d_mesh_dialog_ptr.reset(
-				new MeshDialog(
+		d_mesh_dialog_ptr = new MeshDialog(
 				get_view_state(),
 				*d_manage_feature_collections_dialog_ptr,
-				this));
+				this);
 	}
 
-	QtWidgetUtils::pop_up_dialog(d_mesh_dialog_ptr.get());
+	QtWidgetUtils::pop_up_dialog(d_mesh_dialog_ptr);
 }
 
 void

@@ -56,9 +56,9 @@ GPlatesGui::PythonManager::initialize()
 	init_python_interpreter();
 	// Hold references to the main module and its namespace for easy access from
 	// all parts of GPlates.
-	GPlatesApi::PythonInterpreterLocker interpreter_locker;
 	try
 	{
+		GPlatesApi::PythonInterpreterLocker interpreter_locker;
 		d_python_main_thread_runner = new GPlatesApi::PythonRunner(d_python_main_namespace,this);
 		d_python_execution_thread = new GPlatesApi::PythonExecutionThread(d_python_main_namespace, this);
 		d_python_execution_thread->start(QThread::IdlePriority);
@@ -163,6 +163,17 @@ GPlatesGui::PythonManager::init_python_interpreter(std::string program_name)
 }
 
 
+void
+GPlatesGui::PythonManager::recycle_python_object(const boost::python::object& obj)
+{
+	//leave these memory here. it doesn't matter.
+	static std::vector<boost::python::object>* python_object_bin = new std::vector<boost::python::object>;
+	GPlatesApi::PythonInterpreterLocker lock;
+	python_object_bin->clear();
+	python_object_bin->push_back(obj);
+}
+
+
 QFileInfoList
 GPlatesGui::PythonManager::get_scripts()
 {
@@ -171,7 +182,7 @@ GPlatesGui::PythonManager::get_scripts()
 	QFileInfoList file_list;
 	//The ".pyc" files will be generated every time the python script is executed.
 	//And this caused duplicate menu items.
-	QStringList filters = (QStringList() << "*.py" ); //<< "*.pyc");
+	QStringList filters = (QStringList() << "*.py" << "*.pyc");
 
 	QDir cwd;
 	cwd.setNameFilters(filters);
@@ -222,26 +233,27 @@ GPlatesGui::PythonManager::register_utils_scripts()
 	// before we start running Python scripts.
 	QFileInfoList file_list = get_scripts();
 	add_sys_path();
+	std::set<QString> modules;
 	BOOST_FOREACH(const QFileInfo& file, file_list)
 	{
-		register_script(file.absoluteFilePath(),"utf-8"); 
+		modules.insert(file.baseName());
+	}
+	BOOST_FOREACH(const QString& module, modules)
+	{
+		register_script(module); 
 	}
 }
 
 
 void
-GPlatesGui::PythonManager::register_script(
-		const QString& name, 
-		const QString& encoding)
+GPlatesGui::PythonManager::register_script(const QString& name)
 {
 	using namespace boost::python;
 	try
 	{
 		GPlatesApi::PythonInterpreterLocker interpreter_locker;
 
-		QFileInfo file_info(name);
-
-		object module = import(file_info.baseName().toStdString().c_str());
+		object module = import(name.toStdString().c_str());
 		module.attr("register")(); //TODO: define static const for this. 
 		qDebug() << "The script " << name << " has been registered.";
 	}
@@ -329,6 +341,12 @@ GPlatesGui::PythonManager::python_runner_finished()
 				d_python_console_dialog_ptr);
 	QWidget* w = GPlatesApi::PythonUtils::run_in_main_thread(f);
 	d_event_blackout.remove_blackout_exemption(w);
+}
+
+void
+GPlatesGui::PythonManager::print_py_msg(const QString& msg)
+{
+	d_python_console_dialog_ptr->append_text(msg);
 }
 
 #endif //GPLATES_NO_PYTHON

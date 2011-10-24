@@ -178,29 +178,29 @@ GPlatesFeatureVisitors::find_first_geometry_property(
 {
 		if(!feature_ref.is_valid())
 			return boost::none;
-
-		GPlatesModel::FeatureHandle::iterator iter =
-			feature_ref->begin();
-		GPlatesModel::FeatureHandle::iterator iter_end =
-			feature_ref->end();
-
-		GPlatesFeatureVisitors::GeometryFinder geometry_finder;
-		for(; iter != iter_end; iter++)
-		{
-#if 0
-			if(!iter.is_valid())
-			{
-				continue;
-			}
-#endif
-			(*iter)->accept_visitor(geometry_finder);
-			if (geometry_finder.has_found_geometries()) 
-			{
-				return iter;					
-			}
-		}
-		return boost::none;
+		else
+			return find_first_geometry_property(*feature_ref);
 	
+}
+
+boost::optional<GPlatesModel::FeatureHandle::iterator>
+GPlatesFeatureVisitors::find_first_geometry_property(
+			GPlatesModel::FeatureHandle& feature_ref)
+{
+	GPlatesModel::FeatureHandle::iterator 
+			iter	 = feature_ref.begin(), 
+			iter_end = feature_ref.end();
+
+	GPlatesFeatureVisitors::GeometryFinder geometry_finder;
+	for(; iter != iter_end; iter++)
+	{
+		(*iter)->accept_visitor(geometry_finder);
+		if (geometry_finder.has_found_geometries()) 
+		{
+			return iter;					
+		}
+	}
+	return boost::none;
 }
 
 /**

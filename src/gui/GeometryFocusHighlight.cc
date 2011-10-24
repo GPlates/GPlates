@@ -29,6 +29,7 @@
 #include "Colour.h"
 #include "GeometryFocusHighlight.h"
 
+#include "gui/DrawStyleManager.h"
 #include "gui/FeatureFocus.h"
 #include "gui/Symbol.h"
 

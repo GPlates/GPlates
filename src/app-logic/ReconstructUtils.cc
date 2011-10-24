@@ -542,7 +542,7 @@ GPlatesAppLogic::ReconstructUtils::display_rotation(
 
     const boost::optional<GPlatesMaths::UnitVector3D> &axis_hint = rotation.axis_hint();
     UnitQuaternion3D::RotationParams params = old_uq.get_rotation_params(axis_hint);
-    real_t angle = params.angle;
+    //real_t angle = params.angle;
 
     PointOnSphere point(params.axis);
     LatLonPoint llp = make_lat_lon_point(point);

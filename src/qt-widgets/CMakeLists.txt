@@ -274,6 +274,7 @@ set(srcs
     ProjectionControlWidget.h
     ProjectionControlWidgetUi.ui
     PropertyValueNotSupportedException.h
+    PythonArgumentWidget.h
     PythonConsoleDialog.cc
     PythonConsoleDialog.h
     PythonConsoleDialogUi.ui

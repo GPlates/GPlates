@@ -1189,7 +1189,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::calculate_num_vertices_along_tile_edges(
 			}
 		}
 	}
-
+#if 0
 	// Convert from dot product to angle.
 	const GPlatesMaths::real_t x_tile_max_spanned_angle_in_radians = 2 * acos(x_tile_min_half_span);
 	const GPlatesMaths::real_t y_tile_max_spanned_angle_in_radians = 2 * acos(y_tile_min_half_span);
@@ -1201,7 +1201,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::calculate_num_vertices_along_tile_edges(
 	const GPlatesMaths::real_t y_num_quads_based_on_distance_real =
 			GPlatesMaths::convert_rad_to_deg(y_tile_max_spanned_angle_in_radians) /
 					MAX_ANGLE_IN_DEGREES_BETWEEN_VERTICES;
-
+#endif
 	// Determine the number of quads along each tile edge based on the texel resolution.
 	const unsigned int x_num_quads_based_on_texels = num_u_texels / NUM_TEXELS_PER_VERTEX;
 	const unsigned int y_num_quads_based_on_texels = num_v_texels / NUM_TEXELS_PER_VERTEX;

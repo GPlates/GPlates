@@ -80,6 +80,13 @@ namespace GPlatesPresentation
 		GPlatesPresentation::ViewState d_view_state;
 		GPlatesQtWidgets::ViewportWindow d_viewport_window;
 	};
+
+	inline
+	double
+	current_time()
+	{
+		return Application::instance()->get_application_state().get_current_reconstruction_time();
+	}
 }
 
 #endif  // GPLATES_PRESENTATION_APPLICATION_H

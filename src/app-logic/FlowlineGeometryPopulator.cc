@@ -132,8 +132,8 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 		std::vector<double> times = d_flowline_property_finder.get_times();
 
 		std::vector<double>::const_iterator
-			t_iter = times.begin(),
-			t_prev_iter = times.begin();
+			t_iter = times.begin();
+			//t_prev_iter = times.begin();
 
 		++t_iter;
 

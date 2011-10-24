@@ -127,7 +127,7 @@ GPlatesPresentation::ViewState::ViewState(
 			new GPlatesGui::TextOverlaySettings()),
 	d_export_animation_registry(
 			new GPlatesGui::ExportAnimationRegistry()),
-	d_python_manager_ptr(new GPlatesGui::PythonManager())
+	d_python_manager_ptr(GPlatesGui::PythonManager::instance())
 {
 	connect_to_viewport_zoom();
 

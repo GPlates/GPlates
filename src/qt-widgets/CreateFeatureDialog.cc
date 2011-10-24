@@ -707,7 +707,15 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_next()
 	int index_increment = 1;
 	if ((stack->currentIndex() == PROPERTIES_PAGE) && !d_customisable_feature_type_selected)
 	{
-		index_increment = 2;		
+		index_increment = 2;
+
+		if(!d_time_period_widget->valid()) // if the start-end time are not valid, do not change page.
+		{
+			QMessageBox::warning(this, tr("Time Period Invalid"),
+				tr("The begin-end time is not valid."),
+				QMessageBox::Ok);
+			return;
+		}
 	}
 
 	int next_index = stack->currentIndex() + index_increment;

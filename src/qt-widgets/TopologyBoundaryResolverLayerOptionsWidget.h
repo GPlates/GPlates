@@ -45,6 +45,7 @@ namespace GPlatesQtWidgets
 {
 	// Forward declaration.
 	class ViewportWindow;
+	class DrawStyleDialog;
 
 	/**
 	 * TopologyBoundaryResolverLayerOptionsWidget is used to show additional options for
@@ -80,6 +81,9 @@ namespace GPlatesQtWidgets
 		void
 		handle_fill_polygons_clicked();
 
+		void
+		open_draw_style_setting_dlg();
+
 	private:
 
 		TopologyBoundaryResolverLayerOptionsWidget(
@@ -91,7 +95,7 @@ namespace GPlatesQtWidgets
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;
 		ViewportWindow *d_viewport_window;
-
+		DrawStyleDialog		   *d_draw_style_dialog_ptr;
 		/**
 		 * The visual layer for which we are currently displaying options.
 		 */

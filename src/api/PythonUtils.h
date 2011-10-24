@@ -39,6 +39,11 @@
 #include "gui/PythonManager.h"
 
 #if !defined(GPLATES_NO_PYTHON)
+
+#define DISPATCH_GUI_FUN \
+	if(!GPlatesApi::PythonUtils::is_main_thread())  \
+		return GPlatesApi::PythonUtils::run_in_main_thread
+
 namespace GPlatesAppLogic
 {
 	// Forward declarations.
@@ -85,9 +90,7 @@ namespace GPlatesApi
 		 * @throws boost::python::error_already_set.
 		 */
 		QString
-		stringify_object(
-				const boost::python::object &obj,
-				const char *coding = "ascii");
+		to_QString(const boost::python::object &obj);
 
 		/**
 		 * Runs all startup scripts in pre-defined search directories on the given
@@ -148,7 +151,7 @@ namespace GPlatesApi
 				);
 			return  boost::any_cast<ReturnType>(retVal);
 		}
-
+		
 		template<>
 		inline
 		void
@@ -164,6 +167,26 @@ namespace GPlatesApi
 					Q_ARG(boost::function< void () > , f));
 			return ;
 		}
+
+
+		inline
+		bool
+		is_gui_object(const boost::python::object &obj)
+		{
+			bool ret = false;
+			try
+			{
+				PythonInterpreterLocker interpreter_locker;
+				ret =  boost::python::extract<bool>(obj.attr("gui_obj"));
+			}
+			catch (const  boost::python::error_already_set &)
+			{
+				qWarning() << GPlatesApi::PythonUtils::get_error_message();
+			}
+			return ret;
+		}
+
+
 	}
 }
 #endif   //GPLATES_NO_PYTHON)

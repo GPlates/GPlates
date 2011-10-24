@@ -35,7 +35,14 @@
 #include "global/IntrusivePointerZeroRefCountException.h"
 
 #include "utils/non_null_intrusive_ptr.h"
+#include "global/CompilerWarnings.h"
 
+//Due to a gcc bug, 
+//gcc 4.6 reports uninitialized variable warning falsely.
+//disable the uninitialized warning for gcc 4.6 here
+#if (__GNUC__ == 4 && __GNUC_MINOR__ == 6)
+DISABLE_GCC_WARNING("-Wuninitialized")
+#endif 
 
 namespace GPlatesUtils
 {

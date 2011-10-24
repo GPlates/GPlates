@@ -130,6 +130,14 @@ namespace GPlatesGui
 		get_colour(
 				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const;
 
+		boost::optional<Colour>
+		get_colour(
+				const GPlatesModel::FeatureHandle& feature) const
+		{
+			//TODO:
+			return boost::none;
+		}
+
 	signals:
 
 		void

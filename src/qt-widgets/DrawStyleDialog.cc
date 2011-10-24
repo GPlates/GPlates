@@ -22,29 +22,53 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#include "global/python.h"
+#include <boost/optional.hpp>
+#include <QFileDialog>
+#include <QColorDialog>
 #include <QHeaderView>
+
+#include "SceneView.h"
+#include "ReconstructionViewWidget.h"
 #include "DrawStyleDialog.h"
+
+#include "PythonArgumentWidget.h"
+#include "app-logic/PropertyExtractors.h"
+#include "file-io/CptReader.h"
+#include "file-io/ReadErrorAccumulation.h"
+#include "gui/DrawStyleAdapters.h"
 #include "gui/DrawStyleManager.h"
 #include "gui/HTMLColourNames.h"
+#include "gui/GenericColourScheme.h"
+#include "gui/SingleColourScheme.h"
+#include "gui/PlateIdColourPalettes.h"
+#include "gui/PythonConfiguration.h"
 #include "presentation/ReconstructVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
+#include "GlobeAndMapWidget.h"
 
 GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 		GPlatesPresentation::ViewState &view_state,
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer,
 		QWidget* parent_) :
-	d_visual_layer(visual_layer)
+	QDialog(parent_),
+	d_visual_layer(visual_layer),
+	d_show_thumbnails(true),
+	d_repaint_flag(true),
+	d_disable_style_item_change(false)
 {
 	setupUi(this);
-	
+	d_globe_and_map_widget_ptr = new GlobeAndMapWidget(view_state, style_list);
 	categories_table->horizontalHeader()->setResizeMode(0, QHeaderView::Stretch);
 	categories_table->horizontalHeader()->hide();
 	categories_table->verticalHeader()->hide();
+	categories_table->resizeColumnsToContents();
+	categories_table->resize(categories_table->horizontalHeader()->length(),0);
 
 	// Set up the list of colour schemes.
 	style_list->setViewMode(QListWidget::IconMode);
 	style_list->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
-	//	colour_schemes_list->setSpacing(SPACING); //Due to a qt bug, the setSpacing doesn't work well in IconMode.
+	//	style_list->setSpacing(SPACING); //Due to a qt bug, the setSpacing doesn't work well in IconMode.
 	style_list->setMovement(QListView::Static);
 	style_list->setWrapping(true);
 	style_list->setResizeMode(QListView::Adjust);
@@ -55,18 +79,35 @@ GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 	blank_pixmap.fill(*GPlatesGui::HTMLColourNames::instance().get_colour("slategray"));
 	d_blank_icon = QIcon(blank_pixmap);
 	d_style_mgr = GPlatesGui::DrawStyleManager::instance();
+	
 	init_dlg();
 	make_signal_slot_connections();
+	
 	open_button->hide();
-	add_button->hide();
 	edit_button->hide();
+
+	add_button->show();
+	remove_button->show();
+
+	// Set up our GlobeAndMapWidget that we use for rendering.
+	d_globe_and_map_widget_ptr->resize(ICON_SIZE, ICON_SIZE);
+	d_globe_and_map_widget_ptr->hide();
+
+#if defined(Q_OS_MAC)
+	if(QT_VERSION >= 0x040600)
+		d_globe_and_map_widget_ptr->move(style_list->spacing()+4, style_list->spacing()+3); 
+#else
+	d_globe_and_map_widget_ptr->move(1- ICON_SIZE, 1- ICON_SIZE);
+#endif
+	splitter->setStretchFactor(splitter->indexOf(categories_table),1);
+	splitter->setStretchFactor(splitter->indexOf(right_side_frame),4);
 }
 
 void
 GPlatesQtWidgets::DrawStyleDialog::init_catagory_table()
 {
 	categories_table->clear();
-	GPlatesGui::DrawStyleManager::CatagoryContainer catas = GPlatesGui::DrawStyleManager::instance()->all_catagories();
+	GPlatesGui::DrawStyleManager::CatagoryContainer& catas = d_style_mgr->all_catagories();
 	std::size_t n_size = catas.size();
 	categories_table->setRowCount(n_size);
 	for(std::size_t row=0; row < n_size; row++)
@@ -74,7 +115,7 @@ GPlatesQtWidgets::DrawStyleDialog::init_catagory_table()
 		QTableWidgetItem *item = new QTableWidgetItem(catas[row]->name());
 		item->setToolTip(catas[row]->desc());
 		QVariant qv;
-		qv.setValue(static_cast<void*>(catas[row])); // Store the colour scheme ID in the item data.
+		qv.setValue(static_cast<void*>(catas[row])); 
 		item->setData(Qt::UserRole, qv);
 		item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
 		categories_table->setItem(row, 0, item);
@@ -91,44 +132,117 @@ GPlatesQtWidgets::DrawStyleDialog::make_signal_slot_connections()
 			this,
 			SLOT(handle_close_button_clicked()));
 
+	// Remove button.
+	QObject::connect(
+			remove_button,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_remove_button_clicked()));
+
+	// Add button.
+	QObject::connect(
+			add_button,
+			SIGNAL(clicked(bool)),
+			this,
+			SLOT(handle_add_button_clicked(bool)));
+
 	// Categories table.
 	QObject::connect(
 			categories_table,
 			SIGNAL(currentCellChanged(int, int, int, int)),
 			this,
 			SLOT(handle_categories_table_cell_changed(int, int, int, int)));
+
+	QObject::connect(
+			style_list,
+			SIGNAL(currentItemChanged(QListWidgetItem*,QListWidgetItem*)),
+			this,
+			SLOT(handle_style_selection_changed(QListWidgetItem*,QListWidgetItem*)));
+
+	QObject::connect(
+			d_globe_and_map_widget_ptr,
+			SIGNAL(repainted(bool)),
+			this,
+			SLOT(handle_repaint(bool)));
+
+	QObject::connect(
+			show_thumbnails_checkbox,
+			SIGNAL(stateChanged(int)),
+			this,
+			SLOT(handle_show_thumbnails_changed(int)));
+
+	QObject::connect(
+			cfg_name_line_edit,
+			SIGNAL(textChanged(const QString&)),
+			this,
+			SLOT(handle_cfg_name_changed(const QString&)));
 }
 
 void
 GPlatesQtWidgets::DrawStyleDialog::handle_close_button_clicked()
 {
-	set_style();
 	hide();
+}
+
+void
+GPlatesQtWidgets::DrawStyleDialog::handle_repaint(bool)
+{
+	d_repaint_flag = true;
+	d_image = d_globe_and_map_widget_ptr->grab_frame_buffer();
+}
+
+void
+GPlatesQtWidgets::DrawStyleDialog::handle_remove_button_clicked()
+{
+	if(d_disable_style_item_change)
+		return;
+	
+	QTableWidgetItem* cur_item = categories_table->currentItem();
+	if(!cur_item)
+		return;
+
+	GPlatesGui::DrawStyleManager* mgr = GPlatesGui::DrawStyleManager::instance();
+	QListWidgetItem* item = style_list->currentItem();
+	if(item)
+	{
+		QVariant qv = item->data(Qt::UserRole);
+		GPlatesGui::StyleAdapter* sa = static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
+		delete style_list->takeItem(style_list->currentRow());
+		mgr->remove_style(sa);
+	}
+}
+
+
+void
+GPlatesQtWidgets::DrawStyleDialog::set_style(GPlatesGui::StyleAdapter* _style)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
+	{
+		locked_visual_layer->get_visual_layer_params()->set_style_adaper(_style);
+	}
+	GPlatesGui::DrawStyleManager::instance()->emit_style_changed();
+}
+
+GPlatesQtWidgets::DrawStyleDialog::~DrawStyleDialog()
+{
+	if(GPlatesGui::DrawStyleManager::is_alive())
+	{
+		d_style_mgr->decrease_ref(*get_style(style_list->currentItem()));
+		d_style_mgr->save_user_defined_styles();
+	}
 }
 
 
 void
 GPlatesQtWidgets::DrawStyleDialog::set_style()
 {
-	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
+	QListWidgetItem* item = style_list->currentItem();
+	if(item)
 	{
-		GPlatesPresentation::ReconstructVisualLayerParams *params =
-			dynamic_cast<GPlatesPresentation::ReconstructVisualLayerParams *>(
-			locked_visual_layer->get_visual_layer_params().get());
-		
-		QListWidgetItem* item = style_list->currentItem();
-		if(item)
-		{
-			QVariant qv = item->data(Qt::UserRole);
-			GPlatesGui::StyleAdapter* sa = static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
-
-			if (params)
-			{
-				params->set_style_adaper(sa);
-			}
-		}
+		QVariant qv = item->data(Qt::UserRole);
+		GPlatesGui::StyleAdapter* sa = static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
+		set_style(sa);
 	}
-	GPlatesGui::DrawStyleManager::instance()->emit_style_changed();
 }
 
 void
@@ -144,62 +258,312 @@ GPlatesQtWidgets::DrawStyleDialog::handle_categories_table_cell_changed(
 		int previous_row,
 		int previous_column)
 {
+	if(d_disable_style_item_change)
+		return;
 	if(current_row < 0)
 	{
 		qWarning() << "The index of current row is negative number. Do nothing and return.";
 		return;
 	}
 	QTableWidgetItem* item = categories_table->currentItem();
-	QVariant qv = item->data(Qt::UserRole);
-	GPlatesGui::StyleCatagory* cata = static_cast<GPlatesGui::StyleCatagory*>(qv.value<void*>());
-	load_category(cata);
+	if(item)
+	{
+		GPlatesGui::StyleCatagory* cata = get_catagory(*item);
+		if(cata)
+			load_category(*cata);
+	}
 }
 
 void
-GPlatesQtWidgets::DrawStyleDialog::load_category(const GPlatesGui::StyleCatagory* cata)
+GPlatesQtWidgets::DrawStyleDialog::load_category(const GPlatesGui::StyleCatagory& cata)
 {
 	using namespace GPlatesGui;
 	
-	GPlatesGui::DrawStyleManager::StyleContainer styles = GPlatesGui::DrawStyleManager::instance()->get_styles(*cata);
+	DrawStyleManager::StyleContainer styles = d_style_mgr->get_styles(cata);
 	style_list->clear();
 	
 	BOOST_FOREACH(StyleAdapter* sa, styles)
 	{
-		QListWidgetItem *item = new QListWidgetItem(
-				d_blank_icon,
-				sa->name(),
-				style_list);
+		QListWidgetItem *item = new QListWidgetItem(d_blank_icon, sa->name(), style_list);
 
 		QVariant qv;
-		qv.setValue(static_cast<void*>(sa)); // Store the colour scheme ID in the item data.
+		qv.setValue(static_cast<void*>(sa)); 
 		item->setData(Qt::UserRole, qv);
 		style_list->addItem(item);
 	}
 
-	// Show "Add" button for Single Colour category, "Open" button for every other category.
-	// Also show "Edit" button only for Single Colour category.
-	if (cata->name() == GPlatesGui::COLOUR_SINGLE)
-	{
-		open_button->hide();
-		add_button->show();
-		edit_button->show();
-	}
-	else if(cata->name() == GPlatesGui::COLOUR_PLATE_ID || 
-			cata->name() == GPlatesGui::COLOUR_FEATURE_AGE || 
-			cata->name() == GPlatesGui::COLOUR_FEATURE_TYPE)
-	{
-		open_button->show();
-		add_button->hide();
-		edit_button->hide();
-	}
-#if 0
 	// Set the rendering chain in motion.
 	if (d_show_thumbnails)
 	{
-		start_rendering_from(0);
+		show_preview_icon();
+	}
+}
+
+void
+GPlatesQtWidgets::DrawStyleDialog::handle_style_selection_changed(
+		QListWidgetItem* current,
+		QListWidgetItem* previous)
+{
+	using namespace GPlatesGui;
+
+	DrawStyleManager* mgr = DrawStyleManager::instance();
+	if(previous)
+	{
+		QVariant qv = previous->data(Qt::UserRole);
+		StyleAdapter* pre_style = static_cast<StyleAdapter*>(qv.value<void*>());
+		mgr->decrease_ref(*pre_style);
+	}
+	if(current)
+	{
+		QVariant qv = current->data(Qt::UserRole);
+		StyleAdapter* current_style = static_cast<StyleAdapter*>(qv.value<void*>());
+		set_style(current_style);
+		mgr->increase_ref(*current_style);
+		cfg_name_line_edit->setText(current_style->name());
+
+		const Configuration& cfg = current_style->configuration();
+		build_config_panel(cfg);
+		
+		if(!mgr->is_built_in_style(*current_style) && mgr->get_ref_number(*current_style) == 1)
+		{
+			remove_button->setEnabled(true);
+			enable_config_panel(true);
+		}
+		else
+		{
+			remove_button->setEnabled(false);
+			enable_config_panel(false);
+		}
+	}
+}
+
+void
+GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
+{
+	//sync the camera point
+	boost::optional<GPlatesMaths::LatLonPoint> camera_point = 
+		GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget().camera_llp();
+	
+	if(camera_point)
+		d_globe_and_map_widget_ptr->get_active_view().set_camera_viewpoint(*camera_point);
+
+	int len = style_list->count();
+    	d_globe_and_map_widget_ptr->show();
+	for(int i = 0; i < len; i++)
+	{
+		 QListWidgetItem* current_item = style_list->item(i);
+		 
+		 if(!current_item)
+			 continue;
+
+		d_repaint_flag = false;
+		QVariant qv = current_item->data(Qt::UserRole);
+		GPlatesGui::StyleAdapter* sa = static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
+		set_style(sa);
+			
+		d_globe_and_map_widget_ptr->update_canvas();
+			
+		d_disable_style_item_change = true;
+
+		while(!d_repaint_flag)
+			QApplication::processEvents();
+
+		d_disable_style_item_change = false;
+			
+		current_item->setIcon(QIcon(QPixmap::fromImage(d_image)));
+	}
+	d_globe_and_map_widget_ptr->hide();
+	style_list->setCurrentRow(0);
+}
+
+
+void
+GPlatesQtWidgets::DrawStyleDialog::refresh_current_icon()
+{
+	d_globe_and_map_widget_ptr->show();
+
+	QListWidgetItem* current_item = style_list->currentItem();
+
+	if(!current_item)
+		return;
+
+	if (d_show_thumbnails)
+	{
+		d_repaint_flag = false;
+		QVariant qv = current_item->data(Qt::UserRole);
+		GPlatesGui::StyleAdapter* sa = static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
+		set_style(sa);
+
+		d_globe_and_map_widget_ptr->update_canvas();
+
+		d_disable_style_item_change = true;
+
+		while(!d_repaint_flag)
+			QApplication::processEvents();
+
+		d_disable_style_item_change = false;
+
+		current_item->setIcon(QIcon(QPixmap::fromImage(d_image)));
+	}
+	d_globe_and_map_widget_ptr->hide();
+}
+
+
+void
+GPlatesQtWidgets::DrawStyleDialog::handle_add_button_clicked(bool )
+{
+	using namespace GPlatesGui;
+
+	if(d_disable_style_item_change)
+		return;
+
+	 QTableWidgetItem* cur_cata_item = categories_table->currentItem();
+	 if(!cur_cata_item)
+		 return;
+
+	StyleCatagory* current_cata = get_catagory(*cur_cata_item);
+	if(current_cata)
+	{
+		const StyleAdapter* style_temp = d_style_mgr->get_template_style(*current_cata);
+		if(style_temp)
+		{
+			StyleAdapter* new_style = style_temp->deep_clone();
+			if(new_style)
+			{
+				QString new_name("Unnamed");
+				if(!is_style_name_valid(*current_cata,new_name))
+				{
+					new_name = generate_new_valid_style_name(*current_cata,new_name);
+				}
+				new_style->set_name(new_name);
+				d_style_mgr->register_style(new_style);
+				load_category(*current_cata);
+			}
+		}
+	}
+};
+
+
+void
+GPlatesQtWidgets::DrawStyleDialog::build_config_panel(const GPlatesGui::Configuration& cfg)
+{
+#if !defined(GPLATES_NO_PYTHON)
+	//clear old gui widget in the panel
+	BOOST_FOREACH(QWidget* old_widget, d_cfg_widgets)
+	{
+		QObject::disconnect(
+				old_widget,
+				SIGNAL(configuration_changed()),
+				this,
+				SLOT(handle_configuration_changed()));
+	}
+	d_cfg_widgets.clear();
+				
+	QLayoutItem* row = NULL;
+	while((formLayout->count() > 2) && (row = formLayout->takeAt(2)) != 0)
+	{
+		delete row->layout();
+		delete row->widget();
+	}
+		
+	BOOST_FOREACH(const QString& item_name, cfg.all_cfg_item_names())
+	{
+		const GPlatesGui::PythonCfgItem* item = dynamic_cast<const GPlatesGui::PythonCfgItem*>(cfg.get(item_name));
+		QWidget* cfg_widget = create_cfg_widget(const_cast<GPlatesGui::PythonCfgItem*>(item));
+		if(cfg_widget)
+		{
+			QObject::connect(
+					cfg_widget,
+					SIGNAL(configuration_changed()),
+					this,
+					SLOT(handle_configuration_changed()));
+			formLayout->addRow(item_name + ":" , cfg_widget);
+			d_cfg_widgets.push_back(cfg_widget);//save the pointer so that we can disconnect them later.
+		}
 	}
 #endif
 }
+
+
+void
+GPlatesQtWidgets::DrawStyleDialog::handle_cfg_name_changed(const QString& cfg_name)
+{
+	QListWidgetItem * item = style_list->currentItem();
+	if(item)
+	{
+		GPlatesGui::StyleAdapter* style_adpter = get_style(item);
+		if(style_adpter)
+		{
+			QString new_cfg_name = cfg_name;
+			new_cfg_name.remove(QChar('/'));
+			if(style_adpter->name() == new_cfg_name)
+				return;
+			
+			if(!is_style_name_valid(style_adpter->catagory(), new_cfg_name))
+			{
+				new_cfg_name = generate_new_valid_style_name(style_adpter->catagory(), new_cfg_name);
+			}
+			style_adpter->set_name(new_cfg_name);
+			item->setText(new_cfg_name);
+		}
+	}
+}
+
+
+bool
+GPlatesQtWidgets::DrawStyleDialog::is_style_name_valid(
+		const GPlatesGui::StyleCatagory& catagory,
+		const QString& cfg_name)
+{
+	if(cfg_name.contains('/'))// '/' cannot be in style name.
+		return false;
+
+	//check duplicated name.
+	GPlatesGui::DrawStyleManager::StyleContainer styles = d_style_mgr->get_styles(catagory);
+	BOOST_FOREACH(const GPlatesGui::StyleAdapter* _style, styles)
+	{
+		if(_style->name() == cfg_name)
+			return false;
+	}
+	return true;
+}
+
+
+const QString
+GPlatesQtWidgets::DrawStyleDialog::generate_new_valid_style_name(
+		const GPlatesGui::StyleCatagory& catagory,
+		const QString& cfg_name)
+{
+	QString new_name_base = cfg_name;
+	new_name_base.remove("/");
+	if(is_style_name_valid(catagory, new_name_base))
+	{
+		return new_name_base;
+	}
+	else
+	{
+		int c = 1;
+		while(1)
+		{
+			QString new_name = QString(new_name_base + "_%1").arg(c);
+			if(is_style_name_valid(catagory, new_name))
+				return new_name;
+			else
+				c++;
+		}
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 

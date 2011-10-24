@@ -20,8 +20,13 @@ set(srcs
     CoReg.cc
     DeferredApiCall.h
     DeferredApiCallImpl.h
-    FeatureCollection.cc
-    FeatureCollection.h
+    PyApplication.cc
+    PyColour.cc
+    PyFeature.cc
+    PyFeature.h
+    PyFeatureCollection.cc
+    PyFeatureCollection.h
+    PyFunctions.cc
     Python.cc
     PythonExecutionMonitor.cc
     PythonExecutionMonitor.h
@@ -35,9 +40,10 @@ set(srcs
     PythonRunner.h
     PythonUtils.cc
     PythonUtils.h
+    PyTopologyTools.cc
+    PyViewportWindow.cc
     Sleeper.cc
     Sleeper.h
-    ViewportWindow.cc
 )
 
 

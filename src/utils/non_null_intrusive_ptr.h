@@ -31,6 +31,14 @@
 #include <boost/intrusive_ptr.hpp>
 
 #include "NullIntrusivePointerHandler.h"
+#include "global/CompilerWarnings.h"
+//when non_null_intrusive_ptr works with boost::optional, 
+//gcc 4.6 reports uninitialized variable warning falsely.
+//disable the uninitialized warning for gcc 4.6
+#if (__GNUC__ == 4 && __GNUC_MINOR__ == 6)
+DISABLE_GCC_WARNING("-Wuninitialized")
+#endif 
+
 
 namespace GPlatesUtils
 {
@@ -299,6 +307,8 @@ template<class E, class T, class Y, class Z> std::basic_ostream<E, T> & operator
 
 #ifdef BOOST_MSVC
 # pragma warning(pop)
-#endif    
+#endif  
+
+ENABLE_GCC_WARNING("-Wuninitialized")
 
 #endif  // #ifndef NON_NULL_INTRUSIVE_PTR_HPP_INCLUDED

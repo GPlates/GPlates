@@ -493,7 +493,6 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_time_period_array(
 }
 
 
-
 void
 GPlatesQtWidgets::EditTimeSequenceWidget::update_times()
 {
@@ -503,7 +502,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_times()
 		GPlatesPropertyValues::TemplateTypeParameterType::create_gml("TimePeriod");
 
 	// Find first valid time in table, so we can store it as the "end" part of the first gpml:Array element. 
-	boost::optional<double> begin_time,end_time;
+	boost::optional<double> begin_time, end_time;
 	int count;
 
 	for (count = 0; count < table_times->rowCount(); ++count)

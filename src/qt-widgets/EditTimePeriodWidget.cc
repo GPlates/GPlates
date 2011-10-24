@@ -328,4 +328,24 @@ GPlatesQtWidgets::EditTimePeriodWidget::handle_disappearance_is_distant_future_c
 }
 
 
+bool
+GPlatesQtWidgets::EditTimePeriodWidget::valid()
+{
+	if(spinbox_time_of_appearance->isEnabled() && 
+		spinbox_time_of_disappearance->isEnabled())
+	{
+		if(spinbox_time_of_appearance->value() < spinbox_time_of_disappearance->value())
+		{
+			spinbox_time_of_disappearance->setValue(0);
+			spinbox_time_of_disappearance->setFocus();
+			return false;
+		}
+	}
+	return true;
+};
+
+
+
+
+
 

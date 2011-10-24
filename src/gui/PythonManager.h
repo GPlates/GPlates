@@ -24,15 +24,18 @@
 * with this program; if not, write to Free Software Foundation, Inc.,
 * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
-#ifndef GPLATES_UTILS_PYTHON_MANAGER_H
-#define GPLATES_UTILS_PYTHON_MANAGER_H
+#ifndef GPLATES_GUI_PYTHON_MANAGER_H
+#define GPLATES_GUI_PYTHON_MANAGER_H
 #include <QDir>
 #include <QFileInfoList>
+#include <boost/foreach.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "global/GPlatesException.h"
 #include "global/python.h"
-#include "gui/EventBlackout.h"
+#include "EventBlackout.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -57,6 +60,9 @@ namespace GPlatesQtWidgets
 }
 
 #if !defined(GPLATES_NO_PYTHON)
+
+namespace bp = boost::python ;
+
 namespace GPlatesGui
 {
 	class PyManagerNotReady : 
@@ -67,7 +73,6 @@ namespace GPlatesGui
 			const GPlatesUtils::CallStack::Trace &exception_source) :
 		GPlatesGlobal::Exception(exception_source)
 		{ }
-		//GPLATES_EXCEPTION_SOURCE
 	protected:
 		const char *
 		exception_name() const
@@ -107,24 +112,36 @@ namespace GPlatesGui
 		}
 	};
 
+
 	class PythonManager : public QObject
 	{
-
 		Q_OBJECT
 
 	public:
 		void initialize();
 		bool is_initialized(){return d_inited;}
-		PythonManager() : 
-			d_python_main_thread_runner(NULL),
-			d_python_execution_thread(NULL),
-			d_sleeper(NULL),
-			d_inited(false), 
-			d_python_console_dialog_ptr(NULL),
-			d_stopped_event_blackout_for_python_runner(false)
-		{ }
-
 		~PythonManager();
+		
+		static
+		PythonManager*
+		instance()
+		{
+			//static variable will be initialized only once.
+			static PythonManager* inst = new PythonManager();
+			return inst;
+		}
+
+		/*
+		* This function is a little bit tricky.
+		* The boost python object could exist in embedded python interpreter. 
+		* When we destruct object in python interpreter, the python GIL must be obtained.
+		* However, boost::python::object is actually a "smart pointer". We don't exactly know when it will be acturally destructed.
+		* Instead of acquiring python GIL all over the source code, we do it in this function.
+		* Put all python object which is not needed anymore in this recycle bin.
+		*/
+		void
+		recycle_python_object(const boost::python::object& obj);
+
 
 		void
 		init_python_interpreter(
@@ -143,23 +160,7 @@ namespace GPlatesGui
 		get_scripts();
 
 		void
-		register_script(
-				const QString& name, 
-				const QString& encoding);
-
-		void
-		register_py_obj(
-				const QString& name, 
-				const boost::python::object& obj)
-		{
-			d_python_main_namespace[name.toStdString()] = obj;
-		}
-
-		boost::python::object
-		get_py_obj(const QString& name)
-		{
-			return d_python_main_namespace[name.toStdString()];
-		}
+		register_script(const QString& name);
 
 		/**
 		 * Returns a thread on which Python code can be run off the main thread.
@@ -177,6 +178,9 @@ namespace GPlatesGui
 		void
 		python_runner_finished();
 
+		void
+		print_py_msg(const QString& msg);
+
 	signals:
 		void
 		system_exit_exception_raised(
@@ -184,6 +188,15 @@ namespace GPlatesGui
 				QString exit_error_message);
 
 	protected:
+		PythonManager() : 
+			d_python_main_thread_runner(NULL),
+			d_python_execution_thread(NULL),
+			d_sleeper(NULL),
+			d_inited(false), 
+			d_python_console_dialog_ptr(NULL),
+			d_stopped_event_blackout_for_python_runner(false)
+		{ }
+
 		class PythonExecGuard
 		{
 		public:
@@ -284,6 +297,7 @@ namespace GPlatesGui
 		 * Lock down the user interface during Python execution.
 		*/
 		GPlatesGui::EventBlackout d_event_blackout;
+			
 	};
 }
 #else
@@ -293,6 +307,14 @@ namespace GPlatesGui
 	class PythonManager : public QObject
 	{
 	public:
+		static
+		PythonManager*
+		instance()
+		{
+			//static variable will be initialized only once.
+			static PythonManager* inst = new PythonManager();
+			return inst;
+		}
 		void initialize(GPlatesPresentation::Application& app){app.get_viewport_window().hide_python_menu();}
 		void pop_up_python_console(){}
 	};

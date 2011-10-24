@@ -389,7 +389,7 @@ GPlatesQtWidgets::PythonConsoleDialog::do_append_object(
 		const boost::python::object &obj,
 		bool error)
 {
-	do_append_text(GPlatesApi::PythonUtils::stringify_object(obj, "utf-8"), error); // FIXME: hard coded codec
+	do_append_text(GPlatesApi::PythonUtils::to_QString(obj), error); 
 }
 
 

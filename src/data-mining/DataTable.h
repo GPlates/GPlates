@@ -140,6 +140,9 @@ namespace GPlatesDataMining
 			d_data_index = idx;
 		}
 
+		void
+		to_qstring_table(std::vector<std::vector<QString> >&) const;
+
 
 	protected:
 		TableHeader d_table_header;

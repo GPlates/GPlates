@@ -44,6 +44,7 @@
 #include "global/python.h"
 
 #include "gui/GPlatesQApplication.h"
+#include "gui/DrawStyleManager.h"
 
 #include "maths/MathsUtils.h"
 
@@ -84,7 +85,7 @@ namespace
 	//enable symbol-table feature by secret command line option.
 	const char *SYMBOL_TABLE_OPTION_NAME = "symbol-table";
 	//enable python by secret command line option.
-	const char *PYTHON_OPTION_NAME = "python";
+	const char *NO_PYTHON_OPTION_NAME = "no-python";
 
 	void
 	print_usage(
@@ -151,7 +152,7 @@ namespace
 
 		//Add secret python options.
 		input_options.hidden_options.add_options()
-			(PYTHON_OPTION_NAME, "Enable python");
+			(NO_PYTHON_OPTION_NAME, "Disable python");
 
 		boost::program_options::variables_map vm;
 
@@ -220,14 +221,32 @@ namespace
 		}
 
 		//enable python by command line option.
-		if(vm.count(PYTHON_OPTION_NAME))
+		if(vm.count(NO_PYTHON_OPTION_NAME))
 		{
-			ComponentManager::instance().enable(
+			ComponentManager::instance().disable(
 				ComponentManager::Component::python());
 		}
+		#if defined(GPLATES_NO_PYTHON)
+		ComponentManager::instance().disable(
+				ComponentManager::Component::python());
+		#endif
 
 		return command_line_options;
 	}
+}
+
+void
+clean_up()
+{
+	if(GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
+	{
+#if !defined(GPLATES_NO_PYTHON)
+		GPlatesApi::PythonInterpreterLocker lock;
+#endif
+		delete GPlatesGui::DrawStyleManager::instance(); //delete draw style manager singleton.
+		delete GPlatesPresentation::Application::instance(); //delete the application singleton.
+	}
+	delete GPlatesGui::PythonManager::instance();
 }
 
 int internal_main(int argc, char* argv[])
@@ -260,7 +279,6 @@ int internal_main(int argc, char* argv[])
 	CommandLineOptions command_line_options = process_command_line_options(
 			qapplication.argc(), qapplication.argv());
 
-	
 	GPlatesPresentation::Application *app = GPlatesPresentation::Application::instance();
 	GPlatesQtWidgets::ViewportWindow &main_window_widget = app->get_viewport_window();
 	
@@ -306,11 +324,12 @@ int internal_main(int argc, char* argv[])
 		main_window_widget.hide_python_menu();
 	}
 
-	return qapplication.exec();
+	int ret = qapplication.exec();
+	clean_up();
+	return ret;
 
 	// Note: Because we are using Boost.Python, Py_Finalize() should not be called.
 }
-
 
 int main(int argc, char* argv[])
 {
@@ -329,7 +348,6 @@ int main(int argc, char* argv[])
 	// in Visual Studio or you used the "-DCMAKE_BUILD_TYPE:STRING=profilegplates"
 	// command-line option in "cmake" on Linux or Mac.
 	PROFILE_REPORT_TO_FILE("profile.txt");
-
 	return return_code;
 }
 

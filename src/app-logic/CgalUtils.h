@@ -436,7 +436,7 @@ namespace GPlatesAppLogic
 			// Loop over the points, convert them, and add them to the triangulation
 			for ( pos_iter = points_begin; pos_iter != points_end; ++pos_iter)
 			{
-				const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*pos_iter);
+				//const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*pos_iter);
 				GPlatesAppLogic::CgalUtils::cgal_point_2_type point = convert_point_to_cgal_2(*pos_iter);
 				//qDebug() << "before do_insert vertex_handles.size() " << vertex_handles.size();
 				//qDebug() << "before do_insert point = " << point.x() << "," << point.y();
@@ -554,7 +554,7 @@ namespace GPlatesAppLogic
 			// Loop over the points, convert them, and add them to the triangulation
 			for ( pos_iter = points_begin; pos_iter != points_end; ++pos_iter)
 			{
-				const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*pos_iter);
+				//const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*pos_iter);
 				GPlatesAppLogic::CgalUtils::cgal_point_2_type point = convert_point_to_cgal_2(*pos_iter);
 				//qDebug() << "before do_insert vertex_handles.size() " << vertex_handles.size();
 				//qDebug() << "before do_insert point = " << point.x() << "," << point.y();

@@ -22,15 +22,16 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
+#include "LinkWidget.h"
 #include "TopologyNetworkResolverLayerOptionsWidget.h"
 
 #include "TotalReconstructionPolesDialog.h"
 #include "ViewportWindow.h"
 
 #include "presentation/TopologyNetworkVisualLayerParams.h"
+#include "QtWidgetUtils.h"
 
-
+#include "utils/ComponentManager.h"
 GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkResolverLayerOptionsWidget(
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
@@ -39,7 +40,8 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 	LayerOptionsWidget(parent_),
 	d_application_state(application_state),
 	d_view_state(view_state),
-	d_viewport_window(viewport_window)
+	d_viewport_window(viewport_window),
+	d_draw_style_dialog_ptr(NULL)
 {
 	setupUi(this);
 
@@ -66,6 +68,22 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 			SIGNAL(clicked()),
 			this,
 			SLOT(handle_segment_velocity_clicked()));
+
+	LinkWidget *draw_style_link = new LinkWidget(
+			tr("Draw Style Setting..."), this);
+
+	QtWidgetUtils::add_widget_to_placeholder(
+			draw_style_link,
+			draw_style_placeholder_widget);
+	QObject::connect(
+			draw_style_link,
+			SIGNAL(link_activated()),
+			this,
+			SLOT(open_draw_style_setting_dlg()));
+	if(!GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
+	{
+		draw_style_link->setVisible(false);
+	}
 }
 
 
@@ -175,4 +193,23 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_segment_velo
 		}
 	}
 }
+
+void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::open_draw_style_setting_dlg()
+{
+	if (!d_draw_style_dialog_ptr)
+	{
+		d_draw_style_dialog_ptr = new DrawStyleDialog(
+				GPlatesPresentation::Application::instance()->get_view_state(),
+				d_current_visual_layer,
+				this);
+		d_draw_style_dialog_ptr->init_dlg();
+	}
+	QtWidgetUtils::pop_up_dialog(d_draw_style_dialog_ptr);
+}
+
+
+
+
+
 

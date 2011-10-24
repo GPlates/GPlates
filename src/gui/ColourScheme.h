@@ -40,6 +40,13 @@ namespace GPlatesAppLogic
 	class ReconstructionGeometry;
 }
 
+
+namespace GPlatesModel
+{
+	class FeatureHandle;
+}
+
+
 namespace GPlatesGui
 {
 	/**
@@ -74,6 +81,11 @@ namespace GPlatesGui
 		boost::optional<Colour>
 		get_colour(
 				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const = 0;
+
+		virtual
+		boost::optional<Colour>
+		get_colour(
+				const GPlatesModel::FeatureHandle& feature_ptr) const = 0;
 
 	};
 }

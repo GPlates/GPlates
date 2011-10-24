@@ -22,49 +22,51 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
+#include <math.h>
+#include <QDebug>
 #include "ColourSpectrum.h"
-#include "Colour.h"
 
-
-namespace
+GPlatesGui::ColourSpectrum::ColourSpectrum(
+		const GPlatesGui::Colour& upper_colour,
+		const GPlatesGui::Colour& lower_colour,
+		const double upper_bound,
+		const double lower_bound) :
+	d_upper_colour(upper_colour),
+	d_lower_colour(lower_colour),
+	d_upper_bound(upper_bound),
+	d_lower_bound(lower_bound)
 {
-	using namespace GPlatesGui;
-
-	static const Colour COLOURS[] = {
-		Colour(1, 0, 0),
-		Colour(1, 1, 0),
-		Colour(0, 1, 0),
-		Colour(0, 1, 1),
-		Colour(0, 0, 1),
-		Colour(1, 0, 1)
-	};
-
-	static const int NUM_RANGES = sizeof(COLOURS) / sizeof(Colour) - 1;
+	if(d_upper_bound < d_lower_bound)
+		qWarning() << "The upper bound is less than the lower bound.";
 }
 
-
-GPlatesGui::Colour
-GPlatesGui::ColourSpectrum::get_colour_at(
-		double position)
+#if 0
+GPlatesGui::ColourSpectrum::ColourSpectrum() 
 {
-	int range = static_cast<int>(position * NUM_RANGES);
+	using namespace boost::assign;
+	d_colours +=
+			Colour(1, 0, 0),
+			Colour(1, 1, 0),
+			Colour(0, 1, 0),
+			Colour(0, 1, 1),
+			Colour(0, 0, 1),
+			Colour(1, 0, 1)
+			;
+}
+#endif 
 
-	// Handle cases where position is outside of [0.0, 1.0].
-	if (range < 0)
-	{
-		return COLOURS[0];
-	}
-	else if (range >= NUM_RANGES)
-	{
-		return COLOURS[NUM_RANGES];
-	}
+boost::optional<GPlatesGui::Colour>
+GPlatesGui::ColourSpectrum::get_colour_at(double position) const
+{
 
-	double position_in_range = position * NUM_RANGES - range;
+	if(position > d_upper_bound || position < d_lower_bound)
+		return boost::none;
+	
+	double position_in_range = (position - d_lower_bound) / (d_upper_bound - d_lower_bound);
 
 	return Colour::linearly_interpolate(
-			COLOURS[range],
-			COLOURS[range + 1],
+			d_upper_colour,
+			d_lower_colour,
 			position_in_range);
 }
 

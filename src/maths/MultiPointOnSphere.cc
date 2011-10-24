@@ -272,7 +272,7 @@ GPlatesMaths::multi_points_are_ordered_equivalent(
 	MultiPointOnSphere::const_iterator mp1_iter = mp1.begin();
 	MultiPointOnSphere::const_iterator mp1_end = mp1.end();
 	MultiPointOnSphere::const_iterator mp2_iter = mp2.begin();
-	MultiPointOnSphere::const_iterator mp2_end = mp2.end();
+	//MultiPointOnSphere::const_iterator mp2_end = mp2.end();
 	for ( ; mp1_iter != mp1_end; ++mp1_iter, ++mp2_iter) {
 		if ( ! points_are_coincident(*mp1_iter, *mp2_iter)) {
 			return false;

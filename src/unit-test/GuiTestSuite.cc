@@ -30,6 +30,8 @@
 #include "TestSuiteFilter.h"
 #include "MipmapperTest.h"
 
+#include "unit-test/CptPaletteTest.h"
+
 GPlatesUnitTest::GuiTestSuite::GuiTestSuite(
 		unsigned level) : 
 	GPlatesUnitTest::GPlatesTestSuite(
@@ -42,5 +44,6 @@ void
 GPlatesUnitTest::GuiTestSuite::construct_maps()
 {
 	ADD_TESTSUITE(Mipmapper);
+	ADD_TESTSUITE(CptPalette);
 }
 

@@ -67,19 +67,6 @@ namespace GPlatesPresentation
 		bool
 		get_fill_polygons() const;
 
-		void
-		set_style_adaper(
-				const GPlatesGui::StyleAdapter* adapter)
-		{
-			d_style = adapter;
-		}
-
-		const GPlatesGui::StyleAdapter*
-		style_adapter() const
-		{
-			return d_style;
-		}
-
 		/**
 		 * Override of virtual method in VirtualLayerParams base.
 		 */
@@ -112,7 +99,6 @@ namespace GPlatesPresentation
 
 		bool d_vgp_draw_circular_error;
 		bool d_fill_polygons;
-		const GPlatesGui::StyleAdapter* d_style;
 	};
 }
 

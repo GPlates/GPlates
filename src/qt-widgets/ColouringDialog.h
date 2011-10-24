@@ -177,6 +177,14 @@ namespace GPlatesQtWidgets
 			get_colour(
 					const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const;
 
+			boost::optional<GPlatesGui::Colour>
+			get_colour(
+					const GPlatesModel::FeatureHandle& feature) const
+			{
+				//TODO:
+				return boost::none;
+			}
+
 		private:
 
 			/**

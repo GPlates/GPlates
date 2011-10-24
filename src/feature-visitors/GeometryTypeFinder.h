@@ -220,6 +220,10 @@ namespace GPlatesFeatureVisitors
 	find_first_geometry_property(
 			GPlatesModel::FeatureHandle::weak_ref feature_ref);
 
+	boost::optional<GPlatesModel::FeatureHandle::iterator>
+	find_first_geometry_property(
+			GPlatesModel::FeatureHandle& feature_ref);
+
 	/**
 	 * Determine if the given property contains a geometry.
 	 *

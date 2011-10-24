@@ -41,6 +41,7 @@
 #include "gui/Symbol.h"
 
 #include "view-operations/RenderedGeometryLayer.h"
+#include "utils/Profile.h"
 
 
 GPlatesPresentation::VisualLayers::VisualLayers(
@@ -445,6 +446,7 @@ GPlatesPresentation::VisualLayers::remove_layer(
 void
 GPlatesPresentation::VisualLayers::create_rendered_geometries()
 {
+	PROFILE_FUNC();
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block. This is so we can do multiple changes
 	// without any canvas' redrawing themselves after each change.

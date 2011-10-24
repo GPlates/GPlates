@@ -99,17 +99,9 @@ namespace GPlatesPresentation
 			public QObject,
 			private boost::noncopyable
 	{
-
-
-
-
 		Q_OBJECT
 		
 	public:
-	
-
-
-
 
 		ViewState(
 				GPlatesAppLogic::ApplicationState &application_state);
@@ -399,7 +391,7 @@ namespace GPlatesPresentation
 		 */
 		boost::scoped_ptr<GPlatesGui::ExportAnimationRegistry> d_export_animation_registry;
 			
-		boost::scoped_ptr<GPlatesGui::PythonManager> d_python_manager_ptr;
+		GPlatesGui::PythonManager* d_python_manager_ptr;
 	};
 }
 

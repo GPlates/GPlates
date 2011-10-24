@@ -1,0 +1,30 @@
+#
+# This is an example regular CPT file that can be used with GPlates.
+#
+# This CPT file is intended for colouring geometries by plate ID.
+#
+# It colours plates with an ID in the format 7xx orange and plates with an ID in
+# the format 8xx green. Plates with an ID less than 700 are coloured black, and
+# plates with an ID greater than or equal to 900 are coloured white.
+#
+# The format for regular CPT files is described here:
+# http://www.soest.hawaii.edu/gmt/gmt/doc/gmt/html/GMT_Docs/node70.html
+#
+# COLOR_MODEL!=HSV
+
+10 255/10/10	gpml:MidOceanRidge
+20 200/150/150	gpml:Isochron
+701 orange	Africa
+801 green Australia
+
+
+0	orange	200	orange	L	;Africa
+200 green 400 -
+400	170	204	255	500	211	141	95 U ;annotation_U
+500	45	34	33 11  700	67	12	99  44 B ;annotation_B
+700	211	141	124	900	- L ;annotation_L
+
+
+B	0	0	0
+F	255	255	255
+N	128	128	128

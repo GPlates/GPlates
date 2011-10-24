@@ -34,8 +34,7 @@
 
 #include "presentation/ReconstructVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
-
-
+#include "utils/ComponentManager.h"
 GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
@@ -62,7 +61,7 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 	
 	LinkWidget *draw_style_link = new LinkWidget(
 			tr("Draw Style Setting..."), this);
-	draw_style_link->setVisible(false);
+
 	QtWidgetUtils::add_widget_to_placeholder(
 			draw_style_link,
 			draw_style_placeholder_widget);
@@ -78,6 +77,11 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 			SIGNAL(clicked()),
 			this,
 			SLOT(handle_fill_polygons_clicked()));
+
+	if(!GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
+	{
+		draw_style_link->setVisible(false);
+	}
 
 }
 
@@ -151,9 +155,9 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::open_draw_style_setting_dlg()
 		d_draw_style_dialog_ptr = new DrawStyleDialog(
 				GPlatesPresentation::Application::instance()->get_view_state(),
 				d_current_visual_layer,
-				&d_viewport_window->visual_layers_dialog());
+				this);
+		d_draw_style_dialog_ptr->init_dlg();
 	}
-	d_draw_style_dialog_ptr->init_dlg();
 	QtWidgetUtils::pop_up_dialog(d_draw_style_dialog_ptr);
 }
 
@@ -172,3 +176,8 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::handle_fill_polygons_clicked()
 		}
 	}
 }
+
+GPlatesQtWidgets::ReconstructLayerOptionsWidget::~ReconstructLayerOptionsWidget()
+{ }
+
+

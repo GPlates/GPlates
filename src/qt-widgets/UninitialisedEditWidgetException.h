@@ -46,6 +46,8 @@ namespace GPlatesQtWidgets
 					const GPlatesUtils::CallStack::Trace &exception_source) :
 				GPlatesGlobal::PreconditionViolationError(exception_source)
 			{  }
+
+			~UninitialisedEditWidgetException() throw(){}
 			
 			const char *
 			exception_name() const

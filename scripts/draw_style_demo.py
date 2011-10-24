@@ -1,51 +1,129 @@
-import pygplates
+﻿import pygplates
+import random
 
-class DrawStyle_1:
+class Random1:
 	def __init__(self):
-		self.name = "ds1"
-	
+		pass
+			
 	def get_style(self, feature, style):
-		style.dummy=1234;
-		print "returning from get_style python."
-
-class DrawStyle_2:
-	def __init__(self):
-		self.name = "ds2"
-	
-	def get_style(self, feature, style):
-		style.dummy=1234;
-		print "returning from get_style python."
+		style.colour = pygplates.Colour(random.random(),random.random(),random.random(),random.random())
+		
+	def get_config(self):
+		self.cfg_dict = {}
+		self.cfg_dict['cfg_1/type'] = 'dummy'
+		return self.cfg_dict
+		
+	def set_config(self, config):
+		self.cfg = config
 
 		
-class DrawStyle_3:
+class Random2:
 	def __init__(self):
-		self.name = "ds3"
-	
+		pass
+			
 	def get_style(self, feature, style):
-		style.dummy=1234;
-		print "returning from get_style python."
+		style.colour = pygplates.Colour(random.random(),random.random(),random.random(),random.random())
+		
+	def get_config(self):
+		self.cfg_dict = {}
+		self.cfg_dict['cfg_1/type'] = 'dummy'
+		return self.cfg_dict
+		
+	def set_config(self, config):
+		self.cfg = config
+		
 
 		
-class DrawStyle_4:
+class Blue:
 	def __init__(self):
-		self.name = "ds4"
-	
+		pass
+			
 	def get_style(self, feature, style):
-		style.dummy=1234;
-		print "returning from get_style python."
+		style.colour = pygplates.Colour.blue
+		
+	def get_config(self):
+		self.cfg_dict = {}
+		self.cfg_dict['cfg_1/type'] = 'dummy'
+		return self.cfg_dict
+		
+	def set_config(self, config):
+		self.cfg = config
 
-class DrawStyle_5:
+		
+class SingleColour:
 	def __init__(self):
-		self.name = "ds5"
-	
+		pass
+				
 	def get_style(self, feature, style):
-		style.dummy=1234;
-		print "returning from get_style python."
+		style.colour = self.cfg['Color']
+		
+	def get_config(self):
+		self.cfg_dict = {}
+		self.cfg_dict['Color/type'] = 'Color'
+		return self.cfg_dict
+		
+	def set_config(self, config):
+		self.cfg = config
 
+		
+class PlateId:
+	def __init__(self):
+		pass
+			
+	def get_style(self, feature, style):
+		id = feature.plate_id()
+		id = int(id)
+		style.colour = self.cfg['Palette'].get_color(pygplates.PaletteKey(id))
+		
+	def get_config(self):
+		self.cfg_dict = {}
+		self.cfg_dict['Palette/type'] = 'Palette'
+		return self.cfg_dict
+		
+	def set_config(self, config):
+		self.cfg = config
+
+		
+class FeatureAge:
+	def __init__(self):
+		pass
+				
+	def get_style(self, feature, style):
+		age = feature.valid_time[0]
+		style.colour = self.cfg['Palette'].get_color(pygplates.PaletteKey(float(age)))
+		
+	def get_config(self):
+		self.cfg_dict = {}
+		self.cfg_dict['Palette/type'] = 'Palette'
+		return self.cfg_dict
+		
+	def set_config(self, config):
+		self.cfg = config
+
+		
+class FeatureType:
+	def __init__(self):
+		pass
+		
+	def get_style(self, feature, style):
+		type = feature.type;
+		style.colour = self.cfg['Palette'].get_color(pygplates.PaletteKey(type))
+		
+	def get_config(self):
+		self.cfg_dict = {}
+		self.cfg_dict['Palette/type'] = 'Palette'
+		return self.cfg_dict
+		
+	def set_config(self, config):
+		self.cfg = config
+
+		
 def register():
-	pygplates.Application().register_draw_style(DrawStyle_1())
-	pygplates.Application().register_draw_style(DrawStyle_2())
-	pygplates.Application().register_draw_style(DrawStyle_3())
-	pygplates.Application().register_draw_style(DrawStyle_4())
-	pygplates.Application().register_draw_style(DrawStyle_5())
+	pygplates.Application().register_draw_style(PlateId())
+	pygplates.Application().register_draw_style(SingleColour())
+	pygplates.Application().register_draw_style(FeatureAge())
+	pygplates.Application().register_draw_style(FeatureType())
+	#pygplates.Application().register_draw_style(Random1())
+	#pygplates.Application().register_draw_style(Random2())
+	#pygplates.Application().register_draw_style(Blue())
 

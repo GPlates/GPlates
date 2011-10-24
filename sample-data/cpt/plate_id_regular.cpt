@@ -11,7 +11,7 @@
 # http://www.soest.hawaii.edu/gmt/gmt/doc/gmt/html/GMT_Docs/node70.html
 #
 700	orange	799	orange	L	;Africa
-800 0	192	0	899	0	192	0
+800 0	192	0	899	 255   192	0
 B	0	0	0
 F	255	255	255
 N	128	128	128

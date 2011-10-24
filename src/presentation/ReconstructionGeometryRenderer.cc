@@ -64,6 +64,7 @@
 #include "presentation/VelocityFieldCalculatorVisualLayerParams.h"
 
 #include "utils/Profile.h"
+#include "utils/ComponentManager.h"
 
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
@@ -118,20 +119,35 @@ namespace
 
 		boost::optional<GPlatesGui::Symbol> symbol = get_symbol(
 				feature_type_symbol_map, reconstruction_geometry);
-		
-		//qDebug() << "hehe, the dummy draw style is : " << style.dummy;
+		//symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, 10, true);
 
 		// Create a RenderedGeometry for drawing the reconstructed geometry.
 		// Draw it in the specified colour (if specified) otherwise defer colouring to a later time
 		// using ColourProxy.
-		GPlatesViewOperations::RenderedGeometry rendered_geom =
-				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-						rotation ? rotation.get() * geometry : geometry,
-						colour ? colour.get() : GPlatesGui::ColourProxy(reconstruction_geometry),
-						render_params.reconstruction_point_size_hint,
-						render_params.reconstruction_line_width_hint,
-						render_params.fill_polygons,
-						symbol);
+		GPlatesViewOperations::RenderedGeometry rendered_geom;
+		if(GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
+		{
+			rendered_geom =
+					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+					rotation ? rotation.get() * geometry : geometry,
+					colour ? colour : style.colour,
+					render_params.reconstruction_point_size_hint,
+					render_params.reconstruction_line_width_hint,
+					render_params.fill_polygons,
+					symbol);
+		}
+		else
+		{
+			rendered_geom =
+					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+					rotation ? rotation.get() * geometry : geometry,
+					colour ? colour.get() : GPlatesGui::ColourProxy(reconstruction_geometry),
+					render_params.reconstruction_point_size_hint,
+					render_params.reconstruction_line_width_hint,
+					render_params.fill_polygons,
+					symbol);
+		}
+		
 
 		// Create a RenderedGeometry for storing the ReconstructionGeometry and
 		// a RenderedGeometry associated with it.
@@ -355,7 +371,11 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_rendered_geometries_spatial_partition,
 			GPLATES_ASSERTION_SOURCE);
-	GPlatesGui::DrawStyle ds = d_style_adapter? d_style_adapter->get_style(rfg->get_feature_ref()) : GPlatesGui::DrawStyle();
+	
+	GPlatesGui::DrawStyle ds = d_style_adapter ? 
+		d_style_adapter->get_style(rfg->get_feature_ref()) : 
+		GPlatesGui::DrawStyle();
+
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 			create_rendered_reconstruction_geometry(
 					rfg->reconstructed_geometry(),
@@ -495,6 +515,9 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometries_spatial_partition,
 			GPLATES_ASSERTION_SOURCE);
 
+	GPlatesGui::DrawStyle ds = d_style_adapter ? 
+			d_style_adapter->get_style(rtb->get_feature_ref()) : 
+			GPlatesGui::DrawStyle();
 	// FIXME: POLYGON, POLYLINE
 
 	if ( rtb->is_polygon() )
@@ -504,7 +527,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 					rtb->resolved_topology_geometry(), 
 					rtb, 
 					d_render_params, 
-					d_colour);
+					d_colour,
+					boost::none,
+					boost::none,
+					ds);
 
 		// Render the rendered geometry.
 		render(rendered_geometry);
@@ -534,6 +560,9 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometries_spatial_partition,
 			GPLATES_ASSERTION_SOURCE);
 
+	GPlatesGui::DrawStyle ds = d_style_adapter ? 
+		d_style_adapter->get_style(rtn->get_feature_ref()) : 
+		GPlatesGui::DrawStyle();
 
 	// Check for Mesh Triangulation
 	if (d_render_params.show_topological_network_mesh_triangulation)
@@ -554,7 +583,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 						d_render_params, 
 						d_colour,
 						boost::none,
-						boost::none);
+						boost::none,
+						ds);
 
 			
 			// Render the rendered geometry.

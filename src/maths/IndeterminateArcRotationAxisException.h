@@ -54,6 +54,9 @@ namespace GPlatesMaths
 		{
 			return d_arc;
 		}
+
+		~IndeterminateArcRotationAxisException() throw(){}
+
 	protected:
 		virtual
 		const char *

@@ -661,7 +661,6 @@ namespace GPlatesGui
 
 	protected:
 
-		explicit
 		CptColourPalette() :
 			d_rgb_colour_model(true)
 		{  }

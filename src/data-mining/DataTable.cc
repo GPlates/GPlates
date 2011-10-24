@@ -42,12 +42,23 @@ void
 GPlatesDataMining::DataTable::export_as_CSV(
 		const QString& filename) const
 {
-	const_iterator iter = begin();
-	const_iterator iter_end = end();
-
 	std::vector<GPlatesGui::CsvExport::LineDataType> vector_table;
 
 	vector_table.push_back(d_table_header);
+	to_qstring_table(vector_table);
+	
+	GPlatesGui::CsvExport::ExportOptions opt;
+	opt.delimiter = ',';
+	GPlatesGui::CsvExport::export_data(
+			filename, 
+			opt, 
+			vector_table);
+}
+
+void
+GPlatesDataMining::DataTable::to_qstring_table(std::vector<std::vector<QString> >& table) const
+{
+	const_iterator iter = begin(), iter_end = end();
 
 	for(; iter != iter_end; iter++) //for each row
 	{
@@ -59,20 +70,14 @@ GPlatesDataMining::DataTable::export_as_CSV(
 			(*iter)->get_cell(i, o_data);
 
 			line.push_back(
-					boost::apply_visitor(
-							GPlatesDataMining::ConvertOpaqueDataToString(),
-							o_data));
-			
-		}
-		vector_table.push_back(line);
-	}
+				boost::apply_visitor(
+				GPlatesDataMining::ConvertOpaqueDataToString(),
+				o_data));
 
-	GPlatesGui::CsvExport::ExportOptions opt;
-	opt.delimiter = ',';
-	GPlatesGui::CsvExport::export_data(
-			filename, 
-			opt, 
-			vector_table);
+		}
+		table.push_back(line);
+	}
+	return;
 }
 
 
@@ -81,8 +86,7 @@ GPlatesDataMining::operator<<(
 		std::ostream& os,
 		const DataTable& table)
 {
-	DataTable::const_iterator iter		 = table.begin();
-	DataTable::const_iterator iter_end	 = table.end();
+	DataTable::const_iterator iter = table.begin(), iter_end = table.end();
 
 	for(; iter != iter_end; iter++) //for each row
 	{

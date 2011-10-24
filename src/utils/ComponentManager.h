@@ -114,7 +114,9 @@ namespace GPlatesUtils
 	private:
 		ComponentManager() :
 			d_switchs() //by default, all 0s. set default value here.
-		{	}
+		{
+			enable(Component::python()); // enable python by default
+		}
 
 		ComponentManager(const ComponentManager&);
 		ComponentManager& operator=(const ComponentManager&);

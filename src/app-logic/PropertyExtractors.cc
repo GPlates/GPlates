@@ -28,13 +28,19 @@
 #include "PropertyExtractors.h"
 #include "presentation/Application.h"
 
-
 const boost::optional<GPlatesAppLogic::PlateIdPropertyExtractor::return_type>
 GPlatesAppLogic::PlateIdPropertyExtractor::operator()(
 		const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) const
 {
 	return ReconstructionGeometryUtils::get_plate_id(
 				&reconstruction_geometry);
+}
+
+const boost::optional<GPlatesAppLogic::PlateIdPropertyExtractor::return_type>
+GPlatesAppLogic::PlateIdPropertyExtractor::operator()(
+		const GPlatesModel::FeatureHandle& feature) const
+{
+	return GPlatesUtils::get_int_plate_id(&feature);
 }
 
 

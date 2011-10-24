@@ -25,9 +25,14 @@
  
 #ifndef GPLATES_QTWIDGETS_DRAWSTYLEDIALOG_H
 #define GPLATES_QTWIDGETS_DRAWSTYLEDIALOG_H
+#include <boost/thread/mutex.hpp>
+#include <boost/weak_ptr.hpp>
 
+#include "presentation/Application.h"
 #include "DrawStyleDialogUi.h"
-#include "gui/DrawStyleManager.h"
+#include "gui/PythonConfiguration.h"
+#include "PythonArgumentWidget.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -37,11 +42,16 @@ namespace GPlatesAppLogic
 namespace GPlatesGui
 {
 	class ColourSchemeContainer;
+	class DrawStyleManager;
+	class StyleCatagory;
+	class StyleAdapter;
+	class Configuration;
 }
 
 namespace GPlatesPresentation
 {
 	class ViewState;
+	class VisualLayer;
 }
 
 namespace GPlatesQtWidgets
@@ -61,10 +71,7 @@ namespace GPlatesQtWidgets
 			boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer,
 			QWidget* parent_ = NULL);
 
-		~DrawStyleDialog()
-		{
-			qDebug() << "destructing DrawStyleDialog";
-		}
+		~DrawStyleDialog();
 		
 		void
 		init_catagory_table();
@@ -80,12 +87,90 @@ namespace GPlatesQtWidgets
 		set_style();
 
 		void
-		load_category(const GPlatesGui::StyleCatagory* );
-				
+		set_style(GPlatesGui::StyleAdapter* style);
+
+		void
+		load_category(const GPlatesGui::StyleCatagory& );
+
+		void
+		show_preview_icon();
+
+		GPlatesGui::StyleCatagory*
+		get_catagory(QTableWidgetItem& item)
+		{
+			QVariant qv = item.data(Qt::UserRole);
+			return static_cast<GPlatesGui::StyleCatagory*>(qv.value<void*>());
+		}
+
+		GPlatesGui::StyleAdapter*
+		get_style(QListWidgetItem* item)
+		{
+			QVariant qv = item->data(Qt::UserRole);
+			return static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
+		}
+
+		void
+		refresh_current_icon();
+
+#if !defined(GPLATES_NO_PYTHON)			
+		QWidget *
+		create_cfg_widget(GPlatesGui::PythonCfgItem* item)
+		{
+			//this function is temporary.
+			if(dynamic_cast<GPlatesGui::PythonCfgColor*>(item) != 0)
+			{
+				return new PythonArgColorWidget(item,this);
+			}
+
+			if(dynamic_cast<GPlatesGui::PythonCfgPalette*>(item) != 0)
+			{
+				return new PythonArgPaletteWidget(item,this);
+			}
+		
+			return new PythonArgDefaultWidget(item,this);
+		}
+#endif
+
+		void
+		build_config_panel(const GPlatesGui::Configuration& cfg);
+
+
+		void
+		enable_config_panel(bool flag)
+		{
+			scrollArea->setEnabled(flag);
+		}
+
+
+		GPlatesGui::StyleAdapter*
+		get_current_style()
+		{
+			QListWidgetItem * item = style_list->currentItem();
+			if(item)
+				return get_style(item);
+			else
+				return NULL;
+		}
+
+
+		bool
+		is_style_name_valid(
+				const GPlatesGui::StyleCatagory&,
+				const QString&);
+
+
+		const QString
+		generate_new_valid_style_name(
+				const GPlatesGui::StyleCatagory&,
+				const QString&);
+
 	private slots:
 		void
 		handle_close_button_clicked();
 
+		void
+		handle_remove_button_clicked();
+		
 		void
 		handle_categories_table_cell_changed(
 				int current_row,
@@ -93,11 +178,53 @@ namespace GPlatesQtWidgets
 				int previous_row,
 				int previous_column);
 
+		void
+		handle_style_selection_changed(
+				QListWidgetItem* current,
+				QListWidgetItem* previous);
+
+		void
+		handle_repaint(bool);
+
+
+		void
+		handle_show_thumbnails_changed(int state)
+		{
+			d_show_thumbnails = (state == Qt::Checked);
+			QTableWidgetItem* item = categories_table->currentItem();
+			if(item)
+			{
+				GPlatesGui::StyleCatagory* cata = get_catagory(*item);
+				if(cata)
+					load_category(*cata);
+			}
+		}
+
+		
+		void
+		handle_cfg_name_changed(const QString& new_cfg_name);
+
+		void
+		handle_add_button_clicked(bool);
+
+		void
+		handle_configuration_changed()
+		{
+			refresh_current_icon();
+		}
+
 	private:
-		static const std::size_t ICON_SIZE = 145;
+		static const int ICON_SIZE = 145;
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_visual_layer;
 		QIcon d_blank_icon;
 		GPlatesGui::DrawStyleManager* d_style_mgr;
+		bool d_show_thumbnails;
+		GlobeAndMapWidget *d_globe_and_map_widget_ptr;
+		bool d_repaint_flag;
+		QImage d_image;
+		bool d_disable_style_item_change;
+		QString d_last_open_directory;
+		std::vector<QWidget*> d_cfg_widgets;
 	};
 }
 

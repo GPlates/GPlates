@@ -40,6 +40,7 @@ using namespace GPlatesAppLogic;
 using namespace GPlatesFileIO;
 using namespace GPlatesDataMining;
 using namespace GPlatesModel;
+
 #if !defined(GPLATES_NO_PYTHON)
 using namespace boost::python;
 
@@ -302,6 +303,40 @@ namespace
 			return ret_list;
 		}
 
+		list
+		get_result_data_from_layer()
+		{
+			list ret;
+			std::vector<std::vector<QString> > table;
+			GPlatesDataMining::DataSelector::get_data_table().to_qstring_table(table);
+			std::vector<std::vector<QString> >::const_iterator iter_1 = table.begin(), iter_end_1 = table.end();
+			for(; iter_1 != iter_end_1; iter_1++)
+			{
+				list tmp;
+				std::vector<QString>::const_iterator iter_2 = iter_1->begin(), iter_end_2 = iter_1->end();
+				for(; iter_2 != iter_end_2; iter_2++)
+				{
+					tmp.append(boost::python::object(iter_2->toStdString()));
+				}
+				ret.append(tmp);
+			}
+			return ret;
+		}
+
+
+		list
+		get_data_header()
+		{
+			list ret;
+			const GPlatesDataMining::TableHeader& header = GPlatesDataMining::DataSelector::get_data_table().table_header();
+			GPlatesDataMining::TableHeader::const_iterator iter= header.begin(), iter_end = header.end();
+			for(; iter != iter_end; iter++)
+			{
+				ret.append(boost::python::object(iter->toStdString()));
+			}
+			return ret;
+		}
+
 	protected:
 		std::vector<const ReconstructedFeatureGeometry*>
 		get_seed_rfg(
@@ -521,6 +556,8 @@ export_co_registration()
 		.def("clear_cfg_rows",				&CoRegistration::clear_cfg_rows)
 		.def("feature_ids",					&CoRegistration::feature_ids)
 		.def("roi_filter",					&CoRegistration::roi_filter)
+		.def("get_result_data_from_layer",	&CoRegistration::get_result_data_from_layer)
+		.def("get_data_header",				&CoRegistration::get_data_header)
 		;
 }
 #endif

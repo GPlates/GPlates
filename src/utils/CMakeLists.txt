@@ -33,6 +33,8 @@ set(srcs
     DeferredCallEvent.h
     Environment.cc
     Environment.h
+    FeatureUtils.cc
+    FeatureUtils.h
     FunctionTypes.h
     GeometryCreationUtils.h
     IdStringSet.cc
