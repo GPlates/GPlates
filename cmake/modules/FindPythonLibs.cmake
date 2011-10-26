@@ -23,11 +23,42 @@ SET(PYTHON_LIBRARY NOTFOUND CACHE FLEPATH "Python Framework" FORCE)
 # GPlates modification:
 # Use the GPlates version of FindFrameworks.
 INCLUDE(GPlatesFindFrameworks)
+
+IF(APPLE)
+
 # Search for the python framework on Apple.
 GPLATES_FIND_FRAMEWORKS(Python)
+MESSAGE(STATUS "python framework: ${Python_FRAMEWORKS}")
+MESSAGE(STATUS "boost python library: ${Boost_PYTHON_LIBRARY}")
+
+find_program (OTOOL otool)
+ 
+execute_process (COMMAND
+  ${OTOOL} -L ${Boost_PYTHON_LIBRARY}
+  OUTPUT_VARIABLE _otool_output
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+ 
+string (REPLACE "\n" ";" _otool_output ${_otool_output})
+ 
+foreach (_line ${_otool_output})
+  if (_line MATCHES Python.framework)
+    string (REGEX REPLACE "/Python[ (]+[^)]+[)]$" "" PYTHON_FRAMEWORK_ROOT ${_line})
+  endif (_line MATCHES Python.framework) 
+endforeach (_line)
+ 
+string (STRIP ${PYTHON_FRAMEWORK_ROOT} PYTHON_FRAMEWORK_ROOT) 
+string (REGEX REPLACE "^.+/" "" PYTHON_FRAMEWORK_VERSION ${PYTHON_FRAMEWORK_ROOT})
+
+MESSAGE(STATUS "python framework root: ${PYTHON_FRAMEWORK_ROOT}")
+MESSAGE(STATUS "python framework version: ${PYTHON_FRAMEWORK_VERSION}")
+
+#SET(Python_FRAMEWORKS ${PYTHON_FRAMEWORK_ROOT} "")
+#MESSAGE(STATUS "python framework: ${Python_FRAMEWORKS}")
+ENDIF(APPLE)
+
 # End GPlates modification.
 
-FOREACH(_CURRENT_VERSION 2.7 2.6 2.5 2.4 2.3 2.2 2.1 2.0 1.6 1.5)
+FOREACH(_CURRENT_VERSION ${PYTHON_FRAMEWORK_VERSION} 2.7 2.6 2.5 2.4 2.3 2.2 2.1 2.0 1.6 1.5)
   STRING(REPLACE "." "" _CURRENT_VERSION_NO_DOTS ${_CURRENT_VERSION})
   IF(WIN32)
     FIND_LIBRARY(PYTHON_DEBUG_LIBRARY
@@ -83,7 +114,7 @@ ENDFOREACH(_CURRENT_VERSION)
 # GPlates addition.
 # Since we specified NO_DEFAULT_PATH above, we now search the default paths here
 # which are only searched if the variables haven't already been set.
-FOREACH(_CURRENT_VERSION 2.7 2.6 2.5 2.4 2.3 2.2 2.1 2.0 1.6 1.5)
+FOREACH(_CURRENT_VERSION {PYTHON_FRAMEWORK_VERSION} 2.7 2.6 2.5 2.4 2.3 2.2 2.1 2.0 1.6 1.5)
   STRING(REPLACE "." "" _CURRENT_VERSION_NO_DOTS ${_CURRENT_VERSION})
 
   FIND_LIBRARY(PYTHON_LIBRARY

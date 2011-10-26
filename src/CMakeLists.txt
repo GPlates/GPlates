@@ -1,8 +1,5 @@
 # Find our required libraries.
 set(required_libs "Qt4" "OpenGL" "GLEW" "GDAL" "GZIP" "PROJ4" "CGAL")
-if(NOT GPLATES_NO_PYTHON)
-	set(required_libs ${required_libs} "PythonLibs")
-endif(NOT GPLATES_NO_PYTHON)
 foreach(lib ${required_libs})
 	find_package(${lib} REQUIRED)
 endforeach(lib)
@@ -14,6 +11,10 @@ if(NOT GPLATES_NO_PYTHON)
 	set(boost_components ${boost_components} python)
 endif(NOT GPLATES_NO_PYTHON)
 find_package("Boost" 1.34.1 REQUIRED ${boost_components})
+
+if(NOT GPLATES_NO_PYTHON)
+	find_package("PythonLibs" REQUIRED)
+endif(NOT GPLATES_NO_PYTHON)
 
 # Check that each of the above libraries was found, because even though it is
 # required, if Boost is found but not the libraries, the CMake scripts will
