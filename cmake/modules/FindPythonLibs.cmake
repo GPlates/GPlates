@@ -27,7 +27,7 @@ INCLUDE(GPlatesFindFrameworks)
 GPLATES_FIND_FRAMEWORKS(Python)
 # End GPlates modification.
 
-FOREACH(_CURRENT_VERSION 2.6 2.5 2.4 2.3 2.2 2.1 2.0 1.6 1.5)
+FOREACH(_CURRENT_VERSION 2.7 2.6 2.5 2.4 2.3 2.2 2.1 2.0 1.6 1.5)
   STRING(REPLACE "." "" _CURRENT_VERSION_NO_DOTS ${_CURRENT_VERSION})
   IF(WIN32)
     FIND_LIBRARY(PYTHON_DEBUG_LIBRARY
@@ -83,7 +83,7 @@ ENDFOREACH(_CURRENT_VERSION)
 # GPlates addition.
 # Since we specified NO_DEFAULT_PATH above, we now search the default paths here
 # which are only searched if the variables haven't already been set.
-FOREACH(_CURRENT_VERSION 2.6 2.5 2.4 2.3 2.2 2.1 2.0 1.6 1.5)
+FOREACH(_CURRENT_VERSION 2.7 2.6 2.5 2.4 2.3 2.2 2.1 2.0 1.6 1.5)
   STRING(REPLACE "." "" _CURRENT_VERSION_NO_DOTS ${_CURRENT_VERSION})
 
   FIND_LIBRARY(PYTHON_LIBRARY
