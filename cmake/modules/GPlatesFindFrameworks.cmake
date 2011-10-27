@@ -12,7 +12,8 @@ IF(NOT GPLATES_FIND_FRAMEWORKS_INCLUDED)
           ${CMAKE_FRAMEWORK_PATH}/${fwk}.framework # GPlates addition.
           /Library/Frameworks/${fwk}.framework
           /System/Library/Frameworks/${fwk}.framework
-          /Network/Library/Frameworks/${fwk}.framework)
+          /Network/Library/Frameworks/${fwk}.framework
+          /opt/local/Library/Frameworks/${fwk}.framework)
         IF(EXISTS ${dir})
           SET(${fwk}_FRAMEWORKS ${${fwk}_FRAMEWORKS} ${dir})
         ENDIF(EXISTS ${dir})
