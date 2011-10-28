@@ -85,7 +85,13 @@ FOREACH(_CURRENT_VERSION ${PYTHON_FRAMEWORK_VERSION} 2.7 2.6 2.5 2.4 2.3 2.2 2.1
     NAMES python${_CURRENT_VERSION_NO_DOTS} python${_CURRENT_VERSION}
     PATHS
       ${PYTHON_FRAMEWORK_LIBRARIES} # GPlates addition.
-      [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\${_CURRENT_VERSION}\\InstallPath]/libs
+	  # GPlates addition: 
+      # Comment out explicit registry paths (and avoid default paths) on first try in case CMAKE_LIBRARY_PATH
+	  # environment variable is set by a GPlates developer (eg, "C:\SDK\python\Python-2.6.6\").
+	  # Avoids finding something in "C:/Python26/ArcGIS10.0/libs/" for example.
+	  # We do another search later that includes these paths though.
+	  #
+      # [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\${_CURRENT_VERSION}\\InstallPath]/libs
     PATH_SUFFIXES
       python${_CURRENT_VERSION}/config
     NO_DEFAULT_PATH # GPlates modification.
@@ -103,7 +109,13 @@ FOREACH(_CURRENT_VERSION ${PYTHON_FRAMEWORK_VERSION} 2.7 2.6 2.5 2.4 2.3 2.2 2.1
     NAMES Python.h
     PATHS
       ${PYTHON_FRAMEWORK_INCLUDES}
-      [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\${_CURRENT_VERSION}\\InstallPath]/include
+	  # GPlates addition: 
+      # Comment out explicit registry paths (and avoid default paths) on first try in case CMAKE_INCLUDE_PATH
+	  # environment variable is set by a GPlates developer (eg, "C:\SDK\python\Python-2.6.6\Include\").
+	  # Avoids finding something in "C:/Python26/ArcGIS10.0/include/" for example.
+	  # We do another search later that includes these paths though.
+	  #
+      # [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\${_CURRENT_VERSION}\\InstallPath]/include
     PATH_SUFFIXES
       python${_CURRENT_VERSION}
     NO_DEFAULT_PATH # GPlates addition.
@@ -119,6 +131,9 @@ FOREACH(_CURRENT_VERSION {PYTHON_FRAMEWORK_VERSION} 2.7 2.6 2.5 2.4 2.3 2.2 2.1 
 
   FIND_LIBRARY(PYTHON_LIBRARY
     NAMES python${_CURRENT_VERSION_NO_DOTS} python${_CURRENT_VERSION}
+	# We avoided searching the registry above so do it now.
+	PATHS
+      [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\${_CURRENT_VERSION}\\InstallPath]/libs
     PATH_SUFFIXES
       python${_CURRENT_VERSION}/config
     # Avoid finding the .dll in the PATH.  We want the .lib.
@@ -127,6 +142,9 @@ FOREACH(_CURRENT_VERSION {PYTHON_FRAMEWORK_VERSION} 2.7 2.6 2.5 2.4 2.3 2.2 2.1 
 
   FIND_PATH(PYTHON_INCLUDE_PATH
     NAMES Python.h
+	# We avoided searching the registry above so do it now.
+	PATHS
+      [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\${_CURRENT_VERSION}\\InstallPath]/include
     PATH_SUFFIXES
       python${_CURRENT_VERSION}
   )
