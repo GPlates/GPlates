@@ -33,6 +33,8 @@
 #include "DrawStyleDialog.h"
 
 #include "PythonArgumentWidget.h"
+#include "QtWidgetUtils.h"
+#include "VisualLayersComboBox.h"
 #include "app-logic/PropertyExtractors.h"
 #include "file-io/CptReader.h"
 #include "file-io/ReadErrorAccumulation.h"
@@ -52,56 +54,118 @@ GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer,
 		QWidget* parent_) :
 	QDialog(parent_),
+	d_view_state(view_state),
 	d_visual_layer(visual_layer),
 	d_show_thumbnails(true),
 	d_repaint_flag(true),
 	d_disable_style_item_change(false)
 {
-	setupUi(this);
-	d_globe_and_map_widget_ptr = new GlobeAndMapWidget(view_state, style_list);
-	categories_table->horizontalHeader()->setResizeMode(0, QHeaderView::Stretch);
-	categories_table->horizontalHeader()->hide();
-	categories_table->verticalHeader()->hide();
-	categories_table->resizeColumnsToContents();
-	categories_table->resize(categories_table->horizontalHeader()->length(),0);
-
-	// Set up the list of colour schemes.
-	style_list->setViewMode(QListWidget::IconMode);
-	style_list->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
-	//	style_list->setSpacing(SPACING); //Due to a qt bug, the setSpacing doesn't work well in IconMode.
-	style_list->setMovement(QListView::Static);
-	style_list->setWrapping(true);
-	style_list->setResizeMode(QListView::Adjust);
-	style_list->setUniformItemSizes(true);
-	style_list->setWordWrap(true);
-
-	QPixmap blank_pixmap(ICON_SIZE, ICON_SIZE);
-	blank_pixmap.fill(*GPlatesGui::HTMLColourNames::instance().get_colour("slategray"));
-	d_blank_icon = QIcon(blank_pixmap);
-	d_style_mgr = GPlatesGui::DrawStyleManager::instance();
-	
 	init_dlg();
-	make_signal_slot_connections();
-	
-	open_button->hide();
-	edit_button->hide();
-
-	add_button->show();
-	remove_button->show();
-
-	// Set up our GlobeAndMapWidget that we use for rendering.
-	d_globe_and_map_widget_ptr->resize(ICON_SIZE, ICON_SIZE);
-	d_globe_and_map_widget_ptr->hide();
-
-#if defined(Q_OS_MAC)
-	if(QT_VERSION >= 0x040600)
-		d_globe_and_map_widget_ptr->move(style_list->spacing()+4, style_list->spacing()+3); 
-#else
-	d_globe_and_map_widget_ptr->move(1- ICON_SIZE, 1- ICON_SIZE);
-#endif
-	splitter->setStretchFactor(splitter->indexOf(categories_table),1);
-	splitter->setStretchFactor(splitter->indexOf(right_side_frame),4);
+	select_layer_group->setVisible(false);
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
+	{
+		current_layer_label->setText(locked_visual_layer->get_name());
+	}
 }
+
+namespace
+{
+	bool pred(GPlatesPresentation::VisualLayerType::Type t)
+	{
+		const GPlatesPresentation::VisualLayerType::Type t1 = 
+			static_cast<GPlatesPresentation::VisualLayerType::Type>(
+					GPlatesAppLogic::LayerTaskType::RECONSTRUCT);
+		const GPlatesPresentation::VisualLayerType::Type t2 = 
+			static_cast<GPlatesPresentation::VisualLayerType::Type>(
+			GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
+		const GPlatesPresentation::VisualLayerType::Type t3 = 
+			static_cast<GPlatesPresentation::VisualLayerType::Type>(
+			GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER);
+		return (t == t1 || t == t2 || t == t3);
+	}
+}
+
+GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
+		GPlatesPresentation::ViewState &view_state,
+		QWidget* parent_) :
+	QDialog(parent_),
+	d_view_state(view_state),
+	d_show_thumbnails(true),
+	d_repaint_flag(true),
+	d_disable_style_item_change(false)
+{
+	init_dlg();
+	current_layer_group->setVisible(false);
+	VisualLayersComboBox* combox = new VisualLayersComboBox(
+			view_state.get_visual_layers(),
+			view_state.get_visual_layer_registry(),
+			pred,
+			this);
+
+	QtWidgetUtils::add_widget_to_placeholder(combox, select_layer_widget);
+	
+	QObject::connect(
+			combox,
+			SIGNAL(selected_visual_layer_changed(
+					boost::weak_ptr<GPlatesPresentation::VisualLayer>)),
+			this,
+			SLOT(handle_layer_changed(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer>)));
+
+}
+
+
+void
+GPlatesQtWidgets::DrawStyleDialog::showEvent ( QShowEvent * event )
+{
+	handle_layer_changed(d_visual_layer);
+}
+
+
+void
+GPlatesQtWidgets::DrawStyleDialog::handle_layer_changed(
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> layer)
+{
+	d_visual_layer = layer;
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
+	{
+		const GPlatesGui::StyleAdapter* style = 
+			locked_visual_layer->get_visual_layer_params()->style_adapter();
+		focus_style(style);
+	}
+}
+
+
+void
+GPlatesQtWidgets::DrawStyleDialog::focus_style(const GPlatesGui::StyleAdapter* style)
+{
+	const GPlatesGui::StyleCatagory* cata = &style->catagory();
+	int row_num = categories_table->rowCount();
+	for(int i=0; i<row_num; i++)
+	{
+		QTableWidgetItem* item = categories_table->item(i,0);
+		GPlatesGui::StyleCatagory* tmp_cat = static_cast<GPlatesGui::StyleCatagory*>(item->data(Qt::UserRole).value<void*>());
+		if(tmp_cat == cata)
+		{
+			categories_table->setCurrentItem(item, QItemSelectionModel::SelectCurrent);
+			break;
+		}
+	}
+
+	int style_num = style_list->count();
+	for(int i=0; i<style_num; i++)
+	{
+		QListWidgetItem* item = style_list->item(i);
+		GPlatesGui::StyleAdapter* tmp_style = 
+			static_cast<GPlatesGui::StyleAdapter*>(item->data(Qt::UserRole).value<void*>());
+		if(tmp_style == style)
+		{
+			style_list->setCurrentItem(item, QItemSelectionModel::SelectCurrent);
+			break;
+		}
+	}
+}
+
 
 void
 GPlatesQtWidgets::DrawStyleDialog::init_catagory_table()
@@ -248,7 +312,50 @@ GPlatesQtWidgets::DrawStyleDialog::set_style()
 void
 GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 {
+	setupUi(this);
+	d_globe_and_map_widget_ptr = new GlobeAndMapWidget(d_view_state, style_list);
+	categories_table->horizontalHeader()->setResizeMode(0, QHeaderView::Stretch);
+	categories_table->horizontalHeader()->hide();
+	categories_table->verticalHeader()->hide();
+	categories_table->resizeColumnsToContents();
+	categories_table->resize(categories_table->horizontalHeader()->length(),0);
+
+	// Set up the list of colour schemes.
+	style_list->setViewMode(QListWidget::IconMode);
+	style_list->setIconSize(QSize(ICON_SIZE, ICON_SIZE));
+	//	style_list->setSpacing(SPACING); //Due to a qt bug, the setSpacing doesn't work well in IconMode.
+	style_list->setMovement(QListView::Static);
+	style_list->setWrapping(true);
+	style_list->setResizeMode(QListView::Adjust);
+	style_list->setUniformItemSizes(true);
+	style_list->setWordWrap(true);
+
+	QPixmap blank_pixmap(ICON_SIZE, ICON_SIZE);
+	blank_pixmap.fill(*GPlatesGui::HTMLColourNames::instance().get_colour("slategray"));
+	d_blank_icon = QIcon(blank_pixmap);
+	d_style_mgr = GPlatesGui::DrawStyleManager::instance();
+	
 	init_catagory_table();
+	make_signal_slot_connections();
+	
+	open_button->hide();
+	edit_button->hide();
+
+	add_button->show();
+	remove_button->show();
+
+	// Set up our GlobeAndMapWidget that we use for rendering.
+	d_globe_and_map_widget_ptr->resize(ICON_SIZE, ICON_SIZE);
+	d_globe_and_map_widget_ptr->hide();
+
+#if defined(Q_OS_MAC)
+	if(QT_VERSION >= 0x040600)
+		d_globe_and_map_widget_ptr->move(style_list->spacing()+4, style_list->spacing()+3); 
+#else
+	d_globe_and_map_widget_ptr->move(1- ICON_SIZE, 1- ICON_SIZE);
+#endif
+	splitter->setStretchFactor(splitter->indexOf(categories_table),1);
+	splitter->setStretchFactor(splitter->indexOf(right_side_frame),4);
 }
 
 void

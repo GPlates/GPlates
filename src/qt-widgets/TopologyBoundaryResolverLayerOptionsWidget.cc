@@ -139,7 +139,7 @@ GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::open_draw_style_se
 				GPlatesPresentation::Application::instance()->get_view_state(),
 				d_current_visual_layer,
 				this);
-		d_draw_style_dialog_ptr->init_dlg();
+		d_draw_style_dialog_ptr->init_catagory_table();
 	}
 	QtWidgetUtils::pop_up_dialog(d_draw_style_dialog_ptr);
 }

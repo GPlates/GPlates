@@ -71,6 +71,7 @@
 #include "CreateVGPDialog.h"
 #include "DigitisationWidget.h"
 #include "DockWidget.h"
+#include "DrawStyleDialog.h"
 #include "ExportAnimationDialog.h"
 #include "FeaturePropertiesDialog.h"
 #include "GlobeCanvas.h"
@@ -307,6 +308,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				get_application_state(), get_view_state(), this)),
 	d_calculate_reconstruction_pole_dialog_ptr(NULL),
 	d_colouring_dialog_ptr(NULL),
+	d_draw_style_dialog_ptr(NULL),
 	d_connect_wfs_dialog_ptr(NULL),
 	d_create_vgp_dialog_ptr(NULL),
 	d_export_animation_dialog_ptr(NULL),
@@ -749,11 +751,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			SLOT(handle_visual_layer_added(size_t)));
 	
 	set_internal_release_window_title();
-	
-	if(GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
-	{
-		menu_Features->removeAction(action_Manage_Colouring);
-	}
 }
 
 
@@ -958,8 +955,16 @@ GPlatesQtWidgets::ViewportWindow::connect_view_menu_actions()
 void
 GPlatesQtWidgets::ViewportWindow::connect_features_menu_actions()
 {
+	if(!GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
+	{
 	QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
 			this, SLOT(pop_up_colouring_dialog()));
+	}
+	else
+	{
+		QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
+				this, SLOT(pop_up_draw_style_dialog()));
+	}
 	// ----
 	QObject::connect(action_Load_Symbol, SIGNAL(triggered()),
 			this, SLOT(handle_load_symbol_file()));
@@ -1560,6 +1565,20 @@ GPlatesQtWidgets::ViewportWindow::pop_up_colouring_dialog()
 	}
 
 	QtWidgetUtils::pop_up_dialog(d_colouring_dialog_ptr.get());
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_draw_style_dialog()
+{
+	if (!d_draw_style_dialog_ptr)
+	{
+		d_draw_style_dialog_ptr = new DrawStyleDialog(
+				GPlatesPresentation::Application::instance()->get_view_state(),
+				this);
+		d_draw_style_dialog_ptr->init_catagory_table();
+	}
+	QtWidgetUtils::pop_up_dialog(d_draw_style_dialog_ptr);
 }
 
 

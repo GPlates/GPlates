@@ -109,7 +109,7 @@ namespace GPlatesGui
 
 		
 		const StyleCatagory&
-		catagory()
+		catagory() const
 		{
 			return d_catagory;
 		}

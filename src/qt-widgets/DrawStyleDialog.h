@@ -67,9 +67,13 @@ namespace GPlatesQtWidgets
 
 	public:
 		DrawStyleDialog(
-			GPlatesPresentation::ViewState &view_state,
-			boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer,
-			QWidget* parent_ = NULL);
+				GPlatesPresentation::ViewState &view_state,
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer,
+				QWidget* parent_ = NULL);
+
+		DrawStyleDialog(
+				GPlatesPresentation::ViewState &view_state,
+				QWidget* parent_ = NULL);
 
 		~DrawStyleDialog();
 		
@@ -164,6 +168,12 @@ namespace GPlatesQtWidgets
 				const GPlatesGui::StyleCatagory&,
 				const QString&);
 
+		void
+		focus_style(const GPlatesGui::StyleAdapter*);
+
+		void
+		showEvent ( QShowEvent * event );
+
 	private slots:
 		void
 		handle_close_button_clicked();
@@ -213,6 +223,10 @@ namespace GPlatesQtWidgets
 			refresh_current_icon();
 		}
 
+		void
+		handle_layer_changed(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer>);
+
 	private:
 		static const int ICON_SIZE = 145;
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_visual_layer;
@@ -225,6 +239,7 @@ namespace GPlatesQtWidgets
 		bool d_disable_style_item_change;
 		QString d_last_open_directory;
 		std::vector<QWidget*> d_cfg_widgets;
+		GPlatesPresentation::ViewState& d_view_state;
 	};
 }
 
