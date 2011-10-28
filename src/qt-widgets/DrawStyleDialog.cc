@@ -54,11 +54,11 @@ GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer,
 		QWidget* parent_) :
 	QDialog(parent_),
-	d_view_state(view_state),
 	d_visual_layer(visual_layer),
 	d_show_thumbnails(true),
 	d_repaint_flag(true),
-	d_disable_style_item_change(false)
+	d_disable_style_item_change(false),
+	d_view_state(view_state)
 {
 	init_dlg();
 	select_layer_group->setVisible(false);
@@ -89,10 +89,10 @@ GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 		GPlatesPresentation::ViewState &view_state,
 		QWidget* parent_) :
 	QDialog(parent_),
-	d_view_state(view_state),
 	d_show_thumbnails(true),
 	d_repaint_flag(true),
-	d_disable_style_item_change(false)
+	d_disable_style_item_change(false),
+	d_view_state(view_state)
 {
 	init_dlg();
 	current_layer_group->setVisible(false);
@@ -116,7 +116,7 @@ GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 
 
 void
-GPlatesQtWidgets::DrawStyleDialog::showEvent ( QShowEvent * event )
+GPlatesQtWidgets::DrawStyleDialog::showEvent ( QShowEvent *  )
 {
 	handle_layer_changed(d_visual_layer);
 }
@@ -129,17 +129,17 @@ GPlatesQtWidgets::DrawStyleDialog::handle_layer_changed(
 	d_visual_layer = layer;
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
 	{
-		const GPlatesGui::StyleAdapter* style = 
+		const GPlatesGui::StyleAdapter* t_style = 
 			locked_visual_layer->get_visual_layer_params()->style_adapter();
-		focus_style(style);
+		focus_style(t_style);
 	}
 }
 
 
 void
-GPlatesQtWidgets::DrawStyleDialog::focus_style(const GPlatesGui::StyleAdapter* style)
+GPlatesQtWidgets::DrawStyleDialog::focus_style(const GPlatesGui::StyleAdapter* style_)
 {
-	const GPlatesGui::StyleCatagory* cata = &style->catagory();
+	const GPlatesGui::StyleCatagory* cata = &style_->catagory();
 	int row_num = categories_table->rowCount();
 	for(int i=0; i<row_num; i++)
 	{
@@ -158,7 +158,7 @@ GPlatesQtWidgets::DrawStyleDialog::focus_style(const GPlatesGui::StyleAdapter* s
 		QListWidgetItem* item = style_list->item(i);
 		GPlatesGui::StyleAdapter* tmp_style = 
 			static_cast<GPlatesGui::StyleAdapter*>(item->data(Qt::UserRole).value<void*>());
-		if(tmp_style == style)
+		if(tmp_style == style_)
 		{
 			style_list->setCurrentItem(item, QItemSelectionModel::SelectCurrent);
 			break;
