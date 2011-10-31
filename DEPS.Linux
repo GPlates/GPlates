@@ -35,6 +35,7 @@ installed:
   • GL library (the OpenGL shared library)
   • GLU library (the OpenGL Utility shared library)
   • GLEW library (the OpenGL Extension Wrangler Library)
+  • Python library (version 2.x but not version 3.x)
   • Boost library headers (version 1.34 or newer)
   • Qt library (version 4.4 or newer)
   • Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer)
@@ -67,7 +68,8 @@ g++             g++-4.2
 GL              See note below.
 GLU             See note below.
 GLEW            libglew-dev 
-Boost           libboost-dev
+Python          libpython-dev
+Boost           libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev
 Qt              libqt4-gui libqt4-dev (See note below.)
 GDAL            libgdal1-dev libgdal1-1.4.0
 CGAL            libcgal-dev libcgal2
