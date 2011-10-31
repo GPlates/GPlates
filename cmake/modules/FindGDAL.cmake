@@ -26,17 +26,51 @@
 # 'GDAL_DIR'.
 #
 
+FUNCTION(FIND_OTHER_GDAL_INCLUDE_DIRS _GDAL_DIR_SEARCH)
+IF(WIN32)
+  FIND_PATH(GDAL_OGR_INCLUDE_DIR ogr_core.h
+		PATHS 
+		${_GDAL_DIR_SEARCH}
+		"${_GDAL_DIR_SEARCH}/ogr"
+		NO_DEFAULT_PATH
+		PATH_SUFFIXES include
+		DOC "Include directory for the GDAL ogr library"
+		)
+		
+		FIND_PATH(GDAL_PORT_INCLUDE_DIR cpl_port.h
+		PATHS 
+		${_GDAL_DIR_SEARCH}
+		"${_GDAL_DIR_SEARCH}/port"
+		NO_DEFAULT_PATH
+		PATH_SUFFIXES include
+		DOC "Include directory for the GDAL port library"
+		)
+		
+		FIND_PATH(GDAL_FRMTS_INCLUDE_DIR ogrsf_frmts.h
+		PATHS 
+		${_GDAL_DIR_SEARCH}
+		"${_GDAL_DIR_SEARCH}/ogr/ogrsf_frmts"
+		NO_DEFAULT_PATH
+		PATH_SUFFIXES include
+		DOC "Include directory for the GDAL ogrsf_frmts library"
+		)
+ENDIF(WIN32)		
+ENDFUNCTION()
+
 SET(GDAL_DIR_SEARCH "${GDAL_DIR}")
 IF(GDAL_DIR_SEARCH)
     FILE(TO_CMAKE_PATH "${GDAL_DIR_SEARCH}" GDAL_DIR_SEARCH)
     SET(GDAL_DIR_SEARCH ${GDAL_DIR_SEARCH})
     
     FIND_PATH(GDAL_INCLUDE_DIR gdal.h
-      PATHS ${GDAL_DIR_SEARCH}
+      PATHS 
+		${GDAL_DIR_SEARCH}
+		"${GDAL_DIR_SEARCH}/gcore"
       NO_DEFAULT_PATH
       PATH_SUFFIXES include
       DOC "Include directory for the GDAL library"
     )
+	FIND_OTHER_GDAL_INCLUDE_DIRS(${GDAL_DIR_SEARCH})
 ENDIF(GDAL_DIR_SEARCH)
 
 SET(GDAL_DIR_SEARCH "$ENV{GDAL_DIR}")
@@ -45,11 +79,15 @@ IF(GDAL_DIR_SEARCH)
     SET(GDAL_DIR_SEARCH ${GDAL_DIR_SEARCH})
     
     FIND_PATH(GDAL_INCLUDE_DIR gdal.h
-      PATHS ${GDAL_DIR_SEARCH}
+      PATHS 
+	  ${GDAL_DIR_SEARCH}
+	  "${GDAL_DIR_SEARCH}/gcore"
       NO_DEFAULT_PATH
       PATH_SUFFIXES include
       DOC "Include directory for the GDAL library"
     )
+	FIND_OTHER_GDAL_INCLUDE_DIRS(${GDAL_DIR_SEARCH})
+	
 ENDIF(GDAL_DIR_SEARCH)
 
 #
@@ -67,14 +105,19 @@ IF(GDAL_DIR_SEARCH)
       PATH_SUFFIXES include
       DOC "Include directory for the GDAL library"
     )
+	FIND_OTHER_GDAL_INCLUDE_DIRS(${GDAL_DIR_SEARCH})
 ENDIF(GDAL_DIR_SEARCH)
 
-FIND_PATH(GDAL_INCLUDE_DIR gdal.h
-    PATHS ${CMAKE_PREFIX_PATH} # Unofficial: We are proposing this.
-    NO_DEFAULT_PATH
-    PATH_SUFFIXES include
-    DOC "Include directory for the GDAL library"
-)
+SET(GDAL_DIR_SEARCH "${CMAKE_PREFIX_PATH}")
+IF(GDAL_DIR_SEARCH)
+	FIND_PATH(GDAL_INCLUDE_DIR gdal.h
+		PATHS ${CMAKE_PREFIX_PATH} # Unofficial: We are proposing this.
+		NO_DEFAULT_PATH
+		PATH_SUFFIXES include
+		DOC "Include directory for the GDAL library"
+	)
+	FIND_OTHER_GDAL_INCLUDE_DIRS(${GDAL_DIR_SEARCH})
+ENDIF(GDAL_DIR_SEARCH)	
 
 #
 # Try searching default paths (plus the extras specified in 'PATHS' (which

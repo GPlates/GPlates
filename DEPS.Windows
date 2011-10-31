@@ -100,10 +100,8 @@ GDAL
 
 	1.Get GDAL source code from http://trac.osgeo.org/gdal/wiki/DownloadSource.
 	2.Use Vistual Studio to build GDAL.
-	3.Add $GDAL_ROOT\gcore; $GDAL_ROOT\ogr; $GDAL_ROOT\port; $GDAL_ROOT/ogr/ogrsf_frmts 
-	  into CMAKE_INCLUDE_PATH
-	4.Add $GDAL_ROOT to CMAKE_LIBRARY_PATH
-
+	3.Set 'CGAL_DIR' environment variable to the root path of GDAL.
+	
 Proj4
 
   1. Get Proj4 source file from http://trac.osgeo.org/proj/.
