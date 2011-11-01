@@ -131,7 +131,8 @@ GPlatesQtWidgets::DrawStyleDialog::handle_layer_changed(
 	{
 		const GPlatesGui::StyleAdapter* t_style = 
 			locked_visual_layer->get_visual_layer_params()->style_adapter();
-		focus_style(t_style);
+		if(t_style)
+			focus_style(t_style);
 	}
 }
 
