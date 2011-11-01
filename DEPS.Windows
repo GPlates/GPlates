@@ -100,7 +100,7 @@ GDAL
 
 	1.Get GDAL source code from http://trac.osgeo.org/gdal/wiki/DownloadSource.
 	2.Use Vistual Studio to build GDAL.
-	3.Set 'CGAL_DIR' environment variable to the root path of GDAL.
+	3.Set 'GDAL_DIR' environment variable to the root path of GDAL.
 	
 Proj4
 
