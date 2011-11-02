@@ -58,7 +58,8 @@ GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 	d_show_thumbnails(true),
 	d_repaint_flag(true),
 	d_disable_style_item_change(false),
-	d_view_state(view_state)
+	d_view_state(view_state),
+	d_combo_box(NULL)
 {
 	init_dlg();
 	select_layer_group->setVisible(false);
@@ -67,6 +68,20 @@ GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 		current_layer_label->setText(locked_visual_layer->get_name());
 	}
 }
+
+
+void
+GPlatesQtWidgets::DrawStyleDialog::reset(
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> layer)
+{
+	d_visual_layer = layer;
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
+	{
+		current_layer_label->setText(locked_visual_layer->get_name());
+		focus_style(locked_visual_layer->get_visual_layer_params()->style_adapter());
+	}
+}
+
 
 namespace
 {
@@ -92,32 +107,34 @@ GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 	d_show_thumbnails(true),
 	d_repaint_flag(true),
 	d_disable_style_item_change(false),
-	d_view_state(view_state)
+	d_view_state(view_state),
+	d_combo_box(NULL)
 {
 	init_dlg();
 	current_layer_group->setVisible(false);
-	VisualLayersComboBox* combox = new VisualLayersComboBox(
+	d_combo_box = new VisualLayersComboBox(
 			view_state.get_visual_layers(),
 			view_state.get_visual_layer_registry(),
 			pred,
 			this);
 
-	QtWidgetUtils::add_widget_to_placeholder(combox, select_layer_widget);
+	QtWidgetUtils::add_widget_to_placeholder(d_combo_box, select_layer_widget);
 	
 	QObject::connect(
-			combox,
+			d_combo_box,
 			SIGNAL(selected_visual_layer_changed(
 					boost::weak_ptr<GPlatesPresentation::VisualLayer>)),
 			this,
 			SLOT(handle_layer_changed(
 				boost::weak_ptr<GPlatesPresentation::VisualLayer>)));
-
 }
 
 
 void
 GPlatesQtWidgets::DrawStyleDialog::showEvent ( QShowEvent *  )
 {
+	if(select_layer_group->isVisible())
+		d_visual_layer = d_combo_box->get_selected_visual_layer();
 	handle_layer_changed(d_visual_layer);
 }
 
@@ -357,6 +374,12 @@ GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 #endif
 	splitter->setStretchFactor(splitter->indexOf(categories_table),1);
 	splitter->setStretchFactor(splitter->indexOf(right_side_frame),4);
+
+	QObject::connect(
+			GPlatesGui::DrawStyleManager::instance(),
+			SIGNAL(draw_style_changed()),
+			this,
+			SLOT(focus_style()));
 }
 
 void
@@ -661,6 +684,22 @@ GPlatesQtWidgets::DrawStyleDialog::generate_new_valid_style_name(
 		}
 	}
 }
+
+
+void
+GPlatesQtWidgets::DrawStyleDialog::focus_style()
+{
+	if(!isVisible())
+		return;
+
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
+	{
+		focus_style(locked_visual_layer->get_visual_layer_params()->style_adapter());
+	}
+}
+
+
+
 
 
 
