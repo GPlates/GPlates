@@ -30,6 +30,12 @@ DISABLE_MSVC_WARNING(4503)
 POP_MSVC_WARNINGS
 
 #include <boost/cast.hpp>
+
+#ifdef NDEBUG
+#      define HAVE_NDEBUG
+#      undef NDEBUG
+#endif
+
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
 #include <CGAL/Delaunay_mesher_2.h>
@@ -37,6 +43,11 @@ POP_MSVC_WARNINGS
 #include <CGAL/Delaunay_mesh_size_criteria_2.h>
 #include <CGAL/Cartesian.h>
 #include <CGAL/Polygon_2.h>
+
+#ifdef HAVE_NDEBUG
+#      define NDEBUG
+#endif
+
 #include <QDebug>
 
 #include "PolygonMesh.h"

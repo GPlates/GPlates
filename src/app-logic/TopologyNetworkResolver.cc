@@ -37,7 +37,17 @@ POP_MSVC_WARNINGS
 
 #include "TopologyNetworkResolver.h"
 
+#ifdef NDEBUG
+#      define HAVE_NDEBUG
+#      undef NDEBUG
+#endif
+
 #include "CgalUtils.h"
+
+#ifdef HAVE_NDEBUG
+#      define NDEBUG
+#endif
+
 #include "GeometryUtils.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructedFeatureGeometry.h"
