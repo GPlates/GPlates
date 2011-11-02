@@ -58,6 +58,7 @@ namespace GPlatesQtWidgets
 {
 	class GlobeAndMapWidget;
 	class ReadErrorAccumulationDialog;
+	class VisualLayersComboBox;
 
 	class DrawStyleDialog  : 
 			public QDialog, 
@@ -82,6 +83,9 @@ namespace GPlatesQtWidgets
 
 		void
 		init_dlg();
+
+		void
+		reset(boost::weak_ptr<GPlatesPresentation::VisualLayer> layer);
 
 	protected:
 		void
@@ -196,6 +200,8 @@ namespace GPlatesQtWidgets
 		void
 		handle_repaint(bool);
 
+		void
+		focus_style();
 
 		void
 		handle_show_thumbnails_changed(int state)
@@ -240,6 +246,7 @@ namespace GPlatesQtWidgets
 		QString d_last_open_directory;
 		std::vector<QWidget*> d_cfg_widgets;
 		GPlatesPresentation::ViewState& d_view_state;
+		VisualLayersComboBox* d_combo_box;
 	};
 }
 

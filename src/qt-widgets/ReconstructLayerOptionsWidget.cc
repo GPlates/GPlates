@@ -107,6 +107,10 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::set_data(
 {
 	d_current_visual_layer = visual_layer;
 
+	//reset the draw style dialog.
+	if(d_draw_style_dialog_ptr)
+		d_draw_style_dialog_ptr->reset(visual_layer);
+
 	// Set the state of the filled polygon checkbox.
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
 	{
