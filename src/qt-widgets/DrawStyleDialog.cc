@@ -70,6 +70,7 @@ GPlatesQtWidgets::DrawStyleDialog::reset(
 	qDebug() << "reseting draw style dialog...";
 	d_combo_box->set_selected_visual_layer(layer);
 	d_visual_layer = layer;
+	init_catagory_table();
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
 	{
 		focus_style(locked_visual_layer->get_visual_layer_params()->style_adapter());
@@ -94,6 +95,7 @@ namespace
 	}
 }
 
+#if 0
 void
 GPlatesQtWidgets::DrawStyleDialog::showEvent ( QShowEvent *  )
 {
@@ -101,7 +103,7 @@ GPlatesQtWidgets::DrawStyleDialog::showEvent ( QShowEvent *  )
 	d_visual_layer = d_combo_box->get_selected_visual_layer();
 	handle_layer_changed(d_visual_layer);
 }
-
+#endif
 
 void
 GPlatesQtWidgets::DrawStyleDialog::handle_layer_changed(

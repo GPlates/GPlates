@@ -133,6 +133,6 @@ GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::handle_fill_polygo
 void
 GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::open_draw_style_setting_dlg()
 {
-	d_draw_style_dialog_ptr->reset(d_current_visual_layer);
 	QtWidgetUtils::pop_up_dialog(d_draw_style_dialog_ptr);
+	d_draw_style_dialog_ptr->reset(d_current_visual_layer);
 }

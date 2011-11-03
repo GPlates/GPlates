@@ -170,8 +170,10 @@ namespace GPlatesQtWidgets
 		void
 		focus_style(const GPlatesGui::StyleAdapter*);
 
+#if 0
 		void
 		showEvent ( QShowEvent * event );
+#endif
 
 	private slots:
 		void

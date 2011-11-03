@@ -1572,6 +1572,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_colouring_dialog()
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_draw_style_dialog()
 {
+	d_draw_style_dialog_ptr->init_catagory_table();
 	QtWidgetUtils::pop_up_dialog(d_draw_style_dialog_ptr);
 }
 
