@@ -257,6 +257,12 @@ namespace GPlatesQtWidgets
 			return *d_visual_layers_dialog_ptr;
 		}
 
+		DrawStyleDialog*
+		draw_style_dialog()
+		{
+			return d_draw_style_dialog_ptr;
+		}
+
 		void
 		restore_canvas_tool_last_chosen_by_user();
 

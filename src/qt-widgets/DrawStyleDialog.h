@@ -69,11 +69,6 @@ namespace GPlatesQtWidgets
 	public:
 		DrawStyleDialog(
 				GPlatesPresentation::ViewState &view_state,
-				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer,
-				QWidget* parent_ = NULL);
-
-		DrawStyleDialog(
-				GPlatesPresentation::ViewState &view_state,
 				QWidget* parent_ = NULL);
 
 		~DrawStyleDialog();

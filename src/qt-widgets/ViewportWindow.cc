@@ -308,7 +308,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				get_application_state(), get_view_state(), this)),
 	d_calculate_reconstruction_pole_dialog_ptr(NULL),
 	d_colouring_dialog_ptr(NULL),
-	d_draw_style_dialog_ptr(NULL),
+	d_draw_style_dialog_ptr(
+			new DrawStyleDialog(get_view_state(), this)),
 	d_connect_wfs_dialog_ptr(NULL),
 	d_create_vgp_dialog_ptr(NULL),
 	d_export_animation_dialog_ptr(NULL),
@@ -1571,13 +1572,6 @@ GPlatesQtWidgets::ViewportWindow::pop_up_colouring_dialog()
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_draw_style_dialog()
 {
-	if (!d_draw_style_dialog_ptr)
-	{
-		d_draw_style_dialog_ptr = new DrawStyleDialog(
-				GPlatesPresentation::Application::instance()->get_view_state(),
-				this);
-		d_draw_style_dialog_ptr->init_catagory_table();
-	}
 	QtWidgetUtils::pop_up_dialog(d_draw_style_dialog_ptr);
 }
 

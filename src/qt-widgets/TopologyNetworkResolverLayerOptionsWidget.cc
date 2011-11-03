@@ -41,7 +41,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 	d_application_state(application_state),
 	d_view_state(view_state),
 	d_viewport_window(viewport_window),
-	d_draw_style_dialog_ptr(NULL)
+	d_draw_style_dialog_ptr(viewport_window->draw_style_dialog())
 {
 	setupUi(this);
 
@@ -107,10 +107,6 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 		const boost::weak_ptr<GPlatesPresentation::VisualLayer> &visual_layer)
 {
 	d_current_visual_layer = visual_layer;
-
-	//reset the draw style dialog.
-	if(d_draw_style_dialog_ptr)
-		d_draw_style_dialog_ptr->reset(visual_layer);
 
 	// Set the state of the checkboxes.
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
@@ -201,14 +197,8 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_segment_velo
 void
 GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::open_draw_style_setting_dlg()
 {
-	if (!d_draw_style_dialog_ptr)
-	{
-		d_draw_style_dialog_ptr = new DrawStyleDialog(
-				GPlatesPresentation::Application::instance()->get_view_state(),
-				d_current_visual_layer,
-				this);
-		d_draw_style_dialog_ptr->init_catagory_table();
-	}
+	d_draw_style_dialog_ptr->reset(d_current_visual_layer);
+	qDebug() << "popup draw style dialog...";
 	QtWidgetUtils::pop_up_dialog(d_draw_style_dialog_ptr);
 }
 

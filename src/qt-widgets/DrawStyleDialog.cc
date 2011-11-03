@@ -51,10 +51,8 @@
 
 GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 		GPlatesPresentation::ViewState &view_state,
-		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer,
 		QWidget* parent_) :
 	QDialog(parent_),
-	d_visual_layer(visual_layer),
 	d_show_thumbnails(true),
 	d_repaint_flag(true),
 	d_disable_style_item_change(false),
@@ -62,11 +60,6 @@ GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 	d_combo_box(NULL)
 {
 	init_dlg();
-	select_layer_group->setVisible(false);
-	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
-	{
-		current_layer_label->setText(locked_visual_layer->get_name());
-	}
 }
 
 
@@ -74,10 +67,11 @@ void
 GPlatesQtWidgets::DrawStyleDialog::reset(
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> layer)
 {
+	qDebug() << "reseting draw style dialog...";
+	d_combo_box->set_selected_visual_layer(layer);
 	d_visual_layer = layer;
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
 	{
-		current_layer_label->setText(locked_visual_layer->get_name());
 		focus_style(locked_visual_layer->get_visual_layer_params()->style_adapter());
 	}
 }
@@ -100,41 +94,11 @@ namespace
 	}
 }
 
-GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
-		GPlatesPresentation::ViewState &view_state,
-		QWidget* parent_) :
-	QDialog(parent_),
-	d_show_thumbnails(true),
-	d_repaint_flag(true),
-	d_disable_style_item_change(false),
-	d_view_state(view_state),
-	d_combo_box(NULL)
-{
-	init_dlg();
-	current_layer_group->setVisible(false);
-	d_combo_box = new VisualLayersComboBox(
-			view_state.get_visual_layers(),
-			view_state.get_visual_layer_registry(),
-			pred,
-			this);
-
-	QtWidgetUtils::add_widget_to_placeholder(d_combo_box, select_layer_widget);
-	
-	QObject::connect(
-			d_combo_box,
-			SIGNAL(selected_visual_layer_changed(
-					boost::weak_ptr<GPlatesPresentation::VisualLayer>)),
-			this,
-			SLOT(handle_layer_changed(
-				boost::weak_ptr<GPlatesPresentation::VisualLayer>)));
-}
-
-
 void
 GPlatesQtWidgets::DrawStyleDialog::showEvent ( QShowEvent *  )
 {
-	if(select_layer_group->isVisible())
-		d_visual_layer = d_combo_box->get_selected_visual_layer();
+	init_catagory_table();
+	d_visual_layer = d_combo_box->get_selected_visual_layer();
 	handle_layer_changed(d_visual_layer);
 }
 
@@ -353,7 +317,7 @@ GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 	d_blank_icon = QIcon(blank_pixmap);
 	d_style_mgr = GPlatesGui::DrawStyleManager::instance();
 	
-	init_catagory_table();
+	//init_catagory_table();
 	make_signal_slot_connections();
 	
 	open_button->hide();
@@ -375,11 +339,23 @@ GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 	splitter->setStretchFactor(splitter->indexOf(categories_table),1);
 	splitter->setStretchFactor(splitter->indexOf(right_side_frame),4);
 
+	d_combo_box = new VisualLayersComboBox(
+			d_view_state.get_visual_layers(),
+			d_view_state.get_visual_layer_registry(),
+			pred,
+			this);
+
 	QObject::connect(
-			GPlatesGui::DrawStyleManager::instance(),
-			SIGNAL(draw_style_changed()),
+			d_combo_box,
+			SIGNAL(selected_visual_layer_changed(
+					boost::weak_ptr<GPlatesPresentation::VisualLayer>)),
 			this,
-			SLOT(focus_style()));
+			SLOT(handle_layer_changed(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer>)));
+	if(d_combo_box->count() !=0 )
+		d_combo_box->setCurrentIndex(0);
+
+	QtWidgetUtils::add_widget_to_placeholder(d_combo_box, select_layer_widget);
 }
 
 void
@@ -436,6 +412,8 @@ GPlatesQtWidgets::DrawStyleDialog::handle_style_selection_changed(
 		QListWidgetItem* previous)
 {
 	using namespace GPlatesGui;
+	if(current == previous)
+		return;
 
 	DrawStyleManager* mgr = DrawStyleManager::instance();
 	if(previous)
