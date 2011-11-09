@@ -47,6 +47,7 @@
 #include "gui/PythonConfiguration.h"
 #include "presentation/ReconstructVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
+#include "presentation/VisualLayers.h"
 #include "GlobeAndMapWidget.h"
 
 GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
@@ -57,7 +58,8 @@ GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 	d_repaint_flag(true),
 	d_disable_style_item_change(false),
 	d_view_state(view_state),
-	d_combo_box(NULL)
+	d_combo_box(NULL),
+	d_style_of_all(NULL)
 {
 	init_dlg();
 }
@@ -116,6 +118,31 @@ GPlatesQtWidgets::DrawStyleDialog::handle_layer_changed(
 			locked_visual_layer->get_visual_layer_params()->style_adapter();
 		if(t_style)
 			focus_style(t_style);
+	}
+	else
+	{
+		if(d_style_of_all)
+			focus_style(d_style_of_all);
+		else
+		{
+			categories_table->clearSelection();
+			style_list->clearSelection();
+			style_list->clear();
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::DrawStyleDialog::apply_style_to_all_layers()
+{
+	GPlatesPresentation::VisualLayers& layers = d_view_state.get_visual_layers();
+	for(size_t i=0; i<layers.size(); i++)
+	{
+		if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_layer = layers.visual_layer_at(i).lock())
+		{
+			locked_layer->get_visual_layer_params()->set_style_adaper(d_style_of_all);
+		}
 	}
 }
 
@@ -266,10 +293,22 @@ GPlatesQtWidgets::DrawStyleDialog::set_style(GPlatesGui::StyleAdapter* _style)
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
 	{
-		locked_visual_layer->get_visual_layer_params()->set_style_adaper(_style);
+		if(locked_visual_layer->get_visual_layer_params()->style_adapter() == _style)
+			return;
+		else
+		{
+			locked_visual_layer->get_visual_layer_params()->set_style_adaper(_style);
+			d_style_of_all = NULL;
+		}
+	}
+	else
+	{
+		d_style_of_all = _style;
+		apply_style_to_all_layers();
 	}
 	GPlatesGui::DrawStyleManager::instance()->emit_style_changed();
 }
+
 
 GPlatesQtWidgets::DrawStyleDialog::~DrawStyleDialog()
 {
@@ -341,7 +380,7 @@ GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 	splitter->setStretchFactor(splitter->indexOf(categories_table),1);
 	splitter->setStretchFactor(splitter->indexOf(right_side_frame),4);
 
-	d_combo_box = new VisualLayersComboBox(
+	d_combo_box = new LayerGroupComboBox(
 			d_view_state.get_visual_layers(),
 			d_view_state.get_visual_layer_registry(),
 			pred,
@@ -416,7 +455,7 @@ GPlatesQtWidgets::DrawStyleDialog::handle_style_selection_changed(
 	using namespace GPlatesGui;
 	if(current == previous)
 		return;
-
+	
 	DrawStyleManager* mgr = DrawStyleManager::instance();
 	if(previous)
 	{

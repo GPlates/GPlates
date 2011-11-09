@@ -32,6 +32,7 @@
 #include "DrawStyleDialogUi.h"
 #include "gui/PythonConfiguration.h"
 #include "PythonArgumentWidget.h"
+#include "VisualLayersComboBox.h"
 
 
 namespace GPlatesAppLogic
@@ -58,7 +59,39 @@ namespace GPlatesQtWidgets
 {
 	class GlobeAndMapWidget;
 	class ReadErrorAccumulationDialog;
-	class VisualLayersComboBox;
+
+	Q_DECLARE_METATYPE( boost::weak_ptr<GPlatesPresentation::VisualLayer> )
+
+	class LayerGroupComboBox :
+			public VisualLayersComboBox
+	{
+	public:
+		LayerGroupComboBox(
+				GPlatesPresentation::VisualLayers &visual_layers,
+				GPlatesPresentation::VisualLayerRegistry &visual_layer_registry,
+				const predicate_type &predicate,
+				QWidget *parent_ = NULL) :
+			VisualLayersComboBox(visual_layers, visual_layer_registry, predicate, parent_)
+		{
+			insert_all();
+		}
+	protected:
+		void
+		populate()
+		{
+			VisualLayersComboBox::populate();
+			insert_all();
+		}
+
+		void
+		insert_all()
+		{
+			QVariant qv; qv.setValue(boost::weak_ptr<GPlatesPresentation::VisualLayer>());
+			static const QIcon empty_icon(QPixmap(16, 16));
+			insertItem(0, empty_icon, "(All)", qv);
+			setCurrentIndex(0);
+		}
+	};
 
 	class DrawStyleDialog  : 
 			public QDialog, 
@@ -170,6 +203,9 @@ namespace GPlatesQtWidgets
 		void
 		focus_style(const GPlatesGui::StyleAdapter*);
 
+		void
+		apply_style_to_all_layers();
+
 #if 0
 		void
 		showEvent ( QShowEvent * event );
@@ -243,7 +279,8 @@ namespace GPlatesQtWidgets
 		QString d_last_open_directory;
 		std::vector<QWidget*> d_cfg_widgets;
 		GPlatesPresentation::ViewState& d_view_state;
-		VisualLayersComboBox* d_combo_box;
+		LayerGroupComboBox* d_combo_box;
+		GPlatesGui::StyleAdapter* d_style_of_all;
 	};
 }
 

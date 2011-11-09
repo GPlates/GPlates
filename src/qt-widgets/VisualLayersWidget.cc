@@ -60,18 +60,26 @@ GPlatesQtWidgets::VisualLayersWidget::VisualLayersWidget(
 			SIGNAL(clicked()),
 			this,
 			SLOT(handle_add_new_layer_button_clicked()));
-	QObject::connect(
-			colouring_button,
-			SIGNAL(clicked()),
-			this,
-			SLOT(handle_colouring_button_clicked()));
+	
 
 	// Hide things for now...
 	control_widget->hide();
 
 	if(GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
 	{
-		colouring_button->hide();
+		QObject::connect(
+				colouring_button,
+				SIGNAL(clicked()),
+				d_viewport_window,
+				SLOT(pop_up_draw_style_dialog()));
+	}
+	else
+	{
+		QObject::connect(
+				colouring_button,
+				SIGNAL(clicked()),
+				this,
+				SLOT(handle_colouring_button_clicked()));
 	}
 }
 
