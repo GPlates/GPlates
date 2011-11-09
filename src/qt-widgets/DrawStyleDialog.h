@@ -60,8 +60,6 @@ namespace GPlatesQtWidgets
 	class GlobeAndMapWidget;
 	class ReadErrorAccumulationDialog;
 
-	Q_DECLARE_METATYPE( boost::weak_ptr<GPlatesPresentation::VisualLayer> )
-
 	class LayerGroupComboBox :
 			public VisualLayersComboBox
 	{
@@ -84,13 +82,7 @@ namespace GPlatesQtWidgets
 		}
 
 		void
-		insert_all()
-		{
-			QVariant qv; qv.setValue(boost::weak_ptr<GPlatesPresentation::VisualLayer>());
-			static const QIcon empty_icon(QPixmap(16, 16));
-			insertItem(0, empty_icon, "(All)", qv);
-			setCurrentIndex(0);
-		}
+		insert_all();
 	};
 
 	class DrawStyleDialog  : 

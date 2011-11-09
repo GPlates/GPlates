@@ -133,6 +133,18 @@ GPlatesQtWidgets::DrawStyleDialog::handle_layer_changed(
 }
 
 
+Q_DECLARE_METATYPE( boost::weak_ptr<GPlatesPresentation::VisualLayer> )
+
+void
+GPlatesQtWidgets::LayerGroupComboBox::insert_all()
+{
+	QVariant qv; qv.setValue(boost::weak_ptr<GPlatesPresentation::VisualLayer>());
+	static const QIcon empty_icon(QPixmap(16, 16));
+	insertItem(0, empty_icon, "(All)", qv);
+	setCurrentIndex(0);
+}
+
+
 void
 GPlatesQtWidgets::DrawStyleDialog::apply_style_to_all_layers()
 {
