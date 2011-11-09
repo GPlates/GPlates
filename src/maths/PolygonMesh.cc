@@ -31,9 +31,11 @@ POP_MSVC_WARNINGS
 
 #include <boost/cast.hpp>
 
-#ifdef NDEBUG
-#      define HAVE_NDEBUG
-#      undef NDEBUG
+#if defined (CGAL_MACOS_COMPILER_WORKAROUND)
+#	ifdef NDEBUG
+#		define HAVE_NDEBUG
+#		undef NDEBUG
+#	endif
 #endif
 
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
@@ -44,8 +46,10 @@ POP_MSVC_WARNINGS
 #include <CGAL/Cartesian.h>
 #include <CGAL/Polygon_2.h>
 
-#ifdef HAVE_NDEBUG
-#      define NDEBUG
+#if defined (CGAL_MACOS_COMPILER_WORKAROUND)
+#	ifdef HAVE_NDEBUG
+#		define NDEBUG
+#	endif
 #endif
 
 #include <QDebug>

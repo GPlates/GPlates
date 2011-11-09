@@ -37,15 +37,19 @@ POP_MSVC_WARNINGS
 
 #include "TopologyNetworkResolver.h"
 
-#ifdef NDEBUG
-#      define HAVE_NDEBUG
-#      undef NDEBUG
+#if defined (CGAL_MACOS_COMPILER_WORKAROUND)
+#	ifdef NDEBUG
+#		define HAVE_NDEBUG
+#		undef NDEBUG
+#	endif
 #endif
 
 #include "CgalUtils.h"
 
-#ifdef HAVE_NDEBUG
-#      define NDEBUG
+#if defined (CGAL_MACOS_COMPILER_WORKAROUND)
+#	ifdef HAVE_NDEBUG
+#		define NDEBUG
+#	endif
 #endif
 
 #include "GeometryUtils.h"
