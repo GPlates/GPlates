@@ -174,6 +174,13 @@ namespace GPlatesApi
 				{
 					mgr->register_style(adapter);
 				}
+
+				if(mgr->get_styles(*sc).size() == 0)
+				{
+					StyleAdapter* new_adapter = mgr->get_template_style(*sc)->deep_clone();
+					new_adapter->set_name("Default");
+					mgr->register_style(new_adapter);
+				}
 			}
 			catch(const error_already_set &)
 			{

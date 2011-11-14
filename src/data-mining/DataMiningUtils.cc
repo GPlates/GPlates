@@ -186,11 +186,15 @@ GPlatesDataMining::DataMiningUtils::get_shape_file_value_by_name(
 		{
 			GPlatesFeatureVisitors::ShapefileAttributeFinder visitor(name);
 			(*it)->accept_visitor(visitor);
-			if(1 != std::distance(visitor.found_qvariants_begin(),visitor.found_qvariants_end()))
+			if(1 < std::distance(visitor.found_qvariants_begin(),visitor.found_qvariants_end()))
 			{
 				qDebug() << "More than one property found in shape file attribute.";
 				qDebug() << "But this is a one to one mapping. So, only return the first value.";
 				qDebug() << "More than one shape file attributes have the same name. Please check you data.";
+			}
+			if(0 == std::distance(visitor.found_qvariants_begin(),visitor.found_qvariants_end()))
+			{
+				continue;
 			}
 			return convert_qvariant_to_Opaque_data(*visitor.found_qvariants_begin());
 		}

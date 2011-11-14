@@ -123,7 +123,7 @@ def register():
 	pygplates.Application().register_draw_style(SingleColour())
 	pygplates.Application().register_draw_style(FeatureAge())
 	pygplates.Application().register_draw_style(FeatureType())
-	#pygplates.Application().register_draw_style(Random1())
-	#pygplates.Application().register_draw_style(Random2())
+	pygplates.Application().register_draw_style(Random1())
+	pygplates.Application().register_draw_style(Random2())
 	#pygplates.Application().register_draw_style(Blue())
 

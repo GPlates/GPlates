@@ -294,8 +294,8 @@ GPlatesQtWidgets::DrawStyleDialog::handle_remove_button_clicked()
 	{
 		QVariant qv = item->data(Qt::UserRole);
 		GPlatesGui::StyleAdapter* sa = static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
-		delete style_list->takeItem(style_list->currentRow());
 		mgr->remove_style(sa);
+		delete style_list->takeItem(style_list->currentRow());
 	}
 }
 
@@ -486,9 +486,13 @@ GPlatesQtWidgets::DrawStyleDialog::handle_style_selection_changed(
 		const Configuration& cfg = current_style->configuration();
 		build_config_panel(cfg);
 		
-		if(!mgr->is_built_in_style(*current_style) && mgr->get_ref_number(*current_style) == 1)
+		if(!mgr->is_built_in_style(*current_style))
 		{
-			remove_button->setEnabled(true);
+			if(mgr->get_ref_number(*current_style) == 1 && mgr->can_be_removed(*current_style))
+				remove_button->setEnabled(true);
+			else
+				remove_button->setEnabled(false);
+			
 			enable_config_panel(true);
 		}
 		else

@@ -166,6 +166,18 @@ GPlatesGui::mono_age_palette(
 	return p;
 }
 
+
+const GPlatesGui::Palette*
+GPlatesGui::default_palette()
+{
+	std::vector<ColourSpectrum> spect;
+	spect.push_back(ColourSpectrum(Colour::get_blue(), Colour::get_red(), 1000, 0));
+	static Palette* p = new RegularPalette(spect);
+	p->set_BFN_colour(Colour::get_black(), Colour::get_white(), Colour::get_black());
+	return p;
+}
+
+
 namespace
 {
 	using namespace GPlatesGui;

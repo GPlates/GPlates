@@ -367,12 +367,12 @@ GPlatesGui::DrawStyleManager::get_built_in_styles(const GPlatesGui::StyleCatagor
 	{
 		ret.push_back(create_built_in_palette_adapter("Default", "FeatureType", &adapter));
 	}
-	else
-	{
-		StyleAdapter* new_adapter = adapter.deep_clone();
-		new_adapter->set_name("Default");
-		ret.push_back(new_adapter);
-	}
+// 	else
+// 	{
+// 		StyleAdapter* new_adapter = adapter.deep_clone();
+// 		new_adapter->set_name("Default");
+// 		ret.push_back(new_adapter);
+// 	}
 	return ret;
 }
 

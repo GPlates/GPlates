@@ -193,7 +193,7 @@ GPlatesGui::PythonStyleAdapter::create_cfg_item(const std::map<QString, QString>
 	}
 	else if(it->second == "Palette")
 	{
-		return new PythonCfgPalette("Palette", "DefaultPlateId");
+		return new PythonCfgPalette("Palette", "DeaultPalette");
 	} 
 	return new PythonCfgString("String", " ");
 }

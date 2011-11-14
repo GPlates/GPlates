@@ -467,6 +467,10 @@ namespace GPlatesGui
 			const double lower = 0);
 
 
+	const GPlatesGui::Palette*
+	default_palette();
+
+
 	class FeatureTypePalette : public CategoricalPalette
 	{
 	public:
@@ -519,6 +523,7 @@ namespace
 		palette_map["FeatureAgeDefault"]	= default_age_palette();
 		palette_map["FeatureAgeMono"]		= mono_age_palette();
 		palette_map["FeatureType"]			= FeatureTypePalette::instance();
+		palette_map["DeaultPalette"]		= default_palette();
 		return true;
 	}
 }

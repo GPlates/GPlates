@@ -122,6 +122,17 @@ namespace GPlatesGui
 			return style.d_id >= BUILT_IN_OFFSET;
 		}
 
+
+		bool
+		can_be_removed(const StyleAdapter& style)
+		{
+			if(get_styles(style.catagory()).size() <=1)
+				return false;
+			else
+				return true;
+		}
+
+
 		bool
 		remove_style(StyleAdapter* style);
 
