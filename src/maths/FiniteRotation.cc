@@ -239,7 +239,24 @@ namespace {
 		 * This algorithm based upon the method described in Burger89.
 		 */
 
-		const real_t cos_theta = dot(q1, q2);
+		real_t cos_theta = dot(q1, q2);
+
+		// Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible that
+		// q1 and q2 could be separated by a longer path than are q1 and -q2 (or -q1 and q2).
+		// So check if we're using the longer path and negate either quaternion in order to
+		// take the shorter path.
+		//
+		// See the "Quaternion Slerp" section of http://en.wikipedia.org/wiki/Slerp
+		real_t shortest_path_correction = 1;
+		if (cos_theta.is_precisely_less_than(0))
+		{
+			cos_theta = -cos_theta;
+
+			// NOTE: We really should be negating one of the two quaternions (q1 or q2 - it doesn't
+			// matter which one) but it's easier, and faster, to negate one of the interpolation
+			// coefficients since the quaternions are multiplied by them (q = c1 * q1 + c2 * q2).
+			shortest_path_correction = -1;
+		}
 
 		if (cos_theta >= 1.0) {
 
@@ -250,43 +267,6 @@ namespace {
 			 */
 			return q1;
 		}
-		if (cos_theta <= -1.0) {
-
-			/*
-			 * FIXME:  The two quaternions are pointing in opposite
-			 * directions.  In 4D hypersphere space.  What the hell
-			 * am I supposed to do now?  How the hell do I
-			 * interpolate from one to the other when there's not
-			 * even a unique 4D great-circle from one to the other? 
-			 *
-			 * Perhaps *more* concerningly, how the **HELL** do I
-			 * explain this to the user??  "Hello, your finite
-			 * rotation quaternions are pointing in opposite
-			 * directions in four-dimensional hyperspace, even
-			 * though you don't understand how four-dimensional
-			 * hyperspace has anything to do with plate rotations
-			 * and you probably don't even know what quaternions
-			 * are!  This operation will now terminate.  Have a
-			 * nice day!"
-			 *
-			 * Argh!
-			 */
-			std::ostringstream oss;
-
-			oss
-			 << "Unable to interpolate between quaternions which "
-			    "are pointing in opposite directions\n"
-			    "in 4D hypersphere space: "
-			 << q1
-			 << "\nand "
-			 << q2
-			 << ".\nNot quite sure what to make of this?  Neither "
-			    "are we.  You should probably contact us (the "
-			    "developers).";
-
-			throw IndeterminateResultException(GPLATES_EXCEPTION_SOURCE,
-					oss.str().c_str());
-		}
 
 		// Since cos(theta) lies in the range (-1, 1), theta will lie
 		// in the range (0, PI).
@@ -295,7 +275,7 @@ namespace {
 		// Since theta lies in the range (0, PI), sin(theta) will lie
 		// in the range (0, 1].
 		//
-		// Since cos(theta) lies in the range (-1, 1), cos^2(theta)
+		// Since |cos(theta)| lies in the range [0, 1), cos^2(theta)
 		// will lie in the range [0, 1), so (1 - cos^2(theta)) will lie
 		// in the range (0, 1], so sqrt(1 - cos^2(theta)) lie in the
 		// range (0, 1], and hence can be used in place of sin(theta)
@@ -307,21 +287,9 @@ namespace {
 		 1.0 / sqrt(1.0 - cos_theta * cos_theta);
 
 		const real_t c1 = sin((1.0 - t) * theta) * one_on_sin_theta;
-		real_t c2 = sin(t * theta) * one_on_sin_theta;
+		const real_t c2 = sin(t * theta) * one_on_sin_theta;
 
-		// Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible that
-		// q1 and q2 could be separated by a longer path than are q1 and -q2 (or -q1 and q2).
-		// So check if we're using the longer path and negate (take antipodal of) either quaternion
-		// in order to take the shorter path.
-		//
-		// See the "Quaternion Slerp" section of http://en.wikipedia.org/wiki/Slerp
-		if (cos_theta.is_precisely_less_than(0))
-		{
-			// Easier to negate a c2 rather than q2 since c2 is multiplying q2 anyway.
-			c2 = -c2;
-		}
-
-		return UnitQuaternion3D::create(c1 * q1 + c2 * q2);
+		return UnitQuaternion3D::create(c1 * q1 + shortest_path_correction * c2 * q2);
 	}
 
 }
