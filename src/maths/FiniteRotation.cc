@@ -239,7 +239,7 @@ namespace {
 		 * This algorithm based upon the method described in Burger89.
 		 */
 
-		real_t cos_theta = dot(q1, q2);
+		const real_t cos_theta = dot(q1, q2);
 
 		if (cos_theta >= 1.0) {
 
@@ -290,7 +290,7 @@ namespace {
 
 		// Since cos(theta) lies in the range (-1, 1), theta will lie
 		// in the range (0, PI).
-		real_t theta = acos(cos_theta);
+		const real_t theta = acos(cos_theta);
 
 		// Since theta lies in the range (0, PI), sin(theta) will lie
 		// in the range (0, 1].
@@ -303,12 +303,23 @@ namespace {
 		//
 		// And finally, since sqrt(1 - cos^2(theta)) lies in the range
 		// (0, 1], there won't be any division by zero.
-		real_t one_on_sin_theta =
+		const real_t one_on_sin_theta =
 		 1.0 / sqrt(1.0 - cos_theta * cos_theta);
 
-		real_t
-		 c1 = sin((1.0 - t) * theta) * one_on_sin_theta,
-		 c2 = sin(t * theta) * one_on_sin_theta;
+		const real_t c1 = sin((1.0 - t) * theta) * one_on_sin_theta;
+		real_t c2 = sin(t * theta) * one_on_sin_theta;
+
+		// Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible that
+		// q1 and q2 could be separated by a longer path than are q1 and -q2 (or -q1 and q2).
+		// So check if we're using the longer path and negate (take antipodal of) either quaternion
+		// in order to take the shorter path.
+		//
+		// See the "Quaternion Slerp" section of http://en.wikipedia.org/wiki/Slerp
+		if (cos_theta.is_precisely_less_than(0))
+		{
+			// Easier to negate a c2 rather than q2 since c2 is multiplying q2 anyway.
+			c2 = -c2;
+		}
 
 		return UnitQuaternion3D::create(c1 * q1 + c2 * q2);
 	}
