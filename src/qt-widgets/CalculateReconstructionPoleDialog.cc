@@ -123,13 +123,8 @@ GPlatesQtWidgets::CalculateReconstructionPoleDialog::handle_calculate()
 		geographic_pole.reset(PointOnSphere::south_pole);
 	}
 	
-	Rotation rotation = Rotation::create(vgp_pole, *geographic_pole);
-	Real angle = rotation.angle();
-	// Restrict angle to between 0 and 90 degrees. 
-	if (angle > GPlatesMaths::HALF_PI)
-	{
-		angle = GPlatesMaths::PI-angle;
-	}
+	const Rotation rotation = Rotation::create(vgp_pole, *geographic_pole);
+	const Real angle = rotation.angle();
 	
 	QLocale locale_;
 	// The latitude of llp should be zero, by the way.
