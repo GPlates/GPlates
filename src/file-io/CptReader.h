@@ -1207,6 +1207,9 @@ namespace GPlatesFileIO
 
 		struct ColourData
 		{
+			ColourData():
+					model(GMT_NAME), str_data("black"){}
+
 			Model model;
 			std::vector<float> float_array;
 			QString str_data;

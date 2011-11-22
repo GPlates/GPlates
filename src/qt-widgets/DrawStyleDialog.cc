@@ -111,6 +111,9 @@ void
 GPlatesQtWidgets::DrawStyleDialog::handle_layer_changed(
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> layer)
 {
+	if(!isVisible() || (layer.lock().get() == d_visual_layer.lock().get()))
+		return;
+
 	d_visual_layer = layer;
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
 	{
