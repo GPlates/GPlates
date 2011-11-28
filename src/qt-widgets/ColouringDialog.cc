@@ -253,7 +253,13 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 
 	// Set up our GlobeAndMapWidget that we use for rendering.
 	d_globe_and_map_widget_ptr->resize(ICON_SIZE, ICON_SIZE);
-	d_globe_and_map_widget_ptr->move(1 - ICON_SIZE, 1 - ICON_SIZE); // leave 1px showing
+
+#if defined(Q_OS_MAC)
+	if(QT_VERSION >= 0x040600)
+		d_globe_and_map_widget_ptr->move(style_list->spacing()+4, style_list->spacing()+3); 
+#else
+	d_globe_and_map_widget_ptr->move(1- ICON_SIZE, 1- ICON_SIZE);
+#endif
 
 	// Set up the list of feature collections.
 	populate_feature_collections();
