@@ -256,7 +256,9 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 
 #if defined(Q_OS_MAC)
 	if(QT_VERSION >= 0x040600)
-		d_globe_and_map_widget_ptr->move(style_list->spacing()+4, style_list->spacing()+3); 
+		d_globe_and_map_widget_ptr->move(
+				colour_schemes_list->spacing()+4, 
+				colour_schemes_list->spacing()+3); 
 #else
 	d_globe_and_map_widget_ptr->move(1- ICON_SIZE, 1- ICON_SIZE);
 #endif
