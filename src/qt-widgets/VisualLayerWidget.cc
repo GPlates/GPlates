@@ -374,6 +374,15 @@ GPlatesQtWidgets::VisualLayerWidget::set_data(
 
 		d_enable_layer_link->set_link_text(is_active ? tr("Disable layer") : tr("Enable layer"));
 
+		// Make sure the advanced options are expanded if the layer is disabled.
+		// Because this is the only way the user can re-enable the layer.
+		// Can happen if disable layer, quit GPlates, open GPlates, restore session - in which case
+		// the default is an un-expanded advanced options.
+		if (!is_active)
+		{
+			locked_visual_layer->set_expanded(GPlatesPresentation::VisualLayer::ADVANCED_OPTIONS);
+		}
+
 		// Set the expand/collapse icons.
 		bool expanded = locked_visual_layer->is_expanded(GPlatesPresentation::VisualLayer::ALL);
 		bool input_channels_expanded = locked_visual_layer->is_expanded(GPlatesPresentation::VisualLayer::INPUT_CHANNELS);
