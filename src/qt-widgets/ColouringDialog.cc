@@ -217,11 +217,6 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 	d_preview_colour_scheme(
 			new PreviewColourScheme(
 				d_view_state_colour_scheme_delegator)),
-	d_globe_and_map_widget_ptr(
-			new GlobeAndMapWidget(
-				d_existing_globe_and_map_widget_ptr,
-				d_preview_colour_scheme,
-				this)),
 	d_feature_store_root(
 			view_state.get_application_state().get_model_interface()->root()),
 	d_show_thumbnails(true),
@@ -245,6 +240,10 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 {
 	setupUi(this);
 	reposition();
+	d_globe_and_map_widget_ptr = new GlobeAndMapWidget(
+                               d_existing_globe_and_map_widget_ptr,
+                                d_preview_colour_scheme,
+                                colour_schemes_list);
 
 	// Create the blank icon.
 	QPixmap blank_pixmap(ICON_SIZE, ICON_SIZE);
