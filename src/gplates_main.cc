@@ -50,6 +50,7 @@
 
 #include "presentation/Application.h"
 
+#include "qt-widgets/PythonInitFailedDialog.h"
 #include "qt-widgets/ViewportWindow.h"
 
 #include "utils/Profile.h"
@@ -279,6 +280,42 @@ int internal_main(int argc, char* argv[])
 	CommandLineOptions command_line_options = process_command_line_options(
 			qapplication.argc(), qapplication.argv());
 
+	
+	if(GPlatesUtils::ComponentManager::instance().is_enabled(
+			GPlatesUtils::ComponentManager::Component::python()))
+	{
+		GPlatesGui::PythonManager* mgr = GPlatesGui::PythonManager::instance();
+
+#ifndef GPLATES_NO_PYTHON
+		try
+		{
+			mgr->initialize();
+		}
+		catch(const GPlatesGui::PythonInitFailed& ex)
+		{
+			std::stringstream ss;
+			ex.write(ss);
+			qWarning() << ss.str().c_str();
+			
+			//try our best to find python installation.
+			mgr->find_python();
+			mgr->set_python_home();
+
+			if(mgr->show_init_fail_dlg())
+			{
+				boost::scoped_ptr<GPlatesQtWidgets::PythonInitFailedDialog> python_fail_dlg(
+					new GPlatesQtWidgets::PythonInitFailedDialog);
+
+				python_fail_dlg->exec();
+				mgr->set_show_init_fail_dlg(python_fail_dlg->show_again());
+			}
+
+			GPlatesUtils::ComponentManager::instance().disable(
+				GPlatesUtils::ComponentManager::Component::python());
+		}
+#endif
+	}
+
 	GPlatesPresentation::Application *app = GPlatesPresentation::Application::instance();
 	GPlatesQtWidgets::ViewportWindow &main_window_widget = app->get_viewport_window();
 	
@@ -302,24 +339,7 @@ int internal_main(int argc, char* argv[])
     	
 	main_window_widget.show();
 	
-	if(ComponentManager::instance().is_enabled(ComponentManager::Component::python()))
-	{
-#ifdef GPLATES_NO_PYTHON
-		app->get_view_state().get_python_manager().initialize(*app);
-#else
-		try{
-			app->get_view_state().get_python_manager().initialize();
-		}
-		catch(const PythonInitFailed& ex)
-		{
-			std::stringstream ss;
-			ex.write(ss);
-			qWarning() << ss.str().c_str();
-			main_window_widget.hide_python_menu();
-		}
-#endif
-	}
-	else
+	if(!ComponentManager::instance().is_enabled(ComponentManager::Component::python()))
 	{
 		main_window_widget.hide_python_menu();
 	}

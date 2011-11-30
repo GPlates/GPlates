@@ -116,6 +116,28 @@ class FeatureType:
 		
 	def set_config(self, config):
 		self.cfg = config
+		
+		
+class ColorByProperty:
+	def __init__(self):
+		pass
+			
+	def get_style(self, feature, style):
+		p_name = self.cfg['v_name_1']
+		prop = feature.get_property(p_name)
+		#print prop
+		style.colour = self.cfg['p1'].get_color(pygplates.PaletteKey(prop))
+		
+	def get_config(self):
+		self.cfg_dict = {}
+		self.cfg_dict['v_name_1/type'] = 'String'
+		self.cfg_dict['p1/type'] = 'Palette'
+		#self.cfg_dict['v_name_2/type'] = 'String'
+		#self.cfg_dict['p2/type'] = 'Palette'
+		return self.cfg_dict
+		
+	def set_config(self, config):
+		self.cfg = config
 
 		
 def register():
@@ -123,7 +145,8 @@ def register():
 	pygplates.Application().register_draw_style(SingleColour())
 	pygplates.Application().register_draw_style(FeatureAge())
 	pygplates.Application().register_draw_style(FeatureType())
+	#pygplates.Application().register_draw_style(ColorByProperty())
 	pygplates.Application().register_draw_style(Random1())
-	pygplates.Application().register_draw_style(Random2())
+	#pygplates.Application().register_draw_style(Random2())
 	#pygplates.Application().register_draw_style(Blue())
 

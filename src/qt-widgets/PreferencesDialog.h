@@ -27,6 +27,7 @@
 #define GPLATES_QTWIDGETS_PREFERENCESDIALOG_H
 
 #include <QDialog>
+#include <QTableView>
 
 #include "GPlatesDialog.h"
 
@@ -40,6 +41,26 @@ namespace GPlatesAppLogic
 
 namespace GPlatesQtWidgets
 {
+	class ConfigTableView :
+			public QTableView
+	{
+	public:
+
+		explicit
+		ConfigTableView(
+				QWidget *parent_ = NULL) :
+			QTableView(parent_)
+		{ }
+
+		void
+		commit_current_editor_data()
+		{
+			 QModelIndex index = currentIndex();
+			 QWidget * widget = indexWidget(index);
+			 commitData(widget);
+		}
+	};
+
 	/**
 	 * This dialog provides users with controls for various preference settings available
 	 * in GPlates via GPlatesAppLogic::UserPreferences.
@@ -66,8 +87,20 @@ namespace GPlatesQtWidgets
 		virtual
 		~PreferencesDialog()
 		{  }
+
+	
+		void 
+		reject()
+		{
+			d_cfg_table->commit_current_editor_data();
+			GPlatesDialog::reject();
+		}
+
+	protected:
 		
+		ConfigTableView * d_cfg_table;
 	};
+
 }
 
 #endif  // GPLATES_QTWIDGETS_PREFERENCESDIALOG_H

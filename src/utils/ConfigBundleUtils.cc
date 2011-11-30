@@ -31,15 +31,17 @@
 #include "ConfigInterface.h"
 #include "ConfigModel.h"
 
+#include "qt-widgets/PreferencesDialog.h"
 
-QTableView *
+
+GPlatesQtWidgets::ConfigTableView *
 GPlatesUtils::link_config_interface_to_table(
 		ConfigInterface &config,
 		QWidget *parent)
 {
 	// We allocate the memory for this new table widget, and give it the parent supplied
 	// by the caller so that Qt will handle cleanup of said memory.
-	QTableView *tableview_ptr = new QTableView(parent);
+	GPlatesQtWidgets::ConfigTableView *tableview_ptr = new GPlatesQtWidgets::ConfigTableView(parent);
 		
 	// We also create a ConfigModel to act as the intermediary between ConfigBundle and
 	// the table, and parent that to the table view widget so that it also gets cleaned

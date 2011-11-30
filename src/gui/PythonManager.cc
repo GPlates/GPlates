@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <QDir>
+#include <QProcess>
 #include <iostream>
 
 #include "PythonManager.h"
@@ -32,10 +33,12 @@
 #include "api/PythonRunner.h"
 #include "api/PythonUtils.h"
 #include "api/Sleeper.h"
+
 #include "app-logic/ApplicationState.h"
 #include "app-logic/UserPreferences.h"
 
 #include "presentation/Application.h"
+
 #include "qt-widgets/QtWidgetUtils.h"
 #include "qt-widgets/PythonConsoleDialog.h"
 
@@ -43,6 +46,27 @@
 
 #if !defined(GPLATES_NO_PYTHON)
 extern "C" void initpygplates();
+
+
+GPlatesGui::PythonManager::PythonManager() : 
+	d_python_main_thread_runner(NULL),
+	d_python_execution_thread(NULL),
+	d_sleeper(NULL),
+	d_inited(false), 
+	d_python_console_dialog_ptr(NULL),
+	d_stopped_event_blackout_for_python_runner(false)
+{
+	//this UserPreferences must be local.
+	//don't use global UserPreferences because it hasn't been constructed yet.
+	GPlatesAppLogic::UserPreferences user_pref(NULL);
+	d_show_python_init_fail_dlg = user_pref.get_value("python/show_python_init_fail_dialog").toBool();
+	d_python_home = user_pref.get_value("python/python_home").toString();
+
+	QRegExp rx("^\\d.\\d"); // Match d.d
+	rx.indexIn(QString(Py_GetVersion()));
+	d_python_version = rx.cap();
+	qDebug() << "Python Version: " << d_python_version;
+}
 
 void
 GPlatesGui::PythonManager::initialize() 
@@ -52,6 +76,10 @@ GPlatesGui::PythonManager::initialize()
 		qWarning() << "The embedded python interpret has been initialized already.";
 		return;
 	}
+
+	//the python home in gplates preference has priority.
+	set_python_home();
+
 	using namespace boost::python;
 	init_python_interpreter();
 	// Hold references to the main module and its namespace for easy access from
@@ -62,7 +90,8 @@ GPlatesGui::PythonManager::initialize()
 		d_python_main_thread_runner = new GPlatesApi::PythonRunner(d_python_main_namespace,this);
 		d_python_execution_thread = new GPlatesApi::PythonExecutionThread(d_python_main_namespace, this);
 		d_python_execution_thread->start(QThread::IdlePriority);
-	
+		check_python_capability();
+
 		d_inited = true;
 		register_utils_scripts();
 		init_python_console();
@@ -74,8 +103,88 @@ GPlatesGui::PythonManager::initialize()
 	}
 }
 
+
+void
+GPlatesGui::PythonManager::check_python_capability()
+{
+	QString test_code = QString(
+			"import sys; \
+			import code; \
+			import pygplates; \
+			print \'testing python import...\'; ");
+
+	bool result = true;
+	GPlatesApi::PythonInterpreterLocker l;
+	result &= (0 == PyRun_SimpleString(test_code.toStdString().c_str()));
+	
+	if(!result)
+	{
+		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
+	}
+
+}
+
+
+void
+GPlatesGui::PythonManager::set_python_home()
+{
+	if(validate_python_home())
+	{
+		if( QString(getenv("PYTHONHOME")) != d_python_home)
+		{
+#ifndef __WINDOWS__
+			QString tmp = QString("PYTHONHOME=") + d_python_home;
+			//qDebug() << "set python home: " << tmp;
+			char* v = tmp.toAscii().data();
+			putenv(v);
+#else
+			_putenv_s("PYTHONHOME", d_python_home.toAscii().data());
+#endif
+			QProcess::startDetached(QCoreApplication::applicationFilePath(), QStringList());
+			exit(0);
+		}
+		//std::cout << getenv("PYTHONHOME") << std::endl;
+	}
+
+	return;
+}
+
+void
+GPlatesGui::PythonManager::find_python()
+{
+#ifdef __APPLE__
+	const char* python_home_dirs[] = 
+	{
+		"/opt/local/Library/Frameworks/Python.framework/Versions/",
+		"/System/Library/Frameworks/Python.framework/Versions/",
+		"/Library/Frameworks/Python.framework/Versions/"
+	};
+
+	for(int i=0; i< sizeof(python_home_dirs)/sizeof(char*); i++)
+	{
+		QString h = QString(python_home_dirs[i]) + "/" + d_python_version;
+		if(validate_python_home(h))
+		{
+			d_python_home = h;
+			break;
+		}
+		else
+		{
+			continue;
+		}
+	}
+#endif
+}
+
+
 GPlatesGui::PythonManager::~PythonManager()
 {
+	//don't use global UserPreferences because it could have been destroyed already.
+	GPlatesAppLogic::UserPreferences user_pref(NULL);
+	user_pref.set_value(
+			"python/show_python_init_fail_dialog",
+			d_show_python_init_fail_dlg);
+
 	// Stop the Python execution thread.
 	static const int WAIT_TIME = 1000 /* milliseconds */;
 	if(d_python_execution_thread)
@@ -246,18 +355,19 @@ GPlatesGui::PythonManager::register_utils_scripts()
 
 
 void
-GPlatesGui::PythonManager::register_script(const QString& name)
+GPlatesGui::PythonManager::register_script(
+		const QString& name)
 {
-	using namespace boost::python;
+	namespace bp = boost::python ;;
 	try
 	{
 		GPlatesApi::PythonInterpreterLocker interpreter_locker;
 
-		object module = import(name.toStdString().c_str());
+		bp::object module = bp::import(name.toStdString().c_str());
 		module.attr("register")(); //TODO: define static const for this. 
 		qDebug() << "The script " << name << " has been registered.";
 	}
-	catch (const error_already_set &)
+	catch (const bp::error_already_set &)
 	{
 		qWarning() << GPlatesApi::PythonUtils::get_error_message();
 		PySys_WriteStderr("The script is not registered.\n");

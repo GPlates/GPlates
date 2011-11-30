@@ -361,6 +361,29 @@ GPlatesFileIO::CptParser::process_line(const QString& line)
 	}
 
 	QStringList tokens = line.split(' ');
+	
+	
+	if(line.startsWith(QLatin1Char('\"')) || line.startsWith(QLatin1Char('\'')) )
+	{
+		QChar quote = line[0]; 
+		QString tmp;
+		for(;;)
+		{
+			if(tokens.length() == 0)
+				break;
+
+			tmp.append(" " + tokens.takeFirst());
+	
+			if(tmp.endsWith(quote))
+				break;
+		}
+		tmp.remove(quote);
+		tmp.simplified();
+		tokens.push_front(tmp);
+		qDebug() << "tmp: " << tmp;
+		qDebug() << "len: " << tokens.length();
+	}
+
 	if(tokens.length() < 2) // no enough tokens
 	{
 		qWarning() << "Invalid line in cpt file: [" << line << "]";
@@ -372,6 +395,7 @@ GPlatesFileIO::CptParser::process_line(const QString& line)
 		return process_categorical_line(tokens);
 	}
 
+	
 	QString first = tokens.at(0);
 	if(first == "B")
 		process_bfn(tokens,d_back);

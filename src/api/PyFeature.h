@@ -28,6 +28,9 @@
 #include "global/python.h"
 #include "model/FeatureHandle.h"
 #include "utils/FeatureUtils.h"
+#include "data-mining/DataMiningUtils.h"
+#include "data-mining/OpaqueDataToDouble.h"
+#include "data-mining/OpaqueDataToQString.h"
 
 #if !defined(GPLATES_NO_PYTHON)
 
@@ -44,6 +47,7 @@ namespace GPlatesApi
 			d_handle(w_ref)
 		{ }
 
+		
 		bp::object
 		id()
 		{
@@ -54,6 +58,7 @@ namespace GPlatesApi
 			return bp::str(buf.data());
 		}
 
+		
 		bp::tuple
 		valid_time()
 		{
@@ -65,11 +70,13 @@ namespace GPlatesApi
 			return bp::make_tuple(start.dval(),end.dval());
 		}
 
+		
 		operator GPlatesModel::FeatureHandle::weak_ref()
 		{
 			return d_handle;
 		}
 
+		
 		bp::object
 		type()
 		{
@@ -80,6 +87,7 @@ namespace GPlatesApi
 			return bp::str(buf.data());
 		}
 
+		
 		unsigned long
 		plate_id()
 		{
@@ -90,6 +98,39 @@ namespace GPlatesApi
 				GPlatesUtils::get_int_plate_id(d_handle.handle_ptr());
 			return pid ? *pid : 0;
 		}
+
+		
+		bp::object
+		get_property(bp::object name_)
+		{
+			using namespace GPlatesDataMining;
+			QString name = QString::fromUtf8(bp::extract<const char*>(name_));
+			OpaqueData data = DataMiningUtils::get_property_value_by_name(d_handle, name);
+			
+			if(is_empty_opaque(data))
+			{
+				data = DataMiningUtils::get_shape_file_value_by_name(d_handle, name);
+
+				if(is_empty_opaque(data))
+					return bp::object();
+			}
+			
+			if(boost::optional<double> int_tmp = 
+				boost::apply_visitor(ConvertOpaqueDataToDouble(), data))
+			{
+				return bp::object(*int_tmp);
+			}
+
+			if(boost::optional<QString> str_tmp = 
+				boost::apply_visitor(ConvertOpaqueDataToString(), data))
+			{
+				const QByteArray buf = str_tmp->toUtf8();
+				return bp::str(buf.data());
+			}
+			
+			return bp::object();
+		}
+
 	private:
 		GPlatesModel::FeatureHandle::weak_ref d_handle;
 	};

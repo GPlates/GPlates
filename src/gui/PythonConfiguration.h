@@ -263,6 +263,8 @@ namespace GPlatesGui
 		set_value(const QVariant& new_value)
 		{
 			d_value = new_value;
+			QString new_str = d_value.toString().trimmed();
+			d_py_obj = bp::object(new_str.toStdString());
 		}
 
 		PythonCfgString*

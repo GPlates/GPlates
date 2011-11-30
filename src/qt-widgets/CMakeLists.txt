@@ -281,6 +281,9 @@ set(srcs
     PythonExecutionMonitorWidget.cc
     PythonExecutionMonitorWidget.h
     PythonExecutionMonitorWidgetUi.ui
+    PythonInitFailedDialog.cc
+    PythonInitFailedDialog.h
+    PythonInitFailedDialogUi.ui
     PythonReadlineDialog.cc
     PythonReadlineDialog.h
     PythonReadlineDialogUi.ui

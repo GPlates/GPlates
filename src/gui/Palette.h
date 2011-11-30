@@ -70,7 +70,7 @@ namespace GPlatesGui
 					if(l_double && r_double)
 						return *l_double < *r_double;
 
-					return  Key(lhs).to_qstring() < Key(rhs).to_qstring();
+					return  Key(lhs).to_qstring().simplified() < Key(rhs).to_qstring().simplified();
 				}
 
 				template <typename T>
@@ -203,11 +203,11 @@ namespace GPlatesGui
 			{ }
 
 			Key(const char* k) :
-				d_data(QString::fromUtf8(k))
+				d_data(QString::fromUtf8(k).simplified())
 			{ }
 
 			Key(const QString& k) :
-				d_data(k)
+				d_data(k.simplified())
 			{ }
 
 			boost::optional<long>

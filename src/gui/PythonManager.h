@@ -172,6 +172,56 @@ namespace GPlatesGui
 			return d_python_execution_thread;
 		}
 
+		
+		bool
+		show_init_fail_dlg() const
+		{
+			return d_show_python_init_fail_dlg;
+		}
+
+		
+		const QString&
+		python_version() const
+		{
+			return d_python_version;
+		}
+
+
+		const QString&
+		python_home() const
+		{
+			return d_python_home;
+		}
+
+
+		/*
+		* Validate the python home setting in preference,
+		* and try the best to find a valid python installation.
+		* If a good python has been found, set the PYTHONHOME env variable.
+		* On Windows, GPlates needs to restart to make env variable effective.
+		*/
+		void
+		set_python_home();
+
+
+		void
+		find_python();
+		
+
+		void
+		set_show_init_fail_dlg(bool b) 
+		{
+			d_show_python_init_fail_dlg = b;
+		}
+
+
+		void
+		set_python_home(const QString& str) 
+		{
+			d_python_home = str;
+		}
+
+
 		void
 		python_runner_started();
 
@@ -188,14 +238,36 @@ namespace GPlatesGui
 				QString exit_error_message);
 
 	protected:
-		PythonManager() : 
-			d_python_main_thread_runner(NULL),
-			d_python_execution_thread(NULL),
-			d_sleeper(NULL),
-			d_inited(false), 
-			d_python_console_dialog_ptr(NULL),
-			d_stopped_event_blackout_for_python_runner(false)
-		{ }
+		PythonManager() ;
+
+
+		void
+		check_python_capability();
+		
+
+		bool
+		validate_python_home()
+		{
+			return validate_python_home(d_python_home);
+		}
+
+		bool
+		validate_python_home(
+				const QString& new_home)
+		{
+#ifndef __WINDOWS__ 
+			QString path_of_code_py = 
+				new_home + "/lib/python" +
+				d_python_version + "/os.py"; //use this file as hint to find python home.
+#else
+			QString path_of_code_py = 
+				new_home + "/Lib/os.py"; 
+#endif
+			qDebug() << path_of_code_py;
+			QFileInfo file_hint(path_of_code_py);
+			return file_hint.isFile();
+		}
+
 
 		class PythonExecGuard
 		{
@@ -297,7 +369,12 @@ namespace GPlatesGui
 		 * Lock down the user interface during Python execution.
 		*/
 		GPlatesGui::EventBlackout d_event_blackout;
-			
+
+		bool d_show_python_init_fail_dlg;
+
+		QString d_python_home;
+		
+		QString d_python_version;
 	};
 }
 #else

@@ -32,8 +32,15 @@
 #include <QTableView>
 
 
+namespace GPlatesQtWidgets
+{
+	class ConfigTableView;
+}
+
+
 namespace GPlatesUtils
 {
+
 	class ConfigInterface;
 
 	/**
@@ -45,7 +52,7 @@ namespace GPlatesUtils
 	 *                 This is to ensure memory will be cleaned up appropriately; it is up to
 	 *                 you to insert the widget into a layout somewhere.
 	 */
-	QTableView *
+	GPlatesQtWidgets::ConfigTableView *
 	link_config_interface_to_table(
 			ConfigInterface &config,
 			QWidget *parent);

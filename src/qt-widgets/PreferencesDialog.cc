@@ -51,12 +51,12 @@ GPlatesQtWidgets::PreferencesDialog::PreferencesDialog(
 			stack_settings_ui, SLOT(setCurrentIndex(int)));
 	
 	// Create and install the Table Of Every Preference Imaginable.
-	QTableView *advanced_settings_table_ptr = GPlatesUtils::link_config_interface_to_table(
+	d_cfg_table= GPlatesUtils::link_config_interface_to_table(
 			app_state.get_user_preferences(), this);
-	QtWidgetUtils::add_widget_to_placeholder(advanced_settings_table_ptr, advanced_settings_placeholder);
+	QtWidgetUtils::add_widget_to_placeholder(d_cfg_table, advanced_settings_placeholder);
 	
 	GPlatesGui::ConfigValueDelegate *delegate = new GPlatesGui::ConfigValueDelegate(this);
-	advanced_settings_table_ptr->setItemDelegate(delegate);
+	d_cfg_table->setItemDelegate(delegate);
 }
 
 

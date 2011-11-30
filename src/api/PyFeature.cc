@@ -32,6 +32,7 @@ export_feature()
 	using namespace boost::python;
 	class_<GPlatesApi::Feature>("Feature", no_init )
 		.def("plate_id", &GPlatesApi::Feature::plate_id)
+		.def("get_property", &GPlatesApi::Feature::get_property)
  		.add_property("id", &GPlatesApi::Feature::id)
  		.add_property("type", &GPlatesApi::Feature::type)
  		.add_property("valid_time",&GPlatesApi::Feature::valid_time)

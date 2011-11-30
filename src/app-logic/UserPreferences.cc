@@ -101,7 +101,9 @@ namespace
 		//
 		// Get the platform-specific "Documents" dir. 
 		//   Linux and OSX: ~/Documents/
-		defaults.setValue("paths/default_export_dir", QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation));
+		defaults.setValue(
+				"paths/default_export_dir", 
+				QDir(QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation)).absolutePath());
 
 
 		////////////////////////////////
