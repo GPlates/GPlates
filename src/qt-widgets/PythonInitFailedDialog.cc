@@ -44,7 +44,7 @@ namespace
 		$INSTALL_INSTRUCTION \
 		</body> </html>"
 		;
-
+#ifdef __WINDOWS__
 	const char* python26_install_instructions_win =
 		"<p><a href=\"http://www.python.org/download/releases/2.6.6/\">Click here to download Python installer for Windows</a></p>" \
 		;
@@ -52,15 +52,18 @@ namespace
 	const char* python27_install_instructions_win =
 		"<p><a href=\"http://www.python.org/download/releases/2.7.2/\">Click here to download Python installer for Windows</a></p>" \
 		;
+#endif
 
+#ifdef __APPLE__
 	const char* python26_install_instructions_mac =
 		"<h4>Type in \"sudo port install python26\" in terminal to install python.</h4>" \
 		;
-
 	const char* python27_install_instructions_mac =
 		"<h4>Type in \"sudo port install python27\" in terminal to install python.</h4>" \
 		;
+#endif
 
+#ifdef __LINUX__
 	const char* python26_install_instructions_linux =
 		"<h4>Type in \"sudo apt-get install python2.6\" in terminal to install python.</h4>" \
 		;
@@ -68,6 +71,7 @@ namespace
 	const char* python27_install_instructions_linux =
 		"<h4>Type in \"sudo apt-get install python2.7\" in terminal to install python.</h4>" \
 		;
+#endif
 }
 
 
