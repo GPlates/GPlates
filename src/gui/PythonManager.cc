@@ -110,8 +110,11 @@ GPlatesGui::PythonManager::check_python_capability()
 	QString test_code = QString(
 			"import sys; \
 			import code; \
+			import math; \
 			import pygplates; \
-			print \'testing python import...\'; ");
+			print \'testing python import...\'; \
+			print pygplates.Application().current_time(); \
+			print math.log(12);");
 
 	bool result = true;
 	GPlatesApi::PythonInterpreterLocker l;
