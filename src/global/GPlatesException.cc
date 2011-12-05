@@ -53,6 +53,13 @@ GPlatesGlobal::Exception::write(
 
 	// Get derived class to output a message.
 	write_message(os);
+
+	// Extract the call stack trace to the location where the exception was thrown.
+	std::string call_stack_trace_std;
+	get_call_stack_trace_string(call_stack_trace_std);
+
+	// Write out the call-stack - it's always useful to know where an exception was thrown.
+	os << std::endl << call_stack_trace_std;
 }
 
 
