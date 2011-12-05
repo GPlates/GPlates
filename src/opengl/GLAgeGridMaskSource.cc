@@ -155,7 +155,8 @@ GPlatesOpenGL::GLAgeGridMaskSource::GLAgeGridMaskSource(
 	// Factor to convert floating-point age range to 16-bit integer...
 	d_raster_inv_age_range_factor(0xffff / (max_age_in_raster - min_age_in_raster)),
 	d_age_high_byte_tile_working_space(new GPlatesGui::rgba8_t[tile_texel_dimension * tile_texel_dimension]),
-	d_age_low_byte_tile_working_space(new GPlatesGui::rgba8_t[tile_texel_dimension * tile_texel_dimension])
+	d_age_low_byte_tile_working_space(new GPlatesGui::rgba8_t[tile_texel_dimension * tile_texel_dimension]),
+	d_logged_tile_load_failure_warning(false)
 {
 	// Set our current integer reconstruction time.
 	convert_age_to_16_bit_integer(
@@ -266,8 +267,9 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_tile(
 	if (should_reload_high_and_low_byte_age_textures(
 			renderer, tile, high_byte_age_texture, low_byte_age_texture))
 	{
-		PROFILE_BEGIN(proxy_raster, "get_region_from_level");
+		PROFILE_BEGIN(profile_get_region_from_level, "GLAgeGridMaskSource: get_region_from_level");
 		// Get the region of the raster covered by this tile at the level-of-detail of this tile.
+		// These are the age grid *age* values.
 		boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> raster_region_opt =
 				d_proxied_raster_resolver->get_region_from_level(
 						level,
@@ -275,7 +277,19 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_tile(
 						texel_y_offset,
 						texel_width,
 						texel_height);
-		PROFILE_END(proxy_raster);
+		PROFILE_END(profile_get_region_from_level);
+
+		PROFILE_BEGIN(profile_get_coverage_from_level, "GLAgeGridMaskSource: get_coverage_from_level");
+		// Get the region of the raster covered by this tile at the level-of-detail of this tile.
+		// These are the age grid *coverage* values.
+		boost::optional<GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_type> raster_coverage_opt =
+				d_proxied_raster_resolver->get_coverage_from_level(
+						level,
+						texel_x_offset,
+						texel_y_offset,
+						texel_width,
+						texel_height);
+		PROFILE_END(profile_get_coverage_from_level);
 
 		// If there was an error accessing raster data then black out the texture to
 		// indicate no age grid mask - the age grid coverage will come from the same raster
@@ -283,20 +297,25 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_tile(
 		// is the same as if the age grid had not been connected.
 		// TODO: Connect age grid mask source and age grid coverage source to the same
 		// proxied raster resolver.
-		if (!raster_region_opt)
+		if (!raster_region_opt || !raster_coverage_opt)
 		{
-			qWarning() << "Unable to load age grid data into raster tile:";
+			if (!d_logged_tile_load_failure_warning)
+			{
+				qWarning() << "Unable to load age grid data into raster tile:";
 
-			qWarning() << "  level, texel_x_offset, texel_y_offset, texel_width, texel_height: "
-					<< level << ", "
-					<< texel_x_offset << ", "
-					<< texel_y_offset << ", "
-					<< texel_width << ", "
-					<< texel_height << ", ";
+				qWarning() << "  level, texel_x_offset, texel_y_offset, texel_width, texel_height: "
+						<< level << ", "
+						<< texel_x_offset << ", "
+						<< texel_y_offset << ", "
+						<< texel_width << ", "
+						<< texel_height << ", ";
+
+				d_logged_tile_load_failure_warning = true;
+			}
 
 			// Create a black raster to load into the texture.
 			const GPlatesGui::rgba8_t black(0, 0, 0, 0);
-			GLTextureUtils::load_colour_into_texture_2D(renderer, target_texture, black, texel_width, texel_height);
+			GLTextureUtils::load_colour_into_rgba8_texture_2D(renderer, target_texture, black, texel_width, texel_height);
 
 			return cache_handle_type();
 		}
@@ -308,6 +327,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_tile(
 		if (!load_age_grid_into_high_and_low_byte_tile(
 				renderer,
 				raster_region_opt.get(),
+				raster_coverage_opt.get(),
 				high_byte_age_texture,
 				low_byte_age_texture,
 				texel_width,
@@ -315,7 +335,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_tile(
 		{
 			// Create a black raster to load into the texture.
 			const GPlatesGui::rgba8_t black(0, 0, 0, 0);
-			GLTextureUtils::load_colour_into_texture_2D(renderer, target_texture, black, texel_width, texel_height);
+			GLTextureUtils::load_colour_into_rgba8_texture_2D(renderer, target_texture, black, texel_width, texel_height);
 
 			return cache_handle_type();
 		}
@@ -413,14 +433,24 @@ GPlatesOpenGL::GLAgeGridMaskSource::should_reload_high_and_low_byte_age_textures
 void
 GPlatesOpenGL::GLAgeGridMaskSource::create_tile_texture(
 		GLRenderer &renderer,
-		const GLTexture::shared_ptr_type &texture)
+		const GLTexture::shared_ptr_type &texture) const
 {
 	// No mipmaps needed or anisotropic filtering required.
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	// Clamp texture coordinates to centre of edge texels -
+	// it's easier for hardware to implement - and doesn't affect our calculations.
+	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	{
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
+	else
+	{
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	}
 
 	// Create the texture in OpenGL - this actually creates the texture without any data.
 	// We'll be getting our raster source to load image data into the texture.
@@ -437,7 +467,8 @@ template <typename RealType>
 void
 GPlatesOpenGL::GLAgeGridMaskSource::load_age_grid_into_high_and_low_byte_tile(
 		GLRenderer &renderer,
-		const RealType *age_grid_tile,
+		const RealType *age_grid_age_tile,
+		const float *age_grid_coverage_tile,
 		GLTexture::shared_ptr_type &high_byte_age_texture,
 		GLTexture::shared_ptr_type &low_byte_age_texture,
 		unsigned int texel_width,
@@ -449,22 +480,27 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_age_grid_into_high_and_low_byte_tile(
 	const unsigned int num_texels = texel_width * texel_height;
 	for (unsigned int texel = 0; texel < num_texels; ++texel)
 	{
-		
+		// If we've sampled outside the coverage then we have no valid age grid value so
+		// set the age to the maximum age since it represents continental crust (inside the coverage
+		// area is oceanic crust) and continental crust is much older than oceanic crust.
+		const RealType age_grid_texel =
+				(age_grid_coverage_tile[texel] > 0) ? age_grid_age_tile[texel] : d_raster_max_age;
+
 		// Convert floating-point age grid value to integer.
 		convert_age_to_16_bit_integer(
-				age_grid_tile[texel],
+				age_grid_texel,
 				high_byte_tile_working_space[texel].alpha,
 				low_byte_tile_working_space[texel].alpha);
 	}
 
 	// Load the data into the high and low byte textures.
-	GLTextureUtils::load_rgba8_image_into_texture_2D(
+	GLTextureUtils::load_image_into_rgba8_texture_2D(
 			renderer,
 			high_byte_age_texture,
 			high_byte_tile_working_space,
 			texel_width,
 			texel_height);
-	GLTextureUtils::load_rgba8_image_into_texture_2D(
+	GLTextureUtils::load_image_into_rgba8_texture_2D(
 			renderer,
 			low_byte_age_texture,
 			low_byte_tile_working_space,
@@ -476,7 +512,8 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_age_grid_into_high_and_low_byte_tile(
 bool
 GPlatesOpenGL::GLAgeGridMaskSource::load_age_grid_into_high_and_low_byte_tile(
 		GLRenderer &renderer,
-		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &age_grid_tile,
+		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &age_grid_age_tile,
+		const GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_type &age_grid_coverage_tile,
 		GLTexture::shared_ptr_type &high_byte_age_texture,
 		GLTexture::shared_ptr_type &low_byte_age_texture,
 		unsigned int texel_width,
@@ -484,14 +521,15 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_age_grid_into_high_and_low_byte_tile(
 {
 	PROFILE_FUNC();
 
-	boost::optional<GPlatesPropertyValues::FloatRawRaster::non_null_ptr_type> float_age_grid_tile =
+	boost::optional<GPlatesPropertyValues::FloatRawRaster::non_null_ptr_type> float_age_grid_age_tile =
 			GPlatesPropertyValues::RawRasterUtils::try_raster_cast<
-					GPlatesPropertyValues::FloatRawRaster>(*age_grid_tile);
-	if (float_age_grid_tile)
+					GPlatesPropertyValues::FloatRawRaster>(*age_grid_age_tile);
+	if (float_age_grid_age_tile)
 	{
 		load_age_grid_into_high_and_low_byte_tile(
 				renderer,
-				float_age_grid_tile.get()->data(),
+				float_age_grid_age_tile.get()->data(),
+				age_grid_coverage_tile.get()->data(),
 				high_byte_age_texture,
 				low_byte_age_texture,
 				texel_width,
@@ -500,14 +538,15 @@ GPlatesOpenGL::GLAgeGridMaskSource::load_age_grid_into_high_and_low_byte_tile(
 		return true;
 	}
 
-	boost::optional<GPlatesPropertyValues::DoubleRawRaster::non_null_ptr_type> double_age_grid_tile =
+	boost::optional<GPlatesPropertyValues::DoubleRawRaster::non_null_ptr_type> double_age_grid_age_tile =
 			GPlatesPropertyValues::RawRasterUtils::try_raster_cast<
-					GPlatesPropertyValues::DoubleRawRaster>(*age_grid_tile);
-	if (double_age_grid_tile)
+					GPlatesPropertyValues::DoubleRawRaster>(*age_grid_age_tile);
+	if (double_age_grid_age_tile)
 	{
 		load_age_grid_into_high_and_low_byte_tile(
 				renderer,
-				double_age_grid_tile.get()->data(),
+				double_age_grid_age_tile.get()->data(),
+				age_grid_coverage_tile.get()->data(),
 				high_byte_age_texture,
 				low_byte_age_texture,
 				texel_width,
@@ -549,7 +588,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_mask(
 
 
 	// Begin rendering to a 2D render target texture.
-	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(renderer, target_texture);
+	GLRenderer::RenderTarget2DScope render_target_scope(renderer, target_texture);
 
 	// Viewport that matches the tile texture size even though some tiles (around boundary of age
 	// grid raster) will not use the full tile.
@@ -595,7 +634,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_intermediate_mask(
 	PROFILE_FUNC();
 
 	// Begin rendering to a 2D render target texture.
-	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(renderer, intermediate_texture);
+	GLRenderer::RenderTarget2DScope render_target_scope(renderer, intermediate_texture);
 
 	renderer.gl_viewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension);
 

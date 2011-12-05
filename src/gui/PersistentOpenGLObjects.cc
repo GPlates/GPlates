@@ -142,7 +142,7 @@ GPlatesGui::PersistentOpenGLObjects::render_raster(
 
 	// Need to force the raster to update if there's a time-dependent raster and we're
 	// reconstructing this raster below. Doing this causes 'GLMultiResolutionRaster' to
-	// check the proxied raster source and change it if necessary (without rebuilding itself).
+	// check the visual raster source and change it if necessary (without rebuilding itself).
 	//
 	// FIXME: Need to sort out the mess of dependencies.
 	raster_layer_usage->get_multi_resolution_raster(renderer);
@@ -176,7 +176,9 @@ GPlatesGui::PersistentOpenGLObjects::render_raster(
 			//
 			// We are rendering a *reconstructed* raster.
 			//
-			return static_polygon_reconstructed_raster.get()->render(renderer);
+			cache_handle_type cache_handle;
+			static_polygon_reconstructed_raster.get()->render(renderer, cache_handle);
+			return cache_handle;
 		}
 		// else drop through and render the *unreconstructed* raster...
 	}
@@ -190,7 +192,9 @@ GPlatesGui::PersistentOpenGLObjects::render_raster(
 	// Render the multi-resolution raster.
 	if (multi_resolution_raster)
 	{
-		return multi_resolution_raster.get()->render(renderer);
+		cache_handle_type cache_handle;
+		multi_resolution_raster.get()->render(renderer, cache_handle);
+		return cache_handle;
 	}
 
 	// No rendering took place.
@@ -239,13 +243,13 @@ GPlatesGui::PersistentOpenGLObjects::RasterLayerUsage::set_raster_colour_palette
 
 	d_raster_colour_palette = raster_colour_palette;
 
-	// If we have a proxied raster source then attempt to change the raster first
+	// If we have a visual raster source then attempt to change the raster first
 	// since it's cheaper than rebuilding the multi-resolution raster.
-	if (d_proxied_raster_source)
+	if (d_visual_raster_source)
 	{
 		if (d_raster_layer_proxy->get_proxied_raster())
 		{
-			if (d_proxied_raster_source.get()->change_raster(
+			if (d_visual_raster_source.get()->change_raster(
 					renderer,
 					d_raster_layer_proxy->get_proxied_raster().get(),
 					d_raster_colour_palette.get()))
@@ -261,7 +265,7 @@ GPlatesGui::PersistentOpenGLObjects::RasterLayerUsage::set_raster_colour_palette
 
 	// The colour palette has changed and we were unable to change the raster so
 	// invalidate everything.
-	d_proxied_raster_source = boost::none;
+	d_visual_raster_source = boost::none;
 	d_multi_resolution_raster = boost::none;
 	d_rebuild_subject_token.invalidate();
 
@@ -284,9 +288,9 @@ GPlatesGui::PersistentOpenGLObjects::RasterLayerUsage::set_raster_modulate_colou
 
 	d_raster_modulate_colour = raster_modulate_colour;
 
-	if (d_proxied_raster_source)
+	if (d_visual_raster_source)
 	{
-		d_proxied_raster_source.get()->change_modulate_colour(renderer, raster_modulate_colour);
+		d_visual_raster_source.get()->change_modulate_colour(renderer, raster_modulate_colour);
 	}
 }
 
@@ -297,7 +301,7 @@ GPlatesGui::PersistentOpenGLObjects::RasterLayerUsage::get_multi_resolution_rast
 {
 	if (!d_raster_layer_proxy->get_proxied_raster() || !d_raster_colour_palette)
 	{
-		d_proxied_raster_source = boost::none;
+		d_visual_raster_source = boost::none;
 
 		// There's no proxied raster or colour palette so nothing we can do.
 		return boost::none;
@@ -316,17 +320,17 @@ GPlatesGui::PersistentOpenGLObjects::RasterLayerUsage::get_multi_resolution_rast
 	if (!d_raster_layer_proxy->get_proxied_raster_subject_token().is_observer_up_to_date(
 			d_proxied_raster_observer_token))
 	{
-		// If we have a proxied raster source then attempt to change the raster first
+		// If we have a visual raster source then attempt to change the raster first
 		// since it's cheaper than rebuilding the multi-resolution raster.
-		if (d_proxied_raster_source)
+		if (d_visual_raster_source)
 		{
-			if (!d_proxied_raster_source.get()->change_raster(
+			if (!d_visual_raster_source.get()->change_raster(
 					renderer,
 					d_raster_layer_proxy->get_proxied_raster().get(),
 					d_raster_colour_palette.get()))
 			{
 				// Unsuccessful, so rebuild.
-				d_proxied_raster_source = boost::none;
+				d_visual_raster_source = boost::none;
 			}
 		}
 
@@ -335,19 +339,19 @@ GPlatesGui::PersistentOpenGLObjects::RasterLayerUsage::get_multi_resolution_rast
 				d_proxied_raster_observer_token);
 	}
 
-	// Rebuild the proxied raster source if necessary.
-	if (!d_proxied_raster_source)
+	// Rebuild the visual raster source if necessary.
+	if (!d_visual_raster_source)
 	{
 		// NOTE: We also invalidate the multi-resolution raster since it must link
-		// to the proxied raster source and hence must also be rebuilt.
+		// to the visual raster source and hence must also be rebuilt.
 		d_multi_resolution_raster = boost::none;
 
-		d_proxied_raster_source = GPlatesOpenGL::GLProxiedRasterSource::create(
+		d_visual_raster_source = GPlatesOpenGL::GLVisualRasterSource::create(
 				renderer,
 				d_raster_layer_proxy->get_proxied_raster().get(),
 				d_raster_colour_palette.get(),
 				d_raster_modulate_colour);
-		if (!d_proxied_raster_source)
+		if (!d_visual_raster_source)
 		{
 			// Unable to create a source proxy raster so nothing we can do.
 			return boost::none;
@@ -370,8 +374,9 @@ GPlatesGui::PersistentOpenGLObjects::RasterLayerUsage::get_multi_resolution_rast
 	{
 		const GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type multi_resolution_raster =
 				GPlatesOpenGL::GLMultiResolutionRaster::create(
+						renderer,
 						d_raster_layer_proxy->get_georeferencing().get(),
-						d_proxied_raster_source.get());
+						d_visual_raster_source.get());
 
 		d_multi_resolution_raster = multi_resolution_raster;
 	}
@@ -409,10 +414,7 @@ GPlatesGui::PersistentOpenGLObjects::RasterLayerUsage::is_required_direct_or_ind
 
 
 GPlatesGui::PersistentOpenGLObjects::CubeRasterLayerUsage::CubeRasterLayerUsage(
-		const GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> &raster_layer_usage,
-		const GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type &
-				cube_subdivision_projection_transforms_cache) :
-	d_cube_subdivision_projection_transforms_cache(cube_subdivision_projection_transforms_cache),
+		const GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> &raster_layer_usage) :
 	d_raster_layer_usage(raster_layer_usage)
 {
 }
@@ -447,8 +449,16 @@ GPlatesGui::PersistentOpenGLObjects::CubeRasterLayerUsage::get_multi_resolution_
 		// Attempt to create the multi-resolution cube raster.
 		d_multi_resolution_cube_raster =
 				GPlatesOpenGL::GLMultiResolutionCubeRaster::create(
+						renderer,
 						multi_resolution_raster.get(),
-						d_cube_subdivision_projection_transforms_cache);
+						GPlatesOpenGL::GLMultiResolutionCubeRaster::DEFAULT_TILE_TEXEL_DIMENSION,
+						true/*adapt_tile_dimension_to_source_resolution*/,
+						GPlatesOpenGL::GLMultiResolutionCubeRaster::DEFAULT_FIXED_POINT_TEXTURE_FILTER,
+						// Use non-default here - our source GLMultiResolutionRaster in turn references
+						// a GLVisualRasterSource which has caching that insulates us from the
+						// file system so we don't really need any caching in GLMultiResolutionRaster
+						// and can save a lot of texture memory usage as a result...
+						false/*cache_source_tile_textures*/);
 	}
 
 	return d_multi_resolution_cube_raster;
@@ -479,24 +489,21 @@ GPlatesGui::PersistentOpenGLObjects::CubeRasterLayerUsage::is_required_direct_or
 
 
 GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::AgeGridLayerUsage(
-		const GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type &age_grid_raster_layer_proxy,
-		const GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type &
-				cube_subdivision_projection_transforms_cache) :
-	d_cube_subdivision_projection_transforms_cache(cube_subdivision_projection_transforms_cache),
+		const GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type &age_grid_raster_layer_proxy) :
 	d_age_grid_raster_layer_proxy(age_grid_raster_layer_proxy)
 {
 }
 
 
-boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
-GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::get_age_grid_mask_multi_resolution_cube_raster(
+boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type>
+GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::get_age_grid_mask_multi_resolution_raster(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const double &reconstruction_time)
 {
 	check_input_raster();
 
-	// Rebuild the age grid *mask* cube raster if necessary.
-	if (!d_age_grid_mask_multi_resolution_cube_raster)
+	// Rebuild the age grid *mask* raster if necessary.
+	if (!d_age_grid_mask_multi_resolution_raster)
 	{
 		if (!d_age_grid_mask_multi_resolution_source)
 		{
@@ -521,41 +528,34 @@ GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::get_age_grid_mask_multi_
 			}
 		}
 
-		if (!d_age_grid_mask_multi_resolution_raster)
-		{
-			// Create an age grid mask multi-resolution raster.
-			GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type age_grid_mask_multi_resolution_raster =
-					GPlatesOpenGL::GLMultiResolutionRaster::create(
-							d_age_grid_raster_layer_proxy->get_georeferencing().get(),
-							d_age_grid_mask_multi_resolution_source.get());
+		// Create an age grid mask multi-resolution raster.
+		GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type age_grid_mask_multi_resolution_raster =
+				GPlatesOpenGL::GLMultiResolutionRaster::create(
+						renderer,
+						d_age_grid_raster_layer_proxy->get_georeferencing().get(),
+						d_age_grid_mask_multi_resolution_source.get(),
+						// Avoids blending seams due to anisotropic filtering which gives age grid
+						// mask alpha values that are not either 0.0 or 1.0...
+						GPlatesOpenGL::GLMultiResolutionRaster::FIXED_POINT_TEXTURE_FILTER_NO_ANISOTROPIC);
 
-			d_age_grid_mask_multi_resolution_raster = age_grid_mask_multi_resolution_raster;
-		}
-
-		// Create an age grid mask multi-resolution cube raster.
-		GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type age_grid_mask_multi_resolution_cube_raster =
-				GPlatesOpenGL::GLMultiResolutionCubeRaster::create(
-						d_age_grid_mask_multi_resolution_raster.get(),
-						d_cube_subdivision_projection_transforms_cache);
-
-		d_age_grid_mask_multi_resolution_cube_raster = age_grid_mask_multi_resolution_cube_raster;
+		d_age_grid_mask_multi_resolution_raster = age_grid_mask_multi_resolution_raster;
 	}
 
 	update(reconstruction_time);
 
-	return d_age_grid_mask_multi_resolution_cube_raster;
+	return d_age_grid_mask_multi_resolution_raster;
 }
 
 
-boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
-GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::get_age_grid_coverage_multi_resolution_cube_raster(
+boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type>
+GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::get_age_grid_coverage_multi_resolution_raster(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const double &reconstruction_time)
 {
 	check_input_raster();
 
 	// Rebuild the age grid *coverage* cube raster if necessary.
-	if (!d_age_grid_coverage_multi_resolution_cube_raster)
+	if (!d_age_grid_coverage_multi_resolution_raster)
 	{
 		if (!d_age_grid_coverage_multi_resolution_source)
 		{
@@ -569,8 +569,12 @@ GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::get_age_grid_coverage_mu
 			}
 
 			d_age_grid_coverage_multi_resolution_source =
-					GPlatesOpenGL::GLAgeGridCoverageSource::create(
-							age_grid_raster.get());
+					GPlatesOpenGL::GLCoverageSource::create(
+							age_grid_raster.get(),
+							// The age grid coverage is designed for use with
+							// class 'GLMultiResolutionStaticPolygonReconstructedRaster' so we
+							// distribute the coverage across pixel channels according to what it wants...
+							GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::AgeGridRaster::COVERAGE_TEXTURE_DATA_FORMAT);
 			if (!d_age_grid_coverage_multi_resolution_source)
 			{
 				// Unable to get age grid coverage source so nothing we can do.
@@ -578,29 +582,22 @@ GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::get_age_grid_coverage_mu
 			}
 		}
 
-		if (!d_age_grid_coverage_multi_resolution_raster)
-		{
-			// Create an age grid coverage multi-resolution raster.
-			GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type age_grid_coverage_multi_resolution_raster =
-					GPlatesOpenGL::GLMultiResolutionRaster::create(
-							d_age_grid_raster_layer_proxy->get_georeferencing().get(),
-							d_age_grid_coverage_multi_resolution_source.get());
+		// Create an age grid coverage multi-resolution raster.
+		GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type age_grid_coverage_multi_resolution_raster =
+				GPlatesOpenGL::GLMultiResolutionRaster::create(
+						renderer,
+						d_age_grid_raster_layer_proxy->get_georeferencing().get(),
+						d_age_grid_coverage_multi_resolution_source.get(),
+						// Avoids blending seams due to anisotropic filtering which gives age grid
+						// coverage alpha values that are not either 0.0 or 1.0...
+						GPlatesOpenGL::GLMultiResolutionRaster::FIXED_POINT_TEXTURE_FILTER_NO_ANISOTROPIC);
 
-			d_age_grid_coverage_multi_resolution_raster = age_grid_coverage_multi_resolution_raster;
-		}
-
-		// Create an age grid coverage multi-resolution cube raster.
-		GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type age_grid_coverage_multi_resolution_cube_raster =
-				GPlatesOpenGL::GLMultiResolutionCubeRaster::create(
-						d_age_grid_coverage_multi_resolution_raster.get(),
-						d_cube_subdivision_projection_transforms_cache);
-
-		d_age_grid_coverage_multi_resolution_cube_raster = age_grid_coverage_multi_resolution_cube_raster;
+		d_age_grid_coverage_multi_resolution_raster = age_grid_coverage_multi_resolution_raster;
 	}
 
 	update(reconstruction_time);
 
-	return d_age_grid_coverage_multi_resolution_cube_raster;
+	return d_age_grid_coverage_multi_resolution_raster;
 }
 
 
@@ -642,9 +639,7 @@ GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::check_input_raster()
 	{
 		// Rebuild everything that depends on georeferencing directly or indirectly.
 		d_age_grid_mask_multi_resolution_raster = boost::none;
-		d_age_grid_mask_multi_resolution_cube_raster = boost::none;
 		d_age_grid_coverage_multi_resolution_raster = boost::none;
-		d_age_grid_coverage_multi_resolution_cube_raster = boost::none;
 
 		// There's no georeferencing so nothing we can do.
 		return;
@@ -657,10 +652,8 @@ GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::check_input_raster()
 		// Rebuild everything.
 		d_age_grid_mask_multi_resolution_source = boost::none;
 		d_age_grid_mask_multi_resolution_raster = boost::none;
-		d_age_grid_mask_multi_resolution_cube_raster = boost::none;
 		d_age_grid_coverage_multi_resolution_source = boost::none;
 		d_age_grid_coverage_multi_resolution_raster = boost::none;
-		d_age_grid_coverage_multi_resolution_cube_raster = boost::none;
 
 		// We are now up-to-date with respect to the age grid feature in the age grid layer proxy.
 		d_age_grid_raster_layer_proxy->get_raster_feature_subject_token().update_observer(
@@ -679,16 +672,7 @@ GPlatesGui::PersistentOpenGLObjects::AgeGridLayerUsage::update(
 
 
 GPlatesGui::PersistentOpenGLObjects::ReconstructedStaticPolygonMeshesLayerUsage::ReconstructedStaticPolygonMeshesLayerUsage(
-		const GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type &reconstructed_static_polygon_meshes_layer_proxy,
-		const GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type &
-				cube_subdivision_projection_transforms_cache,
-		const GPlatesGlobal::PointerTraits<cube_subdivision_loose_bounds_cache_type>::non_null_ptr_type &
-				cube_subdivision_loose_bounds_cache,
-		const GPlatesGlobal::PointerTraits<cube_subdivision_bounding_polygons_cache_type>::non_null_ptr_type &
-				cube_subdivision_bounding_polygons_cache) :
-	d_cube_subdivision_projection_transforms_cache(cube_subdivision_projection_transforms_cache),
-	d_cube_subdivision_loose_bounds_cache(cube_subdivision_loose_bounds_cache),
-	d_cube_subdivision_bounding_polygons_cache(cube_subdivision_bounding_polygons_cache),
+		const GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type &reconstructed_static_polygon_meshes_layer_proxy) :
 	d_reconstructed_static_polygon_meshes_layer_proxy(reconstructed_static_polygon_meshes_layer_proxy)
 {
 }
@@ -723,10 +707,7 @@ GPlatesGui::PersistentOpenGLObjects::ReconstructedStaticPolygonMeshesLayerUsage:
 						renderer,
 						d_reconstructed_static_polygon_meshes_layer_proxy->get_present_day_polygon_meshes(),
 						d_reconstructed_static_polygon_meshes_layer_proxy->get_present_day_geometries(),
-						d_reconstructed_static_polygon_meshes_layer_proxy->get_reconstructions_spatial_partition(reconstruction_time),
-						d_cube_subdivision_projection_transforms_cache,
-						d_cube_subdivision_loose_bounds_cache,
-						d_cube_subdivision_bounding_polygons_cache);
+						d_reconstructed_static_polygon_meshes_layer_proxy->get_reconstructions_spatial_partition(reconstruction_time));
 
 		// Even though we just create the 'GLReconstructedStaticPolygonMeshes' we still need to
 		// update it in case we're using age grids which needs a reconstructions spatial partition
@@ -842,13 +823,7 @@ GPlatesGui::PersistentOpenGLObjects::ReconstructedStaticPolygonMeshesLayerUsage:
 
 
 GPlatesGui::PersistentOpenGLObjects::StaticPolygonReconstructedRasterLayerUsage::StaticPolygonReconstructedRasterLayerUsage(
-		const GPlatesUtils::non_null_intrusive_ptr<CubeRasterLayerUsage> &cube_raster_layer_usage,
-		const GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type &
-				cube_subdivision_projection_transforms_cache,
-		const GPlatesGlobal::PointerTraits<cube_subdivision_bounds_cache_type>::non_null_ptr_type &
-				cube_subdivision_bounds_cache) :
-	d_cube_subdivision_projection_transforms_cache(cube_subdivision_projection_transforms_cache),
-	d_cube_subdivision_bounds_cache(cube_subdivision_bounds_cache),
+		const GPlatesUtils::non_null_intrusive_ptr<CubeRasterLayerUsage> &cube_raster_layer_usage) :
 	d_cube_raster_layer_usage(cube_raster_layer_usage)
 {
 }
@@ -928,21 +903,21 @@ GPlatesGui::PersistentOpenGLObjects::StaticPolygonReconstructedRasterLayerUsage:
 		// We are reconstructing a raster - let's see if we are also using an age grid to help out.
 		if (d_age_grid_layer_usage)
 		{
-			// Get the age grid mask cube raster.
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> age_grid_mask_cube_raster =
-					d_age_grid_layer_usage.get()->get_age_grid_mask_multi_resolution_cube_raster(
+			// Get the age grid mask raster.
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> age_grid_mask_raster =
+					d_age_grid_layer_usage.get()->get_age_grid_mask_multi_resolution_raster(
 							renderer,
 							reconstruction_time);
 
 			// Get the age grid coverage cube raster.
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> age_grid_coverage_cube_raster =
-					d_age_grid_layer_usage.get()->get_age_grid_coverage_multi_resolution_cube_raster(
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> age_grid_coverage_raster =
+					d_age_grid_layer_usage.get()->get_age_grid_coverage_multi_resolution_raster(
 							renderer,
 							reconstruction_time);
 
-			// We can only reconstruct with an age grid if we have both cube rasters.
+			// We can only reconstruct with an age grid if we have both rasters.
 			// If one is successfully created then typically the other one will be too.
-			if (age_grid_mask_cube_raster && age_grid_coverage_cube_raster)
+			if (age_grid_mask_raster && age_grid_coverage_raster)
 			{
 				// TODO: Add age grid to reconstructed raster.
 				d_reconstructed_raster =
@@ -950,11 +925,9 @@ GPlatesGui::PersistentOpenGLObjects::StaticPolygonReconstructedRasterLayerUsage:
 								renderer,
 								multi_resolution_cube_raster.get(),
 								reconstructed_static_polygon_meshes,
-								d_cube_subdivision_projection_transforms_cache,
-								d_cube_subdivision_bounds_cache,
-								GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::AgeGridParams(
-										age_grid_mask_cube_raster.get(),
-										age_grid_coverage_cube_raster.get()));
+								GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::AgeGridRaster(
+										age_grid_mask_raster.get(),
+										age_grid_coverage_raster.get()));
 
 				return d_reconstructed_raster;
 			}
@@ -966,9 +939,7 @@ GPlatesGui::PersistentOpenGLObjects::StaticPolygonReconstructedRasterLayerUsage:
 				GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create(
 						renderer,
 						multi_resolution_cube_raster.get(),
-						reconstructed_static_polygon_meshes,
-						d_cube_subdivision_projection_transforms_cache,
-						d_cube_subdivision_bounds_cache);
+						reconstructed_static_polygon_meshes);
 
 		return d_reconstructed_raster;
 	}
@@ -1092,21 +1063,7 @@ GPlatesGui::PersistentOpenGLObjects::StaticPolygonReconstructedRasterLayerUsage:
 
 
 GPlatesGui::PersistentOpenGLObjects::GLLayer::GLLayer(
-		const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy,
-		const GPlatesOpenGL::GLCubeSubdivision::non_null_ptr_to_const_type &cube_subdivision,
-		const GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type &
-				cube_subdivision_projection_transforms_cache,
-		const GPlatesGlobal::PointerTraits<cube_subdivision_bounds_cache_type>::non_null_ptr_type &
-				cube_subdivision_bounds_cache,
-		const GPlatesGlobal::PointerTraits<cube_subdivision_loose_bounds_cache_type>::non_null_ptr_type &
-				cube_subdivision_loose_bounds_cache,
-		const GPlatesGlobal::PointerTraits<cube_subdivision_bounding_polygons_cache_type>::non_null_ptr_type &
-				cube_subdivision_bounding_polygons_cache) :
-	d_cube_subdivision(cube_subdivision),
-	d_cube_subdivision_projection_transforms_cache(cube_subdivision_projection_transforms_cache),
-	d_cube_subdivision_bounds_cache(cube_subdivision_bounds_cache),
-	d_cube_subdivision_loose_bounds_cache(cube_subdivision_loose_bounds_cache),
-	d_cube_subdivision_bounding_polygons_cache(cube_subdivision_bounding_polygons_cache),
+		const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) :
 	d_layer_proxy(layer_proxy),
 	d_layer_usages(LayerUsage::NUM_TYPES)
 {
@@ -1147,8 +1104,7 @@ GPlatesGui::PersistentOpenGLObjects::GLLayer::get_cube_raster_layer_usage()
 				GPlatesUtils::non_null_intrusive_ptr<CubeRasterLayerUsage>(
 						new CubeRasterLayerUsage(
 								// Note: Connecting to the raster in the same layer...
-								get_raster_layer_usage(),
-								d_cube_subdivision_projection_transforms_cache));
+								get_raster_layer_usage()));
 	}
 
 	return GPlatesUtils::dynamic_pointer_cast<CubeRasterLayerUsage>(d_layer_usages[layer_usage_type].get());
@@ -1171,8 +1127,7 @@ GPlatesGui::PersistentOpenGLObjects::GLLayer::get_age_grid_layer_usage()
 		d_layer_usages[layer_usage_type] = 
 				GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage>(
 						new AgeGridLayerUsage(
-								age_grid_layer_proxy,
-								d_cube_subdivision_projection_transforms_cache));
+								age_grid_layer_proxy));
 	}
 
 	return GPlatesUtils::dynamic_pointer_cast<AgeGridLayerUsage>(d_layer_usages[layer_usage_type].get());
@@ -1197,10 +1152,7 @@ GPlatesGui::PersistentOpenGLObjects::GLLayer::get_reconstructed_static_polygon_m
 		d_layer_usages[layer_usage_type] = 
 				GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage>(
 						new ReconstructedStaticPolygonMeshesLayerUsage(
-								reconstructed_static_polygon_meshes_layer_proxy,
-								d_cube_subdivision_projection_transforms_cache,
-								d_cube_subdivision_loose_bounds_cache,
-								d_cube_subdivision_bounding_polygons_cache));
+								reconstructed_static_polygon_meshes_layer_proxy));
 	}
 
 	return GPlatesUtils::dynamic_pointer_cast<ReconstructedStaticPolygonMeshesLayerUsage>(
@@ -1223,9 +1175,7 @@ GPlatesGui::PersistentOpenGLObjects::GLLayer::get_static_polygon_reconstructed_r
 		d_layer_usages[layer_usage_type] = 
 				GPlatesUtils::non_null_intrusive_ptr<StaticPolygonReconstructedRasterLayerUsage>(
 						new StaticPolygonReconstructedRasterLayerUsage(
-								get_cube_raster_layer_usage(),
-								d_cube_subdivision_projection_transforms_cache,
-								d_cube_subdivision_bounds_cache));
+								get_cube_raster_layer_usage()));
 	}
 
 	return GPlatesUtils::dynamic_pointer_cast<StaticPolygonReconstructedRasterLayerUsage>(
@@ -1273,25 +1223,6 @@ GPlatesGui::PersistentOpenGLObjects::GLLayer::remove_references_to_layer(
 }
 
 
-GPlatesGui::PersistentOpenGLObjects::GLLayers::GLLayers(
-		const GPlatesOpenGL::GLCubeSubdivision::non_null_ptr_to_const_type &cube_subdivision,
-		const GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type &
-				cube_subdivision_projection_transforms_cache,
-		const GPlatesGlobal::PointerTraits<cube_subdivision_bounds_cache_type>::non_null_ptr_type &
-				cube_subdivision_bounds_cache,
-		const GPlatesGlobal::PointerTraits<cube_subdivision_loose_bounds_cache_type>::non_null_ptr_type &
-				cube_subdivision_loose_bounds_cache,
-		const GPlatesGlobal::PointerTraits<cube_subdivision_bounding_polygons_cache_type>::non_null_ptr_type &
-				cube_subdivision_bounding_polygons_cache) :
-	d_cube_subdivision(cube_subdivision),
-	d_cube_subdivision_projection_transforms_cache(cube_subdivision_projection_transforms_cache),
-	d_cube_subdivision_bounds_cache(cube_subdivision_bounds_cache),
-	d_cube_subdivision_loose_bounds_cache(cube_subdivision_loose_bounds_cache),
-	d_cube_subdivision_bounding_polygons_cache(cube_subdivision_bounding_polygons_cache)
-{
-}
-
-
 GPlatesGui::PersistentOpenGLObjects::GLLayer &
 GPlatesGui::PersistentOpenGLObjects::GLLayers::get_layer(
 		const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy)
@@ -1304,14 +1235,7 @@ GPlatesGui::PersistentOpenGLObjects::GLLayers::get_layer(
 	}
 
 	// Create, and insert, a new GL layer.
-	const GLLayer::non_null_ptr_type gl_layer =
-			GLLayer::create(
-					layer_proxy,
-					d_cube_subdivision,
-					d_cube_subdivision_projection_transforms_cache,
-					d_cube_subdivision_bounds_cache,
-					d_cube_subdivision_loose_bounds_cache,
-					d_cube_subdivision_bounding_polygons_cache);
+	const GLLayer::non_null_ptr_type gl_layer = GLLayer::create(layer_proxy);
 
 	std::pair<layer_map_type::iterator, bool> insert_result =
 			d_layer_map.insert(
@@ -1354,12 +1278,6 @@ GPlatesGui::PersistentOpenGLObjects::ListObjects::ListObjects(
 		const boost::shared_ptr<GPlatesOpenGL::GLContext::SharedState> &opengl_shared_state_input,
 		const NonListObjects &non_list_objects) :
 	opengl_shared_state(opengl_shared_state_input),
-	gl_layers(
-			non_list_objects.cube_subdivision,
-			non_list_objects.cube_subdivision_projection_transforms_cache,
-			non_list_objects.cube_subdivision_bounds_cache,
-			non_list_objects.cube_subdivision_loose_bounds_cache,
-			non_list_objects.cube_subdivision_bounding_polygons_cache),
 	d_non_list_objects(non_list_objects)
 {
 }
@@ -1389,32 +1307,8 @@ GPlatesGui::PersistentOpenGLObjects::ListObjects::get_multi_resolution_filled_po
 		d_multi_resolution_filled_polygons =
 				GPlatesOpenGL::GLMultiResolutionFilledPolygons::create(
 						renderer,
-						get_multi_resolution_cube_mesh(renderer),
-						d_non_list_objects.cube_subdivision_projection_transforms_cache,
-						d_non_list_objects.cube_subdivision_bounds_cache);
+						get_multi_resolution_cube_mesh(renderer));
 	}
 
 	return d_multi_resolution_filled_polygons.get();
-}
-
-
-GPlatesGui::PersistentOpenGLObjects::NonListObjects::NonListObjects() :
-	cube_subdivision(GPlatesOpenGL::GLCubeSubdivision::create()),
-	cube_subdivision_projection_transforms_cache(
-			cube_subdivision_projection_transforms_cache_type::create(
-					cube_subdivision,
-					1024/*number cached projection transforms*/)),
-	cube_subdivision_bounds_cache(
-			cube_subdivision_bounds_cache_type::create(
-					cube_subdivision,
-					1024/*number cached bounds*/)),
-	cube_subdivision_loose_bounds_cache(
-			cube_subdivision_loose_bounds_cache_type::create(
-					cube_subdivision,
-					1024/*number cached loose bounds*/)),
-	cube_subdivision_bounding_polygons_cache(
-			cube_subdivision_bounding_polygons_cache_type::create(
-					cube_subdivision,
-					1024/*number cached bounding polygons*/))
-{
 }

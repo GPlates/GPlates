@@ -63,7 +63,7 @@ namespace GPlatesOpenGL
 	/**
 	 * Stream writer class to write to a fixed size buffer.
 	 *
-	 * This is one way to write to a vertex buffer (using its gl_map_buffer/gl_unmap_buffer interface).
+	 * This is one way to write to a vertex buffer (using its gl_map_buffer_static/gl_unmap_buffer interface).
 	 *
 	 * This is useful when you don't know how many vertices/indices you're going to stream and
 	 * you're not going to re-use the vertices/indices.
@@ -79,10 +79,20 @@ namespace GPlatesOpenGL
 	class GLStaticBufferStreamWriter
 	{
 	public:
+		/**
+		 * Constructor.
+		 *
+		 * @a initial_count can be used for vertices to indicate that a vertex buffer already
+		 * has some vertices in it - then the vertex elements (indices) can be correctly offset
+		 * from the start of the vertex buffer instead of the start of this stream.
+		 */
 		GLStaticBufferStreamWriter(
 				StreamElementType *stream,
-				unsigned int max_num_stream_elements) :
+				unsigned int max_num_stream_elements,
+				unsigned int initial_count = 0) :
 			d_stream(stream),
+			d_max_num_stream_elements(max_num_stream_elements),
+			d_initial_count(initial_count),
 			d_current_stream_element(stream)
 		{  }
 
@@ -95,23 +105,28 @@ namespace GPlatesOpenGL
 			++d_current_stream_element;
 		}
 
-		//! Returns the number of stream elements written so far.
+		/**
+		 * Returns the count of stream elements.
+		 *
+		 * NOTE: This is the number of stream elements written so far plus the initial count passed into constructor.
+		 */
 		unsigned int
 		count() const
 		{
-			return d_current_stream_element - d_stream;
+			return d_initial_count + (d_current_stream_element - d_stream);
 		}
 
 		//! Returns the number of stream elements that can still be written (that there is space for).
 		unsigned int
 		remaining() const
 		{
-			return d_stream + d_max_num_stream_elements - d_current_stream_element;
+			return (d_stream + d_max_num_stream_elements) - d_current_stream_element;
 		}
 
 	private:
 		StreamElementType *d_stream;
 		unsigned int d_max_num_stream_elements;
+		unsigned int d_initial_count;
 
 		StreamElementType *d_current_stream_element;
 	};

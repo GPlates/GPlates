@@ -43,8 +43,9 @@
 #include "GLContext.h"
 #include "GLIntersect.h"
 #include "GLMatrix.h"
-#include "GLRenderer.h"
 #include "GLProjectionUtils.h"
+#include "GLRenderer.h"
+#include "GLShaderProgramUtils.h"
 #include "GLUtils.h"
 #include "GLVertex.h"
 
@@ -63,18 +64,65 @@ namespace GPlatesOpenGL
 		//! The inverse of log(2.0).
 		const float INVERSE_LOG2 = 1.0 / std::log(2.0);
 	}
+
+	//! Vertex shader source code to render a tile to the scene.
+	const char *RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE =
+			"void main (void)\n"
+			"{\n"
+
+			"	// Ensure position is transformed exactly same as fixed-function pipeline.\n"
+			"	gl_Position = ftransform(); //gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
+
+			"	// Transform present-day position by cube map projection and\n"
+			"	// any texture coordinate adjustments before accessing textures.\n"
+			"	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_Vertex;\n"
+			"	gl_TexCoord[1] = gl_TextureMatrix[1] * gl_Vertex;\n"
+
+			"}\n";
+
+	/**
+	 * Fragment shader source code to render a tile to the scene.
+	 *
+	 * If we're near the edge of a polygon (and there's no adjacent polygon)
+	 * then the fragment alpha will not be 1.0 (also happens if clipped).
+	 * This reduces the anti-aliasing affect of the bilinear filtering since the bilinearly
+	 * filtered alpha will soften the edge (during the alpha-blend stage) but also the RGB colour
+	 * has been bilinearly filtered with black (RGB of zero) which is a double-reduction that
+	 * reduces the softness of the anti-aliasing.
+	 * To get around this we revert the effect of blending with black leaving only the alpha-blending.
+	 */
+	const char *RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE =
+			"uniform sampler2D tile_texture_sampler;\n"
+
+			"#ifdef ENABLE_CLIPPING\n"
+			"uniform sampler2D clip_texture_sampler;\n"
+			"#endif // ENABLE_CLIPPING\n"
+
+			"void main (void)\n"
+			"{\n"
+
+			"	// Projective texturing to handle cube map projection.\n"
+			"	gl_FragColor = texture2DProj(tile_texture_sampler, gl_TexCoord[0]);\n"
+
+			"#ifdef ENABLE_CLIPPING\n"
+			"	gl_FragColor *= texture2DProj(clip_texture_sampler, gl_TexCoord[1]);\n"
+			"#endif // ENABLE_CLIPPING\n"
+
+			"	// Revert effect of blending with black texels near polygon edge.\n"
+			"	if (gl_FragColor.a > 0)\n"
+			"	{\n"
+			"		gl_FragColor.rgb /= gl_FragColor.a;\n"
+			"	}\n"
+
+			"}\n";
 }
 
 
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::GLMultiResolutionFilledPolygons(
 		GLRenderer &renderer,
-		const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh,
-		const cube_subdivision_projection_transforms_cache_type::non_null_ptr_type &cube_subdivision_projection_transforms_cache,
-		const cube_subdivision_bounds_cache_type::non_null_ptr_type &cube_subdivision_bounds_cache) :
-	d_cube_subdivision_projection_transforms_cache(cube_subdivision_projection_transforms_cache),
-	d_cube_subdivision_bounds_cache(cube_subdivision_bounds_cache),
+		const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh) :
 	d_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create()),
-	d_tile_texel_dimension(cube_subdivision_projection_transforms_cache->get_tile_texel_dimension()),
+	d_tile_texel_dimension(DEFAULT_TILE_TEXEL_DIMENSION),
 	d_multi_resolution_cube_mesh(multi_resolution_cube_mesh)
 {
 	create_polygon_stencil_texture(renderer);
@@ -82,6 +130,9 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::GLMultiResolutionFilledPolygons(
 	create_polygons_vertex_array(renderer);
 
 	create_polygon_stencil_quads_vertex_array(renderer);
+
+	// If there's support for shader programs then create them.
+	create_shader_programs(renderer);
 }
 
 
@@ -113,8 +164,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::get_level_of_detail(
 	// texel size will always be less that at the face centre so at least it's bounded and the
 	// variation across the cube face is not that large so we shouldn't be using a level-of-detail
 	// that is much higher than what we need.
-	const float max_lowest_resolution_texel_size_on_unit_sphere =
-			2.0 / d_cube_subdivision_projection_transforms_cache->get_tile_texel_dimension();
+	const float max_lowest_resolution_texel_size_on_unit_sphere = 2.0 / d_tile_texel_dimension;
 
 	const float level_of_detail_factor = INVERSE_LOG2 *
 			(std::log(max_lowest_resolution_texel_size_on_unit_sphere) -
@@ -181,6 +231,25 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render(
 			renderer.gl_get_matrix(GL_MODELVIEW),
 			renderer.gl_get_matrix(GL_PROJECTION));
 
+	// Create a subdivision cube quad tree traversal.
+	// No caching is required since we're only visiting each subdivision node once.
+	//
+	// Cube subdivision cache for half-texel-expanded projection transforms since that is what's used to
+	// lookup the tile textures (the tile textures are bilinearly filtered and the centres of
+	// border texels match up with adjacent tiles).
+	cube_subdivision_cache_type::non_null_ptr_type
+			cube_subdivision_cache =
+					cube_subdivision_cache_type::create(
+							GPlatesOpenGL::GLCubeSubdivision::create(
+									GPlatesOpenGL::GLCubeSubdivision::get_expand_frustum_ratio(
+											d_tile_texel_dimension,
+											0.5/* half a texel */)));
+	// Cube subdivision cache for the clip texture (no frustum expansion here).
+	clip_cube_subdivision_cache_type::non_null_ptr_type
+			clip_cube_subdivision_cache =
+					clip_cube_subdivision_cache_type::create(
+							GPlatesOpenGL::GLCubeSubdivision::create());
+
 	//
 	// Traverse the source raster cube quad tree and the spatial partition of reconstructed polygon meshes.
 	//
@@ -203,15 +272,14 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render(
 						*filled_polygons.d_filled_polygons_spatial_partition,
 						cube_face);
 
-		// Get the child projection transforms node.
-		const cube_subdivision_projection_transforms_cache_type::node_reference_type
-				projection_transforms_cache_root_node =
-						d_cube_subdivision_projection_transforms_cache->get_quad_tree_root_node(cube_face);
-
-		// Get the child bounds node.
-		const cube_subdivision_bounds_cache_type::node_reference_type
-				bounds_cache_root_node =
-						d_cube_subdivision_bounds_cache->get_quad_tree_root_node(cube_face);
+		// Get the cube subdivision root node.
+		const cube_subdivision_cache_type::node_reference_type
+				cube_subdivision_cache_root_node =
+						cube_subdivision_cache->get_quad_tree_root_node(cube_face);
+		// Get the cube subdivision root node.
+		const clip_cube_subdivision_cache_type::node_reference_type
+				clip_cube_subdivision_cache_root_node =
+						clip_cube_subdivision_cache->get_quad_tree_root_node(cube_face);
 
 		// Initially there are no intersecting nodes...
 		filled_polygons_spatial_partition_node_list_type filled_polygons_spatial_partition_node_list;
@@ -222,8 +290,10 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render(
 				*filled_polygons.d_filled_polygons_spatial_partition,
 				filled_polygons_spatial_partition_node_list,
 				filled_polygons_intersecting_nodes,
-				projection_transforms_cache_root_node,
-				bounds_cache_root_node,
+				*cube_subdivision_cache,
+				cube_subdivision_cache_root_node,
+				*clip_cube_subdivision_cache,
+				clip_cube_subdivision_cache_root_node,
 				0/*level_of_detail*/,
 				render_level_of_detail,
 				frustum_planes,
@@ -244,8 +314,10 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_quad_tree(
 		const filled_polygons_spatial_partition_type &filled_polygons_spatial_partition,
 		const filled_polygons_spatial_partition_node_list_type &parent_filled_polygons_intersecting_node_list,
 		const filled_polygons_intersecting_nodes_type &filled_polygons_intersecting_nodes,
-		const cube_subdivision_projection_transforms_cache_type::node_reference_type &projection_transforms_cache_node,
-		const cube_subdivision_bounds_cache_type::node_reference_type &bounds_cache_node,
+		cube_subdivision_cache_type &cube_subdivision_cache,
+		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
+		clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
+		const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
 		unsigned int level_of_detail,
 		unsigned int render_level_of_detail,
 		const GLFrustum &frustum_planes,
@@ -255,9 +327,9 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_quad_tree(
 	// So only test for intersection if the mask is non-zero.
 	if (frustum_plane_mask != 0)
 	{
-		const GLIntersect::OrientedBoundingBox &quad_tree_node_bounds =
-				d_cube_subdivision_bounds_cache->get_cached_element(bounds_cache_node)
-						->get_oriented_bounding_box();
+		const GLIntersect::OrientedBoundingBox quad_tree_node_bounds =
+				cube_subdivision_cache.get_oriented_bounding_box(
+						cube_subdivision_cache_node);
 
 		// See if the current quad tree node intersects the view frustum.
 		// Use the quad tree node's bounding box.
@@ -290,7 +362,10 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_quad_tree(
 				filled_polygons_spatial_partition,
 				parent_filled_polygons_intersecting_node_list,
 				filled_polygons_intersecting_nodes,
-				projection_transforms_cache_node);
+				cube_subdivision_cache,
+				cube_subdivision_cache_node,
+				clip_cube_subdivision_cache,
+				clip_cube_subdivision_cache_node);
 
 		return;
 	}
@@ -325,7 +400,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_quad_tree(
 					filled_polygons_intersecting_nodes_type::parent_intersecting_nodes_type::MAX_NUM_NODES];
 
 			// A tail-shared list to contain the filled polygon nodes that intersect the
-			// current root node. The parent list contains the nodes we've been
+			// current node. The parent list contains the nodes we've been
 			// accumulating so far during our quad tree traversal.
 			filled_polygons_spatial_partition_node_list_type
 					child_filled_polygons_intersecting_node_list(
@@ -359,19 +434,18 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_quad_tree(
 				}
 			}
 
-			// Get the child projection transforms node.
-			const cube_subdivision_projection_transforms_cache_type::node_reference_type
-					child_projection_transforms_cache_node =
-							d_cube_subdivision_projection_transforms_cache->get_child_node(
-									projection_transforms_cache_node,
+			// Get the child cube subdivision cache node.
+			const cube_subdivision_cache_type::node_reference_type
+					child_cube_subdivision_cache_node =
+							cube_subdivision_cache.get_child_node(
+									cube_subdivision_cache_node,
 									child_u_offset,
 									child_v_offset);
-
-			// Get the child bounds node.
-			const cube_subdivision_bounds_cache_type::node_reference_type
-					child_bounds_cache_node =
-							d_cube_subdivision_bounds_cache->get_child_node(
-									bounds_cache_node,
+			// Get the child clip cube subdivision cache node.
+			const clip_cube_subdivision_cache_type::node_reference_type
+					child_clip_cube_subdivision_cache_node =
+							clip_cube_subdivision_cache.get_child_node(
+									clip_cube_subdivision_cache_node,
 									child_u_offset,
 									child_v_offset);
 
@@ -381,8 +455,10 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_quad_tree(
 					filled_polygons_spatial_partition,
 					child_filled_polygons_intersecting_node_list,
 					child_filled_polygons_intersecting_nodes,
-					child_projection_transforms_cache_node,
-					child_bounds_cache_node,
+					cube_subdivision_cache,
+					child_cube_subdivision_cache_node,
+					clip_cube_subdivision_cache,
+					child_clip_cube_subdivision_cache_node,
 					level_of_detail + 1,
 					render_level_of_detail,
 					frustum_planes,
@@ -399,14 +475,17 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_quad_tree_node(
 		const filled_polygons_spatial_partition_type &filled_polygons_spatial_partition,
 		const filled_polygons_spatial_partition_node_list_type &parent_filled_polygons_intersecting_node_list,
 		const filled_polygons_intersecting_nodes_type &filled_polygons_intersecting_nodes,
-		const cube_subdivision_projection_transforms_cache_type::node_reference_type &projection_transforms_cache_node)
+		cube_subdivision_cache_type &cube_subdivision_cache,
+		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
+		clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
+		const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node)
 {
 	// From here on we can't allocate the list nodes on the runtime stack because we need to access
 	// the list after we return from traversing the spatial partition. So use an object pool instead.
 	boost::object_pool<FilledPolygonsListNode> filled_polygons_list_node_pool;
 
 	// A tail-shared list to contain the reconstructed polygon meshes nodes that intersect the
-	// current source raster root node. The parent list contains the nodes we've been
+	// current source raster node. The parent list contains the nodes we've been
 	// accumulating so far during our quad tree traversal.
 	filled_polygons_spatial_partition_node_list_type
 			filled_polygons_intersecting_node_list(
@@ -457,7 +536,10 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_quad_tree_node(
 			mesh_quad_tree_node,
 			filled_polygons_spatial_partition,
 			filled_polygons_intersecting_node_list,
-			projection_transforms_cache_node);
+			cube_subdivision_cache,
+			cube_subdivision_cache_node,
+			clip_cube_subdivision_cache,
+			clip_cube_subdivision_cache_node);
 }
 
 
@@ -521,17 +603,21 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::set_tile_state(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_to_const_type &tile_texture,
 		const GLTransform &projection_transform,
+		const GLTransform &clip_projection_transform,
 		const GLTransform &view_transform,
 		bool clip_to_tile_frustum)
 {
-	// State for the tile texture.
-	GLUtils::set_frustum_texture_state(
-			renderer,
-			tile_texture,
-			projection_transform.get_matrix(),
-			view_transform.get_matrix(),
-			0/*texture_unit*/,
-			GL_REPLACE);
+	// Used to transform texture coordinates to account for partial coverage of current tile.
+	GLMatrix scene_tile_texture_matrix;
+	scene_tile_texture_matrix.gl_mult_matrix(GLUtils::get_clip_space_to_texture_space_transform());
+	// Set up the texture matrix to perform model-view and projection transforms of the frustum.
+	scene_tile_texture_matrix.gl_mult_matrix(projection_transform.get_matrix());
+	scene_tile_texture_matrix.gl_mult_matrix(view_transform.get_matrix());
+	// Load texture transform into texture unit 0.
+	renderer.gl_load_texture_matrix(GL_TEXTURE0, scene_tile_texture_matrix);
+
+	// Bind the scene tile texture to texture unit 0.
+	renderer.gl_bind_texture(tile_texture, GL_TEXTURE0, GL_TEXTURE_2D);
 
 	// If we've traversed deep enough into the cube quad tree then the cube quad tree mesh
 	// cannot provide a drawable that's bounded by the cube quad tree node tile and so
@@ -544,14 +630,19 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::set_tile_state(
 		if (GLContext::get_parameters().texture.gl_max_texture_units >= 2)
 		{
 			// State for the clip texture.
-			GLUtils::set_frustum_texture_state(
-					renderer,
-					d_multi_resolution_cube_mesh->get_clip_texture(),
-					projection_transform.get_matrix(),
-					view_transform.get_matrix(),
-					1/*texture_unit*/,
-					GL_MODULATE,
-					GLTextureUtils::get_clip_texture_clip_space_to_texture_space_transform());
+			//
+			// NOTE: We also do *not* expand the tile frustum since the clip texture uses nearest
+			// filtering instead of bilinear filtering and hence we're not removing a seam between
+			// tiles (instead we are clipping adjacent tiles).
+			GLMatrix clip_texture_matrix(GLTextureUtils::get_clip_texture_clip_space_to_texture_space_transform());
+			// Set up the texture matrix to perform model-view and projection transforms of the frustum.
+			clip_texture_matrix.gl_mult_matrix(clip_projection_transform.get_matrix());
+			clip_texture_matrix.gl_mult_matrix(view_transform.get_matrix());
+			// Load texture transform into texture unit 1.
+			renderer.gl_load_texture_matrix(GL_TEXTURE1, clip_texture_matrix);
+
+			// Bind the clip texture to texture unit 1.
+			renderer.gl_bind_texture(d_multi_resolution_cube_mesh->get_clip_texture(), GL_TEXTURE1, GL_TEXTURE_2D);
 		}
 		else
 		{
@@ -569,14 +660,58 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::set_tile_state(
 		}
 	}
 
+	// Use shader program (if supported), otherwise the fixed-function pipeline.
+	if (d_render_tile_to_scene_program_object && d_render_tile_to_scene_with_clipping_program_object)
+	{
+		if (clip_to_tile_frustum)
+		{
+			// Bind the shader program with clipping.
+			renderer.gl_bind_program_object(d_render_tile_to_scene_with_clipping_program_object.get());
+
+			// Set the tile texture sampler to texture unit 0.
+			d_render_tile_to_scene_with_clipping_program_object.get()->gl_uniform1i(
+					renderer, "tile_texture_sampler", 0/*texture unit*/);
+
+			// Set the clip texture sampler to texture unit 1.
+			d_render_tile_to_scene_with_clipping_program_object.get()->gl_uniform1i(
+					renderer, "clip_texture_sampler", 1/*texture unit*/);
+		}
+		else
+		{
+			// Bind the shader program.
+			renderer.gl_bind_program_object(d_render_tile_to_scene_program_object.get());
+
+			// Set the tile texture sampler to texture unit 0.
+			d_render_tile_to_scene_program_object.get()->gl_uniform1i(
+					renderer, "tile_texture_sampler", 0/*texture unit*/);
+		}
+	}
+	else // Fixed function...
+	{
+		// Enable texturing and set the texture function on texture unit 0.
+		renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+		// Set up texture coordinate generation from the vertices (x,y,z) on texture unit 0.
+		GLUtils::set_object_linear_tex_gen_state(renderer, 0/*texture_unit*/);
+
+		// NOTE: If two texture units are not supported then just don't clip to the tile.
+		// The 'is_supported()' method should have been called to prevent us from getting here though.
+		if (GLContext::get_parameters().texture.gl_max_texture_units >= 2)
+		{
+			// Enable texturing and set the texture function on texture unit 1.
+			renderer.gl_enable_texture(GL_TEXTURE1, GL_TEXTURE_2D);
+			renderer.gl_tex_env(GL_TEXTURE1, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+			// Set up texture coordinate generation from the vertices (x,y,z) on texture unit 1.
+			GLUtils::set_object_linear_tex_gen_state(renderer, 1/*texture_unit*/);
+		}
+	}
+
 	// NOTE: We don't set alpha-blending (or alpha-testing) state here because we
 	// might not be rendering directly to the final render target and hence we don't
 	// want to double-blend semi-transparent rasters - the alpha value is multiplied by
 	// all channels including alpha during alpha blending (R,G,B,A) -> (A*R,A*G,A*B,A*A) -
 	// the final render target would then have a source blending contribution of (3A*R,3A*G,3A*B,4A)
 	// which is not what we want - we want (A*R,A*G,A*B,A*A).
-	// Currently we are rendering to the final render target but when we reconstruct
-	// rasters in the map view (later) we will render to an intermediate render target.
 
 #if 0
 	// Used to render as wire-frame meshes instead of filled textured meshes for
@@ -592,7 +727,10 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_tile_to_scene(
 		const mesh_quad_tree_node_type &mesh_quad_tree_node,
 		const filled_polygons_spatial_partition_type &filled_polygons_spatial_partition,
 		const filled_polygons_spatial_partition_node_list_type &filled_polygons_intersecting_node_list,
-		const cube_subdivision_projection_transforms_cache_type::node_reference_type &projection_transforms_cache_node)
+		cube_subdivision_cache_type &cube_subdivision_cache,
+		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
+		clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
+		const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node)
 {
 	PROFILE_FUNC();
 
@@ -612,16 +750,21 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_tile_to_scene(
 		return;
 	}
 
-	// Get the view/projection transforms for the current cube quad tree node.
-	const GLTransform::non_null_ptr_to_const_type projection_transform =
-			d_cube_subdivision_projection_transforms_cache->get_cached_element(
-					projection_transforms_cache_node)->get_projection_transform();
-
 	// The view transform never changes within a cube face so it's the same across
 	// an entire cube face quad tree (each cube face has its own quad tree).
 	const GLTransform::non_null_ptr_to_const_type view_transform =
-			d_cube_subdivision_projection_transforms_cache->get_view_transform(
-					projection_transforms_cache_node.get_cube_face());
+			cube_subdivision_cache.get_view_transform(
+					cube_subdivision_cache_node);
+
+	// Regular projection transform.
+	const GLTransform::non_null_ptr_to_const_type projection_transform =
+			cube_subdivision_cache.get_projection_transform(
+					cube_subdivision_cache_node);
+
+	// Clip texture projection transform.
+	const GLTransform::non_null_ptr_to_const_type clip_projection_transform =
+			clip_cube_subdivision_cache.get_projection_transform(
+					clip_cube_subdivision_cache_node);
 
 	// Get an unused tile texture from our texture cache.
 	const GLTexture::shared_ptr_to_const_type tile_texture = allocate_tile_texture(renderer);
@@ -646,6 +789,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_tile_to_scene(
 			renderer,
 			tile_texture,
 			*projection_transform,
+			*clip_projection_transform,
 			*view_transform,
 			clip_to_tile_frustum);
 
@@ -666,7 +810,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 	//++g_num_tiles_rendered;
 
 	// Begin a render target that will render the individual filled polygons to the tile texture.
-	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(renderer, tile_texture);
+	GLRenderer::RenderTarget2DScope render_target_scope(renderer, tile_texture);
 
 	// The viewport for the tile texture.
 	renderer.gl_viewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension);
@@ -714,7 +858,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 	// Ie, if we're limited to the current dimensions of the main framebuffer (the current window).
 	unsigned int render_target_width;
 	unsigned int render_target_height;
-	renderer.get_max_rgba8_render_target_dimensions(render_target_width, render_target_height);
+	renderer.get_max_render_target_dimensions(render_target_width, render_target_height);
 	if (render_target_width < d_tile_texel_dimension)
 	{
 		render_target_width = d_tile_texel_dimension;
@@ -817,7 +961,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_polygo
 
 	// Begin a render target that will render the individual filled polygons to the tile texture.
 	// This is also an implicit state block (saves/restores state).
-	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(
+	GLRenderer::RenderTarget2DScope render_target_scope(
 			renderer,
 			d_polygon_stencil_texture,
 			// Limit rendering to a part of the polygon stencil texture if it's too big for render-target...
@@ -849,6 +993,11 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_polygo
 #endif
 
 	renderer.gl_mult_matrix(GL_MODELVIEW, view_transform.get_matrix());
+
+	// NOTE: We use the half-texel-expanded projection transform since we want to render the
+	// border pixels (in each tile) exactly on the tile (plane) boundary.
+	// The tile textures are bilinearly filtered and this way the centres of border texels match up
+	// with adjacent tiles.
 	renderer.gl_mult_matrix(GL_PROJECTION, projection_transform.get_matrix());
 
 	const GLMatrix view_matrix = renderer.gl_get_matrix(GL_MODELVIEW);
@@ -995,21 +1144,9 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_tile_texture(
 	// We're not using mipmaps because our cube mapping does not have much distortion
 	// unlike global rectangular lat/lon rasters that squash near the poles.
 	//
-	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-	// Clamp texture coordinates to centre of edge texels -
-	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp)
-	{
-		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	}
-	else
-	{
-		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	}
+	// We do enable bilinear filtering (also note that the texture is a fixed-point format).
+	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Specify anisotropic filtering if it's supported since we are not using mipmaps
 	// and any textures rendered near the edge of the globe will get squashed a bit due to
@@ -1018,6 +1155,19 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_tile_texture(
 	{
 		const GLfloat anisotropy = GLContext::get_parameters().texture.gl_texture_max_anisotropy;
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+	}
+
+	// Clamp texture coordinates to centre of edge texels -
+	// it's easier for hardware to implement - and doesn't affect our calculations.
+	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	{
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
+	else
+	{
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	}
 
 	// Create the texture but don't load any data into it.
@@ -1088,7 +1238,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_polygon_stencil_texture(
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp)
+	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
 	{
 		d_polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		d_polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -1217,4 +1367,32 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_polygon_stencil_quads_ver
 	// Store the vertices/indices in a new vertex buffer and vertex element buffer that is then
 	// bound to the vertex array.
 	set_vertex_array_data(renderer, *d_polygon_stencil_quads_vertex_array, quad_vertices, quad_indices);
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_shader_programs(
+		GLRenderer &renderer)
+{
+	// We only make use of shader programs for the final stage of rendering a tile to the scene.
+
+	// A version without clipping.
+	d_render_tile_to_scene_program_object =
+			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
+					renderer,
+					RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE,
+					RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE);
+
+	// A version with clipping.
+	GLShaderProgramUtils::ShaderSource render_tile_to_scene_with_clipping_shader_source;
+	// Add the '#define' first.
+	render_tile_to_scene_with_clipping_shader_source.add_shader_source("#define ENABLE_CLIPPING\n");
+	// Then add the GLSL 'main()' function.
+	render_tile_to_scene_with_clipping_shader_source.add_shader_source(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE);
+	// Create the program object.
+	d_render_tile_to_scene_with_clipping_program_object =
+			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
+					renderer,
+					RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE,
+					render_tile_to_scene_with_clipping_shader_source);
 }

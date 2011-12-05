@@ -37,6 +37,7 @@
 #include "GLCubeSubdivisionCache.h"
 #include "GLMatrix.h"
 #include "GLMultiResolutionCubeMesh.h"
+#include "GLProgramObject.h"
 #include "GLTexture.h"
 #include "GLVertex.h"
 #include "GLVertexArray.h"
@@ -156,25 +157,6 @@ namespace GPlatesOpenGL
 
 		//! A convenience typedef for a shared pointer to a const @a GLMultiResolutionFilledPolygons.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GLMultiResolutionFilledPolygons> non_null_ptr_to_const_type;
-
-		/**
-		 * Typedef for a @a GLCubeSubvision cache of projection transforms.
-		 */
-		typedef GLCubeSubdivisionCache<
-				true/*CacheProjectionTransform*/,
-				false/*CacheBounds*/,
-				false/*CacheLooseBounds*/>
-						cube_subdivision_projection_transforms_cache_type;
-
-		/**
-		 * Typedef for a @a GLCubeSubvision cache of subdivision tile bounds.
-		 */
-		typedef GLCubeSubdivisionCache<
-				false/*CacheProjectionTransform*/,
-				true/*CacheBounds*/,
-				false/*CacheLooseBounds*/>
-						cube_subdivision_bounds_cache_type;
-
 
 		/**
 		 * Used to accumulate filled polygons (optionally as a spatial partition) for rendering.
@@ -360,17 +342,9 @@ namespace GPlatesOpenGL
 		non_null_ptr_type
 		create(
 				GLRenderer &renderer,
-				const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh,
-				const cube_subdivision_projection_transforms_cache_type::non_null_ptr_type &
-						cube_subdivision_projection_transforms_cache,
-				const cube_subdivision_bounds_cache_type::non_null_ptr_type &cube_subdivision_bounds_cache)
+				const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh)
 		{
-			return non_null_ptr_type(
-					new GLMultiResolutionFilledPolygons(
-							renderer,
-							multi_resolution_cube_mesh,
-							cube_subdivision_projection_transforms_cache,
-							cube_subdivision_bounds_cache));
+			return non_null_ptr_type(new GLMultiResolutionFilledPolygons(renderer, multi_resolution_cube_mesh));
 		}
 
 
@@ -384,6 +358,27 @@ namespace GPlatesOpenGL
 				const filled_polygons_type &filled_polygons);
 
 	private:
+		/**
+		 * Typedef for a @a GLCubeSubvision cache.
+		 */
+		typedef GLCubeSubdivisionCache<
+				true/*CacheProjectionTransform*/, false/*CacheLooseProjectionTransform*/,
+				false/*CacheFrustum*/, false/*CacheLooseFrustum*/,
+				false/*CacheBoundingPolygon*/, false/*CacheLooseBoundingPolygon*/,
+				true/*CacheBounds*/, false/*CacheLooseBounds*/>
+						cube_subdivision_cache_type;
+
+		/**
+		 * Typedef for a @a GLCubeSubvision cache.
+		 */
+		typedef GLCubeSubdivisionCache<
+				true/*CacheProjectionTransform*/, false/*CacheLooseProjectionTransform*/,
+				false/*CacheFrustum*/, false/*CacheLooseFrustum*/,
+				false/*CacheBoundingPolygon*/, false/*CacheLooseBoundingPolygon*/,
+				false/*CacheBounds*/, false/*CacheLooseBounds*/>
+						clip_cube_subdivision_cache_type;
+
+
 		//! Typedef for a texturedvertex of a stencil quad.
 		typedef GLTexturedVertex stencil_quad_vertex_type;
 
@@ -423,15 +418,10 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Used to get projection transforms as the cube quad tree is traversed.
+		 * The default tile size for rendering filled polygons.
 		 */
-		cube_subdivision_projection_transforms_cache_type::non_null_ptr_type
-				d_cube_subdivision_projection_transforms_cache;
+		static const unsigned int DEFAULT_TILE_TEXEL_DIMENSION = 256;
 
-		/**
-		 * Used to get node bounds for view-frustum culling as the cube quad tree is traversed.
-		 */
-		cube_subdivision_bounds_cache_type::non_null_ptr_type d_cube_subdivision_bounds_cache;
 
 		/**
 		 * Cache of tile textures - the textures are not reused over frames though.
@@ -476,14 +466,25 @@ namespace GPlatesOpenGL
 		 */
 		GLMultiResolutionCubeMesh::non_null_ptr_to_const_type d_multi_resolution_cube_mesh;
 
+		/**
+		 * Shader program to render tiles to the scene (the final stage).
+		 *
+		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used).
+		 */
+		boost::optional<GLProgramObject::shared_ptr_type> d_render_tile_to_scene_program_object;
+
+		/**
+		 * Shader program to render tiles to the scene (the final stage) with clipping.
+		 *
+		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used).
+		 */
+		boost::optional<GLProgramObject::shared_ptr_type> d_render_tile_to_scene_with_clipping_program_object;
+
 
 		//! Constructor.
 		GLMultiResolutionFilledPolygons(
 				GLRenderer &renderer,
-				const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh,
-				const cube_subdivision_projection_transforms_cache_type::non_null_ptr_type &
-						cube_subdivision_projection_transforms_cache,
-				const cube_subdivision_bounds_cache_type::non_null_ptr_type &cube_subdivision_bounds_cache);
+				const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh);
 
 
 		unsigned int
@@ -499,8 +500,10 @@ namespace GPlatesOpenGL
 				const filled_polygons_spatial_partition_type &filled_polygons_spatial_partition,
 				const filled_polygons_spatial_partition_node_list_type &parent_filled_polygons_intersecting_node_list,
 				const filled_polygons_intersecting_nodes_type &filled_polygons_intersecting_nodes,
-				const cube_subdivision_projection_transforms_cache_type::node_reference_type &projection_transforms_cache_node,
-				const cube_subdivision_bounds_cache_type::node_reference_type &bounds_cache_node,
+				cube_subdivision_cache_type &cube_subdivision_cache,
+				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
+				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
+				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
 				unsigned int level_of_detail,
 				unsigned int render_level_of_detail,
 				const GLFrustum &frustum_planes,
@@ -516,8 +519,10 @@ namespace GPlatesOpenGL
 						parent_reconstructed_polygon_meshes_intersecting_node_list,
 				const filled_polygons_intersecting_nodes_type &
 						reconstructed_polygon_meshes_intersecting_nodes,
-				const cube_subdivision_projection_transforms_cache_type::node_reference_type &
-						projection_transforms_cache_node);
+				cube_subdivision_cache_type &cube_subdivision_cache,
+				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
+				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
+				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node);
 
 		void
 		get_filled_polygons_intersecting_nodes(
@@ -532,6 +537,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const GLTexture::shared_ptr_to_const_type &tile_texture,
 				const GLTransform &projection_transform,
+				const GLTransform &clip_projection_transform,
 				const GLTransform &view_transform,
 				bool clip_to_tile_frustum);
 
@@ -541,7 +547,10 @@ namespace GPlatesOpenGL
 				const mesh_quad_tree_node_type &mesh_quad_tree_node,
 				const filled_polygons_spatial_partition_type &filled_polygons_spatial_partition,
 				const filled_polygons_spatial_partition_node_list_type &filled_polygons_intersecting_node_list,
-				const cube_subdivision_projection_transforms_cache_type::node_reference_type &projection_transforms_cache_node);
+				cube_subdivision_cache_type &cube_subdivision_cache,
+				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
+				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
+				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node);
 
 		void
 		render_filled_polygons_to_tile_texture(
@@ -592,6 +601,10 @@ namespace GPlatesOpenGL
 
 		void
 		create_polygon_stencil_quads_vertex_array(
+				GLRenderer &renderer);
+
+		void
+		create_shader_programs(
 				GLRenderer &renderer);
 	};
 }

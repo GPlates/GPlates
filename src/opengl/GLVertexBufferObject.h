@@ -169,6 +169,36 @@ namespace GPlatesOpenGL
 				GLsizei stride,
 				GLint offset) const;
 
+		/**
+		 * Same as @a gl_vertex_attrib_pointer except used to specify attributes mapping to *integer* shader variables.
+		 *
+		 * NOTE: The 'GL_ARB_vertex_shader' *and* 'GL_EXT_gpu_shader4' extensions must be supported.
+		 */
+		virtual
+		void
+		gl_vertex_attrib_i_pointer(
+				GLRenderer &renderer,
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset) const;
+
+		/**
+		 * Same as @a gl_vertex_attrib_pointer except used to specify attributes mapping to *double* shader variables.
+		 *
+		 * NOTE: The 'GL_ARB_vertex_shader' *and* 'GL_ARB_vertex_attrib_64bit' extensions must be supported.
+		 */
+		virtual
+		void
+		gl_vertex_attrib_l_pointer(
+				GLRenderer &renderer,
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset) const;
+
 
 		/**
 		 * Returns the buffer object.

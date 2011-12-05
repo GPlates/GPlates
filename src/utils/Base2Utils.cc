@@ -25,6 +25,22 @@
 
 #include "Base2Utils.h"
 
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
+
+
+namespace GPlatesUtils
+{
+	namespace Base2
+	{
+		namespace
+		{
+			const unsigned int LOG2_BITMASK[] = {0x2, 0xC, 0xF0, 0xFF00, 0xFFFF0000};
+			const unsigned int LOG2_BITSHIFT[] = {1, 2, 4, 8, 16};
+		}
+	}
+}
+
 
 unsigned int
 GPlatesUtils::Base2::previous_power_of_two(
@@ -54,4 +70,47 @@ GPlatesUtils::Base2::next_power_of_two(
 	++value;
 
 	return value;
+}
+
+
+unsigned int
+GPlatesUtils::Base2::log2_previous_power_of_two(
+		boost::uint32_t value)
+{
+	unsigned int result = 0;
+	for (int i = 4; i >= 0; i--)
+	{
+		if (value & LOG2_BITMASK[i])
+		{
+			value >>= LOG2_BITSHIFT[i];
+			result |= LOG2_BITSHIFT[i];
+		} 
+	}
+
+	return result;
+}
+
+
+unsigned int
+GPlatesUtils::Base2::log2_next_power_of_two(
+		boost::uint32_t value)
+{
+	const unsigned int log2_previous_power_of_two_value = log2_previous_power_of_two(value);
+
+	return is_power_of_two(value)
+			? log2_previous_power_of_two_value
+			// It's not a power-of-two so increment to the next log base 2 value...
+			: log2_previous_power_of_two_value + 1;
+}
+
+
+unsigned int
+GPlatesUtils::Base2::log2_power_of_two(
+		boost::uint32_t value)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			is_power_of_two(value),
+			GPLATES_ASSERTION_SOURCE);
+
+	return log2_previous_power_of_two(value);
 }

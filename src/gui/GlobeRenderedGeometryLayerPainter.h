@@ -51,6 +51,7 @@
 #include "maths/Vector3D.h"
 
 #include "opengl/GLBuffer.h"
+#include "opengl/GLCubeSubdivisionCache.h"
 #include "opengl/GLStreamPrimitives.h"
 #include "opengl/GLVertex.h"
 
@@ -217,6 +218,17 @@ namespace GPlatesGui
 		typedef GPlatesMaths::CubeQuadTreePartition<GPlatesViewOperations::RenderedGeometry>
 				rendered_geometries_spatial_partition_type;
 
+		/**
+		 * Typedef for a @a GLCubeSubvision cache that caches loose bounds.
+		 */
+		typedef GPlatesOpenGL::GLCubeSubdivisionCache<
+				false/*CacheProjectionTransform*/, false/*CacheLooseProjectionTransform*/,
+				false/*CacheFrusum*/, false/*CacheLooseFrustum*/,
+				false/*CacheBoundingPolygon*/, false/*CacheLooseBoundingPolygon*/,
+				false/*CacheBounds*/, true/*CacheLooseBounds*/>
+						cube_subdivision_cache_type;
+
+
 
 		const GPlatesViewOperations::RenderedGeometryLayer &d_rendered_geometry_layer;
 
@@ -270,11 +282,10 @@ namespace GPlatesGui
 
 		void
 		render_spatial_partition_quad_tree(
-				const rendered_geometries_spatial_partition_type &rendered_geometries_spatial_partition,
 				const GPlatesMaths::CubeQuadTreeLocation &cube_quad_tree_node_location,
 				rendered_geometries_spatial_partition_type::const_node_reference_type rendered_geometries_quad_tree_node,
-				PersistentOpenGLObjects::cube_subdivision_loose_bounds_cache_type &cube_subdivision_loose_bounds,
-				const PersistentOpenGLObjects::cube_subdivision_loose_bounds_cache_type::node_reference_type &loose_bounds_node,
+				cube_subdivision_cache_type &cube_subdivision_cache,
+				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
 				const GPlatesOpenGL::GLFrustum &frustum_planes,
 				boost::uint32_t frustum_plane_mask);
 

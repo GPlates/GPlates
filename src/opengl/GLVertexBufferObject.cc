@@ -122,3 +122,31 @@ GPlatesOpenGL::GLVertexBufferObject::gl_vertex_attrib_pointer(
 	renderer.gl_vertex_attrib_pointer(
 			attribute_index, size, type, normalized, stride, offset, get_buffer_object());
 }
+
+
+void
+GPlatesOpenGL::GLVertexBufferObject::gl_vertex_attrib_i_pointer(
+		GLRenderer &renderer,
+		GLuint attribute_index,
+		GLint size,
+		GLenum type,
+		GLsizei stride,
+		GLint offset) const
+{
+	renderer.gl_vertex_attrib_i_pointer(
+			attribute_index, size, type, stride, offset, get_buffer_object());
+}
+
+
+void
+GPlatesOpenGL::GLVertexBufferObject::gl_vertex_attrib_l_pointer(
+		GLRenderer &renderer,
+		GLuint attribute_index,
+		GLint size,
+		GLenum type,
+		GLsizei stride,
+		GLint offset) const
+{
+	renderer.gl_vertex_attrib_l_pointer(
+			attribute_index, size, type, stride, offset, get_buffer_object());
+}

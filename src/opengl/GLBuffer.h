@@ -75,6 +75,8 @@ namespace GPlatesOpenGL
 		//
 		static const target_type TARGET_ARRAY_BUFFER;          // When reading/writing vertex attribute data (vertices).
 		static const target_type TARGET_ELEMENT_ARRAY_BUFFER;  // When reading/writing vertex element data (indices).
+		static const target_type TARGET_PIXEL_UNPACK_BUFFER;   // When reading pixel data.
+		static const target_type TARGET_PIXEL_PACK_BUFFER;     // When writing pixel data.
 
 
 		//! Typedef for the usage of the buffer.
@@ -109,17 +111,6 @@ namespace GPlatesOpenGL
 		static const access_type ACCESS_READ_ONLY;  // Indicates read-only access
 		static const access_type ACCESS_WRITE_ONLY; // Indicates write-only access
 		static const access_type ACCESS_READ_WRITE; // Indicates read-write access
-
-
-		//! Typedef for mapped range access to the buffer.
-		typedef unsigned int range_access_type;
-
-		static const range_access_type RANGE_ACCESS_READ_BIT;
-		static const range_access_type RANGE_ACCESS_WRITE_BIT;
-		static const range_access_type RANGE_ACCESS_INVALIDATE_RANGE_BIT;
-		static const range_access_type RANGE_ACCESS_INVALIDATE_BUFFER_BIT;
-		static const range_access_type RANGE_ACCESS_FLUSH_EXPLICIT_BIT;
-		static const range_access_type RANGE_ACCESS_UNSYNCHRONIZED_BIT;
 
 
 		/**
@@ -220,7 +211,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Retrieves a sub-section of data from the existing array and copies it into.
+		 * Retrieves a sub-section of data from the existing array and copies it into @a data.
 		 *
 		 * Note that @a gl_buffer_data must have been called and the sub-range must fit within it.
 		 *
@@ -239,122 +230,251 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Maps the buffer for the specified access.
+		 * Maps the buffer for static access.
 		 *
-		 * This mirrors the behaviour of glMapBuffer.
-		 * Returns NULL if buffer cannot be mapped or is already mapped.
+		 * The returned pointer points to the beginning of the buffer.
+		 *
+		 * The reason it's called 'static' is the mapping operation will block in OpenGL if
+		 * the GPU is currently accessing the buffer data (eg, for a draw call).
+		 * To avoid the block you would first need to call 'glBufferData()' with a NULL data pointer
+		 * to get a new buffer allocation (allows GPU to continue accessing the previous buffer contents
+		 * will you write data to the new buffer allocation).
+		 *
+		 * So this method is probably best used if you're writing buffer data only once or
+		 * infrequently enough that blocking is not a concern.
+		 *
+		 * NOTE: Unlike @a gl_map_buffer_dynamic and @a gl_map_buffer_stream,
+		 * @a gl_map_buffer_static is always supported.
+		 *
+		 * This mirrors the behaviour of glMapBuffer except that this method throws exception
+		 * on error (instead of returning NULL) so you don't need to test for NULL.
+		 * It also emits the relevant OpenGL warning message to the console.
 		 */
 		virtual
-		void *
-		gl_map_buffer(
+		GLvoid *
+		gl_map_buffer_static(
 				GLRenderer &renderer,
 				target_type target,
 				access_type access) = 0;
 
 
 		/**
-		 * Returns true if a sub-range of the buffer can be mapped.
+		 * Returns true if @a gl_map_buffer_dynamic can be called without blocking.
 		 *
-		 * This is only supported if the GL_ARB_map_buffer_range extension is available
-		 * (or if GL_ARB_vertex_buffer_objects are *not* supported and instead simulated with
-		 * system memory that OpenGL always blocks on).
+		 * Asynchronous mapping is supported if the GL_ARB_map_buffer_range or
+		 * GL_APPLE_flush_buffer_range extension is available.
 		 *
-		 * Only then can the methods @a gl_map_buffer_range and @a gl_flush_mapped_buffer_range be called.
+		 * Without asynchronous mapping support blocking can happen if the GPU is reading from the buffer when you map it.
+		 * In this case @a gl_map_buffer_dynamic is the same as @a gl_map_buffer_static and you might
+		 * be better off modifying your own system memory copy of the buffer data and re-submitting
+		 * the entire data via @a gl_buffer_data each time you want to modify the data.
+		 *
+		 * NOTE: A return value of false does not prevent @a gl_map_buffer_dynamic from being called.
 		 */
 		virtual
 		bool
-		is_map_buffer_range_supported() const = 0;
+		asynchronous_map_buffer_dynamic_supported(
+				GLRenderer &renderer) const = 0;
 
 		/**
-		 * Maps the specified range of the buffer for the specified access.
+		 * Maps the buffer for dynamic *write* access.
 		 *
-		 * This mirrors the behaviour of glMapBufferRange.
-		 * Returns NULL if buffer cannot be mapped or is already mapped.
+		 * The returned pointer points to the beginning of the buffer.
 		 *
-		 * NOTE: This method is only supported if the GL_ARB_map_buffer_range extension is available
-		 * (or if GL_ARB_vertex_buffer_objects are *not* supported and instead simulated with
-		 * system memory that OpenGL always blocks on).
+		 * The reason it's called 'dynamic' is it allows modification of *existing* buffer data without
+		 * causing OpenGL to block (if the GPU is currently accessing the buffer data, eg, for a draw call).
+		 * This is done by specifying sub-ranges within the mapped buffer that you have modified.
+		 * This is useful if you want to retain the same data and only modify parts of it.
 		 *
-		 * Check with @a is_map_buffer_range_supported to see if this method can be used.
+		 * Like @a gl_map_buffer_static this method throws exception on error so you don't need to test for NULL.
+		 *
+		 * NOTE: Check with @a asynchronous_map_buffer_dynamic_supported - if it returns false then
+		 * @a gl_map_buffer_dynamic is the same as @a gl_map_buffer_static and you might be better off
+		 * modifying your own system memory copy of the buffer data and re-submitting the entire
+		 * via @a gl_buffer_data each time you want to modify the data.
+		 * NOTE: If @a asynchronous_map_buffer_dynamic_supported returns false and you still decide
+		 * to use @a gl_map_buffer_dynamic then you also still need to call @a gl_flush_buffer_dynamic.
 		 */
 		virtual
-		void *
-		gl_map_buffer_range(
-				GLRenderer &renderer,
-				target_type target,
-				unsigned int offset,
-				unsigned int length,
-				range_access_type range_access) = 0;
-
-		/**
-		 * Maps the specified range of the buffers.
-		 *
-		 * This mirrors the behaviour of glFlushMappedBufferRange.
-		 *
-		 * NOTE: This method is only supported if the GL_ARB_map_buffer_range extension is available
-		 * (or if GL_ARB_vertex_buffer_objects are *not* supported and instead simulated with
-		 * system memory that OpenGL always blocks on).
-		 *
-		 * Check with @a is_map_buffer_range_supported to see if this method can be used.
-		 */
-		virtual
-		void
-		gl_flush_mapped_buffer_range(
-				GLRenderer &renderer,
-				target_type target,
-				unsigned int offset,
-				unsigned int length) = 0;
-
-
-		/**
-		 * Unmaps the buffer mapped with @a gl_map_buffer - indicates updates or reading is complete.
-		 *
-		 * This mirrors the behaviour of glUnmapBuffer.
-		 * Returns NULL if buffer cannot be mapped or is already mapped.
-		 */
-		virtual
-		void
-		gl_unmap_buffer(
+		GLvoid *
+		gl_map_buffer_dynamic(
 				GLRenderer &renderer,
 				target_type target) = 0;
 
 		/**
-		 * RAII class to call @a gl_map_buffer and @a gl_unmap_buffer over a scope.
+		 * Flushes a range of a currently mapped buffer (mapped via @a gl_map_buffer_dynamic).
+		 *
+		 * There can be multiple calls to @a gl_flush_buffer_dynamic between a
+		 * @a gl_map_buffer_dynamic / @a gl_unmap_buffer pair where each call corresponds to
+		 * modification of a different range within the buffer.
+		 *
+		 * NOTE: Call @a gl_flush_buffer_dynamic *after* each modification of a specified range.
+		 * If a range of data is modified but not flushed then that data becomes undefined.
+		 *
+		 * NOTE: The buffer must currently be mapped with @a gl_map_buffer_dynamic before this can be called.
+		 */
+		virtual
+		void
+		gl_flush_buffer_dynamic(
+				GLRenderer &renderer,
+				target_type target,
+				unsigned int offset,
+				unsigned int length/*in bytes*/) = 0;
+
+
+		/**
+		 * Returns true if @a gl_map_buffer_stream has fine-grained asynchronous support.
+		 *
+		 * Asynchronous mapping is supported if the GL_ARB_map_buffer_range or
+		 * GL_APPLE_flush_buffer_range extension is available.
+		 *
+		 * Without asynchronous mapping support each call to @a gl_map_buffer_stream will allocate
+		 * a new buffer (of size determined by @a gl_buffer_data) in order to avoid blocking that
+		 * can happen if the GPU is reading from the buffer when you map it.
+		 * So there's still a coarse-grained level of asynchronous streaming support regardless.
+		 * However if you have a large size buffer and only write a small amount of data during
+		 * each mapping then this can use more memory (since the OpenGL driver allocates new buffers,
+		 * behind the scenes, at each discard).
+		 *
+		 * NOTE: A return value of false does not prevent @a gl_map_buffer_stream from being called.
+		 */
+		virtual
+		bool
+		asynchronous_map_buffer_stream_supported(
+				GLRenderer &renderer) const = 0;
+
+		/**
+		 * Maps the buffer for streaming *write* access.
+		 *
+		 * The returned pointer points to the area in the buffer at which streaming can begin -
+		 * this is @a stream_offset bytes from the beginning of the buffer.
+		 * @a stream_bytes_available is the number of bytes available for streaming.
+		 *
+		 * @a minimum_bytes_to_stream is the smallest amount of bytes that you will want to stream.
+		 * If the internal buffer is too full to satisfy this request then the current buffer allocation
+		 * is discarded and a new one of the same size (see @a gl_buffer_data) is allocated.
+		 * @a minimum_bytes_to_stream must be in the half-open range (0, buffer_size] where
+		 * 'buffer_size' is determined by @a gl_buffer_data.
+		 *
+		 * This call must be followed up with a single call to @a gl_flush_buffer_stream
+		 * (before @a gl_unmap_buffer is called but after modifying the buffer) to specify the
+		 * number of bytes that were streamed.
+		 *
+		 * This is a more flexible alternative to @a gl_map_buffer_static when streaming small amounts
+		 * of data - normally with a large size buffer you need to orphan the previously rendered
+		 * buffer (by calling 'glBufferData()' with a NULL data pointer) in order to avoid blocking
+		 * to wait for the GPU to finish with the previous rendering call - however doing this frequently
+		 * for a large buffer when only a small portion of it is actually used could lead to the
+		 * OpenGL driver using excessive amounts of memory (or perhaps even just blocking) - actually
+		 * this is what happens if @a asynchronous_map_buffer_stream_supported returns false.
+		 * The solution is to call 'gl_map_buffer_stream()' and modify only unused parts of the
+		 * buffer (since the last time the buffer was orphaned) - this is done by incrementally filling
+		 * up the buffer and issuing draw calls and then when the buffer is full simply orphaning/discarding
+		 * it (the driver returns a new underlying buffer allocation) and do the same thing again.
+		 * This is the way Direct3D does it (using D3DLOCK_NOOVERWRITE and D3DLOCK_DISCARD) -
+		 * see http://msdn.microsoft.com/en-us/library/windows/desktop/bb147263%28v=vs.85%29.aspx#Using_Dynamic_Vertex_and_Index_Buffers
+		 *
+		 * Like @a gl_map_buffer_static this method throws exception on error.
+		 */
+		virtual
+		GLvoid *
+		gl_map_buffer_stream(
+				GLRenderer &renderer,
+				target_type target,
+				unsigned int minimum_bytes_to_stream,
+				unsigned int &stream_offset,
+				unsigned int &stream_bytes_available) = 0;
+
+		/**
+		 * Specifies the number of bytes streamed after calling @a gl_map_buffer_stream and
+		 * writing data into the region mapped for streaming.
+		 *
+		 * @a bytes_written is the number of bytes streamed into the region mapped by @a gl_map_buffer_stream.
+		 *
+		 * There should be only a single call to @a gl_flush_buffer_stream between a
+		 * @a gl_map_buffer_stream / @a gl_unmap_buffer pair.
+		 *
+		 * NOTE: Call @a gl_flush_buffer_stream *after* modifying the region mapped for streaming.
+		 * If the region mapped for streaming is modified but not flushed then that data becomes undefined.
+		 *
+		 * NOTE: The buffer must currently be mapped with @a gl_map_buffer_stream before this can be called.
+		 *
+		 * NOTE: If no data was streamed (written) after calling @a gl_map_buffer_stream then
+		 * specifying zero for @a bytes_written is allowed since it makes it easier for the client code
+		 * (@a gl_flush_buffer_stream effectively gets ignored in this case).
+		 */
+		virtual
+		void
+		gl_flush_buffer_stream(
+				GLRenderer &renderer,
+				target_type target,
+				unsigned int bytes_written) = 0;
+
+
+		/**
+		 * Unmaps the buffer mapped with @a gl_map_buffer_static - indicates updates or reading is complete.
+		 *
+		 * This mirrors the behaviour of glUnmapBuffer (included returning GL_FALSE if the buffer
+		 * contents were corrupted during the mapping, eg, video memory corruption during ALT+TAB).
+		 * Also emits OpenGL error message as a warning to the console.
+		 */
+		virtual
+		GLboolean
+		gl_unmap_buffer(
+				GLRenderer &renderer,
+				target_type target) = 0;
+
+
+		/**
+		 * RAII class to call @a gl_map_buffer_static and @a gl_unmap_buffer over a scope.
 		 */
 		class MapBufferScope :
 				private boost::noncopyable
 		{
 		public:
 			/**
-			 * Constructor - NOTE that it doesn't map the buffer - call @a gl_map_buffer for that.
+			 * Constructor - NOTE that it doesn't map the buffer - call @a gl_map_buffer_static for that.
 			 */
 			MapBufferScope(
 					GLRenderer &renderer,
 					GLBuffer &buffer,
-					target_type target,
-					access_type access);
+					target_type target);
 
-			//! Destructor - unmaps buffer if @a gl_unmap_buffer needs to be called but was not called.
+			/**
+			 * Destructor - unmaps buffer if @a gl_unmap_buffer needs to be called but was not called -
+			 * in which case the return code from @a gl_unmap_buffer is ignored.
+			 */
 			~MapBufferScope();
 
 			//
-			// @a gl_map_buffer and @a gl_unmap_buffer can be called multiple times (in matched non-nested pairs).
+			// @a gl_map_buffer_static and @a gl_unmap_buffer can be called multiple times (in matched non-nested pairs).
 			//
 
-			//! Maps buffer using parameters passed into constructor.
-			void *
-			gl_map_buffer();
+			//! Maps buffer.
+			GLvoid *
+			gl_map_buffer_static(
+					access_type access);
+
+			//! Maps buffer for dynamic *write* access - check if supported using @a asynchronous_map_buffer_dynamic_supported.
+			GLvoid *
+			gl_map_buffer_dynamic();
+
+			//! Maps buffer for streaming *write* access - check if supported using @a asynchronous_map_buffer_stream_supported.
+			GLvoid *
+			gl_map_buffer_stream(
+					unsigned int minimum_bytes_to_stream,
+					unsigned int &stream_offset,
+					unsigned int &stream_bytes_available);
 
 			//! Unmaps buffer using parameters passed into constructor.
-			void
+			GLboolean
 			gl_unmap_buffer();
 
 		private:
 			GLRenderer &d_renderer;
 			GLBuffer &d_buffer;
 			target_type d_target;
-			access_type d_access;
-			void *d_data;
+			GLvoid *d_data;
 		};
 
 

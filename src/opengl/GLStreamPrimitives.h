@@ -57,6 +57,7 @@ namespace GPlatesOpenGL
 	 *  - GL_POINTS,
 	 *  - GL_LINES, or
 	 *  - GL_TRIANGLES.
+	 * NOTE: When using the nested class 'Quads' it is still streamed as GL_TRIANGLES.
 	 *
 	 * This class does take advantage of vertex re-use (via vertex indices) but it is limited
 	 * to the re-use you get with line strips/loops and triangles strips/fans.
@@ -405,7 +406,8 @@ namespace GPlatesOpenGL
 			TriangleFans(
 					stream_primitives_type &stream_primitives) :
 				d_stream_primitives(stream_primitives),
-				d_vertex_index(0)
+				d_vertex_index(0),
+				d_apex_vertex_element(0)
 			{  }
 
 			void
@@ -437,12 +439,161 @@ namespace GPlatesOpenGL
 			stream_primitives_type &d_stream_primitives;
 			vertex_type d_triangles_vertices[2];
 			unsigned int d_vertex_index;
+			unsigned int d_apex_vertex_element;
+		};
+
+		/**
+		 * Attach to @a GLStreamPrimitives to stream individual vertex-indexed triangle meshes.
+		 *
+		 * This supports user-specified vertex indexing rather than the implicit indexing in the other
+		 * primitive types (such as triangle strips and fans) and hence allows for more complex primitives.
+		 *
+		 * NOTE: This can stream meshes that are larger than the stream buffers - although this
+		 * is not a good idea.
+		 */
+		class TriangleMeshes
+		{
+		public:
+			explicit
+			TriangleMeshes(
+					stream_primitives_type &stream_primitives) :
+				d_stream_primitives(stream_primitives),
+				d_base_vertex_element(0),
+				d_reordered_vertices(false)
+			{  }
+
+			void
+			begin_mesh()
+			{
+				d_mesh_vertices.clear();
+				d_reordered_mesh_vertex_elements.clear();
+				d_base_vertex_element = d_stream_primitives.get_base_vertex_element();
+				d_reordered_vertices = false;
+			}
+
+			/**
+			 * Adds the next vertex to the mesh.
+			 *
+			 * Returns false if the vertex buffer is full.
+			 * In this case you only need to re-submit the last vertex submitted (ie, the @a vertex
+			 * in the call that failed) in order to continue streaming into the same begin/end pair
+			 * - once a new buffer has been provided.
+			 */
+			bool
+			add_vertex(
+					const vertex_type &vertex);
+
+			/**
+			 * Adds a triangle to the mesh.
+			 *
+			 * The triangle references three vertices already added using @a add_vertex.
+			 *
+			 * For example, a quad could be:
+			 *   begin_mesh();
+			 *   add_vertex(); // vertex 0
+			 *   add_vertex(); // vertex 1
+			 *   add_vertex(); // vertex 2
+			 *   add_triangle(0, 1, 2);
+			 *   add_vertex(); // vertex 3
+			 *   add_triangle(0, 2, 3);
+			 *   end_mesh();
+			 *
+			 * NOTE: The vertices indexed by this triangle *must* have already been added.
+			 *
+			 * It is also best to add a triangle as soon as its vertices have been added.
+			 * For example, if you add all the vertices first and then add the triangles last then it's
+			 * possible that the vertex buffer filled up while adding the vertices - in which case
+			 * when the triangles are added the vertices (which are buffered internally) must
+			 * be re-added to the vertex buffer (effectively wasting the originally added vertices).
+			 * However for small meshes and reasonably large vertex buffers this will happen
+			 * relatively infrequently.
+			 *
+			 * Returns false if the vertex buffer (or vertex element buffer) is full.
+			 * In this case you only need to re-submit the last triangle submitted (ie, the three
+			 * vertex elements in the call that failed) in order to continue streaming into the
+			 * same begin/end pair - once the new buffers have been provided.
+			 */
+			bool
+			add_triangle(
+					vertex_element_type first_vertex_element,
+					vertex_element_type second_vertex_element,
+					vertex_element_type third_vertex_element);
+
+			void
+			end_mesh()
+			{
+				// Nothing to do
+			}
+
+		private:
+			stream_primitives_type &d_stream_primitives;
+			std::vector<vertex_type> d_mesh_vertices;
+			std::vector< boost::optional<vertex_element_type> > d_reordered_mesh_vertex_elements;
+			unsigned int d_base_vertex_element;
+			bool d_reordered_vertices;
+
+			void
+			reorder_vertices();
+		};
+
+		/**
+		 * Attach to @a GLStreamPrimitives to stream quad primitives.
+		 *
+		 * WARNING: Even though quad primitives are streamed in, the final output is in the form of
+		 * triangles (ie, GL_TRIANGLES) and should *not* be rendered as GL_QUADS.
+		 * The reason for this is the graphics hardware breaks everything down to triangles anyway
+		 * (and, for this reason, OpenGL 3 has deprecated GL_QUADS) - most current hardware has
+		 * post transform-and-lighting hardware to convert quads to triangles but there is no
+		 * guarantee this special-purpose hardware will be there in future hardware.
+		 */
+		class Quads
+		{
+		public:
+			explicit
+			Quads(
+					stream_primitives_type &stream_primitives) :
+				d_stream_primitives(stream_primitives),
+				d_vertex_index(0)
+			{  }
+
+			void
+			begin_quads()
+			{
+				d_vertex_index = 0;
+			}
+
+			/**
+			 * Add quads as groups of four vertices.
+			 *
+			 * Returns false if the vertex buffer (or vertex element buffer) is full.
+			 * In this case you only need to re-submit the last vertex submitted (ie, @a vertex in the
+			 * call that failed) in order to continue streaming into the same begin/end pair -
+			 * once new buffers have been provided.
+			 *
+			 * WARNING: Even though quad primitives are streamed in, the final output is in the form of
+			 * triangles (ie, GL_TRIANGLES) and should *not* be rendered as GL_QUADS.
+			 */
+			bool
+			add_vertex(
+					const vertex_type &vertex);
+
+			void
+			end_quads()
+			{
+				// Nothing to do
+			}
+
+		private:
+			stream_primitives_type &d_stream_primitives;
+			vertex_type d_quads_vertices[3];
+			unsigned int d_vertex_index;
 		};
 
 
 		/**
 		 * RAII class to start and stop streaming over a scope and also to temporarily interrupt
-		 * streaming when the vertex buffer or vertex element buffer is full.
+		 * streaming when the vertex buffer or vertex element buffer is full (or when client
+		 * decides to render the stream contents).
 		 */
 		class StreamTarget :
 				private boost::noncopyable
@@ -476,14 +627,14 @@ namespace GPlatesOpenGL
 			 * pass a *non-const* reference instead of a const reference (it wasn't to avoid
 			 * copying the vertices because boost::in_place doesn't do that).
 			 *
-			 * NOTE: A typical usage of this method is to use it with 'GLBuffer::gl_map_buffer' on
+			 * NOTE: A typical usage of this method is to use it with 'GLBuffer::gl_map_buffer_static' on
 			 * a vertex buffer and a vertex element buffer and then call 'GLBuffer::gl_unmapBuffer'
 			 * after calling @a stop_streaming. For this you would use @a GLStaticStreamPrimitives.
 			 *
 			 * This way @a GLStreamPrimitives is used to fill up a vertex buffer and vertex element
 			 * buffer which can then be used for rendering.
 			 * Note that you can also call GLBuffer::gl_buffer_data with a NULL 'data' parameter to
-			 * prevent the CPU blocking on the GLBuffer::gl_map_buffer call (if the GPU is still
+			 * prevent the CPU blocking on the GLBuffer::gl_map_buffer_static call (if the GPU is still
 			 * rendering from the contents of the buffers) - OpenGL effectively allocates a new buffer
 			 * behind the scenes if the GPU is still using the previous buffer (all this is done
 			 * behind a single vertex buffer object or vertex element buffer object).
@@ -526,9 +677,23 @@ namespace GPlatesOpenGL
 			 * If you used @a Lines or @a LineStrips for streaming then draw the streamed vertices with GL_LINES.
 			 * If you used @a Triangles, @a TriangleStrips or @a TriangleFans for streaming then draw
 			 * the streamed vertices with GL_TRIANGLES.
+			 *
+			 * NOTE: If you use @a Quads then draw the streamed vertices with GL_TRIANGLES (not GL_QUADS).
 			 */
 			void
 			stop_streaming();
+
+			/**
+			 * Returns the count of vertices already in the stream writer at the last call to @a start_streaming.
+			 */
+			unsigned int
+			get_start_streaming_vertex_count() const;
+
+			/**
+			 * Returns the count of vertex elements already in the stream writer at the last call to @a start_streaming.
+			 */
+			unsigned int
+			get_start_streaming_vertex_element_count() const;
 
 			/**
 			 * Returns the number of vertices streamed since the last call to @a start_streaming.
@@ -550,6 +715,8 @@ namespace GPlatesOpenGL
 
 		private:
 			stream_primitives_type &d_stream_primitives;
+			unsigned int d_start_streaming_vertex_count;
+			unsigned int d_start_streaming_vertex_element_count;
 			unsigned int d_num_streamed_vertices;
 			unsigned int d_num_streamed_vertex_elements;
 			bool d_targeting_stream;
@@ -595,7 +762,17 @@ namespace GPlatesOpenGL
 		void
 		begin_streaming(
 				const VertexStreamWriterConstructorArgs &vertex_stream_writer_constructor_args,
-				const VertexElementStreamWriterConstructorArgs &vertex_element_stream_writer_constructor_args);
+				const VertexElementStreamWriterConstructorArgs &vertex_element_stream_writer_constructor_args,
+				unsigned int &begin_streaming_vertex_count,
+				unsigned int &begin_streaming_vertex_element_count);
+
+		/**
+		 * Returns the number of vertices currently in the vertex stream writer.
+		 *
+		 * NOTE: Only valid when called between @a begin_streaming / @a end_streaming.
+		 */
+		unsigned int
+		get_base_vertex_element() const;
 
 		/**
 		 * Returns the number of vertices streamed since the last call to @a begin_streaming.
@@ -723,6 +900,32 @@ namespace GPlatesOpenGL
 		add_triangle(
 				const vertex_type &first_vertex,
 				const vertex_type &third_vertex);
+
+
+		/**
+		 * Adds a vertex only (no vertex elements are added).
+		 *
+		 * This method should be used with the overload of @a add_triangle accepting vertex *elements*.
+		 *
+		 * Returns false if the vertex buffer is full.
+		 */
+		bool
+		add_vertex(
+				const vertex_type &vertex);
+
+		/**
+		 * Adds a triangle primitive by indexing the specified vertices (and added with @a add_vertex).
+		 *
+		 * The indices are relative to the beginning of the stream writer (*not* relative to when
+		 * @a begin_streaming is called) because they must be relative to the beginning of storage).
+		 *
+		 * Returns false if the vertex element buffer is full.
+		 */
+		bool
+		add_triangle(
+				vertex_element_type first_vertex_element,
+				vertex_element_type second_vertex_element,
+				vertex_element_type third_vertex_element);
 	};
 
 
@@ -759,7 +962,9 @@ namespace GPlatesOpenGL
 	void
 	GLStreamPrimitives<VertexType, VertexElementType, StreamWriterType>::begin_streaming(
 			const VertexStreamWriterConstructorArgs &vertex_stream_writer_constructor_args,
-			const VertexElementStreamWriterConstructorArgs &vertex_element_stream_writer_constructor_args)
+			const VertexElementStreamWriterConstructorArgs &vertex_element_stream_writer_constructor_args,
+			unsigned int &begin_streaming_vertex_count,
+			unsigned int &begin_streaming_vertex_element_count)
 	{
 		// Make sure 'end_streaming' was called (or this is the first we're called).
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -782,6 +987,23 @@ namespace GPlatesOpenGL
 		d_vertex_element_stream = vertex_element_stream_writer_constructor_args;
 		// The initial stream count (can be non-zero if passed a non-empty std::vector for example).
 		d_begin_vertex_element_stream_count = d_vertex_element_stream->count();
+
+		// Initialise caller's parameters.
+		begin_streaming_vertex_count = d_begin_vertex_stream_count;
+		begin_streaming_vertex_element_count = d_begin_vertex_element_stream_count;
+	}
+
+
+	template <class VertexType, typename VertexElementType, template <class> class StreamWriterType>
+	unsigned int
+	GLStreamPrimitives<VertexType, VertexElementType, StreamWriterType>::get_base_vertex_element() const
+	{
+		// Make sure we are between 'begin_streaming' and 'end_streaming'.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				d_vertex_stream,
+				GPLATES_ASSERTION_SOURCE);
+
+		return d_vertex_stream->count();
 	}
 
 
@@ -1091,6 +1313,56 @@ namespace GPlatesOpenGL
 
 	template <class VertexType, typename VertexElementType, template <class> class StreamWriterType>
 	bool
+	GLStreamPrimitives<VertexType, VertexElementType, StreamWriterType>::add_vertex(
+			const vertex_type &vertex)
+	{
+		// Make sure we are between 'begin_streaming' and 'end_streaming'.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				d_vertex_stream,
+				GPLATES_ASSERTION_SOURCE);
+
+		// If there is not enough space for one vertex.
+		if (!d_vertex_stream->remaining())
+		{
+			return false;
+		}
+
+		// Add the vertex.
+		d_vertex_stream->write(vertex);
+
+		return true;
+	}
+
+
+	template <class VertexType, typename VertexElementType, template <class> class StreamWriterType>
+	bool
+	GLStreamPrimitives<VertexType, VertexElementType, StreamWriterType>::add_triangle(
+			vertex_element_type first_vertex_element,
+			vertex_element_type second_vertex_element,
+			vertex_element_type third_vertex_element)
+	{
+		// Make sure we are between 'begin_streaming' and 'end_streaming'.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				d_vertex_element_stream,
+				GPLATES_ASSERTION_SOURCE);
+
+		// If there is not enough space for the indices.
+		if (d_vertex_element_stream->remaining() < 3)
+		{
+			return false;
+		}
+
+		// Add the triangle's vertex indices.
+		d_vertex_element_stream->write(first_vertex_element);
+		d_vertex_element_stream->write(second_vertex_element);
+		d_vertex_element_stream->write(third_vertex_element);
+
+		return true;
+	}
+
+
+	template <class VertexType, typename VertexElementType, template <class> class StreamWriterType>
+	bool
 	GLStreamPrimitives<VertexType, VertexElementType, StreamWriterType>::Lines::add_vertex(
 			const vertex_type &vertex)
 	{
@@ -1358,21 +1630,14 @@ namespace GPlatesOpenGL
 	{
 		if (d_vertex_index > 2) // Handle most common case first...
 		{
-			// Add a triangle using its first and third vertices.
-			// Its second vertex will be the third vertex of the last triangle added.
-			// The reason for specifying the first vertex of the triangle (even though
-			// its already been specified by a previous triangle) is because a triangle
-			// must fall within a finite contiguous range of vertices and that is because
-			// we need a finite overlap when we move from one vertex array to another.
-			// A triangle fan has an arbitrary overlap unless we re-specify the fan apex
-			// vertex for each triangle of the fan.
-			// UPDATE: Actually this has since changed and we can now detect buffer transitions
-			// right here so we could pass in the vertex index of the apex vertex but I'm not
-			// going to bother with this since triangle fans aren't likely to be used for
-			// large geometries with lots of vertices (since all triangles are forced to connect
-			// to the apex vertex making it only useful for special cases) so the speed improvement
-			// will be virtually nothing.
-			if (!d_stream_primitives.add_triangle(d_triangles_vertices[0], vertex))
+			// Make sure we are between 'begin_streaming' and 'end_streaming'.
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					d_stream_primitives.d_vertex_stream && d_stream_primitives.d_vertex_element_stream,
+					GPLATES_ASSERTION_SOURCE);
+
+			// If there is not enough space for one vertex and three indices.
+			if (!d_stream_primitives.d_vertex_stream->remaining() ||
+				d_stream_primitives.d_vertex_element_stream->remaining() < 3)
 			{
 				// To enable the user to re-submit the same vertex again (after they've allocated
 				// more vertex/index buffer space) we will also need to re-submit the previous two vertices.
@@ -1387,16 +1652,35 @@ namespace GPlatesOpenGL
 			// We only need one copy since the apex vertex never changes.
 			d_triangles_vertices[1] = vertex;
 
+			// Add the triangle's third vertex to the stream.
+			const vertex_element_type third_vertex_element = d_stream_primitives.d_vertex_stream->count();
+			d_stream_primitives.d_vertex_stream->write(vertex);
+
+			// The second vertex is the third vertex of the last triangle added which
+			// is the last vertex added to the stream.
+			const vertex_element_type second_vertex_element = third_vertex_element - 1;
+
+			// The first vertex is the apex vertex.
+
+			// Add the triangle's vertex indices.
+			d_stream_primitives.d_vertex_element_stream->write(d_apex_vertex_element);
+			d_stream_primitives.d_vertex_element_stream->write(second_vertex_element);
+			d_stream_primitives.d_vertex_element_stream->write(third_vertex_element);
+
 			// No need to increment vertex index anymore.
 		}
 		else if (d_vertex_index < 2)
 		{
-			// The first or second vertex of the triangle strip.
+			// The first or second vertex of the triangle fan.
 			d_triangles_vertices[d_vertex_index] = vertex;
 			++d_vertex_index;
 		}
 		else // d_vertex_index == 2
 		{
+			// The first vertex added is the apex vertex - record its position in the vertex buffer
+			// so we can index it later (all triangles in the fan index the apex vertex).
+			d_apex_vertex_element = d_stream_primitives.d_vertex_stream->count();
+
 			// We have the third triangle vertex so submit our first triangle.
 			if (!d_stream_primitives.add_triangle(d_triangles_vertices[0], d_triangles_vertices[1], vertex))
 			{
@@ -1416,9 +1700,218 @@ namespace GPlatesOpenGL
 
 
 	template <class VertexType, typename VertexElementType, template <class> class StreamWriterType>
+	bool
+	GLStreamPrimitives<VertexType, VertexElementType, StreamWriterType>::TriangleMeshes::add_vertex(
+			const vertex_type &vertex)
+	{
+		// Make sure we are between 'begin_streaming' and 'end_streaming'.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				d_stream_primitives.d_vertex_stream,
+				GPLATES_ASSERTION_SOURCE);
+
+		// If there is not enough space for one vertex.
+		if (!d_stream_primitives.d_vertex_stream->remaining())
+		{
+			reorder_vertices();
+
+			// Return immediately so the user can re-submit the vertex once they've started a new
+			// buffer(s) - in which case the next call will attempt to add the same vertex again.
+			return false;
+		}
+
+		if (d_reordered_vertices)
+		{
+			// Here there's no longer a one-to-one association between vertices and indices.
+			// So we need to keep track of which vertex elements map to which vertices.
+			d_reordered_mesh_vertex_elements.push_back(d_stream_primitives.d_vertex_stream->count());
+		}
+
+		// Add the vertex to the stream.
+		d_stream_primitives.d_vertex_stream->write(vertex);
+
+		// Keep track of the vertex in case the stream buffer fills up and we need to re-submit it later.
+		d_mesh_vertices.push_back(vertex);
+
+		return true;
+	}
+
+
+	template <class VertexType, typename VertexElementType, template <class> class StreamWriterType>
+	bool
+	GLStreamPrimitives<VertexType, VertexElementType, StreamWriterType>::TriangleMeshes::add_triangle(
+			vertex_element_type first_relative_vertex_element,
+			vertex_element_type second_relative_vertex_element,
+			vertex_element_type third_relative_vertex_element)
+	{
+		// Number of vertices in the current mesh.
+		const unsigned int num_mesh_vertices = d_mesh_vertices.size();
+
+		// Make sure we are between 'begin_streaming' and 'end_streaming' *and*
+		// make sure enough vertices have been added otherwise the indices can reference garbage.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				d_stream_primitives.d_vertex_stream &&
+					first_relative_vertex_element < num_mesh_vertices &&
+					second_relative_vertex_element < num_mesh_vertices &&
+					third_relative_vertex_element < num_mesh_vertices,
+				GPLATES_ASSERTION_SOURCE);
+
+		if (d_reordered_vertices)
+		{
+			// Here there's no longer a one-to-one association between vertices and indices.
+			// We need to determine if a vertex should get (re)added to the stream buffer.
+			// Only those vertices used in new triangles get (re)added - this avoids (re)adding
+			// *all* the mesh vertices every time a stream buffer fills up.
+
+			// We could be adding up to three vertices here so make sure there's enough room.
+			if (d_stream_primitives.d_vertex_stream->remaining() < 3)
+			{
+				// Return immediately so the user can re-submit the triangle once they've started a new
+				// buffer(s) - in which case the next call will attempt to add the same triangle again.
+				return false;
+			}
+
+			// See if the first triangle vertex has been added.
+			boost::optional<vertex_element_type> &first_vertex_element =
+					d_reordered_mesh_vertex_elements[first_relative_vertex_element];
+			if (!first_vertex_element)
+			{
+				// Keep track of the vertex element in case vertex is indexed again.
+				first_vertex_element = d_stream_primitives.d_vertex_stream->count();
+				// (Re)add the vertex to the stream.
+				d_stream_primitives.d_vertex_stream->write(d_mesh_vertices[first_relative_vertex_element]);
+			}
+
+			// See if the second triangle vertex has been added.
+			boost::optional<vertex_element_type> &second_vertex_element =
+					d_reordered_mesh_vertex_elements[second_relative_vertex_element];
+			if (!second_vertex_element)
+			{
+				// Keep track of the vertex element in case vertex is indexed again.
+				second_vertex_element = d_stream_primitives.d_vertex_stream->count();
+				// (Re)add the vertex to the stream.
+				d_stream_primitives.d_vertex_stream->write(d_mesh_vertices[second_relative_vertex_element]);
+			}
+
+			// See if the third triangle vertex has been added.
+			boost::optional<vertex_element_type> &third_vertex_element =
+					d_reordered_mesh_vertex_elements[third_relative_vertex_element];
+			if (!third_vertex_element)
+			{
+				// Keep track of the vertex element in case vertex is indexed again.
+				third_vertex_element = d_stream_primitives.d_vertex_stream->count();
+				// (Re)add the vertex to the stream.
+				d_stream_primitives.d_vertex_stream->write(d_mesh_vertices[third_relative_vertex_element]);
+			}
+
+			// Here there's no longer a one-to-one association between vertices and indices.
+			if (!d_stream_primitives.add_triangle(
+				first_vertex_element.get(),
+				second_vertex_element.get(),
+				third_vertex_element.get()))
+			{
+				// Return immediately so the user can re-submit the triangle once they've started a new
+				// buffer(s) - in which case the next call will attempt to add the same triangle again.
+				return false;
+			}
+
+			return true;
+		}
+
+		// This is the most common case and happens when the stream buffer(s) have not filled up
+		// during submission of the current mesh - we want to keep this path reasonably optimal.
+		// Here there's a one-to-one association between vertices and indices.
+		if (!d_stream_primitives.add_triangle(
+			d_base_vertex_element + first_relative_vertex_element,
+			d_base_vertex_element + second_relative_vertex_element,
+			d_base_vertex_element + third_relative_vertex_element))
+		{
+			// We have to assume that the vertex buffer will get re-allocated even though only the
+			// vertex *element* buffer needs re-allocation (with the current interface the caller
+			// can't know which buffer needs re-allocation - we don't have two return codes - it
+			// actually ends up just being easier for the client to re-map both buffers).
+			reorder_vertices();
+
+			// Return immediately so the user can re-submit the triangle once they've started a new
+			// buffer(s) - in which case the next call will attempt to add the same triangle again.
+			return false;
+		}
+
+		return true;
+	}
+
+
+	template <class VertexType, typename VertexElementType, template <class> class StreamWriterType>
+	void
+	GLStreamPrimitives<VertexType, VertexElementType, StreamWriterType>::TriangleMeshes::reorder_vertices()
+	{
+		// Set all the values to 'boost::none' so that they'll get recalculated when we add more triangles.
+		// In this way only those vertices that are indexed by subsequently added triangles will be
+		// added again to the vertex buffer (ie, not all the vertices).
+		if (d_reordered_vertices)
+		{
+			std::fill(d_reordered_mesh_vertex_elements.begin(), d_reordered_mesh_vertex_elements.end(), boost::none);
+		}
+		else
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					d_reordered_mesh_vertex_elements.empty(),
+					GPLATES_ASSERTION_SOURCE);
+			// Defaults to 'boost::none'.
+			d_reordered_mesh_vertex_elements.resize(d_mesh_vertices.size());
+
+			d_reordered_vertices = true;
+		}
+	}
+
+
+	template <class VertexType, typename VertexElementType, template <class> class StreamWriterType>
+	bool
+	GLStreamPrimitives<VertexType, VertexElementType, StreamWriterType>::Quads::add_vertex(
+			const vertex_type &vertex)
+	{
+		if (d_vertex_index < 2)
+		{
+			// The first or second vertex of the quad.
+			d_quads_vertices[d_vertex_index] = vertex;
+			++d_vertex_index;
+		}
+		else if (d_vertex_index == 2)
+		{
+			// We have the third quad vertex so submit the first triangle of the quad.
+			if (!d_stream_primitives.add_triangle(d_quads_vertices[0], d_quads_vertices[1], vertex))
+			{
+				// Return immediately so the user can re-submit the vertex once they've started a new
+				// buffer(s) - in which case the next call will attempt to add the same triangle again.
+				return false;
+			}
+
+			// The third vertex of the quad.
+			d_quads_vertices[d_vertex_index] = vertex;
+			++d_vertex_index;
+		}
+		else // d_vertex_index == 3 ...
+		{
+			// We have the fourth quad vertex so submit the second triangle of the quad.
+			if (!d_stream_primitives.add_triangle(d_quads_vertices[0], d_quads_vertices[2], vertex))
+			{
+				// Return immediately so the user can re-submit the vertex once they've started a new
+				// buffer(s) - in which case the next call will attempt to add the same triangle again.
+				return false;
+			}
+
+			d_vertex_index = 0;
+		}
+
+		return true;
+	}
+
+
+	template <class VertexType, typename VertexElementType, template <class> class StreamWriterType>
 	GLStreamPrimitives<VertexType, VertexElementType, StreamWriterType>::StreamTarget::StreamTarget(
 			stream_primitives_type &stream_primitives) :
 		d_stream_primitives(stream_primitives),
+		d_start_streaming_vertex_count(0),
+		d_start_streaming_vertex_element_count(0),
 		d_num_streamed_vertices(0),
 		d_num_streamed_vertex_elements(0),
 		d_targeting_stream(false)
@@ -1457,7 +1950,9 @@ namespace GPlatesOpenGL
 
 		d_stream_primitives.begin_streaming(
 				vertex_stream_writer_constructor_args,
-				vertex_element_stream_writer_constructor_args);
+				vertex_element_stream_writer_constructor_args,
+				d_start_streaming_vertex_count,
+				d_start_streaming_vertex_element_count);
 
 		d_targeting_stream = true;
 		d_num_streamed_vertices = 0;
@@ -1477,6 +1972,22 @@ namespace GPlatesOpenGL
 		d_targeting_stream = false;
 		d_stream_primitives.end_streaming(d_num_streamed_vertices, d_num_streamed_vertex_elements);
 		// Don't reset stream counts so clients can still query them.
+	}
+
+
+	template <class VertexType, typename VertexElementType, template <class> class StreamWriterType>
+	unsigned int
+	GLStreamPrimitives<VertexType, VertexElementType, StreamWriterType>::StreamTarget::get_start_streaming_vertex_count() const
+	{
+		return d_start_streaming_vertex_count;
+	}
+
+
+	template <class VertexType, typename VertexElementType, template <class> class StreamWriterType>
+	unsigned int
+	GLStreamPrimitives<VertexType, VertexElementType, StreamWriterType>::StreamTarget::get_start_streaming_vertex_element_count() const
+	{
+		return d_start_streaming_vertex_element_count;
 	}
 
 

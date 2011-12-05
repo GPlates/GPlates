@@ -81,6 +81,7 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::get_child_node(
 			return QuadTreeNode(
 					parent_node.d_mesh_drawable,
 					GLUtils::QuadTreeClipSpaceTransform(
+							GLUtils::QuadTreeClipSpaceTransform()/*Identity transform*/,
 							child_x_offset,
 							child_y_offset));
 		}

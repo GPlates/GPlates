@@ -43,6 +43,8 @@
 
 const GPlatesOpenGL::GLBuffer::target_type GPlatesOpenGL::GLBuffer::TARGET_ARRAY_BUFFER = GL_ARRAY_BUFFER_ARB;
 const GPlatesOpenGL::GLBuffer::target_type GPlatesOpenGL::GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER = GL_ELEMENT_ARRAY_BUFFER_ARB;
+const GPlatesOpenGL::GLBuffer::target_type GPlatesOpenGL::GLBuffer::TARGET_PIXEL_UNPACK_BUFFER = GL_PIXEL_UNPACK_BUFFER_ARB;
+const GPlatesOpenGL::GLBuffer::target_type GPlatesOpenGL::GLBuffer::TARGET_PIXEL_PACK_BUFFER = GL_PIXEL_PACK_BUFFER_ARB;
 
 const GPlatesOpenGL::GLBuffer::usage_type GPlatesOpenGL::GLBuffer::USAGE_STATIC_DRAW = GL_STATIC_DRAW_ARB;
 const GPlatesOpenGL::GLBuffer::usage_type GPlatesOpenGL::GLBuffer::USAGE_STATIC_READ = GL_STATIC_READ_ARB;
@@ -57,13 +59,6 @@ const GPlatesOpenGL::GLBuffer::usage_type GPlatesOpenGL::GLBuffer::USAGE_STREAM_
 const GPlatesOpenGL::GLBuffer::access_type GPlatesOpenGL::GLBuffer::ACCESS_READ_ONLY = GL_READ_ONLY_ARB;
 const GPlatesOpenGL::GLBuffer::access_type GPlatesOpenGL::GLBuffer::ACCESS_WRITE_ONLY = GL_WRITE_ONLY_ARB;
 const GPlatesOpenGL::GLBuffer::access_type GPlatesOpenGL::GLBuffer::ACCESS_READ_WRITE = GL_READ_WRITE_ARB;
-
-const GPlatesOpenGL::GLBuffer::range_access_type GPlatesOpenGL::GLBuffer::RANGE_ACCESS_READ_BIT = GL_MAP_READ_BIT;
-const GPlatesOpenGL::GLBuffer::range_access_type GPlatesOpenGL::GLBuffer::RANGE_ACCESS_WRITE_BIT = GL_MAP_WRITE_BIT;
-const GPlatesOpenGL::GLBuffer::range_access_type GPlatesOpenGL::GLBuffer::RANGE_ACCESS_INVALIDATE_RANGE_BIT = GL_MAP_INVALIDATE_RANGE_BIT;
-const GPlatesOpenGL::GLBuffer::range_access_type GPlatesOpenGL::GLBuffer::RANGE_ACCESS_INVALIDATE_BUFFER_BIT = GL_MAP_INVALIDATE_BUFFER_BIT;
-const GPlatesOpenGL::GLBuffer::range_access_type GPlatesOpenGL::GLBuffer::RANGE_ACCESS_FLUSH_EXPLICIT_BIT = GL_MAP_FLUSH_EXPLICIT_BIT;
-const GPlatesOpenGL::GLBuffer::range_access_type GPlatesOpenGL::GLBuffer::RANGE_ACCESS_UNSYNCHRONIZED_BIT = GL_MAP_UNSYNCHRONIZED_BIT;
 
 
 std::auto_ptr<GPlatesOpenGL::GLBuffer>
@@ -85,12 +80,10 @@ GPlatesOpenGL::GLBuffer::create_as_auto_ptr(
 GPlatesOpenGL::GLBuffer::MapBufferScope::MapBufferScope(
 		GLRenderer &renderer,
 		GLBuffer &buffer,
-		target_type target,
-		access_type access) :
+		target_type target) :
 	d_renderer(renderer),
 	d_buffer(buffer),
 	d_target(target),
-	d_access(access),
 	d_data(NULL)
 {
 }
@@ -112,29 +105,62 @@ GPlatesOpenGL::GLBuffer::MapBufferScope::~MapBufferScope()
 }
 
 
-void *
-GPlatesOpenGL::GLBuffer::MapBufferScope::gl_map_buffer()
+GLvoid *
+GPlatesOpenGL::GLBuffer::MapBufferScope::gl_map_buffer_static(
+		access_type access)
 {
 	// Make sure 'gl_unmap_buffer' was called, or this is first time called.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_data == NULL,
 			GPLATES_ASSERTION_SOURCE);
 
-	d_data = d_buffer.gl_map_buffer(d_renderer, d_target, d_access);
+	d_data = d_buffer.gl_map_buffer_static(d_renderer, d_target, access);
 
 	return d_data;
 }
 
 
-void
+GLvoid *
+GPlatesOpenGL::GLBuffer::MapBufferScope::gl_map_buffer_dynamic()
+{
+	// Make sure 'gl_unmap_buffer' was called, or this is first time called.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_data == NULL,
+			GPLATES_ASSERTION_SOURCE);
+
+	d_data = d_buffer.gl_map_buffer_dynamic(d_renderer, d_target);
+
+	return d_data;
+}
+
+
+GLvoid *
+GPlatesOpenGL::GLBuffer::MapBufferScope::gl_map_buffer_stream(
+		unsigned int minimum_bytes_to_stream,
+		unsigned int &stream_offset,
+		unsigned int &stream_bytes_available)
+{
+	// Make sure 'gl_unmap_buffer' was called, or this is first time called.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_data == NULL,
+			GPLATES_ASSERTION_SOURCE);
+
+	d_data = d_buffer.gl_map_buffer_stream(
+			d_renderer, d_target, minimum_bytes_to_stream, stream_offset, stream_bytes_available);
+
+	return d_data;
+}
+
+
+GLboolean
 GPlatesOpenGL::GLBuffer::MapBufferScope::gl_unmap_buffer()
 {
-	// Make sure 'gl_map_buffer' was called and was successful.
+	// Make sure 'gl_map_buffer_static' was called and was successful.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_data,
 			GPLATES_ASSERTION_SOURCE);
 
-	d_buffer.gl_unmap_buffer(d_renderer, d_target);
-
 	d_data = NULL;
+
+	return d_buffer.gl_unmap_buffer(d_renderer, d_target);
 }

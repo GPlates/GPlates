@@ -29,9 +29,13 @@
 #include <cmath>
 #include <iterator>
 #include <vector>
+#include <boost/mpl/if.hpp>
 #include <boost/operators.hpp>
 #include <boost/pool/object_pool.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/type_traits/add_const.hpp>
+#include <boost/type_traits/is_const.hpp>
+#include <boost/type_traits/remove_reference.hpp>
 
 #include "ConstGeometryOnSphereVisitor.h"
 #include "CubeCoordinateFrame.h"
@@ -151,6 +155,9 @@ namespace GPlatesMaths
 			 */
 			typedef typename element_list_impl_type::const_iterator const_iterator;
 
+			//! Typedef for a non-const iterator of the elements in the internal list.
+			typedef typename element_list_impl_type::iterator iterator;
+
 
 			/**
 			 * Add an element already wrapped in a linked list node.
@@ -189,6 +196,20 @@ namespace GPlatesMaths
 			 */
 			const_iterator
 			end() const
+			{
+				return d_element_list.end();
+			}
+
+			//! Begin non-const iterator over the elements (of type 'ElementType' in this list).
+			iterator
+			begin()
+			{
+				return d_element_list.begin();
+			}
+
+			//! End non-const iterator over the elements (of type 'ElementType' in this list).
+			iterator
+			end()
 			{
 				return d_element_list.end();
 			}
@@ -319,29 +340,47 @@ namespace GPlatesMaths
 		/**
 		 * Iterator over the elements in cube quad tree node.
 		 *
+		 * 'ElementQualifiedType' can be either 'element_type' or 'const element_type'.
+		 *
 		 * This is similar to, in fact a wrapper around, the iterator in @a ElementList but
 		 * is easier to use for clients since it dereferences directly to 'element_type'.
 		 */
-		class ElementConstIterator :
-				public std::iterator<std::forward_iterator_tag, const element_type>,
-				public boost::forward_iteratable<ElementConstIterator, const element_type *>
+		template <class ElementQualifiedType>
+		class ElementIterator :
+				public std::iterator<std::forward_iterator_tag, ElementQualifiedType>,
+				public boost::forward_iteratable<ElementIterator<ElementQualifiedType>, ElementQualifiedType *>
 		{
 		public:
+			//! Typedef for the element list iterator.
+			typedef typename boost::mpl::if_<
+					boost::is_const<typename boost::remove_reference<ElementQualifiedType>::type >,
+								typename ElementList::const_iterator,
+								typename ElementList::iterator>::type
+										element_list_iterator_type;
+
 			explicit
-			ElementConstIterator(
-					typename ElementList::const_iterator element_list_iterator) :
+			ElementIterator(
+					element_list_iterator_type element_list_iterator) :
 				d_element_list_iterator(element_list_iterator)
 			{  }
 
+			/**
+			 * Implicit conversion constructor from 'iterator' to 'const_iterator'.
+			 */
+			ElementIterator(
+					const ElementIterator<element_type> &rhs) :
+				d_element_list_iterator(rhs.d_element_list_iterator)
+			{  }
+
 			//! 'operator->()' provided by base class boost::forward_iteratable.
-			const element_type &
+			ElementQualifiedType &
 			operator*() const
 			{
 				return d_element_list_iterator->get_element();
 			}
 
 			//! Post-increment operator provided by base class boost::forward_iteratable.
-			ElementConstIterator &
+			ElementIterator &
 			operator++()
 			{
 				++d_element_list_iterator;
@@ -352,18 +391,24 @@ namespace GPlatesMaths
 			friend
 			bool
 			operator==(
-					const ElementConstIterator &lhs,
-					const ElementConstIterator &rhs)
+					const ElementIterator &lhs,
+					const ElementIterator &rhs)
 			{
 				return lhs.d_element_list_iterator == rhs.d_element_list_iterator;
 			}
 
 		private:
-			typename ElementList::const_iterator d_element_list_iterator;
+			element_list_iterator_type d_element_list_iterator;
+
+			friend class ElementIterator<typename boost::add_const<element_type>::type>; // The const iterator.
 		};
 
 		//! Typedef for element const iterator.
-		typedef ElementConstIterator element_const_iterator;
+		typedef ElementIterator<const element_type> element_const_iterator;
+
+		//! Typedef for element non-const iterator.
+		typedef ElementIterator<element_type> element_iterator;
+
 
 
 		/**
@@ -379,6 +424,13 @@ namespace GPlatesMaths
 				public GPlatesUtils::SafeBool< NodeReference<NodeImplQualifiedType> >
 		{
 		public:
+			//! Typedef for the element iterator.
+			typedef typename boost::mpl::if_<
+					boost::is_const<NodeImplQualifiedType>,
+								element_const_iterator,
+								element_iterator>::type
+										element_iterator_type;
+
 			//! Default constructor initialises to NULL reference.
 			NodeReference() :
 				d_node_impl(NULL)
@@ -410,17 +462,17 @@ namespace GPlatesMaths
 			}
 
 			//! Returns begin iterator for elements in this node.
-			element_const_iterator
+			element_iterator_type
 			begin() const
 			{
-				return element_const_iterator(d_node_impl->get_element().begin());
+				return element_iterator_type(d_node_impl->get_element().begin());
 			}
 
 			//! Returns end iterator for elements in this node.
-			element_const_iterator
+			element_iterator_type
 			end() const
 			{
-				return element_const_iterator(d_node_impl->get_element().end());
+				return element_iterator_type(d_node_impl->get_element().end());
 			}
 
 			/**
@@ -624,6 +676,32 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Returns the non-const begin iterator for elements in the root of the spatial partition.
+		 */
+		element_iterator
+		begin_root_elements()
+		{
+			ElementList *element_list = d_cube_quad_tree->get_root_element();
+			return element_list
+					? element_iterator(element_list->begin())
+					: element_iterator(d_dummy_empty_element_list_impl.begin());
+		}
+
+
+		/**
+		 * Returns the non-const end iterator for elements in the root of the spatial partition.
+		 */
+		element_iterator
+		end_root_elements()
+		{
+			ElementList *element_list = d_cube_quad_tree->get_root_element();
+			return element_list
+					? element_iterator(element_list->end())
+					: element_iterator(d_dummy_empty_element_list_impl.end());
+		}
+
+
+		/**
 		 * Gets the root node of the specified cube face (quad tree), if it exists.
 		 *
 		 * NOTE: Be sure to check the returned reference with operator! before using.
@@ -633,6 +711,16 @@ namespace GPlatesMaths
 				CubeCoordinateFrame::CubeFaceType cube_face) const
 		{
 			return const_node_reference_type(d_cube_quad_tree->get_quad_tree_root_node(cube_face));
+		}
+
+		/**
+		 * Gets the non-const root node of the specified cube face (quad tree), if it exists.
+		 */
+		node_reference_type
+		get_quad_tree_root_node(
+				CubeCoordinateFrame::CubeFaceType cube_face)
+		{
+			return node_reference_type(d_cube_quad_tree->get_quad_tree_root_node(cube_face));
 		}
 
 
@@ -648,6 +736,18 @@ namespace GPlatesMaths
 				unsigned int child_y_offset) const
 		{
 			return const_node_reference_type(parent_node.get_child_node(child_x_offset, child_y_offset));
+		}
+
+		/**
+		 * Gets the non-const child node of the specified parent node, if it exists.
+		 */
+		node_reference_type
+		get_child_node(
+				node_reference_type parent_node,
+				unsigned int child_x_offset,
+				unsigned int child_y_offset)
+		{
+			return node_reference_type(parent_node.get_child_node(child_x_offset, child_y_offset));
 		}
 
 
@@ -738,6 +838,7 @@ namespace GPlatesMaths
 		 *
 		 * NOTE: This can also be used for region-of-interest queries if you add the
 		 * bounding circle extent to the region-of-interest extent and pass that into this method.
+		 * Although there are also @a add methods taking a 'region_of-interest' parameter that are easier to use.
 		 */
 		void
 		add(
@@ -799,6 +900,42 @@ namespace GPlatesMaths
 			geometry.accept_visitor(add_geometry);
 		}
 
+		/**
+		 * Add an element, to the spatial partition, using the *expanded* (by region-of-interest)
+		 * spatial extent of the specified GeometryOnSphere object.
+		 *
+		 * This is a convenient wrapper around the @a add overload accepting a bounding circle.
+		 */
+		void
+		add(
+				const ElementType &element,
+				const GeometryOnSphere &geometry,
+				const BoundingCircleExtent &region_of_interest,
+				location_type *location_added = NULL)
+		{
+			AddRegionOfInterestGeometryOnSphere add_geometry(*this, element, region_of_interest, location_added);
+			geometry.accept_visitor(add_geometry);
+		}
+
+		/**
+		 * Same as the above overload of @a add but location of insertion is the *rotated* geometry.
+		 *
+		 * This is implemented to be more efficient than actually rotating the geometry and
+		 * then inserting that.
+		 */
+		void
+		add(
+				const ElementType &element,
+				const GeometryOnSphere &geometry,
+				const BoundingCircleExtent &region_of_interest,
+				const FiniteRotation &finite_rotation,
+				location_type *location_added = NULL)
+		{
+			// Rotate only the geometry's bounding circle centre to avoid rotating the entire geometry.
+			AddRegionOfInterestRotatedGeometryOnSphere add_geometry(*this, element, finite_rotation, region_of_interest, location_added);
+			geometry.accept_visitor(add_geometry);
+		}
+
 
 		/**
 		 * Add an element, to the spatial partition, using the specified PointOnSphere.
@@ -825,6 +962,36 @@ namespace GPlatesMaths
 				location_type *location_added = NULL)
 		{
 			add(element, point_on_sphere.position_vector(), finite_rotation, location_added);
+		}
+
+		/**
+		 * Add an element, to the spatial partition, using the specified PointOnSphere but also using
+		 * the finite bounding extent specified by @a region_of_interest (instead of a point insertion).
+		 *
+		 * This is a convenient wrapper around the @a add overload accepting a point.
+		 */
+		void
+		add(
+				const ElementType &element,
+				const PointOnSphere &point_on_sphere,
+				const BoundingCircleExtent &region_of_interest,
+				location_type *location_added = NULL)
+		{
+			add(element, point_on_sphere.position_vector(), region_of_interest, location_added);
+		}
+
+		/**
+		 * Same as the above overload of @a add but location of insertion is the *rotated* point.
+		 */
+		void
+		add(
+				const ElementType &element,
+				const PointOnSphere &point_on_sphere,
+				const BoundingCircleExtent &region_of_interest,
+				const FiniteRotation &finite_rotation,
+				location_type *location_added = NULL)
+		{
+			add(element, point_on_sphere.position_vector(), finite_rotation, region_of_interest, location_added);
 		}
 
 
@@ -862,6 +1029,51 @@ namespace GPlatesMaths
 			add(element, bounding_small_circle.get_centre(), BoundingCircleExtent(bounding_small_circle), finite_rotation, location_added);
 		}
 
+		/**
+		 * Add an element, to the spatial partition, using the *expanded* (by region-of-interest)
+		 * spatial extent of the specified MultiPointOnSphere object.
+		 *
+		 * This is a convenient wrapper around the @a add overload accepting a bounding circle.
+		 */
+		void
+		add(
+				const ElementType &element,
+				const MultiPointOnSphere &multi_point_on_sphere,
+				const BoundingCircleExtent &region_of_interest,
+				location_type *location_added = NULL)
+		{
+			const BoundingSmallCircle &bounding_small_circle = multi_point_on_sphere.get_bounding_small_circle();
+			add(
+					element,
+					bounding_small_circle.get_centre(),
+					BoundingCircleExtent(bounding_small_circle) + region_of_interest,
+					location_added);
+		}
+
+		/**
+		 * Same as the above overload of @a add but location of insertion is the *rotated* geometry.
+		 *
+		 * This is implemented to be more efficient than actually rotating the geometry and
+		 * then inserting that.
+		 */
+		void
+		add(
+				const ElementType &element,
+				const MultiPointOnSphere &multi_point_on_sphere,
+				const BoundingCircleExtent &region_of_interest,
+				const FiniteRotation &finite_rotation,
+				location_type *location_added = NULL)
+		{
+			// Rotate only the geometry's bounding circle centre to avoid rotating the entire geometry.
+			const BoundingSmallCircle &bounding_small_circle = multi_point_on_sphere.get_bounding_small_circle();
+			add(
+					element,
+					bounding_small_circle.get_centre(),
+					BoundingCircleExtent(bounding_small_circle) + region_of_interest,
+					finite_rotation,
+					location_added);
+		}
+
 
 		/**
 		 * Add an element, to the spatial partition, using the spatial extent of the
@@ -897,6 +1109,51 @@ namespace GPlatesMaths
 			add(element, bounding_small_circle.get_centre(), BoundingCircleExtent(bounding_small_circle), finite_rotation, location_added);
 		}
 
+		/**
+		 * Add an element, to the spatial partition, using the *expanded* (by region-of-interest)
+		 * spatial extent of the specified PolylineOnSphere object.
+		 *
+		 * This is a convenient wrapper around the @a add overload accepting a bounding circle.
+		 */
+		void
+		add(
+				const ElementType &element,
+				const PolylineOnSphere &polyline_on_sphere,
+				const BoundingCircleExtent &region_of_interest,
+				location_type *location_added = NULL)
+		{
+			const BoundingSmallCircle &bounding_small_circle = polyline_on_sphere.get_bounding_small_circle();
+			add(
+					element,
+					bounding_small_circle.get_centre(),
+					BoundingCircleExtent(bounding_small_circle) + region_of_interest,
+					location_added);
+		}
+
+		/**
+		 * Same as the above overload of @a add but location of insertion is the *rotated* geometry.
+		 *
+		 * This is implemented to be more efficient than actually rotating the geometry and
+		 * then inserting that.
+		 */
+		void
+		add(
+				const ElementType &element,
+				const PolylineOnSphere &polyline_on_sphere,
+				const BoundingCircleExtent &region_of_interest,
+				const FiniteRotation &finite_rotation,
+				location_type *location_added = NULL)
+		{
+			// Rotate only the geometry's bounding circle centre to avoid rotating the entire geometry.
+			const BoundingSmallCircle &bounding_small_circle = polyline_on_sphere.get_bounding_small_circle();
+			add(
+					element,
+					bounding_small_circle.get_centre(),
+					BoundingCircleExtent(bounding_small_circle) + region_of_interest,
+					finite_rotation,
+					location_added);
+		}
+
 
 		/**
 		 * Add an element, to the spatial partition, using the spatial extent of the
@@ -930,6 +1187,51 @@ namespace GPlatesMaths
 			// Rotate only the geometry's bounding circle centre to avoid rotating the entire geometry.
 			const BoundingSmallCircle &bounding_small_circle = polygon_on_sphere.get_bounding_small_circle();
 			add(element, bounding_small_circle.get_centre(), BoundingCircleExtent(bounding_small_circle), finite_rotation, location_added);
+		}
+
+		/**
+		 * Add an element, to the spatial partition, using the *expanded* (by region-of-intereset)
+		 * spatial extent of the specified PolygonOnSphere object.
+		 *
+		 * This is a convenient wrapper around the @a add overload accepting a bounding circle.
+		 */
+		void
+		add(
+				const ElementType &element,
+				const PolygonOnSphere &polygon_on_sphere,
+				const BoundingCircleExtent &region_of_interest,
+				location_type *location_added = NULL)
+		{
+			const BoundingSmallCircle &bounding_small_circle = polygon_on_sphere.get_bounding_small_circle();
+			add(
+					element,
+					bounding_small_circle.get_centre(),
+					BoundingCircleExtent(bounding_small_circle) + region_of_interest,
+					location_added);
+		}
+
+		/**
+		 * Same as the above overload of @a add but location of insertion is the *rotated* geometry.
+		 *
+		 * This is implemented to be more efficient than actually rotating the geometry and
+		 * then inserting that.
+		 */
+		void
+		add(
+				const ElementType &element,
+				const PolygonOnSphere &polygon_on_sphere,
+				const BoundingCircleExtent &region_of_interest,
+				const FiniteRotation &finite_rotation,
+				location_type *location_added = NULL)
+		{
+			// Rotate only the geometry's bounding circle centre to avoid rotating the entire geometry.
+			const BoundingSmallCircle &bounding_small_circle = polygon_on_sphere.get_bounding_small_circle();
+			add(
+					element,
+					bounding_small_circle.get_centre(),
+					BoundingCircleExtent(bounding_small_circle) + region_of_interest,
+					finite_rotation,
+					location_added);
 		}
 
 
@@ -1156,6 +1458,122 @@ namespace GPlatesMaths
 			CubeQuadTreePartition<ElementType> &d_spatial_partition;
 			const ElementType &d_element;
 			const FiniteRotation &d_finite_rotation;
+			location_type *d_location_added;
+		};
+
+
+		/**
+		 * Add @a GeometryOnSphere derived objects (with extended bounding circles) to this spatial partition.
+		 */
+		struct AddRegionOfInterestGeometryOnSphere :
+				public ConstGeometryOnSphereVisitor
+		{
+			AddRegionOfInterestGeometryOnSphere(
+					CubeQuadTreePartition<ElementType> &spatial_partition,
+					const ElementType &element,
+					const BoundingCircleExtent &region_of_interest,
+					location_type *location_added) :
+				d_spatial_partition(spatial_partition),
+				d_element(element),
+				d_region_of_interest(region_of_interest),
+				d_location_added(location_added)
+			{  }
+
+			virtual
+			void
+			visit_multi_point_on_sphere(
+					MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+			{
+				d_spatial_partition.add(d_element, *multi_point_on_sphere, d_region_of_interest, d_location_added);
+			}
+
+			virtual
+			void
+			visit_point_on_sphere(
+					PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+			{
+				d_spatial_partition.add(d_element, point_on_sphere->position_vector(), d_region_of_interest, d_location_added);
+			}
+
+			virtual
+			void
+			visit_polygon_on_sphere(
+					PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+			{
+				d_spatial_partition.add(d_element, *polygon_on_sphere, d_region_of_interest, d_location_added);
+			}
+
+			virtual
+			void
+			visit_polyline_on_sphere(
+					PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+			{
+				d_spatial_partition.add(d_element, *polyline_on_sphere, d_region_of_interest, d_location_added);
+			}
+
+			CubeQuadTreePartition<ElementType> &d_spatial_partition;
+			const ElementType &d_element;
+			const BoundingCircleExtent &d_region_of_interest;
+			location_type *d_location_added;
+		};
+
+
+		/**
+		 * Add @a GeometryOnSphere derived objects (with extended bounding circles) to this
+		 * spatial partition in at their *rotated* locations.
+		 */
+		struct AddRegionOfInterestRotatedGeometryOnSphere :
+				public ConstGeometryOnSphereVisitor
+		{
+			AddRegionOfInterestRotatedGeometryOnSphere(
+					CubeQuadTreePartition<ElementType> &spatial_partition,
+					const ElementType &element,
+					const FiniteRotation &finite_rotation,
+					const BoundingCircleExtent &region_of_interest,
+					location_type *location_added) :
+				d_spatial_partition(spatial_partition),
+				d_element(element),
+				d_finite_rotation(finite_rotation),
+				d_region_of_interest(region_of_interest),
+				d_location_added(location_added)
+			{  }
+
+			virtual
+			void
+			visit_multi_point_on_sphere(
+					MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+			{
+				d_spatial_partition.add(d_element, *multi_point_on_sphere, d_region_of_interest, d_finite_rotation, d_location_added);
+			}
+
+			virtual
+			void
+			visit_point_on_sphere(
+					PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+			{
+				d_spatial_partition.add(d_element, point_on_sphere->position_vector(), d_region_of_interest, d_finite_rotation, d_location_added);
+			}
+
+			virtual
+			void
+			visit_polygon_on_sphere(
+					PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+			{
+				d_spatial_partition.add(d_element, *polygon_on_sphere, d_region_of_interest, d_finite_rotation, d_location_added);
+			}
+
+			virtual
+			void
+			visit_polyline_on_sphere(
+					PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+			{
+				d_spatial_partition.add(d_element, *polyline_on_sphere, d_region_of_interest, d_finite_rotation, d_location_added);
+			}
+
+			CubeQuadTreePartition<ElementType> &d_spatial_partition;
+			const ElementType &d_element;
+			const FiniteRotation &d_finite_rotation;
+			const BoundingCircleExtent &d_region_of_interest;
 			location_type *d_location_added;
 		};
 

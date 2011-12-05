@@ -24,8 +24,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_OPENGL_GLPROXIEDRASTERSOURCE_H
-#define GPLATES_OPENGL_GLPROXIEDRASTERSOURCE_H
+#ifndef GPLATES_OPENGL_GLVISUALRASTERSOURCE_H
+#define GPLATES_OPENGL_GLVISUALRASTERSOURCE_H
 
 #include <vector>
 #include <boost/optional.hpp>
@@ -57,21 +57,27 @@ namespace GPlatesOpenGL
 	class GLRenderer;
 
 	/**
-	 * An arbitrary dimension source of RGBA data made accessible by a proxied raster.
+	 * An arbitrary dimension source of fixed-point RGBA8 data made accessible by a proxied raster.
+	 *
+	 * This raster is meant for visual display by applying a colour palette if the raster source
+	 * is floating-point or simply leaving the data in RGBA format if it's a standard colour format
+	 * such as JPEG.
+	 *
+	 * There is also support for modulating the opacity and intensity of the raster for visual purposes.
 	 */
-	class GLProxiedRasterSource :
+	class GLVisualRasterSource :
 			public GLMultiResolutionRasterSource
 	{
 	public:
-		//! A convenience typedef for a shared pointer to a non-const @a GLProxiedRasterSource.
-		typedef GPlatesUtils::non_null_intrusive_ptr<GLProxiedRasterSource> non_null_ptr_type;
+		//! A convenience typedef for a shared pointer to a non-const @a GLVisualRasterSource.
+		typedef GPlatesUtils::non_null_intrusive_ptr<GLVisualRasterSource> non_null_ptr_type;
 
-		//! A convenience typedef for a shared pointer to a const @a GLProxiedRasterSource.
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GLProxiedRasterSource> non_null_ptr_to_const_type;
+		//! A convenience typedef for a shared pointer to a const @a GLVisualRasterSource.
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GLVisualRasterSource> non_null_ptr_to_const_type;
 
 
 		/**
-		 * Creates a @a GLProxiedRasterSource object.
+		 * Creates a @a GLVisualRasterSource object.
 		 *
 		 * @a tile_texel_dimension must be a power-of-two - it is the OpenGL square texture
 		 * dimension to use for the tiled textures that represent the multi-resolution raster.
@@ -116,6 +122,15 @@ namespace GPlatesOpenGL
 
 
 		virtual
+		GLint
+		get_target_texture_internal_format() const
+		{
+			// Fixed-point 8-bit textures are all that's required for visual rendering.
+			return GL_RGBA8;
+		}
+
+
+		virtual
 		cache_handle_type
 		load_tile(
 				unsigned int level,
@@ -134,7 +149,7 @@ namespace GPlatesOpenGL
 		 * and raster dimensions.
 		 *
 		 * Returns false if @a raster has different dimensions than the current internal raster.
-		 * In this case you'll need to create a new @a GLProxiedRasterSource.
+		 * In this case you'll need to create a new @a GLVisualRasterSource.
 		 *
 		 * NOTE: The opposite, changing the georeferencing without changing the raster,
 		 * will require creating a new @a GLMultiResolutionRaster object.
@@ -287,8 +302,13 @@ namespace GPlatesOpenGL
 		QImage d_error_text_image_level_zero;
 		QImage d_error_text_image_mipmap_levels;
 
+		/**
+		 * We log a load-tile-failure warning message only once for each raster source.
+		 */
+		bool d_logged_tile_load_failure_warning;
 
-		GLProxiedRasterSource(
+
+		GLVisualRasterSource(
 				GLRenderer &renderer,
 				const GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type &
 						proxy_raster_resolver,
@@ -337,8 +357,8 @@ namespace GPlatesOpenGL
 		void
 		create_tile_texture(
 				GLRenderer &renderer,
-				const GLTexture::shared_ptr_type &texture);
+				const GLTexture::shared_ptr_type &texture) const;
 	};
 }
 
-#endif // GPLATES_OPENGL_GLPROXIEDRASTERSOURCE_H
+#endif // GPLATES_OPENGL_GLVISUALRASTERSOURCE_H

@@ -117,10 +117,6 @@ namespace GPlatesAppLogic
 			set_raster_feature(
 					boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref);
 
-			//! Call this when the raster feature is modified.
-			void
-			raster_feature_modified();
-
 			//! Update state to reflect a new, or modified, raster feature.
 			void
 			updated_raster_feature();

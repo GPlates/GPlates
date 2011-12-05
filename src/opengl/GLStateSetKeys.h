@@ -212,7 +212,7 @@ namespace GPlatesOpenGL
 		get_load_texture_matrix_key(
 				GLenum texture_unit) const
 		{
-			return get_texture_key_from_key_offset(texture_unit, TEXTURE_KEY_LOAD_MATRIX_TEXTURE);
+			return get_texture_coord_key_from_key_offset(texture_unit, TEXTURE_COORD_KEY_LOAD_MATRIX_TEXTURE);
 		}
 
 	private:
@@ -225,62 +225,76 @@ namespace GPlatesOpenGL
 			NUM_GENERIC_VERTEX_ATTRIBUTE_KEY_OFFSETS // Must be last.
 		};
 
-		//! Key offsets within a particular texture unit - offsets repeat for each subsequent texture unit.
-		enum TextureKeyOffsetType
+		//! Key offsets within a particular texture *image* unit - offsets repeat for each subsequent texture unit.
+		enum TextureImageUnitKeyOffsetType
 		{
-			TEXTURE_KEY_BIND_TEXTURE_1D,
-			TEXTURE_KEY_BIND_TEXTURE_1D_ARRAY,
-			TEXTURE_KEY_BIND_TEXTURE_2D,
-			TEXTURE_KEY_BIND_TEXTURE_2D_ARRAY,
-			TEXTURE_KEY_BIND_TEXTURE_2D_MULTISAMPLE,
-			TEXTURE_KEY_BIND_TEXTURE_2D_MULTISAMPLE_ARRAY,
-			TEXTURE_KEY_BIND_TEXTURE_3D,
-			TEXTURE_KEY_BIND_TEXTURE_BUFFER,
-			TEXTURE_KEY_BIND_TEXTURE_CUBE_MAP,
-			TEXTURE_KEY_BIND_TEXTURE_RECTANGLE,
-			TEXTURE_KEY_ENABLE_CLIENT_STATE_TEXTURE_COORD_ARRAY,
-			TEXTURE_KEY_ENABLE_TEXTURE_1D,
-			TEXTURE_KEY_ENABLE_TEXTURE_2D,
-			TEXTURE_KEY_ENABLE_TEXTURE_3D,
-			TEXTURE_KEY_ENABLE_TEXTURE_CUBE_MAP,
-			TEXTURE_KEY_ENABLE_TEXTURE_GEN_S,
-			TEXTURE_KEY_ENABLE_TEXTURE_GEN_T,
-			TEXTURE_KEY_ENABLE_TEXTURE_GEN_R,
-			TEXTURE_KEY_ENABLE_TEXTURE_GEN_Q,
-			TEXTURE_KEY_ENABLE_TEXTURE_RECTANGLE,
-			TEXTURE_KEY_LOAD_MATRIX_TEXTURE,
-			TEXTURE_KEY_TEX_ENV_MODE,
-			TEXTURE_KEY_TEXTURE_EYE_PLANE_S,
-			TEXTURE_KEY_TEXTURE_EYE_PLANE_T,
-			TEXTURE_KEY_TEXTURE_EYE_PLANE_R,
-			TEXTURE_KEY_TEXTURE_EYE_PLANE_Q,
-			TEXTURE_KEY_TEXTURE_GEN_MODE_S,
-			TEXTURE_KEY_TEXTURE_GEN_MODE_T,
-			TEXTURE_KEY_TEXTURE_GEN_MODE_R,
-			TEXTURE_KEY_TEXTURE_GEN_MODE_Q,
-			TEXTURE_KEY_TEXTURE_OBJECT_PLANE_S,
-			TEXTURE_KEY_TEXTURE_OBJECT_PLANE_T,
-			TEXTURE_KEY_TEXTURE_OBJECT_PLANE_R,
-			TEXTURE_KEY_TEXTURE_OBJECT_PLANE_Q,
-			TEXTURE_KEY_VERTEX_ARRAY_TEX_COORD_POINTER,
+			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_1D,
+			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_1D_ARRAY,
+			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D,
+			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_ARRAY,
+			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_MULTISAMPLE,
+			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_MULTISAMPLE_ARRAY,
+			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_3D,
+			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_BUFFER,
+			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_CUBE_MAP,
+			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_RECTANGLE,
+			TEXTURE_IMAGE_UNIT_KEY_ENABLE_TEXTURE_1D,
+			TEXTURE_IMAGE_UNIT_KEY_ENABLE_TEXTURE_2D,
+			TEXTURE_IMAGE_UNIT_KEY_ENABLE_TEXTURE_3D,
+			TEXTURE_IMAGE_UNIT_KEY_ENABLE_TEXTURE_CUBE_MAP,
+			TEXTURE_IMAGE_UNIT_KEY_ENABLE_TEXTURE_RECTANGLE,
+			TEXTURE_IMAGE_UNIT_KEY_TEX_ENV_MODE,
 
-			NUM_TEXTURE_UNIT_KEY_OFFSETS // Must be last.
+			NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS // Must be last.
+		};
+
+		//! Key offsets within a particular texture *coordinate* set - offsets repeat for each subsequent texture unit.
+		enum TextureCoordKeyOffsetType
+		{
+			TEXTURE_COORD_KEY_ENABLE_CLIENT_STATE_TEXTURE_COORD_ARRAY,
+			TEXTURE_COORD_KEY_ENABLE_TEXTURE_GEN_S,
+			TEXTURE_COORD_KEY_ENABLE_TEXTURE_GEN_T,
+			TEXTURE_COORD_KEY_ENABLE_TEXTURE_GEN_R,
+			TEXTURE_COORD_KEY_ENABLE_TEXTURE_GEN_Q,
+			TEXTURE_COORD_KEY_LOAD_MATRIX_TEXTURE,
+			TEXTURE_COORD_KEY_TEXTURE_EYE_PLANE_S,
+			TEXTURE_COORD_KEY_TEXTURE_EYE_PLANE_T,
+			TEXTURE_COORD_KEY_TEXTURE_EYE_PLANE_R,
+			TEXTURE_COORD_KEY_TEXTURE_EYE_PLANE_Q,
+			TEXTURE_COORD_KEY_TEXTURE_GEN_MODE_S,
+			TEXTURE_COORD_KEY_TEXTURE_GEN_MODE_T,
+			TEXTURE_COORD_KEY_TEXTURE_GEN_MODE_R,
+			TEXTURE_COORD_KEY_TEXTURE_GEN_MODE_Q,
+			TEXTURE_COORD_KEY_TEXTURE_OBJECT_PLANE_S,
+			TEXTURE_COORD_KEY_TEXTURE_OBJECT_PLANE_T,
+			TEXTURE_COORD_KEY_TEXTURE_OBJECT_PLANE_R,
+			TEXTURE_COORD_KEY_TEXTURE_OBJECT_PLANE_Q,
+			TEXTURE_COORD_KEY_VERTEX_ARRAY_TEX_COORD_POINTER,
+
+			NUM_TEXTURE_COORD_KEY_OFFSETS // Must be last.
 		};
 
 		key_type d_generic_vertex_attribute_index_zero_base_key;
 
-		key_type d_texture_unit_zero_base_key;
+		key_type d_texture_image_unit_zero_base_key;
+		key_type d_texture_coord_zero_base_key;
 
 		unsigned int d_num_state_set_keys;
 
 		//! Default constructor can only be called by @a create.
 		GLStateSetKeys();
 
-		//! Calculate a key for a texture parameter in the specified texture unit.
+		//! Calculate a key for a texture parameter in the specified texture *image* unit.
 		key_type
-		get_texture_key_from_key_offset(
+		get_texture_image_unit_key_from_key_offset(
 				GLenum texture_unit,
-				TextureKeyOffsetType key_offset) const;
+				TextureImageUnitKeyOffsetType key_offset) const;
+
+		//! Calculate a key for a texture parameter for the specified texture *coordinate* set.
+		key_type
+		get_texture_coord_key_from_key_offset(
+				GLenum texture_unit,
+				TextureCoordKeyOffsetType key_offset) const;
 	};
 }
 

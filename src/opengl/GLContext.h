@@ -218,7 +218,7 @@ namespace GPlatesOpenGL
 			 *
 			 * NOTE: The returned texture will have its level zero initialised (memory allocated for image)
 			 * but the image data will be unspecified if it's the first time the texture object is returned.
-			 * If @a mipmapped is true then all mipmap level will also be initialised.
+			 * If @a mipmapped is true then all mipmap levels will also be initialised.
 			 *
 			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
 			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
@@ -385,12 +385,16 @@ namespace GPlatesOpenGL
 			 * Use this when you need a framebuffer object temporarily and want to promote
 			 * resource sharing by returning it for others to use.
 			 *
+			 * NOTE: 'gl_detach_all()' is called on the returned framebuffer object (just before returning)
+			 * since the attachments made by other clients are unknown.
+			 *
 			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
 			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
 			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
 			 */
 			GLFrameBufferObject::shared_ptr_type
-			acquire_frame_buffer_object();
+			acquire_frame_buffer_object(
+					GLRenderer &renderer);
 
 			/**
 			 * Returns the vertex array object resource manager.
@@ -565,6 +569,15 @@ namespace GPlatesOpenGL
 				//! Is GL_ARB_geometry_shader4 supported?
 				bool gl_ARB_geometry_shader4;
 
+				//! Is GL_EXT_gpu_shader4 supported?
+				bool gl_EXT_gpu_shader4;
+
+				//! Is GL_ARB_gpu_shader_fp64 supported?
+				bool gl_ARB_gpu_shader_fp64;
+
+				//! Is GL_ARB_vertex_attrib_64bit supported?
+				bool gl_ARB_vertex_attrib_64bit;
+
 				/**
 				 * The maximum number of generic vertex attributes supported by the
 				 * GL_ARB_vertex_shader extension (or zero if it's not supported).
@@ -602,17 +615,63 @@ namespace GPlatesOpenGL
 				 */
 				GLuint gl_max_texture_size; // GL_MAX_TEXTURE_SIZE query result
 
+				//! Is GL_ARB_texture_non_power_of_two supported?
+				bool gl_ARB_texture_non_power_of_two;
+
 				/**
 				 * The maximum number of texture units supported by the
 				 * GL_ARB_multitexture extension (or one if it's not supported).
+				 *
+				 * NOTE: This is the 'old style' number of texture units where number of texture
+				 * coordinates and number of texture images is the same.
+				 *
+				 * NOTE: This value should be used when using the fixed-function pipeline.
+				 * For fragment shaders you can use @a gl_max_texture_image_units and
+				 * @a gl_max_texture_coords which are either the same as @a gl_max_texture_units or larger.
+				 * But you can *not* use them for the fixed-function pipeline.
 				 */
 				GLuint gl_max_texture_units; // GL_MAX_TEXTURE_UNITS query result
+
+				/**
+				 * The maximum number of texture *image* units supported by the
+				 * GL_ARB_fragment_shader extension (or @a gl_max_texture_units if it's not supported).
+				 *
+				 * NOTE: This is the 'new style' number of texture units where number of texture
+				 * *image* units differs to the number of texture coordinates.
+				 *
+				 * NOTE: This can be used for fragment shaders (can also use @a gl_max_texture_units
+				 * but it's less than or equal to @a gl_max_texture_image_units).
+				 */
+				GLuint gl_max_texture_image_units; // GL_MAX_TEXTURE_IMAGE_UNITS query result
+
+				/**
+				 * The maximum number of texture coordinates supported by the
+				 * GL_ARB_fragment_shader extension (or @a gl_max_texture_units if it's not supported).
+				 *
+				 * NOTE: This is the 'new style' number of texture units where number of texture
+				 * *image* units differs to the number of texture coordinates.
+				 *
+				 * NOTE: This can be used for fragment shaders (can also use @a gl_max_texture_units
+				 * but it's less than or equal to @a gl_max_texture_coords).
+				 */
+				GLuint gl_max_texture_coords; // GL_MAX_TEXTURE_COORDS query result
 
 				/**
 				 * The maximum texture filtering anisotropy supported by the
 				 * GL_EXT_texture_filter_anisotropic extension (or 1.0 if it's not supported).
 				 */
 				GLfloat gl_texture_max_anisotropy; // GL_TEXTURE_MAX_ANISOTROPY query result
+
+				/**
+				 * Is GL_EXT_texture_edge_clamp supported?
+				 *
+				 * This is the standard texture clamping in Direct3D - it's easier for hardware to implement
+				 * since it avoids accessing the texture border colour (even in (bi)linear filtering mode).
+				 */
+				bool gl_EXT_texture_edge_clamp;
+
+				//! Is GL_SGIS_texture_edge_clamp supported? Same as GL_EXT_texture_edge_clamp extension really.
+				bool gl_SGIS_texture_edge_clamp;
 
 				//! Is GL_EXT_texture3D supported?
 				bool gl_EXT_texture3D;
@@ -625,6 +684,24 @@ namespace GPlatesOpenGL
 
 				//! Is GL_EXT_texture_buffer_object supported?
 				bool gl_EXT_texture_buffer_object;
+
+				//! Is GL_ARB_texture_float supported?
+				bool gl_ARB_texture_float;
+
+				//! Is GL_ARB_texture_rg supported?
+				bool gl_ARB_texture_rg;
+
+				/**
+				 * Is GL_ARB_color_buffer_float supported?
+				 *
+				 * This affects things other than floating-point textures (samplers or render-targets) but
+				 * we put it with the texture parameters since it's most directly related to floating-point
+				 * colour buffers (eg, floating-point textures attached to a framebuffer object).
+				 *
+				 * Unfortunately for Mac OSX 10.5 (Leopard) this is not supported.
+				 * It is supported in Snow Leopard (10.6), and above, however.
+				 */
+				bool gl_ARB_color_buffer_float;
 			};
 
 			//! Parameters related to buffer objects.
@@ -637,6 +714,15 @@ namespace GPlatesOpenGL
 
 				//! Is GL_ARB_vertex_array_object supported?
 				bool gl_ARB_vertex_array_object;
+
+				//! Is GL_ARB_pixel_buffer_object supported?
+				bool gl_ARB_pixel_buffer_object;
+
+				//! Is GL_ARB_map_buffer_range supported?
+				bool gl_ARB_map_buffer_range;
+
+				//! Is GL_APPLE_flush_buffer_range supported?
+				bool gl_APPLE_flush_buffer_range;
 			};
 
 			Viewport viewport;

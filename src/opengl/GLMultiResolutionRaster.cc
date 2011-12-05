@@ -45,6 +45,7 @@
 #include "GLIntersect.h"
 #include "GLProjectionUtils.h"
 #include "GLRenderer.h"
+#include "GLShaderProgramUtils.h"
 #include "GLUtils.h"
 #include "GLVertex.h"
 
@@ -55,29 +56,51 @@
 
 #include "utils/Profile.h"
 
+
 namespace
 {
 	//! The inverse of log(2.0).
 	const float INVERSE_LOG2 = 1.0 / std::log(2.0);
+
+	//! Fragment shader source code to render raster.
+	const char *RENDER_RASTER_FRAGMENT_SHADER_SOURCE =
+			"uniform sampler2D raster_texture_sampler;\n"
+
+			"void main (void)\n"
+			"{\n"
+
+			"   gl_FragColor = texture2D(raster_texture_sampler, gl_TexCoord[0].st);\n"
+
+			"}\n";
 }
 
 
 GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type
 GPlatesOpenGL::GLMultiResolutionRaster::create(
+		GLRenderer &renderer,
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 		const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
+		FixedPointTextureFilterType fixed_point_texture_filter,
+		bool cache_entire_raster_level_of_detail_pyramid,
 		RasterScanlineOrderType raster_scanline_order)
 {
-	return non_null_ptr_type(new GLMultiResolutionRaster(
-			georeferencing,
-			raster_source,
-			raster_scanline_order));
+	return non_null_ptr_type(
+			new GLMultiResolutionRaster(
+					renderer,
+					georeferencing,
+					raster_source,
+					fixed_point_texture_filter,
+					cache_entire_raster_level_of_detail_pyramid,
+					raster_scanline_order));
 }
 
 
 GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
+		GLRenderer &renderer,
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 		const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
+		FixedPointTextureFilterType fixed_point_texture_filter,
+		bool cache_entire_raster_level_of_detail_pyramid,
 		RasterScanlineOrderType raster_scanline_order) :
 	d_georeferencing(georeferencing),
 	d_raster_source(raster_source),
@@ -85,12 +108,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 	d_raster_width(raster_source->get_raster_width()),
 	d_raster_height(raster_source->get_raster_height()),
 	d_raster_scanline_order(raster_scanline_order),
+	d_fixed_point_texture_filter(fixed_point_texture_filter),
 	d_tile_texel_dimension(raster_source->get_tile_texel_dimension()),
 	// The parentheses around min are to prevent the windows min macros
 	// from stuffing numeric_limits' min.
 	d_max_highest_resolution_texel_size_on_unit_sphere((std::numeric_limits<float>::min)()),
-	// Start with smallest size cache and just let the cache grow in size as needed...
-	d_tile_texture_cache(tile_texture_cache_type::create()),
+	// Start with small size cache and just let the cache grow in size as needed if caching enabled...
+	d_tile_texture_cache(tile_texture_cache_type::create(2/* GPU pipeline breathing room in case caching disabled*/)),
 	// Start with smallest size cache and just let the cache grow in size as needed...
 	d_tile_vertices_cache(tile_vertices_cache_type::create())
 {
@@ -98,135 +122,51 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 	// tree (used to quickly find visible tiles) where the drawable tiles are in the
 	// leaf nodes of the OBB tree.
 	initialise_level_of_detail_pyramid();
-}
 
-
-GPlatesOpenGL::GLMultiResolutionRaster::cache_handle_type
-GPlatesOpenGL::GLMultiResolutionRaster::render(
-		GLRenderer &renderer,
-		float level_of_detail_bias)
-{
-	const GLViewport &viewport = renderer.gl_get_viewport();
-	const GLMatrix &model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
-	const GLMatrix &projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
-
-	// Get the tiles visible in the view frustum of the render target in 'renderer'.
-	std::vector<tile_handle_type> visible_tiles;
-	get_visible_tiles(visible_tiles, viewport, model_view_transform, projection_transform, level_of_detail_bias);
-
-	return render(renderer, visible_tiles);
-}
-
-
-GPlatesOpenGL::GLMultiResolutionRaster::cache_handle_type
-GPlatesOpenGL::GLMultiResolutionRaster::render(
-		GLRenderer &renderer,
-		const std::vector<tile_handle_type> &tiles)
-{
-	// Make sure we leave the OpenGL state the way it was.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
-	// Enable texturing and set the texture function on texture unit 0.
-	renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
-	renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-
-	// NOTE: We don't set alpha-blending (or alpha-testing) state here because we
-	// might not be rendering directly to the final render target and hence we don't
-	// want to double-blend semi-transparent rasters - the alpha value is multiplied by
-	// all channels including alpha during alpha blending (R,G,B,A) -> (A*R,A*G,A*B,A*A) -
-	// the final render target would then have a source blending contribution of (3A*R,3A*G,3A*B,4A)
-	// which is not what we want - we want (A*R,A*G,A*B,A*A).
-	// Currently we are rendering to the final render target but when we reconstruct
-	// rasters in the map view (later) we will render to an intermediate render target.
-
-	// The cached view is a sequence of tiles for the caller to keep alive until the next frame.
-	boost::shared_ptr<std::vector<Tile> > cache_handle(new std::vector<Tile>());
-	cache_handle->reserve(tiles.size());
-
-	// Render each tile.
-	BOOST_FOREACH(GLMultiResolutionRaster::tile_handle_type tile_handle, tiles)
+	// If the client has requested the entire level-of-detail pyramid be cached.
+	// This does not consume memory until each individual tile is requested.
+	// For example, if all level 0 tiles are accessed but none of the other levels then memory
+	// will only be used for the level 0 tiles.
+	if (cache_entire_raster_level_of_detail_pyramid)
 	{
-		const Tile tile = get_tile(tile_handle, renderer);
-
-		// Bind the tile texture to texture unit 0.
-		renderer.gl_bind_texture(tile.tile_texture->texture, GL_TEXTURE0, GL_TEXTURE_2D);
-
-		// Bind the current tile.
-		tile.tile_vertices->vertex_array->gl_bind(renderer);
-
-		const unsigned int num_vertices =
-				tile.tile_vertices->vertex_buffer->get_buffer()->get_buffer_size() / sizeof(vertex_type);
-		const unsigned int num_indices =
-				tile.tile_vertices->vertex_element_buffer->get_buffer()->get_buffer_size() / sizeof(vertex_element_type);
-
-		// Draw the current tile.
-		tile.tile_vertices->vertex_array->gl_draw_range_elements(
-				renderer,
-				GL_TRIANGLES,
-				0/*start*/,
-				num_vertices - 1/*end*/,
-				num_indices/*count*/,
-				GLVertexElementTraits<vertex_element_type>::type,
-				0 /*indices_offset*/);
-
-		// The caller will cache this tile to keep it from being prematurely recycled by our caches.
-		cache_handle->push_back(tile);
+		// This effectively disables any recycling that would otherwise happen in the cache.
+		d_tile_texture_cache->set_min_num_objects(d_tiles.size());
+		d_tile_vertices_cache->set_min_num_objects(d_tiles.size());
 	}
 
-	return cache_handle;
+	// If the source raster is floating-point (ie, not coloured as fixed-point for visual display)
+	// then use a shader program instead of the fixed-function pipeline.
+	if (GLTexture::is_format_floating_point(d_raster_source->get_target_texture_internal_format()))
+	{
+		// If shader programs are supported then use them to render the raster tile.
+		//
+		// If floating-point textures are supported then shader programs should also be supported.
+		// If they are not for some reason (pretty unlikely) then revert to using the fixed-function pipeline.
+		//
+		// NOTE: The reason for doing this (instead of just using the fixed-function pipeline always)
+		// is to prevent clamping (to [0,1] range) of floating-point textures.
+		// The raster texture might be rendered as floating-point (if we're being used for
+		// data analysis instead of visualisation). The programmable pipeline has no clamping by default
+		// whereas the fixed-function pipeline does (both clamping at the fragment output and internal
+		// clamping in the texture environment stages). This clamping can be controlled by the
+		// 'GL_ARB_color_buffer_float' extension (which means we could use the fixed-function pipeline
+		// always) but that extension is not available on Mac OSX 10.5 (Leopard) on any hardware
+		// (rectified in 10.6) so instead we'll just use the programmable pipeline whenever it's
+		// available (and all platforms that support GL_ARB_texture_float should also support shaders).
+		d_render_floating_point_raster_program_object =
+				GLShaderProgramUtils::compile_and_link_fragment_program(
+						renderer,
+						RENDER_RASTER_FRAGMENT_SHADER_SOURCE);
+	}
 }
 
 
 float
-GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
-		std::vector<tile_handle_type> &visible_tiles,
-		const GLViewport &viewport,
-		const GLMatrix &model_view_transform,
-		const GLMatrix &projection_transform,
-		float level_of_detail_bias) const
-{
-	// There should be levels of detail.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			!d_level_of_detail_pyramid.empty(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// Get the level-of-detail based on the size of viewport pixels projected onto the globe.
-	float level_of_detail_factor;
-	const unsigned int level_of_detail =
-			get_level_of_detail(
-					viewport,
-					model_view_transform,
-					projection_transform,
-					level_of_detail_bias,
-					level_of_detail_factor);
-	const LevelOfDetail &lod = *d_level_of_detail_pyramid[level_of_detail];
-
-	//
-	// Traverse the OBB tree of the level-of-detail and gather of list of tiles that
-	// are visible in the view frustum (as defined by 'transform_stack').
-	//
-
-	// First get the view frustum planes.
-	const GLFrustum frustum_planes(model_view_transform, projection_transform);
-
-	// Get the root OBB tree node of the level-of-detail.
-	const LevelOfDetail::OBBTreeNode &lod_root_obb_tree_node =
-			lod.get_obb_tree_node(lod.obb_tree_root_node_index);
-
-	// Recursively traverse the OBB tree to find visible tiles.
-	get_visible_tiles(frustum_planes, GLFrustum::ALL_PLANES_ACTIVE_MASK, lod, lod_root_obb_tree_node, visible_tiles);
-
-	return level_of_detail_factor;
-}
-
-
-unsigned int
 GPlatesOpenGL::GLMultiResolutionRaster::get_level_of_detail(
-		const GLViewport &viewport,
 		const GLMatrix &model_view_transform,
 		const GLMatrix &projection_transform,
-		float level_of_detail_bias,
-		float &level_of_detail_factor) const
+		const GLViewport &viewport,
+		float level_of_detail_bias) const
 {
 	// Get the minimum size of a pixel in the current viewport when projected
 	// onto the unit sphere (in model space).
@@ -241,39 +181,89 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_level_of_detail(
 	//
 	// ...where 't0' is the texel size of the *highest* resolution level-of-detail and
 	// 't' is the projected size of a pixel of the viewport. And 'lod_bias' is used
-	// by clients to allow a the largest texel in a drawn texture to be larger than
+	// by clients to allow the largest texel in a drawn texture to be larger than
 	// a pixel in the viewport (which can result in blockiness in places in the rendered scene).
 	//
 	// Note: we return the un-clamped floating-point level-of-detail so clients of this class
 	// can see if they need a higher resolution render-texture, for example, to render
-	// our raster into - so in that case they'd keep increasing their render-target
-	// resolution or decreasing their render target view frustum until the level-of-detail
-	// became negative.
-	level_of_detail_factor = level_of_detail_bias + INVERSE_LOG2 *
+	// our raster into - so in that case they'd increase their render-target resolution or
+	// decrease their render target view frustum until the level-of-detail was zero.
+	return level_of_detail_bias + INVERSE_LOG2 *
 			(std::log(min_pixel_size_on_unit_sphere) -
 					std::log(d_max_highest_resolution_texel_size_on_unit_sphere));
+}
 
+
+float
+GPlatesOpenGL::GLMultiResolutionRaster::get_viewport_dimension_scale(
+		const GLMatrix &model_view_transform,
+		const GLMatrix &projection_transform,
+		const GLViewport &viewport,
+		float level_of_detail) const
+{
+	const float current_level_of_detail = get_level_of_detail(model_view_transform, projection_transform, viewport);
+
+	// new_viewport_dimension = viewport_dimension * pow(2, (get_level_of_detail - lod))
+	return std::pow(2.0f, current_level_of_detail - level_of_detail);
+}
+
+
+unsigned int
+GPlatesOpenGL::GLMultiResolutionRaster::clamp_level_of_detail(
+		float level_of_detail_float) const
+{
 	// Truncate level-of-detail factor and clamp to the range of our levels of details.
-	int level_of_detail = static_cast<int>(level_of_detail_factor);
+	int level_of_detail = static_cast<int>(level_of_detail_float);
 	// Clamp to highest resolution level of detail.
 	if (level_of_detail < 0)
 	{
-		// LOD bias aside, if we get here then even the highest resolution level-of-detail did not
-		// have enough resolution for the current viewport and projection but it'll have to do
-		// since its the highest resolution we have to offer.
+		// If we get here then even the highest resolution level-of-detail did not have enough
+		// resolution for the specified level of detail but it'll have to do since its the
+		// highest resolution we have to offer.
 		// This is where the user will start to see magnification of the raster.
 		level_of_detail = 0;
 	}
 	// Clamp to lowest resolution level of detail.
 	if (level_of_detail >= boost::numeric_cast<int>(d_level_of_detail_pyramid.size()))
 	{
-		// LOD bias aside, if we get there then even our lowest resolution level of detail
-		// had too much resolution - but this is pretty unlikely for all but the very
+		// If we get there then even our lowest resolution level of detail had too much resolution
+		// for the specified level of detail - but this is pretty unlikely for all but the very
 		// smallest of viewports.
 		level_of_detail = d_level_of_detail_pyramid.size() - 1;
 	}
 
 	return level_of_detail;
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
+		std::vector<tile_handle_type> &visible_tiles,
+		const GLMatrix &model_view_transform,
+		const GLMatrix &projection_transform,
+		unsigned int level_of_detail) const
+{
+	// There should be levels of detail and the specified level of detail should be in range.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!d_level_of_detail_pyramid.empty() &&
+				level_of_detail < d_level_of_detail_pyramid.size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	const LevelOfDetail &lod = *d_level_of_detail_pyramid[level_of_detail];
+
+	//
+	// Traverse the OBB tree of the level-of-detail and gather of list of tiles that
+	// are visible in the view frustum.
+	//
+
+	// First get the view frustum planes.
+	const GLFrustum frustum_planes(model_view_transform, projection_transform);
+
+	// Get the root OBB tree node of the level-of-detail.
+	const LevelOfDetail::OBBTreeNode &lod_root_obb_tree_node = lod.get_obb_tree_node(lod.obb_tree_root_node_index);
+
+	// Recursively traverse the OBB tree to find visible tiles.
+	get_visible_tiles(frustum_planes, GLFrustum::ALL_PLANES_ACTIVE_MASK, lod, lod_root_obb_tree_node, visible_tiles);
 }
 
 
@@ -334,6 +324,135 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
 }
 
 
+bool
+GPlatesOpenGL::GLMultiResolutionRaster::render(
+		GLRenderer &renderer,
+		cache_handle_type &cache_handle,
+		bool cache_tile_textures,
+		float level_of_detail_bias)
+{
+	const GLViewport &viewport = renderer.gl_get_viewport();
+	const GLMatrix &model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
+	const GLMatrix &projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
+
+	// Get the tiles visible in the view frustum of the render target in 'renderer'.
+	std::vector<tile_handle_type> visible_tiles;
+	get_visible_tiles(visible_tiles, model_view_transform, projection_transform, viewport, level_of_detail_bias);
+
+	// Return early if there are no tiles to render.
+	if (visible_tiles.empty())
+	{
+		cache_handle = cache_handle_type();
+		return false;
+	}
+
+	return render(renderer, visible_tiles, cache_handle, cache_tile_textures);
+}
+
+
+bool
+GPlatesOpenGL::GLMultiResolutionRaster::render(
+		GLRenderer &renderer,
+		unsigned int level_of_detail,
+		cache_handle_type &cache_handle,
+		bool cache_tile_textures)
+{
+	const GLMatrix &model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
+	const GLMatrix &projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
+
+	// Get the tiles visible in the view frustum of the render target in 'renderer'.
+	std::vector<tile_handle_type> visible_tiles;
+	get_visible_tiles(visible_tiles, model_view_transform, projection_transform, level_of_detail);
+
+	// Return early if there are no tiles to render.
+	if (visible_tiles.empty())
+	{
+		cache_handle = cache_handle_type();
+		return false;
+	}
+
+	return render(renderer, visible_tiles, cache_handle, cache_tile_textures);
+}
+
+
+bool
+GPlatesOpenGL::GLMultiResolutionRaster::render(
+		GLRenderer &renderer,
+		const std::vector<tile_handle_type> &tiles,
+		cache_handle_type &cache_handle,
+		bool cache_tile_textures)
+{
+	// Make sure we leave the OpenGL state the way it was.
+	GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	// Use shader program (if supported), otherwise the fixed-function pipeline.
+	// A valid shader program means we have a floating-point source raster.
+	if (d_render_floating_point_raster_program_object)
+	{
+		// Bind the shader program.
+		renderer.gl_bind_program_object(d_render_floating_point_raster_program_object.get());
+		// Set the raster texture sampler to texture unit 0.
+		d_render_floating_point_raster_program_object.get()->gl_uniform1i(renderer, "raster_texture_sampler", 0/*texture unit*/);
+	}
+	else // Fixed function...
+	{
+		// Use the fixed-function pipeline (available on all hardware) to render raster.
+		// Enable texturing and set the texture function on texture unit 0.
+		renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+	}
+
+	// NOTE: We don't set alpha-blending (or alpha-testing) state here because we
+	// might not be rendering directly to the final render target and hence we don't
+	// want to double-blend semi-transparent rasters - the alpha value is multiplied by
+	// all channels including alpha during alpha blending (R,G,B,A) -> (A*R,A*G,A*B,A*A) -
+	// the final render target would then have a source blending contribution of (3A*R,3A*G,3A*B,4A)
+	// which is not what we want - we want (A*R,A*G,A*B,A*A).
+
+	// The cached view is a sequence of tiles for the caller to keep alive until the next frame.
+	boost::shared_ptr<std::vector<ClientCacheTile> > cached_tiles(new std::vector<ClientCacheTile>());
+	cached_tiles->reserve(tiles.size());
+
+	// Render each tile.
+	BOOST_FOREACH(GLMultiResolutionRaster::tile_handle_type tile_handle, tiles)
+	{
+		const Tile tile = get_tile(tile_handle, renderer);
+
+		// Bind the tile texture to texture unit 0.
+		renderer.gl_bind_texture(tile.tile_texture->texture, GL_TEXTURE0, GL_TEXTURE_2D);
+
+		// Bind the current tile.
+		tile.tile_vertices->vertex_array->gl_bind(renderer);
+
+		const unsigned int num_vertices =
+				tile.tile_vertices->vertex_buffer->get_buffer()->get_buffer_size() / sizeof(vertex_type);
+		const unsigned int num_indices =
+				tile.tile_vertices->vertex_element_buffer->get_buffer()->get_buffer_size() / sizeof(vertex_element_type);
+
+		// Draw the current tile.
+		tile.tile_vertices->vertex_array->gl_draw_range_elements(
+				renderer,
+				GL_TRIANGLES,
+				0/*start*/,
+				num_vertices - 1/*end*/,
+				num_indices/*count*/,
+				GLVertexElementTraits<vertex_element_type>::type,
+				0 /*indices_offset*/);
+
+		// The caller will cache this tile to keep it from being prematurely recycled by our caches.
+		//
+		// Note that none of this has any effect if the client specified the entire level-of-detail
+		// pyramid be cached (in the 'create()' method) in which case it'll get cached regardless.
+		cached_tiles->push_back(ClientCacheTile(tile, cache_tile_textures));
+	}
+
+	// Return cached tiles to the caller.
+	cache_handle = cached_tiles;
+
+	return !tiles.empty();
+}
+
+
 GPlatesOpenGL::GLMultiResolutionRaster::Tile
 GPlatesOpenGL::GLMultiResolutionRaster::get_tile(
 		tile_handle_type tile_handle,
@@ -378,6 +497,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile_texture(
 
 			// The texture was just allocated so we need to create it in OpenGL.
 			create_texture(renderer, tile_texture->texture);
+
+			//qDebug() << "GLMultiResolutionRaster: " << d_tile_texture_cache->get_current_num_objects_in_use();
 		}
 
 		load_raster_data_into_tile_texture(
@@ -432,6 +553,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &texture)
 {
+	const GLint internal_format = d_raster_source->get_target_texture_internal_format();
+
 #if 0
 	// If the auto-generate mipmaps OpenGL extension is supported then have mipmaps generated
 	// automatically for us and specify a mipmap minification filter,
@@ -471,18 +594,38 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	// south pole will exhibit squashing along the longitude, but not the latitude, direction.
 	// Regular isotropic filtering will just reduce texel resolution equally along both
 	// directions and reduce the visual sharpness that we want to retain in the latitude direction.
-	if (GLEW_EXT_texture_filter_anisotropic)
+	//
+	// NOTE: We don't enable anisotropic filtering for floating-point textures since earlier
+	// hardware (that supports floating-point textures) only supports nearest filtering.
+	if (!GLTexture::is_format_floating_point(internal_format) &&
+		GLEW_EXT_texture_filter_anisotropic &&
+		d_fixed_point_texture_filter == FIXED_POINT_TEXTURE_FILTER_ANISOTROPIC)
 	{
 		const GLfloat anisotropy = GLContext::get_parameters().texture.gl_texture_max_anisotropy;
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
 
-	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	// Clamp texture coordinates to centre of edge texels -
+	// it's easier for hardware to implement - and doesn't affect our calculations.
+	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	{
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
+	else
+	{
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	}
 
 	// Create the texture in OpenGL - this actually creates the texture without any data.
 	// We'll be getting our raster source to load image data into the texture.
-	texture->gl_tex_image_2D(renderer, GL_TEXTURE_2D, 0, GL_RGBA8,
+	//
+	// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
+	// just use values that are compatible with all internal formats to avoid a possible error.
+	texture->gl_tex_image_2D(
+			renderer, GL_TEXTURE_2D, 0,
+			internal_format,
 			d_tile_texel_dimension, d_tile_texel_dimension,
 			0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 

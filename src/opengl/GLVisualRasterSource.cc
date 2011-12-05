@@ -33,7 +33,7 @@
 #include <opengl/OpenGL.h>
 #include <QDebug>
 
-#include "GLProxiedRasterSource.h"
+#include "GLVisualRasterSource.h"
 
 #include "GLContext.h"
 #include "GLRenderer.h"
@@ -70,8 +70,8 @@ namespace GPlatesOpenGL
 }
 
 
-boost::optional<GPlatesOpenGL::GLProxiedRasterSource::non_null_ptr_type>
-GPlatesOpenGL::GLProxiedRasterSource::create(
+boost::optional<GPlatesOpenGL::GLVisualRasterSource::non_null_ptr_type>
+GPlatesOpenGL::GLVisualRasterSource::create(
 		GLRenderer &renderer,
 		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
 		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
@@ -109,7 +109,7 @@ GPlatesOpenGL::GLProxiedRasterSource::create(
 			tile_texel_dimension > 0 && GPlatesUtils::Base2::is_power_of_two(tile_texel_dimension),
 			GPLATES_ASSERTION_SOURCE);
 
-	return non_null_ptr_type(new GLProxiedRasterSource(
+	return non_null_ptr_type(new GLVisualRasterSource(
 			renderer,
 			proxy_resolver_opt.get(),
 			raster_colour_palette,
@@ -120,7 +120,7 @@ GPlatesOpenGL::GLProxiedRasterSource::create(
 }
 
 
-GPlatesOpenGL::GLProxiedRasterSource::GLProxiedRasterSource(
+GPlatesOpenGL::GLVisualRasterSource::GLVisualRasterSource(
 		GLRenderer &renderer,
 		const GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type &
 				proxy_raster_resolver,
@@ -134,20 +134,21 @@ GPlatesOpenGL::GLProxiedRasterSource::GLProxiedRasterSource(
 	d_raster_width(raster_width),
 	d_raster_height(raster_height),
 	d_tile_texel_dimension(tile_texel_dimension),
-	// Start with smallest size cache and just let the cache grow in size as needed...
+	// Start with small size cache and just let the cache grow in size as needed...
 	d_raster_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create()),
 	d_raster_modulate_colour(raster_modulate_colour),
 	d_full_screen_quad_drawable(
 			GLUtils::create_full_screen_2D_coloured_textured_quad(
 					renderer,
-					GPlatesGui::Colour::to_rgba8(raster_modulate_colour)))
+					GPlatesGui::Colour::to_rgba8(raster_modulate_colour))),
+	d_logged_tile_load_failure_warning(false)
 {
 	initialise_level_of_detail_pyramid();
 }
 
 
-GPlatesOpenGL::GLProxiedRasterSource::cache_handle_type
-GPlatesOpenGL::GLProxiedRasterSource::load_tile(
+GPlatesOpenGL::GLVisualRasterSource::cache_handle_type
+GPlatesOpenGL::GLVisualRasterSource::load_tile(
 		unsigned int level,
 		unsigned int texel_x_offset,
 		unsigned int texel_y_offset,
@@ -187,6 +188,8 @@ GPlatesOpenGL::GLProxiedRasterSource::load_tile(
 
 			// The texture was just allocated so we need to create it in OpenGL.
 			create_tile_texture(renderer, raster_texture);
+
+			//qDebug() << "GLVisualRasterSource: " << d_raster_texture_cache->get_current_num_objects_in_use();
 		}
 
 		// Load the proxied raster data into the texture.
@@ -225,7 +228,7 @@ GPlatesOpenGL::GLProxiedRasterSource::load_tile(
 
 
 bool
-GPlatesOpenGL::GLProxiedRasterSource::change_raster(
+GPlatesOpenGL::GLVisualRasterSource::change_raster(
 		GLRenderer &renderer,
 		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &new_raw_raster,
 		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette)
@@ -271,7 +274,7 @@ GPlatesOpenGL::GLProxiedRasterSource::change_raster(
 
 
 void
-GPlatesOpenGL::GLProxiedRasterSource::change_modulate_colour(
+GPlatesOpenGL::GLVisualRasterSource::change_modulate_colour(
 		GLRenderer &renderer,
 		const GPlatesGui::Colour &raster_modulate_colour)
 {
@@ -301,7 +304,7 @@ GPlatesOpenGL::GLProxiedRasterSource::change_modulate_colour(
 
 
 void
-GPlatesOpenGL::GLProxiedRasterSource::initialise_level_of_detail_pyramid()
+GPlatesOpenGL::GLVisualRasterSource::initialise_level_of_detail_pyramid()
 {
 	// The dimension of texels that contribute to a level-of-detail
 	// (starting with the highest resolution level-of-detail).
@@ -352,8 +355,8 @@ GPlatesOpenGL::GLProxiedRasterSource::initialise_level_of_detail_pyramid()
 }
 
 
-GPlatesOpenGL::GLProxiedRasterSource::Tile &
-GPlatesOpenGL::GLProxiedRasterSource::get_tile(
+GPlatesOpenGL::GLVisualRasterSource::Tile &
+GPlatesOpenGL::GLVisualRasterSource::get_tile(
 		unsigned int level,
 		unsigned int texel_x_offset,
 		unsigned int texel_y_offset)
@@ -379,7 +382,7 @@ GPlatesOpenGL::GLProxiedRasterSource::get_tile(
 
 
 void
-GPlatesOpenGL::GLProxiedRasterSource::load_proxied_raster_data_into_raster_texture(
+GPlatesOpenGL::GLVisualRasterSource::load_proxied_raster_data_into_raster_texture(
 		unsigned int level,
 		unsigned int texel_x_offset,
 		unsigned int texel_y_offset,
@@ -404,7 +407,7 @@ GPlatesOpenGL::GLProxiedRasterSource::load_proxied_raster_data_into_raster_textu
 	if (raster_region_opt)
 	{
 		// Load the source data into the raster texture.
-		GLTextureUtils::load_rgba8_image_into_texture_2D(
+		GLTextureUtils::load_image_into_rgba8_texture_2D(
 				renderer,
 				raster_texture,
 				raster_region_opt.get()->data(),
@@ -415,7 +418,10 @@ GPlatesOpenGL::GLProxiedRasterSource::load_proxied_raster_data_into_raster_textu
 	{
 		// There was an error accessing raster data so black out the texture and
 		// render an error message into it.
+		//
 		// FIXME: We should probably deal with the error in a better way than this.
+		// However it can be thought of as a visible assertion of sorts - the user sees the error message
+		// clearly and it has already pointed us developers to the problem quickly on more than one occasion.
 		render_error_text_into_texture(
 				level,
 				texel_x_offset,
@@ -432,7 +438,7 @@ GPlatesOpenGL::GLProxiedRasterSource::load_proxied_raster_data_into_raster_textu
 
 
 void
-GPlatesOpenGL::GLProxiedRasterSource::render_error_text_into_texture(
+GPlatesOpenGL::GLVisualRasterSource::render_error_text_into_texture(
 		unsigned int level,
 		unsigned int texel_x_offset,
 		unsigned int texel_y_offset,
@@ -441,16 +447,19 @@ GPlatesOpenGL::GLProxiedRasterSource::render_error_text_into_texture(
 		const GLTexture::shared_ptr_type &texture,
 		GLRenderer &renderer)
 {
-#if 0 // Too many warnings - besides already drawing error message on globe via textures.
-	qWarning() << "Unable to load data into raster tile:";
+	if (!d_logged_tile_load_failure_warning)
+	{
+		qWarning() << "Unable to load data into raster tile:";
 
-	qWarning() << "  level, texel_x_offset, texel_y_offset, texel_width, texel_height: "
-			<< level << ", "
-			<< texel_x_offset << ", "
-			<< texel_y_offset << ", "
-			<< texel_width << ", "
-			<< texel_height << ", ";
-#endif
+		qWarning() << "  level, texel_x_offset, texel_y_offset, texel_width, texel_height: "
+				<< level << ", "
+				<< texel_x_offset << ", "
+				<< texel_y_offset << ", "
+				<< texel_width << ", "
+				<< texel_height << ", ";
+
+		d_logged_tile_load_failure_warning = true;
+	}
 
 	// Create a black raster to load into the texture and overlay an error message in red.
 	// Create a different message depending on whether the level is zero or not.
@@ -482,7 +491,7 @@ GPlatesOpenGL::GLProxiedRasterSource::render_error_text_into_texture(
 	if (texel_width == d_tile_texel_dimension && texel_height == d_tile_texel_dimension)
 	{
 		// Load cached image into raster texture.
-		GLTextureUtils::load_argb32_qimage_into_texture_2D(
+		GLTextureUtils::load_argb32_qimage_into_rgba8_texture_2D(
 				renderer,
 				texture,
 				error_text_image,
@@ -491,7 +500,7 @@ GPlatesOpenGL::GLProxiedRasterSource::render_error_text_into_texture(
 	else
 	{
 		// Need to load clipped copy of error text image into raster texture.
-		GLTextureUtils::load_argb32_qimage_into_texture_2D(
+		GLTextureUtils::load_argb32_qimage_into_rgba8_texture_2D(
 				renderer,
 				texture,
 				error_text_image.copy(0, 0, texel_width, texel_height),
@@ -501,7 +510,7 @@ GPlatesOpenGL::GLProxiedRasterSource::render_error_text_into_texture(
 
 
 void
-GPlatesOpenGL::GLProxiedRasterSource::write_raster_texture_into_tile_target_texture(
+GPlatesOpenGL::GLVisualRasterSource::write_raster_texture_into_tile_target_texture(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &target_texture,
 		const GLTexture::shared_ptr_type &raster_texture)
@@ -511,7 +520,7 @@ GPlatesOpenGL::GLProxiedRasterSource::write_raster_texture_into_tile_target_text
 	//
 
 	// Begin rendering to a 2D render target texture.
-	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(renderer, target_texture);
+	GLRenderer::RenderTarget2DScope render_target_scope(renderer, target_texture);
 
 	// Viewport that matches the tile texture size.
 	renderer.gl_viewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension);
@@ -535,16 +544,26 @@ GPlatesOpenGL::GLProxiedRasterSource::write_raster_texture_into_tile_target_text
 
 
 void
-GPlatesOpenGL::GLProxiedRasterSource::create_tile_texture(
+GPlatesOpenGL::GLVisualRasterSource::create_tile_texture(
 		GLRenderer &renderer,
-		const GLTexture::shared_ptr_type &texture)
+		const GLTexture::shared_ptr_type &texture) const
 {
 	// No mipmaps needed or anisotropic filtering required.
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	// Clamp texture coordinates to centre of edge texels -
+	// it's easier for hardware to implement - and doesn't affect our calculations.
+	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	{
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
+	else
+	{
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	}
 
 	// Create the texture in OpenGL - this actually creates the texture without any data.
 	// We'll load image data into the texture later.

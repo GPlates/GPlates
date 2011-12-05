@@ -59,6 +59,10 @@ namespace GPlatesOpenGL
 	 * A shader program object.
 	 *
 	 * Note that the 'GL_ARB_shader_objects' and 'GL_ARB_vertex_shader' extensions must be supported.
+	 *
+	 * Also some methods (such as @a gl_uniform1ui and @a gl_uniform1d) require extra extensions:
+	 *  - 'GL_EXT_gpu_shader4' for setting *unsigned* integer uniform variables, and
+	 *  - 'GL_ARB_gpu_shader_fp64' for setting *double* uniform variables.
 	 */
 	class GLProgramObject :
 			public GLObject,
@@ -188,7 +192,7 @@ namespace GPlatesOpenGL
 		 * "GLSL attempts to eliminate aliasing of vertex attributes but this is integral to NVIDIA’s "
 		 * "hardware approach and necessary for maintaining compatibility with existing OpenGL applications "
 		 * "that NVIDIA customers rely on. NVIDIA’s GLSL implementation therefore does not allow built-in "
-		 * "vertex attributes to collide with a generic vertex attributes that is assigned to a particular "
+		 * "vertex attributes to collide with a generic vertex attribute that is assigned to a particular "
 		 * "vertex attribute index with glBindAttribLocation. For example, you should not use gl_Normal "
 		 * "(a built-in vertex attribute) and also use glBindAttribLocation to bind a generic vertex attribute "
 		 * "named "whatever" to vertex attribute index 2 because gl_Normal aliases to index 2."
@@ -261,6 +265,10 @@ namespace GPlatesOpenGL
 		//
 		// NOTE: As dictated by OpenGL, the *type* (eg, GLfloat, GLint) and *size* (eg, 1,2,3,4) of the
 		// uniform variable set with @a gl_uniform must match that declared in the shader source code.
+		//
+		// NOTE: The methods that set *unsigned* integer and *double* uniforms require extra extensions:
+		//  - 'GL_EXT_gpu_shader4' for setting *unsigned* integer uniform variables, and
+		//  - 'GL_ARB_gpu_shader_fp64' for setting *double* uniform variables.
 
 
 		//! Performs same function as the glUniform1f OpenGL function.
@@ -291,6 +299,52 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const char *name,
 				const GLint *value,
+				unsigned int count);
+
+		/**
+		 * Performs same function as the glUniform1d OpenGL function.
+		 *
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
+		 */
+		void
+		gl_uniform1d(
+				GLRenderer &renderer,
+				const char *name,
+				GLdouble v0);
+
+		/**
+		 * Performs same function as the glUniform1dv OpenGL function.
+		 *
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
+		 */
+		void
+		gl_uniform1d(
+				GLRenderer &renderer,
+				const char *name,
+				const GLdouble *value,
+				unsigned int count);
+
+		/**
+		 * Performs same function as the glUniform1ui OpenGL function.
+		 *
+		 * NOTE: Requires 'GL_EXT_gpu_shader4'.
+		 */
+		void
+		gl_uniform1ui(
+				GLRenderer &renderer,
+				const char *name,
+				GLuint v0);
+
+		/**
+		 * Performs same function as the glUniform1uiv OpenGL function.
+		 *
+		 * NOTE: Requires 'GL_EXT_gpu_shader4'.
+		 */
+		void
+		gl_uniform1ui(
+				GLRenderer &renderer,
+				const char *name,
+				const GLuint *value,
 				unsigned int count);
 
 
@@ -324,6 +378,54 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const char *name,
 				const GLint *value,
+				unsigned int count);
+
+		/**
+		 * Performs same function as the glUniform2d OpenGL function.
+		 *
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
+		 */
+		void
+		gl_uniform2d(
+				GLRenderer &renderer,
+				const char *name,
+				GLdouble v0,
+				GLdouble v1);
+
+		/**
+		 * Performs same function as the glUniform2dv OpenGL function.
+		 *
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
+		 */
+		void
+		gl_uniform2d(
+				GLRenderer &renderer,
+				const char *name,
+				const GLdouble *value,
+				unsigned int count);
+
+		/**
+		 * Performs same function as the glUniform2ui OpenGL function.
+		 *
+		 * NOTE: Requires 'GL_EXT_gpu_shader4'.
+		 */
+		void
+		gl_uniform2ui(
+				GLRenderer &renderer,
+				const char *name,
+				GLuint v0,
+				GLuint v1);
+
+		/**
+		 * Performs same function as the glUniform2uiv OpenGL function.
+		 *
+		 * NOTE: Requires 'GL_EXT_gpu_shader4'.
+		 */
+		void
+		gl_uniform2ui(
+				GLRenderer &renderer,
+				const char *name,
+				const GLuint *value,
 				unsigned int count);
 
 
@@ -362,10 +464,56 @@ namespace GPlatesOpenGL
 				unsigned int count);
 
 		/**
-		 * Writes @a UnitVector3D as (x,y,z).
+		 * Performs same function as the glUniform3d OpenGL function.
 		 *
-		 * NOTE: 
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
+		void
+		gl_uniform3d(
+				GLRenderer &renderer,
+				const char *name,
+				GLdouble v0,
+				GLdouble v1,
+				GLdouble v2);
+
+		/**
+		 * Performs same function as the glUniform3dv OpenGL function.
+		 *
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
+		 */
+		void
+		gl_uniform3d(
+				GLRenderer &renderer,
+				const char *name,
+				const GLdouble *value,
+				unsigned int count);
+
+		/**
+		 * Performs same function as the glUniform3ui OpenGL function.
+		 *
+		 * NOTE: Requires 'GL_EXT_gpu_shader4'.
+		 */
+		void
+		gl_uniform3ui(
+				GLRenderer &renderer,
+				const char *name,
+				GLuint v0,
+				GLuint v1,
+				GLuint v2);
+
+		/**
+		 * Performs same function as the glUniform3uiv OpenGL function.
+		 *
+		 * NOTE: Requires 'GL_EXT_gpu_shader4'.
+		 */
+		void
+		gl_uniform3ui(
+				GLRenderer &renderer,
+				const char *name,
+				const GLuint *value,
+				unsigned int count);
+
+		//! Writes @a UnitVector3D as single-precision (x,y,z).
 		void
 		gl_uniform3f(
 				GLRenderer &renderer,
@@ -373,6 +521,20 @@ namespace GPlatesOpenGL
 				const GPlatesMaths::UnitVector3D &value)
 		{
 			gl_uniform3f(renderer, name, value.x().dval(), value.y().dval(), value.z().dval());
+		}
+
+		/**
+		 * Writes @a UnitVector3D as double-precision (x,y,z).
+		 *
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
+		 */
+		void
+		gl_uniform3d(
+				GLRenderer &renderer,
+				const char *name,
+				const GPlatesMaths::UnitVector3D &value)
+		{
+			gl_uniform3d(renderer, name, value.x().dval(), value.y().dval(), value.z().dval());
 		}
 
 		//! Writes @a Vector3D as (x,y,z).
@@ -383,6 +545,20 @@ namespace GPlatesOpenGL
 				const GPlatesMaths::Vector3D &value)
 		{
 			gl_uniform3f(renderer, name, value.x().dval(), value.y().dval(), value.z().dval());
+		}
+
+		/**
+		 * Writes @a Vector3D as double-precision (x,y,z).
+		 *
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
+		 */
+		void
+		gl_uniform3d(
+				GLRenderer &renderer,
+				const char *name,
+				const GPlatesMaths::Vector3D &value)
+		{
+			gl_uniform3d(renderer, name, value.x().dval(), value.y().dval(), value.z().dval());
 		}
 
 
@@ -423,10 +599,59 @@ namespace GPlatesOpenGL
 				unsigned int count);
 
 		/**
-		 * Writes @a UnitVector3D as (x,y,z,w).
+		 * Performs same function as the glUniform4d OpenGL function.
 		 *
-		 * NOTE: 
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
+		void
+		gl_uniform4d(
+				GLRenderer &renderer,
+				const char *name,
+				GLdouble v0,
+				GLdouble v1,
+				GLdouble v2,
+				GLdouble v3);
+
+		/**
+		 * Performs same function as the glUniform4dv OpenGL function.
+		 *
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
+		 */
+		void
+		gl_uniform4d(
+				GLRenderer &renderer,
+				const char *name,
+				const GLdouble *value,
+				unsigned int count);
+
+		/**
+		 * Performs same function as the glUniform4ui OpenGL function.
+		 *
+		 * NOTE: Requires 'GL_EXT_gpu_shader4'.
+		 */
+		void
+		gl_uniform4ui(
+				GLRenderer &renderer,
+				const char *name,
+				GLuint v0,
+				GLuint v1,
+				GLuint v2,
+				GLuint v3);
+
+		/**
+		 * Performs same function as the glUniform4uiv OpenGL function.
+		 *
+		 * NOTE: Requires 'GL_EXT_gpu_shader4'.
+		 */
+		void
+		gl_uniform4ui(
+				GLRenderer &renderer,
+				const char *name,
+				const GLuint *value,
+				unsigned int count);
+
+
+		//! Writes @a UnitVector3D as single-precision (x,y,z,w).
 		void
 		gl_uniform4f(
 				GLRenderer &renderer,
@@ -437,7 +662,22 @@ namespace GPlatesOpenGL
 			gl_uniform4f(renderer, name, value_xyz.x().dval(), value_xyz.y().dval(), value_xyz.z().dval(), value_w);
 		}
 
-		//! Writes @a Vector3D as (x,y,z,w).
+		/**
+		 * Writes @a UnitVector3D as double-precision (x,y,z,w).
+		 *
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
+		 */
+		void
+		gl_uniform4d(
+				GLRenderer &renderer,
+				const char *name,
+				const GPlatesMaths::UnitVector3D &value_xyz,
+				GLdouble value_w = 1)
+		{
+			gl_uniform4d(renderer, name, value_xyz.x().dval(), value_xyz.y().dval(), value_xyz.z().dval(), value_w);
+		}
+
+		//! Writes @a Vector3D as single-precision (x,y,z,w).
 		void
 		gl_uniform4f(
 				GLRenderer &renderer,
@@ -448,7 +688,22 @@ namespace GPlatesOpenGL
 			gl_uniform4f(renderer, name, value_xyz.x().dval(), value_xyz.y().dval(), value_xyz.z().dval(), value_w);
 		}
 
-		//! Writes @a value as (r,g,b,a).
+		/**
+		 * Writes @a Vector3D as double-precision (x,y,z,w).
+		 *
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
+		 */
+		void
+		gl_uniform4d(
+				GLRenderer &renderer,
+				const char *name,
+				const GPlatesMaths::Vector3D &value_xyz,
+				GLdouble value_w = 1)
+		{
+			gl_uniform4d(renderer, name, value_xyz.x().dval(), value_xyz.y().dval(), value_xyz.z().dval(), value_w);
+		}
+
+		//! Writes @a value as single-precision (r,g,b,a).
 		void
 		gl_uniform4f(
 				GLRenderer &renderer,
@@ -465,10 +720,25 @@ namespace GPlatesOpenGL
 		 * NOTE: If @a transpose is false then matrix must be laid out in column-major format (ie, col0, col1).
 		 */
 		void
-		gl_uniform_matrix2x2(
+		gl_uniform_matrix2x2f(
 				GLRenderer &renderer,
 				const char *name,
 				const GLfloat *value,
+				unsigned int count,
+				GLboolean transpose);
+
+		/**
+		 * Performs same function as the glUniformMatrix2dv OpenGL function.
+		 *
+		 * NOTE: If @a transpose is false then matrix must be laid out in column-major format (ie, col0, col1).
+		 *
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
+		 */
+		void
+		gl_uniform_matrix2x2d(
+				GLRenderer &renderer,
+				const char *name,
+				const GLdouble *value,
 				unsigned int count,
 				GLboolean transpose);
 
@@ -478,10 +748,25 @@ namespace GPlatesOpenGL
 		 * NOTE: If @a transpose is false then matrix must be laid out in column-major format (ie, col0, col1, col2).
 		 */
 		void
-		gl_uniform_matrix3x3(
+		gl_uniform_matrix3x3f(
 				GLRenderer &renderer,
 				const char *name,
 				const GLfloat *value,
+				unsigned int count,
+				GLboolean transpose);
+
+		/**
+		 * Performs same function as the glUniformMatrix3dv OpenGL function.
+		 *
+		 * NOTE: If @a transpose is false then matrix must be laid out in column-major format (ie, col0, col1, col2).
+		 *
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
+		 */
+		void
+		gl_uniform_matrix3x3d(
+				GLRenderer &renderer,
+				const char *name,
+				const GLdouble *value,
 				unsigned int count,
 				GLboolean transpose);
 
@@ -491,36 +776,61 @@ namespace GPlatesOpenGL
 		 * NOTE: If @a transpose is false then matrix must be laid out in column-major format (ie, col0, col1, col2, col3).
 		 */
 		void
-		gl_uniform_matrix4x4(
+		gl_uniform_matrix4x4f(
 				GLRenderer &renderer,
 				const char *name,
 				const GLfloat *value,
 				unsigned int count,
 				GLboolean transpose);
 
-
 		/**
-		 * Performs same function as the glUniformMatrix4fv OpenGL function.
+		 * Performs same function as the glUniformMatrix4dv OpenGL function.
 		 *
-		 * NOTE: Matrix must be laid out in column-major format (ie, col0, col1, col2, col3).
+		 * NOTE: If @a transpose is false then matrix must be laid out in column-major format (ie, col0, col1, col2, col3).
+		 *
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
 		 */
 		void
-		gl_uniform_matrix4x4(
+		gl_uniform_matrix4x4d(
 				GLRenderer &renderer,
 				const char *name,
-				const GLfloat *value,
-				unsigned int count);
+				const GLdouble *value,
+				unsigned int count,
+				GLboolean transpose);
+
 
 		//! Performs same function as the glUniformMatrix4fv OpenGL function with a single matrix.
 		void
-		gl_uniform_matrix4x4(
+		gl_uniform_matrix4x4f(
+				GLRenderer &renderer,
+				const char *name,
+				const GLMatrix &matrix);
+
+		/**
+		 * Performs same function as the glUniformMatrix4dv OpenGL function with a single matrix.
+		 *
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
+		 */
+		void
+		gl_uniform_matrix4x4d(
 				GLRenderer &renderer,
 				const char *name,
 				const GLMatrix &matrix);
 
 		//! Performs same function as the glUniformMatrix4fv OpenGL function with one or more matrices.
 		void
-		gl_uniform_matrix4x4(
+		gl_uniform_matrix4x4f(
+				GLRenderer &renderer,
+				const char *name,
+				const std::vector<GLMatrix> &matrices);
+
+		/**
+		 * Performs same function as the glUniformMatrix4dv OpenGL function with one or more matrices.
+		 *
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
+		 */
+		void
+		gl_uniform_matrix4x4d(
 				GLRenderer &renderer,
 				const char *name,
 				const std::vector<GLMatrix> &matrices);

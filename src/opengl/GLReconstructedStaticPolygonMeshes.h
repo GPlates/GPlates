@@ -53,8 +53,7 @@ namespace GPlatesOpenGL
 	class GLRenderer;
 
 	/**
-	 * A raster that is reconstructed by mapping it onto a set of present-day static polygons and
-	 * reconstructing the polygons (and hence partitioned pieces of the raster).
+	 * Reconstructed static polygons used to reconstruct a raster.
 	 */
 	class GLReconstructedStaticPolygonMeshes :
 			public GPlatesUtils::ReferenceCount<GLReconstructedStaticPolygonMeshes>
@@ -79,33 +78,6 @@ namespace GPlatesOpenGL
 		//! Typedef for a spatial partition of reconstructed feature geometries.
 		typedef GPlatesMaths::CubeQuadTreePartition<GPlatesAppLogic::ReconstructContext::Reconstruction>
 				reconstructions_spatial_partition_type;
-
-		/**
-		 * Typedef for a @a GLCubeSubvision cache of projection transforms of quad tree nodes.
-		 */
-		typedef GPlatesOpenGL::GLCubeSubdivisionCache<
-				true/*CacheProjectionTransform*/>
-						cube_subdivision_projection_transforms_cache_type;
-
-		/**
-		 * Typedef for a @a GLCubeSubvision cache of loose bounds of quad tree nodes.
-		 */
-		typedef GPlatesOpenGL::GLCubeSubdivisionCache<
-				false/*CacheProjectionTransform*/,
-				false/*CacheBounds*/,
-				true/*CacheLooseBounds*/>
-						cube_subdivision_loose_bounds_cache_type;
-
-		/**
-		 * Typedef for a @a GLCubeSubvision cache of bounding polygons of quad tree nodes.
-		 */
-		typedef GPlatesOpenGL::GLCubeSubdivisionCache<
-				false/*CacheProjectionTransform*/,
-				false/*CacheBounds*/,
-				false/*CacheLooseBounds*/,
-				true/*CacheBoundingPolygon*/>
-						cube_subdivision_bounding_polygons_cache_type;
-
 
 		/**
 		 * Represents the boolean membership state of present day polygon meshes.
@@ -560,20 +532,14 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const polygon_mesh_seq_type &polygon_meshes,
 				const geometries_seq_type &present_day_geometries,
-				const reconstructions_spatial_partition_type::non_null_ptr_to_const_type &reconstructions_spatial_partition,
-				const cube_subdivision_projection_transforms_cache_type::non_null_ptr_type &cube_subdivision_projection_transforms_cache,
-				const cube_subdivision_loose_bounds_cache_type::non_null_ptr_type &cube_subdivision_loose_bounds_cache,
-				const cube_subdivision_bounding_polygons_cache_type::non_null_ptr_type &cube_subdivision_bounding_polygons_cache)
+				const reconstructions_spatial_partition_type::non_null_ptr_to_const_type &reconstructions_spatial_partition)
 		{
 			return non_null_ptr_type(
 					new GLReconstructedStaticPolygonMeshes(
 							renderer,
 							polygon_meshes,
 							present_day_geometries,
-							reconstructions_spatial_partition,
-							cube_subdivision_projection_transforms_cache,
-							cube_subdivision_loose_bounds_cache,
-							cube_subdivision_bounding_polygons_cache));
+							reconstructions_spatial_partition));
 		}
 
 
@@ -648,6 +614,17 @@ namespace GPlatesOpenGL
 
 	private:
 		/**
+		 * Typedef for a @a GLCubeSubvision cache.
+		 */
+		typedef GPlatesOpenGL::GLCubeSubdivisionCache<
+				true/*CacheProjectionTransform*/, false/*CacheLooseProjectionTransform*/,
+				true/*CacheFrustum*/, false/*CacheLooseFrustum*/,
+				true/*CacheBoundingPolygon*/, false/*CacheLooseBoundingPolygon*/,
+				false/*CacheBounds*/, true/*CacheLooseBounds*/>
+						cube_subdivision_cache_type;
+
+
+		/**
 		 * Typedef for mapping finite rotations to a group of reconstructed polygon meshes.
 		 *
 		 * We need boost::reference_wrapper because we need to compare the finite rotation object itself
@@ -658,21 +635,6 @@ namespace GPlatesOpenGL
 				reconstructed_polygon_mesh_transform_group_seq_type::size_type>
 						reconstructed_polygon_mesh_transform_group_map_type;
 
-
-		/**
-		 * Used to retrieve projection transforms and frustums during cube quad tree visitation.
-		 */
-		cube_subdivision_projection_transforms_cache_type::non_null_ptr_type d_cube_subdivision_projection_transforms_cache;
-
-		/**
-		 * Used to retrieve loose bounds during cube quad tree visitation.
-		 */
-		cube_subdivision_loose_bounds_cache_type::non_null_ptr_type d_cube_subdivision_loose_bounds_cache;
-
-		/**
-		 * Used to retrieve bounding small circles (from bounding polygons) during cube quad tree visitation.
-		 */
-		cube_subdivision_bounding_polygons_cache_type::non_null_ptr_type d_cube_subdivision_bounding_polygons_cache;
 
 		/**
 		 * All polygon mesh drawables share a single vertex array.
@@ -711,10 +673,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const polygon_mesh_seq_type &polygon_meshes,
 				const geometries_seq_type &present_day_geometries,
-				const reconstructions_spatial_partition_type::non_null_ptr_to_const_type &reconstructions_spatial_partition,
-				const cube_subdivision_projection_transforms_cache_type::non_null_ptr_type &cube_subdivision_projection_transforms_cache,
-				const cube_subdivision_loose_bounds_cache_type::non_null_ptr_type &cube_subdivision_loose_bounds_cache,
-				const cube_subdivision_bounding_polygons_cache_type::non_null_ptr_type &cube_subdivision_bounding_polygons_cache);
+				const reconstructions_spatial_partition_type::non_null_ptr_to_const_type &reconstructions_spatial_partition);
 
 
 		/**
@@ -727,7 +686,8 @@ namespace GPlatesOpenGL
 				unsigned int num_polygon_meshes,
 				const reconstructions_spatial_partition_type::const_node_reference_type &reconstructions_quad_tree_node,
 				const reconstructions_spatial_partition_type::const_node_reference_type &active_or_inactive_reconstructions_quad_tree_node,
-				const cube_subdivision_loose_bounds_cache_type::node_reference_type &loose_bounds_quad_tree_node,
+				cube_subdivision_cache_type &cube_subdivision_cache,
+				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_quad_tree_node,
 				const bool cull_invisible_reconstructions,
 				bool visible,
 				const GLFrustum &frustum_planes,
@@ -773,8 +733,8 @@ namespace GPlatesOpenGL
 				const boost::optional<const GPlatesMaths::BoundingSmallCircle &> &polygon_mesh_bounding_small_circle,
 				const std::vector<unsigned int> &polygon_mesh_parent_triangle_indices,
 				PresentDayPolygonMeshesNodeIntersections::intersection_partition_type::node_type &intersections_quad_tree_node,
-				const cube_subdivision_projection_transforms_cache_type::node_reference_type &projection_transforms_cache_node,
-				const cube_subdivision_bounding_polygons_cache_type::node_reference_type &bounding_polygons_cache_node,
+				cube_subdivision_cache_type &cube_subdivision_cache,
+				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_quad_tree_node,
 				unsigned int current_depth);
 	};
 }

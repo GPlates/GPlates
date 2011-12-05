@@ -128,6 +128,7 @@ namespace GPlatesOpenGL
 		}
 
 
+
 		/**
 		 * Attaches the specified mip-level of @a texture to the specified colour attachment point.
 		 *
@@ -154,6 +155,14 @@ namespace GPlatesOpenGL
 		gl_detach(
 				GLRenderer &renderer,
 				GLenum colour_attachment);
+
+
+		/**
+		 * Detaches any currently attached attachment points.
+		 */
+		void
+		gl_detach_all(
+				GLRenderer &renderer);
 
 
 		/**

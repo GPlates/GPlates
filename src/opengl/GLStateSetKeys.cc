@@ -36,6 +36,7 @@
 
 #include "GLContext.h"
 
+#include "global/AbortException.h"
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -57,12 +58,23 @@ GPlatesOpenGL::GLStateSetKeys::GLStateSetKeys() :
 			NUM_GENERIC_VERTEX_ATTRIBUTE_KEY_OFFSETS *
 			GLContext::get_parameters().shader.gl_max_vertex_attribs;
 
-	d_texture_unit_zero_base_key = current_key;
+	d_texture_image_unit_zero_base_key = current_key;
 	current_key +=
-			NUM_TEXTURE_UNIT_KEY_OFFSETS *
-			GLContext::get_parameters().texture.gl_max_texture_units;
+			NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS *
+			GLContext::get_parameters().texture.gl_max_texture_image_units;
+
+	d_texture_coord_zero_base_key = current_key;
+	current_key +=
+			NUM_TEXTURE_COORD_KEY_OFFSETS *
+			GLContext::get_parameters().texture.gl_max_texture_coords;
 
 	d_num_state_set_keys = current_key;
+
+	//qDebug() << "GLStateSetKeys: Number keys: " << d_num_state_set_keys;
+	//qDebug() << "GLStateSetKeys: gl_max_texture_image_units: " << GLContext::get_parameters().texture.gl_max_texture_image_units;
+	//qDebug() << "GLStateSetKeys: gl_max_texture_coords: " << GLContext::get_parameters().texture.gl_max_texture_coords;
+	//qDebug() << "GLStateSetKeys: NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS: " << NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS;
+	//qDebug() << "GLStateSetKeys: NUM_TEXTURE_COORD_KEY_OFFSETS: " << NUM_TEXTURE_COORD_KEY_OFFSETS;
 }
 
 
@@ -107,11 +119,9 @@ GPlatesOpenGL::GLStateSetKeys::get_enable_key(
 {
 	// Must be a non-texture capability - texture capabilities provided by 'get_texture_enable_key'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			cap != GL_TEXTURE_1D && cap != GL_TEXTURE_2D && cap != GL_TEXTURE_3D && cap != GL_TEXTURE_CUBE_MAP
-#ifdef GL_ARB_texture_rectangle
-				&& cap != GL_TEXTURE_RECTANGLE_ARB
-#endif
-			, GPLATES_ASSERTION_SOURCE);
+			cap != GL_TEXTURE_1D && cap != GL_TEXTURE_2D && cap != GL_TEXTURE_3D &&
+				cap != GL_TEXTURE_CUBE_MAP && cap != GL_TEXTURE_RECTANGLE_ARB,
+			GPLATES_ASSERTION_SOURCE);
 
 	key_type key = 0;
 
@@ -231,53 +241,37 @@ GPlatesOpenGL::GLStateSetKeys::get_texture_enable_key(
 		GLenum texture_unit,
 		GLenum texture_target) const
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_units,
-			GPLATES_ASSERTION_SOURCE);
-
-	TextureKeyOffsetType key_offset = static_cast<TextureKeyOffsetType>(0);
-
 	// Note that other texture targets (like GL_TEXTURE_2D_ARRAY) are not supported by 'glEnable' and
 	// 'glDisable' since they are used by shaders which don't require 'glEnable' and 'glDisable'.
 	switch (texture_target)
 	{
 	case GL_TEXTURE_1D:
-		key_offset = TEXTURE_KEY_ENABLE_TEXTURE_1D;
-		break;
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_ENABLE_TEXTURE_1D);
 	case GL_TEXTURE_2D:
-		key_offset = TEXTURE_KEY_ENABLE_TEXTURE_2D;
-		break;
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_ENABLE_TEXTURE_2D);
 	case GL_TEXTURE_3D:
-		key_offset = TEXTURE_KEY_ENABLE_TEXTURE_3D;
-		break;
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_ENABLE_TEXTURE_3D);
 	case GL_TEXTURE_CUBE_MAP:
-		key_offset = TEXTURE_KEY_ENABLE_TEXTURE_CUBE_MAP;
-		break;
-#ifdef GL_ARB_texture_rectangle
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_ENABLE_TEXTURE_CUBE_MAP);
 	case GL_TEXTURE_RECTANGLE_ARB:
-		key_offset = TEXTURE_KEY_ENABLE_TEXTURE_RECTANGLE;
-		break;
-#endif
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_ENABLE_TEXTURE_RECTANGLE);
+
 	case GL_TEXTURE_GEN_S:
-		key_offset = TEXTURE_KEY_ENABLE_TEXTURE_GEN_S;
-		break;
+		return get_texture_coord_key_from_key_offset(texture_unit, TEXTURE_COORD_KEY_ENABLE_TEXTURE_GEN_S);
 	case GL_TEXTURE_GEN_T:
-		key_offset = TEXTURE_KEY_ENABLE_TEXTURE_GEN_T;
-		break;
+		return get_texture_coord_key_from_key_offset(texture_unit, TEXTURE_COORD_KEY_ENABLE_TEXTURE_GEN_T);
 	case GL_TEXTURE_GEN_R:
-		key_offset = TEXTURE_KEY_ENABLE_TEXTURE_GEN_R;
-		break;
+		return get_texture_coord_key_from_key_offset(texture_unit, TEXTURE_COORD_KEY_ENABLE_TEXTURE_GEN_R);
 	case GL_TEXTURE_GEN_Q:
-		key_offset = TEXTURE_KEY_ENABLE_TEXTURE_GEN_Q;
-		break;
+		return get_texture_coord_key_from_key_offset(texture_unit, TEXTURE_COORD_KEY_ENABLE_TEXTURE_GEN_Q);
+
 	default:
 		// Unsupported texture target type.
 		GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
-		break;
 	}
 
-	return get_texture_key_from_key_offset(texture_unit, key_offset);
+	// Shouldn't get there - keep the compiler happy.
+	throw GPlatesGlobal::AbortException(GPLATES_EXCEPTION_SOURCE);
 }
 
 GPlatesOpenGL::GLStateSetKeys::key_type
@@ -285,54 +279,35 @@ GPlatesOpenGL::GLStateSetKeys::get_bind_texture_key(
 		GLenum texture_unit,
 		GLenum texture_target) const
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_units,
-			GPLATES_ASSERTION_SOURCE);
-
-	TextureKeyOffsetType key_offset = static_cast<TextureKeyOffsetType>(0);
-
 	// Note that other texture targets (like GL_TEXTURE_2D_ARRAY) are not supported by 'glEnable' and
 	// 'glDisable' since they are used by shaders which don't require 'glEnable' and 'glDisable'.
 	switch (texture_target)
 	{
 	case GL_TEXTURE_1D:
-		key_offset = TEXTURE_KEY_BIND_TEXTURE_1D;
-		break;
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_1D);
 	case GL_TEXTURE_2D:
-		key_offset = TEXTURE_KEY_BIND_TEXTURE_2D;
-		break;
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D);
 	case GL_TEXTURE_3D:
-		key_offset = TEXTURE_KEY_BIND_TEXTURE_3D;
-		break;
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_3D);
 	case GL_TEXTURE_CUBE_MAP:
-		key_offset = TEXTURE_KEY_BIND_TEXTURE_CUBE_MAP;
-		break;
-#ifdef GL_ARB_texture_rectangle // In case old 'glew.h' header
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_CUBE_MAP);
 	case GL_TEXTURE_RECTANGLE_ARB:
-		key_offset = TEXTURE_KEY_BIND_TEXTURE_RECTANGLE;
-		break;
-#endif
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_RECTANGLE);
 #ifdef GL_EXT_texture_array // In case old 'glew.h' header
 	case GL_TEXTURE_1D_ARRAY_EXT:
-		key_offset = TEXTURE_KEY_BIND_TEXTURE_1D_ARRAY;
-		break;
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_1D_ARRAY);
 	case GL_TEXTURE_2D_ARRAY_EXT:
-		key_offset = TEXTURE_KEY_BIND_TEXTURE_2D_ARRAY;
-		break;
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_ARRAY);
 #endif
 #ifdef GL_ARB_texture_multisample // In case old 'glew.h' header
 	case GL_TEXTURE_2D_MULTISAMPLE:
-		key_offset = TEXTURE_KEY_BIND_TEXTURE_2D_MULTISAMPLE;
-		break;
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_MULTISAMPLE);
 	case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
-		key_offset = TEXTURE_KEY_BIND_TEXTURE_2D_MULTISAMPLE_ARRAY;
-		break;
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_MULTISAMPLE_ARRAY);
 #endif
 #ifdef GL_EXT_texture_buffer_object // In case old 'glew.h' header
 	case GL_TEXTURE_BUFFER_EXT:
-		key_offset = TEXTURE_KEY_BIND_TEXTURE_BUFFER;
-		break;
+		return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_BUFFER);
 #endif
 
 	default:
@@ -341,7 +316,8 @@ GPlatesOpenGL::GLStateSetKeys::get_bind_texture_key(
 		break;
 	}
 
-	return get_texture_key_from_key_offset(texture_unit, key_offset);
+	// Shouldn't get there - keep the compiler happy.
+	throw GPlatesGlobal::AbortException(GPLATES_EXCEPTION_SOURCE);
 }
 
 
@@ -351,13 +327,6 @@ GPlatesOpenGL::GLStateSetKeys::get_tex_env_key(
 		GLenum target,
 		GLenum pname) const
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_units,
-			GPLATES_ASSERTION_SOURCE);
-
-	TextureKeyOffsetType key_offset = static_cast<TextureKeyOffsetType>(0);
-
 	// We're only supporting what we currently use - more can be added though.
 	// Also add to GLTexEnvStateSet::apply_default_state.
 	switch (target)
@@ -366,8 +335,7 @@ GPlatesOpenGL::GLStateSetKeys::get_tex_env_key(
 		switch (pname)
 		{
 		case GL_TEXTURE_ENV_MODE:
-			key_offset = TEXTURE_KEY_TEX_ENV_MODE;
-			break;
+			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_TEX_ENV_MODE);
 		default:
 			// Unsupported pname.
 			GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
@@ -381,7 +349,8 @@ GPlatesOpenGL::GLStateSetKeys::get_tex_env_key(
 		break;
 	}
 
-	return get_texture_key_from_key_offset(texture_unit, key_offset);
+	// Shouldn't get there - keep the compiler happy.
+	throw GPlatesGlobal::AbortException(GPLATES_EXCEPTION_SOURCE);
 }
 
 
@@ -392,36 +361,36 @@ GPlatesOpenGL::GLStateSetKeys::get_tex_gen_key(
 		GLenum pname) const
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_units,
-			GPLATES_ASSERTION_SOURCE);
-
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			coord >= GL_S && coord <= GL_Q,
 			GPLATES_ASSERTION_SOURCE);
-
-	TextureKeyOffsetType key_offset = static_cast<TextureKeyOffsetType>(0);
 
 	// We're only supporting what we currently use - more can be added though.
 	// Also add to GLTexGenStateSet::apply_default_state.
 	switch (pname)
 	{
 	case GL_TEXTURE_GEN_MODE:
-		key_offset = TextureKeyOffsetType(TEXTURE_KEY_TEXTURE_GEN_MODE_S + (coord - GL_S));
-		break;
+		return get_texture_coord_key_from_key_offset(
+				texture_unit,
+				TextureCoordKeyOffsetType(TEXTURE_COORD_KEY_TEXTURE_GEN_MODE_S + (coord - GL_S)));
+
 	case GL_OBJECT_PLANE:
-		key_offset = TextureKeyOffsetType(TEXTURE_KEY_TEXTURE_OBJECT_PLANE_S + (coord - GL_S));
-		break;
+		return get_texture_coord_key_from_key_offset(
+				texture_unit,
+				TextureCoordKeyOffsetType(TEXTURE_COORD_KEY_TEXTURE_OBJECT_PLANE_S + (coord - GL_S)));
+
 	case GL_EYE_PLANE:
-		key_offset = TextureKeyOffsetType(TEXTURE_KEY_TEXTURE_EYE_PLANE_S + (coord - GL_S));
-		break;
+		return get_texture_coord_key_from_key_offset(
+				texture_unit,
+				TextureCoordKeyOffsetType(TEXTURE_COORD_KEY_TEXTURE_EYE_PLANE_S + (coord - GL_S)));
+
 	default:
 		// Unsupported pname.
 		GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
 		break;
 	}
 
-	return get_texture_key_from_key_offset(texture_unit, key_offset);
+	// Shouldn't get there - keep the compiler happy.
+	throw GPlatesGlobal::AbortException(GPLATES_EXCEPTION_SOURCE);
 }
 
 
@@ -429,12 +398,7 @@ GPlatesOpenGL::GLStateSetKeys::key_type
 GPlatesOpenGL::GLStateSetKeys::get_enable_client_texture_state_key(
 		GLenum texture_unit) const
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_units,
-			GPLATES_ASSERTION_SOURCE);
-
-	return get_texture_key_from_key_offset(texture_unit, TEXTURE_KEY_ENABLE_CLIENT_STATE_TEXTURE_COORD_ARRAY);
+	return get_texture_coord_key_from_key_offset(texture_unit, TEXTURE_COORD_KEY_ENABLE_CLIENT_STATE_TEXTURE_COORD_ARRAY);
 }
 
 
@@ -442,12 +406,7 @@ GPlatesOpenGL::GLStateSetKeys::key_type
 GPlatesOpenGL::GLStateSetKeys::get_tex_coord_pointer_state_key(
 		GLenum texture_unit) const
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_units,
-			GPLATES_ASSERTION_SOURCE);
-
-	return get_texture_key_from_key_offset(texture_unit, TEXTURE_KEY_VERTEX_ARRAY_TEX_COORD_POINTER);
+	return get_texture_coord_key_from_key_offset(texture_unit, TEXTURE_COORD_KEY_VERTEX_ARRAY_TEX_COORD_POINTER);
 }
 
 
@@ -537,11 +496,32 @@ GPlatesOpenGL::GLStateSetKeys::get_load_matrix_key(
 
 
 GPlatesOpenGL::GLStateSetKeys::key_type
-GPlatesOpenGL::GLStateSetKeys::get_texture_key_from_key_offset(
+GPlatesOpenGL::GLStateSetKeys::get_texture_image_unit_key_from_key_offset(
 		GLenum texture_unit,
-		TextureKeyOffsetType key_offset) const
+		TextureImageUnitKeyOffsetType key_offset) const
 {
-	return d_texture_unit_zero_base_key +
-		(texture_unit - GLContext::Parameters::Texture::gl_texture0) * NUM_TEXTURE_UNIT_KEY_OFFSETS +
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			texture_unit >= GL_TEXTURE0 &&
+					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_image_units,
+			GPLATES_ASSERTION_SOURCE);
+
+	return d_texture_image_unit_zero_base_key +
+		(texture_unit - GLContext::Parameters::Texture::gl_texture0) * NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS +
+		key_offset;
+}
+
+
+GPlatesOpenGL::GLStateSetKeys::key_type
+GPlatesOpenGL::GLStateSetKeys::get_texture_coord_key_from_key_offset(
+		GLenum texture_unit,
+		TextureCoordKeyOffsetType key_offset) const
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			texture_unit >= GL_TEXTURE0 &&
+					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_coords,
+			GPLATES_ASSERTION_SOURCE);
+
+	return d_texture_coord_zero_base_key +
+		(texture_unit - GLContext::Parameters::Texture::gl_texture0) * NUM_TEXTURE_COORD_KEY_OFFSETS +
 		key_offset;
 }

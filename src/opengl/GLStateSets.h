@@ -1718,12 +1718,22 @@ namespace GPlatesOpenGL
 	struct GLVertexAttribPointerStateSet :
 			public GLStateSet
 	{
+		//! The vertex attribute API to use...
+		enum VertexAttribAPIType
+		{
+			VERTEX_ATTRIB_POINTER, // Used for 'glVertexAttribPointer'
+			VERTEX_ATTRIB_I_POINTER, // Used for 'glVertexAttribIPointer'
+			VERTEX_ATTRIB_L_POINTER // Used for 'glVertexAttribLPointer'
+		};
+
 		//! Binds to a vertex buffer object.
 		GLVertexAttribPointerStateSet(
 				GLuint attribute_index,
+				VertexAttribAPIType vertex_attrib_api,
 				GLint size,
 				GLenum type,
-				GLboolean normalized,
+				// Only used for 'VERTEX_ATTRIB_POINTER', not 'VERTEX_ATTRIB_I_POINTER' or 'VERTEX_ATTRIB_L_POINTER'...
+				boost::optional<GLboolean> normalized,
 				GLsizei stride,
 				GLint offset,
 				const GLBufferObject::shared_ptr_to_const_type &buffer_object);
@@ -1731,9 +1741,11 @@ namespace GPlatesOpenGL
 		//! No binding to a vertex buffer object (using client memory array).
 		GLVertexAttribPointerStateSet(
 				GLuint attribute_index,
+				VertexAttribAPIType vertex_attrib_api,
 				GLint size,
 				GLenum type,
-				GLboolean normalized,
+				// Only used for 'VERTEX_ATTRIB_POINTER', not 'VERTEX_ATTRIB_I_POINTER' or 'VERTEX_ATTRIB_L_POINTER'...
+				boost::optional<GLboolean> normalized,
 				GLsizei stride,
 				GLint offset,
 				const GLBufferImpl::shared_ptr_to_const_type &buffer_impl);
@@ -1758,9 +1770,12 @@ namespace GPlatesOpenGL
 	private:
 		Implementation::GLVertexAttributeBuffer d_buffer;
 		GLuint d_attribute_index;
+		VertexAttribAPIType d_vertex_attrib_api;
 		GLint d_size;
 		GLenum d_type;
-		GLboolean d_normalized;
+		// Is optional since only used for 'glVertexAttribPointer' but not
+		// 'glVertexAttribIPointer' or 'glVertexAttribLPointer'...
+		boost::optional<GLboolean> d_normalized;
 		GLsizei d_stride;
 	};
 

@@ -45,9 +45,6 @@ namespace GPlatesOpenGL
 	/**
 	 * An abstraction of the OpenGL buffer objects extension as used for vertex buffers containing
 	 * vertex (attribute) data and *not* vertex element (indices) data.
-	 *
-	 * This implementation is used when the OpenGL extension is not supported - in which case
-	 * vertex buffer objects are simulated by using client-side memory arrays in a base OpenGL 1.1 way.
 	 */
 	class GLVertexBuffer :
 			public boost::enable_shared_from_this<GLVertexBuffer>
@@ -191,6 +188,36 @@ namespace GPlatesOpenGL
 				GLint size,
 				GLenum type,
 				GLboolean normalized,
+				GLsizei stride,
+				GLint offset) const = 0;
+
+		/**
+		 * Same as @a gl_vertex_attrib_pointer except used to specify attributes mapping to *integer* shader variables.
+		 *
+		 * NOTE: The 'GL_ARB_vertex_shader' *and* 'GL_EXT_gpu_shader4' extensions must be supported.
+		 */
+		virtual
+		void
+		gl_vertex_attrib_i_pointer(
+				GLRenderer &renderer,
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset) const = 0;
+
+		/**
+		 * Same as @a gl_vertex_attrib_pointer except used to specify attributes mapping to *double* shader variables.
+		 *
+		 * NOTE: The 'GL_ARB_vertex_shader' *and* 'GL_ARB_vertex_attrib_64bit' extensions must be supported.
+		 */
+		virtual
+		void
+		gl_vertex_attrib_l_pointer(
+				GLRenderer &renderer,
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
 				GLsizei stride,
 				GLint offset) const = 0;
 	};

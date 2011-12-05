@@ -24,6 +24,7 @@
  */
 
 #include <boost/cast.hpp>
+#include <boost/foreach.hpp>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
  * Must be included before the OpenGL headers (which also means before Qt headers).
@@ -110,11 +111,8 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Revert our framebuffer binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
-	// Bind this framebuffer object so changes target it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_frame_buffer_and_apply(shared_from_this());
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
 
 	// We should only get here if the framebuffer object extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -151,11 +149,8 @@ GPlatesOpenGL::GLFrameBufferObject::gl_detach(
 	//PROFILE_FUNC();
 
 	// Revert our framebuffer binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
-	// Bind this framebuffer object so changes target it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_frame_buffer_and_apply(shared_from_this());
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
 
 	// We should only get here if the framebuffer object extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -185,6 +180,39 @@ GPlatesOpenGL::GLFrameBufferObject::gl_detach(
 }
 
 
+void
+GPlatesOpenGL::GLFrameBufferObject::gl_detach_all(
+		GLRenderer &renderer)
+{
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
+
+	// We should only get here if the framebuffer object extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Detach any currently attached attachment points.
+	BOOST_FOREACH(boost::optional<ColourAttachment> &colour_attachment, d_colour_attachments)
+	{
+		if (colour_attachment)
+		{
+			// Detach by binding to texture object zero.
+			glFramebufferTexture2DEXT(
+					GL_FRAMEBUFFER_EXT,
+					colour_attachment->attachment,
+					colour_attachment->texture_target,
+					0/*texture*/,
+					colour_attachment->level);
+
+			// No longer tracking the colour attachment point.
+			colour_attachment = boost::none;
+		}
+	}
+}
+
+
 bool
 GPlatesOpenGL::GLFrameBufferObject::gl_check_frame_buffer_status(
 		GLRenderer &renderer) const
@@ -192,11 +220,8 @@ GPlatesOpenGL::GLFrameBufferObject::gl_check_frame_buffer_status(
 	//PROFILE_FUNC();
 
 	// Revert our framebuffer binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
-	// Bind this framebuffer object so changes target it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_frame_buffer_and_apply(shared_from_this());
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
 
 	const GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
 	switch(status)

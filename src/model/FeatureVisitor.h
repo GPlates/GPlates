@@ -30,6 +30,7 @@
 
 #include <iostream>
 #include <boost/optional.hpp>
+#include <QDebug>
 
 #include "FeatureHandle.h"
 #include "FeatureCollectionHandle.h"
@@ -848,7 +849,7 @@ namespace GPlatesModel
 	FeatureVisitorBase<FeatureHandleType>::log_invalid_weak_ref(
 			const feature_weak_ref_type &feature_weak_ref)
 	{
-		std::cerr << "Invalid weak-ref not dereferenced." << std::endl;
+		qWarning() << "Invalid weak-ref not dereferenced.";
 	}
 
 
@@ -857,7 +858,7 @@ namespace GPlatesModel
 	FeatureVisitorBase<FeatureHandleType>::log_invalid_iterator(
 			const feature_collection_iterator_type &iterator)
 	{
-		std::cerr << "Invalid iterator not dereferenced." << std::endl;
+		qWarning() << "Invalid iterator not dereferenced.";
 	}
 
 

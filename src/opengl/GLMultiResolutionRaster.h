@@ -36,6 +36,7 @@
 #include "GLIntersectPrimitives.h"
 #include "GLMatrix.h"
 #include "GLMultiResolutionRasterSource.h"
+#include "GLProgramObject.h"
 #include "GLTexture.h"
 #include "GLTextureUtils.h"
 #include "GLVertex.h"
@@ -96,6 +97,28 @@ namespace GPlatesOpenGL
 		 */
 		typedef boost::shared_ptr<void> cache_handle_type;
 
+		/**
+		 * The texture filter types to use for fixed-point textures.
+		 *
+		 * Floating-point textures always use nearest filtering with no anisotropic filtering.
+		 * This is because earlier hardware does not support anything but nearest filtering and
+		 * so it needs to be emulated in a fragment shader (instead of being part of a texture
+		 * object's state) and hence must be done by the client (not us).
+		 *
+		 * NOTE: Currently all filtering is 'neareset' instead of 'bilinear' but this will probably change soon.
+		 * 
+		 * If anisotropic filtering is specified it will be ignored if the
+		 * 'GLEW_EXT_texture_filter_anisotropic' extension is not supported.
+		 */
+		enum FixedPointTextureFilterType
+		{
+			// Nearest neighbour filtering...
+			FIXED_POINT_TEXTURE_FILTER_NO_ANISOTROPIC,
+			// Nearest neighbour (with anisotropic) filtering...
+			FIXED_POINT_TEXTURE_FILTER_ANISOTROPIC,
+
+			NUM_FIXED_POINT_TEXTURE_FILTER_TYPES // Must be the last enum.
+		};
 
 		/**
 		 * The order of scanlines or rows of data in the raster as visualised in the image.
@@ -108,21 +131,44 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * The default fixed-point texture filtering mode for the textures returned by @a get_tile_texture
+		 * is bilinear (with anisotropic) filtering.
+		 *
+		 * Note that floating-point textures are always nearest neighbour (with no anisotropic) regardless.
+		 */
+		static const FixedPointTextureFilterType DEFAULT_FIXED_POINT_TEXTURE_FILTER =
+				FIXED_POINT_TEXTURE_FILTER_ANISOTROPIC;
+
+
+		/**
 		 * Creates a @a GLMultiResolutionRaster object.
 		 *
-		 * @a tile_texel_dimension must be a power-of-two - it is the OpenGL square texture
-		 * dimension to use for the tiled textures that represent the multi-resolution raster.
-		 *
-		 * If @a tile_texel_dimension is greater than the maximum texture size supported
-		 * by the run-time system then it will be reduced to the maximum texture size.
-		 *
 		 * Returns false if @a raster is not a proxy raster or if it's uninitialised.
+		 *
+		 * Default fixed-point texture filtering mode for the internal textures rendered during
+		 * @a render is nearest neighbour (with anisotropic) filtering.
+		 * Note that floating-point textures are always nearest neighbour (with no anisotropic) regardless.
+		 *
+		 * If @a cache_entire_raster_level_of_detail_pyramid is true then the internal texture/vertex
+		 * cache is allowed to grow to encompass all tiles in all levels of detail.
+		 * WARNING: This should normally be turned off (especially for visualisation of rasters where
+		 * only a small part of the raster is ever visible at any time - otherwise memory usage will
+		 * grow excessively large).
+		 * An example of turning this on is data analysis of a floating-point raster where the whole
+		 * raster is likely to be accessed (not just a small window as in the case of visual display)
+		 * repeatedly over many frames and you don't want to incur to the large performance hit of
+		 * continuously reloading tiles from disk (eg, raster co-registration data-mining front-end)
+		 * - in this case the user can always choose a lower level of detail if the memory usage is
+		 * too high for their system.
 		 */
 		static
 		non_null_ptr_type
 		create(
+				GLRenderer &renderer,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 				const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
+				FixedPointTextureFilterType fixed_point_texture_filter = DEFAULT_FIXED_POINT_TEXTURE_FILTER,
+				bool cache_entire_raster_level_of_detail_pyramid = false,
 				RasterScanlineOrderType raster_scanline_order = TOP_TO_BOTTOM);
 
 
@@ -140,59 +186,6 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Renders all tiles visible in the view frustum of the current render target
-		 * of @a renderer.
-		 *
-		 * The returned @a cache_handle_type object should be kept alive until the next call
-		 * to @a render. This is designed purely to take advantage of frame-to-frame coherency.
-		 * For example:
-		 *
-		 *   cache_handle_type my_cached_view;
-		 *   // Frame 1...
-		 *   my_cached_view = raster->render(...);
-		 *   // Frame 2...
-		 *   my_cached_view = raster->render(...);
-		 *
-		 * ...NOTE: In frame 2 'my_cached_view' is overwritten *after* 'render()' is called.
-		 * This enables reuse of calculations from frame 1 by keeping them alive during frame 2.
-		 *
-		 * A positive @a level_of_detail_bias can be used to relax the constraint that
-		 * the rendered raster have texels that are less or equal to the size of a pixel
-		 * of the viewport (to avoid blockiness or blurriness of the rendered raster).
-		 * The @a level_of_detail_bias is a log2 so 1.0 means use a level of detail texture
-		 * that requires half the resolution (eg, 256x256 instead of 512x512) of what would
-		 * normally be used if a LOD bias of zero were used, and 2.0 means a quarter
-		 * (eg, 128x128 instead of 512x512). Fractional values are allowed (and more useful).
-		 */
-		cache_handle_type
-		render(
-				GLRenderer &renderer,
-				float level_of_detail_bias = 0.0f);
-
-
-		/**
-		 * Renders the specified tiles to the current render target of @a renderer.
-		 *
-		 * The returned @a cache_handle_type object should be kept alive until the next call
-		 * to @a render. This is designed purely to take advantage of frame-to-frame coherency.
-		 * For example:
-		 *
-		 *   cache_handle_type my_cached_view;
-		 *   // Frame 1...
-		 *   my_cached_view = raster->render(...);
-		 *   // Frame 2...
-		 *   my_cached_view = raster->render(...);
-		 *
-		 * ...NOTE: In frame 2 'my_cached_view' is overwritten *after* 'render()' is called.
-		 * This enables reuse of calculations from frame 1 by keeping them alive during frame 2.
-		 */
-		cache_handle_type
-		render(
-				GLRenderer &renderer,
-				const std::vector<tile_handle_type> &tiles);
-
-
-		/**
 		 * Returns the number of levels of detail.
 		 *
 		 * The highest resolution (original raster) is level 0 and the lowest
@@ -206,7 +199,92 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns a list of tiles that are visible the inside the view frustum planes defined
+		 * Returns the unclamped exact floating-point level-of-detail that theoretically represents
+		 * the exact level-of-detail that would be required to fulfill the resolution needs of the
+		 * current render target (as defined by the specified viewport and view/projection matrices).
+		 *
+		 * Since tiles are only at integer level-of-detail factors, and are clamped to lie
+		 * in the range [0,N) where 'N' is the integer returned by @a get_num_levels_of_detail,
+		 * an unclamped floating-point number is only useful to determine if the current
+		 * render target is big enough or if it's too big, ie, if it's less than zero.
+		 *
+		 * See @a render for a description of @a level_of_detail_bias.
+		 * NOTE: @a level_of_detail_bias is simply added to the level-of-detail calculated internally.
+		 */
+		float
+		get_level_of_detail(
+				const GLMatrix &model_view_transform,
+				const GLMatrix &projection_transform,
+				const GLViewport &viewport,
+				float level_of_detail_bias = 0.0f) const;
+
+
+		/**
+		 * Given the specified viewport (and model-view/projection matrices) and the desired
+		 * level-of-detail this method determines the scale factor that needs to be applied to
+		 * @a viewport width and height such that it is sized correctly to contain the resolution
+		 * of the desired level-of-detail.
+		 *
+		 * This is useful if you want to adapt the render-target (viewport) size to an integer
+		 * level-of-detail rather than adapt the level-of-detail to the render target size.
+		 * Typically the latter is used for visual display while the former is used for
+		 * processing floating-point rasters at a user-specified level-of-detail (where the user
+		 * specifies an integer level-of-detail simply as a way to control memory usage and speed).
+		 *
+		 * The new render-target size appropriate for @a level_of_detail should be calculated as:
+		 *   new_viewport_dimension = viewport_dimension * returned_scale_factor
+		 * ...which should resize it if it's either too big or too small.
+		 *
+		 * This method can be used together with the overload of @a get_visible_tiles accepting
+		 * an integer level-of-detail (and no viewport).
+		 *
+		 * NOTE: @a level_of_detail is a 'float' (not an integer) unlike other methods.
+		 * This is to allow adjustment of an integer level-of-detail with a bias.
+		 */
+		float
+		get_viewport_dimension_scale(
+				const GLMatrix &model_view_transform,
+				const GLMatrix &projection_transform,
+				const GLViewport &viewport,
+				float level_of_detail) const;
+
+
+		/**
+		 * Takes an unclamped level-of-detail (see @a get_level_of_detail) and clamps it to lie
+		 * in the half-open range [0, @a get_num_levels_of_detail).
+		 *
+		 * NOTE: It also rounds down to the nearest *integer* level-of-detail which means rounding
+		 * to the closest *higher* resolution level-of-detail (eg, 0.9 is rounded to 0.0 instead of 1.0).
+		 * Tiles only exist (and hence can only be rendered) at *integer* levels of details.
+		 */
+		unsigned int
+		clamp_level_of_detail(
+				float level_of_detail) const;
+
+
+		/**
+		 * Returns a list of tiles that are visible inside the view frustum planes defined
+		 * by the specified model-view and projection transforms.
+		 *
+		 * The specified level-of-detail determines which tiles (in the LOD hierarchy) should
+		 * be returned/rendered - see @a get_level_of_detail for viewport sizing details.
+		 *
+		 * NOTE: If @a get_level_of_detail was used to determine @a level_of_detail then
+		 * the model-view and projection transforms specified here and in @a get_level_of_detail
+		 * should match.
+		 *
+		 * NOTE: @a level_of_detail must be in the half-open range [0, @a get_num_levels_of_detail).
+		 */
+		void
+		get_visible_tiles(
+				std::vector<tile_handle_type> &visible_tiles,
+				const GLMatrix &model_view_transform,
+				const GLMatrix &projection_transform,
+				unsigned int level_of_detail) const;
+
+
+		/**
+		 * Returns a list of tiles that are visible inside the view frustum planes defined
 		 * by the specified model-view and projection transforms.
 		 *
 		 * The specified viewport determines the internal level-of-detail required that in turn
@@ -217,26 +295,137 @@ namespace GPlatesOpenGL
 		 * Returns the lowest resolution tiles that adequately fulfill the resolution
 		 * needs of the current render target (or the highest level-of-detail if none of the
 		 * level-of-details is adequate).
-		 * The required resolution is determined by the current viewport dimensions and the
-		 * current model-view-projection transform (both provided by @a transform_stack).
+		 * The required resolution is determined by the specified viewport and model-view/projection transforms.
 		 *
 		 * See @a render for a description of @a level_of_detail_bias.
-		 *
-		 * Also returns the unclamped exact floating-point level-of-detail factor that theoretically
-		 * represents the exact level-of-detail that would be required to fulfill the resolution
-		 * needs of the current render target (as defined by @a transform_stack).
-		 * Since tiles are only at integer level-of-detail factors, and are clamped to lie
-		 * in the range [0,N) where 'N' is the integer returned by @a get_num_levels_of_detail,
-		 * an unclampled floating-point number is only useful to determine if the current
-		 * render target is big enough or if it's too big, ie, if it's outside the range [0,N).
 		 */
-		float
+		void
 		get_visible_tiles(
 				std::vector<tile_handle_type> &visible_tiles,
-				const GLViewport &viewport,
 				const GLMatrix &model_view_transform,
 				const GLMatrix &projection_transform,
-				float level_of_detail_bias = 0.0f) const;
+				const GLViewport &viewport,
+				float level_of_detail_bias = 0.0f) const
+		{
+			get_visible_tiles(
+					visible_tiles,
+					model_view_transform,
+					projection_transform,
+					clamp_level_of_detail(
+							get_level_of_detail(
+									model_view_transform, projection_transform, viewport, level_of_detail_bias)));
+		}
+
+
+		/**
+		 * Renders all tiles visible in the view frustum (determined by the current viewport and
+		 * model-view/projection transforms of @a renderer) and returns true if any tiles were rendered.
+		 *
+		 * @a cache_handle_type should be kept alive until the next call to @a render.
+		 * This is designed purely to take advantage of frame-to-frame coherency.
+		 * For example:
+		 *
+		 *   cache_handle_type my_cached_view;
+		 *   // Frame 1...
+		 *   my_cached_view = raster->render(...);
+		 *   // Frame 2...
+		 *   my_cached_view = raster->render(...);
+		 *
+		 * ...NOTE: In frame 2 'my_cached_view' is overwritten *after* 'render()' is called.
+		 * This enables reuse of calculations from frame 1 by keeping them alive during frame 2.
+		 *
+		 * Note that if @a cache_tile_textures is false then the returned cache handle will not
+		 * contain any caching (of tile textures) and hence those same rendered tile textures will
+		 * need to be re-generated the next time @a render is called.
+		 * The only exception to this is if 'cache_entire_raster_level_of_detail_pyramid', passed
+		 * into @a create, was true in which case all tiles are cached regardless.
+		 * Note, however, that source tile textures from GLMultiResolutionRasterSource *are*
+		 * cached regardless (because that insulates us from the file system which is very slow).
+		 * However if there is no caching in GLMultiResolutionRasterSource then you should do it here.
+		 *
+		 * A positive @a level_of_detail_bias can be used to relax the constraint that
+		 * the rendered raster have texels that are less than or equal to the size of a pixel
+		 * of the viewport (to avoid blockiness or blurriness of the rendered raster).
+		 * The @a level_of_detail_bias is a log2 so 1.0 means use a level of detail texture
+		 * that requires half the resolution (eg, 256x256 instead of 512x512) of what would
+		 * normally be used if a LOD bias of zero were used, and 2.0 means a quarter
+		 * (eg, 128x128 instead of 512x512). Fractional values are allowed (and more useful).
+		 *
+		 * The framebuffer colour buffer format should typically match the texture format of this
+		 * raster. The two main examples are:
+		 *   1) visual display of raster: an RGBA fixed-point raster rendered to the main framebuffer,
+		 *   2) data analysis: a single-channel floating-point raster rendered to
+		 *      a floating-point texture attached to a framebuffer object.
+		 * NOTE: It is possible to render a fixed-point raster to a floating-point colour buffer
+		 * or vice versa but there's no real need or use for that.
+		 */
+		bool
+		render(
+				GLRenderer &renderer,
+				cache_handle_type &cache_handle,
+				bool cache_tile_textures = true,
+				float level_of_detail_bias = 0.0f);
+
+
+		/**
+		 * Renders all tiles visible in the view frustum (determined by the current model-view/projection
+		 * transforms of @a renderer) and returns true if any tiles were rendered.
+		 *
+		 * This differs from the above @a render method in that the current viewport is *not* used
+		 * to determine the level-of-detail (because the level-of-detail is explicitly provided).
+		 *
+		 * See the first overload of @a render for more details.
+		 */
+		bool
+		render(
+				GLRenderer &renderer,
+				unsigned int level_of_detail,
+				cache_handle_type &cache_handle,
+				bool cache_tile_textures = true);
+
+
+		/**
+		 * Renders the specified tiles to the current render target of @a renderer (returns true
+		 * if the specified tiles are not empty).
+		 *
+		 * See the first overload of @a render for more details.
+		 */
+		bool
+		render(
+				GLRenderer &renderer,
+				const std::vector<tile_handle_type> &tiles,
+				cache_handle_type &cache_handle,
+				bool cache_tile_textures = true);
+
+
+		/**
+		 * Returns the tile texel dimension of this raster which is also the tile texel dimension
+		 * of the raster source.
+		 */
+		std::size_t
+		get_tile_texel_dimension() const
+		{
+			return d_tile_texel_dimension;
+		}
+
+
+		/**
+		 * Returns the texture internal format that can be used if rendering to a texture, when
+		 * calling @a render, as opposed to the main framebuffer.
+		 *
+		 * This is the 'internalformat' parameter of GLTexture::gl_tex_image_2D for example.
+		 *
+		 * NOTE: The filtering mode is expected to be set to 'nearest' in all cases.
+		 * Currently 'nearest' fits best with the georeferencing information of rasters.
+		 * And also earlier hardware, that supports floating-point textures, does not implement
+		 * bilinear filtering (any linear filtering will need to be emulated in a pixel shader).
+		 */
+		GLint
+		get_target_texture_internal_format() const
+		{
+			// Delegate to our source raster input.
+			return d_raster_source->get_target_texture_internal_format();
+		}
 
 	private:
 		/**
@@ -319,6 +508,31 @@ namespace GPlatesOpenGL
 
 			tile_vertices_cache_type::object_shared_ptr_type tile_vertices;
 			tile_texture_cache_type::object_shared_ptr_type tile_texture;
+		};
+
+
+		/**
+		 * Used to cache information, specific to a tile, to return to the client for caching.
+		 */
+		struct ClientCacheTile
+		{
+			ClientCacheTile(
+					const Tile &tile_,
+					// Set to true to cache the GLMultiResolutionRaster tile texture...
+					bool cache_tile_texture_) :
+				tile_vertices(tile_.tile_vertices),
+				// NOTE: The GLMultiResolutionRasterSource tile is always cached...
+				source_cache_handle(tile_.tile_texture->source_cache_handle)
+			{
+				if (cache_tile_texture_)
+				{
+					tile_texture = tile_.tile_texture;
+				}
+			}
+
+			tile_vertices_cache_type::object_shared_ptr_type tile_vertices;
+			tile_texture_cache_type::object_shared_ptr_type tile_texture;
+			GLMultiResolutionRasterSource::cache_handle_type source_cache_handle;
 		};
 
 
@@ -642,6 +856,11 @@ namespace GPlatesOpenGL
 		 */
 		RasterScanlineOrderType d_raster_scanline_order;
 
+		/**
+		 * The texture filtering mode (for fixed-point textures) for textures rendered during @a render.
+		 */
+		FixedPointTextureFilterType d_fixed_point_texture_filter;
+
 
 		/**
 		 * The number of texels along a tiles edge (horizontal or vertical since it's square).
@@ -687,6 +906,13 @@ namespace GPlatesOpenGL
 		 */
 		vertex_element_buffer_map_type d_vertex_element_buffers;
 
+		/**
+		 * Shader program to render *floating-point* raster.
+		 *
+		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used).
+		 */
+		boost::optional<GLProgramObject::shared_ptr_type> d_render_floating_point_raster_program_object;
+
 
 		/**
 		 * The number of texels between two adjacent vertices along a horizontal or
@@ -721,8 +947,11 @@ namespace GPlatesOpenGL
 
 		//! Constructor.
 		GLMultiResolutionRaster(
+				GLRenderer &renderer,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 				const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
+				FixedPointTextureFilterType fixed_point_texture_filter,
+				bool cache_entire_raster_level_of_detail_pyramid,
 				RasterScanlineOrderType raster_scanline_order);
 
 		/**
@@ -834,18 +1063,6 @@ namespace GPlatesOpenGL
 				const unsigned int num_vertices_along_tile_x_edge,
 				const unsigned int num_vertices_along_tile_y_edge);
 
-
-		/**
-		 * Returns the level-of-detail that fulfills the resolution requirements, and no more,
-		 * of the current viewport and projection of @a renderer.
-		 */
-		unsigned int
-		get_level_of_detail(
-				const GLViewport &viewport,
-				const GLMatrix &model_view_transform,
-				const GLMatrix &projection_transform,
-				float level_of_detail_bias,
-				float &level_of_detail_factor) const;
 
 		/**
 		 * Recursively traverses OBB tree to find visible tiles.

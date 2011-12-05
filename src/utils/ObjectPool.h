@@ -125,6 +125,10 @@ namespace GPlatesUtils
 				object(in_place_factory)
 			{  }
 
+			ObjectWrapper() :
+				object()
+			{  }
+
 			boost::optional<ObjectType> object;
 		};
 
@@ -143,6 +147,10 @@ namespace GPlatesUtils
 				public GPlatesUtils::SafeBool<ObjectPtr>
 		{
 		public:
+			ObjectPtr() :
+				d_object_wrapper(NULL)
+			{  }
+
 			/**
 			 * Use "if (ptr)" or "if (!ptr)" to effect this boolean test.
 			 *
@@ -205,11 +213,6 @@ namespace GPlatesUtils
 				return d_object_wrapper ? d_object_wrapper->object.get_ptr() : NULL;
 			}
 
-
-			ObjectPtr() :
-				d_object_wrapper(NULL)
-			{  }
-
 		private:
 			ObjectWrapper *d_object_wrapper;
 
@@ -236,6 +239,49 @@ namespace GPlatesUtils
 			d_object_pool(new object_pool_type()),
 			d_free_list_node_pool(new free_list_node_pool_type())
 		{  }
+
+
+		/**
+		 * Returns true if there are any objects currently in this pool.
+		 */
+		bool
+		empty() const
+		{
+			return d_num_objects == 0;
+		}
+
+
+		/**
+		 * Returns the number of objects currently in this pool.
+		 */
+		unsigned int
+		size() const
+		{
+			return d_num_objects;
+		}
+
+
+		/**
+		 * Destroys all objects and releases all memory allocated.
+		 *
+		 * Note that the destructor effectively does the same thing so this call is only
+		 * necessary if you wish to add more objects after the @a clear.
+		 */
+		void
+		clear()
+		{
+			// The only way to destroy all objects and release memory is to destroy
+			// the boost::object_pool objects.
+			d_object_free_list.clear();
+			d_free_list_node_free_list.clear();
+			d_object_pool.reset();
+			d_free_list_node_pool.reset();
+			d_num_objects = 0;
+
+			// Allocate new boost::object_pool objects.
+			d_object_pool.reset(new object_pool_type());
+			d_free_list_node_pool.reset(new free_list_node_pool_type());
+		}
 
 
 		/**
@@ -266,6 +312,9 @@ namespace GPlatesUtils
 		 *
 		 * The returned object will remain valid as long as this pool is alive, or until @a clear
 		 * is called, at which point the object will be destroyed and the pointer will be left dangling.
+		 *
+		 * NOTE: Boost 1.34 does not support nullary in-place (ie, "boost::in_place()") so you'll
+		 * need to use the other @a add overload (ie, the one that copies the object).
 		 */
 		template <class InPlaceFactoryType>
 		object_ptr_type
@@ -289,6 +338,8 @@ namespace GPlatesUtils
 				ObjectWrapper *const new_object = new (uninitialised_new_object) ObjectWrapper(in_place_factory);
 				free_object_guard.Dismiss();
 
+				++d_num_objects;
+
 				return object_ptr_type(new_object);
 			}
 
@@ -310,6 +361,8 @@ namespace GPlatesUtils
 			// This means no copy-assignment of objects - the assignment operator of boost::optional
 			// just works with in-place factories - boost is cool !
 			free_list_object->object = in_place_factory;
+
+			++d_num_objects;
 
 			return object_ptr_type(free_list_object);
 		}
@@ -343,6 +396,9 @@ namespace GPlatesUtils
 		 *
 		 * NOTE: You must ensure that this object pool lives longer than any returned shared_ptr's
 		 * otherwise a crash is likely to occur.
+		 *
+		 * NOTE: Boost 1.34 does not support nullary in-place (ie, "boost::in_place()") so you'll
+		 * need to use the other @a add_with_auto_release overload (ie, the one that copies the object).
 		 */
 		template <class InPlaceFactoryType>
 		shared_object_ptr_type
@@ -368,6 +424,12 @@ namespace GPlatesUtils
 		release(
 				object_ptr_type object_ptr)
 		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					d_num_objects != 0,
+					GPLATES_ASSERTION_SOURCE);
+
+			--d_num_objects;
+
 			// Destroy the embedded object first.
 			object_ptr.d_object_wrapper->object = boost::none;
 
@@ -399,28 +461,6 @@ namespace GPlatesUtils
 			// Store the object pointer in the list node and add the list node to the free list.
 			free_list_node.object_wrapper = object_ptr.d_object_wrapper;
 			d_object_free_list.push_front(&free_list_node);
-		}
-
-
-		/**
-		 * Destroys all objects and releases all memory allocated.
-		 *
-		 * Note that the destructor effectively does the same thing so this call is only
-		 * necessary if you wish to add more objects after the @a clear.
-		 */
-		void
-		clear()
-		{
-			// The only way to destroy all objects and release memory is to destroy
-			// the boost::object_pool objects.
-			d_object_free_list.clear();
-			d_free_list_node_free_list.clear();
-			d_object_pool.reset();
-			d_free_list_node_pool.reset();
-
-			// Allocate new boost::object_pool objects.
-			d_object_pool.reset(new object_pool_type());
-			d_free_list_node_pool.reset(new free_list_node_pool_type());
 		}
 
 	private:
@@ -490,6 +530,9 @@ namespace GPlatesUtils
 
 		//! Pool of linked list nodes.
 		boost::scoped_ptr<free_list_node_pool_type> d_free_list_node_pool;
+
+		//! The number of objects currently in this pool.
+		unsigned int d_num_objects;
 	};
 }
 

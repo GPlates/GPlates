@@ -26,6 +26,9 @@
 #ifndef GPLATES_MATHS_CUBEQUADTREEPARTITIONUTILS_H
 #define GPLATES_MATHS_CUBEQUADTREEPARTITIONUTILS_H
 
+#include <boost/mpl/if.hpp>
+#include <boost/type_traits/is_const.hpp>
+
 #include "CubeCoordinateFrame.h"
 #include "CubeQuadTreeLocation.h"
 #include "CubeQuadTreePartition.h"
@@ -85,7 +88,7 @@ namespace GPlatesMaths
 
 
 		// Forward declaration.
-		template <typename ElementType>
+		template <typename ElementType, class CubeQuadTreePartitionType>
 		class CubeQuadTreeIntersectingNodes;
 
 
@@ -102,10 +105,21 @@ namespace GPlatesMaths
 		 * The template parameter 'ElementType' is the element type of the spatial partition
 		 * that we're looking for intersecting nodes.
 		 */
-		template <typename ElementType>
+		template <typename ElementType, class CubeQuadTreePartitionType = const CubeQuadTreePartition<ElementType> >
 		class CubeQuadTreePartitionIntersectingNodes
 		{
 		public:
+			//! Typedef for the spatial partition we are traversing.
+			typedef CubeQuadTreePartitionType cube_quad_tree_partition_type;
+
+			//! Typedef for the node reference type.
+			typedef typename boost::mpl::if_<
+					boost::is_const<CubeQuadTreePartitionType>,
+								typename cube_quad_tree_partition_type::const_node_reference_type,
+								typename cube_quad_tree_partition_type::node_reference_type>::type
+										cube_quad_tree_partition_node_reference_type;
+
+
 			/**
 			 * Contains node references of intersecting nodes of the spatial partition.
 			 */
@@ -124,7 +138,7 @@ namespace GPlatesMaths
 				}
 
 				//! Returns the node reference of the specified intersecting node.
-				typename CubeQuadTreePartition<ElementType>::const_node_reference_type
+				cube_quad_tree_partition_node_reference_type
 				get_node(
 						unsigned int node_index) const
 				{
@@ -141,7 +155,7 @@ namespace GPlatesMaths
 
 			private:
 				unsigned int d_num_nodes;
-				typename CubeQuadTreePartition<ElementType>::const_node_reference_type d_node_references[MAX_NUM_NODES];
+				cube_quad_tree_partition_node_reference_type d_node_references[MAX_NUM_NODES];
 				CubeQuadTreeLocation d_node_locations[MAX_NUM_NODES];
 
 				IntersectingNodesType() :
@@ -149,8 +163,8 @@ namespace GPlatesMaths
 				{  }
 
 				// Make friend so can initialise private data.
-				friend class CubeQuadTreePartitionIntersectingNodes<ElementType>;
-				friend class CubeQuadTreeIntersectingNodes<ElementType>;
+				friend class CubeQuadTreePartitionIntersectingNodes<ElementType, CubeQuadTreePartitionType>;
+				friend class CubeQuadTreeIntersectingNodes<ElementType, CubeQuadTreePartitionType>;
 			};
 
 			/**
@@ -167,7 +181,7 @@ namespace GPlatesMaths
 			 * instantiating @a CubeQuadTreePartitionIntersectingNodes objects as they traverse.
 			 */
 			CubeQuadTreePartitionIntersectingNodes(
-					const CubeQuadTreePartition<ElementType> &spatial_partition,
+					cube_quad_tree_partition_type &spatial_partition,
 					CubeCoordinateFrame::CubeFaceType cube_face);
 
 
@@ -206,6 +220,16 @@ namespace GPlatesMaths
 			}
 
 		protected:
+			CubeQuadTreeLocation d_node_location;
+			intersecting_nodes_type d_intersecting_nodes;
+
+
+			//! Constructor for derived class.
+			CubeQuadTreePartitionIntersectingNodes(
+					const CubeQuadTreeLocation &node_location) :
+				d_node_location(node_location)
+			{  }
+
 			/**
 			 * Find those child nodes of the parent intersecting nodes that
 			 * intersect 'this' child.
@@ -214,19 +238,6 @@ namespace GPlatesMaths
 			void
 			find_intersecting_nodes(
 					const IntersectingNodesType<max_num_parent_nodes> &parent_intersecting_nodes);
-
-			//! Typedef for the spatial partition we are traversing.
-			typedef CubeQuadTreePartition<ElementType> cube_quad_tree_partition_type;
-
-
-			CubeQuadTreeLocation d_node_location;
-			intersecting_nodes_type d_intersecting_nodes;
-
-			//! Constructor for derived class.
-			CubeQuadTreePartitionIntersectingNodes(
-					const CubeQuadTreeLocation &node_location) :
-				d_node_location(node_location)
-			{  }
 		};
 
 
@@ -244,19 +255,28 @@ namespace GPlatesMaths
 		 * The template parameter 'ElementType' is the element type of the spatial partition
 		 * that we're looking for intersecting nodes.
 		 */
-		template <typename ElementType>
+		template <typename ElementType, class CubeQuadTreePartitionType = const CubeQuadTreePartition<ElementType> >
 		class CubeQuadTreeIntersectingNodes :
-				public CubeQuadTreePartitionIntersectingNodes<ElementType>
+				public CubeQuadTreePartitionIntersectingNodes<ElementType, CubeQuadTreePartitionType>
 		{
 		public:
+			//! Typedef for the cube quad tree partition.
+			typedef typename CubeQuadTreePartitionIntersectingNodes<ElementType, CubeQuadTreePartitionType>
+					::cube_quad_tree_partition_type cube_quad_tree_partition_type;
+
+			//! Typedef for the node reference type.
+			typedef typename CubeQuadTreePartitionIntersectingNodes<ElementType, CubeQuadTreePartitionType>
+					::cube_quad_tree_partition_node_reference_type cube_quad_tree_partition_node_reference_type;
+
 			/**
 			 * Typedef for a sequence of intersecting nodes at the parent traversal depth.
 			 *
 			 * For a regular cube quad tree (not a spatial partition) the maximum number of
 			 * parent nodes that can possibly intersect a child node is four instead of nine.
 			 */
-			typedef typename CubeQuadTreePartitionIntersectingNodes<ElementType>::template IntersectingNodesType<4>
-					parent_intersecting_nodes_type;
+			typedef typename CubeQuadTreePartitionIntersectingNodes<ElementType, CubeQuadTreePartitionType>
+					::template IntersectingNodesType<4>
+							parent_intersecting_nodes_type;
 
 
 			/**
@@ -267,7 +287,7 @@ namespace GPlatesMaths
 			 * @a CubeQuadTreeIntersectingNodes objects as they traverse.
 			 */
 			CubeQuadTreeIntersectingNodes(
-					const CubeQuadTreePartition<ElementType> &spatial_partition,
+					cube_quad_tree_partition_type &spatial_partition,
 					CubeCoordinateFrame::CubeFaceType cube_face);
 
 
@@ -298,11 +318,8 @@ namespace GPlatesMaths
 			}
 
 		private:
-			typedef typename CubeQuadTreePartitionIntersectingNodes<ElementType>::cube_quad_tree_partition_type
-					cube_quad_tree_partition_type;
-
-			using CubeQuadTreePartitionIntersectingNodes<ElementType>::d_node_location;
-			using CubeQuadTreePartitionIntersectingNodes<ElementType>::d_intersecting_nodes;
+			using CubeQuadTreePartitionIntersectingNodes<ElementType, CubeQuadTreePartitionType>::d_node_location;
+			using CubeQuadTreePartitionIntersectingNodes<ElementType, CubeQuadTreePartitionType>::d_intersecting_nodes;
 
 			parent_intersecting_nodes_type d_parent_intersecting_nodes;
 		};
@@ -463,9 +480,9 @@ namespace GPlatesMaths
 		}
 
 
-		template <typename ElementType>
-		CubeQuadTreePartitionIntersectingNodes<ElementType>::CubeQuadTreePartitionIntersectingNodes(
-				const CubeQuadTreePartition<ElementType> &spatial_partition,
+		template <typename ElementType, class CubeQuadTreePartitionType>
+		CubeQuadTreePartitionIntersectingNodes<ElementType, CubeQuadTreePartitionType>::CubeQuadTreePartitionIntersectingNodes(
+				CubeQuadTreePartitionType &spatial_partition,
 				CubeCoordinateFrame::CubeFaceType cube_face) :
 			d_node_location(cube_face)
 		{
@@ -483,7 +500,7 @@ namespace GPlatesMaths
 					continue;
 				}
 
-				typename cube_quad_tree_partition_type::const_node_reference_type neighbour_root_node =
+				cube_quad_tree_partition_node_reference_type neighbour_root_node =
 						spatial_partition.get_quad_tree_root_node(neighbour_cube_face);
 				if (neighbour_root_node)
 				{
@@ -495,16 +512,16 @@ namespace GPlatesMaths
 		}
 
 
-		template <typename ElementType>
+		template <typename ElementType, class CubeQuadTreePartitionType>
 		template <int max_num_parent_nodes>
 		void
-		CubeQuadTreePartitionIntersectingNodes<ElementType>::find_intersecting_nodes(
+		CubeQuadTreePartitionIntersectingNodes<ElementType, CubeQuadTreePartitionType>::find_intersecting_nodes(
 				const IntersectingNodesType<max_num_parent_nodes> &parent_intersecting_nodes)
 		{
 			const unsigned int num_parent_nodes = parent_intersecting_nodes.get_num_nodes();
 			for (unsigned int parent_node_index = 0; parent_node_index < num_parent_nodes; ++parent_node_index)
 			{
-				typename cube_quad_tree_partition_type::const_node_reference_type
+				cube_quad_tree_partition_node_reference_type
 						parent_intersecting_node_reference =
 								parent_intersecting_nodes.get_node(parent_node_index);
 
@@ -516,7 +533,7 @@ namespace GPlatesMaths
 				{
 					for (unsigned int child_x_offset = 0; child_x_offset < 2; ++child_x_offset)
 					{
-						typename cube_quad_tree_partition_type::const_node_reference_type
+						cube_quad_tree_partition_node_reference_type
 								intersecting_node_reference =
 										parent_intersecting_node_reference.get_child_node(
 												child_x_offset, child_y_offset);
@@ -550,8 +567,8 @@ namespace GPlatesMaths
 		}
 
 
-		template <typename ElementType>
-		CubeQuadTreePartitionIntersectingNodes<ElementType>::CubeQuadTreePartitionIntersectingNodes(
+		template <typename ElementType, class CubeQuadTreePartitionType>
+		CubeQuadTreePartitionIntersectingNodes<ElementType, CubeQuadTreePartitionType>::CubeQuadTreePartitionIntersectingNodes(
 				const CubeQuadTreePartitionIntersectingNodes &parent,
 				unsigned int child_x_offset,
 				unsigned int child_y_offset) :
@@ -562,23 +579,23 @@ namespace GPlatesMaths
 		}
 
 
-		template <typename ElementType>
-		CubeQuadTreeIntersectingNodes<ElementType>::CubeQuadTreeIntersectingNodes(
-				const CubeQuadTreePartition<ElementType> &spatial_partition,
+		template <typename ElementType, class CubeQuadTreePartitionType>
+		CubeQuadTreeIntersectingNodes<ElementType, CubeQuadTreePartitionType>::CubeQuadTreeIntersectingNodes(
+				cube_quad_tree_partition_type &spatial_partition,
 				CubeCoordinateFrame::CubeFaceType cube_face) :
-			CubeQuadTreePartitionIntersectingNodes<ElementType>(
+			CubeQuadTreePartitionIntersectingNodes<ElementType, CubeQuadTreePartitionType>(
 					spatial_partition,
 					cube_face)
 		{
 		}
 
 
-		template <typename ElementType>
-		CubeQuadTreeIntersectingNodes<ElementType>::CubeQuadTreeIntersectingNodes(
+		template <typename ElementType, class CubeQuadTreePartitionType>
+		CubeQuadTreeIntersectingNodes<ElementType, CubeQuadTreePartitionType>::CubeQuadTreeIntersectingNodes(
 				const CubeQuadTreeIntersectingNodes &parent,
 				unsigned int child_x_offset,
 				unsigned int child_y_offset) :
-			CubeQuadTreePartitionIntersectingNodes<ElementType>(
+			CubeQuadTreePartitionIntersectingNodes<ElementType, CubeQuadTreePartitionType>(
 					CubeQuadTreeLocation(parent.d_node_location, child_x_offset, child_y_offset))
 		{
 			// First reduce the set of parent nodes from nine to four.
@@ -588,7 +605,7 @@ namespace GPlatesMaths
 			const unsigned int num_parent_nodes = parent.d_intersecting_nodes.get_num_nodes();
 			for (unsigned int parent_node_index = 0; parent_node_index < num_parent_nodes; ++parent_node_index)
 			{
-				typename cube_quad_tree_partition_type::const_node_reference_type
+				cube_quad_tree_partition_node_reference_type
 						parent_intersecting_node_reference =
 								parent.d_intersecting_nodes.get_node(parent_node_index);
 

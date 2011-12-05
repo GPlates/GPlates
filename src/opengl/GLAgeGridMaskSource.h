@@ -118,6 +118,15 @@ namespace GPlatesOpenGL
 
 
 		virtual
+		GLint
+		get_target_texture_internal_format() const
+		{
+			// Fixed-point 8-bit textures are used to store the age-grid mask.
+			return GL_RGBA8;
+		}
+
+
+		virtual
 		cache_handle_type
 		load_tile(
 				unsigned int level,
@@ -280,6 +289,11 @@ namespace GPlatesOpenGL
 		boost::scoped_array<GPlatesGui::rgba8_t> d_age_high_byte_tile_working_space;
 		boost::scoped_array<GPlatesGui::rgba8_t> d_age_low_byte_tile_working_space;
 
+		/**
+		 * We log a load-tile-failure warning message only once for each coverage source.
+		 */
+		bool d_logged_tile_load_failure_warning;
+
 
 		GLAgeGridMaskSource(
 				GLRenderer &renderer,
@@ -311,7 +325,8 @@ namespace GPlatesOpenGL
 		bool
 		load_age_grid_into_high_and_low_byte_tile(
 				GLRenderer &renderer,
-				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &age_grid_tile,
+				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &age_grid_age_tile,
+				const GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_type &age_grid_coverage_tile,
 				GLTexture::shared_ptr_type &high_byte_age_texture,
 				GLTexture::shared_ptr_type &low_byte_age_texture,
 				unsigned int texel_width,
@@ -321,7 +336,8 @@ namespace GPlatesOpenGL
 		void
 		load_age_grid_into_high_and_low_byte_tile(
 				GLRenderer &renderer,
-				const RealType *age_grid_tile,
+				const RealType *age_grid_age_tile,
+				const float *age_grid_coverage_tile,
 				GLTexture::shared_ptr_type &high_byte_age_texture,
 				GLTexture::shared_ptr_type &low_byte_age_texture,
 				unsigned int texel_width,
@@ -344,7 +360,7 @@ namespace GPlatesOpenGL
 		void
 		create_tile_texture(
 				GLRenderer &renderer,
-				const GLTexture::shared_ptr_type &texture);
+				const GLTexture::shared_ptr_type &texture) const;
 
 		/**
 		 * Converts a floating-point age to a 16-bit unsigned integer.

@@ -37,6 +37,7 @@
 #include "GLObject.h"
 #include "GLObjectResource.h"
 #include "GLObjectResourceManager.h"
+#include "GLPixelBuffer.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -155,6 +156,11 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Performs same function as the glTexImage1D OpenGL function.
+		 *
+		 * NOTE: If @a pixels is NULL then the texture is created but the image data is left uninitialised.
+		 *
+		 * NOTE: There's no need to unbind pixel buffer objects (to ensure sourcing from client memory)
+		 * because that is taken care of internally.
 		 */
 		void
 		gl_tex_image_1D(
@@ -169,7 +175,30 @@ namespace GPlatesOpenGL
 				const GLvoid *pixels);
 
 		/**
+		 * Performs same function as the glTexImage1D OpenGL function.
+		 *
+		 * NOTE: The image data is read beginning at offset @a offset in the specified pixel buffer.
+		 */
+		void
+		gl_tex_image_1D(
+				GLRenderer &renderer,
+				GLenum target,
+				GLint level,
+				GLint internalformat,
+				GLsizei width,
+				GLint border,
+				GLenum format,
+				GLenum type,
+				const GLPixelBuffer::shared_ptr_to_const_type &pixels,
+				GLint offset = 0);
+
+		/**
 		 * Performs same function as the glTexImage2D OpenGL function.
+		 *
+		 * NOTE: If @a pixels is NULL then the texture is created but the image data is left uninitialised.
+		 *
+		 * NOTE: There's no need to unbind pixel buffer objects (to ensure sourcing from client memory)
+		 * because that is taken care of internally.
 		 */
 		void
 		gl_tex_image_2D(
@@ -185,7 +214,31 @@ namespace GPlatesOpenGL
 				const GLvoid *pixels);
 
 		/**
+		 * Performs same function as the glTexImage2D OpenGL function.
+		 *
+		 * NOTE: The image data is read beginning at offset @a offset in the specified pixel buffer.
+		 */
+		void
+		gl_tex_image_2D(
+				GLRenderer &renderer,
+				GLenum target,
+				GLint level,
+				GLint internalformat,
+				GLsizei width,
+				GLsizei height,
+				GLint border,
+				GLenum format,
+				GLenum type,
+				const GLPixelBuffer::shared_ptr_to_const_type &pixels,
+				GLint offset = 0);
+
+		/**
 		 * Performs same function as the glTexImage3D OpenGL function.
+		 *
+		 * NOTE: If @a pixels is NULL then the texture is created but the image data is left uninitialised.
+		 *
+		 * NOTE: There's no need to unbind pixel buffer objects (to ensure sourcing from client memory)
+		 * because that is taken care of internally.
 		 *
 		 * NOTE: The GL_EXT_texture3D extension must be available.
 		 */
@@ -202,6 +255,28 @@ namespace GPlatesOpenGL
 				GLenum format,
 				GLenum type,
 				const GLvoid *pixels);
+
+		/**
+		 * Performs same function as the glTexImage3D OpenGL function.
+		 *
+		 * NOTE: The image data is read beginning at offset @a offset in the specified pixel buffer.
+		 *
+		 * NOTE: The GL_EXT_texture3D extension must be available.
+		 */
+		void
+		gl_tex_image_3D(
+				GLRenderer &renderer,
+				GLenum target,
+				GLint level,
+				GLint internalformat,
+				GLsizei width,
+				GLsizei height,
+				GLsizei depth,
+				GLint border,
+				GLenum format,
+				GLenum type,
+				const GLPixelBuffer::shared_ptr_to_const_type &pixels,
+				GLint offset = 0);
 
 
 		/**
@@ -250,6 +325,9 @@ namespace GPlatesOpenGL
 		/**
 		 * Performs same function as the glTexSubImage1D OpenGL function.
 		 *
+		 * NOTE: There's no need to unbind pixel buffer objects (to ensure sourcing from client memory)
+		 * because that is taken care of internally.
+		 *
 		 * @throws PreconditionViolationError if @a texture is not initialised.
 		 */
 		void
@@ -264,7 +342,29 @@ namespace GPlatesOpenGL
 				const GLvoid *pixels);
 
 		/**
+		 * Performs same function as the glTexSubImage1D OpenGL function.
+		 *
+		 * NOTE: The image data is read beginning at offset @a offset in the specified pixel buffer.
+		 *
+		 * @throws PreconditionViolationError if @a texture is not initialised.
+		 */
+		void
+		gl_tex_sub_image_1D(
+				GLRenderer &renderer,
+				GLenum target,
+				GLint level,
+				GLint xoffset,
+				GLsizei width,
+				GLenum format,
+				GLenum type,
+				const GLPixelBuffer::shared_ptr_to_const_type &pixels,
+				GLint offset = 0);
+
+		/**
 		 * Performs same function as the glTexSubImage2D OpenGL function.
+		 *
+		 * NOTE: There's no need to unbind pixel buffer objects (to ensure sourcing from client memory)
+		 * because that is taken care of internally.
 		 *
 		 * @throws PreconditionViolationError if @a texture is not initialised.
 		 */
@@ -282,7 +382,31 @@ namespace GPlatesOpenGL
 				const GLvoid *pixels);
 
 		/**
+		 * Performs same function as the glTexSubImage2D OpenGL function.
+		 *
+		 * NOTE: The image data is read beginning at offset @a offset in the specified pixel buffer.
+		 *
+		 * @throws PreconditionViolationError if @a texture is not initialised.
+		 */
+		void
+		gl_tex_sub_image_2D(
+				GLRenderer &renderer,
+				GLenum target,
+				GLint level,
+				GLint xoffset,
+				GLint yoffset,
+				GLsizei width,
+				GLsizei height,
+				GLenum format,
+				GLenum type,
+				const GLPixelBuffer::shared_ptr_to_const_type &pixels,
+				GLint offset = 0);
+
+		/**
 		 * Performs same function as the glTexSubImage3D OpenGL function.
+		 *
+		 * NOTE: There's no need to unbind pixel buffer objects (to ensure sourcing from client memory)
+		 * because that is taken care of internally.
 		 *
 		 * NOTE: The GL_EXT_subtexture extension must be available.
 		 *
@@ -302,6 +426,31 @@ namespace GPlatesOpenGL
 				GLenum format,
 				GLenum type,
 				const GLvoid *pixels);
+
+		/**
+		 * Performs same function as the glTexSubImage3D OpenGL function.
+		 *
+		 * NOTE: The image data is read beginning at offset @a offset in the specified pixel buffer.
+		 *
+		 * NOTE: The GL_EXT_subtexture extension must be available.
+		 *
+		 * @throws PreconditionViolationError if @a texture is not initialised.
+		 */
+		void
+		gl_tex_sub_image_3D(
+				GLRenderer &renderer,
+				GLenum target,
+				GLint level,
+				GLint xoffset,
+				GLint yoffset,
+				GLint zoffset,
+				GLsizei width,
+				GLsizei height,
+				GLsizei depth,
+				GLenum format,
+				GLenum type,
+				const GLPixelBuffer::shared_ptr_to_const_type &pixels,
+				GLint offset = 0);
 
 
 		//
@@ -354,6 +503,37 @@ namespace GPlatesOpenGL
 		{
 			return d_internal_format;
 		}
+
+
+		/**
+		 * Returns true if 'this' texture is a floating-point texture.
+		 *
+		 * This is determined by the 'internalformat' parameter to @a gl_tex_image_2d for example.
+		 *
+		 * Returns false if either:
+		 *   1) this texture is a fixed-point texture, or
+		 *   2) none of the texture image specification methods have been called yet.
+		 *
+		 * NOTE: Excludes floating-point depth formats (only colour formats considered).
+		 */
+		bool
+		is_floating_point() const
+		{
+			return d_internal_format ? is_format_floating_point(d_internal_format.get()) : false;
+		}
+
+
+		/**
+		 * Returns true if the specified internal texture format is a floating-point format.
+		 *
+		 * This is the same as the 'internalformat' parameter to @a gl_tex_image_2d for example.
+		 *
+		 * NOTE: Excludes floating-point depth formats (only colour formats considered).
+		 */
+		static
+		bool
+		is_format_floating_point(
+				GLint internalformat);
 
 
 		/**

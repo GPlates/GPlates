@@ -194,8 +194,9 @@ namespace GPlatesUtils
 		 * Subsequent pushing and popping elements from either list will not affect
 		 * the other list. Although the memory management of the shared nodes is still
 		 * the responsibility of the caller.
+		 *
+		 * NOTE: There is no 'explicit' keyword here to allow implicit copying (eg, in a std::vector).
 		 */
-		explicit
 		IntrusiveSinglyLinkedList(
 				const IntrusiveSinglyLinkedList &other_list) :
 			d_list(other_list.d_list)

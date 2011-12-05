@@ -324,6 +324,26 @@ namespace GPlatesMaths
 			d_root_element = root_element;
 		}
 
+
+		/**
+		 * Returns true if there are any elements currently in this cube quad tree (including the root element).
+		 */
+		bool
+		empty() const
+		{
+			return d_quad_tree_node_pool.empty() && !d_root_element;
+		}
+
+
+		/**
+		 * Returns the number of elements currently in this cube quad tree (including the root element).
+		 */
+		unsigned int
+		size() const
+		{
+			return d_quad_tree_node_pool.size() + (d_root_element ? 1 : 0);
+		}
+
 		/**
 		 * Clears the entire cube quad tree including the root element.
 		 *

@@ -132,7 +132,7 @@ GPlatesOpenGL::GLVertexArrayImpl::set_enable_client_texture_state(
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_units,
+					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_coords,
 			GPLATES_ASSERTION_SOURCE);
 
 	GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer, d_compiled_bind_state);
@@ -196,7 +196,7 @@ GPlatesOpenGL::GLVertexArrayImpl::set_tex_coord_pointer(
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_units,
+					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_coords,
 			GPLATES_ASSERTION_SOURCE);
 
 	GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer, d_compiled_bind_state);
@@ -235,4 +235,44 @@ GPlatesOpenGL::GLVertexArrayImpl::set_vertex_attrib_pointer(
 	GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer, d_compiled_bind_state);
 
 	vertex_buffer->gl_vertex_attrib_pointer(renderer, attribute_index, size, type, normalized, stride, offset);
+}
+
+
+void
+GPlatesOpenGL::GLVertexArrayImpl::set_vertex_attrib_i_pointer(
+		GLRenderer &renderer,
+		const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+		GLuint attribute_index,
+		GLint size,
+		GLenum type,
+		GLsizei stride,
+		GLint offset)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			attribute_index < GLContext::get_parameters().shader.gl_max_vertex_attribs,
+			GPLATES_ASSERTION_SOURCE);
+
+	GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer, d_compiled_bind_state);
+
+	vertex_buffer->gl_vertex_attrib_i_pointer(renderer, attribute_index, size, type, stride, offset);
+}
+
+
+void
+GPlatesOpenGL::GLVertexArrayImpl::set_vertex_attrib_l_pointer(
+		GLRenderer &renderer,
+		const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+		GLuint attribute_index,
+		GLint size,
+		GLenum type,
+		GLsizei stride,
+		GLint offset)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			attribute_index < GLContext::get_parameters().shader.gl_max_vertex_attribs,
+			GPLATES_ASSERTION_SOURCE);
+
+	GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer, d_compiled_bind_state);
+
+	vertex_buffer->gl_vertex_attrib_l_pointer(renderer, attribute_index, size, type, stride, offset);
 }

@@ -11,8 +11,6 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
-    GLAgeGridCoverageSource.cc
-    GLAgeGridCoverageSource.h
     GLAgeGridMaskSource.cc
     GLAgeGridMaskSource.h
     GLBuffer.cc
@@ -25,9 +23,13 @@ set(srcs
     GLCompiledDrawState.h
     GLContext.cc
     GLContext.h
+    GLCoverageSource.cc
+    GLCoverageSource.h
     GLCubeSubdivision.cc
     GLCubeSubdivision.h
     GLCubeSubdivisionCache.h
+    GLDataRasterSource.cc
+    GLDataRasterSource.h
     GLDepthRange.h
     GLFrameBufferObject.cc
     GLFrameBufferObject.h
@@ -53,12 +55,18 @@ set(srcs
     GLObject.h
     GLObjectResource.h
     GLObjectResourceManager.h
+    GLPixelBuffer.cc
+    GLPixelBuffer.h
+    GLPixelBufferImpl.cc
+    GLPixelBufferImpl.h
+    GLPixelBufferObject.cc
+    GLPixelBufferObject.h
     GLProgramObject.cc
     GLProgramObject.h
     GLProjectionUtils.cc
     GLProjectionUtils.h
-    GLProxiedRasterSource.cc
-    GLProxiedRasterSource.h
+    GLRasterCoRegistration.cc
+    GLRasterCoRegistration.h
     GLReconstructedStaticPolygonMeshes.cc
     GLReconstructedStaticPolygonMeshes.h
     GLRenderer.cc
@@ -66,6 +74,8 @@ set(srcs
     GLRendererImpl.h
     GLShaderObject.cc
     GLShaderObject.h
+    GLShaderProgramUtils.cc
+    GLShaderProgramUtils.h
     GLState.cc
     GLState.h
     GLStateSet.h
@@ -108,6 +118,8 @@ set(srcs
     GLVertexElementBufferObject.cc
     GLVertexElementBufferObject.h
     GLViewport.h
+    GLVisualRasterSource.cc
+    GLVisualRasterSource.h
     OpenGL.h
     OpenGLBadAllocException.h
     OpenGLException.h

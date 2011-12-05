@@ -229,10 +229,12 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition(
 		rendered_geometries_spatial_partition.end_root_elements(),
 		boost::bind(&GPlatesViewOperations::RenderedGeometry::accept_visitor, _1, boost::ref(*this)));
 
-	// Get the oriented bounding box cube quad tree cache so we can do view-frustum culling
+	// Create a loose oriented-bounding-box cube quad tree cache so we can do view-frustum culling
 	// as we traverse the spatial partition of rendered geometries.
-	PersistentOpenGLObjects::cube_subdivision_loose_bounds_cache_type &cube_subdivision_loose_bounds =
-			d_persistent_opengl_objects->get_cube_subdivision_loose_bounds_cache();
+	// We're only visiting each subdivision node once so there's no need for caching.
+	cube_subdivision_cache_type::non_null_ptr_type cube_subdivision_cache =
+			cube_subdivision_cache_type::create(
+					GPlatesOpenGL::GLCubeSubdivision::create());
 
 	// Get the view frustum planes.
 	const GPlatesOpenGL::GLFrustum frustum_planes(
@@ -257,18 +259,17 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition(
 			continue;
 		}
 
-		const PersistentOpenGLObjects::cube_subdivision_loose_bounds_cache_type::node_reference_type
-				loose_bounds_root_node = cube_subdivision_loose_bounds.get_quad_tree_root_node(cube_face);
+		const cube_subdivision_cache_type::node_reference_type
+				cube_subdivision_cache_root_node = cube_subdivision_cache->get_quad_tree_root_node(cube_face);
 
 		// We're at the root node of the quad tree of the current cube face.
 		const GPlatesMaths::CubeQuadTreeLocation root_cube_quad_tree_node_location(cube_face);
 
 		render_spatial_partition_quad_tree(
-				rendered_geometries_spatial_partition,
 				root_cube_quad_tree_node_location,
 				loose_quad_tree_root_node,
-				cube_subdivision_loose_bounds,
-				loose_bounds_root_node,
+				*cube_subdivision_cache,
+				cube_subdivision_cache_root_node,
 				frustum_planes,
 				// There are six frustum planes initially active
 				GPlatesOpenGL::GLFrustum::ALL_PLANES_ACTIVE_MASK);
@@ -278,11 +279,10 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition(
 
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition_quad_tree(
-		const rendered_geometries_spatial_partition_type &rendered_geometries_spatial_partition,
 		const GPlatesMaths::CubeQuadTreeLocation &cube_quad_tree_node_location,
 		rendered_geometries_spatial_partition_type::const_node_reference_type rendered_geometries_quad_tree_node,
-		PersistentOpenGLObjects::cube_subdivision_loose_bounds_cache_type &cube_subdivision_loose_bounds,
-		const PersistentOpenGLObjects::cube_subdivision_loose_bounds_cache_type::node_reference_type &loose_bounds_node,
+		cube_subdivision_cache_type &cube_subdivision_cache,
+		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
 		const GPlatesOpenGL::GLFrustum &frustum_planes,
 		boost::uint32_t frustum_plane_mask)
 {
@@ -294,8 +294,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition_quad_tre
 		// Use the static quad tree node's bounding box.
 		boost::optional<boost::uint32_t> out_frustum_plane_mask =
 				GPlatesOpenGL::GLIntersect::intersect_OBB_frustum(
-						cube_subdivision_loose_bounds.get_cached_element(loose_bounds_node)
-								->get_loose_oriented_bounding_box(),
+						cube_subdivision_cache.get_loose_oriented_bounding_box(cube_subdivision_cache_node),
 						frustum_planes.get_planes(),
 						frustum_plane_mask);
 		if (!out_frustum_plane_mask)
@@ -338,9 +337,9 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition_quad_tre
 				continue;
 			}
 
-			const PersistentOpenGLObjects::cube_subdivision_loose_bounds_cache_type::node_reference_type
-					child_loose_bounds_node = cube_subdivision_loose_bounds.get_child_node(
-							loose_bounds_node, child_u_offset, child_v_offset);
+			const cube_subdivision_cache_type::node_reference_type
+					child_loose_bounds_node = cube_subdivision_cache.get_child_node(
+							cube_subdivision_cache_node, child_u_offset, child_v_offset);
 
 			// We're at the child node location of the current node location.
 			const GPlatesMaths::CubeQuadTreeLocation child_cube_quad_tree_node_location(
@@ -349,10 +348,9 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition_quad_tre
 							child_v_offset);
 
 			render_spatial_partition_quad_tree(
-					rendered_geometries_spatial_partition,
 					child_cube_quad_tree_node_location,
 					child_rendered_geometries_quad_tree_node,
-					cube_subdivision_loose_bounds,
+					cube_subdivision_cache,
 					child_loose_bounds_node,
 					frustum_planes,
 					frustum_plane_mask);

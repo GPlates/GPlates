@@ -48,7 +48,7 @@ GPlatesOpenGL::GLState::GLState(
 	d_state_set_keys(state_set_keys),
 	d_state_store(state_store),
 	d_state_sets(state_set_keys->get_num_state_set_keys()),
-	d_state_set_slots(state_set_keys->get_num_state_set_keys()),
+	d_state_set_slots(get_num_state_set_slot_flag32s(*state_set_keys)),
 	d_shared_data(shared_data)
 {
 }
@@ -57,6 +57,8 @@ GPlatesOpenGL::GLState::GLState(
 GPlatesOpenGL::GLState::shared_ptr_type
 GPlatesOpenGL::GLState::clone() const
 {
+	PROFILE_FUNC();
+
 	shared_ptr_type cloned_state;
 
 	//
@@ -77,12 +79,56 @@ GPlatesOpenGL::GLState::clone() const
 	//
 	// Next copy the current state to the cloned state.
 	//
+	// NOTE: This code has been written for optimisation, not simplicity, since it registers high
+	// on the CPU profile for some rendering paths.
+	//
+	const unsigned int num_state_set_slot_flag32s = d_state_set_slots.size();
+	const state_set_slot_flag32_type *const state_set_slots = &d_state_set_slots[0];
+	state_set_slot_flag32_type *const cloned_state_set_slots = &cloned_state->d_state_set_slots[0];
+	const immutable_state_set_ptr_type *const state_sets = &d_state_sets[0];
+	immutable_state_set_ptr_type *const cloned_state_sets = &cloned_state->d_state_sets[0];
+	// Iterate over groups of 32 slots.
+	for (unsigned int state_set_slot_flag32_index = 0;
+		state_set_slot_flag32_index < num_state_set_slot_flag32s;
+		++state_set_slot_flag32_index)
+	{
+		const state_set_slot_flag32_type state_set_slot_flag32 =
+				state_set_slots[state_set_slot_flag32_index];
 
-	// Copy all the state-set pointers.
-	cloned_state->d_state_sets = d_state_sets;
+		// Are any of the current 32 slots non-null?
+		if (state_set_slot_flag32 != 0)
+		{
+			const state_set_key_type state_set_slot32 = (state_set_slot_flag32_index << 5);
 
-	// Copy all state-set flags.
-	cloned_state->d_state_set_slots = d_state_set_slots;
+			state_set_slot_flag32_type byte_mask = 0xff;
+			// Iterate over the 4 groups of 8 slots each.
+			for (int i = 0; i < 4; ++i, byte_mask <<= 8)
+			{
+				// Are any of the current 8 slots non-null?
+				if ((state_set_slot_flag32 & byte_mask) != 0)
+				{
+					unsigned int bit32 = (i << 3);
+					state_set_slot_flag32_type flag32 = (1 << bit32);
+
+					// Iterate over 8 slots.
+					for (int j = 8; --j >= 0; ++bit32, flag32 <<= 1)
+					{
+						// Is the current slot non-null?
+						if ((state_set_slot_flag32 & flag32) != 0)
+						{
+							const state_set_key_type state_set_slot = state_set_slot32 + bit32;
+
+							// Copy the slot's state-set pointer.
+							cloned_state_sets[state_set_slot] = state_sets[state_set_slot];
+						}
+					}
+				}
+			}
+
+			// Copy the 32 slot flags.
+			cloned_state_set_slots[state_set_slot_flag32_index] = state_set_slots[state_set_slot_flag32_index];
+		}
+	}
 
 	// Return the cloned state.
 	return cloned_state;
@@ -92,11 +138,56 @@ GPlatesOpenGL::GLState::clone() const
 void
 GPlatesOpenGL::GLState::clear()
 {
-	// Clear all the state-set pointers.
-	d_state_sets.assign(d_state_set_keys->get_num_state_set_keys(), immutable_state_set_ptr_type());
+	PROFILE_FUNC();
 
-	// Clear all state-set flags.
-	d_state_set_slots.assign(d_state_set_keys->get_num_state_set_keys(), false);
+	// Clear any state set slots that are non-null.
+	//
+	// NOTE: This code has been written for optimisation, not simplicity, since it registers high
+	// on the CPU profile for some rendering paths.
+	//
+	const unsigned int num_state_set_slot_flag32s = d_state_set_slots.size();
+	state_set_slot_flag32_type *const state_set_slots = &d_state_set_slots[0];
+	immutable_state_set_ptr_type *const state_sets = &d_state_sets[0];
+	// Iterate over groups of 32 slots.
+	for (unsigned int state_set_slot_flag32_index = 0;
+		state_set_slot_flag32_index < num_state_set_slot_flag32s;
+		++state_set_slot_flag32_index)
+	{
+		const state_set_slot_flag32_type state_set_slot_flag32 =
+				state_set_slots[state_set_slot_flag32_index];
+
+		// Are any of the current 32 slots non-null?
+		if (state_set_slot_flag32 != 0)
+		{
+			const state_set_key_type state_set_slot32 = (state_set_slot_flag32_index << 5);
+
+			state_set_slot_flag32_type byte_mask = 0xff;
+			// Iterate over the 4 groups of 8 slots each.
+			for (int i = 0; i < 4; ++i, byte_mask <<= 8)
+			{
+				// Are any of the current 8 slots non-null?
+				if ((state_set_slot_flag32 & byte_mask) != 0)
+				{
+					unsigned int bit32 = (i << 3);
+					state_set_slot_flag32_type flag32 = (1 << bit32);
+
+					// Iterate over 8 slots.
+					for (int j = 8; --j >= 0; ++bit32, flag32 <<= 1)
+					{
+						// Is the current slot non-null?
+						if ((state_set_slot_flag32 & flag32) != 0)
+						{
+							// Clear the slot's state-set pointer.
+							state_sets[state_set_slot32 + bit32] = immutable_state_set_ptr_type();
+						}
+					}
+				}
+			}
+
+			// Clear 32 slot flags.
+			state_set_slots[state_set_slot_flag32_index] = 0;
+		}
+	}
 }
 
 
@@ -114,6 +205,34 @@ GPlatesOpenGL::GLState::set_bind_buffer_object_and_apply(
 			boost::in_place(buffer_object, target));
 
 	// If the buffer object is bound to the vertex element target then it will get recorded into the
+	// currently bound vertex array object so we need to track this change with the vertex array object.
+	// See http://www.opengl.org/wiki/Vertex_Array_Object for more details.
+	if (target == GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER)
+	{
+		begin_bind_vertex_array_object(last_applied_state);
+		apply_state(last_applied_state, state_set_key);
+		end_bind_vertex_array_object(last_applied_state);
+	}
+	else
+	{
+		apply_state(last_applied_state, state_set_key);
+	}
+}
+
+
+void
+GPlatesOpenGL::GLState::set_unbind_buffer_object_and_apply(
+		GLenum target,
+		GLState &last_applied_state)
+{
+	const state_set_key_type state_set_key = d_state_set_keys->get_bind_buffer_object_key(target);
+
+	set_state_set(
+			d_state_set_store->bind_buffer_object_state_sets,
+			state_set_key,
+			boost::in_place(target));
+
+	// If the buffer object target is the vertex element target then it will get recorded into the
 	// currently bound vertex array object so we need to track this change with the vertex array object.
 	// See http://www.opengl.org/wiki/Vertex_Array_Object for more details.
 	if (target == GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER)
@@ -185,9 +304,19 @@ GPlatesOpenGL::GLState::apply_state_used_by_gl_clear(
 
 
 void
+GPlatesOpenGL::GLState::apply_state_used_by_gl_read_pixels(
+		GLState &last_applied_state) const
+{
+	// NOTE: There are no bind vertex array object state-sets or dependent state-sets to worry about here.
+	// Simple application of the 'glReadPixel' state set slots is all that is required.
+	apply_state(last_applied_state, d_shared_data->gl_read_pixels_state_set_slots);
+}
+
+
+void
 GPlatesOpenGL::GLState::apply_state(
 		GLState &last_applied_state,
-		const state_set_key_seq_type &state_set_slots_mask) const
+		const state_set_slot_flags_type &state_set_slots_mask) const
 {
 	// Note that we want to change the state sets in the order of their slots.
 	// This is because it is typically more efficient that way.
@@ -219,94 +348,144 @@ GPlatesOpenGL::GLState::apply_state(
 
 	//
 	// NOTE: This code is written in an optimised manner since it shows high on the CPU profile.
-	// So there's a bit of copy'n'paste going on.
+	// And there's a bit of copy'n'paste going on from the single slot version of 'apply_state'.
 	//
 
 	// Iterate over the state set slots.
-	const state_set_slot_flag_type *const mutable_state_set_slots =
+	const unsigned int num_state_set_slot_flag32s = d_state_set_slots.size();
+	const state_set_slot_flag32_type *const mutable_state_set_slots =
 			d_shared_data->mutable_state_set_slots
 			? &d_shared_data->mutable_state_set_slots.get()[0]
 			: NULL;
-	const state_set_slot_flag_type *const state_set_slots = &d_state_set_slots[0];
-	state_set_slot_flag_type *const last_applied_state_set_slots = &last_applied_state.d_state_set_slots[0];
+	const state_set_slot_flag32_type *const state_set_slots = &d_state_set_slots[0];
+	state_set_slot_flag32_type *const last_applied_state_set_slots = &last_applied_state.d_state_set_slots[0];
 	const immutable_state_set_ptr_type *const state_sets = &d_state_sets[0];
 	immutable_state_set_ptr_type *const last_applied_state_sets = &last_applied_state.d_state_sets[0];
+	const state_set_slot_flag32_type *const state_set_slots_mask_array = &state_set_slots_mask[0];
 
-	const state_set_key_type *const state_set_slots_mask_array = &state_set_slots_mask[0];
-	const unsigned int num_state_set_slots = state_set_slots_mask.size();
-
-	// Iterate over the state set slots to apply.
-	for (unsigned int n = 0; n < num_state_set_slots; ++n)
+	// Iterate over groups of 32 slots.
+	for (unsigned int state_set_slot_flag32_index = 0;
+		state_set_slot_flag32_index < num_state_set_slot_flag32s;
+		++state_set_slot_flag32_index)
 	{
-		const state_set_key_type state_set_slot = state_set_slots_mask_array[n];
+		const state_set_slot_flag32_type state_set_slot_flag32_mask =
+				state_set_slots_mask_array[state_set_slot_flag32_index];
 
-		// Include state-set slots that exist in either state (or both).
-		// Only those state-sets that don't exist in either state are excluded here (not visited/applied).
-		// If state set slot is set in either in 'this' state or the last applied state then apply it.
-		const state_set_slot_flag_type combined_flag =
-				(state_set_slots[state_set_slot] | last_applied_state_set_slots[state_set_slot]);
-		if (combined_flag)
+		// Are any of the current 32 slots non-null in the mask?
+		if (state_set_slot_flag32_mask != 0)
 		{
-			// Note that either of these could be NULL.
-			const immutable_state_set_ptr_type &current_state_set = state_sets[state_set_slot];
-			immutable_state_set_ptr_type &last_applied_state_set = last_applied_state_sets[state_set_slot];
+			const state_set_slot_flag32_type state_set_slot_flag32_to_apply =
+					state_set_slots[state_set_slot_flag32_index];
 
-			// Also including a cheap test of pointers since GLState objects can share the
-			// same immutable GLStateSet objects - if they are the same object (or both NULL)
-			// then there can be no difference in state and hence nothing to apply.
-			//
-			// NOTE: Not all slots are *immutable* - there are a few exceptions.
-			// Also note that both state set slots cannot be null since we've excluded that
-			// possibility with 'combined_flag'.
-			if (current_state_set == last_applied_state_set)
+			// Include state-set slots that exist in either state (or both).
+			// Only those state-sets that don't exist in either state are excluded here (not visited/applied).
+			// If state set slot is set in either in 'this' state or the last applied state then apply it.
+			state_set_slot_flag32_type state_set_slot_flag32 =
+					state_set_slot_flag32_mask &
+						(state_set_slot_flag32_to_apply |
+							last_applied_state_set_slots[state_set_slot_flag32_index]);
+
+			// Are any of the current 32 slots non-null in the combined flag?
+			if (state_set_slot_flag32 != 0)
 			{
-				if (
-					// Continue to the next slot if there are *no* mutable state sets...
-					!mutable_state_set_slots ||
-					// Continue to the next slot if this slot is *not* a mutable state set slot...
-					!mutable_state_set_slots[state_set_slot])
+				const state_set_key_type state_set_slot32 = (state_set_slot_flag32_index << 5);
+
+				state_set_slot_flag32_type byte_mask = 0xff;
+				// Iterate over the 4 groups of 8 slots each.
+				for (int i = 0; i < 4; ++i, byte_mask <<= 8)
 				{
-					continue;
+					// Are any of the current 8 slots non-null?
+					if ((state_set_slot_flag32 & byte_mask) != 0)
+					{
+						unsigned int bit32 = (i << 3);
+						state_set_slot_flag32_type flag32 = (1 << bit32);
+
+						// Iterate over 8 slots.
+						for (int j = 8; --j >= 0; ++bit32, flag32 <<= 1)
+						{
+							// Is the current slot non-null?
+							if ((state_set_slot_flag32 & flag32) != 0)
+							{
+								const state_set_key_type state_set_slot = state_set_slot32 + bit32;
+
+								// Note that either of these could be NULL.
+								const immutable_state_set_ptr_type &current_state_set = state_sets[state_set_slot];
+								immutable_state_set_ptr_type &last_applied_state_set = last_applied_state_sets[state_set_slot];
+
+								// Also including a cheap test of pointers since GLState objects can share the
+								// same immutable GLStateSet objects - if they are the same object (or both NULL)
+								// then there can be no difference in state and hence nothing to apply.
+								//
+								// NOTE: Not all slots are *immutable* - there are a few exceptions.
+								// Also note that both state set slots cannot be null since we've excluded that
+								// possibility with the combined flag.
+								if (current_state_set == last_applied_state_set)
+								{
+									if (
+										// Continue to the next slot if there are *no* mutable state sets...
+										!mutable_state_set_slots ||
+										// Continue to the next slot if this slot is *not* a mutable state set slot...
+										(mutable_state_set_slots[state_set_slot_flag32_index] & flag32) == 0)
+									{
+										continue;
+									}
+								}
+								// Note that if we get here then both state-sets cannot be null.
+
+								if (last_applied_state_set)
+								{
+									if (current_state_set)
+									{
+										// Both the current and last applied state sets exist.
+
+										// This is a transition from an existing state to another (possibly different)
+										// existing state - if the two states are the same then it's possible for this
+										// to do nothing.
+										current_state_set->apply_state(*last_applied_state_set, last_applied_state);
+
+										// Update the last applied state so subsequent state-sets can see it.
+										last_applied_state_set = current_state_set;
+									}
+									else
+									{
+										// Only the last applied state set exists - get it to set the default state.
+										// This is a transition from an existing state to the default state.
+										last_applied_state_set->apply_to_default_state(last_applied_state);
+
+										// Update the last applied state so subsequent state-sets can see it.
+										last_applied_state_set.reset();
+										// Clear the bit flag.
+										// Note that this is set immediately after the state is applied
+										// in case the state-sets look at it.
+										last_applied_state_set_slots[state_set_slot_flag32_index] &= ~flag32;
+									}
+								}
+								else
+								{
+									// Since both state-sets cannot be null then 'current_state_set' must be non-null.
+
+									// Only the current state set exists - get it to apply its internal state.
+									// This is a transition from the default state to a new state.
+									current_state_set->apply_from_default_state(last_applied_state);
+
+									// Update the last applied state so subsequent state-sets can see it.
+									last_applied_state_set = current_state_set;
+									// Set the bit flag.
+									// Note that this is set immediately after the state is applied
+									// in case the state-sets look at it.
+									last_applied_state_set_slots[state_set_slot_flag32_index] |= flag32;
+								}
+
+								// It's also possible that other state-sets in 'last_applied_state'
+								// were modified and they might be in the current group of 32 slots.
+								state_set_slot_flag32 =
+										state_set_slot_flag32_mask &
+											(state_set_slot_flag32_to_apply |
+												last_applied_state_set_slots[state_set_slot_flag32_index]);
+							}
+						}
+					}
 				}
-			}
-			// Note that if we get here then both state-sets cannot be null.
-
-			if (last_applied_state_set)
-			{
-				if (current_state_set)
-				{
-					// Both the current and last applied state sets exist.
-
-					// This is a transition from an existing state to another (possibly different)
-					// existing state - if the two states are the same then it's possible for this
-					// to do nothing.
-					current_state_set->apply_state(*last_applied_state_set, last_applied_state);
-
-					// Update the last applied state so subsequent state-sets can see it.
-					last_applied_state_set = current_state_set;
-				}
-				else
-				{
-					// Only the last applied state set exists - get it to set the default state.
-					// This is a transition from an existing state to the default state.
-					last_applied_state_set->apply_to_default_state(last_applied_state);
-
-					// Update the last applied state so subsequent state-sets can see it.
-					last_applied_state_set.reset();
-					last_applied_state_set_slots[state_set_slot] = false;
-				}
-			}
-			else
-			{
-				// Since both state-sets cannot be null then 'current_state_set' must be non-null.
-
-				// Only the current state set exists - get it to apply its internal state.
-				// This is a transition from the default state to a new state.
-				current_state_set->apply_from_default_state(last_applied_state);
-
-				// Update the last applied state so subsequent state-sets can see it.
-				last_applied_state_set = current_state_set;
-				last_applied_state_set_slots[state_set_slot] = true;
 			}
 		}
 	}
@@ -318,6 +497,11 @@ GPlatesOpenGL::GLState::apply_state(
 		GLState &last_applied_state,
 		state_set_key_type state_set_key) const
 {
+	// Find the bit flag for the specified state set key.
+	const unsigned int state_set_slot_flag32_index = (state_set_key >> 5);
+	const unsigned int bit32 = (state_set_key & 31);
+	const state_set_slot_flag32_type flag32 = (1 << bit32);
+
 	// Note that either of these could be NULL.
 	const immutable_state_set_ptr_type &current_state_set = d_state_sets[state_set_key];
 	immutable_state_set_ptr_type &last_applied_state_set = last_applied_state.d_state_sets[state_set_key];
@@ -335,7 +519,7 @@ GPlatesOpenGL::GLState::apply_state(
 			// Continue to the next slot if both state sets are null...
 			!current_state_set ||
 			// Continue to the next slot if this slot is *not* a mutable state set slot...
-			!d_shared_data->mutable_state_set_slots.get()[state_set_key])
+			(d_shared_data->mutable_state_set_slots.get()[state_set_slot_flag32_index] & flag32) == 0)
 		{
 			return;
 		}
@@ -367,7 +551,10 @@ GPlatesOpenGL::GLState::apply_state(
 
 			// Update the last applied state so subsequent state-sets can see it.
 			last_applied_state_set.reset();
-			last_applied_state.d_state_set_slots[state_set_key] = false;
+			// Clear the bit flag.
+			// Note that this is set immediately after the state is applied
+			// in case the state-sets look at it.
+			last_applied_state.d_state_set_slots[state_set_slot_flag32_index] &= ~flag32;
 		}
 	}
 	else
@@ -380,7 +567,10 @@ GPlatesOpenGL::GLState::apply_state(
 
 		// Update the last applied state so subsequent state-sets can see it.
 		last_applied_state_set = current_state_set;
-		last_applied_state.d_state_set_slots[state_set_key] = true;
+		// Set the bit flag.
+		// Note that this is set immediately after the state is applied
+		// in case the state-sets look at it.
+		last_applied_state.d_state_set_slots[state_set_slot_flag32_index] |= flag32;
 	}
 }
 
@@ -389,54 +579,59 @@ void
 GPlatesOpenGL::GLState::merge_state_change(
 		const GLState &state_change)
 {
+	PROFILE_FUNC();
+
 	// Merge all state set slots of 'state_change' that have been set.
-	const state_set_slot_flag_type *const state_set_slots_to_merge = &state_change.d_state_set_slots[0];
-	state_set_slot_flag_type *const state_set_slots = &d_state_set_slots[0];
+	//
+	// NOTE: This code has been written for optimisation, not simplicity, since it registers high
+	// on the CPU profile for some rendering paths.
+	//
+	const unsigned int num_state_set_slot_flag32s = d_state_set_slots.size();
+	const state_set_slot_flag32_type *const state_set_slots_to_merge = &state_change.d_state_set_slots[0];
+	state_set_slot_flag32_type *const state_set_slots = &d_state_set_slots[0];
 	const immutable_state_set_ptr_type *const state_sets_to_merge = &state_change.d_state_sets[0];
 	immutable_state_set_ptr_type *const state_sets = &d_state_sets[0];
-	const state_set_key_type num_state_set_slots = d_state_set_keys->get_num_state_set_keys();
-	for (state_set_key_type state_set_slot = 0; state_set_slot < num_state_set_slots; ++state_set_slot)
+	// Iterate over groups of 32 slots.
+	for (unsigned int state_set_slot_flag32_index = 0;
+		state_set_slot_flag32_index < num_state_set_slot_flag32s;
+		++state_set_slot_flag32_index)
 	{
-		if (state_set_slots_to_merge[state_set_slot])
+		const state_set_slot_flag32_type state_set_slot_flag32_to_merge =
+				state_set_slots_to_merge[state_set_slot_flag32_index];
+
+		// Are any of the current 32 slots non-null?
+		if (state_set_slot_flag32_to_merge != 0)
 		{
-			// Copy over the state set from the state change.
-			// This is always non-null.
-			state_sets[state_set_slot] = state_sets_to_merge[state_set_slot];
+			const state_set_key_type state_set_slot32_to_merge = (state_set_slot_flag32_index << 5);
+
+			state_set_slot_flag32_type byte_mask = 0xff;
+			// Iterate over the 4 groups of 8 slots each.
+			for (int i = 0; i < 4; ++i, byte_mask <<= 8)
+			{
+				// Are any of the current 8 slots non-null?
+				if ((state_set_slot_flag32_to_merge & byte_mask) != 0)
+				{
+					unsigned int bit32 = (i << 3);
+					state_set_slot_flag32_type flag32 = (1 << bit32);
+
+					// Iterate over 8 slots.
+					for (int j = 8; --j >= 0; ++bit32, flag32 <<= 1)
+					{
+						// Is the current slot non-null?
+						if ((state_set_slot_flag32_to_merge & flag32) != 0)
+						{
+							const state_set_key_type state_set_slot = state_set_slot32_to_merge + bit32;
+
+							// Copy over the state set from the state change.
+							// This is always non-null.
+							state_sets[state_set_slot] = state_sets_to_merge[state_set_slot];
+						}
+					}
+				}
+			}
 
 			// Mark those slots that have been set.
-			state_set_slots[state_set_slot] = true;
-		}
-	}
-}
-
-
-void
-GPlatesOpenGL::GLState::merge_state_change(
-		const GLState &state_change,
-		const state_set_key_seq_type &state_set_slots_mask)
-{
-	// Merge all state set slots of 'state_change' that have been set.
-	const state_set_slot_flag_type *const state_set_slots_to_merge = &state_change.d_state_set_slots[0];
-	state_set_slot_flag_type *const state_set_slots = &d_state_set_slots[0];
-	const immutable_state_set_ptr_type *const state_sets_to_merge = &state_change.d_state_sets[0];
-	immutable_state_set_ptr_type *const state_sets = &d_state_sets[0];
-
-	const state_set_key_type *const state_set_slots_mask_array = &state_set_slots_mask[0];
-	const unsigned int num_state_set_slots = state_set_slots_mask.size();
-
-	// Iterate over the state set slots to apply.
-	for (unsigned int n = 0; n < num_state_set_slots; ++n)
-	{
-		const state_set_key_type state_set_slot = state_set_slots_mask_array[n];
-
-		if (state_set_slots_to_merge[state_set_slot])
-		{
-			// Copy over the state set from the state change.
-			// This is always non-null.
-			state_sets[state_set_slot] = state_sets_to_merge[state_set_slot];
-
-			// Mark those slots that have been set.
-			state_set_slots[state_set_slot] = true;
+			state_set_slots[state_set_slot_flag32_index] |= state_set_slot_flag32_to_merge;
 		}
 	}
 }
@@ -446,29 +641,72 @@ void
 GPlatesOpenGL::GLState::copy_vertex_array_state(
 		const GLState &state)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
-	// We only want to copy those slots that contain vertex array state...
-	const state_set_slot_flag_type *const state_set_slots_to_copy = &state.d_state_set_slots[0];
-	state_set_slot_flag_type *const state_set_slots = &d_state_set_slots[0];
+	// Copy only those slots that contain vertex array state...
+	//
+	// NOTE: This code has been written for optimisation, not simplicity, since it registers high
+	// on the CPU profile for some rendering paths.
+	//
+	const unsigned int num_state_set_slot_flag32s = d_state_set_slots.size();
+
+	const state_set_slot_flag32_type *const state_set_slots_to_copy = &state.d_state_set_slots[0];
+	state_set_slot_flag32_type *const state_set_slots = &d_state_set_slots[0];
 	const immutable_state_set_ptr_type *const state_sets_to_copy = &state.d_state_sets[0];
 	immutable_state_set_ptr_type *const state_sets = &d_state_sets[0];
 
-	const state_set_key_seq_type &state_set_slots_copy_mask = d_shared_data->vertex_array_state_set_slots;
-	const state_set_key_type *const state_set_slots_copy_mask_array = &state_set_slots_copy_mask[0];
-	const unsigned int num_state_set_slots = state_set_slots_copy_mask.size();
+	const state_set_slot_flags_type &state_set_slots_copy_mask = d_shared_data->vertex_array_state_set_slots;
+	const state_set_slot_flag32_type *const state_set_slots_copy_mask_array = &state_set_slots_copy_mask[0];
 
-	// Iterate over the state set slots to copy.
-	for (unsigned int n = 0; n < num_state_set_slots; ++n)
+	// Iterate over groups of 32 slots.
+	for (unsigned int state_set_slot_flag32_index = 0;
+		state_set_slot_flag32_index < num_state_set_slot_flag32s;
+		++state_set_slot_flag32_index)
 	{
-		const state_set_key_type state_set_slot = state_set_slots_copy_mask_array[n];
+		const state_set_slot_flag32_type state_set_slot_flag32_copy_mask =
+				state_set_slots_copy_mask_array[state_set_slot_flag32_index];
 
-		// Copy over the state set.
-		// This is could be null or non-null.
-		state_sets[state_set_slot] = state_sets_to_copy[state_set_slot];
+		// Are any of the current 32 slots non-null?
+		if (state_set_slot_flag32_copy_mask != 0)
+		{
+			const state_set_key_type state_set_slot32_to_copy = (state_set_slot_flag32_index << 5);
 
-		// Mark the slot as set or unset.
-		state_set_slots[state_set_slot] = state_set_slots_to_copy[state_set_slot];
+			state_set_slot_flag32_type byte_mask = 0xff;
+			// Iterate over the 4 groups of 8 slots each.
+			for (int i = 0; i < 4; ++i, byte_mask <<= 8)
+			{
+				// Are any of the current 8 slots non-null?
+				if ((state_set_slot_flag32_copy_mask & byte_mask) != 0)
+				{
+					unsigned int bit32 = (i << 3);
+					state_set_slot_flag32_type flag32 = (1 << bit32);
+
+					// Iterate over 8 slots.
+					for (int j = 8; --j >= 0; ++bit32, flag32 <<= 1)
+					{
+						// Is the current slot non-null?
+						if ((state_set_slot_flag32_copy_mask & flag32) != 0)
+						{
+							const state_set_key_type state_set_slot = state_set_slot32_to_copy + bit32;
+
+							// Copy over the state set.
+							// This is could be null or non-null.
+							state_sets[state_set_slot] = state_sets_to_copy[state_set_slot];
+						}
+					}
+				}
+			}
+
+			//
+			// Mark those slots that have been set (or unset).
+			//
+
+			// First clear all flags corresponding to the copy flags.
+			state_set_slots[state_set_slot_flag32_index] &= ~state_set_slot_flag32_copy_mask;
+			// Next set any flags corresponding to the vertex array flags.
+			state_set_slots[state_set_slot_flag32_index] |=
+					(state_set_slot_flag32_copy_mask & state_set_slots_to_copy[state_set_slot_flag32_index]);
+		}
 	}
 }
 
@@ -515,14 +753,73 @@ GPlatesOpenGL::GLState::end_bind_vertex_array_object(
 }
 
 
+unsigned int
+GPlatesOpenGL::GLState::get_num_state_set_slot_flag32s(
+		const GLStateSetKeys &state_set_keys)
+{
+	// Slot flags go into groups of 32 (since using 32-bit integer bitmasks)...
+	return (state_set_keys.get_num_state_set_keys() >> 5) +
+		((state_set_keys.get_num_state_set_keys() & 31) != 0 ? 1 : 0);
+}
+
+
+bool
+GPlatesOpenGL::GLState::is_state_set_slot_set(
+		state_set_slot_flags_type &state_set_slots,
+		state_set_key_type state_set_slot)
+{
+	// Find the bit flag for the specified state set key.
+	const unsigned int state_set_slot_flag32_index = (state_set_slot >> 5);
+	const unsigned int bit32 = (state_set_slot & 31);
+	const state_set_slot_flag32_type flag32 = (1 << bit32);
+
+	return (state_set_slots[state_set_slot_flag32_index] & flag32) != 0;
+}
+
+
+void
+GPlatesOpenGL::GLState::set_state_set_slot_flag(
+		state_set_slot_flags_type &state_set_slots,
+		state_set_key_type state_set_slot)
+{
+	// Find the bit flag for the specified state set key.
+	const unsigned int state_set_slot_flag32_index = (state_set_slot >> 5);
+	const unsigned int bit32 = (state_set_slot & 31);
+	const state_set_slot_flag32_type flag32 = (1 << bit32);
+
+	state_set_slots[state_set_slot_flag32_index] |= flag32;
+}
+
+
+void
+GPlatesOpenGL::GLState::clear_state_set_slot_flag(
+		state_set_slot_flags_type &state_set_slots,
+		state_set_key_type state_set_slot)
+{
+	// Find the bit flag for the specified state set key.
+	const unsigned int state_set_slot_flag32_index = (state_set_slot >> 5);
+	const unsigned int bit32 = (state_set_slot & 31);
+	const state_set_slot_flag32_type flag32 = (1 << bit32);
+
+	state_set_slots[state_set_slot_flag32_index] &= ~flag32;
+}
+
+
 GPlatesOpenGL::GLState::SharedData::SharedData(
 		const GLStateSetKeys &state_set_keys,
 		const GLState::shared_ptr_type &default_vertex_array_object_current_context_state_) :
+	dependent_state_set_slots(get_num_state_set_slot_flag32s(state_set_keys)),
+	inverse_dependent_state_set_slots(get_num_state_set_slot_flag32s(state_set_keys)),
+	vertex_array_state_set_slots(get_num_state_set_slot_flag32s(state_set_keys)),
+	inverse_vertex_array_state_set_slots(get_num_state_set_slot_flag32s(state_set_keys)),
+	gl_clear_state_set_slots(get_num_state_set_slot_flag32s(state_set_keys)),
+	gl_read_pixels_state_set_slots(get_num_state_set_slot_flag32s(state_set_keys)),
 	default_vertex_array_object_current_context_state(default_vertex_array_object_current_context_state_)
 {
 	initialise_dependent_state_set_slots(state_set_keys);
 	initialise_vertex_array_state_set_slots(state_set_keys);
 	initialise_gl_clear_state_set_slots(state_set_keys);
+	initialise_gl_read_pixels_state_set_slots(state_set_keys);
 	initialise_mutable_state_set_slots(state_set_keys);
 }
 
@@ -556,7 +853,7 @@ GPlatesOpenGL::GLState::SharedData::initialise_dependent_state_set_slots(
 	// NOTE: These are also the only state modifications that "GLStateSet::apply_state()" can make
 	// through its 'last_applied_state' function argument. In other words these are the only
 	// modifications to the last applied state that can be made *while* applying the state.
-	state_set_slot_flags_type dependent_slots(state_set_keys.get_num_state_set_keys());
+	std::vector<bool> dependent_slots(state_set_keys.get_num_state_set_keys());
 	dependent_slots[GLStateSetKeys::KEY_MATRIX_MODE] = true;
 	dependent_slots[GLStateSetKeys::KEY_ACTIVE_TEXTURE] = true;
 	dependent_slots[GLStateSetKeys::KEY_BIND_ARRAY_BUFFER_OBJECT] = true;
@@ -574,11 +871,11 @@ GPlatesOpenGL::GLState::SharedData::initialise_dependent_state_set_slots(
 
 		if (dependent_slots[state_set_slot])
 		{
-			dependent_state_set_slots.push_back(state_set_slot);
+			set_state_set_slot_flag(dependent_state_set_slots, state_set_slot);
 		}
 		else
 		{
-			inverse_dependent_state_set_slots.push_back(state_set_slot);
+			set_state_set_slot_flag(inverse_dependent_state_set_slots, state_set_slot);
 		}
 	}
 }
@@ -588,7 +885,7 @@ void
 GPlatesOpenGL::GLState::SharedData::initialise_vertex_array_state_set_slots(
 		const GLStateSetKeys &state_set_keys)
 {
-	state_set_slot_flags_type vertex_array_slots(state_set_keys.get_num_state_set_keys());
+	std::vector<bool> vertex_array_slots(state_set_keys.get_num_state_set_keys());
 
 	//
 	// All non-generic vertex attribute enable/disable client state.
@@ -597,8 +894,8 @@ GPlatesOpenGL::GLState::SharedData::initialise_vertex_array_state_set_slots(
 	vertex_array_slots[GLStateSetKeys::KEY_ENABLE_CLIENT_STATE_NORMAL_ARRAY] = true;
 	vertex_array_slots[GLStateSetKeys::KEY_ENABLE_CLIENT_STATE_VERTEX_ARRAY] = true;
 	// Iterate over the enable texture coordinate client state flags.
-	const unsigned int MAX_TEXTURE_UNITS = GLContext::get_parameters().texture.gl_max_texture_units;
-	for (unsigned int texture_coord_index = 0; texture_coord_index < MAX_TEXTURE_UNITS; ++texture_coord_index)
+	const unsigned int MAX_TEXTURE_COORDS = GLContext::get_parameters().texture.gl_max_texture_coords;
+	for (unsigned int texture_coord_index = 0; texture_coord_index < MAX_TEXTURE_COORDS; ++texture_coord_index)
 	{
 		vertex_array_slots[
 				state_set_keys.get_enable_client_texture_state_key(GL_TEXTURE0 + texture_coord_index)] = true;
@@ -611,7 +908,7 @@ GPlatesOpenGL::GLState::SharedData::initialise_vertex_array_state_set_slots(
 	vertex_array_slots[GLStateSetKeys::KEY_VERTEX_ARRAY_NORMAL_POINTER] = true;
 	vertex_array_slots[GLStateSetKeys::KEY_VERTEX_ARRAY_VERTEX_POINTER] = true;
 	// Iterate over the texture coordinate arrays.
-	for (unsigned int texture_coord_index = 0; texture_coord_index < MAX_TEXTURE_UNITS; ++texture_coord_index)
+	for (unsigned int texture_coord_index = 0; texture_coord_index < MAX_TEXTURE_COORDS; ++texture_coord_index)
 	{
 		vertex_array_slots[
 				state_set_keys.get_tex_coord_pointer_state_key(GL_TEXTURE0 + texture_coord_index)] = true;
@@ -650,11 +947,11 @@ GPlatesOpenGL::GLState::SharedData::initialise_vertex_array_state_set_slots(
 	{
 		if (vertex_array_slots[state_set_slot])
 		{
-			vertex_array_state_set_slots.push_back(state_set_slot);
+			set_state_set_slot_flag(vertex_array_state_set_slots, state_set_slot);
 		}
 		else
 		{
-			inverse_vertex_array_state_set_slots.push_back(state_set_slot);
+			set_state_set_slot_flag(inverse_vertex_array_state_set_slots, state_set_slot);
 		}
 	}
 }
@@ -666,13 +963,23 @@ GPlatesOpenGL::GLState::SharedData::initialise_gl_clear_state_set_slots(
 {
 	// Specify the state set keys representing states needed by 'glClear'.
 	// Note that the viewport is not used by 'glClear' (but the scissor test and rectangle are).
-	gl_clear_state_set_slots.push_back(GLStateSetKeys::KEY_CLEAR_COLOR);
-	gl_clear_state_set_slots.push_back(GLStateSetKeys::KEY_CLEAR_DEPTH);
-	gl_clear_state_set_slots.push_back(GLStateSetKeys::KEY_CLEAR_STENCIL);
-	gl_clear_state_set_slots.push_back(GLStateSetKeys::KEY_COLOR_MASK);
-	gl_clear_state_set_slots.push_back(GLStateSetKeys::KEY_ENABLE_SCISSOR_TEST);
-	gl_clear_state_set_slots.push_back(GLStateSetKeys::KEY_SCISSOR);
+	set_state_set_slot_flag(gl_clear_state_set_slots, GLStateSetKeys::KEY_BIND_FRAME_BUFFER);
+	set_state_set_slot_flag(gl_clear_state_set_slots, GLStateSetKeys::KEY_CLEAR_COLOR);
+	set_state_set_slot_flag(gl_clear_state_set_slots, GLStateSetKeys::KEY_CLEAR_DEPTH);
+	set_state_set_slot_flag(gl_clear_state_set_slots, GLStateSetKeys::KEY_CLEAR_STENCIL);
+	set_state_set_slot_flag(gl_clear_state_set_slots, GLStateSetKeys::KEY_COLOR_MASK);
+	set_state_set_slot_flag(gl_clear_state_set_slots, GLStateSetKeys::KEY_ENABLE_SCISSOR_TEST);
+	set_state_set_slot_flag(gl_clear_state_set_slots, GLStateSetKeys::KEY_SCISSOR);
+}
 
+
+void
+GPlatesOpenGL::GLState::SharedData::initialise_gl_read_pixels_state_set_slots(
+		const GLStateSetKeys &state_set_keys)
+{
+	// Specify the state set keys representing states needed by 'glReadPixels'.
+	set_state_set_slot_flag(gl_read_pixels_state_set_slots, GLStateSetKeys::KEY_BIND_FRAME_BUFFER);
+	set_state_set_slot_flag(gl_read_pixels_state_set_slots, GLStateSetKeys::KEY_BIND_PIXEL_PACK_BUFFER_OBJECT);
 }
 
 
@@ -697,36 +1004,39 @@ GPlatesOpenGL::GLState::SharedData::initialise_mutable_state_set_slots(
 	// Maybe this isn't in the spec and nVidia do it anyway - not sure what the spec says?
 	// So for now this applies to *both* client memory arrays and native OpenGL buffer objects.
 	//
+
 	// Create mutable state-set slots if necessary.
 	if (!mutable_state_set_slots)
 	{
-		mutable_state_set_slots = state_set_slot_flags_type(state_set_keys.get_num_state_set_keys());
+		mutable_state_set_slots = state_set_slot_flags_type(get_num_state_set_slot_flag32s(state_set_keys));
 	}
 
 	// Add all the non-generic attribute array slots.
-	mutable_state_set_slots.get()[GLStateSetKeys::KEY_VERTEX_ARRAY_COLOR_POINTER] = true;
-	mutable_state_set_slots.get()[GLStateSetKeys::KEY_VERTEX_ARRAY_NORMAL_POINTER] = true;
-	mutable_state_set_slots.get()[GLStateSetKeys::KEY_VERTEX_ARRAY_VERTEX_POINTER] = true;
+	set_state_set_slot_flag(mutable_state_set_slots.get(), GLStateSetKeys::KEY_VERTEX_ARRAY_COLOR_POINTER);
+	set_state_set_slot_flag(mutable_state_set_slots.get(), GLStateSetKeys::KEY_VERTEX_ARRAY_NORMAL_POINTER);
+	set_state_set_slot_flag(mutable_state_set_slots.get(), GLStateSetKeys::KEY_VERTEX_ARRAY_VERTEX_POINTER);
 
 	// Add all texture coordinate pointer slots.
-	const GLuint MAX_TEXTURE_UNITS = GLContext::get_parameters().texture.gl_max_texture_units;
-	for (GLuint texture_coord_index = 0; texture_coord_index < MAX_TEXTURE_UNITS; ++texture_coord_index)
+	const GLuint MAX_TEXTURE_COORDS = GLContext::get_parameters().texture.gl_max_texture_coords;
+	for (GLuint texture_coord_index = 0; texture_coord_index < MAX_TEXTURE_COORDS; ++texture_coord_index)
 	{
-		mutable_state_set_slots.get()[
-				state_set_keys.get_tex_coord_pointer_state_key(GL_TEXTURE0 + texture_coord_index)] = true;
+		set_state_set_slot_flag(
+				mutable_state_set_slots.get(),
+				state_set_keys.get_tex_coord_pointer_state_key(GL_TEXTURE0 + texture_coord_index));
 	}
 
 	// Add all the generic attribute array slots.
 	const GLuint MAX_VERTEX_ATTRIBS = GLContext::get_parameters().shader.gl_max_vertex_attribs;
 	for (GLuint attribute_index = 0; attribute_index < MAX_VERTEX_ATTRIBS; ++attribute_index)
 	{
-		mutable_state_set_slots.get()[
-				state_set_keys.get_vertex_attrib_array_key(attribute_index)] = true;
+		set_state_set_slot_flag(
+				mutable_state_set_slots.get(),
+				state_set_keys.get_vertex_attrib_array_key(attribute_index));
 	}
 
 	// Remove the bind vertex array object state-set slot since it gets its own apply pass.
 	if (mutable_state_set_slots)
 	{
-		mutable_state_set_slots.get()[GLStateSetKeys::KEY_BIND_VERTEX_ARRAY_OBJECT] = false;
+		clear_state_set_slot_flag(mutable_state_set_slots.get(), GLStateSetKeys::KEY_BIND_VERTEX_ARRAY_OBJECT);
 	}
 }

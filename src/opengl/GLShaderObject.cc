@@ -81,6 +81,20 @@ GPlatesOpenGL::GLShaderObject::Allocator::deallocate(
 }
 
 
+const char *GPlatesOpenGL::GLShaderObject::SHADER_VERSION_STRINGS[GPlatesOpenGL::GLShaderObject::NUM_SHADER_VERSIONS] =
+{
+	"#version 110\n",
+	"#version 120\n",
+	"#version 130\n",
+	"#version 140\n",
+	"#version 150 compatibility\n",
+	"#version 330 compatibility\n",
+	"#version 400 compatibility\n",
+	"#version 410 compatibility\n",
+	"#version 420 compatibility\n"
+};
+
+
 bool
 GPlatesOpenGL::GLShaderObject::is_supported(
 		GLRenderer &renderer,
@@ -99,8 +113,10 @@ GPlatesOpenGL::GLShaderObject::is_supported(
 	case GL_FRAGMENT_SHADER_ARB:
 		return GPLATES_OPENGL_BOOL(GLEW_ARB_fragment_shader);
 
+#ifdef GL_ARB_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
 	case GL_GEOMETRY_SHADER_ARB:
 		return GPLATES_OPENGL_BOOL(GLEW_ARB_geometry_shader4);
+#endif
 
 	default:
 		// Unsupported capability.
@@ -131,27 +147,36 @@ GPlatesOpenGL::GLShaderObject::GLShaderObject(
 void
 GPlatesOpenGL::GLShaderObject::gl_shader_source(
 		GLRenderer &renderer,
-		const std::vector<const char *> &source_strings)
+		const std::vector<const char *> &source_strings,
+		ShaderVersion shader_version)
 {
-	const GLsizei count = source_strings.size();
-	if (count == 0)
+	if (source_strings.empty())
 	{
 		return;
 	}
 
 	// For some reason glShaderSourceARB accepts a *non*-const pointer to an array of strings.
 	// So we have to copy the caller's 'const' array.
-	std::vector<const char *> strings(source_strings);
+	// We have to do it anyway since we're also adding the shader version string.
+	std::vector<const char *> strings;
+	strings.reserve(source_strings.size() + 1);
+
+	// Add the shader version string first (it needs to come before any non-commented source code).
+	strings.push_back(SHADER_VERSION_STRINGS[shader_version]);
+
+	// Add the caller's shader source segments.
+	strings.insert(strings.end(), source_strings.begin(), source_strings.end());
 
 	// 'length' is NULL indicating the source strings are null-terminated.
-	glShaderSourceARB(get_shader_resource_handle(), count, &strings[0], NULL);
+	glShaderSourceARB(get_shader_resource_handle(), strings.size(), &strings[0], NULL);
 }
 
 
 void
 GPlatesOpenGL::GLShaderObject::gl_shader_source(
 		GLRenderer &renderer,
-		const std::vector<std::string> &source_strings)
+		const std::vector<std::string> &source_strings,
+		ShaderVersion shader_version)
 {
 	const GLsizei count = source_strings.size();
 	if (count == 0)
@@ -160,33 +185,42 @@ GPlatesOpenGL::GLShaderObject::gl_shader_source(
 	}
 
 	// Allocate an array of 'char' string pointers.
-	boost::scoped_array<const GLchar *> strings(new const GLchar *[count]);
+	boost::scoped_array<const GLchar *> strings(new const GLchar *[count + 1]);
+
+	// Add the shader version string first (it needs to come before any non-commented source code).
+	strings[0] = SHADER_VERSION_STRINGS[shader_version];
+
+	// Add the caller's shader source segments.
 	for (GLsizei n = 0; n < count; ++n)
 	{
-		strings[n] = source_strings[n].c_str();
+		strings[n + 1] = source_strings[n].c_str();
 	}
 
 	// 'length' is NULL indicating the source strings are null-terminated.
-	glShaderSourceARB(get_shader_resource_handle(), count, strings.get(), NULL);
+	glShaderSourceARB(get_shader_resource_handle(), count + 1, strings.get(), NULL);
 }
 
 
 void
 GPlatesOpenGL::GLShaderObject::gl_shader_source(
 		GLRenderer &renderer,
-		const char *source_string)
+		const char *source_string,
+		ShaderVersion shader_version)
 {
-	// 'length' is NULL indicating the source string is null-terminated.
-	glShaderSourceARB(get_shader_resource_handle(), 1/*count*/, &source_string, NULL);
+	gl_shader_source(
+			renderer,
+			std::vector<const char *>(1, source_string),
+			shader_version);
 }
 
 
 void
 GPlatesOpenGL::GLShaderObject::gl_shader_source(
 		GLRenderer &renderer,
-		const std::string &source_string)
+		const std::string &source_string,
+		ShaderVersion shader_version)
 {
-	gl_shader_source(renderer, source_string.c_str());
+	gl_shader_source(renderer, source_string.c_str(), shader_version);
 }
 
 

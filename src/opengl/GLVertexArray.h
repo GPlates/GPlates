@@ -140,7 +140,7 @@ namespace GPlatesOpenGL
 		 * This method is useful when reusing a vertex array and you don't know what attribute
 		 * arrays were previously enabled on the vertex array for example.
 		 *
-		 * NOTE: The detachments/disables are not  until the next call to @a gl_bind.
+		 * NOTE: The detachments/disables are not until the next call to @a gl_bind.
 		 */
 		virtual
 		void
@@ -290,7 +290,7 @@ namespace GPlatesOpenGL
 		 * Enables the specified *generic* vertex attribute data at attribute index @a attribute_index.
 		 *
 		 * These are the *generic* attribute arrays selected for use by @a gl_bind.
-		 * They can be used in addition to the non-generic arrays or instead of.
+		 * They can be used in addition to the non-generic arrays (or instead of).
 		 * These *generic* attributes can only be accessed by shader programs (see @a GLProgramObject).
 		 * The non-generic arrays can be accessed by both the fixed-function pipeline and shader programs.
 		 * Although starting with OpenGL 3 the non-generic arrays are deprecated/removed from the core OpenGL profile.
@@ -321,7 +321,7 @@ namespace GPlatesOpenGL
 		 * 'bind_vertex_buffer_to_vertex_array()' for your particular vertex structure(s) - see 'GLVertex.h'.
 		 *
 		 * These are the *generic* attribute arrays selected for use by @a gl_bind.
-		 * They can be used in addition to the non-generic arrays or instead of.
+		 * They can be used in addition to the non-generic arrays (or instead of).
 		 * These *generic* attributes can only be accessed by shader programs (see @a GLProgramObject).
 		 * The non-generic arrays can be accessed by both the fixed-function pipeline and shader programs.
 		 * Although starting with OpenGL 3 the non-generic arrays are deprecated/removed from the core OpenGL profile.
@@ -346,6 +346,38 @@ namespace GPlatesOpenGL
 				GLint size,
 				GLenum type,
 				GLboolean normalized,
+				GLsizei stride,
+				GLint offset) = 0;
+
+		/**
+		 * Same as @a set_vertex_attrib_pointer except used to specify attributes mapping to *integer* shader variables.
+		 *
+		 * NOTE: The 'GL_ARB_vertex_shader' *and* 'GL_EXT_gpu_shader4' extensions must be supported.
+		 */
+		virtual
+		void
+		set_vertex_attrib_i_pointer(
+				GLRenderer &renderer,
+				const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset) = 0;
+
+		/**
+		 * Same as @a set_vertex_attrib_pointer except used to specify attributes mapping to *double* shader variables.
+		 *
+		 * NOTE: The 'GL_ARB_vertex_shader' *and* 'GL_ARB_vertex_attrib_64bit' extensions must be supported.
+		 */
+		virtual
+		void
+		set_vertex_attrib_l_pointer(
+				GLRenderer &renderer,
+				const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
 				GLsizei stride,
 				GLint offset) = 0;
 	};

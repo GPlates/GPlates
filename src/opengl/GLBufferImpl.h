@@ -79,7 +79,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns the size, in bytes, of the current buffer as allocated by @a gl_buffer_data.
 		 *
-		 * NOTE: Initially the size is zero (until @a gl_buffer_data is first called).
+		 * See base class interface for more details.
 		 */
 		virtual
 		unsigned int
@@ -92,9 +92,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Specifies a new buffer of data.
 		 *
-		 * This mirrors the behaviour of glBufferData.
-		 * In particular note that NULL is a valid value for @a data (in which case it
-		 * allocates storage but leaves it uninitialised).
+		 * See base class interface for more details.
 		 */
 		virtual
 		void
@@ -109,9 +107,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Specifies a new sub-section of data in the existing array.
 		 *
-		 * Note that @a gl_buffer_data must have been called and the sub-range must fit within it.
-		 *
-		 * This mirrors the behaviour of glBufferSubData.
+		 * See base class interface for more details.
 		 */
 		virtual
 		void
@@ -126,11 +122,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Retrieves a sub-section of data from the existing array and copies it into.
 		 *
-		 * Note that @a gl_buffer_data must have been called and the sub-range must fit within it.
-		 *
-		 * NOTE: @a data must be an existing array with a size of at least @a size bytes.
-		 *
-		 * This mirrors the behaviour of glGetBufferSubData.
+		 * See base class interface for more details.
 		 */
 		virtual
 		void
@@ -143,14 +135,13 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Maps the buffer for reading or writing.
+		 * Maps the buffer for static access.
 		 *
-		 * This mirrors the behaviour of glMapBuffer (except for access mode).
-		 * Returns NULL if buffer cannot be mapped or is already mapped.
+		 * See base class interface for more details.
 		 */
 		virtual
-		void *
-		gl_map_buffer(
+		GLvoid *
+		gl_map_buffer_static(
 				GLRenderer &renderer,
 				target_type target,
 				access_type access)
@@ -160,64 +151,121 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Range access is supported.
+		 * Returns true if @a gl_map_buffer_dynamic can be called without blocking.
 		 *
-		 * It's system memory that OpenGL blocks on access so there's no synchronisation or access issues.
+		 * Calling @a gl_map_buffer_dynamic does not result in blocking.
+		 *
+		 * See base class interface for more details.
 		 */
 		virtual
 		bool
-		is_map_buffer_range_supported() const
+		asynchronous_map_buffer_dynamic_supported(
+				GLRenderer &renderer) const
 		{
 			return true;
 		}
 
 		/**
-		 * Maps the specified range of the buffer for the specified access.
+		 * Maps the buffer for dynamic *write* access.
 		 *
-		 * This mirrors the behaviour of glMapBufferRange.
-		 * Returns NULL if buffer cannot be mapped or is already mapped.
+		 * See base class interface for more details.
 		 */
 		virtual
-		void *
-		gl_map_buffer_range(
+		GLvoid *
+		gl_map_buffer_dynamic(
 				GLRenderer &renderer,
-				target_type target,
-				unsigned int offset,
-				unsigned int length,
-				range_access_type range_access);
+				target_type target)
+		{
+			return d_data.get();
+		}
 
 		/**
-		 * Maps the specified range of the buffers.
+		 * Flushes a range of a currently mapped buffer (mapped via @a gl_map_buffer_dynamic).
 		 *
-		 * This mirrors the behaviour of glFlushMappedBufferRange.
+		 * See base class interface for more details.
 		 */
 		virtual
 		void
-		gl_flush_mapped_buffer_range(
+		gl_flush_buffer_dynamic(
 				GLRenderer &renderer,
 				target_type target,
 				unsigned int offset,
-				unsigned int length)
+				unsigned int length/*in bytes*/)
 		{
-			// This is a no-op for system memory buffers that OpenGL blocks on access so
-			// there's no synchronisation or access issues.
+			// This is a no-op since it's just a system memory buffer and it's not being accessed by
+			// the GPU (because any OpenGL calls referencing this memory will block and copy the array).
 		}
 
 
 		/**
-		 * Unmaps the buffer mapped with @a gl_map_buffer - indicates updates or reading is complete.
+		 * Returns true if @a gl_map_buffer_stream has fine-grained asynchronous support.
 		 *
-		 * This mirrors the behaviour of glUnmapBuffer.
-		 * Returns NULL if buffer cannot be mapped or is already mapped.
+		 * Calling @a gl_map_buffer_stream does not result in blocking.
+		 *
+		 * See base class interface for more details.
+		 */
+		virtual
+		bool
+		asynchronous_map_buffer_stream_supported(
+				GLRenderer &renderer) const
+		{
+			return true;
+		}
+
+		/**
+		 * Maps the buffer for streaming *write* access.
+		 *
+		 * See base class interface for more details.
+		 */
+		virtual
+		GLvoid *
+		gl_map_buffer_stream(
+				GLRenderer &renderer,
+				target_type target,
+				unsigned int minimum_bytes_to_stream,
+				unsigned int &stream_offset,
+				unsigned int &stream_bytes_available)
+		{
+			// OpenGL vertex arrays copy when dereferencing data during draw calls so no synchronisation issues.
+			// The entire buffer is always available.
+			stream_offset = 0;
+			stream_bytes_available = d_size;
+
+			return d_data.get();
+		}
+
+		/**
+		 * Specifies the number of bytes streamed after calling @a gl_map_buffer_stream and
+		 * writing data into the region mapped for streaming.
+		 *
+		 * See base class interface for more details.
 		 */
 		virtual
 		void
+		gl_flush_buffer_stream(
+				GLRenderer &renderer,
+				target_type target,
+				unsigned int bytes_written)
+		{
+			// This is a no-op.
+			// OpenGL vertex arrays copy when dereferencing data during draw calls so no synchronisation issues.
+		}
+
+
+		/**
+		 * Unmaps the buffer mapped with @a gl_map_buffer_static - indicates updates or reading is complete.
+		 *
+		 * See base class interface for more details.
+		 */
+		virtual
+		GLboolean
 		gl_unmap_buffer(
 				GLRenderer &renderer,
 				target_type target)
 		{
 			// This is a no-op since it's just a system memory buffer and it's not being accessed by
 			// the GPU (because any OpenGL calls referencing this memory will block and copy the array).
+			return GL_TRUE;
 		}
 
 
@@ -232,6 +280,15 @@ namespace GPlatesOpenGL
 		 */
 		const GLubyte *
 		get_buffer_resource() const
+		{
+			return d_data.get();
+		}
+
+		/**
+		 * The 'non-const' version of @a get_buffer_resource.
+		 */
+		GLubyte *
+		get_buffer_resource()
 		{
 			return d_data.get();
 		}

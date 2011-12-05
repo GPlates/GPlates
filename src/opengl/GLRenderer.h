@@ -43,6 +43,7 @@
 #include "GLDepthRange.h"
 #include "GLFrameBufferObject.h"
 #include "GLMatrix.h"
+#include "GLPixelBufferObject.h"
 #include "GLProgramObject.h"
 #include "GLRendererImpl.h"
 #include "GLState.h"
@@ -211,11 +212,27 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Begin a new 2D render target to render into a RGBA8 texture (without using a depth/stencil buffer).
+		 * Returns true if this interface supports rendering to arbitrary texture formats
+		 * such as floating-point textures.
 		 *
-		 * This simulates a true off-screen RGBA8 render target, when the GL_EXT_framebuffer_object
-		 * OpenGL extension is not present, by rendering to the main framebuffer instead.
-		 * Although if the GL_EXT_framebuffer_object extension is available then it will be used.
+		 * If false is returned then only the fixed-point RGBA8 format can be rendered to.
+		 *
+		 * This is effectively a test for support of the 'GL_EXT_framebuffer_object' extension.
+		 */
+		bool
+		supports_arbitrary_colour_format_render_targets() const;
+
+
+		/**
+		 * Begin a new 2D render target to render into a texture (without using a depth/stencil buffer).
+		 *
+		 * If the 'GL_EXT_framebuffer_object' extension is supported then it will be used and
+		 * either fixed-point or floating-point textures can be rendered to.
+		 * See @a supports_arbitrary_colour_format_render_targets.
+		 * However if 'GL_EXT_framebuffer_object' is not supported then only fixed-point RGBA8 textures
+		 * can be rendered to - this is because rendering to the main framebuffer is used instead.
+		 * This means there is support for rendering to fixed-point RGBA8 textures for *all*
+		 * graphics card (even those that don't support the 'GL_EXT_framebuffer_object' extension).
 		 *
 		 * The texture should have been initialised with GLTexture::gl_tex_image_2D or GLTexture::gl_tex_image_3D.
 		 * Rendering is by default to the level 0 mipmap of the texture.
@@ -241,8 +258,8 @@ namespace GPlatesOpenGL
 		 * See @a begin_state_block / @a end_state_block (they are called internally by this render target block).
 		 *
 		 * If @a reset_to_default_state is true then this block starts off in the default OpenGL state.
-		 * However, when the matching @a end_rgba8_render_target_2D is called then the state will be
-		 * restored to what it was before @a begin_rgba8_render_target_2D was called.
+		 * However, when the matching @a end_render_target_2D is called then the state will be
+		 * restored to what it was before @a begin_render_target_2D was called.
 		 * Unlike state blocks, the default value for @a reset_to_default_state is to reset to the default state.
 		 * This is because the state required for render targets is usually fairly independent of the
 		 * state outside the render target scope.
@@ -257,18 +274,12 @@ namespace GPlatesOpenGL
 		 * This, in turn, means a render target 2D block nested *inside* a compile draw state block
 		 * will *not* compile its draw commands into the compiled draw state.
 		 *
-		 * NOTE: For floating-point render targets (textures) you should use framebuffer objects directly
-		 * which require the GL_EXT_framebuffer_object extension to be available.
-		 * And you can use @a gl_bind_frame_buffer to make them active.
-		 * This method is meant to support RGBA8 rendering for *all* graphics card (even those
-		 * that don't support the GL_EXT_framebuffer_object extension).
-		 *
 		 * @throws GLRendererAPIError if:
 		 *  - @a texture has not been initialised, or
 		 *  - @a depth or stencil testing is enabled.
 		 */
 		void
-		begin_rgba8_render_target_2D(
+		begin_render_target_2D(
 				const GLTexture::shared_ptr_to_const_type &texture,
 				boost::optional<GLViewport> render_target_viewport = boost::none,
 				GLint level = 0,
@@ -284,12 +295,12 @@ namespace GPlatesOpenGL
 		 *  - there are render-queue and state blocks that were not nested properly.
 		 */
 		void
-		end_rgba8_render_target_2D();
+		end_render_target_2D();
 
 
 		/**
-		 * Returns the maximum render target dimensions when using @a begin_rgba8_render_target_2D /
-		 * @a end_rgba8_render_target_2D (values returned as power-of-two dimensions).
+		 * Returns the maximum render target dimensions when using @a begin_render_target_2D /
+		 * @a end_render_target_2D (values returned as power-of-two dimensions).
 		 *
 		 * This is mainly in case the 'GL_EXT_framebuffer_object' extension is not available and
 		 * we fallback to the main framebuffer as a render-target. In which case the dimensions
@@ -299,32 +310,32 @@ namespace GPlatesOpenGL
 		 * the maximum texture dimensions and maximum viewport dimensions.
 		 *
 		 * NOTE: Must be called between @a begin_render and @a end_render but not necessarily
-		 * between @a begin_rgba8_render_target_2D and @a end_rgba8_render_target_2D.
+		 * between @a begin_render_target_2D and @a end_render_target_2D.
 		 *
 		 * NOTE: The dimensions can change from one render to the next (if main framebuffer used
 		 * as render target and the window is resized). So ideally this should be called every render.
 		 */
 		void
-		get_max_rgba8_render_target_dimensions(
+		get_max_render_target_dimensions(
 				unsigned int &max_render_target_width,
 				unsigned int &max_render_target_height) const;
 
 
 		/**
-		 * RAII class to call @a begin_rgba8_render_target_2D and @a end_rgba8_render_target_2D over a scope.
+		 * RAII class to call @a begin_render_target_2D and @a end_render_target_2D over a scope.
 		 */
-		class Rgba8RenderTarget2DScope :
+		class RenderTarget2DScope :
 				private boost::noncopyable
 		{
 		public:
-			Rgba8RenderTarget2DScope(
+			RenderTarget2DScope(
 					GLRenderer &renderer,
 					const GLTexture::shared_ptr_to_const_type &texture,
 					boost::optional<GLViewport> render_target_viewport = boost::none,
 					GLint level = 0,
 					bool reset_to_default_state = true);
 
-			~Rgba8RenderTarget2DScope();
+			~RenderTarget2DScope();
 
 		private:
 			GLRenderer &d_renderer;
@@ -400,15 +411,15 @@ namespace GPlatesOpenGL
 		 * 
 		 *   begin_render_queue_block
 		 *   
-		 *     begin_rgba8_render_target_2D A
+		 *     begin_render_target_2D A
 		 *       draw to render target (immediately)
-		 *     end_rgba8_render_target_2D
+		 *     end_render_target_2D
 		 *     
 		 *     draw X using render texture A (queued)
 		 *     
-		 *     begin_rgba8_render_target_2D B
+		 *     begin_render_target_2D B
 		 *       draw to render target (immediately)
-		 *     end_rgba8_render_target_2D
+		 *     end_render_target_2D
 		 *     
 		 *     draw Y using render texture B (queued)
 		 *     
@@ -1182,9 +1193,9 @@ namespace GPlatesOpenGL
 		GLRendererImpl::frame_buffer_draw_count_type d_current_frame_buffer_draw_count;
 
 		/**
-		 * The framebuffer object to use for RGBA8 render targets (if GL_EXT_framebuff_object supported).
+		 * The framebuffer object to use for render targets (if GL_EXT_framebuff_object supported).
 		 */
-		boost::optional<GLFrameBufferObject::shared_ptr_type> d_rgba8_framebuffer_object;
+		boost::optional<GLFrameBufferObject::shared_ptr_type> d_framebuffer_object;
 
 		/**
 		 * Used to cache results of 'glCheckFramebufferStatus' as an optimisation since it's expensive to call.
@@ -1329,15 +1340,15 @@ namespace GPlatesOpenGL
 				const GLRendererImpl::RenderTextureTarget &render_texture_target);
 
 		bool
-		begin_rgba8_framebuffer_object_2D(
+		begin_framebuffer_object_2D(
 				GLRendererImpl::RenderTextureTarget &render_texture_target);
 
 		void
-		end_rgba8_framebuffer_object_2D(
+		end_framebuffer_object_2D(
 				const boost::optional<GLRendererImpl::RenderTextureTarget> &parent_render_texture_target);
 
 		bool
-		check_rgba8_framebuffer_object_2D_completeness(
+		check_framebuffer_object_2D_completeness(
 				const GLRendererImpl::RenderTextureTarget &render_texture_target);
 
 		void
@@ -1404,7 +1415,7 @@ namespace GPlatesOpenGL
 		 * remove redundant state changes between draw calls.
 		 *
 		 * NOTE: This method should *not* be used in general rendering.
-		 * Currently it is not actually used anywhere.
+		 * It should only be used to help implement the renderer framework.
 		 */
 		void
 		apply_current_state_to_opengl();
@@ -1444,6 +1455,39 @@ namespace GPlatesOpenGL
 				GLenum type,
 				GLint indices_offset,
 				const GLBufferImpl::shared_ptr_to_const_type &vertex_element_buffer_impl);
+
+
+		/**
+		 * Performs the equivalent of the OpenGL command 'glReadPixels'.
+		 *
+		 * This overload uses the bound pixel buffer object (on the *pack* target) to write pixel data to.
+		 */
+		void
+		gl_read_pixels(
+				GLint x,
+				GLint y,
+				GLsizei width,
+				GLsizei height,
+				GLenum format,
+				GLenum type,
+				GLint offset);
+
+
+		/**
+		 * Performs the equivalent of the OpenGL command 'glReadPixels'.
+		 *
+		 * This overload uses client memory (no bound objects) to write pixel data to.
+		 */
+		void
+		gl_read_pixels(
+				GLint x,
+				GLint y,
+				GLsizei width,
+				GLsizei height,
+				GLenum format,
+				GLenum type,
+				GLint offset,
+				const GLBufferImpl::shared_ptr_type &pixel_buffer_impl);
 
 
 		/**
@@ -1510,6 +1554,32 @@ namespace GPlatesOpenGL
 		}
 
 		/**
+		 * RAII class to bind, and apply, to OpenGL over a scope (reverts bind, but not apply, at scope exit).
+		 *
+		 * The apply is only needed for the scope duration since client needs to know object is bound directly to OpenGL.
+		 * This class is a lot more efficient than using @a StateBlockScope to save/restore all state.
+		 */
+		class BindFrameBufferAndApply :
+				private boost::noncopyable
+		{
+		public:
+			BindFrameBufferAndApply(
+					GLRenderer &renderer,
+					const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object) :
+				d_renderer(renderer),
+				d_prev_frame_buffer_object(renderer.get_current_state()->get_bind_frame_buffer())
+			{
+				renderer.gl_bind_frame_buffer_and_apply(frame_buffer_object);
+			}
+
+			~BindFrameBufferAndApply();
+
+		private:
+			GLRenderer &d_renderer;
+			boost::optional<GLFrameBufferObject::shared_ptr_to_const_type> d_prev_frame_buffer_object;
+		};
+
+		/**
 		 * Binds the specified shader program object and applies directly to OpenGL - requires the GL_ARB_shader_objects extension.
 		 *
 		 * NOTE: Should only be used by the implementation of @a GLProgramObject - since it makes *direct*
@@ -1521,6 +1591,32 @@ namespace GPlatesOpenGL
 		{
 			get_current_state()->set_bind_program_object_and_apply(program_object, *d_last_applied_state);
 		}
+
+		/**
+		 * RAII class to bind, and apply, to OpenGL over a scope (reverts bind, but not apply, at scope exit).
+		 *
+		 * The apply is only needed for the scope duration since client needs to know object is bound directly to OpenGL.
+		 * This class is a lot more efficient than using @a StateBlockScope to save/restore all state.
+		 */
+		class BindProgramObjectAndApply :
+				private boost::noncopyable
+		{
+		public:
+			BindProgramObjectAndApply(
+					GLRenderer &renderer,
+					const GLProgramObject::shared_ptr_to_const_type &program_object) :
+				d_renderer(renderer),
+				d_prev_program_object(renderer.get_current_state()->get_bind_program_object())
+			{
+				renderer.gl_bind_program_object_and_apply(program_object);
+			}
+
+			~BindProgramObjectAndApply();
+
+		private:
+			GLRenderer &d_renderer;
+			boost::optional<GLProgramObject::shared_ptr_to_const_type> d_prev_program_object;
+		};
 
 		/**
 		 * Binds a texture to the specified texture unit and applies directly to OpenGL.
@@ -1540,6 +1636,38 @@ namespace GPlatesOpenGL
 		}
 
 		/**
+		 * RAII class to bind, and apply, to OpenGL over a scope (reverts bind, but not apply, at scope exit).
+		 *
+		 * The apply is only needed for the scope duration since client needs to know object is bound directly to OpenGL.
+		 * This class is a lot more efficient than using @a StateBlockScope to save/restore all state.
+		 */
+		class BindTextureAndApply :
+				private boost::noncopyable
+		{
+		public:
+			BindTextureAndApply(
+					GLRenderer &renderer,
+					const GLTexture::shared_ptr_to_const_type &texture_object,
+					GLenum texture_unit,
+					GLenum texture_target) :
+				d_renderer(renderer),
+				d_prev_texture_object(renderer.get_current_state()->get_bind_texture(texture_unit, texture_target)),
+				d_texture_unit(texture_unit),
+				d_texture_target(texture_target)
+			{
+				renderer.gl_bind_texture_and_apply(texture_object, texture_unit, texture_target);
+			}
+
+			~BindTextureAndApply();
+
+		private:
+			GLRenderer &d_renderer;
+			boost::optional<GLTexture::shared_ptr_to_const_type> d_prev_texture_object;
+			GLenum d_texture_unit;
+			GLenum d_texture_target;
+		};
+
+		/**
 		 * Binds a vertex array object - requires the GL_ARB_vertex_array_object extension.
 		 */
 		void
@@ -1555,6 +1683,32 @@ namespace GPlatesOpenGL
 		void
 		gl_bind_vertex_array_object_and_apply(
 				const GLVertexArrayObject::shared_ptr_to_const_type &vertex_array_object);
+
+		/**
+		 * RAII class to bind, and apply, to OpenGL over a scope (reverts bind, but not apply, at scope exit).
+		 *
+		 * The apply is only needed for the scope duration since client needs to know object is bound directly to OpenGL.
+		 * This class is a lot more efficient than using @a StateBlockScope to save/restore all state.
+		 */
+		class BindVertexArrayObjectAndApply :
+				private boost::noncopyable
+		{
+		public:
+			BindVertexArrayObjectAndApply(
+					GLRenderer &renderer,
+					const GLVertexArrayObject::shared_ptr_to_const_type &vertex_array_object) :
+				d_renderer(renderer),
+				d_prev_vertex_array_object(renderer.get_current_state()->get_bind_vertex_array_object())
+			{
+				renderer.gl_bind_vertex_array_object_and_apply(vertex_array_object);
+			}
+
+			~BindVertexArrayObjectAndApply();
+
+		private:
+			GLRenderer &d_renderer;
+			boost::optional<GLVertexArrayObject::shared_ptr_to_const_type> d_prev_vertex_array_object;
+		};
 
 		/**
 		 * Unbinds any currently bound vertex array object.
@@ -1608,6 +1762,48 @@ namespace GPlatesOpenGL
 		}
 
 		/**
+		 * Binds a pixel buffer object on the *unpack* target - requires the GL_ARB_pixel_buffer_object extension.
+		 */
+		void
+		gl_bind_pixel_unpack_buffer_object(
+				const GLPixelBufferObject::shared_ptr_to_const_type &pixel_buffer_object)
+		{
+			gl_bind_buffer_object(
+					pixel_buffer_object->get_buffer_object(),
+					GLPixelBufferObject::get_unpack_target_type());
+		}
+
+		/**
+		 * Unbinds any currently bound pixel buffer object on the *unpack* target.
+		 */
+		void
+		gl_unbind_pixel_unpack_buffer_object()
+		{
+			gl_unbind_buffer_object(GLPixelBufferObject::get_unpack_target_type());
+		}
+
+		/**
+		 * Binds a pixel buffer object on the *pack* target - requires the GL_ARB_pixel_buffer_object extension.
+		 */
+		void
+		gl_bind_pixel_pack_buffer_object(
+				const GLPixelBufferObject::shared_ptr_to_const_type &pixel_buffer_object)
+		{
+			gl_bind_buffer_object(
+					pixel_buffer_object->get_buffer_object(),
+					GLPixelBufferObject::get_pack_target_type());
+		}
+
+		/**
+		 * Unbinds any currently bound pixel buffer object on the *pack* target.
+		 */
+		void
+		gl_unbind_pixel_pack_buffer_object()
+		{
+			gl_unbind_buffer_object(GLPixelBufferObject::get_pack_target_type());
+		}
+
+		/**
 		 * Binds a buffer object to the specified target - requires the GL_ARB_vertex_buffer_object extension.
 		 */
 		void
@@ -1630,6 +1826,35 @@ namespace GPlatesOpenGL
 		}
 
 		/**
+		 * RAII class to bind, and apply, to OpenGL over a scope (reverts bind, but not apply, at scope exit).
+		 *
+		 * The apply is only needed for the scope duration since client needs to know object is bound directly to OpenGL.
+		 * This class is a lot more efficient than using @a StateBlockScope to save/restore all state.
+		 */
+		class BindBufferObjectAndApply :
+				private boost::noncopyable
+		{
+		public:
+			BindBufferObjectAndApply(
+					GLRenderer &renderer,
+					const GLBufferObject::shared_ptr_to_const_type &buffer_object,
+					GLenum target) :
+				d_renderer(renderer),
+				d_prev_buffer_object(renderer.get_current_state()->get_bind_buffer_object(target)),
+				d_target(target)
+			{
+				renderer.gl_bind_buffer_object_and_apply(buffer_object, target);
+			}
+
+			~BindBufferObjectAndApply();
+
+		private:
+			GLRenderer &d_renderer;
+			boost::optional<GLBufferObject::shared_ptr_to_const_type> d_prev_buffer_object;
+			GLenum d_target;
+		};
+
+		/**
 		 * Unbinds any buffer object currently bound to the specified target.
 		 */
 		void
@@ -1638,6 +1863,44 @@ namespace GPlatesOpenGL
 		{
 			get_current_state()->set_unbind_buffer_object(target);
 		}
+
+		/**
+		 * Same as @a gl_unbind_buffer_object but also applies binding directly to OpenGL.
+		 */
+		void
+		gl_unbind_buffer_object_and_apply(
+				GLenum target)
+		{
+			get_current_state()->set_unbind_buffer_object_and_apply(target, *d_last_applied_state);
+		}
+
+		/**
+		 * RAII class to unbind, and apply, to OpenGL over a scope (reverts bind, but not apply, at scope exit).
+		 *
+		 * The apply is only needed for the scope duration since client needs to know that no object is bound directly to OpenGL.
+		 * This class is a lot more efficient than using @a StateBlockScope to save/restore all state.
+		 */
+		class UnbindBufferObjectAndApply :
+				private boost::noncopyable
+		{
+		public:
+			UnbindBufferObjectAndApply(
+					GLRenderer &renderer,
+					GLenum target) :
+				d_renderer(renderer),
+				d_prev_buffer_object(renderer.get_current_state()->get_bind_buffer_object(target)),
+				d_target(target)
+			{
+				renderer.gl_unbind_buffer_object_and_apply(target);
+			}
+
+			~UnbindBufferObjectAndApply();
+
+		private:
+			GLRenderer &d_renderer;
+			boost::optional<GLBufferObject::shared_ptr_to_const_type> d_prev_buffer_object;
+			GLenum d_target;
+		};
 
 		/**
 		 * Enables the specified (@a array) vertex array (in the fixed-function pipeline).
@@ -1839,6 +2102,78 @@ namespace GPlatesOpenGL
 		{
 			get_current_state()->set_vertex_attrib_pointer(
 					attribute_index, size, type, normalized, stride, offset, vertex_buffer_impl);
+		}
+
+		/**
+		 * Same as @a gl_vertex_attrib_pointer except used to specify attributes mapping to *integer* shader variables.
+		 *
+		 * NOTE: Requires 'GL_EXT_gpu_shader4' OpenGL extension.
+		 */
+		void
+		gl_vertex_attrib_i_pointer(
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset,
+				GLBufferObject::shared_ptr_to_const_type vertex_buffer_object)
+		{
+			get_current_state()->set_vertex_attrib_i_pointer(
+					attribute_index, size, type, stride, offset, vertex_buffer_object);
+		}
+
+		/**
+		 * Same as @a gl_vertex_attrib_pointer except used to specify attributes mapping to *integer* shader variables.
+		 *
+		 * NOTE: Requires 'GL_EXT_gpu_shader4' OpenGL extension.
+		 */
+		void
+		gl_vertex_attrib_i_pointer(
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset,
+				GLBufferImpl::shared_ptr_to_const_type vertex_buffer_impl)
+		{
+			get_current_state()->set_vertex_attrib_i_pointer(
+					attribute_index, size, type, stride, offset, vertex_buffer_impl);
+		}
+
+		/**
+		 * Same as @a gl_vertex_attrib_pointer except used to specify attributes mapping to *double* shader variables.
+		 *
+		 * NOTE: Requires 'GL_ARB_vertex_attrib_64bit' OpenGL extension.
+		 */
+		void
+		gl_vertex_attrib_l_pointer(
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset,
+				GLBufferObject::shared_ptr_to_const_type vertex_buffer_object)
+		{
+			get_current_state()->set_vertex_attrib_l_pointer(
+					attribute_index, size, type, stride, offset, vertex_buffer_object);
+		}
+
+		/**
+		 * Same as @a gl_vertex_attrib_pointer except used to specify attributes mapping to *double* shader variables.
+		 *
+		 * NOTE: Requires 'GL_ARB_vertex_attrib_64bit' OpenGL extension.
+		 */
+		void
+		gl_vertex_attrib_l_pointer(
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset,
+				GLBufferImpl::shared_ptr_to_const_type vertex_buffer_impl)
+		{
+			get_current_state()->set_vertex_attrib_l_pointer(
+					attribute_index, size, type, stride, offset, vertex_buffer_impl);
 		}
 	};
 

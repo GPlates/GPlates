@@ -74,6 +74,44 @@ namespace GPlatesUtils
 		unsigned int
 		next_power_of_two(
 				boost::uint32_t value);
+
+
+		/**
+		 * Determines the previous lower power-of-two of the specified integer and returns
+		 * the log base 2 of that result.
+		 *
+		 * Returns log2 of @a value if @a value is already a power-of-two.
+		 *
+		 * NOTE: Does not work for a @a value of zero.
+		 */
+		unsigned int
+		log2_previous_power_of_two(
+				boost::uint32_t value);
+
+
+		/**
+		 * Determines the next higher power-of-two of the specified integer and returns
+		 * the log base 2 of that result.
+		 *
+		 * Returns log2 of @a value if @a value is already a power-of-two.
+		 *
+		 * NOTE: Does not work for a @a value of zero.
+		 */
+		unsigned int
+		log2_next_power_of_two(
+				boost::uint32_t value);
+
+
+		/**
+		 * Determines the log base 2 of @a value (where @a value *must* be a power-of-two).
+		 *
+		 * NOTE: @a value must already be a power-of-two.
+		 *
+		 * NOTE: Does not work for a @a value of zero.
+		 */
+		unsigned int
+		log2_power_of_two(
+				boost::uint32_t value);
 	}
 }
 

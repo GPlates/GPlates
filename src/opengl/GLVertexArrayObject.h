@@ -324,6 +324,38 @@ namespace GPlatesOpenGL
 				GLsizei stride,
 				GLint offset);
 
+		/**
+		 * Same as @a set_vertex_attrib_pointer except used to specify attributes mapping to *integer* shader variables.
+		 *
+		 * NOTE: The 'GL_ARB_vertex_shader' *and* 'GL_EXT_gpu_shader4' extensions must be supported.
+		 */
+		virtual
+		void
+		set_vertex_attrib_i_pointer(
+				GLRenderer &renderer,
+				const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset);
+
+		/**
+		 * Same as @a set_vertex_attrib_pointer except used to specify attributes mapping to *double* shader variables.
+		 *
+		 * NOTE: The 'GL_ARB_vertex_shader' *and* 'GL_ARB_vertex_attrib_64bit' extensions must be supported.
+		 */
+		virtual
+		void
+		set_vertex_attrib_l_pointer(
+				GLRenderer &renderer,
+				const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset);
+
 
 		/**
 		 * Returns the vertex array resource handle (and current resource state) associated with the specified context.

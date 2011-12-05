@@ -22,6 +22,13 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+/*
+ * The OpenGL Extension Wrangler Library (GLEW).
+ * Must be included before the OpenGL headers (which also means before Qt headers).
+ * For this reason it's best to try and include it in ".cc" files only.
+ */
+#include <GL/glew.h>
+#include <opengl/OpenGL.h>
 
 #include "GLCubeSubdivision.h"
 
@@ -30,21 +37,18 @@
 
 #include "maths/PointOnSphere.h"
 
-#include "utils/Base2Utils.h"
-
 
 GPlatesOpenGL::GLCubeSubdivision::GLCubeSubdivision(
-		std::size_t tile_texel_dimension,
+		const double &expand_frustum_ratio,
 		GLdouble zNear,
 		GLdouble zFar) :
-	d_tile_texel_dimension(tile_texel_dimension),
+	d_expand_frustum_ratio(expand_frustum_ratio),
+	// See http://www.opengl.org/resources/code/samples/sig99/advanced99/notes/node30.html
+	// to help understand why the *inverse* ratio is used to scale the projection transform...
+	d_expanded_projection_scale(1.0 / expand_frustum_ratio),
 	d_near(zNear),
 	d_far(zFar)
 {
-	// Tile dimension should be a power-of-two.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPlatesUtils::Base2::is_power_of_two(tile_texel_dimension),
-			GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -80,10 +84,11 @@ GPlatesOpenGL::GLCubeSubdivision::get_view_transform(
 
 
 GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
-GPlatesOpenGL::GLCubeSubdivision::get_projection_transform(
+GPlatesOpenGL::GLCubeSubdivision::create_projection_transform(
 		unsigned int level_of_detail,
 		unsigned int tile_u_offset,
-		unsigned int tile_v_offset) const
+		unsigned int tile_v_offset,
+		const double &expanded_projection_scale) const
 {
 	const unsigned int num_subdivisions = (1 << level_of_detail);
 
@@ -109,7 +114,11 @@ GPlatesOpenGL::GLCubeSubdivision::get_projection_transform(
 	const GLdouble inv_num_subdivisions = 1.0 / num_subdivisions;
 
 	// Scale the subdivision view volume to fill NDC space (-1,1).
-	projection_matrix.gl_scale(num_subdivisions, num_subdivisions, 1);
+	// Note that 'expanded_projection_scale' is 1.0 if no frustum expansion has been requested.
+	projection_matrix.gl_scale(
+			expanded_projection_scale * num_subdivisions,
+			expanded_projection_scale * num_subdivisions,
+			1);
 
 	// Translate the subdivided tile so that's it is centred about the z axis.
 	projection_matrix.gl_translate(
@@ -130,56 +139,16 @@ GPlatesOpenGL::GLCubeSubdivision::get_projection_transform(
 
 
 GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-GPlatesOpenGL::GLCubeSubdivision::get_bounding_polygon(
-		GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
-		unsigned int level_of_detail,
-		unsigned int tile_u_offset,
-		unsigned int tile_v_offset) const
+GPlatesOpenGL::GLCubeSubdivision::create_bounding_polygon(
+		const FrustumCornerPoints &frustum_corner_points)
 {
-	const unsigned int num_subdivisions = (1 << level_of_detail);
-
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			tile_u_offset < num_subdivisions && tile_v_offset < num_subdivisions,
-			GPLATES_ASSERTION_SOURCE);
-
-	// The view looks out from the centre of the globe along the face normal.
-
-	const GPlatesMaths::Vector3D face_centre(
-			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
-					cube_face,
-					GPlatesMaths::CubeCoordinateFrame::Z_AXIS));
-	const GPlatesMaths::UnitVector3D &u_direction =
-			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
-					cube_face,
-					GPlatesMaths::CubeCoordinateFrame::X_AXIS/*u*/);
-	const GPlatesMaths::UnitVector3D &v_direction =
-			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
-					cube_face,
-					GPlatesMaths::CubeCoordinateFrame::Y_AXIS/*v*/);
-
-	const double inv_num_subdivisions = 1.0 / num_subdivisions;
-
-	// Determine where in [-1,1] on the cube face the subdivision tile lies.
-	const double lower_u_scale = -1 + (2.0 * tile_u_offset) * inv_num_subdivisions;
-	const double upper_u_scale = -1 + (2.0 * tile_u_offset + 2) * inv_num_subdivisions;
-	const double lower_v_scale = -1 + (2.0 * tile_v_offset) * inv_num_subdivisions;
-	const double upper_v_scale = -1 + (2.0 * tile_v_offset + 2) * inv_num_subdivisions;
-
 	// Get the corner points of the subdivision tile and project onto the sphere.
 	const GPlatesMaths::PointOnSphere corner_points[4] =
 	{
-		GPlatesMaths::PointOnSphere(
-				(face_centre + lower_u_scale * u_direction + lower_v_scale * v_direction)
-						.get_normalisation()),
-		GPlatesMaths::PointOnSphere(
-				(face_centre + upper_u_scale * u_direction + lower_v_scale * v_direction)
-						.get_normalisation()),
-		GPlatesMaths::PointOnSphere(
-				(face_centre + upper_u_scale * u_direction + upper_v_scale * v_direction)
-						.get_normalisation()),
-		GPlatesMaths::PointOnSphere(
-				(face_centre + lower_u_scale * u_direction + upper_v_scale * v_direction)
-						.get_normalisation())
+		GPlatesMaths::PointOnSphere(frustum_corner_points.lower_u_lower_v.get_normalisation()),
+		GPlatesMaths::PointOnSphere(frustum_corner_points.upper_u_lower_v.get_normalisation()),
+		GPlatesMaths::PointOnSphere(frustum_corner_points.upper_u_upper_v.get_normalisation()),
+		GPlatesMaths::PointOnSphere(frustum_corner_points.lower_u_upper_v.get_normalisation())
 	};
 
 	// Return the bounding polygon.
@@ -187,183 +156,20 @@ GPlatesOpenGL::GLCubeSubdivision::get_bounding_polygon(
 	// It is counter-clockwise when viewed the sphere centre which means it's
 	// clockwise when viewed from above the surface of the sphere.
 	return GPlatesMaths::PolygonOnSphere::create_on_heap(corner_points, corner_points + 4);
-}
-
-
-GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-GPlatesOpenGL::GLCubeSubdivision::get_loose_bounding_polygon(
-		GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
-		unsigned int level_of_detail,
-		unsigned int tile_u_offset,
-		unsigned int tile_v_offset) const
-{
-	const unsigned int num_subdivisions = (1 << level_of_detail);
-
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			tile_u_offset < num_subdivisions && tile_v_offset < num_subdivisions,
-			GPLATES_ASSERTION_SOURCE);
-
-	// The view looks out from the centre of the globe along the face normal.
-
-	const GPlatesMaths::Vector3D face_centre(
-			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
-					cube_face,
-					GPlatesMaths::CubeCoordinateFrame::Z_AXIS));
-	const GPlatesMaths::UnitVector3D &u_direction =
-			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
-					cube_face,
-					GPlatesMaths::CubeCoordinateFrame::X_AXIS/*u*/);
-	const GPlatesMaths::UnitVector3D &v_direction =
-			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
-					cube_face,
-					GPlatesMaths::CubeCoordinateFrame::Y_AXIS/*v*/);
-
-	const double inv_num_subdivisions = 1.0 / num_subdivisions;
-
-	// Determine where in [-1,1] on the cube face the subdivision tile lies.
-	// NOTE: Since this is a loose bounds we double the normal size of the tile which
-	// involves subtracting/adding 'inv_num_subdivisions' compared to a non-loose tile.
-	const double lower_u_scale = -1 + (2.0 * tile_u_offset - 1) * inv_num_subdivisions;
-	const double upper_u_scale = -1 + (2.0 * tile_u_offset + 3) * inv_num_subdivisions;
-	const double lower_v_scale = -1 + (2.0 * tile_v_offset - 1) * inv_num_subdivisions;
-	const double upper_v_scale = -1 + (2.0 * tile_v_offset + 3) * inv_num_subdivisions;
-
-	// Get the corner points of the subdivision tile and project onto the sphere.
-	const GPlatesMaths::PointOnSphere corner_points[4] =
-	{
-		GPlatesMaths::PointOnSphere(
-				(face_centre + lower_u_scale * u_direction + lower_v_scale * v_direction)
-						.get_normalisation()),
-		GPlatesMaths::PointOnSphere(
-				(face_centre + upper_u_scale * u_direction + lower_v_scale * v_direction)
-						.get_normalisation()),
-		GPlatesMaths::PointOnSphere(
-				(face_centre + upper_u_scale * u_direction + upper_v_scale * v_direction)
-						.get_normalisation()),
-		GPlatesMaths::PointOnSphere(
-				(face_centre + lower_u_scale * u_direction + upper_v_scale * v_direction)
-						.get_normalisation())
-	};
-
-	// Return the bounding polygon.
-	//
-	// It is counter-clockwise when viewed the sphere centre which means it's
-	// clockwise when viewed from above the surface of the sphere.
-	return GPlatesMaths::PolygonOnSphere::create_on_heap(corner_points, corner_points + 4);
-}
-
-
-GPlatesOpenGL::GLIntersect::OrientedBoundingBox
-GPlatesOpenGL::GLCubeSubdivision::get_oriented_bounding_box(
-		GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
-		unsigned int level_of_detail,
-		unsigned int tile_u_offset,
-		unsigned int tile_v_offset) const
-{
-	const unsigned int num_subdivisions = (1 << level_of_detail);
-
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			tile_u_offset < num_subdivisions && tile_v_offset < num_subdivisions,
-			GPLATES_ASSERTION_SOURCE);
-
-	// The view looks out from the centre of the globe along the face normal.
-
-	const GPlatesMaths::Vector3D face_centre(
-			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
-					cube_face,
-					GPlatesMaths::CubeCoordinateFrame::Z_AXIS));
-	const GPlatesMaths::UnitVector3D &u_direction =
-			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
-					cube_face,
-					GPlatesMaths::CubeCoordinateFrame::X_AXIS/*u*/);
-	const GPlatesMaths::UnitVector3D &v_direction =
-			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
-					cube_face,
-					GPlatesMaths::CubeCoordinateFrame::Y_AXIS/*v*/);
-
-	const double inv_num_subdivisions = 1.0 / num_subdivisions;
-
-	// Determine where in [-1,1] on the cube face the subdivision tile lies.
-	const double lower_u_scale = -1 + (2.0 * tile_u_offset) * inv_num_subdivisions;
-	const double upper_u_scale = -1 + (2.0 * tile_u_offset + 2) * inv_num_subdivisions;
-	const double lower_v_scale = -1 + (2.0 * tile_v_offset) * inv_num_subdivisions;
-	const double upper_v_scale = -1 + (2.0 * tile_v_offset + 2) * inv_num_subdivisions;
-
-	// Get the corner points of the subdivision tile in the plane of the cube face.
-	const GPlatesMaths::Vector3D face_corner_points[4] =
-	{
-		face_centre + lower_u_scale * u_direction + lower_v_scale * v_direction,
-		face_centre + upper_u_scale * u_direction + lower_v_scale * v_direction,
-		face_centre + upper_u_scale * u_direction + upper_v_scale * v_direction,
-		face_centre + lower_u_scale * u_direction + upper_v_scale * v_direction
-	};
-
-	return create_oriented_bounding_box(face_corner_points);
-}
-
-
-GPlatesOpenGL::GLIntersect::OrientedBoundingBox
-GPlatesOpenGL::GLCubeSubdivision::get_loose_oriented_bounding_box(
-		GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
-		unsigned int level_of_detail,
-		unsigned int tile_u_offset,
-		unsigned int tile_v_offset) const
-{
-	const unsigned int num_subdivisions = (1 << level_of_detail);
-
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			tile_u_offset < num_subdivisions && tile_v_offset < num_subdivisions,
-			GPLATES_ASSERTION_SOURCE);
-
-	// The view looks out from the centre of the globe along the face normal.
-
-	const GPlatesMaths::Vector3D face_centre(
-			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
-					cube_face,
-					GPlatesMaths::CubeCoordinateFrame::Z_AXIS));
-	const GPlatesMaths::UnitVector3D &u_direction =
-			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
-					cube_face,
-					GPlatesMaths::CubeCoordinateFrame::X_AXIS/*u*/);
-	const GPlatesMaths::UnitVector3D &v_direction =
-			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
-					cube_face,
-					GPlatesMaths::CubeCoordinateFrame::Y_AXIS/*v*/);
-
-	const double inv_num_subdivisions = 1.0 / num_subdivisions;
-
-	// Determine where in [-1,1] on the cube face the subdivision tile lies.
-	// NOTE: Since this is a loose bounds we double the normal size of the tile which
-	// involves subtracting/adding 'inv_num_subdivisions' compared to a non-loose tile.
-	const double lower_u_scale = -1 + (2.0 * tile_u_offset - 1) * inv_num_subdivisions;
-	const double upper_u_scale = -1 + (2.0 * tile_u_offset + 3) * inv_num_subdivisions;
-	const double lower_v_scale = -1 + (2.0 * tile_v_offset - 1) * inv_num_subdivisions;
-	const double upper_v_scale = -1 + (2.0 * tile_v_offset + 3) * inv_num_subdivisions;
-
-	// Get the corner points of the subdivision tile in the plane of the cube face.
-	const GPlatesMaths::Vector3D face_corner_points[4] =
-	{
-		face_centre + lower_u_scale * u_direction + lower_v_scale * v_direction,
-		face_centre + upper_u_scale * u_direction + lower_v_scale * v_direction,
-		face_centre + upper_u_scale * u_direction + upper_v_scale * v_direction,
-		face_centre + lower_u_scale * u_direction + upper_v_scale * v_direction
-	};
-
-	return create_oriented_bounding_box(face_corner_points);
 }
 
 
 GPlatesOpenGL::GLIntersect::OrientedBoundingBox
 GPlatesOpenGL::GLCubeSubdivision::create_oriented_bounding_box(
-		const GPlatesMaths::Vector3D face_corner_points[])
+		const FrustumCornerPoints &frustum_corner_points)
 {
 	// Normalise the face corner points.
 	const GPlatesMaths::UnitVector3D normalised_face_corner_points[4] =
 	{
-		face_corner_points[0].get_normalisation(),
-		face_corner_points[1].get_normalisation(),
-		face_corner_points[2].get_normalisation(),
-		face_corner_points[3].get_normalisation()
+		frustum_corner_points.lower_u_lower_v.get_normalisation(),
+		frustum_corner_points.upper_u_lower_v.get_normalisation(),
+		frustum_corner_points.upper_u_upper_v.get_normalisation(),
+		frustum_corner_points.lower_u_upper_v.get_normalisation()
 	};
 	// Same but as Vector3D instead of UnitVector3D.
 	const GPlatesMaths::Vector3D normalised_face_corner_vectors[4] =
@@ -419,4 +225,43 @@ GPlatesOpenGL::GLCubeSubdivision::create_oriented_bounding_box(
 					sphere_corner_points[3], sphere_corner_points[0]));
 
 	return bounding_box_builder.get_oriented_bounding_box();
+}
+
+
+GPlatesOpenGL::GLCubeSubdivision::FrustumCornerPoints::FrustumCornerPoints(
+		GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
+		unsigned int level_of_detail,
+		unsigned int tile_u_offset,
+		unsigned int tile_v_offset,
+		const double &expand_frustum_ratio) :
+	num_subdivisions(1 << level_of_detail),
+	inv_num_subdivisions(1.0 / num_subdivisions),
+	// The view looks out from the centre of the globe along the face normal...
+	face_centre(
+			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
+					cube_face,
+					GPlatesMaths::CubeCoordinateFrame::Z_AXIS)),
+	u_direction(
+			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
+					cube_face,
+					GPlatesMaths::CubeCoordinateFrame::X_AXIS/*u*/)),
+	v_direction(
+			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
+					cube_face,
+					GPlatesMaths::CubeCoordinateFrame::Y_AXIS/*v*/)),
+	frustum_expand(expand_frustum_ratio - 1.0),
+	// Determine where in [-1,1] on the cube face the subdivision tile lies...
+	lower_u_scale(-1 + (2.0 * tile_u_offset - frustum_expand) * inv_num_subdivisions),
+	upper_u_scale(-1 + (2.0 * tile_u_offset + 2 + frustum_expand) * inv_num_subdivisions),
+	lower_v_scale(-1 + (2.0 * tile_v_offset - frustum_expand) * inv_num_subdivisions),
+	upper_v_scale(-1 + (2.0 * tile_v_offset + 2 + frustum_expand) * inv_num_subdivisions),
+	// The four frustum corner points...
+	lower_u_lower_v(face_centre + lower_u_scale * u_direction + lower_v_scale * v_direction),
+	lower_u_upper_v(face_centre + lower_u_scale * u_direction + upper_v_scale * v_direction),
+	upper_u_lower_v(face_centre + upper_u_scale * u_direction + lower_v_scale * v_direction),
+	upper_u_upper_v(face_centre + upper_u_scale * u_direction + upper_v_scale * v_direction)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			tile_u_offset < num_subdivisions && tile_v_offset < num_subdivisions,
+			GPLATES_ASSERTION_SOURCE);
 }

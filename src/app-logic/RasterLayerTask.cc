@@ -181,11 +181,36 @@ GPlatesAppLogic::RasterLayerTask::modified_input_file(
 {
 	if (input_channel_name == RASTER_FEATURE_CHANNEL_NAME)
 	{
-		// Let the layer task params know that the raster feature has been modified.
-		d_layer_task_params.raster_feature_modified();
+		// The feature collection has been modified which means it may have a new feature such as when
+		// a file is reloaded (same feature collection but all features are removed and reloaded).
+		// So we have to assume the existing raster feature is no longer valid so we need to set
+		// the raster feature again.
+		//
+		// This is pretty much the same as 'add_input_file_connection()'.
+		GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection->begin();
+		GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection->end();
+		if (features_iter == features_end)
+		{
+			// A raster feature collection should have one feature.
+			qWarning() << "Modified raster feature collection contains no features.";
+			return;
+		}
 
-		// Let the raster layer proxy know the raster feature has been modified.
-		d_raster_layer_proxy->modified_raster_feature(d_layer_task_params);
+		// Set the raster feature in the raster layer proxy.
+		const GPlatesModel::FeatureHandle::weak_ref feature_ref = (*features_iter)->reference();
+
+		// Let the layer task params know of the new raster feature.
+		d_layer_task_params.set_raster_feature(feature_ref);
+
+		// Let the raster layer proxy know of the raster and let it know of the new parameters.
+		d_raster_layer_proxy->set_current_raster_feature(feature_ref, d_layer_task_params);
+
+		// A raster feature collection should have only one feature.
+		if (++features_iter != features_end)
+		{
+			qWarning() << "Modified raster feature collection contains more than one feature - "
+					"ignoring all but the first.";
+		}
 	}
 }
 
@@ -328,13 +353,6 @@ GPlatesAppLogic::RasterLayerTask::Params::set_raster_feature(
 {
 	d_raster_feature = raster_feature;
 
-	updated_raster_feature();
-}
-
-
-void
-GPlatesAppLogic::RasterLayerTask::Params::raster_feature_modified()
-{
 	updated_raster_feature();
 }
 

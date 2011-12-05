@@ -542,7 +542,7 @@ GPlatesOpenGL::GLActiveTextureStateSet::GLActiveTextureStateSet(
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			active_texture >= GL_TEXTURE0 &&
-					active_texture < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_units,
+					active_texture < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_image_units,
 			GPLATES_ASSERTION_SOURCE);
 }
 
@@ -858,7 +858,7 @@ GPlatesOpenGL::GLBindTextureStateSet::GLBindTextureStateSet(
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_units,
+					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_image_units,
 			GPLATES_ASSERTION_SOURCE);
 }
 
@@ -870,7 +870,7 @@ GPlatesOpenGL::GLBindTextureStateSet::GLBindTextureStateSet(
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_units,
+					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_image_units,
 			GPLATES_ASSERTION_SOURCE);
 }
 
@@ -1244,7 +1244,7 @@ GPlatesOpenGL::GLClientActiveTextureStateSet::GLClientActiveTextureStateSet(
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			client_active_texture >= GL_TEXTURE0 &&
-					client_active_texture < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_units,
+					client_active_texture < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_coords,
 			GPLATES_ASSERTION_SOURCE);
 }
 
@@ -2901,42 +2901,114 @@ GPlatesOpenGL::GLTexEnvStateSet::get_default_param() const
 
 GPlatesOpenGL::GLVertexAttribPointerStateSet::GLVertexAttribPointerStateSet(
 		GLuint attribute_index,
+		VertexAttribAPIType vertex_attrib_api,
 		GLint size,
 		GLenum type,
-		GLboolean normalized,
+		boost::optional<GLboolean> normalized,
 		GLsizei stride,
 		GLint offset,
 		const GLBufferObject::shared_ptr_to_const_type &buffer_object) :
 	d_buffer(offset, buffer_object),
 	d_attribute_index(attribute_index),
+	d_vertex_attrib_api(vertex_attrib_api),
 	d_size(size),
 	d_type(type),
 	d_normalized(normalized),
 	d_stride(stride)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_shader),
-			GPLATES_ASSERTION_SOURCE);
+	// The relevant extension(s) must be supported...
+	switch (d_vertex_attrib_api)
+	{
+	case VERTEX_ATTRIB_POINTER:
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_shader) && normalized,
+				GPLATES_ASSERTION_SOURCE);
+		break;
+
+	case VERTEX_ATTRIB_I_POINTER:
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				GLEW_ARB_vertex_shader &&
+#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
+					GLEW_EXT_gpu_shader4 &&
+#else
+					false &&
+#endif
+					!normalized,
+				GPLATES_ASSERTION_SOURCE);
+		break;
+
+	case VERTEX_ATTRIB_L_POINTER:
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				GLEW_ARB_vertex_shader &&
+#ifdef GL_ARB_vertex_attrib_64bit // In case old 'glew.h' (since extension added relatively recently).
+					GLEW_ARB_vertex_attrib_64bit &&
+#else
+					false &&
+#endif
+					!normalized,
+				GPLATES_ASSERTION_SOURCE);
+		break;
+
+	default:
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		break;
+	}
 }
 
 GPlatesOpenGL::GLVertexAttribPointerStateSet::GLVertexAttribPointerStateSet(
 		GLuint attribute_index,
+		VertexAttribAPIType vertex_attrib_api,
 		GLint size,
 		GLenum type,
-		GLboolean normalized,
+		boost::optional<GLboolean> normalized,
 		GLsizei stride,
 		GLint offset,
 		const GLBufferImpl::shared_ptr_to_const_type &buffer_impl) :
 	d_buffer(offset, buffer_impl),
 	d_attribute_index(attribute_index),
+	d_vertex_attrib_api(vertex_attrib_api),
 	d_size(size),
 	d_type(type),
 	d_normalized(normalized),
 	d_stride(stride)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_shader),
-			GPLATES_ASSERTION_SOURCE);
+	// The relevant extension(s) must be supported...
+	switch (d_vertex_attrib_api)
+	{
+	case VERTEX_ATTRIB_POINTER:
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_shader) && normalized,
+				GPLATES_ASSERTION_SOURCE);
+		break;
+
+	case VERTEX_ATTRIB_I_POINTER:
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				GLEW_ARB_vertex_shader &&
+#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
+					GLEW_EXT_gpu_shader4 &&
+#else
+					false &&
+#endif
+					!normalized,
+				GPLATES_ASSERTION_SOURCE);
+		break;
+
+	case VERTEX_ATTRIB_L_POINTER:
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				GLEW_ARB_vertex_shader &&
+#ifdef GL_ARB_vertex_attrib_64bit // In case old 'glew.h' (since extension added relatively recently).
+					GLEW_ARB_vertex_attrib_64bit &&
+#else
+					false &&
+#endif
+					!normalized,
+				GPLATES_ASSERTION_SOURCE);
+		break;
+
+	default:
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		break;
+	}
 }
 
 
@@ -2951,6 +3023,7 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_state(
 	// Return early if no state change...
 	// No need to compare attribute index - different indices go into different state-set slots.
 	if (!d_buffer.has_changed_state(last_applied.d_buffer) &&
+		d_vertex_attrib_api == last_applied.d_vertex_attrib_api &&
 		d_size == last_applied.d_size &&
 		d_type == last_applied.d_type &&
 		d_normalized == last_applied.d_normalized &&
@@ -2963,7 +3036,28 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_state(
 	d_buffer.bind_buffer(last_applied_state);
 
 	// GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
-	glVertexAttribPointerARB(d_attribute_index, d_size, d_type, d_normalized, d_stride, d_buffer.get_buffer_pointer_to_apply());
+	switch (d_vertex_attrib_api)
+	{
+	case VERTEX_ATTRIB_POINTER:
+		glVertexAttribPointerARB(
+				d_attribute_index, d_size, d_type, d_normalized.get(), d_stride, d_buffer.get_buffer_pointer_to_apply());
+		break;
+	case VERTEX_ATTRIB_I_POINTER:
+#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
+		glVertexAttribIPointerEXT(
+				d_attribute_index, d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
+#endif
+		break;
+	case VERTEX_ATTRIB_L_POINTER:
+#ifdef GL_ARB_vertex_attrib_64bit // In case old 'glew.h' (since extension added relatively recently).
+		glVertexAttribLPointer(
+				d_attribute_index, d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
+#endif
+		break;
+	default:
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		break;
+	}
 	d_buffer.applied_buffer_pointer_to_opengl();
 }
 
@@ -2972,8 +3066,10 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_from_default_state(
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
+	// Note that for the default state we arbitrarily chose the 'glVertexAttribPointer' API.
 	// No need to compare attribute index - different indices go into different state-set slots.
 	if (!d_buffer.has_changed_from_default_state() &&
+		d_vertex_attrib_api == VERTEX_ATTRIB_POINTER &&
 		d_size == 4 &&
 		d_type == GL_FLOAT &&
 		d_normalized == GL_FALSE &&
@@ -2986,7 +3082,28 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_from_default_state(
 	d_buffer.bind_buffer(last_applied_state);
 
 	// GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
-	glVertexAttribPointerARB(d_attribute_index, d_size, d_type, d_normalized, d_stride, d_buffer.get_buffer_pointer_to_apply());
+	switch (d_vertex_attrib_api)
+	{
+	case VERTEX_ATTRIB_POINTER:
+		glVertexAttribPointerARB(
+				d_attribute_index, d_size, d_type, d_normalized.get(), d_stride, d_buffer.get_buffer_pointer_to_apply());
+		break;
+	case VERTEX_ATTRIB_I_POINTER:
+#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
+		glVertexAttribIPointerEXT(
+				d_attribute_index, d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
+#endif
+		break;
+	case VERTEX_ATTRIB_L_POINTER:
+#ifdef GL_ARB_vertex_attrib_64bit // In case old 'glew.h' (since extension added relatively recently).
+		glVertexAttribLPointer(
+				d_attribute_index, d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
+#endif
+		break;
+	default:
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		break;
+	}
 	d_buffer.applied_buffer_pointer_to_opengl();
 }
 
@@ -2995,8 +3112,10 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_to_default_state(
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
+	// Note that for the default state we arbitrarily chose the 'glVertexAttribPointer' API.
 	// No need to compare attribute index - different indices go into different state-set slots.
 	if (!d_buffer.has_changed_to_default_state() &&
+		d_vertex_attrib_api == VERTEX_ATTRIB_POINTER &&
 		d_size == 4 &&
 		d_type == GL_FLOAT &&
 		d_normalized == GL_FALSE &&
@@ -3009,6 +3128,7 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_to_default_state(
 	d_buffer.unbind_buffer(last_applied_state);
 
 	// These are the default parameters.
+	// Note that for the default state we arbitrarily chose the 'glVertexAttribPointer' API.
 	glVertexAttribPointerARB(d_attribute_index, 4, GL_FLOAT, GL_FALSE, 0, NULL);
 	d_buffer.applied_buffer_pointer_to_opengl();
 

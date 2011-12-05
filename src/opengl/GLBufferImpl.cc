@@ -52,8 +52,6 @@ GPlatesOpenGL::GLBufferImpl::gl_buffer_data(
 	}
 
 	// Notify clients that a buffer allocation has occurred.
-	// Even if we re-use the same buffer the client will have to re-specify the vertex array pointer
-	// since it contains (or will contain) new data.
 	allocated_buffer();
 }
 
@@ -91,21 +89,4 @@ GPlatesOpenGL::GLBufferImpl::gl_get_buffer_sub_data(
 
 	// Copy the sub-range.
 	std::memcpy(data, d_data.get() + offset, size);
-}
-
-
-void *
-GPlatesOpenGL::GLBufferImpl::gl_map_buffer_range(
-		GLRenderer &renderer,
-		target_type target,
-		unsigned int offset,
-		unsigned int length,
-		range_access_type range_access)
-{
-	// Range must fit within existing buffer.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			offset + length <= d_size,
-			GPLATES_ASSERTION_SOURCE);
-
-	return d_data.get() + offset;
 }

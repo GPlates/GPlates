@@ -81,9 +81,6 @@ namespace GPlatesOpenGL
 	/**
 	 * An abstraction of the OpenGL buffer objects extension as used for vertex element buffers
 	 * containing vertex element (index) data and *not* vertex attribute (vertices) data.
-	 *
-	 * This implementation is used when the OpenGL extension is not supported - in which case
-	 * vertex buffer objects are simulated by using client-side memory arrays in a base OpenGL 1.1 way.
 	 */
 	class GLVertexElementBuffer :
 			public boost::enable_shared_from_this<GLVertexElementBuffer>

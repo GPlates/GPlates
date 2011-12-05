@@ -79,6 +79,11 @@ GPlatesOpenGL::GLRenderer::begin_render(
 	// The viewport of the window currently attached to the OpenGL context.
 	d_default_viewport = default_viewport;
 	d_default_state->set_viewport(default_viewport, default_viewport);
+
+	// Start a new render target block with its first state block set to the default state.
+	// This render target block represents the main framebuffer.
+	begin_render_target_block_internal(true/*reset_to_default_state*/);
+
 	// NOTE: We are explicitly setting OpenGL state here (which is unusual since it's all meant to be
 	// wrapped by GLState and the GLStateSet derivations) because there isn't really any default
 	// viewport since the 'default' is different depending on the window the OpenGL context is
@@ -91,15 +96,11 @@ GPlatesOpenGL::GLRenderer::begin_render(
 	glViewport(default_viewport.x(), default_viewport.y(), default_viewport.width(), default_viewport.height());
 	glScissor(default_viewport.x(), default_viewport.y(), default_viewport.width(), default_viewport.height());
 
-	// Use the GL_EXT_framebuffer_object extension for RGBA8 render targets if it's available.
+	// Use the GL_EXT_framebuffer_object extension for render targets if it's available.
 	if (GLContext::get_parameters().framebuffer.gl_EXT_framebuffer_object)
 	{
-		d_rgba8_framebuffer_object = d_context->get_non_shared_state()->acquire_frame_buffer_object();
+		d_framebuffer_object = d_context->get_non_shared_state()->acquire_frame_buffer_object(*this);
 	}
-
-	// Start a new render target block with its first state block set to the default state.
-	// This render target block represents the main framebuffer.
-	begin_render_target_block_internal(true/*reset_to_default_state*/);
 
 	// Apply the default vertex array state to the default vertex array object (resource handle zero).
 	// Since we haven't bound any vertex array objects yet then the default object (zero) is currently bound.
@@ -129,8 +130,8 @@ GPlatesOpenGL::GLRenderer::end_render()
 	// We no longer have a default viewport.
 	d_default_viewport = boost::none;
 
-	// No longer need a framebuffer object for RGBA8 render targets.
-	d_rgba8_framebuffer_object = boost::none;
+	// No longer need a framebuffer object for render targets.
+	d_framebuffer_object = boost::none;
 
 	// We should be at the default OpenGL state but it has not necessarily been applied
 	// directly to OpenGL yet. So we do this now.
@@ -142,8 +143,16 @@ GPlatesOpenGL::GLRenderer::end_render()
 }
 
 
+bool
+GPlatesOpenGL::GLRenderer::supports_arbitrary_colour_format_render_targets() const
+{
+	// Can only render to non-RGBA8 formats if there's support for native framebuffer objects.
+	return GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object);
+}
+
+
 void
-GPlatesOpenGL::GLRenderer::begin_rgba8_render_target_2D(
+GPlatesOpenGL::GLRenderer::begin_render_target_2D(
 		const GLTexture::shared_ptr_to_const_type &texture,
 		boost::optional<GLViewport> render_target_viewport,
 		GLint level,
@@ -203,14 +212,14 @@ GPlatesOpenGL::GLRenderer::begin_rgba8_render_target_2D(
 	gl_depth_mask(GL_FALSE);
 
 	// Begin the current render texture target.
-	if (d_rgba8_framebuffer_object)
+	if (d_framebuffer_object)
 	{
 		// Use framebuffer object for rendering to texture unless the driver is not supported
 		// the configuration for some reason.
-		if (!begin_rgba8_framebuffer_object_2D(render_texture_target))
+		if (!begin_framebuffer_object_2D(render_texture_target))
 		{
 			// Return the framebuffer object to the cache it was acquired from.
-			d_rgba8_framebuffer_object = boost::none;
+			d_framebuffer_object = boost::none;
 
 			// Start using the main framebuffer instead (for rendering to texture).
 			begin_rgba8_main_framebuffer_2D(render_texture_target);
@@ -224,19 +233,19 @@ GPlatesOpenGL::GLRenderer::begin_rgba8_render_target_2D(
 
 
 void
-GPlatesOpenGL::GLRenderer::end_rgba8_render_target_2D()
+GPlatesOpenGL::GLRenderer::end_render_target_2D()
 {
 	//PROFILE_FUNC();
 
 	// End the current render texture target.
-	if (d_rgba8_framebuffer_object)
+	if (d_framebuffer_object)
 	{
 		// End the current render target block.
 		//
 		// FIXME: This is risky because we are implicitly ending a stack block here
-		// before calling 'end_rgba8_framebuffer_object_2D()' which could itself set some state.
+		// before calling 'end_framebuffer_object_2D()' which could itself set some state.
 		// We really want to end the render target block last so it restores all state.
-		// Right now we get away with it because 'end_rgba8_framebuffer_object_2D()' doesn't
+		// Right now we get away with it because 'end_framebuffer_object_2D()' doesn't
 		// set any global state (it only modifies the framebuffer object's state - ie, local state).
 		// To fix: change std::stack to something where can access second from top element (not just top).
 		end_render_target_block_internal();
@@ -245,7 +254,7 @@ GPlatesOpenGL::GLRenderer::end_rgba8_render_target_2D()
 		const boost::optional<RenderTextureTarget> parent_render_texture_target =
 				get_current_render_target_block().render_texture_target;
 
-		end_rgba8_framebuffer_object_2D(parent_render_texture_target);
+		end_framebuffer_object_2D(parent_render_texture_target);
 	}
 	else
 	{
@@ -268,12 +277,12 @@ GPlatesOpenGL::GLRenderer::end_rgba8_render_target_2D()
 
 
 void
-GPlatesOpenGL::GLRenderer::get_max_rgba8_render_target_dimensions(
+GPlatesOpenGL::GLRenderer::get_max_render_target_dimensions(
 		unsigned int &max_render_target_width,
 		unsigned int &max_render_target_height) const
 {
 	// If using framebuffer objects for render-targets...
-	if (d_rgba8_framebuffer_object)
+	if (d_framebuffer_object)
 	{
 		// The minimum of the maximum texture width and maximum viewport width.
 		max_render_target_width = GLContext::get_parameters().texture.gl_max_texture_size;
@@ -298,7 +307,7 @@ GPlatesOpenGL::GLRenderer::get_max_rgba8_render_target_dimensions(
 		GPlatesGlobal::Assert<OpenGLException>(
 				d_default_viewport,
 				GPLATES_ASSERTION_SOURCE,
-				"Must call 'GLRenderer::get_max_rgba8_render_target_dimensions' between begin_render/end_render.");
+				"Must call 'GLRenderer::get_max_render_target_dimensions' between begin_render/end_render.");
 
 		// Round down to the nearest power-of-two.
 		// This is because the client will be using power-of-two texture dimensions.
@@ -848,6 +857,144 @@ GPlatesOpenGL::GLRenderer::gl_draw_range_elements(
 
 
 void
+GPlatesOpenGL::GLRenderer::gl_read_pixels(
+		GLint x,
+		GLint y,
+		GLsizei width,
+		GLsizei height,
+		GLenum format,
+		GLenum type,
+		GLint offset)
+{
+	// We're using pixel buffers objects in this version of 'gl_read_pixels'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_ARB_pixel_buffer_object),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Wrap up the read pixels call in case it gets added to a render queue.
+	struct ReadPixelsDrawable :
+			public Drawable
+	{
+		ReadPixelsDrawable(
+				GLint x_,
+				GLint y_,
+				GLsizei width_,
+				GLsizei height_,
+				GLenum format_,
+				GLenum type_,
+				GLint offset_) :
+			x(x_),
+			y(y_),
+			width(width_),
+			height(height_),
+			format(format_),
+			type(type_),
+			offset(offset_)
+		{  }
+
+		virtual
+		void
+		draw(
+				const GLState &state_to_apply,
+				GLState &last_applied_state) const
+		{
+			// Apply only the subset of state needed by 'glReadPixels'.
+			state_to_apply.apply_state_used_by_gl_read_pixels(last_applied_state);
+
+			glReadPixels(x, y, width, height, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
+		}
+
+		GLint x;
+		GLint y;
+		GLsizei width;
+		GLsizei height;
+		GLenum format;
+		GLenum type;
+		GLint offset;
+	};
+
+	const Drawable::non_null_ptr_to_const_type drawable(
+			new ReadPixelsDrawable(x, y, width, height, format, type, offset));
+
+	// NOTE: The cloning of the current state is necessary so that when we render the drawable
+	// later it doesn't apply state that's been modified between now and then.
+	draw(RenderOperation(clone_current_state(), drawable));
+}
+
+
+void
+GPlatesOpenGL::GLRenderer::gl_read_pixels(
+		GLint x,
+		GLint y,
+		GLsizei width,
+		GLsizei height,
+		GLenum format,
+		GLenum type,
+		GLint offset,
+		const GLBufferImpl::shared_ptr_type &pixel_buffer_impl)
+{
+	// Wrap up the read pixels call in case it gets added to a render queue.
+	struct ReadPixelsDrawable :
+			public Drawable
+	{
+		ReadPixelsDrawable(
+				GLint x_,
+				GLint y_,
+				GLsizei width_,
+				GLsizei height_,
+				GLenum format_,
+				GLenum type_,
+				GLint offset_,
+				const GLBufferImpl::shared_ptr_type &pixel_buffer_impl_) :
+			x(x_),
+			y(y_),
+			width(width_),
+			height(height_),
+			format(format_),
+			type(type_),
+			offset(offset_),
+			pixel_buffer_impl(pixel_buffer_impl_)
+		{  }
+
+		virtual
+		void
+		draw(
+				const GLState &state_to_apply,
+				GLState &last_applied_state) const
+		{
+			// Apply only the subset of state needed by 'glReadPixels'.
+			state_to_apply.apply_state_used_by_gl_read_pixels(last_applied_state);
+
+			// The client memory pixel data pointer.
+			// NOTE: By getting the pixel data resource pointer here (at the OpenGL read pixels call)
+			// we allow the buffer to be updated *after* the read pixels call is submitted
+			// (eg, a compiled draw state).
+			// This emulates how buffer objects work.
+			GLvoid *pixels = pixel_buffer_impl->get_buffer_resource() + offset;
+
+			glReadPixels(x, y, width, height, format, type, pixels);
+		}
+
+		GLint x;
+		GLint y;
+		GLsizei width;
+		GLsizei height;
+		GLenum format;
+		GLenum type;
+		GLint offset;
+		GLBufferImpl::shared_ptr_type pixel_buffer_impl;
+	};
+
+	const Drawable::non_null_ptr_to_const_type drawable(
+			new ReadPixelsDrawable(x, y, width, height, format, type, offset, pixel_buffer_impl));
+
+	// NOTE: The cloning of the current state is necessary so that when we render the drawable
+	// later it doesn't apply state that's been modified between now and then.
+	draw(RenderOperation(clone_current_state(), drawable));
+}
+
+
+void
 GPlatesOpenGL::GLRenderer::gl_copy_tex_sub_image_1D(
 		GLenum texture_unit,
 		GLenum texture_target,
@@ -1206,7 +1353,7 @@ GPlatesOpenGL::GLRenderer::draw(
 	}
 	// Otherwise just render the drawable now...
 
-	// If we're in a RGBA8 render texture target then we can't have depth/stencil tests enabled
+	// If we're in a render texture target then we can't have depth/stencil tests enabled
 	// because we either don't have a depth/stencil buffer FBO attachment or
 	// don't want to overwrite the depth/stencil buffer of the main framebuffer.
 	// We also disallow depth writes in case the main framebuffer is being used as a render target
@@ -1230,8 +1377,7 @@ GPlatesOpenGL::GLRenderer::draw(
 	// The draw command should apply any state sets that have not yet been applied (and that
 	// are required for it to complete its draw command).
 	//
-	// NOTE: Aside from 'end_render()' and immediate-apply blocks this is the
-	// only place we apply the current state directly to OpenGL.
+	// NOTE: Aside from 'end_render()' this is the only place we apply the current state directly to OpenGL.
 	// This is because a draw call is where the current OpenGL state comes into effect
 	// (eg, which textures are used, is blending enabled, which framebuffer is targeted etc).
 	// And by only applying when drawing (except as mentioned above) we can remove
@@ -1275,8 +1421,23 @@ GPlatesOpenGL::GLRenderer::begin_rgba8_main_framebuffer_2D(
 	// So we set the filtering settings each time we acquire.
 	save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	// Turn off anisotropic filtering (don't need it).
+	if (GLEW_EXT_texture_filter_anisotropic)
+	{
+		save_restore_texture->gl_tex_parameterf(*this, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
+	}
+	// Clamp texture coordinates to centre of edge texels -
+	// it's easier for hardware to implement - and doesn't affect our calculations.
+	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	{
+		save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
+	else
+	{
+		save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	}
 
 	// Record the save/restore texture so we can restore the main framebuffer later.
 	render_texture_target.save_restore_texture = save_restore_texture;
@@ -1374,11 +1535,11 @@ GPlatesOpenGL::GLRenderer::end_rgba8_main_framebuffer_2D(
 
 
 bool
-GPlatesOpenGL::GLRenderer::begin_rgba8_framebuffer_object_2D(
+GPlatesOpenGL::GLRenderer::begin_framebuffer_object_2D(
 		RenderTextureTarget &render_texture_target)
 {
 	// Attach the texture to the framebuffer object.
-	d_rgba8_framebuffer_object.get()->gl_attach(
+	d_framebuffer_object.get()->gl_attach(
 			*this,
 			GL_TEXTURE_2D,
 			render_texture_target.texture,
@@ -1386,7 +1547,7 @@ GPlatesOpenGL::GLRenderer::begin_rgba8_framebuffer_object_2D(
 			GL_COLOR_ATTACHMENT0_EXT);
 
 	// Revert to using the main framebuffer as a render-target if the framebuffer object status is invalid.
-	if (!check_rgba8_framebuffer_object_2D_completeness(render_texture_target))
+	if (!check_framebuffer_object_2D_completeness(render_texture_target))
 	{
 		// Only emit one warning to avoid spamming the log.
 		static bool warning_emitted = false;
@@ -1398,20 +1559,20 @@ GPlatesOpenGL::GLRenderer::begin_rgba8_framebuffer_object_2D(
 		}
 
 		// Detach the texture from the framebuffer object before we return it to the framebuffer object cache.
-		d_rgba8_framebuffer_object.get()->gl_detach(*this, GL_COLOR_ATTACHMENT0_EXT);
+		d_framebuffer_object.get()->gl_detach(*this, GL_COLOR_ATTACHMENT0_EXT);
 
 		return false;
 	}
 
 	// Bind the framebuffer object to make it the active framebuffer.
-	gl_bind_frame_buffer(d_rgba8_framebuffer_object.get());
+	gl_bind_frame_buffer(d_framebuffer_object.get());
 
 	return true;
 }
 
 
 void
-GPlatesOpenGL::GLRenderer::end_rgba8_framebuffer_object_2D(
+GPlatesOpenGL::GLRenderer::end_framebuffer_object_2D(
 		const boost::optional<RenderTextureTarget> &parent_render_texture_target)
 {
 	// If there's no parent then we've returned to rendering to the *main* framebuffer.
@@ -1420,7 +1581,7 @@ GPlatesOpenGL::GLRenderer::end_rgba8_framebuffer_object_2D(
 		// Detach the texture from the current framebuffer object.
 		// We're finished using the framebuffer object for now so it's good to leave it in a default
 		// state so it doesn't prevent us releasing the texture resource if we need to.
-		d_rgba8_framebuffer_object.get()->gl_detach(*this, GL_COLOR_ATTACHMENT0_EXT);
+		d_framebuffer_object.get()->gl_detach(*this, GL_COLOR_ATTACHMENT0_EXT);
 
 		// We don't need to bind the *main* framebuffer because the end of the current render target
 		// block also ends an implicit state block which will revert the bind state for us.
@@ -1430,7 +1591,7 @@ GPlatesOpenGL::GLRenderer::end_rgba8_framebuffer_object_2D(
 
 	// The parent render target is now the active render target.
 	// Attach the texture, of the parent render target, to the framebuffer object.
-	d_rgba8_framebuffer_object.get()->gl_attach(
+	d_framebuffer_object.get()->gl_attach(
 			*this,
 			GL_TEXTURE_2D,
 			parent_render_texture_target->texture,
@@ -1444,7 +1605,7 @@ GPlatesOpenGL::GLRenderer::end_rgba8_framebuffer_object_2D(
 
 
 bool
-GPlatesOpenGL::GLRenderer::check_rgba8_framebuffer_object_2D_completeness(
+GPlatesOpenGL::GLRenderer::check_framebuffer_object_2D_completeness(
 		const RenderTextureTarget &render_texture_target)
 {
 	//
@@ -1462,7 +1623,7 @@ GPlatesOpenGL::GLRenderer::check_rgba8_framebuffer_object_2D_completeness(
 			d_rgba8_framebuffer_object_status_map.find(frame_buffer_state);
 	if (framebuffer_status_iter == d_rgba8_framebuffer_object_status_map.end())
 	{
-		const bool framebuffer_status = d_rgba8_framebuffer_object.get()->gl_check_frame_buffer_status(*this);
+		const bool framebuffer_status = d_framebuffer_object.get()->gl_check_frame_buffer_status(*this);
 
 		d_rgba8_framebuffer_object_status_map[frame_buffer_state] = framebuffer_status;
 
@@ -1640,7 +1801,7 @@ GPlatesOpenGL::GLRenderer::RenderScope::end_render()
 }
 
 
-GPlatesOpenGL::GLRenderer::Rgba8RenderTarget2DScope::Rgba8RenderTarget2DScope(
+GPlatesOpenGL::GLRenderer::RenderTarget2DScope::RenderTarget2DScope(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_to_const_type &texture,
 		boost::optional<GLViewport> render_target_viewport,
@@ -1648,17 +1809,17 @@ GPlatesOpenGL::GLRenderer::Rgba8RenderTarget2DScope::Rgba8RenderTarget2DScope(
 		bool reset_to_default_state) :
 	d_renderer(renderer)
 {
-	d_renderer.begin_rgba8_render_target_2D(texture, render_target_viewport, level, reset_to_default_state);
+	d_renderer.begin_render_target_2D(texture, render_target_viewport, level, reset_to_default_state);
 }
 
 
-GPlatesOpenGL::GLRenderer::Rgba8RenderTarget2DScope::~Rgba8RenderTarget2DScope()
+GPlatesOpenGL::GLRenderer::RenderTarget2DScope::~RenderTarget2DScope()
 {
 	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
 	// But we log the exception and the location it was emitted.
 	try
 	{
-		d_renderer.end_rgba8_render_target_2D();
+		d_renderer.end_render_target_2D();
 	}
 	catch (std::exception &exc)
 	{
@@ -1816,11 +1977,167 @@ GPlatesOpenGL::GLRenderer::GLRendererAPIError::write_message(
 		os << "expected a compile draw state block";
 		break;
 	case CANNOT_ENABLE_DEPTH_STENCIL_TEST_IN_RGBA8_RENDER_TARGETS:
-		os << "cannot enable depth or stencil tests when using RGBA8 render targets";
+		os << "cannot enable depth or stencil tests when using render targets";
 		break;
 	default:
 		os << "unspecified error";
 		break;
+	}
+}
+
+
+GPlatesOpenGL::GLRenderer::BindFrameBufferAndApply::~BindFrameBufferAndApply()
+{
+	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
+	// But we log the exception and the location it was emitted.
+	try
+	{
+		if (d_prev_frame_buffer_object)
+		{
+			d_renderer.gl_bind_frame_buffer(d_prev_frame_buffer_object.get());
+		}
+		else
+		{
+			d_renderer.gl_unbind_frame_buffer();
+		}
+	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "GLRenderer: exception thrown during BindFrameBufferAndApply: " << exc.what();
+	}
+	catch (...)
+	{
+		qWarning() << "GLRenderer: exception thrown during BindFrameBufferAndApply: Unknown error";
+	}
+}
+
+
+GPlatesOpenGL::GLRenderer::BindProgramObjectAndApply::~BindProgramObjectAndApply()
+{
+	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
+	// But we log the exception and the location it was emitted.
+	try
+	{
+		if (d_prev_program_object)
+		{
+			d_renderer.gl_bind_program_object(d_prev_program_object.get());
+		}
+		else
+		{
+			d_renderer.gl_unbind_program_object();
+		}
+	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "GLRenderer: exception thrown during BindProgramObjectAndApply: " << exc.what();
+	}
+	catch (...)
+	{
+		qWarning() << "GLRenderer: exception thrown during BindProgramObjectAndApply: Unknown error";
+	}
+}
+
+
+GPlatesOpenGL::GLRenderer::BindTextureAndApply::~BindTextureAndApply()
+{
+	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
+	// But we log the exception and the location it was emitted.
+	try
+	{
+		if (d_prev_texture_object)
+		{
+			d_renderer.gl_bind_texture(d_prev_texture_object.get(), d_texture_unit, d_texture_target);
+		}
+		else
+		{
+			d_renderer.gl_unbind_texture(d_texture_unit, d_texture_target);
+		}
+	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "GLRenderer: exception thrown during BindTextureAndApply: " << exc.what();
+	}
+	catch (...)
+	{
+		qWarning() << "GLRenderer: exception thrown during BindTextureAndApply: Unknown error";
+	}
+}
+
+
+GPlatesOpenGL::GLRenderer::BindVertexArrayObjectAndApply::~BindVertexArrayObjectAndApply()
+{
+	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
+	// But we log the exception and the location it was emitted.
+	try
+	{
+		if (d_prev_vertex_array_object)
+		{
+			d_renderer.gl_bind_vertex_array_object(d_prev_vertex_array_object.get());
+		}
+		else
+		{
+			d_renderer.gl_unbind_vertex_array_object();
+		}
+	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "GLRenderer: exception thrown during BindVertexArrayObjectAndApply: " << exc.what();
+	}
+	catch (...)
+	{
+		qWarning() << "GLRenderer: exception thrown during BindVertexArrayObjectAndApply: Unknown error";
+	}
+}
+
+
+GPlatesOpenGL::GLRenderer::BindBufferObjectAndApply::~BindBufferObjectAndApply()
+{
+	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
+	// But we log the exception and the location it was emitted.
+	try
+	{
+		if (d_prev_buffer_object)
+		{
+			d_renderer.gl_bind_buffer_object(d_prev_buffer_object.get(), d_target);
+		}
+		else
+		{
+			d_renderer.gl_unbind_buffer_object(d_target);
+		}
+	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "GLRenderer: exception thrown during BindBufferObjectAndApply: " << exc.what();
+	}
+	catch (...)
+	{
+		qWarning() << "GLRenderer: exception thrown during BindBufferObjectAndApply: Unknown error";
+	}
+}
+
+
+GPlatesOpenGL::GLRenderer::UnbindBufferObjectAndApply::~UnbindBufferObjectAndApply()
+{
+	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
+	// But we log the exception and the location it was emitted.
+	try
+	{
+		if (d_prev_buffer_object)
+		{
+			d_renderer.gl_bind_buffer_object(d_prev_buffer_object.get(), d_target);
+		}
+		else
+		{
+			d_renderer.gl_unbind_buffer_object(d_target);
+		}
+	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "GLRenderer: exception thrown during UnbindBufferObjectAndApply: " << exc.what();
+	}
+	catch (...)
+	{
+		qWarning() << "GLRenderer: exception thrown during UnbindBufferObjectAndApply: Unknown error";
 	}
 }
 

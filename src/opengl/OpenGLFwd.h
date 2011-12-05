@@ -56,7 +56,11 @@ namespace GPlatesOpenGL
 	 * NOTE: Please avoid 'using namespace GPlatesGlobal' as this will pollute the current namespace.
 	 */
 
-	template <bool CacheProjectionTransform, bool CacheBounds, bool CacheLooseBounds, bool CacheBoundingPolygon, bool CacheLooseBoundingPolygon>
+	template <
+			bool CacheProjectionTransform, bool CacheLooseProjectionTransform,
+			bool CacheFrustum, bool CacheLooseFrustum,
+			bool CacheBoundingPolygon, bool CacheLooseBoundingPolygon,
+			bool CacheBounds, bool CacheLooseBounds>
 	class GLCubeSubdivisionCache;
 }
 

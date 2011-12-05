@@ -138,3 +138,43 @@ GPlatesOpenGL::GLVertexBufferImpl::gl_vertex_attrib_pointer(
 			// 'static_pointer_cast' to keep earlier boost versions happy...
 			boost::static_pointer_cast<const GLBufferImpl>(d_buffer));
 }
+
+
+void
+GPlatesOpenGL::GLVertexBufferImpl::gl_vertex_attrib_i_pointer(
+		GLRenderer &renderer,
+		GLuint attribute_index,
+		GLint size,
+		GLenum type,
+		GLsizei stride,
+		GLint offset) const
+{
+	renderer.gl_vertex_attrib_i_pointer(
+			attribute_index,
+			size,
+			type,
+			stride,
+			offset,
+			// 'static_pointer_cast' to keep earlier boost versions happy...
+			boost::static_pointer_cast<const GLBufferImpl>(d_buffer));
+}
+
+
+void
+GPlatesOpenGL::GLVertexBufferImpl::gl_vertex_attrib_l_pointer(
+		GLRenderer &renderer,
+		GLuint attribute_index,
+		GLint size,
+		GLenum type,
+		GLsizei stride,
+		GLint offset) const
+{
+	renderer.gl_vertex_attrib_l_pointer(
+			attribute_index,
+			size,
+			type,
+			stride,
+			offset,
+			// 'static_pointer_cast' to keep earlier boost versions happy...
+			boost::static_pointer_cast<const GLBufferImpl>(d_buffer));
+}

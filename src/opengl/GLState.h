@@ -30,6 +30,7 @@
 #include <memory> // For std::auto_ptr
 #include <vector>
 #include <boost/bind.hpp>
+#include <boost/cstdint.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_array.hpp>
@@ -71,36 +72,29 @@ namespace GPlatesOpenGL
 			private boost::noncopyable
 	{
 	private:
-		//! Typedef for a state set key.
-		typedef GLStateSetKeys::key_type state_set_key_type;
-
-		//! Typedef for a sequence of state set keys.
-		typedef std::vector<state_set_key_type> state_set_key_seq_type;
-
 		/**
-		 * Typedef for a boolean flag indicating if a state set slots has been initialised.
-		 *
-		 * NOTE: We *don't* use 'bool' here because:
-		 *  1) We've written some code that expects std::vector to behave like an ordinary array
-		 *     and that's not the case for the std::vector<bool> specialisation which does not
-		 *     have random access iterators, and
-		 *  2) It is faster to index into an ordinary array since std::vector<bool> must unpack bits
-		 *     (although more memory efficient) and the apply-state code shows quite high on
-		 *     the CPU profile so it's worth the extra memory usage (which is still only about a quarter
-		 *     of the memory used for the GLStateSet pointers so it's a relatively small increase).
+		 * Typedef for a group of 32 boolean flags indicating if 32 state set slots have been initialised.
 		 */
-		typedef unsigned char state_set_slot_flag_type;
+		typedef boost::uint32_t state_set_slot_flag32_type;
 
 		/**
 		 * Typedef for a set of flags indicating which state set slots have been initialised.
 		 *
 		 * NOTE: This used to be a boost::dynamic_bitset<> but the searching for the next non-zero
 		 * flag was consuming too much CPU.
-		 * Using a std::vector and blasting through all ~200 state-sets ends up being noticeably
-		 * faster which is important since applying state shows high on the CPU profile for some
-		 * rendering paths such as reconstructing rasters with age-grid smoothing.
+		 * Next a std::vector was used instead because blasting through all ~200 state-sets ended up
+		 * being noticeably faster which is important since applying state shows high on the CPU profile
+		 * for some rendering paths such as reconstructing rasters with age-grid smoothing.
+		 * However the number of slots jumped from ~250 to ~750 when switching from 'old-style'
+		 * texture units to 'new-style' texture units (for shaders) increasing the max number of
+		 * texture units from 4 to 32 (on latest nVidia hardware).
+		 * So next switched to a packed bit flags approach similar to boost::dynamic_bitset but blasting
+		 * through our own collection of 32-bit integers instead of the slow searching through the bit
+		 * flags done by boost::dynamic_bitset. This enables us to rapidly skip past up to 32 slots
+		 * in one test (which is useful considering most of those 32 texture units typically are not
+		 * used by clients and hence are empty slots).
 		 */
-		typedef std::vector<state_set_slot_flag_type> state_set_slot_flags_type;
+		typedef std::vector<state_set_slot_flag32_type> state_set_slot_flags_type;
 
 	public:
 		//
@@ -149,27 +143,32 @@ namespace GPlatesOpenGL
 			 * These slots are used indirectly via other regular GLStateSet's and hence are
 			 * treated as special cases.
 			 */
-			state_set_key_seq_type dependent_state_set_slots;
+			state_set_slot_flags_type dependent_state_set_slots;
 
 			/**
 			 * The inverse of @a dependent_state_set_slots (an optimisation).
 			 */
-			state_set_key_seq_type inverse_dependent_state_set_slots;
+			state_set_slot_flags_type inverse_dependent_state_set_slots;
 
 			/**
 			 * These slots represent the state that gets recorded into a native vertex array object.
 			 */
-			state_set_key_seq_type vertex_array_state_set_slots;
+			state_set_slot_flags_type vertex_array_state_set_slots;
 
 			/**
 			 * The inverse of @a vertex_array_state_set_slots (an optimisation).
 			 */
-			state_set_key_seq_type inverse_vertex_array_state_set_slots;
+			state_set_slot_flags_type inverse_vertex_array_state_set_slots;
 
 			/**
 			 * These slots represent states needed by 'glClear'.
 			 */
-			state_set_key_seq_type gl_clear_state_set_slots;
+			state_set_slot_flags_type gl_clear_state_set_slots;
+
+			/**
+			 * These slots represent states needed by 'glReadPixels'.
+			 */
+			state_set_slot_flags_type gl_read_pixels_state_set_slots;
 
 			/**
 			 * The majority of GLStateSet's are immutable, however a special few are effectively
@@ -212,6 +211,11 @@ namespace GPlatesOpenGL
 			//! Initialise state set slots representing states needed by 'glClear'.
 			void
 			initialise_gl_clear_state_set_slots(
+					const GLStateSetKeys &state_set_keys);
+
+			//! Initialise state set slots representing states needed by 'glReadPixels'.
+			void
+			initialise_gl_read_pixels_state_set_slots(
 					const GLStateSetKeys &state_set_keys);
 
 			/**
@@ -298,6 +302,13 @@ namespace GPlatesOpenGL
 		 */
 		void
 		apply_state_used_by_gl_clear(
+				GLState &last_applied_state) const;
+
+		/**
+		 * The same as @a apply_state except only those GLStateSet's needed by 'glReadPixels' are applied.
+		 */
+		void
+		apply_state_used_by_gl_read_pixels(
 				GLState &last_applied_state) const;
 
 
@@ -655,6 +666,12 @@ namespace GPlatesOpenGL
 					d_state_set_keys->get_bind_buffer_object_key(target),
 					boost::in_place(target));
 		}
+
+		//! Same as @a set_unbind_buffer_object but also applies directly to OpenGL.
+		void
+		set_unbind_buffer_object_and_apply(
+				GLenum target,
+				GLState &last_applied_state);
 
 		//! Returns the bound buffer object, or boost::none if no object bound.
 		boost::optional<GLBufferObject::shared_ptr_to_const_type>
@@ -1210,7 +1227,15 @@ namespace GPlatesOpenGL
 			set_state_set(
 					d_state_set_store->vertex_attrib_array_state_sets,
 					d_state_set_keys->get_vertex_attrib_array_key(attribute_index),
-					boost::in_place(attribute_index, size, type, normalized, stride, offset, buffer_object));
+					boost::in_place(
+							attribute_index,
+							GLVertexAttribPointerStateSet::VERTEX_ATTRIB_POINTER,
+							size,
+							type,
+							normalized,
+							stride,
+							offset,
+							buffer_object));
 		}
 
 		/**
@@ -1232,7 +1257,119 @@ namespace GPlatesOpenGL
 			set_state_set(
 					d_state_set_store->vertex_attrib_array_state_sets,
 					d_state_set_keys->get_vertex_attrib_array_key(attribute_index),
-					boost::in_place(attribute_index, size, type, normalized, stride, offset, buffer_impl));
+					boost::in_place(
+							attribute_index,
+							GLVertexAttribPointerStateSet::VERTEX_ATTRIB_POINTER,
+							size,
+							type,
+							normalized,
+							stride,
+							offset,
+							buffer_impl));
+		}
+
+		/**
+		 * Same as @a set_vertex_attrib_pointer except used to specify attributes mapping to *integer* shader variables.
+		 */
+		void
+		set_vertex_attrib_i_pointer(
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset,
+				const GLBufferObject::shared_ptr_to_const_type &buffer_object)
+		{
+			set_state_set(
+					d_state_set_store->vertex_attrib_array_state_sets,
+					d_state_set_keys->get_vertex_attrib_array_key(attribute_index),
+					boost::in_place(
+							attribute_index,
+							GLVertexAttribPointerStateSet::VERTEX_ATTRIB_I_POINTER,
+							size,
+							type,
+							boost::none/*normalized*/,
+							stride,
+							offset,
+							buffer_object));
+		}
+
+		/**
+		 * Same as @a set_vertex_attrib_pointer except used to specify attributes mapping to *integer* shader variables.
+		 */
+		void
+		set_vertex_attrib_i_pointer(
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset,
+				const GLBufferImpl::shared_ptr_to_const_type &buffer_impl)
+		{
+			set_state_set(
+					d_state_set_store->vertex_attrib_array_state_sets,
+					d_state_set_keys->get_vertex_attrib_array_key(attribute_index),
+					boost::in_place(
+							attribute_index,
+							GLVertexAttribPointerStateSet::VERTEX_ATTRIB_I_POINTER,
+							size,
+							type,
+							boost::none/*normalized*/,
+							stride,
+							offset,
+							buffer_impl));
+		}
+
+		/**
+		 * Same as @a set_vertex_attrib_pointer except used to specify attributes mapping to *double* shader variables.
+		 */
+		void
+		set_vertex_attrib_l_pointer(
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset,
+				const GLBufferObject::shared_ptr_to_const_type &buffer_object)
+		{
+			set_state_set(
+					d_state_set_store->vertex_attrib_array_state_sets,
+					d_state_set_keys->get_vertex_attrib_array_key(attribute_index),
+					boost::in_place(
+							attribute_index,
+							GLVertexAttribPointerStateSet::VERTEX_ATTRIB_L_POINTER,
+							size,
+							type,
+							boost::none/*normalized*/,
+							stride,
+							offset,
+							buffer_object));
+		}
+
+		/**
+		 * Same as @a set_vertex_attrib_pointer except used to specify attributes mapping to *double* shader variables.
+		 */
+		void
+		set_vertex_attrib_l_pointer(
+				GLuint attribute_index,
+				GLint size,
+				GLenum type,
+				GLsizei stride,
+				GLint offset,
+				const GLBufferImpl::shared_ptr_to_const_type &buffer_impl)
+		{
+			set_state_set(
+					d_state_set_store->vertex_attrib_array_state_sets,
+					d_state_set_keys->get_vertex_attrib_array_key(attribute_index),
+					boost::in_place(
+							attribute_index,
+							GLVertexAttribPointerStateSet::VERTEX_ATTRIB_L_POINTER,
+							size,
+							type,
+							boost::none/*normalized*/,
+							stride,
+							offset,
+							buffer_impl));
 		}
 
 
@@ -1308,6 +1445,9 @@ namespace GPlatesOpenGL
 		}
 
 	private:
+		//! Typedef for a state set key.
+		typedef GLStateSetKeys::key_type state_set_key_type;
+
 		/**
 		 * Typedef for a shared pointer to an immutable @a GLStateSet.
 		 *
@@ -1343,6 +1483,12 @@ namespace GPlatesOpenGL
 		 * A flag for each state set (indexed by state set key).
 		 *
 		 * A flag value of true indicates non-null entries in @a d_state_sets.
+		 *
+		 * WARNING: The number of flags is rounded up to the nearest multiple of 32 so care
+		 * should be taken to ensure @a d_state_sets isn't dereferenced beyond the total number
+		 * of state-set slots.
+		 * We could have added extra code to take care of the last 32 state-set slots but it's
+		 * easier to just treat them as flags that are always null.
 		 */
 		state_set_slot_flags_type d_state_set_slots;
 
@@ -1383,7 +1529,8 @@ namespace GPlatesOpenGL
 			d_state_sets[state_set_key] = state_set_pool.add_with_auto_release(state_set_constructor_args);
 
 			// Mark the state set slot as not empty.
-			d_state_set_slots[state_set_key] = true;
+			// This is a slightly optimised version of 'set_state_set_slot_flag()'.
+			d_state_set_slots[state_set_key >> 5] |= (1 << (state_set_key & 31));
 		}
 
 
@@ -1399,7 +1546,8 @@ namespace GPlatesOpenGL
 				QueryMemberDataType GLStateSetType::*query_member) const
 		{
 			// If no state set on the key slot then it means that state is the default state.
-			if (!d_state_set_slots[state_set_key])
+			// This is a slightly optimised version of 'is_state_set_slot_set()'.
+			if ((d_state_set_slots[state_set_key >> 5] & (1 << (state_set_key & 31))) == 0)
 			{
 				return boost::none;
 			}
@@ -1429,7 +1577,8 @@ namespace GPlatesOpenGL
 				const QueryFunctionType &query_function) const
 		{
 			// If no state set on the key slot then it means that state is the default state.
-			if (!d_state_set_slots[state_set_key])
+			// This is a slightly optimised version of 'is_state_set_slot_set()'.
+			if ((d_state_set_slots[state_set_key >> 5] & (1 << (state_set_key & 31))) == 0)
 			{
 				return boost::none;
 			}
@@ -1453,7 +1602,7 @@ namespace GPlatesOpenGL
 		void
 		apply_state(
 				GLState &last_applied_state,
-				const state_set_key_seq_type &state_set_slots_mask) const;
+				const state_set_slot_flags_type &state_set_slots_mask) const;
 
 		/**
 		 * Applies 'this' state (from @a last_applied_state) for the specified *single* state-set slot.
@@ -1462,14 +1611,6 @@ namespace GPlatesOpenGL
 		apply_state(
 				GLState &last_applied_state,
 				state_set_key_type state_set_slot_to_apply) const;
-
-		/**
-		 * Merge the state-sets of @a state_change into this but only those specified by @a state_set_slots_mask.
-		 */
-		void
-		merge_state_change(
-				const GLState &state_change,
-				const state_set_key_seq_type &state_set_slots_mask);
 
 		/**
 		 * Bind (or unbind) a vertex array object if necessary.
@@ -1485,6 +1626,43 @@ namespace GPlatesOpenGL
 		void
 		end_bind_vertex_array_object(
 				GLState &last_applied_state) const;
+
+		/**
+		 * Returns the number of groups of 32 state-set slots required.
+		 *
+		 * Note that this is rounded up to the nearest multiple of 32.
+		 */
+		static
+		unsigned int
+		get_num_state_set_slot_flag32s(
+				const GLStateSetKeys &state_set_keys);
+
+		/**
+		 * Returns true if the specified state set slot flag is set.
+		 */
+		static
+		bool
+		is_state_set_slot_set(
+				state_set_slot_flags_type &state_set_slots,
+				state_set_key_type state_set_slot);
+
+		/**
+		 * Sets the specified state set slot flag.
+		 */
+		static
+		void
+		set_state_set_slot_flag(
+				state_set_slot_flags_type &state_set_slots,
+				state_set_key_type state_set_slot);
+
+		/**
+		 * Clears the specified state set slot flag.
+		 */
+		static
+		void
+		clear_state_set_slot_flag(
+				state_set_slot_flags_type &state_set_slots,
+				state_set_key_type state_set_slot);
 	};
 }
 

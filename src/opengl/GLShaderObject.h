@@ -112,6 +112,42 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * GLSL shader versions.
+		 *
+		 * This is used instead of specifying "#version 120" for example.
+		 * This is because the "#version" directive must come before any non-commented source code.
+		 * But this becomes difficult with multiple source code segments because usually the
+		 * "#version" directive is placed in the segment defining the 'main()' shader function and
+		 * this usually is the last segment (because it uses other shader segments and hence they
+		 * must be defined first).
+		 * So the solution used here is this class will create a "#version" shader segment and add
+		 * it as the first shader segment which means it should not be defined in any supplied
+		 * shader segments.
+		 */
+		enum ShaderVersion
+		{
+			GLSL_1_1, // Corresponds to OpenGL version 2.0
+			GLSL_1_2, // Corresponds to OpenGL version 2.1
+			GLSL_1_3, // Corresponds to OpenGL version 3.0
+			GLSL_1_4, // Corresponds to OpenGL version 3.1
+			GLSL_1_5, // Corresponds to OpenGL version 3.2
+			GLSL_3_3, // Corresponds to OpenGL version 3.3
+			GLSL_4_0, // Corresponds to OpenGL version 4.0
+			GLSL_4_1, // Corresponds to OpenGL version 4.1
+			GLSL_4_2,  // Corresponds to OpenGL version 4.2
+
+			NUM_SHADER_VERSIONS // This must be last.
+		};
+
+		/**
+		 * The default shader version to compile.
+		 *
+		 * Version 1.2 is chosen instead of 1.1 since most hardware supporting OpenGL 2.0 supports 2.1.
+		 */
+		static const ShaderVersion DEFAULT_SHADER_VERSION = GLSL_1_2;
+
+
+		/**
 		 * Returns true if @a shader_type is supported on the runtime system.
 		 *
 		 * Currently @a shader_type can be GL_VERTEX_SHADER_ARB, GL_FRAGMENT_SHADER_ARB or GL_GEOMETRY_SHADER_ARB.
@@ -162,7 +198,8 @@ namespace GPlatesOpenGL
 		void
 		gl_shader_source(
 				GLRenderer &renderer,
-				const std::vector<const char *> &source_strings);
+				const std::vector<const char *> &source_strings,
+				ShaderVersion shader_version = DEFAULT_SHADER_VERSION);
 
 		/**
 		 * Performs same function as the glShaderSource OpenGL function.
@@ -172,7 +209,8 @@ namespace GPlatesOpenGL
 		void
 		gl_shader_source(
 				GLRenderer &renderer,
-				const std::vector<std::string> &source_strings);
+				const std::vector<std::string> &source_strings,
+				ShaderVersion shader_version = DEFAULT_SHADER_VERSION);
 
 		/**
 		 * Performs same function as the glShaderSource OpenGL function.
@@ -182,7 +220,8 @@ namespace GPlatesOpenGL
 		void
 		gl_shader_source(
 				GLRenderer &renderer,
-				const char *source_string);
+				const char *source_string,
+				ShaderVersion shader_version = DEFAULT_SHADER_VERSION);
 
 		/**
 		 * Performs same function as the glShaderSource OpenGL function.
@@ -192,7 +231,8 @@ namespace GPlatesOpenGL
 		void
 		gl_shader_source(
 				GLRenderer &renderer,
-				const std::string &source_string);
+				const std::string &source_string,
+				ShaderVersion shader_version = DEFAULT_SHADER_VERSION);
 
 
 		/**
@@ -220,6 +260,9 @@ namespace GPlatesOpenGL
 
 	private:
 		resource_type::non_null_ptr_to_const_type d_resource;
+
+		//! Shader source version strings.
+		static const char *SHADER_VERSION_STRINGS[NUM_SHADER_VERSIONS];
 
 
 		//! Constructor.

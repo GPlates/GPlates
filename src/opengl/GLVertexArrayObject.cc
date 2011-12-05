@@ -241,6 +241,36 @@ GPlatesOpenGL::GLVertexArrayObject::set_vertex_attrib_pointer(
 
 
 void
+GPlatesOpenGL::GLVertexArrayObject::set_vertex_attrib_i_pointer(
+		GLRenderer &renderer,
+		const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+		GLuint attribute_index,
+		GLint size,
+		GLenum type,
+		GLsizei stride,
+		GLint offset)
+{
+	d_object_state->set_vertex_attrib_i_pointer(
+			renderer, vertex_buffer, attribute_index, size, type, stride, offset);
+}
+
+
+void
+GPlatesOpenGL::GLVertexArrayObject::set_vertex_attrib_l_pointer(
+		GLRenderer &renderer,
+		const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+		GLuint attribute_index,
+		GLint size,
+		GLenum type,
+		GLsizei stride,
+		GLint offset)
+{
+	d_object_state->set_vertex_attrib_l_pointer(
+			renderer, vertex_buffer, attribute_index, size, type, stride, offset);
+}
+
+
+void
 GPlatesOpenGL::GLVertexArrayObject::get_vertex_array_resource(
 		GLRenderer &renderer,
 		GPlatesOpenGL::GLVertexArrayObject::resource_handle_type &resource_handle,

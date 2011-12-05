@@ -53,8 +53,7 @@ namespace GPlatesOpenGL
 	{
 		//
 		// The following reflects the structure of 'struct GLVertex'.
-		// It defines how the elements of the vertex are packed together in the vertex.
-		// It's an OpenGL thing.
+		// It tells OpenGL how the elements of the vertex are packed together in the vertex.
 		//
 
 		vertex_array.set_enable_client_state(renderer, GL_VERTEX_ARRAY, true/*enable*/);
@@ -78,8 +77,7 @@ namespace GPlatesOpenGL
 	{
 		//
 		// The following reflects the structure of 'struct GLColouredVertex'.
-		// It defines how the elements of the vertex are packed together in the vertex.
-		// It's an OpenGL thing.
+		// It tells OpenGL how the elements of the vertex are packed together in the vertex.
 		//
 
 		vertex_array.set_enable_client_state(renderer, GL_VERTEX_ARRAY, true/*enable*/);
@@ -112,8 +110,7 @@ namespace GPlatesOpenGL
 	{
 		//
 		// The following reflects the structure of 'struct GLTexturedVertex'.
-		// It defines how the elements of the vertex are packed together in the vertex.
-		// It's an OpenGL thing.
+		// It tells OpenGL how the elements of the vertex are packed together in the vertex.
 		//
 
 		vertex_array.set_enable_client_state(renderer, GL_VERTEX_ARRAY, true/*enable*/);
@@ -147,8 +144,7 @@ namespace GPlatesOpenGL
 	{
 		//
 		// The following reflects the structure of 'struct GLColouredTexturedVertex'.
-		// It defines how the elements of the vertex are packed together in the vertex.
-		// It's an OpenGL thing.
+		// It tells OpenGL how the elements of the vertex are packed together in the vertex.
 		//
 
 		vertex_array.set_enable_client_state(renderer, GL_VERTEX_ARRAY, true/*enable*/);

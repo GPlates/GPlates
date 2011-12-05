@@ -204,6 +204,62 @@ GPlatesOpenGL::GLContext::initialise_shader_parameters(
 		qDebug() << "  GL_ARB_geometry_shader4";
 	}
 #endif
+
+#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
+	if (GLEW_EXT_gpu_shader4)
+	{
+		shader_parameters.gl_EXT_gpu_shader4 = true;
+
+		qDebug() << "  GL_EXT_gpu_shader4";
+	}
+#endif
+
+#ifdef GL_ARB_gpu_shader_fp64 // In case old 'glew.h' (since extension added relatively recently).
+	if (GLEW_ARB_gpu_shader_fp64 ||
+		// Oddly this extension re since functions like 'glProgramUniform1dEXT' are not found.
+		// However we don't need these 'direct access state' functions - as long as we have the
+		// regular uniform function like 'glUniform1d' that's all we need.
+		// Note that Mac OSX (even Lion) doesn't support this extension so this is a
+		// Windows and Linux only extension.
+		(
+			GPLATES_OPENGL_BOOL(glUniform1d) &&
+			GPLATES_OPENGL_BOOL(glUniform1dv) &&
+			GPLATES_OPENGL_BOOL(glUniform2d) &&
+			GPLATES_OPENGL_BOOL(glUniform2dv) &&
+			GPLATES_OPENGL_BOOL(glUniform3d) &&
+			GPLATES_OPENGL_BOOL(glUniform3dv) &&
+			GPLATES_OPENGL_BOOL(glUniform4d) &&
+			GPLATES_OPENGL_BOOL(glUniform4dv) &&
+			GPLATES_OPENGL_BOOL(glUniformMatrix2dv) &&
+			GPLATES_OPENGL_BOOL(glUniformMatrix2x3dv) &&
+			GPLATES_OPENGL_BOOL(glUniformMatrix2x4dv) &&
+			GPLATES_OPENGL_BOOL(glUniformMatrix3dv) &&
+			GPLATES_OPENGL_BOOL(glUniformMatrix3x2dv) &&
+			GPLATES_OPENGL_BOOL(glUniformMatrix3x4dv) &&
+			GPLATES_OPENGL_BOOL(glUniformMatrix4dv) &&
+			GPLATES_OPENGL_BOOL(glUniformMatrix4x2dv) &&
+			GPLATES_OPENGL_BOOL(glUniformMatrix4x3dv)
+		))
+	{
+		shader_parameters.gl_ARB_gpu_shader_fp64 = true;
+
+		// FIXME: This is dodgy but we're just turning it on in case it was off and
+		// functions like 'glUniform1d' are supported - we do this because code checks
+		// 'GLEW_ARB_gpu_shader_fp64' directly in many places.
+		__GLEW_ARB_gpu_shader_fp64 = true;
+
+		qDebug() << "  GL_ARB_gpu_shader_fp64";
+	}
+#endif
+
+#ifdef GL_ARB_vertex_attrib_64bit // In case old 'glew.h' (since extension added relatively recently).
+	if (GLEW_ARB_vertex_attrib_64bit)
+	{
+		shader_parameters.gl_ARB_vertex_attrib_64bit = true;
+
+		qDebug() << "  GL_ARB_vertex_attrib_64bit";
+	}
+#endif
 }
 
 
@@ -217,6 +273,14 @@ GPlatesOpenGL::GLContext::initialise_texture_parameters(
 	// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
 	texture_parameters.gl_max_texture_size = max_texture_size;
 
+	// Are non-power-of-two dimension textures supported?
+	if (GLEW_ARB_texture_non_power_of_two)
+	{
+		texture_parameters.gl_ARB_texture_non_power_of_two = true;;
+
+		qDebug() << "  GL_ARB_texture_non_power_of_two";
+	}
+
 	// Get the maximum number of texture units supported.
 	if (GLEW_ARB_multitexture)
 	{
@@ -226,6 +290,49 @@ GPlatesOpenGL::GLContext::initialise_texture_parameters(
 		texture_parameters.gl_max_texture_units = max_texture_units;
 
 		qDebug() << "  GL_ARB_multitexture";
+	}
+
+	// Get the maximum number of texture *image* units and texture coordinates supported by fragment shaders.
+	if (GLEW_ARB_fragment_shader)
+	{
+		GLint max_texture_image_units;
+		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &max_texture_image_units);
+		// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
+		texture_parameters.gl_max_texture_image_units = max_texture_image_units;
+
+		GLint max_texture_coords;
+		glGetIntegerv(GL_MAX_TEXTURE_COORDS_ARB, &max_texture_coords);
+		// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
+		texture_parameters.gl_max_texture_coords = max_texture_coords;
+	}
+	else if (GLEW_ARB_multitexture)
+	{
+		// Fallback to the 'old-style' way of reporting texture units...
+		GLint max_texture_units;
+		glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &max_texture_units);
+		// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
+		texture_parameters.gl_max_texture_image_units = max_texture_units;
+		texture_parameters.gl_max_texture_coords = max_texture_units;
+	}
+	// ...else they are both left as their default values of 1
+
+	// Is clamping to the centre of texture edge pixels supported?
+	//
+	// This is the standard texture clamping in Direct3D - it's easier for hardware to implement
+	// since it avoids accessing the texture border colour (even in (bi)linear filtering mode).
+	//
+	// Seems Mac OSX use the SGIS version exclusively but in general the EXT version is more common.
+	if (GLEW_EXT_texture_edge_clamp)
+	{
+		texture_parameters.gl_EXT_texture_edge_clamp = true;;
+
+		qDebug() << "  GL_EXT_texture_edge_clamp";
+	}
+	if (GLEW_SGIS_texture_edge_clamp)
+	{
+		texture_parameters.gl_SGIS_texture_edge_clamp = true;;
+
+		qDebug() << "  GL_SGIS_texture_edge_clamp";
 	}
 
 	// Get the maximum texture anisotropy supported.
@@ -268,6 +375,35 @@ GPlatesOpenGL::GLContext::initialise_texture_parameters(
 		qDebug() << "  GL_EXT_texture_buffer_object";
 	}
 #endif
+
+	// Is GLEW_ARB_texture_float supported?
+	if (GLEW_ARB_texture_float)
+	{
+		texture_parameters.gl_ARB_texture_float = true;
+
+		qDebug() << "  GL_ARB_texture_float";
+	}
+
+	// Is GLEW_ARB_texture_rg supported?
+#ifdef GL_ARB_texture_rg
+	if (GLEW_ARB_texture_rg)
+	{
+		texture_parameters.gl_ARB_texture_rg = true;
+
+		qDebug() << "  GL_ARB_texture_rg";
+	}
+#endif
+
+	// Is GLEW_ARB_color_buffer_float supported?
+	// This affects things other than floating-point textures (samplers or render-targets) but
+	// we put it with the texture parameters since it's most directly related to floating-point
+	// colour buffers (eg, floating-point textures attached to a framebuffer object).
+	if (GLEW_ARB_color_buffer_float)
+	{
+		texture_parameters.gl_ARB_color_buffer_float = true;
+
+		qDebug() << "  GL_ARB_color_buffer_float";
+	}
 }
 
 
@@ -290,6 +426,27 @@ GPlatesOpenGL::GLContext::initialise_buffer_parameters(
 		qDebug() << "  GL_ARB_vertex_array_object";
 	}
 #endif
+
+	if (GLEW_ARB_pixel_buffer_object)
+	{
+		buffer_parameters.gl_ARB_pixel_buffer_object = true;
+
+		qDebug() << "  GL_ARB_pixel_buffer_object";
+	}
+
+	if (GLEW_ARB_map_buffer_range)
+	{
+		buffer_parameters.gl_ARB_map_buffer_range = true;
+
+		qDebug() << "  GL_ARB_map_buffer_range";
+	}
+
+	if (GLEW_APPLE_flush_buffer_range)
+	{
+		buffer_parameters.gl_APPLE_flush_buffer_range = true;
+
+		qDebug() << "  GL_APPLE_flush_buffer_range";
+	}
 }
 
 
@@ -345,6 +502,7 @@ GPlatesOpenGL::GLContext::disable_opengl_extensions()
 	//__GLEW_EXT_framebuffer_object = 0;
 	//__GLEW_ARB_vertex_shader = 0;
 	//__GLEW_ARB_multitexture = 0;
+	//__GLEW_ARB_texture_non_power_of_two = 0;
 }
 
 
@@ -541,8 +699,8 @@ GPlatesOpenGL::GLContext::SharedState::get_unbound_vertex_array_compiled_draw_st
 		renderer.gl_enable_client_state(GL_COLOR_ARRAY, false);
 		renderer.gl_enable_client_state(GL_NORMAL_ARRAY, false);
 		// Iterate over the enable texture coordinate client state flags.
-		const unsigned int MAX_TEXTURE_UNITS = GLContext::get_parameters().texture.gl_max_texture_units;
-		for (unsigned int texture_coord_index = 0; texture_coord_index < MAX_TEXTURE_UNITS; ++texture_coord_index)
+		const unsigned int MAX_TEXTURE_COORDS = GLContext::get_parameters().texture.gl_max_texture_coords;
+		for (unsigned int texture_coord_index = 0; texture_coord_index < MAX_TEXTURE_COORDS; ++texture_coord_index)
 		{
 			renderer.gl_enable_client_texture_state(GL_TEXTURE0 + texture_coord_index, false);
 		}
@@ -559,7 +717,7 @@ GPlatesOpenGL::GLContext::SharedState::get_unbound_vertex_array_compiled_draw_st
 		renderer.gl_color_pointer(4, GL_FLOAT, 0, 0, default_client_memory_buffer);
 		renderer.gl_normal_pointer(GL_FLOAT, 0, 0, default_client_memory_buffer);
 		// Iterate over the texture coordinate arrays.
-		for (unsigned int texture_coord_index = 0; texture_coord_index < MAX_TEXTURE_UNITS; ++texture_coord_index)
+		for (unsigned int texture_coord_index = 0; texture_coord_index < MAX_TEXTURE_COORDS; ++texture_coord_index)
 		{
 			renderer.gl_tex_coord_pointer(4, GL_FLOAT, 0, 0, default_client_memory_buffer, GL_TEXTURE0 + texture_coord_index);
 		}
@@ -675,7 +833,8 @@ GPlatesOpenGL::GLContext::NonSharedState::NonSharedState() :
 
 
 GPlatesOpenGL::GLFrameBufferObject::shared_ptr_type
-GPlatesOpenGL::GLContext::NonSharedState::acquire_frame_buffer_object()
+GPlatesOpenGL::GLContext::NonSharedState::acquire_frame_buffer_object(
+		GLRenderer &renderer)
 {
 	// Attempt to acquire a recycled object.
 	boost::optional<GLFrameBufferObject::shared_ptr_type> frame_buffer_object_opt =
@@ -686,8 +845,12 @@ GPlatesOpenGL::GLContext::NonSharedState::acquire_frame_buffer_object()
 		frame_buffer_object_opt = d_frame_buffer_object_cache->allocate_object(
 				GLFrameBufferObject::create_as_auto_ptr(d_frame_buffer_object_resource_manager));
 	}
+	const GLFrameBufferObject::shared_ptr_type &frame_buffer_object = frame_buffer_object_opt.get();
 
-	return frame_buffer_object_opt.get();
+	// First clear the framebuffer attachments before returning to the client.
+	frame_buffer_object->gl_detach_all(renderer);
+
+	return frame_buffer_object;
 }
 
 
@@ -711,6 +874,9 @@ GPlatesOpenGL::GLContext::Parameters::Shader::Shader() :
 	gl_ARB_vertex_shader(false),
 	gl_ARB_fragment_shader(false),
 	gl_ARB_geometry_shader4(false),
+	gl_EXT_gpu_shader4(false),
+	gl_ARB_gpu_shader_fp64(false),
+	gl_ARB_vertex_attrib_64bit(false),
 	gl_max_vertex_attribs(0)
 {
 }
@@ -718,18 +884,29 @@ GPlatesOpenGL::GLContext::Parameters::Shader::Shader() :
 
 GPlatesOpenGL::GLContext::Parameters::Texture::Texture() :
 	gl_max_texture_size(gl_min_texture_size),
+	gl_ARB_texture_non_power_of_two(false),
 	gl_max_texture_units(1),
+	gl_max_texture_image_units(1),
+	gl_max_texture_coords(1),
 	gl_texture_max_anisotropy(1.0f),
+	gl_EXT_texture_edge_clamp(false),
+	gl_SGIS_texture_edge_clamp(false),
 	gl_EXT_texture3D(false),
 	gl_EXT_texture_array(false),
 	gl_max_texture_array_layers(1),
-	gl_EXT_texture_buffer_object(false)
+	gl_EXT_texture_buffer_object(false),
+	gl_ARB_texture_float(false),
+	gl_ARB_texture_rg(false),
+	gl_ARB_color_buffer_float(false)
 {
 }
 
 
 GPlatesOpenGL::GLContext::Parameters::Buffer::Buffer() :
 	gl_ARB_vertex_buffer_object(false),
-	gl_ARB_vertex_array_object(false)
+	gl_ARB_vertex_array_object(false),
+	gl_ARB_pixel_buffer_object(false),
+	gl_ARB_map_buffer_range(false),
+	gl_APPLE_flush_buffer_range(false)
 {
 }

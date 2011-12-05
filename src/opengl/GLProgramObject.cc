@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cstring> // for memcpy
+
 #include <boost/scoped_array.hpp>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
@@ -212,12 +214,10 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1f(
 		const char *name,
 		GLfloat v0)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniform1fARB(get_uniform_location(name), v0);
 }
@@ -230,12 +230,10 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1f(
 		const GLfloat *value,
 		unsigned int count)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniform1fvARB(get_uniform_location(name), count, value);
 }
@@ -247,12 +245,10 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1i(
 		const char *name,
 		GLint v0)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniform1iARB(get_uniform_location(name), v0);
 }
@@ -265,14 +261,110 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1i(
 		const GLint *value,
 		unsigned int count)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniform1ivARB(get_uniform_location(name), count, value);
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform1d(
+		GLRenderer &renderer,
+		const char *name,
+		GLdouble v0)
+{
+#ifdef GL_ARB_gpu_shader_fp64 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_ARB_gpu_shader_fp64),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniform1d(get_uniform_location(name), v0);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform1d(
+		GLRenderer &renderer,
+		const char *name,
+		const GLdouble *value,
+		unsigned int count)
+{
+#ifdef GL_ARB_gpu_shader_fp64 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_ARB_gpu_shader_fp64),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniform1dv(get_uniform_location(name), count, value);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform1ui(
+		GLRenderer &renderer,
+		const char *name,
+		GLuint v0)
+{
+#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_EXT_gpu_shader4' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_EXT_gpu_shader4),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniform1uiEXT(get_uniform_location(name), v0);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform1ui(
+		GLRenderer &renderer,
+		const char *name,
+		const GLuint *value,
+		unsigned int count)
+{
+#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_EXT_gpu_shader4' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_EXT_gpu_shader4),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniform1uivEXT(get_uniform_location(name), count, value);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
 }
 
 
@@ -283,12 +375,10 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2f(
 		GLfloat v0,
 		GLfloat v1)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniform2fARB(get_uniform_location(name), v0, v1);
 }
@@ -301,12 +391,10 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2f(
 		const GLfloat *value,
 		unsigned count)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniform2fvARB(get_uniform_location(name), count, value);
 }
@@ -319,12 +407,10 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2i(
 		GLint v0,
 		GLint v1)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniform2iARB(get_uniform_location(name), v0, v1);
 }
@@ -337,14 +423,112 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2i(
 		const GLint *value,
 		unsigned int count)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniform2ivARB(get_uniform_location(name), count, value);
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform2d(
+		GLRenderer &renderer,
+		const char *name,
+		GLdouble v0,
+		GLdouble v1)
+{
+#ifdef GL_ARB_gpu_shader_fp64 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_ARB_gpu_shader_fp64),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniform2d(get_uniform_location(name), v0, v1);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform2d(
+		GLRenderer &renderer,
+		const char *name,
+		const GLdouble *value,
+		unsigned int count)
+{
+#ifdef GL_ARB_gpu_shader_fp64 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_ARB_gpu_shader_fp64),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniform2dv(get_uniform_location(name), count, value);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform2ui(
+		GLRenderer &renderer,
+		const char *name,
+		GLuint v0,
+		GLuint v1)
+{
+#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_EXT_gpu_shader4' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_EXT_gpu_shader4),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniform2uiEXT(get_uniform_location(name), v0, v1);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform2ui(
+		GLRenderer &renderer,
+		const char *name,
+		const GLuint *value,
+		unsigned int count)
+{
+#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_EXT_gpu_shader4' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_EXT_gpu_shader4),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniform2uivEXT(get_uniform_location(name), count, value);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
 }
 
 
@@ -356,12 +540,10 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3f(
 		GLfloat v1,
 		GLfloat v2)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniform3fARB(get_uniform_location(name), v0, v1, v2);
 }
@@ -374,12 +556,10 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3f(
 		const GLfloat *value,
 		unsigned count)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniform3fvARB(get_uniform_location(name), count, value);
 }
@@ -393,12 +573,10 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3i(
 		GLint v1,
 		GLint v2)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniform3iARB(get_uniform_location(name), v0, v1, v2);
 }
@@ -411,14 +589,114 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3i(
 		const GLint *value,
 		unsigned int count)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniform3ivARB(get_uniform_location(name), count, value);
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform3d(
+		GLRenderer &renderer,
+		const char *name,
+		GLdouble v0,
+		GLdouble v1,
+		GLdouble v2)
+{
+#ifdef GL_ARB_gpu_shader_fp64 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_ARB_gpu_shader_fp64),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniform3d(get_uniform_location(name), v0, v1, v2);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform3d(
+		GLRenderer &renderer,
+		const char *name,
+		const GLdouble *value,
+		unsigned int count)
+{
+#ifdef GL_ARB_gpu_shader_fp64 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_ARB_gpu_shader_fp64),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniform3dv(get_uniform_location(name), count, value);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform3ui(
+		GLRenderer &renderer,
+		const char *name,
+		GLuint v0,
+		GLuint v1,
+		GLuint v2)
+{
+#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_EXT_gpu_shader4' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_EXT_gpu_shader4),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniform3uiEXT(get_uniform_location(name), v0, v1, v2);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform3ui(
+		GLRenderer &renderer,
+		const char *name,
+		const GLuint *value,
+		unsigned int count)
+{
+#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_EXT_gpu_shader4' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_EXT_gpu_shader4),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniform3uivEXT(get_uniform_location(name), count, value);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
 }
 
 
@@ -431,12 +709,10 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4f(
 		GLfloat v2,
 		GLfloat v3)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniform4fARB(get_uniform_location(name), v0, v1, v2, v3);
 }
@@ -449,12 +725,10 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4f(
 		const GLfloat *value,
 		unsigned count)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniform4fvARB(get_uniform_location(name), count, value);
 }
@@ -469,12 +743,10 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4i(
 		GLint v2,
 		GLint v3)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniform4iARB(get_uniform_location(name), v0, v1, v2, v3);
 }
@@ -487,86 +759,258 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4i(
 		const GLint *value,
 		unsigned int count)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniform4ivARB(get_uniform_location(name), count, value);
 }
 
 
 void
-GPlatesOpenGL::GLProgramObject::gl_uniform_matrix2x2(
+GPlatesOpenGL::GLProgramObject::gl_uniform4d(
+		GLRenderer &renderer,
+		const char *name,
+		GLdouble v0,
+		GLdouble v1,
+		GLdouble v2,
+		GLdouble v3)
+{
+#ifdef GL_ARB_gpu_shader_fp64 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_ARB_gpu_shader_fp64),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniform4d(get_uniform_location(name), v0, v1, v2, v3);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform4d(
+		GLRenderer &renderer,
+		const char *name,
+		const GLdouble *value,
+		unsigned int count)
+{
+#ifdef GL_ARB_gpu_shader_fp64 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_ARB_gpu_shader_fp64),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniform4dv(get_uniform_location(name), count, value);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform4ui(
+		GLRenderer &renderer,
+		const char *name,
+		GLuint v0,
+		GLuint v1,
+		GLuint v2,
+		GLuint v3)
+{
+#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_EXT_gpu_shader4' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_EXT_gpu_shader4),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniform4uiEXT(get_uniform_location(name), v0, v1, v2, v3);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform4ui(
+		GLRenderer &renderer,
+		const char *name,
+		const GLuint *value,
+		unsigned int count)
+{
+#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_EXT_gpu_shader4' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_EXT_gpu_shader4),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniform4uivEXT(get_uniform_location(name), count, value);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform_matrix2x2f(
 		GLRenderer &renderer,
 		const char *name,
 		const GLfloat *value,
 		unsigned int count,
 		GLboolean transpose)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniformMatrix2fvARB(get_uniform_location(name), count, transpose, value);
 }
 
 
 void
-GPlatesOpenGL::GLProgramObject::gl_uniform_matrix3x3(
+GPlatesOpenGL::GLProgramObject::gl_uniform_matrix2x2d(
+		GLRenderer &renderer,
+		const char *name,
+		const GLdouble *value,
+		unsigned int count,
+		GLboolean transpose)
+{
+#ifdef GL_ARB_gpu_shader_fp64 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_ARB_gpu_shader_fp64),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniformMatrix2dv(get_uniform_location(name), count, transpose, value);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform_matrix3x3f(
 		GLRenderer &renderer,
 		const char *name,
 		const GLfloat *value,
 		unsigned int count,
 		GLboolean transpose)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniformMatrix3fvARB(get_uniform_location(name), count, transpose, value);
 }
 
 
 void
-GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4(
+GPlatesOpenGL::GLProgramObject::gl_uniform_matrix3x3d(
+		GLRenderer &renderer,
+		const char *name,
+		const GLdouble *value,
+		unsigned int count,
+		GLboolean transpose)
+{
+#ifdef GL_ARB_gpu_shader_fp64 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_ARB_gpu_shader_fp64),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniformMatrix3dv(get_uniform_location(name), count, transpose, value);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4f(
 		GLRenderer &renderer,
 		const char *name,
 		const GLfloat *value,
 		unsigned int count,
 		GLboolean transpose)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	glUniformMatrix4fvARB(get_uniform_location(name), count, transpose, value);
 }
 
 
 void
-GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4(
+GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
+		GLRenderer &renderer,
+		const char *name,
+		const GLdouble *value,
+		unsigned int count,
+		GLboolean transpose)
+{
+#ifdef GL_ARB_gpu_shader_fp64 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_ARB_gpu_shader_fp64),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	glUniformMatrix4dv(get_uniform_location(name), count, transpose, value);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4f(
 		GLRenderer &renderer,
 		const char *name,
 		const GLMatrix &matrix)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	const GLdouble *const double_matrix = matrix.get_matrix();
 
@@ -583,17 +1027,42 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4(
 
 
 void
-GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4(
+GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
+		GLRenderer &renderer,
+		const char *name,
+		const GLMatrix &matrix)
+{
+#ifdef GL_ARB_gpu_shader_fp64 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_ARB_gpu_shader_fp64),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	const GLdouble *const double_matrix = matrix.get_matrix();
+
+	// Note that the matrix is in column-major format.
+	glUniformMatrix4dv(get_uniform_location(name), 1, GL_FALSE/*transpose*/, double_matrix);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4f(
 		GLRenderer &renderer,
 		const char *name,
 		const std::vector<GLMatrix> &matrices)
 {
-	// Revert our program object binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Bind this program object glUniform applies to it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_program_object_and_apply(shared_from_this());
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
 	// Iterate over the matrices and convert from double to float.
 	boost::scoped_array<GLfloat> float_matrices(new GLfloat[16 * matrices.size()]);
@@ -611,6 +1080,38 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4(
 	}
 
 	glUniformMatrix4fvARB(get_uniform_location(name), matrices.size(), GL_FALSE/*transpose*/, float_matrices.get());
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
+		GLRenderer &renderer,
+		const char *name,
+		const std::vector<GLMatrix> &matrices)
+{
+#ifdef GL_ARB_gpu_shader_fp64 // In case old 'glew.h' (since extension added relatively recently).
+	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_ARB_gpu_shader_fp64),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind this program object glUniform applies to it.
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
+
+	// Iterate over the matrices and copy to an array of doubles.
+	boost::scoped_array<GLdouble> double_matrices(new GLdouble[16 * matrices.size()]);
+	for (unsigned int m = 0; m < matrices.size(); ++m)
+	{
+		// Copy the current matrix into the array.
+		std::memcpy(double_matrices.get() + 16 * m, matrices[m].get_matrix(), 16 * sizeof(GLdouble));
+	}
+
+	glUniformMatrix4dv(get_uniform_location(name), matrices.size(), GL_FALSE/*transpose*/, double_matrices.get());
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
 }
 
 

@@ -28,6 +28,7 @@
 
 #include <memory> // For std::auto_ptr
 #include <vector>
+#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <opengl/OpenGL.h>
@@ -122,7 +123,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns the size, in bytes, of the current buffer as allocated by @a gl_buffer_data.
 		 *
-		 * NOTE: Initially the size is zero (until @a gl_buffer_data is first called).
+		 * See base class interface for more details.
 		 */
 		virtual
 		unsigned int
@@ -135,7 +136,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Specifies a new buffer of data.
 		 *
-		 * This mirrors the behaviour of glBufferData.
+		 * See base class interface for more details.
 		 */
 		virtual
 		void
@@ -150,11 +151,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Specifies a new sub-section of data in the existing array.
 		 *
-		 * Note that @a gl_buffer_data must have been called and the sub-range must fit within it.
-		 *
-		 * This mirrors the behaviour of glBufferSubData.
-		 * In particular note that NULL is a valid value for @a data (in which case it
-		 * allocates storage but leaves it uninitialised).
+		 * See base class interface for more details.
 		 */
 		virtual
 		void
@@ -169,11 +166,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Retrieves a sub-section of data from the existing array and copies it into.
 		 *
-		 * Note that @a gl_buffer_data must have been called and the sub-range must fit within it.
-		 *
-		 * NOTE: @a data must be an existing array with a size of at least @a size bytes.
-		 *
-		 * This mirrors the behaviour of glGetBufferSubData.
+		 * See base class interface for more details.
 		 */
 		virtual
 		void
@@ -188,73 +181,96 @@ namespace GPlatesOpenGL
 		/**
 		 * Maps the buffer for the specified access.
 		 *
-		 * This mirrors the behaviour of glMapBuffer.
-		 * Returns NULL if buffer cannot be mapped or is already mapped.
+		 * See base class interface for more details.
 		 */
 		virtual
 		GLvoid *
-		gl_map_buffer(
+		gl_map_buffer_static(
 				GLRenderer &renderer,
 				target_type target,
 				access_type access);
 
 
 		/**
-		 * Returns true if a sub-range of the buffer can be mapped.
+		 * Returns true if @a gl_map_buffer_dynamic can be called without blocking.
 		 *
-		 * This is only supported if the GL_ARB_map_buffer_range extension is available.
-		 *
-		 * Only then can the methods @a gl_map_buffer_range and @a gl_flush_mapped_buffer_range be called.
+		 * See base class interface for more details.
 		 */
 		virtual
 		bool
-		is_map_buffer_range_supported() const;
+		asynchronous_map_buffer_dynamic_supported(
+				GLRenderer &renderer) const;
 
 		/**
-		 * Maps the specified range of the buffer for the specified access.
+		 * Maps the buffer for dynamic *write* access.
 		 *
-		 * This mirrors the behaviour of glMapBufferRange.
-		 * Returns NULL if buffer cannot be mapped or is already mapped.
-		 *
-		 * NOTE: This method is only supported if the GL_ARB_map_buffer_range extension is available.
-		 *
-		 * Check with @a is_map_buffer_range_supported to see if this method can be used.
+		 * See base class interface for more details.
 		 */
 		virtual
-		void *
-		gl_map_buffer_range(
+		GLvoid *
+		gl_map_buffer_dynamic(
 				GLRenderer &renderer,
-				target_type target,
-				unsigned int offset,
-				unsigned int length,
-				range_access_type access);
+				target_type target);
 
 		/**
-		 * Maps the specified range of the buffers.
+		 * Flushes a range of a currently mapped buffer (mapped via @a gl_map_buffer_dynamic).
 		 *
-		 * This mirrors the behaviour of glFlushMappedBufferRange.
-		 *
-		 * NOTE: This method is only supported if the GL_ARB_map_buffer_range extension is available.
-		 *
-		 * Check with @a is_map_buffer_range_supported to see if this method can be used.
+		 * See base class interface for more details.
 		 */
 		virtual
 		void
-		gl_flush_mapped_buffer_range(
+		gl_flush_buffer_dynamic(
 				GLRenderer &renderer,
 				target_type target,
 				unsigned int offset,
-				unsigned int length);
+				unsigned int length/*in bytes*/);
 
 
 		/**
-		 * Unmaps the buffer mapped with @a gl_map_buffer - indicates updates or reading is complete.
+		 * Returns true if @a gl_map_buffer_stream has fine-grained asynchronous support.
 		 *
-		 * This mirrors the behaviour of glUnmapBuffer.
-		 * Returns NULL if buffer cannot be mapped or is already mapped.
+		 * See base class interface for more details.
+		 */
+		virtual
+		bool
+		asynchronous_map_buffer_stream_supported(
+				GLRenderer &renderer) const;
+
+		/**
+		 * Maps the buffer for streaming *write* access.
+		 *
+		 * See base class interface for more details.
+		 */
+		virtual
+		GLvoid *
+		gl_map_buffer_stream(
+				GLRenderer &renderer,
+				target_type target,
+				unsigned int minimum_bytes_to_stream,
+				unsigned int &stream_offset,
+				unsigned int &stream_bytes_available);
+
+		/**
+		 * Specifies the number of bytes streamed after calling @a gl_map_buffer_stream and
+		 * writing data into the region mapped for streaming.
+		 *
+		 * See base class interface for more details.
 		 */
 		virtual
 		void
+		gl_flush_buffer_stream(
+				GLRenderer &renderer,
+				target_type target,
+				unsigned int bytes_written);
+
+
+		/**
+		 * Unmaps the buffer mapped with @a gl_map_buffer_static - indicates updates or reading is complete.
+		 *
+		 * See base class interface for more details.
+		 */
+		virtual
+		GLboolean
 		gl_unmap_buffer(
 				GLRenderer &renderer,
 				target_type target);
@@ -280,6 +296,20 @@ namespace GPlatesOpenGL
 	private:
 		resource_type::non_null_ptr_to_const_type d_resource;
 		unsigned int d_size;
+		boost::optional<usage_type> d_usage;
+
+		/**
+		 * Current offset into buffer where uninitialised memory is (memory that hasn't been yet
+		 * been written to by the client).
+		 *
+		 * This is used when streaming (using @a gl_map_buffer_stream) since streaming is
+		 * written into uninitialised memory (to avoid synchronisation issues with GPU).
+		 *
+		 * This is the first part of the current buffer that contains unwritten data.
+		 * This is data that can be written to without interfering with data that the GPU
+		 * might currently be reading (eg, due to a previous draw call).
+		 */
+		unsigned int d_uninitialised_offset;
 	};
 }
 

@@ -32,6 +32,7 @@
 
 #include "GLTexture.h"
 
+#include "GLPixelBufferImpl.h"
 #include "GLRenderer.h"
 
 
@@ -51,12 +52,10 @@ GPlatesOpenGL::GLTexture::gl_tex_parameteri(
 		GLenum pname,
 		GLint param)
 {
-	// Revert our texture binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_texture_and_apply(shared_from_this(), GL_TEXTURE0, target);
+	// Revert our texture binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindTextureAndApply save_restore_bind(renderer, shared_from_this(), GL_TEXTURE0, target);
 
 	glTexParameteri(target, pname, param);
 }
@@ -69,12 +68,10 @@ GPlatesOpenGL::GLTexture::gl_tex_parameterf(
 		GLenum pname,
 		GLfloat param)
 {
-	// Revert our texture binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_texture_and_apply(shared_from_this(), GL_TEXTURE0, target);
+	// Revert our texture binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindTextureAndApply save_restore_bind(renderer, shared_from_this(), GL_TEXTURE0, target);
 
 	glTexParameterf(target, pname, param);
 }
@@ -92,14 +89,36 @@ GPlatesOpenGL::GLTexture::gl_tex_image_1D(
 		GLenum type,
 		const GLvoid *pixels)
 {
-	// Revert our texture binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
+	// Load the texture image via pixel buffer emulation functionality to ensure that no
+	// native OpenGL pixel buffer objects are bound when the texture is uploaded
+	// (because the texture is being sourced from client memory).
+	GLPixelBufferImpl::gl_tex_image_1D(
+			renderer, shared_from_this(), target, level, internalformat, width, border, format, type, pixels);
 
-	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_texture_and_apply(shared_from_this(), GL_TEXTURE0, target);
+	if (level == 0)
+	{
+		d_width = width;
+	}
 
-	glTexImage1D(target, level, internalformat, width, border, format, type, pixels);
+	d_internal_format = internalformat;
+}
+
+
+void
+GPlatesOpenGL::GLTexture::gl_tex_image_1D(
+		GLRenderer &renderer,
+		GLenum target,
+		GLint level,
+		GLint internalformat,
+		GLsizei width,
+		GLint border,
+		GLenum format,
+		GLenum type,
+		const GLPixelBuffer::shared_ptr_to_const_type &pixels,
+		GLint offset)
+{
+	// Get the pixel buffer to load the texture image.
+	pixels->gl_tex_image_1D(renderer, shared_from_this(), target, level, internalformat, width, border, format, type, offset);
 
 	if (level == 0)
 	{
@@ -123,14 +142,39 @@ GPlatesOpenGL::GLTexture::gl_tex_image_2D(
 		GLenum type,
 		const GLvoid *pixels)
 {
-	// Revert our texture binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
+	// Load the texture image via pixel buffer emulation functionality to ensure that no
+	// native OpenGL pixel buffer objects are bound when the texture is uploaded
+	// (because the texture is being sourced from client memory).
+	GLPixelBufferImpl::gl_tex_image_2D(
+			renderer, shared_from_this(), target, level, internalformat, width, height, border, format, type, pixels);
 
-	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_texture_and_apply(shared_from_this(), GL_TEXTURE0, target);
+	if (level == 0)
+	{
+		d_width = width;
+		d_height = height;
+	}
 
-	glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+	d_internal_format = internalformat;
+}
+
+
+void
+GPlatesOpenGL::GLTexture::gl_tex_image_2D(
+		GLRenderer &renderer,
+		GLenum target,
+		GLint level,
+		GLint internalformat,
+		GLsizei width,
+		GLsizei height,
+		GLint border,
+		GLenum format,
+		GLenum type,
+		const GLPixelBuffer::shared_ptr_to_const_type &pixels,
+		GLint offset)
+{
+	// Get the pixel buffer to load the texture image.
+	pixels->gl_tex_image_2D(
+			renderer, shared_from_this(), target, level, internalformat, width, height, border, format, type, offset);
 
 	if (level == 0)
 	{
@@ -156,19 +200,41 @@ GPlatesOpenGL::GLTexture::gl_tex_image_3D(
 		GLenum type,
 		const GLvoid *pixels)
 {
-	// Revert our texture binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
+	// Load the texture image via pixel buffer emulation functionality to ensure that no
+	// native OpenGL pixel buffer objects are bound when the texture is uploaded
+	// (because the texture is being sourced from client memory).
+	GLPixelBufferImpl::gl_tex_image_3D(
+			renderer, shared_from_this(), target, level, internalformat, width, height, depth, border, format, type, pixels);
 
-	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_texture_and_apply(shared_from_this(), GL_TEXTURE0, target);
+	if (level == 0)
+	{
+		d_width = width;
+		d_height = height;
+		d_depth = depth;
+	}
 
-	// The GL_EXT_texture3D extension must be available.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_texture3D),
-			GPLATES_ASSERTION_SOURCE);
+	d_internal_format = internalformat;
+}
 
-	glTexImage3DEXT(target, level, internalformat, width, height, depth, border, format, type, pixels);
+
+void
+GPlatesOpenGL::GLTexture::gl_tex_image_3D(
+		GLRenderer &renderer,
+		GLenum target,
+		GLint level,
+		GLint internalformat,
+		GLsizei width,
+		GLsizei height,
+		GLsizei depth,
+		GLint border,
+		GLenum format,
+		GLenum type,
+		const GLPixelBuffer::shared_ptr_to_const_type &pixels,
+		GLint offset)
+{
+	// Get the pixel buffer to load the texture image.
+	pixels->gl_tex_image_3D(
+			renderer, shared_from_this(), target, level, internalformat, width, height, depth, border, format, type, offset);
 
 	if (level == 0)
 	{
@@ -192,12 +258,10 @@ GPlatesOpenGL::GLTexture::gl_copy_tex_image_1D(
 		GLsizei width,
 		GLint border)
 {
-	// Revert our texture binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_texture_and_apply(shared_from_this(), GL_TEXTURE0, target);
+	// Revert our texture binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindTextureAndApply save_restore_bind(renderer, shared_from_this(), GL_TEXTURE0, target);
 
 	glCopyTexImage1D(target, level, internalformat, x, y, width, border);
 
@@ -222,12 +286,10 @@ GPlatesOpenGL::GLTexture::gl_copy_tex_image_2D(
 		GLsizei height,
 		GLint border)
 {
-	// Revert our texture binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
-
 	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_texture_and_apply(shared_from_this(), GL_TEXTURE0, target);
+	// Revert our texture binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindTextureAndApply save_restore_bind(renderer, shared_from_this(), GL_TEXTURE0, target);
 
 	glCopyTexImage2D(target, level, internalformat, x, y, width, height, border);
 
@@ -252,14 +314,28 @@ GPlatesOpenGL::GLTexture::gl_tex_sub_image_1D(
 		GLenum type,
 		const GLvoid *pixels)
 {
-	// Revert our texture binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
+	// Load the texture image via pixel buffer emulation functionality to ensure that no
+	// native OpenGL pixel buffer objects are bound when the texture is uploaded
+	// (because the texture is being sourced from client memory).
+	GLPixelBufferImpl::gl_tex_sub_image_1D(
+			renderer, shared_from_this(), target, level, xoffset, width, format, type, pixels);
+}
 
-	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_texture_and_apply(shared_from_this(), GL_TEXTURE0, target);
 
-	glTexSubImage1D(target, level, xoffset, width, format, type, pixels);
+void
+GPlatesOpenGL::GLTexture::gl_tex_sub_image_1D(
+		GLRenderer &renderer,
+		GLenum target,
+		GLint level,
+		GLint xoffset,
+		GLsizei width,
+		GLenum format,
+		GLenum type,
+		const GLPixelBuffer::shared_ptr_to_const_type &pixels,
+		GLint offset)
+{
+	// Get the pixel buffer to load the texture image.
+	pixels->gl_tex_sub_image_1D(renderer, shared_from_this(), target, level, xoffset, width, format, type, offset);
 }
 
 
@@ -276,14 +352,31 @@ GPlatesOpenGL::GLTexture::gl_tex_sub_image_2D(
 		GLenum type,
 		const GLvoid *pixels)
 {
-	// Revert our texture binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
+	// Load the texture image via pixel buffer emulation functionality to ensure that no
+	// native OpenGL pixel buffer objects are bound when the texture is uploaded
+	// (because the texture is being sourced from client memory).
+	GLPixelBufferImpl::gl_tex_sub_image_2D(
+			renderer, shared_from_this(), target, level, xoffset, yoffset, width, height, format, type, pixels);
+}
 
-	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_texture_and_apply(shared_from_this(), GL_TEXTURE0, target);
 
-	glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
+void
+GPlatesOpenGL::GLTexture::gl_tex_sub_image_2D(
+		GLRenderer &renderer,
+		GLenum target,
+		GLint level,
+		GLint xoffset,
+		GLint yoffset,
+		GLsizei width,
+		GLsizei height,
+		GLenum format,
+		GLenum type,
+		const GLPixelBuffer::shared_ptr_to_const_type &pixels,
+		GLint offset)
+{
+	// Get the pixel buffer to load the texture image.
+	pixels->gl_tex_sub_image_2D(
+			renderer, shared_from_this(), target, level, xoffset, yoffset, width, height, format, type, offset);
 }
 
 
@@ -302,17 +395,48 @@ GPlatesOpenGL::GLTexture::gl_tex_sub_image_3D(
 		GLenum type,
 		const GLvoid *pixels)
 {
-	// The GL_EXT_subtexture extension must be available.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_subtexture),
-			GPLATES_ASSERTION_SOURCE);
+	// Load the texture image via pixel buffer emulation functionality to ensure that no
+	// native OpenGL pixel buffer objects are bound when the texture is uploaded
+	// (because the texture is being sourced from client memory).
+	GLPixelBufferImpl::gl_tex_sub_image_3D(
+			renderer, shared_from_this(), target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+}
 
-	// Revert our texture binding on return so we don't affect changes made by clients.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
 
-	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
-	// Make sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	renderer.gl_bind_texture_and_apply(shared_from_this(), GL_TEXTURE0, target);
+void
+GPlatesOpenGL::GLTexture::gl_tex_sub_image_3D(
+		GLRenderer &renderer,
+		GLenum target,
+		GLint level,
+		GLint xoffset,
+		GLint yoffset,
+		GLint zoffset,
+		GLsizei width,
+		GLsizei height,
+		GLsizei depth,
+		GLenum format,
+		GLenum type,
+		const GLPixelBuffer::shared_ptr_to_const_type &pixels,
+		GLint offset)
+{
+	// Get the pixel buffer to load the texture image.
+	pixels->gl_tex_sub_image_3D(
+			renderer, shared_from_this(), target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, offset);
+}
 
-	glTexSubImage3DEXT(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+
+bool
+GPlatesOpenGL::GLTexture::is_format_floating_point(
+		GLint internalformat)
+{
+	return
+			// GL_ARB_texture_float ...
+			(internalformat >= GL_RGBA32F_ARB && internalformat <= GL_LUMINANCE_ALPHA16F_ARB) ||
+			// GL_ARB_texture_rg ...
+			(internalformat >= GL_R16F && internalformat <= GL_RG32F)
+#ifdef GL_EXT_packed_float // In case old GLEW header file.
+			// GL_EXT_packed_float ...
+			|| internalformat == GL_R11F_G11F_B10F_EXT || internalformat == GL_UNSIGNED_INT_10F_11F_11F_REV_EXT
+#endif
+			;
 }

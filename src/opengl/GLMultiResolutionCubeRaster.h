@@ -106,11 +106,68 @@ namespace GPlatesOpenGL
 		typedef boost::shared_ptr<void> cache_handle_type;
 
 		/**
-		 * Typedef for a @a GLCubeSubvision cache of projection transforms.
+		 * The texture filter types to use for fixed-point textures.
+		 *
+		 * Floating-point textures always use nearest filtering with no anisotropic filtering.
+		 * This is because earlier hardware does not support anything but nearest filtering and
+		 * so it needs to be emulated in a fragment shader (instead of being part of a texture
+		 * object's state) and hence must be done by the client (not us).
+		 *
+		 * NOTE: The 'minification' filtering is always 'nearest' - the 'magnification' filter is
+		 * what is configurable.
+		 * The 'magnification' filter also applies only to the leaf node since that is when
+		 * the maximum resolution has been reached and magnification starts to happen.
+		 * 
+		 * If anisotropic filtering is specified it will be ignored if the
+		 * 'GLEW_EXT_texture_filter_anisotropic' extension is not supported.
 		 */
-		typedef GPlatesOpenGL::GLCubeSubdivisionCache<
-				true/*CacheProjectionTransform*/>
-						cube_subdivision_projection_transforms_cache_type;
+		enum FixedPointTextureFilterType
+		{
+			// Nearest neighbour magnification filtering...
+			FIXED_POINT_TEXTURE_FILTER_MAG_NEAREST,
+			// Nearest neighbour magnification (with anisotropic) filtering...
+			FIXED_POINT_TEXTURE_FILTER_MAG_NEAREST_ANISOTROPIC,
+			// Bilinear magnification filtering...
+			FIXED_POINT_TEXTURE_FILTER_MAG_LINEAR,
+			// Bilinear magnification (with anisotropic) filtering...
+			FIXED_POINT_TEXTURE_FILTER_MAG_LINEAR_ANISOTROPIC
+		};
+
+		/**
+		 * The default fixed-point texture filtering mode for the textures returned by @a get_tile_texture
+		 * is bilinear (with anisotropic) filtering.
+		 *
+		 * Note that floating-point textures are always nearest neighbour (with no anisotropic) regardless.
+		 */
+		static const FixedPointTextureFilterType DEFAULT_FIXED_POINT_TEXTURE_FILTER =
+				FIXED_POINT_TEXTURE_FILTER_MAG_LINEAR_ANISOTROPIC;
+
+
+		/**
+		 * Determines the granularity of caching to be used for GLMultiResolutionCubeRaster tile textures...
+		 */
+		enum CacheTileTexturesType
+		{
+			CACHE_TILE_TEXTURES_NONE,
+			CACHE_TILE_TEXTURES_INDIVIDUAL_TILES,
+			CACHE_TILE_TEXTURES_ENTIRE_CUBE_QUAD_TREE
+		};
+
+		/**
+		 * The default granularity of tile texture caching.
+		 */
+		static const CacheTileTexturesType DEFAULT_CACHE_TILE_TEXTURES = CACHE_TILE_TEXTURES_INDIVIDUAL_TILES;
+
+
+		/**
+		 * The default tile dimension is 256.
+		 *
+		 * See @a create for details on how, and if, the actual tile dimension is calculated.
+		 *
+		 * This size gives us a small enough tile region on the globe to make good use
+		 * of view frustum culling of tiles.
+		 */
+		static const std::size_t DEFAULT_TILE_TEXEL_DIMENSION = 256;
 
 
 		/**
@@ -213,23 +270,54 @@ namespace GPlatesOpenGL
 		/**
 		 * Creates a @a GLMultiResolutionCubeRaster object.
 		 *
-		 * See @a GLMultiResolutionRaster for a description of @a source_raster_level_of_detail_bias.
-		 * This is the bias applied to the source @a source_multi_resolution_raster when it
-		 * is rendered into a tile of this cube raster.
+		 * @a tile_texel_dimension is the (possibly unadapted) dimension of each square tile texture
+		 * (returned by @a get_tile_texture).
+		 *
+		 * If @a adapt_tile_dimension_to_source_resolution is true then @a tile_texel_dimension
+		 * is optimally adapted to the resolution of the source raster such that each level-of-detail
+		 * in 'this' cube raster matches the source resolution - this also minimises the number of
+		 * levels of detail - without this there is typically one extra level-of-detail required to
+		 * capture the highest resolution of the source raster.
+		 * NOTE: The adapted tile texel dimension will never be larger than twice @a tile_texel_dimension.
+		 * So you should ensure that '2 * tile_texel_dimension' is not larger than the maximum texture dimension.
+		 *
+		 * NOTE: If the 'GL_ARB_texture_non_power_of_two' extension is *not* supported then the
+		 * actual tile texel dimension will be rounded up to the next power-of-two dimension unless
+		 * it is already a power-of-two. There is effectively no optimal adaption for power-of-two dimensions.
+		 * This happens regardless of the value of @a adapt_tile_dimension_to_source_resolution.
+		 *
+		 * If @a cache_source_tile_textures is true then the source raster tile textures will be
+		 * cached *when/if* our tile textures are cached during calls to @a get_tile_texture.
+		 * Note that the @a get_tile_texture method is used to specify if, and when, *our* tile textures are cached.
+		 *
+		 * If @a cache_tile_textures is true then the internal texture cache is allowed to
+		 * grow to encompass all existing cube quad tree nodes/tiles.
+		 * WARNING: This should normally be turned off (especially for visualisation of rasters where
+		 * only a small part of the raster is ever visible at any time - otherwise memory usage will
+		 * grow excessively large).
+		 * See similar variable in @a GLMultiResolutionRaster::create for more details.
+		 * If it's turned on then it should ideally only be turned on either there or here.
 		 */
 		static
 		non_null_ptr_type
 		create(
+				GLRenderer &renderer,
 				const GLMultiResolutionRaster::non_null_ptr_type &source_multi_resolution_raster,
-				const cube_subdivision_projection_transforms_cache_type::non_null_ptr_type &
-						cube_subdivision_projection_transforms_cache,
-				float source_raster_level_of_detail_bias = 0.0f)
+				std::size_t tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION,
+				bool adapt_tile_dimension_to_source_resolution = true,
+				FixedPointTextureFilterType fixed_point_texture_filter = DEFAULT_FIXED_POINT_TEXTURE_FILTER,
+				bool cache_source_tile_textures = true,
+				CacheTileTexturesType cache_tile_textures = DEFAULT_CACHE_TILE_TEXTURES)
 		{
 			return non_null_ptr_type(
 					new GLMultiResolutionCubeRaster(
+							renderer,
 							source_multi_resolution_raster,
-							cube_subdivision_projection_transforms_cache,
-							source_raster_level_of_detail_bias));
+							tile_texel_dimension,
+							adapt_tile_dimension_to_source_resolution,
+							fixed_point_texture_filter,
+							cache_source_tile_textures,
+							cache_tile_textures));
 		}
 
 
@@ -266,12 +354,23 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns texture of tile.
 		 *
+		 * NOTE: The returned texture has bilinear filtering enabled if it's a fixed-point texture.
+		 * If it's a floating-point texture you should emulate bilinear filtering in a fragment shader.
+		 * This is because earlier hardware (supporting floating-point textures) only supports nearest filtering.
+		 *
 		 * @a renderer is used if the tile's texture is not currently cached and needs
 		 * to be re-rendered from the source raster.
 		 *
+		 * @a cache_handle can be stored by the client to keep textures (and vertices) cached.
+		 * Depending on the 'cache_tile_textures' parameter to @a create the returned tile texture
+		 * can be kept alive (ie, prevents it from being recycled in the internal cache due to another
+		 * call to @a get_tile_texture).
+		 * The same applies to the source tile textures from GLMultiResolutionRaster which depend
+		 * on the 'cache_source_tile_textures' parameter to @a create.
+		 *
 		 * NOTE: The returned texture shared pointer should only be used for rendering
-		 * and then discarded. This is because the texture is part of a texture cache
-		 * and so it cannot be recycled if a shared pointer is holding onto it.
+		 * and then discarded. This is because the texture is part of a texture cache and it might
+		 * get used during a subsequent call to @a get_tile_texture if it isn't being cached.
 		 */
 		GLTexture::shared_ptr_to_const_type
 		get_tile_texture(
@@ -279,7 +378,104 @@ namespace GPlatesOpenGL
 				const QuadTreeNode &tile,
 				cache_handle_type &cache_handle);
 
+
+		/**
+		 * Returns the tile texel dimension passed into constructor.
+		 */
+		std::size_t
+		get_tile_texel_dimension() const
+		{
+			return d_tile_texel_dimension;
+		}
+
+
+		/**
+		 * Returns the texture internal format that can be used if rendering to a texture as
+		 * opposed to the main framebuffer.
+		 *
+		 * This is the internal format of the texture returned by @a get_tile_texture.
+		 */
+		GLint
+		get_tile_texture_internal_format() const
+		{
+			// It's the same as our source raster input.
+			return d_multi_resolution_raster->get_target_texture_internal_format();
+		}
+
+
+		/**
+		 * Returns the filter for fixed-point textures (selected in @a create).
+		 */
+		FixedPointTextureFilterType
+		get_fixed_point_texture_filter() const
+		{
+			return d_fixed_point_texture_filter;
+		}
+
+
+		/**
+		 * Initialises the specified tile texture to reserve memory for its (uninitialised) image and
+		 * sets its various filtering options.
+		 *
+		 * Normally this method isn't needed since you can call @a get_tile_texture which both
+		 * allocates and initialises a texture.
+		 * However clients can call this if they want to modify a tile texture returned by
+		 * @a get_tile_texture (such as modulating it with another texture).
+		 */
+		void
+		create_tile_texture(
+				GLRenderer &renderer,
+				const GLTexture::shared_ptr_type &tile_texture,
+				const QuadTreeNode &tile);
+
+
+		/**
+		 * Updates the specified tile texture, created with @a create_tile_texture, so that its
+		 * filtering options correspond to whether it belongs to a leaf node tile or not.
+		 *
+		 * Normally this method isn't needed since you can call @a get_tile_texture which handles
+		 * @a create_tile_texture and @a update_tile_texture for you.
+		 * However clients can call this if they want to modify a tile texture returned by
+		 * @a get_tile_texture (such as modulating it with another texture).
+		 */
+		void
+		update_tile_texture(
+				GLRenderer &renderer,
+				const GLTexture::shared_ptr_type &tile_texture,
+				const QuadTreeNode &tile);
+
 	private:
+		/**
+		 * Used to cache information, specific to a tile, to return to the client for caching.
+		 */
+		struct ClientCacheTile
+		{
+			ClientCacheTile(
+					const tile_texture_cache_type::object_shared_ptr_type &tile_texture_,
+					// Set to true to cache the GLMultiResolutionCubeRaster tile texture...
+					CacheTileTexturesType cache_tile_textures_) :
+				// NOTE: The GLMultiResolutionRaster tile is always cached...
+				source_cache_handle(tile_texture_->source_cache_handle)
+			{
+				if (cache_tile_textures_ != CACHE_TILE_TEXTURES_NONE)
+				{
+					tile_texture = tile_texture_;
+				}
+			}
+
+			tile_texture_cache_type::object_shared_ptr_type tile_texture;
+			GLMultiResolutionRaster::cache_handle_type source_cache_handle;
+		};
+
+
+		/**
+		 * Typedef for a @a GLCubeSubvision cache.
+		 */
+		typedef GPlatesOpenGL::GLCubeSubdivisionCache<
+				true/*CacheProjectionTransform*/>
+						cube_subdivision_cache_type;
+
+
 		/**
 		 * The raster we are re-sampling into our cube map.
 		 */
@@ -287,26 +483,29 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Used to retrieve the cube quadtree projection transforms.
-		 */
-		GPlatesGlobal::PointerTraits<cube_subdivision_projection_transforms_cache_type>::non_null_ptr_type
-				d_cube_subdivision_projection_transforms_cache;
-
-		/**
 		 * The number of texels along a tiles edge (horizontal or vertical since it's square).
 		 */
 		std::size_t d_tile_texel_dimension;
 
 		/**
-		 * The LOD bias to apply to the source raster when rendering it into our
-		 * render textures.
+		 * The texture filtering mode (for fixed-point textures) returned by @a get_tile_texture.
 		 */
-		float d_source_raster_level_of_detail_bias;
+		FixedPointTextureFilterType d_fixed_point_texture_filter;
 
 		/**
 		 * Cache of tile textures.
 		 */
 		tile_texture_cache_type::shared_ptr_type d_texture_cache;
+
+		/**
+		 * Determines granularity of caching of *our* tile textures (from @a get_tile_texture).
+		 */
+		CacheTileTexturesType d_cache_tile_textures;
+
+		/**
+		 * If true then we cache the source tile textures used to render each of our tile textures.
+		 */
+		bool d_cache_source_tile_textures;
 
 		/**
 		 * The cube quad tree.
@@ -317,33 +516,47 @@ namespace GPlatesOpenGL
 
 		//! Constructor.
 		GLMultiResolutionCubeRaster(
+				GLRenderer &renderer,
 				const GLMultiResolutionRaster::non_null_ptr_type &multi_resolution_raster,
-				const cube_subdivision_projection_transforms_cache_type::non_null_ptr_type &cube_subdivision_projection_transforms_cache,
-				float source_raster_level_of_detail_bias);
+				std::size_t initial_tile_texel_dimension,
+				bool adapt_tile_dimension_to_source_resolution,
+				FixedPointTextureFilterType fixed_point_texture_filter,
+				bool cache_source_tile_textures,
+				CacheTileTexturesType cache_tile_textures);
 
+		/**
+		 * Adjusts @a d_tile_texel_dimension and returns the number of LODs of source raster used
+		 * by this cube map raster.
+		 */
+		unsigned int
+		adjust_tile_texel_dimension(
+				bool adapt_tile_dimension_to_source_resolution);
 
 		void
-		initialise_cube_quad_trees();
+		initialise_cube_quad_trees(
+				const unsigned int num_levels_of_detail);
 
 		/**
 		 * Creates a quad tree node if it is covered by the source raster.
 		 */
 		boost::optional<cube_quad_tree_type::node_type::ptr_type>
 		create_quad_tree_node(
-				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
 				const GLViewport &viewport,
-				const cube_subdivision_projection_transforms_cache_type::node_reference_type &projection_transform_quad_tree_node);
+				cube_subdivision_cache_type &cube_subdivision_cache,
+				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
+				const unsigned int level_of_detail);
 
 		void
 		render_raster_data_into_tile_texture(
+				GLRenderer &renderer,
 				const QuadTreeNode &tile,
-				TileTexture &tile_texture,
-				GLRenderer &renderer);
+				TileTexture &tile_texture);
 
 		void
-		create_texture(
+		update_fixed_point_tile_texture_mag_filter(
 				GLRenderer &renderer,
-				const GLTexture::shared_ptr_type &texture);
+				const GLTexture::shared_ptr_type &tile_texture,
+				const QuadTreeNode &tile);
 	};
 }
 

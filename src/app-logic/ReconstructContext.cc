@@ -221,44 +221,144 @@ GPlatesAppLogic::ReconstructContext::reconstruct(
 					reconstruction_tree_creator,
 					reconstruction_time);
 
-			// Iterate over the reconstructed feature geometries and determine the
-			// geometry property handle of each one.
-			std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>::const_iterator rfg_iter =
-					reconstructed_feature_geometries.begin();
-			std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>::const_iterator rfg_end =
-					reconstructed_feature_geometries.end();
-			for ( ; rfg_iter != rfg_end; ++rfg_iter)
-			{
-				const ReconstructedFeatureGeometry::non_null_ptr_type &rfg = *rfg_iter;
-				const GPlatesModel::FeatureHandle::iterator rfg_geometry_property = rfg->property();
-
-				// Iterate over the geometry properties we've previously obtained for the
-				// current feature and find which one corresponds to the current RFG.
-				ReconstructMethodFeature::geometry_property_to_handle_seq_type::const_iterator
-						geometry_property_handle_iter =
-								reconstruct_method_feature.geometry_property_to_handle_seq.begin();
-				const ReconstructMethodFeature::geometry_property_to_handle_seq_type::const_iterator
-						geometry_property_handle_end =
-								reconstruct_method_feature.geometry_property_to_handle_seq.end();
-				for ( ; geometry_property_handle_iter != geometry_property_handle_end; ++geometry_property_handle_iter)
-				{
-					if (geometry_property_handle_iter->property_iterator == rfg_geometry_property)
-					{
-						// Add the RFG and its associated geometry property handle to the caller's sequence.
-						reconstructions.push_back(
-								Reconstruction(
-										rfg,
-										geometry_property_handle_iter->geometry_property_handle));
-
-						// Continue to the next RFG.
-						break;
-					}
-				}
-			}
+			// Convert the reconstructed feature geometries to reconstructions for the current feature.
+			get_feature_reconstructions(
+					reconstructions,
+					reconstruct_method_feature,
+					reconstructed_feature_geometries);
 		}
 	}
 
 	return reconstruct_handle;
+}
+
+
+GPlatesAppLogic::ReconstructHandle::type
+GPlatesAppLogic::ReconstructContext::reconstruct(
+		std::vector<ReconstructedFeature> &reconstructed_features,
+		const ReconstructParams &reconstruct_params,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const double &reconstruction_time)
+{
+	//PROFILE_BLOCK("ReconstructContext::reconstruct: ReconstructedFeature's");
+
+	// Since we're mapping RFGs to geometry property handles we need to ensure
+	// that the handles have been assigned.
+	if (!have_assigned_geometry_property_handles())
+	{
+		assign_geometry_property_handles();
+	}
+
+	// Get the next global reconstruct handle - it'll be stored in each RFG.
+	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
+
+	// Optimisation: Count the number of features so we can size the caller's array to avoid
+	// unnecessary copying/re-allocation as we add features to it.
+	unsigned int num_features = 0;
+	BOOST_FOREACH(
+			const ReconstructMethodFeatures &reconstruct_method_features,
+			d_reconstruct_method_features_seq)
+	{
+		num_features += reconstruct_method_features.features.size();
+	}
+	// Avoid reallocations (note that 'ReconstructedFeature' contains a std::vector data member
+	// itself which might also need to be deallocated/reallocated).
+	reconstructed_features.reserve(reconstructed_features.size() + num_features);
+
+	// Iterate over the reconstruct method features.
+	BOOST_FOREACH(
+			const ReconstructMethodFeatures &reconstruct_method_features,
+			d_reconstruct_method_features_seq)
+	{
+		ReconstructMethodInterface &reconstruct_method = *reconstruct_method_features.reconstruct_method;
+
+		// Iterate over the features that are to be reconstructed using the current method.
+		std::vector<ReconstructMethodFeature>::const_iterator features_iter =
+				reconstruct_method_features.features.begin();
+		const std::vector<ReconstructMethodFeature>::const_iterator features_end =
+				reconstruct_method_features.features.end();
+		for ( ; features_iter != features_end; ++features_iter)
+		{
+			const ReconstructMethodFeature &reconstruct_method_feature = *features_iter;
+			const GPlatesModel::FeatureHandle::weak_ref &feature_ref = reconstruct_method_feature.feature;
+
+			// Reconstruct the current feature.
+			std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
+			reconstruct_method.reconstruct_feature(
+					reconstructed_feature_geometries,
+					feature_ref,
+					reconstruct_handle,
+					reconstruct_params,
+					reconstruction_tree_creator,
+					reconstruction_time);
+
+			// Add a reconstructed feature objects to the caller's sequence.
+			reconstructed_features.push_back(ReconstructedFeature(feature_ref));
+			ReconstructedFeature &reconstructed_feature = reconstructed_features.back();
+
+			// Convert the reconstructed feature geometries to reconstructions for the current feature.
+			get_feature_reconstructions(
+					// Note: Add to the reconstructed feature instead of a global sequence of
+					// reconstructions like other 'reconstruct' methods...
+					reconstructed_feature.d_reconstructions,
+					reconstruct_method_feature,
+					reconstructed_feature_geometries);
+		}
+	}
+
+	return reconstruct_handle;
+}
+
+
+void
+GPlatesAppLogic::ReconstructContext::get_feature_reconstructions(
+		std::vector<Reconstruction> &reconstructions,
+		const ReconstructMethodFeature &reconstruct_method_feature,
+		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries)
+{
+	// Nothing to do if there are no reconstructed feature geometries.
+	if (reconstructed_feature_geometries.empty())
+	{
+		return;
+	}
+
+	// Optimisation to size geometries array (most likely one since most features have one geometry).
+	reconstructions.reserve(reconstructed_feature_geometries.size());
+
+	// Iterate over the reconstructed feature geometries and determine the
+	// geometry property handle of each one.
+	std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>::const_iterator rfg_iter =
+			reconstructed_feature_geometries.begin();
+	std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>::const_iterator rfg_end =
+			reconstructed_feature_geometries.end();
+	for ( ; rfg_iter != rfg_end; ++rfg_iter)
+	{
+		const ReconstructedFeatureGeometry::non_null_ptr_type &rfg = *rfg_iter;
+		const GPlatesModel::FeatureHandle::iterator rfg_geometry_property = rfg->property();
+
+		// Iterate over the geometry properties we've previously obtained for the
+		// current feature and find which one corresponds to the current RFG.
+		ReconstructMethodFeature::geometry_property_to_handle_seq_type::const_iterator
+				geometry_property_handle_iter =
+						reconstruct_method_feature.geometry_property_to_handle_seq.begin();
+		const ReconstructMethodFeature::geometry_property_to_handle_seq_type::const_iterator
+				geometry_property_handle_end =
+						reconstruct_method_feature.geometry_property_to_handle_seq.end();
+		for ( ; geometry_property_handle_iter != geometry_property_handle_end; ++geometry_property_handle_iter)
+		{
+			if (geometry_property_handle_iter->property_iterator == rfg_geometry_property)
+			{
+				// Add the RFG and its associated geometry property handle to the caller's sequence.
+				reconstructions.push_back(
+						Reconstruction(
+								rfg,
+								geometry_property_handle_iter->geometry_property_handle));
+
+				// Continue to the next RFG.
+				break;
+			}
+		}
+	}
 }
 
 
