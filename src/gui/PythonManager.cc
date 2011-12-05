@@ -107,14 +107,21 @@ GPlatesGui::PythonManager::initialize()
 void
 GPlatesGui::PythonManager::check_python_capability()
 {
-	QString test_code = QString(
-			"import sys; \
-			import code; \
-			import math; \
-			import pygplates; \
-			print \'testing python import...\'; \
-			print pygplates.Application().current_time(); \
-			print math.log(12);");
+	QString test_code = QString() +
+			"print \'******Start testing python capability******\';\n" +
+			"import sys;\n" +
+			"import code;\n"  +
+			"import math;\n"  +
+			"import platform; " +
+			"import pygplates; " +
+			"print \'python import passed.\'; " +
+			"print math.log(12); " +
+			"print \'python math passed.\'; " +
+			"print sys.version_info; " +
+			"print sys.platform; " +
+			"print platform.uname(); " +
+			"print \'python sys passed.\'; " +
+			"print \'******End of testing python capability******\'; ";
 
 	bool result = true;
 	GPlatesApi::PythonInterpreterLocker l;
