@@ -237,7 +237,8 @@ namespace GPlatesUtils
 		 */
 		ObjectPool() :
 			d_object_pool(new object_pool_type()),
-			d_free_list_node_pool(new free_list_node_pool_type())
+			d_free_list_node_pool(new free_list_node_pool_type()),
+			d_num_objects(0)
 		{  }
 
 
