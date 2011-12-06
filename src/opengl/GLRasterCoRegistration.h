@@ -751,7 +751,7 @@ namespace GPlatesOpenGL
 			is_sub_tree_full() const
 			{
 				// d_num_descendant_leaf_nodes == (2 ^ d_reduce_stage_index) ^ 2
-				return d_num_descendant_leaf_nodes == (1 << (d_reduce_stage_index << 1));
+				return d_num_descendant_leaf_nodes == static_cast<unsigned>(1 << (d_reduce_stage_index << 1));
 			}
 
 			/**
