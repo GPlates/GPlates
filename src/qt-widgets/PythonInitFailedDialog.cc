@@ -27,6 +27,7 @@
 
 #include "gui/PythonManager.h"
 
+#ifndef GPLATES_NO_PYTHON
 
 namespace
 {
@@ -111,6 +112,6 @@ GPlatesQtWidgets::PythonInitFailedDialog::assemble_message()
 #endif
 }
 
-
+#endif
 
 
