@@ -114,7 +114,7 @@ GPlatesApi::Feature::get_properties_by_name(
  				GPlatesUtils::GetPropertyAsPythonObjVisitor visitor;
  				(*it)->accept_visitor(visitor);
  				bp::object data = visitor.get_data(); 
-				if(!data.is_none())
+				if(!(data.ptr() == Py_None))
  				{
  					ret.append(data);
  				}
@@ -152,6 +152,9 @@ GPlatesApi::Feature::get_properties_by_name(
 
 					case QVariant::String:
 						ret.append(data.toString());
+						break;
+					default:
+						qDebug() << "Unknown type of shape file attribute.";
 						break;
 				}
 			}
