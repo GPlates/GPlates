@@ -47,89 +47,56 @@ namespace GPlatesApi
 			d_handle(w_ref)
 		{ }
 
+
+		/*
+		* Return all properties in boost::python::list.
+		*/
+		bp::list
+		get_properties();
+
+
+		/*
+		* Return all properties with given name in boost::python::list.
+		*/
+		bp::list
+		get_properties_by_name(
+				bp::object prop_name = bp::str());
+
 		
 		bp::object
-		id()
-		{
-			if(!d_handle.is_valid())
-				return bp::object();
-
-			const QByteArray buf = d_handle->feature_id().get().qstring().toUtf8();
-			return bp::str(buf.data());
-		}
+		feature_id();
 
 		
 		bp::tuple
-		valid_time()
-		{
-			if(!d_handle.is_valid())
-				return bp::tuple();
+		valid_time();
 
-			GPlatesMaths::Real start, end;
-			boost::tie(start, end) = GPlatesUtils::get_start_end_time(d_handle.handle_ptr());
-			return bp::make_tuple(start.dval(),end.dval());
-		}
+
+		bp::object
+		begin_time();
+
+
+		bp::object
+		end_time();
+
+				
+		bp::object
+		feature_type();
 
 		
+		unsigned long
+		plate_id();
+
+		
+
+
 		operator GPlatesModel::FeatureHandle::weak_ref()
 		{
 			return d_handle;
 		}
-
-		
-		bp::object
-		type()
-		{
-			if(!d_handle.is_valid())
-				return bp::object();
-
-			const QByteArray buf = d_handle->feature_type().get_name().qstring().toUtf8();
-			return bp::str(buf.data());
-		}
-
-		
-		unsigned long
-		plate_id()
-		{
-			if(!d_handle.is_valid())
-				return 0;
-
-			boost::optional<unsigned long> pid =
-				GPlatesUtils::get_int_plate_id(d_handle.handle_ptr());
-			return pid ? *pid : 0;
-		}
-
-		
-		bp::object
-		get_property(bp::object name_)
-		{
-			using namespace GPlatesDataMining;
-			QString name = QString::fromUtf8(bp::extract<const char*>(name_));
-			OpaqueData data = DataMiningUtils::get_property_value_by_name(d_handle, name);
-			
-			if(is_empty_opaque(data))
-			{
-				data = DataMiningUtils::get_shape_file_value_by_name(d_handle, name);
-
-				if(is_empty_opaque(data))
-					return bp::object();
-			}
-			
-			if(boost::optional<double> int_tmp = 
-				boost::apply_visitor(ConvertOpaqueDataToDouble(), data))
-			{
-				return bp::object(*int_tmp);
-			}
-
-			if(boost::optional<QString> str_tmp = 
-				boost::apply_visitor(ConvertOpaqueDataToString(), data))
-			{
-				const QByteArray buf = str_tmp->toUtf8();
-				return bp::str(buf.data());
-			}
-			
-			return bp::object();
-		}
+	//protected:
+	public:
+		bp::list
+		get_all_property_names();
 
 	private:
 		GPlatesModel::FeatureHandle::weak_ref d_handle;

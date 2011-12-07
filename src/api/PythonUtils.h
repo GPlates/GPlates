@@ -186,7 +186,14 @@ namespace GPlatesApi
 			return ret;
 		}
 
-
+		inline
+		boost::python::str
+		qstring_to_python_string(
+				const QString& str_input)
+		{
+			QByteArray buf = str_input.toUtf8();
+			return boost::python::str(buf.constData());
+		}
 	}
 }
 #endif   //GPLATES_NO_PYTHON)

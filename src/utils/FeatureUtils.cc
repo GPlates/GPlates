@@ -28,6 +28,8 @@
 
 #include "model/FeatureVisitor.h"
 #include "model/FeatureHandle.h"
+#include "model/QualifiedXmlName.h"
+
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GeoTimeInstant.h"
@@ -143,20 +145,23 @@ GPlatesUtils::get_age(
 	return boost::none;
 }
 
-GPlatesMaths::Real
-to_real(const GPlatesPropertyValues::GeoTimeInstant& time)
+namespace
 {
-	if (time.is_distant_past())
+	GPlatesMaths::Real
+	to_real(const GPlatesPropertyValues::GeoTimeInstant& time)
 	{
-		return GPlatesMaths::Real::positive_infinity();
-	}
-	else if (time.is_distant_future())
-	{
-		return GPlatesMaths::Real::negative_infinity();
-	}
-	else
-	{
-		return GPlatesMaths::Real(time.value());
+		if (time.is_distant_past())
+		{
+			return GPlatesMaths::Real::positive_infinity();
+		}
+		else if (time.is_distant_future())
+		{
+			return GPlatesMaths::Real::negative_infinity();
+		}
+		else
+		{
+			return GPlatesMaths::Real(time.value());
+		}
 	}
 }
 
@@ -192,6 +197,41 @@ GPlatesUtils::get_start_end_time(
 	}
 	return boost::make_tuple(st,et);
 }
+
+
+boost::optional<GPlatesModel::PropertyName>
+GPlatesUtils::convert_property_name(
+		const QString& name)
+{
+	QRegExp rx("^\\s*\\b(gpml|gml)\\b\\s*:\\s*\\b(\\w+)\\b\\s*"); // (gpml|gmp):(name)
+	rx.indexIn(name);
+	QString prefix = rx.cap(1);
+	QString short_name = rx.cap(2);
+	qDebug() << "prefix: " << prefix; 
+	qDebug() << "name: " << short_name; 
+	
+	boost::optional<GPlatesModel::PropertyName> ret = boost::none;
+	if(prefix.length() == 0 || short_name.length() == 0)
+	{
+		qWarning() << "The prefix or name is empty.";
+		qWarning() << prefix << " : " << short_name;
+	}
+
+	if(prefix == "gpml")
+	{
+		ret = GPlatesModel::PropertyName::create_gpml(short_name);
+	}
+
+	if(prefix == "gml")
+	{
+		ret = GPlatesModel::PropertyName::create_gml(short_name);
+	}
+
+	return ret; 
+}
+
+
+
 
 
 

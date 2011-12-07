@@ -841,6 +841,9 @@ namespace GPlatesQtWidgets
 		/*
 		* Fixme: some of the scoped pointers below are not necessary since
 		* most of the dialogs have a parent which means Qt will handle the memory for us.
+		* There is no "double free" problem because the boost::scoped_ptr goes out of scope first, 
+		* when the pointer has been deleted by boost::scoped_ptr, Qt memory management system can
+		* detect the deletion of the pointer because the object is derived from QObject.
 		*/
 		boost::scoped_ptr<AboutDialog> d_about_dialog_ptr;
 		boost::scoped_ptr<AnimateDialog> d_animate_dialog_ptr;

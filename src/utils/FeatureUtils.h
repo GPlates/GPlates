@@ -28,8 +28,12 @@
 
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
+
 #include "maths/Real.h"
+
 #include "model/types.h"
+#include "model/PropertyName.h"
+#include "model/PropertyValue.h"
 
 namespace GPlatesPropertyValues
 {
@@ -56,7 +60,41 @@ namespace GPlatesUtils
 			GPlatesMaths::Real>
 	get_start_end_time(
 			const GPlatesModel::FeatureHandle* feature_ptr);
+
+
+	boost::optional<GPlatesModel::PropertyName>
+	convert_property_name(
+			const QString&);
+
+	
+	inline
+	boost::optional<QString>
+	get_shapefile_attribute(
+			const QString& name)
+	{
+		boost::optional<QString> shape_name = boost::none;
+		QRegExp rx("^\\s*(gpml:shapefileAttributes)\\s*:\\s*\\b(\\w+)\\b\\s*"); // gpml:shapefileAttributes
+		if(rx.indexIn(name) != -1)
+		{
+			shape_name = rx.cap(2);
+			qDebug() << "Shapefile attribute name: " << *shape_name;
+		}
+		return shape_name;
+	}
+
+
+	inline
+	QString
+	property_value_to_qstring(
+			const GPlatesModel::PropertyValue& data)
+	{
+		std::stringstream ss;
+		data.print_to(ss);
+		return QString(ss.str().c_str());
+	}
+
 }
+
 #endif //GPLATES_UTILS_FEATUREUTILS_H
 
 

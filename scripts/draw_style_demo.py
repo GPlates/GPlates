@@ -89,7 +89,7 @@ class FeatureAge:
 		pass
 				
 	def get_style(self, feature, style):
-		age = feature.valid_time[0]
+		age = feature.begin_time()
 		style.colour = self.cfg['Palette'].get_color(pygplates.PaletteKey(float(age)))
 		
 	def get_config(self):
@@ -106,7 +106,7 @@ class FeatureType:
 		pass
 		
 	def get_style(self, feature, style):
-		type = feature.type;
+		type = feature.feature_type();
 		style.colour = self.cfg['Palette'].get_color(pygplates.PaletteKey(type))
 		
 	def get_config(self):
@@ -124,7 +124,7 @@ class ColorByProperty:
 			
 	def get_style(self, feature, style):
 		p_name = self.cfg['v_name_1']
-		prop = feature.get_property(p_name)
+		prop = feature.get_properties_by_name(p_name)
 		#print prop
 		style.colour = self.cfg['p1'].get_color(pygplates.PaletteKey(prop))
 		

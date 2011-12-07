@@ -26,14 +26,25 @@
 #if !defined(GPLATES_NO_PYTHON)
 
 #include "PythonUtils.h"
+#include "PyFeature.h"
+
 #include "gui/Colour.h"
 #include "gui/ColourPalette.h"
 #include "gui/DrawStyleAdapters.h"
+#include "gui/DrawStyleManager.h"
+
+
 
 namespace bp = boost::python;
 using namespace boost::python;
+
 namespace GPlatesApi
 {
+	//I have trouble to use the static functions , for example "static const Colour &get_red();",
+	//in GPlatesGui::Colour class for boost python class member function export due to the fact that
+	//boost python seems have problem with the return values which are reference.
+	//So, I have to wrap those functions here.  
+
 	inline
 	GPlatesGui::Colour
 	red()
@@ -54,6 +65,67 @@ namespace GPlatesApi
 	{
 		return GPlatesGui::Colour::get_white();
 	}
+
+	inline
+	GPlatesGui::Colour
+	black()
+	{
+		return GPlatesGui::Colour::get_black();
+	}
+
+
+	inline
+	GPlatesGui::Colour
+	green()
+	{
+		return GPlatesGui::Colour::get_green();
+	}
+
+	inline
+	GPlatesGui::Colour
+	grey()
+	{
+		return GPlatesGui::Colour::get_grey();
+	}
+
+	inline
+	GPlatesGui::Colour
+	silver()
+	{
+		return GPlatesGui::Colour::get_silver();
+	}
+
+	inline
+	GPlatesGui::Colour
+	purple()
+	{
+		return GPlatesGui::Colour::get_purple();
+	}
+
+
+	inline
+	GPlatesGui::Colour
+	yellow()
+	{
+		return GPlatesGui::Colour::get_yellow();
+	}
+
+	inline
+	GPlatesGui::Colour
+	navy()
+	{
+		return GPlatesGui::Colour::get_navy();
+	}
+
+	//TODO
+	// 	static const Colour &get_maroon();
+	// 
+	// 	static const Colour &get_fuchsia();
+	// 	static const Colour &get_lime();
+	// 	static const Colour &get_olive();
+	// 
+	// 	static const Colour &get_teal();
+	// 	static const Colour &get_aqua();
 }
 
 	
@@ -65,6 +137,13 @@ export_colour()
 		.add_static_property("blue", &GPlatesApi::blue)
 		.add_static_property("red", &GPlatesApi::red)
 		.add_static_property("white", &GPlatesApi::white)
+		.add_static_property("black", &GPlatesApi::black)
+		.add_static_property("green", &GPlatesApi::green)
+		.add_static_property("grey", &GPlatesApi::grey)
+		.add_static_property("silver", &GPlatesApi::silver)
+		.add_static_property("purple", &GPlatesApi::purple)
+		.add_static_property("yellow", &GPlatesApi::yellow)
+		.add_static_property("navy", &GPlatesApi::navy)
 		;
 
 	class_<GPlatesApi::Palette>("Palette", no_init)
@@ -79,8 +158,7 @@ export_colour()
 		;
 }
 
-#include "gui/DrawStyleManager.h"
-#include "PyFeature.h"
+
 void
 export_style()
 {

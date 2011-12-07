@@ -47,7 +47,8 @@ export_feature_collection()
 	using namespace boost::python;
 
 	class_<GPlatesApi::FeatureCollection>("FeatureCollection", no_init /* for now, disable creation */)
-		.add_property("size", &GPlatesApi::FeatureCollection::size)
+		//.add_property("size", &GPlatesApi::FeatureCollection::size)
+		.def("size", &GPlatesApi::FeatureCollection::size)
 		.def("features", &GPlatesApi::FeatureCollection::features)
 		;
 }
