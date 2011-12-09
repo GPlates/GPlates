@@ -65,7 +65,7 @@ GPlatesGui::PythonManager::PythonManager() :
 	QRegExp rx("^\\d.\\d"); // Match d.d
 	rx.indexIn(QString(Py_GetVersion()));
 	d_python_version = rx.cap();
-	qDebug() << "Python Version: " << d_python_version;
+	//qDebug() << "Python Version: " << d_python_version;
 }
 
 void
@@ -108,19 +108,19 @@ void
 GPlatesGui::PythonManager::check_python_capability()
 {
 	QString test_code = QString() +
-			"print \'******Start testing python capability******\';\n" +
-			"import sys;\n" +
-			"import code;\n"  +
-			"import math;\n"  +
+			"print \'******Start testing python capability******\';" +
+			"import sys;" +
+			"import code;"  +
+			"import math;"  +
 			"import platform; " +
 			"import pygplates; " +
-			"print \'python import passed.\'; " +
-			"print math.log(12); " +
-			"print \'python math passed.\'; " +
-			"print sys.version_info; " +
-			"print sys.platform; " +
-			"print platform.uname(); " +
-			"print \'python sys passed.\'; " +
+			"print \'python import test passed.\'; " +
+			"math.log(12); " +
+			"print \'python math test passed.\'; " +
+			"sys.version_info; " +
+			"sys.platform; " +
+			"platform.uname(); " +
+			"print \'python system test passed.\'; " +
 			"print \'******End of testing python capability******\'; ";
 
 	bool result = true;

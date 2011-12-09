@@ -263,7 +263,7 @@ namespace GPlatesGui
 			QString path_of_code_py = 
 				new_home + "/Lib/os.py"; 
 #endif
-			qDebug() << path_of_code_py;
+			//qDebug() << path_of_code_py;
 			QFileInfo file_hint(path_of_code_py);
 			return file_hint.isFile();
 		}
