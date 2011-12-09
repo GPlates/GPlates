@@ -804,7 +804,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_point_region_of_interest_shade
 	//
 
 	// sizeof() only works on data members if you have an object instantiated...
-	PointRegionOfInterestVertex vertex_for_sizeof;
+	PointRegionOfInterestVertex vertex_for_sizeof; 
+	// Avoid unused variable warning on some compilers not recognising sizeof() as usage.
+	static_cast<void>(vertex_for_sizeof.point_centre);
 	// Offset of attribute data from start of a vertex.
 	GLint offset = 0;
 
@@ -975,6 +977,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader
 
 	// sizeof() only works on data members if you have an object instantiated...
 	LineRegionOfInterestVertex vertex_for_sizeof;
+	// Avoid unused variable warning on some compilers not recognising sizeof() as usage.
+	static_cast<void>(vertex_for_sizeof.line_arc_start_point);
 	// Offset of attribute data from start of a vertex.
 	GLint offset = 0;
 
@@ -1147,6 +1151,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_fill_region_of_interest_shader
 
 	// sizeof() only works on data members if you have an object instantiated...
 	FillRegionOfInterestVertex vertex_for_sizeof;
+	// Avoid unused variable warning on some compilers not recognising sizeof() as usage.
+	static_cast<void>(vertex_for_sizeof.fill_position);
 	// Offset of attribute data from start of a vertex.
 	GLint offset = 0;
 
@@ -1319,6 +1325,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 
 	// sizeof() only works on data members if you have an object instantiated...
 	MaskRegionOfInterestVertex vertex_for_sizeof;
+	// Avoid unused variable warning on some compilers not recognising sizeof() as usage.
+	static_cast<void>(vertex_for_sizeof.screen_space_position);
 	// Offset of attribute data from start of a vertex.
 	GLint offset = 0;
 
