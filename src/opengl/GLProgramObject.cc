@@ -276,6 +276,9 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1d(
 		const char *name,
 		GLdouble v0)
 {
+// In case old 'glew.h' (since extension added relatively recently).
+// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
+#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform1d)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
@@ -286,9 +289,6 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-// In case old 'glew.h' (since extension added relatively recently).
-// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
-#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform1d)
 	glUniform1d(get_uniform_location(name), v0);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -303,6 +303,9 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1d(
 		const GLdouble *value,
 		unsigned int count)
 {
+// In case old 'glew.h' (since extension added relatively recently).
+// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
+#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform1dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
@@ -313,9 +316,6 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-// In case old 'glew.h' (since extension added relatively recently).
-// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
-#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform1dv)
 	glUniform1dv(get_uniform_location(name), count, value);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -443,6 +443,9 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2d(
 		GLdouble v0,
 		GLdouble v1)
 {
+// In case old 'glew.h' (since extension added relatively recently).
+// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
+#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform2d)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
@@ -453,9 +456,6 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-// In case old 'glew.h' (since extension added relatively recently).
-// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
-#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform2d)
 	glUniform2d(get_uniform_location(name), v0, v1);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -470,6 +470,9 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2d(
 		const GLdouble *value,
 		unsigned int count)
 {
+// In case old 'glew.h' (since extension added relatively recently).
+// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
+#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform2dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
@@ -480,9 +483,6 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-// In case old 'glew.h' (since extension added relatively recently).
-// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
-#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform2dv)
 	glUniform2dv(get_uniform_location(name), count, value);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -614,6 +614,9 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3d(
 		GLdouble v1,
 		GLdouble v2)
 {
+// In case old 'glew.h' (since extension added relatively recently).
+// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
+#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform3d)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
@@ -624,9 +627,6 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-// In case old 'glew.h' (since extension added relatively recently).
-// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
-#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform3d)
 	glUniform3d(get_uniform_location(name), v0, v1, v2);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -641,6 +641,9 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3d(
 		const GLdouble *value,
 		unsigned int count)
 {
+// In case old 'glew.h' (since extension added relatively recently).
+// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
+#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform3dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
@@ -651,9 +654,6 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-// In case old 'glew.h' (since extension added relatively recently).
-// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
-#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform3dv)
 	glUniform3dv(get_uniform_location(name), count, value);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -789,6 +789,9 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4d(
 		GLdouble v2,
 		GLdouble v3)
 {
+// In case old 'glew.h' (since extension added relatively recently).
+// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
+#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform4d)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
@@ -799,9 +802,6 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-// In case old 'glew.h' (since extension added relatively recently).
-// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
-#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform4d)
 	glUniform4d(get_uniform_location(name), v0, v1, v2, v3);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -816,6 +816,9 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4d(
 		const GLdouble *value,
 		unsigned int count)
 {
+// In case old 'glew.h' (since extension added relatively recently).
+// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
+#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform4dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
@@ -826,9 +829,6 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-// In case old 'glew.h' (since extension added relatively recently).
-// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
-#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform4dv)
 	glUniform4dv(get_uniform_location(name), count, value);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -913,6 +913,9 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix2x2d(
 		unsigned int count,
 		GLboolean transpose)
 {
+// In case old 'glew.h' (since extension added relatively recently).
+// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
+#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix2dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
@@ -923,9 +926,6 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix2x2d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-// In case old 'glew.h' (since extension added relatively recently).
-// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
-#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix2dv)
 	glUniformMatrix2dv(get_uniform_location(name), count, transpose, value);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -958,6 +958,9 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix3x3d(
 		unsigned int count,
 		GLboolean transpose)
 {
+// In case old 'glew.h' (since extension added relatively recently).
+// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
+#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix3dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
@@ -968,9 +971,6 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix3x3d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-// In case old 'glew.h' (since extension added relatively recently).
-// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
-#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix3dv)
 	glUniformMatrix3dv(get_uniform_location(name), count, transpose, value);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -1003,6 +1003,9 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 		unsigned int count,
 		GLboolean transpose)
 {
+// In case old 'glew.h' (since extension added relatively recently).
+// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
+#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix4dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
@@ -1013,9 +1016,6 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-// In case old 'glew.h' (since extension added relatively recently).
-// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
-#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix4dv)
 	glUniformMatrix4dv(get_uniform_location(name), count, transpose, value);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -1054,6 +1054,9 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 		const char *name,
 		const GLMatrix &matrix)
 {
+// In case old 'glew.h' (since extension added relatively recently).
+// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
+#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix4dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
@@ -1066,9 +1069,6 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 
 	const GLdouble *const double_matrix = matrix.get_matrix();
 
-// In case old 'glew.h' (since extension added relatively recently).
-// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
-#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix4dv)
 	// Note that the matrix is in column-major format.
 	glUniformMatrix4dv(get_uniform_location(name), 1, GL_FALSE/*transpose*/, double_matrix);
 #else
@@ -1113,6 +1113,9 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 		const char *name,
 		const std::vector<GLMatrix> &matrices)
 {
+// In case old 'glew.h' (since extension added relatively recently).
+// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
+#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix4dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
@@ -1131,9 +1134,6 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 		std::memcpy(double_matrices.get() + 16 * m, matrices[m].get_matrix(), 16 * sizeof(GLdouble));
 	}
 
-// In case old 'glew.h' (since extension added relatively recently).
-// Also it seems some glew headers define 'GL_ARB_gpu_shader_fp64' but not 'glUniform...' API functions.
-#if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix4dv)
 	glUniformMatrix4dv(get_uniform_location(name), matrices.size(), GL_FALSE/*transpose*/, double_matrices.get());
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
