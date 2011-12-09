@@ -214,14 +214,45 @@ GPlatesOpenGL::GLContext::initialise_shader_parameters(
 	}
 #endif
 
-#ifdef GL_ARB_gpu_shader_fp64 // In case old 'glew.h' (since extension added relatively recently).
-	if (GLEW_ARB_gpu_shader_fp64 ||
-		// Oddly this extension re since functions like 'glProgramUniform1dEXT' are not found.
-		// However we don't need these 'direct access state' functions - as long as we have the
-		// regular uniform function like 'glUniform1d' that's all we need.
-		// Note that Mac OSX (even Lion) doesn't support this extension so this is a
-		// Windows and Linux only extension.
-		(
+// In case old 'glew.h' (since extension added relatively recently).
+#ifdef GL_ARB_gpu_shader_fp64
+	// Some versions of 'glew.h' appear to define 'GL_ARB_gpu_shader_fp64' but not the 'glUniform...' API functions.
+	// And there are also some run-time systems that report 'GLEW_ARB_gpu_shader_fp64' as 'false', indicating
+	// they don't support the extension, yet still provide non-null 'glUniform...' API functions.
+	// Oddly this extension can report unsupported if functions like 'glProgramUniform1dEXT' are not found.
+	// However we don't need these 'direct access state' functions - as long as we have the
+	// regular uniform function like 'glUniform1d' that's all we need.
+	// Note that Mac OSX (even Lion) doesn't support this extension so this is a
+	// Windows and Linux only extension.
+	//
+	// So our way of detecting this extension is just to look for non-null 'glUniform...' API functions.
+	// If they are there then we turn the extension on, otherwise we turn it off.
+	//
+	// FIXME: Find a better way to override the extension (to disable it).
+	// This is the global flag used by 'GLEW_ARB_gpu_shader_fp64'.
+	__GLEW_ARB_gpu_shader_fp64 = false;
+
+	#if defined(glUniform1d) && \
+		defined(glUniform1dv) && \
+		defined(glUniform2d) && \
+		defined(glUniform2dv) && \
+		defined(glUniform3d) && \
+		defined(glUniform3dv) && \
+		defined(glUniform4d) && \
+		defined(glUniform4dv) && \
+		defined(glUniformMatrix2dv) && \
+		defined(glUniformMatrix2x3dv) && \
+		defined(glUniformMatrix2x4dv) && \
+		defined(glUniformMatrix3dv) && \
+		defined(glUniformMatrix3x2dv) && \
+		defined(glUniformMatrix3x4dv) && \
+		defined(glUniformMatrix4dv) && \
+		defined(glUniformMatrix4x2dv) && \
+		defined(glUniformMatrix4x3dv)
+
+		// We know they've been defined in the 'glew.h' file so check that they return non-null
+		// indicating they are available on the run-time system...
+		if (
 			GPLATES_OPENGL_BOOL(glUniform1d) &&
 			GPLATES_OPENGL_BOOL(glUniform1dv) &&
 			GPLATES_OPENGL_BOOL(glUniform2d) &&
@@ -238,18 +269,17 @@ GPlatesOpenGL::GLContext::initialise_shader_parameters(
 			GPLATES_OPENGL_BOOL(glUniformMatrix3x4dv) &&
 			GPLATES_OPENGL_BOOL(glUniformMatrix4dv) &&
 			GPLATES_OPENGL_BOOL(glUniformMatrix4x2dv) &&
-			GPLATES_OPENGL_BOOL(glUniformMatrix4x3dv)
-		))
-	{
-		shader_parameters.gl_ARB_gpu_shader_fp64 = true;
+			GPLATES_OPENGL_BOOL(glUniformMatrix4x3dv))
+		{
+			shader_parameters.gl_ARB_gpu_shader_fp64 = true;
 
-		// FIXME: This is dodgy but we're just turning it on in case it was off and
-		// functions like 'glUniform1d' are supported - we do this because code checks
-		// 'GLEW_ARB_gpu_shader_fp64' directly in many places.
-		__GLEW_ARB_gpu_shader_fp64 = true;
+			// FIXME: Find a better way to override the extension (to enable it).
+			// This is the global flag used by 'GLEW_ARB_gpu_shader_fp64'.
+			__GLEW_ARB_gpu_shader_fp64 = true;
 
-		qDebug() << "  GL_ARB_gpu_shader_fp64";
-	}
+			qDebug() << "  GL_ARB_gpu_shader_fp64";
+		}
+	#endif
 #endif
 
 #ifdef GL_ARB_vertex_attrib_64bit // In case old 'glew.h' (since extension added relatively recently).
