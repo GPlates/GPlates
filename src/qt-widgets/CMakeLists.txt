@@ -75,6 +75,8 @@ set(srcs
     ConfigureTextOverlayDialog.cc
     ConfigureTextOverlayDialog.h
     ConfigureTextOverlayDialogUi.ui
+    ConfigValueEditorWidget.cc
+    ConfigValueEditorWidget.h
     ConnectWFSDialog.cc
     ConnectWFSDialog.h
     ConnectWFSDialogUi.ui
@@ -268,6 +270,15 @@ set(srcs
     PreferencesDialog.cc
     PreferencesDialog.h
     PreferencesDialogUi.ui
+    PreferencesPaneFiles.cc
+    PreferencesPaneFiles.h
+    PreferencesPaneFilesUi.ui
+    PreferencesPaneNetwork.cc
+    PreferencesPaneNetwork.h
+    PreferencesPaneNetworkUi.ui
+    PreferencesPaneView.cc
+    PreferencesPaneView.h
+    PreferencesPaneViewUi.ui
     ProgressDialog.h
     ProgressDialogUi.ui
     ProjectionControlWidget.cc

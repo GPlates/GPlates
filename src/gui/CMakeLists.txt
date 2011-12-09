@@ -38,6 +38,10 @@ set(srcs
     ColourSchemeInfo.h
     ColourSpectrum.cc
     ColourSpectrum.h
+    ConfigGuiUtils.cc
+    ConfigGuiUtils.h
+    ConfigModel.cc
+    ConfigModel.h
     ConfigValueDelegate.cc
     ConfigValueDelegate.h
     CptColourPalette.cc

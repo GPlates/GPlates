@@ -30,7 +30,7 @@
 
 #include "ConfigModel.h"
 
-#include "ConfigInterface.h"
+#include "utils/ConfigInterface.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -44,12 +44,12 @@ namespace
 	 */
 	void
 	initialise_basic_schema(
-			GPlatesUtils::ConfigModel::SchemaType &schema,
+			GPlatesGui::ConfigModel::SchemaType &schema,
 			GPlatesUtils::ConfigInterface &config)
 	{
 		QStringList keys = config.subkeys();
 		Q_FOREACH(QString key, keys) {
-			GPlatesUtils::ConfigModel::SchemaEntry entry;
+			GPlatesGui::ConfigModel::SchemaEntry entry;
 			entry.key = key;
 			entry.label = key;
 			
@@ -60,11 +60,13 @@ namespace
 
 
 
-GPlatesUtils::ConfigModel::ConfigModel(
-		ConfigInterface &_config,
+GPlatesGui::ConfigModel::ConfigModel(
+		GPlatesUtils::ConfigInterface &_config,
+		bool use_icons,
 		QObject *_parent):
 	QAbstractTableModel(_parent),
 	d_config_ptr(&_config),
+	d_use_icons_indicating_defaults(use_icons),
 	d_default_foreground(QBrush(Qt::black)),
 	d_default_background(QBrush(Qt::white)),
 	d_user_overriding_default_icon(QIcon(":/gnome_emblem_default_16.png")),
@@ -80,12 +82,12 @@ GPlatesUtils::ConfigModel::ConfigModel(
 }
 
 
-GPlatesUtils::ConfigModel::~ConfigModel()
+GPlatesGui::ConfigModel::~ConfigModel()
 {  }
 
 
 QVariant
-GPlatesUtils::ConfigModel::data(
+GPlatesGui::ConfigModel::data(
 		const QModelIndex &idx,
 		int role) const
 {
@@ -117,7 +119,7 @@ GPlatesUtils::ConfigModel::data(
 
 
 QVariant
-GPlatesUtils::ConfigModel::get_name_data_for_role(
+GPlatesGui::ConfigModel::get_name_data_for_role(
 		const SchemaEntry &entry,
 		int role) const
 {
@@ -130,14 +132,18 @@ GPlatesUtils::ConfigModel::get_name_data_for_role(
 	case Qt::DecorationRole:
 			// Use a small icon in front of the name to indicate whether a value has been
 			// explicitly set by the user or not (and whether there is a default backing it).
-			if (d_config_ptr->has_been_set(entry.key)) {
-				if (d_config_ptr->default_exists(entry.key)) {
-					return d_user_overriding_default_icon;
+			if (d_use_icons_indicating_defaults) {
+				if (d_config_ptr->has_been_set(entry.key)) {
+					if (d_config_ptr->default_exists(entry.key)) {
+						return d_user_overriding_default_icon;
+					} else {
+						return d_user_no_default_icon;
+					}
 				} else {
-					return d_user_no_default_icon;
+					return d_default_value_icon;
 				}
 			} else {
-				return d_default_value_icon;
+				return QVariant();
 			}
 
 	case Qt::ForegroundRole:
@@ -153,7 +159,7 @@ GPlatesUtils::ConfigModel::get_name_data_for_role(
 
 
 QVariant
-GPlatesUtils::ConfigModel::get_value_data_for_role(
+GPlatesGui::ConfigModel::get_value_data_for_role(
 		const SchemaEntry &entry,
 		int role) const
 {
@@ -179,7 +185,7 @@ GPlatesUtils::ConfigModel::get_value_data_for_role(
 
 
 QVariant
-GPlatesUtils::ConfigModel::headerData(
+GPlatesGui::ConfigModel::headerData(
 		int section,
 		Qt::Orientation orientation,
 		int role) const
@@ -213,11 +219,19 @@ GPlatesUtils::ConfigModel::headerData(
 
 
 bool
-GPlatesUtils::ConfigModel::setData(
+GPlatesGui::ConfigModel::setData(
 		const QModelIndex &idx,
 		const QVariant &value,
 		int role)
 {
+	// Very Special case: If we get a special role, we should reset
+	// the value to the default. See ConfigValueDelegate.
+	if (role == ROLE_RESET_VALUE_TO_DEFAULT) {
+		QString rs_key = d_schema.at(idx.row()).key;
+		d_config_ptr->clear_value(rs_key);
+		return true;
+	}
+	
 	// Can't edit for invalid indexes or roles.
 	if ( ! idx.isValid() || role != Qt::EditRole) {
 		return false;
@@ -228,7 +242,7 @@ GPlatesUtils::ConfigModel::setData(
 	}
 	
 	QString key = d_schema.at(idx.row()).key;
-	qDebug() << "ConfigModel: Setting" << key << "=" << value;
+	//qDebug() << "ConfigModel: Setting" << key << "=" << value;
 	d_config_ptr->set_value(key, value);
 	
 	return true;
@@ -238,7 +252,7 @@ GPlatesUtils::ConfigModel::setData(
 
 
 Qt::ItemFlags
-GPlatesUtils::ConfigModel::flags(
+GPlatesGui::ConfigModel::flags(
 		const QModelIndex &idx) const
 {
 	if ( ! idx.isValid()) {
@@ -256,7 +270,7 @@ GPlatesUtils::ConfigModel::flags(
 		
 
 int
-GPlatesUtils::ConfigModel::rowCount(
+GPlatesGui::ConfigModel::rowCount(
 		const QModelIndex &parent_idx) const
 {
 	return d_schema.size();
@@ -264,15 +278,14 @@ GPlatesUtils::ConfigModel::rowCount(
 
 
 void
-GPlatesUtils::ConfigModel::react_key_value_updated(
+GPlatesGui::ConfigModel::react_key_value_updated(
 		QString key)
 {
 	// Ah, the ConfigInterface's key value got changed somewhere by someone.
 	// Are we following this key? If so, figure out the indexes.
 	for (int i = 0; i < d_schema.size(); ++i) {
 		if (d_schema.at(i).key == key) {
-			qDebug() << "ConfigModel: Oh, the key" << key << "got changed. It's on our row" << i <<", so I'll update that.";
-			
+		
 			QModelIndex idx_top_left = index(i, 0);
 			QModelIndex idx_bottom_right = index(i, 1);
 

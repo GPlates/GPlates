@@ -69,6 +69,15 @@ namespace GPlatesQtWidgets
 	 * it should be used as a modal dialog - exec() it, don't show() it.
 	 * FIXME: As PreferencesDialog has been converted to a GPlatesDialog, we might need
 	 * to ensure this is still the case.
+	 *
+	 * TO ADD A NEW PREFERENCE CATEGORY:-
+	 *    1. Create a new PreferencesPaneXXXUi.ui in Designer, along with PreferencesPaneXXX.h and
+	 *       PreferencesPaneXXX.cc - you may wish to base it off one of the existing panes.
+	 *    2. Add to subversion and cmake/add_sources.py
+	 *    3. #include it in PreferencesDialog.cc
+	 *    4. Add a call to add_pane() inside PreferencesDialog's constructor, in the order you
+	 *       want it to appear.
+	 *    5. The Advanced pane is special and always last.
 	 */
 	class PreferencesDialog: 
 			public GPlatesDialog,
@@ -97,6 +106,15 @@ namespace GPlatesQtWidgets
 		}
 
 	protected:
+	
+	private:
+	
+		void
+		add_pane(
+				int index,
+				const QString &category_label,
+				QWidget *pane_widget,
+				bool scrolling);
 		
 		ConfigTableView * d_cfg_table;
 	};

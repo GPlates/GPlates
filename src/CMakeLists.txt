@@ -485,11 +485,26 @@ if (NOT WIN32)
 	endif (Boost_LIBRARY_DIRS)
 endif (NOT WIN32)
 
+
+
 # Avoid all GPlates library link dependencies on the linker command-line by
-# specifying GPlates libraries twice. This gets around some dependencies
+# specifying a 'group' around GPlates libraries. This gets around some dependencies
 # like 'gui' depends on 'canvas-tools' depends on 'gui' depends on 'maths'.
-target_link_libraries(gplates ${GPlates_LIBS} ${dependency_LIBS} ${GPlates_LIBS})
-target_link_libraries(gplates-no-gui ${GPlates_LIBS} ${dependency_LIBS} ${GPlates_LIBS})
+# The --start-group / --end-group options are specific to Linux' ld command, and
+# the -Xlinker option is necessary to pass those options through 'c++' into 'ld'.
+# The Windows and MacOS linkers appear to work fine without needing to specify
+# this extra resolution behaviour.
+if (NOT WIN32 AND NOT APPLE)
+	set(GPlates_LINK_CMD -Xlinker --start-group ${GPlates_LIBS} -Xlinker --end-group)
+else (NOT WIN32 AND NOT APPLE)
+	set(GPlates_LINK_CMD ${GPlates_LIBS})	
+endif (NOT WIN32 AND NOT APPLE)
+
+# Actual link dependencies get assembled here.
+# The GPlates CLI target doesn't need the extra 'GPlates_LINK_CMD' step above as its
+# dependency list is much smaller.
+target_link_libraries(gplates ${GPlates_LINK_CMD} ${dependency_LIBS})
+target_link_libraries(gplates-no-gui ${GPlates_LINK_CMD} ${dependency_LIBS})
 if (ADD_GPLATES_CLI_TARGET)
 	target_link_libraries(gplates-cli ${GPlates_cli_LIBS} ${dependency_LIBS} ${GPlates_cli_LIBS})
 endif (ADD_GPLATES_CLI_TARGET)

@@ -28,36 +28,9 @@
 
 #include <QString>
 #include <QStringList>
-#include <QWidget>
-#include <QTableView>
-
-
-namespace GPlatesQtWidgets
-{
-	class ConfigTableView;
-}
-
 
 namespace GPlatesUtils
 {
-
-	class ConfigInterface;
-
-	/**
-	 * Given a ConfigBundle (or UserPreferences) and parent widget, create a QTableView that
-	 * is linked to the ConfigBundle; changes in one will be reflected in the other.
-	 *
-	 * @param bundle - the bundle of key/value pairs.
-	 * @param parent - a QWidget to serve as the parent for the returned QTableView widget.
-	 *                 This is to ensure memory will be cleaned up appropriately; it is up to
-	 *                 you to insert the widget into a layout somewhere.
-	 */
-	GPlatesQtWidgets::ConfigTableView *
-	link_config_interface_to_table(
-			ConfigInterface &config,
-			QWidget *parent);
-	
-
 	////////////////////////////////////////////////////////////////////////
 	// What follows are a bunch of small utility functions used by
 	// UserPreferences and ConfigBundle, formerly in the anon namespace

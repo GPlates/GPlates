@@ -29,12 +29,14 @@
 #include <QItemDelegate>
 
 
+
 namespace GPlatesGui
 {
 	/**
 	 * Qt Delegate for use in TableViews created for ConfigBundles and UserPreferences.
 	 *
 	 * This lets us have finer control over the editing widgets that get created in table cells.
+	 * One ConfigValueDelegate gets created for one ConfigModel.
 	 *
 	 * I'm basing this off the Spin Box Delegate tutorial for now, until I've got a better handle
 	 * on exactly what we need for our delegates. http://doc.trolltech.com/4.5/itemviews-spinboxdelegate.html
@@ -93,6 +95,14 @@ namespace GPlatesGui
 				const QModelIndex &index) const;
 	
 	private slots:
+		
+		void
+		commit_and_close(
+				QWidget *editor)
+		{
+			commitData(editor);
+			closeEditor(editor);
+		}
 		
 	};
 }

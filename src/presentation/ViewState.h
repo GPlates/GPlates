@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  * Copyright (C) 2010 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -292,6 +292,12 @@ namespace GPlatesPresentation
 
 		void
 		setup_rendered_geometry_collection();
+		
+		/**
+		 * Overrides some ViewState settings' defaults based on UserPreferences.
+		 */
+		void
+		initialise_from_user_preferences();
 
 		//
 		// NOTE: Most of these are boost::scoped_ptr's to avoid having to include header files.

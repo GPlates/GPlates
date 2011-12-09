@@ -23,14 +23,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_UTILS_CONFIGMODEL_H
-#define GPLATES_UTILS_CONFIGMODEL_H
+#ifndef GPLATES_GUI_CONFIGMODEL_H
+#define GPLATES_GUI_CONFIGMODEL_H
 
 #include <QAbstractTableModel>
 #include <QVariant>
 #include <QPointer>
 #include <QString>
 #include <QList>
+#include <Qt>
 #include <boost/noncopyable.hpp>
 
 
@@ -38,7 +39,11 @@
 namespace GPlatesUtils
 {
 	class ConfigInterface;
+}
 
+
+namespace GPlatesGui
+{
 	/**
 	 * A Qt Model class to adapt the interface of UserPreferences/ConfigBundle to a
 	 * Qt TableView.
@@ -51,6 +56,16 @@ namespace GPlatesUtils
 		Q_OBJECT
 
 	public:
+	
+		/**
+		 * Custom Qt::ItemDataRole to allow ConfigValueDelegate to reset a value to the default.
+		 * There is probably a better place/way to define this.
+		 */
+		enum CustomItemDataRole
+		{
+			ROLE_RESET_VALUE_TO_DEFAULT = Qt::UserRole + 1
+		};
+	
 
 		/**
 		 * Constructor for ConfigModel. You should not need to create these objects
@@ -61,7 +76,8 @@ namespace GPlatesUtils
 		 */
 		explicit
 		ConfigModel(
-				ConfigInterface &_config,
+				GPlatesUtils::ConfigInterface &_config,
+				bool use_icons,
 				QObject *_parent);
 
 		virtual
@@ -186,7 +202,7 @@ namespace GPlatesUtils
 		/**
 		 * The ConfigBundle or UserPreferences backend.
 		 */
-		QPointer<ConfigInterface> d_config_ptr;
+		QPointer<GPlatesUtils::ConfigInterface> d_config_ptr;
 
 				
 		/**
@@ -197,6 +213,12 @@ namespace GPlatesUtils
 		 */
 		SchemaType d_schema;
 
+		/**
+		 * The default setup for UserPreferences uses tick icons to show whether a
+		 * default value has been overridden by the user. This is configurable,
+		 * since e.g. python colouring probably wouldn't want it.
+		 */
+		bool d_use_icons_indicating_defaults;
 
 		// Default colours, packed into QBrushes, packed into QVariants, to be returned
 		// from data() accesses for table foreground/background requests.
@@ -213,4 +235,4 @@ namespace GPlatesUtils
 	};
 }
 
-#endif // GPLATES_UTILS_CONFIGMODEL_H
+#endif // GPLATES_GUI_CONFIGMODEL_H

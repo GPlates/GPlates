@@ -24,27 +24,21 @@
  */
 
 #include <QWidget>
-#include <QHBoxLayout>
 #include <QLineEdit>
-#include <QToolButton>
-#include <QIcon>
 
 #include "ConfigValueDelegate.h"
 
 
+#include "global/GPlatesAssert.h"
+#include "global/AssertionFailureException.h"
+
+#include "gui/ConfigModel.h"	// for ROLE_RESET_TO_DEFAULT.
+
+#include "qt-widgets/ConfigValueEditorWidget.h"
+
+
 // Random thoughts:
 // We can pass Schema information through a custom Qt::UserRole.
-
-// wrt Reset button,
-// Subclass QWidget for ConfigValueEditorWidget or somesuch.
-// This merely takes the clicked() from the reset button and connects to it:s own
-// handle_reset() which sets a flag and emits a reset_requested(QWidget *editor)
-// which is connected to the ConfigValueDelegate::closeEditor(QWidget *editor)
-// which is connected to the thigh-bone.
-// When setModelData() is then called by Qt, ConfigValueDelegate can check for this
-// 'reset to default' flag and commit an invalid QVariant() to the ConfigModel which
-// will interpret *that* as a request to revert to the default.
-// Swings and roundabouts really.
 
 
 
@@ -61,24 +55,15 @@ GPlatesGui::ConfigValueDelegate::createEditor(
 		const QStyleOptionViewItem &option,
 		const QModelIndex &idx) const
 {
-	static const QIcon reset_icon(":/tango_undo_16.png");
-
-	QWidget *editor = new QWidget(parent_widget);
-	QHBoxLayout *hbox = new QHBoxLayout(editor);
-	hbox->setContentsMargins(0, 0, 0, 0);
-	hbox->setSpacing(1);
-	editor->setLayout(hbox);
-	QLineEdit *line_edit = new QLineEdit(editor);
-	line_edit->setObjectName("editor");
-	hbox->addWidget(line_edit);
-	QToolButton *reset_button = new QToolButton(editor);
-	reset_button->setObjectName("reset");
-	reset_button->setIcon(reset_icon);
-	reset_button->setIconSize(QSize(16, 16));
-	reset_button->setToolTip(tr("Reset to default value"));
-	
-	hbox->addWidget(reset_button);
-	editor->setFocusProxy(line_edit);
+	GPlatesQtWidgets::ConfigValueEditorWidget *editor = 
+			new GPlatesQtWidgets::ConfigValueEditorWidget(parent_widget);
+	// We connect the editor's "I want to reset this value" signal to our superclass closeEditor()
+	// slot. This will mean that setModelData() gets called with that editor widget as an argument;
+	// we must inspect that widget for the "reset" flag there and send a message back to the model
+	// via setData() that we want to reset the value to defaults. It's a bit of a roundabout way
+	// to do things, I know, but pushing all these things through the existing Qt Model interface
+	// is probably the least-sucky way to do things.
+	connect(editor, SIGNAL(reset_requested(QWidget *)), this, SLOT(commit_and_close(QWidget *)));
 	
 	return editor;
 }
@@ -103,6 +88,26 @@ GPlatesGui::ConfigValueDelegate::setModelData(
 		QAbstractItemModel *model,
 		const QModelIndex &idx) const
 {
+	// Cast the editor widget to what (we assume) it really is so we can do more clever stuff.
+	GPlatesQtWidgets::ConfigValueEditorWidget *cfg_editor = 
+			dynamic_cast<GPlatesQtWidgets::ConfigValueEditorWidget *>(editor);
+	// (This delegate should ONLY be called with ConfigValueEditorWidget editors.)
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			cfg_editor != NULL, GPLATES_ASSERTION_SOURCE);
+	
+	// Before we set any value from this editor, we must check to see if the "reset to default"
+	// button was pressed prior to this method being invoked by Qt's model/view system.
+	if (cfg_editor->wants_reset()) {
+		// Committing an invalid QVariant() with a special user ItemDataRole is being used to
+		// indicate the user wants a reset.
+		// In the far-off future, if we wanted to be able to send more complex messages,
+		// we might register our own custom QVariant type - see the docs on QVariant for info.
+		model->setData(idx, QVariant(), GPlatesGui::ConfigModel::ROLE_RESET_VALUE_TO_DEFAULT);
+		return;
+	}
+	
+
+	// FIXME: Assuming it's a QLineEdit editor for now:-
 	QLineEdit *actual_editor = editor->findChild<QLineEdit *>("editor");
 	if (actual_editor) {
 		QString value = actual_editor->text();
