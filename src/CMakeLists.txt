@@ -327,6 +327,9 @@ if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGR
     add_dependencies(view-operations qt-widgets)
     add_dependencies(presentation qt-widgets)
     add_dependencies(gui qt-widgets)
+if(NOT GPLATES_NO_PYTHON)
+	add_dependencies(api gui)
+endif(NOT GPLATES_NO_PYTHON)
     add_dependencies(global run-gplates-extract-svn-info)
 	# because gplates-extract-svn-info executable generates global/SubversionInfo.cc
     #add_dependencies(qt-widgets qt-resources)

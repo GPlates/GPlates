@@ -26,6 +26,7 @@
 #if !defined(GPLATES_NO_PYTHON)
 
 #include <boost/foreach.hpp>
+
 #include "PyFeatureCollection.h"
 #include "PythonRunner.h"
 #include "DeferredApiCall.h"
@@ -33,6 +34,7 @@
 #include "PythonInterpreterLocker.h"
 #include "PythonUtils.h"
 #include "Sleeper.h"
+
 #include "app-logic/FeatureCollectionFileState.h"
 
 #include "global/CompilerWarnings.h"
@@ -40,10 +42,14 @@
 
 #include "gui/DrawStyleManager.h"
 #include "gui/FeatureFocus.h"
+#include "gui/PythonManager.h"
 #include "gui/UtilitiesMenu.h"
 
+#include "presentation/Application.h"
+
+#include "qt-widgets/ViewportWindow.h"
+
 #include "utils/StringUtils.h"
-#include "gui/PythonManager.h"
 
 namespace
 {

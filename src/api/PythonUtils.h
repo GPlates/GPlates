@@ -28,14 +28,18 @@
 
 // This needs to go before the <QString> due to compile problems on the Mac.
 #include "global/python.h"
+
 #include <QApplication>
 #include <QDebug>
+#include <QMetaType>
 #include <QString>
 #include <QThread>
 
+#include <boost/any.hpp>
+
 #include "api/PythonInterpreterLocker.h"
 #include "api/PythonInterpreterUnlocker.h"
-#include "presentation/Application.h"
+
 #include "gui/PythonManager.h"
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -115,7 +119,7 @@ namespace GPlatesApi
 		GPlatesGui::PythonManager&
 		python_manager()
 		{
-			return GPlatesPresentation::Application::instance()->get_view_state().get_python_manager();
+			return *GPlatesGui::PythonManager::instance();
 		}
 		
 		template<class Type>

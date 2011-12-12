@@ -41,6 +41,7 @@
 #include "model/FeatureHandle.h"
 #include "AgeColourPalettes.h"
 #include "ColourPalette.h"
+#include "ColourScheme.h"
 #include "FeatureTypeColourPalette.h"
 #include "Palette.h"
 #include "PlateIdColourPalettes.h"
