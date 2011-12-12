@@ -45,6 +45,7 @@
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructedFlowline.h"
 #include "app-logic/ReconstructedMotionPath.h"
+#include "app-logic/ReconstructedSmallCircle.h"
 #include "app-logic/ReconstructedVirtualGeomagneticPole.h"
 #include "app-logic/ResolvedRaster.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
@@ -740,6 +741,32 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			rendered_geom);
 
 	// Render the rendered geometry.
+	render(rendered_geometry);
+
+}
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::visit(
+        const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
+{
+	// Must be between 'begin_render' and 'end_render'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+		d_rendered_geometries_spatial_partition,
+		GPLATES_ASSERTION_SOURCE);
+
+	// Create a RenderedGeometry for drawing the reconstructed geometry.
+	// Draw it in the specified colour (if specified) otherwise defer colouring to a later time
+	// using ColourProxy.
+	GPlatesViewOperations::RenderedGeometry rendered_geom =
+		GPlatesViewOperations::create_rendered_small_circle(GPlatesMaths::SmallCircle::create_colatitude(
+			rsc->centre()->position_vector(),rsc->radius()),
+            d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rsc));
+
+	GPlatesViewOperations::RenderedGeometry rendered_geometry =
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+		rsc,
+		rendered_geom);
+
 	render(rendered_geometry);
 
 }

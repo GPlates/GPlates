@@ -54,7 +54,8 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 		const GPlatesCanvasTools::ManipulatePole::non_null_ptr_type &manipulate_pole_tool,
 		const GPlatesCanvasTools::BuildTopology::non_null_ptr_type &build_topology_tool,
 		const GPlatesCanvasTools::EditTopology::non_null_ptr_type &edit_topology_tool,
-		const GPlatesCanvasTools::MeasureDistance::non_null_ptr_type &measure_distance_tool) :
+		const GPlatesCanvasTools::MeasureDistance::non_null_ptr_type &measure_distance_tool,
+		const GPlatesCanvasTools::CreateSmallCircle::non_null_ptr_type &create_small_circle_tool) :
 	d_pan_map_tool_ptr(
 			new GPlatesCanvasTools::PanMap(
 				map_canvas,
@@ -131,6 +132,12 @@ GPlatesGui::MapCanvasToolChoice::MapCanvasToolChoice(
 	d_measure_distance_tool_ptr(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 				measure_distance_tool,
+				map_canvas,
+				map_view,
+				map_transform)),
+	d_create_small_circle_tool_ptr(
+			new GPlatesCanvasTools::CanvasToolAdapterForMap(
+				create_small_circle_tool,
 				map_canvas,
 				map_view,
 				map_transform)),

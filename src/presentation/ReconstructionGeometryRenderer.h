@@ -281,6 +281,12 @@ namespace GPlatesPresentation
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp);
 
+
+                virtual
+                void
+                visit(
+                                const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc);
+
 		virtual
 		void
 		visit(

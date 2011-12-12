@@ -126,3 +126,25 @@ GPlatesQtWidgets::ChooseFeatureCollectionDialog::get_file_reference(
 	}
 }
 
+boost::optional<std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_reference, bool> >
+GPlatesQtWidgets::ChooseFeatureCollectionDialog::get_file_reference()
+{
+	d_choose_widget->initialise();
+	d_choose_widget->setFocus();
+
+	if (exec() == QDialog::Accepted)
+	{
+		try
+		{
+			return d_choose_widget->get_file_reference();
+		}
+		catch (...)
+		{
+			return boost::none;
+		}
+	}
+	else
+	{
+		return boost::none;
+	}
+}

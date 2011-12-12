@@ -69,6 +69,7 @@ namespace GPlatesQtWidgets
 	class MeasureDistanceWidget;
 	class ModifyGeometryWidget;
 	class ModifyReconstructionPoleWidget;
+	class SmallCircleWidget;
 	class SnapNearbyVerticesWidget;
 	class TopologyToolsWidget;
 	class ViewportWindow;
@@ -98,6 +99,7 @@ namespace GPlatesQtWidgets
 			MODIFY_POLE,
 			TOPOLOGY_TOOLS,
 			MEASURE_DISTANCE,
+			SMALL_CIRCLE,
 
 			NUM_PAGES // Must be the last entry.
 		};
@@ -177,6 +179,15 @@ namespace GPlatesQtWidgets
 		}
 
 		/**
+		 *  Accessor for SmallCircleWidget                                                                    
+		 */
+		SmallCircleWidget &
+		small_circle_widget() const
+		{
+			return *d_small_circle_widget_ptr;
+		}
+
+		/**
 		 * Gets action shared between all task panel widgets that, when triggered,
 		 * clears the state of that widget.
 		 */
@@ -241,6 +252,9 @@ namespace GPlatesQtWidgets
 
 		void
 		choose_measure_distance_tab();
+
+		void
+		choose_small_circle_tab();
 
 		void
 		enable_move_nearby_vertices_widget(
@@ -313,6 +327,12 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		set_up_measure_distance_tab();
+
+		/**
+		 *  Sets up the "Small Circle" tab.  In the egg-stream task panel.                                                                   
+		 */
+		void
+		set_up_small_circle_tab();
 
 
 		/**
@@ -394,6 +414,11 @@ namespace GPlatesQtWidgets
 				 * Memory managed by Qt.
 				 */
 				MeasureDistanceWidget *d_measure_distance_widget_ptr;
+
+				/**
+				 * Widget responsible for the Small Circle tab.                                                                    
+				 */
+				SmallCircleWidget *d_small_circle_widget_ptr;
 			};
 		};
 

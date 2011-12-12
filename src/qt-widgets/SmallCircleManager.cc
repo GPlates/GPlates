@@ -181,7 +181,7 @@ namespace
 
 	}
 }
-
+#if 0
 GPlatesQtWidgets::SmallCircleManager::SmallCircleManager(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		GPlatesAppLogic::ApplicationState &application_state,
@@ -207,7 +207,7 @@ GPlatesQtWidgets::SmallCircleManager::SmallCircleManager(
 
 	d_small_circle_layer->set_active();
 
-        update_buttons();
+    update_buttons();
 
 }
 
@@ -285,3 +285,4 @@ GPlatesQtWidgets::SmallCircleManager::handle_item_selection_changed()
 {
 	update_buttons();
 }
+#endif

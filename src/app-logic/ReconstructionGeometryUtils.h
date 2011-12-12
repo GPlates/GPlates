@@ -40,6 +40,7 @@
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructedFlowline.h"
 #include "ReconstructedMotionPath.h"
+#include "ReconstructedSmallCircle.h"
 #include "ReconstructedVirtualGeomagneticPole.h"
 #include "ReconstructionGeometry.h"
 #include "ReconstructionGeometryVisitor.h"
@@ -539,6 +540,14 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
+			{
+				d_feature_ref = rsc->get_feature_ref();
+			}
+
+			virtual
+			void
+			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
 			{
 				d_feature_ref = rvgp->get_feature_ref();
@@ -631,6 +640,14 @@ namespace GPlatesAppLogic
 					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
 			{
 				d_property = rmp->property();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
+			{
+				d_property = rsc->property();
 			}
 
 			virtual
@@ -752,6 +769,14 @@ namespace GPlatesAppLogic
 			{
 				d_plate_id = rmp->plate_id();
 			}
+
+                       virtual
+                        void
+                        visit(
+                                const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
+                        {
+                                d_plate_id = rsc->plate_id();
+                        }
 
 		private:
 			boost::optional<GPlatesModel::integer_plate_id_type> d_plate_id;
@@ -946,6 +971,56 @@ namespace GPlatesAppLogic
 
 			return visitor.get_boundary_polygon();
 		}
+
+		/**
+		 * Determines if there are any small circle features in the collection.
+		 *
+		 * Note: Small Circles are currently not reconstructable (although they may be 
+		 * in the future). 
+		 */
+		class DetectSmallCircleFeatures:
+			public GPlatesModel::ConstFeatureVisitor
+		{
+		public:
+			DetectSmallCircleFeatures() :
+				d_found_small_circle_features(false)
+			{  }
+
+
+			bool
+			has_small_circle_features() const
+			{
+				return d_found_small_circle_features;
+			}
+
+
+			virtual
+			void
+			visit_feature_handle(
+					const GPlatesModel::FeatureHandle &feature_handle)
+			{
+				if (d_found_small_circle_features)
+				{
+					// We've already found a small circle feature so just return.
+					return;
+				}
+
+				static const GPlatesModel::FeatureType small_circle_feature_type = 
+					GPlatesModel::FeatureType::create_gpml("SmallCircle");
+
+				if (feature_handle.feature_type() == small_circle_feature_type)
+				{
+					d_found_small_circle_features = true;
+				}
+
+				// NOTE: We don't actually want to visit the feature's properties
+				// so we're not calling 'visit_feature_properties()'.
+			}
+
+		private:
+			bool d_found_small_circle_features;
+		};
+
 	}
 }
 

@@ -5,7 +5,7 @@
  * $Revision: 8194 $
  * $Date: 2010-04-26 18:24:42 +0200 (ma, 26 apr 2010) $ 
  * 
- * Copyright (C)  2010 Geological Survey of Norway
+ * Copyright (C)  2010, 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -29,8 +29,8 @@
 #include <QDialog>
 
 #include "maths/SmallCircle.h"
-#include "SmallCircleManager.h"
 #include "CreateSmallCircleDialogUi.h"
+#include "SmallCircleWidget.h"
 
 namespace GPlatesAppLogic
 {
@@ -47,17 +47,13 @@ namespace GPlatesQtWidgets
 
 	public:
 		CreateSmallCircleDialog(
-			SmallCircleManager *small_circle_manager,
+                        GPlatesQtWidgets::SmallCircleWidget *small_circle_widget,
 			GPlatesAppLogic::ApplicationState &application_state,
 			QWidget *parent);
 
 		void
 		init();
-
-	signals:
 	
-	void
-	circle_added();
 
 	private slots:
 		
@@ -68,7 +64,7 @@ namespace GPlatesQtWidgets
 		handle_calculate();
 
 		void
-		handle_add();
+                handle_preview();
 
 		void
 		handle_single_changed(
@@ -91,7 +87,7 @@ namespace GPlatesQtWidgets
 		void
 		highlight_invalid_radius_fields();
 
-		SmallCircleManager *d_small_circle_manager_ptr;
+                SmallCircleWidget *d_small_circle_widget_ptr;
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
 	};

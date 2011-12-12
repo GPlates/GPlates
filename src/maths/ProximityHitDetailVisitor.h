@@ -39,6 +39,7 @@ namespace GPlatesMaths
 	class PointProximityHitDetail;
 	class PolygonProximityHitDetail;
 	class PolylineProximityHitDetail;
+	class SmallCircleProximityHitDetail;
 
 
 	/**
@@ -93,6 +94,12 @@ namespace GPlatesMaths
 		void
 		visit_polyline_proximity_hit_detail(
 				PolylineProximityHitDetail &polyline_detail)
+		{  }
+
+		virtual
+		void
+		visit_small_circle_proximity_hit_detail(
+				SmallCircleProximityHitDetail &small_circle_detail)
 		{  }
 
 		// This operator should never be defined, because we don't want/need to allow

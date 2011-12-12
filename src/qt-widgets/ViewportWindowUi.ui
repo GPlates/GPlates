@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>724</width>
-    <height>700</height>
+    <height>688</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -177,7 +177,6 @@
     <addaction name="action_Load_Symbol"/>
     <addaction name="action_Unload_Symbol"/>
     <addaction name="separator"/>
-    <addaction name="action_Manage_Small_Circles"/>
     <addaction name="action_View_Total_Reconstruction_Sequences"/>
     <addaction name="action_View_Shapefile_Attributes"/>
     <addaction name="separator"/>
@@ -256,6 +255,7 @@
    <addaction name="action_Manipulate_Pole"/>
    <addaction name="action_Build_Topology"/>
    <addaction name="action_Edit_Topology"/>
+   <addaction name="action_Create_Small_Circle"/>
   </widget>
   <widget class="QDockWidget" name="dock_search_results">
    <property name="minimumSize">
@@ -1588,6 +1588,24 @@
   <action name="action_Log_Dialog">
    <property name="text">
     <string>Lo&amp;g</string>
+   </property>
+  </action>
+  <action name="action_Create_Small_Circle">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../qt-resources/qt_widgets.qrc">
+     <normaloff>:/small_circle_35.png</normaloff>:/small_circle_35.png</iconset>
+   </property>
+   <property name="text">
+    <string>Create Small Circle</string>
+   </property>
+   <property name="toolTip">
+    <string>Create Small Circle  C</string>
+   </property>
+   <property name="shortcut">
+    <string>C</string>
    </property>
   </action>
  </widget>

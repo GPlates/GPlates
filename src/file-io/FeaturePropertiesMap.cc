@@ -1058,13 +1058,11 @@ namespace
 	get_motion_path_properties()
 	{
 
-		// FIXME: Should this be a reconstructable feature?
 		PropertyCreationUtils::PropertyCreatorMap map = get_reconstructable_feature_properties();					
 
 		map[ PropertyName::create_gpml("seedPoints") ] = 
 			GET_PROP_VAL_NAME(create_time_dependent_property_value);	
 
-		// FIXME: This should be an array of time instants. 
 		map[ PropertyName::create_gpml("times") ] =
 			GET_PROP_VAL_NAME(create_array);			
 
@@ -1073,6 +1071,39 @@ namespace
 
 		map[ PropertyName::create_gpml("relativePlate") ] =
 			GET_PROP_VAL_NAME(create_plate_id);
+
+		return map;
+	}
+
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_small_circle_properties()
+	{
+	/* 
+		Some things to consider regarding small-circles-as-features:
+		
+		* small-circles may have been created via centre-plus-multiple-radii; do we store
+		these as separate small circles, or make provision for multiple radii to be stored
+		in a single feature?
+
+		* small-circle centres may have been created via a stage pole; do we store this fact, and
+		any stage-pole ingredients, so that we can re-create the stage-pole centre dynamically for
+		different reconstruction trees?radius
+
+		The simplest answers are "no" to both of the above; so the current implementation (below) stores
+		only a centre and a radius. 
+	*/
+
+		//PropertyCreationUtils::PropertyCreatorMap map = get_abstract_feature_properties();	
+
+		// Should small circles be reconstructable? I'm forcing them to be reconstructable for now
+		// so that they'll get treated along with other reconstructable features.
+		PropertyCreationUtils::PropertyCreatorMap map = get_reconstructable_feature_properties();	
+
+		map[ PropertyName::create_gpml("centre") ] =
+			GET_PROP_VAL_NAME(create_point);
+
+		map[ PropertyName::create_gpml("radius") ] =
+			GET_PROP_VAL_NAME(create_measure);
 
 		return map;
 	}
@@ -1155,6 +1186,8 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 		get_displacement_point_properties();
 	d_map[ FeatureType::create_gpml("PoliticalBoundary")] =
 		get_political_boundary_properties();
+	d_map[ FeatureType::create_gpml("SmallCircle")] =
+		get_small_circle_properties();
 
 
 	// Rock units.

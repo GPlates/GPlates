@@ -79,6 +79,20 @@ namespace GPlatesQtWidgets
 		get_file_reference(
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &initial);
 
+		/**
+		 * Overloaded version of get_file_reference which does not require an initial feature collection
+		 * or file_reference.
+		 *
+		 * Returns an iterator to the file selected by the user, and a boolean value
+		 * indicating whether the iterator points to a file that was newly created.
+		 *
+		 * If the user chose to create a new feature collection, a new feature
+		 * collection is created and an iterator to that new feature collection is
+		 * returned.
+		 */
+		boost::optional<std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_reference, bool> >
+		get_file_reference();
+
 	private:
 
 		ChooseFeatureCollectionWidget *d_choose_widget;

@@ -400,6 +400,9 @@ namespace GPlatesQtWidgets
 		choose_edit_topology_tool();
 
 		void
+		choose_create_small_circle_tool();
+
+		void
 		choose_measure_distance_tool();
 
 		void
@@ -757,6 +760,9 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_edit_topology_triggered();
+
+		void
+		handle_create_small_circle_triggered();
 
 		void
 		handle_measure_distance_triggered();

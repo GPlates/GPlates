@@ -59,6 +59,7 @@ namespace GPlatesAppLogic
 	class ReconstructedFeatureGeometry;
 	class ReconstructedFlowline;
 	class ReconstructedMotionPath;
+	class ReconstructedSmallCircle;
 	class ReconstructedVirtualGeomagneticPole;
 	class ResolvedRaster;
 	class ResolvedTopologicalBoundary;
@@ -127,6 +128,11 @@ namespace GPlatesAppLogic
 		typedef typename GPlatesUtils::CopyConst<
 				ReconstructionGeometryType, CoRegistrationData>::type
 						co_registration_data_type;
+
+		//! Typedef for @a ReconstructedSmallCircle of appropriate const-ness.
+		typedef typename GPlatesUtils::CopyConst<
+				ReconstructionGeometryType, ReconstructedSmallCircle>::type
+						reconstructed_small_circle_type;
 
 		// We'll make this function pure virtual so that the class is abstract.  The class
 		// *should* be abstract, but wouldn't be unless we did this, since all the virtual
@@ -217,6 +223,12 @@ namespace GPlatesAppLogic
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crd)
 		{  }
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
+		{ }
 
 
 	private:

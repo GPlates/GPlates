@@ -32,6 +32,7 @@
 #include "ReconstructMethodFlowline.h"
 #include "ReconstructMethodHalfStageRotation.h"
 #include "ReconstructMethodMotionPath.h"
+#include "ReconstructMethodSmallCircle.h"
 #include "ReconstructMethodVirtualGeomagneticPole.h"
 
 #include "global/PreconditionViolationError.h"
@@ -241,4 +242,12 @@ GPlatesAppLogic::register_default_reconstruct_method_types(
 			ReconstructMethod::MOTION_PATH,
 			&ReconstructMethodMotionPath::can_reconstruct_feature,
 			&ReconstructMethodMotionPath::create);
+
+	//
+	// Reconstruct small circles.
+	//
+	registry.register_reconstruct_method(
+			ReconstructMethod::SMALL_CIRCLE,
+			&ReconstructMethodSmallCircle::can_reconstruct_feature,
+			&ReconstructMethodSmallCircle::create);
 }

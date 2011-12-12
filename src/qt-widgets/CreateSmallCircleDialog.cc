@@ -38,6 +38,7 @@
 #include "maths/FiniteRotation.h"
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
+#include "maths/SmallCircle.h"
 
 #include "model/types.h"
 
@@ -95,11 +96,11 @@ namespace
 }
 
 GPlatesQtWidgets::CreateSmallCircleDialog::CreateSmallCircleDialog(
-	GPlatesQtWidgets::SmallCircleManager *small_circle_manager,
+        GPlatesQtWidgets::SmallCircleWidget *small_circle_widget,
 	GPlatesAppLogic::ApplicationState &application_state,
 	QWidget *parent_):
-		QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | 				Qt::WindowSystemMenuHint),
-		d_small_circle_manager_ptr(small_circle_manager),
+                QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
+                d_small_circle_widget_ptr(small_circle_widget),
 		d_application_state(application_state)
 {
 	setupUi(this);
@@ -116,7 +117,7 @@ GPlatesQtWidgets::CreateSmallCircleDialog::CreateSmallCircleDialog(
 	// connections
 	QObject::connect(checkbox_stage_pole,SIGNAL(stateChanged(int)),this,SLOT(handle_stage_pole_checkbox_state()));
 	QObject::connect(button_calculate_stage_pole,SIGNAL(clicked()),this,SLOT(handle_calculate()));
-	QObject::connect(button_add,SIGNAL(clicked()),this,SLOT(handle_add()));
+        QObject::connect(button_preview,SIGNAL(clicked()),this,SLOT(handle_preview()));
 	QObject::connect(radio_button_single,SIGNAL(toggled(bool)),this,SLOT(handle_single_changed(bool)));
 	QObject::connect(radio_button_multiple,SIGNAL(toggled(bool)),this,SLOT(handle_multiple_changed(bool)));
 	QObject::connect(spinbox_radius_1,SIGNAL(valueChanged(double)),SLOT(handle_multiple_circle_fields_changed()));
@@ -182,13 +183,13 @@ GPlatesQtWidgets::CreateSmallCircleDialog::handle_calculate()
 }
 
 void
-GPlatesQtWidgets::CreateSmallCircleDialog::handle_add()
+GPlatesQtWidgets::CreateSmallCircleDialog::handle_preview()
 {
 	using namespace GPlatesMaths;
 
 	PointOnSphere centre = make_point_on_sphere(LatLonPoint(spinbox_lat->value(),spinbox_lon->value()));
 
-	bool valid_circle_added = false;
+    GPlatesQtWidgets::SmallCircleWidget::small_circle_collection_type small_circle_collection;
 
 	if (radio_button_single->isChecked())
 	{
@@ -202,11 +203,11 @@ GPlatesQtWidgets::CreateSmallCircleDialog::handle_add()
 			return;
 		}
 
-		const Real colat = convert_deg_to_rad(radius);
 
-		d_small_circle_manager_ptr->add_circle(
-				GPlatesMaths::SmallCircle::create_colatitude(centre.position_vector(), colat));
-		valid_circle_added = true;
+		Real colat = convert_deg_to_rad(radius);
+
+		small_circle_collection.push_back(GPlatesMaths::SmallCircle::create_colatitude(centre.position_vector(),colat));
+
 	}
 
 	if (radio_button_multiple->isChecked())
@@ -229,11 +230,12 @@ GPlatesQtWidgets::CreateSmallCircleDialog::handle_add()
 					continue;
 				}
 
-				const Real colat = convert_deg_to_rad(radius);
 
-				d_small_circle_manager_ptr->add_circle(
-						GPlatesMaths::SmallCircle::create_colatitude(centre.position_vector(), colat));
-				valid_circle_added = true;
+				Real colat = convert_deg_to_rad(radius);
+
+                small_circle_collection.push_back(
+						GPlatesMaths::SmallCircle::create_colatitude(centre.position_vector(),colat));
+
 			}
 		}
 		else
@@ -243,15 +245,17 @@ GPlatesQtWidgets::CreateSmallCircleDialog::handle_add()
 
 	}
 	
-	if (valid_circle_added)
+    if (!small_circle_collection.empty())
 	{
-		emit circle_added();
+        d_small_circle_widget_ptr->update_circles(small_circle_collection);
 
 		// FIXME: We're close the dialog after each new small circle has been created. This
 		// might get annoying for someone who has a whole bunch of circles to add.  Consider
 		// leaving dialog open and updating the manager dialog, and the globe/map, after 
 		// adding a small circle. 
-		reject();
+
+                // Leave the dialog open for now.
+                //reject();
 	}
 
 }

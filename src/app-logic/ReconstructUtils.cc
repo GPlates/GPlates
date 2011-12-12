@@ -35,6 +35,7 @@
 #include "AppLogicUtils.h"
 #include "ReconstructContext.h"
 #include "ReconstructionTreePopulator.h"
+#include "SmallCircleGeometryPopulator.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
 

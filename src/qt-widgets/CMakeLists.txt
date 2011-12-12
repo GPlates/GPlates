@@ -41,6 +41,9 @@ set(srcs
     CalculateReconstructionPoleDialog.cc
     CalculateReconstructionPoleDialog.h
     CalculateReconstructionPoleDialogUi.ui
+	CalculateStagePoleDialog.cc
+	CalculateStagePoleDialog.h
+	CalculateStagePoleDialogUi.ui
     ChangeFeatureTypeDialog.cc
     ChangeFeatureTypeDialog.h
     ChangeFeatureTypeDialogUi.ui
@@ -91,6 +94,9 @@ set(srcs
     CreateSmallCircleDialog.cc
     CreateSmallCircleDialog.h
     CreateSmallCircleDialogUi.ui
+    CreateSmallCircleFeatureDialog.cc
+    CreateSmallCircleFeatureDialog.h
+    CreateSmallCircleFeatureDialogUi.ui	
     CreateVGPDialog.cc
     CreateVGPDialog.h
     CreateVGPDialogUi.ui
@@ -369,6 +375,9 @@ set(srcs
     SmallCircleManager.cc
     SmallCircleManager.h
     SmallCircleManagerUi.ui
+	SmallCircleWidget.cc
+	SmallCircleWidget.h
+	SmallCircleWidgetUi.ui
     SnapNearbyVerticesWidget.cc
     SnapNearbyVerticesWidget.h
     SnapNearbyVerticesWidgetUi.ui

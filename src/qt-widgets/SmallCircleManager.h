@@ -64,7 +64,7 @@ namespace GPlatesQtWidgets
 			RADIUS_COLUMN,
 			NUM_COLUMNS
 		};
-
+#if 0
 		SmallCircleManager(
 			GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 			GPlatesAppLogic::ApplicationState &application_state,
@@ -101,7 +101,7 @@ namespace GPlatesQtWidgets
 		CreateSmallCircleDialog *d_create_small_circle_dialog_ptr;
 
 		std::vector<GPlatesMaths::SmallCircle> d_small_circle_collection;
-
+#endif
 	};
 }
 

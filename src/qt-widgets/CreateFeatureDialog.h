@@ -118,11 +118,11 @@ namespace GPlatesQtWidgets
 			return d_feature_ref;
 		}
 
-                boost::optional<GPlatesModel::integer_plate_id_type>
-                get_left_plate();
+		boost::optional<GPlatesModel::integer_plate_id_type>
+		get_left_plate();
 
-                boost::optional<GPlatesModel::integer_plate_id_type>
-                get_right_plate();
+		boost::optional<GPlatesModel::integer_plate_id_type>
+		get_right_plate();
 
 
 	signals:

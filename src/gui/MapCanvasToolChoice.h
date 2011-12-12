@@ -31,14 +31,15 @@
 #include <QObject>
 
 #include "canvas-tools/BuildTopology.h"
-#include "canvas-tools/EditTopology.h"
-#include "canvas-tools/MeasureDistance.h"
-#include "canvas-tools/DigitiseGeometry.h"
 #include "canvas-tools/ClickGeometry.h"
+#include "canvas-tools/CreateSmallCircle.h"
 #include "canvas-tools/DeleteVertex.h"
+#include "canvas-tools/DigitiseGeometry.h"
+#include "canvas-tools/EditTopology.h"
 #include "canvas-tools/InsertVertex.h"
-#include "canvas-tools/MoveVertex.h"
 #include "canvas-tools/ManipulatePole.h"
+#include "canvas-tools/MeasureDistance.h"
+#include "canvas-tools/MoveVertex.h"
 #include "canvas-tools/SplitFeature.h"
 
 
@@ -90,7 +91,8 @@ namespace GPlatesGui
 				const GPlatesCanvasTools::ManipulatePole::non_null_ptr_type &manipulate_pole_tool,
 				const GPlatesCanvasTools::BuildTopology::non_null_ptr_type &build_topology_tool,
 				const GPlatesCanvasTools::EditTopology::non_null_ptr_type &edit_topology_tool,
-				const GPlatesCanvasTools::MeasureDistance::non_null_ptr_type &measure_distance_tool);
+				const GPlatesCanvasTools::MeasureDistance::non_null_ptr_type &measure_distance_tool,
+				const GPlatesCanvasTools::CreateSmallCircle::non_null_ptr_type &create_small_circle_tool);
 
 		~MapCanvasToolChoice();
 
@@ -194,6 +196,12 @@ namespace GPlatesGui
 			change_tool_if_necessary(d_measure_distance_tool_ptr.get());
 		}
 
+		void
+		choose_create_small_circle_tool()
+		{
+			change_tool_if_necessary(d_create_small_circle_tool_ptr.get());
+		}
+
 	private:
 		/**
 		 * This is the PanMap tool which the user may choose.
@@ -266,6 +274,11 @@ namespace GPlatesGui
 		 * This is the Measure Distance canvas tool which the user may choose.
 		 */
 		boost::scoped_ptr<MapCanvasTool> d_measure_distance_tool_ptr;
+
+		/**
+		 * This is the Create Small Circle canvas tool which the user may choose.
+		 */
+		boost::scoped_ptr<MapCanvasTool> d_create_small_circle_tool_ptr;
 
 		/**
 		 * The current choice of CanvasTool.

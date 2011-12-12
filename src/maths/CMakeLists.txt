@@ -104,6 +104,7 @@ set(srcs
     SmallCircleBounds.h
     SmallCircleCoverageMesh.cc
     SmallCircleCoverageMesh.h
+    SmallCircleProximityHitDetail.h
     SphereSettings.h
     SphericalArea.cc
     SphericalArea.h

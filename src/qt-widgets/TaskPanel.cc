@@ -36,6 +36,7 @@
 #include "MeasureDistanceWidget.h"
 #include "ModifyGeometryWidget.h"
 #include "ModifyReconstructionPoleWidget.h"
+#include "SmallCircleWidget.h"
 #include "SnapNearbyVerticesWidget.h"
 #include "ReconstructionPoleWidget.h"
 #include "TopologyToolsWidget.h"
@@ -165,6 +166,10 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 			new MeasureDistanceWidget(
 				measure_distance_state,
 				this)),
+	d_small_circle_widget_ptr(
+			new SmallCircleWidget(
+				view_state,
+				this)),
 	d_active_widget(NULL)
 {
 	// Note that the ActionButtonBox uses 22x22 icons. This equates to a QToolButton
@@ -189,7 +194,8 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	set_up_modify_pole_tab();
 	set_up_topology_tools_tab();
 	set_up_measure_distance_tab();
-	
+	set_up_small_circle_tab();
+
 	choose_feature_tab();
 }
 
@@ -341,6 +347,19 @@ GPlatesQtWidgets::TaskPanel::set_up_measure_distance_tab()
 	lay->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
 }
 
+void
+GPlatesQtWidgets::TaskPanel::set_up_small_circle_tab()
+{
+        QLayout *layout_ = add_default_layout(
+		add_page_with_title(d_stacked_widget_ptr, tr("Small Circle")));
+
+        layout_->addWidget(d_small_circle_widget_ptr);
+
+	// After the main widget and anything else we might want to cram in there,
+	// a spacer to eat up remaining space and push all the widgets to the top
+	// of the Modify Pole tab.
+        layout_->addItem(new QSpacerItem(10, 10, QSizePolicy::Minimum, QSizePolicy::Expanding));
+}
 
 void
 GPlatesQtWidgets::TaskPanel::choose_tab(
@@ -427,6 +446,11 @@ GPlatesQtWidgets::TaskPanel::choose_measure_distance_tab()
 	choose_tab(MEASURE_DISTANCE);
 }
 
+void
+GPlatesQtWidgets::TaskPanel::choose_small_circle_tab()
+{
+	choose_tab(SMALL_CIRCLE);
+}
 
 void
 GPlatesQtWidgets::TaskPanel::handle_clear_action_enabled_changed(

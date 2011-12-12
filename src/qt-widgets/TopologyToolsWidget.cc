@@ -193,6 +193,9 @@ GPlatesQtWidgets::TopologyToolsWidget::activate( GPlatesGui::TopologyTools::Canv
 	setDisabled( false );
 	d_topology_tools_ptr->activate( mode );
 
+	// FIXME: there are other feature-creation routes in GPlates now (e.g. for VGPs and SmallCircle features) -
+	// should topology tools know about these? If so we need to connect to a signal from them here.
+
 	// connect to Feature Creation Dialog signals
 	QObject::connect(
 		d_create_feature_dialog,

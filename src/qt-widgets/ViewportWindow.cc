@@ -650,6 +650,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				status_bar_callback,
 				rendered_geom_collection,
 				*d_measure_distance_state_ptr);
+	GPlatesCanvasTools::CreateSmallCircle::non_null_ptr_type create_small_circle_tool =
+		GPlatesCanvasTools::CreateSmallCircle::create(
+				status_bar_callback,
+				rendered_geom_collection,
+				d_task_panel_ptr->small_circle_widget());
 
 	// Set up the Map and Globe Canvas Tools Choices.
 	d_globe_canvas_tool_choice_ptr.reset(
@@ -669,7 +674,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				manipulate_pole_tool,
 				build_topology_tool,
 				edit_topology_tool,
-				measure_distance_tool));
+				measure_distance_tool,
+				create_small_circle_tool));
 	d_map_canvas_tool_choice_ptr.reset(
 			new GPlatesGui::MapCanvasToolChoice(
 				map_canvas,
@@ -688,7 +694,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				manipulate_pole_tool,
 				build_topology_tool,
 				edit_topology_tool,
-				measure_distance_tool));
+				measure_distance_tool,
+				create_small_circle_tool));
 
 	// Set up the Map and Globe Canvas Tool Adapters for handling globe click and drag events.
 	// FIXME:  This is, of course, very exception-unsafe.  This whole class needs to be nuked.
@@ -1097,6 +1104,9 @@ GPlatesQtWidgets::ViewportWindow::connect_tools_menu_actions()
 			this, SLOT(handle_build_topology_triggered()));
 	QObject::connect(action_Edit_Topology, SIGNAL(triggered()),
 			this, SLOT(handle_edit_topology_triggered()));
+
+	QObject::connect(action_Create_Small_Circle, SIGNAL(triggered()),
+			this, SLOT(handle_create_small_circle_triggered()));
 }
 
 
@@ -2050,6 +2060,24 @@ GPlatesQtWidgets::ViewportWindow::choose_edit_topology_tool()
 	d_task_panel_ptr->choose_topology_tools_tab();
 }
 
+void
+GPlatesQtWidgets::ViewportWindow::handle_create_small_circle_triggered()
+{
+	d_choose_canvas_tool->choose_create_small_circle_tool();
+	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::CREATE_SMALL_CIRCLE;
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::choose_create_small_circle_tool()
+{
+	action_Create_Small_Circle->setChecked(true);
+	d_globe_canvas_tool_choice_ptr->choose_create_small_circle_tool();
+	d_map_canvas_tool_choice_ptr->choose_create_small_circle_tool();
+
+	d_task_panel_ptr->choose_small_circle_tab();
+}
+
 
 void
 GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
@@ -2602,6 +2630,8 @@ GPlatesQtWidgets::ViewportWindow::open_new_window()
 void
 GPlatesQtWidgets::ViewportWindow::pop_up_small_circle_manager()
 {
+
+#if 0
 	if (!d_small_circle_manager_ptr)
 	{
 		d_small_circle_manager_ptr.reset(
@@ -2612,6 +2642,7 @@ GPlatesQtWidgets::ViewportWindow::pop_up_small_circle_manager()
 	}
 
 	QtWidgetUtils::pop_up_dialog(d_small_circle_manager_ptr.get());
+#endif
 }
 
 void
