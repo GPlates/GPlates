@@ -270,12 +270,12 @@ export_instance()
 		.def("get_main_window",
 				&Application::get_viewport_window,
 				return_value_policy<reference_existing_object>()) // ViewportWindow is noncopyable 
-		.def("exec_gui_file", &Application::exec_gui_file)
-		.def("exec_gui_string", &Application::exec_gui_string)
-		.def("eval_gui_string", &Application::eval_gui_string)
+		//.def("exec_gui_file", &Application::exec_gui_file)
+		//.def("exec_gui_string", &Application::exec_gui_string)
+		//.def("eval_gui_string", &Application::eval_gui_string)
 		.def("register_utility", &Application::register_utility)
 		.def("get_loaded_files", &Application::get_loaded_files)
-		.def("get_feature_collection_from_loaded_file", &Application::get_feature_collection_from_loaded_file)
+		//.def("get_feature_collection_from_loaded_file", &Application::get_feature_collection_from_loaded_file)
 		.def("register_draw_style", &Application::register_draw_style)
 		.def("feature_collections", &Application::feature_collections)
 		.def("current_time", &Application::current_time)
