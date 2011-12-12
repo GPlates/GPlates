@@ -29,9 +29,13 @@
 
 #include <vector>
 #include <map>
-#include <boost/foreach.hpp>
-#include <QString>
+
 #include "global/python.h"
+
+#include <boost/foreach.hpp>
+
+#include <QString>
+#include <QVariant>
 
 namespace GPlatesGui
 {
@@ -42,7 +46,8 @@ namespace GPlatesGui
 	{
 	public:
 		explicit
-		ConfigurationItem(const QVariant& v) :
+		ConfigurationItem(
+				const QVariant& v) :
 			d_value(v)
 		{ }
 
@@ -60,7 +65,8 @@ namespace GPlatesGui
 
 		virtual
 		void
-		set_value(const QVariant& v)
+		set_value(
+				const QVariant& v)
 		{
 			d_value = v;
 		}
@@ -85,7 +91,8 @@ namespace GPlatesGui
 		{ }
 
 		const ConfigurationItem*
-		get(const QString& name) const
+		get(
+				const QString& name) const
 		{
 			CfgItemMap::const_iterator it = d_items.find(name);
 			return (it != d_items.end()) ? it->second : NULL;
@@ -93,7 +100,8 @@ namespace GPlatesGui
 
 
 		ConfigurationItem*
-		get(const QString& name) 
+		get(
+				const QString& name) 
 		{
 			CfgItemMap::iterator it = d_items.find(name);
 			return (it != d_items.end()) ? it->second : NULL;
@@ -129,7 +137,8 @@ namespace GPlatesGui
 		}
 
 
-		Configuration(const Configuration& rhs)
+		Configuration(
+					const Configuration& rhs)
 		{
 			BOOST_FOREACH(const CfgItemMap::value_type& item, rhs.d_items)
 			{
@@ -139,7 +148,8 @@ namespace GPlatesGui
 
 
 		Configuration&
-		operator=(const Configuration& rhs)
+		operator=(
+				const Configuration& rhs)
 		{
 			if(this == &rhs)
 				return *this;
@@ -211,7 +221,8 @@ namespace GPlatesGui
 				const Colour& color) ;
 
 		void
-		set_value(const QVariant& value);
+		set_value(
+				const QVariant& value);
 
 		PythonCfgColor*
 		clone() const 
@@ -235,7 +246,8 @@ namespace GPlatesGui
 		~PythonCfgPalette();
 
 		void
-		set_value(const QVariant& value);
+		set_value(
+				const QVariant& value);
 
 		PythonCfgPalette*
 		clone() const 
@@ -260,7 +272,8 @@ namespace GPlatesGui
 		~PythonCfgString(){}
 
 		void
-		set_value(const QVariant& new_value)
+		set_value(
+				const QVariant& new_value)
 		{
 			d_value = new_value;
 			QString new_str = d_value.toString().trimmed();
@@ -272,6 +285,7 @@ namespace GPlatesGui
 		{
 			return new PythonCfgString(*this);
 		}
+
 	private:
 	};
 #endif //GPLATES_NO_PYTHON
