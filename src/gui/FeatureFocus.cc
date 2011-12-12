@@ -375,6 +375,10 @@ protected:
 		void
 		visit(const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crr)
 		{ }
+
+                void
+                visit(const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
+                { }
 private:
 	boost::optional<GPlatesMaths::LatLonPoint> d_location;
 };
