@@ -237,7 +237,9 @@ namespace GPlatesQtWidgets
 			{
 				GPlatesGui::StyleCatagory* cata = get_catagory(*item);
 				if(cata)
+				{
 					load_category(*cata);
+				}
 			}
 		}
 

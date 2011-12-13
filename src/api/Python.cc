@@ -67,12 +67,12 @@ BOOST_PYTHON_MODULE(pygplates)
 
 	export_style();
 	
-	export_topology_tools();
+	//export_topology_tools();
 
 #endif	
 	export_feature_collection();
 	export_feature();
-	export_co_registration();
+	//export_co_registration();
 	export_functions();
 	export_colour();
 }

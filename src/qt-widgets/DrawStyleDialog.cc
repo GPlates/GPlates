@@ -69,7 +69,7 @@ void
 GPlatesQtWidgets::DrawStyleDialog::reset(
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> layer)
 {
-	qDebug() << "reseting draw style dialog...";
+	//qDebug() << "reseting draw style dialog...";
 	d_combo_box->set_selected_visual_layer(layer);
 	d_visual_layer = layer;
 	init_catagory_table();
@@ -119,16 +119,23 @@ GPlatesQtWidgets::DrawStyleDialog::handle_layer_changed(
 	{
 		const GPlatesGui::StyleAdapter* t_style = 
 			locked_visual_layer->get_visual_layer_params()->style_adapter();
+		
 		if(t_style)
+		{
 			focus_style(t_style);
+		}
 	}
 	else
 	{
 		if(d_style_of_all)
+		{
 			focus_style(d_style_of_all);
+		}
 		else
 		{
 			categories_table->clearSelection();
+			categories_table->setCurrentIndex(QModelIndex());
+		
 			style_list->clearSelection();
 			style_list->clear();
 		}

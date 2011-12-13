@@ -267,9 +267,9 @@ export_instance()
 	using namespace GPlatesApi;
 
 	class_<Application, boost::noncopyable>("Application")
-		.def("get_main_window",
-				&Application::get_viewport_window,
-				return_value_policy<reference_existing_object>()) // ViewportWindow is noncopyable 
+		//.def("get_main_window",
+		//		&Application::get_viewport_window,
+		//		return_value_policy<reference_existing_object>()) // ViewportWindow is noncopyable 
 		//.def("exec_gui_file", &Application::exec_gui_file)
 		//.def("exec_gui_string", &Application::exec_gui_string)
 		//.def("eval_gui_string", &Application::eval_gui_string)

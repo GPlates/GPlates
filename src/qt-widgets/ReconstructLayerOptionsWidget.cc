@@ -150,7 +150,7 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::open_vgp_visibility_dialog()
 void
 GPlatesQtWidgets::ReconstructLayerOptionsWidget::open_draw_style_setting_dlg()
 {
-	qDebug() << "popup draw style dialog...";
+	//qDebug() << "popup draw style dialog...";
 	QtWidgetUtils::pop_up_dialog(d_draw_style_dialog_ptr);
 	d_draw_style_dialog_ptr->reset(d_current_visual_layer);
 }
