@@ -23,6 +23,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+/*
+ * The OpenGL Extension Wrangler Library (GLEW).
+ * Must be included before the OpenGL headers (which also means before Qt headers).
+ * For this reason it's best to try and include it in ".cc" files only.
+ */
+#include <GL/glew.h>
+#include <opengl/OpenGL.h>
+
 #include "GLShaderProgramUtils.h"
 
 #include "GLProgramObject.h"
