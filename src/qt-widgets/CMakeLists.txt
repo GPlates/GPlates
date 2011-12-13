@@ -282,6 +282,9 @@ set(srcs
     PreferencesPaneNetwork.cc
     PreferencesPaneNetwork.h
     PreferencesPaneNetworkUi.ui
+    PreferencesPanePython.cc
+    PreferencesPanePython.h
+    PreferencesPanePythonUi.ui
     PreferencesPaneView.cc
     PreferencesPaneView.h
     PreferencesPaneViewUi.ui

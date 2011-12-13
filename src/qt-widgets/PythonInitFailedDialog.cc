@@ -39,7 +39,7 @@ namespace
 		<h3>Troubleshooting</h3> \
 		<h4>Check if <font color=\"red\">$PYTHON_NAME</font> has been installed.</h4> \
 		<h4>If $PYTHON_NAME has been installed at an unusual location, \
-		set \"python/python_home\" variable in GPlates preference \"Edit->Preference->Advanced Settings\" \
+		set \"python/python_home\" variable in GPlates preference \"Edit->Preference->Python\" \
 		and restart GPlates. </h4> \
 		<h3>Install Python</h3> \
 		$INSTALL_INSTRUCTION \

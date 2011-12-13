@@ -189,12 +189,6 @@ GPlatesGui::PythonManager::find_python()
 
 GPlatesGui::PythonManager::~PythonManager()
 {
-	//don't use global UserPreferences because it could have been destroyed already.
-	GPlatesAppLogic::UserPreferences user_pref(NULL);
-	user_pref.set_value(
-			"python/show_python_init_fail_dialog",
-			d_show_python_init_fail_dlg);
-
 	// Stop the Python execution thread.
 	static const int WAIT_TIME = 1000 /* milliseconds */;
 	if(d_python_execution_thread)
@@ -211,6 +205,18 @@ GPlatesGui::PythonManager::~PythonManager()
 	delete d_python_main_thread_runner;
 	delete d_sleeper;
 }
+
+
+void
+GPlatesGui::PythonManager::set_show_init_fail_dlg(\
+		bool b) 
+{
+	d_show_python_init_fail_dlg = b;
+	GPlatesAppLogic::UserPreferences(NULL).set_value(
+		"python/show_python_init_fail_dialog",
+		b);
+}
+
 
 void
 GPlatesGui::PythonManager::init_python_interpreter(std::string program_name)

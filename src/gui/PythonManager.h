@@ -209,14 +209,13 @@ namespace GPlatesGui
 		
 
 		void
-		set_show_init_fail_dlg(bool b) 
-		{
-			d_show_python_init_fail_dlg = b;
-		}
+		set_show_init_fail_dlg(
+				bool b);
 
 
 		void
-		set_python_home(const QString& str) 
+		set_python_home(
+				const QString& str) 
 		{
 			d_python_home = str;
 		}
@@ -229,7 +228,8 @@ namespace GPlatesGui
 		python_runner_finished();
 
 		void
-		print_py_msg(const QString& msg);
+		print_py_msg(
+				const QString& msg);
 
 	signals:
 		void

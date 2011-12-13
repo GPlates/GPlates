@@ -33,6 +33,7 @@
 #include "PreferencesPaneFiles.h"
 #include "PreferencesPaneNetwork.h"
 #include "PreferencesPaneView.h"
+#include "PreferencesPanePython.h"
 
 #include "QtWidgetUtils.h"
 #include "app-logic/ApplicationState.h"
@@ -52,7 +53,7 @@ GPlatesQtWidgets::PreferencesDialog::PreferencesDialog(
 	add_pane(index++, tr("View"), new PreferencesPaneView(app_state, this), false);
 	add_pane(index++, tr("Files"), new PreferencesPaneFiles(app_state, this), true);	// might get large enough to need scrolling.
 	add_pane(index++, tr("Network"), new PreferencesPaneNetwork(app_state, this), false);
-	
+	add_pane(index++, tr("Python"), new PreferencesPanePython(app_state, this), true);
 	
 	// It is very easy to accidentally leave a QStackedWidget on the wrong page after
 	// editing with the Designer. And in this case we've been mucking about with it in code

@@ -59,6 +59,7 @@ GPlatesQtWidgets::PreferencesPaneFiles::PreferencesPaneFiles(
 	QWidget(parent_)
 {
 	setupUi(this);
+	groupbox_scripting->setVisible(false);
 	GPlatesAppLogic::UserPreferences &prefs = app_state.get_user_preferences();
 	
 	// Loading and Saving UserPreferences link:-
