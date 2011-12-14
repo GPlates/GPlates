@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 Geological Survey of Norway
+ * Copyright (C) 2008, 2009, 2011 Geological Survey of Norway
  * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -777,3 +777,36 @@ GPlatesQtWidgets::MapView::height() const
 	return d_gl_widget_ptr->height();
 }
 
+void
+GPlatesQtWidgets::MapView::set_orientation(
+	const GPlatesMaths::Rotation &rotation
+	/*bool should_emit_external_signal */)
+{
+	GPlatesMaths::LatLonPoint llp(0,0);
+	GPlatesMaths::PointOnSphere centre = GPlatesMaths::make_point_on_sphere(llp);
+
+	GPlatesMaths::Rotation rev = rotation.get_reverse();
+
+	GPlatesMaths::PointOnSphere desired_centre = rev*centre;
+	GPlatesMaths::LatLonPoint desired_llp = GPlatesMaths::make_lat_lon_point(desired_centre);
+
+
+	// Convert the llp to canvas coordinates.
+	double x_pos = desired_llp.longitude();
+	double y_pos = desired_llp.latitude();
+
+	try{
+		d_map_canvas_ptr->map().projection().forward_transform(x_pos,y_pos);
+	}
+	catch(GPlatesGui::ProjectionException &e)
+	{
+		std::cerr << "Caught exception converting lat-long to scene coordinates." << std::endl;
+		e.write(std::cerr);
+	}
+
+	// Centre the view on this point.
+	d_map_transform.set_centre_of_viewport(
+		GPlatesGui::MapTransform::point_type(x_pos, y_pos)
+		/*should_emit_external_signal */);
+
+}

@@ -8,6 +8,7 @@
  *   $Date$
  * 
  * Copyright (C) 2004, 2005, 2006, 2007, 2010 The University of Sydney, Australia
+ * Copyright (C) 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -109,6 +110,10 @@ namespace GPlatesGui
 		 */
 		void
 		zoom_changed();
+
+		void
+		send_zoom_to_stdout(
+			double zoom);
 
 	private:
 

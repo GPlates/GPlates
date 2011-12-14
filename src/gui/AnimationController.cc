@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
+ * Copyright (C) 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -432,6 +433,8 @@ GPlatesGui::AnimationController::set_view_time(
 		d_application_state_ptr->set_reconstruction_time(new_time);
 		
 		emit view_time_changed(new_time);
+		// FIXME: We could probably use the view_time_changed signal here. 
+		emit send_time_to_stdout(new_time);
 	}
 }
 

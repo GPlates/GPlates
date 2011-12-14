@@ -11,6 +11,7 @@
  *  (under the name "GLCanvas.cc")
  * Copyright (C) 2006, 2007 The University of Sydney, Australia
  *  (under the name "GlobeCanvas.cc")
+ * Copyright (C) 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -49,6 +50,7 @@
 #include "gui/ColourScheme.h"
 #include "gui/GlobeVisibilityTester.h"
 #include "gui/QGLWidgetTextRenderer.h"
+#include "gui/SimpleGlobeOrientation.h"
 #include "gui/SvgExport.h"
 #include "gui/TextOverlay.h"
 
@@ -1190,3 +1192,18 @@ GPlatesQtWidgets::GlobeCanvas::grab_frame_buffer()
 	return grabFrameBuffer();
 }
 
+void
+GPlatesQtWidgets::GlobeCanvas::set_orientation(
+	const GPlatesMaths::Rotation &rotation
+	/*bool should_emit_external_signal */)
+{
+	d_globe.orientation().set_rotation(rotation);
+
+	update_canvas();
+}
+
+boost::optional<GPlatesMaths::Rotation>
+GPlatesQtWidgets::GlobeCanvas::orientation() const
+{
+	return d_globe.orientation().rotation();
+}

@@ -366,6 +366,12 @@ namespace GPlatesAppLogic
 		initialise_versioning();
 
 		/**
+		 * Stores executable path of current application in user settings.                                                                    
+		 */
+		void
+		store_executable_path();
+
+		/**
 		 * If this string ! .isNull(), all settings operations will be performed
 		 * on a 'subdirectory' of the keystore - this is so that we can support
 		 * simultaneous use of different gplates versions with different settings.

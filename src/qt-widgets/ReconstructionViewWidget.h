@@ -44,6 +44,7 @@
 namespace GPlatesMaths
 {
 	class PointOnSphere;
+	class Rotation;
 }
 
 namespace GPlatesViewOperations
@@ -167,6 +168,15 @@ namespace GPlatesQtWidgets
 
 		void
 		update_tools_and_status_message();
+
+		void
+		send_camera_pos_to_stdout(
+			double,
+			double);
+
+		void
+		send_orientation_to_stdout(
+			GPlatesMaths::Rotation &);
 	
 	private slots:
 

@@ -11,6 +11,7 @@
  *  (under the name "GLCanvas.h")
  * Copyright (C) 2006, 2007, 2010, 2011 The University of Sydney, Australia
  *  (under the name "GlobeCanvas.h")
+ * Copyright (C) 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -244,6 +245,16 @@ namespace GPlatesQtWidgets
 		void
 		set_camera_viewpoint(
 			const GPlatesMaths::LatLonPoint &llp);
+
+		virtual
+		boost::optional<GPlatesMaths::Rotation>
+		orientation() const;
+
+		virtual
+		void
+		set_orientation(
+			const GPlatesMaths::Rotation &rotation
+			/*bool should_emit_external_signal = true */);
 
 		QImage
 		grab_frame_buffer();

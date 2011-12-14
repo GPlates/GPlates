@@ -167,6 +167,7 @@ GPlatesAppLogic::UserPreferences::UserPreferences(
 	QCoreApplication::setApplicationName("GPlates");
 	
 	initialise_versioning();
+	store_executable_path();
 	
 	// Set some default values that cannot be hardcoded, but are instead generated
 	// at runtime.
@@ -458,4 +459,11 @@ GPlatesAppLogic::UserPreferences::initialise_versioning()
 	raw_settings.setValue("version/current", GPlatesGlobal::VersionString);
 }
 
+void
+GPlatesAppLogic::UserPreferences::store_executable_path()
+{
+	QSettings settings;
 
+	// Record the executable path to this application. 
+	settings.setValue("paths/executable",QCoreApplication::applicationFilePath());
+}

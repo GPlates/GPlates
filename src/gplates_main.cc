@@ -8,6 +8,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2006, 2007, 2009, 2010, 2011 The University of Sydney, Australia
+ * Copyright (C) 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -67,12 +68,14 @@ namespace
 	{
 	public:
 		CommandLineOptions() :
-			debug_gui(false)
+			debug_gui(false),
+			enable_external_syncing(false)
 		{ }
 
 		QStringList line_format_filenames;
 		QStringList rotation_format_filenames;
 		bool debug_gui;
+		bool enable_external_syncing;
 	};
 	
 	const char *ROTATION_FILE_OPTION_NAME_WITH_SHORT_OPTION = "rotation-file,r";
@@ -87,6 +90,8 @@ namespace
 	const char *SYMBOL_TABLE_OPTION_NAME = "symbol-table";
 	//enable python by secret command line option.
 	const char *NO_PYTHON_OPTION_NAME = "no-python";
+	// Enable communication with external programs
+	const char *ENABLE_EXTERNAL_SYNCING_OPTION_NAME = "enable-external-syncing";
 
 	void
 	print_usage(
@@ -155,6 +160,10 @@ namespace
 		input_options.hidden_options.add_options()
 			(NO_PYTHON_OPTION_NAME, "Disable python");
 
+		// Add enable-external-syncing options
+		input_options.hidden_options.add_options()
+			(ENABLE_EXTERNAL_SYNCING_OPTION_NAME, "Enable external syncing.");
+
 		boost::program_options::variables_map vm;
 
 		try
@@ -220,6 +229,12 @@ namespace
 			ComponentManager::instance().enable(
 				ComponentManager::Component::symbology());
 		}
+
+		if(vm.count(ENABLE_EXTERNAL_SYNCING_OPTION_NAME))
+		{
+			command_line_options.enable_external_syncing = true;
+		}
+
 
 		//enable python by command line option.
 		if(vm.count(NO_PYTHON_OPTION_NAME))
@@ -328,6 +343,9 @@ int internal_main(int argc, char* argv[])
 	if (command_line_options.debug_gui)
 	{
 		main_window_widget.install_gui_debug_menu();
+	}
+	if (command_line_options.enable_external_syncing){
+		main_window_widget.enable_external_syncing();
 	}
 
 	using namespace GPlatesGui;

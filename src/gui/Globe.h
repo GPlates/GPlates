@@ -113,7 +113,7 @@ namespace GPlatesGui
 				GPlatesOpenGL::GLRenderer &renderer);
 
 		SimpleGlobeOrientation &
-		orientation()
+		orientation() const
 		{
 			return *d_globe_orientation_ptr;
 		}

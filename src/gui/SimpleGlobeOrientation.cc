@@ -8,6 +8,7 @@
  *   $Date$
  * 
  * Copyright (C) 2004, 2005, 2006, 2007, 2008, 2010 The University of Sydney, Australia
+ * Copyright (C) 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -229,3 +230,13 @@ GPlatesGui::SimpleGlobeOrientation::orient_poles_vertically()
 	emit orientation_changed();
 }
 
+void
+GPlatesGui::SimpleGlobeOrientation::set_rotation(
+	const GPlatesMaths::Rotation &rotation_ 
+/*	bool should_emit_external_signal */)
+{
+	d_accum_rot = rotation_;
+	d_rev_accum_rot = d_accum_rot.get_reverse();
+
+	emit orientation_changed(/*should_emit_external_signal*/);
+}

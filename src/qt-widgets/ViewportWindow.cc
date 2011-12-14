@@ -6,7 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2006, 2007, 2008, 2009, 2010, 2011 The University of Sydney, Australia
- * Copyright (C) 2007, 2008, 2009, 2010 Geological Survey of Norway
+ * Copyright (C) 2007, 2008, 2009, 2010, 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -178,6 +178,7 @@
 
 #include "utils/ComponentManager.h"
 #include "utils/DeferredCallEvent.h"
+#include "utils/ExternalSyncController.h"
 #include "utils/Profile.h"
 #include "utils/ComponentManager.h"
 #include "gui/PythonManager.h"
@@ -399,7 +400,8 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	d_inside_update_undo_action_tooltip(false),
 	d_inside_update_redo_action_tooltip(false),
 	d_import_menu_ptr(NULL), // Needs to be set up after call to setupUi.
-	d_utilities_menu_ptr(NULL) // Needs to be set up after call to setupUi.
+	d_utilities_menu_ptr(NULL), // Needs to be set up after call to setupUi.
+	d_external_sync_controller_ptr(NULL)
 {
 	setupUi(this);
 
@@ -2794,3 +2796,20 @@ GPlatesQtWidgets::ViewportWindow::showEvent(
 	update_tools_and_status_message();
 }
 
+void
+GPlatesQtWidgets::ViewportWindow::enable_external_syncing(
+	bool gplates_is_master)
+{
+	if (!d_external_sync_controller_ptr)
+	{
+		d_external_sync_controller_ptr.reset(
+			new GPlatesUtils::ExternalSyncController(
+			gplates_is_master,
+			this,
+			&get_view_state()));
+
+
+	}
+	d_external_sync_controller_ptr->enable_external_syncing();
+
+}

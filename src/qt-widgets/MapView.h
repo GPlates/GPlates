@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 Geological Survey of Norway
+ * Copyright (C) 2008, 2009, 2011 Geological Survey of Norway
  * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -111,6 +111,19 @@ namespace GPlatesQtWidgets
 		void
 		set_camera_viewpoint(
 			const GPlatesMaths::LatLonPoint &llp);
+
+		virtual
+		void
+		set_orientation(
+			const GPlatesMaths::Rotation &rotation
+			/*bool should_emit_external_signal  = true*/);
+
+		virtual
+		boost::optional<GPlatesMaths::Rotation> 
+		orientation() const
+		{
+			return boost::none;
+		};
 
 		virtual
 		void

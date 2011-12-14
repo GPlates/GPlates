@@ -6,7 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2006, 2007, 2008, 2009, 2010, 2011 The University of Sydney, Australia
- * Copyright (C) 2007, 2008, 2009, 2010 Geological Survey of Norway
+ * Copyright (C) 2007, 2008, 2009, 2010, 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -101,6 +101,11 @@ namespace GPlatesViewOperations
 	class FocusedFeatureGeometryManipulator;
 	class GeometryBuilder;
 	class GeometryOperationTarget;
+}
+
+namespace GPlatesUtils
+{
+	class ExternalSyncController;
 }
 
 namespace GPlatesQtWidgets
@@ -278,6 +283,20 @@ namespace GPlatesQtWidgets
 			return *d_utilities_menu_ptr;
 		}
 	
+		/**
+		 * Enable  communication.
+		 *
+		 * We need to control this from the viewport
+		 * window for situations where gplates is
+		 * launched remotely and acts as the "slave"
+		 * application. This would also disable the ability
+		 * to open the external-sync-dialog from
+		 * GPlates.
+		 */
+		void
+		enable_external_syncing(
+		    bool gplates_is_master = false);
+
 	public slots:
 		
 		void
@@ -505,6 +524,12 @@ namespace GPlatesQtWidgets
 			d_animation_controller.set_view_time(time);
 		}
 
+		GPlatesGui::AnimationController&
+		get_animation_controller()
+		{
+			return d_animation_controller;
+		}
+
 	protected:
 	
 		/**
@@ -624,7 +649,10 @@ namespace GPlatesQtWidgets
 		void
 		set_internal_release_window_title();
 
-	private slots:
+
+	
+		
+		private slots:
 
 		void
 		pop_up_specify_anchored_plate_id_dialog();
@@ -975,6 +1003,11 @@ namespace GPlatesQtWidgets
 		 * Allows Python scripts to be run from the Utilities menu.
 		 */
 		GPlatesGui::UtilitiesMenu *d_utilities_menu_ptr;
+
+		/**
+		 * Controller for external communication.
+		 */
+		boost::scoped_ptr<GPlatesUtils::ExternalSyncController> d_external_sync_controller_ptr;	
 	};
 }
 

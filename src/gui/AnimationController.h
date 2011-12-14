@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
+ * Copyright (C) 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -402,6 +403,10 @@ namespace GPlatesGui
 		void
 		animation_state_changed(
 				bool is_playing);
+
+		void
+		send_time_to_stdout(
+			double time);
 
 	private slots:
 
