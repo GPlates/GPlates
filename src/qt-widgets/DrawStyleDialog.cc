@@ -170,8 +170,14 @@ GPlatesQtWidgets::DrawStyleDialog::apply_style_to_all_layers()
 
 
 void
-GPlatesQtWidgets::DrawStyleDialog::focus_style(const GPlatesGui::StyleAdapter* style_)
+GPlatesQtWidgets::DrawStyleDialog::focus_style(
+		const GPlatesGui::StyleAdapter* style_)
 {
+	if(NULL == style_)
+	{
+		return;
+	}
+
 	const GPlatesGui::StyleCatagory* cata = &style_->catagory();
 	int row_num = categories_table->rowCount();
 	for(int i=0; i<row_num; i++)

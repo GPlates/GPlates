@@ -193,7 +193,8 @@ namespace GPlatesQtWidgets
 				const QString&);
 
 		void
-		focus_style(const GPlatesGui::StyleAdapter*);
+		focus_style(
+				const GPlatesGui::StyleAdapter*);
 
 		void
 		apply_style_to_all_layers();
