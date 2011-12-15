@@ -92,9 +92,10 @@ namespace GPlatesQtWidgets
 		}
 	private slots:
 		void
-		handle_string_changed(const QString& str)
+		handle_string_changed(
+				const QString& str)
 		{
-			d_cfg_item->set_value(str);
+			d_cfg_item->set_value(str.trimmed());
 			emit configuration_changed();
 		}
 	private:

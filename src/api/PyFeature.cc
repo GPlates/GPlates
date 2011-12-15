@@ -151,7 +151,7 @@ GPlatesApi::Feature::get_properties_by_name(
 						break;
 
 					case QVariant::String:
-						ret.append(data.toString());
+						ret.append(PythonUtils::qstring_to_python_string(data.toString()));
 						break;
 					default:
 						qDebug() << "Unknown type of shape file attribute.";
@@ -198,7 +198,7 @@ GPlatesApi::Feature::get_all_property_names()
 				{
 					const QByteArray buf = (shape_file_attr_name.build_aliased_name().qstring() + ":" + 
 						GPlatesUtils::make_qstring_from_icu_string(iter->key()->value().get())).toUtf8();
-					qDebug() << "name: " << QString(buf);
+					//qDebug() << "name: " << QString(buf);
 					ret.append(bp::str(buf.data()));
 				}
 			}

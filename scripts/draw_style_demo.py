@@ -1,4 +1,4 @@
-﻿import pygplates
+import pygplates
 import random
 
 class Random1:
@@ -123,15 +123,19 @@ class ColorByProperty:
 		pass
 			
 	def get_style(self, feature, style):
-		p_name = self.cfg['v_name_1']
-		prop = feature.get_properties_by_name(p_name)
+		p_name = self.cfg['property_name']
+		if(len(p_name) == 0):
+			return
+			
+		props = feature.get_properties_by_name(p_name)
 		#print prop
-		style.colour = self.cfg['p1'].get_color(pygplates.PaletteKey(prop))
+		if(len(props) > 0):
+			style.colour = self.cfg['palette'].get_color(pygplates.PaletteKey(props[0]))
 		
 	def get_config(self):
 		self.cfg_dict = {}
-		self.cfg_dict['v_name_1/type'] = 'String'
-		self.cfg_dict['p1/type'] = 'Palette'
+		self.cfg_dict['property_name/type'] = 'String'
+		self.cfg_dict['palette/type'] = 'Palette'
 		#self.cfg_dict['v_name_2/type'] = 'String'
 		#self.cfg_dict['p2/type'] = 'Palette'
 		return self.cfg_dict
