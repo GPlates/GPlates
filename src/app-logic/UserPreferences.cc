@@ -465,5 +465,5 @@ GPlatesAppLogic::UserPreferences::store_executable_path()
 	QSettings settings;
 
 	// Record the executable path to this application. 
-	settings.setValue("paths/executable",QCoreApplication::applicationFilePath());
+	settings.setValue("paths/executables/gplates/last_used",QCoreApplication::applicationFilePath());
 }

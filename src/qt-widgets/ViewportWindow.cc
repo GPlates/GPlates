@@ -93,7 +93,6 @@
 #include "SetProjectionDialog.h"
 #include "ShapefileAttributeViewerDialog.h"
 #include "ShapefilePropertyMapper.h"
-#include "SmallCircleManager.h"
 #include "SpecifyAnchoredPlateIdDialog.h"
 #include "SymbolManagerDialog.h"
 #include "TaskPanel.h"
