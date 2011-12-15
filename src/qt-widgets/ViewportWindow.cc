@@ -334,7 +334,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			new ShapefileAttributeViewerDialog(
 				get_application_state().get_feature_collection_file_state(),
 				this)),
-	d_small_circle_manager_ptr(NULL),
 	d_specify_anchored_plate_id_dialog_ptr(
 			new SpecifyAnchoredPlateIdDialog(
 				this)),
@@ -981,8 +980,6 @@ GPlatesQtWidgets::ViewportWindow::connect_features_menu_actions()
 	QObject::connect(action_Unload_Symbol, SIGNAL(triggered()),
 			this, SLOT(handle_unload_symbol_file()));
 	// ----
-	QObject::connect(action_Manage_Small_Circles, SIGNAL(triggered()),
-			this, SLOT(pop_up_small_circle_manager()));
 	QObject::connect(action_View_Total_Reconstruction_Sequences, SIGNAL(triggered()),
 			this, SLOT(pop_up_total_reconstruction_sequences_dialog()));
 	QObject::connect(action_View_Shapefile_Attributes, SIGNAL(triggered()),
@@ -1789,6 +1786,12 @@ GPlatesQtWidgets::ViewportWindow::enable_measure_distance_tool(
 	action_Measure_Distance->setEnabled(enable);
 }
 
+void
+GPlatesQtWidgets::ViewportWindow::enable_create_small_circle_tool(
+	bool enable)
+{
+	action_Create_Small_Circle->setEnabled(enable);
+}
 
 void
 GPlatesQtWidgets::ViewportWindow::handle_drag_globe_triggered()
@@ -2629,23 +2632,6 @@ GPlatesQtWidgets::ViewportWindow::open_new_window()
 	}
 }
 
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_small_circle_manager()
-{
-
-#if 0
-	if (!d_small_circle_manager_ptr)
-	{
-		d_small_circle_manager_ptr.reset(
-			new SmallCircleManager(
-				get_view_state().get_rendered_geometry_collection(),
-				get_application_state(),
-				this));
-	}
-
-	QtWidgetUtils::pop_up_dialog(d_small_circle_manager_ptr.get());
-#endif
-}
 
 void
 GPlatesQtWidgets::ViewportWindow::status_message(
@@ -2717,6 +2703,7 @@ GPlatesQtWidgets::ViewportWindow::clone_feature_with_dialog()
 	{
 		d_choose_feature_collection_dialog_ptr.reset(
 				new ChooseFeatureCollectionDialog(
+					get_application_state().get_reconstruct_method_registry(),
 					get_application_state().get_feature_collection_file_state(),
 					get_application_state().get_feature_collection_file_io(),
 					this));

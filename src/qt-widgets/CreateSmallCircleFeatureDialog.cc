@@ -102,6 +102,7 @@ GPlatesQtWidgets::CreateSmallCircleFeatureDialog::CreateSmallCircleFeatureDialog
 	d_application_state_ptr(app_state_ptr),
 	d_choose_feature_collection_widget(
 			new ChooseFeatureCollectionWidget(
+				d_application_state_ptr->get_reconstruct_method_registry(),
 				d_file_state,
 				d_file_io,
 				this)),

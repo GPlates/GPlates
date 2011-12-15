@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2010 Geological Survey of Norway
+ * Copyright (C) 2010, 2011 Geological Survey of Norway
  * Copyright (C) 2010, 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -32,6 +32,10 @@
 #include "QtWidgetUtils.h"
 #include "ReconstructionPoleWidget.h"
 
+#include "app-logic/PalaeomagUtils.h"
+
+#include "gui/FeatureFocus.h"
+
 #include "maths/GreatCircleArc.h"
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
@@ -47,7 +51,8 @@ GPlatesQtWidgets::CalculateReconstructionPoleDialog::CalculateReconstructionPole
 	QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_dialog_ptr(new InsertVGPReconstructionPoleDialog(view_state_, parent_)),
 	d_reconstruction_pole_widget_ptr(new ReconstructionPoleWidget(this)),
-	d_application_state_ptr(&view_state_.get_application_state())
+	d_application_state_ptr(&view_state_.get_application_state()),
+	d_feature_focus(view_state_.get_feature_focus())
 {
 	setupUi(this);
 
@@ -72,6 +77,11 @@ GPlatesQtWidgets::CalculateReconstructionPoleDialog::CalculateReconstructionPole
 			SIGNAL(clicked(QAbstractButton *)),
 			this,
 			SLOT(handle_button_clicked(QAbstractButton *)));
+	QObject::connect(
+			&d_feature_focus,
+			SIGNAL(focus_changed(GPlatesGui::FeatureFocus &)),
+			this,
+			SLOT(handle_feature_focus_changed()));
 
 	update_buttons();
 
@@ -135,13 +145,7 @@ GPlatesQtWidgets::CalculateReconstructionPoleDialog::handle_calculate()
 	qDebug() << "lon: " << recon_pole_llp.longitude();
 	qDebug() << "angle: " << radiansToDegrees(angle).dval();
 	qDebug();	
-#endif	
-
-#if 0
-	line_rot_lat->setText(locale_.toString(recon_pole_llp.latitude(), 'f', 2));
-	line_rot_lon->setText(locale_.toString(recon_pole_llp.longitude(), 'f', 2));
-	line_rot_angle->setText(locale_.toString(radiansToDegrees(angle).dval(), 'f', 2));
-#endif	
+#endif		
 
 	d_reconstruction_pole.reset(ReconstructionPole(
 		spinbox_plateid->value(),
@@ -183,3 +187,48 @@ GPlatesQtWidgets::CalculateReconstructionPoleDialog::update_buttons()
 	main_buttonbox->button(QDialogButtonBox::Save)->setEnabled(false);
 }
 
+void
+GPlatesQtWidgets::CalculateReconstructionPoleDialog::fill_found_fields_from_feature_focus()
+{
+	if (!d_feature_focus.is_valid())
+	{
+		return;
+	}
+
+	GPlatesAppLogic::PalaeomagUtils::VirtualGeomagneticPolePropertyFinder finder;
+	finder.visit_feature(d_feature_focus.focused_feature());
+
+	if (!finder.is_vgp_feature())
+	{
+		return;
+	}
+
+	boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> pole_point = finder.get_vgp_point();
+
+	if (pole_point)
+	{
+		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(**pole_point);
+		spinbox_vgp_lat->setValue(llp.latitude());
+		spinbox_vgp_lon->setValue(llp.longitude());
+	}
+
+	boost::optional<GPlatesModel::integer_plate_id_type> plate_id = finder.get_plate_id();
+
+	if (plate_id)
+	{
+		spinbox_plateid->setValue(*plate_id);
+	}
+
+	boost::optional<double> age = finder.get_age();
+
+	if (age)
+	{
+		spinbox_age->setValue(*age);
+	}
+}
+
+void
+GPlatesQtWidgets::CalculateReconstructionPoleDialog::handle_feature_focus_changed()
+{
+	fill_found_fields_from_feature_focus();
+}

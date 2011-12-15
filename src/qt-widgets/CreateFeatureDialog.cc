@@ -416,6 +416,7 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 				this)),
 	d_choose_feature_collection_widget(
 			new ChooseFeatureCollectionWidget(
+				view_state_.get_application_state().get_reconstruct_method_registry(),
 				d_file_state,
 				d_file_io,
 				this)),

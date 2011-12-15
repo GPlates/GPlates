@@ -100,7 +100,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 	d_edit_string_widget_ptr(new EditStringWidget(this)),
 	d_edit_boolean_widget_ptr(new EditBooleanWidget(this)),
 	d_edit_shapefile_attributes_widget_ptr(new EditShapefileAttributesWidget(this)),
-        d_edit_time_sequence_widget_ptr(new EditTimeSequenceWidget(
+    d_edit_time_sequence_widget_ptr(new EditTimeSequenceWidget(
                 view_state_.get_application_state(), this)),
 	d_edit_verb(tr("Edit"))
 {
@@ -157,6 +157,8 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 			this, SLOT(edit_widget_wants_committing()));
 	QObject::connect(d_edit_time_sequence_widget_ptr, SIGNAL(commit_me()),
 			this, SLOT(edit_widget_wants_committing()));	
+	QObject::connect(d_edit_time_sequence_widget_ptr, SIGNAL(commit_me()),
+			this, SLOT(edit_widget_wants_committing()));
 }
 
 
@@ -189,12 +191,16 @@ GPlatesQtWidgets::EditWidgetGroupBox::build_widget_map() const
 	map["gpml:angle"] = d_edit_angle_widget_ptr;
 	map["xs:string"] = d_edit_string_widget_ptr;
 	map["xs:boolean"] = d_edit_boolean_widget_ptr;
+
+	// FIXME: check if IrregularSampling should correspond to the time-sequence-widget, 
+	// and if it should be included in this map. I think 
 	map["gpml:IrregularSampling"] = d_edit_time_sequence_widget_ptr;
 	map["gpml:StringList"] = d_edit_string_list_widget_ptr;
 #if 0
 	// Keep the KeyValueDictionary out of the map until we have the
 	// ability to create one. 
 	map["gpml:KeyValueDictionary"] = d_edit_shapefile_attributes_widget_ptr;
+
 #endif
 	return map;
 }

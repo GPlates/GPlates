@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2010 Geological Survey of Norway
+ * Copyright (C) 2010, 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -36,6 +36,11 @@
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
+}
+
+namespace GPlatesGui
+{
+	class FeatureFocus;
 }
 
 namespace GPlatesPresentation
@@ -71,10 +76,21 @@ namespace GPlatesQtWidgets
 		handle_button_clicked(
 				QAbstractButton *button);
 
+		void
+		handle_feature_focus_changed();
+
 	private:
 	
 		void
 		update_buttons();
+
+		/**
+		 * Get pmag-related info from the feature focus (if any), and pre-fill the appropriate widgets.  
+		 *
+		 * Couldn't resist the alliteration.
+		 */
+		void
+		fill_found_fields_from_feature_focus();
 		
 		InsertVGPReconstructionPoleDialog *d_dialog_ptr;
 
@@ -87,6 +103,12 @@ namespace GPlatesQtWidgets
 		 * the rotation model can be updated if necessary. 
 		 */
 		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
+
+		/**
+		 * The focussed feature - for listening to changes in focus, and pre-filling the
+		 * vgp fields from the focussed feature.
+		 */
+		const GPlatesGui::FeatureFocus &d_feature_focus;
 		
 		
 	};

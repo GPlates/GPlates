@@ -33,6 +33,12 @@
          <attribute name="headerMinimumSectionSize">
           <number>50</number>
          </attribute>
+         <attribute name="headerDefaultSectionSize">
+          <number>60</number>
+         </attribute>
+         <attribute name="headerMinimumSectionSize">
+          <number>50</number>
+         </attribute>
          <column>
           <property name="text">
            <string>File / Seq</string>
@@ -286,9 +292,19 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="button_New_Sequence">
+        <widget class="QPushButton" name="button_Delete_Sequence">
          <property name="enabled">
           <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>&amp;Delete Sequence</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="button_New_Sequence">
+         <property name="enabled">
+          <bool>true</bool>
          </property>
          <property name="text">
           <string>&amp;New Sequence</string>

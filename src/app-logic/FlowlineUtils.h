@@ -96,8 +96,8 @@ namespace GPlatesAppLogic
 		};
 
 		/**
-		* Used to obtain flowline-relevant parameters from a flowline feature.
-		*/
+		 * Used to obtain flowline-relevant parameters from a flowline feature.
+		 */
 		class FlowlinePropertyFinder :
 			public GPlatesModel::ConstFeatureVisitor
 		{

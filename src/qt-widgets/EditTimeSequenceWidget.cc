@@ -301,8 +301,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::EditTimeSequenceWidget(
 	AbstractEditWidget(parent_),
 	EditTableWidget(),
         d_current_reconstruction_time(
-                app_state_.get_current_reconstruction_time()),
-	d_editing(false)
+                app_state_.get_current_reconstruction_time())
 {
     setupUi(this);
     // Set column widths and resizabilty.
@@ -551,7 +550,6 @@ GPlatesQtWidgets::EditTimeSequenceWidget::handle_insert_row_above(
 	if (row >= 0) {
 		insert_blank_time_into_table(row);
 	}
-	d_editing = true;
 	update_buttons();
 }
 
@@ -563,7 +561,6 @@ GPlatesQtWidgets::EditTimeSequenceWidget::handle_insert_row_below(
 	if (row >= 0) {
 		insert_blank_time_into_table(row + 1);
 	}
-	d_editing = true;
 	update_buttons();
 }
 

@@ -78,6 +78,7 @@ GPlatesGui::EnableCanvasTool::initialise()
 	d_viewport_window->enable_digitise_polyline_tool(true);
 	d_viewport_window->enable_digitise_multipoint_tool(true);
 	d_viewport_window->enable_digitise_polygon_tool(true);
+	d_viewport_window->enable_create_small_circle_tool(true);
 }
 
 void

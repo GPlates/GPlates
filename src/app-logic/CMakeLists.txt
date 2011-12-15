@@ -69,6 +69,8 @@ set(srcs
     MotionPathUtils.h
     MultiPointVectorField.cc
     MultiPointVectorField.h
+	PalaeomagUtils.cc
+	PalaeomagUtils.h
     PartitionFeatureTask.cc
     PartitionFeatureTask.h
     PartitionFeatureUtils.cc
@@ -184,6 +186,8 @@ set(srcs
     TopologyNetworkResolverLayerTask.h
     TopologyUtils.cc
     TopologyUtils.h
+	TRSUtils.cc
+	TRSUtils.h
     UserPreferences.cc
     UserPreferences.h
     VelocityFieldCalculatorLayerProxy.cc

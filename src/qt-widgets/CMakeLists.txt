@@ -41,9 +41,6 @@ set(srcs
     CalculateReconstructionPoleDialog.cc
     CalculateReconstructionPoleDialog.h
     CalculateReconstructionPoleDialogUi.ui
-	CalculateStagePoleDialog.cc
-	CalculateStagePoleDialog.h
-	CalculateStagePoleDialogUi.ui
     ChangeFeatureTypeDialog.cc
     ChangeFeatureTypeDialog.h
     ChangeFeatureTypeDialogUi.ui
@@ -97,6 +94,9 @@ set(srcs
     CreateSmallCircleFeatureDialog.cc
     CreateSmallCircleFeatureDialog.h
     CreateSmallCircleFeatureDialogUi.ui	
+	CreateTotalReconstructionSequenceDialog.cc
+	CreateTotalReconstructionSequenceDialog.h
+	CreateTotalReconstructionSequenceDialogUi.ui	
     CreateVGPDialog.cc
     CreateVGPDialog.h
     CreateVGPDialogUi.ui
@@ -167,6 +167,12 @@ set(srcs
     EditTimeSequenceWidget.h
     EditTimeSequenceWidgetUi.ui
     EditTopologyWidgetUi.ui
+	EditTotalReconstructionSequenceDialog.cc
+	EditTotalReconstructionSequenceDialog.h
+	EditTotalReconstructionSequenceDialogUi.ui
+	EditTotalReconstructionSequenceWidget.cc
+	EditTotalReconstructionSequenceWidget.h
+	EditTotalReconstructionSequenceWidgetUi.ui
     EditWidgetChooser.cc
     EditWidgetChooser.h
     EditWidgetGroupBox.cc
@@ -375,9 +381,6 @@ set(srcs
     ShapefileFileFormatConfigurationDialogUi.ui
     ShapefilePropertyMapper.cc
     ShapefilePropertyMapper.h
-    SmallCircleManager.cc
-    SmallCircleManager.h
-    SmallCircleManagerUi.ui
 	SmallCircleWidget.cc
 	SmallCircleWidget.h
 	SmallCircleWidgetUi.ui

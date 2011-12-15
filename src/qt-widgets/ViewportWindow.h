@@ -357,7 +357,7 @@ namespace GPlatesQtWidgets
 				bool enable = true);
 
 		void
-			enable_split_feature_tool(
+		enable_split_feature_tool(
 			bool enable = true);
 
 		void
@@ -374,6 +374,10 @@ namespace GPlatesQtWidgets
 
 		void
 		enable_measure_distance_tool(
+				bool enable = true);
+
+		void
+		enable_create_small_circle_tool(
 				bool enable = true);
 
 		void
@@ -799,9 +803,6 @@ namespace GPlatesQtWidgets
 		open_new_window();
 
 		void
-		pop_up_small_circle_manager();
-
-		void
 		pop_up_background_colour_picker();
 
 		void
@@ -898,7 +899,6 @@ namespace GPlatesQtWidgets
 		boost::scoped_ptr<SetCameraViewpointDialog> d_set_camera_viewpoint_dialog_ptr;
 		boost::scoped_ptr<SetProjectionDialog> d_set_projection_dialog_ptr;
 		boost::scoped_ptr<ShapefileAttributeViewerDialog> d_shapefile_attribute_viewer_dialog_ptr;
-		boost::scoped_ptr<SmallCircleManager> d_small_circle_manager_ptr;
 		boost::scoped_ptr<SpecifyAnchoredPlateIdDialog> d_specify_anchored_plate_id_dialog_ptr;
 		boost::scoped_ptr<SymbolManagerDialog> d_symbol_manager_dialog_ptr;
 		boost::scoped_ptr<TotalReconstructionPolesDialog> d_total_reconstruction_poles_dialog_ptr;

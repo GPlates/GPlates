@@ -37,6 +37,7 @@
 namespace GPlatesAppLogic
 {
 	class FeatureCollectionFileIO;
+	class ReconstructMethodRegistry;
 }
 
 namespace GPlatesQtWidgets
@@ -51,6 +52,7 @@ namespace GPlatesQtWidgets
 
 		explicit
 		ChooseFeatureCollectionDialog(
+				const GPlatesAppLogic::ReconstructMethodRegistry &reconstruct_method_registry,
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileIO &file_io,
 				QWidget *parent_ = NULL);
