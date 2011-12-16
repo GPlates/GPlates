@@ -127,6 +127,10 @@ namespace GPlatesQtWidgets
 
 		~GlobeCanvas();
 
+		void
+		set_disable_update(
+				bool b);
+
 	private:
 
 		//! Private constructor for use by clone()

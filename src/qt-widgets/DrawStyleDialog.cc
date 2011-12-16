@@ -38,6 +38,7 @@
 #include "app-logic/PropertyExtractors.h"
 #include "file-io/CptReader.h"
 #include "file-io/ReadErrorAccumulation.h"
+
 #include "gui/DrawStyleAdapters.h"
 #include "gui/DrawStyleManager.h"
 #include "gui/HTMLColourNames.h"
@@ -45,10 +46,17 @@
 #include "gui/SingleColourScheme.h"
 #include "gui/PlateIdColourPalettes.h"
 #include "gui/PythonConfiguration.h"
+#include "gui/ViewportProjection.h"
+
 #include "presentation/ReconstructVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
 #include "presentation/VisualLayers.h"
+
 #include "GlobeAndMapWidget.h"
+#include "GlobeCanvas.h"
+#include "MapCanvas.h"
+#include "MapView.h"
+
 
 GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 		GPlatesPresentation::ViewState &view_state,
@@ -59,7 +67,10 @@ GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 	d_disable_style_item_change(false),
 	d_view_state(view_state),
 	d_combo_box(NULL),
-	d_style_of_all(NULL)
+	d_style_of_all(NULL),
+	d_drag(false),
+	d_projection_changed(false),
+	d_refresh_preview(false)
 {
 	init_dlg();
 }
@@ -270,6 +281,12 @@ GPlatesQtWidgets::DrawStyleDialog::make_signal_slot_connections()
 			this,
 			SLOT(handle_style_selection_changed(QListWidgetItem*,QListWidgetItem*)));
 
+// 	QObject::connect(
+// 			&GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget().globe_and_map_widget(),
+// 			SIGNAL(repainted(bool)),
+// 			this,
+// 			SLOT(handle_main_repaint(bool)));
+
 	QObject::connect(
 			d_globe_and_map_widget_ptr,
 			SIGNAL(repainted(bool)),
@@ -287,6 +304,32 @@ GPlatesQtWidgets::DrawStyleDialog::make_signal_slot_connections()
 			SIGNAL(textChanged(const QString&)),
 			this,
 			SLOT(handle_cfg_name_changed(const QString&)));
+
+	QObject::connect(
+			&GPlatesPresentation::Application::instance()->get_viewport_window().globe_canvas(),
+			SIGNAL(mouse_released_after_drag(
+					const GPlatesMaths::PointOnSphere &,
+					const GPlatesMaths::PointOnSphere &, bool,
+					const GPlatesMaths::PointOnSphere &,
+					const GPlatesMaths::PointOnSphere &, bool,
+					const GPlatesMaths::PointOnSphere &,
+					Qt::MouseButton, Qt::KeyboardModifiers)),
+			this, 
+			SLOT(handle_release_after_drag()));
+
+	QObject::connect(
+			&GPlatesPresentation::Application::instance()->get_viewport_window().map_view(),
+			SIGNAL(mouse_released_after_drag(const QPointF &,
+					bool, const QPointF &, bool, const QPointF &,
+					Qt::MouseButton, Qt::KeyboardModifiers)),
+			this, 
+			SLOT(handle_release_after_drag()));
+
+	QObject::connect(
+			&d_view_state.get_viewport_projection(),
+			SIGNAL(projection_type_changed(const GPlatesGui::ViewportProjection &)),
+			this,
+			SLOT(handle_change_projection()));
 }
 
 void
@@ -296,11 +339,21 @@ GPlatesQtWidgets::DrawStyleDialog::handle_close_button_clicked()
 }
 
 void
-GPlatesQtWidgets::DrawStyleDialog::handle_repaint(bool)
+GPlatesQtWidgets::DrawStyleDialog::handle_repaint(
+		bool mouse_down)
 {
 	d_repaint_flag = true;
 	d_image = d_globe_and_map_widget_ptr->grab_frame_buffer();
+	return;
 }
+
+
+// void
+// GPlatesQtWidgets::DrawStyleDialog::handle_main_repaint(
+// 		bool mouse_down)
+// {
+// 	return;
+// }
 
 void
 GPlatesQtWidgets::DrawStyleDialog::handle_remove_button_clicked()
@@ -325,7 +378,8 @@ GPlatesQtWidgets::DrawStyleDialog::handle_remove_button_clicked()
 
 
 void
-GPlatesQtWidgets::DrawStyleDialog::set_style(GPlatesGui::StyleAdapter* _style)
+GPlatesQtWidgets::DrawStyleDialog::set_style(
+		GPlatesGui::StyleAdapter* _style)
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
 	{
@@ -540,42 +594,59 @@ GPlatesQtWidgets::DrawStyleDialog::handle_style_selection_changed(
 void
 GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 {
-	PreviewGuard guard(*this);
-
-	//sync the camera point
-	boost::optional<GPlatesMaths::LatLonPoint> camera_point = 
-		GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget().camera_llp();
-	
-	if(camera_point)
-		d_globe_and_map_widget_ptr->get_active_view().set_camera_viewpoint(*camera_point);
-
-	int len = style_list->count();
-    	d_globe_and_map_widget_ptr->show();
-	for(int i = 0; i < len; i++)
 	{
-		 QListWidgetItem* current_item = style_list->item(i);
+		//sync the camera point
+		GPlatesQtWidgets::ReconstructionViewWidget & view_widget = 
+			GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget();
+		boost::optional<GPlatesMaths::LatLonPoint> camera_point = view_widget.camera_llp();
+	
+		if(camera_point)
+		{
+			d_globe_and_map_widget_ptr->get_active_view().set_camera_viewpoint(*camera_point);
+		}
+
+		if(view_widget.globe_is_active())
+		{
+			d_globe_and_map_widget_ptr->get_globe_canvas().set_orientation(
+				*view_widget.globe_canvas().orientation());
+		}
+		
+		PreviewGuard guard(*this);
+		
+		int len = style_list->count();
+    
+		d_globe_and_map_widget_ptr->show();
+	
+		for(int i = 0; i < len; i++)
+		{
+			 QListWidgetItem* current_item = style_list->item(i);
 		 
-		 if(!current_item)
-			 continue;
+			 if(!current_item)
+				 continue;
 
-		d_repaint_flag = false;
-		QVariant qv = current_item->data(Qt::UserRole);
-		GPlatesGui::StyleAdapter* sa = static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
-		set_style(sa);
+			d_repaint_flag = false;
+			QVariant qv = current_item->data(Qt::UserRole);
+			GPlatesGui::StyleAdapter* sa = static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
+			set_style(sa);
 			
-		d_globe_and_map_widget_ptr->update_canvas();
+			d_globe_and_map_widget_ptr->update_canvas();
 			
-		d_disable_style_item_change = true;
+			d_disable_style_item_change = true;
 
-		while(!d_repaint_flag)
-			QApplication::processEvents();
+			while(!d_repaint_flag)
+				QApplication::processEvents();
 
-		d_disable_style_item_change = false;
+			d_disable_style_item_change = false;
 			
-		current_item->setIcon(QIcon(QPixmap::fromImage(d_image)));
+			current_item->setIcon(QIcon(QPixmap::fromImage(d_image)));
+		}
+	
+		d_globe_and_map_widget_ptr->hide();
 	}
-	d_globe_and_map_widget_ptr->hide();
+		
 	style_list->setCurrentRow(0);
+	QVariant q_data = style_list->currentItem()->data(Qt::UserRole);
+	set_style(static_cast<GPlatesGui::StyleAdapter*>(q_data.value<void*>()));
 }
 
 
@@ -768,6 +839,48 @@ GPlatesQtWidgets::DrawStyleDialog::focus_style()
 		focus_style(locked_visual_layer->get_visual_layer_params()->style_adapter());
 	}
 }
+
+
+GPlatesQtWidgets::PreviewGuard::PreviewGuard(
+		DrawStyleDialog& dlg) :
+	d_dlg(dlg),
+	d_guard(&dlg.d_preview_guard)
+{
+	dlg.d_combo_box->setDisabled(true);
+	dlg.categories_table->setDisabled(true);
+
+	GPlatesQtWidgets::ReconstructionViewWidget & view_widget = 
+		GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget();
+	if(view_widget.globe_is_active())
+	{
+		view_widget.globe_canvas().set_disable_update(true);
+	}
+	else if(view_widget.map_is_active())
+	{
+		view_widget.map_view().map_canvas().set_disable_update(true);
+	}
+}
+
+GPlatesQtWidgets::PreviewGuard::~PreviewGuard()
+{
+	d_dlg.d_combo_box->setDisabled(false);
+	d_dlg.categories_table->setDisabled(false);
+			
+	GPlatesQtWidgets::ReconstructionViewWidget & view_widget = 
+		GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget();
+			
+	if(view_widget.globe_is_active())
+	{
+		view_widget.globe_canvas().set_disable_update(false);
+	}
+	else if(view_widget.map_is_active())
+	{
+		view_widget.map_view().map_canvas().set_disable_update(false);
+	}
+}
+
+
+
 
 
 

@@ -231,7 +231,35 @@ namespace GPlatesQtWidgets
 				QListWidgetItem* previous);
 
 		void
-		handle_repaint(bool);
+		handle_repaint(
+				bool);
+
+// 		void
+// 		handle_main_repaint(
+// 				bool);
+
+		void
+		refresh_preview_icons()
+		{
+			QApplication::processEvents();
+			if( isVisible() && d_preview_guard.tryLock())
+			{
+				d_preview_guard.unlock();
+				show_preview_icon();
+			}
+		}
+
+		void
+		handle_release_after_drag()
+		{
+			refresh_preview_icons();
+		}
+
+		void
+		handle_change_projection()
+		{
+			refresh_preview_icons();
+		}
 
 		void
 		focus_style();
@@ -284,6 +312,7 @@ namespace GPlatesQtWidgets
 		LayerGroupComboBox* d_combo_box;
 		GPlatesGui::StyleAdapter* d_style_of_all;
 		QMutex d_preview_guard;
+		bool d_drag, d_projection_changed, d_refresh_preview;
 	};
 
 
@@ -291,19 +320,9 @@ namespace GPlatesQtWidgets
 	{
 	public:
 		PreviewGuard(
-				DrawStyleDialog& dlg) :
-			d_dlg(dlg),
-			d_guard(&dlg.d_preview_guard)
-		{
-			dlg.d_combo_box->setDisabled(true);
-			dlg.categories_table->setDisabled(true);
-		}
+				DrawStyleDialog& dlg) ;
 
-		~PreviewGuard()
-		{
-			d_dlg.d_combo_box->setDisabled(false);
-			d_dlg.categories_table->setDisabled(false);
-		}
+		~PreviewGuard();
 
 	private:
 		DrawStyleDialog& d_dlg;

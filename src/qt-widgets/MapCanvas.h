@@ -93,6 +93,10 @@ namespace GPlatesQtWidgets
 		void
 		draw_svg_output();
 
+		void
+		set_disable_update(
+				bool b);
+
 	signals:
 
 		void

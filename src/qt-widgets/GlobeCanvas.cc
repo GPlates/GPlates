@@ -342,6 +342,51 @@ GPlatesQtWidgets::GlobeCanvas::init()
 	setAttribute(Qt::WA_NoSystemBackground);
 }
 
+void
+GPlatesQtWidgets::GlobeCanvas::set_disable_update(
+		bool b)
+{
+	if(b)
+	{
+		QObject::disconnect(
+				&(d_view_state.get_rendered_geometry_collection()),
+				SIGNAL(collection_was_updated(
+						GPlatesViewOperations::RenderedGeometryCollection &,
+						GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
+				this,
+				SLOT(update_canvas()));
+		QObject::disconnect(
+				&(d_globe.orientation()), 
+				SIGNAL(orientation_changed()),
+				this, 
+				SLOT(notify_of_orientation_change()));
+		QObject::disconnect(
+				&(d_globe.orientation()), 
+				SIGNAL(orientation_changed()),
+				this, 
+				SLOT(force_mouse_pointer_pos_change()));
+	}
+	else
+	{
+		QObject::connect(
+				&(d_view_state.get_rendered_geometry_collection()),
+				SIGNAL(collection_was_updated(
+						GPlatesViewOperations::RenderedGeometryCollection &,
+						GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
+				this,
+				SLOT(update_canvas()));
+		QObject::connect(
+				&(d_globe.orientation()), 
+				SIGNAL(orientation_changed()),
+				this, 
+				SLOT(notify_of_orientation_change()));
+		QObject::connect(
+				&(d_globe.orientation()), 
+				SIGNAL(orientation_changed()),
+				this, 
+				SLOT(force_mouse_pointer_pos_change()));
+	}
+}
 
 GPlatesQtWidgets::GlobeCanvas *
 GPlatesQtWidgets::GlobeCanvas::clone(

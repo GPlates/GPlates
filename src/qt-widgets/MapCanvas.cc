@@ -99,6 +99,34 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 			SLOT(update_canvas()));
 }
 
+void
+GPlatesQtWidgets::MapCanvas::set_disable_update(
+		bool b)
+{
+	if(b)
+	{
+		QObject::disconnect(d_rendered_geometry_collection,
+		SIGNAL(collection_was_updated(
+				GPlatesViewOperations::RenderedGeometryCollection &,
+				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
+		this,
+		SLOT(update_canvas(
+				GPlatesViewOperations::RenderedGeometryCollection &,
+				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)));
+	}
+	else
+	{
+		QObject::connect(d_rendered_geometry_collection,
+		SIGNAL(collection_was_updated(
+				GPlatesViewOperations::RenderedGeometryCollection &,
+				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
+		this,
+		SLOT(update_canvas(
+				GPlatesViewOperations::RenderedGeometryCollection &,
+				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)));
+	}
+}
+
 GPlatesQtWidgets::MapCanvas::~MapCanvas()
 {  }
 
