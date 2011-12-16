@@ -137,7 +137,15 @@ GPlatesQtWidgets::DrawStyleDialog::handle_layer_changed(
 			categories_table->setCurrentIndex(QModelIndex());
 		
 			style_list->clearSelection();
-			style_list->clear();
+			if(d_preview_guard.tryLock())
+			{
+				style_list->clear();
+				d_preview_guard.unlock();
+			}
+			else
+			{
+				return;
+			}
 		}
 	}
 }
@@ -454,9 +462,19 @@ void
 GPlatesQtWidgets::DrawStyleDialog::load_category(const GPlatesGui::StyleCatagory& cata)
 {
 	using namespace GPlatesGui;
-	
+
 	DrawStyleManager::StyleContainer styles = d_style_mgr->get_styles(cata);
-	style_list->clear();
+	
+	if(d_preview_guard.tryLock())
+	{
+		style_list->clear();
+		d_preview_guard.unlock();
+	}
+	else
+	{
+		return;
+	}
+	
 	
 	BOOST_FOREACH(StyleAdapter* sa, styles)
 	{
@@ -522,6 +540,8 @@ GPlatesQtWidgets::DrawStyleDialog::handle_style_selection_changed(
 void
 GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 {
+	PreviewGuard guard(*this);
+
 	//sync the camera point
 	boost::optional<GPlatesMaths::LatLonPoint> camera_point = 
 		GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget().camera_llp();

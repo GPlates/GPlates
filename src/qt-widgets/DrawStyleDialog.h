@@ -28,6 +28,9 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/weak_ptr.hpp>
 
+#include <QMutex>
+#include <QMutexLocker>
+
 #include "presentation/Application.h"
 #include "DrawStyleDialogUi.h"
 #include "gui/PythonConfiguration.h"
@@ -84,12 +87,16 @@ namespace GPlatesQtWidgets
 		void
 		insert_all();
 	};
+	
+	class PreviewGuard;
 
 	class DrawStyleDialog  : 
 			public QDialog, 
 			protected Ui_DrawStyleDialog
 	{
 		Q_OBJECT
+
+		friend class PreviewGuard;
 
 	public:
 		DrawStyleDialog(
@@ -276,7 +283,35 @@ namespace GPlatesQtWidgets
 		GPlatesPresentation::ViewState& d_view_state;
 		LayerGroupComboBox* d_combo_box;
 		GPlatesGui::StyleAdapter* d_style_of_all;
+		QMutex d_preview_guard;
 	};
+
+
+	class PreviewGuard
+	{
+	public:
+		PreviewGuard(
+				DrawStyleDialog& dlg) :
+			d_dlg(dlg),
+			d_guard(&dlg.d_preview_guard)
+		{
+			dlg.d_combo_box->setDisabled(true);
+			dlg.categories_table->setDisabled(true);
+		}
+
+		~PreviewGuard()
+		{
+			d_dlg.d_combo_box->setDisabled(false);
+			d_dlg.categories_table->setDisabled(false);
+		}
+
+	private:
+		DrawStyleDialog& d_dlg;
+		QMutexLocker d_guard;
+	};
+
+
 }
+
 
 #endif  // GPLATES_QTWIDGETS_RENDERSETTINGDIALOG_H
