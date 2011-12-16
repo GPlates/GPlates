@@ -59,7 +59,7 @@ namespace
 	// that, because we use an orthographic projection for the globe...
 	const GLfloat RADIUS = 7.0f;
 
-	typedef GPlatesOpenGL::GLColouredVertex vertex_type;
+	typedef GPlatesOpenGL::GLColourVertex vertex_type;
 	typedef GLushort vertex_element_type;
 	typedef GPlatesOpenGL::GLDynamicStreamPrimitives<vertex_type, vertex_element_type> stream_primitives_type;
 

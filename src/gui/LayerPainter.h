@@ -28,8 +28,10 @@
 
 #include <vector>
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "MapProjection.h"
 #include "PersistentOpenGLObjects.h"
 #include "RasterColourPalette.h"
 #include "TextRenderer.h"
@@ -65,7 +67,7 @@ namespace GPlatesGui
 		typedef GLuint vertex_element_type;
 
 		//! Typedef for a coloured vertex.
-		typedef GPlatesOpenGL::GLColouredVertex coloured_vertex_type;
+		typedef GPlatesOpenGL::GLColourVertex coloured_vertex_type;
 
 		//! Typedef for a sequence of coloured vertices.
 		typedef std::vector<coloured_vertex_type> coloured_vertex_seq_type;
@@ -216,21 +218,23 @@ namespace GPlatesGui
 
 
 		/**
-		 * Information to render a text string.
+		 * Information to render a text string located at a 2D viewport position.
 		 */
-		struct TextDrawable
+		struct TextDrawable2D
 		{
-			TextDrawable(
+			TextDrawable2D(
 					QString text_,
 					QFont font_,
-					GPlatesMaths::UnitVector3D uv_,
+					const double &world_x_,
+					const double &world_y_,
 					int x_offset_,
 					int y_offset_,
 					boost::optional<Colour> colour_,
 					boost::optional<Colour> shadow_colour_) :
 				text(text_),
 				font(font_),
-				uv(uv_),
+				world_x(world_x_),
+				world_y(world_y_),
 				x_offset(x_offset_),
 				y_offset(y_offset_),
 				colour(colour_),
@@ -239,7 +243,43 @@ namespace GPlatesGui
 
 			QString text;
 			QFont font;
-			GPlatesMaths::UnitVector3D uv;
+			double world_x;
+			double world_y;
+			int x_offset;
+			int y_offset;
+			boost::optional<Colour> colour;
+			// render drop shadow, if any
+			boost::optional<Colour> shadow_colour;
+		};
+
+
+		/**
+		 * Information to render a text string located at a 3D world position.
+		 *
+		 * The 3D world position is transformed using the model-view-projection transform in GLRenderer.
+		 */
+		struct TextDrawable3D
+		{
+			TextDrawable3D(
+					QString text_,
+					QFont font_,
+					GPlatesMaths::UnitVector3D world_position_,
+					int x_offset_,
+					int y_offset_,
+					boost::optional<Colour> colour_,
+					boost::optional<Colour> shadow_colour_) :
+				text(text_),
+				font(font_),
+				world_position(world_position_),
+				x_offset(x_offset_),
+				y_offset(y_offset_),
+				colour(colour_),
+				shadow_colour(shadow_colour_)
+			{  }
+
+			QString text;
+			QFont font;
+			GPlatesMaths::UnitVector3D world_position;
 			int x_offset;
 			int y_offset;
 			boost::optional<Colour> colour;
@@ -253,20 +293,38 @@ namespace GPlatesGui
 		 */
 		struct RasterDrawable
 		{
+			/**
+			 * If @a map_projection_ is specified then the raster is rendered using the specified
+			 * 2D map projection, otherwise it's rendered to the 3D globe.
+			 */
 			RasterDrawable(
 					const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type source_resolved_raster_,
 					const RasterColourPalette::non_null_ptr_to_const_type source_raster_colour_palette_,
-					const Colour &source_raster_modulate_colour_) :
+					const Colour &source_raster_modulate_colour_,
+					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection_ = boost::none) :
 				source_resolved_raster(source_resolved_raster_),
 				source_raster_colour_palette(source_raster_colour_palette_),
-				source_raster_modulate_colour(source_raster_modulate_colour_)
+				source_raster_modulate_colour(source_raster_modulate_colour_),
+				map_projection(map_projection_)
 			{  }
 
 			GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type source_resolved_raster;
 			RasterColourPalette::non_null_ptr_to_const_type source_raster_colour_palette;
 			Colour source_raster_modulate_colour;
+			boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection;
 		};
 
+
+		/**
+		 * Constructor.
+		 *
+		 * Set @a use_depth_buffer to true if you have a depth buffer (eg, main framebuffer) and
+		 * you want to use it.
+		 * Currently the 3D globe view uses the depth buffer but the 2D map views don't.
+		 */
+		explicit
+		LayerPainter(
+				bool use_depth_buffer = true);
 
 		/**
 		 * Must be called before streaming or queuing any primitives.
@@ -302,7 +360,8 @@ namespace GPlatesGui
 		PointLinePolygonDrawables translucent_drawables_on_the_sphere;
 
 		std::vector<RasterDrawable> rasters;
-		std::vector<TextDrawable> text_off_the_sphere;
+		std::vector<TextDrawable3D> text_drawables_3D;
+		std::vector<TextDrawable2D> text_drawables_2D;
 
 		/**
 		 * Optional location in cube quad tree (spatial partition) when/if traversing a
@@ -320,7 +379,13 @@ namespace GPlatesGui
 				PersistentOpenGLObjects &persistent_opengl_objects);
 
 		void
-		paint_text_off_the_sphere(
+		paint_text_drawables_2D(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const TextRenderer &text_renderer,
+				float scale);
+
+		void
+		paint_text_drawables_3D(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const TextRenderer &text_renderer,
 				float scale);
@@ -337,6 +402,9 @@ namespace GPlatesGui
 
 		//! Used to bind vertices and vertex elements of @a d_vertex_element_buffer and @a d_vertex_buffer.
 		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_vertex_array;
+
+		//! Whether to enable depth testing and writes at any stage of the rendering.
+		bool d_use_depth_buffer;
 	};
 }
 

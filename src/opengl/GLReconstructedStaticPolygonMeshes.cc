@@ -70,6 +70,9 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::update(
 {
 	d_reconstructions_spatial_partition = reconstructions_spatial_partition;
 	d_active_or_inactive_reconstructions_spatial_partition = active_or_inactive_reconstructions_spatial_partition;
+
+	// Let clients know that we have changed.
+	d_subject_token.invalidate();
 }
 
 

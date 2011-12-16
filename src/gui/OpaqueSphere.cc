@@ -50,7 +50,7 @@ namespace
 	static const double RADIUS = 1.0;
 	static const unsigned int NUM_SLICES = 72;
 
-	typedef GPlatesOpenGL::GLColouredVertex vertex_type;
+	typedef GPlatesOpenGL::GLColourVertex vertex_type;
 	typedef GLushort vertex_element_type;
 	typedef GPlatesOpenGL::GLDynamicStreamPrimitives<vertex_type, vertex_element_type> stream_primitives_type;
 

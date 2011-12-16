@@ -33,6 +33,8 @@
 #include "FunctionDomainException.h"
 #include "HighPrecision.h"
 
+#include "global/GPlatesAssert.h"
+
 // uncomment to turn on warnings
 #if 0
 #def WARNINGS 
@@ -49,9 +51,14 @@ GPlatesMaths::sqrt(
 			// Even allowing some flexibility of comparison, the value of 'r' is
 			// negative, which falls outside the domain of 'sqrt'.
 
-			std::ostringstream oss("function 'sqrt' invoked with invalid argument ");
+			std::ostringstream oss;
+			oss << "function 'sqrt' invoked with invalid argument ";
 			oss << r;
-			throw FunctionDomainException(GPLATES_EXCEPTION_SOURCE,
+			// Throw exception in release build but abort in debug build - if the input
+			// is this far out of range a developer should really look at the cause.
+			GPlatesGlobal::Assert<FunctionDomainException>(
+					false,
+					GPLATES_EXCEPTION_SOURCE,
 					oss.str().c_str());
 		} else {
 			// It was almost valid.  Let's be lenient and pretend the value was exactly
@@ -77,9 +84,14 @@ GPlatesMaths::asin(
 			// Even allowing some flexibility of comparison, the value of 'r' is less
 			// than minus one, which falls outside the domain of 'asin'.
 
-			std::ostringstream oss("function 'asin' invoked with invalid argument ");
+			std::ostringstream oss;
+			oss << "function 'asin' invoked with invalid argument ";
 			oss << r;
-			throw FunctionDomainException(GPLATES_EXCEPTION_SOURCE,
+			// Throw exception in release build but abort in debug build - if the input
+			// is this far out of range a developer should really look at the cause.
+			GPlatesGlobal::Assert<FunctionDomainException>(
+					false,
+					GPLATES_EXCEPTION_SOURCE,
 					oss.str().c_str());
 		} else {
 			// It was almost valid.  Let's be lenient and pretend the value was exactly
@@ -100,9 +112,14 @@ GPlatesMaths::asin(
 			// Even allowing some flexibility of comparison, the value of 'r' is
 			// greater than one, which falls outside the domain of 'asin'.
 
-			std::ostringstream oss("function 'asin' invoked with invalid argument ");
+			std::ostringstream oss;
+			oss << "function 'asin' invoked with invalid argument ";
 			oss << r;
-			throw FunctionDomainException(GPLATES_EXCEPTION_SOURCE,
+			// Throw exception in release build but abort in debug build - if the input
+			// is this far out of range a developer should really look at the cause.
+			GPlatesGlobal::Assert<FunctionDomainException>(
+					false,
+					GPLATES_EXCEPTION_SOURCE,
 					oss.str().c_str());
 		} else {
 			// It was almost valid.  Let's be lenient and pretend the value was exactly
@@ -131,9 +148,14 @@ GPlatesMaths::acos(
 			// Even allowing some flexibility of comparison, the value of 'r' is less
 			// than minus one, which falls outside the domain of 'acos'.
 
-			std::ostringstream oss("function 'acos' invoked with invalid argument ");
+			std::ostringstream oss;
+			oss << "function 'acos' invoked with invalid argument ";
 			oss << r;
-			throw FunctionDomainException(GPLATES_EXCEPTION_SOURCE,
+			// Throw exception in release build but abort in debug build - if the input
+			// is this far out of range a developer should really look at the cause.
+			GPlatesGlobal::Assert<FunctionDomainException>(
+					false,
+					GPLATES_EXCEPTION_SOURCE,
 					oss.str().c_str());
 		} else {
 			// It was almost valid.  Let's be lenient and pretend the value was exactly
@@ -153,9 +175,14 @@ GPlatesMaths::acos(
 			// Even allowing some flexibility of comparison, the value of 'r' is
 			// greater than one, which falls outside the domain of 'acos'.
 
-			std::ostringstream oss("function 'acos' invoked with invalid argument ");
+			std::ostringstream oss;
+			oss << "function 'acos' invoked with invalid argument ";
 			oss << r;
-			throw FunctionDomainException(GPLATES_EXCEPTION_SOURCE,
+			// Throw exception in release build but abort in debug build - if the input
+			// is this far out of range a developer should really look at the cause.
+			GPlatesGlobal::Assert<FunctionDomainException>(
+					false,
+					GPLATES_EXCEPTION_SOURCE,
 					oss.str().c_str());
 		} else {
 			// It was almost valid.  Let's be lenient and pretend the value was exactly

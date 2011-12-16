@@ -51,7 +51,7 @@ namespace GPlatesOpenGL
 			 * The returned vector is the intersection of the window coordinate (screen pixel)
 			 * projected onto the unit sphere, or returns false if misses the globe.
 			 */
-			boost::optional<GPlatesMaths::Vector3D>
+			boost::optional<GPlatesMaths::UnitVector3D>
 			project_window_coords_onto_unit_sphere(
 					const GLViewport &viewport,
 					const GLMatrix &model_view_transform,
@@ -107,7 +107,9 @@ namespace GPlatesOpenGL
 				}
 
 				// Return the point on the sphere where the ray first intersects.
-				return ray.get_point_on_ray(ray_distance.get());
+				// Due to numerical precision the ray may be slightly off the sphere so we'll
+				// normalise it (otherwise can provide out-of-range for 'acos' later on).
+				return ray.get_point_on_ray(ray_distance.get()).get_normalisation();
 			}
 		}
 	}
@@ -199,7 +201,7 @@ GPlatesOpenGL::GLProjectionUtils::get_min_pixel_size_on_unit_sphere(
 	for (int n = 0; n < 9; ++n)
 	{
 		// Project the same point on the unit sphere.
-		const boost::optional<GPlatesMaths::Vector3D> projected_pixel =
+		const boost::optional<GPlatesMaths::UnitVector3D> projected_pixel =
 				project_window_coords_onto_unit_sphere(
 						viewport,
 						model_view_transform,
@@ -214,7 +216,7 @@ GPlatesOpenGL::GLProjectionUtils::get_min_pixel_size_on_unit_sphere(
 		// Project the sample point plus one pixel (in the x direction) onto the unit sphere.
 		// It doesn't matter that the window coordinate might go outside the viewport
 		// because there's no clipping happening here.
-		const boost::optional<GPlatesMaths::Vector3D> projected_pixel_plus_one_x =
+		const boost::optional<GPlatesMaths::UnitVector3D> projected_pixel_plus_one_x =
 				project_window_coords_onto_unit_sphere(
 						viewport,
 						model_view_transform,
@@ -239,7 +241,7 @@ GPlatesOpenGL::GLProjectionUtils::get_min_pixel_size_on_unit_sphere(
 		// Project the sample point plus one pixel (in the y direction) onto the unit sphere.
 		// It doesn't matter that the window coordinate might go outside the viewport
 		// because there's no clipping happening here.
-		const boost::optional<GPlatesMaths::Vector3D> projected_pixel_plus_one_y =
+		const boost::optional<GPlatesMaths::UnitVector3D> projected_pixel_plus_one_y =
 				project_window_coords_onto_unit_sphere(
 						viewport,
 						model_view_transform,

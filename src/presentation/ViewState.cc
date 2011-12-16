@@ -97,7 +97,7 @@ GPlatesPresentation::ViewState::ViewState(
 	d_viewport_zoom(
 			new GPlatesGui::ViewportZoom()),
 	d_viewport_projection(
-			new GPlatesGui::ViewportProjection(GPlatesGui::ORTHOGRAPHIC)),
+			new GPlatesGui::ViewportProjection(GPlatesGui::MapProjection::ORTHOGRAPHIC)),
 	d_geometry_focus_highlight(
 			new GPlatesGui::GeometryFocusHighlight(*d_rendered_geometry_collection,d_feature_type_symbol_map)),
 	d_feature_focus(

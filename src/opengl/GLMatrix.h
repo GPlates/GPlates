@@ -244,6 +244,13 @@ namespace GPlatesOpenGL
 			return reinterpret_cast<const GLdouble *>(d_matrix);
 		}
 
+		//! Returns internal matrix in OpenGL column-major format.
+		GLdouble *
+		get_matrix()
+		{
+			return reinterpret_cast<GLdouble *>(d_matrix);
+		}
+
 		/**
 		 * Returns the matrix element of the specified row and column.
 		 */

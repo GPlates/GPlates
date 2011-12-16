@@ -30,10 +30,14 @@
 #include <boost/none.hpp>
 
 #include "Rotation.h"
-#include "Vector3D.h"
+
 #include "ConstGeometryOnSphereVisitor.h"
-#include "MathsUtils.h"
 #include "InvalidOperationException.h"
+#include "MathsUtils.h"
+#include "Vector3D.h"
+
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 
 
 namespace
@@ -60,6 +64,82 @@ namespace
 
 		return ((2.0 * s) * v);
 	}
+
+
+	/**
+	 * Visits a @a GeometryOnSphere, rotates it and returns as a @a GeometryOnSphere.
+	 */
+	class RotateGeometryOnSphere :
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+		/**
+		 * Construct with the @a Rotation to use for rotating.
+		 */
+		explicit
+		RotateGeometryOnSphere(
+				const GPlatesMaths::Rotation &rotation) :
+			d_rotation(rotation)
+		{  }
+
+
+		/**
+		 * Rotates @a geometry using @a Rotation passed into constructor
+		 * and returns rotated @a GeometryOnSphere.
+		 */
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		rotate(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry)
+		{
+			d_rotated_geometry = boost::none;
+
+			geometry->accept_visitor(*this);
+
+			// Unless there's a new derived type of GeometryOnSphere we should
+			// be able to dereference 'd_rotated_geometry'.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					d_rotated_geometry, GPLATES_ASSERTION_SOURCE);
+
+			return *d_rotated_geometry;
+		}
+
+	protected:
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+			d_rotated_geometry = d_rotation * multi_point_on_sphere;
+		}
+
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+			d_rotated_geometry = d_rotation * point_on_sphere;
+		}
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			d_rotated_geometry = d_rotation * polygon_on_sphere;
+		}
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			d_rotated_geometry = d_rotation * polyline_on_sphere;
+		}
+
+	private:
+		const GPlatesMaths::Rotation &d_rotation;
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_rotated_geometry;
+	};
 }
 
 
@@ -205,178 +285,85 @@ GPlatesMaths::operator*(
 	}
 }
 
-namespace
-{
-	const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
-	rotate_multi_point(
-			const GPlatesMaths::Rotation &rotation,
-			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point)
-	{
-		using namespace GPlatesMaths;
 
-		std::vector<PointOnSphere> rotated_points;
-		rotated_points.reserve(multi_point->number_of_points());
+const GPlatesMaths::PointOnSphere
+GPlatesMaths::operator*(
+		const Rotation &r,
+		const PointOnSphere &p) {
 
-		MultiPointOnSphere::const_iterator iter = multi_point->begin();
-		MultiPointOnSphere::const_iterator end = multi_point->end();
-		for ( ; iter != end; ++iter) {
-			rotated_points.push_back(rotation * (*iter));
-		}
-
-		MultiPointOnSphere::non_null_ptr_to_const_type rotated_multi_point(
-				MultiPointOnSphere::create_on_heap(rotated_points));
-		return rotated_multi_point;
-	}
-
-
-	const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
-	rotate_point(
-			const GPlatesMaths::Rotation &rotation,
-			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point)
-	{
-		using namespace GPlatesMaths;
-
-		UnitVector3D rotated_position_vector = rotation * point->position_vector();
-		PointOnSphere::non_null_ptr_to_const_type rotated_point(
-				PointOnSphere::create_on_heap(rotated_position_vector));
-		return rotated_point;
-	}
-
-
-	const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-	rotate_polygon(
-			const GPlatesMaths::Rotation &rotation,
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon)
-	{
-		using namespace GPlatesMaths;
-
-		std::vector<PointOnSphere> rotated_points;
-		rotated_points.reserve(polygon->number_of_vertices());
-
-		PolygonOnSphere::vertex_const_iterator iter = polygon->vertex_begin();
-		PolygonOnSphere::vertex_const_iterator end = polygon->vertex_end();
-		for ( ; iter != end; ++iter) {
-			rotated_points.push_back(rotation * (*iter));
-		}
-
-		PolygonOnSphere::non_null_ptr_to_const_type rotated_polygon(
-				PolygonOnSphere::create_on_heap(rotated_points));
-		return rotated_polygon;
-	}
-
-
-	const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
-	rotate_polyline(
-			const GPlatesMaths::Rotation &rotation,
-			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline)
-	{
-		using namespace GPlatesMaths;
-
-		std::vector<PointOnSphere> rotated_points;
-		rotated_points.reserve(polyline->number_of_vertices());
-
-		PolylineOnSphere::vertex_const_iterator iter = polyline->vertex_begin();
-		PolylineOnSphere::vertex_const_iterator end = polyline->vertex_end();
-		for ( ; iter != end; ++iter) {
-			rotated_points.push_back(rotation * (*iter));
-		}
-
-		PolylineOnSphere::non_null_ptr_to_const_type rotated_polyline(
-				PolylineOnSphere::create_on_heap(rotated_points));
-		return rotated_polyline;
-	}
-
-
-	/**
-	 * This is a Visitor to rotate a geometry-on-sphere.
-	 */
-	class GeometryOnSphereRotater:
-			public GPlatesMaths::ConstGeometryOnSphereVisitor
-	{
-	public:
-		explicit
-		GeometryOnSphereRotater(
-				const GPlatesMaths::Rotation &r):
-			d_rotation(r)
-		{  }
-
-		~GeometryOnSphereRotater()
-		{  }
-
-		const GPlatesMaths::GeometryOnSphere::maybe_null_ptr_to_const_type
-		rotated_geometry() const
-		{
-			return d_rotated_geometry;
-		}
-
-		// Please keep these geometries ordered alphabetically.
-
-		/**
-		 * Override this function in your own derived class.
-		 */
-		virtual
-		void
-		visit_multi_point_on_sphere(
-				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
-		{
-			d_rotated_geometry = rotate_multi_point(d_rotation, multi_point_on_sphere).get();
-		}
-
-		/**
-		 * Override this function in your own derived class.
-		 */
-		virtual
-		void
-		visit_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
-		{
-			d_rotated_geometry = rotate_point(d_rotation, point_on_sphere).get();
-		}
-
-		/**
-		 * Override this function in your own derived class.
-		 */
-		virtual
-		void
-		visit_polygon_on_sphere(
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
-		{
-			d_rotated_geometry = rotate_polygon(d_rotation, polygon_on_sphere).get();
-		}
-
-		/**
-		 * Override this function in your own derived class.
-		 */
-		virtual
-		void
-		visit_polyline_on_sphere(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
-		{
-			d_rotated_geometry = rotate_polyline(d_rotation, polyline_on_sphere).get();
-		}
-
-	private:
-		const GPlatesMaths::Rotation d_rotation;
-		GPlatesMaths::GeometryOnSphere::maybe_null_ptr_to_const_type d_rotated_geometry;
-	};
+	UnitVector3D rotated_position_vector = r * p.position_vector();
+	return PointOnSphere(rotated_position_vector);
 }
 
 
-const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere>
 GPlatesMaths::operator*(
-		const Rotation &r1,
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type g)
+		const Rotation &r,
+		const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> &p)
 {
-	GeometryOnSphereRotater rotater(r1);
-	g->accept_visitor(rotater);
-	if ( ! rotater.rotated_geometry()) {
-		// FIXME:  How did this happen?  We should throw an exception!
-		// For now, let's be very lazy and very bad...
-		return g;
-	}
-	GeometryOnSphere::non_null_ptr_to_const_type non_null_ptr(
-			rotater.rotated_geometry().get(),
-			GPlatesUtils::NullIntrusivePointerHandler());
+	UnitVector3D rotated_position_vector = r * p->position_vector();
+	return PointOnSphere::create_on_heap(rotated_position_vector);
+}
 
-	return non_null_ptr;
+
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::MultiPointOnSphere>
+GPlatesMaths::operator*(
+		const Rotation &r,
+		const GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere> &mp)
+{
+	std::vector<PointOnSphere> rotated_points;
+	rotated_points.reserve(mp->number_of_points());
+
+	MultiPointOnSphere::const_iterator iter = mp->begin();
+	MultiPointOnSphere::const_iterator end = mp->end();
+	for ( ; iter != end; ++iter) {
+		rotated_points.push_back(r * (*iter));
+	}
+
+	return MultiPointOnSphere::create_on_heap(rotated_points);
+}
+
+
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
+GPlatesMaths::operator*(
+		const Rotation &r,
+		const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere> &p)
+{
+	std::vector<PointOnSphere> rotated_points;
+	rotated_points.reserve(p->number_of_vertices());
+
+	PolylineOnSphere::vertex_const_iterator iter = p->vertex_begin();
+	PolylineOnSphere::vertex_const_iterator end = p->vertex_end();
+	for ( ; iter != end; ++iter) {
+		rotated_points.push_back(r * (*iter));
+	}
+
+	return PolylineOnSphere::create_on_heap(rotated_points);
+}
+
+
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere>
+GPlatesMaths::operator*(
+		const Rotation &r,
+		const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere> &p)
+{
+	std::vector<PointOnSphere> rotated_points;
+	rotated_points.reserve(p->number_of_vertices());
+
+	PolygonOnSphere::vertex_const_iterator iter = p->vertex_begin();
+	PolygonOnSphere::vertex_const_iterator end = p->vertex_end();
+	for ( ; iter != end; ++iter) {
+		rotated_points.push_back(r * (*iter));
+	}
+
+	return PolygonOnSphere::create_on_heap(rotated_points);
+}
+
+
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::GeometryOnSphere>
+GPlatesMaths::operator*(
+		const Rotation &r,
+		const GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere> &g)
+{
+	return RotateGeometryOnSphere(r).rotate(g);
 }

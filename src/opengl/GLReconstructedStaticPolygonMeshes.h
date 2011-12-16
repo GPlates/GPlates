@@ -46,6 +46,7 @@
 #include "maths/PolygonMesh.h"
 
 #include "utils/ReferenceCount.h"
+#include "utils/SubjectObserverToken.h"
 
 
 namespace GPlatesOpenGL
@@ -544,6 +545,17 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Returns a subject token that clients can observe to see if they need to update themselves
+		 * (such as any cached data that depends on us) by getting reconstructed polygon meshes from us.
+		 */
+		const GPlatesUtils::SubjectToken &
+		get_subject_token() const
+		{
+			return d_subject_token;
+		}
+
+
+		/**
 		 * Returns the present day polygon mesh drawables.
 		 *
 		 * The returned sequence can be indexed by @a present_day_polygon_mesh_handle_type.
@@ -666,6 +678,11 @@ namespace GPlatesOpenGL
 		 */
 		boost::optional<reconstructions_spatial_partition_type::non_null_ptr_to_const_type>
 				d_active_or_inactive_reconstructions_spatial_partition;
+
+		/**
+		 * Used to inform clients that we have been updated.
+		 */
+		GPlatesUtils::SubjectToken d_subject_token;
 
 
 		//! Constructor.

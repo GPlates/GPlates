@@ -36,10 +36,17 @@
 
 namespace GPlatesGui
 {
+	/**
+	 * Renders text (using OpenGL) to a QGLWidget.
+	 */
 	class QGLWidgetTextRenderer :
 			public TextRenderer
 	{
 	public:
+
+		typedef GPlatesUtils::non_null_intrusive_ptr<QGLWidgetTextRenderer> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const QGLWidgetTextRenderer> non_null_ptr_to_const_type;
+
 
 		/**
 		 * Constructs an instance of QGLWidgetTextRenderer on the heap.
@@ -51,6 +58,20 @@ namespace GPlatesGui
 		{
 			return new QGLWidgetTextRenderer(gl_widget_ptr);
 		}
+
+
+		//! Specifies the renderer to use for subsequent text rendering.
+		virtual
+		void
+		begin_render(
+				GPlatesOpenGL::GLRenderer *renderer);
+
+
+		//! Ends text rendering.
+		virtual
+		void
+		end_render();
+
 
 		/**
 		 * Renders @a string at position (@a x , @a y ) in window coordinates
@@ -75,6 +96,7 @@ namespace GPlatesGui
 	private:
 
 		QGLWidget *d_gl_widget_ptr;
+		GPlatesOpenGL::GLRenderer *d_renderer;
 	};
 }
 

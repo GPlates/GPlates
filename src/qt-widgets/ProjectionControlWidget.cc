@@ -46,11 +46,11 @@ GPlatesQtWidgets::ProjectionControlWidget::ProjectionControlWidget(
 	// to the text changing directly; instead, we can embed some data for
 	// each combobox choice (perhaps an enumeration) via this form of
 	// addItem() : http://doc.trolltech.com/4.3/qcombobox.html#addItem
-	combo_projections->addItem(tr("3D Globe"),GPlatesGui::ORTHOGRAPHIC);
-	combo_projections->addItem(tr("Rectangular"),GPlatesGui::RECTANGULAR);
-	combo_projections->addItem(tr("Mercator"),GPlatesGui::MERCATOR);
-	combo_projections->addItem(tr("Mollweide"),GPlatesGui::MOLLWEIDE);
-	combo_projections->addItem(tr("Robinson"),GPlatesGui::ROBINSON);
+	combo_projections->addItem(tr("3D Globe"),GPlatesGui::MapProjection::ORTHOGRAPHIC);
+	combo_projections->addItem(tr("Rectangular"),GPlatesGui::MapProjection::RECTANGULAR);
+	combo_projections->addItem(tr("Mercator"),GPlatesGui::MapProjection::MERCATOR);
+	combo_projections->addItem(tr("Mollweide"),GPlatesGui::MapProjection::MOLLWEIDE);
+	combo_projections->addItem(tr("Robinson"),GPlatesGui::MapProjection::ROBINSON);
 	
 	// Handle events from the user changing the combobox.
 	QObject::connect(combo_projections, SIGNAL(activated(int)),
@@ -72,11 +72,11 @@ GPlatesQtWidgets::ProjectionControlWidget::handle_combobox_changed(
 	QVariant selected_projection_qv = combo_projections->itemData(idx);
 
 	// Extract projection type from QVariant.
-	const GPlatesGui::ProjectionType projection_type =
-			static_cast<GPlatesGui::ProjectionType>(selected_projection_qv.toInt());
+	const GPlatesGui::MapProjection::Type projection_type =
+			static_cast<GPlatesGui::MapProjection::Type>(selected_projection_qv.toInt());
 	
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			projection_type >= 0 && projection_type < GPlatesGui::NUM_PROJECTIONS,
+			projection_type >= 0 && projection_type < GPlatesGui::MapProjection::NUM_PROJECTIONS,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Set the projection type - it will also notify us of the change with its signal.

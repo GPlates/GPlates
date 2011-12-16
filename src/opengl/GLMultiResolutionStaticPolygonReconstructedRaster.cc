@@ -219,6 +219,60 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::GLMultiResolut
 }
 
 
+const GPlatesUtils::SubjectToken &
+GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_subject_token() const
+{
+	//
+	// This covers changes to the inputs that don't require completely re-creating the inputs.
+	// That is beyond our scope and is detected and managed by our owners (and owners of our inputs).
+	//
+
+	// If the source raster has changed.
+	if (!d_raster_to_reconstruct->get_subject_token().is_observer_up_to_date(
+				d_raster_to_reconstruct_texture_observer_token))
+	{
+		d_subject_token.invalidate();
+
+		d_raster_to_reconstruct->get_subject_token().update_observer(
+				d_raster_to_reconstruct_texture_observer_token);
+	}
+
+	// If the reconstructed polygons have changed (a new reconstruction).
+	if (!d_reconstructed_static_polygon_meshes->get_subject_token().is_observer_up_to_date(
+				d_reconstructed_static_polygon_meshes_observer_token))
+	{
+		d_subject_token.invalidate();
+
+		d_reconstructed_static_polygon_meshes->get_subject_token().update_observer(
+				d_reconstructed_static_polygon_meshes_observer_token);
+	}
+
+	// If the age grid has changed (a new reconstruction time).
+	if (d_age_grid_cube_raster)
+	{
+		if (!d_age_grid_cube_raster->age_grid_mask_cube_raster->get_subject_token().is_observer_up_to_date(
+				d_age_grid_cube_raster->d_age_grid_mask_cube_raster_observer_token))
+		{
+			d_subject_token.invalidate();
+
+			d_age_grid_cube_raster->age_grid_mask_cube_raster->get_subject_token().update_observer(
+					d_age_grid_cube_raster->d_age_grid_mask_cube_raster_observer_token);
+		}
+
+		if (!d_age_grid_cube_raster->age_grid_coverage_cube_raster->get_subject_token().is_observer_up_to_date(
+				d_age_grid_cube_raster->d_age_grid_coverage_cube_raster_observer_token))
+		{
+			d_subject_token.invalidate();
+
+			d_age_grid_cube_raster->age_grid_coverage_cube_raster->get_subject_token().update_observer(
+					d_age_grid_cube_raster->d_age_grid_coverage_cube_raster_observer_token);
+		}
+	}
+
+	return d_subject_token;
+}
+
+
 unsigned int
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_level_of_detail(
 		const GLViewport &viewport,
@@ -297,9 +351,6 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 			reconstructed_polygon_mesh_transform_groups =
 					d_reconstructed_static_polygon_meshes->get_reconstructed_polygon_meshes(renderer);
 
-	// The source raster cube quad tree.
-	const raster_cube_quad_tree_type &raster_cube_quad_tree = d_raster_to_reconstruct->get_cube_quad_tree();
-
 	// Used to cache information (only during this 'render' method) that can be reused as we traverse
 	// the source raster for each transform in the reconstructed polygon meshes.
 	render_traversal_cube_quad_tree_type::non_null_ptr_type render_traversal_cube_quad_tree =
@@ -375,10 +426,10 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 					static_cast<GPlatesMaths::CubeCoordinateFrame::CubeFaceType>(face);
 
 			// Get the quad tree root node of the current cube face of the source raster.
-			const raster_cube_quad_tree_type::node_type *source_raster_quad_tree_root =
-					raster_cube_quad_tree.get_quad_tree_root_node(cube_face);
+			boost::optional<raster_quad_tree_node_type> source_raster_quad_tree_root =
+					d_raster_to_reconstruct->get_quad_tree_root_node(cube_face);
 			// If there is no source raster for the current cube face then continue to the next face.
-			if (source_raster_quad_tree_root == NULL)
+			if (!source_raster_quad_tree_root)
 			{
 				continue;
 			}
@@ -427,12 +478,10 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 			if (d_age_grid_cube_raster)
 			{
 				// Get the quad tree root node of the current cube face of the age grid mask/coverage rasters.
-				const age_grid_mask_cube_quad_tree_type::node_type *age_grid_mask_quad_tree_root =
-						d_age_grid_cube_raster->age_grid_mask_cube_raster->get_cube_quad_tree()
-								.get_quad_tree_root_node(cube_face);
-				const age_grid_coverage_cube_quad_tree_type::node_type *age_grid_coverage_quad_tree_root =
-						d_age_grid_cube_raster->age_grid_coverage_cube_raster->get_cube_quad_tree()
-								.get_quad_tree_root_node(cube_face);
+				boost::optional<age_grid_mask_quad_tree_node_type> age_grid_mask_quad_tree_root =
+						d_age_grid_cube_raster->age_grid_mask_cube_raster->get_quad_tree_root_node(cube_face);
+				boost::optional<age_grid_coverage_quad_tree_node_type> age_grid_coverage_quad_tree_root =
+						d_age_grid_cube_raster->age_grid_coverage_cube_raster->get_quad_tree_root_node(cube_face);
 
 				// If there is an age grid mask/coverage raster for the current cube face then...
 				if (age_grid_mask_quad_tree_root && age_grid_coverage_quad_tree_root)
@@ -512,7 +561,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 		render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
 		client_cache_cube_quad_tree_type &client_cache_cube_quad_tree,
 		client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-		const raster_cube_quad_tree_type::node_type &source_raster_quad_tree_node,
+		const raster_quad_tree_node_type &source_raster_quad_tree_node,
 		const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
 		const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables,
 		const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
@@ -547,7 +596,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 	// - we've reached a leaf node of the source raster (highest resolution supplied by the source raster),
 	// ...then render the current source raster tile.
 	if (level_of_detail == render_level_of_detail ||
-		source_raster_quad_tree_node.get_element().is_leaf_node())
+		source_raster_quad_tree_node.is_leaf_node())
 	{
 		render_source_raster_tile_to_scene(
 				renderer,
@@ -579,13 +628,14 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 		for (unsigned int child_u_offset = 0; child_u_offset < 2; ++child_u_offset)
 		{
 			// Get the child node of the current source raster quad tree node.
-			const raster_cube_quad_tree_type::node_type *child_source_raster_quad_tree_node =
-					source_raster_quad_tree_node.get_child_node(child_u_offset, child_v_offset);
+			boost::optional<raster_quad_tree_node_type> child_source_raster_quad_tree_node =
+					d_raster_to_reconstruct->get_child_node(
+							source_raster_quad_tree_node, child_u_offset, child_v_offset);
 
 			// If there is no source raster for the current child then continue to the next child.
 			// This happens if the current child is not covered by the source raster.
 			// Note that if we get here then the current parent is not a leaf node.
-			if (child_source_raster_quad_tree_node == NULL)
+			if (!child_source_raster_quad_tree_node)
 			{
 				continue;
 			}
@@ -664,10 +714,10 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 		render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
 		client_cache_cube_quad_tree_type &client_cache_cube_quad_tree,
 		client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-		const raster_cube_quad_tree_type::node_type &source_raster_quad_tree_node,
+		const raster_quad_tree_node_type &source_raster_quad_tree_node,
 		const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
-		const age_grid_mask_cube_quad_tree_type::node_type &age_grid_mask_quad_tree_node,
-		const age_grid_coverage_cube_quad_tree_type::node_type &age_grid_coverage_quad_tree_node,
+		const age_grid_mask_quad_tree_node_type &age_grid_mask_quad_tree_node,
+		const age_grid_coverage_quad_tree_node_type &age_grid_coverage_quad_tree_node,
 		const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
 		const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
 		const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables,
@@ -710,8 +760,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 	if (
 			level_of_detail == render_level_of_detail ||
 			(
-				age_grid_mask_quad_tree_node.get_element().is_leaf_node() ||
-				age_grid_coverage_quad_tree_node.get_element().is_leaf_node()
+				age_grid_mask_quad_tree_node.is_leaf_node() ||
+				age_grid_coverage_quad_tree_node.is_leaf_node()
 			)
 		)
 	{
@@ -807,16 +857,18 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 					source_raster_uv_transform, child_u_offset, child_v_offset);
 
 			// Get the child node of the current age grid mask/coverage quad tree nodes.
-			const age_grid_mask_cube_quad_tree_type::node_type *child_age_grid_mask_quad_tree_node =
-					age_grid_mask_quad_tree_node.get_child_node(child_u_offset, child_v_offset);
-			const age_grid_coverage_cube_quad_tree_type::node_type *child_age_grid_coverage_quad_tree_node =
-					age_grid_coverage_quad_tree_node.get_child_node(child_u_offset, child_v_offset);
+			boost::optional<age_grid_mask_quad_tree_node_type> child_age_grid_mask_quad_tree_node =
+					d_age_grid_cube_raster->age_grid_mask_cube_raster->get_child_node(
+							age_grid_mask_quad_tree_node, child_u_offset, child_v_offset);
+			boost::optional<age_grid_coverage_quad_tree_node_type> child_age_grid_coverage_quad_tree_node =
+					d_age_grid_cube_raster->age_grid_coverage_cube_raster->get_child_node(
+							age_grid_coverage_quad_tree_node, child_u_offset, child_v_offset);
 
 			// If there is no age grid for the current child then render source raster without an age grid.
 			// This happens if the current child is not covered by the age grid.
 			// Note that if we get here then the current parent age grid node is not a leaf node.
-			if (child_age_grid_mask_quad_tree_node == NULL ||
-				child_age_grid_coverage_quad_tree_node == NULL)
+			if (!child_age_grid_mask_quad_tree_node ||
+				!child_age_grid_coverage_quad_tree_node)
 			{
 				// Render the current child node if it isn't culled.
 				// Note that we're *not* continuing to traverse the quad tree because the source raster
@@ -893,9 +945,9 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 		render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
 		client_cache_cube_quad_tree_type &client_cache_cube_quad_tree,
 		client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-		const raster_cube_quad_tree_type::node_type &source_raster_quad_tree_node,
-		const age_grid_mask_cube_quad_tree_type::node_type &age_grid_mask_quad_tree_node,
-		const age_grid_coverage_cube_quad_tree_type::node_type &age_grid_coverage_quad_tree_node,
+		const raster_quad_tree_node_type &source_raster_quad_tree_node,
+		const age_grid_mask_quad_tree_node_type &age_grid_mask_quad_tree_node,
+		const age_grid_coverage_quad_tree_node_type &age_grid_coverage_quad_tree_node,
 		const GLUtils::QuadTreeUVTransform &age_grid_uv_transform,
 		const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
 		const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
@@ -937,7 +989,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 	// Note that we've already reached the highest resolution of the age grid which is why
 	// we are uv scaling it.
 	if (level_of_detail == render_level_of_detail ||
-		source_raster_quad_tree_node.get_element().is_leaf_node())
+		source_raster_quad_tree_node.is_leaf_node())
 	{
 		render_source_raster_and_age_grid_tile_to_scene(
 				renderer,
@@ -988,13 +1040,14 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 			}
 
 			// Get the child node of the current source raster quad tree node.
-			const raster_cube_quad_tree_type::node_type *child_source_raster_quad_tree_node =
-					source_raster_quad_tree_node.get_child_node(child_u_offset, child_v_offset);
+			boost::optional<raster_quad_tree_node_type> child_source_raster_quad_tree_node =
+					d_raster_to_reconstruct->get_child_node(
+							source_raster_quad_tree_node, child_u_offset, child_v_offset);
 
 			// If there is no source raster for the current child then continue to the next child.
 			// This happens if the current child is not covered by the source raster.
 			// Note that if we get here then the current parent is not a leaf node.
-			if (child_source_raster_quad_tree_node == NULL)
+			if (!child_source_raster_quad_tree_node)
 			{
 				continue;
 			}
@@ -1082,9 +1135,9 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 		render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
 		client_cache_cube_quad_tree_type &client_cache_cube_quad_tree,
 		client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-		const raster_cube_quad_tree_type::node_type &source_raster_quad_tree_node,
-		const age_grid_mask_cube_quad_tree_type::node_type &age_grid_mask_quad_tree_node,
-		const age_grid_coverage_cube_quad_tree_type::node_type &age_grid_coverage_quad_tree_node,
+		const raster_quad_tree_node_type &source_raster_quad_tree_node,
+		const age_grid_mask_quad_tree_node_type &age_grid_mask_quad_tree_node,
+		const age_grid_coverage_quad_tree_node_type &age_grid_coverage_quad_tree_node,
 		const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
 		const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
 		const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables,
@@ -1126,10 +1179,10 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 	if (
 			level_of_detail == render_level_of_detail ||
 			(
-				source_raster_quad_tree_node.get_element().is_leaf_node() &&
+				source_raster_quad_tree_node.is_leaf_node() &&
 				(
-					age_grid_mask_quad_tree_node.get_element().is_leaf_node() ||
-					age_grid_coverage_quad_tree_node.get_element().is_leaf_node()
+					age_grid_mask_quad_tree_node.is_leaf_node() ||
+					age_grid_coverage_quad_tree_node.is_leaf_node()
 				)
 			)
 		)
@@ -1223,12 +1276,14 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 
 			// Get the child node of the current age grid mask/coverage quad tree nodes.
 			// NOTE: These could be NULL.
-			const age_grid_mask_cube_quad_tree_type::node_type *child_age_grid_mask_quad_tree_node =
-					age_grid_mask_quad_tree_node.get_child_node(child_u_offset, child_v_offset);
-			const age_grid_coverage_cube_quad_tree_type::node_type *child_age_grid_coverage_quad_tree_node =
-					age_grid_coverage_quad_tree_node.get_child_node(child_u_offset, child_v_offset);
+			boost::optional<age_grid_mask_quad_tree_node_type> child_age_grid_mask_quad_tree_node =
+					d_age_grid_cube_raster->age_grid_mask_cube_raster->get_child_node(
+							age_grid_mask_quad_tree_node, child_u_offset, child_v_offset);
+			boost::optional<age_grid_coverage_quad_tree_node_type> child_age_grid_coverage_quad_tree_node =
+					d_age_grid_cube_raster->age_grid_coverage_cube_raster->get_child_node(
+							age_grid_coverage_quad_tree_node, child_u_offset, child_v_offset);
 
-			if (source_raster_quad_tree_node.get_element().is_leaf_node())
+			if (source_raster_quad_tree_node.is_leaf_node())
 			{
 				// If the source raster parent node is a leaf node then it has no children.
 				// So we need to start scaling the source raster tile texture as our children
@@ -1245,8 +1300,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 				// Note that if we get here then the current parent age grid node is *not* a leaf node
 				// (because the parent source raster node is a leaf node and only one of source raster
 				// or age grid can be a leaf node - otherwise we wouldn't be here).
-				if (child_age_grid_mask_quad_tree_node == NULL ||
-					child_age_grid_coverage_quad_tree_node == NULL)
+				if (!child_age_grid_mask_quad_tree_node ||
+					!child_age_grid_coverage_quad_tree_node)
 				{
 					// Render the current child node if it isn't culled.
 					// Note that we're *not* continuing to traverse the quad tree because the source raster
@@ -1313,21 +1368,22 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 			}
 
 			// Get the child node of the current source raster quad tree node.
-			const raster_cube_quad_tree_type::node_type *child_source_raster_quad_tree_node =
-					source_raster_quad_tree_node.get_child_node(child_u_offset, child_v_offset);
+			boost::optional<raster_quad_tree_node_type> child_source_raster_quad_tree_node =
+					d_raster_to_reconstruct->get_child_node(
+							source_raster_quad_tree_node, child_u_offset, child_v_offset);
 
 			// If there is no source raster for the current child then continue to the next child.
 			// This happens if the current child is not covered by the source raster.
 			// Note that if we get here then the current parent is not a leaf node.
-			if (child_source_raster_quad_tree_node == NULL)
+			if (!child_source_raster_quad_tree_node)
 			{
 				continue;
 			}
 
 			// Note that both mask and coverage nodes will be leaf nodes at the same time but
 			// we'll test both just to make sure.
-			if (age_grid_mask_quad_tree_node.get_element().is_leaf_node() ||
-				age_grid_coverage_quad_tree_node.get_element().is_leaf_node())
+			if (age_grid_mask_quad_tree_node.is_leaf_node() ||
+				age_grid_coverage_quad_tree_node.is_leaf_node())
 			{
 				// If the age grid parent node is a leaf node then it has no children.
 				// So we need to start scaling the age grid tile textures as our children
@@ -1371,8 +1427,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 			// If there is no age grid for the current child then render source raster without an age grid.
 			// This happens if the current child is not covered by the age grid because we've
 			// already verified that the parent age grid node is *not* a leaf node.
-			if (child_age_grid_mask_quad_tree_node == NULL ||
-				child_age_grid_coverage_quad_tree_node == NULL)
+			if (!child_age_grid_mask_quad_tree_node ||
+				!child_age_grid_coverage_quad_tree_node)
 			{
 				// Note that we're *are* continuing to traverse the quad tree because the source raster
 				// has *not* reached its highest resolution yet.
@@ -1617,7 +1673,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_source_
 		GLRenderer &renderer,
 		render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
 		client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-		const raster_cube_quad_tree_type::node_type &source_raster_quad_tree_node,
+		const raster_quad_tree_node_type &source_raster_quad_tree_node,
 		const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
 		const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
 		const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
@@ -1638,11 +1694,17 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_source_
 		// Since it's a cube texture it may, in turn, have to render its source raster
 		// into its texture (which it then passes to us to use).
 		GLMultiResolutionCubeRaster::cache_handle_type source_raster_cache_handle;
-		const GLTexture::shared_ptr_to_const_type source_raster_texture =
-				d_raster_to_reconstruct->get_tile_texture(
+		const boost::optional<GLTexture::shared_ptr_to_const_type> source_raster_texture =
+				source_raster_quad_tree_node.get_tile_texture(
 						renderer,
-						source_raster_quad_tree_node.get_element(),
+						cube_subdivision_cache.get_view_transform(cube_subdivision_cache_node),
+						cube_subdivision_cache.get_projection_transform(cube_subdivision_cache_node),
 						source_raster_cache_handle);
+		if (!source_raster_texture)
+		{
+			// Note that this should never happen since we're using a 'GLMultiResolutionCubeRaster'.
+			return;
+		}
 
 		// Cache the source raster texture to return to our client.
 		// This prevents the texture from being immediately recycled for another tile immediately
@@ -1659,7 +1721,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_source_
 		render_traversal_cube_quad_tree_node.get_element().scene_tile_compiled_draw_state =
 				create_scene_tile_compiled_draw_state(
 						renderer,
-						source_raster_texture,
+						source_raster_texture.get(),
 						source_raster_uv_transform,
 						cube_subdivision_cache,
 						cube_subdivision_cache_node,
@@ -1740,10 +1802,10 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_source_
 		cube_quad_tree_type::node_type &cube_quad_tree_node,
 		render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
 		client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-		const raster_cube_quad_tree_type::node_type &source_raster_quad_tree_node,
+		const raster_quad_tree_node_type &source_raster_quad_tree_node,
 		const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
-		const age_grid_mask_cube_quad_tree_type::node_type &age_grid_mask_quad_tree_node,
-		const age_grid_coverage_cube_quad_tree_type::node_type &age_grid_coverage_quad_tree_node,
+		const age_grid_mask_quad_tree_node_type &age_grid_mask_quad_tree_node,
+		const age_grid_coverage_quad_tree_node_type &age_grid_coverage_quad_tree_node,
 		const GLUtils::QuadTreeUVTransform &age_grid_uv_transform,
 		const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
 		const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
@@ -1817,10 +1879,10 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_age_masked
 		GLRenderer &renderer,
 		cube_quad_tree_type::node_type &cube_quad_tree_node,
 		client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-		const raster_cube_quad_tree_type::node_type &source_raster_quad_tree_node,
+		const raster_quad_tree_node_type &source_raster_quad_tree_node,
 		const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
-		const age_grid_mask_cube_quad_tree_type::node_type &age_grid_mask_quad_tree_node,
-		const age_grid_coverage_cube_quad_tree_type::node_type &age_grid_coverage_quad_tree_node,
+		const age_grid_mask_quad_tree_node_type &age_grid_mask_quad_tree_node,
+		const age_grid_coverage_quad_tree_node_type &age_grid_coverage_quad_tree_node,
 		const GLUtils::QuadTreeUVTransform &age_grid_uv_transform,
 		const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
 		const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
@@ -1852,7 +1914,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_age_masked
 			d_raster_to_reconstruct->create_tile_texture(
 					renderer,
 					age_masked_source_tile_texture->texture,
-					source_raster_quad_tree_node.get_element());
+					source_raster_quad_tree_node);
 
 			//qDebug() << "GLMultiResolutionStaticPolygonReconstructedRaster: "
 			//		<< d_age_masked_source_tile_texture_cache->get_current_num_objects_in_use();
@@ -1864,7 +1926,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_age_masked
 			d_raster_to_reconstruct->update_tile_texture(
 					renderer,
 					age_masked_source_tile_texture->texture,
-					source_raster_quad_tree_node.get_element());
+					source_raster_quad_tree_node);
 		}
 
 		// Render the age-masked source raster into our tile texture.
@@ -1931,10 +1993,10 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_age_mas
 		GLRenderer &renderer,
 		AgeMaskedSourceTileTexture &age_masked_source_tile_texture,
 		cube_quad_tree_type::node_type &cube_quad_tree_node,
-		const raster_cube_quad_tree_type::node_type &source_raster_quad_tree_node,
+		const raster_quad_tree_node_type &source_raster_quad_tree_node,
 		const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
-		const age_grid_mask_cube_quad_tree_type::node_type &age_grid_mask_quad_tree_node,
-		const age_grid_coverage_cube_quad_tree_type::node_type &age_grid_coverage_quad_tree_node,
+		const age_grid_mask_quad_tree_node_type &age_grid_mask_quad_tree_node,
+		const age_grid_coverage_quad_tree_node_type &age_grid_coverage_quad_tree_node,
 		const GLUtils::QuadTreeUVTransform &age_grid_uv_transform,
 		const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
 		const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
@@ -1949,14 +2011,35 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_age_mas
 	// Obtain textures of the source, age grid mask/coverage tiles.
 	//
 
+	// The view transform never changes within a cube face so it's the same across
+	// an entire cube face quad tree (each cube face has its own quad tree).
+	const GLTransform::non_null_ptr_to_const_type view_transform =
+			cube_subdivision_cache.get_view_transform(
+					cube_subdivision_cache_node);
+
+	// Get the view/projection transforms for the current cube quad tree node.
+	//
+	// NOTE: We get the half-texel-expanded projection transform since that is what's used to
+	// lookup the tile textures (the tile textures are bilinearly filtered and the centres of
+	// border texels match up with adjacent tiles).
+	const GLTransform::non_null_ptr_to_const_type half_texel_expanded_projection_transform =
+			cube_subdivision_cache.get_projection_transform(
+					cube_subdivision_cache_node);
+
 	// Get the source raster texture.
 	// Since it's a cube texture it may, in turn, have to render its source raster
 	// into its texture (which it then passes to us to use).
-	GLTexture::shared_ptr_to_const_type source_raster_texture =
-			d_raster_to_reconstruct->get_tile_texture(
+	const boost::optional<GLTexture::shared_ptr_to_const_type> source_raster_texture =
+			source_raster_quad_tree_node.get_tile_texture(
 					renderer,
-					source_raster_quad_tree_node.get_element(),
+					view_transform,
+					half_texel_expanded_projection_transform,
 					age_masked_source_tile_texture.source_raster_cache_handle);
+	if (!source_raster_texture)
+	{
+		// Note that this should never happen since we're using a 'GLMultiResolutionCubeRaster'.
+		return;
+	}
 
 	// If we got here then we should have an age grid.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -1966,16 +2049,23 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_age_mas
 	// Get the age grid mask/coverage textures.
 	// Since they are cube textures they may, in turn, have to render their source rasters
 	// into their textures (which they then pass to us to use).
-	const GLTexture::shared_ptr_to_const_type age_grid_mask_texture =
-			d_age_grid_cube_raster->age_grid_mask_cube_raster->get_tile_texture(
+	const boost::optional<GLTexture::shared_ptr_to_const_type> age_grid_mask_texture =
+			age_grid_mask_quad_tree_node.get_tile_texture(
 					renderer,
-					age_grid_mask_quad_tree_node.get_element(),
+					view_transform,
+					half_texel_expanded_projection_transform,
 					age_masked_source_tile_texture.age_grid_mask_cache_handle);
-	const GLTexture::shared_ptr_to_const_type age_grid_coverage_texture =
-			d_age_grid_cube_raster->age_grid_coverage_cube_raster->get_tile_texture(
+	const boost::optional<GLTexture::shared_ptr_to_const_type> age_grid_coverage_texture =
+			age_grid_coverage_quad_tree_node.get_tile_texture(
 					renderer,
-					age_grid_coverage_quad_tree_node.get_element(),
+					view_transform,
+					half_texel_expanded_projection_transform,
 					age_masked_source_tile_texture.age_grid_coverage_cache_handle);
+	if (!age_grid_mask_texture || !age_grid_coverage_texture)
+	{
+		// Note that this should never happen since we're using a 'GLMultiResolutionCubeRaster'.
+		return;
+	}
 
 
 	// Used to transform texture coordinates to account for partial coverage of current tile
@@ -1989,21 +2079,6 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_age_mas
 	// This can happen if we are rendering a source raster that is higher-resolution than the age grid.
 	GLMatrix age_grid_partial_tile_coverage_texture_matrix;
 	age_grid_uv_transform.inverse_transform(age_grid_partial_tile_coverage_texture_matrix);
-
-	// Get the view/projection transforms for the current cube quad tree node.
-	//
-	// NOTE: We get the half-texel-expanded projection transform since that is what's used to
-	// lookup the tile textures (the tile textures are bilinearly filtered and the centres of
-	// border texels match up with adjacent tiles).
-	const GLTransform::non_null_ptr_to_const_type half_texel_expanded_projection_transform =
-			cube_subdivision_cache.get_projection_transform(
-					cube_subdivision_cache_node);
-
-	// The view transform never changes within a cube face so it's the same across
-	// an entire cube face quad tree (each cube face has its own quad tree).
-	const GLTransform::non_null_ptr_to_const_type view_transform =
-			cube_subdivision_cache.get_view_transform(
-					cube_subdivision_cache_node);
 
 	// Get all present day polygons that intersect the current cube quad tree node.
 	const present_day_polygon_mesh_membership_type &present_day_polygons_intersecting_tile =
@@ -2028,9 +2103,9 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_age_mas
 				*view_transform,
 				source_raster_tile_coverage_texture_matrix,
 				age_grid_partial_tile_coverage_texture_matrix,
-				source_raster_texture,
-				age_grid_mask_texture,
-				age_grid_coverage_texture);
+				source_raster_texture.get(),
+				age_grid_mask_texture.get(),
+				age_grid_coverage_texture.get());
 	}
 	else // fixed-function pipeline...
 	{
@@ -2044,9 +2119,9 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_age_mas
 				*view_transform,
 				source_raster_tile_coverage_texture_matrix,
 				age_grid_partial_tile_coverage_texture_matrix,
-				source_raster_texture,
-				age_grid_mask_texture,
-				age_grid_coverage_texture);
+				source_raster_texture.get(),
+				age_grid_mask_texture.get(),
+				age_grid_coverage_texture.get());
 	}
 
 

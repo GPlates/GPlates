@@ -42,6 +42,43 @@ namespace GPlatesOpenGL
 	namespace GLText
 	{
 		/**
+		 * Renders text at a 2D position specified in OpenGL viewport coordinates (origin is bottom-left).
+		 *
+		 * Creates text @a string at position (@a x , @a y , 0.0) in world coordinates
+		 * using a particular @a colour and @a font.
+		 *
+		 * The current model-view and projection matrices of @a renderer, along with the current
+		 * viewport, are used to project from 2D world position into 2D viewport coordinates.
+		 *
+		 * @a x_offset and @a y_offset are the pixel coordinate shifts to offset the text from
+		 * where it would otherwise be.
+		 * NOTE: These are specified in OpenGL viewport coordinates (origin is bottom-left).
+		 * So if @a y_offset is '+1' then it offsets one pixel towards the top of the window.
+		 *
+		 * Note that @a renderer only does the projection whereas @a text_renderer does the
+		 * actual rendering of text.
+		 *
+		 * Also note that, because of this delegation to Qt for text rendering, the text rendering
+		 * draw call cannot be queued (see the @a GLRenderer interface).
+		 *
+		 * Since OpenGL viewport and Qt use different coordinate systems this method
+		 * inverts the 'y' coordinate before passing to Qt to render the text.
+		 */
+		void
+		render_text_2D(
+				GLRenderer &renderer,
+				const GPlatesGui::TextRenderer &text_renderer,
+				const double &world_x,
+				const double &world_y,
+				const QString &string,
+				const GPlatesGui::Colour &colour,
+				int x_offset,
+				int y_offset,
+				const QFont &font,
+				float scale = 1.0f);
+
+
+		/**
 		 * Renders text at a 3D position.
 		 *
 		 * Creates text @a string at position (@a x , @a y , @a z) in world coordinates
@@ -52,25 +89,22 @@ namespace GPlatesOpenGL
 		 *
 		 * @a x_offset and @a y_offset are the pixel coordinate shifts to offset the text from
 		 * where it would otherwise be.
+		 * NOTE: These are specified in OpenGL viewport coordinates (origin is bottom-left).
+		 * So if @a y_offset is '+1' then it offsets one pixel towards the top of the window.
 		 *
 		 * Note that @a renderer only does the projection whereas @a text_renderer does the
 		 * actual rendering of text.
 		 *
 		 * Also note that, because of this delegation to Qt for text rendering, the text rendering
 		 * draw call cannot be queued (see the @a GLRenderer interface).
-		 *
-		 * TODO: Incorporate more direct rendering of text into our OpenGL framework instead of
-		 * fully delegating to Qt (as @a text_renderer does). This way we have more control over
-		 * the OpenGL state and better able to have depth-tested text for example (although
-		 * that does conflict with anti-aliased, ie alpha-blended, text renderering).
 		 */
 		void
-		render_text(
+		render_text_3D(
 				GLRenderer &renderer,
 				const GPlatesGui::TextRenderer &text_renderer,
-				double x,
-				double y,
-				double z,
+				double world_x,
+				double world_y,
+				double world_z,
 				const QString &string,
 				const GPlatesGui::Colour &colour,
 				int x_offset,

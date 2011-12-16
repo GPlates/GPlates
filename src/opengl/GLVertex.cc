@@ -69,14 +69,14 @@ namespace GPlatesOpenGL
 
 	template<>
 	void
-	bind_vertex_buffer_to_vertex_array<GLColouredVertex>(
+	bind_vertex_buffer_to_vertex_array<GLColourVertex>(
 			GLRenderer &renderer,
 			GLVertexArray &vertex_array,
 			const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
 			GLint offset)
 	{
 		//
-		// The following reflects the structure of 'struct GLColouredVertex'.
+		// The following reflects the structure of 'struct GLColourVertex'.
 		// It tells OpenGL how the elements of the vertex are packed together in the vertex.
 		//
 
@@ -86,7 +86,7 @@ namespace GPlatesOpenGL
 				vertex_buffer,
 				3,
 				GL_FLOAT,
-				sizeof(GLColouredVertex),
+				sizeof(GLColourVertex),
 				offset);
 
 		vertex_array.set_enable_client_state(renderer, GL_COLOR_ARRAY, true/*enable*/);
@@ -95,21 +95,21 @@ namespace GPlatesOpenGL
 				vertex_buffer,
 				4,
 				GL_UNSIGNED_BYTE,
-				sizeof(GLColouredVertex),
+				sizeof(GLColourVertex),
 				offset + 3 * sizeof(GLfloat));
 	}
 
 
 	template<>
 	void
-	bind_vertex_buffer_to_vertex_array<GLTexturedVertex>(
+	bind_vertex_buffer_to_vertex_array<GLTextureVertex>(
 			GLRenderer &renderer,
 			GLVertexArray &vertex_array,
 			const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
 			GLint offset)
 	{
 		//
-		// The following reflects the structure of 'struct GLTexturedVertex'.
+		// The following reflects the structure of 'struct GLTextureVertex'.
 		// It tells OpenGL how the elements of the vertex are packed together in the vertex.
 		//
 
@@ -119,7 +119,7 @@ namespace GPlatesOpenGL
 				vertex_buffer,
 				3,
 				GL_FLOAT,
-				sizeof(GLTexturedVertex),
+				sizeof(GLTextureVertex),
 				offset);
 
 		vertex_array.set_enable_client_texture_state(renderer, GL_TEXTURE0, true/*enable*/);
@@ -129,21 +129,21 @@ namespace GPlatesOpenGL
 				GL_TEXTURE0,
 				2,
 				GL_FLOAT,
-				sizeof(GLTexturedVertex),
+				sizeof(GLTextureVertex),
 				offset + 3 * sizeof(GLfloat));
 	}
 
 
 	template<>
 	void
-	bind_vertex_buffer_to_vertex_array<GLColouredTexturedVertex>(
+	bind_vertex_buffer_to_vertex_array<GLTexture3DVertex>(
 			GLRenderer &renderer,
 			GLVertexArray &vertex_array,
 			const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
 			GLint offset)
 	{
 		//
-		// The following reflects the structure of 'struct GLColouredTexturedVertex'.
+		// The following reflects the structure of 'struct GLTextureVertex'.
 		// It tells OpenGL how the elements of the vertex are packed together in the vertex.
 		//
 
@@ -153,7 +153,41 @@ namespace GPlatesOpenGL
 				vertex_buffer,
 				3,
 				GL_FLOAT,
-				sizeof(GLColouredTexturedVertex),
+				sizeof(GLTexture3DVertex),
+				offset);
+
+		vertex_array.set_enable_client_texture_state(renderer, GL_TEXTURE0, true/*enable*/);
+		vertex_array.set_tex_coord_pointer(
+				renderer,
+				vertex_buffer,
+				GL_TEXTURE0,
+				3,
+				GL_FLOAT,
+				sizeof(GLTexture3DVertex),
+				offset + 3 * sizeof(GLfloat));
+	}
+
+
+	template<>
+	void
+	bind_vertex_buffer_to_vertex_array<GLColourTextureVertex>(
+			GLRenderer &renderer,
+			GLVertexArray &vertex_array,
+			const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+			GLint offset)
+	{
+		//
+		// The following reflects the structure of 'struct GLColourTextureVertex'.
+		// It tells OpenGL how the elements of the vertex are packed together in the vertex.
+		//
+
+		vertex_array.set_enable_client_state(renderer, GL_VERTEX_ARRAY, true/*enable*/);
+		vertex_array.set_vertex_pointer(
+				renderer,
+				vertex_buffer,
+				3,
+				GL_FLOAT,
+				sizeof(GLColourTextureVertex),
 				offset);
 
 		vertex_array.set_enable_client_texture_state(renderer, GL_TEXTURE0, true/*enable*/);
@@ -163,7 +197,7 @@ namespace GPlatesOpenGL
 				GL_TEXTURE0,
 				2,
 				GL_FLOAT,
-				sizeof(GLColouredTexturedVertex),
+				sizeof(GLColourTextureVertex),
 				offset + 3 * sizeof(GLfloat));
 
 		vertex_array.set_enable_client_state(renderer, GL_COLOR_ARRAY, true/*enable*/);
@@ -172,7 +206,7 @@ namespace GPlatesOpenGL
 				vertex_buffer,
 				4,
 				GL_UNSIGNED_BYTE,
-				sizeof(GLColouredTexturedVertex),
+				sizeof(GLColourTextureVertex),
 				offset + 5 * sizeof(GLfloat));
 	}
 }

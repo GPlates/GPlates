@@ -38,6 +38,13 @@ namespace GPlatesMaths
 {
 	using namespace GPlatesGlobal;
 
+	// Forward declarations for the non-member function 'operator*'.
+	class MultiPointOnSphere;
+	class PointOnSphere;
+	class PolylineOnSphere;
+	class PolygonOnSphere;
+	class GeometryOnSphere;
+
 
 	/** 
 	 * Represents a rotation by a particular angle about a particular axis.
@@ -255,25 +262,65 @@ namespace GPlatesMaths
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	inline
 	const PointOnSphere
 	operator*(
 			const Rotation &r,
-			const PointOnSphere &p)
-	{
-		return PointOnSphere(r * p.position_vector());
-	}
+			const PointOnSphere &p);
 
 
 	/**
-	 * Apply the given rotation to the given geometry-on-sphere.
+	 * Apply the given rotation to the given intrusive-pointer to point-on-sphere.
 	 *
 	 * This operation is not supposed to be symmetrical.
 	 */
-	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+	const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere>
 	operator*(
 			const Rotation &r,
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type g);
+			const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> &p);
+
+
+	/**
+	 * Apply the given rotation to the given intrusive-pointer to multi-point-on-sphere.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	const GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere>
+	operator*(
+			const Rotation &r,
+			const GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere> &mp);
+
+
+	/**
+	 * Apply the given rotation to the given intrusive-pointer to polyline.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere>
+	operator*(
+			const Rotation &r,
+			const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere> &p);
+
+
+	/**
+	 * Apply the given rotation to the given intrusive-pointer to polygon.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere>
+	operator*(
+			const Rotation &r,
+			const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere> &p);
+
+
+	/**
+	 * Apply the given rotation to the given intrusive-pointer to @a GeometryOnSphere.
+	 *
+	 * This operation is not supposed to be symmetrical.
+	 */
+	const GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere>
+	operator*(
+			const Rotation &r,
+			const GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere> &g);
 }
 
 #endif  // GPLATES_MATHS_ROTATION_H

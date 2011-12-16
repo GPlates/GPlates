@@ -28,17 +28,29 @@
 #ifndef GPLATES_GUI_MAP_H
 #define GPLATES_GUI_MAP_H
 
+#include <boost/optional.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+
 #include "ColourScheme.h"
+#include "MapGrid.h"
 #include "MapProjection.h"
+#include "MapRenderedGeometryCollectionPainter.h"
 #include "TextRenderer.h"
 
 #include "gui/ViewportZoom.h"
+#include "gui/PersistentOpenGLObjects.h"
 
 #include "presentation/ViewState.h"
 #include "presentation/VisualLayers.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
 
+
+namespace GPlatesOpenGL
+{
+	class GLRenderer;
+}
 
 namespace GPlatesGui
 {
@@ -50,9 +62,15 @@ namespace GPlatesGui
 	class Map
 	{
 	public:
+		/**
+		 * Typedef for an opaque object that caches a particular painting.
+		 */
+		typedef boost::shared_ptr<void> cache_handle_type;
+
 
 		Map(
 				GPlatesPresentation::ViewState &view_state,
+				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,
@@ -60,18 +78,27 @@ namespace GPlatesGui
 				const ColourScheme::non_null_ptr_type &colour_scheme,
 				const TextRenderer::non_null_ptr_to_const_type &text_renderer);
 
+		/**
+		 * Initialise any OpenGL state.
+		 *
+		 * This method is called when the OpenGL context is first bound (and hence we can make OpenGL calls).
+		 */
+		void
+		initialiseGL(
+				GPlatesOpenGL::GLRenderer &renderer);
+
 		MapProjection &
 		projection();
 
 		const MapProjection &
 		projection() const;
 
-		ProjectionType
+		MapProjection::Type
 		projection_type() const;
 
 		void
 		set_projection_type(
-				GPlatesGui::ProjectionType projection_type_);
+				GPlatesGui::MapProjection::Type projection_type_);
 
 		double
 		central_meridian();
@@ -80,33 +107,26 @@ namespace GPlatesGui
 		set_central_meridian(
 				double central_meridian_);
 
-		//! Set the background colour and draw the lat-lon grid.
-		void
-		draw_background();
-
-		//! Draws the contents of the RenderedGeometryLayers.
-		void
+		/**
+		 * Paint the map and all the visible features and rasters on it.
+		 *
+		 * @param viewport_zoom_factor The magnification of the map in the viewport window.
+		 */
+		cache_handle_type
 		paint(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const double &viewport_zoom_factor,
 				float scale);
-
-		void
-		set_update_type(
-				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type update_type);
 
 	private:
 
-		//! Draw lat-lon grid lines on the canvas, at 30-degree intervals. 
-		void
-		draw_grid_lines();
-
 		//! To do map projections
-		MapProjection d_projection;
+		MapProjection::non_null_ptr_type d_map_projection;
 
 		GPlatesPresentation::ViewState &d_view_state;
 
 		//! A pointer to the state's RenderedGeometryCollection
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
-		GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type d_update_type;
 
 		const GPlatesPresentation::VisualLayers &d_visual_layers;
 
@@ -121,6 +141,18 @@ namespace GPlatesGui
 
 		//! Used for rendering text
 		TextRenderer::non_null_ptr_to_const_type d_text_renderer_ptr;
+
+		/**
+		 * Lines of lat and lon on the map.
+		 *
+		 * It's optional since it can't be constructed until @a initialiseGL is called (valid OpenGL context).
+		 */
+		boost::optional<MapGrid> d_grid;
+
+		/**
+		 * Painter used to draw rendered geometry layers onto the map.
+		 */
+		MapRenderedGeometryCollectionPainter d_rendered_geom_collection_painter;
 	};
 }
 

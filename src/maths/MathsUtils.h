@@ -172,7 +172,7 @@ namespace GPlatesMaths
 		const T
 		convert_deg_to_rad(
 				const T &value_in_degrees,
-				boost::false_type)
+				boost::false_type/*is_integral*/)
 		{
 			return T((PI / 180.0) * value_in_degrees);
 		}
@@ -181,9 +181,9 @@ namespace GPlatesMaths
 		double
 		convert_deg_to_rad(
 				int value_in_degrees,
-				boost::true_type)
+				boost::true_type/*is_integral*/)
 		{
-			// Avoid integer truncation.
+			// Avoid integer truncation by avoiding 'int()' constructor and by returning 'double'.
 			return (PI / 180.0) * value_in_degrees;
 		}
 
@@ -193,7 +193,7 @@ namespace GPlatesMaths
 		const T
 		convert_rad_to_deg(
 				const T &value_in_radians,
-				boost::false_type)
+				boost::false_type/*is_integral*/)
 		{
 			return T((180.0 / PI) * value_in_radians);
 		}
@@ -202,9 +202,9 @@ namespace GPlatesMaths
 		double
 		convert_rad_to_deg(
 				int value_in_radians,
-				boost::true_type)
+				boost::true_type/*is_integral*/)
 		{
-			// Avoid integer truncation.
+			// Avoid integer truncation by avoiding 'int()' constructor and by returning 'double'.
 			return (180.0 / PI) * value_in_radians;
 		}
 	}

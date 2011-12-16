@@ -1464,10 +1464,10 @@ namespace GPlatesOpenGL
 		GLStateSetKeys::non_null_ptr_to_const_type d_state_set_keys;
 
 		/**
-		 * Used to efficiently allocates new @a GLState objects when cloning.
+		 * Used to efficiently allocate new @a GLState objects when cloning.
 		 *
 		 * NOTE: It's a weak reference to avoid circular shared pointers (memory island leak).
-		 * If we're asked to clone ouself *after* the state store is destroyed then we'll just
+		 * If we're asked to clone ourself *after* the state store is destroyed then we'll just
 		 * allocate on the heap instead of via the state store.
 		 */
 		boost::weak_ptr<GLStateStore> d_state_store;

@@ -77,88 +77,6 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Returns true if the specified bounding small circle intersects the dateline arc.
-		 */
-		bool
-		possibly_intersects_dateline(
-				const BoundingSmallCircle &geometry_bounding_small_circle)
-		{
-			const UnitVector3D &geometry_centroid = geometry_bounding_small_circle.get_centre();
-
-			// NOTE: 'dval' means not using epsilon test here...
-			if (dot(geometry_centroid, DATELINE_HEMISPHERE_NORMAL).dval() > 0)
-			{
-				// Geometry centroid is close enough to the dateline arc that we need to test
-				// distance to arc itself rather than simply distance to north or south pole.
-
-				// Instead of testing...
-				//
-				// angle_geometry_small_circle + angle_from_geometry_centroid_to_front_half_space_normal > 90
-				//
-				// ...we can test...
-				//
-				// cos(angle_geometry_small_circle + angle_from_geometry_centroid_to_front_half_space_normal) < 0
-				//
-				// ...where we can use cos(A+B) = cos(A) * cos(B) - sin(A) * sin(B)
-				// This avoids the expensive 'acos' function.
-
-				const real_t dot_centroid_and_front_half_space_normal = dot(geometry_centroid, FRONT_HALF_SPACE_NORMAL);
-				const real_t dot_centroid_and_closest_of_front_or_back_half_space_normal =
-						// NOTE: 'dval' means not using epsilon test here...
-						(dot_centroid_and_front_half_space_normal.dval() > 0)
-						? dot_centroid_and_front_half_space_normal
-						: -dot_centroid_and_front_half_space_normal;
-
-				// We only used 'real_t' to take advantage of range testing in 'sqrt'.
-				const double sine_angle_from_geometry_centroid_to_dateline_arc_normal =
-						sqrt(1 - dot_centroid_and_closest_of_front_or_back_half_space_normal *
-								dot_centroid_and_closest_of_front_or_back_half_space_normal).dval();
-
-				// cosine(angle_from_geometry_centroid_to_front_half_space_normal)...
-				const double &cosine_angle_from_geometry_centroid_to_dateline_arc_normal =
-						dot_centroid_and_closest_of_front_or_back_half_space_normal.dval();
-
-				// NOTE: No epsilon testing here...
-				return 0 >=
-						geometry_bounding_small_circle.get_small_circle_boundary_cosine() *
-							cosine_angle_from_geometry_centroid_to_dateline_arc_normal -
-						geometry_bounding_small_circle.get_small_circle_boundary_sine() *
-							sine_angle_from_geometry_centroid_to_dateline_arc_normal;
-			}
-			else
-			{
-				// Only need to test distance of geometry centroid to north or south pole.
-				return geometry_bounding_small_circle.test(NORTH_POLE) != BoundingSmallCircle::OUTSIDE_BOUNDS ||
-					geometry_bounding_small_circle.test(SOUTH_POLE) != BoundingSmallCircle::OUTSIDE_BOUNDS;
-			}
-		}
-
-
-		/**
-		 * Returns true if the bounding small circle of @a input_polyline intersects the dateline arc.
-		 */
-		inline
-		bool
-		possibly_intersects_dateline(
-				const PolylineOnSphere::non_null_ptr_to_const_type &input_polyline)
-		{
-			return possibly_intersects_dateline(input_polyline->get_bounding_small_circle());
-		}
-
-
-		/**
-		 * Returns true if the bounding small circle of @a input_polygon intersects the dateline arc.
-		 */
-		inline
-		bool
-		possibly_intersects_dateline(
-				const PolygonOnSphere::non_null_ptr_to_const_type &input_polygon)
-		{
-			return possibly_intersects_dateline(input_polygon->get_bounding_small_circle());
-		}
-
-
-		/**
 		 * Returns true if the specified line segment crosses north pole, otherwise it crosses south pole.
 		 *
 		 * @pre line segment must lie on the 'thick' plane containing the dateline *and* the
@@ -205,7 +123,7 @@ namespace GPlatesMaths
 
 
 void
-GPlatesMaths::DateLineWrapper::wrap_polyline_to_dateline(
+GPlatesMaths::DateLineWrapper::wrap_to_dateline(
 		const PolylineOnSphere::non_null_ptr_to_const_type &input_polyline,
 		std::vector<lat_lon_polyline_type> &output_polylines)
 {
@@ -238,7 +156,7 @@ GPlatesMaths::DateLineWrapper::wrap_polyline_to_dateline(
 
 
 void
-GPlatesMaths::DateLineWrapper::wrap_polygon_to_dateline(
+GPlatesMaths::DateLineWrapper::wrap_to_dateline(
 		const PolygonOnSphere::non_null_ptr_to_const_type &input_polygon,
 		std::vector<lat_lon_polygon_type> &output_polygons)
 {
@@ -267,6 +185,77 @@ GPlatesMaths::DateLineWrapper::wrap_polygon_to_dateline(
 			true/*is_polygon*/);
 
 	graph.generate_polygons(output_polygons, input_polygon);
+}
+
+
+bool
+GPlatesMaths::DateLineWrapper::intersects_dateline(
+		const BoundingSmallCircle &geometry_bounding_small_circle) const
+{
+	const UnitVector3D &geometry_centroid = geometry_bounding_small_circle.get_centre();
+
+	// NOTE: 'dval' means not using epsilon test here...
+	if (dot(geometry_centroid, DATELINE_HEMISPHERE_NORMAL).dval() > 0)
+	{
+		// Geometry centroid is close enough to the dateline arc that we need to test
+		// distance to arc itself rather than simply distance to north or south pole.
+
+		// Instead of testing...
+		//
+		// angle_geometry_small_circle + angle_from_geometry_centroid_to_front_half_space_normal > 90
+		//
+		// ...we can test...
+		//
+		// cos(angle_geometry_small_circle + angle_from_geometry_centroid_to_front_half_space_normal) < 0
+		//
+		// ...where we can use cos(A+B) = cos(A) * cos(B) - sin(A) * sin(B)
+		// This avoids the expensive 'acos' function.
+
+		const real_t dot_centroid_and_front_half_space_normal = dot(geometry_centroid, FRONT_HALF_SPACE_NORMAL);
+		const real_t dot_centroid_and_closest_of_front_or_back_half_space_normal =
+				// NOTE: 'dval' means not using epsilon test here...
+				(dot_centroid_and_front_half_space_normal.dval() > 0)
+				? dot_centroid_and_front_half_space_normal
+				: -dot_centroid_and_front_half_space_normal;
+
+		// We only used 'real_t' to take advantage of range testing in 'sqrt'.
+		const double sine_angle_from_geometry_centroid_to_dateline_arc_normal =
+				sqrt(1 - dot_centroid_and_closest_of_front_or_back_half_space_normal *
+						dot_centroid_and_closest_of_front_or_back_half_space_normal).dval();
+
+		// cosine(angle_from_geometry_centroid_to_front_half_space_normal)...
+		const double &cosine_angle_from_geometry_centroid_to_dateline_arc_normal =
+				dot_centroid_and_closest_of_front_or_back_half_space_normal.dval();
+
+		// NOTE: No epsilon testing here...
+		return 0 >=
+				geometry_bounding_small_circle.get_small_circle_boundary_cosine() *
+					cosine_angle_from_geometry_centroid_to_dateline_arc_normal -
+				geometry_bounding_small_circle.get_small_circle_boundary_sine() *
+					sine_angle_from_geometry_centroid_to_dateline_arc_normal;
+	}
+	else
+	{
+		// Only need to test distance of geometry centroid to north or south pole.
+		return geometry_bounding_small_circle.test(NORTH_POLE) != BoundingSmallCircle::OUTSIDE_BOUNDS ||
+			geometry_bounding_small_circle.test(SOUTH_POLE) != BoundingSmallCircle::OUTSIDE_BOUNDS;
+	}
+}
+
+
+bool
+GPlatesMaths::DateLineWrapper::possibly_intersects_dateline(
+		const PolylineOnSphere::non_null_ptr_to_const_type &polyline) const
+{
+	return intersects_dateline(polyline->get_bounding_small_circle());
+}
+
+
+bool
+GPlatesMaths::DateLineWrapper::possibly_intersects_dateline(
+		const PolygonOnSphere::non_null_ptr_to_const_type &polygon) const
+{
+	return intersects_dateline(polygon->get_bounding_small_circle());
 }
 
 
@@ -1202,8 +1191,8 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_vertex(
 
 void
 GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_front_dateline(
-			const PointOnSphere &point,
-			bool exiting_dateline_polygon)
+		const PointOnSphere &point,
+		bool exiting_dateline_polygon)
 {
 	// Override the point's longitude with that of the dateline (from the front which is 180 degrees).
 	const LatLonPoint original_vertex = make_lat_lon_point(point);
@@ -1255,8 +1244,8 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_fro
 
 void
 GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_back_dateline(
-			const PointOnSphere &point,
-			bool exiting_dateline_polygon)
+		const PointOnSphere &point,
+		bool exiting_dateline_polygon)
 {
 	// Override the point's longitude with that of the dateline (from the back which is -180 degrees).
 	const LatLonPoint original_vertex = make_lat_lon_point(point);
@@ -1308,8 +1297,8 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_bac
 
 void
 GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_north_pole(
-			const PointOnSphere &point,
-			bool exiting_dateline_polygon)
+		const PointOnSphere &point,
+		bool exiting_dateline_polygon)
 {
 	// Override the point's latitude with that of the north pole's.
 	const LatLonPoint original_vertex = make_lat_lon_point(point);
@@ -1361,8 +1350,8 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_nor
 
 void
 GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_south_pole(
-			const PointOnSphere &point,
-			bool exiting_dateline_polygon)
+		const PointOnSphere &point,
+		bool exiting_dateline_polygon)
 {
 	// Override the point's latitude with that of the south pole's.
 	const LatLonPoint original_vertex = make_lat_lon_point(point);

@@ -33,6 +33,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "GLCubeSubdivisionCache.h"
+#include "GLMultiResolutionCubeRasterInterface.h"
 #include "GLMultiResolutionRaster.h"
 #include "GLTexture.h"
 #include "GLTextureUtils.h"
@@ -53,10 +54,10 @@ namespace GPlatesOpenGL
 	class GLViewport;
 
 	/**
-	 * A raster that is re-sampled into a multi-resolution cube map (aligned with global axes).
+	 * A raster that is re-sampled into a multi-resolution cube map.
 	 */
 	class GLMultiResolutionCubeRaster :
-			public GPlatesUtils::ReferenceCount<GLMultiResolutionCubeRaster>
+			public GLMultiResolutionCubeRasterInterface
 	{
 	private:
 		/**
@@ -103,7 +104,12 @@ namespace GPlatesOpenGL
 		/**
 		 * Typedef for an opaque object that caches a particular tile of this raster.
 		 */
-		typedef boost::shared_ptr<void> cache_handle_type;
+		typedef GLMultiResolutionCubeRasterInterface::cache_handle_type cache_handle_type;
+
+		/**
+		 * Typedef for a quad tree node.
+		 */
+		typedef GLMultiResolutionCubeRasterInterface::quad_tree_node_type quad_tree_node_type;
 
 		/**
 		 * The texture filter types to use for fixed-point textures.
@@ -171,103 +177,6 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * A node in the quad tree of a cube face.
-		 */
-		class QuadTreeNode
-		{
-		public:
-			/*
-			 * NOTE: Use the 'get_child_node' method wrapped in 'cube_quad_tree_type::node_type'
-			 * to return a child quad tree node of this quad tree node.
-			 *
-			 * It returns NULL if either:
-			 * 1) the source raster is not high enough resolution to warrant creating child nodes, or
-			 * 2) the source raster does not cover the child's area.
-			 *
-			 * For (1) this will happen when 'this' quad tree node returns true for @a is_leaf_node.
-			 * In other words 'this' node is at the highest resolution so it won't have any children.
-			 *
-			 * For (2) this will happen the source raster is non-global and partially covers this
-			 * quad tree node (in which case it's possible not all children will be covered).
-			 */
-
-
-			/**
-			 * Returns true if this quad tree node is at the highest resolution.
-			 *
-			 * In other words a resolution high enough to capture the resolution of the source raster.
-			 *
-			 * If true is returned then this quad tree node will have *no* children, otherwise
-			 * it will have one or more children depending on which child nodes are covered by the
-			 * source raster (ie, if the source raster is non-global).
-			 */
-			bool
-			is_leaf_node() const
-			{
-				return d_is_leaf_node;
-			}
-
-		private:
-			/**
-			 * A leaf node - a node containing *no* children.
-			 */
-			bool d_is_leaf_node;
-
-			//! Projection matrix defining perspective frustum of this tile.
-			GLTransform::non_null_ptr_to_const_type d_projection_transform;
-
-			//! View matrix defining orientation of frustum of this tile.
-			GLTransform::non_null_ptr_to_const_type d_view_transform;
-
-			//! Tiles of source raster covered by this tile.
-			std::vector<GLMultiResolutionRaster::tile_handle_type> d_src_raster_tiles;
-
-			/**
-			 * Keeps tracks of whether the source data has changed underneath us
-			 * and we need to reload our texture.
-			 */
-			mutable GPlatesUtils::ObserverToken d_source_texture_observer_token;
-
-			/**
-			 * The texture representation of the raster data for this tile.
-			 */
-			tile_texture_cache_type::volatile_object_ptr_type d_tile_texture;
-
-
-			//! Constructor is private so user cannot construct.
-			QuadTreeNode(
-					const GLTransform::non_null_ptr_to_const_type &projection_transform_,
-					const GLTransform::non_null_ptr_to_const_type &view_transform_,
-					const tile_texture_cache_type::volatile_object_ptr_type &tile_texture_) :
-				d_is_leaf_node(true),
-				d_projection_transform(projection_transform_),
-				d_view_transform(view_transform_),
-				d_tile_texture(tile_texture_)
-			{  }
-
-			/**
-			 * Sets this node as an internal node - a node containing non-null children.
-			 */
-			void
-			set_internal_node()
-			{
-				d_is_leaf_node = false;
-			}
-
-			// Make a friend so can construct and access data.
-			friend class GLMultiResolutionCubeRaster;
-		};
-
-
-		/**
-		 * Typedef for a cube quad tree with nodes containing the type @a QuadTreeNode.
-		 *
-		 * This is what is actually traversed by the user once the cube quad tree has been created.
-		 */
-		typedef GPlatesMaths::CubeQuadTree<QuadTreeNode> cube_quad_tree_type;
-
-
-		/**
 		 * Creates a @a GLMultiResolutionCubeRaster object.
 		 *
 		 * @a tile_texel_dimension is the (possibly unadapted) dimension of each square tile texture
@@ -286,12 +195,10 @@ namespace GPlatesOpenGL
 		 * it is already a power-of-two. There is effectively no optimal adaption for power-of-two dimensions.
 		 * This happens regardless of the value of @a adapt_tile_dimension_to_source_resolution.
 		 *
-		 * If @a cache_source_tile_textures is true then the source raster tile textures will be
-		 * cached *when/if* our tile textures are cached during calls to @a get_tile_texture.
-		 * Note that the @a get_tile_texture method is used to specify if, and when, *our* tile textures are cached.
+		 * If @a cache_source_tile_textures is true then the source raster tile textures will be cached.
 		 *
-		 * If @a cache_tile_textures is true then the internal texture cache is allowed to
-		 * grow to encompass all existing cube quad tree nodes/tiles.
+		 * If @a cache_tile_textures is 'CACHE_TILE_TEXTURES_ENTIRE_CUBE_QUAD_TREE' then the internal
+		 * texture cache is allowed to grow to encompass all existing cube quad tree nodes/tiles.
 		 * WARNING: This should normally be turned off (especially for visualisation of rasters where
 		 * only a small part of the raster is ever visible at any time - otherwise memory usage will
 		 * grow excessively large).
@@ -322,9 +229,19 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Sets the transform to apply to raster/geometries when rendering into the cube map.
+		 */
+		virtual
+		void
+		set_world_transform(
+				const GLMatrix &world_transform);
+
+
+		/**
 		 * Returns a subject token that clients can observe to see if they need to update themselves
 		 * (such as any cached data we render for them) by getting us to re-render.
 		 */
+		virtual
 		const GPlatesUtils::SubjectToken &
 		get_subject_token() const
 		{
@@ -335,53 +252,33 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The returned cube quad tree can be used to traverse the cube quad tree raster.
+		 * Returns the quad tree root node of the specified cube face.
 		 *
-		 * The element type of the returned cube quad tree is @a QuadTreeNode.
-		 *
-		 * Since the returned cube quad tree is 'const' it cannot be modified.
-		 *
-		 * NOTE: Use the 'get_quad_tree_root_node' method wrapped in 'cube_quad_tree_type' to get
-		 * the root quad tree node of a particular face.
+		 * Returns boost::none if the source raster does not overlap the specified cube face.
 		 */
-		const cube_quad_tree_type &
-		get_cube_quad_tree() const
-		{
-			return *d_cube_quad_tree;
-		}
+		virtual
+		boost::optional<quad_tree_node_type>
+		get_quad_tree_root_node(
+				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face);
 
 
 		/**
-		 * Returns texture of tile.
+		 * Returns the specified child cube quad tree node of specified parent node.
 		 *
-		 * NOTE: The returned texture has bilinear filtering enabled if it's a fixed-point texture.
-		 * If it's a floating-point texture you should emulate bilinear filtering in a fragment shader.
-		 * This is because earlier hardware (supporting floating-point textures) only supports nearest filtering.
-		 *
-		 * @a renderer is used if the tile's texture is not currently cached and needs
-		 * to be re-rendered from the source raster.
-		 *
-		 * @a cache_handle can be stored by the client to keep textures (and vertices) cached.
-		 * Depending on the 'cache_tile_textures' parameter to @a create the returned tile texture
-		 * can be kept alive (ie, prevents it from being recycled in the internal cache due to another
-		 * call to @a get_tile_texture).
-		 * The same applies to the source tile textures from GLMultiResolutionRaster which depend
-		 * on the 'cache_source_tile_textures' parameter to @a create.
-		 *
-		 * NOTE: The returned texture shared pointer should only be used for rendering
-		 * and then discarded. This is because the texture is part of a texture cache and it might
-		 * get used during a subsequent call to @a get_tile_texture if it isn't being cached.
+		 * Returns boost::none if the source raster does not overlap the specified child node.
 		 */
-		GLTexture::shared_ptr_to_const_type
-		get_tile_texture(
-				GLRenderer &renderer,
-				const QuadTreeNode &tile,
-				cache_handle_type &cache_handle);
+		virtual
+		boost::optional<quad_tree_node_type>
+		get_child_node(
+				const quad_tree_node_type &parent_node,
+				unsigned int child_x_offset,
+				unsigned int child_y_offset);
 
 
 		/**
 		 * Returns the tile texel dimension passed into constructor.
 		 */
+		virtual
 		std::size_t
 		get_tile_texel_dimension() const
 		{
@@ -426,7 +323,10 @@ namespace GPlatesOpenGL
 		create_tile_texture(
 				GLRenderer &renderer,
 				const GLTexture::shared_ptr_type &tile_texture,
-				const QuadTreeNode &tile);
+				const quad_tree_node_type &tile)
+		{
+			create_tile_texture(renderer, tile_texture, get_cube_quad_tree_node(tile).get_element());
+		}
 
 
 		/**
@@ -442,7 +342,10 @@ namespace GPlatesOpenGL
 		update_tile_texture(
 				GLRenderer &renderer,
 				const GLTexture::shared_ptr_type &tile_texture,
-				const QuadTreeNode &tile);
+				const quad_tree_node_type &tile)
+		{
+			update_tile_texture(renderer, tile_texture, get_cube_quad_tree_node(tile).get_element());
+		}
 
 	private:
 		/**
@@ -465,6 +368,118 @@ namespace GPlatesOpenGL
 
 			tile_texture_cache_type::object_shared_ptr_type tile_texture;
 			GLMultiResolutionRaster::cache_handle_type source_cache_handle;
+		};
+
+
+		/**
+		 * A node in the quad tree of a cube face.
+		 */
+		struct CubeQuadTreeNode
+		{
+			CubeQuadTreeNode(
+					unsigned int tile_level_of_detail_,
+					const tile_texture_cache_type::volatile_object_ptr_type &tile_texture_) :
+				// Starts off as true (and later gets set to false if this is an internal node)...
+				d_is_leaf_node(true),
+				d_tile_level_of_detail(tile_level_of_detail_),
+				d_tile_texture(tile_texture_)
+			{  }
+
+			/**
+			 * A leaf node - a node containing *no* children.
+			 */
+			bool d_is_leaf_node;
+
+			/**
+			 * The level-of-detail at which to render this tile.
+			 *
+			 * This remains constant even when the world transform changes.
+			 */
+			unsigned int d_tile_level_of_detail;
+
+			//! Tiles of source raster covered by this tile.
+			mutable std::vector<GLMultiResolutionRaster::tile_handle_type> d_src_raster_tiles;
+
+			/**
+			 * Keeps track of the visible source tiles contributing to this tile.
+			 *
+			 * The set of source tiles changes when the world transform is modified.
+			 */
+			mutable GPlatesUtils::ObserverToken d_visible_source_tiles_observer_token;
+
+			/**
+			 * The texture representation of the raster data for this tile.
+			 */
+			tile_texture_cache_type::volatile_object_ptr_type d_tile_texture;
+
+			/**
+			 * Keeps tracks of whether the source data has changed underneath us
+			 * and we need to reload our texture.
+			 */
+			mutable GPlatesUtils::ObserverToken d_source_texture_observer_token;
+		};
+
+
+		/**
+		 * Typedef for a cube quad tree with nodes containing the type @a CubeQuadTreeNode.
+		 *
+		 * This is what is actually traversed by the user once the cube quad tree has been created.
+		 */
+		typedef GPlatesMaths::CubeQuadTree<CubeQuadTreeNode> cube_quad_tree_type;
+
+
+		/**
+		 * Implementation of base class node to return to the client.
+		 */
+		struct QuadTreeNodeImpl :
+				public GLMultiResolutionCubeRasterInterface::QuadTreeNode::ImplInterface
+		{
+			QuadTreeNodeImpl(
+					const cube_quad_tree_type::node_type &cube_quad_tree_node_,
+					GLMultiResolutionCubeRaster &multi_resolution_cube_raster_) :
+				cube_quad_tree_node(cube_quad_tree_node_),
+				multi_resolution_cube_raster(multi_resolution_cube_raster_)
+			{  }
+
+			/**
+			 * Returns true if this quad tree node is at the highest resolution.
+			 */
+			virtual
+			bool
+			is_leaf_node() const
+			{
+				return cube_quad_tree_node.get_element().d_is_leaf_node;
+			}
+
+			/**
+			 * Returns texture of tile.
+			 */
+			virtual
+			boost::optional<GLTexture::shared_ptr_to_const_type>
+			get_tile_texture(
+					GLRenderer &renderer,
+					const GLTransform::non_null_ptr_to_const_type &view_transform,
+					const GLTransform::non_null_ptr_to_const_type &projection_transform,
+					cache_handle_type &cache_handle) const
+			{
+				return multi_resolution_cube_raster.get_tile_texture(
+						renderer,
+						cube_quad_tree_node.get_element(),
+						view_transform,
+						projection_transform,
+						cache_handle);
+			}
+
+
+			/**
+			 * Reference to the cube quad tree node containing the real data.
+			 */
+			const cube_quad_tree_type::node_type &cube_quad_tree_node;
+
+			/**
+			 * Pointer to parent class so can delegate to it.
+			 */
+			GLMultiResolutionCubeRaster &multi_resolution_cube_raster;
 		};
 
 
@@ -514,6 +529,15 @@ namespace GPlatesOpenGL
 		 */
 		cube_quad_tree_type::non_null_ptr_type d_cube_quad_tree;
 
+		/**
+		 * The transform to use when rendering into the cube quad tree tiles.
+		 */
+		GLMatrix d_world_transform;
+
+		//! Keep track of changes to @a d_world_transform.
+		GPlatesUtils::SubjectToken d_world_transform_subject;
+
+
 		//! Constructor.
 		GLMultiResolutionCubeRaster(
 				GLRenderer &renderer,
@@ -546,17 +570,50 @@ namespace GPlatesOpenGL
 				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
 				const unsigned int level_of_detail);
 
+		GLTexture::shared_ptr_to_const_type
+		get_tile_texture(
+				GLRenderer &renderer,
+				const CubeQuadTreeNode &tile,
+				const GLTransform::non_null_ptr_to_const_type &view_transform,
+				const GLTransform::non_null_ptr_to_const_type &projection_transform,
+				cache_handle_type &cache_handle);
+
 		void
 		render_raster_data_into_tile_texture(
 				GLRenderer &renderer,
-				const QuadTreeNode &tile,
-				TileTexture &tile_texture);
+				const CubeQuadTreeNode &tile,
+				TileTexture &tile_texture,
+				const GLTransform::non_null_ptr_to_const_type &view_transform,
+				const GLTransform::non_null_ptr_to_const_type &projection_transform);
+
+		void
+		create_tile_texture(
+				GLRenderer &renderer,
+				const GLTexture::shared_ptr_type &tile_texture,
+				const CubeQuadTreeNode &tile);
+
+		void
+		update_tile_texture(
+				GLRenderer &renderer,
+				const GLTexture::shared_ptr_type &tile_texture,
+				const CubeQuadTreeNode &tile);
 
 		void
 		update_fixed_point_tile_texture_mag_filter(
 				GLRenderer &renderer,
 				const GLTexture::shared_ptr_type &tile_texture,
-				const QuadTreeNode &tile);
+				const CubeQuadTreeNode &tile);
+
+		/**
+		 * Gets our internal cube quad tree node from the client's tile handle.
+		 */
+		static
+		const cube_quad_tree_type::node_type &
+		get_cube_quad_tree_node(
+				const quad_tree_node_type &tile)
+		{
+			return dynamic_cast<QuadTreeNodeImpl &>(tile.get_impl()).cube_quad_tree_node;
+		}
 	};
 }
 

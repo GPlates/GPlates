@@ -31,6 +31,8 @@
 #include <iosfwd>
 #include <QString>
 
+#include "utils/QtStreamable.h"
+
 // This is a hold-over from using ICU's UnicodeString.
 #ifndef GPLATES_ICU_BOOL
 // The ICU UnicodeString binary comparison operators returned a UBool rather than a bool,
@@ -48,7 +50,9 @@ namespace GPlatesUtils
 	 *
 	 * http://icu-project.org/apiref/icu4c/classUnicodeString.html
 	 */
-	class UnicodeString
+	class UnicodeString :
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<UnicodeString>
 	{
 	public:
 		UnicodeString()

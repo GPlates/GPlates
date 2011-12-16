@@ -50,8 +50,8 @@
 
 namespace
 {
-	typedef GPlatesOpenGL::GLColouredVertex vertex_type;
-	typedef GLushort vertex_element_type;
+	typedef GPlatesOpenGL::GLColourVertex vertex_type;
+	typedef GLuint vertex_element_type;
 	typedef GPlatesOpenGL::GLDynamicStreamPrimitives<vertex_type, vertex_element_type> stream_primitives_type;
 
 	/**
@@ -230,13 +230,15 @@ namespace
 
 		stream_target.stop_streaming();
 
+#if 0 // Update: using 32-bit indices now...
 		// We're using 16-bit indices (ie, 65536 vertices) so make sure we've not exceeded that many vertices.
 		// Shouldn't get close really but check to be sure.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 				vertices.size() - 1 <= GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::MAX_INDEXABLE_VERTEX,
 				GPLATES_ASSERTION_SOURCE);
+#endif
 
-		// Streamed triangle strips end up as indexed triangles.
+		// Streamed line strips end up as indexed lines.
 		const GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type draw_vertex_array =
 				compile_vertex_array_draw_state(
 						renderer, vertex_array, vertices, vertex_elements, GL_LINES);
@@ -271,13 +273,15 @@ namespace
 
 		stream_target.stop_streaming();
 
+#if 0 // Update: using 32-bit indices now...
 		// We're using 16-bit indices (ie, 65536 vertices) so make sure we've not exceeded that many vertices.
 		// Shouldn't get close really but check to be sure.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 				vertices.size() - 1 <= GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::MAX_INDEXABLE_VERTEX,
 				GPLATES_ASSERTION_SOURCE);
+#endif
 
-		// Streamed triangle strips end up as indexed triangles.
+		// Streamed line strips end up as indexed lines.
 		const GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type draw_vertex_array =
 				compile_vertex_array_draw_state(
 						renderer, vertex_array, vertices, vertex_elements, GL_LINES);
@@ -355,4 +359,3 @@ GPlatesGui::SphericalGrid::paint_circumference(
 
 	renderer.apply_compiled_draw_state(*d_circumference_compiled_draw_state.get());
 }
-

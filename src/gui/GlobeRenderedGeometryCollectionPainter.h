@@ -85,7 +85,6 @@ namespace GPlatesGui
 		/**
 		 * Draw the rendered geometries.
 		 *
-		 * @param render_graph_node the render graph node that all rendering should be attached to.
 		 * @param viewport_zoom_factor is used for rendering view-dependent geometries.
 		 */
 		cache_handle_type

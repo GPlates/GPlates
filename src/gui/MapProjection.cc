@@ -51,7 +51,7 @@ namespace
 
 	struct ProjectionParameters 
 	{
-		GPlatesGui::ProjectionType projection_name;
+		GPlatesGui::MapProjection::Type projection_name;
 		const char* proj4_name;
 		const char* proj4_ellipse;
 		double scaling_factor;
@@ -59,12 +59,12 @@ namespace
 	};
 
 	static ProjectionParameters projection_table[] = {
-		{GPlatesGui::ORTHOGRAPHIC,"","",0.,false},
-		{GPlatesGui::RECTANGULAR,"proj=latlong","ellps=WGS84",RAD_TO_DEG,true},
-		{GPlatesGui::MERCATOR,"proj=merc","ellps=WGS84",0.0000070,true},
-		{GPlatesGui::MOLLWEIDE,"proj=moll","ellps=WGS84",0.0000095,true},
-		{GPlatesGui::ROBINSON,"proj=robin","ellps=WGS84",0.0000095,true},
-		{GPlatesGui::LAMBERT_CONIC,"proj=lcc","ellps=WGS84",0.000003,true}
+		{GPlatesGui::MapProjection::ORTHOGRAPHIC,"","",0.,false},
+		{GPlatesGui::MapProjection::RECTANGULAR,"proj=latlong","ellps=WGS84",RAD_TO_DEG,true},
+		{GPlatesGui::MapProjection::MERCATOR,"proj=merc","ellps=WGS84",0.0000070,true},
+		{GPlatesGui::MapProjection::MOLLWEIDE,"proj=moll","ellps=WGS84",0.0000095,true},
+		{GPlatesGui::MapProjection::ROBINSON,"proj=robin","ellps=WGS84",0.0000095,true},
+		{GPlatesGui::MapProjection::LAMBERT_CONIC,"proj=lcc","ellps=WGS84",0.000003,true}
 	};
 
 }
@@ -80,7 +80,7 @@ GPlatesGui::MapProjection::MapProjection():
 }
 
 GPlatesGui::MapProjection::MapProjection(
-	ProjectionType projection_type_):
+		MapProjection::Type projection_type_):
 	d_projection(0),
 	d_latlon_projection(0),
 	d_scale(1.),
@@ -88,27 +88,35 @@ GPlatesGui::MapProjection::MapProjection(
 	d_central_llp(0,0),
 	d_boundary_great_circle(INITIAL_BOUNDARY_AXIS)
 {
-	if ((projection_type_ < MIN_PROJECTION_INDEX) || (projection_type_ > NUM_PROJECTIONS-1))
-	{
-		// An invalid projection type was set. 
-		d_projection_type = ORTHOGRAPHIC;
-		return;
-	}
-	else{
-		set_projection_type(projection_type_);
-	}
+	set_projection_type(projection_type_);
+}
+
+GPlatesGui::MapProjection::MapProjection(
+		const Settings &projection_settings):
+	d_projection(0),
+	d_latlon_projection(0),
+	d_scale(1.),
+	d_projection_type(ORTHOGRAPHIC),
+	d_central_llp(projection_settings.get_central_llp()),
+	d_boundary_great_circle(INITIAL_BOUNDARY_AXIS)
+{
+	set_projection_type(projection_settings.get_projection_type());
+
+	// The central llp is not the default so we need to update the boundary great circle.
+	update_boundary_great_circle();
 }
 
 GPlatesGui::MapProjection::~MapProjection()
 {
-	if (d_projection){
+	if (d_projection)
+	{
 		pj_free(d_projection);
 	}
 }
 
 void
 GPlatesGui::MapProjection::set_projection_type(
-		ProjectionType projection_type_)
+		MapProjection::Type projection_type_)
 {
 
 	if ((projection_type_ < MIN_PROJECTION_INDEX) || (projection_type_ > NUM_PROJECTIONS-1))
@@ -132,7 +140,8 @@ GPlatesGui::MapProjection::set_projection_type(
 	projection_args[1] = strdup(projection_table[projection_type_].proj4_ellipse);
 	projection_args[2] = strdup(lon_string.toStdString().c_str());
 
-	if (d_projection){
+	if (d_projection)
+	{
 		pj_free(d_projection);
 		pj_free(d_latlon_projection);
 	}
@@ -163,7 +172,8 @@ GPlatesGui::MapProjection::set_projection_type(
 
 
 	d_scale = projection_table[projection_type_].scaling_factor;
-	if (d_scale < MIN_SCALE_FACTOR) {
+	if (d_scale < MIN_SCALE_FACTOR)
+	{
 		d_scale = MIN_SCALE_FACTOR;
 	}
 
@@ -179,11 +189,26 @@ GPlatesGui::MapProjection::set_projection_type(
 
 void
 GPlatesGui::MapProjection::forward_transform(
+	const GPlatesMaths::PointOnSphere &point_on_sphere, 
+	double &x_coordinate, 
+	double &y_coordinate) const
+{
+	const GPlatesMaths::LatLonPoint lat_lon_point = make_lat_lon_point(point_on_sphere);
+
+	x_coordinate = lat_lon_point.longitude();
+	y_coordinate = lat_lon_point.latitude();
+	forward_transform(x_coordinate, y_coordinate);
+}
+
+
+void
+GPlatesGui::MapProjection::forward_transform(
 	 double &longitude,
 	 double &latitude) const
 {
 
-	if (!d_projection){
+	if (!d_projection)
+	{
 		return;
 	}
 
@@ -236,7 +261,8 @@ GPlatesGui::MapProjection::inverse_transform(
 	double &longitude,
 	double &latitude) const
 {
-	if (!d_projection){
+	if (!d_projection)
+	{
 		return boost::none;
 	}
 
@@ -318,7 +344,12 @@ GPlatesGui::MapProjection::set_central_llp(
 	set_projection_type(d_projection_type);
 
 	// We need to update the boundary great circle as well.
+	update_boundary_great_circle();
+}
 
+void
+GPlatesGui::MapProjection::update_boundary_great_circle()
+{
 	// We need 2 points to do this. We can use:
 	// 1) The central llp of the map projection, and
 	// 2) The "north pole" of the map projection (which will not necessarily coincide with the real north pole). 
@@ -343,55 +374,3 @@ GPlatesGui::MapProjection::set_central_llp(
 	GPlatesMaths::PointOnSphere second_pos = GPlatesMaths::make_point_on_sphere(second_llp);
 	d_boundary_great_circle = GPlatesMaths::GreatCircle(central_pos,second_pos);
 }
-
-const
-GPlatesMaths::LatLonPoint &
-GPlatesGui::MapProjection::central_llp() const
-{
-	return d_central_llp;
-}
-
-const
-GPlatesMaths::GreatCircle &
-GPlatesGui::MapProjection::boundary_great_circle() const
-{
-	return d_boundary_great_circle;
-}
-
-void
-GPlatesGui::MapProjection::forward_transform(
-	const GPlatesMaths::PointOnSphere &point_on_sphere, 
-	double &x_coordinate, 
-	double &y_coordinate) const
-{
-
-	if (!d_projection){
-		return;
-	}
-
-	const GPlatesMaths::Real
-		&x = point_on_sphere.position_vector().x(),
-		&y = point_on_sphere.position_vector().y(),
-		&z = point_on_sphere.position_vector().z();
-
-	//std::cerr << "--\nx: " << x << ", y: " << y << ", z: " << z << std::endl;
-	y_coordinate = asin(z).dval();
-	x_coordinate = atan2(y, x).dval();
-	if (x_coordinate < -GPlatesMaths::PI) {
-		x_coordinate = GPlatesMaths::PI;
-	}
-
-	int result = pj_transform(d_latlon_projection,d_projection,1,0,&x_coordinate,&y_coordinate,NULL);
-	if (result != 0)
-	{
-		throw ProjectionException(GPLATES_EXCEPTION_SOURCE,"Error in pj_transform.");
-	}
-	if (GPlatesMaths::is_infinity(x_coordinate) || GPlatesMaths::is_infinity(y_coordinate))
-	{
-		throw ProjectionException(GPLATES_EXCEPTION_SOURCE,"HUGE_VAL returned from pj_transform.");
-	}
-
-	x_coordinate *= d_scale;
-	y_coordinate *= d_scale;
-}
-

@@ -322,7 +322,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::handle_projection_type_changed(
 		const GPlatesGui::ViewportProjection &viewport_projection)
 {
 	// Reset the mouse coords label if projection changed.
-	if (viewport_projection.get_projection_type() == GPlatesGui::ORTHOGRAPHIC)
+	if (viewport_projection.get_projection_type() == GPlatesGui::MapProjection::ORTHOGRAPHIC)
 	{
 		d_label_mouse_coords->setText(DEFAULT_MOUSE_COORDS_LABEL_TEXT_FOR_GLOBE);
 	}

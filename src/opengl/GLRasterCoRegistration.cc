@@ -628,10 +628,6 @@ void
 GPlatesOpenGL::GLRasterCoRegistration::initialise_texture_level_of_detail_parameters(
 		GLRenderer &renderer)
 {
-	// We don't worry about half-texel expansion of the projection frustums here because
-	// we just need to determine viewport dimensions. There will be a slight error by neglecting
-	// the half texel but it's already an approximation anyway.
-	// Besides, the half texel depends on the tile texel dimension and we're going to change that below.
 	GLCubeSubdivision::non_null_ptr_to_const_type cube_subdivision = GLCubeSubdivision::create();
 
 	// Get the projection transforms of an entire cube face (the lowest resolution level-of-detail).
@@ -640,7 +636,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_texture_level_of_detail_parame
 					0/*level_of_detail*/, 0/*tile_u_offset*/, 0/*tile_v_offset*/);
 
 	// Get the view transform - it doesn't matter which cube face we choose because, although
-	// the view transform are different, it won't matter to us since we're projecting onto
+	// the view transforms are different, it won't matter to us since we're projecting onto
 	// a spherical globe from its centre and all faces project the same way.
 	const GLTransform::non_null_ptr_to_const_type view_transform =
 			cube_subdivision->get_view_transform(
@@ -1547,7 +1543,7 @@ void
 GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interest_vertex_array(
 		GLRenderer &renderer)
 {
-	std::vector<GLTexturedVertex> vertices;
+	std::vector<GLTextureVertex> vertices;
 	std::vector<reduction_vertex_element_type> vertex_elements;
 
 	const unsigned int total_number_quads =
@@ -1572,7 +1568,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 
 void
 GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_vertex_array_in_quad_tree_traversal_order(
-		std::vector<GLTexturedVertex> &vertices,
+		std::vector<GLTextureVertex> &vertices,
 		std::vector<reduction_vertex_element_type> &vertex_elements,
 		unsigned int x_quad_offset,
 		unsigned int y_quad_offset,
@@ -1600,10 +1596,10 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_vertex_array_in_quad
 
 		const unsigned int quad_start_vertex_index = vertices.size();
 
-		vertices.push_back(GLTexturedVertex(x0, y0, 0, u0, v0));
-		vertices.push_back(GLTexturedVertex(x0, y1, 0, u0, v1));
-		vertices.push_back(GLTexturedVertex(x1, y1, 0, u1, v1));
-		vertices.push_back(GLTexturedVertex(x1, y0, 0, u1, v0));
+		vertices.push_back(GLTextureVertex(x0, y0, 0, u0, v0));
+		vertices.push_back(GLTextureVertex(x0, y1, 0, u0, v1));
+		vertices.push_back(GLTextureVertex(x1, y1, 0, u1, v1));
+		vertices.push_back(GLTextureVertex(x1, y0, 0, u1, v0));
 
 		// First quad triangle.
 		vertex_elements.push_back(quad_start_vertex_index);

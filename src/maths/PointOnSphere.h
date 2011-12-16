@@ -37,6 +37,8 @@
 #include "TrailingLatLonCoordinateException.h"
 #include "InvalidLatLonCoordinateException.h"
 
+#include "utils/QtStreamable.h"
+
 
 namespace GPlatesMaths
 {
@@ -54,7 +56,9 @@ namespace GPlatesMaths
 	 * will definitely lie on the surface of the sphere.
 	 */
 	class PointOnSphere:
-			public GeometryOnSphere
+			public GeometryOnSphere,
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<PointOnSphere>
 	{
 	public:
 

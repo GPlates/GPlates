@@ -31,10 +31,9 @@
 #include <exception>
 #include <iosfwd>
 #include <string>
-#include <QDebug>
-#include <QTextStream>
 
 #include "utils/CallStackTracker.h"
+#include "utils/QtStreamable.h"
 
 
 // Note: we don't use BOOST_CURRENT_FUNCTION anymore since it can produce some pretty
@@ -50,7 +49,9 @@ namespace GPlatesGlobal
 	 * This is the base class of all exceptions in GPlates.
 	 */
 	class Exception :
-			public std::exception
+			public std::exception,
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<Exception>
 	{
 		public:
 			/**
@@ -171,24 +172,6 @@ namespace GPlatesGlobal
 	std::ostream &
 	operator <<(
 			std::ostream &os,
-			const Exception &ex);
-
-
-	/**
-	 * Write string representation of the exception to qDebug(), qWarning(), qCritical() or qFatal().
-	 */
-	QDebug
-	operator <<(
-			QDebug dbg,
-			const Exception &ex);
-
-
-	/**
-	 * Write string representation of the exception to a QTextStream.
-	 */
-	QTextStream &
-	operator <<(
-			QTextStream &stream,
 			const Exception &ex);
 }
 

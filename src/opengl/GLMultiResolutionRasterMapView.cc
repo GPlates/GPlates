@@ -1,0 +1,538 @@
+/* $Id$ */
+
+/**
+ * \file 
+ * $Revision$
+ * $Date$
+ * 
+ * Copyright (C) 2011 The University of Sydney, Australia
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+#include <cmath>
+#include <boost/cast.hpp>
+#include <QDebug>
+
+#include "GLMultiResolutionRasterMapView.h"
+
+#include "GLContext.h"
+#include "GLFrustum.h"
+#include "GLIntersect.h"
+#include "GLMatrix.h"
+#include "GLProjectionUtils.h"
+#include "GLRenderer.h"
+#include "GLTextureUtils.h"
+#include "GLViewport.h"
+
+#include "maths/MathsUtils.h"
+#include "maths/Rotation.h"
+
+#include "utils/Profile.h"
+
+
+const double GPlatesOpenGL::GLMultiResolutionRasterMapView::ERROR_VIEWPORT_PIXEL_SIZE_IN_MAP_PROJECTION = 360.0;
+
+
+GPlatesOpenGL::GLMultiResolutionRasterMapView::GLMultiResolutionRasterMapView(
+		GLRenderer &renderer,
+		const GLMultiResolutionCubeRasterInterface::non_null_ptr_type &multi_resolution_cube_raster,
+		const GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type &multi_resolution_map_cube_mesh) :
+	d_multi_resolution_cube_raster(multi_resolution_cube_raster),
+	d_multi_resolution_map_cube_mesh(multi_resolution_map_cube_mesh),
+	d_tile_texel_dimension(multi_resolution_cube_raster->get_tile_texel_dimension()),
+	d_map_projection_central_meridian_longitude(0)
+{
+}
+
+
+bool
+GPlatesOpenGL::GLMultiResolutionRasterMapView::render(
+		GLRenderer &renderer,
+		cache_handle_type &cache_handle)
+{
+	PROFILE_FUNC();
+
+	// First see if the map projection central meridian has changed.
+	// If so then we need to invalidate the source raster cube map cache because it is aligned with
+	// the central meridian and must be regenerated.
+	//
+	// NOTE: If the projection *type* changes then we don't need to invalidate - the raster cube map
+	// can still be applied as is.
+	const double updated_map_projection_central_meridian_longitude =
+			d_multi_resolution_map_cube_mesh->get_current_map_projection_settings().get_central_llp().longitude();
+	if (!GPlatesMaths::are_almost_exactly_equal(
+			d_map_projection_central_meridian_longitude, updated_map_projection_central_meridian_longitude))
+	{
+		d_map_projection_central_meridian_longitude = updated_map_projection_central_meridian_longitude;
+
+		// Specify a transform that makes the (non-zero longitude) central meridian (at equator)
+		// become the global x-axis. This means an object on the central meridian
+		// (of the map projection) will be transformed to be at longitude zero.
+		//
+		// This transform rotates, about north pole, to move central meridian longitude to zero longitude...
+		const GPlatesMaths::Rotation world_transform =
+				GPlatesMaths::Rotation::create(
+						GPlatesMaths::UnitVector3D::zBasis()/*north pole*/,
+						GPlatesMaths::convert_deg_to_rad(
+								// The negative sign rotates *to* longitude zero...
+								-d_map_projection_central_meridian_longitude));
+
+		// Note that this invalidates all cached textures so we only want to call it if the transform changed.
+		d_multi_resolution_cube_raster->set_world_transform(GLMatrix(world_transform.quat()));
+	}
+
+
+	// Make sure we leave the OpenGL state the way it was.
+	GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	// Determine the size of a viewport pixel in map projection coordinates.
+	const double viewport_pixel_size_in_map_projection =
+			get_viewport_pixel_size_in_map_projection(
+					renderer.gl_get_viewport(),
+					renderer.gl_get_matrix(GL_MODELVIEW),
+					renderer.gl_get_matrix(GL_PROJECTION));
+
+	// The size of a tile of viewport pixels projected onto the map (ie, in map-projection coordinates).
+	// A tile is 'd_tile_texel_dimension' x 'd_tile_texel_dimension' pixels. When a tile of texels
+	// in the map projection matches this then the correct level-of-detail has been found.
+	const double viewport_tile_map_projection_size =
+			d_tile_texel_dimension * viewport_pixel_size_in_map_projection;
+
+	// Get the view frustum planes.
+	const GLFrustum frustum_planes(
+			renderer.gl_get_matrix(GL_MODELVIEW),
+			renderer.gl_get_matrix(GL_PROJECTION));
+
+	// Create a subdivision cube quad tree traversal.
+	// No caching is required since we're only visiting each subdivision node once.
+	//
+	// Cube subdivision cache for half-texel-expanded projection transforms since that is what's used to
+	// lookup the tile textures (the tile textures are bilinearly filtered and the centres of
+	// border texels match up with adjacent tiles).
+	cube_subdivision_cache_type::non_null_ptr_type
+			cube_subdivision_cache =
+					cube_subdivision_cache_type::create(
+							GPlatesOpenGL::GLCubeSubdivision::create(
+									GPlatesOpenGL::GLCubeSubdivision::get_expand_frustum_ratio(
+											d_tile_texel_dimension,
+											0.5/* half a texel */)));
+	// Cube subdivision cache for the clip texture (no frustum expansion here).
+	clip_cube_subdivision_cache_type::non_null_ptr_type
+			clip_cube_subdivision_cache =
+					clip_cube_subdivision_cache_type::create(
+							GPlatesOpenGL::GLCubeSubdivision::create());
+
+	// Keep track of how many tiles were rendered to the scene.
+	// Currently this is just used to determine if we rendered anything.
+	unsigned int num_tiles_rendered_to_scene = 0;
+
+	// The cached view is a sequence of tiles for the caller to keep alive until the next frame.
+	boost::shared_ptr<std::vector<cache_handle_type> > cached_tiles(new std::vector<cache_handle_type>());
+
+	//
+	// Traverse the source raster cube quad tree and the spatial partition of reconstructed polygon meshes.
+	//
+
+	// Traverse the quad trees of the cube faces.
+	for (unsigned int face = 0; face < 6; ++face)
+	{
+		const GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face =
+				static_cast<GPlatesMaths::CubeCoordinateFrame::CubeFaceType>(face);
+
+		// Get the quad tree root node of the current cube face of the source raster.
+		const boost::optional<raster_quad_tree_node_type> source_raster_quad_tree_root =
+				d_multi_resolution_cube_raster->get_quad_tree_root_node(cube_face);
+		// If there is no source raster for the current cube face then continue to the next face.
+		if (!source_raster_quad_tree_root)
+		{
+			continue;
+		}
+
+		// Get the quad tree root node of the current cube face of the source mesh.
+		const mesh_quad_tree_node_type mesh_quad_tree_root_node =
+				d_multi_resolution_map_cube_mesh->get_quad_tree_root_node(cube_face);
+
+		// Get the cube subdivision root node.
+		const cube_subdivision_cache_type::node_reference_type
+				cube_subdivision_cache_root_node =
+						cube_subdivision_cache->get_quad_tree_root_node(cube_face);
+		// Get the cube subdivision root node.
+		const clip_cube_subdivision_cache_type::node_reference_type
+				clip_cube_subdivision_cache_root_node =
+						clip_cube_subdivision_cache->get_quad_tree_root_node(cube_face);
+
+		render_quad_tree(
+				renderer,
+				*source_raster_quad_tree_root,
+				mesh_quad_tree_root_node,
+				*cube_subdivision_cache,
+				cube_subdivision_cache_root_node,
+				*clip_cube_subdivision_cache,
+				clip_cube_subdivision_cache_root_node,
+				viewport_tile_map_projection_size,
+				frustum_planes,
+				// There are six frustum planes initially active
+				GLFrustum::ALL_PLANES_ACTIVE_MASK,
+				*cached_tiles,
+				num_tiles_rendered_to_scene);
+	}
+
+	// Return cached tiles to the caller.
+	cache_handle = cached_tiles;
+
+	return num_tiles_rendered_to_scene > 0;
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionRasterMapView::render_quad_tree(
+		GLRenderer &renderer,
+		const raster_quad_tree_node_type &source_raster_quad_tree_node,
+		const mesh_quad_tree_node_type &mesh_quad_tree_node,
+		cube_subdivision_cache_type &cube_subdivision_cache,
+		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
+		clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
+		const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
+		const double &viewport_tile_map_projection_size,
+		const GLFrustum &frustum_planes,
+		boost::uint32_t frustum_plane_mask,
+		std::vector<cache_handle_type> &cached_tiles,
+		unsigned int &num_tiles_rendered_to_scene)
+{
+	// If the frustum plane mask is zero then it means we are entirely inside the view frustum.
+	// So only test for intersection if the mask is non-zero.
+	if (frustum_plane_mask != 0)
+	{
+		const GLIntersect::OrientedBoundingBox &quad_tree_node_bounds =
+				mesh_quad_tree_node.get_map_projection_bounding_box();
+
+		// See if the current quad tree node intersects the view frustum.
+		// Use the quad tree node's bounding box.
+		boost::optional<boost::uint32_t> out_frustum_plane_mask =
+				GLIntersect::intersect_OBB_frustum(
+						quad_tree_node_bounds,
+						frustum_planes.get_planes(),
+						frustum_plane_mask);
+		if (!out_frustum_plane_mask)
+		{
+			// No intersection so quad tree node is outside view frustum and we can cull it.
+			return;
+		}
+
+		// Update the frustum plane mask so we only test against those planes that
+		// the current quad tree render node intersects. The node is entirely inside
+		// the planes with a zero bit and so its child nodes are also entirely inside
+		// those planes too and so they won't need to test against them.
+		frustum_plane_mask = out_frustum_plane_mask.get();
+	}
+
+	// If either:
+	// - we're at the correct level of detail for rendering, or
+	// - we've reached a leaf node of the source raster (highest resolution supplied by the source raster),
+	// ...then render the current source raster tile.
+	if (mesh_quad_tree_node.get_max_map_projection_size() <= viewport_tile_map_projection_size ||
+		source_raster_quad_tree_node.is_leaf_node())
+	{
+		render_tile_to_scene(
+				renderer,
+				source_raster_quad_tree_node,
+				mesh_quad_tree_node,
+				cube_subdivision_cache,
+				cube_subdivision_cache_node,
+				clip_cube_subdivision_cache,
+				clip_cube_subdivision_cache_node,
+				cached_tiles,
+				num_tiles_rendered_to_scene);
+
+		return;
+	}
+
+	//
+	// Iterate over the child quad tree nodes.
+	//
+
+	for (unsigned int child_v_offset = 0; child_v_offset < 2; ++child_v_offset)
+	{
+		for (unsigned int child_u_offset = 0; child_u_offset < 2; ++child_u_offset)
+		{
+			// Get the child node of the current source raster quad tree node.
+			const boost::optional<raster_quad_tree_node_type> child_source_raster_quad_tree_node =
+					d_multi_resolution_cube_raster->get_child_node(
+							source_raster_quad_tree_node, child_u_offset, child_v_offset);
+			// If there is no source raster for the current child then continue to the next child.
+			// This happens if the current child is not covered by the source raster.
+			// Note that if we get here then the current parent is not a leaf node.
+			if (!child_source_raster_quad_tree_node)
+			{
+				continue;
+			}
+
+			// Get the child node of the current mesh quad tree node.
+			const mesh_quad_tree_node_type child_mesh_quad_tree_node =
+					d_multi_resolution_map_cube_mesh->get_child_node(
+							mesh_quad_tree_node,
+							child_u_offset,
+							child_v_offset);
+
+			// Get the child cube subdivision cache node.
+			const cube_subdivision_cache_type::node_reference_type
+					child_cube_subdivision_cache_node =
+							cube_subdivision_cache.get_child_node(
+									cube_subdivision_cache_node,
+									child_u_offset,
+									child_v_offset);
+			// Get the child clip cube subdivision cache node.
+			const clip_cube_subdivision_cache_type::node_reference_type
+					child_clip_cube_subdivision_cache_node =
+							clip_cube_subdivision_cache.get_child_node(
+									clip_cube_subdivision_cache_node,
+									child_u_offset,
+									child_v_offset);
+
+			render_quad_tree(
+					renderer,
+					*child_source_raster_quad_tree_node,
+					child_mesh_quad_tree_node,
+					cube_subdivision_cache,
+					child_cube_subdivision_cache_node,
+					clip_cube_subdivision_cache,
+					child_clip_cube_subdivision_cache_node,
+					viewport_tile_map_projection_size,
+					frustum_planes,
+					frustum_plane_mask,
+					cached_tiles,
+					num_tiles_rendered_to_scene);
+		}
+	}
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionRasterMapView::render_tile_to_scene(
+		GLRenderer &renderer,
+		const raster_quad_tree_node_type &source_raster_quad_tree_node,
+		const mesh_quad_tree_node_type &mesh_quad_tree_node,
+		cube_subdivision_cache_type &cube_subdivision_cache,
+		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
+		clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
+		const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
+		std::vector<cache_handle_type> &cached_tiles,
+		unsigned int &num_tiles_rendered_to_scene)
+{
+	// The view transform never changes within a cube face so it's the same across
+	// an entire cube face quad tree (each cube face has its own quad tree).
+	const GLTransform::non_null_ptr_to_const_type view_transform =
+			cube_subdivision_cache.get_view_transform(
+					cube_subdivision_cache_node);
+
+	// Regular projection transform.
+	const GLTransform::non_null_ptr_to_const_type projection_transform =
+			cube_subdivision_cache.get_projection_transform(
+					cube_subdivision_cache_node);
+
+	// Get the tile texture from our source raster.
+	GLMultiResolutionCubeRasterInterface::cache_handle_type source_raster_cache_handle;
+	const boost::optional<GLTexture::shared_ptr_to_const_type> tile_texture_opt =
+			source_raster_quad_tree_node.get_tile_texture(
+					renderer,
+					view_transform,
+					projection_transform,
+					source_raster_cache_handle);
+	// If there is no tile texture it means there's nothing to be drawn (eg, no raster covering this node).
+	if (!tile_texture_opt)
+	{
+		return;
+	}
+	const GLTexture::shared_ptr_to_const_type tile_texture = tile_texture_opt.get();
+
+	// Make sure we return the cached handle to our caller so they can cache it.
+	cached_tiles.push_back(source_raster_cache_handle);
+
+	// Make sure we leave the OpenGL state the way it was.
+	GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	// Clip texture projection transform.
+	const GLTransform::non_null_ptr_to_const_type clip_projection_transform =
+			clip_cube_subdivision_cache.get_projection_transform(
+					clip_cube_subdivision_cache_node);
+
+	// See if we've traversed deep enough in the cube mesh quad tree to require using a clip
+	// texture - this occurs because the cube mesh has nodes only to a certain depth.
+	const bool clip_to_tile_frustum = mesh_quad_tree_node.get_clip_texture_clip_space_transform();
+
+	// Prepare for rendering the current tile.
+	set_tile_state(
+			renderer,
+			tile_texture,
+			*projection_transform,
+			*clip_projection_transform,
+			*view_transform,
+			clip_to_tile_frustum);
+
+	// Draw the mesh covering the current quad tree node tile.
+	mesh_quad_tree_node.render_mesh_drawable(renderer);
+
+	// This is the only place we increment the rendered tile count.
+	++num_tiles_rendered_to_scene;
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionRasterMapView::set_tile_state(
+		GLRenderer &renderer,
+		const GLTexture::shared_ptr_to_const_type &tile_texture,
+		const GLTransform &projection_transform,
+		const GLTransform &clip_projection_transform,
+		const GLTransform &view_transform,
+		bool clip_to_tile_frustum)
+{
+	// Used to transform texture coordinates to account for partial coverage of current tile.
+	GLMatrix scene_tile_texture_matrix;
+	scene_tile_texture_matrix.gl_mult_matrix(GLUtils::get_clip_space_to_texture_space_transform());
+	// Set up the texture matrix to perform model-view and projection transforms of the frustum.
+	scene_tile_texture_matrix.gl_mult_matrix(projection_transform.get_matrix());
+	scene_tile_texture_matrix.gl_mult_matrix(view_transform.get_matrix());
+	// Load texture transform into texture unit 0.
+	renderer.gl_load_texture_matrix(GL_TEXTURE0, scene_tile_texture_matrix);
+
+	// Bind the scene tile texture to texture unit 0.
+	renderer.gl_bind_texture(tile_texture, GL_TEXTURE0, GL_TEXTURE_2D);
+
+	// Enable texturing and set the texture function on texture unit 0.
+	renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
+	renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+	// NOTE: Since our texture coordinates are 3D and contain the original point-on-sphere positions
+	// (before map projection) we don't need to set up texture coordinate generation from the vertices (x,y,z).
+
+	// If we've traversed deep enough into the cube quad tree then the cube quad tree mesh
+	// then the drawable starts to cover multiple quad tree nodes (instead of a single node)
+	// so we need to use a clip texture to mask off all but the node we're interested in.
+	if (clip_to_tile_frustum)
+	{
+		// NOTE: If two texture units are not supported then just don't clip to the tile.
+		// It'll look worse but at least it'll still work mostly and will only be noticeable
+		// if they zoom in far enough (which is when this code gets activated).
+		if (GLContext::get_parameters().texture.gl_max_texture_units >= 2)
+		{
+			// State for the clip texture.
+			//
+			// NOTE: We also do *not* expand the tile frustum since the clip texture uses nearest
+			// filtering instead of bilinear filtering and hence we're not removing a seam between
+			// tiles (instead we are clipping adjacent tiles).
+			GLMatrix clip_texture_matrix(GLTextureUtils::get_clip_texture_clip_space_to_texture_space_transform());
+			// Set up the texture matrix to perform model-view and projection transforms of the frustum.
+			clip_texture_matrix.gl_mult_matrix(clip_projection_transform.get_matrix());
+			clip_texture_matrix.gl_mult_matrix(view_transform.get_matrix());
+			// Load texture transform into texture unit 1.
+			renderer.gl_load_texture_matrix(GL_TEXTURE1, clip_texture_matrix);
+
+			// Bind the clip texture to texture unit 1.
+			renderer.gl_bind_texture(d_multi_resolution_map_cube_mesh->get_clip_texture(), GL_TEXTURE1, GL_TEXTURE_2D);
+
+			// Enable texturing and set the texture function on texture unit 1.
+			renderer.gl_enable_texture(GL_TEXTURE1, GL_TEXTURE_2D);
+			renderer.gl_tex_env(GL_TEXTURE1, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+			// NOTE: Since our texture coordinates are 3D and contain the original point-on-sphere positions
+			// (before map projection) we don't need to set up texture coordinate generation from the vertices (x,y,z).
+		}
+		else
+		{
+			// Only emit warning message once.
+			static bool emitted_warning = false;
+			if (!emitted_warning)
+			{
+				qWarning() <<
+						"High zoom levels of map view NOT supported by this OpenGL system - \n"
+						"  requires two texture units - visual results will be incorrect.\n"
+						"  Most graphics hardware for over a decade supports this -\n"
+						"  most likely software renderer fallback has occurred - possibly via remote desktop software.";
+				emitted_warning = true;
+			}
+		}
+	}
+
+	// NOTE: We don't set alpha-blending (or alpha-testing) state here because we
+	// might not be rendering directly to the final render target and hence we don't
+	// want to double-blend semi-transparent rasters - the alpha value is multiplied by
+	// all channels including alpha during alpha blending (R,G,B,A) -> (A*R,A*G,A*B,A*A) -
+	// the final render target would then have a source blending contribution of (3A*R,3A*G,3A*B,4A)
+	// which is not what we want - we want (A*R,A*G,A*B,A*A).
+
+#if 0
+	// Used to render as wire-frame meshes instead of filled textured meshes for
+	// visualising mesh density.
+	renderer.gl_polygon_mode(GL_FRONT_AND_BACK, GL_LINE);
+#endif
+}
+
+
+double
+GPlatesOpenGL::GLMultiResolutionRasterMapView::get_viewport_pixel_size_in_map_projection(
+		const GLViewport &viewport,
+		const GLMatrix &model_view_transform,
+		const GLMatrix &projection_transform) const
+{
+	// The map-projection coordinates of a viewport pixel (values at bottom-left and bottom-right corners of pixel).
+	double objx[2];
+	double objy[2];
+	double objz[2];
+
+	// Get map-projection coordinates of bottom-left viewport pixel.
+	// The depth doesn't actually matter since it's a 2D orthographic projection
+	// (for 'projection_transform' as opposed to the map projection which is handled elsewhere).
+	if (GLProjectionUtils::glu_un_project(
+		viewport,
+		model_view_transform,
+		projection_transform,
+		// Bottom-left viewport pixel...
+		// The 'z' value does matter in 2D orthographic projection
+		// (for 'projection_transform' as opposed to the map projection).
+		0, 0, 0,
+		&objx[0], &objy[0], &objz[0]) == GL_FALSE)
+	{
+		qWarning() << "GLMultiResolutionRasterMapView::get_viewport_pixel_size_in_map_projection: "
+			<< "glu_un_project() failed: using lowest resolution view.";
+
+		return ERROR_VIEWPORT_PIXEL_SIZE_IN_MAP_PROJECTION;
+	}
+
+	// Get map-projection coordinates of bottom-left viewport pixel.
+	// The depth doesn't actually matter since it's a 2D orthographic projection
+	// (for 'projection_transform' as opposed to the map projection which is handled elsewhere).
+	if (GLProjectionUtils::glu_un_project(
+		viewport,
+		model_view_transform,
+		projection_transform,
+		// Bottom-left viewport pixel plus one in x-direction...
+		// The 'z' value does matter in 2D orthographic projection
+		// (for 'projection_transform' as opposed to the map projection).
+		1, 0, 0,
+		&objx[1], &objy[1], &objz[1]) == GL_FALSE)
+	{
+		qWarning() << "GLMultiResolutionRasterMapView::get_viewport_pixel_size_in_map_projection: "
+			<< "glu_un_project() failed: using lowest resolution view.";
+
+		return ERROR_VIEWPORT_PIXEL_SIZE_IN_MAP_PROJECTION;
+	}
+
+	// Return the 2D distance, in map projection coordinates, across the width of a single viewport pixel.
+
+	double delta_objx = objx[1] - objx[0];
+	double delta_objy = objy[1] - objy[0];
+
+	return std::sqrt(delta_objx * delta_objx + delta_objy * delta_objy);
+}

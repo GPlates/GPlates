@@ -25,6 +25,8 @@ set(srcs
     GLContext.h
     GLCoverageSource.cc
     GLCoverageSource.h
+    GLCubeMeshGenerator.cc
+    GLCubeMeshGenerator.h
     GLCubeSubdivision.cc
     GLCubeSubdivision.h
     GLCubeSubdivisionCache.h
@@ -39,16 +41,25 @@ set(srcs
     GLIntersect.h
     GLIntersectPrimitives.cc
     GLIntersectPrimitives.h
+    GLMapCubeMeshGenerator.cc
+    GLMapCubeMeshGenerator.h
     GLMatrix.cc
     GLMatrix.h
     GLMultiResolutionCubeMesh.cc
     GLMultiResolutionCubeMesh.h
     GLMultiResolutionCubeRaster.cc
     GLMultiResolutionCubeRaster.h
+    GLMultiResolutionCubeRasterInterface.h
+    GLMultiResolutionCubeReconstructedRaster.cc
+    GLMultiResolutionCubeReconstructedRaster.h
     GLMultiResolutionFilledPolygons.cc
     GLMultiResolutionFilledPolygons.h
+    GLMultiResolutionMapCubeMesh.cc
+    GLMultiResolutionMapCubeMesh.h
     GLMultiResolutionRaster.cc
     GLMultiResolutionRaster.h
+    GLMultiResolutionRasterMapView.cc
+    GLMultiResolutionRasterMapView.h
     GLMultiResolutionRasterSource.h
     GLMultiResolutionStaticPolygonReconstructedRaster.cc
     GLMultiResolutionStaticPolygonReconstructedRaster.h

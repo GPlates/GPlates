@@ -42,6 +42,8 @@
 
 namespace GPlatesMaths
 {
+	class BoundingSmallCircle;
+
 	/**
 	 * Clips polyline/polygon geometries to the dateline (at -180, or +180, degrees longitude) and
 	 * wraps them to the opposite longitude so that they display correctly over a (-180,180)
@@ -117,7 +119,7 @@ namespace GPlatesMaths
 		 * This can happen if the input polyline lies entirely *on* the dateline.
 		 */
 		void
-		wrap_polyline_to_dateline(
+		wrap_to_dateline(
 				const PolylineOnSphere::non_null_ptr_to_const_type &input_polyline,
 				std::vector<lat_lon_polyline_type> &output_polylines);
 
@@ -140,9 +142,27 @@ namespace GPlatesMaths
 		 * This can happen if the input polygon lies entirely *on* the dateline.
 		 */
 		void
-		wrap_polygon_to_dateline(
+		wrap_to_dateline(
 				const PolygonOnSphere::non_null_ptr_to_const_type &input_polygon,
 				std::vector<lat_lon_polygon_type> &output_polygons);
+
+		//
+		// The following early reject methods are not needed and only provided for convenience...
+		//
+
+		/**
+		 * Returns true if the specified bounding small circle intersects the dateline arc.
+		 *
+		 * This can be used as a quick test to see if a geometry (bounded by the small circle)
+		 * can *possibly* intersect the dateline.
+		 *
+		 * NOTE: A return value of true does *not* necessarily mean a geometry bounded by the
+		 * small circle intersects the dateline.
+		 * However a return value of false does mean a bounded geometry does *not* intersect the dateline.
+		 */
+		bool
+		intersects_dateline(
+				const BoundingSmallCircle &geometry_bounding_small_circle) const;
 
 	private:
 		/**
@@ -282,30 +302,30 @@ namespace GPlatesMaths
 			//! Adds an intersection of geometry with the dateline on the front side of dateline.
 			void
 			add_intersection_vertex_on_front_dateline(
-						const PointOnSphere &point,
-						bool exiting_dateline_polygon);
+					const PointOnSphere &point,
+					bool exiting_dateline_polygon);
 
 			//! Adds an intersection of geometry with the dateline on the back side of dateline.
 			void
 			add_intersection_vertex_on_back_dateline(
-						const PointOnSphere &point,
-						bool exiting_dateline_polygon);
+					const PointOnSphere &point,
+					bool exiting_dateline_polygon);
 
 			/**
 			 * Adds an intersection of geometry with the north pole.
 			 */
 			void
 			add_intersection_vertex_on_north_pole(
-						const PointOnSphere &point,
-						bool exiting_dateline_polygon);
+					const PointOnSphere &point,
+					bool exiting_dateline_polygon);
 
 			/**
 			 * Adds an intersection of geometry with the south pole.
 			 */
 			void
 			add_intersection_vertex_on_south_pole(
-						const PointOnSphere &point,
-						bool exiting_dateline_polygon);
+					const PointOnSphere &point,
+					bool exiting_dateline_polygon);
 
 			/**
 			 * Record the fact that the geometry intersected the north pole.
@@ -404,6 +424,14 @@ namespace GPlatesMaths
 		//! Constructor.
 		DateLineWrapper()
 		{  }
+
+		bool
+		possibly_intersects_dateline(
+				const PolylineOnSphere::non_null_ptr_to_const_type &polyline) const;
+
+		bool
+		possibly_intersects_dateline(
+				const PolygonOnSphere::non_null_ptr_to_const_type &polygon) const;
 
 		//! Generates a graph from the geometry and the dateline and any intersections.
 		template <typename LineSegmentForwardIter>

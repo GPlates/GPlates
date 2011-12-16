@@ -52,6 +52,7 @@
 
 #include "utils/ObjectCache.h"
 #include "utils/ReferenceCount.h"
+#include "utils/SubjectObserverToken.h"
 
 
 namespace GPlatesOpenGL
@@ -142,6 +143,14 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Returns a subject token that clients can observe to see if they need to update themselves
+		 * (such as any cached data we render for them) by getting us to re-render.
+		 */
+		const GPlatesUtils::SubjectToken &
+		get_subject_token() const;
+
+
+		/**
 		 * Renders the reconstructed raster visible in the view frustum (determined by the
 		 * current viewport and model-view/projection transforms of @a renderer).
 		 *
@@ -154,6 +163,24 @@ namespace GPlatesOpenGL
 		render(
 				GLRenderer &renderer,
 				cache_handle_type &cache_handle);
+
+
+		/**
+		 * Returns the texture internal format that can be used if rendering to a texture, when
+		 * calling @a render, as opposed to the main framebuffer.
+		 *
+		 * This is the 'internalformat' parameter of GLTexture::gl_tex_image_2D for example.
+		 *
+		 * NOTE: The filtering mode is expected to be set to 'linear' in all cases except floating-point rasters.
+		 * Because earlier hardware, that supports floating-point textures, does not implement
+		 * bilinear filtering (any linear filtering will need to be emulated in a pixel shader).
+		 */
+		GLint
+		get_target_texture_internal_format() const
+		{
+			// Delegate to our source raster input.
+			return d_raster_to_reconstruct->get_tile_texture_internal_format();
+		}
 
 	private:
 		/**
@@ -222,6 +249,10 @@ namespace GPlatesOpenGL
 
 			GLMultiResolutionCubeRaster::non_null_ptr_type age_grid_mask_cube_raster;
 			GLMultiResolutionCubeRaster::non_null_ptr_type age_grid_coverage_cube_raster;
+
+			// Keep track of changes to the age grid input rasters.
+			mutable GPlatesUtils::ObserverToken d_age_grid_mask_cube_raster_observer_token;
+			mutable GPlatesUtils::ObserverToken d_age_grid_coverage_cube_raster_observer_token;
 		};
 
 
@@ -370,14 +401,14 @@ namespace GPlatesOpenGL
 		typedef GPlatesMaths::CubeQuadTree<QuadTreeNode> cube_quad_tree_type;
 
 
-		//! Typedef for a cube quad tree of raster tiles.
-		typedef GLMultiResolutionCubeRaster::cube_quad_tree_type raster_cube_quad_tree_type;
+		//! Typedef for a raster cube quad tree node.
+		typedef GLMultiResolutionCubeRaster::quad_tree_node_type raster_quad_tree_node_type;
 
 		//! Typedef for a cube quad tree of age grid mask tiles.
-		typedef GLMultiResolutionCubeRaster::cube_quad_tree_type age_grid_mask_cube_quad_tree_type;
+		typedef GLMultiResolutionCubeRaster::quad_tree_node_type age_grid_mask_quad_tree_node_type;
 
 		//! Typedef for a cube quad tree of age grid coverage tiles.
-		typedef GLMultiResolutionCubeRaster::cube_quad_tree_type age_grid_coverage_cube_quad_tree_type;
+		typedef GLMultiResolutionCubeRaster::quad_tree_node_type age_grid_coverage_quad_tree_node_type;
 
 		//! Typedef for a sequence of present day polygon mesh drawables.
 		typedef GLReconstructedStaticPolygonMeshes::present_day_polygon_mesh_drawables_seq_type
@@ -417,10 +448,16 @@ namespace GPlatesOpenGL
 		 */
 		GLMultiResolutionCubeRaster::non_null_ptr_type d_raster_to_reconstruct;
 
+		//! Keep track of changes to @a d_raster_to_reconstruct.
+		mutable GPlatesUtils::ObserverToken d_raster_to_reconstruct_texture_observer_token;
+
 		/**
 		 * The reconstructed present day static polygon meshes.
 		 */
 		GLReconstructedStaticPolygonMeshes::non_null_ptr_type d_reconstructed_static_polygon_meshes;
+
+		//! Keep track of changes to @a d_reconstructed_static_polygon_meshes.
+		mutable GPlatesUtils::ObserverToken d_reconstructed_static_polygon_meshes_observer_token;
 
 		/**
 		 * Optional age grid mask and coverage rasters.
@@ -497,6 +534,11 @@ namespace GPlatesOpenGL
 		 */
 		cube_quad_tree_type::non_null_ptr_type d_cube_quad_tree;
 
+		/**
+		 * Used to inform clients that we have been updated.
+		 */
+		mutable GPlatesUtils::SubjectToken d_subject_token;
+
 
 		//! Constructor.
 		GLMultiResolutionStaticPolygonReconstructedRaster(
@@ -519,7 +561,7 @@ namespace GPlatesOpenGL
 				render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
 				client_cache_cube_quad_tree_type &client_cache_cube_quad_tree,
 				client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-				const raster_cube_quad_tree_type::node_type &source_raster_quad_tree_node,
+				const raster_quad_tree_node_type &source_raster_quad_tree_node,
 				const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
 				const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables,
 				const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
@@ -542,10 +584,10 @@ namespace GPlatesOpenGL
 				render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
 				client_cache_cube_quad_tree_type &client_cache_cube_quad_tree,
 				client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-				const raster_cube_quad_tree_type::node_type &source_raster_quad_tree_node,
+				const raster_quad_tree_node_type &source_raster_quad_tree_node,
 				const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
-				const age_grid_mask_cube_quad_tree_type::node_type &age_grid_mask_quad_tree_node,
-				const age_grid_coverage_cube_quad_tree_type::node_type &age_grid_coverage_quad_tree_node,
+				const age_grid_mask_quad_tree_node_type &age_grid_mask_quad_tree_node,
+				const age_grid_coverage_quad_tree_node_type &age_grid_coverage_quad_tree_node,
 				const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
 				const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
 				const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables,
@@ -569,9 +611,9 @@ namespace GPlatesOpenGL
 				render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
 				client_cache_cube_quad_tree_type &client_cache_cube_quad_tree,
 				client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-				const raster_cube_quad_tree_type::node_type &source_raster_quad_tree_node,
-				const age_grid_mask_cube_quad_tree_type::node_type &age_grid_mask_quad_tree_node,
-				const age_grid_coverage_cube_quad_tree_type::node_type &age_grid_coverage_quad_tree_node,
+				const raster_quad_tree_node_type &source_raster_quad_tree_node,
+				const age_grid_mask_quad_tree_node_type &age_grid_mask_quad_tree_node,
+				const age_grid_coverage_quad_tree_node_type &age_grid_coverage_quad_tree_node,
 				const GLUtils::QuadTreeUVTransform &age_grid_uv_transform,
 				const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
 				const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
@@ -596,9 +638,9 @@ namespace GPlatesOpenGL
 				render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
 				client_cache_cube_quad_tree_type &client_cache_cube_quad_tree,
 				client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-				const raster_cube_quad_tree_type::node_type &source_raster_quad_tree_node,
-				const age_grid_mask_cube_quad_tree_type::node_type &age_grid_mask_quad_tree_node,
-				const age_grid_coverage_cube_quad_tree_type::node_type &age_grid_coverage_quad_tree_node,
+				const raster_quad_tree_node_type &source_raster_quad_tree_node,
+				const age_grid_mask_quad_tree_node_type &age_grid_mask_quad_tree_node,
+				const age_grid_coverage_quad_tree_node_type &age_grid_coverage_quad_tree_node,
 				const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
 				const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
 				const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables,
@@ -639,7 +681,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
 				client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-				const raster_cube_quad_tree_type::node_type &source_raster_quad_tree_node,
+				const raster_quad_tree_node_type &source_raster_quad_tree_node,
 				const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
 				const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
 				const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
@@ -673,10 +715,10 @@ namespace GPlatesOpenGL
 				cube_quad_tree_type::node_type &cube_quad_tree_node,
 				render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
 				client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-				const raster_cube_quad_tree_type::node_type &source_raster_quad_tree_node,
+				const raster_quad_tree_node_type &source_raster_quad_tree_node,
 				const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
-				const age_grid_mask_cube_quad_tree_type::node_type &age_grid_mask_quad_tree_node,
-				const age_grid_coverage_cube_quad_tree_type::node_type &age_grid_coverage_quad_tree_node,
+				const age_grid_mask_quad_tree_node_type &age_grid_mask_quad_tree_node,
+				const age_grid_coverage_quad_tree_node_type &age_grid_coverage_quad_tree_node,
 				const GLUtils::QuadTreeUVTransform &age_grid_uv_transform,
 				const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
 				const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
@@ -694,10 +736,10 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				cube_quad_tree_type::node_type &cube_quad_tree_node,
 				client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-				const raster_cube_quad_tree_type::node_type &source_raster_quad_tree_node,
+				const raster_quad_tree_node_type &source_raster_quad_tree_node,
 				const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
-				const age_grid_mask_cube_quad_tree_type::node_type &age_grid_mask_quad_tree_node,
-				const age_grid_coverage_cube_quad_tree_type::node_type &age_grid_coverage_quad_tree_node,
+				const age_grid_mask_quad_tree_node_type &age_grid_mask_quad_tree_node,
+				const age_grid_coverage_quad_tree_node_type &age_grid_coverage_quad_tree_node,
 				const GLUtils::QuadTreeUVTransform &age_grid_uv_transform,
 				const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
 				const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
@@ -711,10 +753,10 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				AgeMaskedSourceTileTexture &age_masked_source_tile_texture,
 				cube_quad_tree_type::node_type &cube_quad_tree_node,
-				const raster_cube_quad_tree_type::node_type &source_raster_quad_tree_node,
+				const raster_quad_tree_node_type &source_raster_quad_tree_node,
 				const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
-				const age_grid_mask_cube_quad_tree_type::node_type &age_grid_mask_quad_tree_node,
-				const age_grid_coverage_cube_quad_tree_type::node_type &age_grid_coverage_quad_tree_node,
+				const age_grid_mask_quad_tree_node_type &age_grid_mask_quad_tree_node,
+				const age_grid_coverage_quad_tree_node_type &age_grid_coverage_quad_tree_node,
 				const GLUtils::QuadTreeUVTransform &age_grid_uv_transform,
 				const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
 				const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,

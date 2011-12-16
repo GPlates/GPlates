@@ -49,6 +49,9 @@ namespace GPlatesMaths
 
 namespace GPlatesGui
 {
+	/**
+	 * Renders latitude and longitude grid lines in the 3D globe view.
+	 */
 	class SphericalGrid :
 			private boost::noncopyable
 	{
@@ -76,7 +79,7 @@ namespace GPlatesGui
 
 	private:
 		const GraticuleSettings &d_graticule_settings;
-		
+
 		boost::optional<GraticuleSettings> d_last_seen_graticule_settings;
 
 		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_grid_vertex_array;

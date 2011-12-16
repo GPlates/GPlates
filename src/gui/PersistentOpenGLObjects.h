@@ -32,6 +32,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "Colour.h"
+#include "MapProjection.h"
 #include "RasterColourPalette.h"
 
 #include "app-logic/Layer.h"
@@ -47,8 +48,11 @@
 #include "opengl/GLContext.h"
 #include "opengl/GLMultiResolutionCubeMesh.h"
 #include "opengl/GLMultiResolutionCubeRaster.h"
+#include "opengl/GLMultiResolutionCubeRasterInterface.h"
 #include "opengl/GLMultiResolutionFilledPolygons.h"
+#include "opengl/GLMultiResolutionMapCubeMesh.h"
 #include "opengl/GLMultiResolutionRaster.h"
+#include "opengl/GLMultiResolutionRasterMapView.h"
 #include "opengl/GLMultiResolutionStaticPolygonReconstructedRaster.h"
 #include "opengl/GLVisualRasterSource.h"
 #include "opengl/GLReconstructedStaticPolygonMeshes.h"
@@ -150,13 +154,17 @@ namespace GPlatesGui
 		 *
 		 * @a source_raster_modulate_colour can be used to modulate the raster by the specified
 		 * colour (eg, to enable semi-transparent rasters).
+		 *
+		 * If @a map_projection is specified then the raster is rendered using the specified
+		 * 2D map projection, otherwise it's rendered to the 3D globe.
 		 */
 		cache_handle_type
 		render_raster(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type &source_resolved_raster,
 				const RasterColourPalette::non_null_ptr_to_const_type &source_raster_colour_palette,
-				const Colour &source_raster_modulate_colour = Colour::get_white());
+				const Colour &source_raster_modulate_colour = Colour::get_white(),
+				boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection = boost::none);
 
 
 		/**
@@ -211,6 +219,7 @@ namespace GPlatesGui
 				AGE_GRID,
 				RECONSTRUCTED_STATIC_POLYGON_MESHES,
 				STATIC_POLYGON_RECONSTRUCTED_RASTER,
+				MAP_RASTER,
 
 				NUM_TYPES
 			};
@@ -516,6 +525,62 @@ namespace GPlatesGui
 
 
 		/**
+		 * A map-view of a (possibly reconstructed) raster.
+		 */
+		class MapRasterLayerUsage :
+				public LayerUsage
+		{
+		public:
+			explicit
+			MapRasterLayerUsage(
+					const GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> &raster_layer_usage,
+					const GPlatesUtils::non_null_intrusive_ptr<StaticPolygonReconstructedRasterLayerUsage> &
+							reconstructed_raster_layer_usage);
+
+			/**
+			 * Returns multi-resolution raster in map view - rebuilds if out-of-date with respect to its dependencies.
+			 *
+			 * @a multi_resolution_map_cube_mesh is shared by all layers (because contains no layer-specific state).
+			 */
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRasterMapView::non_null_ptr_type>
+			get_multi_resolution_raster_map_view(
+					GPlatesOpenGL::GLRenderer &renderer,
+					const GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type &multi_resolution_map_cube_mesh,
+					const double &reconstruction_time);
+
+			//! See if needs updating due to switching between regular and reconstructed rasters.
+			void
+			update(
+					boost::optional<GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> > raster_layer_usage,
+					boost::optional<GPlatesUtils::non_null_intrusive_ptr<StaticPolygonReconstructedRasterLayerUsage> >
+							reconstructed_raster_layer_usage);
+
+			//! Let clients know we've rebuilt our map raster.
+			const GPlatesUtils::SubjectToken &
+			get_rebuild_subject_token();
+
+			virtual
+			bool
+			is_required_direct_or_indirect_dependency(
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const;
+
+		private:
+			boost::optional<GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> > d_raster_layer_usage;
+			GPlatesUtils::ObserverToken d_raster_layer_usage_observer_token;
+
+			boost::optional<GPlatesUtils::non_null_intrusive_ptr<StaticPolygonReconstructedRasterLayerUsage> >
+					d_reconstructed_raster_layer_usage;
+			GPlatesUtils::ObserverToken d_reconstructed_raster_layer_usage_observer_token;
+
+			GPlatesUtils::SubjectToken d_rebuild_subject_token;
+
+			//boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type> d_multi_resolution_cube_raster;
+
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRasterMapView::non_null_ptr_type> d_multi_resolution_raster_map_view;
+		};
+
+
+		/**
 		 * Represents OpenGL objects (in the various layer usage classes) associated with a layer.
 		 *
 		 * Each layer contains all the possible uses of any layer type.
@@ -556,6 +621,10 @@ namespace GPlatesGui
 			//! Returns the static polygon reconstructed raster layer usage (creates one if does not yet exist).
 			GPlatesUtils::non_null_intrusive_ptr<StaticPolygonReconstructedRasterLayerUsage>
 			get_static_polygon_reconstructed_raster_layer_usage();
+
+			//! Returns the map raster layer usage (creates one if does not yet exist).
+			GPlatesUtils::non_null_intrusive_ptr<MapRasterLayerUsage>
+			get_map_raster_layer_usage();
 
 			/**
 			 * Called by @a GLLayers when a layer (proxy) is about to be removed.
@@ -655,6 +724,18 @@ namespace GPlatesGui
 					GPlatesOpenGL::GLRenderer &renderer) const;
 
 			/**
+			 * Returns the multi-resolution *map* cube mesh.
+			 *
+			 * This also consumes a reasonable amount of memory so it is shared across all layers.
+			 *
+			 * NOTE: This must be called when an OpenGL context is currently active.
+			 */
+			GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type
+			get_multi_resolution_map_cube_mesh(
+					GPlatesOpenGL::GLRenderer &renderer,
+					const MapProjection &map_projection) const;
+
+			/**
 			 * Returns the multi-resolution filled polygons renderer.
 			 *
 			 * NOTE: This must be called when an OpenGL context is currently active.
@@ -674,6 +755,15 @@ namespace GPlatesGui
 			 */
 			mutable boost::optional<GPlatesOpenGL::GLMultiResolutionCubeMesh::non_null_ptr_to_const_type>
 					d_multi_resolution_cube_mesh;
+
+			/**
+			 * Used to get a mesh to view any cube quad tree raster in a map-projection view.
+			 *
+			 * NOTE: This can be shared by all layers since it contains no state specific
+			 * to anything a layer will draw with it (contains only global map projection).
+			 */
+			mutable boost::optional<GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_type>
+					d_multi_resolution_map_cube_mesh;
 
 			/**
 			 * Used to render coloured filled polygons as raster masks (instead of polygon meshes).

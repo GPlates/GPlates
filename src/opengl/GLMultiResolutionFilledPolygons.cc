@@ -260,7 +260,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render(
 		const GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face =
 				static_cast<GPlatesMaths::CubeCoordinateFrame::CubeFaceType>(face);
 
-		// Get the quad tree root node of the current cube face of the source raster.
+		// Get the quad tree root node of the current cube face of the source mesh.
 		const mesh_quad_tree_node_type mesh_quad_tree_root_node =
 				d_multi_resolution_cube_mesh->get_quad_tree_root_node(cube_face);
 
@@ -694,15 +694,17 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::set_tile_state(
 		// Set up texture coordinate generation from the vertices (x,y,z) on texture unit 0.
 		GLUtils::set_object_linear_tex_gen_state(renderer, 0/*texture_unit*/);
 
-		// NOTE: If two texture units are not supported then just don't clip to the tile.
-		// The 'is_supported()' method should have been called to prevent us from getting here though.
-		if (GLContext::get_parameters().texture.gl_max_texture_units >= 2)
+		if (clip_to_tile_frustum)
 		{
-			// Enable texturing and set the texture function on texture unit 1.
-			renderer.gl_enable_texture(GL_TEXTURE1, GL_TEXTURE_2D);
-			renderer.gl_tex_env(GL_TEXTURE1, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			// Set up texture coordinate generation from the vertices (x,y,z) on texture unit 1.
-			GLUtils::set_object_linear_tex_gen_state(renderer, 1/*texture_unit*/);
+			// NOTE: If two texture units are not supported then just don't clip to the tile.
+			if (GLContext::get_parameters().texture.gl_max_texture_units >= 2)
+			{
+				// Enable texturing and set the texture function on texture unit 1.
+				renderer.gl_enable_texture(GL_TEXTURE1, GL_TEXTURE_2D);
+				renderer.gl_tex_env(GL_TEXTURE1, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+				// Set up texture coordinate generation from the vertices (x,y,z) on texture unit 1.
+				GLUtils::set_object_linear_tex_gen_state(renderer, 1/*texture_unit*/);
+			}
 		}
 	}
 
@@ -777,9 +779,6 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_tile_to_scene(
 			*projection_transform,
 			*view_transform);
 
-	// Get the mesh covering the current quad tree node tile.
-	GLCompiledDrawState::non_null_ptr_to_const_type mesh_drawable = mesh_quad_tree_node.get_mesh_drawable();
-
 	// See if we've traversed deep enough in the cube mesh quad tree to require using a clip
 	// texture - this occurs because the cube mesh has nodes only to a certain depth.
 	const bool clip_to_tile_frustum = mesh_quad_tree_node.get_clip_texture_clip_space_transform();
@@ -793,7 +792,8 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_tile_to_scene(
 			*view_transform,
 			clip_to_tile_frustum);
 
-	renderer.apply_compiled_draw_state(*mesh_drawable);
+	// Draw the mesh covering the current quad tree node tile.
+	mesh_quad_tree_node.render_mesh_drawable(renderer);
 }
 
 

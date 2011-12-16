@@ -263,6 +263,20 @@ namespace GPlatesQtWidgets
 		QImage
 		grab_frame_buffer();
 
+		//! Returns the @a GLContext associated with this QGLWidget so it can be shared across widgets.
+		GPlatesOpenGL::GLContext::non_null_ptr_type
+		get_gl_context()
+		{
+			return d_gl_context;
+		}
+
+		//! Returns the persistent OpenGL objects associated with this widget's OpenGL context so it can be shared across widgets.
+		GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type
+		get_persistent_opengl_objects()
+		{
+			return d_gl_persistent_objects;
+		}
+
 	public slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
@@ -525,11 +539,9 @@ namespace GPlatesQtWidgets
 
 		GPlatesPresentation::ViewState &d_view_state;
 
-		/**
-		 * Shadows some OpenGL state to allow faster OpenGL queries and
-		 * to minimise state changes.
-		 */
+		//! Mirrors an OpenGL context and provides a central place to manage low-level OpenGL objects.
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
+		//! Makes the QGLWidget's OpenGL context current in @a GlobeCanvas constructor so it can call OpenGL.
 		MakeGLContextCurrent d_make_context_current;
 
 		//! The OpenGL viewport used to render the main scene into this canvas.
@@ -609,7 +621,7 @@ namespace GPlatesQtWidgets
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
 
-		GPlatesGui::TextRenderer::non_null_ptr_to_const_type d_text_renderer;
+		GPlatesGui::TextRenderer::non_null_ptr_type d_text_renderer;
 
 		GPlatesGui::Globe d_globe;
 

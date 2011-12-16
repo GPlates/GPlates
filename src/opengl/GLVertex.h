@@ -120,13 +120,13 @@ namespace GPlatesOpenGL
 	/**
 	 * A vertex with 3D position and a colour.
 	 */
-	struct GLColouredVertex
+	struct GLColourVertex
 	{
 		//! NOTE: Default constructor does *not* initialise !
-		GLColouredVertex()
+		GLColourVertex()
 		{  }
 
-		GLColouredVertex(
+		GLColourVertex(
 				GLfloat x_,
 				GLfloat y_,
 				GLfloat z_,
@@ -137,7 +137,7 @@ namespace GPlatesOpenGL
 			colour(colour_)
 		{  }
 
-		GLColouredVertex(
+		GLColourVertex(
 				const GPlatesMaths::UnitVector3D &vertex_,
 				GPlatesGui::rgba8_t colour_) :
 			x(vertex_.x().dval()),
@@ -152,11 +152,11 @@ namespace GPlatesOpenGL
 	};
 
 	/**
-	 * Binds a @a GLVertexBuffer, containing vertices of type @a GLColouredVertex, to a @a GLVertexArray.
+	 * Binds a @a GLVertexBuffer, containing vertices of type @a GLColourVertex, to a @a GLVertexArray.
 	 */
 	template <>
 	void
-	bind_vertex_buffer_to_vertex_array<GLColouredVertex>(
+	bind_vertex_buffer_to_vertex_array<GLColourVertex>(
 			GLRenderer &renderer,
 			GLVertexArray &vertex_array,
 			const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
@@ -166,13 +166,13 @@ namespace GPlatesOpenGL
 	/**
 	 * A vertex with 3D position and 2D texture coordinates.
 	 */
-	struct GLTexturedVertex
+	struct GLTextureVertex
 	{
 		//! NOTE: Default constructor does *not* initialise !
-		GLTexturedVertex()
+		GLTextureVertex()
 		{  }
 
-		GLTexturedVertex(
+		GLTextureVertex(
 				GLfloat x_,
 				GLfloat y_,
 				GLfloat z_,
@@ -185,7 +185,7 @@ namespace GPlatesOpenGL
 			v(v_)
 		{  }
 
-		GLTexturedVertex(
+		GLTextureVertex(
 				const GPlatesMaths::UnitVector3D &vertex_,
 				GLfloat u_,
 				GLfloat v_) :
@@ -202,11 +202,65 @@ namespace GPlatesOpenGL
 	};
 
 	/**
-	 * Binds a @a GLVertexBuffer, containing vertices of type @a GLTexturedVertex, to a @a GLVertexArray.
+	 * Binds a @a GLVertexBuffer, containing vertices of type @a GLTextureVertex, to a @a GLVertexArray.
 	 */
 	template <>
 	void
-	bind_vertex_buffer_to_vertex_array<GLTexturedVertex>(
+	bind_vertex_buffer_to_vertex_array<GLTextureVertex>(
+			GLRenderer &renderer,
+			GLVertexArray &vertex_array,
+			const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+			GLint offset);
+
+
+	/**
+	 * A vertex with 3D position and *3D* texture coordinates.
+	 */
+	struct GLTexture3DVertex
+	{
+		//! NOTE: Default constructor does *not* initialise !
+		GLTexture3DVertex()
+		{  }
+
+		GLTexture3DVertex(
+				GLfloat x_,
+				GLfloat y_,
+				GLfloat z_,
+				GLfloat s_,
+				GLfloat t_,
+				GLfloat r_) :
+			x(x_),
+			y(y_),
+			z(z_),
+			s(s_),
+			t(t_),
+			r(r_)
+		{  }
+
+		GLTexture3DVertex(
+				const GPlatesMaths::UnitVector3D &vertex_,
+				GLfloat s_,
+				GLfloat t_,
+				GLfloat r_) :
+			x(vertex_.x().dval()),
+			y(vertex_.y().dval()),
+			z(vertex_.z().dval()),
+			s(s_),
+			t(t_),
+			r(r_)
+		{  }
+
+
+		GLfloat x, y, z;
+		GLfloat s, t, r;
+	};
+
+	/**
+	 * Binds a @a GLVertexBuffer, containing vertices of type @a GLTexture3DVertex, to a @a GLVertexArray.
+	 */
+	template <>
+	void
+	bind_vertex_buffer_to_vertex_array<GLTexture3DVertex>(
 			GLRenderer &renderer,
 			GLVertexArray &vertex_array,
 			const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
@@ -216,13 +270,13 @@ namespace GPlatesOpenGL
 	/**
 	 * A vertex with 3D position, a colour and 2D texture coordinates.
 	 */
-	struct GLColouredTexturedVertex
+	struct GLColourTextureVertex
 	{
 		//! NOTE: Default constructor does *not* initialise !
-		GLColouredTexturedVertex()
+		GLColourTextureVertex()
 		{  }
 
-		GLColouredTexturedVertex(
+		GLColourTextureVertex(
 				GLfloat x_,
 				GLfloat y_,
 				GLfloat z_,
@@ -237,7 +291,7 @@ namespace GPlatesOpenGL
 			colour(colour_)
 		{  }
 
-		GLColouredTexturedVertex(
+		GLColourTextureVertex(
 				const GPlatesMaths::UnitVector3D &vertex_,
 				GLfloat u_,
 				GLfloat v_,
@@ -257,11 +311,11 @@ namespace GPlatesOpenGL
 	};
 
 	/**
-	 * Binds a @a GLVertexBuffer, containing vertices of type @a GLColouredTexturedVertex, to a @a GLVertexArray.
+	 * Binds a @a GLVertexBuffer, containing vertices of type @a GLColourTextureVertex, to a @a GLVertexArray.
 	 */
 	template <>
 	void
-	bind_vertex_buffer_to_vertex_array<GLColouredTexturedVertex>(
+	bind_vertex_buffer_to_vertex_array<GLColourTextureVertex>(
 			GLRenderer &renderer,
 			GLVertexArray &vertex_array,
 			const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,

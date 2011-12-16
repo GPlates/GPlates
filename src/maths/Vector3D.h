@@ -33,6 +33,9 @@
 #include "types.h"  /* real_t */
 #include "GenericVectorOps3D.h"
 
+#include "utils/QtStreamable.h"
+
+
 namespace GPlatesMaths {
 
 	class UnitVector3D;
@@ -44,7 +47,9 @@ namespace GPlatesMaths {
 	 * It may be of any magnitude.  Hence, there is no invariant which
 	 * must be maintained.
 	 */
-	class Vector3D
+	class Vector3D :
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<Vector3D>
 	{
 	public:
 		/**

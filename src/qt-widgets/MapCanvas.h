@@ -28,19 +28,24 @@
 #ifndef GPLATES_QTWIDGETS_MAPCANVAS_H
 #define GPLATES_QTWIDGETS_MAPCANVAS_H
 
-#include <boost/scoped_ptr.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#include <QGLWidget>
 #include <QGraphicsScene>
 
 #include "gui/ColourScheme.h"
 #include "gui/Map.h"
-#include "gui/TextRenderer.h"
+#include "gui/PersistentOpenGLObjects.h"
+#include "gui/QPainterTextRenderer.h"
+#include "gui/TextOverlay.h"
+
+#include "opengl/GLContext.h"
 
 
 namespace GPlatesGui
 {
 	class RenderSettings;
-	class TextOverlay;
 	class ViewportZoom;
 }
 
@@ -70,10 +75,11 @@ namespace GPlatesQtWidgets
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				MapView *map_view_ptr,
+				const GPlatesOpenGL::GLContext::non_null_ptr_type &gl_context,
+				const GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type &gl_persistent_objects,
 				GPlatesGui::RenderSettings &render_settings,
 				GPlatesGui::ViewportZoom &viewport_zoom,
 				const GPlatesGui::ColourScheme::non_null_ptr_type &colour_scheme,
-				const GPlatesGui::TextRenderer::non_null_ptr_to_const_type &text_renderer,
 				QWidget *parent_ = NULL);
 
 		~MapCanvas();
@@ -107,11 +113,6 @@ namespace GPlatesQtWidgets
 		void
 		update_canvas();
 
-		void
-		update_canvas(
-				GPlatesViewOperations::RenderedGeometryCollection &collection,
-				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type update_type);
-
 	protected:
 
 		/**
@@ -122,30 +123,78 @@ namespace GPlatesQtWidgets
 				QPainter *painter,
 				const QRectF &rect);
 
-		/**
-		 * A virtual override of the QGraphicsScene function.
-		 */
-		void
-		drawForeground(
-				QPainter *painter,
-				const QRectF &rect);
-
 	private:
+
+		//! Do some OpenGL initialisation.
+		void 
+		initializeGL();
 
 		//! Calculate scaling for lines, points and text based on size of view
 		float
 		calculate_scale();
 
+
+		/**
+		 * Utility class to make the QGLWidget's OpenGL context current in @a MapCanvas constructor.
+		 *
+		 * This is so we can do OpenGL stuff in the @a MapCanvas constructor when normally
+		 * we'd have to wait until 'drawBackground()'.
+		 */
+		struct MakeGLContextCurrent
+		{
+			explicit
+			MakeGLContextCurrent(
+					GPlatesOpenGL::GLContext &gl_context)
+			{
+				gl_context.make_current();
+			}
+		};
+
+		/**
+		 * Typedef for an opaque object that caches a particular painting.
+		 */
+		typedef boost::shared_ptr<void> cache_handle_type;
+
+
 		GPlatesPresentation::ViewState &d_view_state;
 		MapView *d_map_view_ptr;
+
+		//! Mirrors an OpenGL context and provides a central place to manage low-level OpenGL objects.
+		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
+		//! Makes the QGLWidget's OpenGL context current in @a GlobeCanvas constructor so it can call OpenGL.
+		MakeGLContextCurrent d_make_context_current;
+
+		/**
+		 * Enables frame-to-frame caching of persistent OpenGL resources.
+		 *
+		 * There is a certain amount of caching without this already.
+		 * This just prevents a render frame from re-using cached resources of the previous frame
+		 * in order to avoid regenerating the same cached resources unnecessarily each frame.
+		 * We hold onto the previous frame's cached resources *while* generating the current frame and
+		 * then release our hold on the previous frame (and continue this pattern each new frame).
+		 */
+		cache_handle_type d_gl_frame_cache_handle;
+
+		/**
+		 * Renders text using the QPainter interface.
+		 *
+		 * Even though we're rendering to a QGLWidget we need a QPainter text renderer because
+		 * with Qt's *OpenGL2* paint engine we are not allowed to call QGLWidget::renderText while
+		 * a painter is active (regardless of whether inside beginNativePainting/endNativePainting
+		 * or not) so all text rendering should be done via the QPainter interface instead - which
+		 * will in turn use the OpenGL paint engine to render text onto the QGLWidget...
+		 * 
+		 */
+		GPlatesGui::TextRenderer::non_null_ptr_type d_text_renderer;
+
+		//! Paints an optional text overlay onto the map.
+		boost::scoped_ptr<GPlatesGui::TextOverlay> d_text_overlay;
 
 		//! Holds the state
 		GPlatesGui::Map d_map;
 
 		//! A pointer to the state's RenderedGeometryCollection
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
-
-		boost::scoped_ptr<GPlatesGui::TextOverlay> d_text_overlay;
 	};
 
 }

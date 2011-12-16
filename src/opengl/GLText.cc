@@ -34,12 +34,29 @@
 
 
 void
-GPlatesOpenGL::GLText::render_text(
+GPlatesOpenGL::GLText::render_text_2D(
 		GLRenderer &renderer,
 		const GPlatesGui::TextRenderer &text_renderer,
-		double x,
-		double y,
-		double z,
+		const double &world_x,
+		const double &world_y,
+		const QString &string,
+		const GPlatesGui::Colour &colour,
+		int x_offset,
+		int y_offset,
+		const QFont &font,
+		float scale)
+{
+	render_text_3D(renderer, text_renderer, world_x, world_y, 0.0, string, colour, x_offset, y_offset, font, scale);
+}
+
+
+void
+GPlatesOpenGL::GLText::render_text_3D(
+		GLRenderer &renderer,
+		const GPlatesGui::TextRenderer &text_renderer,
+		double world_x,
+		double world_y,
+		double world_z,
 		const QString &string,
 		const GPlatesGui::Colour &colour,
 		int x_offset,
@@ -51,17 +68,17 @@ GPlatesOpenGL::GLText::render_text(
 	const GLMatrix &model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
 	const GLMatrix &projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
 
-	GLdouble winX, winY, winZ;
+	GLdouble win_x, win_y, win_z;
 	GLProjectionUtils::glu_project(
 			viewport, model_view_transform, projection_transform,
-			x, y, z,
-			&winX, &winY, &winZ);
+			world_x, world_y, world_z,
+			&win_x, &win_y, &win_z);
 
 	// Get the window coordinates at which to render text.
-	const int viewport_x = static_cast<int>(winX) + x_offset;
-	// Note that OpenGL and Qt y-axes appear to be the reverse of each other.
-	const int viewport_y = viewport.height() - (static_cast<int>(winY) + y_offset);
+	const int qt_win_x = static_cast<int>(win_x) + x_offset;
+	// Note that OpenGL and Qt y-axes are the reverse of each other.
+	const int qt_win_y = viewport.height() - (static_cast<int>(win_y) + y_offset);
 
 	// Delegate to Qt to do the actual rendering of text.
-	text_renderer.render_text(viewport_x, viewport_y, string, colour, font, scale);
+	text_renderer.render_text(qt_win_x, qt_win_y, string, colour, font, scale);
 }

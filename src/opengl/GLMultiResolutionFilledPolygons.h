@@ -78,7 +78,7 @@ namespace GPlatesOpenGL
 	{
 	private:
 		//! Typedef for a coloured vertex of a polygon.
-		typedef GLColouredVertex polygon_vertex_type;
+		typedef GLColourVertex polygon_vertex_type;
 
 		//! Typedef for a vertex element (vertex index) of a polygon.
 		typedef GLuint polygon_vertex_element_type;
@@ -380,7 +380,7 @@ namespace GPlatesOpenGL
 
 
 		//! Typedef for a texturedvertex of a stencil quad.
-		typedef GLTexturedVertex stencil_quad_vertex_type;
+		typedef GLTextureVertex stencil_quad_vertex_type;
 
 		//! Typedef for a vertex element (vertex index) of a stencil quad.
 		typedef GLushort stencil_quad_vertex_element_type;

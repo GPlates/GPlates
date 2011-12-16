@@ -28,8 +28,6 @@
 #ifndef GPLATES_GUI_GLOBERENDEREDGEOMETRYLAYERPAINTER_H
 #define GPLATES_GUI_GLOBERENDEREDGEOMETRYLAYERPAINTER_H
 
-#include <map>
-#include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
@@ -41,19 +39,16 @@
 #include "GlobeVisibilityTester.h"
 #include "LayerPainter.h"
 #include "PersistentOpenGLObjects.h"
-#include "RasterColourPalette.h"
 #include "TextRenderer.h"
 #include "RenderSettings.h"
 
-#include "app-logic/ResolvedRaster.h"
 #include "maths/CubeQuadTreePartition.h"
 #include "maths/types.h"
 #include "maths/Vector3D.h"
 
-#include "opengl/GLBuffer.h"
 #include "opengl/GLCubeSubdivisionCache.h"
-#include "opengl/GLStreamPrimitives.h"
-#include "opengl/GLVertex.h"
+
+#include "presentation/VisualLayers.h"
 
 #include "view-operations/RenderedGeometry.h"
 #include "view-operations/RenderedGeometryVisitor.h"
@@ -93,16 +88,7 @@ namespace GPlatesGui
 				RenderSettings &render_settings,
 				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
-				ColourScheme::non_null_ptr_type colour_scheme) :
-			d_rendered_geometry_layer(rendered_geometry_layer),
-			d_persistent_opengl_objects(persistent_opengl_objects),
-			d_inverse_zoom_factor(inverse_viewport_zoom_factor),
-			d_render_settings(render_settings),
-			d_text_renderer_ptr(text_renderer_ptr),
-			d_visibility_tester(visibility_tester),
-			d_colour_scheme(colour_scheme),
-			d_scale(1.0f)
-		{  }
+				ColourScheme::non_null_ptr_type colour_scheme);
 
 
 		/**
@@ -267,6 +253,7 @@ namespace GPlatesGui
 
 		//! Multiplying factor to get line width of 1.0f to look like one screen-space pixel.
 		static const float LINE_WIDTH_ADJUSTMENT;
+
 
 		/**
 		 * Visit each rendered geometry in our sequence (or spatial partition).

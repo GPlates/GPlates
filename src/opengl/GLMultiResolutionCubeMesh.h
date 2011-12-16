@@ -30,7 +30,6 @@
 #include <boost/optional.hpp>
 #include <opengl/OpenGL.h>
 
-#include "GLCompiledDrawState.h"
 #include "GLMatrix.h"
 #include "GLTexture.h"
 #include "GLTextureUtils.h"
@@ -46,6 +45,7 @@
 #include "maths/CubeCoordinateFrame.h"
 #include "maths/CubeQuadTree.h"
 #include "maths/CubeQuadTreeLocation.h"
+#include "maths/UnitVector3D.h"
 
 #include "utils/ReferenceCount.h"
 
@@ -62,16 +62,35 @@ namespace GPlatesOpenGL
 	{
 	private:
 		/**
+		 * Information needed to render a quad tree node mesh.
+		 *
+		 * Previously we used @a GLCompiledDrawState for this since it's a lot easier to capture
+		 * renderer state and draw calls with it. But it consumed a bit too much memory due to
+		 * using a compiled draw state for each mesh drawable (adds up to a total of ~150Mb for a
+		 * quad tree depth of 6 - each GLState consumes a few Kb and there are about 32,000 at level 6).
+		 *
+		 * Now we just store the draw parameters ourselves and submit them in a draw call when requested.
+		 */
+		struct MeshDrawable
+		{
+			GLVertexArray::shared_ptr_to_const_type vertex_array;
+			GLuint start;
+			GLuint end;
+			GLsizei count;
+			GLint indices_offset;
+		};
+
+		/**
 		 * Stores mesh information for a cube quad tree node.
 		 */
 		struct MeshQuadTreeNode
 		{
 			MeshQuadTreeNode(
-					const GLCompiledDrawState::non_null_ptr_to_const_type &mesh_drawable_) :
+					const MeshDrawable &mesh_drawable_) :
 				mesh_drawable(mesh_drawable_)
 			{  }
 
-			GLCompiledDrawState::non_null_ptr_to_const_type mesh_drawable;
+			MeshDrawable mesh_drawable;
 		};
 
 		/**
@@ -94,13 +113,11 @@ namespace GPlatesOpenGL
 		{
 		public:
 			/**
-			 * Returns the mesh drawable for this quad tree node.
+			 * Renders the mesh drawable for this quad tree node.
 			 */
-			GLCompiledDrawState::non_null_ptr_to_const_type
-			get_mesh_drawable() const
-			{
-				return d_mesh_drawable;
-			}
+			void
+			render_mesh_drawable(
+					GLRenderer &renderer) const;
 
 			/**
 			 * Returns the clip space transform for this quad tree node.
@@ -123,7 +140,7 @@ namespace GPlatesOpenGL
 			 * pre-generated mesh quad tree at which point texture clipping is required since
 			 * the mesh is larger than the current quad tree node tile.
 			 *
-			 * NOTE: The above texture matrix matrix multiplies are not needed if the
+			 * NOTE: The above texture matrix multiplies are not needed if the
 			 * the projection transform of the tile's frustum is used because this already
 			 * takes into account the clip space adjustments.
 			 */
@@ -140,9 +157,9 @@ namespace GPlatesOpenGL
 			const mesh_cube_quad_tree_type::node_type *d_mesh_node;
 
 			/**
-			 * The mesh drawable.
+			 * The mesh drawable - it's a pointer instead of a reference so 'this' object can be copied.
 			 */
-			GLCompiledDrawState::non_null_ptr_to_const_type d_mesh_drawable;
+			const MeshDrawable *d_mesh_drawable;
 
 			/**
 			 * The transform required to transform clip space to texture coordinates for
@@ -159,15 +176,15 @@ namespace GPlatesOpenGL
 			QuadTreeNode(
 					const mesh_cube_quad_tree_type::node_type &mesh_node) :
 				d_mesh_node(&mesh_node),
-				d_mesh_drawable(mesh_node.get_element().mesh_drawable)
+				d_mesh_drawable(&mesh_node.get_element().mesh_drawable)
 			{  }
 
 			//! Constructor for when we *don't* have a mesh quad tree node - ie, deeper than the mesh tree.
 			QuadTreeNode(
-					const GLCompiledDrawState::non_null_ptr_to_const_type &mesh_drawable,
+					const MeshDrawable &mesh_drawable,
 					const GLUtils::QuadTreeClipSpaceTransform &clip_space_transform) :
 				d_mesh_node(NULL),
-				d_mesh_drawable(mesh_drawable),
+				d_mesh_drawable(&mesh_drawable),
 				d_clip_space_transform(clip_space_transform)
 			{  }
 
@@ -251,6 +268,10 @@ namespace GPlatesOpenGL
 		}
 
 	private:
+		//! Typedef for the vertex indices.
+		typedef GLushort vertex_element_type;
+
+
 		/**
 		 * The maximum depth of the meshes cube quad tree.
 		 *
@@ -258,12 +279,8 @@ namespace GPlatesOpenGL
 		 * (1<<7) is 128 and 128x128 tiles per cube face where each tile has 4 vertices means
 		 * 65536 vertices which fits exactly into 16-bit vertex indices.
 		 *
-		 * NOTE: 7 is quite dense so using 6 instead (still takes a lot of zoom to get to 6 so
-		 * the clip texture should only be needed for high zoom levels).
-		 *
-		 * NOTE: 6 consumes a bit too much memory due to using a compiled draw state for each mesh
-		 * drawable (adds up to a total of ~150Mb - each GLState consumes a few Kb and there are
-		 * about 32,000 at level 6). Reducing to level 5 brings the memory usage down to ~40Mb.
+		 * NOTE: 7 is quite dense so using 5 instead (still takes reasonable zoom to get to 5 so
+		 * the clip texture should only be needed for medium to high zoom levels).
 		 */
 		static const unsigned int MESH_CUBE_QUAD_TREE_MAXIMUM_DEPTH = 5;
 
@@ -312,27 +329,16 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer);
 
 		void
-		create_cube_edge_vertices(
-				std::vector<GLVertex> cube_edge_vertices_array[],
-				const GLVertex cube_corner_vertices[]);
-
-		void
-		create_cube_face_mesh_vertices(
-				std::vector<GLVertex> &cube_face_mesh_vertices,
-				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
-				const std::vector<GLVertex> cube_edge_vertices[]);
-
-		void
 		create_cube_face_vertex_and_index_array(
 				GLRenderer &renderer,
 				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
-				const std::vector<GLVertex> &unique_cube_face_mesh_vertices);
+				const std::vector<GPlatesMaths::UnitVector3D> &unique_cube_face_mesh_vertices);
 
 		void
 		create_cube_face_vertex_and_index_array(
 				std::vector<GLVertex> &mesh_vertices,
-				std::vector<GLushort> &mesh_indices,
-				const std::vector<GLVertex> &unique_cube_face_mesh_vertices,
+				std::vector<vertex_element_type> &mesh_indices,
+				const std::vector<GPlatesMaths::UnitVector3D> &unique_cube_face_mesh_vertices,
 				const GPlatesMaths::CubeQuadTreeLocation &quad_tree_node_location);
 
 		void

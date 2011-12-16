@@ -35,6 +35,8 @@
 #include "Vector3D.h"
 #include "UnitVector3D.h"
 
+#include "utils/QtStreamable.h"
+
 
 namespace GPlatesMaths {
 
@@ -135,7 +137,10 @@ namespace GPlatesMaths {
 	 * consulted.  However, they were not properly cited until the 9th
 	 * of April, 2005.
 	 */
-	class UnitQuaternion3D {
+	class UnitQuaternion3D :
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<UnitQuaternion3D>
+	{
 
 		/*
 		 * These functions use the protected constructor.

@@ -1298,7 +1298,7 @@ namespace GPlatesOpenGL
 
 		void
 		initialise_reduction_vertex_array_in_quad_tree_traversal_order(
-				std::vector<GLTexturedVertex> &vertices,
+				std::vector<GLTextureVertex> &vertices,
 				std::vector<reduction_vertex_element_type> &vertex_elements,
 				unsigned int x_quad_offset,
 				unsigned int y_quad_offset,

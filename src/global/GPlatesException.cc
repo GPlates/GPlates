@@ -98,42 +98,11 @@ GPlatesGlobal::Exception::what() const throw()
 }
 
 
-namespace GPlatesGlobal
+std::ostream &
+GPlatesGlobal::operator <<(
+		std::ostream &os,
+		const Exception &ex)
 {
-	std::ostream &
-	operator <<(
-			std::ostream &os,
-			const Exception &ex)
-	{
-		ex.write(os);
-		return os;
-	}
-
-
-	QDebug
-	operator <<(
-			QDebug dbg,
-			const Exception &ex)
-	{
-		std::ostringstream output_string_stream;
-		output_string_stream << ex;
-
-		dbg.nospace() << QString::fromStdString(output_string_stream.str());
-
-		return dbg.space();
-	}
-
-
-	QTextStream &
-	operator <<(
-			QTextStream &stream,
-			const Exception &ex)
-	{
-		std::ostringstream output_string_stream;
-		output_string_stream << ex;
-
-		stream << QString::fromStdString(output_string_stream.str());
-
-		return stream;
-	}
+	ex.write(os);
+	return os;
 }

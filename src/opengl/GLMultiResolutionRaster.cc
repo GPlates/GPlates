@@ -666,8 +666,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile_vertices(
 				get_vertex_element_buffer(renderer, lod_tile.x_num_vertices, lod_tile.y_num_vertices);
 
 		// Bind the vertex element buffer for the current tile to the vertex array.
-		// We have to do this each time we recycle (or create) a tile since the since the previous
-		// vertex elements (indices) may not be appropriate for the current tile (due to partial boundary tiles).
+		// We have to do this each time we recycle (or create) a tile since the previous vertex
+		// elements (indices) may not be appropriate for the current tile (due to partial boundary tiles).
 		//
 		// When we draw the vertex array it will use this vertex element buffer.
 		tile_vertices->vertex_array->set_vertex_element_buffer(renderer, tile_vertices->vertex_element_buffer);
@@ -1469,7 +1469,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::calc_max_texel_size_on_unit_sphere(
 			const double x_plus_one_texel = x +
 					((i == 0) ? texel_size_in_pixels : -texel_size_in_pixels);
 
-			// Sample point one texel in x direction.
+			// Sample plus one texel in x direction.
 			const GPlatesMaths::PointOnSphere sample_point_plus_one_texel_x =
 					convert_pixel_coord_to_geographic_coord(x_plus_one_texel, y);
 
@@ -1484,7 +1484,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::calc_max_texel_size_on_unit_sphere(
 				min_dot_product_texel_size = dot_product_texel_size_x;
 			}
 
-			// Sample point one texel in y direction.
+			// Sample plus one texel in y direction.
 			const GPlatesMaths::PointOnSphere sample_point_plus_one_texel_y =
 					convert_pixel_coord_to_geographic_coord(x, y_plus_one_texel);
 

@@ -151,8 +151,7 @@ namespace {
 
 	private:
 		const GPlatesMaths::FiniteRotation &d_finite_rotation;
-		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-				d_rotated_geometry;
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_rotated_geometry;
 	};
 }
 
@@ -361,27 +360,20 @@ GPlatesMaths::operator*(
 }
 
 
-const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere,
-		GPlatesUtils::NullIntrusivePointerHandler>
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
-		GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler> p)
+		const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> &p)
 {
 	UnitVector3D rotated_position_vector = r * p->position_vector();
-	GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
-			GPlatesUtils::NullIntrusivePointerHandler> rotated_point(
-			PointOnSphere::create_on_heap(rotated_position_vector));
-	return rotated_point;
+	return PointOnSphere::create_on_heap(rotated_position_vector);
 }
 
 
-const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::MultiPointOnSphere,
-		GPlatesUtils::NullIntrusivePointerHandler>
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::MultiPointOnSphere>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
-		GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler> mp)
+		const GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere> &mp)
 {
 	std::vector<PointOnSphere> rotated_points;
 	rotated_points.reserve(mp->number_of_points());
@@ -392,19 +384,14 @@ GPlatesMaths::operator*(
 		rotated_points.push_back(r * (*iter));
 	}
 
-	GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere,
-			GPlatesUtils::NullIntrusivePointerHandler> rotated_multipoint(
-			MultiPointOnSphere::create_on_heap(rotated_points));
-	return rotated_multipoint;
+	return MultiPointOnSphere::create_on_heap(rotated_points);
 }
 
 
-const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere,
-		GPlatesUtils::NullIntrusivePointerHandler>
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
-		GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler> p)
+		const GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere> &p)
 {
 	std::vector<PointOnSphere> rotated_points;
 	rotated_points.reserve(p->number_of_vertices());
@@ -415,19 +402,14 @@ GPlatesMaths::operator*(
 		rotated_points.push_back(r * (*iter));
 	}
 
-	GPlatesUtils::non_null_intrusive_ptr<const PolylineOnSphere,
-			GPlatesUtils::NullIntrusivePointerHandler> rotated_polyline(
-			PolylineOnSphere::create_on_heap(rotated_points));
-	return rotated_polyline;
+	return PolylineOnSphere::create_on_heap(rotated_points);
 }
 
 
-const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere,
-		GPlatesUtils::NullIntrusivePointerHandler>
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
-		GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler> p)
+		const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere> &p)
 {
 	std::vector<PointOnSphere> rotated_points;
 	rotated_points.reserve(p->number_of_vertices());
@@ -438,19 +420,14 @@ GPlatesMaths::operator*(
 		rotated_points.push_back(r * (*iter));
 	}
 
-	GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere,
-			GPlatesUtils::NullIntrusivePointerHandler> rotated_polygon(
-			PolygonOnSphere::create_on_heap(rotated_points));
-	return rotated_polygon;
+	return PolygonOnSphere::create_on_heap(rotated_points);
 }
 
 
-const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::GeometryOnSphere,
-		GPlatesUtils::NullIntrusivePointerHandler>
+const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::GeometryOnSphere>
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
-		GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler> g)
+		const GPlatesUtils::non_null_intrusive_ptr<const GeometryOnSphere> &g)
 {
 	return RotateGeometryOnSphere(r).rotate(g);
 }

@@ -38,6 +38,8 @@
 
 #include "maths/MathsUtils.h"
 
+#include "utils/QtStreamable.h"
+
 
 namespace GPlatesGui
 {
@@ -87,7 +89,9 @@ namespace GPlatesGui
 		{  }
 	};
 
-	struct rgba8_t
+	struct rgba8_t :
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<rgba8_t>
 	{
 		static const int NUM_COMPONENTS = 4;
 
@@ -288,7 +292,9 @@ namespace GPlatesGui
 
 
 	class Colour :
-			public boost::equality_comparable<Colour>
+			public boost::equality_comparable<Colour>,
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<Colour>
 	{
 	public:
 		/*

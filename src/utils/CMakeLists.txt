@@ -58,6 +58,7 @@ set(srcs
     Profile.cc
     Profile.h
     QtFormattingUtils.h
+    QtStreamable.h
     Reducer.h
     ReferenceCount.h
     SafeBool.h

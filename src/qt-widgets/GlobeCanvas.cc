@@ -197,8 +197,9 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_):
 	QGLWidget(
+			// We turn *off* multisampling because lines actually look better without it...
 			// We need an alpha channel in case falling back to main frame buffer for render textures...
-			QGLFormat(QGL::AlphaChannel),
+			QGLFormat(/*QGL::SampleBuffers |*/ QGL::AlphaChannel),
 			parent_),
 	d_view_state(view_state),
 	d_gl_context(
@@ -243,10 +244,12 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
 		QWidget *parent_) :
 	QGLWidget(
+			// We turn *off* multisampling because lines actually look better without it...
 			// We need an alpha channel in case falling back to main frame buffer for render textures...
-			QGLFormat(QGL::AlphaChannel),
-			// Share display lists and texture objects...
-			parent_, existing_globe_canvas),
+			QGLFormat(/*QGL::SampleBuffers |*/ QGL::AlphaChannel),
+			parent_,
+			// Share texture objects, vertex buffer objects, etc...
+			existing_globe_canvas),
 	d_view_state(view_state_),
 	d_gl_context(isSharing() // Mirror the sharing of OpenGL context state (if sharing)...
 			? GPlatesOpenGL::GLContext::create(
@@ -667,6 +670,9 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 		// and the choice is determined by the globe renderer.
 		renderer->gl_load_matrix(GL_MODELVIEW, d_gl_model_view_transform);
 
+		// We need to do this before any text rendering can occur (and it can inside 'Globe::paint').
+		GPlatesGui::TextRenderer::RenderScope text_render_scope(*d_text_renderer, renderer.get());
+
 		const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
 		const float scale = calculate_scale();
 		//
@@ -687,16 +693,19 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 				d_gl_projection_transform_include_full_globe,
 				d_gl_projection_transform_include_stars);
 
-		// Finished rendering (before scope exit).
-		// OpenGL should now be back in the default OpenGL state.
-		render_scope.end_render();
-
 		// Paint the text overlay.
+		// NOTE: We do this after finishing our renderer framework scope because this painting
+		// is implemented by Qt (not us).
 		d_text_overlay->paint(
 				d_view_state.get_text_overlay_settings(),
 				width(),
 				height(),
 				scale);
+
+		// Finished text rendering.
+		text_render_scope.end_render();
+
+		// At scope exit OpenGL should now be back in the default OpenGL state...
 	}
 	catch (const GPlatesGlobal::Exception &e)
 	{

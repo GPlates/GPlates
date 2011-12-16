@@ -59,8 +59,7 @@ namespace GPlatesOpenGL
 	class GLRenderer;
 
 	/**
-	 * Represents the OpenGL graphics state, transform state, texture state
-	 * and drawables as a graph.
+	 * Mirrors an OpenGL context and provides a central place to manage low-level OpenGL objects.
 	 */
 	class GLContext :
 			public GPlatesUtils::ReferenceCount<GLContext>

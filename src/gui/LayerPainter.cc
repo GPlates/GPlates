@@ -31,6 +31,13 @@
 #include "opengl/GLText.h"
 
 
+GPlatesGui::LayerPainter::LayerPainter(
+		bool use_depth_buffer) :
+	d_use_depth_buffer(use_depth_buffer)
+{
+}
+
+
 void
 GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::begin_painting()
 {
@@ -183,9 +190,11 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 	// Paint the drawable representing all triangle primitives (if any).
 	//
 
+#if 0 // NOTE: This causes transparent edges between adjacent triangles in a mesh so we don't enable it...
 	// Set the anti-aliased polygon state.
-	renderer.gl_enable(GL_POLYGON_SMOOTH);
-	renderer.gl_hint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+ 	renderer.gl_enable(GL_POLYGON_SMOOTH);
+ 	renderer.gl_hint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+#endif
 
 	d_triangle_drawables.end_painting(
 			renderer,
@@ -291,6 +300,13 @@ GPlatesGui::LayerPainter::end_painting(
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
 
 	//
+	// The following mainly applies to the 3D globe view.
+	//
+	// The 2D map views don't need a depth buffer (being purely 2D with no off-sphere objects
+	// like arrows that should be depth sorted relative to each other).
+	//
+
+	//
 	// Primitives *on* the sphere include those that don't map exactly to the sphere because
 	// of their finite tessellation level but are nonetheless considered as spherical geometries.
 	// For example a polyline has individual great circle arc segments that are tessellated
@@ -354,8 +370,8 @@ GPlatesGui::LayerPainter::end_painting(
 	renderer.gl_enable(GL_LINE_SMOOTH);
 	renderer.gl_hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 
-	// Turn on depth testing.
-	renderer.gl_enable(GL_DEPTH_TEST);
+	// Turn on depth testing if the client has requested to use the depth buffer.
+	renderer.gl_enable(GL_DEPTH_TEST, d_use_depth_buffer);
 
 	// Turn off depth writes.
 	renderer.gl_depth_mask(GL_FALSE);
@@ -369,7 +385,11 @@ GPlatesGui::LayerPainter::end_painting(
 
 		// Turn on depth writes.
 		// Drawables *off* the sphere is the only case where depth writes are enabled.
-		renderer.gl_depth_mask(GL_TRUE);
+		// Only enable depth writes if client requested to use the depth buffer.
+		if (d_use_depth_buffer)
+		{
+			renderer.gl_depth_mask(GL_TRUE);
+		}
 
 		// Even though these primitives are (or should be) opaque they are still rendered with
 		// polygon anti-aliasing which relies on alpha-blending (so we don't disable it here).
@@ -397,10 +417,13 @@ GPlatesGui::LayerPainter::end_painting(
 			*d_vertex_array,
 			persistent_opengl_objects);
 
-	// Render any 3D text last.
-	// This is because the text is converted from 3D space to 2D window coordinates and hence
-	// is effectively *off* the sphere but it can't have depth writes enabled (because we don't
-	// know the depth since its rendered as 2D).
+	// Render any 2D text last (text specified at 2D viewport positions).
+	paint_text_drawables_2D(renderer, text_renderer, scale);
+
+	// Render any 3D text last (text specified at 3D world positions).
+	// This is because the text is converted from 3D space to 2D window coordinates and hence is
+	// effectively *off* the sphere (in the 3D globe view) but it can't have depth writes enabled
+	// (because we don't know the depth since its rendered as 2D).
 	// We add it last so it gets drawn last for this layer which should put it on top.
 	// However if another rendered layer is drawn after this one then the text will be overwritten
 	// and not appear to hover in 3D space - currently it looks like the only layer that uses
@@ -409,7 +432,7 @@ GPlatesGui::LayerPainter::end_painting(
 	// such as rendered arrows (should it be on top or interleave depending on depth).
 	// FIXME: We might be able to draw text as 3D and turn depth writes on (however the
 	// alpha-blending could cause some visual artifacts as described above).
-	paint_text_off_the_sphere(renderer, text_renderer, scale);
+	paint_text_drawables_3D(renderer, text_renderer, scale);
 
 	// Only used for the duration of painting.
 	d_renderer = boost::none;
@@ -436,7 +459,8 @@ GPlatesGui::LayerPainter::paint_rasters(
 				renderer,
 				raster_drawable.source_resolved_raster,
 				raster_drawable.source_raster_colour_palette,
-				raster_drawable.source_raster_modulate_colour);
+				raster_drawable.source_raster_modulate_colour,
+				raster_drawable.map_projection);
 
 		cache_handle->push_back(raster_cache_handle);
 	}
@@ -449,25 +473,25 @@ GPlatesGui::LayerPainter::paint_rasters(
 
 
 void
-GPlatesGui::LayerPainter::paint_text_off_the_sphere(
+GPlatesGui::LayerPainter::paint_text_drawables_2D(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const TextRenderer &text_renderer,
 		float scale)
 {
-	BOOST_FOREACH(const TextDrawable &text_drawable, text_off_the_sphere)
+	BOOST_FOREACH(const TextDrawable2D &text_drawable, text_drawables_2D)
 	{
 		// render drop shadow, if any
 		if (text_drawable.shadow_colour)
 		{
-			GPlatesOpenGL::GLText::render_text(
+			GPlatesOpenGL::GLText::render_text_2D(
 					renderer,
 					text_renderer,
-					text_drawable.uv.x().dval(),
-					text_drawable.uv.y().dval(),
-					text_drawable.uv.z().dval(),
+					text_drawable.world_x,
+					text_drawable.world_y,
 					text_drawable.text,
 					text_drawable.shadow_colour.get(),
 					text_drawable.x_offset + 1, // right 1px
+					// OpenGL viewport 'y' coord goes from bottom to top...
 					text_drawable.y_offset - 1, // down 1px
 					text_drawable.font,
 					scale);
@@ -476,12 +500,11 @@ GPlatesGui::LayerPainter::paint_text_off_the_sphere(
 		// render main text
 		if (text_drawable.colour)
 		{
-			GPlatesOpenGL::GLText::render_text(
+			GPlatesOpenGL::GLText::render_text_2D(
 					renderer,
 					text_renderer,
-					text_drawable.uv.x().dval(),
-					text_drawable.uv.y().dval(),
-					text_drawable.uv.z().dval(),
+					text_drawable.world_x,
+					text_drawable.world_y,
 					text_drawable.text,
 					text_drawable.colour.get(),
 					text_drawable.x_offset,
@@ -492,5 +515,54 @@ GPlatesGui::LayerPainter::paint_text_off_the_sphere(
 	}
 
 	// Now that the text has been rendered we should clear the drawables list for the next render call.
-	text_off_the_sphere.clear();
+	text_drawables_2D.clear();
+}
+
+
+void
+GPlatesGui::LayerPainter::paint_text_drawables_3D(
+		GPlatesOpenGL::GLRenderer &renderer,
+		const TextRenderer &text_renderer,
+		float scale)
+{
+	BOOST_FOREACH(const TextDrawable3D &text_drawable, text_drawables_3D)
+	{
+		// render drop shadow, if any
+		if (text_drawable.shadow_colour)
+		{
+			GPlatesOpenGL::GLText::render_text_3D(
+					renderer,
+					text_renderer,
+					text_drawable.world_position.x().dval(),
+					text_drawable.world_position.y().dval(),
+					text_drawable.world_position.z().dval(),
+					text_drawable.text,
+					text_drawable.shadow_colour.get(),
+					text_drawable.x_offset + 1, // right 1px
+					// OpenGL viewport 'y' coord goes from bottom to top...
+					text_drawable.y_offset - 1, // down 1px
+					text_drawable.font,
+					scale);
+		}
+
+		// render main text
+		if (text_drawable.colour)
+		{
+			GPlatesOpenGL::GLText::render_text_3D(
+					renderer,
+					text_renderer,
+					text_drawable.world_position.x().dval(),
+					text_drawable.world_position.y().dval(),
+					text_drawable.world_position.z().dval(),
+					text_drawable.text,
+					text_drawable.colour.get(),
+					text_drawable.x_offset,
+					text_drawable.y_offset,
+					text_drawable.font,
+					scale);
+		}
+	}
+
+	// Now that the text has been rendered we should clear the drawables list for the next render call.
+	text_drawables_3D.clear();
 }

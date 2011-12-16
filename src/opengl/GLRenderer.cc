@@ -54,6 +54,7 @@ using namespace GPlatesOpenGL::GLRendererImpl;
 GPlatesOpenGL::GLRenderer::GLRenderer(
 		const GLContext::non_null_ptr_type &context,
 		const GLStateStore::shared_ptr_type &state_store) :
+	d_qpainter(NULL),
 	d_context(context),
 	d_state_store(state_store),
 	d_default_state(d_state_store->allocate_state()),
@@ -116,6 +117,58 @@ GPlatesOpenGL::GLRenderer::begin_render(
 
 
 void
+GPlatesOpenGL::GLRenderer::begin_render(
+		QPainter *opengl_qpainter)
+{
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			!d_qpainter,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_NO_ACTIVE_QPAINTER);
+
+	d_qpainter = opengl_qpainter;
+
+	// The QPainter should currently be active and it should use an OpenGL paint engine.
+	const QPaintEngine::Type paint_engine_type = d_qpainter->paintEngine()->type();
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			d_qpainter->isActive() &&
+				(paint_engine_type == QPaintEngine::OpenGL || paint_engine_type == QPaintEngine::OpenGL2),
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_ACTIVE_OPENGL_QPAINTER);
+
+	// The modelview and projection matrices set by QPainter.
+	GLMatrix qpainter_model_view_matrix;
+	GLMatrix qpainter_projection_matrix;
+
+	// Suspend the QPainter so we can start making calls directly to OpenGL without interfering with
+	// the QPainter's OpenGL state.
+	suspend_qpainter(qpainter_model_view_matrix, qpainter_projection_matrix);
+
+	//
+	// Retrieve the viewport, set by QPainter, from OpenGL.
+	//
+	// NOTE: It is *not* normally a good idea to retrieve state *from* OpenGL because, in the worst case,
+	// this has the potential to stall the graphics pipeline - and in general it's not recommended.
+	//
+	GLint viewport[4];
+	glGetIntegerv(GL_VIEWPORT, viewport);
+
+	begin_render(GPlatesOpenGL::GLViewport(viewport[0], viewport[1], viewport[2], viewport[3]));
+
+	// We're not really in the default OpenGL state so we need to track the current
+	// modelview and projection matrices set by QPainter.
+	// Easiest way to do that is simply to load them.
+	gl_load_matrix(GL_MODELVIEW, qpainter_model_view_matrix);
+	gl_load_matrix(GL_PROJECTION, qpainter_projection_matrix);
+
+	// This is one of the rare cases where we need to apply the OpenGL state encapsulated in
+	// GLRenderer directly to OpenGL - in this case we need to make sure our last applied state
+	// actually represents the state of OpenGL - which it may not because QPainter may have
+	// changed the model-view and projection matrices.
+	apply_current_state_to_opengl();
+}
+
+
+void
 GPlatesOpenGL::GLRenderer::end_render()
 {
 	// Finish the current render target block that represented the main framebuffer.
@@ -140,6 +193,92 @@ GPlatesOpenGL::GLRenderer::end_render()
 
 	// End a rendering frame.
 	d_context->end_render();
+
+	// If a QPainter (using OpenGL) was specified in 'begin_render' then resume it suspend it so the
+	// client can continue using the QPainter for rendering.
+	// NOTE: We are currently in the default OpenGL state which is required before we can resume the QPainter.
+	if (d_qpainter)
+	{
+		// The QPainter should currently be active - it should not have become inactive between
+		// 'begin_render' and 'end_render' or switched paint engines.
+		const QPaintEngine::Type paint_engine_type = d_qpainter->paintEngine()->type();
+		GPlatesGlobal::Assert<GLRendererAPIError>(
+				d_qpainter->isActive() &&
+					(paint_engine_type == QPaintEngine::OpenGL || paint_engine_type == QPaintEngine::OpenGL2),
+				GPLATES_ASSERTION_SOURCE,
+				GLRendererAPIError::SHOULD_HAVE_ACTIVE_OPENGL_QPAINTER);
+
+		// NOTE: We don't need to reset to the default state (and apply it) because that was just
+		// done above (that's the state we leave OpenGL in when we're finished rendering).
+		resume_qpainter();
+
+		d_qpainter = NULL;
+	}
+}
+
+
+QPainter *
+GPlatesOpenGL::GLRenderer::begin_qpainter_block()
+{
+	if (d_qpainter)
+	{
+		// Reset to the default OpenGL state as that's what QPainter expects when it resumes painting.
+		begin_state_block(true/*reset_to_default_state*/);
+
+		// This is one of the rare cases where we need to apply the OpenGL state encapsulated in
+		// GLRenderer directly to OpenGL so that Qt can see it. When we're rendering exclusively using
+		// GLRenderer we don't need this because the next draw call will flush the state to OpenGL for us.
+		apply_current_state_to_opengl();
+
+		resume_qpainter();
+	}
+
+	return d_qpainter;
+}
+
+
+void
+GPlatesOpenGL::GLRenderer::end_qpainter_block()
+{
+	if (d_qpainter)
+	{
+		// The modelview and projection matrices set by QPainter.
+		GLMatrix qpainter_model_view_matrix;
+		GLMatrix qpainter_projection_matrix;
+
+		// Suspend the QPainter so we can start making calls directly to OpenGL without
+		// interfering with the QPainter's OpenGL state.
+		suspend_qpainter(qpainter_model_view_matrix, qpainter_projection_matrix);
+
+		// Restore the OpenGL state to what it was before 'begin_qpainter_block' was called.
+		end_state_block();
+
+		// While the QPainter was used it may have altered its transform so we should update
+		// the modelview and projection matrices set by QPainter.
+		// Easiest way to do that is simply to load them.
+		gl_load_matrix(GL_MODELVIEW, qpainter_model_view_matrix);
+		gl_load_matrix(GL_PROJECTION, qpainter_projection_matrix);
+
+		// This is one of the rare cases where we need to apply the OpenGL state encapsulated in
+		// GLRenderer directly to OpenGL - in this case we need to make sure our last applied state
+		// actually represents the state of OpenGL - which it may not because QPainter may have
+		// changed the model-view and projection matrices.
+		apply_current_state_to_opengl();
+	}
+}
+
+
+GPlatesOpenGL::GLRenderer::QPainterBlockScope::QPainterBlockScope(
+		GLRenderer &renderer) :
+	d_renderer(renderer),
+	d_qpainter(renderer.begin_qpainter_block())
+{
+}
+
+
+GPlatesOpenGL::GLRenderer::QPainterBlockScope::~QPainterBlockScope()
+{
+	d_renderer.end_qpainter_block();
 }
 
 
@@ -1398,6 +1537,86 @@ GPlatesOpenGL::GLRenderer::draw(
 
 
 void
+GPlatesOpenGL::GLRenderer::suspend_qpainter(
+		GLMatrix &qpainter_model_view_matrix,
+		GLMatrix &qpainter_projection_matrix)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_qpainter,
+			GPLATES_ASSERTION_SOURCE);
+
+#if QT_VERSION >= 0x040600
+	// From Qt 4.6, the default paint engine is QPaintEngine::OpenGL2.
+	// And it needs protection if we're mixing painter calls with our own native OpenGL calls.
+	//
+	// Get the paint engine to reset to the default OpenGL state.
+	// Actually it still sets the modelview and projection matrices as if you were using
+	// the 1.x paint engine (so it's not exactly the default OpenGL state).
+	d_qpainter->beginNativePainting();
+#else
+	// Our GLRender assumes it's entered in the default OpenGL state and when it exits it leaves
+	// OpenGL in the default state.
+	// However QPainter using the OpenGL version 1 paint engine (QPaintEngine::OpenGL) expects
+	// us to restore the modelview (and projection?) matrices if we've modified them.
+	// So we push the modelview and projection matrices onto the OpenGL matrix stack so that we
+	// modify copies of them and we restore the originals when resuming the QPainter later.
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glMatrixMode(GL_MODELVIEW); // The default matrix mode.
+#endif
+
+	//
+	// Retrieve the current modelview/projection matrices from OpenGL.
+	//
+	// NOTE: It is *not* normally a good idea to retrieve state *from* OpenGL because, in the worst case,
+	// this has the potential to stall the graphics pipeline - and in general it's not recommended.
+	//
+	// The reason for this is we track the OpenGL state and we normally assume it starts out in the
+	// default state (which is the case if QPainter isn't used) but is not the case here.
+	//
+	// FIXME: We should probably obtain these via QPainter::transform() and QPainter::viewport().
+
+	// Get the current modelview matrix from OpenGL.
+	glGetDoublev(GL_MODELVIEW_MATRIX, qpainter_model_view_matrix.get_matrix());  
+
+	// Get the current projection matrix from OpenGL.
+	glGetDoublev(GL_PROJECTION_MATRIX, qpainter_projection_matrix.get_matrix());  
+}
+
+
+void
+GPlatesOpenGL::GLRenderer::resume_qpainter()
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_qpainter,
+			GPLATES_ASSERTION_SOURCE);
+
+#if QT_VERSION >= 0x040600
+	// From Qt 4.6, the default paint engine is QPaintEngine::OpenGL2.
+	// And it needs protection if we're mixing painter calls with our own native OpenGL calls.
+	//
+	// NOTE: At this point we must have restored the OpenGL state to the default state !
+	// Otherwise we will stuff up the painter's OpenGL state - this is because the painter only
+	// restores the state that it sets - any other state it assumes is in the default state.
+	//
+	// Get the paint engine to restore its OpenGL state (to what it was before 'beginNativePainting').
+	d_qpainter->endNativePainting();
+#else
+	// We are now in the default OpenGL state but we need to return the QPainter to the state it was in.
+	// For the QPainter OpenGL2 paint engine this is not necessary but it is for the OpenGL1 paint engine.
+	// So we pop the modelview and projection matrices that we pushed onto the OpenGL matrix stack.
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW); // The default matrix mode.
+#endif
+}
+
+
+void
 GPlatesOpenGL::GLRenderer::begin_rgba8_main_framebuffer_2D(
 		RenderTextureTarget &render_texture_target)
 {
@@ -1768,6 +1987,16 @@ GPlatesOpenGL::GLRenderer::RenderScope::RenderScope(
 }
 
 
+GPlatesOpenGL::GLRenderer::RenderScope::RenderScope(
+		GLRenderer &renderer,
+		QPainter *opengl_qpainter) :
+	d_renderer(renderer),
+	d_called_end_render(false)
+{
+	d_renderer.begin_render(opengl_qpainter);
+}
+
+
 GPlatesOpenGL::GLRenderer::RenderScope::~RenderScope()
 {
 	if (!d_called_end_render)
@@ -1952,6 +2181,12 @@ GPlatesOpenGL::GLRenderer::GLRendererAPIError::write_message(
 {
 	switch (d_error_type)
 	{
+	case SHOULD_HAVE_NO_ACTIVE_QPAINTER:
+		os << "expected no active QPainter";
+		break;
+	case SHOULD_HAVE_ACTIVE_OPENGL_QPAINTER:
+		os << "expected an active OpenGL QPainter";
+		break;
 	case SHOULD_HAVE_NO_STATE_BLOCKS:
 		os << "expected no state blocks";
 		break;

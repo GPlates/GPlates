@@ -35,6 +35,7 @@
 #include <boost/shared_array.hpp>
 #include <boost/shared_ptr.hpp>
 #include <opengl/OpenGL.h>
+#include <QPainter>
 
 #include "GLBufferImpl.h"
 #include "GLBufferObject.h"
@@ -91,6 +92,8 @@ namespace GPlatesOpenGL
 		public:
 			enum ErrorType
 			{
+				SHOULD_HAVE_NO_ACTIVE_QPAINTER,
+				SHOULD_HAVE_ACTIVE_OPENGL_QPAINTER,
 				SHOULD_HAVE_NO_STATE_BLOCKS,
 				SHOULD_HAVE_A_STATE_BLOCK,
 				SHOULD_HAVE_NO_RENDER_TARGET_BLOCKS,
@@ -170,11 +173,36 @@ namespace GPlatesOpenGL
 		begin_render(
 				const GLViewport &default_viewport);
 
+
+		/**
+		 * An alternative version of @a begin_render that accepts a QPainter.
+		 *
+		 * NOTE: The QPainter must currently be active and must use an OpenGL paint engine
+		 * (ie, QPaintEngine::OpenGL or QPaintEngine::OpenGL2).
+		 * An example is a QGraphicsView that has a QGLWidget viewport - here the method
+		 * QGraphicsScene::drawBackground, that you override, passes an active QPainter that uses OpenGL.
+		 * This method will get the Qt paint engine to reset to the default OpenGL state (aside from the
+		 * modelview and projection matrices which it sets according to the QPainter's current transform state).
+		 * NOTE: The specified QPainter must exist until @a end_render is called.
+		 *
+		 * Upon returning the OpenGL state will be the default state except for the modelview and
+		 * projection transforms which will be set to the transform state of @a qpainter and
+		 * orthographic projection.
+		 *
+		 * The default viewport is also obtained from @a qpainter.
+		 */
+		void
+		begin_render(
+				QPainter *opengl_qpainter);
+
 		/**
 		 * Call this method after using 'this' renderer and before it is destroyed.
 		 * Note: This method calls GLContext::end_render.
 		 *
 		 * This sets the OpenGL state back to the default OpenGL state.
+		 *
+		 * NOTE: If a QPainter was specified in @a begin_render then its OpenGL paint engine will be
+		 * restored to its OpenGL state (to what it was before 'begin_render' was called).
 		 *
 		 * @throws PreconditionViolationError if:
 		 *  - the number of begin calls of a particular type (such as state blocks) does not equal
@@ -194,6 +222,10 @@ namespace GPlatesOpenGL
 					GLRenderer &renderer,
 					const GLViewport &default_viewport);
 
+			RenderScope(
+					GLRenderer &renderer,
+					QPainter *opengl_qpainter);
+
 			~RenderScope();
 
 			//! Opportunity to end rendering before the scope exits (when destructor is called).
@@ -203,6 +235,53 @@ namespace GPlatesOpenGL
 		private:
 			GLRenderer &d_renderer;
 			bool d_called_end_render;
+		};
+
+
+		/**
+		 * Begins rendering to a QPainter (and suspends rendering using GLRenderer).
+		 *
+		 * The QPainter returned is the one passed into @a begin_render, or NULL if none passed.
+		 * It can be used to make QPainter calls.
+		 *
+		 * @throws @a GLRendererAPIError if @a begin_render not yet called.
+		 */
+		QPainter *
+		begin_qpainter_block();
+
+		/**
+		 * Ends the current QPainter block.
+		 *
+		 * Upon returning no further QPainter calls can be made.
+		 *
+		 * @throws @a GLRendererAPIError if there is no current QPainter block.
+		 */
+		void
+		end_qpainter_block();
+
+		/**
+		 * RAII class to call @a begin_qpainter_block and @a end_qpainter_block over a scope.
+		 */
+		class QPainterBlockScope :
+				private boost::noncopyable
+		{
+		public:
+			explicit
+			QPainterBlockScope(
+					GLRenderer &renderer);
+
+			~QPainterBlockScope();
+
+			//! Returns the QPainter passed into GLRenderer::begin_render or NULL if none passed in.
+			QPainter *
+			get_qpainter() const
+			{
+				return d_qpainter;
+			}
+
+		private:
+			GLRenderer &d_renderer;
+			QPainter *d_qpainter;
 		};
 
 
@@ -918,6 +997,9 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: For enabling/disabling texturing use @a gl_enable_texture instead.
 		 *
+		 * NOTE: All capabilities are disabled by default except two (GL_DITHER and GL_MULTISAMPLE).
+
+		 *
 		 * Also note that only a subset of the capabilities are currently supported in the
 		 * implementation although it is easy to add more as needed (see 'GLStateSetKeys::get_enable_key').
 		 */
@@ -929,7 +1011,11 @@ namespace GPlatesOpenGL
 			get_current_state()->set_enable(cap, enable);
 		}
 
-		//! Enable/disable texturing for the specified target and texture unit.
+		/**
+		 * Enable/disable texturing for the specified target and texture unit.
+		 *
+		 * NOTE: All texture unit are disabled by default.
+		 */
 		void
 		gl_enable_texture(
 				GLenum texture_unit,
@@ -1152,6 +1238,11 @@ namespace GPlatesOpenGL
 
 	private:
 		/**
+		 * Is valid if a QPainter is active during rendering (when @a begin_render is called).
+		 */
+		QPainter *d_qpainter;
+
+		/**
 		 * Used to begin/end rendering and manage framebuffer objects.
 		 */
 		GLContext::non_null_ptr_type d_context;
@@ -1332,6 +1423,15 @@ namespace GPlatesOpenGL
 				const GLRendererImpl::RenderOperation &render_operation);
 
 		void
+		suspend_qpainter(
+				GLMatrix &qpainter_model_view_matrix,
+				GLMatrix &qpainter_projection_matrix);
+
+		//! NOTE: OpenGL must be in the default state before this is called.
+		void
+		resume_qpainter();
+
+		void
 		begin_rgba8_main_framebuffer_2D(
 				GLRendererImpl::RenderTextureTarget &render_texture_target);
 
@@ -1416,6 +1516,8 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: This method should *not* be used in general rendering.
 		 * It should only be used to help implement the renderer framework.
+		 * Another case is when interacting with code beyond our control that directly
+		 * calls OpenGL such as Qt (eg, during text rendering).
 		 */
 		void
 		apply_current_state_to_opengl();

@@ -139,16 +139,20 @@ set(srcs
     LogFilterModel.h
     Map.cc
     Map.h
-    MapCanvasPainter.cc
-    MapCanvasPainter.h
     MapCanvasTool.cc
     MapCanvasTool.h
     MapCanvasToolAdapter.cc
     MapCanvasToolAdapter.h
     MapCanvasToolChoice.cc
     MapCanvasToolChoice.h
+    MapGrid.cc
+    MapGrid.h
     MapProjection.cc
     MapProjection.h
+    MapRenderedGeometryCollectionPainter.cc
+    MapRenderedGeometryCollectionPainter.h
+    MapRenderedGeometryLayerPainter.cc
+    MapRenderedGeometryLayerPainter.h
     MapTransform.cc
     MapTransform.h
     Mipmapper.cc
@@ -170,6 +174,8 @@ set(srcs
     PythonManager.h
     QGLWidgetTextRenderer.cc
     QGLWidgetTextRenderer.h
+    QPainterTextRenderer.cc
+    QPainterTextRenderer.h
     RasterColourPalette.cc
     RasterColourPalette.h
     ReconstructionGeometrySequence.h
@@ -192,6 +198,7 @@ set(srcs
     TextOverlay.h
     TextOverlaySettings.cc
     TextOverlaySettings.h
+    TextRenderer.cc
     TextRenderer.h
     TopologySectionsContainer.cc
     TopologySectionsContainer.h

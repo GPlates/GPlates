@@ -33,6 +33,7 @@
 #include "app-logic/ApplicationState.h"
 
 #include "opengl/GLCubeSubdivisionCache.h"
+#include "opengl/GLMultiResolutionCubeReconstructedRaster.h"
 #include "opengl/GLRenderer.h"
 
 #include "property-values/RawRaster.h"
@@ -100,7 +101,8 @@ GPlatesGui::PersistentOpenGLObjects::render_raster(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type &resolved_raster,
 		const RasterColourPalette::non_null_ptr_to_const_type &source_raster_colour_palette,
-		const Colour &source_raster_modulate_colour)
+		const Colour &source_raster_modulate_colour,
+		boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection)
 {
 	// Get the GL layer corresponding to the layer the raster came from.
 	GLLayer &gl_raster_layer = d_list_objects->gl_layers.get_layer(
@@ -176,9 +178,35 @@ GPlatesGui::PersistentOpenGLObjects::render_raster(
 			//
 			// We are rendering a *reconstructed* raster.
 			//
-			cache_handle_type cache_handle;
-			static_polygon_reconstructed_raster.get()->render(renderer, cache_handle);
-			return cache_handle;
+			if (!map_projection)
+			{
+				cache_handle_type cache_handle;
+				static_polygon_reconstructed_raster.get()->render(renderer, cache_handle);
+				return cache_handle;
+			}
+
+			//
+			// Render *reconstructed* raster into the map projection.
+			//
+
+			// Get the map raster layer usage.
+			const GPlatesUtils::non_null_intrusive_ptr<MapRasterLayerUsage> map_raster_layer_usage =
+					gl_raster_layer.get_map_raster_layer_usage();
+			// Update it.
+			map_raster_layer_usage->update(boost::none, static_polygon_reconstructed_raster_layer_usage);
+			// Get the raster map view.
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRasterMapView::non_null_ptr_type> multi_resolution_raster_map_view =
+					map_raster_layer_usage->get_multi_resolution_raster_map_view(
+							renderer,
+							// The global map cube mesh shared by all layers...
+							d_list_objects->get_multi_resolution_map_cube_mesh(renderer, *map_projection.get()),
+							resolved_raster->get_reconstruction_time());
+			if (multi_resolution_raster_map_view)
+			{
+				cache_handle_type cache_handle;
+				multi_resolution_raster_map_view.get()->render(renderer, cache_handle);
+				return cache_handle;
+			}
 		}
 		// else drop through and render the *unreconstructed* raster...
 	}
@@ -192,9 +220,35 @@ GPlatesGui::PersistentOpenGLObjects::render_raster(
 	// Render the multi-resolution raster.
 	if (multi_resolution_raster)
 	{
-		cache_handle_type cache_handle;
-		multi_resolution_raster.get()->render(renderer, cache_handle);
-		return cache_handle;
+		if (!map_projection)
+		{
+			cache_handle_type cache_handle;
+			multi_resolution_raster.get()->render(renderer, cache_handle);
+			return cache_handle;
+		}
+
+		//
+		// Render raster into the map projection.
+		//
+
+		// Get the map raster layer usage.
+		const GPlatesUtils::non_null_intrusive_ptr<MapRasterLayerUsage> map_raster_layer_usage =
+				gl_raster_layer.get_map_raster_layer_usage();
+		// Update it.
+		map_raster_layer_usage->update(raster_layer_usage, boost::none);
+		// Get the raster map view.
+		boost::optional<GPlatesOpenGL::GLMultiResolutionRasterMapView::non_null_ptr_type> multi_resolution_raster_map_view =
+				map_raster_layer_usage->get_multi_resolution_raster_map_view(
+						renderer,
+						// The global map cube mesh shared by all layers...
+						d_list_objects->get_multi_resolution_map_cube_mesh(renderer, *map_projection.get()),
+						resolved_raster->get_reconstruction_time());
+		if (multi_resolution_raster_map_view)
+		{
+			cache_handle_type cache_handle;
+			multi_resolution_raster_map_view.get()->render(renderer, cache_handle);
+			return cache_handle;
+		}
 	}
 
 	// No rendering took place.
@@ -709,8 +763,8 @@ GPlatesGui::PersistentOpenGLObjects::ReconstructedStaticPolygonMeshesLayerUsage:
 						d_reconstructed_static_polygon_meshes_layer_proxy->get_present_day_geometries(),
 						d_reconstructed_static_polygon_meshes_layer_proxy->get_reconstructions_spatial_partition(reconstruction_time));
 
-		// Even though we just create the 'GLReconstructedStaticPolygonMeshes' we still need to
-		// update it in case we're using age grids which needs a reconstructions spatial partition
+		// Even though we just created the 'GLReconstructedStaticPolygonMeshes' we still need to
+		// update it in case we're using age grids which need a reconstructions spatial partition
 		// that ignores the active time periods of features.
 		force_update = true;
 
@@ -1062,6 +1116,186 @@ GPlatesGui::PersistentOpenGLObjects::StaticPolygonReconstructedRasterLayerUsage:
 }
 
 
+GPlatesGui::PersistentOpenGLObjects::MapRasterLayerUsage::MapRasterLayerUsage(
+		const GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> &raster_layer_usage,
+		const GPlatesUtils::non_null_intrusive_ptr<StaticPolygonReconstructedRasterLayerUsage> &reconstructed_raster_layer_usage) :
+	d_raster_layer_usage(raster_layer_usage),
+	d_reconstructed_raster_layer_usage(reconstructed_raster_layer_usage)
+{
+}
+
+
+boost::optional<GPlatesOpenGL::GLMultiResolutionRasterMapView::non_null_ptr_type>
+GPlatesGui::PersistentOpenGLObjects::MapRasterLayerUsage::get_multi_resolution_raster_map_view(
+		GPlatesOpenGL::GLRenderer &renderer,
+		const GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type &multi_resolution_map_cube_mesh,
+		const double &reconstruction_time)
+{
+	// There needs to be a raster (regular or reconstructed).
+	if (!d_raster_layer_usage &&
+		!d_reconstructed_raster_layer_usage)
+	{
+		d_multi_resolution_raster_map_view = boost::none;
+
+		return boost::none;
+	}
+
+	// If we're not up-to-date with respect to the raster layer usage...
+	if (d_raster_layer_usage &&
+		!d_raster_layer_usage.get()->get_rebuild_subject_token().is_observer_up_to_date(
+			d_raster_layer_usage_observer_token))
+	{
+		// Then we need to rebuild the multi-resolution raster map view.
+		d_multi_resolution_raster_map_view = boost::none;
+
+		// We are now up-to-date with respect to the cube raster layer usage.
+		d_raster_layer_usage.get()->get_rebuild_subject_token().update_observer(
+				d_raster_layer_usage_observer_token);
+	}
+
+	// If we're not up-to-date with respect to the reconstructed raster layer usage...
+	if (d_reconstructed_raster_layer_usage &&
+		!d_reconstructed_raster_layer_usage.get()->get_rebuild_subject_token().is_observer_up_to_date(
+			d_reconstructed_raster_layer_usage_observer_token))
+	{
+		// Then we need to rebuild the multi-resolution raster map view.
+		d_multi_resolution_raster_map_view = boost::none;
+
+		// We are now up-to-date with respect to the cube raster layer usage.
+		d_reconstructed_raster_layer_usage.get()->get_rebuild_subject_token().update_observer(
+				d_reconstructed_raster_layer_usage_observer_token);
+	}
+
+	if (!d_multi_resolution_raster_map_view)
+	{
+		if (d_raster_layer_usage)
+		{
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> multi_resolution_raster =
+					d_raster_layer_usage.get()->get_multi_resolution_raster(renderer);
+			if (!multi_resolution_raster)
+			{
+				// Unable to get the multi-resolution raster so nothing we can do.
+				return boost::none;
+			}
+
+			GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type multi_resolution_cube_raster =
+					GPlatesOpenGL::GLMultiResolutionCubeRaster::create(
+							renderer,
+							multi_resolution_raster.get(),
+							GPlatesOpenGL::GLMultiResolutionCubeRaster::DEFAULT_TILE_TEXEL_DIMENSION,
+							true/*adapt_tile_dimension_to_source_resolution*/,
+							GPlatesOpenGL::GLMultiResolutionCubeRaster::DEFAULT_FIXED_POINT_TEXTURE_FILTER,
+							// Use non-default here - our source GLMultiResolutionRaster in turn references
+							// a GLVisualRasterSource which has caching that insulates us from the
+							// file system so we don't really need any caching in GLMultiResolutionRaster
+							// and can save a lot of texture memory usage as a result...
+							false/*cache_source_tile_textures*/);
+
+			// Attempt to create the multi-resolution raster map view.
+			d_multi_resolution_raster_map_view =
+					GPlatesOpenGL::GLMultiResolutionRasterMapView::create(
+							renderer,
+							multi_resolution_cube_raster.get(),
+							multi_resolution_map_cube_mesh.get());
+		}
+		else
+		{
+			boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
+					multi_resolution_reconstructed_raster =
+							d_reconstructed_raster_layer_usage.get()->get_static_polygon_reconstructed_raster(
+									renderer,
+									reconstruction_time);
+			if (!multi_resolution_reconstructed_raster)
+			{
+				// Unable to get the multi-resolution raster so nothing we can do.
+				return boost::none;
+			}
+
+			GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type multi_resolution_cube_reconstructed_raster =
+					GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::create(
+							renderer,
+							multi_resolution_reconstructed_raster.get());
+
+			// Attempt to create the multi-resolution raster map view.
+			d_multi_resolution_raster_map_view =
+					GPlatesOpenGL::GLMultiResolutionRasterMapView::create(
+							renderer,
+							multi_resolution_cube_reconstructed_raster.get(),
+							multi_resolution_map_cube_mesh.get());
+		}
+	}
+
+	return d_multi_resolution_raster_map_view;
+}
+
+
+void
+GPlatesGui::PersistentOpenGLObjects::MapRasterLayerUsage::update(
+		boost::optional<GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> > raster_layer_usage,
+		boost::optional<GPlatesUtils::non_null_intrusive_ptr<StaticPolygonReconstructedRasterLayerUsage> >
+				reconstructed_raster_layer_usage)
+{
+	// See if we've switched layer usages.
+	if (d_raster_layer_usage != raster_layer_usage)
+	{
+		// Then we need to rebuild the raster map view.
+		d_multi_resolution_raster_map_view = boost::none;
+
+		// We're observing a different object.
+		d_raster_layer_usage_observer_token.reset();
+
+		d_raster_layer_usage = raster_layer_usage;
+	}
+	if (d_reconstructed_raster_layer_usage != reconstructed_raster_layer_usage)
+	{
+		// Then we need to rebuild the raster map view.
+		d_multi_resolution_raster_map_view = boost::none;
+
+		// We're observing a different object.
+		d_reconstructed_raster_layer_usage_observer_token.reset();
+
+		d_reconstructed_raster_layer_usage = reconstructed_raster_layer_usage;
+	}
+}
+
+
+const GPlatesUtils::SubjectToken &
+GPlatesGui::PersistentOpenGLObjects::MapRasterLayerUsage::get_rebuild_subject_token()
+{
+	// If we're not up-to-date with respect to the regular raster layer usage...
+	if (d_raster_layer_usage &&
+		!d_raster_layer_usage.get()->get_rebuild_subject_token().is_observer_up_to_date(
+			d_raster_layer_usage_observer_token))
+	{
+		// Let clients know they need to update themselves with respect to us.
+		d_rebuild_subject_token.invalidate();
+	}
+
+	// If we're not up-to-date with respect to the reconstructed raster layer usage...
+	if (d_reconstructed_raster_layer_usage &&
+		!d_reconstructed_raster_layer_usage.get()->get_rebuild_subject_token().is_observer_up_to_date(
+			d_reconstructed_raster_layer_usage_observer_token))
+	{
+		// Let clients know they need to update themselves with respect to us.
+		d_rebuild_subject_token.invalidate();
+	}
+
+	return d_rebuild_subject_token;
+}
+
+
+bool
+GPlatesGui::PersistentOpenGLObjects::MapRasterLayerUsage::is_required_direct_or_indirect_dependency(
+		const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy_handle) const
+{
+	return
+		(d_raster_layer_usage &&
+			d_raster_layer_usage.get()->is_required_direct_or_indirect_dependency(layer_proxy_handle)) ||
+		(d_reconstructed_raster_layer_usage &&
+			d_reconstructed_raster_layer_usage.get()->is_required_direct_or_indirect_dependency(layer_proxy_handle));
+}
+
+
 GPlatesGui::PersistentOpenGLObjects::GLLayer::GLLayer(
 		const GPlatesAppLogic::LayerProxy::non_null_ptr_type &layer_proxy) :
 	d_layer_proxy(layer_proxy),
@@ -1183,6 +1417,26 @@ GPlatesGui::PersistentOpenGLObjects::GLLayer::get_static_polygon_reconstructed_r
 }
 
 
+GPlatesUtils::non_null_intrusive_ptr<GPlatesGui::PersistentOpenGLObjects::MapRasterLayerUsage>
+GPlatesGui::PersistentOpenGLObjects::GLLayer::get_map_raster_layer_usage()
+{
+	const LayerUsage::Type layer_usage_type = LayerUsage::MAP_RASTER;
+
+	if (!d_layer_usages[layer_usage_type])
+	{
+		// Create a new MapRasterLayerUsage object.
+		d_layer_usages[layer_usage_type] = 
+				GPlatesUtils::non_null_intrusive_ptr<MapRasterLayerUsage>(
+						new MapRasterLayerUsage(
+								// Note: Connecting to the cube raster in the same layer...
+								get_raster_layer_usage(),
+								get_static_polygon_reconstructed_raster_layer_usage()));
+	}
+
+	return GPlatesUtils::dynamic_pointer_cast<MapRasterLayerUsage>(d_layer_usages[layer_usage_type].get());
+}
+
+
 void
 GPlatesGui::PersistentOpenGLObjects::GLLayer::remove_references_to_layer(
 		const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy_to_be_removed)
@@ -1295,6 +1549,27 @@ GPlatesGui::PersistentOpenGLObjects::ListObjects::get_multi_resolution_cube_mesh
 	}
 
 	return d_multi_resolution_cube_mesh.get();
+}
+
+
+GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type
+GPlatesGui::PersistentOpenGLObjects::ListObjects::get_multi_resolution_map_cube_mesh(
+		GPlatesOpenGL::GLRenderer &renderer,
+		const MapProjection &map_projection) const
+{
+	if (!d_multi_resolution_map_cube_mesh)
+	{
+		d_multi_resolution_map_cube_mesh =
+				GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_type(
+						GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create(
+								renderer,
+								map_projection));
+	}
+
+	// Update the map projection if it's changed.
+	d_multi_resolution_map_cube_mesh.get()->update_map_projection(renderer, map_projection);
+
+	return d_multi_resolution_map_cube_mesh.get();
 }
 
 

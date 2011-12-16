@@ -61,7 +61,10 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 			new MapView(
 				d_view_state,
 				d_view_state.get_colour_scheme(),
-				this)),
+				this,
+				d_globe_canvas_ptr.get(),
+				d_globe_canvas_ptr->get_gl_context(),
+				d_globe_canvas_ptr->get_persistent_opengl_objects())),
 	d_layout(new QStackedLayout(this)),
 	d_active_view_ptr(d_globe_canvas_ptr.get()),
 	d_zoom_enabled(true)
@@ -88,7 +91,10 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 			new MapView(
 				d_view_state,
 				colour_scheme,
-				this)),
+				this,
+				d_globe_canvas_ptr.get(),
+				d_globe_canvas_ptr->get_gl_context(),
+				d_globe_canvas_ptr->get_persistent_opengl_objects())),
 	d_layout(new QStackedLayout(this)),
 	d_active_view_ptr(
 			existing_globe_and_map_widget_ptr->is_globe_active()
@@ -214,7 +220,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 	// Save the existing camera llp.
 	boost::optional<GPlatesMaths::LatLonPoint> camera_llp = get_camera_llp();
 
-	if (view_projection.get_projection_type() == GPlatesGui::ORTHOGRAPHIC)
+	if (view_projection.get_projection_type() == GPlatesGui::MapProjection::ORTHOGRAPHIC)
 	{
 		// Switch to globe.
 		d_active_view_ptr = d_globe_canvas_ptr.get();

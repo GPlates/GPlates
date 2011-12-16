@@ -68,7 +68,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::GLMultiResolutionCubeRaster(
 	d_cube_quad_tree(cube_quad_tree_type::create())
 {
 	// Adjust the tile dimension to the source raster resolution if non-power-of-two textures are supported.
-	// The number of levels of details returned might not be all levels of the source raster -
+	// The number of levels of detail returned might not be all levels of the source raster -
 	// just the ones used by this cube map raster (the lowest resolutions might get left off).
 	const unsigned int num_levels_of_detail =
 			adjust_tile_texel_dimension(adapt_tile_dimension_to_source_resolution);
@@ -93,105 +93,6 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::GLMultiResolutionCubeRaster(
 		// This effectively disables any recycling that would otherwise happen in the cache.
 		d_texture_cache->set_min_num_objects(d_cube_quad_tree->size());
 	}
-}
-
-
-GPlatesOpenGL::GLTexture::shared_ptr_to_const_type
-GPlatesOpenGL::GLMultiResolutionCubeRaster::get_tile_texture(
-		GLRenderer &renderer,
-		const QuadTreeNode &tile,
-		cache_handle_type &cache_handle)
-{
-	//
-	// Get the texture for the tile.
-	//
-
-	// See if we've generated our tile texture and
-	// see if it hasn't been recycled by the texture cache.
-	tile_texture_cache_type::object_shared_ptr_type tile_texture = tile.d_tile_texture->get_cached_object();
-	if (!tile_texture)
-	{
-		tile_texture = tile.d_tile_texture->recycle_an_unused_object();
-		if (!tile_texture)
-		{
-			// Create a new tile texture.
-			tile_texture = tile.d_tile_texture->set_cached_object(
-					std::auto_ptr<TileTexture>(new TileTexture(renderer)),
-					// Called whenever tile texture is returned to the cache...
-					boost::bind(&TileTexture::returned_to_cache, _1));
-
-			// The texture was just allocated so we need to create it in OpenGL.
-			create_tile_texture(renderer, tile_texture->texture, tile);
-
-			//qDebug() << "GLMultiResolutionCubeRaster: " << d_texture_cache->get_current_num_objects_in_use();
-		}
-		else
-		{
-			// The filtering depends on whether the current tile is a leaf node or not.
-			// So update the texture's filtering options.
-			update_tile_texture(renderer, tile_texture->texture, tile);
-		}
-
-		// Render the source raster into our tile texture.
-		render_raster_data_into_tile_texture(
-				renderer,
-				tile,
-				*tile_texture);
-	}
-	// Our texture wasn't recycled but see if it's still valid in case the source
-	// raster changed the data underneath us.
-	else if (!d_multi_resolution_raster->get_subject_token().is_observer_up_to_date(
-				tile.d_source_texture_observer_token))
-	{
-		// Render the source raster into our tile texture.
-		render_raster_data_into_tile_texture(
-				renderer,
-				tile,
-				*tile_texture);
-	}
-
-	// The caller will cache this tile to keep it from being prematurely recycled by our caches.
-	//
-	// Note that none of this has any effect if the client specified the entire cube quad tree
-	// be cached (in the 'create()' method) in which case it'll get cached regardless.
-	cache_handle = boost::shared_ptr<ClientCacheTile>(
-			new ClientCacheTile(tile_texture, d_cache_tile_textures));
-
-	return tile_texture->texture;
-}
-
-
-void
-GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture(
-		GLRenderer &renderer,
-		const QuadTreeNode &tile,
-		TileTexture &tile_texture)
-{
-	PROFILE_FUNC();
-
-	// Begin rendering to a 2D render target texture.
-	GLRenderer::RenderTarget2DScope render_target_scope(renderer, tile_texture.texture);
-
-	renderer.gl_viewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension);
-
-	renderer.gl_clear_color(); // Clear colour to all zeros.
-	renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
-
-	renderer.gl_load_matrix(GL_MODELVIEW, tile.d_view_transform->get_matrix());
-	renderer.gl_load_matrix(GL_PROJECTION, tile.d_projection_transform->get_matrix());
-
-	// Get the source raster to render into the render target using the view frustum
-	// we have provided. We have already cached the visible source raster tiles that need to be
-	// rendered into our frustum to save it a bit of culling work.
-	d_multi_resolution_raster->render(
-			renderer,
-			tile.d_src_raster_tiles,
-			tile_texture.source_cache_handle,
-			d_cache_source_tile_textures);
-
-	// This tile texture is now update-to-date with respect to the source multi-resolution raster.
-	d_multi_resolution_raster->get_subject_token().update_observer(
-			tile.d_source_texture_observer_token);
 }
 
 
@@ -332,8 +233,8 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::initialise_cube_quad_trees(
 			num_levels_of_detail > 0,
 			GPLATES_ASSERTION_SOURCE);
 
-	// Create a projection transforms cube quad tree cache so we can do view-frustum culling
-	// as we traverse the spatial partition of rendered geometries.
+	// Create a projection transforms cube quad tree cache so we can determine the view frustum
+	// to render each spatial partition node into.
 	// We're only visiting each subdivision node once so there's no need for caching.
 	//
 	// Expand the tile frustums by half a texel around the border of each frustum.
@@ -341,6 +242,8 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::initialise_cube_quad_trees(
 	// of the unmodified frustum which means adjacent tiles will have the same colour after
 	// bilinear filtering and hence there will be no visible colour seams (or discontinuities
 	// in the raster data if the source raster is floating-point).
+	// The nice thing is this works for both bilinear filtering and nearest neighbour filtering
+	// (ie, there'll be no visible seams in nearest neighbour filtering either).
 	cube_subdivision_cache_type::non_null_ptr_type
 			cube_subdivision_cache =
 					cube_subdivision_cache_type::create(
@@ -451,10 +354,13 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 	// Create a quad tree node.
 	cube_quad_tree_type::node_type::ptr_type quad_tree_node =
 			d_cube_quad_tree->create_node(
-					QuadTreeNode(
-							half_texel_expanded_projection_transform,
-							view_transform,
+					CubeQuadTreeNode(
+							tile_level_of_detail,
 							d_texture_cache->allocate_volatile_object()));
+
+	// Mark the tile as up-to-date with respect to the world transform.
+	d_world_transform_subject.update_observer(
+			quad_tree_node->get_element().d_visible_source_tiles_observer_token);
 
 	// Initialise the quad tree node's source tiles.
 	quad_tree_node->get_element().d_src_raster_tiles.swap(source_raster_tile_handles);
@@ -500,12 +406,212 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 						*quad_tree_node, child_u_offset, child_v_offset, child_node.get());
 
 				// Since we've given the quad tree node a child it is now an internal node.
-				quad_tree_node->get_element().set_internal_node();
+				quad_tree_node->get_element().d_is_leaf_node = false;
 			}
 		}
 	}
 
 	return quad_tree_node;
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionCubeRaster::set_world_transform(
+		const GLMatrix &world_transform)
+{
+	d_world_transform = world_transform;
+
+	// Iterate over all the nodes in the cube quad tree and reset the observer tokens.
+	// This will force an update when the textures are subsequently requested.
+	cube_quad_tree_type::iterator cube_quad_tree_node_iter = d_cube_quad_tree->get_iterator();
+	for ( ; !cube_quad_tree_node_iter.finished(); cube_quad_tree_node_iter.next())
+	{
+		CubeQuadTreeNode &cube_quad_tree_node = cube_quad_tree_node_iter.get_element();
+
+		// Force the texture to be regenerated.
+		cube_quad_tree_node.d_source_texture_observer_token.reset();
+	}
+
+	// Force the visible source tiles to be recalculated for each cube quad tree tile.
+	// This is necessary because the source tiles that contribute to each destination tile are now different.
+	d_world_transform_subject.invalidate();
+}
+
+
+GPlatesOpenGL::GLTexture::shared_ptr_to_const_type
+GPlatesOpenGL::GLMultiResolutionCubeRaster::get_tile_texture(
+		GLRenderer &renderer,
+		const CubeQuadTreeNode &tile,
+		const GLTransform::non_null_ptr_to_const_type &view_transform,
+		const GLTransform::non_null_ptr_to_const_type &projection_transform,
+		cache_handle_type &cache_handle)
+{
+	//
+	// See if a new set of visible source tiles, contributing to this tile, needs to be calculated.
+	//
+
+	if (!d_world_transform_subject.is_observer_up_to_date(tile.d_visible_source_tiles_observer_token))
+	{
+		// Clear the old set of source tiles.
+		tile.d_src_raster_tiles.clear();
+
+		// Multiply the current world transform into the model-view matrix.
+		GLMatrix world_model_view_transform(view_transform->get_matrix());
+		world_model_view_transform.gl_mult_matrix(d_world_transform);
+
+		// Get the new set of source tiles that are visible in the current tile's frustum.
+		d_multi_resolution_raster->get_visible_tiles(
+				tile.d_src_raster_tiles,
+				world_model_view_transform,
+				projection_transform->get_matrix(),
+				tile.d_tile_level_of_detail);
+
+		// The tile is now up-to-date with respect to the world transform.
+		d_world_transform_subject.update_observer(tile.d_visible_source_tiles_observer_token);
+	}
+
+	//
+	// Get the texture for the tile.
+	//
+
+	// See if we've generated our tile texture and
+	// see if it hasn't been recycled by the texture cache.
+	tile_texture_cache_type::object_shared_ptr_type tile_texture = tile.d_tile_texture->get_cached_object();
+	if (!tile_texture)
+	{
+		tile_texture = tile.d_tile_texture->recycle_an_unused_object();
+		if (!tile_texture)
+		{
+			// Create a new tile texture.
+			tile_texture = tile.d_tile_texture->set_cached_object(
+					std::auto_ptr<TileTexture>(new TileTexture(renderer)),
+					// Called whenever tile texture is returned to the cache...
+					boost::bind(&TileTexture::returned_to_cache, _1));
+
+			// The texture was just allocated so we need to create it in OpenGL.
+			create_tile_texture(renderer, tile_texture->texture, tile);
+
+			//qDebug() << "GLMultiResolutionCubeRaster: " << d_texture_cache->get_current_num_objects_in_use();
+		}
+		else
+		{
+			// The filtering depends on whether the current tile is a leaf node or not.
+			// So update the texture's filtering options.
+			update_tile_texture(renderer, tile_texture->texture, tile);
+		}
+
+		// Render the source raster into our tile texture.
+		render_raster_data_into_tile_texture(
+				renderer,
+				tile,
+				*tile_texture,
+				view_transform,
+				projection_transform);
+	}
+	// Our texture wasn't recycled but see if it's still valid in case the source
+	// raster changed the data underneath us.
+	else if (!d_multi_resolution_raster->get_subject_token().is_observer_up_to_date(
+				tile.d_source_texture_observer_token))
+	{
+		// Render the source raster into our tile texture.
+		render_raster_data_into_tile_texture(
+				renderer,
+				tile,
+				*tile_texture,
+				view_transform,
+				projection_transform);
+	}
+
+	// The caller will cache this tile to keep it from being prematurely recycled by our caches.
+	//
+	// Note that none of this has any effect if the client specified the entire cube quad tree
+	// be cached (in the 'create()' method) in which case it'll get cached regardless.
+	cache_handle = boost::shared_ptr<ClientCacheTile>(
+			new ClientCacheTile(tile_texture, d_cache_tile_textures));
+
+	return tile_texture->texture;
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture(
+		GLRenderer &renderer,
+		const CubeQuadTreeNode &tile,
+		TileTexture &tile_texture,
+		const GLTransform::non_null_ptr_to_const_type &view_transform,
+		const GLTransform::non_null_ptr_to_const_type &projection_transform)
+{
+	PROFILE_FUNC();
+
+	// Begin rendering to a 2D render target texture.
+	GLRenderer::RenderTarget2DScope render_target_scope(renderer, tile_texture.texture);
+
+	renderer.gl_viewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension);
+
+	renderer.gl_clear_color(); // Clear colour to all zeros.
+	renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
+
+	// The model-view matrix.
+	renderer.gl_load_matrix(GL_MODELVIEW, view_transform->get_matrix());
+	// Multiply in the requested world transform.
+	renderer.gl_mult_matrix(GL_MODELVIEW, d_world_transform);
+
+	// The projection matrix.
+	renderer.gl_load_matrix(GL_PROJECTION, projection_transform->get_matrix());
+
+	// Get the source raster to render into the render target using the view frustum
+	// we have provided. We have already cached the visible source raster tiles that need to be
+	// rendered into our frustum to save it a bit of culling work.
+	// And that's why we also don't need to test the return value to see if anything was rendered.
+	d_multi_resolution_raster->render(
+			renderer,
+			tile.d_src_raster_tiles,
+			tile_texture.source_cache_handle,
+			d_cache_source_tile_textures);
+
+	// This tile texture is now update-to-date with respect to the source multi-resolution raster.
+	d_multi_resolution_raster->get_subject_token().update_observer(
+			tile.d_source_texture_observer_token);
+}
+
+
+boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::quad_tree_node_type>
+GPlatesOpenGL::GLMultiResolutionCubeRaster::get_quad_tree_root_node(
+		GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face)
+{
+	const cube_quad_tree_type::node_type *cube_root_node =
+			d_cube_quad_tree->get_quad_tree_root_node(cube_face);
+	if (cube_root_node == NULL)
+	{
+		return boost::none;
+	}
+
+	return quad_tree_node_type(
+			GPlatesUtils::non_null_intrusive_ptr<quad_tree_node_type::ImplInterface>(
+					new QuadTreeNodeImpl(*cube_root_node, *this)));
+}
+
+
+boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::quad_tree_node_type>
+GPlatesOpenGL::GLMultiResolutionCubeRaster::get_child_node(
+		const quad_tree_node_type &parent_node,
+		unsigned int child_x_offset,
+		unsigned int child_y_offset)
+{
+	// Get our internal cube quad tree parent node.
+	const cube_quad_tree_type::node_type &cube_parent_node = get_cube_quad_tree_node(parent_node);
+
+	// Get the internal cube quad tree child node.
+	const cube_quad_tree_type::node_type *cube_child_node =
+			cube_parent_node.get_child_node(child_x_offset, child_y_offset);
+	if (cube_child_node == NULL)
+	{
+		return boost::none;
+	}
+
+	return quad_tree_node_type(
+			GPlatesUtils::non_null_intrusive_ptr<quad_tree_node_type::ImplInterface>(
+					new QuadTreeNodeImpl(*cube_child_node, *this)));
 }
 
 
@@ -516,7 +622,7 @@ void
 GPlatesOpenGL::GLMultiResolutionCubeRaster::create_tile_texture(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &tile_texture,
-		const QuadTreeNode &tile)
+		const CubeQuadTreeNode &tile)
 {
 	//PROFILE_FUNC();
 
@@ -592,7 +698,7 @@ void
 GPlatesOpenGL::GLMultiResolutionCubeRaster::update_tile_texture(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &tile_texture,
-		const QuadTreeNode &tile)
+		const CubeQuadTreeNode &tile)
 {
 	// Use the same texture format as the source raster.
 	const boost::optional<GLenum> internal_format = tile_texture->get_internal_format();
@@ -615,7 +721,7 @@ void
 GPlatesOpenGL::GLMultiResolutionCubeRaster::update_fixed_point_tile_texture_mag_filter(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &tile_texture,
-		const QuadTreeNode &tile)
+		const CubeQuadTreeNode &tile)
 {
 	// Set the magnification filter.
 	switch (d_fixed_point_texture_filter)
@@ -629,7 +735,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::update_fixed_point_tile_texture_mag_
 	case FIXED_POINT_TEXTURE_FILTER_MAG_LINEAR_ANISOTROPIC:
 		// Only if it's a leaf node do we specify bilinear filtering since only then
 		// will the texture start to magnify (the bilinear makes it smooth instead of pixelated).
-		if (tile.is_leaf_node())
+		if (tile.d_is_leaf_node)
 		{
 			tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		}

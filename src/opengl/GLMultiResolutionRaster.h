@@ -824,7 +824,7 @@ namespace GPlatesOpenGL
 		typedef std::vector<LevelOfDetail::non_null_ptr_type> level_of_detail_seq_type;
 
 		//! Typedef for vertices.
-		typedef GLTexturedVertex vertex_type;
+		typedef GLTextureVertex vertex_type;
 
 		//! Typedef for vertex indices.
 		typedef GLushort vertex_element_type;
