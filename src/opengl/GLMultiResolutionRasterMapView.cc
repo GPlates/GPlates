@@ -25,6 +25,9 @@
 
 #include <cmath>
 #include <boost/cast.hpp>
+#include <GL/glew.h>
+#include <opengl/OpenGL.h>
+
 #include <QDebug>
 
 #include "GLMultiResolutionRasterMapView.h"
