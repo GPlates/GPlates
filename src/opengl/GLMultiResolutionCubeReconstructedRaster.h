@@ -113,12 +113,16 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The default tile dimension is 256.
+		 * The default tile dimension is 512.
 		 *
 		 * This size gives us a small enough tile region on the globe to make good use
 		 * of view frustum culling of tiles.
+		 * It's also larger than the default tile sizes elsewhere (256) because each tile requires
+		 * a full render of the reconstructed raster into the tile's view frustum.
+		 * These renders are quite expensive so we don't want too many of them - increasing the
+		 * tile dimension means less visible tiles in the map view.
 		 */
-		static const std::size_t DEFAULT_TILE_TEXEL_DIMENSION = 256;
+		static const std::size_t DEFAULT_TILE_TEXEL_DIMENSION = 512;
 
 
 		/**
@@ -220,6 +224,29 @@ namespace GPlatesOpenGL
 		}
 
 	private:
+		/**
+		 * Used to cache information, specific to a tile, to return to the client for caching.
+		 */
+		struct ClientCacheTile
+		{
+			ClientCacheTile(
+					const tile_texture_cache_type::object_shared_ptr_type &tile_texture_,
+					// Set to true to cache the GLMultiResolutionCubeReconstructedRaster tile texture...
+					bool cache_tile_texture_) :
+				// NOTE: The source GLMultiResolutionStaticPolygonReconstructedRaster cache is always cached...
+				source_cache_handle(tile_texture_->source_cache_handle)
+			{
+				if (cache_tile_texture_)
+				{
+					tile_texture = tile_texture_;
+				}
+			}
+
+			tile_texture_cache_type::object_shared_ptr_type tile_texture;
+			GLMultiResolutionRaster::cache_handle_type source_cache_handle;
+		};
+
+
 		/**
 		 * A node in the quad tree of a cube face.
 		 */
