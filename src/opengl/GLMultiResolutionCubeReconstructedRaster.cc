@@ -196,7 +196,9 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::render_raster_data_into
 
 	// Alpha-blend state.
 	// This enables the alpha texture clipping (done by reconstructed raster renderer) to mask out
-	// source regions as they're being rendered rather than writing alpha into the framebuffer.
+	// source regions as they're being rendered rather than writing RGBA of zero into the render-target
+	// effectively overwriting previously rendered valid data - when the render-target is used for
+	// rendering in turn as a texture it would come out as transparent.
 	renderer.gl_enable(GL_BLEND);
 	renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 

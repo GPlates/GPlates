@@ -286,10 +286,6 @@ namespace GPlatesGui
 			get_multi_resolution_raster(
 					GPlatesOpenGL::GLRenderer &renderer);
 
-			//! Let clients know we've rebuilt our raster.
-			const GPlatesUtils::SubjectToken &
-			get_rebuild_subject_token();
-
 			virtual
 			bool
 			is_required_direct_or_indirect_dependency(
@@ -299,13 +295,15 @@ namespace GPlatesGui
 			GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type d_raster_layer_proxy;
 			GPlatesUtils::ObserverToken d_proxied_raster_observer_token;
 			GPlatesUtils::ObserverToken d_raster_feature_observer_token;
-			GPlatesUtils::SubjectToken d_rebuild_subject_token;
+
+			boost::optional<RasterColourPalette::non_null_ptr_to_const_type> d_raster_colour_palette;
+			bool d_raster_colour_palette_dirty;
+
+			Colour d_raster_modulate_colour;
+			bool d_raster_modulate_colour_dirty;
 
 			boost::optional<GPlatesOpenGL::GLVisualRasterSource::non_null_ptr_type> d_visual_raster_source;
 			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_multi_resolution_raster;
-
-			boost::optional<RasterColourPalette::non_null_ptr_to_const_type> d_raster_colour_palette;
-			Colour d_raster_modulate_colour;
 		};
 
 
@@ -329,10 +327,6 @@ namespace GPlatesGui
 			get_multi_resolution_cube_raster(
 					GPlatesOpenGL::GLRenderer &renderer);
 
-			//! Let clients know we've rebuilt our cube raster.
-			const GPlatesUtils::SubjectToken &
-			get_rebuild_subject_token();
-
 			virtual
 			bool
 			is_required_direct_or_indirect_dependency(
@@ -340,9 +334,8 @@ namespace GPlatesGui
 
 		private:
 			GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> d_raster_layer_usage;
-			GPlatesUtils::ObserverToken d_raster_layer_usage_observer_token;
-			GPlatesUtils::SubjectToken d_rebuild_subject_token;
 
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_multi_resolution_raster;
 			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> d_multi_resolution_cube_raster;
 		};
 
@@ -358,6 +351,12 @@ namespace GPlatesGui
 			AgeGridLayerUsage(
 					const GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type &age_grid_raster_layer_proxy);
 
+			//! Specify the current reconstruction time.
+			void
+			set_reconstruction_time(
+					GPlatesOpenGL::GLRenderer &renderer,
+					const double &reconstruction_time);
+
 			/**
 			 * Returns the age grid *mask* multi-resolution raster.
 			 *
@@ -365,8 +364,7 @@ namespace GPlatesGui
 			 */
 			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type>
 			get_age_grid_mask_multi_resolution_raster(
-					GPlatesOpenGL::GLRenderer &renderer,
-					const double &reconstruction_time);
+					GPlatesOpenGL::GLRenderer &renderer);
 
 			/**
 			 * Returns the age grid *mask* multi-resolution raster.
@@ -375,17 +373,8 @@ namespace GPlatesGui
 			 */
 			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type>
 			get_age_grid_coverage_multi_resolution_raster(
-					GPlatesOpenGL::GLRenderer &renderer,
-					const double &reconstruction_time);
+					GPlatesOpenGL::GLRenderer &renderer);
 
-			//! See if needs updating.
-			void
-			update(
-					const double &reconstruction_time);
-
-			//! Let clients know we've rebuilt our age grid cube rasters.
-			const GPlatesUtils::SubjectToken &
-			get_rebuild_subject_token();
 
 			virtual
 			bool
@@ -395,7 +384,9 @@ namespace GPlatesGui
 		private:
 			GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type d_age_grid_raster_layer_proxy;
 			GPlatesUtils::ObserverToken d_age_grid_raster_feature_observer_token;
-			GPlatesUtils::SubjectToken d_rebuild_subject_token;
+
+			GPlatesMaths::real_t d_reconstruction_time;
+			bool d_reconstruction_time_dirty;
 
 			boost::optional<GPlatesOpenGL::GLAgeGridMaskSource::non_null_ptr_type> d_age_grid_mask_multi_resolution_source;
 			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_age_grid_mask_multi_resolution_raster;
@@ -405,6 +396,9 @@ namespace GPlatesGui
 
 			void
 			check_input_raster();
+
+			void
+			update();
 		};
 
 
@@ -419,6 +413,12 @@ namespace GPlatesGui
 			ReconstructedStaticPolygonMeshesLayerUsage(
 					const GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type &reconstructed_polygons_layer_proxy);
 
+			//! Specify the current reconstruction time.
+			void
+			set_reconstruction_time(
+					GPlatesOpenGL::GLRenderer &renderer,
+					const double &reconstruction_time);
+
 			/**
 			 * Returns the reconstructed static polygon meshes.
 			 *
@@ -427,19 +427,7 @@ namespace GPlatesGui
 			GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type
 			get_reconstructed_static_polygon_meshes(
 					GPlatesOpenGL::GLRenderer &renderer,
-					const double &reconstruction_time,
 					bool reconstructing_with_age_grid);
-
-			//! See if needs updating.
-			void
-			update(
-					const double &reconstruction_time,
-					bool reconstructing_with_age_grid,
-					bool force_update = false);
-
-			//! Let clients know we've rebuilt our reconstructed static polygon meshes.
-			const GPlatesUtils::SubjectToken &
-			get_rebuild_subject_token();
 
 			virtual
 			bool
@@ -450,12 +438,17 @@ namespace GPlatesGui
 			GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type d_reconstructed_static_polygon_meshes_layer_proxy;
 			GPlatesUtils::ObserverToken d_reconstructed_polygons_observer_token;
 			GPlatesUtils::ObserverToken d_present_day_polygons_observer_token;
-			GPlatesUtils::SubjectToken d_rebuild_subject_token;
+
+			GPlatesMaths::real_t d_reconstruction_time;
+			bool d_reconstruction_time_dirty;
+
+			boost::optional<bool> d_reconstructing_with_age_grid;
 
 			boost::optional<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
 					d_reconstructed_static_polygon_meshes;
-			boost::optional<GPlatesMaths::real_t> d_reconstruction_time;
-			boost::optional<bool> d_reconstructing_with_age_grid;
+
+			void
+			update();
 		};
 
 
@@ -473,6 +466,17 @@ namespace GPlatesGui
 					const GPlatesUtils::non_null_intrusive_ptr<CubeRasterLayerUsage> &cube_raster_layer_usage);
 
 			/**
+			 * Set/update the layer usages that come from other layers.
+			 *
+			 * This is done in case the user connects to new layers or disconnects.
+			 */
+			void
+			set_layer_inputs(
+					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> > &
+							reconstructed_polygon_meshes_layer_usage,
+					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > &age_grid_layer_usage);
+
+			/**
 			 * Returns the static polygon reconstructed raster.
 			 *
 			 * Rebuilds if out-of-date with respect to its dependencies.
@@ -480,23 +484,7 @@ namespace GPlatesGui
 			 */
 			boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
 			get_static_polygon_reconstructed_raster(
-					GPlatesOpenGL::GLRenderer &renderer,
-					const double &reconstruction_time);
-
-			/**
-			 * Update the layer usages that come from other layers.
-			 *
-			 * This is done in case the user connects to new layers or disconnects.
-			 */
-			void
-			update(
-					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> > &
-							reconstructed_polygon_meshes_layer_usage,
-					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > &age_grid_layer_usage);
-
-			//! Let clients know we've rebuilt our static polygon reconstructed raster.
-			const GPlatesUtils::SubjectToken &
-			get_rebuild_subject_token();
+					GPlatesOpenGL::GLRenderer &renderer);
 
 			virtual
 			bool
@@ -509,15 +497,17 @@ namespace GPlatesGui
 					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy);
 
 		private:
+			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> d_multi_resolution_cube_raster;
 			GPlatesUtils::non_null_intrusive_ptr<CubeRasterLayerUsage> d_cube_raster_layer_usage;
+
+			boost::optional<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
+					d_reconstructed_polygon_meshes;
 			boost::optional<GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> >
 					d_reconstructed_polygon_meshes_layer_usage;
-			boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > d_age_grid_layer_usage;
 
-			GPlatesUtils::ObserverToken d_cube_raster_layer_usage_observer_token;
-			GPlatesUtils::ObserverToken d_reconstructer_polygon_meshes_layer_usage_observer_token;
-			GPlatesUtils::ObserverToken d_age_grid_layer_usage_observer_token;
-			GPlatesUtils::SubjectToken d_rebuild_subject_token;
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_age_grid_mask_raster;
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_age_grid_coverage_raster;
+			boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > d_age_grid_layer_usage;
 
 			boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
 					d_reconstructed_raster;
@@ -545,19 +535,7 @@ namespace GPlatesGui
 			boost::optional<GPlatesOpenGL::GLMultiResolutionRasterMapView::non_null_ptr_type>
 			get_multi_resolution_raster_map_view(
 					GPlatesOpenGL::GLRenderer &renderer,
-					const GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type &multi_resolution_map_cube_mesh,
-					const double &reconstruction_time);
-
-			//! See if needs updating due to switching between regular and reconstructed rasters.
-			void
-			update(
-					boost::optional<GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> > raster_layer_usage,
-					boost::optional<GPlatesUtils::non_null_intrusive_ptr<StaticPolygonReconstructedRasterLayerUsage> >
-							reconstructed_raster_layer_usage);
-
-			//! Let clients know we've rebuilt our map raster.
-			const GPlatesUtils::SubjectToken &
-			get_rebuild_subject_token();
+					const GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type &multi_resolution_map_cube_mesh);
 
 			virtual
 			bool
@@ -565,16 +543,11 @@ namespace GPlatesGui
 					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const;
 
 		private:
-			boost::optional<GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> > d_raster_layer_usage;
-			GPlatesUtils::ObserverToken d_raster_layer_usage_observer_token;
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_raster;
+			GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> d_raster_layer_usage;
 
-			boost::optional<GPlatesUtils::non_null_intrusive_ptr<StaticPolygonReconstructedRasterLayerUsage> >
-					d_reconstructed_raster_layer_usage;
-			GPlatesUtils::ObserverToken d_reconstructed_raster_layer_usage_observer_token;
-
-			GPlatesUtils::SubjectToken d_rebuild_subject_token;
-
-			//boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type> d_multi_resolution_cube_raster;
+			boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type> d_reconstructed_raster;
+			GPlatesUtils::non_null_intrusive_ptr<StaticPolygonReconstructedRasterLayerUsage> d_reconstructed_raster_layer_usage;
 
 			boost::optional<GPlatesOpenGL::GLMultiResolutionRasterMapView::non_null_ptr_type> d_multi_resolution_raster_map_view;
 		};
