@@ -217,7 +217,7 @@ bool
 GPlatesOpenGL::GLFrameBufferObject::gl_check_frame_buffer_status(
 		GLRenderer &renderer) const
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	// Revert our framebuffer binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.

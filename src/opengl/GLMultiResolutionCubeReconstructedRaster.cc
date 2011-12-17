@@ -32,6 +32,7 @@
  */
 #include <GL/glew.h>
 #include <opengl/OpenGL.h>
+#include <QDebug>
 
 #include "GLMultiResolutionCubeReconstructedRaster.h"
 
@@ -172,18 +173,22 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_tile_texture(
 				*tile_texture);
 	}
 
+	// The caller will cache this tile to keep it from being prematurely recycled by our caches.
+	// Also the cached data accumulated by the reconstructed raster renderer will be added to the cache.
+	cache_handle = boost::shared_ptr<ClientCacheTile>(
+			new ClientCacheTile(
+					tile_texture,
+					// Only cache the tile texture if the client has requested it...
+					d_cache_tile_textures &&
+						// If the nothing was rendered into the tile then we don't want to return the
+						// unused texture to the caller for caching - this way it'll get returned to
+						// the texture cache for reuse...
+						visible));
+
 	// If nothing was rendered then inform the caller.
-	// We don't want to return the unused texture to the caller for caching - this way it'll
-	// get returned to the texture cache for reuse.
 	if (!visible)
 	{
 		return boost::none;
-	}
-
-	// The caller will cache this tile to keep it from being prematurely recycled by our caches.
-	if (d_cache_tile_textures)
-	{
-		cache_handle = tile_texture;
 	}
 
 	return GLTexture::shared_ptr_to_const_type(tile_texture->texture);

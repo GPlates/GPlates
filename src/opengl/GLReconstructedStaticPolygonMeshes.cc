@@ -54,8 +54,6 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::GLReconstructedStaticPolygonM
 	d_present_day_polygon_meshes_node_intersections(polygon_meshes.size()),
 	d_reconstructions_spatial_partition(reconstructions_spatial_partition)
 {
-	//PROFILE_FUNC();
-
 	create_polygon_mesh_drawables(renderer, polygon_meshes);
 
 	find_present_day_polygon_mesh_node_intersections(present_day_geometries, polygon_meshes);
@@ -350,6 +348,8 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::add_reconstructed_polygon_mes
 		bool active_reconstructions_only,
 		bool visible)
 {
+	//PROFILE_FUNC();
+
 	// Iterate over the sequence of reconstructions.
 	for (reconstructions_spatial_partition_type::element_const_iterator reconstructions_iter = begin_reconstructions;
 		reconstructions_iter != end_reconstructions;

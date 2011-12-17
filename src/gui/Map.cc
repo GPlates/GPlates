@@ -42,6 +42,8 @@
 
 #include "opengl/GLRenderer.h"
 
+#include "utils/Profile.h"
+
 
 GPlatesGui::Map::Map(
 		GPlatesPresentation::ViewState &view_state,

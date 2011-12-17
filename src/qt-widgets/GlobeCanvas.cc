@@ -531,7 +531,7 @@ GPlatesQtWidgets::GlobeCanvas::draw_svg_output()
 	}
 	catch (const GPlatesGlobal::Exception &e)
 	{
-			std::cerr << e << std::endl;
+			qWarning() << e;
 	}
 }
 
@@ -632,7 +632,7 @@ GPlatesQtWidgets::GlobeCanvas::resizeGL(
 	}
 	catch (const GPlatesGlobal::Exception &e)
 	{
-		std::cerr << e << std::endl;
+		qWarning() << e;
 	}
 }
 
@@ -809,12 +809,11 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 		// OK, something strange happened:  Our boost::optional MousePressInfo is not
 		// initialised.  Rather than spontaneously crashing with a Boost assertion error,
 		// let's log a warning on the console and NOT crash.
-		std::cerr << "Warning (GlobeCanvas::mouseReleaseEvent, "
+		qWarning() << "Warning (GlobeCanvas::mouseReleaseEvent, "
 				<< __FILE__
 				<< " line "
 				<< __LINE__
-				<< "):\nUninitialised mouse press info!"
-				<< std::endl;
+				<< "):\nUninitialised mouse press info!";
 		return;
 	}
 
@@ -1073,7 +1072,7 @@ GPlatesQtWidgets::GlobeCanvas::paintEvent(QPaintEvent *paint_event)
 		painter.end();
 
 	} catch (const GPlatesGlobal::Exception &e){
-			std::cerr << e << std::endl;
+			qWarning() << e;
 	}
 
 }

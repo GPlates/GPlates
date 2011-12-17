@@ -30,6 +30,8 @@
 #include "opengl/GLRenderer.h"
 #include "opengl/GLText.h"
 
+#include "utils/Profile.h"
+
 
 GPlatesGui::LayerPainter::LayerPainter(
 		bool use_depth_buffer) :
@@ -296,6 +298,8 @@ GPlatesGui::LayerPainter::end_painting(
 		const TextRenderer &text_renderer,
 		float scale)
 {
+	PROFILE_FUNC();
+
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
 

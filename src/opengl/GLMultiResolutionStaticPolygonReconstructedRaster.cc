@@ -733,8 +733,6 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 		boost::uint32_t frustum_plane_mask,
 		unsigned int &num_tiles_rendered_to_scene)
 {
-	PROFILE_FUNC();
-
 	// If the current quad tree node does not intersect any polygon meshes in the current rotation
 	// group or the current quad tree node is outside the view frustum then we can return early.
 	if (cull_quad_tree(
@@ -964,8 +962,6 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 		boost::uint32_t frustum_plane_mask,
 		unsigned int &num_tiles_rendered_to_scene)
 {
-	PROFILE_FUNC();
-
 	// If the current quad tree node does not intersect any polygon meshes in the current rotation
 	// group or the current quad tree node is outside the view frustum then we can return early.
 	if (cull_quad_tree(

@@ -171,6 +171,8 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 {
 	try
 	{
+		PROFILE_BLOCK("MapCanvas::drawBackground: render map");
+
 		// Create a render for all our OpenGL rendering work.
 		// Note that nothing will happen until we enter a rendering scope.
 		GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
