@@ -46,6 +46,7 @@
 #include "GLMatrix.h"
 #include "GLProjectionUtils.h"
 #include "GLRenderer.h"
+#include "GLShaderProgramUtils.h"
 #include "GLTextureUtils.h"
 #include "GLViewport.h"
 
@@ -67,6 +68,45 @@ namespace GPlatesOpenGL
 {
 	namespace
 	{
+		//! Vertex shader source code to render a tile to the scene.
+		const char *RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE =
+				"void main (void)\n"
+				"{\n"
+
+				"	// Position gets transformed exactly same as fixed-function pipeline.\n"
+				"	gl_Position = ftransform(); //gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
+
+				"	// Transform 3D texture coords (present day posisiont) by cube map projection and\n"
+				"	// any texture coordinate adjustments before accessing textures.\n"
+				"	// We have two texture transforms but only one texture coordinate.\n"
+				"	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;\n"
+				"	gl_TexCoord[1] = gl_TextureMatrix[1] * gl_MultiTexCoord0;\n"
+
+				"}\n";
+
+		/**
+		 * Fragment shader source code to render a tile to the scene.
+		 */
+		const char *RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE =
+				"uniform sampler2D tile_texture_sampler;\n"
+
+				"#ifdef ENABLE_CLIPPING\n"
+				"uniform sampler2D clip_texture_sampler;\n"
+				"#endif // ENABLE_CLIPPING\n"
+
+				"void main (void)\n"
+				"{\n"
+
+				"	// Projective texturing to handle cube map projection.\n"
+				"	gl_FragColor = texture2DProj(tile_texture_sampler, gl_TexCoord[0]);\n"
+
+				"#ifdef ENABLE_CLIPPING\n"
+				"	gl_FragColor *= texture2DProj(clip_texture_sampler, gl_TexCoord[1]);\n"
+				"#endif // ENABLE_CLIPPING\n"
+
+				"}\n";
+
+
 		/**
 		 * Visualise the level-of-detail of a tile (either as text or a checkerboard pattern).
 		 */
@@ -179,6 +219,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::GLMultiResolutionRasterMapView(
 	d_tile_texel_dimension(multi_resolution_cube_raster->get_tile_texel_dimension()),
 	d_map_projection_central_meridian_longitude(0)
 {
+	create_shader_programs(renderer);
 }
 
 
@@ -485,6 +526,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render_tile_to_scene(
 	// Make sure we return the cached handle to our caller so they can cache it.
 	cached_tiles.push_back(source_raster_cache_handle);
 
+
 	// Make sure we leave the OpenGL state the way it was.
 	GLRenderer::StateBlockScope save_restore_state(renderer);
 
@@ -546,21 +588,13 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::set_tile_state(
 	// Bind the scene tile texture to texture unit 0.
 	renderer.gl_bind_texture(tile_texture, GL_TEXTURE0, GL_TEXTURE_2D);
 
-	// Enable texturing and set the texture function on texture unit 0.
-	renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
-	renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-	// NOTE: Since our texture coordinates are 3D and contain the original point-on-sphere positions
-	// (before map projection) we don't need to set up texture coordinate generation from the vertices (x,y,z).
-
-	// If we've traversed deep enough into the cube quad tree then the cube quad tree mesh
-	// then the drawable starts to cover multiple quad tree nodes (instead of a single node)
-	// so we need to use a clip texture to mask off all but the node we're interested in.
-	if (clip_to_tile_frustum)
+	// Use shader program (if supported), otherwise the fixed-function pipeline.
+	if (d_render_tile_to_scene_program_object && d_render_tile_to_scene_with_clipping_program_object)
 	{
-		// NOTE: If two texture units are not supported then just don't clip to the tile.
-		// It'll look worse but at least it'll still work mostly and will only be noticeable
-		// if they zoom in far enough (which is when this code gets activated).
-		if (GLContext::get_parameters().texture.gl_max_texture_units >= 2)
+		// If we've traversed deep enough into the cube quad tree then the cube quad tree mesh
+		// then the drawable starts to cover multiple quad tree nodes (instead of a single node)
+		// so we need to use a clip texture to mask off all but the node we're interested in.
+		if (clip_to_tile_frustum)
 		{
 			// State for the clip texture.
 			//
@@ -577,13 +611,42 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::set_tile_state(
 			// Bind the clip texture to texture unit 1.
 			renderer.gl_bind_texture(d_multi_resolution_map_cube_mesh->get_clip_texture(), GL_TEXTURE1, GL_TEXTURE_2D);
 
-			// Enable texturing and set the texture function on texture unit 1.
-			renderer.gl_enable_texture(GL_TEXTURE1, GL_TEXTURE_2D);
-			renderer.gl_tex_env(GL_TEXTURE1, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			// NOTE: Since our texture coordinates are 3D and contain the original point-on-sphere positions
-			// (before map projection) we don't need to set up texture coordinate generation from the vertices (x,y,z).
+
+			// Bind the shader program with clipping.
+			renderer.gl_bind_program_object(d_render_tile_to_scene_with_clipping_program_object.get());
+
+			// Set the tile texture sampler to texture unit 0.
+			d_render_tile_to_scene_with_clipping_program_object.get()->gl_uniform1i(
+					renderer, "tile_texture_sampler", 0/*texture unit*/);
+
+			// Set the clip texture sampler to texture unit 1.
+			d_render_tile_to_scene_with_clipping_program_object.get()->gl_uniform1i(
+					renderer, "clip_texture_sampler", 1/*texture unit*/);
 		}
 		else
+		{
+			// Bind the shader program.
+			renderer.gl_bind_program_object(d_render_tile_to_scene_program_object.get());
+
+			// Set the tile texture sampler to texture unit 0.
+			d_render_tile_to_scene_program_object.get()->gl_uniform1i(
+					renderer, "tile_texture_sampler", 0/*texture unit*/);
+		}
+	}
+	else // Fixed function...
+	{
+		// Enable texturing and set the texture function on texture unit 0.
+		renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
+		renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+		// NOTE: Since our texture coordinates are 3D and contain the original point-on-sphere positions
+		// (before map projection) we don't need to set up texture coordinate generation from the vertices (x,y,z).
+
+		// However for the fixed-function pipeline clipping is not supported.
+		// We would need a second set of texture coordinates in the vertices that the clip texture
+		// transform could apply to - but the vertices come from GLMultiResolutionMapCubeMesh and
+		// it's too intrusive to add vertex variations in there - besides most hardware should have
+		// basic support for shaders.
+		if (clip_to_tile_frustum)
 		{
 			// Only emit warning message once.
 			static bool emitted_warning = false;
@@ -591,9 +654,9 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::set_tile_state(
 			{
 				qWarning() <<
 						"High zoom levels of map view NOT supported by this OpenGL system - \n"
-						"  requires two texture units - visual results will be incorrect.\n"
-						"  Most graphics hardware for over a decade supports this -\n"
-						"  most likely software renderer fallback has occurred - possibly via remote desktop software.";
+						"  requires shader programs - visual results will be incorrect.\n"
+						"  Most graphics hardware supports this - software renderer fallback "
+						"  might have occurred - possibly via remote desktop software.";
 				emitted_warning = true;
 			}
 		}
@@ -669,4 +732,36 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::get_viewport_pixel_size_in_map_pr
 	double delta_objy = objy[1] - objy[0];
 
 	return std::sqrt(delta_objx * delta_objx + delta_objy * delta_objy);
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionRasterMapView::create_shader_programs(
+		GLRenderer &renderer)
+{
+	// Shader programs to render tiles to the scene.
+	// We fallback to the fixed-function pipeline when shader programs are not supported but
+	// we don't clip with the fixed-function pipeline which was the reason for using shader programs.
+	// The clipping is only needed for high zoom levels so for reasonable zoom levels the fixed-function
+	// pipeline (available on all hardware) should render fine.
+
+	// A version without clipping.
+	d_render_tile_to_scene_program_object =
+			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
+					renderer,
+					RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE,
+					RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE);
+
+	// A version with clipping.
+	GLShaderProgramUtils::ShaderSource render_tile_to_scene_with_clipping_shader_source;
+	// Add the '#define' first.
+	render_tile_to_scene_with_clipping_shader_source.add_shader_source("#define ENABLE_CLIPPING\n");
+	// Then add the GLSL 'main()' function.
+	render_tile_to_scene_with_clipping_shader_source.add_shader_source(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE);
+	// Create the program object.
+	d_render_tile_to_scene_with_clipping_program_object =
+			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
+					renderer,
+					RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE,
+					render_tile_to_scene_with_clipping_shader_source);
 }

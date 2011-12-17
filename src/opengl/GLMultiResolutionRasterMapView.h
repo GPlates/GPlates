@@ -34,6 +34,7 @@
 #include "GLMatrix.h"
 #include "GLMultiResolutionCubeRasterInterface.h"
 #include "GLMultiResolutionMapCubeMesh.h"
+#include "GLProgramObject.h"
 #include "GLTexture.h"
 #include "GLTransform.h"
 #include "GLViewport.h"
@@ -153,6 +154,21 @@ namespace GPlatesOpenGL
 		 */
 		double d_map_projection_central_meridian_longitude;
 
+		/**
+		 * Shader program to render tiles to the scene.
+		 *
+		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used).
+		 */
+		boost::optional<GLProgramObject::shared_ptr_type> d_render_tile_to_scene_program_object;
+
+		/**
+		 * Shader program to render tiles to the scene with clipping.
+		 *
+		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used
+		 * but without clipping - so artifacts will appear when zoomed in far enough).
+		 */
+		boost::optional<GLProgramObject::shared_ptr_type> d_render_tile_to_scene_with_clipping_program_object;
+
 
 		GLMultiResolutionRasterMapView(
 				GLRenderer &renderer,
@@ -200,6 +216,10 @@ namespace GPlatesOpenGL
 				const GLViewport &viewport,
 				const GLMatrix &model_view_transform,
 				const GLMatrix &projection_transform) const;
+
+		void
+		create_shader_programs(
+				GLRenderer &renderer);
 	};
 }
 
