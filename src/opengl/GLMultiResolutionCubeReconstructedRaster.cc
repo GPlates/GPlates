@@ -194,15 +194,19 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::render_raster_data_into
 	// The projection matrix.
 	renderer.gl_load_matrix(GL_PROJECTION, projection_transform->get_matrix());
 
-	// Alpha-blend state.
-	// This enables the alpha texture clipping (done by reconstructed raster renderer) to mask out
-	// source regions as they're being rendered rather than writing RGBA of zero into the render-target
-	// effectively overwriting previously rendered valid data - when the render-target is used for
-	// rendering in turn as a texture it would come out as transparent.
-	renderer.gl_enable(GL_BLEND);
-	renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	// NOTE: We don't set alpha-blending state here because we
+	// might not be rendering directly to the final render target and hence we don't
+	// want to double-blend semi-transparent rasters - the alpha value is multiplied by
+	// all channels including alpha during alpha blending (R,G,B,A) -> (A*R,A*G,A*B,A*A) -
+	// the final render target would then have a source blending contribution of (3A*R,3A*G,3A*B,4A)
+	// which is not what we want - we want (A*R,A*G,A*B,A*A).
 
 	// Alpha-test state.
+	// This enables the alpha texture clipping (done by reconstructed raster renderer) to mask out
+	// source regions as they're being rendered rather than writing RGBA of zero into the render-target
+	// effectively overwriting previously rendered (from same render call) valid data - when the
+	// render-target is used for rendering in turn as a texture it would come out as transparent
+	// blocky regions where there should be valid reconstructed raster data instead.
 	renderer.gl_enable(GL_ALPHA_TEST);
 	renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
 
