@@ -34,6 +34,9 @@
 #include <opengl/OpenGL.h>
 
 #include <QDebug>
+#include <QImage>
+#include <QPainter>
+#include <QString>
 
 #include "GLMultiResolutionRasterMapView.h"
 
@@ -51,6 +54,118 @@
 
 #include "utils/Profile.h"
 
+// Enables visually showing level-of-detail in the map view.
+//#define DEBUG_LEVEL_OF_DETAIL_VISUALLY
+
+// Renders text displaying the level-of-detail of tiles, otherwise renders a checkerboard pattern
+// to visualise texel-to-pixel mapping ratios.
+// NOTE: 'DEBUG_LEVEL_OF_DETAIL_VISUALLY' must be defined.
+//#define DEBUG_LEVEL_OF_DETAIL_WITH_TEXT
+
+
+namespace GPlatesOpenGL
+{
+	namespace
+	{
+		/**
+		 * Visualise the level-of-detail of a tile (either as text or a checkerboard pattern).
+		 */
+#ifdef DEBUG_LEVEL_OF_DETAIL_VISUALLY
+		void
+		visualise_level_of_detail_in_texture(
+				GLRenderer &renderer,
+				const GLTexture::shared_ptr_to_const_type &tile_texture,
+				unsigned int level_of_detail)
+		{
+			const unsigned int tile_texel_dimension = tile_texture->get_width().get();
+
+#ifdef DEBUG_LEVEL_OF_DETAIL_WITH_TEXT
+
+			const QString debug_text = QString("LOD %1").arg(level_of_detail);
+
+			// Draw text into an image.
+			const QImage debug_image = GLTextureUtils::draw_text_into_qimage(
+					debug_text,
+					tile_texel_dimension, tile_texel_dimension,
+					3.0f/*text scale*/,
+					QColor(255, 0, 0, 255)/*red text*/);
+
+#else
+
+			// Draw a checkerboard pattern into an image.
+			// This is to visualise the texel density on the screen to see how close to a one-to-one
+			// texel-to-pixel mapping we get on the screen.
+			QImage debug_image(tile_texel_dimension, tile_texel_dimension, QImage::Format_ARGB32);
+
+			QPainter pattern_painter;
+
+			// Create the base pattern for the checkerboard.
+			QImage pattern2x2(2, 2, QImage::Format_ARGB32);
+			pattern_painter.begin(&pattern2x2);
+			pattern_painter.setCompositionMode(QPainter::CompositionMode_Clear);
+			pattern_painter.fillRect(0, 0, 2, 2, Qt::transparent);
+			pattern_painter.setCompositionMode(QPainter::CompositionMode_Source);
+			pattern_painter.fillRect(0, 0, 1, 1, Qt::transparent);
+			pattern_painter.fillRect(1, 0, 1, 1, Qt::white);
+			pattern_painter.fillRect(0, 1, 1, 1, Qt::white);
+			pattern_painter.fillRect(1, 1, 1, 1, Qt::transparent);
+			pattern_painter.end();
+
+			const unsigned int log2_texels_per_pattern = 3;
+			const unsigned int texels_per_pattern = (1 << log2_texels_per_pattern);
+			const unsigned int pattern_size = 2 * texels_per_pattern;
+			QImage pattern(pattern_size, pattern_size, QImage::Format_ARGB32);
+			// Paint the checkerboard pattern.
+			pattern_painter.begin(&pattern);
+			pattern_painter.setCompositionMode(QPainter::CompositionMode_Clear);
+			pattern_painter.fillRect(0, 0, pattern_size, pattern_size, Qt::transparent);
+			pattern_painter.setCompositionMode(QPainter::CompositionMode_Source);
+			for (unsigned int yp = 0; yp < pattern_size / 2; ++yp)
+			{
+				for (unsigned int xp = 0; xp < pattern_size / 2; ++xp)
+				{
+					int posx = 2 * xp;
+					int posy = 2 * yp;
+					// Leave some patterns transparent.
+					if (((posx >> log2_texels_per_pattern) & 1) ^ ((posy >> log2_texels_per_pattern) & 1))
+					{
+						pattern_painter.drawImage(posx, posy, pattern2x2);
+					}
+				}
+			}
+			pattern_painter.end();
+
+			QPainter debug_image_painter(&debug_image);
+			debug_image_painter.setCompositionMode(QPainter::CompositionMode_Clear);
+			debug_image_painter.fillRect(0, 0, tile_texel_dimension, tile_texel_dimension, Qt::transparent);
+			debug_image_painter.setCompositionMode(QPainter::CompositionMode_Source);
+
+			// Paint the checkerboard.
+			for (unsigned int y = 0; y < tile_texel_dimension / pattern_size; ++y)
+			{
+				for (unsigned int x = 0; x < tile_texel_dimension / pattern_size; ++x)
+				{
+					debug_image_painter.drawImage(x * pattern_size, y * pattern_size, pattern);
+				}
+			}
+
+			debug_image_painter.end();
+
+#endif
+
+			// Convert to ARGB32 format so it's easier to load into a texture.
+			debug_image.convertToFormat(QImage::Format_ARGB32);
+
+			// Load cached image into raster texture.
+			GLTextureUtils::load_argb32_qimage_into_rgba8_texture_2D(
+					renderer,
+					boost::const_pointer_cast<GLTexture>(tile_texture),
+					debug_image,
+					0, 0);
+		}
+#endif
+	}
+}
 
 const double GPlatesOpenGL::GLMultiResolutionRasterMapView::ERROR_VIEWPORT_PIXEL_SIZE_IN_MAP_PROJECTION = 360.0;
 
@@ -350,9 +465,22 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render_tile_to_scene(
 	// If there is no tile texture it means there's nothing to be drawn (eg, no raster covering this node).
 	if (!tile_texture_opt)
 	{
+		//qDebug() << "***************** Nothing render into cube quad tree tile *****************";
 		return;
 	}
 	const GLTexture::shared_ptr_to_const_type tile_texture = tile_texture_opt.get();
+
+#if 0
+	qDebug()
+		<< "Rendered cube quad tree tile: " << num_tiles_rendered_to_scene
+		<< " at LOD: " << cube_subdivision_cache_node.get_level_of_detail();
+#endif
+#ifdef DEBUG_LEVEL_OF_DETAIL_VISUALLY
+	visualise_level_of_detail_in_texture(
+			renderer,
+			tile_texture,
+			cube_subdivision_cache_node.get_level_of_detail());
+#endif
 
 	// Make sure we return the cached handle to our caller so they can cache it.
 	cached_tiles.push_back(source_raster_cache_handle);
