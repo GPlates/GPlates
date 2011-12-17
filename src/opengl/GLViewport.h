@@ -40,6 +40,13 @@ namespace GPlatesOpenGL
 			public boost::equality_comparable<GLViewport>
 	{
 	public:
+		//! Default constructor.
+		GLViewport()
+		{
+			set_viewport(0, 0, 0, 0);
+		}
+
+
 		//! Constructor.
 		GLViewport(
 				GLint x_,

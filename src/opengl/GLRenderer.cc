@@ -135,24 +135,16 @@ GPlatesOpenGL::GLRenderer::begin_render(
 			GPLATES_ASSERTION_SOURCE,
 			GLRendererAPIError::SHOULD_HAVE_ACTIVE_OPENGL_QPAINTER);
 
-	// The modelview and projection matrices set by QPainter.
+	// The viewport and modelview/projection matrices set by QPainter.
+	GLViewport qpainter_viewport;
 	GLMatrix qpainter_model_view_matrix;
 	GLMatrix qpainter_projection_matrix;
 
 	// Suspend the QPainter so we can start making calls directly to OpenGL without interfering with
 	// the QPainter's OpenGL state.
-	suspend_qpainter(qpainter_model_view_matrix, qpainter_projection_matrix);
+	suspend_qpainter(qpainter_viewport, qpainter_model_view_matrix, qpainter_projection_matrix);
 
-	//
-	// Retrieve the viewport, set by QPainter, from OpenGL.
-	//
-	// NOTE: It is *not* normally a good idea to retrieve state *from* OpenGL because, in the worst case,
-	// this has the potential to stall the graphics pipeline - and in general it's not recommended.
-	//
-	GLint viewport[4];
-	glGetIntegerv(GL_VIEWPORT, viewport);
-
-	begin_render(GPlatesOpenGL::GLViewport(viewport[0], viewport[1], viewport[2], viewport[3]));
+	begin_render(qpainter_viewport);
 
 	// We're not really in the default OpenGL state so we need to track the current
 	// modelview and projection matrices set by QPainter.
@@ -242,13 +234,14 @@ GPlatesOpenGL::GLRenderer::end_qpainter_block()
 {
 	if (d_qpainter)
 	{
-		// The modelview and projection matrices set by QPainter.
+		// The viewport and modelview/projection matrices set by QPainter.
+		GLViewport qpainter_viewport;
 		GLMatrix qpainter_model_view_matrix;
 		GLMatrix qpainter_projection_matrix;
 
 		// Suspend the QPainter so we can start making calls directly to OpenGL without
 		// interfering with the QPainter's OpenGL state.
-		suspend_qpainter(qpainter_model_view_matrix, qpainter_projection_matrix);
+		suspend_qpainter(qpainter_viewport, qpainter_model_view_matrix, qpainter_projection_matrix);
 
 		// Restore the OpenGL state to what it was before 'begin_qpainter_block' was called.
 		end_state_block();
@@ -1538,6 +1531,7 @@ GPlatesOpenGL::GLRenderer::draw(
 
 void
 GPlatesOpenGL::GLRenderer::suspend_qpainter(
+		GLViewport &qpainter_viewport,
 		GLMatrix &qpainter_model_view_matrix,
 		GLMatrix &qpainter_projection_matrix)
 {
@@ -1568,21 +1562,63 @@ GPlatesOpenGL::GLRenderer::suspend_qpainter(
 #endif
 
 	//
-	// Retrieve the current modelview/projection matrices from OpenGL.
+	// Retrieve the viewport, set by QPainter, from OpenGL.
 	//
-	// NOTE: It is *not* normally a good idea to retrieve state *from* OpenGL because, in the worst case,
+	// NOTE: It is *not* a good idea to retrieve state *from* OpenGL because, in the worst case,
 	// this has the potential to stall the graphics pipeline - and in general it's not recommended.
 	//
-	// The reason for this is we track the OpenGL state and we normally assume it starts out in the
-	// default state (which is the case if QPainter isn't used) but is not the case here.
+#if 0
+	GLint viewport[4];
+	glGetIntegerv(GL_VIEWPORT, viewport);
+#endif
+
+	// The QPainter's paint device.
+	QPaintDevice *qpaint_device = d_qpainter->device();
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			qpaint_device,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Get the viewport from the QPainter.
+	const QRect viewport = d_qpainter->viewport();
+	// Return to the caller.
+	qpainter_viewport.set_viewport(
+			viewport.x(),
+			// Qt and OpenGL have inverted 'y' viewport components relative to each other...
+			qpaint_device->height() - viewport.y() - viewport.height(),
+			viewport.width(),
+			viewport.height());
+
 	//
-	// FIXME: We should probably obtain these via QPainter::transform() and QPainter::viewport().
+	// Retrieve the current modelview/projection matrices from QPainter.
+	//
+	// NOTE: It is *not* a good idea to retrieve state *from* OpenGL because, in the worst case,
+	// this has the potential to stall the graphics pipeline - and in general it's not recommended.
+	// Profiling revealed 300msec (ie, huge!) for "glGetDoublev(GL_MODELVIEW_MATRIX, ...)" when
+	// rendering rasters with age grid smoothing (ie, a deep GPU pipeline to stall).
+	//
+#if 0
+	GLMatrix mvm, pm;
+	glGetDoublev(GL_MODELVIEW_MATRIX, mvm.get_matrix());
+	glGetDoublev(GL_PROJECTION_MATRIX, pm.get_matrix());
+#endif
 
-	// Get the current modelview matrix from OpenGL.
-	glGetDoublev(GL_MODELVIEW_MATRIX, qpainter_model_view_matrix.get_matrix());  
+	// The reason for retrieving this is we track the OpenGL state and we normally assume it starts
+	// out in the default state (which is the case if QPainter isn't used) but is not the case here.
 
-	// Get the current projection matrix from OpenGL.
-	glGetDoublev(GL_PROJECTION_MATRIX, qpainter_projection_matrix.get_matrix());  
+	// The model-view matrix.
+    const QTransform &model_view_transform = d_qpainter->worldTransform();
+	const GLdouble model_view_matrix[16] =
+	{
+        model_view_transform.m11(), model_view_transform.m12(),         0, model_view_transform.m13(),
+        model_view_transform.m21(), model_view_transform.m22(),         0, model_view_transform.m23(),
+		                         0,                          0,         1,                          0,
+         model_view_transform.dx(),  model_view_transform.dy(),         0, model_view_transform.m33()
+    };
+	qpainter_model_view_matrix.gl_load_matrix(model_view_matrix);
+
+	// The projection matrix.
+	qpainter_projection_matrix.gl_load_identity();
+	qpainter_projection_matrix.gl_ortho(0, qpaint_device->width(), qpaint_device->height(), 0, -999999, 999999);
 }
 
 
@@ -1765,6 +1801,11 @@ GPlatesOpenGL::GLRenderer::begin_framebuffer_object_2D(
 			render_texture_target.level,
 			GL_COLOR_ATTACHMENT0_EXT);
 
+	// Checking the framebuffer status can sometimes be expensive even if called once per frame.
+	// One profile measured 142msec for a single check - not sure if that was due to the check
+	// or somehow the driver needed to wait for some reason and happened at that call.
+	// In any case we only enable checking for debug builds.
+#ifdef GPLATES_DEBUG
 	// Revert to using the main framebuffer as a render-target if the framebuffer object status is invalid.
 	if (!check_framebuffer_object_2D_completeness(render_texture_target))
 	{
@@ -1782,6 +1823,7 @@ GPlatesOpenGL::GLRenderer::begin_framebuffer_object_2D(
 
 		return false;
 	}
+#endif
 
 	// Bind the framebuffer object to make it the active framebuffer.
 	gl_bind_frame_buffer(d_framebuffer_object.get());

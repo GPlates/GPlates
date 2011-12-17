@@ -1424,6 +1424,7 @@ namespace GPlatesOpenGL
 
 		void
 		suspend_qpainter(
+				GLViewport &qpainter_viewport,
 				GLMatrix &qpainter_model_view_matrix,
 				GLMatrix &qpainter_projection_matrix);
 
