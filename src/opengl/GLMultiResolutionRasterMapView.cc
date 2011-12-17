@@ -341,24 +341,11 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render_tile_to_scene(
 		std::vector<cache_handle_type> &cached_tiles,
 		unsigned int &num_tiles_rendered_to_scene)
 {
-	// The view transform never changes within a cube face so it's the same across
-	// an entire cube face quad tree (each cube face has its own quad tree).
-	const GLTransform::non_null_ptr_to_const_type view_transform =
-			cube_subdivision_cache.get_view_transform(
-					cube_subdivision_cache_node);
-
-	// Regular projection transform.
-	const GLTransform::non_null_ptr_to_const_type projection_transform =
-			cube_subdivision_cache.get_projection_transform(
-					cube_subdivision_cache_node);
-
 	// Get the tile texture from our source raster.
 	GLMultiResolutionCubeRasterInterface::cache_handle_type source_raster_cache_handle;
 	const boost::optional<GLTexture::shared_ptr_to_const_type> tile_texture_opt =
 			source_raster_quad_tree_node.get_tile_texture(
 					renderer,
-					view_transform,
-					projection_transform,
 					source_raster_cache_handle);
 	// If there is no tile texture it means there's nothing to be drawn (eg, no raster covering this node).
 	if (!tile_texture_opt)
@@ -372,6 +359,17 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render_tile_to_scene(
 
 	// Make sure we leave the OpenGL state the way it was.
 	GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	// The view transform never changes within a cube face so it's the same across
+	// an entire cube face quad tree (each cube face has its own quad tree).
+	const GLTransform::non_null_ptr_to_const_type view_transform =
+			cube_subdivision_cache.get_view_transform(
+					cube_subdivision_cache_node);
+
+	// Regular projection transform.
+	const GLTransform::non_null_ptr_to_const_type projection_transform =
+			cube_subdivision_cache.get_projection_transform(
+					cube_subdivision_cache_node);
 
 	// Clip texture projection transform.
 	const GLTransform::non_null_ptr_to_const_type clip_projection_transform =

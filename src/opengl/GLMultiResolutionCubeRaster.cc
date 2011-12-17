@@ -75,14 +75,15 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::GLMultiResolutionCubeRaster(
 
 	// The, possibly adapted, tile dimension should be a power-of-two *if*
 	// 'GL_ARB_texture_non_power_of_two' is *not* supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			GPLATES_OPENGL_BOOL(GLEW_ARB_texture_non_power_of_two) ||
 				GPlatesUtils::Base2::is_power_of_two(d_tile_texel_dimension),
 			GPLATES_ASSERTION_SOURCE);
-	// And the, possibly adapted, tile dimension should not be larger than the maximum texture dimension.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_tile_texel_dimension <= GLContext::get_parameters().texture.gl_max_texture_size,
-			GPLATES_ASSERTION_SOURCE);
+	// Make the, possibly adapted, tile dimension does not exceed the maximum texture size...
+	if (d_tile_texel_dimension > GLContext::get_parameters().texture.gl_max_texture_size)
+	{
+		d_tile_texel_dimension = GLContext::get_parameters().texture.gl_max_texture_size;
+	}
 
 	initialise_cube_quad_trees(num_levels_of_detail);
 
@@ -356,6 +357,8 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 			d_cube_quad_tree->create_node(
 					CubeQuadTreeNode(
 							tile_level_of_detail,
+							view_transform,
+							half_texel_expanded_projection_transform,
 							d_texture_cache->allocate_volatile_object()));
 
 	// Mark the tile as up-to-date with respect to the world transform.
@@ -442,8 +445,6 @@ GPlatesOpenGL::GLTexture::shared_ptr_to_const_type
 GPlatesOpenGL::GLMultiResolutionCubeRaster::get_tile_texture(
 		GLRenderer &renderer,
 		const CubeQuadTreeNode &tile,
-		const GLTransform::non_null_ptr_to_const_type &view_transform,
-		const GLTransform::non_null_ptr_to_const_type &projection_transform,
 		cache_handle_type &cache_handle)
 {
 	//
@@ -456,14 +457,14 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::get_tile_texture(
 		tile.d_src_raster_tiles.clear();
 
 		// Multiply the current world transform into the model-view matrix.
-		GLMatrix world_model_view_transform(view_transform->get_matrix());
+		GLMatrix world_model_view_transform(tile.d_view_transform->get_matrix());
 		world_model_view_transform.gl_mult_matrix(d_world_transform);
 
 		// Get the new set of source tiles that are visible in the current tile's frustum.
 		d_multi_resolution_raster->get_visible_tiles(
 				tile.d_src_raster_tiles,
 				world_model_view_transform,
-				projection_transform->get_matrix(),
+				tile.d_projection_transform->get_matrix(),
 				tile.d_tile_level_of_detail);
 
 		// The tile is now up-to-date with respect to the world transform.
@@ -504,9 +505,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::get_tile_texture(
 		render_raster_data_into_tile_texture(
 				renderer,
 				tile,
-				*tile_texture,
-				view_transform,
-				projection_transform);
+				*tile_texture);
 	}
 	// Our texture wasn't recycled but see if it's still valid in case the source
 	// raster changed the data underneath us.
@@ -517,9 +516,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::get_tile_texture(
 		render_raster_data_into_tile_texture(
 				renderer,
 				tile,
-				*tile_texture,
-				view_transform,
-				projection_transform);
+				*tile_texture);
 	}
 
 	// The caller will cache this tile to keep it from being prematurely recycled by our caches.
@@ -537,9 +534,7 @@ void
 GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture(
 		GLRenderer &renderer,
 		const CubeQuadTreeNode &tile,
-		TileTexture &tile_texture,
-		const GLTransform::non_null_ptr_to_const_type &view_transform,
-		const GLTransform::non_null_ptr_to_const_type &projection_transform)
+		TileTexture &tile_texture)
 {
 	PROFILE_FUNC();
 
@@ -552,12 +547,12 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 	renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
 
 	// The model-view matrix.
-	renderer.gl_load_matrix(GL_MODELVIEW, view_transform->get_matrix());
+	renderer.gl_load_matrix(GL_MODELVIEW, tile.d_view_transform->get_matrix());
 	// Multiply in the requested world transform.
 	renderer.gl_mult_matrix(GL_MODELVIEW, d_world_transform);
 
 	// The projection matrix.
-	renderer.gl_load_matrix(GL_PROJECTION, projection_transform->get_matrix());
+	renderer.gl_load_matrix(GL_PROJECTION, tile.d_projection_transform->get_matrix());
 
 	// Get the source raster to render into the render target using the view frustum
 	// we have provided. We have already cached the visible source raster tiles that need to be

@@ -31,6 +31,7 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "GLCubeSubdivision.h"
 #include "GLMultiResolutionStaticPolygonReconstructedRaster.h"
 #include "GLMultiResolutionRaster.h"
 #include "GLTexture.h"
@@ -39,6 +40,7 @@
 
 #include "maths/MathsFwd.h"
 #include "maths/CubeQuadTree.h"
+#include "maths/CubeQuadTreeLocation.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ObjectCache.h"
@@ -123,6 +125,9 @@ namespace GPlatesOpenGL
 		 * Creates a @a GLMultiResolutionCubeReconstructedRaster object.
 		 *
 		 * @a tile_texel_dimension is the dimension of each square tile texture (returned by @a get_tile_texture).
+		 * If it is larger than the maximum supported texture dimension then it will be changed to the maximum.
+		 * If 'GL_ARB_texture_non_power_of_two' is not supported then it will be changed to the
+		 * next power-of-two (if it is not already a power-of-two).
 		 *
 		 * If @a cache_tile_textures is true then the tile textures will be cached.
 		 */
@@ -221,9 +226,19 @@ namespace GPlatesOpenGL
 		struct CubeQuadTreeNode
 		{
 			CubeQuadTreeNode(
+					const GLTransform::non_null_ptr_to_const_type &view_transform_,
+					const GLTransform::non_null_ptr_to_const_type &projection_transform_,
 					const tile_texture_cache_type::volatile_object_ptr_type &tile_texture_) :
+				d_view_transform(view_transform_),
+				d_projection_transform(projection_transform_),
 				d_tile_texture(tile_texture_)
 			{  }
+
+			//! View transform used to render source raster into current tile.
+			GLTransform::non_null_ptr_to_const_type d_view_transform;
+
+			//! Projection transform used to render source raster into current tile.
+			GLTransform::non_null_ptr_to_const_type d_projection_transform;
 
 			/**
 			 * Keeps tracks of whether the source data has changed underneath us
@@ -254,9 +269,11 @@ namespace GPlatesOpenGL
 		{
 			QuadTreeNodeImpl(
 					cube_quad_tree_type::node_type &cube_quad_tree_node_,
-					GLMultiResolutionCubeReconstructedRaster &multi_resolution_cube_raster_) :
+					GLMultiResolutionCubeReconstructedRaster &multi_resolution_cube_raster_,
+					const GPlatesMaths::CubeQuadTreeLocation &cube_quad_tree_location_) :
 				cube_quad_tree_node(cube_quad_tree_node_),
-				multi_resolution_cube_raster(multi_resolution_cube_raster_)
+				multi_resolution_cube_raster(multi_resolution_cube_raster_),
+				cube_quad_tree_location(cube_quad_tree_location_)
 			{  }
 
 			/**
@@ -279,15 +296,11 @@ namespace GPlatesOpenGL
 			boost::optional<GLTexture::shared_ptr_to_const_type>
 			get_tile_texture(
 					GLRenderer &renderer,
-					const GLTransform::non_null_ptr_to_const_type &view_transform,
-					const GLTransform::non_null_ptr_to_const_type &projection_transform,
 					cache_handle_type &cache_handle) const
 			{
 				return multi_resolution_cube_raster.get_tile_texture(
 						renderer,
 						cube_quad_tree_node.get_element(),
-						view_transform,
-						projection_transform,
 						cache_handle);
 			}
 
@@ -301,6 +314,11 @@ namespace GPlatesOpenGL
 			 * Pointer to parent class so can delegate to it.
 			 */
 			GLMultiResolutionCubeReconstructedRaster &multi_resolution_cube_raster;
+
+			/**
+			 * Used to determine location of cube quad tree node so can build view/projection transforms.
+			 */
+			GPlatesMaths::CubeQuadTreeLocation cube_quad_tree_location;
 		};
 
 
@@ -326,6 +344,11 @@ namespace GPlatesOpenGL
 		bool d_cache_tile_textures;
 
 		/**
+		 * Used to calculate projection transforms for the cube quad tree.
+		 */
+		GLCubeSubdivision::non_null_ptr_to_const_type d_cube_subdivision;
+
+		/**
 		 * The cube quad tree.
 		 *
 		 * This is what the user will traverse once we've built the cube quad tree raster.
@@ -349,17 +372,13 @@ namespace GPlatesOpenGL
 		get_tile_texture(
 				GLRenderer &renderer,
 				const CubeQuadTreeNode &tile,
-				const GLTransform::non_null_ptr_to_const_type &view_transform,
-				const GLTransform::non_null_ptr_to_const_type &projection_transform,
 				cache_handle_type &cache_handle);
 
 		bool
 		render_raster_data_into_tile_texture(
 				GLRenderer &renderer,
 				const CubeQuadTreeNode &tile,
-				TileTexture &tile_texture,
-				const GLTransform::non_null_ptr_to_const_type &view_transform,
-				const GLTransform::non_null_ptr_to_const_type &projection_transform);
+				TileTexture &tile_texture);
 
 		void
 		create_tile_texture(
@@ -367,14 +386,14 @@ namespace GPlatesOpenGL
 				const GLTexture::shared_ptr_type &tile_texture);
 
 		/**
-		 * Gets our internal cube quad tree node from the client's tile handle.
+		 * Gets our quad tree node impl from the client's tile handle.
 		 */
 		static
-		cube_quad_tree_type::node_type &
-		get_cube_quad_tree_node(
+		QuadTreeNodeImpl &
+		get_quad_tree_node_impl(
 				const quad_tree_node_type &tile)
 		{
-			return dynamic_cast<QuadTreeNodeImpl &>(tile.get_impl()).cube_quad_tree_node;
+			return dynamic_cast<QuadTreeNodeImpl &>(tile.get_impl());
 		}
 	};
 }

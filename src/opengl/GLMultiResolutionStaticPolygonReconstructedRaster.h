@@ -225,7 +225,7 @@ namespace GPlatesOpenGL
 								// gives age grid mask alpha values that are not either 0.0 or 1.0...
 								GPlatesOpenGL::GLMultiResolutionCubeRaster::FIXED_POINT_TEXTURE_FILTER_MAG_NEAREST,
 								// Use non-default here - our source GLMultiResolutionRaster in turn references
-								// a GLAgeGridMaskSource which has some caching to insulates us from the
+								// a GLAgeGridMaskSource which has some caching to insulate us from the
 								// file system so we don't really need any caching in GLMultiResolutionRaster
 								// and can save texture memory usage as a result...
 								false/*cache_source_tile_textures*/)),

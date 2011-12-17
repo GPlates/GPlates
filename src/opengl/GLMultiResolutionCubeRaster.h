@@ -37,6 +37,7 @@
 #include "GLMultiResolutionRaster.h"
 #include "GLTexture.h"
 #include "GLTextureUtils.h"
+#include "GLTransform.h"
 #include "OpenGLFwd.h"
 
 #include "maths/MathsFwd.h"
@@ -188,7 +189,7 @@ namespace GPlatesOpenGL
 		 * levels of detail - without this there is typically one extra level-of-detail required to
 		 * capture the highest resolution of the source raster.
 		 * NOTE: The adapted tile texel dimension will never be larger than twice @a tile_texel_dimension.
-		 * So you should ensure that '2 * tile_texel_dimension' is not larger than the maximum texture dimension.
+		 * If it is then larger than the maximum supported texture dimension then it will be changed to the maximum.
 		 *
 		 * NOTE: If the 'GL_ARB_texture_non_power_of_two' extension is *not* supported then the
 		 * actual tile texel dimension will be rounded up to the next power-of-two dimension unless
@@ -378,10 +379,14 @@ namespace GPlatesOpenGL
 		{
 			CubeQuadTreeNode(
 					unsigned int tile_level_of_detail_,
+					const GLTransform::non_null_ptr_to_const_type &view_transform_,
+					const GLTransform::non_null_ptr_to_const_type &projection_transform_,
 					const tile_texture_cache_type::volatile_object_ptr_type &tile_texture_) :
 				// Starts off as true (and later gets set to false if this is an internal node)...
 				d_is_leaf_node(true),
 				d_tile_level_of_detail(tile_level_of_detail_),
+				d_view_transform(view_transform_),
+				d_projection_transform(projection_transform_),
 				d_tile_texture(tile_texture_)
 			{  }
 
@@ -396,6 +401,12 @@ namespace GPlatesOpenGL
 			 * This remains constant even when the world transform changes.
 			 */
 			unsigned int d_tile_level_of_detail;
+
+			//! View transform used to render source raster into current tile.
+			GLTransform::non_null_ptr_to_const_type d_view_transform;
+
+			//! Projection transform used to render source raster into current tile.
+			GLTransform::non_null_ptr_to_const_type d_projection_transform;
 
 			//! Tiles of source raster covered by this tile.
 			mutable std::vector<GLMultiResolutionRaster::tile_handle_type> d_src_raster_tiles;
@@ -458,15 +469,11 @@ namespace GPlatesOpenGL
 			boost::optional<GLTexture::shared_ptr_to_const_type>
 			get_tile_texture(
 					GLRenderer &renderer,
-					const GLTransform::non_null_ptr_to_const_type &view_transform,
-					const GLTransform::non_null_ptr_to_const_type &projection_transform,
 					cache_handle_type &cache_handle) const
 			{
 				return multi_resolution_cube_raster.get_tile_texture(
 						renderer,
 						cube_quad_tree_node.get_element(),
-						view_transform,
-						projection_transform,
 						cache_handle);
 			}
 
@@ -574,17 +581,13 @@ namespace GPlatesOpenGL
 		get_tile_texture(
 				GLRenderer &renderer,
 				const CubeQuadTreeNode &tile,
-				const GLTransform::non_null_ptr_to_const_type &view_transform,
-				const GLTransform::non_null_ptr_to_const_type &projection_transform,
 				cache_handle_type &cache_handle);
 
 		void
 		render_raster_data_into_tile_texture(
 				GLRenderer &renderer,
 				const CubeQuadTreeNode &tile,
-				TileTexture &tile_texture,
-				const GLTransform::non_null_ptr_to_const_type &view_transform,
-				const GLTransform::non_null_ptr_to_const_type &projection_transform);
+				TileTexture &tile_texture);
 
 		void
 		create_tile_texture(

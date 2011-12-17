@@ -1697,8 +1697,6 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_source_
 		const boost::optional<GLTexture::shared_ptr_to_const_type> source_raster_texture =
 				source_raster_quad_tree_node.get_tile_texture(
 						renderer,
-						cube_subdivision_cache.get_view_transform(cube_subdivision_cache_node),
-						cube_subdivision_cache.get_projection_transform(cube_subdivision_cache_node),
 						source_raster_cache_handle);
 		if (!source_raster_texture)
 		{
@@ -2011,29 +2009,12 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_age_mas
 	// Obtain textures of the source, age grid mask/coverage tiles.
 	//
 
-	// The view transform never changes within a cube face so it's the same across
-	// an entire cube face quad tree (each cube face has its own quad tree).
-	const GLTransform::non_null_ptr_to_const_type view_transform =
-			cube_subdivision_cache.get_view_transform(
-					cube_subdivision_cache_node);
-
-	// Get the view/projection transforms for the current cube quad tree node.
-	//
-	// NOTE: We get the half-texel-expanded projection transform since that is what's used to
-	// lookup the tile textures (the tile textures are bilinearly filtered and the centres of
-	// border texels match up with adjacent tiles).
-	const GLTransform::non_null_ptr_to_const_type half_texel_expanded_projection_transform =
-			cube_subdivision_cache.get_projection_transform(
-					cube_subdivision_cache_node);
-
 	// Get the source raster texture.
 	// Since it's a cube texture it may, in turn, have to render its source raster
 	// into its texture (which it then passes to us to use).
 	const boost::optional<GLTexture::shared_ptr_to_const_type> source_raster_texture =
 			source_raster_quad_tree_node.get_tile_texture(
 					renderer,
-					view_transform,
-					half_texel_expanded_projection_transform,
 					age_masked_source_tile_texture.source_raster_cache_handle);
 	if (!source_raster_texture)
 	{
@@ -2052,14 +2033,10 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_age_mas
 	const boost::optional<GLTexture::shared_ptr_to_const_type> age_grid_mask_texture =
 			age_grid_mask_quad_tree_node.get_tile_texture(
 					renderer,
-					view_transform,
-					half_texel_expanded_projection_transform,
 					age_masked_source_tile_texture.age_grid_mask_cache_handle);
 	const boost::optional<GLTexture::shared_ptr_to_const_type> age_grid_coverage_texture =
 			age_grid_coverage_quad_tree_node.get_tile_texture(
 					renderer,
-					view_transform,
-					half_texel_expanded_projection_transform,
 					age_masked_source_tile_texture.age_grid_coverage_cache_handle);
 	if (!age_grid_mask_texture || !age_grid_coverage_texture)
 	{
@@ -2083,6 +2060,21 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_age_mas
 	// Get all present day polygons that intersect the current cube quad tree node.
 	const present_day_polygon_mesh_membership_type &present_day_polygons_intersecting_tile =
 			polygon_mesh_node_intersections.get_intersecting_polygon_meshes(intersections_quad_tree_node);
+
+	// The view transform never changes within a cube face so it's the same across
+	// an entire cube face quad tree (each cube face has its own quad tree).
+	const GLTransform::non_null_ptr_to_const_type view_transform =
+			cube_subdivision_cache.get_view_transform(
+					cube_subdivision_cache_node);
+
+	// Get the view/projection transforms for the current cube quad tree node.
+	//
+	// NOTE: We get the half-texel-expanded projection transform since that is what's used to
+	// lookup the tile textures (the tile textures are bilinearly filtered and the centres of
+	// border texels match up with adjacent tiles).
+	const GLTransform::non_null_ptr_to_const_type half_texel_expanded_projection_transform =
+			cube_subdivision_cache.get_projection_transform(
+					cube_subdivision_cache_node);
 
 
 	//

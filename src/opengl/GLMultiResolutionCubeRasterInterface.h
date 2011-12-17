@@ -33,7 +33,6 @@
 
 #include "GLMatrix.h"
 #include "GLTexture.h"
-#include "GLTransform.h"
 #include "OpenGLFwd.h"
 
 #include "maths/CubeCoordinateFrame.h"
@@ -127,11 +126,9 @@ namespace GPlatesOpenGL
 			boost::optional<GLTexture::shared_ptr_to_const_type>
 			get_tile_texture(
 					GLRenderer &renderer,
-					const GLTransform::non_null_ptr_to_const_type &view_transform,
-					const GLTransform::non_null_ptr_to_const_type &projection_transform,
 					cache_handle_type &cache_handle) const
 			{
-				return d_impl->get_tile_texture(renderer,view_transform, projection_transform, cache_handle);
+				return d_impl->get_tile_texture(renderer, cache_handle);
 			}
 
 		private:
@@ -156,8 +153,6 @@ namespace GPlatesOpenGL
 				boost::optional<GLTexture::shared_ptr_to_const_type>
 				get_tile_texture(
 						GLRenderer &renderer,
-						const GLTransform::non_null_ptr_to_const_type &view_transform,
-						const GLTransform::non_null_ptr_to_const_type &projection_transform,
 						cache_handle_type &cache_handle) const = 0;
 			};
 

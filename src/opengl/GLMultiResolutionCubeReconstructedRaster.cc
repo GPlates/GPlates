@@ -50,28 +50,56 @@
 #include "utils/Profile.h"
 
 
+namespace
+{
+	/**
+	 * Adjusts the specified tile texel dimension according to the OpenGL capabilities of the run-time system.
+	 */
+	std::size_t
+	initialise_tile_texel_dimension(
+			std::size_t tile_texel_dimension)
+	{
+		// The tile dimension should be a power-of-two *if* 'GL_ARB_texture_non_power_of_two' is *not* supported.
+		if (!GLEW_ARB_texture_non_power_of_two)
+		{
+			tile_texel_dimension = GPlatesUtils::Base2::next_power_of_two(tile_texel_dimension);
+		}
+
+		// And the tile dimension should not be larger than the maximum texture dimension.
+		if (tile_texel_dimension > GPlatesOpenGL::GLContext::get_parameters().texture.gl_max_texture_size)
+		{
+			tile_texel_dimension = GPlatesOpenGL::GLContext::get_parameters().texture.gl_max_texture_size;
+		}
+
+		return tile_texel_dimension;
+	}
+}
+
+
 GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::GLMultiResolutionCubeReconstructedRaster(
 		GLRenderer &renderer,
 		const GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type &source_reconstructed_raster,
 		std::size_t tile_texel_dimension,
 		bool cache_tile_textures) :
 	d_reconstructed_raster(source_reconstructed_raster),
-	d_tile_texel_dimension(tile_texel_dimension),
+	d_tile_texel_dimension(initialise_tile_texel_dimension(tile_texel_dimension)),
 	// Start with small size cache and just let the cache grow in size as needed (if caching enabled)...
 	d_texture_cache(tile_texture_cache_type::create(2/* GPU pipeline breathing room in case caching disabled*/)),
 	d_cache_tile_textures(cache_tile_textures),
+	d_cube_subdivision(
+			// Expand the tile frustums by half a texel around the border of each frustum.
+			// This causes the texel centres of the border tile texels to fall right on the edge
+			// of the unmodified frustum which means adjacent tiles will have the same colour after
+			// bilinear filtering and hence there will be no visible colour seams (or discontinuities
+			// in the raster data if the source raster is floating-point).
+			// The nice thing is this works for both bilinear filtering and nearest neighbour filtering
+			// (ie, there'll be no visible seams in nearest neighbour filtering either).
+			GPlatesOpenGL::GLCubeSubdivision::create(
+					GPlatesOpenGL::GLCubeSubdivision::get_expand_frustum_ratio(
+							d_tile_texel_dimension,
+							0.5/* half a texel */))),
 	d_cube_quad_tree(cube_quad_tree_type::create())
 {
-	// The tile dimension should be a power-of-two *if* 'GL_ARB_texture_non_power_of_two' is *not* supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_texture_non_power_of_two) ||
-				GPlatesUtils::Base2::is_power_of_two(d_tile_texel_dimension),
-			GPLATES_ASSERTION_SOURCE);
-
-	// And the tile dimension should not be larger than the maximum texture dimension.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_tile_texel_dimension <= GLContext::get_parameters().texture.gl_max_texture_size,
-			GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -96,8 +124,6 @@ boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type>
 GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_tile_texture(
 		GLRenderer &renderer,
 		const CubeQuadTreeNode &tile,
-		const GLTransform::non_null_ptr_to_const_type &view_transform,
-		const GLTransform::non_null_ptr_to_const_type &projection_transform,
 		cache_handle_type &cache_handle)
 {
 	//
@@ -132,9 +158,7 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_tile_texture(
 		visible = render_raster_data_into_tile_texture(
 				renderer,
 				tile,
-				*tile_texture,
-				view_transform,
-				projection_transform);
+				*tile_texture);
 	}
 	// Our texture wasn't recycled but see if it's still valid in case the source
 	// raster changed the data underneath us.
@@ -145,9 +169,7 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_tile_texture(
 		visible = render_raster_data_into_tile_texture(
 				renderer,
 				tile,
-				*tile_texture,
-				view_transform,
-				projection_transform);
+				*tile_texture);
 	}
 
 	// If nothing was rendered then inform the caller.
@@ -172,9 +194,7 @@ bool
 GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::render_raster_data_into_tile_texture(
 		GLRenderer &renderer,
 		const CubeQuadTreeNode &tile,
-		TileTexture &tile_texture,
-		const GLTransform::non_null_ptr_to_const_type &view_transform,
-		const GLTransform::non_null_ptr_to_const_type &projection_transform)
+		TileTexture &tile_texture)
 {
 	PROFILE_FUNC();
 
@@ -187,12 +207,12 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::render_raster_data_into
 	renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
 
 	// The model-view matrix.
-	renderer.gl_load_matrix(GL_MODELVIEW, view_transform->get_matrix());
+	renderer.gl_load_matrix(GL_MODELVIEW, tile.d_view_transform->get_matrix());
 	// Multiply in the requested world transform.
 	renderer.gl_mult_matrix(GL_MODELVIEW, d_world_transform);
 
 	// The projection matrix.
-	renderer.gl_load_matrix(GL_PROJECTION, projection_transform->get_matrix());
+	renderer.gl_load_matrix(GL_PROJECTION, tile.d_projection_transform->get_matrix());
 
 	// NOTE: We don't set alpha-blending state here because we
 	// might not be rendering directly to the final render target and hence we don't
@@ -227,22 +247,41 @@ boost::optional<GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::quad_tr
 GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_quad_tree_root_node(
 		GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face)
 {
+	const GPlatesMaths::CubeQuadTreeLocation cube_quad_tree_location(cube_face);
+
+	// See if we have a root cube quad tree node.
 	cube_quad_tree_type::node_type *cube_root_node =
 			d_cube_quad_tree->get_quad_tree_root_node(cube_face);
+
+	// If not then just create one.
 	if (cube_root_node == NULL)
 	{
+		// The view transform for the current cube face.
+		const GLTransform::non_null_ptr_to_const_type view_transform =
+				d_cube_subdivision->get_view_transform(cube_face);
+
+		// The projection transform for the root cube quad tree node.
+		const GLTransform::non_null_ptr_to_const_type projection_transform =
+				d_cube_subdivision->get_projection_transform(
+						0/*level_of_detail*/,
+						0/*tile_u_offset*/,
+						0/*tile_v_offset*/);
+
 		// Create a root quad tree node.
 		d_cube_quad_tree->set_quad_tree_root_node(
 				cube_face,
 				d_cube_quad_tree->create_node(
-						CubeQuadTreeNode(d_texture_cache->allocate_volatile_object())));
+						CubeQuadTreeNode(
+								view_transform,
+								projection_transform,
+								d_texture_cache->allocate_volatile_object())));
 
 		cube_root_node = d_cube_quad_tree->get_quad_tree_root_node(cube_face);
 	}
 
 	return quad_tree_node_type(
 			GPlatesUtils::non_null_intrusive_ptr<quad_tree_node_type::ImplInterface>(
-					new QuadTreeNodeImpl(*cube_root_node, *this)));
+					new QuadTreeNodeImpl(*cube_root_node, *this, cube_quad_tree_location)));
 }
 
 
@@ -253,27 +292,59 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_child_node(
 		unsigned int child_y_offset)
 {
 	// Get our internal cube quad tree parent node.
-	cube_quad_tree_type::node_type &cube_parent_node = get_cube_quad_tree_node(parent_node);
+	QuadTreeNodeImpl &parent_node_impl = get_quad_tree_node_impl(parent_node);
+
+	// Location of the current child node in the cube quad tree.
+	const GPlatesMaths::CubeQuadTreeLocation child_cube_quad_tree_location(
+			parent_node_impl.cube_quad_tree_location,
+			child_x_offset,
+			child_y_offset);
 
 	// Get the internal cube quad tree child node.
+	// See if we have a child cube quad tree node.
 	cube_quad_tree_type::node_type *cube_child_node =
-			cube_parent_node.get_child_node(child_x_offset, child_y_offset);
+			parent_node_impl.cube_quad_tree_node.get_child_node(child_x_offset, child_y_offset);
+
+	// If not then just create one.
+	//
+	// NOTE: After a while (with the user panning and zooming) we could end up with a lot
+	// of nodes (because, unlike most situations, here there's no limit to how deep into the tree
+	// the client can go - well, the limit would be how much viewport zoom is allowed in the GUI).
+	//
+	// TODO: We may want to periodically release nodes but that'll be hard because will first have
+	// to determine which nodes are least-recently-used and also take into account that removing
+	// an internal quad tree node will also remove its descendant nodes which may not be ready to go.
 	if (cube_child_node == NULL)
 	{
+		// The view transform for the current cube face.
+		const GLTransform::non_null_ptr_to_const_type view_transform =
+				d_cube_subdivision->get_view_transform(
+						child_cube_quad_tree_location.get_node_location()->cube_face);
+
+		// The projection transform for the current child cube quad tree node.
+		const GLTransform::non_null_ptr_to_const_type projection_transform =
+				d_cube_subdivision->get_projection_transform(
+						child_cube_quad_tree_location.get_node_location()->quad_tree_depth/*level_of_detail*/,
+						child_cube_quad_tree_location.get_node_location()->x_node_offset/*tile_u_offset*/,
+						child_cube_quad_tree_location.get_node_location()->y_node_offset/*tile_v_offset*/);
+
 		// Create a child quad tree node.
 		d_cube_quad_tree->set_child_node(
-				cube_parent_node,
+				parent_node_impl.cube_quad_tree_node,
 				child_x_offset,
 				child_y_offset,
 				d_cube_quad_tree->create_node(
-						CubeQuadTreeNode(d_texture_cache->allocate_volatile_object())));
+						CubeQuadTreeNode(
+								view_transform,
+								projection_transform,
+								d_texture_cache->allocate_volatile_object())));
 
-		cube_child_node = cube_parent_node.get_child_node(child_x_offset, child_y_offset);
+		cube_child_node = parent_node_impl.cube_quad_tree_node.get_child_node(child_x_offset, child_y_offset);
 	}
 
 	return quad_tree_node_type(
 			GPlatesUtils::non_null_intrusive_ptr<quad_tree_node_type::ImplInterface>(
-					new QuadTreeNodeImpl(*cube_child_node, *this)));
+					new QuadTreeNodeImpl(*cube_child_node, *this, child_cube_quad_tree_location)));
 }
 
 
