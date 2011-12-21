@@ -121,9 +121,7 @@ GPlatesQtWidgets::MapCanvas::set_disable_update(
 				GPlatesViewOperations::RenderedGeometryCollection &,
 				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
 		this,
-		SLOT(update_canvas(
-				GPlatesViewOperations::RenderedGeometryCollection &,
-				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)));
+		SLOT(update_canvas()));
 	}
 	else
 	{
@@ -132,9 +130,7 @@ GPlatesQtWidgets::MapCanvas::set_disable_update(
 				GPlatesViewOperations::RenderedGeometryCollection &,
 				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
 		this,
-		SLOT(update_canvas(
-				GPlatesViewOperations::RenderedGeometryCollection &,
-				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)));
+		SLOT(update_canvas()));
 	}
 }
 
