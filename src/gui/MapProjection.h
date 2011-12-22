@@ -80,10 +80,10 @@ namespace GPlatesGui
 		{
 		public:
 			Settings(
-					Type projection_type,
-					const GPlatesMaths::LatLonPoint &central_llp) :
-				d_projection_type(projection_type),
-				d_central_llp(central_llp)
+					Type projection_type_,
+					const GPlatesMaths::LatLonPoint &central_llp_) :
+				d_projection_type(projection_type_),
+				d_central_llp(central_llp_)
 			{  }
 
 			Type
@@ -94,9 +94,9 @@ namespace GPlatesGui
 
 			void
 			set_projection_type(
-					Type projection_type)
+					Type projection_type_)
 			{
-				d_projection_type = projection_type;
+				d_projection_type = projection_type_;
 			}
 
 			const GPlatesMaths::LatLonPoint &
@@ -107,9 +107,9 @@ namespace GPlatesGui
 
 			void
 			set_central_llp(
-					const GPlatesMaths::LatLonPoint &central_llp)
+					const GPlatesMaths::LatLonPoint &central_llp_)
 			{
-				d_central_llp = central_llp;
+				d_central_llp = central_llp_;
 			}
 
 		private:
