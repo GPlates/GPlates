@@ -68,11 +68,11 @@ g++             g++-4.2
 GL              See note below.
 GLU             See note below.
 GLEW            libglew-dev 
-Python          libpython-dev
-Boost           libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev
+Python          python-dev
+Boost           libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev
 Qt              libqt4-gui libqt4-dev (See note below.)
-GDAL            libgdal1-dev libgdal1-1.4.0
-CGAL            libcgal-dev libcgal2
+GDAL            libgdal1-dev
+CGAL            libcgal-dev
 PROJ.4          proj
 ImageMagick     libmagick++-dev
 
