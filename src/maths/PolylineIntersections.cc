@@ -33,6 +33,7 @@
 #include "UnableToIntersectEquivalentGreatCirclesException.h"
 #include "UnableToExtendPointlikeArcException.h"
 
+#include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
 
@@ -155,34 +156,42 @@ namespace {
 
 		explicit
 		PointIsCoincident(
-		 const PointOnSphere &point) :
-		 d_point(point) {  }
+		 const IntersectionNode &node) :
+		 d_node(node) {  }
 
 		bool
 		operator()(
 		 const IntersectionNode &ii) const {
 
-			return points_are_coincident(d_point, ii.d_point);
+			 // The first two tests are added to avoid an assertion failure in
+			 // 'add_intersection2_into_graph()' that occurs due to numerical precision when
+			 // the intersection points are *not* quite coincident (within epsilon) but an arc
+			 // of either polyline *is* coincident (within epsilon) of an intersection point.
+			 // This causes two *distinct* intersection points to have the same arc before the
+			 // intersection point (and same arc after).
+			return ii.d_first_after_on_arcs1 == d_node.d_first_after_on_arcs1 ||
+				ii.d_first_after_on_arcs2 == d_node.d_first_after_on_arcs2 ||
+				points_are_coincident(d_node.d_point, ii.d_point);
 		}
 
 	 private:
 
-		const PointOnSphere d_point;
+		const IntersectionNode d_node;
 
 	};
 
 
 	/**
 	 * Determine whether the list of intersection-nodes @a l contains an
-	 * intersection-node whose position is coincident with @a p.
+	 * intersection-node whose position is coincident with @a node.
 	 */
 	inline
 	bool
 	list_contains_coincident_point(
 	 const IntersectionNodeList &l,
-	 const PointOnSphere &p) {
+	 const IntersectionNode &node) {
 
-		PointIsCoincident predicate(p);
+		PointIsCoincident predicate(node);
 		return (std::find_if(l.begin(), l.end(), predicate) != l.end());
 	}
 
@@ -196,8 +205,7 @@ namespace {
 	 IntersectionNodeList &node_list) {
 
 		// Avoid a duplication of nodes in the list.
-		if ( ! list_contains_coincident_point(node_list,
-						      node.d_point)) {
+		if ( ! list_contains_coincident_point(node_list, node)) {
 
 			/*
 			 * Duplication of nodes can arise because we're too
@@ -1548,10 +1556,13 @@ namespace {
 		IntersectionNodeList::iterator inter_node_iter)
 	{
 		// Share the intersection created when processing arc sequence 1.
-		Graph::intersection_ptr_type intersection =
-				intersection_node_map[inter_node_iter];
-
-		graph_intersections2.push_back(intersection);
+		intersection_node_map_type::const_iterator intersection_node_map_iter =
+				intersection_node_map.find(inter_node_iter);
+		// The intersection should have already been added while traversing the first polyline.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				intersection_node_map_iter != intersection_node_map.end(),
+				GPLATES_ASSERTION_SOURCE);
+		Graph::intersection_ptr_type intersection = intersection_node_map_iter->second;
 
 		if (!graph_partitioned_polylines2.empty()) {
 
