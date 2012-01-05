@@ -227,16 +227,18 @@ GPlatesGui::operator<<(
 
 GPlatesGui::Colour
 GPlatesGui::Colour::linearly_interpolate(
-		GPlatesGui::Colour first,
-		GPlatesGui::Colour second,
-		double position)
+		const GPlatesGui::Colour &first,
+		const GPlatesGui::Colour &second,
+		const double &position)
 {
+	const double one_minus_position = (1.0 - position);
+
 	return Colour(
-			static_cast<GLfloat>(first.red() * (1.0 - position) +
+			static_cast<GLfloat>(first.red() * one_minus_position +
 				second.red() * position),
-			static_cast<GLfloat>(first.green() * (1.0 - position) +
+			static_cast<GLfloat>(first.green() * one_minus_position +
 				second.green() * position),
-			static_cast<GLfloat>(first.blue() * (1.0 - position) +
+			static_cast<GLfloat>(first.blue() * one_minus_position +
 				second.blue() * position));
 }
 

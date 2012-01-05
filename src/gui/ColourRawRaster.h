@@ -42,6 +42,7 @@
 
 #include "property-values/RawRaster.h"
 
+#include "utils/Profile.h"
 #include "utils/TypeTraits.h"
 
 
@@ -113,6 +114,8 @@ namespace GPlatesGui
 				RawRasterType &source,
 				const typename ColourPalette<typename RawRasterType::element_type>::non_null_ptr_type &colour_palette)
 		{
+			//PROFILE_FUNC();
+
 			// Creates an uninitialised RGBA8 raster with the same width and height (in
 			// pixels) as the original raster.
 			const unsigned int width = source.width();
@@ -122,13 +125,41 @@ namespace GPlatesGui
 
 			// Get pointers to the source and destination buffers.
 			typedef typename RawRasterType::element_type source_element_type;
-			source_element_type *source_buf = source.data();
+			source_element_type *const source_buf = source.data();
 			const unsigned int source_size = width * height;
-			rgba8_t *dest_buf = rgba_raster->data();
+			rgba8_t *const dest_buf = rgba_raster->data();
 
+			// This code is showing high on the CPU profile so re-writing it for speed.
+			// Not too much gain here - most of the gain is optimising the colour palette lookup.
+#if 0
 			std::transform(source_buf, source_buf + source_size, dest_buf,
 					ColourRawRasterInternals::ColourPaletteFunctor<RawRasterType>(
 						source, *colour_palette));
+#else
+			const ColourPalette<source_element_type> &colour_palette_ref = *colour_palette;
+			for (unsigned int n = 0; n < source_size; ++n)
+			{
+				const source_element_type &value = source_buf[n];
+
+				// Check whether it is the no-data value.
+				if (source.is_no_data_value(value))
+				{
+					dest_buf[n] = ColourRawRasterInternals::TRANSPARENT_COLOUR;
+					continue;
+				}
+
+				//PROFILE_BEGIN(profile_gc, "colour_palette_ref.get_colour");
+				boost::optional<Colour> result = colour_palette_ref.get_colour(value);
+				//PROFILE_END(profile_gc);
+				if (!result)
+				{
+					dest_buf[n] = ColourRawRasterInternals::TRANSPARENT_COLOUR;
+					continue;
+				}
+
+				dest_buf[n] = Colour::to_rgba8(*result);
+			}
+#endif
 
 			return rgba_raster;
 		}

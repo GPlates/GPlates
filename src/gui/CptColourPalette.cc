@@ -27,6 +27,8 @@
 
 #include "CptColourPalette.h"
 
+#include "utils/Profile.h"
+
 
 GPlatesGui::ColourSlice::ColourSlice(
 		value_type lower_value_,
@@ -42,14 +44,7 @@ GPlatesGui::ColourSlice::ColourSlice(
 	d_annotation(annotation_),
 	d_label(label_)
 {
-}
-
-
-bool
-GPlatesGui::ColourSlice::can_handle(
-		value_type value) const
-{
-	return d_lower_value <= value && value <= d_upper_value;
+	set_inverse_value_range();
 }
 
 
@@ -57,9 +52,11 @@ boost::optional<GPlatesGui::Colour>
 GPlatesGui::ColourSlice::get_colour(
 		value_type value) const
 {
+	//PROFILE_FUNC();
+
 	if (d_lower_colour && d_upper_colour)
 	{
-		value_type position = (value - d_lower_value) / (d_upper_value - d_lower_value);
+		const value_type position = (value - d_lower_value) * d_inverse_value_range;
 		return Colour::linearly_interpolate(
 				*d_lower_colour,
 				*d_upper_colour,

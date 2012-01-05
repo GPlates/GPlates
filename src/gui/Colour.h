@@ -457,9 +457,9 @@ namespace GPlatesGui
 		static
 		Colour
 		linearly_interpolate(
-				Colour first,
-				Colour second,
-				double position);
+				const Colour &first,
+				const Colour &second,
+				const double &position);
 
 		/**
 		 * Converts a CMYK colour to a Colour (which is RGBA). The cyan,
