@@ -657,8 +657,8 @@ namespace GPlatesGui
 			}
 
 			// Else try and find an entry that accepts the value, else return NaN colour.
-			std::vector<EntryType>::const_iterator entries_iter = d_entries.begin();
-			const std::vector<EntryType>::const_iterator entries_end = d_entries.end();
+			typename std::vector<EntryType>::const_iterator entries_iter = d_entries.begin();
+			const typename std::vector<EntryType>::const_iterator entries_end = d_entries.end();
 			for ( ; entries_iter != entries_end; ++entries_iter)
 			{
 				if (entries_iter->can_handle(value))
