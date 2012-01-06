@@ -42,6 +42,7 @@
 #include "maths/Real.h"
 
 #include "utils/Parse.h"
+#include "utils/Profile.h"
 #include "utils/Select.h"
 #include "utils/TypeTraits.h"
 
@@ -124,7 +125,10 @@ namespace GPlatesGui
 
 		bool
 		can_handle(
-				value_type value) const;
+				value_type value) const
+		{
+			return d_lower_value.dval() <= value.dval() && value.dval() <= d_upper_value.dval();
+		}
 
 		boost::optional<Colour>
 		get_colour(
@@ -141,6 +145,7 @@ namespace GPlatesGui
 				value_type lower_value_)
 		{
 			d_lower_value = lower_value_;
+			set_inverse_value_range();
 		}
 
 		value_type
@@ -154,6 +159,7 @@ namespace GPlatesGui
 				value_type upper_value_)
 		{
 			d_upper_value = upper_value_;
+			set_inverse_value_range();
 		}
 
 		const boost::optional<Colour> &
@@ -211,9 +217,16 @@ namespace GPlatesGui
 	private:
 
 		value_type d_lower_value, d_upper_value;
+		value_type d_inverse_value_range;
 		boost::optional<Colour> d_lower_colour, d_upper_colour;
 		ColourScaleAnnotation::Type d_annotation;
 		boost::optional<QString> d_label;
+
+		void
+		set_inverse_value_range()
+		{
+			d_inverse_value_range = 1.0 / (d_upper_value - d_lower_value);
+		}
 	};
 
 
@@ -608,6 +621,8 @@ namespace GPlatesGui
 		get_colour(
 				value_type value) const
 		{
+			//PROFILE_FUNC();
+
 			if (d_entries.empty())
 			{
 				return d_nan_colour;
@@ -642,11 +657,13 @@ namespace GPlatesGui
 			}
 
 			// Else try and find an entry that accepts the value, else return NaN colour.
-			BOOST_FOREACH(EntryType entry, d_entries)
+			typename std::vector<EntryType>::const_iterator entries_iter = d_entries.begin();
+			const typename std::vector<EntryType>::const_iterator entries_end = d_entries.end();
+			for ( ; entries_iter != entries_end; ++entries_iter)
 			{
-				if (entry.can_handle(value))
+				if (entries_iter->can_handle(value))
 				{
-					return entry.get_colour(value);
+					return entries_iter->get_colour(value);
 				}
 			}
 

@@ -53,6 +53,8 @@
 
 #include "property-values/RasterStatistics.h"
 
+#include "utils/Profile.h"
+
 
 namespace
 {
@@ -628,6 +630,8 @@ GPlatesFileIO::GDALRasterReader::get_data(
 		const QRect &region,
 		ReadErrorAccumulation *read_errors)
 {
+	//PROFILE_FUNC();
+
 	// Memory managed by GDAL.
 	GDALRasterBand *band = get_raster_band(band_number, read_errors);
 

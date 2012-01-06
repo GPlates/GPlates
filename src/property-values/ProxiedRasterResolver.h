@@ -489,6 +489,8 @@ namespace GPlatesPropertyValues
 						const boost::optional<CoverageRawRaster::non_null_ptr_type> &region_coverage,
 						const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette)
 				{
+					//PROFILE_FUNC();
+
 					// Colour the region_raster using the colour_palette.
 					boost::optional<Rgba8RawRaster::non_null_ptr_type> coloured_region =
 							GPlatesGui::ColourRawRaster::colour_raw_raster_with_raster_colour_palette(
@@ -552,6 +554,8 @@ namespace GPlatesPropertyValues
 					const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette =
 						GPlatesGui::RasterColourPalette::create())
 			{
+				//PROFILE_FUNC();
+
 				// Get the raster data and coverage.
 				boost::optional<typename mipmapped_raster_type::non_null_ptr_type> region_raster = get_region_from_level_as_mipmapped_type(
 						level, region_x_offset, region_y_offset, region_width, region_height);
@@ -667,6 +671,8 @@ namespace GPlatesPropertyValues
 					unsigned int region_width,
 					unsigned int region_height)
 			{
+				//PROFILE_FUNC();
+
 				if (level == 0)
 				{
 					// Level 0 is not stored in the mipmap file.
@@ -743,6 +749,8 @@ namespace GPlatesPropertyValues
 					unsigned int region_width,
 					unsigned int region_height)
 			{
+				//PROFILE_FUNC();
+
 				if (level == 0)
 				{
 					// There is never a coverage raster for level 0.
@@ -846,6 +854,8 @@ namespace GPlatesPropertyValues
 					unsigned int region_width,
 					unsigned int region_height)
 			{
+				//PROFILE_FUNC();
+
 				GPlatesFileIO::RasterBandReaderHandle &raster_band_reader_handle =
 					get_raster_band_reader_handle(*d_proxied_raw_raster);
 

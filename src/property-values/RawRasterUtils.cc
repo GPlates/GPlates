@@ -37,6 +37,7 @@ POP_MSVC_WARNINGS
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
 
+#include "utils/Profile.h"
 #include "utils/TypeTraits.h"
 
 
@@ -358,6 +359,8 @@ GPlatesPropertyValues::RawRasterUtils::apply_coverage_raster(
 		const Rgba8RawRaster::non_null_ptr_type &source_raster,
 		const CoverageRawRaster::non_null_ptr_type &coverage_raster)
 {
+	//PROFILE_FUNC();
+
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			source_raster->width() == coverage_raster->width() &&
 			source_raster->height() == coverage_raster->height(),

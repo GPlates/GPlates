@@ -90,6 +90,21 @@ GPlatesOpenGL::GLContext::initialise()
 
 		// Get the API parameters from the current OpenGL implementation.
 		initialise_parameters();
+
+		// Provide information about lack of framebuffer object support.
+		if (!GLEW_EXT_framebuffer_object)
+		{
+			qDebug() << "Falling back to main frame buffer for render targets.";
+
+			// A lot of render-target rendering uses an alpha channel so emit a warning if
+			// the frame buffer doesn't have an alpha channel.
+			if (!static_cast<QGLWidgetImpl *>(d_context_impl.get())->d_qgl_widget.format().alpha())
+			{
+				qWarning(
+						"Could not get alpha channel on main frame buffer; "
+						"render-target results will be suboptimal");
+			}
+		}
 	}
 }
 
@@ -533,6 +548,9 @@ GPlatesOpenGL::GLContext::disable_opengl_extensions()
 	//__GLEW_ARB_vertex_shader = 0;
 	//__GLEW_ARB_multitexture = 0;
 	//__GLEW_ARB_texture_non_power_of_two = 0;
+	//__GLEW_ARB_shader_objects = 0;
+	//__GLEW_ARB_fragment_shader = 0;
+	//__GLEW_EXT_texture_edge_clamp = 0; __GLEW_SGIS_texture_edge_clamp = 0;
 }
 
 
