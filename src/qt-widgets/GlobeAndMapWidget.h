@@ -125,6 +125,9 @@ namespace GPlatesQtWidgets
 		void
 		update_canvas();
 
+		void
+		repaint_canvas();
+
 		virtual
 		double
 		current_proximity_inclusion_threshold(

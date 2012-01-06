@@ -611,14 +611,14 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 			GPlatesGui::StyleAdapter* sa = static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
 			set_style(sa);
 			
-			d_globe_and_map_widget_ptr->update_canvas();
+			d_globe_and_map_widget_ptr->repaint_canvas();
 			
-			d_disable_style_item_change = true;
-
-			while(!d_repaint_flag)
-				QApplication::processEvents();
-
-			d_disable_style_item_change = false;
+// 			d_disable_style_item_change = true;
+// 
+// 			while(!d_repaint_flag)
+// 				QApplication::processEvents();
+// 
+// 			d_disable_style_item_change = false;
 			
 			current_item->setIcon(QIcon(QPixmap::fromImage(d_image)));
 		}
