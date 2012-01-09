@@ -218,6 +218,11 @@ namespace GPlatesQtWidgets
 		MapCanvas &
 		map_canvas();
 
+
+		void
+		set_disable_update(
+				bool b);
+
 		/**
 		 * Redraw geometries on the canvas associated with this view.
 		 */
@@ -225,10 +230,7 @@ namespace GPlatesQtWidgets
 		update_canvas();
 
 		void
-		repaint_canvas()
-		{
-			repaint();
-		}
+		repaint_canvas();
 
 		double
 		current_proximity_inclusion_threshold(
@@ -279,6 +281,16 @@ namespace GPlatesQtWidgets
 		void
 		keyPressEvent(
 				QKeyEvent *key_event);
+
+		void 
+		paintEvent(
+				QPaintEvent *event)
+		{
+			if(d_disable_update)
+				return;
+
+			QGraphicsView::paintEvent(event);
+		}
 
 	signals:
 
@@ -409,6 +421,8 @@ namespace GPlatesQtWidgets
 		 * Translates and rotates maps
 		 */
 		GPlatesGui::MapTransform &d_map_transform;
+
+		bool d_disable_update;
 	};
 }
 

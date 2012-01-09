@@ -76,7 +76,8 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 			viewport_zoom,
 			colour_scheme,
 			d_text_renderer),
-	d_rendered_geometry_collection(&rendered_geometry_collection)
+	d_rendered_geometry_collection(&rendered_geometry_collection),
+	d_disable_update(false)
 {
 	// Do some OpenGL initialisation.
 	// Because of 'd_make_context_current' we know the OpenGL context is currently active.
@@ -114,24 +115,7 @@ void
 GPlatesQtWidgets::MapCanvas::set_disable_update(
 		bool b)
 {
-	if(b)
-	{
-		QObject::disconnect(d_rendered_geometry_collection,
-		SIGNAL(collection_was_updated(
-				GPlatesViewOperations::RenderedGeometryCollection &,
-				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
-		this,
-		SLOT(update_canvas()));
-	}
-	else
-	{
-		QObject::connect(d_rendered_geometry_collection,
-		SIGNAL(collection_was_updated(
-				GPlatesViewOperations::RenderedGeometryCollection &,
-				GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
-		this,
-		SLOT(update_canvas()));
-	}
+	d_disable_update = b;
 }
 
 GPlatesQtWidgets::MapCanvas::~MapCanvas()
@@ -224,7 +208,10 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 void
 GPlatesQtWidgets::MapCanvas::update_canvas()
 {
-	update();
+	if(!d_disable_update)
+	{
+		update();
+	}
 }
 
 void
