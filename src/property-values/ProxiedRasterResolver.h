@@ -383,7 +383,7 @@ namespace GPlatesPropertyValues
 								new GPlatesFileIO::MipmappedRasterFormatReader<MipmappedRasterType>(
 									mipmap_filename));
 					}
-					catch (GPlatesFileIO::MipmappedRasterFormat::UnsupportedVersion &exc)
+					catch (GPlatesFileIO::RasterFileCacheFormat::UnsupportedVersion &exc)
 					{
 						// Log the exception so we know what caused the failure.
 						qWarning() << exc;

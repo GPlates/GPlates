@@ -27,12 +27,12 @@
 
 #include <ostream>
 
-#include "MipmappedRasterFormat.h"
+#include "RasterFileCacheFormat.h"
 
 
 namespace GPlatesFileIO
 {
-	namespace MipmappedRasterFormat
+	namespace RasterFileCacheFormat
 	{
 		template<>
 		Type
@@ -58,7 +58,7 @@ namespace GPlatesFileIO
 }
 
 
-GPlatesFileIO::MipmappedRasterFormat::UnsupportedVersion::UnsupportedVersion(
+GPlatesFileIO::RasterFileCacheFormat::UnsupportedVersion::UnsupportedVersion(
 		const GPlatesUtils::CallStack::Trace &exception_source,
 		quint32 unrecognised_version_) :
 	Exception(exception_source),
@@ -68,15 +68,15 @@ GPlatesFileIO::MipmappedRasterFormat::UnsupportedVersion::UnsupportedVersion(
 
 
 const char *
-GPlatesFileIO::MipmappedRasterFormat::UnsupportedVersion::exception_name() const
+GPlatesFileIO::RasterFileCacheFormat::UnsupportedVersion::exception_name() const
 {
 
-	return "MipmappedRasterFormat::UnsupportedVersion";
+	return "RasterFileCacheFormat::UnsupportedVersion";
 }
 
 
 void
-GPlatesFileIO::MipmappedRasterFormat::UnsupportedVersion::write_message(
+GPlatesFileIO::RasterFileCacheFormat::UnsupportedVersion::write_message(
 		std::ostream &os) const
 {
 	os << "unsupported version: " << d_unrecognised_version;

@@ -50,7 +50,7 @@
 
 #include "ErrorOpeningFileForReadingException.h"
 #include "FileFormatNotSupportedException.h"
-#include "MipmappedRasterFormat.h"
+#include "RasterFileCacheFormat.h"
 
 #include "gui/Colour.h"
 
@@ -102,12 +102,15 @@ namespace GPlatesFileIO
 			}
 
 			// Check the magic number.
-			quint32 magic_number;
-			d_in >> magic_number;
-			if (magic_number != MipmappedRasterFormat::MAGIC_NUMBER)
+			for (unsigned int n = 0; n < sizeof(RasterFileCacheFormat::MAGIC_NUMBER); ++n)
 			{
-				throw FileFormatNotSupportedException(
-						GPLATES_EXCEPTION_SOURCE, "bad magic number");
+				quint8 magic_number;
+				d_in >> magic_number;
+				if (magic_number != RasterFileCacheFormat::MAGIC_NUMBER[n])
+				{
+					throw FileFormatNotSupportedException(
+							GPLATES_EXCEPTION_SOURCE, "bad magic number");
+				}
 			}
 
 			// Check the version number.
@@ -119,7 +122,7 @@ namespace GPlatesFileIO
 			}
 			else
 			{
-				throw MipmappedRasterFormat::UnsupportedVersion(
+				throw RasterFileCacheFormat::UnsupportedVersion(
 						GPLATES_EXCEPTION_SOURCE, version_number);
 			}
 		}
@@ -528,7 +531,7 @@ namespace GPlatesFileIO
 				LookAheadReader(
 						QMutex &mutex,
 						QWaitCondition &ready,
-						std::vector<MipmappedRasterFormat::LevelInfo> &level_infos,
+						std::vector<RasterFileCacheFormat::LevelInfo> &level_infos,
 						unsigned int cache_size,
 						bool cache_coverages,
 						const boost::function<
@@ -652,7 +655,7 @@ namespace GPlatesFileIO
 					}
 
 					// It's not in our cache, so let's just read it directly.
-					MipmappedRasterFormat::LevelInfo &level_info = d_level_infos[read_raster_event->level];
+					RasterFileCacheFormat::LevelInfo &level_info = d_level_infos[read_raster_event->level];
 					d_copy_raster_region_function(
 							level_info.main_offset,
 							level_info.width,
@@ -703,7 +706,7 @@ namespace GPlatesFileIO
 					}
 
 					// It's not in our cache, so let's just read it directly.
-					MipmappedRasterFormat::LevelInfo &level_info = d_level_infos[read_raster_event->level];
+					RasterFileCacheFormat::LevelInfo &level_info = d_level_infos[read_raster_event->level];
 					d_copy_coverage_region_function(
 							level_info.coverage_offset, // coverage_offset != 0 is checked for by the main thread.
 							level_info.width,
@@ -744,7 +747,7 @@ namespace GPlatesFileIO
 							// Read raster data into the cache.
 							typename RawRasterType::non_null_ptr_type &cached_raster =
 								d_raster_cache[cache_index];
-							MipmappedRasterFormat::LevelInfo &level_info = d_level_infos[block.level];
+							RasterFileCacheFormat::LevelInfo &level_info = d_level_infos[block.level];
 							d_copy_raster_region_function(
 									level_info.main_offset,
 									level_info.width,
@@ -857,7 +860,7 @@ namespace GPlatesFileIO
 						d_read_ahead_blocks.push_if_not_contains(left);
 					}
 
-					MipmappedRasterFormat::LevelInfo &level_info = d_level_infos[block.level];
+					RasterFileCacheFormat::LevelInfo &level_info = d_level_infos[block.level];
 					
 					// One block down.
 					if (block.y_offset + BLOCK_HEIGHT * 2 <= level_info.height)
@@ -881,7 +884,7 @@ namespace GPlatesFileIO
 					{
 						unsigned int new_x_offset = block.x_offset / 2;
 						unsigned int new_y_offset = block.y_offset / 2;
-						MipmappedRasterFormat::LevelInfo &level_below_info = d_level_infos[block.level + 1];
+						RasterFileCacheFormat::LevelInfo &level_below_info = d_level_infos[block.level + 1];
 						if (new_x_offset % BLOCK_WIDTH == 0 &&
 							new_y_offset % BLOCK_HEIGHT == 0 &&
 							new_x_offset + BLOCK_WIDTH <= level_below_info.width &&
@@ -897,7 +900,7 @@ namespace GPlatesFileIO
 					// in the level above.
 					if (block.level != 0)
 					{
-						MipmappedRasterFormat::LevelInfo &level_above_info = d_level_infos[block.level - 1];
+						RasterFileCacheFormat::LevelInfo &level_above_info = d_level_infos[block.level - 1];
 						for (unsigned int i = 0; i != 2; ++i)
 						{
 							for (unsigned int j = 0; j != 2; ++j)
@@ -917,7 +920,7 @@ namespace GPlatesFileIO
 
 				QMutex &d_mutex;
 				QWaitCondition &d_ready;
-				std::vector<MipmappedRasterFormat::LevelInfo> &d_level_infos;
+				std::vector<RasterFileCacheFormat::LevelInfo> &d_level_infos;
 				boost::function<
 					void (
 					unsigned int,
@@ -993,7 +996,7 @@ namespace GPlatesFileIO
 			public:
 
 				ReaderThread(
-						std::vector<MipmappedRasterFormat::LevelInfo> &level_infos,
+						std::vector<RasterFileCacheFormat::LevelInfo> &level_infos,
 						const boost::function<
 							void (
 							unsigned int,
@@ -1097,7 +1100,7 @@ namespace GPlatesFileIO
 				QMutex d_mutex;
 				QWaitCondition d_ready;
 				bool d_main_thread_should_block;
-				std::vector<MipmappedRasterFormat::LevelInfo> &d_level_infos;
+				std::vector<RasterFileCacheFormat::LevelInfo> &d_level_infos;
 				unsigned int d_cache_size;
 				bool d_cache_coverages;
 				boost::function<
@@ -1132,7 +1135,7 @@ namespace GPlatesFileIO
 				d_in(in),
 				d_reader_thread(NULL)
 			{
-				d_in.setVersion(MipmappedRasterFormat::Q_DATA_STREAM_VERSION);
+				d_in.setVersion(RasterFileCacheFormat::Q_DATA_STREAM_VERSION);
 
 				// Check that the file is big enough to hold at least a v1 header.
 				QFileInfo file_info(d_file);
@@ -1148,7 +1151,7 @@ namespace GPlatesFileIO
 				static const qint64 TYPE_OFFSET = 8;
 				d_file.seek(TYPE_OFFSET);
 				d_in >> type;
-				if (type != static_cast<quint32>(MipmappedRasterFormat::get_type_as_enum<
+				if (type != static_cast<quint32>(RasterFileCacheFormat::get_type_as_enum<
 							typename RawRasterType::element_type>()))
 				{
 					throw FileFormatNotSupportedException(
@@ -1179,7 +1182,7 @@ namespace GPlatesFileIO
 				quint32 expected_file_size = header_size;
 				for (quint32 i = 0; i != num_levels; ++i)
 				{
-					MipmappedRasterFormat::LevelInfo current_level;
+					RasterFileCacheFormat::LevelInfo current_level;
 					d_in >> current_level.width
 							>> current_level.height
 							>> current_level.main_offset
@@ -1222,7 +1225,7 @@ namespace GPlatesFileIO
 				{
 					static const unsigned int MIN_THREADED_IMAGE_WIDTH = 1024; // pixels; arbitrary limit.
 					static const unsigned int MIN_THREADED_IMAGE_HEIGHT = 768;
-					MipmappedRasterFormat::LevelInfo &level0 = d_level_infos[0];
+					RasterFileCacheFormat::LevelInfo &level0 = d_level_infos[0];
 
 					if (level0.width >= MIN_THREADED_IMAGE_WIDTH &&
 						level0.height >= MIN_THREADED_IMAGE_HEIGHT)
@@ -1238,7 +1241,7 @@ namespace GPlatesFileIO
 
 						// Calculate the maximum number of blocks possible.
 						int cache_size = 0;
-						BOOST_FOREACH(MipmappedRasterFormat::LevelInfo &level_info, d_level_infos)
+						BOOST_FOREACH(RasterFileCacheFormat::LevelInfo &level_info, d_level_infos)
 						{
 							cache_size += (level_info.width / LookAheadReader::BLOCK_WIDTH) *
 									(level_info.height / LookAheadReader::BLOCK_HEIGHT);
@@ -1327,7 +1330,7 @@ namespace GPlatesFileIO
 				}
 				else
 				{
-					const MipmappedRasterFormat::LevelInfo &level_info = d_level_infos[level];
+					const RasterFileCacheFormat::LevelInfo &level_info = d_level_infos[level];
 					copy_region(
 							level_info.main_offset,
 							level_info.width,
@@ -1355,7 +1358,7 @@ namespace GPlatesFileIO
 					return boost::none;
 				}
 
-				const MipmappedRasterFormat::LevelInfo &level_info = d_level_infos[level];
+				const RasterFileCacheFormat::LevelInfo &level_info = d_level_infos[level];
 				if (level_info.coverage_offset == 0)
 				{
 					// No coverage for this level.
@@ -1408,7 +1411,7 @@ namespace GPlatesFileIO
 					return false;
 				}
 
-				const MipmappedRasterFormat::LevelInfo &level_info = d_level_infos[level];
+				const RasterFileCacheFormat::LevelInfo &level_info = d_level_infos[level];
 				return width > 0 && height > 0 &&
 					x_offset + width <= level_info.width &&
 					y_offset + height <= level_info.height;
@@ -1443,7 +1446,7 @@ namespace GPlatesFileIO
 
 			QFile &d_file;
 			QDataStream &d_in;
-			std::vector<MipmappedRasterFormat::LevelInfo> d_level_infos;
+			std::vector<RasterFileCacheFormat::LevelInfo> d_level_infos;
 
 			boost::scoped_ptr<ReaderThread> d_reader_thread;
 		};

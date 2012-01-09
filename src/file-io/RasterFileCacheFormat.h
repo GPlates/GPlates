@@ -1,0 +1,220 @@
+/* $Id$ */
+
+/**
+ * \file 
+ * File specific comments.
+ *
+ * Most recent change:
+ *   $Date$
+ * 
+ * Copyright (C) 2010 The University of Sydney, Australia
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+#ifndef GPLATES_FILEIO_MIPMAPPEDRASTERFORMAT_H
+#define GPLATES_FILEIO_MIPMAPPEDRASTERFORMAT_H
+
+#include <boost/cstdint.hpp>
+#include <QDataStream>
+
+#include "global/GPlatesException.h"
+
+#include "gui/Colour.h"
+
+
+namespace GPlatesFileIO
+{
+	/**
+	 * This namespace contains parameters that define the GPlates cached/mipmapped raster
+	 * format. This format is used to store block-encoded versions of rasters to enable
+	 * faster retrieval of the original raster and its lower-resolution mipmaps.
+	 *
+	 * One raster file cache stores a copy of the original raster in block-encoded format,
+	 * or if the original raster file contains a number of bands, stores a copy of one band
+	 * in that original raster file. This is the base (full-resolution) level of the mipmap pyramid.
+	 *
+	 * Another raster file cache stores the mipmaps for the original full-resolution raster,
+	 * or if the full-resolution raster file contains a number of bands, stores the
+	 * mipmaps for one band in that full-resolution raster file.
+	 *
+	 * A raster file cache is a binary file that consists of a header followed by block-encoded
+	 * image data (either the full-resolution raster or a succession of downsampled
+	 * images, each with half the width and half the height of the previous).
+	 * In the latter case (mipmaps) the first image has half the width and height of the
+	 * original raster; the original raster is not stored in the mipmapped raster
+	 * file. The sequence of images ends when the greatest dimension of the last
+	 * image is less than the block dimension. If the greatest dimension of the
+	 * original raster is less than that block dimension, no mipmapped raster file cache is
+	 * created for it (since it's not necessary).
+	 *
+	 * If the original raster is an RGBA raster, the mipmaps are in RGBA.
+	 * If the original raster is an integer or float (assumed to be 32-bit) raster,
+	 * the mipmaps are stored as floats.
+	 * If the original raster is a double (assumed to be 64-bit) raster, the
+	 * mipmaps are stored as doubles.
+	 *
+	 * For each cached image (mipmaps and base level) stored as floats or doubles there is a coverage
+	 * raster even if there are no pixels that correspond to, in the original raster, the sentinel value.
+	 * The coverage raster is a 16-bit integer raster that stores the fraction of the corresponding
+	 * pixel in the cached image that is non-sentinel in the original raster.
+	 *
+	 * For the base level raster file cache...
+	 *
+	 * The header consists of the following fields, in order:
+	 *  - ( 0) A magic number that identifies a file as GPlates.
+	 *  - ( 8) The version number of the GPlates raster file cache format used.
+	 *  - (12) The type of the source raster: RGBA, float or double.
+	 *  - (16) For the base level:
+	 *     - The width of the image in this level.
+	 *     - The height of the image in this level.
+	 *     - The starting position, in bytes, of the source raster in the file.
+	 *     - The starting position, in bytes, of the coverage raster in the file.
+	 *       This value is 0 if the mipmap is RGBA.
+	 *
+	 * For the mipmaps raster file cache...
+	 *
+	 * The header consists of the following fields, in order:
+	 *  - ( 0) A magic number that identifies a file as GPlates.
+	 *  - ( 8) The version number of the GPlates raster file cache format used.
+	 *  - (12) The type of the mipmaps: RGBA, float or double.
+	 *  - (16) The number of levels.
+	 *  - (20) For each level:
+	 *     - The width of the mipmap in this level.
+	 *     - The height of the mipmap in this level.
+	 *     - The starting position, in bytes, of the mipmap in the file.
+	 *     - The starting position, in bytes, of the coverage raster in the file.
+	 *       This value is 0 if the mipmap is RGBA.
+	 *
+	 * Most of the fields in the header are unsigned 32-bit integers.
+	 * Each RGBA component is stored as an unsigned 8-bit integer.
+	 * The byte order of the entire raster file cache is big endian (the QDataStream default).
+	 * The file format is independent of the operating system and CPU, with one
+	 * qualification: float is assumed to be 32-bit and double is assumed to be
+	 * 64-bit.
+	 */
+	namespace RasterFileCacheFormat
+	{
+		/**
+		 * The magic number that identifies a file as GPlates.
+		 */
+		//const boost::uint8_t MAGIC_NUMBER[] = { 'G', 'P', 'l', 'a', 't', 'e', 's', 0 };
+		const boost::uint8_t MAGIC_NUMBER[] = { 0x00, 0xF0, 0x0B, 0xAA };
+
+		/**
+		 * The current version number of the GPlates raster file cache format.
+		 *
+		 * NOTE: This must be updated if there are any breaking changes to the file
+		 * format between public GPlates releases.
+		 */
+		const boost::uint32_t VERSION_NUMBER = 1;
+
+		/**
+		 * The type of raster used to store.
+		 */
+		enum Type
+		{
+			RGBA,
+			FLOAT,
+			DOUBLE,
+
+			NUM_TYPES // must be the last entry
+		};
+
+		template<typename T>
+		Type
+		get_type_as_enum();
+
+		template<>
+		Type
+		get_type_as_enum<GPlatesGui::rgba8_t>();
+
+		template<>
+		Type
+		get_type_as_enum<float>();
+
+		template<>
+		Type
+		get_type_as_enum<double>();
+
+		/**
+		 * The block size is the value is dimension of square blocks of image data, in the raster
+		 * file cache, containing BLOCK_SIZE x BLOCK_SIZE pixels of data.
+		 *
+		 * It is also such that the greatest dimension in the lowest level is less than or equal to this.
+		 *
+		 * This is set to a size of OpenGL texture that all hardware platforms support.
+		 * They all support 256 x 256 textures.
+		 */
+		const unsigned int BLOCK_SIZE = 256;
+
+		/**
+		 * The QDataStream serialisation version.
+		 */
+		const int Q_DATA_STREAM_VERSION = QDataStream::Qt_4_4;
+	
+		/**
+		 * Information for the size and file location of a level (base or mipmap) of the mipmap pyramid.
+		 *
+		 * Note the base level and the mipmap levels are in separate files.
+		 */
+		struct LevelInfo
+		{
+			quint32 width, height;
+			quint32 main_offset, coverage_offset; // TODO: Change this to quint64.
+			static const quint32 NUM_COMPONENTS = 4;
+		};
+
+
+		/**
+		 * Thrown when reading a file containing an unrecognised version number.
+		 *
+		 * This happens after reading the magic number so we're fairly sure it's a file that GPlates wrote.
+		 *
+		 * Most likely we're this is an old version of GPlates and we're reading a file generated
+		 * by a newer version of GPlates.
+		 */
+		class UnsupportedVersion :
+				public GPlatesGlobal::Exception
+		{
+		public:
+			UnsupportedVersion(
+				const GPlatesUtils::CallStack::Trace &exception_source,
+				quint32 unrecognised_version);
+
+			quint32
+			unrecognised_version() const
+			{
+				return d_unrecognised_version;
+			}
+
+		protected:
+			virtual
+				const char *
+				exception_name() const;
+
+			virtual
+				void
+				write_message(
+				std::ostream &os) const;
+
+		private:
+			quint32 d_unrecognised_version;
+		};
+	}
+}
+
+#endif  // GPLATES_FILEIO_MIPMAPPEDRASTERFORMAT_H

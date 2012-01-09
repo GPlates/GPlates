@@ -41,7 +41,7 @@
 #include <QDebug>
 
 #include "ErrorOpeningFileForWritingException.h"
-#include "MipmappedRasterFormat.h"
+#include "RasterFileCacheFormat.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesException.h"
@@ -111,7 +111,7 @@ namespace GPlatesFileIO
 						GPLATES_ASSERTION_SOURCE);
 
 				d_num_levels = mipmapper_type::get_number_of_levels(
-						MipmappedRasterFormat::THRESHOLD_SIZE, d_source_raster_width, d_source_raster_height);
+						RasterFileCacheFormat::BLOCK_SIZE, d_source_raster_width, d_source_raster_height);
 
 				// Find out the maximum memory usage required by a mipmapper to mipmap.
 				const float mipmapper_allocation_amplification =
@@ -177,13 +177,17 @@ namespace GPlatesFileIO
 				}
 				QDataStream out(&file);
 
-				// Write magic number and version number.
-				out << static_cast<quint32>(MipmappedRasterFormat::MAGIC_NUMBER);
-				out << static_cast<quint32>(MipmappedRasterFormat::VERSION_NUMBER);
-				out.setVersion(MipmappedRasterFormat::Q_DATA_STREAM_VERSION);
+				// Write magic number/string.
+				for (unsigned int n = 0; n < sizeof(RasterFileCacheFormat::MAGIC_NUMBER); ++n)
+				{
+					out << static_cast<quint8>(RasterFileCacheFormat::MAGIC_NUMBER[n]);
+				}
+				// Write version number.
+				out << static_cast<quint32>(RasterFileCacheFormat::VERSION_NUMBER);
+				out.setVersion(RasterFileCacheFormat::Q_DATA_STREAM_VERSION);
 
 				// Write mipmap type.
-				out << static_cast<quint32>(MipmappedRasterFormat::get_type_as_enum<mipmapped_element_type>());
+				out << static_cast<quint32>(RasterFileCacheFormat::get_type_as_enum<mipmapped_element_type>());
 
 				// Write number of levels.
 				out << static_cast<quint32>(d_num_levels);
@@ -202,7 +206,7 @@ namespace GPlatesFileIO
 				// Get information about each mipmap level that we'll write later.
 				const std::vector<typename mipmapper_type::LevelInfo> mipmapper_level_infos =
 						mipmapper_type::get_level_infos(
-								MipmappedRasterFormat::THRESHOLD_SIZE,
+								RasterFileCacheFormat::BLOCK_SIZE,
 								d_source_raster_width,
 								d_source_raster_height,
 								generate_coverage);
@@ -215,9 +219,9 @@ namespace GPlatesFileIO
 				qint64 total_bytes_of_mipmapped_raster_data = 0;
 
 				// Determine the level infos to write to the mipmap file.
-				std::vector<MipmappedRasterFormat::LevelInfo> level_infos;
+				std::vector<RasterFileCacheFormat::LevelInfo> level_infos;
 				{
-					// Number of bytes written for each 'MipmappedRasterFormat::LevelInfo'.
+					// Number of bytes written for each 'RasterFileCacheFormat::LevelInfo'.
 					static const qint64 LEVEL_INFO_SIZE = 16;
 
 					// Start at the file offset which is the beginning of raw mipmapped data.
@@ -228,7 +232,7 @@ namespace GPlatesFileIO
 					qint64 file_offset = mipmapped_data_file_offset;
 					for (unsigned int level = 0; level < d_num_levels; ++level)
 					{
-						MipmappedRasterFormat::LevelInfo level_info;
+						RasterFileCacheFormat::LevelInfo level_info;
 						level_info.width = mipmapper_level_infos[level].width;
 						level_info.height = mipmapper_level_infos[level].height;
 
@@ -252,10 +256,10 @@ namespace GPlatesFileIO
 				}
 
 				// Write out the level infos.
-				typedef std::vector<MipmappedRasterFormat::LevelInfo>::const_iterator level_iterator_type;
+				typedef std::vector<RasterFileCacheFormat::LevelInfo>::const_iterator level_iterator_type;
 				for (level_iterator_type iter = level_infos.begin(); iter != level_infos.end(); ++iter)
 				{
-					const MipmappedRasterFormat::LevelInfo &current_level_info = *iter;
+					const RasterFileCacheFormat::LevelInfo &current_level_info = *iter;
 					out << current_level_info.width
 						<< current_level_info.height
 						<< current_level_info.main_offset
@@ -358,7 +362,7 @@ namespace GPlatesFileIO
 					{
 						mipmapper->generate_next();
 
-						const MipmappedRasterFormat::LevelInfo &current_level_info = level_infos[level];
+						const RasterFileCacheFormat::LevelInfo &current_level_info = level_infos[level];
 
 						// Get and write the mipmap for the current level.
 						typename mipmapped_raster_type::non_null_ptr_to_const_type current_mipmap =
@@ -447,22 +451,18 @@ namespace GPlatesFileIO
 					bool generate_coverage) = 0;
 
 			/**
-			 * Returns true if a coverage should be generated for the specified source raster region.
+			 * Returns true if a coverage should be generated for the raster type (handled by derived class).
 			 *
-			 * Only generated for non-RGBA rasters (ie, that contain a no-data or sentinel value)
-			 * that actually have a sentinel pixel in the raster.
-			 *
-			 * The default implementation is to return false (suitable for RGBA mipmaps).
+			 * Only generated for non-RGBA rasters regardless of whether the raster actually contains
+			 * a sentinel pixel (ie, a pixel with the no-data or sentinel value).
+			 * If a raster type supports sentinel values (ie, non-RGBA) but has no sentinel values
+			 * in the raster then the coverage raster will compress very well so the extra space
+			 * used should be small (and it saves us having to do a full pass over the raster just
+			 * to see if it contains even a single sentinel pixel).
 			 */
 			virtual
 			bool
-			should_generate_coverage(
-					const QRect &/*source_region_rect*/)
-			{
-				// The source region will be RGBA and there's no need
-				// to generate a coverage for a RGBA raster.
-				return false;
-			}
+			should_generate_coverage() const = 0;
 
 
 			typename ProxiedRawRasterType::non_null_ptr_type d_proxied_raw_raster;
@@ -471,59 +471,6 @@ namespace GPlatesFileIO
 			unsigned int d_source_raster_height;
 			unsigned int d_num_levels;
 			unsigned int d_max_source_rows_per_mipmap_pass;
-
-
-		private:
-			/**
-			 * Non-virtual method to iterate over the source raster regions and
-			 * ask derived class if each region needs coverage.
-			 *
-			 * If any region needs coverage then true is returned meaning the entire
-			 * source raster (and its mipmaps) needs coverage.
-			 */
-			bool
-			should_generate_coverage()
-			{
-				// Iterate over the mipmap passes to see if we need to generate coverages.
-				// If the source raster has any fractional coverage values then these will
-				// propagate down to all the mipmap levels.
-				// This does not apply to RGBA rasters because the coverage is embedded in the
-				// alpha channel and that gets mipmap filtered along with the non-coverage RGB data
-				// so its not a separate coverage raster.
-				unsigned int y = 0;
-				while (y < d_source_raster_height)
-				{
-					// Note that the last section of the source raster will have a number of rows
-					// that are not necessarily a power-of-two.
-					// That's OK because that's expected for the last section - we just don't
-					// want to do that for prior sections as it will give the wrong result.
-					unsigned int num_source_rows_to_mipmap = d_source_raster_height - y;
-					if (num_source_rows_to_mipmap > d_max_source_rows_per_mipmap_pass)
-					{
-						num_source_rows_to_mipmap = d_max_source_rows_per_mipmap_pass;
-					}
-
-					// The source region to test.
-					const QRect source_region_rect(0, y, d_source_raster_width, num_source_rows_to_mipmap);
-
-					// Ask derived class if the source region should generate a coverage.
-					// This might involve reading the data which is why we're breaking it up
-					// into regions to avoid potential memory allocation failure.
-					if (should_generate_coverage(source_region_rect))
-					{
-						// If one region needs coverage then generate for
-						// the entire source raster and mipmaps.
-						return true;
-					}
-
-					// Move to start of the next group of source rows to mipmap.
-					y += num_source_rows_to_mipmap;
-				}
-
-				// None of the source regions need a coverage so the
-				// entire source raster doesn't need any either.
-				return false;
-			}
 		};
 	}
 
@@ -546,8 +493,7 @@ namespace GPlatesFileIO
 
 
 	/**
-	 * This specialisation is for rasters that have an element_type of rgba8_t
-	 * and are without a no-data value.
+	 * This specialisation is for rasters that have an element_type of rgba8_t and are without a no-data value.
 	 */
 	template<class ProxiedRawRasterType>
 	class MipmappedRasterFormatWriter<
@@ -589,12 +535,20 @@ namespace GPlatesFileIO
 			return boost::shared_ptr<mipmapper_type>(
 					new mipmapper_type(source_region_raster));
 		}
+
+		virtual
+		bool
+		should_generate_coverage() const
+		{
+			// The source region will be RGBA and there's no need
+			// to generate a coverage for a RGBA raster.
+			return false;
+		}
 	};
 
 
 	/**
-	 * This specialisation is for rasters that have a floating-point element_type
-	 * and that have a no-data value.
+	 * This specialisation is for rasters that have a floating-point element_type and that have a no-data value.
 	 */
 	template<class ProxiedRawRasterType>
 	class MipmappedRasterFormatWriter<
@@ -644,37 +598,12 @@ namespace GPlatesFileIO
 					new mipmapper_type(source_region_raster, generate_coverage));
 		}
 
-
-		/**
-		 * Returns true if the specified source region of the source raster contains
-		 * at least one sentinel pixel.
-		 */
 		virtual
 		bool
-		should_generate_coverage(
-				const QRect &source_region_rect)
+		should_generate_coverage() const
 		{
-			// Get the region data from the source raster.
-			source_raster_element_type *source_region_data = reinterpret_cast<source_raster_element_type *>(
-					d_source_raster_band_reader_handle.get_data(source_region_rect));
-			if (source_region_data == NULL)
-			{
-				throw GPlatesGlobal::LogException(
-						GPLATES_EXCEPTION_SOURCE,
-						"Unable to read source raster region.");
-			}
-
-			// Store the region data in a source raster type and
-			// retain the statistics/no-data-value of the proxied raster.
-			typename source_raster_type::non_null_ptr_type source_region_raster =
-					GPlatesPropertyValues::RawRasterUtils::convert_proxied_raster_to_unproxied_raster<
-							ProxiedRawRasterType>(
-									d_proxied_raw_raster,
-									source_region_rect.width(),
-									source_region_rect.height(),
-									source_region_data);
-
-			return GPlatesGui::does_raster_contain_a_no_data_value(*source_region_raster);
+			// The source region will support no-data values.
+			return true;
 		}
 
 		using base_type::d_proxied_raw_raster;
@@ -737,37 +666,12 @@ namespace GPlatesFileIO
 					new mipmapper_type(source_region_raster, generate_coverage));
 		}
 
-
-		/**
-		 * Returns true if the specified source region of the source raster contains
-		 * at least one sentinel pixel.
-		 */
 		virtual
 		bool
-		should_generate_coverage(
-				const QRect &source_region_rect)
+		should_generate_coverage() const
 		{
-			// Get the region data from the source raster.
-			source_raster_element_type *source_region_data = reinterpret_cast<source_raster_element_type *>(
-					d_source_raster_band_reader_handle.get_data(source_region_rect));
-			if (source_region_data == NULL)
-			{
-				throw GPlatesGlobal::LogException(
-						GPLATES_EXCEPTION_SOURCE,
-						"Unable to read source raster region.");
-			}
-
-			// Store the region data in a source raster type and
-			// retain the statistics/no-data-value of the proxied raster.
-			typename source_raster_type::non_null_ptr_type source_region_raster =
-					GPlatesPropertyValues::RawRasterUtils::convert_proxied_raster_to_unproxied_raster<
-							ProxiedRawRasterType>(
-									d_proxied_raw_raster,
-									source_region_rect.width(),
-									source_region_rect.height(),
-									source_region_data);
-
-			return GPlatesGui::does_raster_contain_a_no_data_value(*source_region_raster);
+			// The source region will support no-data values.
+			return true;
 		}
 
 		using base_type::d_proxied_raw_raster;
@@ -835,6 +739,15 @@ namespace GPlatesFileIO
 			// Mipmap the coloured raster not the integer source raster.
 			return boost::shared_ptr<mipmapper_type>(
 					new mipmapper_type(coloured_raster.get()));
+		}
+
+		virtual
+		bool
+		should_generate_coverage() const
+		{
+			// The source region will be coloured/converted to RGBA and there's no need
+			// to generate a coverage for a RGBA raster.
+			return false;
 		}
 
 	private:
