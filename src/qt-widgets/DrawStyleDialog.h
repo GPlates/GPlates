@@ -206,10 +206,13 @@ namespace GPlatesQtWidgets
 		void
 		apply_style_to_all_layers();
 
-#if 0
-		void
-		showEvent ( QShowEvent * event );
-#endif
+		void 
+		showEvent(
+				QShowEvent * e)
+		{
+			QDialog::showEvent(e);
+			show_preview_icon();
+		}
 
 	private slots:
 		void

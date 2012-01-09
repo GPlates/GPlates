@@ -576,6 +576,8 @@ GPlatesQtWidgets::DrawStyleDialog::handle_style_selection_changed(
 void
 GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 {
+	QApplication::processEvents();
+	
 	{
 		//sync the camera point
 		GPlatesQtWidgets::ReconstructionViewWidget & view_widget = 
@@ -614,10 +616,12 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 			d_globe_and_map_widget_ptr->repaint_canvas();
 			
 // 			d_disable_style_item_change = true;
-// 
-// 			while(!d_repaint_flag)
-// 				QApplication::processEvents();
-// 
+ 	
+			while(d_globe_and_map_widget_ptr->is_map_active() && !d_repaint_flag)
+			{
+ 				QApplication::processEvents();
+			}
+
 // 			d_disable_style_item_change = false;
 			
 			current_item->setIcon(QIcon(QPixmap::fromImage(d_image)));
@@ -839,7 +843,7 @@ GPlatesQtWidgets::PreviewGuard::PreviewGuard(
 	}
 	else if(view_widget.map_is_active())
 	{
-		view_widget.map_view().map_canvas().set_disable_update(true);
+		view_widget.map_view().set_disable_update(true);
 	}
 	d_current_idx = dlg.style_list->currentRow();
 }
@@ -858,9 +862,10 @@ GPlatesQtWidgets::PreviewGuard::~PreviewGuard()
 	}
 	else if(view_widget.map_is_active())
 	{
-		view_widget.map_view().map_canvas().set_disable_update(false);
+		view_widget.map_view().set_disable_update(false);
 	}
 	 d_dlg.style_list->setCurrentRow(d_current_idx);
+	 d_dlg.set_style();
 }
 
 

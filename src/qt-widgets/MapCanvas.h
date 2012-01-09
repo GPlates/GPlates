@@ -195,6 +195,8 @@ namespace GPlatesQtWidgets
 
 		//! A pointer to the state's RenderedGeometryCollection
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
+
+		bool d_disable_update;
 	};
 
 }

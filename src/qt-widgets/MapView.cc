@@ -101,7 +101,8 @@ GPlatesQtWidgets::MapView::MapView(
 				view_state.get_viewport_zoom(),
 				colour_scheme,
 				this)),
-	d_map_transform(view_state.get_map_transform())
+	d_map_transform(view_state.get_map_transform()),
+	d_disable_update(false)
 {
 	// QWidget::setMouseTracking:
 	//   If mouse tracking is disabled (the default), the widget only receives mouse move
@@ -604,6 +605,23 @@ void
 GPlatesQtWidgets::MapView::update_canvas()
 {
 	map_canvas().update();
+}
+
+
+void
+GPlatesQtWidgets::MapView::repaint_canvas()
+{
+	map_canvas().update();
+	repaint();
+}
+
+
+void
+GPlatesQtWidgets::MapView::set_disable_update(
+		bool b)
+{
+	d_disable_update = b;
+	d_map_canvas_ptr->set_disable_update(b);
 }
 
 
