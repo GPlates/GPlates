@@ -227,7 +227,7 @@ namespace GPlatesQtWidgets
 		void
 		repaint_canvas()
 		{
-			paintGL();
+			repaint();
 		}
 
 		/**

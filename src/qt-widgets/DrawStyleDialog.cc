@@ -148,15 +148,7 @@ GPlatesQtWidgets::DrawStyleDialog::handle_layer_changed(
 			categories_table->setCurrentIndex(QModelIndex());
 		
 			style_list->clearSelection();
-			if(d_preview_guard.tryLock())
-			{
-				style_list->clear();
-				d_preview_guard.unlock();
-			}
-			else
-			{
-				return;
-			}
+			style_list->clear();
 		}
 	}
 }
@@ -518,17 +510,7 @@ GPlatesQtWidgets::DrawStyleDialog::load_category(const GPlatesGui::StyleCatagory
 	using namespace GPlatesGui;
 
 	DrawStyleManager::StyleContainer styles = d_style_mgr->get_styles(cata);
-	
-	if(d_preview_guard.tryLock())
-	{
-		style_list->clear();
-		d_preview_guard.unlock();
-	}
-	else
-	{
-		return;
-	}
-	
+	style_list->clear();
 	
 	BOOST_FOREACH(StyleAdapter* sa, styles)
 	{
@@ -629,14 +611,14 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 			GPlatesGui::StyleAdapter* sa = static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
 			set_style(sa);
 			
-			d_globe_and_map_widget_ptr->update_canvas();
+			d_globe_and_map_widget_ptr->repaint_canvas();
 			
-			d_disable_style_item_change = true;
-
-			while(!d_repaint_flag)
-				QApplication::processEvents();
-
-			d_disable_style_item_change = false;
+// 			d_disable_style_item_change = true;
+// 
+// 			while(!d_repaint_flag)
+// 				QApplication::processEvents();
+// 
+// 			d_disable_style_item_change = false;
 			
 			current_item->setIcon(QIcon(QPixmap::fromImage(d_image)));
 		}
@@ -843,8 +825,7 @@ GPlatesQtWidgets::DrawStyleDialog::focus_style()
 
 GPlatesQtWidgets::PreviewGuard::PreviewGuard(
 		DrawStyleDialog& dlg) :
-	d_dlg(dlg),
-	d_guard(&dlg.d_preview_guard)
+	d_dlg(dlg)
 {
 	dlg.d_combo_box->setDisabled(true);
 	dlg.categories_table->setDisabled(true);

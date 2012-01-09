@@ -43,6 +43,9 @@
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
 #include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
 
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
+
 #include "gui/FeatureFocus.h"
 
 #include "presentation/ReconstructionGeometryRenderer.h"
@@ -325,6 +328,10 @@ void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_drag_position(
 		const GPlatesMaths::PointOnSphere &current_oriented_position)
 {
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_accum_orientation != NULL,
+			GPLATES_ASSERTION_SOURCE);
+
 	if (d_should_constrain_latitude) {
 		if ( ! d_drag_start) {
 			// We haven't set the drag start yet.  The mouse pointer must have been at

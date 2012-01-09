@@ -224,6 +224,12 @@ namespace GPlatesQtWidgets
 		void
 		update_canvas();
 
+		void
+		repaint_canvas()
+		{
+			repaint();
+		}
+
 		double
 		current_proximity_inclusion_threshold(
 				const GPlatesMaths::PointOnSphere &click_point) const;

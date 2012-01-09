@@ -241,10 +241,9 @@ namespace GPlatesQtWidgets
 		void
 		refresh_preview_icons()
 		{
-			QApplication::processEvents();
-			if( isVisible() && d_preview_guard.tryLock())
+			//QApplication::processEvents();
+			if( isVisible())
 			{
-				d_preview_guard.unlock();
 				show_preview_icon();
 			}
 		}
@@ -311,7 +310,6 @@ namespace GPlatesQtWidgets
 		GPlatesPresentation::ViewState& d_view_state;
 		LayerGroupComboBox* d_combo_box;
 		GPlatesGui::StyleAdapter* d_style_of_all;
-		QMutex d_preview_guard;
 		bool d_drag, d_projection_changed, d_refresh_preview;
 	};
 
@@ -326,7 +324,6 @@ namespace GPlatesQtWidgets
 
 	private:
 		DrawStyleDialog& d_dlg;
-		QMutexLocker d_guard;
 	};
 
 
