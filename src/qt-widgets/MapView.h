@@ -284,12 +284,12 @@ namespace GPlatesQtWidgets
 
 		void 
 		paintEvent(
-				QPaintEvent *event)
+				QPaintEvent *paint_event)
 		{
-			if(d_disable_update)
+			if (d_disable_update)
 				return;
 
-			QGraphicsView::paintEvent(event);
+			QGraphicsView::paintEvent(paint_event);
 		}
 
 	signals:
