@@ -324,6 +324,7 @@ namespace GPlatesQtWidgets
 
 	private:
 		DrawStyleDialog& d_dlg;
+		int d_current_idx;
 	};
 
 
