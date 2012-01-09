@@ -626,9 +626,9 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 		d_globe_and_map_widget_ptr->hide();
 	}
 		
-	style_list->setCurrentRow(0);
-	QVariant q_data = style_list->currentItem()->data(Qt::UserRole);
-	set_style(static_cast<GPlatesGui::StyleAdapter*>(q_data.value<void*>()));
+	//style_list->setCurrentRow(0);
+	//QVariant q_data = style_list->currentItem()->data(Qt::UserRole);
+	//set_style(static_cast<GPlatesGui::StyleAdapter*>(q_data.value<void*>()));
 }
 
 
@@ -825,7 +825,8 @@ GPlatesQtWidgets::DrawStyleDialog::focus_style()
 
 GPlatesQtWidgets::PreviewGuard::PreviewGuard(
 		DrawStyleDialog& dlg) :
-	d_dlg(dlg)
+	d_dlg(dlg),
+	d_current_idx(0)
 {
 	dlg.d_combo_box->setDisabled(true);
 	dlg.categories_table->setDisabled(true);
@@ -840,6 +841,7 @@ GPlatesQtWidgets::PreviewGuard::PreviewGuard(
 	{
 		view_widget.map_view().map_canvas().set_disable_update(true);
 	}
+	d_current_idx = dlg.style_list->currentRow();
 }
 
 GPlatesQtWidgets::PreviewGuard::~PreviewGuard()
@@ -858,6 +860,7 @@ GPlatesQtWidgets::PreviewGuard::~PreviewGuard()
 	{
 		view_widget.map_view().map_canvas().set_disable_update(false);
 	}
+	 d_dlg.style_list->setCurrentRow(d_current_idx);
 }
 
 
