@@ -62,6 +62,13 @@ namespace GPlatesFileIO
 				const QRect &region = QRect(),
 				ReadErrorAccumulation *read_errors = NULL);
 
+		/**
+		 * Returns a pointer to a copy of the data contained within the given @a region.
+		 *
+		 * Ownership of the memory passes to the caller of this function.
+		 *
+		 * Returns NULL if the band could not be read.
+		 */
 		void *
 		get_data(
 				const QRect &region = QRect(),

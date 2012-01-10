@@ -30,6 +30,8 @@
 
 #include "MipmapperTest.h"
 
+#include "file-io/RasterFileCacheFormat.h"
+
 #include "gui/Colour.h"
 #include "gui/Mipmapper.h"
 
@@ -174,7 +176,7 @@ GPlatesUnitTest::MipmapperTest::test_rgba_mipmapper()
 	std::memcpy(raster->data(), raster_data, sizeof(raster_data));
 
 	// There should be three mipmap levels.
-	BOOST_CHECK(GPlatesGui::Mipmapper<Rgba8RawRaster>::get_number_of_levels(1, 5, 3) == 3);
+	BOOST_CHECK(GPlatesFileIO::RasterFileCacheFormat::get_number_of_mipmapped_levels(5, 3) == 3);
 
 	GPlatesGui::Mipmapper<Rgba8RawRaster> mipmapper(raster);
 
@@ -223,7 +225,7 @@ GPlatesUnitTest::MipmapperTest::test_float_mipmapper()
 	std::memcpy(raster->data(), raster_data, sizeof(raster_data));
 
 	// There should be three mipmap levels.
-	BOOST_CHECK(GPlatesGui::Mipmapper<FloatRawRaster>::get_number_of_levels(1, 5, 3) == 3);
+	BOOST_CHECK(GPlatesFileIO::RasterFileCacheFormat::get_number_of_mipmapped_levels(5, 3) == 3);
 
 	GPlatesGui::Mipmapper<FloatRawRaster> mipmapper(raster, false/*generate_coverage*/);
 
@@ -275,7 +277,7 @@ GPlatesUnitTest::MipmapperTest::test_int_mipmapper()
 	raster->set_no_data_value(boost::optional<boost::int32_t>(0));
 
 	// There should be three mipmap levels.
-	BOOST_CHECK(GPlatesGui::Mipmapper<Int32RawRaster>::get_number_of_levels(1, 5, 3) == 3);
+	BOOST_CHECK(GPlatesFileIO::RasterFileCacheFormat::get_number_of_mipmapped_levels(5, 3) == 3);
 
 	GPlatesGui::Mipmapper<Int32RawRaster> mipmapper(raster, false/*generate_coverage*/);
 

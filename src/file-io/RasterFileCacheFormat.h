@@ -29,11 +29,14 @@
 #define GPLATES_FILEIO_MIPMAPPEDRASTERFORMAT_H
 
 #include <boost/cstdint.hpp>
+#include <boost/optional.hpp>
 #include <QDataStream>
+#include <QString>
 
 #include "global/GPlatesException.h"
 
 #include "gui/Colour.h"
+#include "gui/RasterColourPalette.h"
 
 
 namespace GPlatesFileIO
@@ -111,8 +114,7 @@ namespace GPlatesFileIO
 		/**
 		 * The magic number that identifies a file as GPlates.
 		 */
-		//const boost::uint8_t MAGIC_NUMBER[] = { 'G', 'P', 'l', 'a', 't', 'e', 's', 0 };
-		const boost::uint8_t MAGIC_NUMBER[] = { 0x00, 0xF0, 0x0B, 0xAA };
+		const boost::uint8_t MAGIC_NUMBER[] = { 'G', 'P', 'l', 'a', 't', 'e', 's', 0 };
 
 		/**
 		 * The current version number of the GPlates raster file cache format.
@@ -120,7 +122,7 @@ namespace GPlatesFileIO
 		 * NOTE: This must be updated if there are any breaking changes to the file
 		 * format between public GPlates releases.
 		 */
-		const boost::uint32_t VERSION_NUMBER = 1;
+		const boost::uint32_t VERSION_NUMBER = 0; // TODO: Change this to 1 when implemented block-encoding.
 
 		/**
 		 * The type of raster used to store.
@@ -174,9 +176,62 @@ namespace GPlatesFileIO
 		struct LevelInfo
 		{
 			quint32 width, height;
-			quint32 main_offset, coverage_offset; // TODO: Change this to quint64.
+			quint64 main_offset, coverage_offset;
 			static const quint32 NUM_COMPONENTS = 4;
 		};
+
+
+		/**
+		 * Returns the number of mipmapped levels in total needed for a source raster of
+		 * the specified dimensions.
+		 */
+		unsigned int
+		get_number_of_mipmapped_levels(
+				const unsigned int source_raster_width,
+				const unsigned int source_raster_height);
+
+
+		/**
+		 * Returns the filename of a file that can be used for writing out a
+		 * mipmaps file for the given @a source_filename.
+		 *
+		 * It first checks whether a mipmap file in the same directory as the
+		 * source raster is writable. If not, it will check whether a mipmap
+		 * file in the temp directory is writable. In the rare case in which the
+		 * user has no permissions to write in the temp directory, boost::none is returned.
+		 */
+		boost::optional<QString>
+		get_writable_mipmap_filename(
+				const QString &source_filename,
+				unsigned int band_number,
+				boost::optional<std::size_t> colour_palette_id = boost::none);
+
+
+		/**
+		 * Returns the filename of an existing mipmap file for the given
+		 * @a source_filename, if any.
+		 *
+		 * It first checks in the same directory as the source raster. If it is
+		 * not found there, it then checks in the temp directory. If the mipmaps
+		 * file is not found in either of those two places, boost::none is returned.
+		 */
+		boost::optional<QString>
+		get_existing_mipmap_filename(
+				const QString &source_filename,
+				unsigned int band_number,
+				boost::optional<std::size_t> colour_palette_id = boost::none);
+
+
+		/**
+		 * Gets the colour palette id for the given @a colour_palette.
+		 *
+		 * It simply casts the memory address of the colour palette and casts it
+		 * to an unsigned int.
+		 */
+		boost::optional<std::size_t>
+		get_colour_palette_id(
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette =
+					GPlatesGui::RasterColourPalette::create());
 
 
 		/**

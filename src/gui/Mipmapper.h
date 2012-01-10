@@ -53,143 +53,6 @@ namespace GPlatesGui
 	namespace MipmapperInternals
 	{
 		/**
-		 * Creates a coverage raster from a raster.
-		 */
-		template<class RawRasterType, bool has_no_data_value>
-		class CreateCoverageRawRaster
-		{
-		public:
-
-			static
-			boost::optional<GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_type>
-			create_coverage_raster(
-					const RawRasterType &raster)
-			{
-				// has_no_data_value = false case handled here.
-				// No work to do, because our raster can't have sentinel values anyway.
-				return boost::none;
-			}
-		};
-
-
-		template<class RawRasterType>
-		class CreateCoverageRawRaster<RawRasterType, true>
-		{
-			class CoverageFunctor :
-					public std::unary_function<typename RawRasterType::element_type,
-					GPlatesPropertyValues::CoverageRawRaster::element_type>
-			{
-			public:
-
-				typedef boost::function<bool (typename RawRasterType::element_type)> is_no_data_value_function_type;
-
-				CoverageFunctor(
-						is_no_data_value_function_type is_no_data_value) :
-					d_is_no_data_value(is_no_data_value)
-				{
-				}
-
-				GPlatesPropertyValues::CoverageRawRaster::element_type
-				operator()(
-						typename RawRasterType::element_type value)
-				{
-					static const GPlatesPropertyValues::CoverageRawRaster::element_type NO_DATA_COVERAGE_VALUE = 0.0f;
-					static const GPlatesPropertyValues::CoverageRawRaster::element_type DATA_PRESENT_VALUE = 1.0f;
-
-					if (d_is_no_data_value(value))
-					{
-						return NO_DATA_COVERAGE_VALUE;
-					}
-					else
-					{
-						return DATA_PRESENT_VALUE;
-					}
-				}
-
-			private:
-
-				is_no_data_value_function_type d_is_no_data_value;
-			};
-
-		public:
-
-			static
-			boost::optional<GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_type>
-			create_coverage_raster(
-					const RawRasterType &raster)
-			{
-				GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_type coverage =
-					GPlatesPropertyValues::CoverageRawRaster::create(raster.width(), raster.height());
-
-				std::transform(
-						raster.data(),
-						raster.data() + raster.width() * raster.height(),
-						coverage->data(),
-						CoverageFunctor(
-							boost::bind(
-								&RawRasterType::is_no_data_value,
-								boost::cref(raster),
-								_1)));
-
-				return coverage;
-			}
-		};
-
-
-		/**
-		 * Determines if a raster has a no-data value and is not fully opaque.
-		 */
-		template<class RawRasterType, bool has_no_data_value>
-		class DoesRasterContainANoDataValue
-		{
-		public:
-			static
-			bool
-			does_raster_contain_a_no_data_value(
-					const RawRasterType &raster)
-			{
-				// has_no_data_value = false case handled here.
-				// No work to do, because our raster can't have sentinel values anyway.
-				return false;
-			}
-		};
-
-
-		template<class RawRasterType>
-		class DoesRasterContainANoDataValue<RawRasterType, true/*has_no_data_value*/>
-		{
-		public:
-			static
-			bool
-			does_raster_contain_a_no_data_value(
-					const RawRasterType &raster)
-			{
-				// Iterate over the pixels and see if any are the sentinel value meaning
-				// that that pixel is transparent.
-				const unsigned int raster_width = raster.width();
-				const unsigned int raster_height = raster.height();
-				for (unsigned int j = 0; j < raster_height; ++j)
-				{
-					const typename RawRasterType::element_type *const row =
-							raster.data() + j * raster_width;
-
-					for (unsigned int i = 0; i < raster_width; ++i)
-					{
-						if (raster.is_no_data_value(row[i]))
-						{
-							// Raster contains a sentinel value so it's not fully opaque.
-							return true;
-						}
-					}
-				}
-
-				// Raster contains no sentinel values, hence it is fully opaque.
-				return false;
-			};
-		};
-
-
-		/**
 		 * Returns coverage raster that is fully opaque (all pixels are 1.0).
 		 */
 		GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_to_const_type
@@ -251,31 +114,6 @@ namespace GPlatesGui
 
 
 			/**
-			 * Returns the number of mipmap levels in total needed for a source raster of
-			 * the specified dimensions.
-			 */
-			static
-			unsigned int
-			get_number_of_levels(
-					const unsigned int threshold_size,
-					const unsigned int source_raster_width,
-					const unsigned int source_raster_height)
-			{
-				unsigned int num_levels = 0;
-
-				unsigned int width = source_raster_width;
-				unsigned int height = source_raster_height;
-
-				while (width > threshold_size || height > threshold_size)
-				{
-					width = (width >> 1) + (width & 1);
-					height = (height >> 1) + (height & 1);
-
-					++num_levels;
-				}
-
-				return num_levels;
-			}
 
 
 			/**
@@ -319,7 +157,7 @@ namespace GPlatesGui
 			 * Generates the next mipmap in the sequence of mipmaps.
 			 *
 			 * NOTE: It is up to the caller to ensure the next mipmap can actually be generated -
-			 * use @a get_number_of_levels for this purpose.
+			 * use @a RasterFileCacheFormat::get_number_of_mipmapped_levels for this purpose.
 			 *
 			 * Also note that this method should be called before each call to
 			 * @a get_current_mipmap and @a get_current_coverage.
@@ -476,24 +314,6 @@ namespace GPlatesGui
 
 
 	/**
-	 * Returns true if the specified raster has a no-data sentinel value in the raster.
-	 *
-	 * The requirement of a no-data value is really just to rule out
-	 * RGBA rasters which have an alpha-channel and hence can be transparent but
-	 * do not have a no-data value (because of the alpha-channel).
-	 */
-	template<class RawRasterType>
-	bool
-	does_raster_contain_a_no_data_value(
-			const RawRasterType &raster)
-	{
-		return MipmapperInternals::DoesRasterContainANoDataValue<
-				RawRasterType, RawRasterType::has_no_data_value>
-						::does_raster_contain_a_no_data_value(raster);
-	}
-
-
-	/**
 	 * Mipmapper takes a raster of type RawRasterType and produces a sequence of
 	 * mipmaps of successively smaller size.
 	 *
@@ -514,8 +334,6 @@ namespace GPlatesGui
 	/**
 	 * This specialisation is for rasters that have an element_type of rgba8_t
 	 * and are without a no-data value.
-	 *
-	 * This version uses ImageMagick for the downsampling; the default Lanczos filter is used.
 	 */
 	template<class RawRasterType>
 	class Mipmapper<RawRasterType,
@@ -881,9 +699,7 @@ namespace GPlatesGui
 
 			if (generate_coverage)
 			{
-				d_current_coverage = MipmapperInternals::CreateCoverageRawRaster<RawRasterType,
-					   RawRasterType::has_no_data_value>::create_coverage_raster(
-		   					   *source_raster);
+				d_current_coverage = GPlatesPropertyValues::RawRasterUtils::create_coverage_raster(*source_raster);
 			}
 		}
 

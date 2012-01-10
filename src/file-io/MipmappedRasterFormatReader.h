@@ -78,6 +78,11 @@ namespace GPlatesFileIO
 		 * opened for reading.
 		 *
 		 * @throws @a FileFormatNotException if the header information is wrong.
+		 *
+		 * @throws @a MipmappedRasterFormat::UnsupportedVersion if the mipmap version is either
+		 * not recognised (mipmap file created by a newer version of GPlates) or not supported
+		 * (eg, if mipmap format is an old format that is inefficient and hence should be regenerated
+		 * with a newer algorithm).
 		 */
 		MipmappedRasterFormatReader(
 				const QString &filename) :
@@ -116,7 +121,7 @@ namespace GPlatesFileIO
 			// Check the version number.
 			quint32 version_number;
 			d_in >> version_number;
-			if (version_number == 1)
+			if (version_number == 1 || version_number == 0 /*TODO: remove 0 when implemented block-encoding*/)
 			{
 				d_impl.reset(new VersionOneReader(d_file, d_in));
 			}
@@ -1139,7 +1144,11 @@ namespace GPlatesFileIO
 
 				// Check that the file is big enough to hold at least a v1 header.
 				QFileInfo file_info(d_file);
-				static const qint64 MINIMUM_HEADER_SIZE = 16;
+				static const qint64 MINIMUM_HEADER_SIZE =
+						sizeof(RasterFileCacheFormat::MAGIC_NUMBER) +
+						sizeof(RasterFileCacheFormat::VERSION_NUMBER) +
+						4 /*raster type enumeration*/ +
+						4 /*number of mipmap levels*/;
 				if (file_info.size() < MINIMUM_HEADER_SIZE)
 				{
 					throw FileFormatNotSupportedException(
@@ -1148,7 +1157,9 @@ namespace GPlatesFileIO
 
 				// Check that the type of raster stored in the file is as requested.
 				quint32 type;
-				static const qint64 TYPE_OFFSET = 8;
+				static const qint64 TYPE_OFFSET =
+						sizeof(RasterFileCacheFormat::MAGIC_NUMBER) +
+						sizeof(RasterFileCacheFormat::VERSION_NUMBER);
 				d_file.seek(TYPE_OFFSET);
 				d_in >> type;
 				if (type != static_cast<quint32>(RasterFileCacheFormat::get_type_as_enum<
@@ -1160,11 +1171,12 @@ namespace GPlatesFileIO
 
 				// Read the number of levels.
 				quint32 num_levels;
-				static const qint64 NUM_LEVELS_OFFSET = 12;
-				static const qint64 LEVEL_INFO_OFFSET = 16;
-				static const qint64 LEVEL_INFO_SIZE = 16;
+				static const qint64 NUM_LEVELS_OFFSET = TYPE_OFFSET  + 4;
+				static const qint64 LEVEL_INFO_OFFSET = MINIMUM_HEADER_SIZE;
+				static const qint64 LEVEL_INFO_SIZE = sizeof(RasterFileCacheFormat::LevelInfo);
 				d_file.seek(NUM_LEVELS_OFFSET);
 				d_in >> num_levels;
+				//qDebug() << "num_levels: " << num_levels;
 				if (file_info.size() < LEVEL_INFO_OFFSET + LEVEL_INFO_SIZE * num_levels)
 				{
 					throw FileFormatNotSupportedException(
@@ -1178,8 +1190,8 @@ namespace GPlatesFileIO
 				// Do this before setting up the render thread in case we need to throw an exception.
 				d_file.seek(LEVEL_INFO_OFFSET);
 				bool any_coverages = false;
-				const quint32 header_size = LEVEL_INFO_OFFSET + LEVEL_INFO_SIZE * num_levels;
-				quint32 expected_file_size = header_size;
+				const quint64 header_size = LEVEL_INFO_OFFSET + LEVEL_INFO_SIZE * num_levels;
+				quint64 expected_file_size = header_size;
 				for (quint32 i = 0; i != num_levels; ++i)
 				{
 					RasterFileCacheFormat::LevelInfo current_level;
@@ -1187,6 +1199,11 @@ namespace GPlatesFileIO
 							>> current_level.height
 							>> current_level.main_offset
 							>> current_level.coverage_offset;
+// 					qDebug() << "Level: " << i;
+// 					qDebug() << "width: " << current_level.width;
+// 					qDebug() << "height: " << current_level.height;
+// 					qDebug() << "main_offset: " << current_level.main_offset;
+// 					qDebug() << "coverage_offset: " << current_level.coverage_offset;
 
 					d_level_infos.push_back(current_level);
 
@@ -1206,6 +1223,8 @@ namespace GPlatesFileIO
 								* sizeof(typename RawRasterType::element_type);
 				}
 
+// 				qDebug() << "expected_file_size " << expected_file_size;
+// 				qDebug() << "file_info.size() " << file_info.size();
 				if (expected_file_size != file_info.size())
 				{
 					throw FileFormatNotSupportedException(

@@ -110,8 +110,8 @@ namespace GPlatesFileIO
 									proxied_raster_element_type>(),
 						GPLATES_ASSERTION_SOURCE);
 
-				d_num_levels = mipmapper_type::get_number_of_levels(
-						RasterFileCacheFormat::BLOCK_SIZE, d_source_raster_width, d_source_raster_height);
+				d_num_levels = GPlatesFileIO::RasterFileCacheFormat::get_number_of_mipmapped_levels(
+						d_source_raster_width, d_source_raster_height);
 
 				// Find out the maximum memory usage required by a mipmapper to mipmap.
 				const float mipmapper_allocation_amplification =
@@ -222,7 +222,7 @@ namespace GPlatesFileIO
 				std::vector<RasterFileCacheFormat::LevelInfo> level_infos;
 				{
 					// Number of bytes written for each 'RasterFileCacheFormat::LevelInfo'.
-					static const qint64 LEVEL_INFO_SIZE = 16;
+					static const qint64 LEVEL_INFO_SIZE = sizeof(RasterFileCacheFormat::LevelInfo);
 
 					// Start at the file offset which is the beginning of raw mipmapped data.
 					// So need to skip past the level infos written to the file.
@@ -236,12 +236,12 @@ namespace GPlatesFileIO
 						level_info.width = mipmapper_level_infos[level].width;
 						level_info.height = mipmapper_level_infos[level].height;
 
-						level_info.main_offset = static_cast<quint32>(file_offset);
+						level_info.main_offset = file_offset;
 						file_offset += mipmapper_level_infos[level].num_bytes_main_mipmap;
 
 						if (generate_coverage)
 						{
-							level_info.coverage_offset = static_cast<quint32>(file_offset);
+							level_info.coverage_offset = file_offset;
 							file_offset += mipmapper_level_infos[level].num_bytes_coverage_mipmap;
 						}
 						else
@@ -265,9 +265,10 @@ namespace GPlatesFileIO
 						<< current_level_info.main_offset
 						<< current_level_info.coverage_offset;
 #if 0
-					qDebug() << current_level_info.width
-							<< current_level_info.height
-							<< current_level_info.main_offset
+					qDebug() << "RasterFileCacheFormat::LevelInfo: "
+							<< current_level_info.width << " "
+							<< current_level_info.height << " "
+							<< current_level_info.main_offset << " "
 							<< current_level_info.coverage_offset;
 #endif
 				}

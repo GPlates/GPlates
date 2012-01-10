@@ -42,6 +42,7 @@
 
 #include "file-io/MipmappedRasterFormatReader.h"
 #include "file-io/MipmappedRasterFormatWriter.h"
+#include "file-io/RasterFileCacheFormat.h"
 #include "file-io/RasterReader.h"
 #include "file-io/TemporaryFileRegistry.h"
 
@@ -275,72 +276,18 @@ namespace GPlatesPropertyValues
 
 	namespace ProxiedRasterResolverInternals
 	{
-		QString
-		make_mipmap_filename_in_same_directory(
-				const QString &source_filename,
-				unsigned int band_number,
-				std::size_t colour_palette_id = 0);
-
-		QString
-		make_mipmap_filename_in_tmp_directory(
-				const QString &source_filename,
-				unsigned int band_number,
-				std::size_t colour_palette_id = 0);
-		
-		/**
-		 * Returns the filename of a file that can be used for writing out a
-		 * mipmaps file for the given @a source_filename.
-		 *
-		 * It first checks whether a mipmap file in the same directory as the
-		 * source raster is writable. If not, it will check whether a mipmap
-		 * file in the temp directory is writable. In the rare case in which the
-		 * user has no permissions to write in the temp directory, the empty
-		 * string is returned.
-		 */
-		QString
-		get_writable_mipmap_filename(
-				const QString &source_filename,
-				unsigned int band_number,
-				std::size_t colour_palette_id = 0);
-
-		/**
-		 * Returns the filename of an existing mipmap file for the given
-		 * @a source_filename, if any.
-		 *
-		 * It first checks in the same directory as the source raster. If it is
-		 * not found there, it then checks in the temp directory. If the mipmaps
-		 * file is not found in either of those two places, the empty string is
-		 * returned.
-		 */
-		QString
-		get_existing_mipmap_filename(
-				const QString &source_filename,
-				unsigned int band_number,
-				std::size_t colour_palette_id = 0);
-
-		/**
-		 * Gets the colour palette id for the given @a colour_palette.
-		 *
-		 * It simply casts the memory address of the colour palette and casts it
-		 * to an unsigned int.
-		 */
-		std::size_t
-		get_colour_palette_id(
-				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette =
-					GPlatesGui::RasterColourPalette::create());
-
 		/**
 		 * Used by @a get_main_mipmap_reader and @a get_coloured_mipmap_reader,
 		 * to reduce code duplication.
 		 */
 		template<class MipmappedRasterType>
-		GPlatesFileIO::MipmappedRasterFormatReader<MipmappedRasterType> *
+		void
 		get_mipmap_reader(
 				boost::scoped_ptr<GPlatesFileIO::MipmappedRasterFormatReader<MipmappedRasterType> > &cached_mipmap_reader,
-				std::size_t colour_palette_id,
+				boost::optional<std::size_t> colour_palette_id,
 				const GPlatesFileIO::RasterBandReaderHandle &raster_band_reader_handle,
 				const boost::function<bool ()> &ensure_mipmaps_available_function,
-				std::size_t *cached_colour_palette_id = NULL)
+				boost::optional<std::size_t> *cached_colour_palette_id = NULL)
 		{
 			const QString &source_filename = raster_band_reader_handle.get_filename();
 
@@ -364,24 +311,34 @@ namespace GPlatesPropertyValues
 				if (!cached_mipmap_reader ||
 						(cached_colour_palette_id && *cached_colour_palette_id != colour_palette_id))
 				{
+					// Set cached mipmap reader to NULL in case there's an error below.
+					// This is also so it's NULL if exception thrown.
+					cached_mipmap_reader.reset(NULL);
+
 					// Create the mipmaps file if not yet available.
 					if (!ensure_mipmaps_available_function())
 					{
-						return NULL;
+						return;
 					}
 
 					unsigned int source_band_number = raster_band_reader_handle.get_band_number();
-					QString mipmap_filename = get_existing_mipmap_filename(
-							source_filename,
-							source_band_number,
-							colour_palette_id);
+					boost::optional<QString> mipmap_filename =
+							GPlatesFileIO::RasterFileCacheFormat::get_existing_mipmap_filename(
+									source_filename,
+									source_band_number,
+									colour_palette_id);
+
+					if (!mipmap_filename)
+					{
+						// Can't write mipmap file anywhere.
+						return;
+					}
+
 					try
 					{
-						cached_mipmap_reader.reset(NULL); // So it's NULL if exception thrown next...
-
 						cached_mipmap_reader.reset(
 								new GPlatesFileIO::MipmappedRasterFormatReader<MipmappedRasterType>(
-									mipmap_filename));
+									mipmap_filename.get()));
 					}
 					catch (GPlatesFileIO::RasterFileCacheFormat::UnsupportedVersion &exc)
 					{
@@ -389,46 +346,46 @@ namespace GPlatesPropertyValues
 						qWarning() << exc;
 
 						qWarning() << "Attempting rebuild of mipmap file '"
-								<< mipmap_filename << "' for current version of GPlates.";
+								<< mipmap_filename.get() << "' for current version of GPlates.";
 
 						// We'll have to remove the file and build it for the current GPlates version.
 						// This means if the future version of GPlates (the one that created the
 						// unrecognised version file) runs again it will either know how to
 						// load our version or rebuild it for itself also.
-						QFile(mipmap_filename).remove();
+						QFile(mipmap_filename.get()).remove();
 
 						// Build it with our version.
 						if (!ensure_mipmaps_available_function())
 						{
-							return NULL;
+							return;
 						}
 
 						// Try reading it again.
 						cached_mipmap_reader.reset(
 								new GPlatesFileIO::MipmappedRasterFormatReader<MipmappedRasterType>(
-									mipmap_filename));
+									mipmap_filename.get()));
 					}
 					catch (std::exception &exc)
 					{
 						// Log the exception so we know what caused the failure.
-						qWarning() << "Error reading mipmap file '" << mipmap_filename
+						qWarning() << "Error reading mipmap file '" << mipmap_filename.get()
 								<< "', attempting rebuild: " << exc.what();
 
 						// Remove the mipmap file in case it is corrupted somehow.
 						// Eg, it was partially written to by a previous instance of GPlates and
 						// not immediately removed for some reason.
-						QFile(mipmap_filename).remove();
+						QFile(mipmap_filename.get()).remove();
 
 						// Try building it again.
 						if (!ensure_mipmaps_available_function())
 						{
-							return NULL;
+							return;
 						}
 
 						// Try reading it again.
 						cached_mipmap_reader.reset(
 								new GPlatesFileIO::MipmappedRasterFormatReader<MipmappedRasterType>(
-									mipmap_filename));
+									mipmap_filename.get()));
 					}
 
 					if (cached_colour_palette_id)
@@ -445,8 +402,6 @@ namespace GPlatesPropertyValues
 
 				cached_mipmap_reader.reset(NULL);
 			}
-
-			return cached_mipmap_reader.get();
 		}
 
 		/**
@@ -935,15 +890,16 @@ namespace GPlatesPropertyValues
 				const QString &filename = raster_band_reader_handle.get_filename();
 				unsigned int band_number = raster_band_reader_handle.get_band_number();
 
-				if (!get_existing_mipmap_filename(filename, band_number).isEmpty())
+				if (GPlatesFileIO::RasterFileCacheFormat::get_existing_mipmap_filename(filename, band_number))
 				{
 					// Mipmap file already exists.
 					return true;
 				}
 
-				QString mipmap_filename = get_writable_mipmap_filename(filename, band_number);
+				boost::optional<QString> mipmap_filename =
+						GPlatesFileIO::RasterFileCacheFormat::get_writable_mipmap_filename(filename, band_number);
 
-				if (mipmap_filename.isEmpty())
+				if (!mipmap_filename)
 				{
 					// Can't write mipmap file anywhere.
 					return false;
@@ -965,30 +921,30 @@ namespace GPlatesPropertyValues
 					GPlatesFileIO::MipmappedRasterFormatWriter<ProxiedRawRasterType> writer(
 							d_proxied_raw_raster,
 							raster_band_reader_handle);
-					writer.write(mipmap_filename);
+					writer.write(mipmap_filename.get());
 
 					// Copy the file permissions from the source raster file to the mipmap file.
-					QFile::setPermissions(mipmap_filename, QFile::permissions(filename));
+					QFile::setPermissions(mipmap_filename.get(), QFile::permissions(filename));
 				}
 				catch (std::exception &exc)
 				{
 					// Log the exception so we know what caused the failure.
-					qWarning() << "Error writing mipmap file '" << mipmap_filename
+					qWarning() << "Error writing mipmap file '" << mipmap_filename.get()
 							<< "', removing it: " << exc.what();
 
 					// Remove the mipmap file in case it was partially written.
-					QFile(mipmap_filename).remove();
+					QFile(mipmap_filename.get()).remove();
 
 					return false;
 				}
 				catch (...)
 				{
 					// Log the exception so we know what caused the failure.
-					qWarning() << "Unknown error writing mipmap file '" << mipmap_filename
+					qWarning() << "Unknown error writing mipmap file '" << mipmap_filename.get()
 							<< "', removing it";
 
 					// Remove the mipmap file in case it was partially written.
-					QFile(mipmap_filename).remove();
+					QFile(mipmap_filename.get()).remove();
 
 					return false;
 				}
@@ -1018,7 +974,7 @@ namespace GPlatesPropertyValues
 					// the user has changed the source raster (required a new mipmap file).
 					ProxiedRasterResolverInternals::get_mipmap_reader(
 							d_main_mipmap_reader,
-							0 /* no colour palette id */,
+							boost::none /* no colour palette id */,
 							get_raster_band_reader_handle(*d_proxied_raw_raster),
 							boost::bind(
 								&BaseProxiedRasterResolver::ensure_main_mipmaps_available,
@@ -1193,7 +1149,6 @@ namespace GPlatesPropertyValues
 				const typename ProxiedRawRasterType::non_null_ptr_type &raster) :
 			base_type(raster),
 			d_coloured_mipmap_reader(NULL),
-			d_colour_palette_id_of_coloured_mipmap_reader(0),
 			d_error_getting_mipmap_reader_for_current_colour_palette(false)
 		{  }
 
@@ -1215,19 +1170,21 @@ namespace GPlatesPropertyValues
 
 			const QString &filename = raster_band_reader_handle.get_filename();
 			unsigned int band_number = raster_band_reader_handle.get_band_number();
-			std::size_t colour_palette_id = ProxiedRasterResolverInternals::get_colour_palette_id(colour_palette);
+			boost::optional<std::size_t> colour_palette_id =
+					GPlatesFileIO::RasterFileCacheFormat::get_colour_palette_id(colour_palette);
 
-			if (!ProxiedRasterResolverInternals::get_existing_mipmap_filename(
-				filename, band_number, colour_palette_id).isEmpty())
+			if (GPlatesFileIO::RasterFileCacheFormat::get_existing_mipmap_filename(
+				filename, band_number, colour_palette_id))
 			{
 				// Mipmap file already exists.
 				return true;
 			}
 
-			QString mipmap_filename = ProxiedRasterResolverInternals::get_writable_mipmap_filename(
-				filename, band_number, colour_palette_id);
+			boost::optional<QString> mipmap_filename =
+					GPlatesFileIO::RasterFileCacheFormat::get_writable_mipmap_filename(
+							filename, band_number, colour_palette_id);
 
-			if (mipmap_filename.isEmpty())
+			if (!mipmap_filename)
 			{
 				// Can't write mipmap file anywhere.
 				return false;
@@ -1245,14 +1202,14 @@ namespace GPlatesPropertyValues
 						colour_palette);
 				// Pass the colour palette so the mipmap format writer can colour the
 				// source raster in sections and mipmap the coloured sections.
-				writer.write(mipmap_filename);
+				writer.write(mipmap_filename.get());
 
 				// The coloured mipmap files used by integer rasters with integer colour
 				// palettes are deleted when GPlates exits.
 				// This is because they are created specifically for particular colour
 				// palettes, indexed by their memory address, which of course does not
 				// remain the same the next time GPlates gets run.
-				GPlatesFileIO::TemporaryFileRegistry::instance().add_file(mipmap_filename);
+				GPlatesFileIO::TemporaryFileRegistry::instance().add_file(mipmap_filename.get());
 				
 				// Make sure the file is only readable and writable by the user.
 				// Suppose the source raster file is on a shared directory that happens to
@@ -1263,27 +1220,27 @@ namespace GPlatesPropertyValues
 				// second instance of GPlates.
 				// 
 				// Note: this should change if we start hashing colour palettes, though.
-				QFile::setPermissions(mipmap_filename, QFile::ReadUser | QFile::WriteUser);
+				QFile::setPermissions(mipmap_filename.get(), QFile::ReadUser | QFile::WriteUser);
 			}
 			catch (std::exception &exc)
 			{
 				// Log the exception so we know what caused the failure.
-				qWarning() << "Error generating mipmap file '" << mipmap_filename
+				qWarning() << "Error generating mipmap file '" << mipmap_filename.get()
 						<< "', removing it: " << exc.what();
 
 				// Remove the mipmap file in case it was partially written.
-				QFile(mipmap_filename).remove();
+				QFile(mipmap_filename.get()).remove();
 
 				return false;
 			}
 			catch (...)
 			{
 				// Log the exception so we know what caused the failure.
-				qWarning() << "Unknown error generating mipmap file '" << mipmap_filename
+				qWarning() << "Unknown error generating mipmap file '" << mipmap_filename.get()
 						<< "', removing it";
 
 				// Remove the mipmap file in case it was partially written.
-				QFile(mipmap_filename).remove();
+				QFile(mipmap_filename.get()).remove();
 
 				return false;
 			}
@@ -1304,8 +1261,8 @@ namespace GPlatesPropertyValues
 		get_coloured_mipmap_reader(
 				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette)
 		{
-			const std::size_t colour_palette_id =
-					ProxiedRasterResolverInternals::get_colour_palette_id(colour_palette);
+			const boost::optional<std::size_t> colour_palette_id =
+					GPlatesFileIO::RasterFileCacheFormat::get_colour_palette_id(colour_palette);
 
 			// If we fail once to get a mipmap reader then we don't need to try
 			// again until something changes - in this case the colour palette.
@@ -1342,7 +1299,7 @@ namespace GPlatesPropertyValues
 
 		boost::scoped_ptr<GPlatesFileIO::MipmappedRasterFormatReader<Rgba8RawRaster> >
 			d_coloured_mipmap_reader;
-		std::size_t d_colour_palette_id_of_coloured_mipmap_reader;
+		boost::optional<std::size_t> d_colour_palette_id_of_coloured_mipmap_reader;
 
 		/**
 		 * Prevents repeated attempts to read (or generate) the mipmap file when there's an error.
