@@ -1225,7 +1225,7 @@ namespace GPlatesFileIO
 
 // 				qDebug() << "expected_file_size " << expected_file_size;
 // 				qDebug() << "file_info.size() " << file_info.size();
-				if (expected_file_size != file_info.size())
+				if (expected_file_size != static_cast<quint64>(file_info.size()))
 				{
 					throw FileFormatNotSupportedException(
 							GPLATES_EXCEPTION_SOURCE, "detected a partially written mipmap file");

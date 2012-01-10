@@ -114,9 +114,6 @@ namespace GPlatesGui
 
 
 			/**
-
-
-			/**
 			 * Returns information for all the mipmap levels in the mipmap pyramid.
 			 */
 			static

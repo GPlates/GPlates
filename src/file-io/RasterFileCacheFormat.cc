@@ -28,6 +28,7 @@
 #include <ostream>
 #include <QDebug>
 #include <QFile>
+#include <QFileInfo>
 
 #include "RasterFileCacheFormat.h"
 
