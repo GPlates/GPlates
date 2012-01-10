@@ -342,7 +342,7 @@ GPlatesGui::MapGrid::paint(
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
 
-	const MapProjection::Settings map_projection_settings = d_map_projection.get_projection_settings();
+	const MapProjectionSettings map_projection_settings = d_map_projection.get_projection_settings();
 
 	// Check whether we need to compile a new draw state.
 	if (!d_grid_compiled_draw_state ||

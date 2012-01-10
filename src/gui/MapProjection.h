@@ -42,6 +42,8 @@
 
 namespace GPlatesGui
 {
+	class MapProjectionSettings;
+
 	/**
 	 * Projects latitude/longitude to/from various map projections.
 	 */
@@ -68,66 +70,6 @@ namespace GPlatesGui
 			LAMBERT_CONIC,
 
 			NUM_PROJECTIONS
-		};
-
-		/**
-		 * Projection settings used to determine if two map projections will generate the same projection results.
-		 *
-		 * NOTE: This is equality comparable.
-		 */
-		class Settings :
-				public boost::equality_comparable<Settings>
-		{
-		public:
-			Settings(
-					Type projection_type_,
-					const GPlatesMaths::LatLonPoint &central_llp_) :
-				d_projection_type(projection_type_),
-				d_central_llp(central_llp_)
-			{  }
-
-			Type
-			get_projection_type() const
-			{
-				return d_projection_type;
-			}
-
-			void
-			set_projection_type(
-					Type projection_type_)
-			{
-				d_projection_type = projection_type_;
-			}
-
-			const GPlatesMaths::LatLonPoint &
-			get_central_llp() const
-			{
-				return d_central_llp;
-			}
-
-			void
-			set_central_llp(
-					const GPlatesMaths::LatLonPoint &central_llp_)
-			{
-				d_central_llp = central_llp_;
-			}
-
-		private:
-			//! The projection type.
-			Type d_projection_type;
-
-			//! The central lat-lon point for the projection.
-			GPlatesMaths::LatLonPoint d_central_llp;
-
-			friend
-			bool
-			operator==(
-					const Settings &lhs,
-					const Settings &rhs)
-			{
-				return lhs.d_projection_type == rhs.d_projection_type &&
-					make_point_on_sphere(lhs.d_central_llp) == make_point_on_sphere(rhs.d_central_llp);
-			}
 		};
 
 
@@ -158,7 +100,7 @@ namespace GPlatesGui
 		static
 		non_null_ptr_type
 		create(
-				const Settings &projection_settings)
+				const MapProjectionSettings &projection_settings)
 		{
 			return non_null_ptr_type(new MapProjection(projection_settings));
 		}
@@ -172,11 +114,8 @@ namespace GPlatesGui
 		 * The returned settings can be equality compared to determine if two map projections
 		 * will generate the same projection results.
 		 */
-		Settings
-		get_projection_settings() const
-		{
-			return Settings(d_projection_type, d_central_llp);
-		}
+		MapProjectionSettings
+		get_projection_settings() const;
 
 		/**
 		 * Change the projection to that referred to by projection_type.
@@ -296,13 +235,74 @@ namespace GPlatesGui
 				Type projection_type);
 
 		MapProjection(
-				const Settings &projection_settings);
+				const MapProjectionSettings &projection_settings);
 
 		/**
 		 * Updates the boundary great circle - should be called if central llp or projection type changed.
 		 */
 		void
 		update_boundary_great_circle();
+	};
+
+
+	/**
+	 * Projection settings used to determine if two map projections will generate the same projection results.
+	 *
+	 * NOTE: This is equality comparable.
+	 *
+	 * Note that this was a nested class inside @a MapProjection but was causing compile issues on some systems -
+	 * possibly due to 'friend bool operator==' injecting into the outer class instead of a namespace.
+	 */
+	class MapProjectionSettings :
+			public boost::equality_comparable<MapProjectionSettings>
+	{
+	public:
+		MapProjectionSettings(
+				MapProjection::Type projection_type_,
+				const GPlatesMaths::LatLonPoint &central_llp_);
+
+		MapProjection::Type
+		get_projection_type() const
+		{
+			return d_projection_type;
+		}
+
+		void
+		set_projection_type(
+				MapProjection::Type projection_type_)
+		{
+			d_projection_type = projection_type_;
+		}
+
+		const GPlatesMaths::LatLonPoint &
+		get_central_llp() const
+		{
+			return d_central_llp;
+		}
+
+		void
+		set_central_llp(
+				const GPlatesMaths::LatLonPoint &central_llp_)
+		{
+			d_central_llp = central_llp_;
+		}
+
+	private:
+		//! The projection type.
+		MapProjection::Type d_projection_type;
+
+		//! The central lat-lon point for the projection.
+		GPlatesMaths::LatLonPoint d_central_llp;
+
+		friend
+		bool
+		operator==(
+				const MapProjectionSettings &lhs,
+				const MapProjectionSettings &rhs)
+		{
+			return lhs.d_projection_type == rhs.d_projection_type &&
+				make_point_on_sphere(lhs.d_central_llp) == make_point_on_sphere(rhs.d_central_llp);
+		}
 	};
 }
 
