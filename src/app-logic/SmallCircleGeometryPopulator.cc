@@ -27,6 +27,7 @@
 #include "app-logic/ReconstructionGeometry.h"
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlPoint.h"
+#include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlMeasure.h"
 #include "property-values/GpmlPlateId.h"
 #include "SmallCircleGeometryPopulator.h"

@@ -33,6 +33,7 @@
 
 #include "api/PythonUtils.h"
 
+#include "property-values/GpmlConstantValue.h"
 #include "property-values/XsString.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"

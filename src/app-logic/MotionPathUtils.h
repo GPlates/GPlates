@@ -36,6 +36,7 @@
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GpmlArray.h"
+#include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"

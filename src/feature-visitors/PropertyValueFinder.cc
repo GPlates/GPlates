@@ -25,8 +25,27 @@
 
 #include "PropertyValueFinder.h"
 
+#include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
+
+
+void
+GPlatesFeatureVisitors::Implementation::visit_gpml_constant_value(
+		GPlatesModel::ConstFeatureVisitor::gpml_constant_value_type &gpml_constant_value,
+		GPlatesModel::ConstFeatureVisitor &visitor)
+{
+	gpml_constant_value.value()->accept_visitor(visitor);
+}
+
+
+void
+GPlatesFeatureVisitors::Implementation::visit_gpml_constant_value(
+		GPlatesModel::FeatureVisitor::gpml_constant_value_type &gpml_constant_value,
+		GPlatesModel::FeatureVisitor &visitor)
+{
+	gpml_constant_value.value()->accept_visitor(visitor);
+}
 
 
 void

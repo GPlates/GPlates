@@ -38,14 +38,7 @@
 #include "model/types.h"
 
 #include "property-values/GeoTimeInstant.h"
-#include "property-values/GpmlConstantValue.h"
 
-
-namespace GPlatesPropertyValues
-{
-	class GpmlIrregularSampling;
-	class GpmlPiecewiseAggregation;
-}
 
 namespace GPlatesFeatureVisitors
 {
@@ -184,6 +177,14 @@ namespace GPlatesFeatureVisitors
 		// cyclic header dependencies including headers for irregular sampling and piecewise aggregation.
 		//
 		void
+		visit_gpml_constant_value(
+				GPlatesModel::ConstFeatureVisitor::gpml_constant_value_type &gpml_constant_value,
+				GPlatesModel::ConstFeatureVisitor &visitor);
+		void
+		visit_gpml_constant_value(
+				GPlatesModel::FeatureVisitor::gpml_constant_value_type &gpml_constant_value,
+				GPlatesModel::FeatureVisitor &visitor);
+		void
 		visit_gpml_irregular_sampling_at_reconstruction_time(
 				GPlatesModel::ConstFeatureVisitor::gpml_irregular_sampling_type &gpml_irregular_sampling,
 				GPlatesModel::ConstFeatureVisitor &visitor,
@@ -255,7 +256,7 @@ namespace GPlatesFeatureVisitors
 			visit_gpml_constant_value(
 					typename FeatureVisitorType::gpml_constant_value_type &gpml_constant_value)
 			{
-				gpml_constant_value.value()->accept_visitor(*this);
+				Implementation::visit_gpml_constant_value(gpml_constant_value, *this);
 			}
 
 			// In case property value is time-dependent.
@@ -264,7 +265,7 @@ namespace GPlatesFeatureVisitors
 			visit_gpml_irregular_sampling(
 					typename FeatureVisitorType::gpml_irregular_sampling_type &gpml_irregular_sampling)
 			{
-				visit_gpml_irregular_sampling_at_reconstruction_time(
+				Implementation::visit_gpml_irregular_sampling_at_reconstruction_time(
 						gpml_irregular_sampling, *this, d_reconstruction_time);
 			}
 
@@ -274,7 +275,7 @@ namespace GPlatesFeatureVisitors
 			visit_gpml_piecewise_aggregation(
 					typename FeatureVisitorType::gpml_piecewise_aggregation_type &gpml_piecewise_aggregation) 
 			{
-				visit_gpml_piecewise_aggregation_at_reconstruction_time(
+				Implementation::visit_gpml_piecewise_aggregation_at_reconstruction_time(
 						gpml_piecewise_aggregation, *this, d_reconstruction_time);
 			}
 

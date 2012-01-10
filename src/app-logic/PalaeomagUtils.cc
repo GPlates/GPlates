@@ -26,8 +26,9 @@
 
 #include "PalaeomagUtils.h"
 
-#include "property-values/GpmlPlateId.h"
 #include "property-values/GmlPoint.h"
+#include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlPlateId.h"
 #include "property-values/XsDouble.h"
 
 bool
