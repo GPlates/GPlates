@@ -617,10 +617,10 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 			
 // 			d_disable_style_item_change = true;
  	
-			while(d_globe_and_map_widget_ptr->is_map_active() && !d_repaint_flag)
-			{
- 				QApplication::processEvents();
-			}
+// 			while(d_globe_and_map_widget_ptr->is_map_active() && !d_repaint_flag)
+// 			{
+//  				QApplication::processEvents();
+// 			}
 
 // 			d_disable_style_item_change = false;
 			

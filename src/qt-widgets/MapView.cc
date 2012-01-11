@@ -611,7 +611,8 @@ GPlatesQtWidgets::MapView::update_canvas()
 void
 GPlatesQtWidgets::MapView::repaint_canvas()
 {
-	map_canvas().update();
+	QPaintEvent e(rect());
+	paintEvent(&e);
 	repaint();
 }
 
