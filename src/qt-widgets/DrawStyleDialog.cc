@@ -576,7 +576,7 @@ GPlatesQtWidgets::DrawStyleDialog::handle_style_selection_changed(
 void
 GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 {
-	QApplication::processEvents();
+	//QApplication::processEvents();
 	
 	{
 		//sync the camera point
