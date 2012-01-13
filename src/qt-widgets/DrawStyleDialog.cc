@@ -64,7 +64,6 @@ GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 	QDialog(parent_),
 	d_show_thumbnails(true),
 	d_repaint_flag(true),
-	d_disable_style_item_change(false),
 	d_view_state(view_state),
 	d_combo_box(NULL),
 	d_style_of_all(NULL),
@@ -346,17 +345,20 @@ GPlatesQtWidgets::DrawStyleDialog::handle_main_repaint(
 {
 	if(!mouse_down && d_refresh_preview)
 	{
-		refresh_preview_icons();
-		d_refresh_preview = false;
+		if(d_preview_lock.tryLock())
+		{
+			try{
+				refresh_preview_icons();
+				d_refresh_preview = false;
+			}catch(...){}
+			d_preview_lock.unlock();
+		}
 	}
 }
 
 void
 GPlatesQtWidgets::DrawStyleDialog::handle_remove_button_clicked()
 {
-	if(d_disable_style_item_change)
-		return;
-	
 	QTableWidgetItem* cur_item = categories_table->currentItem();
 	if(!cur_item)
 		return;
@@ -493,8 +495,6 @@ GPlatesQtWidgets::DrawStyleDialog::handle_categories_table_cell_changed(
 		int previous_row,
 		int previous_column)
 {
-	if(d_disable_style_item_change)
-		return;
 	if(current_row < 0)
 	{
 		qWarning() << "The index of current row is negative number. Do nothing and return.";
@@ -618,12 +618,10 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 
 		#if defined(Q_OS_MAC)
 			d_globe_and_map_widget_ptr->update_canvas();
-			d_disable_style_item_change = true;
 			while(!d_repaint_flag)
 			{
 				QApplication::processEvents();
 			}
-			d_disable_style_item_change = false;
 		#else
 			d_globe_and_map_widget_ptr->repaint_canvas();
 		#endif
@@ -659,12 +657,10 @@ GPlatesQtWidgets::DrawStyleDialog::refresh_current_icon()
 
 		d_globe_and_map_widget_ptr->update_canvas();
 
-		d_disable_style_item_change = true;
 
 		while(!d_repaint_flag)
 			QApplication::processEvents();
 
-		d_disable_style_item_change = false;
 
 		current_item->setIcon(QIcon(QPixmap::fromImage(d_image)));
 	}
@@ -677,8 +673,6 @@ GPlatesQtWidgets::DrawStyleDialog::handle_add_button_clicked(bool )
 {
 	using namespace GPlatesGui;
 
-	if(d_disable_style_item_change)
-		return;
 
 	 QTableWidgetItem* cur_cata_item = categories_table->currentItem();
 	 if(!cur_cata_item)
