@@ -68,8 +68,6 @@ GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 	d_view_state(view_state),
 	d_combo_box(NULL),
 	d_style_of_all(NULL),
-	d_drag(false),
-	d_projection_changed(false),
 	d_refresh_preview(false)
 {
 	init_dlg();
@@ -273,11 +271,13 @@ GPlatesQtWidgets::DrawStyleDialog::make_signal_slot_connections()
 			this,
 			SLOT(handle_style_selection_changed(QListWidgetItem*,QListWidgetItem*)));
 
-// 	QObject::connect(
-// 			&GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget().globe_and_map_widget(),
-// 			SIGNAL(repainted(bool)),
-// 			this,
-// 			SLOT(handle_main_repaint(bool)));
+#if defined(Q_OS_MAC)
+	QObject::connect(
+			&GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget().globe_and_map_widget(),
+			SIGNAL(repainted(bool)),
+			this,
+			SLOT(handle_main_repaint(bool)));
+#endif
 
 	QObject::connect(
 			d_globe_and_map_widget_ptr,
@@ -340,12 +340,16 @@ GPlatesQtWidgets::DrawStyleDialog::handle_repaint(
 }
 
 
-// void
-// GPlatesQtWidgets::DrawStyleDialog::handle_main_repaint(
-// 		bool mouse_down)
-// {
-// 	return;
-// }
+void
+GPlatesQtWidgets::DrawStyleDialog::handle_main_repaint(
+		bool mouse_down)
+{
+	if(!mouse_down && d_refresh_preview)
+	{
+		refresh_preview_icons();
+		d_refresh_preview = false;
+	}
+}
 
 void
 GPlatesQtWidgets::DrawStyleDialog::handle_remove_button_clicked()
@@ -438,6 +442,7 @@ GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 	QPixmap blank_pixmap(ICON_SIZE, ICON_SIZE);
 	blank_pixmap.fill(*GPlatesGui::HTMLColourNames::instance().get_colour("slategray"));
 	d_blank_icon = QIcon(blank_pixmap);
+	d_image = d_globe_and_map_widget_ptr->grab_frame_buffer();
 	d_style_mgr = GPlatesGui::DrawStyleManager::instance();
 	
 	//init_catagory_table();
@@ -576,8 +581,6 @@ GPlatesQtWidgets::DrawStyleDialog::handle_style_selection_changed(
 void
 GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 {
-	//QApplication::processEvents();
-	
 	{
 		//sync the camera point
 		GPlatesQtWidgets::ReconstructionViewWidget & view_widget = 
@@ -612,17 +615,18 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 			QVariant qv = current_item->data(Qt::UserRole);
 			GPlatesGui::StyleAdapter* sa = static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
 			set_style(sa);
-			
-			d_globe_and_map_widget_ptr->repaint_canvas();
-			
-// 			d_disable_style_item_change = true;
- 	
-// 			while(d_globe_and_map_widget_ptr->is_map_active() && !d_repaint_flag)
-// 			{
-//  				QApplication::processEvents();
-// 			}
 
-// 			d_disable_style_item_change = false;
+		#if defined(Q_OS_MAC)
+			d_globe_and_map_widget_ptr->update_canvas();
+			d_disable_style_item_change = true;
+			while(!d_repaint_flag)
+			{
+				QApplication::processEvents();
+			}
+			d_disable_style_item_change = false;
+		#else
+			d_globe_and_map_widget_ptr->repaint_canvas();
+		#endif
 			
 			current_item->setIcon(QIcon(QPixmap::fromImage(d_image)));
 		}
