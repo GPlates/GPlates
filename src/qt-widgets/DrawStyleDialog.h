@@ -264,10 +264,9 @@ namespace GPlatesQtWidgets
 		handle_change_projection()
 		{
 		#if defined(Q_OS_MAC)
-			d_refresh_preview = true;
-		#else
-			refresh_preview_icons();
+			QApplication::processEvents();
 		#endif
+			refresh_preview_icons();
 		}
 
 		void
