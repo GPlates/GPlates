@@ -237,15 +237,14 @@ namespace GPlatesQtWidgets
 		handle_repaint(
 				bool);
 
-// 		void
-// 		handle_main_repaint(
-// 				bool);
+		void
+		handle_main_repaint(
+				bool);
 
 		void
 		refresh_preview_icons()
 		{
-			//QApplication::processEvents();
-			if( isVisible())
+			if(isVisible())
 			{
 				show_preview_icon();
 			}
@@ -254,13 +253,21 @@ namespace GPlatesQtWidgets
 		void
 		handle_release_after_drag()
 		{
+		#if defined(Q_OS_MAC)
+			d_refresh_preview = true;
+		#else
 			refresh_preview_icons();
+		#endif
 		}
 
 		void
 		handle_change_projection()
 		{
+		#if defined(Q_OS_MAC)
+			d_refresh_preview = true;
+		#else
 			refresh_preview_icons();
+		#endif
 		}
 
 		void
@@ -313,7 +320,7 @@ namespace GPlatesQtWidgets
 		GPlatesPresentation::ViewState& d_view_state;
 		LayerGroupComboBox* d_combo_box;
 		GPlatesGui::StyleAdapter* d_style_of_all;
-		bool d_drag, d_projection_changed, d_refresh_preview;
+		bool d_refresh_preview;
 	};
 
 
