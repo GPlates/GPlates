@@ -313,13 +313,13 @@ namespace GPlatesQtWidgets
 		GlobeAndMapWidget *d_globe_and_map_widget_ptr;
 		bool d_repaint_flag;
 		QImage d_image;
-		bool d_disable_style_item_change;
 		QString d_last_open_directory;
 		std::vector<QWidget*> d_cfg_widgets;
 		GPlatesPresentation::ViewState& d_view_state;
 		LayerGroupComboBox* d_combo_box;
 		GPlatesGui::StyleAdapter* d_style_of_all;
 		bool d_refresh_preview;
+		QMutex d_preview_lock;
 	};
 
 
