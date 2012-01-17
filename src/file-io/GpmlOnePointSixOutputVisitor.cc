@@ -684,6 +684,19 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_top_level_property_inline(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	bool pop = d_output.writeStartElement(top_level_property_inline.property_name());
+
+	// Top-level properties which also contain xml attributes
+	// may be having their attributes written twice (at both the property
+	// level, and here). To attempt to get round this, do not write
+	// xml attributes at the top level.
+	//
+	// If this turns out to cause problems with other property types
+	// we will have to find another solution.
+	//
+	// Similar modifications have been made in the GpmlOnePointSixOutputReader - see
+	// GpmlOnePointSixOutputReader::create_feature and
+	// GpmlOnePointSixOutputReader::create_unclassified_feature
+
 		d_output.writeAttributes(
 			top_level_property_inline.xml_attributes().begin(),
 			top_level_property_inline.xml_attributes().end());
