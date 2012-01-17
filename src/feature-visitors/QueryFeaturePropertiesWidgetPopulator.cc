@@ -8,7 +8,7 @@
  *   $Date$
  * 
  * Copyright (C) 2007, 2008, 2009, 2010 The University of Sydney, Australia
- * Copyright (C) 2008, 2010 Geological Survey of Norway
+ * Copyright (C) 2008, 2010, 2012 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -52,6 +52,7 @@
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlKeyValueDictionaryElement.h"
+#include "property-values/GpmlMeasure.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlOldPlatesHeader.h"
@@ -586,6 +587,16 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_plate_
 	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
 }
 
+void
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_measure(
+	const GPlatesPropertyValues::GpmlMeasure &gpml_measure)
+{
+	static const int which_column = 1;
+	QString qstring = QString::number(gpml_measure.quantity());
+
+	// This assumes that the stack is non-empty.
+	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
+}
 
 #if 0
 void

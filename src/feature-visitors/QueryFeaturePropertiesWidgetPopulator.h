@@ -8,7 +8,7 @@
  *   $Date$
  * 
  * Copyright (C) 2007, 2008, 2009, 2010 The University of Sydney, Australia
- * Copyright (C) 2008, 2010 Geological Survey of Norway
+ * Copyright (C) 2008, 2010, 2012 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -151,6 +151,12 @@ namespace GPlatesFeatureVisitors
 		void
 		visit_gpml_key_value_dictionary(
 				const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
+
+		virtual
+		void
+		visit_gpml_measure(
+				const GPlatesPropertyValues::GpmlMeasure &gpml_measure);
+
 
 		virtual
 		void

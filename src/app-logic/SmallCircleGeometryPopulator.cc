@@ -5,7 +5,7 @@
  * Most recent change:
  *   $Date: 2010-08-23 05:33:53 +0200 (ma, 23 aug 2010) $
  * 
- * Copyright (C) 2011 Geological Survey of Norway
+ * Copyright (C) 2011, 2012 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *

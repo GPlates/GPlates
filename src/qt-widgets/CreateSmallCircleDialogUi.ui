@@ -471,6 +471,7 @@
   </layout>
  </widget>
  <tabstops>
+  <tabstop>checkbox_stage_pole</tabstop>
   <tabstop>spinbox_plate_id_moving</tabstop>
   <tabstop>spinbox_plate_id_fixed</tabstop>
   <tabstop>spinbox_time_1</tabstop>
@@ -483,6 +484,7 @@
   <tabstop>radio_button_multiple</tabstop>
   <tabstop>spinbox_radius_1</tabstop>
   <tabstop>spinbox_radius_2</tabstop>
+  <tabstop>spinbox_step</tabstop>
   <tabstop>button_preview</tabstop>
   <tabstop>button_close</tabstop>
  </tabstops>

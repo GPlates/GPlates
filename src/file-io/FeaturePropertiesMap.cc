@@ -7,7 +7,7 @@
  *   $Date$
  * 
  * Copyright (C) 2008, 2010 The University of Sydney, Australia
- * Copyright (C) 2010 Geological Survey of Norway
+ * Copyright (C) 2010, 2012 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
