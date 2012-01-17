@@ -5,7 +5,7 @@
  * Most recent change:
  *   $Date: 2010-08-23 05:33:53 +0200 (ma, 23 aug 2010) $
  * 
- * Copyright (C) 2011 Geological Survey of Norway
+ * Copyright (C) 2011, 2012 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -139,7 +139,7 @@ GPlatesAppLogic::SmallCircleGeometryPopulator::visit_gpml_measure(
 	if (current_top_level_propname())
 	{
 		static const GPlatesModel::PropertyName small_circle_radius_property_name = 
-			GPlatesModel::PropertyName::create_gpml("radius");
+			GPlatesModel::PropertyName::create_gpml("angularRadius");
 		GPlatesModel::PropertyName property_name = *current_top_level_propname();	
 		if (property_name != small_circle_radius_property_name)
 		{

@@ -271,12 +271,34 @@ namespace
 			iter = properties.begin(),
 			end = properties.end();
 		for ( ; iter != end; ++iter) {
+
+
+
+// Top-level properties which also contain xml attributes
+// may be having their attributes read twice (at both the property
+// level, and here). To attempt to get round this, do not read
+// xml attributes at the top level.
+//
+// If this turns out to cause problems with other property types
+// we will have to find another solution.
+//
+// A similar modification has been made in the GpmlOnePointSixOutputVisitor - see
+// GpmlOnePointSixOutputVisitor::visit_top_level_property_inline.
+
+#if 0
 			feature->add(
-					Model::TopLevelPropertyInline::create(
-						iter->first->get_name(),
-						iter->second,
-						iter->first->attributes_begin(),
-						iter->first->attributes_end()));
+				Model::TopLevelPropertyInline::create(
+					iter->first->get_name(),
+					iter->second,
+					iter->first->attributes_begin(),
+					iter->first->attributes_end()));
+#else
+			// Don't write any xml attributes.
+			feature->add(
+				Model::TopLevelPropertyInline::create(
+					iter->first->get_name(),
+					iter->second));
+#endif
 		}
 	}
 
@@ -330,12 +352,31 @@ namespace
 			iter = properties.begin(),
 			end = properties.end();
 		for ( ; iter != end; ++iter) {
+			// Top-level properties which also contain xml attributes
+			// may be having their attributes read twice (at both the property
+			// level, and here). To attempt to get round this, do not read
+			// xml attributes at the top level.
+			//
+			// If this turns out to cause problems with other property types
+			// we will have to find another solution.
+			//
+			// A similar modification has been made in the GpmlOnePointSixOutputVisitor - see
+			// GpmlOnePointSixOutputVisitor::visit_top_level_property_inline.
+
+#if 0
 			feature->add(
-					Model::TopLevelPropertyInline::create(
-						iter->first->get_name(),
-						iter->second,
-						iter->first->attributes_begin(),
-						iter->first->attributes_end()));
+				Model::TopLevelPropertyInline::create(
+				iter->first->get_name(),
+				iter->second,
+				iter->first->attributes_begin(),
+				iter->first->attributes_end()));
+#else
+			// Don't write any xml attributes.
+			feature->add(
+				Model::TopLevelPropertyInline::create(
+				iter->first->get_name(),
+				iter->second));
+#endif
 		}
 	}
 

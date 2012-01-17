@@ -214,7 +214,7 @@ GPlatesQtWidgets::CreateSmallCircleFeatureDialog::handle_create()
 
 			feature->add(
 				GPlatesModel::TopLevelPropertyInline::create(
-				GPlatesModel::PropertyName::create_gpml("radius"),
+				GPlatesModel::PropertyName::create_gpml("angularRadius"),
 				radius));
 
 			GPlatesModel::PropertyValue::non_null_ptr_type time_period = 

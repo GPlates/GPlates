@@ -102,7 +102,7 @@
         <item>
          <widget class="QPushButton" name="button_clear">
           <property name="text">
-           <string>&amp;Clear</string>
+           <string>Clear</string>
           </property>
          </widget>
         </item>
@@ -134,7 +134,7 @@
    <item row="4" column="0">
     <widget class="QPushButton" name="button_create_feature">
      <property name="text">
-      <string>Create &amp;feature(s)...</string>
+      <string>&amp;Create feature(s)...</string>
      </property>
     </widget>
    </item>
