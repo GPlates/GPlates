@@ -140,7 +140,7 @@ GPlatesAppLogic::SmallCircleGeometryPopulator::visit_gpml_measure(
 	if (current_top_level_propname())
 	{
 		static const GPlatesModel::PropertyName small_circle_radius_property_name = 
-			GPlatesModel::PropertyName::create_gpml("radius");
+			GPlatesModel::PropertyName::create_gpml("angularRadius");
 		GPlatesModel::PropertyName property_name = *current_top_level_propname();	
 		if (property_name != small_circle_radius_property_name)
 		{

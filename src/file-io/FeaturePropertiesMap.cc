@@ -1102,7 +1102,7 @@ namespace
 		map[ PropertyName::create_gpml("centre") ] =
 			GET_PROP_VAL_NAME(create_point);
 
-		map[ PropertyName::create_gpml("radius") ] =
+		map[ PropertyName::create_gpml("angularRadius") ] =
 			GET_PROP_VAL_NAME(create_measure);
 
 		return map;
