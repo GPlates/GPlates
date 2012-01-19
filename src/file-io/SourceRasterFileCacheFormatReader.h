@@ -2,12 +2,10 @@
 
 /**
  * \file 
- * File specific comments.
- *
- * Most recent change:
- *   $Date$
+ * $Revision$
+ * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,9 +23,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILEIO_MIPMAPPEDRASTERFORMATREADER_H
-#define GPLATES_FILEIO_MIPMAPPEDRASTERFORMATREADER_H
+#ifndef GPLATES_FILE_IO_SOURCERASTERFILECACHEFORMATREADER_H
+#define GPLATES_FILE_IO_SOURCERASTERFILECACHEFORMATREADER_H
 
+#include <utility>
 #include <vector>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -57,31 +56,81 @@
 namespace GPlatesFileIO
 {
 	/**
-	 * MipmappedRasterFormatReader reads mipmapped images from a mipmapped raster
-	 * file. It is able to read a given region of a given mipmap level.
-	 *
-	 * The template parameter @a RawRasterType is the type of the *mipmapped*
-	 * rasters stored in the file, not the type of the source raster.
+	 * Reads a copy of a source image originating from a @a RasterReader and stored in a cached
+	 * file for efficient retrieval/streaming during raster rendering.
+	 */
+	class SourceRasterFileCacheFormatReader
+	{
+	public:
+		virtual
+		~SourceRasterFileCacheFormatReader()
+		{  }
+
+
+		/**
+		 * Returns the dimensions of the source raster (width, height).
+		 */
+		virtual
+		std::pair<unsigned int, unsigned int>
+		get_raster_dimensions() const = 0;
+
+
+		/**
+		 * Reads the given region from the source raster.
+		 *
+		 * Returns boost::none if the region given lies partly or wholly outside the source raster.
+		 * Also returns boost::none if the file has already been closed.
+		 */
+		virtual
+		boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
+		read_raster(
+				unsigned int x_offset,
+				unsigned int y_offset,
+				unsigned int width,
+				unsigned int height) const = 0;
+
+
+		/**
+		 * Reads the given region from the source raster as a coverage.
+		 *
+		 * The coverage values are 1.0 for all pixels except sentinel pixels (pixels containing the
+		 * non-data value) which they are set to 0.0 coverage value.
+		 *
+		 * Returns boost::none if the region given lies partly or wholly outside the source raster.
+		 * Also returns boost::none if the file has already been closed.
+		 */
+		virtual
+		boost::optional<GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_type>
+		read_coverage(
+				unsigned int x_offset,
+				unsigned int y_offset,
+				unsigned int width,
+				unsigned int height) const = 0;
+	};
+
+
+	/**
+	 * Implementation of @a SourceRasterFileCacheFormatReader for a specific template parameter
+	 * @a RawRasterType representing the type of the source raster.
 	 */
 	template<class RawRasterType>
-	class MipmappedRasterFormatReader
+	class SourceRasterFileCacheFormatReaderImpl :
+			public SourceRasterFileCacheFormatReader
 	{
 	public:
 
 		/**
-		 * Opens @a filename for reading as a mipmapped raster file.
+		 * Opens @a filename for reading as a source raster file cache.
 		 *
-		 * @throws @a ErrorOpeningFileForReadingException if @a filename could not be
-		 * opened for reading.
+		 * @throws @a ErrorOpeningFileForReadingException if @a filename could not be opened for reading.
 		 *
 		 * @throws @a FileFormatNotException if the header information is wrong.
 		 *
-		 * @throws @a RasterFileCacheFormat::UnsupportedVersion if the mipmap version is either
-		 * not recognised (mipmap file created by a newer version of GPlates) or no longer supported
-		 * (eg, if mipmap format is an old format that is inefficient and hence should be regenerated
-		 * with a newer algorithm).
+		 * @throws @a RasterFileCacheFormat::UnsupportedVersion if the version is either not recognised
+		 * (file cache created by a newer version of GPlates) or no longer supported (eg, if format
+		 * is an old format that is inefficient and hence should be regenerated with a newer algorithm).
 		 */
-		MipmappedRasterFormatReader(
+		SourceRasterFileCacheFormatReaderImpl(
 				const QString &filename) :
 			d_file(filename),
 			d_in(&d_file),
@@ -127,14 +176,14 @@ namespace GPlatesFileIO
 #endif
 
 			// Check that the file length is correct.
-			// This is in case mipmap generation from a previous instance of GPlates failed
+			// This is in case raster file cache generation from a previous instance of GPlates failed
 			// part-way through writing the file and didn't remove the file for some reason.
-			// We need to check this here because we don't actually read the mipmapped (encoded)
+			// We need to check this here because we don't actually read the cached (encoded)
 			// data until clients request region of the raster (and it's too late to detect errors then).
 			if (total_file_size != static_cast<quint64>(file_info.size()))
 			{
 				throw FileFormatNotSupportedException(
-						GPLATES_EXCEPTION_SOURCE, "detected a partially written mipmap file");
+						GPLATES_EXCEPTION_SOURCE, "detected a partially written source raster file cache");
 			}
 
 			// Check the version number.
@@ -163,7 +212,7 @@ namespace GPlatesFileIO
 			}
 		}
 
-		~MipmappedRasterFormatReader()
+		~SourceRasterFileCacheFormatReaderImpl()
 		{
 			if (!d_is_closed)
 			{
@@ -181,30 +230,24 @@ namespace GPlatesFileIO
 			d_is_closed = true;
 		}
 
-		/**
-		 * Returns the number of levels in the current mipmapped raster file.
-		 */
-		unsigned int
-		get_number_of_levels() const
-		{
-			return d_impl->get_number_of_levels();
-		}
 
 		/**
-		 * Reads the given region from the mipmap at the given @a level.
-		 *
-		 * Returns boost::none if the @a level is non-existent, or if the region given
-		 * lies partly or wholly outside the mipmap at the given @a level. Also
-		 * returns boost::none if the file has already been closed.
-		 *
-		 * The @a level is the level in the mipmapped raster file. For the first
-		 * mipmap level (i.e. one size smaller than the source raster), specify 0 as
-		 * the @a level, because the mipmapped raster file does not store the source
-		 * raster.
+		 * Returns the dimensions of the source raster (width, height).
 		 */
-		boost::optional<typename RawRasterType::non_null_ptr_type>
-		read_level(
-				unsigned int level,
+		virtual
+		std::pair<unsigned int, unsigned int>
+		get_raster_dimensions() const
+		{
+			return d_impl->get_raster_dimensions();
+		}
+
+
+		/**
+		 * Reads the given region from the source raster.
+		 */
+		virtual
+		boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
+		read_raster(
 				unsigned int x_offset,
 				unsigned int y_offset,
 				unsigned int width,
@@ -218,25 +261,17 @@ namespace GPlatesFileIO
 			}
 			else
 			{
-				return d_impl->read_level(level, x_offset, y_offset, width, height);
+				return d_impl->read_raster(x_offset, y_offset, width, height);
 			}
 		}
 
+
 		/**
-		 * Reads the given region from the coverage raster at the given @a level.
-		 *
-		 * Returns boost::none if the @a level is non-existent, or if the region given
-		 * lies partly or wholly outside the mipmap at the given @a level. Also
-		 * returns boost::none if the file has already been closed.
-		 *
-		 * The @a level is the level in the mipmapped raster file. For the first
-		 * mipmap level (i.e. one size smaller than the source raster), specify 0 as
-		 * the @a level, because the mipmapped raster file does not store the source
-		 * raster.
+		 * Reads the given region from the source raster as a coverage.
 		 */
+		virtual
 		boost::optional<GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_type>
 		read_coverage(
-				unsigned int level,
 				unsigned int x_offset,
 				unsigned int y_offset,
 				unsigned int width,
@@ -250,9 +285,10 @@ namespace GPlatesFileIO
 			}
 			else
 			{
-				return d_impl->read_coverage(level, x_offset, y_offset, width, height);
+				return d_impl->read_coverage(x_offset, y_offset, width, height);
 			}
 		}
+
 
 		/**
 		 * Retrieves information about the file that we are reading.
@@ -284,13 +320,12 @@ namespace GPlatesFileIO
 			}
 
 			virtual
-			unsigned int
-			get_number_of_levels() = 0;
+			std::pair<unsigned int, unsigned int>
+			get_raster_dimensions() const = 0;
 
 			virtual
-			boost::optional<typename RawRasterType::non_null_ptr_type>
-			read_level(
-					unsigned int level,
+			boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
+			read_raster(
 					unsigned int x_offset,
 					unsigned int y_offset,
 					unsigned int width,
@@ -299,12 +334,12 @@ namespace GPlatesFileIO
 			virtual
 			boost::optional<GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_type>
 			read_coverage(
-					unsigned int level,
 					unsigned int x_offset,
 					unsigned int y_offset,
 					unsigned int width,
 					unsigned int height) = 0;
 		};
+
 
 		/**
 		 * A reader for version 1+ files.
@@ -322,7 +357,9 @@ namespace GPlatesFileIO
 					QFile &file,
 					QDataStream &in) :
 				d_file(file),
-				d_in(in)
+				d_in(in),
+				d_raster_width(0),
+				d_raster_height(0)
 			{
 				// NOTE: The total file size has been verified before we get here so there's no
 				// need to check that the file is large enough to read data as we read.
@@ -341,52 +378,28 @@ namespace GPlatesFileIO
 				quint32 has_coverage;
 				d_in >> has_coverage;
 
-				// Read the number of levels.
-				quint32 num_levels;
-				d_in >> num_levels;
-				//qDebug() << "num_levels: " << num_levels;
+				// Read the source raster dimensions.
+				quint32 source_raster_width;
+				quint32 source_raster_height;
+				d_in >> source_raster_width;
+				d_in >> source_raster_height;
+				d_raster_width = source_raster_width;
+				d_raster_height = source_raster_height;
 
-				unsigned int level;
+				// Read the number of blocks in the source raster.
+				quint32 num_blocks_in_source_raster;
+				d_in >> num_blocks_in_source_raster;
 
-				// Read the level info.
-				for (level = 0; level < num_levels; ++level)
-				{
-					RasterFileCacheFormat::LevelInfo current_level;
-					d_in >> current_level.width
-							>> current_level.height
-							>> current_level.blocks_file_offset
-							>> current_level.num_blocks;
-#if 0
-					qDebug() << "Level: " << level;
-					qDebug() << "width: " << current_level.width;
-					qDebug() << "height: " << current_level.height;
-					qDebug() << "blocks_file_offset: " << current_level.file_offset;
-					qDebug() << "num_blocks: " << current_level.num_blocks;
-#endif
-
-					d_level_infos.push_back(current_level);
-				}
-
-				// Create a raster file cache reader for each mipmap level.
-				for (level = 0; level < num_levels; ++level)
-				{
-					const RasterFileCacheFormat::LevelInfo &level_info = d_level_infos[level];
-
-					// Seek to the file position where the block information is.
-					file.seek(d_level_infos[level].blocks_file_offset);
-
-					boost::shared_ptr<RasterFileCacheFormatReader<RawRasterType> > reader(
-							new RasterFileCacheFormatReader<RawRasterType>(
-									version_number,
-									d_file,
-									d_in,
-									level_info.width,
-									level_info.height,
-									level_info.num_blocks,
-									has_coverage));
-
-					d_raster_file_cache_readers.push_back(reader);
-				}
+				// Create a raster file cache reader for the source raster.
+				d_raster_file_cache_reader.reset(
+						new RasterFileCacheFormatReader<RawRasterType>(
+								version_number,
+								d_file,
+								d_in,
+								source_raster_width,
+								source_raster_height,
+								num_blocks_in_source_raster,
+								has_coverage));
 			}
 
 			~VersionOneReader()
@@ -394,52 +407,48 @@ namespace GPlatesFileIO
 			}
 
 			virtual
-			unsigned int
-			get_number_of_levels()
+			std::pair<unsigned int, unsigned int>
+			get_raster_dimensions() const
 			{
-				return d_level_infos.size();
+				return std::make_pair(d_raster_width, d_raster_height);
 			}
 
 			virtual
-			boost::optional<typename RawRasterType::non_null_ptr_type>
-			read_level(
-					unsigned int level,
+			boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
+			read_raster(
 					unsigned int x_offset,
 					unsigned int y_offset,
 					unsigned int width,
 					unsigned int height)
 			{
-				if (level >= d_level_infos.size())
+				boost::optional<typename RawRasterType::non_null_ptr_type> raster =
+						d_raster_file_cache_reader->read_raster(x_offset, y_offset, width, height);
+				if (!raster)
 				{
 					return boost::none;
 				}
 
-				return d_raster_file_cache_readers[level]->read_raster(x_offset, y_offset, width, height);
+				return raster.get();
 			}
 
 			virtual
 			boost::optional<GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_type>
 			read_coverage(
-					unsigned int level,
 					unsigned int x_offset,
 					unsigned int y_offset,
 					unsigned int width,
 					unsigned int height)
 			{
-				if (level >= d_level_infos.size())
-				{
-					return boost::none;
-				}
-
-				return d_raster_file_cache_readers[level]->read_coverage(x_offset, y_offset, width, height);
+				return d_raster_file_cache_reader->read_coverage(x_offset, y_offset, width, height);
 			}
 
 		private:
 
 			QFile &d_file;
 			QDataStream &d_in;
-			std::vector<RasterFileCacheFormat::LevelInfo> d_level_infos;
-			std::vector<boost::shared_ptr<RasterFileCacheFormatReader<RawRasterType> > > d_raster_file_cache_readers;
+			unsigned int d_raster_width;
+			unsigned int d_raster_height;
+			boost::shared_ptr<RasterFileCacheFormatReader<RawRasterType> > d_raster_file_cache_reader;
 		};
 
 
@@ -450,4 +459,4 @@ namespace GPlatesFileIO
 	};
 }
 
-#endif  // GPLATES_FILEIO_MIPMAPPEDRASTERFORMATREADER_H
+#endif // GPLATES_FILE_IO_SOURCERASTERFILECACHEFORMATREADER_H

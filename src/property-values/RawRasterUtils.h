@@ -40,6 +40,7 @@
 #include "RasterType.h"
 #include "RawRaster.h"
 
+#include "maths/MathsUtils.h"
 #include "maths/Real.h"
 
 
@@ -322,6 +323,125 @@ namespace GPlatesPropertyValues
 					return false;
 				};
 			};
+
+
+			/**
+			 * Adds a no-data value to a raster - also converts no-data pixel values (in raster data)
+			 * from the value used to load the raster data to the value expected by the raster type.
+			 *
+			 * This is useful when you've loaded data into a raster and need to set the no-data value
+			 * that's appropriate for the data loaded.
+			 */
+			template<class RawRasterType>
+			struct AddNoDataValue
+			{
+				typedef typename RawRasterType::element_type raster_element_type;
+
+				static
+				void
+				add_no_data_value(
+						RawRasterType &raster,
+						const raster_element_type &no_data_value)
+				{
+					// Default case: do nothing.
+				}
+			};
+
+			// Specialisation for rasters that have a no-data value that can be set.
+			template<typename T, template <class> class DataPolicy, class StatisticsPolicy>
+			struct AddNoDataValue<
+				RawRasterImpl<T, DataPolicy, StatisticsPolicy,
+					RawRasterNoDataValuePolicies::WithNoDataValue> >
+			{
+				typedef RawRasterImpl<T, DataPolicy, StatisticsPolicy,
+					RawRasterNoDataValuePolicies::WithNoDataValue> RawRasterType;
+				typedef typename RawRasterType::element_type raster_element_type;
+
+				static
+				void
+				add_no_data_value(
+						RawRasterType &raster,
+						const raster_element_type &no_data_value)
+				{
+					raster.set_no_data_value(no_data_value);
+				}
+			};
+
+			// Specialisation for rasters that have data and always use NaN as no-data value.
+			template<typename T, class StatisticsPolicy>
+			struct AddNoDataValue<
+				RawRasterImpl<T, RawRasterDataPolicies::WithData,
+					StatisticsPolicy, RawRasterNoDataValuePolicies::NanNoDataValue> >
+			{
+				typedef RawRasterImpl<T, RawRasterDataPolicies::WithData,
+					StatisticsPolicy, RawRasterNoDataValuePolicies::NanNoDataValue> RawRasterType;
+				typedef typename RawRasterType::element_type raster_element_type;
+
+				static
+				void
+				add_no_data_value(
+						RawRasterType &raster,
+						const raster_element_type &no_data_value)
+				{
+					// If the no-data value of the raster data is NaN, then there is nothing
+					// to do, because this RawRasterType expects NaN as the no-data value.
+					if (GPlatesMaths::is_nan(no_data_value))
+					{
+						return;
+					}
+
+					// If it is not NaN, however, we will have to convert all values that match
+					// no_data_value to NaN.
+					raster_element_type casted_nan_value = GPlatesMaths::quiet_nan<raster_element_type>();
+
+					std::replace_if(
+							raster.data(),
+							raster.data() + raster.width() * raster.height(),
+							boost::bind(
+								&GPlatesMaths::are_almost_exactly_equal<raster_element_type>,
+								_1,
+								no_data_value),
+							casted_nan_value);
+				}
+			};
+
+
+			/**
+			 * Adds statistics to a raster.
+			 *
+			 * This is useful when you've loaded data into a raster and need to set the statistics afterwards.
+			 */
+			template<class RawRasterType>
+			struct AddRasterStatistics
+			{
+				static
+				void
+				add_raster_statistics(
+						RawRasterType &raster,
+						const RasterStatistics &raster_statistics)
+				{
+					// Default case: do nothing.
+				}
+			};
+
+			// Specialisation for rasters that have raster statistics.
+			template<typename T, template <class> class DataPolicy, template <class> class NoDataValuePolicy>
+			struct AddRasterStatistics<
+				RawRasterImpl<T, DataPolicy, RawRasterStatisticsPolicies::WithStatistics, NoDataValuePolicy> >
+			{
+				typedef RawRasterImpl<T, DataPolicy, RawRasterStatisticsPolicies::WithStatistics,
+						NoDataValuePolicy> RawRasterType;
+				typedef typename RawRasterType::element_type raster_element_type;
+
+				static
+				void
+				add_raster_statistics(
+						RawRasterType &raster,
+						const RasterStatistics &raster_statistics)
+				{
+					raster.set_statistics(raster_statistics);
+				}
+			};
 		}
 
 
@@ -536,6 +656,42 @@ namespace GPlatesPropertyValues
 			return RawRasterUtilsInternals::DoesRasterContainANoDataValue<
 					RawRasterType, RawRasterType::has_no_data_value>
 							::does_raster_contain_a_no_data_value(raster);
+		}
+
+
+		/**
+		 * Adds a no-data value to a raster - also converts no-data pixel values (in raster data)
+		 * from the value used to load the raster data to the value expected by the raster type.
+		 *
+		 * This is useful when you've loaded data into a raster and need to set the no-data value
+		 * that's appropriate for the data loaded.
+		 */
+		template<class RawRasterType>
+		void
+		add_no_data_value(
+				RawRasterType &raster,
+				const typename RawRasterType::element_type &no_data_value)
+		{
+			return RawRasterUtilsInternals::AddNoDataValue<RawRasterType>::add_no_data_value(
+					raster, no_data_value);
+		}
+
+
+		/**
+		 * Adds a no-data value to a raster - also converts no-data pixel values (in raster data)
+		 * from the value used to load the raster data to the value expected by the raster type.
+		 *
+		 * This is useful when you've loaded data into a raster and need to set the no-data value
+		 * that's appropriate for the data loaded.
+		 */
+		template<class RawRasterType>
+		void
+		add_raster_statistics(
+				RawRasterType &raster,
+				const RasterStatistics &raster_statistics)
+		{
+			return RawRasterUtilsInternals::AddRasterStatistics<RawRasterType>::add_raster_statistics(
+					raster, raster_statistics);
 		}
 
 

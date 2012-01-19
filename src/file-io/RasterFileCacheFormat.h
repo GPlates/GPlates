@@ -28,11 +28,14 @@
 #ifndef GPLATES_FILEIO_MIPMAPPEDRASTERFORMAT_H
 #define GPLATES_FILEIO_MIPMAPPEDRASTERFORMAT_H
 
+#include <vector>
 #include <boost/cstdint.hpp>
 #include <boost/optional.hpp>
+#include <QtGlobal>
 #include <QDataStream>
 #include <QString>
 
+#include "global/AssertionFailureException.h"
 #include "global/GPlatesException.h"
 
 #include "gui/Colour.h"
@@ -84,9 +87,7 @@ namespace GPlatesFileIO
 	 *  - (16) For the base level:
 	 *     - The width of the image in this level.
 	 *     - The height of the image in this level.
-	 *     - The starting position, in bytes, of the source raster in the file.
-	 *     - The starting position, in bytes, of the coverage raster in the file.
-	 *       This value is 0 if the mipmap is RGBA.
+	 *     - The starting position, in bytes, of the encoded source raster data in the file.
 	 *
 	 * For the mipmaps raster file cache...
 	 *
@@ -98,9 +99,7 @@ namespace GPlatesFileIO
 	 *  - (20) For each level:
 	 *     - The width of the mipmap in this level.
 	 *     - The height of the mipmap in this level.
-	 *     - The starting position, in bytes, of the mipmap in the file.
-	 *     - The starting position, in bytes, of the coverage raster in the file.
-	 *       This value is 0 if the mipmap is RGBA.
+	 *     - The starting position, in bytes, of the encoded mipmap data in the file.
 	 *
 	 * Most of the fields in the header are unsigned 32-bit integers.
 	 * Each RGBA component is stored as an unsigned 8-bit integer.
@@ -121,8 +120,15 @@ namespace GPlatesFileIO
 		 *
 		 * NOTE: This must be updated if there are any breaking changes to the file
 		 * format between public GPlates releases.
+		 * For example adding a new parameter to the file or updating a block-decoding algorithm.
+		 *
+		 * The same version number is used for both mipmap and source raster file caches (separate files).
+		 * This means a change to the mipmap raster file format, for example, requires incrementing
+		 * the version number which also affects the source raster file format (even if it hasn't changed).
+		 * But this is OK since each file format can test sub-ranges of version numbers and perform
+		 * backwards compatible reading of raster file caches as needed.
 		 */
-		const boost::uint32_t VERSION_NUMBER = 0; // TODO: Change this to 1 when implemented block-encoding.
+		const boost::uint32_t VERSION_NUMBER = 1;
 
 		/**
 		 * The type of raster used to store.
@@ -132,6 +138,11 @@ namespace GPlatesFileIO
 			RGBA,
 			FLOAT,
 			DOUBLE,
+			UINT8,
+			UINT16,
+			INT16,
+			UINT32,
+			INT32,
 
 			NUM_TYPES // must be the last entry
 		};
@@ -151,6 +162,26 @@ namespace GPlatesFileIO
 		template<>
 		Type
 		get_type_as_enum<double>();
+
+		template<>
+		Type
+		get_type_as_enum<quint8>();
+
+		template<>
+		Type
+		get_type_as_enum<quint16>();
+
+		template<>
+		Type
+		get_type_as_enum<qint16>();
+
+		template<>
+		Type
+		get_type_as_enum<quint32>();
+
+		template<>
+		Type
+		get_type_as_enum<qint32>();
 
 		/**
 		 * The block size is the value is dimension of square blocks of image data, in the raster
@@ -176,17 +207,102 @@ namespace GPlatesFileIO
 		struct LevelInfo
 		{
 			quint32 width, height;
-			quint64 main_offset, coverage_offset;
-			static const quint32 NUM_COMPONENTS = 4;
+			quint64 blocks_file_offset;
+			quint32 num_blocks;
+
+			// Size of sum of individual data members.
+			// This is not necessarily equal to the size of the structure due to alignment reasons.
+			static const unsigned int STREAM_SIZE = 3 * sizeof(quint32) + sizeof(quint64);
+		};
+
+		/**
+		 * Information for a block of encoded data.
+		 */
+		struct BlockInfo
+		{
+			// Pixel offsets locating block within the image of the source (or mipmapped) raster.
+			quint32 x_offset, y_offset;
+			// Most blocks have @a BLOCK_SIZE dimensions except those at right and bottom edges of source raster.
+			quint32 width, height;
+			// Offset within level of encoded data for the source (or mipmapped) raster.
+			quint64 main_offset;
+			// Offset within level of encoded data for the coverage (or mipmapped) raster.
+			// This is zero for source raster formats that don't require a separate coverage (ie, RGBA).
+			quint64 coverage_offset;
+
+			// Size of sum of individual data members.
+			// This is not necessarily equal to the size of the structure due to alignment reasons.
+			static const unsigned int STREAM_SIZE = 4 * sizeof(quint32) + 2 * sizeof(quint64);
+		};
+
+
+		/**
+		 * Keeps track of encoded blocks within an image.
+		 */
+		class BlockInfos
+		{
+		public:
+			//! Constructor allocates *un-initialised* @a BlockInfo structures.
+			BlockInfos(
+					unsigned int image_width,
+					unsigned int image_height);
+
+			//! Returns the number of blocks.
+			unsigned int
+			get_num_blocks() const;
+
+			//! Returns specified block.
+			const BlockInfo &
+			get_block_info(
+					unsigned int block_x_offset,
+					unsigned int block_y_offset) const;
+
+			//! Returns specified non-const block.
+			BlockInfo &
+			get_block_info(
+					unsigned int block_x_offset,
+					unsigned int block_y_offset);
+
+			//! Returns specified block.
+			const BlockInfo &
+			get_block_info(
+					unsigned int block_index) const;
+
+			//! Returns specified non-const block.
+			BlockInfo &
+			get_block_info(
+					unsigned int block_index);
+
+		private:
+			unsigned int d_num_blocks_in_x_direction;
+			unsigned int d_num_blocks_in_y_direction;
+			std::vector<BlockInfo> d_block_infos;
 		};
 
 
 		/**
 		 * Returns the number of mipmapped levels in total needed for a source raster of
 		 * the specified dimensions.
+		 *
+		 * NOTE: This does *not* include the base level (full resolution).
 		 */
 		unsigned int
 		get_number_of_mipmapped_levels(
+				const unsigned int source_raster_width,
+				const unsigned int source_raster_height);
+
+
+		/**
+		 * Returns the mipmap image dimensions for the specified source raster dimensions and mipmap level.
+		 *
+		 * NOTE: Level 0 is *not* the base level (full resolution).
+		 * Instead it is the first filtered/reduced mipmap level (half dimensions of full resolution).
+		 */
+		void
+		get_mipmap_dimensions(
+				unsigned int &mipmap_width,
+				unsigned int &mipmap_height,
+				unsigned int mipmap_level,
 				const unsigned int source_raster_width,
 				const unsigned int source_raster_height);
 
@@ -201,7 +317,7 @@ namespace GPlatesFileIO
 		 * user has no permissions to write in the temp directory, boost::none is returned.
 		 */
 		boost::optional<QString>
-		get_writable_mipmap_filename(
+		get_writable_mipmap_cache_filename(
 				const QString &source_filename,
 				unsigned int band_number,
 				boost::optional<std::size_t> colour_palette_id = boost::none);
@@ -216,10 +332,39 @@ namespace GPlatesFileIO
 		 * file is not found in either of those two places, boost::none is returned.
 		 */
 		boost::optional<QString>
-		get_existing_mipmap_filename(
+		get_existing_mipmap_cache_filename(
 				const QString &source_filename,
 				unsigned int band_number,
 				boost::optional<std::size_t> colour_palette_id = boost::none);
+
+
+		/**
+		 * Returns the filename of a file that can be used for writing out a
+		 * source raster file cache for the given @a source_filename.
+		 *
+		 * It first checks whether a source raster file cache in the same directory as the
+		 * source raster is writable. If not, it will check whether a source raster file cache
+		 * file in the temp directory is writable. In the rare case in which the
+		 * user has no permissions to write in the temp directory, boost::none is returned.
+		 */
+		boost::optional<QString>
+		get_writable_source_cache_filename(
+				const QString &source_filename,
+				unsigned int band_number);
+
+
+		/**
+		 * Returns the filename of an existing source raster file cache for the given
+		 * @a source_filename, if any.
+		 *
+		 * It first checks in the same directory as the source raster. If it is
+		 * not found there, it then checks in the temp directory. If the source raster file cache
+		 * is not found in either of those two places, boost::none is returned.
+		 */
+		boost::optional<QString>
+		get_existing_source_cache_filename(
+				const QString &source_filename,
+				unsigned int band_number);
 
 
 		/**

@@ -97,13 +97,3 @@ GPlatesFileIO::RasterBandReader::get_type(
 {
 	return d_raster_reader->get_type(d_band_number, read_errors);
 }
-
-
-void *
-GPlatesFileIO::RasterBandReader::get_data(
-		const QRect &region,
-		ReadErrorAccumulation *read_errors)
-{
-	return d_raster_reader->get_data(d_band_number, region, read_errors);
-}
-
