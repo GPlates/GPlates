@@ -76,7 +76,7 @@ GPlatesUnitTest::MipmapperTest::test_extend_raster1()
 	// Because the raster already has even width/height, extending it should do nothing.
 	static const int SIZE = 2;
 	Int32RawRaster::non_null_ptr_type raster = Int32RawRaster::create(SIZE, SIZE);
-	boost::int32_t *buf = raster->data();
+	qint32 *buf = raster->data();
 	for (int i = 0; i != SIZE * SIZE; ++i)
 	{
 		*(buf + i) = i;
@@ -274,7 +274,7 @@ GPlatesUnitTest::MipmapperTest::test_int_mipmapper()
 		/* 3rd row */ 20, 21, 22, 23, 24
 	};
 	std::memcpy(raster->data(), raster_data, sizeof(raster_data));
-	raster->set_no_data_value(boost::optional<boost::int32_t>(0));
+	raster->set_no_data_value(boost::optional<qint32>(0));
 
 	// There should be three mipmap levels.
 	BOOST_CHECK(GPlatesFileIO::RasterFileCacheFormat::get_number_of_mipmapped_levels(5, 3) == 3);
