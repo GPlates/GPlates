@@ -34,9 +34,10 @@
 namespace GPlatesGlobal
 {
 	/**
-	 * Base GPlatesGlobal::Exception class which should be used for assertion
-	 * failures; these exceptions indicate something is seriously wrong with
-	 * the internal state of the program.
+	 * General exception type that accepts an exception message.
+	 *
+	 * Use this exception type when you cannot find a suitable alternative and do not want
+	 * to create a new exception type.
 	 */
 	class LogException :
 			public Exception

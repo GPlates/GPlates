@@ -69,8 +69,8 @@ set(srcs
     MotionPathUtils.h
     MultiPointVectorField.cc
     MultiPointVectorField.h
-	PalaeomagUtils.cc
-	PalaeomagUtils.h
+    PalaeomagUtils.cc
+    PalaeomagUtils.h
     PartitionFeatureTask.cc
     PartitionFeatureTask.h
     PartitionFeatureUtils.cc
@@ -93,8 +93,8 @@ set(srcs
     ReconstructedFlowline.h
     ReconstructedMotionPath.cc
     ReconstructedMotionPath.h
-	ReconstructedSmallCircle.cc
-	ReconstructedSmallCircle.h
+    ReconstructedSmallCircle.cc
+    ReconstructedSmallCircle.h
     ReconstructedVirtualGeomagneticPole.cc
     ReconstructedVirtualGeomagneticPole.h
     ReconstructGraph.cc
@@ -143,8 +143,8 @@ set(srcs
     ReconstructMethodMotionPath.h
     ReconstructMethodRegistry.cc
     ReconstructMethodRegistry.h
-	ReconstructMethodSmallCircle.cc
-	ReconstructMethodSmallCircle.h
+    ReconstructMethodSmallCircle.cc
+    ReconstructMethodSmallCircle.h
     ReconstructMethodType.cc
     ReconstructMethodType.h
     ReconstructMethodVirtualGeomagneticPole.cc
@@ -166,8 +166,8 @@ set(srcs
     Session.h
     SessionManagement.cc
     SessionManagement.h
-	SmallCircleGeometryPopulator.cc
-	SmallCircleGeometryPopulator.h
+    SmallCircleGeometryPopulator.cc
+    SmallCircleGeometryPopulator.h
     TopologyBoundaryIntersections.cc
     TopologyBoundaryIntersections.h
     TopologyBoundaryResolver.cc
@@ -186,8 +186,8 @@ set(srcs
     TopologyNetworkResolverLayerTask.h
     TopologyUtils.cc
     TopologyUtils.h
-	TRSUtils.cc
-	TRSUtils.h
+    TRSUtils.cc
+    TRSUtils.h
     UserPreferences.cc
     UserPreferences.h
     VelocityFieldCalculatorLayerProxy.cc

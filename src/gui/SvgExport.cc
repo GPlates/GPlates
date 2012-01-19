@@ -37,6 +37,7 @@
 
 #include "SvgExport.h"
 
+#include "opengl/OpenGL.h"
 #include "opengl/OpenGLException.h"
 
 #include "qt-widgets/SceneView.h"

@@ -51,7 +51,7 @@ namespace GPlatesPropertyValues
 	/**
 	 * This class maintains updated proxied RawRasters for each band in a given
 	 * raster file. The proxied RawRasters are updated when the file name changes
-	 * and then the actual file on disk gets modified.
+	 * and when the actual file on disk gets modified.
 	 */
 	class ProxiedRasterCache :
 			public GPlatesUtils::ReferenceCount<ProxiedRasterCache>

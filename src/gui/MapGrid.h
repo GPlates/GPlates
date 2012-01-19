@@ -67,7 +67,7 @@ namespace GPlatesGui
 		const MapProjection &d_map_projection;
 		const GraticuleSettings &d_graticule_settings;
 	
-		boost::optional<MapProjection::Settings> d_last_seen_map_projection_settings;
+		boost::optional<MapProjectionSettings> d_last_seen_map_projection_settings;
 		boost::optional<GraticuleSettings> d_last_seen_graticule_settings;
 
 		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_grid_vertex_array;

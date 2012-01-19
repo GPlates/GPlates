@@ -66,27 +66,27 @@ namespace GPlatesPropertyValues
 
 		template<>
 		Type
-		get_type_as_enum<boost::int8_t>();
+		get_type_as_enum<qint8>();
 
 		template<>
 		Type
-		get_type_as_enum<boost::uint8_t>();
+		get_type_as_enum<quint8>();
 
 		template<>
 		Type
-		get_type_as_enum<boost::int16_t>();
+		get_type_as_enum<qint16>();
 
 		template<>
 		Type
-		get_type_as_enum<boost::uint16_t>();
+		get_type_as_enum<quint16>();
 
 		template<>
 		Type
-		get_type_as_enum<boost::int32_t>();
+		get_type_as_enum<qint32>();
 
 		template<>
 		Type
-		get_type_as_enum<boost::uint32_t>();
+		get_type_as_enum<quint32>();
 
 		template<>
 		Type

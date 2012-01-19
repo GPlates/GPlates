@@ -300,7 +300,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns the map projection settings corresponding to the internal mesh.
 		 */
-		const GPlatesGui::MapProjection::Settings &
+		const GPlatesGui::MapProjectionSettings &
 		get_current_map_projection_settings() const
 		{
 			return d_map_projection_settings;
@@ -431,7 +431,7 @@ namespace GPlatesOpenGL
 		/**
 		 * The settings of the most recent map projection (used to generate internal mesh).
 		 */
-		GPlatesGui::MapProjection::Settings d_map_projection_settings;
+		GPlatesGui::MapProjectionSettings d_map_projection_settings;
 
 
 

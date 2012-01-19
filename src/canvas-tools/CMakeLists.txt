@@ -21,8 +21,8 @@ set(srcs
     CanvasToolType.h
     ClickGeometry.cc
     ClickGeometry.h
-	CreateSmallCircle.cc
-	CreateSmallCircle.h
+    CreateSmallCircle.cc
+    CreateSmallCircle.h
     DeleteVertex.cc
     DeleteVertex.h
     DigitiseGeometry.cc

@@ -27,6 +27,7 @@
 #include "feature-visitors/TotalReconstructionSequenceTimePeriodFinder.h"
 #include "model/types.h"
 #include "property-values/GeoTimeInstant.h"
+#include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPlateId.h"
 

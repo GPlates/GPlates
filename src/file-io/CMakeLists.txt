@@ -97,8 +97,6 @@ set(srcs
     LineReader.h
     LogToFileHandler.cc
     LogToFileHandler.h
-    MipmappedRasterFormat.cc
-    MipmappedRasterFormat.h
     MipmappedRasterFormatReader.h
     MipmappedRasterFormatWriter.h
     OgrException.h
@@ -137,6 +135,10 @@ set(srcs
     RasterBandReader.h
     RasterBandReaderHandle.cc
     RasterBandReaderHandle.h
+    RasterFileCache.h
+    RasterFileCacheFormat.cc
+    RasterFileCacheFormat.h
+    RasterFileCacheFormatReader.h
     RasterReader.cc
     RasterReader.h
     ReadErrorAccumulation.h
@@ -165,6 +167,7 @@ set(srcs
     ShapefileXmlReader.h
     ShapefileXmlWriter.cc
     ShapefileXmlWriter.h
+    SourceRasterFileCacheFormatReader.h
     StructurePropertyCreatorMap.cc
     StructurePropertyCreatorMap.h
     SymbolFileReader.cc

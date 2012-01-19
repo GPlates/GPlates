@@ -93,10 +93,10 @@ set(srcs
     CreateSmallCircleDialogUi.ui
     CreateSmallCircleFeatureDialog.cc
     CreateSmallCircleFeatureDialog.h
-    CreateSmallCircleFeatureDialogUi.ui	
-	CreateTotalReconstructionSequenceDialog.cc
-	CreateTotalReconstructionSequenceDialog.h
-	CreateTotalReconstructionSequenceDialogUi.ui	
+    CreateSmallCircleFeatureDialogUi.ui
+    CreateTotalReconstructionSequenceDialog.cc
+    CreateTotalReconstructionSequenceDialog.h
+    CreateTotalReconstructionSequenceDialogUi.ui
     CreateVGPDialog.cc
     CreateVGPDialog.h
     CreateVGPDialogUi.ui
@@ -167,12 +167,12 @@ set(srcs
     EditTimeSequenceWidget.h
     EditTimeSequenceWidgetUi.ui
     EditTopologyWidgetUi.ui
-	EditTotalReconstructionSequenceDialog.cc
-	EditTotalReconstructionSequenceDialog.h
-	EditTotalReconstructionSequenceDialogUi.ui
-	EditTotalReconstructionSequenceWidget.cc
-	EditTotalReconstructionSequenceWidget.h
-	EditTotalReconstructionSequenceWidgetUi.ui
+    EditTotalReconstructionSequenceDialog.cc
+    EditTotalReconstructionSequenceDialog.h
+    EditTotalReconstructionSequenceDialogUi.ui
+    EditTotalReconstructionSequenceWidget.cc
+    EditTotalReconstructionSequenceWidget.h
+    EditTotalReconstructionSequenceWidgetUi.ui
     EditWidgetChooser.cc
     EditWidgetChooser.h
     EditWidgetGroupBox.cc
@@ -381,9 +381,9 @@ set(srcs
     ShapefileFileFormatConfigurationDialogUi.ui
     ShapefilePropertyMapper.cc
     ShapefilePropertyMapper.h
-	SmallCircleWidget.cc
-	SmallCircleWidget.h
-	SmallCircleWidgetUi.ui
+    SmallCircleWidget.cc
+    SmallCircleWidget.h
+    SmallCircleWidgetUi.ui
     SnapNearbyVerticesWidget.cc
     SnapNearbyVerticesWidget.h
     SnapNearbyVerticesWidgetUi.ui

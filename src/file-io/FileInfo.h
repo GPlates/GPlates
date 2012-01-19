@@ -44,30 +44,29 @@ namespace GPlatesFileIO
 			const FileInfo &file_info);
 
 
-	// NOTE: This is known to not work correctly on Windows Vista and above when
-	// saving to the Desktop and certain other directories (in particular, those
-	// that the user can write to, but does not explicitly own). The test on
-	// Windows should probably be on the fileName() not the path(). However, if
-	// you are writing to a file, just try and open the file for writing, and if
-	// it fails, then throw an exception (instead of explicitly checking whether
-	// the file can be written to).
-#if 0
-	//@{
 	/**
-	 * Returns 'true' if specified file is writable.
+	 * This function attempts to open the file for writing.
 	 *
-	 * @param file_info file to test for writability.
+	 * If the file already exists it is left unchanged.
+	 * If the file does not exist then this function will *not* leave behind an empty file upon returning.
+	 */
+	bool
+	is_writable(
+			const QString &filename);
+
+	/**
+	 * An overload of @a is_writable.
 	 */
 	bool
 	is_writable(
 			const QFileInfo &file_info);
 
-
+	/**
+	 * An overload of @a is_writable.
+	 */
 	bool
 	is_writable(
 			const FileInfo &file_info);
-	//@}
-#endif
 
 
 	/**
@@ -145,6 +144,22 @@ namespace GPlatesFileIO
 			const FileInfo &file_info)
 	{
 		return file_info.get_qfileinfo().exists();
+	}
+
+	inline
+	bool
+	is_writable(
+			const QFileInfo &file_info)
+	{
+		return is_writable(file_info.filePath());
+	}
+
+	inline
+	bool
+	is_writable(
+			const FileInfo &file_info)
+	{
+		return is_writable(file_info.get_qfileinfo());
 	}
 }
 

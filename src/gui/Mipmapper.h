@@ -28,6 +28,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring> // for memcpy
 #include <functional>
 #include <utility>
 #include <boost/optional.hpp>
@@ -37,8 +38,9 @@
 
 #include "Colour.h"
 
-#include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 #include "maths/MathsUtils.h"
 
@@ -53,143 +55,6 @@ namespace GPlatesGui
 	namespace MipmapperInternals
 	{
 		/**
-		 * Creates a coverage raster from a raster.
-		 */
-		template<class RawRasterType, bool has_no_data_value>
-		class CreateCoverageRawRaster
-		{
-		public:
-
-			static
-			boost::optional<GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_type>
-			create_coverage_raster(
-					const RawRasterType &raster)
-			{
-				// has_no_data_value = false case handled here.
-				// No work to do, because our raster can't have sentinel values anyway.
-				return boost::none;
-			}
-		};
-
-
-		template<class RawRasterType>
-		class CreateCoverageRawRaster<RawRasterType, true>
-		{
-			class CoverageFunctor :
-					public std::unary_function<typename RawRasterType::element_type,
-					GPlatesPropertyValues::CoverageRawRaster::element_type>
-			{
-			public:
-
-				typedef boost::function<bool (typename RawRasterType::element_type)> is_no_data_value_function_type;
-
-				CoverageFunctor(
-						is_no_data_value_function_type is_no_data_value) :
-					d_is_no_data_value(is_no_data_value)
-				{
-				}
-
-				GPlatesPropertyValues::CoverageRawRaster::element_type
-				operator()(
-						typename RawRasterType::element_type value)
-				{
-					static const GPlatesPropertyValues::CoverageRawRaster::element_type NO_DATA_COVERAGE_VALUE = 0.0f;
-					static const GPlatesPropertyValues::CoverageRawRaster::element_type DATA_PRESENT_VALUE = 1.0f;
-
-					if (d_is_no_data_value(value))
-					{
-						return NO_DATA_COVERAGE_VALUE;
-					}
-					else
-					{
-						return DATA_PRESENT_VALUE;
-					}
-				}
-
-			private:
-
-				is_no_data_value_function_type d_is_no_data_value;
-			};
-
-		public:
-
-			static
-			boost::optional<GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_type>
-			create_coverage_raster(
-					const RawRasterType &raster)
-			{
-				GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_type coverage =
-					GPlatesPropertyValues::CoverageRawRaster::create(raster.width(), raster.height());
-
-				std::transform(
-						raster.data(),
-						raster.data() + raster.width() * raster.height(),
-						coverage->data(),
-						CoverageFunctor(
-							boost::bind(
-								&RawRasterType::is_no_data_value,
-								boost::cref(raster),
-								_1)));
-
-				return coverage;
-			}
-		};
-
-
-		/**
-		 * Determines if a raster has a no-data value and is not fully opaque.
-		 */
-		template<class RawRasterType, bool has_no_data_value>
-		class DoesRasterContainANoDataValue
-		{
-		public:
-			static
-			bool
-			does_raster_contain_a_no_data_value(
-					const RawRasterType &raster)
-			{
-				// has_no_data_value = false case handled here.
-				// No work to do, because our raster can't have sentinel values anyway.
-				return false;
-			}
-		};
-
-
-		template<class RawRasterType>
-		class DoesRasterContainANoDataValue<RawRasterType, true/*has_no_data_value*/>
-		{
-		public:
-			static
-			bool
-			does_raster_contain_a_no_data_value(
-					const RawRasterType &raster)
-			{
-				// Iterate over the pixels and see if any are the sentinel value meaning
-				// that that pixel is transparent.
-				const unsigned int raster_width = raster.width();
-				const unsigned int raster_height = raster.height();
-				for (unsigned int j = 0; j < raster_height; ++j)
-				{
-					const typename RawRasterType::element_type *const row =
-							raster.data() + j * raster_width;
-
-					for (unsigned int i = 0; i < raster_width; ++i)
-					{
-						if (raster.is_no_data_value(row[i]))
-						{
-							// Raster contains a sentinel value so it's not fully opaque.
-							return true;
-						}
-					}
-				}
-
-				// Raster contains no sentinel values, hence it is fully opaque.
-				return false;
-			};
-		};
-
-
-		/**
 		 * Returns coverage raster that is fully opaque (all pixels are 1.0).
 		 */
 		GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_to_const_type
@@ -198,7 +63,7 @@ namespace GPlatesGui
 				unsigned int height);
 
 		/**
-		 * Returns coverage raster representing initial fractions of pixels in source raste.
+		 * Returns coverage raster representing initial fractions of pixels in source raster.
 		 *
 		 * Initially all pixels in source raster are in source raster!
 		 */
@@ -251,34 +116,6 @@ namespace GPlatesGui
 
 
 			/**
-			 * Returns the number of mipmap levels in total needed for a source raster of
-			 * the specified dimensions.
-			 */
-			static
-			unsigned int
-			get_number_of_levels(
-					const unsigned int threshold_size,
-					const unsigned int source_raster_width,
-					const unsigned int source_raster_height)
-			{
-				unsigned int num_levels = 0;
-
-				unsigned int width = source_raster_width;
-				unsigned int height = source_raster_height;
-
-				while (width > threshold_size || height > threshold_size)
-				{
-					width = (width >> 1) + (width & 1);
-					height = (height >> 1) + (height & 1);
-
-					++num_levels;
-				}
-
-				return num_levels;
-			}
-
-
-			/**
 			 * Returns information for all the mipmap levels in the mipmap pyramid.
 			 */
 			static
@@ -319,7 +156,7 @@ namespace GPlatesGui
 			 * Generates the next mipmap in the sequence of mipmaps.
 			 *
 			 * NOTE: It is up to the caller to ensure the next mipmap can actually be generated -
-			 * use @a get_number_of_levels for this purpose.
+			 * use @a RasterFileCacheFormat::get_number_of_mipmapped_levels for this purpose.
 			 *
 			 * Also note that this method should be called before each call to
 			 * @a get_current_mipmap and @a get_current_coverage.
@@ -472,24 +309,54 @@ namespace GPlatesGui
 				const CoverageRasterType &coverage_raster,
 				const GPlatesPropertyValues::CoverageRawRaster &fraction_in_source_raster,
 				typename boost::enable_if_c<RawRasterType::has_no_data_value>::type *dummy = 0);
-	}
 
 
-	/**
-	 * Returns true if the specified raster has a no-data sentinel value in the raster.
-	 *
-	 * The requirement of a no-data value is really just to rule out
-	 * RGBA rasters which have an alpha-channel and hence can be transparent but
-	 * do not have a no-data value (because of the alpha-channel).
-	 */
-	template<class RawRasterType>
-	bool
-	does_raster_contain_a_no_data_value(
-			const RawRasterType &raster)
-	{
-		return MipmapperInternals::DoesRasterContainANoDataValue<
-				RawRasterType, RawRasterType::has_no_data_value>
-						::does_raster_contain_a_no_data_value(raster);
+		/**
+		 * Joins up to four rasters into one.
+		 *
+		 *  -----------
+		 * |      |    |
+		 * |  r00 | r01|
+		 * |      |    |
+		 *  -----------
+		 * |  r10 | r11|
+		 *  -----------
+		 *
+		 *  -----------
+		 * |      |    |
+		 * |  r00 | r01|
+		 * |      |    |
+		 *  -----------
+		 *
+		 *  ------
+		 * |      |
+		 * |  r00 |
+		 * |      |
+		 *  ------
+		 * |  r10 |
+		 *  ------
+		 *
+		 *  ------
+		 * |      |
+		 * |  r00 |
+		 * |      |
+		 *  ------
+		 *
+		 * The rasters must join in a non-overlapping manner to fill a rectangular region:
+		 *  - if both 'r01' and 'r10' are specified then 'r11' must also be,
+		 *  - if both 'r01' and 'r10' are *not* specified then 'r11' must also *not* be,
+		 *  - if 'r01' is specified then it's height must match that of 'r00',
+		 *  - if 'r10' is specified then it's width must match that of 'r00',
+		 *  - if both 'r01' and 'r10' are specified then 'r01's width must match 'r11's width and
+		 *    'r10's height must match 'r11's height.
+		 */
+		template <class RawRasterType>
+		typename RawRasterType::non_null_ptr_to_const_type
+		combine_rasters(
+				const RawRasterType &raster00,
+				boost::optional<const RawRasterType &> raster01,
+				boost::optional<const RawRasterType &> raster10,
+				boost::optional<const RawRasterType &> raster11);
 	}
 
 
@@ -501,10 +368,6 @@ namespace GPlatesGui
 	 * @see MipmapperInternals::BasicMipmapper. In addition, all specialisations
 	 * have a public constructor that takes a RawRasterType::non_null_ptr_to_const_type
 	 * as first parameter and an optional boolean (generate coverage) as their second parameter.
-	 *
-	 * Also all specialisations must have a static method:
-	 *   float
-	 *   get_max_memory_bytes_amplification_required_to_mipmap();
 	 */
 	template<class RawRasterType, class Enable = void>
 	class Mipmapper;
@@ -514,8 +377,6 @@ namespace GPlatesGui
 	/**
 	 * This specialisation is for rasters that have an element_type of rgba8_t
 	 * and are without a no-data value.
-	 *
-	 * This version uses ImageMagick for the downsampling; the default Lanczos filter is used.
 	 */
 	template<class RawRasterType>
 	class Mipmapper<RawRasterType,
@@ -530,29 +391,6 @@ namespace GPlatesGui
 		typedef typename base_type::output_raster_type output_raster_type;
 		typedef typename base_type::coverage_element_type coverage_element_type;
 
-		/**
-		 * Returns the maximum amount of memory, as a multiplier of the source raster width times
-		 * height, that will be allocated in order to perform mipmapping.
-		 *
-		 * This does *not* include the memory of the source raster being mipmapped (even if it's stored).
-		 */
-		static
-		float
-		get_max_memory_bytes_amplification_required_to_mipmap()
-		{
-			// Calculate memory usage for generating top-level mipmap since it will use
-			// the most memory.
-			return
-					// Linear R,G,B and A floating-point rasters...
-					4 * sizeof(float) +
-					// Fraction-in-source raster...
-					1 * sizeof(float) +
-					// Extending a raster to even dimensions allocates another raster...
-					1 * sizeof(float);
-			// No need to account for mipmapped 32bpp RGBA mipmap since the extended raster
-			// will be deallocated before it's created so it will reuse that memory.
-		}
-
 
 		/**
 		 * @see MipmapperInternals::BasicMipmapper::BasicMipmapper.
@@ -565,11 +403,116 @@ namespace GPlatesGui
 		{
 			initialise_linear_rgba_channels(source_raster);
 
-			// Note: we're not initialised 'd_current_mipmap' since the call to 'do_generate_next'
+			// Note: we're not initialising 'd_current_mipmap' since the call to 'do_generate_next'
 			// will initialise it for us - provided the client calls it first !
 
 			// Note: no need to generate coverages for RGBA rasters - the coverage is already
 			// in the alpha channel.
+		}
+
+		/**
+		 * @see MipmapperInternals::combine_mipmappers.
+		 *
+		 * NOTE: It is expected that each mipmapper will have already generated data - in other
+		 * words @a do_generate_next has already been called on each one.
+		 */
+		Mipmapper(
+				const Mipmapper &m00,
+				boost::optional<const Mipmapper &> m01,
+				boost::optional<const Mipmapper &> m10,
+				boost::optional<const Mipmapper &> m11) :
+			d_fraction_in_source_raster(
+					MipmapperInternals::combine_rasters(
+							*m00.d_fraction_in_source_raster,
+							m01
+									? *m01->d_fraction_in_source_raster
+									: boost::optional<const GPlatesPropertyValues::CoverageRawRaster &>(),
+							m10
+									? *m10->d_fraction_in_source_raster
+									: boost::optional<const GPlatesPropertyValues::CoverageRawRaster &>(),
+							m11
+									? *m11->d_fraction_in_source_raster
+									: boost::optional<const GPlatesPropertyValues::CoverageRawRaster &>()))
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					m00.d_linear_red_raster && m00.d_linear_green_raster && m00.d_linear_blue_raster && m00.d_linear_alpha_raster,
+					GPLATES_ASSERTION_SOURCE);
+			if (m01)
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						m01->d_linear_red_raster && m01->d_linear_green_raster && m01->d_linear_blue_raster && m01->d_linear_alpha_raster,
+						GPLATES_ASSERTION_SOURCE);
+			}
+			if (m10)
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						m10->d_linear_red_raster && m10->d_linear_green_raster && m10->d_linear_blue_raster && m10->d_linear_alpha_raster,
+						GPLATES_ASSERTION_SOURCE);
+			}
+			if (m11)
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						m11->d_linear_red_raster && m11->d_linear_green_raster && m11->d_linear_blue_raster && m11->d_linear_alpha_raster,
+						GPLATES_ASSERTION_SOURCE);
+			}
+
+			d_linear_red_raster =
+					MipmapperInternals::combine_rasters(
+							*m00.d_linear_red_raster.get(),
+							m01
+									? *m01->d_linear_red_raster.get()
+									: boost::optional<const GPlatesPropertyValues::FloatRawRaster &>(),
+							m10
+									? *m10->d_linear_red_raster.get()
+									: boost::optional<const GPlatesPropertyValues::FloatRawRaster &>(),
+							m11
+									? *m11->d_linear_red_raster.get()
+									: boost::optional<const GPlatesPropertyValues::FloatRawRaster &>());
+
+			d_linear_green_raster =
+					MipmapperInternals::combine_rasters(
+							*m00.d_linear_green_raster.get(),
+							m01
+									? *m01->d_linear_green_raster.get()
+									: boost::optional<const GPlatesPropertyValues::FloatRawRaster &>(),
+							m10
+									? *m10->d_linear_green_raster.get()
+									: boost::optional<const GPlatesPropertyValues::FloatRawRaster &>(),
+							m11
+									? *m11->d_linear_green_raster.get()
+									: boost::optional<const GPlatesPropertyValues::FloatRawRaster &>());
+
+			d_linear_blue_raster =
+					MipmapperInternals::combine_rasters(
+							*m00.d_linear_blue_raster.get(),
+							m01
+									? *m01->d_linear_blue_raster.get()
+									: boost::optional<const GPlatesPropertyValues::FloatRawRaster &>(),
+							m10
+									? *m10->d_linear_blue_raster.get()
+									: boost::optional<const GPlatesPropertyValues::FloatRawRaster &>(),
+							m11
+									? *m11->d_linear_blue_raster.get()
+									: boost::optional<const GPlatesPropertyValues::FloatRawRaster &>());
+
+			d_linear_alpha_raster =
+					MipmapperInternals::combine_rasters(
+							*m00.d_linear_alpha_raster.get(),
+							m01
+									? *m01->d_linear_alpha_raster.get()
+									: boost::optional<const GPlatesPropertyValues::FloatRawRaster &>(),
+							m10
+									? *m10->d_linear_alpha_raster.get()
+									: boost::optional<const GPlatesPropertyValues::FloatRawRaster &>(),
+							m11
+									? *m11->d_linear_alpha_raster.get()
+									: boost::optional<const GPlatesPropertyValues::FloatRawRaster &>());
+
+			// NOTE: 'd_current_mipmap' does not need to be initialised since it's not used as input
+			// during mipmapping (it is only output *after* the mipmapping stage).
+
+			// NOTE: 'd_current_coverage' is left uninitialised because it's not actually used by
+			// our clients - the coverage is already in the alpha channel.
 		}
 
 	private:
@@ -837,54 +780,93 @@ namespace GPlatesGui
 		typedef typename base_type::output_raster_type output_raster_type;
 		typedef typename base_type::coverage_element_type coverage_element_type;
 
-		/**
-		 * Returns the maximum amount of memory, as a multiplier of the source raster width times
-		 * height, that will be allocated in order to perform mipmapping.
-		 *
-		 * This does *not* include the memory of the source raster being mipmapped (even if it's stored).
-		 */
-		static
-		float
-		get_max_memory_bytes_amplification_required_to_mipmap()
-		{
-			// Calculate memory usage for generating top-level mipmap since it will use
-			// the most memory.
-			return
-					// No need to account for the floating-point raster as we store the source raster...
-					0 * sizeof(typename RawRasterType::element_type) +
-					// Coverage raster...
-					1 * sizeof(GPlatesPropertyValues::CoverageRawRaster::element_type) +
-					// Fraction-in-source raster...
-					1 * sizeof(GPlatesPropertyValues::CoverageRawRaster::element_type) +
-					// Extending a raster to even dimensions allocates another raster...
-					1 * sizeof(typename RawRasterType::element_type);
-			// No need to account for mipmapped raster since the extended raster
-			// will be deallocated before it's created so it will reuse that memory.
-		}
-
 
 		/**
 		 * @see MipmapperInternals::BasicMipmapper::BasicMipmapper.
-		 *
-		 * Can use @a does_raster_contain_a_no_data_value to determine
-		 * the value of @a generate_coverage.
 		 */
+		explicit
 		Mipmapper(
-				const typename RawRasterType::non_null_ptr_to_const_type &source_raster,
-				bool generate_coverage) :
-			d_source_raster(source_raster),
+				const typename RawRasterType::non_null_ptr_to_const_type &source_raster) :
 			d_fraction_in_source_raster(
 				MipmapperInternals::get_initial_fraction_in_source_raster(
 					source_raster->width(), source_raster->height()))
 		{
 			d_current_mipmap = source_raster;
 
-			if (generate_coverage)
+			d_current_coverage = GPlatesPropertyValues::RawRasterUtils::create_coverage_raster(*source_raster);
+		}
+
+		/**
+		 * @see MipmapperInternals::combine_mipmappers.
+		 *
+		 * NOTE: It is expected that each mipmapper will have already generated data - in other
+		 * words @a do_generate_next has already been called on each one.
+		 */
+		Mipmapper(
+				const Mipmapper &m00,
+				boost::optional<const Mipmapper &> m01,
+				boost::optional<const Mipmapper &> m10,
+				boost::optional<const Mipmapper &> m11) :
+			d_fraction_in_source_raster(
+					MipmapperInternals::combine_rasters(
+							*m00.d_fraction_in_source_raster,
+							m01
+									? *m01->d_fraction_in_source_raster
+									: boost::optional<const GPlatesPropertyValues::CoverageRawRaster &>(),
+							m10
+									? *m10->d_fraction_in_source_raster
+									: boost::optional<const GPlatesPropertyValues::CoverageRawRaster &>(),
+							m11
+									? *m11->d_fraction_in_source_raster
+									: boost::optional<const GPlatesPropertyValues::CoverageRawRaster &>()))
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					m00.d_current_mipmap && m00.d_current_coverage,
+					GPLATES_ASSERTION_SOURCE);
+			if (m01)
 			{
-				d_current_coverage = MipmapperInternals::CreateCoverageRawRaster<RawRasterType,
-					   RawRasterType::has_no_data_value>::create_coverage_raster(
-		   					   *source_raster);
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						m01->d_current_mipmap && m01->d_current_coverage,
+						GPLATES_ASSERTION_SOURCE);
 			}
+			if (m10)
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						m10->d_current_mipmap && m10->d_current_coverage,
+						GPLATES_ASSERTION_SOURCE);
+			}
+			if (m11)
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						m11->d_current_mipmap && m11->d_current_coverage,
+						GPLATES_ASSERTION_SOURCE);
+			}
+
+			d_current_mipmap =
+					MipmapperInternals::combine_rasters(
+							*m00.d_current_mipmap.get(),
+							m01
+									? *m01->d_current_mipmap.get()
+									: boost::optional<const output_raster_type &>(),
+							m10
+									? *m10->d_current_mipmap.get()
+									: boost::optional<const output_raster_type &>(),
+							m11
+									? *m11->d_current_mipmap.get()
+									: boost::optional<const output_raster_type &>());
+
+			d_current_coverage =
+					MipmapperInternals::combine_rasters(
+							*m00.d_current_coverage.get(),
+							m01
+									? *m01->d_current_coverage.get()
+									: boost::optional<const GPlatesPropertyValues::CoverageRawRaster &>(),
+							m10
+									? *m10->d_current_coverage.get()
+									: boost::optional<const GPlatesPropertyValues::CoverageRawRaster &>(),
+							m11
+									? *m11->d_current_coverage.get()
+									: boost::optional<const GPlatesPropertyValues::CoverageRawRaster &>());
 		}
 
 	private:
@@ -901,17 +883,6 @@ namespace GPlatesGui
 					GPLATES_ASSERTION_SOURCE);
 			d_current_mipmap = MipmapperInternals::extend_raster(*d_current_mipmap.get());
 
-			// Has coverage generation been requested?
-			const bool generating_coverage = d_current_coverage;
-			// Use a fully opaque coverage if we're not generating coverages.
-			// This means more work for the CPU but less changes to the code.
-			// TODO: This is all temporary until the quad-tree mipmap tiling is implemented.
-			if (!d_current_coverage)
-			{
-				d_current_coverage = MipmapperInternals::get_opaque_coverage_raster(
-						d_current_mipmap.get()->width(),
-						d_current_mipmap.get()->height());
-			}
 			d_current_coverage = MipmapperInternals::extend_raster(*d_current_coverage.get());
 
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -939,22 +910,10 @@ namespace GPlatesGui
 								*d_current_coverage.get(),
 								*d_fraction_in_source_raster);
 
-			if (generating_coverage)
-			{
-				d_current_coverage = mipmapped_coverage_and_fraction_in_source_rasters.first;
-			}
-			else
-			{
-				// Reset the coverage back to boost::none if we've not been requested
-				// to generate coverages.
-				// TODO: This is not ideal but is temporary until quad-tree mipmap tiling is implemented.
-				d_current_coverage = boost::none;
-			}
+			d_current_coverage = mipmapped_coverage_and_fraction_in_source_rasters.first;
 			d_fraction_in_source_raster = mipmapped_coverage_and_fraction_in_source_rasters.second;
 		}
 
-
-		typename RawRasterType::non_null_ptr_to_const_type d_source_raster;
 
 		/**
 		 * For each pixel in the current mipmap, this raster stores the fraction
@@ -1003,17 +962,32 @@ namespace GPlatesGui
 
 		/**
 		 * @see MipmapperInternals::BasicMipmapper::BasicMipmapper.
-		 *
-		 * Can use @a does_raster_contain_a_no_data_value to determine
-		 * the value of @a generate_coverage.
 		 */
+		explicit
 		Mipmapper(
-				const typename RawRasterType::non_null_ptr_to_const_type &source_raster,
-				bool generate_coverage) :
+				const typename RawRasterType::non_null_ptr_to_const_type &source_raster) :
 			base_type(
 					GPlatesPropertyValues::RawRasterUtils::convert_integer_raster_to_float_raster<
-						RawRasterType, GPlatesPropertyValues::FloatRawRaster>(*source_raster),
-					generate_coverage)
+						RawRasterType, GPlatesPropertyValues::FloatRawRaster>(*source_raster))
+		{
+		}
+
+		/**
+		 * @see MipmapperInternals::combine_mipmappers.
+		 *
+		 * NOTE: It is expected that each mipmapper will have already generated data - in other
+		 * words @a do_generate_next has already been called on each one.
+		 */
+		Mipmapper(
+				const Mipmapper &m00,
+				boost::optional<const Mipmapper &> m01,
+				boost::optional<const Mipmapper &> m10,
+				boost::optional<const Mipmapper &> m11) :
+			base_type(
+					m00,
+					boost::optional<const base_type &>(m01),
+					boost::optional<const base_type &>(m10),
+					boost::optional<const base_type &>(m11))
 		{
 		}
 	};
@@ -1280,7 +1254,7 @@ namespace GPlatesGui
 					// All of the source pixels are sentinel values.
 					// It's a float raster which has a Nan no-data value so
 					// we dereference the returned boost::optional.
-					*new_mipmap_ptr = *raster.no_data_value();
+					*new_mipmap_ptr = raster.no_data_value().get();
 				}
 				else
 				{
@@ -1303,6 +1277,161 @@ namespace GPlatesGui
 
 		// Return mipmapped raster.
 		return new_mipmap;
+	}
+
+
+	/**
+	 * Joins up to four rasters into one.
+	 *
+	 *  -----------
+	 * |      |    |
+	 * |  r00 | r01|
+	 * |      |    |
+	 *  -----------
+	 * |  r10 | r11|
+	 *  -----------
+	 *
+	 *  -----------
+	 * |      |    |
+	 * |  r00 | r01|
+	 * |      |    |
+	 *  -----------
+	 *
+	 *  ------
+	 * |      |
+	 * |  r00 |
+	 * |      |
+	 *  ------
+	 * |  r10 |
+	 *  ------
+	 *
+	 *  ------
+	 * |      |
+	 * |  r00 |
+	 * |      |
+	 *  ------
+	 *
+	 * The rasters must join in a non-overlapping manner to fill a rectangular region:
+	 *  - if both 'r01' and 'r10' are specified then 'r11' must also be,
+	 *  - if both 'r01' and 'r10' are *not* specified then 'r11' must also *not* be,
+	 *  - if 'r01' is specified then it's height must match that of 'r00',
+	 *  - if 'r10' is specified then it's width must match that of 'r00',
+	 *  - if both 'r01' and 'r10' are specified then 'r01's width must match 'r11's width and
+	 *    'r10's height must match 'r11's height.
+	 */
+	template <class RawRasterType>
+	typename RawRasterType::non_null_ptr_to_const_type
+	MipmapperInternals::combine_rasters(
+			const RawRasterType &raster00,
+			boost::optional<const RawRasterType &> raster01,
+			boost::optional<const RawRasterType &> raster10,
+			boost::optional<const RawRasterType &> raster11)
+	{
+		typedef typename RawRasterType::element_type element_type;
+
+		unsigned int combined_width = raster00.width();
+		unsigned int combined_height = raster00.height();
+
+		if (raster01)
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					raster01->height() == raster00.height(),
+					GPLATES_ASSERTION_SOURCE);
+
+			combined_width += raster01->width();
+
+			if (raster10)
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						raster11,
+						GPLATES_ASSERTION_SOURCE);
+
+				combined_height += raster10->height();
+			}
+		}
+		else if (raster10)
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					raster10->width() == raster00.width(),
+					GPLATES_ASSERTION_SOURCE);
+
+			combined_height += raster10->height();
+		}
+		else // !raster01 && !raster10 ...
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					!raster11,
+					GPLATES_ASSERTION_SOURCE);
+
+			// Only 'raster00' was specified so just return it.
+			return typename RawRasterType::non_null_ptr_to_const_type(&raster00);
+		}
+
+		// Create the combined raster.
+		typename RawRasterType::non_null_ptr_type combined_raster =
+				RawRasterType::create(combined_width, combined_height);
+
+		// Pointer into the combined raster.
+		element_type *combined_raster_data = combined_raster->data();
+
+		// Pointers into the source rasters.
+		const element_type *raster00_data = raster00.data();
+		const element_type *raster01_data = NULL;
+		const element_type *raster10_data = NULL;
+		const element_type *raster11_data = NULL;
+		if (raster01)
+		{
+			raster01_data = raster01->data();
+		}
+		if (raster10)
+		{
+			raster10_data = raster10->data();
+		}
+		if (raster11)
+		{
+			raster11_data = raster11->data();
+		}
+
+		unsigned int y;
+
+		for (y = 0; y < raster00.height(); ++y)
+		{
+			// Copy a row from 'raster00'.
+			std::memcpy(combined_raster_data, raster00_data, raster00.width() * sizeof(element_type));
+			combined_raster_data += raster00.width();
+			raster00_data += raster00.width();
+
+			if (raster01_data)
+			{
+				// Copy a row from 'raster01'.
+				std::memcpy(combined_raster_data, raster01_data, raster01->width() * sizeof(element_type));
+				combined_raster_data += raster01->width();
+				raster01_data += raster01->width();
+			}
+		}
+
+		for (y = raster00.height(); y < combined_height; ++y)
+		{
+			// Shouldn't be able to get here unless 'raster10' was specified.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					raster10 && raster10_data,
+					GPLATES_ASSERTION_SOURCE);
+
+			// Copy a row from 'raster10'.
+			std::memcpy(combined_raster_data, raster10_data, raster10->width() * sizeof(element_type));
+			combined_raster_data += raster10->width();
+			raster10_data += raster10->width();
+
+			if (raster11_data)
+			{
+				// Copy a row from 'raster11'.
+				std::memcpy(combined_raster_data, raster11_data, raster11->width() * sizeof(element_type));
+				combined_raster_data += raster11->width();
+				raster11_data += raster11->width();
+			}
+		}
+
+		return combined_raster;
 	}
 }
 

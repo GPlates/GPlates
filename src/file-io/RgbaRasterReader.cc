@@ -25,48 +25,108 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cstddef> // For std::size_t
+#include <exception>
 #include <iostream>
+#include <limits>
 #include <boost/scoped_array.hpp>
 #include <QtCore/qglobal.h>
+#include <QDataStream>
+#include <QDateTime>
+#include <QDebug>
 #include <QFile>
 #include <QFileInfo>
-#include <QDateTime>
 
 #include "RgbaRasterReader.h"
 
+#include "ErrorOpeningFileForReadingException.h"
+#include "ErrorOpeningFileForWritingException.h"
+#include "RasterFileCacheFormat.h"
 #include "TemporaryFileRegistry.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+#include "global/LogException.h"
+
+#include "utils/Base2Utils.h"
 #include "utils/Profile.h"
+
+
+namespace GPlatesFileIO
+{
+	namespace
+	{
+		bool
+		unpack_region(
+				const QRect &region,
+				int full_width,
+				int full_height,
+				unsigned int &region_x_offset,
+				unsigned int &region_y_offset,
+				unsigned int &region_width,
+				unsigned int &region_height)
+		{
+			if (region.isValid())
+			{
+				// Check that region lies within the source raster.
+				if (region.x() < 0 || region.y() < 0 ||
+					region.width() <= 0 || region.height() <= 0 ||
+						(region.x() + region.width()) > full_width ||
+						(region.y() + region.height()) > full_height)
+				{
+					return false;
+				}
+
+				region_x_offset = region.x();
+				region_y_offset = region.y();
+				region_width = region.width();
+				region_height = region.height();
+			}
+			else
+			{
+				// Invalid region means read in the whole source raster.
+				region_x_offset = 0;
+				region_y_offset = 0;
+				region_width = full_width;
+				region_height = full_height;
+			}
+
+			return true;
+		}
+	}
+}
 
 
 GPlatesFileIO::RgbaRasterReader::RgbaRasterReader(
 		const QString &filename,
-		const boost::function<RasterBandReaderHandle (unsigned int)> &proxy_handle_function,
+		RasterReader *raster_reader,
 		ReadErrorAccumulation *read_errors) :
-	d_filename(filename),
-	d_proxy_handle_function(proxy_handle_function),
+	RasterReaderImpl(raster_reader),
+	d_source_raster_filename(filename),
 	d_source_width(0),
-	d_source_height(0),
-	d_can_read(false)
+	d_source_height(0)
 {
-	QImageReader reader(d_filename);
-	if (reader.canRead())
-	{
-		QSize size = reader.size();
-		d_source_width = size.width();
-		d_source_height = size.height();
-	}
-
-	if (d_source_width > 0 && d_source_height > 0)
-	{
-		d_can_read = true;
-	}
-
-	// Do all the failure to begin reporting here, so that there's only one
-	// such report per file.
-	if (!d_can_read)
+	// Open the source raster for reading to determine the source raster dimensions.
+	QImageReader source_reader(d_source_raster_filename);
+	if (!source_reader.canRead())
 	{
 		report_failure_to_begin(read_errors, ReadErrors::ErrorReadingRasterFile);
+		return;
+	}
+
+	// All Qt-provided formats support image size queries.
+	const QSize image_size = source_reader.size();
+	d_source_width = image_size.width();
+	d_source_height = image_size.height();
+
+	// Create the source raster file cache if there isn't one or it's out of date.
+	create_source_raster_file_cache_format_reader(read_errors);
+
+	if (!d_source_raster_file_cache_format_reader)
+	{
+		// We were unable to create a source raster file cache or unable to read it.
+		report_failure_to_begin(read_errors, ReadErrors::ErrorReadingRasterFile);
+		return;
 	}
 }
 
@@ -74,7 +134,8 @@ GPlatesFileIO::RgbaRasterReader::RgbaRasterReader(
 bool
 GPlatesFileIO::RgbaRasterReader::can_read()
 {
-	return d_can_read;
+	// Return true if we have successfully created a source raster file cache format reader.
+	return d_source_raster_file_cache_format_reader;
 }
 
 
@@ -82,7 +143,7 @@ unsigned int
 GPlatesFileIO::RgbaRasterReader::get_number_of_bands(
 		ReadErrorAccumulation *read_errors)
 {
-	if (d_can_read)
+	if (can_read())
 	{
 		// We only read single-band rasters with Qt.
 		return 1;
@@ -108,7 +169,7 @@ GPlatesFileIO::RgbaRasterReader::get_proxied_raw_raster(
 		unsigned int band_number,
 		ReadErrorAccumulation *read_errors)
 {
-	if (!d_can_read)
+	if (!can_read())
 	{
 		return boost::none;
 	}
@@ -119,14 +180,12 @@ GPlatesFileIO::RgbaRasterReader::get_proxied_raw_raster(
 		return boost::none;
 	}
 
-	if (!ensure_rgba_file_available(read_errors))
-	{
-		return boost::none;
-	}
-
 	GPlatesPropertyValues::ProxiedRgba8RawRaster::non_null_ptr_type result =
 		GPlatesPropertyValues::ProxiedRgba8RawRaster::create(
-				d_source_width, d_source_height, d_proxy_handle_function(band_number));
+				d_source_width,
+				d_source_height,
+				create_raster_band_reader_handle(band_number));
+
 	return GPlatesPropertyValues::RawRaster::non_null_ptr_type(result.get());
 }
 
@@ -137,7 +196,7 @@ GPlatesFileIO::RgbaRasterReader::get_raw_raster(
 		const QRect &region,
 		ReadErrorAccumulation *read_errors)
 {
-	if (!d_can_read)
+	if (!can_read())
 	{
 		return boost::none;
 	}
@@ -148,23 +207,30 @@ GPlatesFileIO::RgbaRasterReader::get_raw_raster(
 		return boost::none;
 	}
 
-	if (!ensure_rgba_file_available(read_errors))
+	unsigned int region_x_offset, region_y_offset, region_width, region_height;
+	if (!unpack_region(region, d_source_width, d_source_height,
+				region_x_offset, region_y_offset, region_width, region_height))
 	{
 		return boost::none;
 	}
 
-	GPlatesGui::rgba8_t *data = read_rgba_file(region);
+	if (!d_source_raster_file_cache_format_reader)
+	{
+		return boost::none;
+	}
+
+	// Read the specified source region from the raster file cache.
+	boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> data =
+			d_source_raster_file_cache_format_reader->read_raster(
+					region_x_offset, region_y_offset, region_width, region_height);
+
 	if (!data)
 	{
 		report_recoverable_error(read_errors, ReadErrors::InvalidRegionInRaster);
+		return boost::none;
 	}
 
-	GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type result =
-		region.isValid() ?
-		GPlatesPropertyValues::Rgba8RawRaster::create(region.width(), region.height(), data) :
-		GPlatesPropertyValues::Rgba8RawRaster::create(d_source_width, d_source_height, data);
-
-	return GPlatesPropertyValues::RawRaster::non_null_ptr_type(result.get());
+	return data.get();
 }
 
 
@@ -173,7 +239,7 @@ GPlatesFileIO::RgbaRasterReader::get_type(
 		unsigned int band_number,
 		ReadErrorAccumulation *read_errors)
 {
-	if (!d_can_read)
+	if (!can_read())
 	{
 		return GPlatesPropertyValues::RasterType::UNKNOWN;
 	}
@@ -184,40 +250,8 @@ GPlatesFileIO::RgbaRasterReader::get_type(
 		return GPlatesPropertyValues::RasterType::UNKNOWN;
 	}
 
-	// We only read RGBA rasters with ImageMagick.
+	// We only read RGBA rasters (with Qt).
 	return GPlatesPropertyValues::RasterType::RGBA8;
-}
-
-
-void *
-GPlatesFileIO::RgbaRasterReader::get_data(
-		unsigned int band_number,
-		const QRect &region,
-		ReadErrorAccumulation *read_errors)
-{
-	if (!d_can_read)
-	{
-		return NULL;
-	}
-
-	if (band_number != 1)
-	{
-		report_recoverable_error(read_errors, ReadErrors::ErrorReadingRasterBand);
-		return NULL;
-	}
-
-	if (!ensure_rgba_file_available(read_errors))
-	{
-		return NULL;
-	}
-
-	GPlatesGui::rgba8_t *data = read_rgba_file(region);
-	if (!data)
-	{
-		report_recoverable_error(read_errors, ReadErrors::InvalidRegionInRaster);
-	}
-
-	return data;
 }
 
 
@@ -230,7 +264,7 @@ GPlatesFileIO::RgbaRasterReader::report_recoverable_error(
 	{
 		read_errors->d_recoverable_errors.push_back(
 				make_read_error_occurrence(
-					d_filename,
+					d_source_raster_filename,
 					DataFormats::RasterImage,
 					0,
 					description,
@@ -248,7 +282,7 @@ GPlatesFileIO::RgbaRasterReader::report_failure_to_begin(
 	{
 		read_errors->d_failures_to_begin.push_back(
 				make_read_error_occurrence(
-					d_filename,
+					d_source_raster_filename,
 					DataFormats::RasterImage,
 					0,
 					description,
@@ -257,190 +291,625 @@ GPlatesFileIO::RgbaRasterReader::report_failure_to_begin(
 }
 
 
-GPlatesGui::rgba8_t *
-GPlatesFileIO::RgbaRasterReader::read_rgba_file(
-		const QRect &region)
-{
-	unsigned int region_width, region_height, region_x_offset, region_y_offset;
-
-	// Check the region.
-	if (region.isValid())
-	{
-		if (region.x() < 0 || region.y() < 0 ||
-				region.width() <= 0 || region.height() <= 0 ||
-				static_cast<unsigned int>(region.x() + region.width()) > d_source_width ||
-				static_cast<unsigned int>(region.y() + region.height()) > d_source_height)
-		{
-			return NULL;
-		}
-
-		region_width = static_cast<unsigned int>(region.width());
-		region_height = static_cast<unsigned int>(region.height());
-		region_x_offset = static_cast<unsigned int>(region.x());
-		region_y_offset = static_cast<unsigned int>(region.y());
-	}
-	else
-	{
-		region_width = d_source_width;
-		region_height = d_source_height;
-		region_x_offset = 0;
-		region_y_offset = 0;
-	}
-
-	//PROFILE_BLOCK("Read RGBA");
-
-	GPlatesGui::rgba8_t * const dest_buf = new GPlatesGui::rgba8_t[region_width * region_height];
-	GPlatesGui::rgba8_t *dest_ptr = dest_buf;
-
-	// Read the bytes in from the file.
-	for (unsigned int y = 0; y != region_height; ++y)
-	{
-		unsigned int row_in_file = y + region_y_offset;
-		// Need to use 64-bit arithmetic when calculating file offsets since
-		// some uncompressed rasters are already larger than 4Gb.
-		d_rgba_file.seek(
-				(qint64(row_in_file) * d_source_width + region_x_offset) * sizeof(GPlatesGui::rgba8_t));
-
-		// Read the raw byte data for the row since it's *significantly* quicker than streaming
-		// each pixel individually (as determined by profiling) - Qt does a lot at each '>>'.
-		input_pixels(d_rgba_in, dest_ptr, region_width);
-
-		// Move to the next row in the region.
-		dest_ptr += region_width;
-	}
-
-	return dest_buf;
-}
-
-
-bool
-GPlatesFileIO::RgbaRasterReader::ensure_rgba_file_available(
+void
+GPlatesFileIO::RgbaRasterReader::create_source_raster_file_cache_format_reader(
 		ReadErrorAccumulation *read_errors)
 {
-	if (d_rgba_in.device())
-	{
-		// The RGBA file exists and is already open.
-		return true;
-	}
+	d_source_raster_file_cache_format_reader.reset();
 
-	// Is there such a file in the same directory?
-	static const QString EXTENSION = ".mipmap-level0";
-	QString rgba_filename;
-	QString in_same_directory = d_filename + EXTENSION;
-	QString in_tmp_directory = TemporaryFileRegistry::make_filename_in_tmp_directory(
-			in_same_directory);
-	if (QFile(in_same_directory).exists())
+	// Find the existing source raster file cache (if exists).
+	boost::optional<QString> cache_filename =
+			RasterFileCacheFormat::get_existing_source_cache_filename(d_source_raster_filename, 1/*band_number*/);
+	if (cache_filename)
 	{
-		rgba_filename = in_same_directory;
-	}
-	else if (QFile(in_tmp_directory).exists())
-	{
-		rgba_filename = in_tmp_directory;
-	}
-
-	if (!rgba_filename.isEmpty())
-	{
-		// Check whether the RGBA file was created after the source file.
-		if (QFileInfo(rgba_filename).lastModified() >
-				QFileInfo(d_filename).lastModified())
+		// If the source raster was modified after the raster file cache then we need
+		// to regenerate the raster file cache.
+		QDateTime source_last_modified = QFileInfo(d_source_raster_filename).lastModified();
+		QDateTime cache_last_modified = QFileInfo(cache_filename.get()).lastModified();
+		if (source_last_modified > cache_last_modified)
 		{
-			// Attempt to open it.
-			d_rgba_file.setFileName(rgba_filename);
-			if (d_rgba_file.open(QIODevice::ReadOnly))
+			// Remove the cache file.
+			QFile(cache_filename.get()).remove();
+			// Create a new cache file.
+			if (!create_source_raster_file_cache(read_errors))
 			{
-				// Check that the RGBA file is the correct size - in case
-				// it was partially written to by a previous instance of GPlates.
-				// For example, if an error occurred part way through writing the file.
-				QImageReader reader(d_filename);
-				if (!reader.canRead())
-				{
-					report_failure_to_begin(read_errors, ReadErrors::ErrorReadingRasterFile);
-					// Can't open the image file so nothing more can be done.
-					return false;
-				}
-
-				// All Qt-provided formats support image size queries.
-				const QSize image_size = reader.size();
-				if (d_rgba_file.size() ==
-					qint64(image_size.width()) * qint64(image_size.height()) * qint64(sizeof(GPlatesGui::rgba8_t)))
-				{
-					// Existing RGBA file is the expected size.
-					d_rgba_in.setDevice(&d_rgba_file);
-					return true;
-				}
-
-				// Close the file - it'll get reopened for writing.
-				d_rgba_file.close();
+				// Unable to create cache file.
+				return;
 			}
-
-			// Fall through, it should then attempt to write one in the temp directory.
 		}
-		else
+	}
+	// Generate the cache file if it doesn't exist...
+	else
+	{
+		if (!create_source_raster_file_cache(read_errors))
 		{
-			// It's too old, delete it.
-			QFile(rgba_filename).remove();
+			// Unable to create cache file.
+			return;
 		}
-	}
 
-	// Try to open an RGBA file in the same directory for writing.
-	d_rgba_file.setFileName(in_same_directory);
-	bool can_open = d_rgba_file.open(QIODevice::WriteOnly | QIODevice::Truncate);
-
-	// If that fails, try and open an RGBA file in the tmp directory for writing.
-	if (!can_open)
-	{
-		d_rgba_file.setFileName(in_tmp_directory);
-		can_open = d_rgba_file.open(QIODevice::WriteOnly | QIODevice::Truncate);
-
-		if (!can_open)
+		cache_filename =
+				RasterFileCacheFormat::get_existing_source_cache_filename(d_source_raster_filename, 1/*band_number*/);
+		if (!cache_filename)
 		{
-			report_failure_to_begin(read_errors, ReadErrors::ErrorReadingRasterFile);
-			return false;
+			// Cache file was created but unable to read it for some reason.
+			return;
 		}
 	}
 
-	// Read the image and write it to the currently open RGBA file.
-	if (!write_image_to_rgba_file(read_errors))
+	try
 	{
-		// Close the RGBA file and remove it.
-		d_rgba_file.remove();
+		try
+		{
+			// Attempt to create the source raster file cache format reader.
+			d_source_raster_file_cache_format_reader.reset(
+					new SourceRasterFileCacheFormatReaderImpl<GPlatesPropertyValues::Rgba8RawRaster>(
+							cache_filename.get()));
+		}
+		catch (RasterFileCacheFormat::UnsupportedVersion &exc)
+		{
+			// Log the exception so we know what caused the failure.
+			qWarning() << exc;
 
-		return false;
+			qWarning() << "Attempting rebuild of source raster file cache '"
+					<< cache_filename.get() << "' for current version of GPlates.";
+
+			// We'll have to remove the file and build it for the current GPlates version.
+			// This means if the future version of GPlates (the one that created the
+			// unrecognised version file) runs again it will either know how to
+			// load our version (or rebuild it for itself also if it determines its
+			// new format is much better or much more efficient).
+			QFile(cache_filename.get()).remove();
+
+			// Build it with the current version format.
+			if (create_source_raster_file_cache(read_errors))
+			{
+				// Try reading it again.
+				d_source_raster_file_cache_format_reader.reset(
+						new SourceRasterFileCacheFormatReaderImpl<GPlatesPropertyValues::Rgba8RawRaster>(
+								cache_filename.get()));
+			}
+		}
+		catch (std::exception &exc)
+		{
+			// Log the exception so we know what caused the failure.
+			qWarning() << "Error reading source raster file cache '" << cache_filename.get()
+					<< "', attempting rebuild: " << exc.what();
+
+			// Remove the cache file in case it is corrupted somehow.
+			// Eg, it was partially written to by a previous instance of GPlates and
+			// not immediately removed for some reason.
+			QFile(cache_filename.get()).remove();
+
+			// Try building it again.
+			if (create_source_raster_file_cache(read_errors))
+			{
+				// Try reading it again.
+				d_source_raster_file_cache_format_reader.reset(
+						new SourceRasterFileCacheFormatReaderImpl<GPlatesPropertyValues::Rgba8RawRaster>(
+								cache_filename.get()));
+			}
+		}
 	}
-
-	// Close the RGBA file.
-	d_rgba_file.close();
-
-	// Copy the file permissions from the source raster to the RGBA file.
-	d_rgba_file.setPermissions(QFile::permissions(d_filename));
-
-	// Open the same file again for reading.
-	if (d_rgba_file.open(QIODevice::ReadOnly))
+	catch (...)
 	{
-		d_rgba_in.setDevice(&d_rgba_file);
-		return true;
+		// Log a warning message.
+		qWarning() << "Unable to read, or generate, source raster file cache for raster '"
+				<< d_source_raster_filename << "', giving up on it.";
 	}
-
-	report_failure_to_begin(read_errors, ReadErrors::ErrorReadingRasterFile);
-	return false;
 }
 
 
 bool
-GPlatesFileIO::RgbaRasterReader::write_image_to_rgba_file(
+GPlatesFileIO::RgbaRasterReader::create_source_raster_file_cache(
 		ReadErrorAccumulation *read_errors)
 {
 	PROFILE_FUNC();
 
-	QImageReader reader(d_filename);
-	if (!reader.canRead())
+	boost::optional<QString> cache_filename =
+			RasterFileCacheFormat::get_writable_source_cache_filename(d_source_raster_filename, 1/*band_number*/);
+
+	if (!cache_filename)
 	{
-		report_failure_to_begin(read_errors, ReadErrors::ErrorReadingRasterFile);
+		// Can't write raster file cache anywhere.
 		return false;
 	}
 
-	// All Qt-provided formats support image size queries.
-	const QSize image_size = reader.size();
+	// Write the cache file.
+	try
+	{
+		write_source_raster_file_cache(cache_filename.get(), read_errors);
+
+		// Copy the file permissions from the source raster file to the cache file.
+		QFile::setPermissions(cache_filename.get(), QFile::permissions(d_source_raster_filename));
+	}
+	catch (std::exception &exc)
+	{
+		// Log the exception so we know what caused the failure.
+		qWarning() << "Error writing source raster file cache '" << cache_filename.get()
+				<< "', removing it: " << exc.what();
+
+		// Remove the cache file in case it was partially written.
+		QFile(cache_filename.get()).remove();
+
+		return false;
+	}
+	catch (...)
+	{
+		// Log the exception so we know what caused the failure.
+		qWarning() << "Unknown error writing source raster file cache '" << cache_filename.get()
+				<< "', removing it";
+
+		// Remove the cache file in case it was partially written.
+		QFile(cache_filename.get()).remove();
+
+		return false;
+	}
+
+	return true;
+}
+
+
+void
+GPlatesFileIO::RgbaRasterReader::write_source_raster_file_cache(
+		const QString &cache_filename,
+		ReadErrorAccumulation *read_errors)
+{
+	PROFILE_FUNC();
+
+	// Open the cache file for writing.
+	QFile cache_file(cache_filename);
+	if (!cache_file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+	{
+		throw ErrorOpeningFileForWritingException(
+				GPLATES_EXCEPTION_SOURCE, cache_filename);
+	}
+	QDataStream out(&cache_file);
+
+	out.setVersion(RasterFileCacheFormat::Q_DATA_STREAM_VERSION);
+
+	// Write magic number/string.
+	for (unsigned int n = 0; n < sizeof(RasterFileCacheFormat::MAGIC_NUMBER); ++n)
+	{
+		out << static_cast<quint8>(RasterFileCacheFormat::MAGIC_NUMBER[n]);
+	}
+
+	// Write the file size - write zero for now and come back later to fill it in.
+	const qint64 file_size_offset = cache_file.pos();
+	qint64 total_cache_file_size = 0;
+	out << static_cast<qint64>(total_cache_file_size);
+
+	// Write version number.
+	out << static_cast<quint32>(RasterFileCacheFormat::VERSION_NUMBER);
+
+	// Write source raster type.
+	out << static_cast<quint32>(
+			RasterFileCacheFormat::get_type_as_enum<GPlatesPropertyValues::Rgba8RawRaster::element_type>());
+
+	// No coverage is necessary for RGBA rasters (it's embedded in the alpha channel).
+	out << static_cast<quint32>(false/*has_coverage*/);
+
+	// Write the source raster dimensions.
+	out << static_cast<quint32>(d_source_width);
+	out << static_cast<quint32>(d_source_height);
+
+	// The source raster will get written to the cache file in blocks.
+	RasterFileCacheFormat::BlockInfos block_infos(d_source_width, d_source_height);
+
+	// Write the number of blocks in the source raster.
+	out << static_cast<quint32>(block_infos.get_num_blocks());
+
+	// Write the (optional) raster no-data value.
+	//
+	// NOTE: The source raster is RGBA which does not have a no-data value.
+	out << static_cast<quint32>(false);
+	out << GPlatesPropertyValues::Rgba8RawRaster::element_type(); // Doesn't matter what gets stored.
+
+	// Write the (optional) raster statistics.
+	//
+	// NOTE: The source raster is RGBA which does not have raster statistics.
+	out << static_cast<quint32>(false); // has_raster_statistics
+	out << static_cast<quint32>(false); // has_raster_minimum
+	out << static_cast<quint32>(false); // has_raster_maximum
+	out << static_cast<quint32>(false); // has_raster_mean
+	out << static_cast<quint32>(false); // has_raster_standard_deviation
+	out << static_cast<double>(0); // raster_minimum - doesn't matter what gets read.
+	out << static_cast<double>(0); // raster_maximum - doesn't matter what gets read.
+	out << static_cast<double>(0); // raster_mean - doesn't matter what gets read.
+	out << static_cast<double>(0); // raster_standard_deviation - doesn't matter what gets read.
+
+	// The block information will get written next.
+	const qint64 block_info_pos = cache_file.pos();
+
+	unsigned int block_index;
+
+	// Write the block information to the cache file.
+	// NOTE: Later we'll need to come back and fill out the block information.
+	const unsigned int num_blocks = block_infos.get_num_blocks();
+	for (block_index = 0; block_index < num_blocks; ++block_index)
+	{
+		RasterFileCacheFormat::BlockInfo &block_info =
+				block_infos.get_block_info(block_index);
+
+		// Set all values to zero - we'll come back later and fill it out properly.
+		block_info.x_offset = 0;
+		block_info.y_offset = 0;
+		block_info.width = 0;
+		block_info.height = 0;
+		block_info.main_offset = 0;
+		block_info.coverage_offset = 0;
+
+		// Write out the dummy block information.
+		out << block_info.x_offset
+			<< block_info.y_offset
+			<< block_info.width
+			<< block_info.height
+			<< block_info.main_offset
+			<< block_info.coverage_offset;
+	}
+
+	// Write the source raster image to the cache file.
+	write_source_raster_file_cache_image_data(cache_file, out, block_infos, read_errors);
+
+	// Now that we've initialised the block information we can go back and write it to the cache file.
+	cache_file.seek(block_info_pos);
+	for (block_index = 0; block_index < num_blocks; ++block_index)
+	{
+		const RasterFileCacheFormat::BlockInfo &block_info =
+				block_infos.get_block_info(block_index);
+
+		// Write out the proper block information.
+		out << block_info.x_offset
+			<< block_info.y_offset
+			<< block_info.width
+			<< block_info.height
+			<< block_info.main_offset
+			<< block_info.coverage_offset;
+	}
+
+	// Write the total size of the cache file so the reader can verify that the
+	// file was not partially written.
+	cache_file.seek(file_size_offset);
+	total_cache_file_size = cache_file.size();
+	out << total_cache_file_size;
+}
+
+
+void
+GPlatesFileIO::RgbaRasterReader::write_source_raster_file_cache_image_data(
+		QFile &cache_file,
+		QDataStream &out,
+		RasterFileCacheFormat::BlockInfos &block_infos,
+		ReadErrorAccumulation *read_errors)
+{
+	// Find the smallest power-of-two that is greater than (or equal to) both the source
+	// raster width and height - this will be used during the Hilbert curve traversal.
+	const unsigned int source_raster_width_next_power_of_two =
+			GPlatesUtils::Base2::next_power_of_two(d_source_width);
+	const unsigned int source_raster_height_next_power_of_two =
+			GPlatesUtils::Base2::next_power_of_two(d_source_height);
+	const unsigned int source_raster_dimension_next_power_of_two =
+			(std::max)(
+					source_raster_width_next_power_of_two,
+					source_raster_height_next_power_of_two);
+
+	// The quad tree depth at which to write to the source raster file cache.
+	// Each of these writes is of dimension RasterFileCacheFormat::BLOCK_SIZE (or less near the
+	// right or bottom edges of the raster).
+	unsigned int write_source_raster_depth = 0;
+	if (source_raster_dimension_next_power_of_two > RasterFileCacheFormat::BLOCK_SIZE)
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				GPlatesUtils::Base2::is_power_of_two(RasterFileCacheFormat::BLOCK_SIZE),
+				GPLATES_ASSERTION_SOURCE);
+
+		// The quad tree depth at which the dimension/coverage of a quad tree node is
+		// 'RasterFileCacheFormat::BLOCK_SIZE'. Each depth increment reduces dimension by factor of two.
+		write_source_raster_depth = GPlatesUtils::Base2::log2_power_of_two(
+				source_raster_dimension_next_power_of_two / RasterFileCacheFormat::BLOCK_SIZE);
+	}
+
+	// The quad tree depth at which to read the source raster.
+	// A depth of zero means read the entire raster once at the root of the quad tree.
+	// Only if partial reads are supported for the source raster file format can we read the source
+	// raster more than once (in sub-regions).
+	unsigned int read_source_raster_depth = 0;
+
+	// If the source raster file format supports partial reads (ie, not forced to read entire image)
+	// then we can read the source raster deeper in the quad tree which means sub-regions of the
+	// entire raster are read avoiding the possibility of memory allocation failures for very high
+	// resolution source rasters.
+	if (QImageReader(d_source_raster_filename).supportsOption(QImageIOHandler::ClipRect))
+	{
+		// Using 64-bit integer in case uncompressed image is larger than 4Gb.
+		const qint64 image_size_in_bytes =
+				quint64(d_source_width) * d_source_height * sizeof(GPlatesGui::rgba8_t);
+
+		// Allocating higher than this is likely to cause memory to start paging to disk which
+		// will just slow things down - so limit the size of partial read that we first attempt.
+		if (image_size_in_bytes > MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT)
+		{
+			qint64 image_allocation_size =
+					// Using 64-bit integer in case uncompressed image is larger than 4Gb...
+					qint64(source_raster_dimension_next_power_of_two) * source_raster_dimension_next_power_of_two *
+						sizeof(GPlatesGui::rgba8_t);
+			// Increase the read depth until the image allocation size is under the maximum.
+			while (read_source_raster_depth < write_source_raster_depth)
+			{
+				++read_source_raster_depth;
+				image_allocation_size /= 4;
+				if (image_allocation_size < MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT)
+				{
+					break;
+				}
+			}
+		}
+	}
+
+	// Traverse the Hilbert curve of blocks of the source raster using quad-tree recursion.
+	// The leaf nodes of the traversal correspond to the blocks in the source raster.
+	hilbert_curve_traversal(
+			0/*depth*/,
+			read_source_raster_depth,
+			write_source_raster_depth,
+			0/*x_offset*/,
+			0/*y_offset*/,
+			source_raster_dimension_next_power_of_two/*dimension*/,
+			0/*hilbert_start_point*/,
+			0/*hilbert_end_point*/,
+			out,
+			block_infos,
+			boost::shared_array<GPlatesGui::rgba8_t>(), // No source region data read yet.
+			QRect(), // A null rectangle - no source region yet.
+			read_errors);
+}
+
+
+void
+GPlatesFileIO::RgbaRasterReader::hilbert_curve_traversal(
+		unsigned int depth,
+		unsigned int read_source_raster_depth,
+		unsigned int write_source_raster_depth,
+		unsigned int x_offset,
+		unsigned int y_offset,
+		unsigned int dimension,
+		unsigned int hilbert_start_point,
+		unsigned int hilbert_end_point,
+		QDataStream &out,
+		RasterFileCacheFormat::BlockInfos &block_infos,
+		// The source raster data in the region covering the current quad tree node.
+		// NOTE: This is only initialised when 'depth == read_source_raster_depth'.
+		boost::shared_array<GPlatesGui::rgba8_t> source_region_data,
+		QRect source_region,
+		ReadErrorAccumulation *read_errors)
+{
+	// See if the current quad-tree region is outside the source raster.
+	// This can happen because the Hilbert traversal operates on power-of-two dimensions
+	// which encompass the source raster (leaving regions that contain no source raster data).
+	if (x_offset >= d_source_width || y_offset >= d_source_height)
+	{
+		return;
+	}
+
+	// If we've reached the depth at which to read from the source raster.
+	// This depth is such that the entire source raster does not need to be read in (for those
+	// raster formats that support partial reads) thus avoiding the possibility of memory allocation
+	// failures for very high resolution rasters.
+	if (depth == read_source_raster_depth)
+	{
+		// We not already have source region data from a parent quad tree node.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				!source_region_data && !source_region.isValid(),
+				GPLATES_ASSERTION_SOURCE);
+
+		// Determine the region of the source raster covered by the current quad tree node.
+		unsigned int source_region_width = d_source_width - x_offset;
+		if (source_region_width > dimension)
+		{
+			source_region_width = dimension;
+		}
+		unsigned int source_region_height = d_source_height - y_offset;
+		if (source_region_height > dimension)
+		{
+			source_region_height = dimension;
+		}
+
+		// Open the source raster for reading.
+		QImageReader source_reader(d_source_raster_filename);
+		if (!source_reader.canRead())
+		{
+			throw ErrorOpeningFileForReadingException(
+					GPLATES_EXCEPTION_SOURCE, d_source_raster_filename);
+		}
+
+		// Read the source raster data from the current region.
+		source_region = QRect(x_offset, y_offset, source_region_width, source_region_height);
+		source_region_data = read_source_raster_region(source_reader, source_region, read_errors);
+
+		// If there was a memory allocation failure.
+		if (!source_region_data)
+		{
+			// If:
+			//  - the source raster format does not support clip rects, or
+			//  - the lower clip rect size is less than a minimum value, or
+			//  - we're at the leaf quad tree node level,
+			// then report insufficient memory.
+			if (!source_reader.supportsOption(QImageIOHandler::ClipRect) ||
+				// Using 64-bit integer in case uncompressed image is larger than 4Gb...
+				qint64(source_region.width() / 2) * (source_region.height() / 2) * sizeof(GPlatesGui::rgba8_t) <
+					MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT ||
+				read_source_raster_depth == write_source_raster_depth)
+			{
+				// Report insufficient memory to load raster.
+				report_failure_to_begin(read_errors, ReadErrors::InsufficientMemoryToLoadRaster);
+
+				throw GPlatesGlobal::LogException(
+						GPLATES_EXCEPTION_SOURCE, "Insufficient memory to load raster.");
+			}
+
+			// Keep reducing the source region until it succeeds or
+			// we've reached a clip rect size that really should not fail.
+			// We do this by attempting to read the source raster again at the child quad tree level
+			// which is half the dimension of the current level.
+			++read_source_raster_depth;
+
+			// Invalidate the source region again - the child level will re-specify it.
+			source_region = QRect();
+		}
+	}
+
+	// If we've reached the leaf node depth then write the source raster data to the cache file.
+	if (depth == write_source_raster_depth)
+	{
+		// We should be the size of a block.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				dimension == RasterFileCacheFormat::BLOCK_SIZE,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Get the current block based on the block x/y offsets.
+		RasterFileCacheFormat::BlockInfo &block_info =
+				block_infos.get_block_info(
+						x_offset / RasterFileCacheFormat::BLOCK_SIZE,
+						y_offset / RasterFileCacheFormat::BLOCK_SIZE);
+
+		// The pixel offsets of the current block within the source raster.
+		block_info.x_offset = x_offset;
+		block_info.y_offset = y_offset;
+
+		// For most blocks the dimensions will be RasterFileCacheFormat::BLOCK_SIZE but
+		// for blocks near the right or bottom edge of source raster they can be less.
+		block_info.width = d_source_width - x_offset;
+		if (block_info.width > RasterFileCacheFormat::BLOCK_SIZE)
+		{
+			block_info.width = RasterFileCacheFormat::BLOCK_SIZE;
+		}
+		block_info.height = d_source_height - y_offset;
+		if (block_info.height > RasterFileCacheFormat::BLOCK_SIZE)
+		{
+			block_info.height = RasterFileCacheFormat::BLOCK_SIZE;
+		}
+
+		// Record the file offset of the current block of data.
+		block_info.main_offset = out.device()->pos();
+
+		// NOTE: There's no coverage data for RGBA rasters.
+		block_info.coverage_offset = 0;
+
+		// We should already have source region data.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				source_region_data && source_region.isValid(),
+				GPLATES_ASSERTION_SOURCE);
+
+		// The current block should be contained within the source region.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				int(block_info.x_offset) >= source_region.x() &&
+					int(block_info.y_offset) >= source_region.y() &&
+					int(block_info.x_offset + block_info.width) <= source_region.x() + source_region.width() &&
+					int(block_info.y_offset + block_info.height) <= source_region.y() + source_region.height(),
+				GPLATES_ASSERTION_SOURCE);
+
+		PROFILE_BLOCK("Write Rgba raster data to file cache");
+
+		// Write the current block from the source region to the output stream.
+		for (unsigned int y = 0; y < block_info.height; ++y)
+		{
+			const GPlatesGui::rgba8_t *const source_region_row =
+					source_region_data.get() +
+						(block_info.y_offset - source_region.y() + y) * source_region.width() +
+						block_info.x_offset - source_region.x();
+
+#if 1
+			output_pixels(out, source_region_row, block_info.width);
+#else
+			for (unsigned int x = 0; x < block_info.width; ++x)
+			{
+				out << source_region_row[x];
+			}
+#endif
+		}
+
+		return;
+	}
+
+	const unsigned int child_depth = depth + 1;
+	const unsigned int child_dimension = (dimension >> 1);
+
+	const unsigned int child_x_offset_hilbert0 = hilbert_start_point;
+	const unsigned int child_y_offset_hilbert0 = hilbert_start_point;
+	hilbert_curve_traversal(
+			child_depth,
+			read_source_raster_depth,
+			write_source_raster_depth,
+			x_offset + child_x_offset_hilbert0 * child_dimension,
+			y_offset + child_y_offset_hilbert0 * child_dimension,
+			child_dimension,
+			hilbert_start_point,
+			1 - hilbert_end_point,
+			out,
+			block_infos,
+			source_region_data,
+			source_region,
+			read_errors);
+
+	const unsigned int child_x_offset_hilbert1 = hilbert_end_point;
+	const unsigned int child_y_offset_hilbert1 = 1 - hilbert_end_point;
+	hilbert_curve_traversal(
+			child_depth,
+			read_source_raster_depth,
+			write_source_raster_depth,
+			x_offset + child_x_offset_hilbert1 * child_dimension,
+			y_offset + child_y_offset_hilbert1 * child_dimension,
+			child_dimension,
+			hilbert_start_point,
+			hilbert_end_point,
+			out,
+			block_infos,
+			source_region_data,
+			source_region,
+			read_errors);
+
+	const unsigned int child_x_offset_hilbert2 = 1 - hilbert_start_point;
+	const unsigned int child_y_offset_hilbert2 = 1 - hilbert_start_point;
+	hilbert_curve_traversal(
+			child_depth,
+			read_source_raster_depth,
+			write_source_raster_depth,
+			x_offset + child_x_offset_hilbert2 * child_dimension,
+			y_offset + child_y_offset_hilbert2 * child_dimension,
+			child_dimension,
+			hilbert_start_point,
+			hilbert_end_point,
+			out,
+			block_infos,
+			source_region_data,
+			source_region,
+			read_errors);
+
+	const unsigned int child_x_offset_hilbert3 = 1 - hilbert_end_point;
+	const unsigned int child_y_offset_hilbert3 = hilbert_end_point;
+	hilbert_curve_traversal(
+			child_depth,
+			read_source_raster_depth,
+			write_source_raster_depth,
+			x_offset + child_x_offset_hilbert3 * child_dimension,
+			y_offset + child_y_offset_hilbert3 * child_dimension,
+			child_dimension,
+			1 - hilbert_start_point,
+			hilbert_end_point,
+			out,
+			block_infos,
+			source_region_data,
+			source_region,
+			read_errors);
+}
+
+
+boost::shared_array<GPlatesGui::rgba8_t> 
+GPlatesFileIO::RgbaRasterReader::read_source_raster_region(
+		QImageReader &source_reader,
+		const QRect &source_region,
+		ReadErrorAccumulation *read_errors)
+{
+	PROFILE_FUNC();
 
 	//
 	// To avoid a memory allocation failure we try not to read very large images into a single image array.
@@ -457,195 +926,76 @@ GPlatesFileIO::RgbaRasterReader::write_image_to_rgba_file(
 	// case can get ~3GB on 32-bit OS or 4GB on 64-bit OS).
 	//
 
-	if (reader.supportsOption(QImageIOHandler::ClipRect))
+	if (source_reader.supportsOption(QImageIOHandler::ClipRect))
 	{
-		// Using 64-bit integer in case uncompressed image is larger than 4Gb.
-		const qint64 image_size_in_bytes =
-				quint64(image_size.width()) * image_size.height() * sizeof(GPlatesGui::rgba8_t);
-
-		if (image_size_in_bytes > MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT)
-		{
-			return write_image_to_rgba_file_using_clip_rects(image_size, read_errors);
-		}
+		// Only want to read the specified source region.
+		//
+		// NOTE: We want a new instance of QImageReader for each clip rect read.
+		// Otherwise the data will not be read properly (at least this was the case for jpeg files).
+		source_reader.setClipRect(source_region);
 	}
-	// ...either the image is not large enough to worry about memory allocation failure or
-	// the image can only be read into a single QImage covering the entire image (in which
-	// case a memory allocation failure can still occur, but there's not much that can be
-	// done about that other than use something besides Qt image reading).
-
-	// Read the entire image into memory.
-	const QImage image = reader.read();
-	if (image.isNull())
+	else
 	{
-		// Most likely ran out of memory because image was too large - we couldn't read it
-		// into sub-rectangles so this can happen for super-large rasters.
-		// Report insufficient memory to load raster.
-		report_failure_to_begin(read_errors, ReadErrors::InsufficientMemoryToLoadRaster);
-		return false;
+		// If the source reader doesn't support clip rects then we must be reading the entire source raster.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				source_region.x() == 0 &&
+					source_region.y() == 0 &&
+					source_region.width() == int(d_source_width) &&
+					source_region.height() == int(d_source_height),
+				GPLATES_ASSERTION_SOURCE);
 	}
 
-	// And then write the image out as RGBA.
-	QDataStream out(&d_rgba_file);
-
-	// Write the image rect to the output file.
-	if (!convert_image_to_gl_and_append_to_rgba_file(image, out, read_errors))
+	// Read the clip rectangle.
+	PROFILE_BEGIN(read_qimage, "QImageReader::read");
+	QImage source_region_image = source_reader.read();
+	PROFILE_END(read_qimage);
+	if (source_region_image.isNull())
 	{
-		return false;
+		// Most likely a memory allocation failure.
+		return boost::shared_array<GPlatesGui::rgba8_t>();
 	}
 
-	return true;
-}
+	// The source region data to return to the caller.
+	boost::shared_array<GPlatesGui::rgba8_t> source_raster_rgba_data;
 
-
-bool
-GPlatesFileIO::RgbaRasterReader::write_image_to_rgba_file_using_clip_rects(
-		const QSize &image_size,
-		ReadErrorAccumulation *read_errors)
-{
-	// Divide image into rectangles spanning the entire width of image
-	// but partially spanning the height.
-	const int image_width = image_size.width();
-	const int image_height = image_size.height();
-
-	// The min/max clip rect sizes to try.
-	const int min_rows_per_clip_rect = MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT /
-			(image_width * sizeof(GPlatesGui::rgba8_t));
-	const int max_rows_per_clip_rect = MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT /
-			(image_width * sizeof(GPlatesGui::rgba8_t));
-
-	// Start off attempting the largest clip rect size and reduce if memory allocation fails.
-	int rows_per_clip_rect = max_rows_per_clip_rect;
-
-	// The output RGBA file.
-	QDataStream out(&d_rgba_file);
-
-	int y = 0;
-	while (y < image_height)
+	try
 	{
-		int clip_rect_height = image_height - y;
-		if (clip_rect_height > rows_per_clip_rect)
-		{
-			clip_rect_height = rows_per_clip_rect;
-		}
-
-		// The input image reader.
-		QImageReader reader(d_filename);
-		if (!reader.canRead())
-		{
-			report_failure_to_begin(read_errors, ReadErrors::ErrorReadingRasterFile);
-			return false;
-		}
-
-		// Only want to read the current set of 'clip_rect_height' rows.
-		reader.setClipRect(QRect(0, y, image_width, clip_rect_height));
-
-		// Read the clip rectangle.
-		PROFILE_BEGIN(read_jpg, "read jpeg");
-		QImage image_rect = reader.read();
-		PROFILE_END(read_jpg);
-		if (image_rect.isNull())
-		{
-			// Most likely a memory allocation failure.
-
-			// If we've already reduced the clip rect size to a reasonable value and
-			// it still fails then report an error.
-			if (rows_per_clip_rect < min_rows_per_clip_rect)
-			{
-				// Report insufficient memory to load raster.
-				report_failure_to_begin(read_errors, ReadErrors::InsufficientMemoryToLoadRaster);
-				return false;
-			}
-
-			// Keep reducing the clip rect height until it succeeds or
-			// we've reached a clip rect size that really should not fail.
-			// Half the clip rect height and try again.
-			rows_per_clip_rect >>= 1;
-
-			continue;
-		}
-
-		// Write the image rect to the output file.
-		if (!convert_image_to_gl_and_append_to_rgba_file(image_rect, out, read_errors))
-		{
-			return false;
-		}
-
-		// Move to start of the next clip rectangle.
-		y += clip_rect_height;
+		source_raster_rgba_data.reset(
+				new GPlatesGui::rgba8_t[
+						// Using std::size_t in case 64-bit and in case uncompressed image is larger than 4Gb...
+						std::size_t(source_region.width()) * source_region.height()]);
+	}
+	catch (std::bad_alloc &)
+	{
+		// Memory allocation failure.
+		return boost::shared_array<GPlatesGui::rgba8_t>();
 	}
 
-	return true;
-}
-
-
-bool
-GPlatesFileIO::RgbaRasterReader::convert_image_to_gl_and_append_to_rgba_file(
-		const QImage &image,
-		QDataStream &out,
-		ReadErrorAccumulation *read_errors)
-{
-	//
-	// We've just loaded an image - it could be any size so we want to minimise the
-	// risk of a memory allocation failure by converting it to GL format and appending to
-	// the output file in *sections*.
-	//
-
-	const int image_width = image.width();
-	const int image_height = image.height();
-	int max_rows_per_convert = MAX_BYTES_TO_CONVERT_IMAGE_TO_ARGB32_FORMAT /
-			(image_width * sizeof(GPlatesGui::rgba8_t));
-	if (max_rows_per_convert == 0)
+	// Convert each row of the source region to RGBA8.
+	for (int y = 0; y < source_region.height(); ++y)
 	{
-		// Shouldn't happen but just in case image is super-large and
-		// MAX_BYTES_TO_CONVERT_IMAGE_TO_ARGB32_FORMAT gets set to super-small for some reason.
-		max_rows_per_convert = 1;
+		const QImage source_region_row = source_region_image.copy(0, y, source_region.width(), 1/*height*/);
+		if (source_region_row.isNull())
+		{
+			// Most likely ran out of memory - shouldn't happen since only a single row allocated.
+			return boost::shared_array<GPlatesGui::rgba8_t>();
+		}
+
+		// Convert the row into ARGB32 format.
+		const QImage source_region_row_argb = source_region_row.convertToFormat(QImage::Format_ARGB32);
+		if (source_region_row_argb.isNull())
+		{
+			// Most likely ran out of memory - shouldn't happen since only a single row allocated.
+			return boost::shared_array<GPlatesGui::rgba8_t>();
+		}
+
+		// Convert the current row from QImage::Format_ARGB32 format to GPlatesGui::rgba8_t.
+		convert_argb32_to_rgba8(
+				reinterpret_cast<const boost::uint32_t *>(source_region_row_argb.scanLine(0)),
+				// Using std::size_t in case 64-bit and in case uncompressed image is larger than 4Gb...
+				source_raster_rgba_data.get() + std::size_t(y) * source_region.width(),
+				source_region.width());
 	}
 
-	// A buffer to storage a single row of pixels.
-	boost::scoped_array<GPlatesGui::rgba8_t> row_buf(new GPlatesGui::rgba8_t[image_width]);
-
-	int y = 0;
-	while (y < image_height)
-	{
-		int num_rows_per_convert = image_height - y;
-		if (num_rows_per_convert > max_rows_per_convert)
-		{
-			num_rows_per_convert = max_rows_per_convert;
-		}
-
-		// Only want to convert the current set of 'num_rows_per_convert' rows.
-		const QImage image_rect = image.copy(0, y, image_width, num_rows_per_convert);
-
-		// Convert the image into ARGB32 format.
-		const QImage argb_image_rect = image_rect.convertToFormat(QImage::Format_ARGB32);
-		if (argb_image_rect.isNull())
-		{
-			// Most likely ran out of memory - shouldn't happen here.
-			// Report insufficient memory to load raster.
-			report_failure_to_begin(read_errors, ReadErrors::InsufficientMemoryToLoadRaster);
-			return false;
-		}
-
-		const unsigned int image_rect_height = argb_image_rect.height();
-
-		//PROFILE_BLOCK("Write to RGBA file");
-
-		// Iterate over the rows.
-		for (unsigned int i = 0; i < image_rect_height; ++i)
-		{
-			// Convert QImage::Format_ARGB32 format to GPlatesGui::rgba8_t.
-			convert_argb32_to_rgba8(
-					reinterpret_cast<const boost::uint32_t *>(argb_image_rect.scanLine(i)),
-					row_buf.get(),
-					image_width);
-
-			// Output converted row of pixels to the data stream.
-			output_pixels(out, row_buf.get(), image_width);
-		}
-
-		// Move to start of the next group of rows to convert.
-		y += num_rows_per_convert;
-	}
-
-	return true;
+	return source_raster_rgba_data;
 }

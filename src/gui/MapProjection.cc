@@ -69,6 +69,7 @@ namespace
 
 }
 
+
 GPlatesGui::MapProjection::MapProjection():
 	d_projection(0),
 	d_scale(1.),
@@ -92,7 +93,7 @@ GPlatesGui::MapProjection::MapProjection(
 }
 
 GPlatesGui::MapProjection::MapProjection(
-		const Settings &projection_settings):
+		const MapProjectionSettings &projection_settings):
 	d_projection(0),
 	d_latlon_projection(0),
 	d_scale(1.),
@@ -112,6 +113,13 @@ GPlatesGui::MapProjection::~MapProjection()
 	{
 		pj_free(d_projection);
 	}
+}
+
+
+GPlatesGui::MapProjectionSettings
+GPlatesGui::MapProjection::get_projection_settings() const
+{
+	return MapProjectionSettings(d_projection_type, d_central_llp);
 }
 
 void
@@ -373,4 +381,13 @@ GPlatesGui::MapProjection::update_boundary_great_circle()
 	GPlatesMaths::LatLonPoint second_llp(lat_of_second_llp,central_lon);
 	GPlatesMaths::PointOnSphere second_pos = GPlatesMaths::make_point_on_sphere(second_llp);
 	d_boundary_great_circle = GPlatesMaths::GreatCircle(central_pos,second_pos);
+}
+
+
+GPlatesGui::MapProjectionSettings::MapProjectionSettings(
+		MapProjection::Type projection_type_,
+		const GPlatesMaths::LatLonPoint &central_llp_) :
+	d_projection_type(projection_type_),
+	d_central_llp(central_llp_)
+{
 }

@@ -31,6 +31,7 @@
 #include <algorithm>
 #include <functional>
 #include <utility>
+#include <boost/bind.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/function.hpp>
@@ -39,6 +40,7 @@
 #include "RasterType.h"
 #include "RawRaster.h"
 
+#include "maths/MathsUtils.h"
 #include "maths/Real.h"
 
 
@@ -184,6 +186,260 @@ namespace GPlatesPropertyValues
 							data,
 							*proxied_raster /* copy statistics policy */,
 							*proxied_raster /* copy no-data policy */);
+				}
+			};
+
+
+			/**
+			 * Creates a coverage raster from a raster.
+			 */
+			template<class RawRasterType, bool has_no_data_value>
+			class CreateCoverageRawRaster
+			{
+			public:
+
+				static
+				boost::optional<CoverageRawRaster::non_null_ptr_type>
+				create_coverage_raster(
+						const RawRasterType &raster)
+				{
+					// has_no_data_value = false case handled here.
+					// No work to do, because our raster can't have sentinel values anyway.
+					return boost::none;
+				}
+			};
+
+			template<class RawRasterType>
+			class CreateCoverageRawRaster<RawRasterType, true>
+			{
+				class CoverageFunctor :
+						public std::unary_function<typename RawRasterType::element_type, CoverageRawRaster::element_type>
+				{
+				public:
+
+					typedef boost::function<bool (typename RawRasterType::element_type)> is_no_data_value_function_type;
+
+					CoverageFunctor(
+							is_no_data_value_function_type is_no_data_value) :
+						d_is_no_data_value(is_no_data_value)
+					{
+					}
+
+					CoverageRawRaster::element_type
+					operator()(
+							typename RawRasterType::element_type value)
+					{
+						static const CoverageRawRaster::element_type NO_DATA_COVERAGE_VALUE = 0.0f;
+						static const CoverageRawRaster::element_type DATA_PRESENT_VALUE = 1.0f;
+
+						if (d_is_no_data_value(value))
+						{
+							return NO_DATA_COVERAGE_VALUE;
+						}
+						else
+						{
+							return DATA_PRESENT_VALUE;
+						}
+					}
+
+				private:
+
+					is_no_data_value_function_type d_is_no_data_value;
+				};
+
+			public:
+
+				static
+				boost::optional<CoverageRawRaster::non_null_ptr_type>
+				create_coverage_raster(
+						const RawRasterType &raster)
+				{
+					CoverageRawRaster::non_null_ptr_type coverage =
+							CoverageRawRaster::create(raster.width(), raster.height());
+
+					std::transform(
+							raster.data(),
+							raster.data() + raster.width() * raster.height(),
+							coverage->data(),
+							CoverageFunctor(
+								boost::bind(
+									&RawRasterType::is_no_data_value,
+									boost::cref(raster),
+									_1)));
+
+					return coverage;
+				}
+			};
+
+
+			/**
+			 * Determines if a raster has a no-data value and is not fully opaque.
+			 */
+			template<class RawRasterType, bool has_no_data_value>
+			class DoesRasterContainANoDataValue
+			{
+			public:
+				static
+				bool
+				does_raster_contain_a_no_data_value(
+						const RawRasterType &raster)
+				{
+					// has_no_data_value = false case handled here.
+					// No work to do, because our raster can't have sentinel values anyway.
+					return false;
+				}
+			};
+
+
+			template<class RawRasterType>
+			class DoesRasterContainANoDataValue<RawRasterType, true/*has_no_data_value*/>
+			{
+			public:
+				static
+				bool
+				does_raster_contain_a_no_data_value(
+						const RawRasterType &raster)
+				{
+					// Iterate over the pixels and see if any are the sentinel value meaning
+					// that that pixel is transparent.
+					const unsigned int raster_width = raster.width();
+					const unsigned int raster_height = raster.height();
+					for (unsigned int j = 0; j < raster_height; ++j)
+					{
+						const typename RawRasterType::element_type *const row =
+								raster.data() + j * raster_width;
+
+						for (unsigned int i = 0; i < raster_width; ++i)
+						{
+							if (raster.is_no_data_value(row[i]))
+							{
+								// Raster contains a sentinel value so it's not fully opaque.
+								return true;
+							}
+						}
+					}
+
+					// Raster contains no sentinel values, hence it is fully opaque.
+					return false;
+				};
+			};
+
+
+			/**
+			 * Adds a no-data value to a raster - also converts no-data pixel values (in raster data)
+			 * from the value used to load the raster data to the value expected by the raster type.
+			 *
+			 * This is useful when you've loaded data into a raster and need to set the no-data value
+			 * that's appropriate for the data loaded.
+			 */
+			template<class RawRasterType>
+			struct AddNoDataValue
+			{
+				typedef typename RawRasterType::element_type raster_element_type;
+
+				static
+				void
+				add_no_data_value(
+						RawRasterType &raster,
+						const raster_element_type &no_data_value)
+				{
+					// Default case: do nothing.
+				}
+			};
+
+			// Specialisation for rasters that have a no-data value that can be set.
+			template<typename T, template <class> class DataPolicy, class StatisticsPolicy>
+			struct AddNoDataValue<
+				RawRasterImpl<T, DataPolicy, StatisticsPolicy,
+					RawRasterNoDataValuePolicies::WithNoDataValue> >
+			{
+				typedef RawRasterImpl<T, DataPolicy, StatisticsPolicy,
+					RawRasterNoDataValuePolicies::WithNoDataValue> RawRasterType;
+				typedef typename RawRasterType::element_type raster_element_type;
+
+				static
+				void
+				add_no_data_value(
+						RawRasterType &raster,
+						const raster_element_type &no_data_value)
+				{
+					raster.set_no_data_value(no_data_value);
+				}
+			};
+
+			// Specialisation for rasters that have data and always use NaN as no-data value.
+			template<typename T, class StatisticsPolicy>
+			struct AddNoDataValue<
+				RawRasterImpl<T, RawRasterDataPolicies::WithData,
+					StatisticsPolicy, RawRasterNoDataValuePolicies::NanNoDataValue> >
+			{
+				typedef RawRasterImpl<T, RawRasterDataPolicies::WithData,
+					StatisticsPolicy, RawRasterNoDataValuePolicies::NanNoDataValue> RawRasterType;
+				typedef typename RawRasterType::element_type raster_element_type;
+
+				static
+				void
+				add_no_data_value(
+						RawRasterType &raster,
+						const raster_element_type &no_data_value)
+				{
+					// If the no-data value of the raster data is NaN, then there is nothing
+					// to do, because this RawRasterType expects NaN as the no-data value.
+					if (GPlatesMaths::is_nan(no_data_value))
+					{
+						return;
+					}
+
+					// If it is not NaN, however, we will have to convert all values that match
+					// no_data_value to NaN.
+					raster_element_type casted_nan_value = GPlatesMaths::quiet_nan<raster_element_type>();
+
+					std::replace_if(
+							raster.data(),
+							raster.data() + raster.width() * raster.height(),
+							boost::bind(
+								&GPlatesMaths::are_almost_exactly_equal<raster_element_type>,
+								_1,
+								no_data_value),
+							casted_nan_value);
+				}
+			};
+
+
+			/**
+			 * Adds statistics to a raster.
+			 *
+			 * This is useful when you've loaded data into a raster and need to set the statistics afterwards.
+			 */
+			template<class RawRasterType>
+			struct AddRasterStatistics
+			{
+				static
+				void
+				add_raster_statistics(
+						RawRasterType &raster,
+						const RasterStatistics &raster_statistics)
+				{
+					// Default case: do nothing.
+				}
+			};
+
+			// Specialisation for rasters that have raster statistics.
+			template<typename T, template <class> class DataPolicy, template <class> class NoDataValuePolicy>
+			struct AddRasterStatistics<
+				RawRasterImpl<T, DataPolicy, RawRasterStatisticsPolicies::WithStatistics, NoDataValuePolicy> >
+			{
+				typedef RawRasterImpl<T, DataPolicy, RawRasterStatisticsPolicies::WithStatistics,
+						NoDataValuePolicy> RawRasterType;
+				typedef typename RawRasterType::element_type raster_element_type;
+
+				static
+				void
+				add_raster_statistics(
+						RawRasterType &raster,
+						const RasterStatistics &raster_statistics)
+				{
+					raster.set_statistics(raster_statistics);
 				}
 			};
 		}
@@ -337,6 +593,23 @@ namespace GPlatesPropertyValues
 
 
 		/**
+		 * Returns true if the specified raster has a no-data sentinel value in the raster.
+		 *
+		 * NOTE: RGBA rasters have an alpha-channel and hence can be transparent but
+		 * do not have a no-data value (because of the alpha-channel).
+		 */
+		template<class RawRasterType>
+		boost::optional<CoverageRawRaster::non_null_ptr_type>
+		create_coverage_raster(
+				const RawRasterType &raster)
+		{
+			return RawRasterUtilsInternals::CreateCoverageRawRaster<
+					RawRasterType, RawRasterType::has_no_data_value>
+							::create_coverage_raster(raster);
+		}
+
+
+		/**
 		 * Applies a coverage raster to an RGBA raster, in place.
 		 *
 		 * The @a source_raster and the @a coverage_raster must be of the same
@@ -367,6 +640,59 @@ namespace GPlatesPropertyValues
 		bool
 		has_fully_transparent_pixels(
 				const Rgba8RawRaster::non_null_ptr_type &raster);
+
+
+		/**
+		 * Returns true if the specified raster has a no-data sentinel value in the raster.
+		 *
+		 * NOTE: RGBA rasters have an alpha-channel and hence can be transparent but
+		 * do not have a no-data value (because of the alpha-channel).
+		 */
+		template<class RawRasterType>
+		bool
+		does_raster_contain_a_no_data_value(
+				const RawRasterType &raster)
+		{
+			return RawRasterUtilsInternals::DoesRasterContainANoDataValue<
+					RawRasterType, RawRasterType::has_no_data_value>
+							::does_raster_contain_a_no_data_value(raster);
+		}
+
+
+		/**
+		 * Adds a no-data value to a raster - also converts no-data pixel values (in raster data)
+		 * from the value used to load the raster data to the value expected by the raster type.
+		 *
+		 * This is useful when you've loaded data into a raster and need to set the no-data value
+		 * that's appropriate for the data loaded.
+		 */
+		template<class RawRasterType>
+		void
+		add_no_data_value(
+				RawRasterType &raster,
+				const typename RawRasterType::element_type &no_data_value)
+		{
+			return RawRasterUtilsInternals::AddNoDataValue<RawRasterType>::add_no_data_value(
+					raster, no_data_value);
+		}
+
+
+		/**
+		 * Adds a no-data value to a raster - also converts no-data pixel values (in raster data)
+		 * from the value used to load the raster data to the value expected by the raster type.
+		 *
+		 * This is useful when you've loaded data into a raster and need to set the no-data value
+		 * that's appropriate for the data loaded.
+		 */
+		template<class RawRasterType>
+		void
+		add_raster_statistics(
+				RawRasterType &raster,
+				const RasterStatistics &raster_statistics)
+		{
+			return RawRasterUtilsInternals::AddRasterStatistics<RawRasterType>::add_raster_statistics(
+					raster, raster_statistics);
+		}
 
 
 		/**
