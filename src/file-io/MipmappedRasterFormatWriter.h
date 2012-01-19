@@ -868,7 +868,7 @@ namespace GPlatesFileIO
 				}
 
 				// Flush the mipmap byte stream to the file stream if enough data has accumulated.
-				if (mipmap_byte_array.size() >= MIPMAP_BYTE_STREAM_SIZE_THRESHOLD)
+				if (mipmap_byte_array.size() >= int(MIPMAP_BYTE_STREAM_SIZE_THRESHOLD))
 				{
 					mipmap_file_stream.writeRawData(mipmap_byte_array.constData(), mipmap_byte_array.size());
 					mipmap_byte_array.clear();
