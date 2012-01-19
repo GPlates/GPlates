@@ -38,6 +38,7 @@
 #include <boost/type_traits/is_floating_point.hpp>
 #include <boost/type_traits/is_integral.hpp>
 #include <boost/utility/enable_if.hpp>
+#include <QByteArray>
 #include <QDataStream>
 #include <QDebug>
 #include <QFile>
@@ -192,14 +193,22 @@ namespace GPlatesFileIO
 				// These files are temporary and will be removed on scope exit after their data
 				// is concatenated to the final mipmap pyramid file.
 				std::vector<boost::shared_ptr<QTemporaryFile> > temporary_mipmap_files;
-				std::vector<boost::shared_ptr<QDataStream> > temporary_mipmap_streams;
+				std::vector<boost::shared_ptr<QDataStream> > temporary_mipmap_file_streams;
+				std::vector<boost::shared_ptr<QByteArray> > temporary_mipmap_byte_arrays;
+				std::vector<boost::shared_ptr<QDataStream> > temporary_mipmap_byte_streams;
 				for (level = 0; level < d_num_levels; ++level)
 				{
 					boost::shared_ptr<QTemporaryFile> temporary_mipmap_file(new QTemporaryFile());
-
-					boost::shared_ptr<QDataStream> temporary_mipmap_stream(new QDataStream(temporary_mipmap_file.get()));
+					boost::shared_ptr<QDataStream> temporary_mipmap_file_stream(
+							new QDataStream(temporary_mipmap_file.get()));
 					// Use the same Qt data stream version as the final output file/stream.
-					temporary_mipmap_stream->setVersion(RasterFileCacheFormat::Q_DATA_STREAM_VERSION);
+					temporary_mipmap_file_stream->setVersion(RasterFileCacheFormat::Q_DATA_STREAM_VERSION);
+
+					boost::shared_ptr<QByteArray> temporary_mipmap_byte_array(new QByteArray());
+					boost::shared_ptr<QDataStream> temporary_mipmap_byte_stream(
+							new QDataStream(temporary_mipmap_byte_array.get(), QIODevice::ReadWrite));
+					// Use the same Qt data stream version as the final output file/stream.
+					temporary_mipmap_byte_stream->setVersion(RasterFileCacheFormat::Q_DATA_STREAM_VERSION);
 
 					// Attempt to open mipmap file (for reading/writing) in temporary directory.
 					if (!temporary_mipmap_file->open())
@@ -216,7 +225,9 @@ namespace GPlatesFileIO
 					}
 
 					temporary_mipmap_files.push_back(temporary_mipmap_file);
-					temporary_mipmap_streams.push_back(temporary_mipmap_stream);
+					temporary_mipmap_file_streams.push_back(temporary_mipmap_file_stream);
+					temporary_mipmap_byte_arrays.push_back(temporary_mipmap_byte_array);
+					temporary_mipmap_byte_streams.push_back(temporary_mipmap_byte_stream);
 				}
 
 				// Create the block information for each mipmap level.
@@ -265,8 +276,26 @@ namespace GPlatesFileIO
 						source_raster_dimension_next_power_of_two/*dimension*/,
 						0/*hilbert_start_point*/,
 						0/*hilbert_end_point*/,
-						temporary_mipmap_streams,
+						temporary_mipmap_file_streams,
+						temporary_mipmap_byte_arrays,
+						temporary_mipmap_byte_streams,
 						mipmap_block_infos);
+
+				// Flush the mipmap byte streams to their file streams if any data remaining in them.
+				for (level = 0; level < d_num_levels; ++level)
+				{
+					QDataStream &mipmap_file_stream = *temporary_mipmap_file_streams[level];
+					QByteArray &mipmap_byte_array = *temporary_mipmap_byte_arrays[level];
+					QDataStream &mipmap_byte_stream = *temporary_mipmap_byte_streams[level];
+
+					if (!mipmap_byte_array.isEmpty())
+					{
+						mipmap_file_stream.writeRawData(
+								mipmap_byte_array.constData(), mipmap_byte_array.size());
+						mipmap_byte_array.clear();
+						mipmap_byte_stream.device()->seek(0);
+					}
+				}
 
 				const qint64 level_info_pos = file.pos();
 
@@ -493,6 +522,15 @@ namespace GPlatesFileIO
 		private:
 
 			/**
+			 * When the number of bytes written to a mipmap byte stream (attached to QByteArray)
+			 * exceeds this threshold then we'll stream it to the mipmap file.
+			 *
+			 * Doing this avoids an excessive number of disk file seeks (slowing things dramatically).
+			 */
+			static const unsigned int MIPMAP_BYTE_STREAM_SIZE_THRESHOLD = 8 * 1024 * 1024;
+
+
+			/**
 			 * Traverse the Hilbert curve of blocks of the source (base level) raster
 			 * using quad-tree recursion.
 			 *
@@ -510,7 +548,9 @@ namespace GPlatesFileIO
 					unsigned int dimension,
 					unsigned int hilbert_start_point,
 					unsigned int hilbert_end_point,
-					const std::vector<boost::shared_ptr<QDataStream> > &temporary_mipmap_streams,
+					const std::vector<boost::shared_ptr<QDataStream> > &temporary_mipmap_file_streams,
+					const std::vector<boost::shared_ptr<QByteArray> > &temporary_mipmap_byte_arrays,
+					const std::vector<boost::shared_ptr<QDataStream> > &temporary_mipmap_byte_streams,
 					std::vector<RasterFileCacheFormat::BlockInfos> &mipmap_block_infos)
 			{
 				// See if the current quad-tree region is outside the source raster.
@@ -544,7 +584,9 @@ namespace GPlatesFileIO
 					// Mipmap the source raster region.
 					mipmap(
 							*mipmapper,
-							*temporary_mipmap_streams[level],
+							*temporary_mipmap_file_streams[level],
+							*temporary_mipmap_byte_arrays[level],
+							*temporary_mipmap_byte_streams[level],
 							block_info,
 							// Level 0 is half the resolution of the full-resolution source raster...
 							x_offset >> 1,
@@ -574,7 +616,9 @@ namespace GPlatesFileIO
 								child_dimension,
 								hilbert_start_point,
 								1 - hilbert_end_point,
-								temporary_mipmap_streams,
+								temporary_mipmap_file_streams,
+								temporary_mipmap_byte_arrays,
+								temporary_mipmap_byte_streams,
 								mipmap_block_infos);
 				if (child_mipmapper_hilbert0)
 				{
@@ -593,7 +637,9 @@ namespace GPlatesFileIO
 								child_dimension,
 								hilbert_start_point,
 								hilbert_end_point,
-								temporary_mipmap_streams,
+								temporary_mipmap_file_streams,
+								temporary_mipmap_byte_arrays,
+								temporary_mipmap_byte_streams,
 								mipmap_block_infos);
 				if (child_mipmapper_hilbert1)
 				{
@@ -612,7 +658,9 @@ namespace GPlatesFileIO
 								child_dimension,
 								hilbert_start_point,
 								hilbert_end_point,
-								temporary_mipmap_streams,
+								temporary_mipmap_file_streams,
+								temporary_mipmap_byte_arrays,
+								temporary_mipmap_byte_streams,
 								mipmap_block_infos);
 				if (child_mipmapper_hilbert2)
 				{
@@ -631,7 +679,9 @@ namespace GPlatesFileIO
 								child_dimension,
 								1 - hilbert_start_point,
 								hilbert_end_point,
-								temporary_mipmap_streams,
+								temporary_mipmap_file_streams,
+								temporary_mipmap_byte_arrays,
+								temporary_mipmap_byte_streams,
 								mipmap_block_infos);
 				if (child_mipmapper_hilbert3)
 				{
@@ -663,7 +713,9 @@ namespace GPlatesFileIO
 				// Mipmap the joined child regions.
 				mipmap(
 						*mipmapper,
-						*temporary_mipmap_streams[level],
+						*temporary_mipmap_file_streams[level],
+						*temporary_mipmap_byte_arrays[level],
+						*temporary_mipmap_byte_streams[level],
 						block_info,
 						// Level 0 is half the resolution of the full-resolution source raster.
 						// The other levels scale resolution as 1 / 2^(level+1) ...
@@ -745,7 +797,9 @@ namespace GPlatesFileIO
 			void
 			mipmap(
 					mipmapper_type &mipmapper,
-					QDataStream &mipmap_stream,
+					QDataStream &mipmap_file_stream,
+					QByteArray &mipmap_byte_array,
+					QDataStream &mipmap_byte_stream,
 					RasterFileCacheFormat::BlockInfo &mipmap_block_info,
 					unsigned int mipmap_x_offset,
 					unsigned int mipmap_y_offset)
@@ -773,11 +827,15 @@ namespace GPlatesFileIO
 						GPLATES_ASSERTION_SOURCE);
 
 				// Record the file offset of the current block of data.
-				mipmap_block_info.main_offset = mipmap_stream.device()->pos();
+				// The offset is the current file offset plus any unwritten data.
+				mipmap_block_info.main_offset =
+						mipmap_file_stream.device()->pos() + mipmap_byte_array.size();
 
-				// Write current main mipmap to the file.
+				// Write current main mipmap to the byte stream.
+				// We do this instead of writing to the file in order to avoid constantly
+				// doing file seeks which slow things down dramatically.
 				MipmappedRasterFormatWriterInternals::write<mipmapped_element_type>(
-						mipmap_stream,
+						mipmap_byte_stream,
 						current_mipmap->data(),
 						current_mipmap->width() * current_mipmap->height());
 
@@ -792,17 +850,29 @@ namespace GPlatesFileIO
 							GPLATES_ASSERTION_SOURCE);
 
 					// Record the file offset of the current block of coverage data.
-					mipmap_block_info.coverage_offset = mipmap_stream.device()->pos();
+					// The offset is the current file offset plus any unwritten data.
+					mipmap_block_info.coverage_offset =
+							mipmap_file_stream.device()->pos() + mipmap_byte_array.size();
 
-					// Write the current coverage mipmap to the file.
+					// Write the current coverage mipmap to the byte stream.
+					// We do this instead of writing to the file in order to avoid constantly
+					// doing file seeks which slow things down dramatically.
 					MipmappedRasterFormatWriterInternals::write<coverage_element_type>(
-							mipmap_stream,
+							mipmap_byte_stream,
 							current_coverage.get()->data(),
 							current_coverage.get()->width() * current_coverage.get()->height());
 				}
 				else
 				{
 					mipmap_block_info.coverage_offset = 0;
+				}
+
+				// Flush the mipmap byte stream to the file stream if enough data has accumulated.
+				if (mipmap_byte_array.size() >= MIPMAP_BYTE_STREAM_SIZE_THRESHOLD)
+				{
+					mipmap_file_stream.writeRawData(mipmap_byte_array.constData(), mipmap_byte_array.size());
+					mipmap_byte_array.clear();
+					mipmap_byte_stream.device()->seek(0);
 				}
 			}
 
