@@ -29,6 +29,7 @@
 #include <cstring> // for strcmp
 #include <exception>
 #include <boost/bind.hpp>
+#include <QDateTime>
 
 #ifdef HAVE_CONFIG_H
 // Include config header so we know whether (and how) to include "gdal_version.h"

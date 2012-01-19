@@ -428,7 +428,9 @@ namespace GPlatesFileIO
 					return boost::none;
 				}
 
-				return raster.get();
+				GPlatesPropertyValues::RawRaster::non_null_ptr_type raw_raster = raster.get();
+
+				return raw_raster;
 			}
 
 			virtual

@@ -227,7 +227,7 @@ GPlatesUnitTest::MipmapperTest::test_float_mipmapper()
 	// There should be three mipmap levels.
 	BOOST_CHECK(GPlatesFileIO::RasterFileCacheFormat::get_number_of_mipmapped_levels(5, 3) == 3);
 
-	GPlatesGui::Mipmapper<FloatRawRaster> mipmapper(raster, false/*generate_coverage*/);
+	GPlatesGui::Mipmapper<FloatRawRaster> mipmapper(raster);
 
 	// Level 1 should be 2x3 with no coverage raster.
 	mipmapper.generate_next();
@@ -279,7 +279,7 @@ GPlatesUnitTest::MipmapperTest::test_int_mipmapper()
 	// There should be three mipmap levels.
 	BOOST_CHECK(GPlatesFileIO::RasterFileCacheFormat::get_number_of_mipmapped_levels(5, 3) == 3);
 
-	GPlatesGui::Mipmapper<Int32RawRaster> mipmapper(raster, false/*generate_coverage*/);
+	GPlatesGui::Mipmapper<Int32RawRaster> mipmapper(raster);
 
 	// Level 1 should be 2x3 with no coverage raster.
 	mipmapper.generate_next();

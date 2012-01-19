@@ -477,7 +477,7 @@ namespace GPlatesFileIO
 			// faster than doing a loop with '>>' (as determined by profiling).
 			// We have to do our own endian conversion though.
 			void *const raw_data = data;
-			const int bytes_read = d_in.readRawData(static_cast<char *>(raw_data), num_elements * sizeof(T));
+			const unsigned int bytes_read = d_in.readRawData(static_cast<char *>(raw_data), num_elements * sizeof(T));
 			if (bytes_read != num_elements * sizeof(T))
 			{
 				throw GPlatesGlobal::LogException(

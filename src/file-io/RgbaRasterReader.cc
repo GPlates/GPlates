@@ -940,8 +940,8 @@ GPlatesFileIO::RgbaRasterReader::read_source_raster_region(
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 				source_region.x() == 0 &&
 					source_region.y() == 0 &&
-					source_region.width() == d_source_width &&
-					source_region.height() == d_source_height,
+					source_region.width() == int(d_source_width) &&
+					source_region.height() == int(d_source_height),
 				GPLATES_ASSERTION_SOURCE);
 	}
 

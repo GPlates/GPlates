@@ -341,7 +341,8 @@ namespace GPlatesFileIO
 					if (boost::is_floating_point<mipmapped_element_type>::value)
 					{
 						out << static_cast<quint32>(true);
-						if (boost::is_same<double, boost::remove_const<mipmapped_element_type>::type>::value)
+						typedef typename boost::remove_const<mipmapped_element_type>::type non_const_mipmapped_element_type;
+						if (boost::is_same<double, non_const_mipmapped_element_type>::value)
 						{
 							out << GPlatesMaths::quiet_nan<double>();
 						}
