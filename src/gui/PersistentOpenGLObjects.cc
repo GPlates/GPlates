@@ -1123,8 +1123,18 @@ bool
 GPlatesGui::PersistentOpenGLObjects::MapRasterLayerUsage::is_required_direct_or_indirect_dependency(
 		const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy_handle) const
 {
-	// We require the source raster but the reconstructed raster is optional.
-	return d_raster_layer_usage.get()->is_required_direct_or_indirect_dependency(layer_proxy_handle);
+	// We require the source raster.
+	// But the reconstructed raster is optional, however, if we are currently using a *reconstructed*
+	// raster then we'll treat it as required otherwise we'll continue to reference the current
+	// reconstructed raster layer usage but it will get removed and then a new one will later get
+	// created but we'll still reference the old one and things will get out of sync.
+	// Note that this fixes a subtle bug that occurs in the map view when removing the static polygons
+	// file (using the Manage Feature Collections dialog) where the raster continues to be
+	// reconstructed using the last known static polygon reconstructed positions.
+	// TODO: Sort this out in a better way.
+	return d_raster_layer_usage.get()->is_required_direct_or_indirect_dependency(layer_proxy_handle) ||
+		(d_reconstructed_raster_layer_usage &&
+			d_reconstructed_raster_layer_usage.get()->is_required_direct_or_indirect_dependency(layer_proxy_handle));
 }
 
 
