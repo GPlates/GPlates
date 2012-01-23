@@ -96,17 +96,48 @@ Boost
   3. Add the \boost\boost_1_xx\lib directory to the CMAKE_LIBRARY_PATH
      environment variable.
 
-GDAL
-
-	1.Get GDAL source code from http://trac.osgeo.org/gdal/wiki/DownloadSource.
-	2.Use Vistual Studio to build GDAL.
-	3.Set 'GDAL_DIR' environment variable to the root path of GDAL.
-	
 Proj4
 
-  1. Get Proj4 source file from http://trac.osgeo.org/proj/.
-  2. Read $Proj4_ROOT/readme.txt and build Proj4.
-  3. Add $Proj4_ROOT/src into CMAKE_INCLUDE_PATH and CMAKE_LIBRARY_PATH.
+  1. Get Proj4 source code from http://trac.osgeo.org/proj/.
+  2. Read the README file and build Proj4.
+     o This typically includes editing the INSTDIR variable in the "nmake.opt" file in Proj4 source code
+       to point to the install location,
+     o You can install it to the same location where you extracted the source code (eg, "INSTDIR=C:\SDK\proj\proj-4.7.0").
+  3. Add the 'include' directory to CMAKE_INCLUDE_PATH environment variable (eg, "C:\SDK\proj\proj-4.7.0\include").
+  4. Add the 'lib' directory to the CMAKE_LIBRARY_PATH environment variable (eg, "C:\SDK\proj\proj-4.7.0\lib").
+
+NetCDF
+
+    1. Download the windows pre-compiled library/DLL from "ftp://ftp.unidata.ucar.edu/pub/netcdf/contrib/win32/".
+       o For example, "ftp://ftp.unidata.ucar.edu/pub/netcdf/contrib/win32/netcdf-4.1.1-win32-bin.zip".
+       o Extract it to a location on your hard drive (eg, "C:\SDK\netcdf\netcdf-4.1.1").
+    2. We also need the associated "netcdf.h" header file which, unfortunately is not in the above pre-compiled collection.
+       o So download the associated source code from "ftp://ftp.unidata.ucar.edu/pub/netcdf/contrib/win32/".
+       o For example, "ftp://ftp.unidata.ucar.edu/pub/netcdf/contrib/win32/netcdf-4.1.1-win32-src.zip".
+    3. Copy the "netcdf.h" from step 2 into the extracted location from step 1 (eg, "C:\SDK\netcdf\netcdf-4.1.1").
+    4. Also add this location to the PATH environment variable (so the NetCDF DLL can be found at run-time).
+       o Eg, Add "C:\SDK\netcdf\netcdf-4.1.1" to the PATH environment variable.
+    5. This library will get compiled into GDAL (see GDAL below).
+
+GDAL
+
+    1. Get GDAL source code from http://trac.osgeo.org/gdal/wiki/DownloadSource.
+    2. Extract to a location on your hard drive (eg, "").
+    3. Edit the "nmake.opt" file under the section labelled "# Uncomment the following to enable NetCDF format.",
+       o Uncomment the following four lines and specify the location of the NetCDF library (see NetCDF above).
+       o For example, after editing, you might have something like:
+         NETCDF_PLUGIN = NO
+         NETCDF_SETTING=yes
+         NETCDF_LIB=C:\SDK\netcdf\netcdf-4.1.1\netcdf.lib
+         NETCDF_INC_DIR=C:\SDK\netcdf\netcdf-4.1.1
+    4. Generate a new Visual Studio solution file,
+       o Run "makegdal_gen.bat 8.00 > makegdal80.vcproj" if you are using Visual Studio 2005.
+       o Run "makegdal_gen.bat 9.00 > makegdal90.vcproj" if you are using Visual Studio 2008.
+    5. Use Visual Studio to build GDAL.
+       o Eg, by opening the 'makegdal80.sln' solution file with Visual Studio 2005 or 2008.
+       o Selecting 'Release' as the build type.
+    6. Set the 'GDAL_DIR' environment variable to the root path of GDAL (eg, "C:\SDK\gdal\gdal-1.9.0").
+    7. Also add the root path of GDAL to the PATH environment variable (so the GDAL DLL can be found at run-time).
   
 CGAL
 
