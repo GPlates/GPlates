@@ -1,3 +1,69 @@
+GPlates 1.2
+===========
+
+Changes since 1.1.1:
+
+ * Colouring dialog per visual layer (instead of per feature collection):
+   * Can activate colouring dialog via layer.
+ * Python colour scripting:
+   * Existing hardwired colour schemes implemented as python scripts.
+   * Users can create/register their own colouring via python scripts.
+   * Python script can request GUI configuration options like strings, floats and palettes.
+   * Load/save python script configuration.
+   * Python API to query feature properties (when implementing python colouring scripts).
+ * Dateline wrapping option when saving Shapefiles:
+   * Wraps polylines and polygons to the dateline.
+   * Also available as option when exporting to Shapefile format.
+ * New Log dialog:
+   * Displays low-level debug, warning and error messages in a dialog window.
+   * Messages can be filtered with a text string entered by the user.
+   * Messages can be copy'n'pasted in order to, for example, email bug reports to the GPlates developers.
+   * Removes duplicate messages - shows message once along with a count of the number of identical messages.
+ * New Preferences dialog:
+   * A user interface to view and modify settings and parameters used in GPlates.
+   * Currently available settings include animation range, export directory, maximum number of save/restore sessions, network proxy settings and python paths.
+   * The "Advanced" pane lists all settings in table format but is *only* for advanced users.
+   * Network proxy settings used for WFS queries.
+ * Improved interactivity with rasters for very high resolution rasters.
+   * New GPlates raster streaming file format for raster file cache to minimise disk file seeks.
+ * Connected digitisation tool to WFS query - digitised geometry can be used for WFS region query.
+ * Render directly to colour preview icon to avoid off-screen render issues on some systems (due to OpenGL pixel ownership test).
+ * Assign Plate ID dialog uses layers instead of files to select the partitioning polygons (one or more layers).
+ * Assign Plate ID dialog has option to ignore the time period of the feature(s) being partitioned.
+ * Can assign Plate IDs using topological networks.
+ * Fixed extremely long running time for Assign Plate ID assignment.
+ * Fixed Assign Plate IDs bug crash (caused by not checking for zero-length arc before accessing its rotation axis).
+ * Significantly reduced delay when clicking on a feature when a very large number of features are under mouse cursor (eg, 2,000 features).
+ * Fixed exponential loading times when restoring many files during a session restore.
+ * PropertyValueFinder works with time-dependent properties.
+ * Temporary hack to merge adjacent point features, along topological polygon or network boundary, into a single polyline during export.
+ * Replaced FWtools with GDAL and PROJ4 - the former uses old python (2.3) and VC runtime (7.1) preventing pygplates from loading into ArcGIS.
+ * Fixed topological sections sometimes not getting found when no rotation file loaded.
+ * Fixed export of duplicate reconstructed geometry, flowline, motion path, or resolved topology when highlighted (in-focus).
+ * Reverse reconstruction included in reconstruct method framework.
+ * Clone Geometry tool can clone topological plate polygons.
+ * gpml:OldPlatesHeader is read-only as far as user edits are concerned.
+ * Fixed slow saving to Shapefiles.
+ * Fixed memory leak exporting velocities.
+ * Fixed extra topological geometry listed in focused features table when clicking on a topological network boundary.
+ * Velocities calculated in microblocks without needing to connect (or auto-connect) their static polygons layer to the velocity layers.
+   * Now calculated as part of the topological network (since microblocks belong to the network)
+ * Fixed certain Qt library files not getting copied into GPlates Mac bundle (such '.nib' files) - by updating cmake scripts to cmake version 2.8.4.
+ * Fixed error reading conjugate plate id from gpml file when it was saved from a Shapefile.
+ * Fixed incorrect generation of empty feature IDs on Shapefile import - empty fields now result in a new feature ID.
+ * Reconstructed raster polygons sorted by plate id to ensure consistent, reproducible visual results.
+ * Allow PLATES4 line/rotation format readers to read non-ascii (unicode) filenames.
+ * Fixed draw style settings not adjusting to a layer order change.
+ * Fixed bug in VGP pole calculator.
+ * Fixed bug in quaternion slerp that, on rare occasions, caused rotation to take the longer path around a pole (instead of shorter path).
+ * Fixed corrupt colour previews problem on some systems.
+ * Fixed inability to enable a layer if layer is disabled, then GPlates closed, then GPlates opened, and then re-opening the session.
+ * Fixed rare crash assigning plate IDs due to numerical precision polyline intersection issue.
+ * Fixed erratic motion of globe when dragging with mouse.
+ 
+Finished up to trunk:12398 for all changesets.
+Finished up to trunk:12824(HEAD) only trunk changesets.
+
 GPlates 1.1.1
 =============
 
@@ -39,7 +105,7 @@ Changes since 1.1:
  * Fixed Mac bundle filename not updating correctly.
  * Fixed Mac bundle creation failure when 'svnversion' returns a string with a colon in it.
 
-GPlates 1.0
+GPlates 1.1
 ===========
 
 Changes since 1.0.1:
