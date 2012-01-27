@@ -350,8 +350,19 @@ namespace GPlatesFileIO
 					}
 				}
 			}
+			catch (std::exception &exc)
+			{
+				// Log the exception so we know what caused the failure.
+				qWarning() << exc.what();
+
+				// Log a warning message.
+				qWarning() << "Unable to read, or generate, mipmap file for raster '"
+						<< source_filename << "', giving up on it.";
+			}
 			catch (...)
 			{
+				qWarning() << "Unknown exception";
+
 				// Log a warning message.
 				qWarning() << "Unable to read, or generate, mipmap file for raster '"
 						<< source_filename << "', giving up on it.";
