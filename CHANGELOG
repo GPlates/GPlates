@@ -1,3 +1,97 @@
+GPlates 1.2
+===========
+
+Changes since 1.1.1:
+
+ * Total Reconstruction Sequence Editing / Creation:
+   * Total Reconstruction Sequence dialog extended to allow creation, editing and deletion of Total Reconstuction Sequences (TRSs).
+   * Newly created TRSs can be saved to existing rotation files, or to a new rotation file.
+     (Note: disabled poles / TRSes are not editable or creatable at the moment).
+ * Small Circle Tool:
+   * Replaced Small Circle Manager with a canvas tool.
+   * Can create small circles directly on the globe (or map) using the mouse.
+     * Click once for centre, click again to define point on radius of the circle. To define multiple radii with the same centre point, click once for centre, shift-click to define radii, and click again to define point on radius of last circle.
+     * Create small circles (as before) by specifying the centre and radii, and generating the centre from a stage pole if desired.
+     * Create small circle features which can be: exported to gpml, imported from gpml, and visualised as a layer.
+     * Query and edit small cirles through the Click Feature canvas tool.
+ * Calculate Rotation Pole tool field automatically filled from an already-selected pmag VGP.
+ * Added synchronisation with an external program to allow viewpoints, reconstruction time, etc to remain in sync:
+   * Message communication using strings with parameters via standard input/output.
+ * Colouring dialog per visual layer (instead of per feature collection):
+   * Can activate colouring dialog via layer.
+ * Python colour scripting:
+   * Existing hardwired colour schemes implemented as python scripts.
+   * Users can create/register their own colouring via python scripts.
+   * Python script can request GUI configuration options like strings, floats and colour palettes.
+   * Load/save python script configuration.
+   * Python API to query feature properties (when implementing python colouring scripts).
+ * Dateline wrapping option when saving Shapefiles:
+   * Wraps polylines and polygons to the dateline.
+   * Also available as option when exporting to Shapefile format.
+ * New Log dialog:
+   * Displays low-level debug, warning and error messages in a dialog window.
+   * Messages can be filtered with a text string entered by the user.
+   * Messages can be copy'n'pasted in order to, for example, email bug reports to the GPlates developers.
+   * Removes duplicate messages - shows message once along with a count of the number of identical messages.
+ * New Preferences dialog:
+   * A user interface to view and modify settings and parameters used in GPlates.
+   * Currently available settings include animation range, export directory, maximum number of save/restore sessions, network proxy settings and python paths.
+   * The "Advanced" pane lists all settings in table format but is *only* for advanced users.
+   * Network proxy settings used for WFS queries.
+ * Significant overhaul of OpenGL rendering engine to both facilitate shader programs and allow feedback from GPU to CPU:
+   * Added floating-point support (OpenGL texture and shader program) throughout raster reconstruction pipeline.
+   * Removed render graph since the extra complexity is not needed and interferes with CPU->GPU->CPU feedback.
+   * Individual GLStateSet's replaced by single GLRenderer interface (from rendering client's point-of-view).
+ * Raster co-registration data mining front-end:
+   * Required overhaul of OpenGL rendering engine.
+   * Can co-register point, polyline and (filled or unfilled) polygon geometries with a (reconstructed) raster containing numerical data.
+   * Supports mean, standard-deviation, minimum and maximum - percentiles/median to come later.
+   * Entirely hardware accelerated by the graphics card for performance (requires OpenGL 2 compliant graphics).
+   * Core is implemented but not yet available.
+ * Reconstructed rasters in the map views:
+   * Supports all raster variations (reconstructed, time-dependent, age-grid and combinations of these).
+   * Supports level-of-detail and view-frustum culling for optimal efficiency.
+   * Uses dateline wrapper (in central meridian reference frame) to clip polyline/polygon geometries.
+ * Added raster opacity/intensity (user-specified per layer).
+ * Improved interactivity with rasters for very high resolution rasters.
+   * New GPlates raster streaming tiled file format for raster file cache to minimise disk file seeks ("*.gplates.cache").
+ * Added bilinear filtering for reconstructed rasters and filled polygons for visual improvement.
+ * Fixed holes appearing in large filled polygons.
+ * Connected digitisation tool to WFS query - digitised geometry can be used for WFS region query.
+ * Render directly to colour preview icon to avoid off-screen render issues on some systems (due to OpenGL pixel ownership test).
+ * Assign Plate ID dialog uses layers instead of files to select the partitioning polygons (one or more layers).
+ * Assign Plate ID dialog has option to ignore the time period of the feature(s) being partitioned.
+ * Can assign Plate IDs using topological networks.
+ * Fixed extremely long running time for Assign Plate ID assignment.
+ * Fixed Assign Plate IDs bug crash (caused by not checking for zero-length arc before accessing its rotation axis).
+ * Significantly reduced delay when clicking on a feature when a very large number of features are under mouse cursor (eg, 2,000 features).
+ * Fixed exponential loading times when restoring many files during a session restore.
+ * PropertyValueFinder works with time-dependent properties.
+ * Temporary hack to merge adjacent point features, along topological polygon or network boundary, into a single polyline during export.
+ * Replaced FWtools with GDAL and PROJ4 - the former uses old python (2.3) and VC runtime (7.1) preventing pygplates from loading into ArcGIS.
+ * Fixed topological sections sometimes not getting found when no rotation file loaded.
+ * Fixed export of duplicate reconstructed geometry, flowline, motion path, or resolved topology when highlighted (in-focus).
+ * Reverse reconstruction included in reconstruct method framework.
+ * Clone Geometry tool can clone topological plate polygons.
+ * gpml:OldPlatesHeader is read-only as far as user edits are concerned.
+ * Fixed slow saving to Shapefiles.
+ * Fixed memory leak exporting velocities.
+ * Fixed extra topological geometry listed in focused features table when clicking on a topological network boundary.
+ * Velocities calculated in microblocks without needing to connect (or auto-connect) their static polygons layer to the velocity layers.
+   * Now calculated as part of the topological network (since microblocks belong to the network)
+ * Fixed certain Qt library files not getting copied into GPlates Mac bundle (such '.nib' files) - by updating cmake scripts to cmake version 2.8.4.
+ * Fixed error reading conjugate plate id from gpml file when it was saved from a Shapefile.
+ * Fixed incorrect generation of empty feature IDs on Shapefile import - empty fields now result in a new feature ID.
+ * Reconstructed raster polygons sorted by plate id to ensure consistent, reproducible visual results.
+ * Allow PLATES4 line/rotation format readers to read non-ascii (unicode) filenames.
+ * Fixed draw style settings not adjusting to a layer order change.
+ * Fixed bug in VGP pole calculator.
+ * Fixed bug in quaternion slerp that, on rare occasions, caused rotation to take the longer path around a pole (instead of shorter path).
+ * Fixed corrupt colour previews problem on some systems.
+ * Fixed inability to enable a layer if layer is disabled, then GPlates closed, then GPlates opened, and then re-opening the session.
+ * Fixed rare crash assigning plate IDs due to numerical precision polyline intersection issue.
+ * Fixed erratic motion of globe when dragging with mouse.
+
 GPlates 1.1.1
 =============
 
@@ -39,7 +133,7 @@ Changes since 1.1:
  * Fixed Mac bundle filename not updating correctly.
  * Fixed Mac bundle creation failure when 'svnversion' returns a string with a colon in it.
 
-GPlates 1.0
+GPlates 1.1
 ===========
 
 Changes since 1.0.1:
