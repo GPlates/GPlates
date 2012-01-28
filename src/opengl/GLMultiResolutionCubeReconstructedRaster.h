@@ -113,7 +113,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The default tile dimension is 512.
+		 * The default tile dimension is 512 (or 256 if framebuffer objects not supported - see below).
 		 *
 		 * This size gives us a small enough tile region on the globe to make good use
 		 * of view frustum culling of tiles.
@@ -121,8 +121,15 @@ namespace GPlatesOpenGL
 		 * a full render of the reconstructed raster into the tile's view frustum.
 		 * These renders are quite expensive so we don't want too many of them - increasing the
 		 * tile dimension means less visible tiles in the map view.
+		 *
+		 * NOTE: If there's no framebuffer object support then the main framebuffer will be used as a
+		 * render-target and thus will be limited to the size of GPlates' main viewport panel which
+		 * is less than 512x512 by default. So to avoid clipping of our render-textures we'll reduce
+		 * the size of render-targets to 256x256 (GPlates' viewport panel should be bigger than this).
 		 */
-		static const std::size_t DEFAULT_TILE_TEXEL_DIMENSION = 512;
+		static
+		std::size_t
+		get_default_tile_texel_dimension();
 
 
 		/**
@@ -140,7 +147,7 @@ namespace GPlatesOpenGL
 		create(
 				GLRenderer &renderer,
 				const GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type &source_reconstructed_raster,
-				std::size_t tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION,
+				std::size_t tile_texel_dimension = get_default_tile_texel_dimension(),
 				bool cache_tile_textures = true)
 		{
 			return non_null_ptr_type(

@@ -77,6 +77,13 @@ namespace
 }
 
 
+std::size_t
+GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_default_tile_texel_dimension()
+{
+	return GLContext::get_parameters().framebuffer.gl_EXT_framebuffer_object ? 512 : 256;
+}
+
+
 GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::GLMultiResolutionCubeReconstructedRaster(
 		GLRenderer &renderer,
 		const GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type &source_reconstructed_raster,
