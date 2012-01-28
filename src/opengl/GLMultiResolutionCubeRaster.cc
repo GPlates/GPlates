@@ -321,14 +321,16 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 							view_transform->get_matrix(),
 							half_texel_expanded_projection_transform->get_matrix(),
 							viewport));
-	// If we go use a lower-resolution level-of-detail just for this tile then might as well
+	// If we can use a lower-resolution level-of-detail just for this tile then might as well
 	// otherwise just use the pre-calculated level-of-detail.
 	// If the tile texel dimension has been adjusted to the optimal non-power-of-two value
 	// then this is not likely to happen.
 	// However if we're forced to use power-of-two dimensions then, as we approach tiles near
 	// the corners/edges of the cube face, we might be able to use lower-resolution level-of-details
 	// due to the texel resolution of those tiles being slightly higher due to the cube map projection.
-	if (tile_level_of_detail < level_of_detail)
+	if (tile_level_of_detail < level_of_detail &&
+		// We can't go to a lower resolution than the source raster provides...
+		level_of_detail < d_multi_resolution_raster->get_num_levels_of_detail())
 	{
 		// Don't go to a higher resolution than pre-calculated - this might happen due to numerical
 		// precision and the fact that the viewport dimensions have been adjusted to give almost

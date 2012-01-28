@@ -183,6 +183,12 @@ namespace GPlatesFileIO
 				// If there's no mipmap levels then nothing left to do.
 				if (d_num_levels == 0)
 				{
+					// Write the total size of the output file so the reader can verify that the
+					// file was not partially written.
+					file.seek(file_size_offset);
+					total_output_file_size = file.size();
+					out << total_output_file_size;
+
 					file.close();
 					return;
 				}

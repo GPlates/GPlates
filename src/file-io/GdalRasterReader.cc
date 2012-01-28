@@ -717,8 +717,19 @@ GPlatesFileIO::GDALRasterReader::create_source_raster_file_cache_format_reader(
 			}
 		}
 	}
+	catch (std::exception &exc)
+	{
+		// Log the exception so we know what caused the failure.
+		qWarning() << exc.what();
+
+		// Log a warning message.
+		qWarning() << "Unable to read, or generate, source raster file cache for raster '"
+				<< d_source_raster_filename << "', giving up on it.";
+	}
 	catch (...)
 	{
+		qWarning() << "Unknown exception";
+
 		// Log a warning message.
 		qWarning() << "Unable to read, or generate, source raster file cache for raster '"
 				<< d_source_raster_filename << "', giving up on it.";
