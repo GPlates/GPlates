@@ -227,7 +227,7 @@ GPlatesCanvasTools::MeasureDistance::paint_label()
 	{
 		// now paint main label on top
 		GPlatesViewOperations::RenderedGeometry main_label =
-			GPlatesViewOperations::create_rendered_string(
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_string(
 					*d_label_position,
 					*d_label_text,
 					LABEL_COLOUR,

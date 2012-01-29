@@ -466,7 +466,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		rvgp->vgp_params().d_a95 )
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_small_circle = 
-				GPlatesViewOperations::create_rendered_small_circle(
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_small_circle(
 						GPlatesMaths::SmallCircle::create_colatitude(
 								pole_point->position_vector(),
 								GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_a95)),
@@ -492,7 +492,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 				*pole_point);
 				
 		GPlatesViewOperations::RenderedGeometry rendered_ellipse = 
-			GPlatesViewOperations::create_rendered_ellipse(
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_ellipse(
 					*pole_point,
 					GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_dp),
 					GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_dm),
@@ -690,7 +690,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 
 	// Left-plate flowline
 	GPlatesViewOperations::RenderedGeometry left_rendered_geom =
-		GPlatesViewOperations::create_rendered_arrowed_polyline(
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrowed_polyline(
 			rf->left_flowline_points(),
 			d_colour ? d_colour.get() : palette->get_colour(rf->left_plate_id()));
 
@@ -704,7 +704,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 
 	// Downstream
 	GPlatesViewOperations::RenderedGeometry right_rendered_geom =
-		GPlatesViewOperations::create_rendered_arrowed_polyline(
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrowed_polyline(
 			rf->right_flowline_points(),
 			d_colour ? d_colour.get() : palette->get_colour(rf->right_plate_id()));
 
@@ -731,7 +731,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	// Draw it in the specified colour (if specified) otherwise defer colouring to a later time
 	// using ColourProxy.
 	GPlatesViewOperations::RenderedGeometry rendered_geom =
-		GPlatesViewOperations::create_rendered_arrowed_polyline(
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrowed_polyline(
 			rmp->motion_path_points(),
 			d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rmp));
 
@@ -758,9 +758,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	// Draw it in the specified colour (if specified) otherwise defer colouring to a later time
 	// using ColourProxy.
 	GPlatesViewOperations::RenderedGeometry rendered_geom =
-		GPlatesViewOperations::create_rendered_small_circle(GPlatesMaths::SmallCircle::create_colatitude(
-			rsc->centre()->position_vector(),rsc->radius()),
-            d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rsc));
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_small_circle(
+			GPlatesMaths::SmallCircle::create_colatitude(
+				rsc->centre()->position_vector(),rsc->radius()),
+			d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rsc));
 
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(

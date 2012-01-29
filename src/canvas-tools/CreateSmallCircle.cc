@@ -160,8 +160,9 @@ GPlatesCanvasTools::CreateSmallCircle::paint()
 
 	if (d_centre && d_point_on_radius)
 	{	
-		GPlatesViewOperations::RenderedGeometry rendered_circle = GPlatesViewOperations::create_rendered_small_circle(
-			GPlatesMaths::SmallCircle::create(d_centre->position_vector(),*d_point_on_radius));
+		GPlatesViewOperations::RenderedGeometry rendered_circle =
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_small_circle(
+					GPlatesMaths::SmallCircle::create(d_centre->position_vector(),*d_point_on_radius));
 
 		d_small_circle_layer_ptr->add_rendered_geometry(rendered_circle);
 	}

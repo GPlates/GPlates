@@ -112,8 +112,9 @@ GPlatesQtWidgets::SmallCircleWidget::update_small_circle_layer()
 
 	for ( ; it != end ; ++it)
 	{
-		GPlatesViewOperations::RenderedGeometry circle = GPlatesViewOperations::create_rendered_small_circle(
-			GPlatesMaths::SmallCircle::create_colatitude(it->axis_vector(),it->colatitude()));
+		GPlatesViewOperations::RenderedGeometry circle =
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_small_circle(
+					GPlatesMaths::SmallCircle::create_colatitude(it->axis_vector(),it->colatitude()));
 
 		d_small_circle_layer->add_rendered_geometry(circle);
 	}
