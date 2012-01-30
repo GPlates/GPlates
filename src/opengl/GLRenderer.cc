@@ -131,7 +131,11 @@ GPlatesOpenGL::GLRenderer::begin_render(
 	const QPaintEngine::Type paint_engine_type = d_qpainter->paintEngine()->type();
 	GPlatesGlobal::Assert<GLRendererAPIError>(
 			d_qpainter->isActive() &&
-				(paint_engine_type == QPaintEngine::OpenGL || paint_engine_type == QPaintEngine::OpenGL2),
+				(paint_engine_type == QPaintEngine::OpenGL
+#if QT_VERSION >= 0x040600 // QPaintEngine::OpenGL2 only available starting with Qt 4.6...
+				|| paint_engine_type == QPaintEngine::OpenGL2
+#endif
+				),
 			GPLATES_ASSERTION_SOURCE,
 			GLRendererAPIError::SHOULD_HAVE_ACTIVE_OPENGL_QPAINTER);
 
@@ -196,7 +200,11 @@ GPlatesOpenGL::GLRenderer::end_render()
 		const QPaintEngine::Type paint_engine_type = d_qpainter->paintEngine()->type();
 		GPlatesGlobal::Assert<GLRendererAPIError>(
 				d_qpainter->isActive() &&
-					(paint_engine_type == QPaintEngine::OpenGL || paint_engine_type == QPaintEngine::OpenGL2),
+					(paint_engine_type == QPaintEngine::OpenGL
+#if QT_VERSION >= 0x040600 // QPaintEngine::OpenGL2 only available starting with Qt 4.6...
+					|| paint_engine_type == QPaintEngine::OpenGL2
+#endif
+					),
 				GPLATES_ASSERTION_SOURCE,
 				GLRendererAPIError::SHOULD_HAVE_ACTIVE_OPENGL_QPAINTER);
 

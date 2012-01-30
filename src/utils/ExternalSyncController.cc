@@ -76,7 +76,7 @@ namespace
 	get_filenames_from_argument_list(
 		const QStringList &string_list)
 	{
-		if (string_list.length() < 2)
+		if (string_list.size() < 2)
 		{
 			return QStringList();
 		}
@@ -98,7 +98,7 @@ namespace
 	get_centre_from_argument_list(
 		const QStringList &string_list)
 	{
-		if (string_list.length() < 3)
+		if (string_list.size() < 3)
 		{
 			return boost::none;
 		}
@@ -135,7 +135,7 @@ namespace
 	get_time_from_argument_list(
 		const QStringList &string_list)
 	{
-		if (string_list.length() < 2)
+		if (string_list.size() < 2)
 		{
 			return boost::none;
 		}
@@ -166,7 +166,7 @@ namespace
 	get_zoom_from_argument_list(
 		const QStringList &string_list)
 	{
-		if (string_list.length() < 2)
+		if (string_list.size() < 2)
 		{
 			return boost::none;
 		}
@@ -207,7 +207,7 @@ namespace
 	get_orientation_from_argument_list(
 		const QStringList &string_list)
 	{
-		if (string_list.length() < 4)
+		if (string_list.size() < 4)
 		{
 			return boost::none;
 		}

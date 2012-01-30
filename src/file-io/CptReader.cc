@@ -369,7 +369,7 @@ GPlatesFileIO::CptParser::process_line(const QString& line)
 		QString tmp;
 		for(;;)
 		{
-			if(tokens.length() == 0)
+			if(tokens.size() == 0)
 				break;
 
 			tmp.append(" " + tokens.takeFirst());
@@ -381,16 +381,16 @@ GPlatesFileIO::CptParser::process_line(const QString& line)
 		tmp.simplified();
 		tokens.push_front(tmp);
 		qDebug() << "tmp: " << tmp;
-		qDebug() << "len: " << tokens.length();
+		qDebug() << "len: " << tokens.size();
 	}
 
-	if(tokens.length() < 2) // no enough tokens
+	if(tokens.size() < 2) // no enough tokens
 	{
 		qWarning() << "Invalid line in cpt file: [" << line << "]";
 		return;
 	}
 
-	if(tokens.length() <= 3) // only could be categorical line
+	if(tokens.size() <= 3) // only could be categorical line
 	{
 		return process_categorical_line(tokens);
 	}
@@ -417,7 +417,7 @@ GPlatesFileIO::CptParser::process_regular_line(QStringList& tokens)
 
 	//strip off annotation fields
 	bool annotation_flag = false;
-	for(int i = 0; i < tokens.length(); )
+	for(int i = 0; i < tokens.size(); )
 	{
 		//annotation begins with ";", until the end of line.
 		if(!annotation_flag && tokens.at(i).simplified().startsWith(";"))
@@ -463,7 +463,7 @@ GPlatesFileIO::CptParser::read_first_colour_data(QStringList& tokens)
 		return data;
 	}
 
-	int len = tokens.length();
+	int len = tokens.size();
 	if(len == 3) // the length indicates that the first color is empty, color name or gmt fill.
 	{
 		QString first_token = tokens.takeAt(0);
@@ -508,7 +508,7 @@ GPlatesFileIO::CptParser::ColourData
 GPlatesFileIO::CptParser::read_second_colour_data(QStringList& tokens)
 {
 	ColourData data;
-	int len = tokens.length();
+	int len = tokens.size();
 	if(len == 1) // the length indicates empty, color name or gmt fill.
 	{
 		QString first_token = tokens.takeAt(0);
@@ -556,13 +556,13 @@ GPlatesFileIO::CptParser::read_second_colour_data(QStringList& tokens)
 void
 GPlatesFileIO::CptParser::process_categorical_line(QStringList& tokens)
 {
-	if(tokens.length() < 2)
+	if(tokens.size() < 2)
 		return;
 
 	CategoricalEntry entry;
 	entry.key = tokens.at(0);
 	entry.data = parse_gmt_fill(tokens.at(1));
-	if(tokens.length() == 3)
+	if(tokens.size() == 3)
 	{
 		entry.label = tokens.at(2);
 	}
@@ -756,7 +756,7 @@ GPlatesFileIO::CptParser::process_bfn(
 		ColourData& data)
 {
 	tokens.removeFirst();
-	if(tokens.length() == 3)
+	if(tokens.size() == 3)
 	{
 		if(d_default_model == RGB)
 		{
@@ -767,7 +767,7 @@ GPlatesFileIO::CptParser::process_bfn(
 			parse_hsv_data(tokens,data);
 		}
 	}
-	else if(tokens.length() == 4)
+	else if(tokens.size() == 4)
 	{
 		parse_cmyk_data(tokens,data);
 	}
