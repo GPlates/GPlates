@@ -121,10 +121,11 @@ namespace GPlatesAppLogic
 			 */
 			enum Reason
 			{
-				NotInAnyBoundaryOrNetwork,
-				InStaticPolygon,
-				InPlateBoundary,
-				InDeformationNetwork,
+				ReconstructedDomainPoint,   // The domain point (present day) was reconstructed (non-static)
+				NotInAnyBoundaryOrNetwork,  // Static domain point was not found in any boundary or network
+				InStaticPolygon,            // Static domain point was found in a reconstructed static boundary
+				InPlateBoundary,            // Static domain point was found in a resolved topological boundary
+				InDeformationNetwork,       // Static domain point was found in a resolved topological network
 				InDeformationNetworkConstrainedInterpolation,
 			};
 
@@ -144,52 +145,53 @@ namespace GPlatesAppLogic
 			 * An optional plate ID.
 			 *
 			 * The plate ID is optional in case the point does not lie inside a plate
-			 * boundary, but the client code still wishes to assign a 3-D vector.
+			 * boundary (or original domain feature has no plate ID), but the client code
+			 * still wishes to assign a 3-D vector.
 			 */
 			boost::optional<GPlatesModel::integer_plate_id_type> d_plate_id;
 
 			/**
 			 * A "maybe-null" reconstruction geometry for the plate boundary that
-			 * encloses the point.
+			 * encloses the point (or the original domain feature with a plate ID).
 			 *
 			 * The reconstruction geometry is optional in case the point does not lie
-			 * inside a plate boundary, but the client code still wishes to assign a
-			 * 3-D vector.
+			 * inside a plate boundary (or original domain feature has no plate ID),
+			 * but the client code still wishes to assign a 3-D vector.
 			 */
-			ReconstructionGeometry::maybe_null_ptr_to_const_type d_enclosing_boundary;
+			ReconstructionGeometry::maybe_null_ptr_to_const_type d_plate_id_reconstruction_geometry;
 
 			/**
 			 * Construct a codomain element from a 3-D vector @a v and a reason @a r.
 			 *
-			 * Optionally, a boost::optional plate ID @opt_p and an enclosing boundary
-			 * @a opt_eb may be specified.
+			 * Optionally, a boost::optional plate ID @opt_p and a plate ID recon geometry
+			 * @a opt_rg may be specified.
 			 */
 			CodomainElement(
 					const GPlatesMaths::Vector3D &v,
 					Reason r,
 					const boost::optional<GPlatesModel::integer_plate_id_type> &opt_p = boost::none,
-					const ReconstructionGeometry::maybe_null_ptr_to_const_type &opt_eb = NULL):
+					const ReconstructionGeometry::maybe_null_ptr_to_const_type &opt_rg = NULL):
 				d_vector(v),
 				d_reason(r),
 				d_plate_id(opt_p),
-				d_enclosing_boundary(opt_eb)
+				d_plate_id_reconstruction_geometry(opt_rg)
 			{  }
 
 			/**
 			 * Construct a codomain element from a 3-D vector @a v, a reason @a r, and
 			 * a plate ID @p.
 			 *
-			 * Optionally, an enclosing boundary @a eb may be specified.
+			 * Optionally, a plate ID recon geometry @a opt_rg may be specified.
 			 */
 			CodomainElement(
 					const GPlatesMaths::Vector3D &v,
 					Reason r,
 					const GPlatesModel::integer_plate_id_type &p,
-					const ReconstructionGeometry::maybe_null_ptr_to_const_type &opt_eb = NULL):
+					const ReconstructionGeometry::maybe_null_ptr_to_const_type &opt_rg = NULL):
 				d_vector(v),
 				d_reason(r),
 				d_plate_id(p),
-				d_enclosing_boundary(opt_eb)
+				d_plate_id_reconstruction_geometry(opt_rg)
 			{  }
 		};
 

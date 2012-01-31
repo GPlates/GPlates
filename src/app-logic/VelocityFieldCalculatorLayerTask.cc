@@ -30,10 +30,10 @@
 
 
 const QString GPlatesAppLogic::VelocityFieldCalculatorLayerTask::VELOCITY_DOMAIN_FEATURES_CHANNEL_NAME =
-		"Multi-point features";
+		"Velocity domain (multi-points/polylines/polygons)";
 
-const QString GPlatesAppLogic::VelocityFieldCalculatorLayerTask::RECONSTRUCTED_STATIC_DYNAMIC_POLYGONS_NETWORKS_CHANNEL_NAME =
-		"Reconstructed static/dynamic polygons/networks";
+const QString GPlatesAppLogic::VelocityFieldCalculatorLayerTask::VELOCITY_SURFACE_LAYERS_CHANNEL_NAME =
+		"Velocity surfaces (static/dynamic polygons/networks)";
 
 
 bool
@@ -66,7 +66,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_input_channel_types() con
 	surfaces_input_channel_types.push_back(LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					RECONSTRUCTED_STATIC_DYNAMIC_POLYGONS_NETWORKS_CHANNEL_NAME,
+					VELOCITY_SURFACE_LAYERS_CHANNEL_NAME,
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
 					surfaces_input_channel_types));
 
@@ -98,7 +98,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::add_input_file_connection(
 	if (input_channel_name == VELOCITY_DOMAIN_FEATURES_CHANNEL_NAME)
 	{
 		d_velocity_field_calculator_layer_proxy
-				->add_multi_point_feature_collection(feature_collection);
+				->add_velocity_domain_feature_collection(feature_collection);
 	}
 }
 
@@ -111,7 +111,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::remove_input_file_connection(
 	if (input_channel_name == VELOCITY_DOMAIN_FEATURES_CHANNEL_NAME)
 	{
 		d_velocity_field_calculator_layer_proxy
-				->remove_multi_point_feature_collection(feature_collection);
+				->remove_velocity_domain_feature_collection(feature_collection);
 	}
 }
 
@@ -124,9 +124,9 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::modified_input_file(
 	if (input_channel_name == VELOCITY_DOMAIN_FEATURES_CHANNEL_NAME)
 	{
 		// Let the velocity layer proxy know that one of the feature collections
-		// containing multi-points has been modified.
+		// containing velocity domain points has been modified.
 		d_velocity_field_calculator_layer_proxy
-				->modified_multi_point_feature_collection(feature_collection);
+				->modified_velocity_domain_feature_collection(feature_collection);
 	}
 }
 
@@ -150,7 +150,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::add_input_layer_proxy_connect
 					GPlatesUtils::get_non_null_pointer(reconstruction_layer_proxy.get()));
 		}
 	}
-	else if (input_channel_name == RECONSTRUCTED_STATIC_DYNAMIC_POLYGONS_NETWORKS_CHANNEL_NAME)
+	else if (input_channel_name == VELOCITY_SURFACE_LAYERS_CHANNEL_NAME)
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct,
@@ -204,7 +204,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::remove_input_layer_proxy_conn
 					d_default_reconstruction_layer_proxy);
 		}
 	}
-	else if (input_channel_name == RECONSTRUCTED_STATIC_DYNAMIC_POLYGONS_NETWORKS_CHANNEL_NAME)
+	else if (input_channel_name == VELOCITY_SURFACE_LAYERS_CHANNEL_NAME)
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct,

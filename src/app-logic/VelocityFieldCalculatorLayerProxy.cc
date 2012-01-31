@@ -59,10 +59,8 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 		std::vector<multi_point_vector_field_non_null_ptr_type> &multi_point_vector_fields,
 		const double &reconstruction_time)
 {
-	// If we have no multi-point features or we are not attached to a reconstruct layer then we
-	// can't get any reconstructed topological boundary sections and we can't resolve any
-	// topological networks.
-	if (d_current_multi_point_feature_collections.empty())
+	// If we have no velocity domain features then there's no points at which to calculate velocities.
+	if (d_current_velocity_domain_feature_collections.empty())
 	{
 		return;
 	}
@@ -128,16 +126,33 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 					reconstruction_time);
 		}
 
-		// Calculate the velocity fields.
-		PlateVelocityUtils::solve_velocities(
-				d_cached_multi_point_velocity_fields.get(),
-				// Used to call when a reconstruction tree is needed for any time/anchor.
-				d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree_creator(),
-				reconstruction_time,
-				d_current_multi_point_feature_collections,
-				reconstructed_static_polygons,
-				resolved_topological_boundaries,
-				resolved_topological_networks);
+		// If we have no surfaces to calculate velocities on then just use the plate IDs of the velocity
+		// domain features to calculate velocities (the plate IDs effectively define the surface).
+		if (reconstructed_static_polygons.empty() &&
+			resolved_topological_boundaries.empty() &&
+			resolved_topological_networks.empty())
+		{
+			// Calculate the velocity fields using the plate IDs of the velocity domain features.
+			PlateVelocityUtils::solve_velocities_by_plate_id(
+					d_cached_multi_point_velocity_fields.get(),
+					// Used to call when a reconstruction tree is needed for any time/anchor.
+					d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree_creator(),
+					reconstruction_time,
+					d_current_velocity_domain_feature_collections);
+		}
+		else
+		{
+			// Calculate the velocity fields using the surfaces.
+			PlateVelocityUtils::solve_velocities_on_surfaces(
+					d_cached_multi_point_velocity_fields.get(),
+					// Used to call when a reconstruction tree is needed for any time/anchor.
+					d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree_creator(),
+					reconstruction_time,
+					d_current_velocity_domain_feature_collections,
+					reconstructed_static_polygons,
+					resolved_topological_boundaries,
+					resolved_topological_networks);
+		}
 	}
 
 	// Append our cached multi-point velocity fields to the caller's sequence.
@@ -270,10 +285,10 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_topological_network_r
 
 
 void
-GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::add_multi_point_feature_collection(
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::add_velocity_domain_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	d_current_multi_point_feature_collections.push_back(feature_collection);
+	d_current_velocity_domain_feature_collections.push_back(feature_collection);
 
 	// The velocities are now invalid.
 	reset_cache();
@@ -284,14 +299,14 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::add_multi_point_feature_coll
 
 
 void
-GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_multi_point_feature_collection(
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_velocity_domain_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	// Erase the feature collection from our list.
-	d_current_multi_point_feature_collections.erase(
+	d_current_velocity_domain_feature_collections.erase(
 			std::find(
-					d_current_multi_point_feature_collections.begin(),
-					d_current_multi_point_feature_collections.end(),
+					d_current_velocity_domain_feature_collections.begin(),
+					d_current_velocity_domain_feature_collections.end(),
 					feature_collection));
 
 	// The velocities are now invalid.
@@ -303,7 +318,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_multi_point_feature_c
 
 
 void
-GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::modified_multi_point_feature_collection(
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::modified_velocity_domain_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	// The velocities are now invalid.

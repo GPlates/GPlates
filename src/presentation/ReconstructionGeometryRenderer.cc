@@ -319,31 +319,29 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			render(rendered_arrow);
 
 		} else if (velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::InPlateBoundary ||
-			velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::InStaticPolygon) {
-			// The point was in a plate boundary (or a reconstructed static polygon).
-			// Colour the arrow according to the plate ID, etc, of the PLATE BOUNDARY
-			// in which the point lies.
+			velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::InStaticPolygon ||
+			velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::ReconstructedDomainPoint) {
+			// The point was either:
+			//   - in a plate boundary (or a reconstructed static polygon), or
+			//   - a reconstructed domain point that used the domain features' plate ID.
+			// Colour the arrow according to the plate ID.
 			//
-			// Note that this is DIFFERENT to the usual practice of colouring
-			// according to the plate ID of the originating feature (in this case,
-			// the feature that contained the mesh points).
-			//
-			// Hence, the ReconstructionGeometry passed into the ColourProxy is the
-			// ReconstructionGeometry of the plate boundary, not of the originating
-			// feature.
+			// The ReconstructionGeometry passed into the ColourProxy is either that of the plate
+			// boundary or that of the originating/domain feature depending on the 'reason'.
+			// But situations are handled the same though.
 
-			const GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type &plate_boundary =
-					velocity.d_enclosing_boundary;
-			if (plate_boundary) {
-				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type pb_non_null_ptr =
-						plate_boundary.get();
+			const GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type &plate_id_recon_geom =
+					velocity.d_plate_id_reconstruction_geometry;
+			if (plate_id_recon_geom) {
+				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type rg_non_null_ptr =
+						plate_id_recon_geom.get();
 
 				const GPlatesViewOperations::RenderedGeometry rendered_arrow =
 						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
 								point,
 								velocity.d_vector,
 								d_render_params.velocity_ratio_unit_vector_direction_to_globe_radius,
-								GPlatesGui::ColourProxy(pb_non_null_ptr));
+								GPlatesGui::ColourProxy(rg_non_null_ptr));
 
 				// Render the rendered geometry.
 				render(rendered_arrow);
@@ -359,7 +357,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 				render(rendered_arrow);
 			}
 		}
-		// else, don't render (if it's in neither boundary nor network)
+		// else, don't render
 	}
 }
 

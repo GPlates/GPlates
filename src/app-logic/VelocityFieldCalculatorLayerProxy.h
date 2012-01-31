@@ -188,31 +188,40 @@ namespace GPlatesAppLogic
 				const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy);
 
 		/**
-		 * Add to the list of feature collections containing multi-point geometries.
+		 * Add to the list of feature collections containing (multi-point) geometries.
+		 *
+		 * NOTE: Originally the geometries were expected to be multi-point geometries but now any
+		 * geometry type can be used (the points in the geometry are treated as a collection of points).
 		 */
 		void
-		add_multi_point_feature_collection(
+		add_velocity_domain_feature_collection(
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 		/**
-		 * Remove from the list of feature collections containing multi-point geometries.
+		 * Remove from the list of feature collections containing (multi-point) geometries.
+		 *
+		 * NOTE: Originally the geometries were expected to be multi-point geometries but now any
+		 * geometry type can be used (the points in the geometry are treated as a collection of points).
 		 */
 		void
-		remove_multi_point_feature_collection(
+		remove_velocity_domain_feature_collection(
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 		/**
-		 * A feature collection containing multi-point geometries was modified.
+		 * A feature collection containing (multi-point) geometries was modified.
+		 *
+		 * NOTE: Originally the geometries were expected to be multi-point geometries but now any
+		 * geometry type can be used (the points in the geometry are treated as a collection of points).
 		 */
 		void
-		modified_multi_point_feature_collection(
+		modified_velocity_domain_feature_collection(
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 	private:
 		/**
 		 * The input feature collections containing the points at which to calculate velocities.
 		 */
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_multi_point_feature_collections;
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_velocity_domain_feature_collections;
 
 		/**
 		 * Used to get reconstruction trees at desired reconstruction times.

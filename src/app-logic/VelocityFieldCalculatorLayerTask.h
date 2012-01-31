@@ -147,7 +147,7 @@ namespace GPlatesAppLogic
 		static const QString VELOCITY_DOMAIN_FEATURES_CHANNEL_NAME;
 
 		//! This is a human-readable name for the reconstructed static/dynamic polygons/networks input channel.
-		static const QString RECONSTRUCTED_STATIC_DYNAMIC_POLYGONS_NETWORKS_CHANNEL_NAME;
+		static const QString VELOCITY_SURFACE_LAYERS_CHANNEL_NAME;
 
 
 		LayerTaskParams d_layer_task_params;

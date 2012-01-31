@@ -86,7 +86,34 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Solves velocities for the specified:
+		 * Solves velocities at velocity domain positions using plate IDs.
+		 *
+		 * The positions at which velocities are calculated is determined by the velocity domain
+		 * geometries inside the features in @a velocity_domain_feature_collections.
+		 * NOTE: Originally the geometries were expected to be multi-point geometries but now any
+		 * geometry type can be used (the points in the geometry are treated as a collection of points).
+		 *
+		 * NOTE: The positions at which velocities are calculated moves according to each velocity
+		 * domain feature's plate ID. This is unlike @a solve_velocities_on_surfaces where the
+		 * positions are static on the globe (do not move/rotate).
+		 *
+		 * The calculated velocities are stored in @a MultiPointVectorField instances (one per
+		 * input velocity domain geometry) and appended to @a multi_point_velocity_fields.
+		 *
+		 * @a reconstruction_tree_creator is used to create @a ReconstructionTree instances
+		 * given reconstruction times. Internally it is used to retrieve a reconstruction tree
+		 * at @a reconstruction_time and "@a reconstruction_time + 1" in order to calculate velocities.
+		 */
+		void
+		solve_velocities_by_plate_id(
+				std::vector<multi_point_vector_field_non_null_ptr_type> &multi_point_velocity_fields,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &velocity_domain_feature_collections);
+
+
+		/**
+		 * Solves velocities for the specified velocity surfaces:
 		 * - reconstructed static polygons,
 		 * - resolved topological boundaries,
 		 * - resolved topological networks.
@@ -97,31 +124,38 @@ namespace GPlatesAppLogic
 		 * So if a point is in a topological network and a topological boundary then the velocity
 		 * in the topological network is calculated.
 		 *
-		 * The positions at which velocities are calculated is determined by the multi-point
-		 * geometries inside the features in @a multi_point_feature_collections.
+		 * The positions at which velocities are calculated is determined by the velocity domain
+		 * geometries inside the features in @a velocity_domain_feature_collections.
+		 * NOTE: Originally the geometries were expected to be multi-point geometries but now any
+		 * geometry type can be used (the points in the geometry are treated as a collection of points).
+		 *
+		 * NOTE: The positions at which velocities are calculated does *not* move according to each
+		 * velocity domain feature's plate ID. This is unlike @a solve_velocities_by_plate_id where
+		 * the positions move/rotate. Originally this function supported gpml:MeshNode velocity
+		 * domain features that had a plate ID of zero (the plate ID is ignored here though).
 		 *
 		 * The calculated velocities are stored in @a MultiPointVectorField instances (one per
-		 * input multi-point geometry) and appended to @a multi_point_velocity_fields.
+		 * input velocity domain geometry) and appended to @a multi_point_velocity_fields.
 		 *
-		 * Note that only the @a ReconstructedFeatureGeometry objects, in @a reconstructed_static_polygons,
+		 * Note that only the @a ReconstructedFeatureGeometry objects, in @a velocity_surface_reconstructed_static_polygons,
 		 * that contain polygon geometry are used (other geometry types are ignored).
 		 *
-		 * @a get_reconstruction_tree_function is a function that returns a @a ReconstructionTree
-		 * given a reconstruction time. Internally it is used to retrieve a reconstruction tree
+		 * @a reconstruction_tree_creator is used to create @a ReconstructionTree instances
+		 * given reconstruction times. Internally it is used to retrieve a reconstruction tree
 		 * at @a reconstruction_time and "@a reconstruction_time + 1" in order to calculate velocities.
 		 */
 		void
-		solve_velocities(
+		solve_velocities_on_surfaces(
 				std::vector<multi_point_vector_field_non_null_ptr_type> &multi_point_velocity_fields,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &reconstruction_time,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &multi_point_feature_collections,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &velocity_domain_feature_collections,
 				// NOTE: Not specifying default arguments because that forces definition of the recon geom classes
 				// (due to destructor of std::vector requiring non_null_ptr_type destructor requiring recon geom definition)
 				// and we are avoiding that due to a cyclic header dependency with "ResolvedTopologicalNetwork.h"...
-				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_static_polygons,
-				const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
-				const std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks);
+				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &velocity_surface_reconstructed_static_polygons,
+				const std::vector<resolved_topological_boundary_non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
+				const std::vector<resolved_topological_network_non_null_ptr_type> &velocity_surface_resolved_topological_networks);
 
 
 		//////////////////////////////
