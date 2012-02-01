@@ -211,7 +211,11 @@ namespace GPlatesQtWidgets
 				QShowEvent * e)
 		{
 			QDialog::showEvent(e);
-			show_preview_icon();
+			#if defined(Q_OS_MAC)
+				d_refresh_preview = true;
+			#else
+				show_preview_icon();
+			#endif
 		}
 
 	private slots:
@@ -247,6 +251,10 @@ namespace GPlatesQtWidgets
 			if(isVisible())
 			{
 				show_preview_icon();
+			}
+			else
+			{
+				d_refresh_preview = true;
 			}
 		}
 

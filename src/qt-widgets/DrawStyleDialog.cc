@@ -345,12 +345,13 @@ GPlatesQtWidgets::DrawStyleDialog::handle_main_repaint(
 {
 	if(!mouse_down && d_refresh_preview)
 	{
+		d_refresh_preview = false;
 		if(d_preview_lock.tryLock())
 		{
 			try{
 				refresh_preview_icons();
-				d_refresh_preview = false;
-			}catch(...){}
+			}catch(...)
+			{ }
 			d_preview_lock.unlock();
 		}
 	}
