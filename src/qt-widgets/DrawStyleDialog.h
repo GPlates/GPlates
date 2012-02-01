@@ -240,10 +240,6 @@ namespace GPlatesQtWidgets
 			{
 				show_preview_icon();
 			}
-			else
-			{
-				d_refresh_preview = true;
-			}
 		}
 
 		void
