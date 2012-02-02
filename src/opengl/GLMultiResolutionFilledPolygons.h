@@ -429,14 +429,15 @@ namespace GPlatesOpenGL
 		GPlatesUtils::ObjectCache<GLTexture>::shared_ptr_type d_texture_cache;
 
 		/**
-		 * Used to render each filled polygon as a stencil.
-		 */
-		GLTexture::shared_ptr_type d_polygon_stencil_texture;
-
-		/**
 		 * The texture dimension of a cube quad tree tile.
 		 */
 		unsigned int d_tile_texel_dimension;
+
+		/*
+		 * The dimensions of the polygon stencil texture.
+		 */
+		unsigned int d_polygon_stencil_texel_width;
+		unsigned int d_polygon_stencil_texel_height;
 
 		/**
 		 * The vertex array containing the polygon stencil quad vertices.
@@ -486,6 +487,9 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh);
 
+		void
+		initialise_polygon_stencil_texture_dimensions(
+				GLRenderer &renderer);
 
 		unsigned int
 		get_level_of_detail(
@@ -563,6 +567,7 @@ namespace GPlatesOpenGL
 		void
 		render_filled_polygons_to_polygon_stencil_texture(
 				GLRenderer &renderer,
+				const GLTexture::shared_ptr_to_const_type &polygon_stencil_texture,
 				unsigned int render_target_width,
 				unsigned int render_target_height,
 				const filled_polygon_seq_type::const_iterator begin_filled_drawables,
@@ -578,6 +583,10 @@ namespace GPlatesOpenGL
 				const filled_polygons_spatial_partition_node_list_type &filled_polygons_intersecting_node_list);
 
 		GLTexture::shared_ptr_to_const_type
+		acquire_polygon_stencil_texture(
+				GLRenderer &renderer);
+
+		GLTexture::shared_ptr_to_const_type
 		allocate_tile_texture(
 				GLRenderer &renderer);
 
@@ -585,10 +594,6 @@ namespace GPlatesOpenGL
 		create_tile_texture(
 				GLRenderer &renderer,
 				const GLTexture::shared_ptr_type &texture);
-
-		void
-		create_polygon_stencil_texture(
-				GLRenderer &renderer);
 
 		void
 		create_polygons_vertex_array(

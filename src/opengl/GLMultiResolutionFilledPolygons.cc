@@ -123,9 +123,11 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::GLMultiResolutionFilledPolygons(
 		const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh) :
 	d_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create()),
 	d_tile_texel_dimension(DEFAULT_TILE_TEXEL_DIMENSION),
+	d_polygon_stencil_texel_width(0),
+	d_polygon_stencil_texel_height(0),
 	d_multi_resolution_cube_mesh(multi_resolution_cube_mesh)
 {
-	create_polygon_stencil_texture(renderer);
+	initialise_polygon_stencil_texture_dimensions(renderer);
 
 	create_polygons_vertex_array(renderer);
 
@@ -133,6 +135,53 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::GLMultiResolutionFilledPolygons(
 
 	// If there's support for shader programs then create them.
 	create_shader_programs(renderer);
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionFilledPolygons::initialise_polygon_stencil_texture_dimensions(
+		GLRenderer &renderer)
+{
+	//
+	// The texture dimensions of the single polygon stencil rendering texture.
+	//
+	// This is ideally much larger than the cube quad tree node tile textures to
+	// minimise render target switching.
+	//
+	// We probably don't need too large a texture - just want to fit a reasonable number of
+	// 256x256 tile textures inside it to minimise render target switching.
+	// Each filled polygon gets its own 256x256 section so 2048x2048 is 64 polygons per render target.
+	//
+	d_polygon_stencil_texel_width = 2048;
+	d_polygon_stencil_texel_height = 2048;
+
+	// Our polygon stencil texture should be big enough to cover a regular tile.
+	if (d_polygon_stencil_texel_width < d_tile_texel_dimension)
+	{
+		d_polygon_stencil_texel_width = d_tile_texel_dimension;
+	}
+	if (d_polygon_stencil_texel_height < d_tile_texel_dimension)
+	{
+		d_polygon_stencil_texel_height = d_tile_texel_dimension;
+	}
+	// But it can't be larger than the maximum texture dimension for the current system.
+	if (d_polygon_stencil_texel_width > GLContext::get_parameters().texture.gl_max_texture_size)
+	{
+		d_polygon_stencil_texel_width = GLContext::get_parameters().texture.gl_max_texture_size;
+	}
+	if (d_polygon_stencil_texel_height > GLContext::get_parameters().texture.gl_max_texture_size)
+	{
+		d_polygon_stencil_texel_height = GLContext::get_parameters().texture.gl_max_texture_size;
+	}
+	// And it can't be larger than the maximum viewport dimensions for the current system.
+	if (d_polygon_stencil_texel_width > GLContext::get_parameters().viewport.gl_max_viewport_width)
+	{
+		d_polygon_stencil_texel_width = GLContext::get_parameters().viewport.gl_max_viewport_width;
+	}
+	if (d_polygon_stencil_texel_height > GLContext::get_parameters().viewport.gl_max_viewport_height)
+	{
+		d_polygon_stencil_texel_height = GLContext::get_parameters().viewport.gl_max_viewport_height;
+	}
 }
 
 
@@ -805,7 +854,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 		const GLTransform &projection_transform,
 		const GLTransform &view_transform)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	//++g_num_tiles_rendered;
 
@@ -824,10 +873,15 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 	renderer.gl_enable(GL_ALPHA_TEST);
 	renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
 
+	// Since the polygon stencil texture is quite large (and uses a reasonable amount of video memory,
+	// eg, 2048x2048 is 16Mb) we will acquire it when we need it so it can be shared with other areas
+	// of GPlates such as rendering filled polygons in the map views.
+	const GLTexture::shared_ptr_to_const_type polygon_stencil_texture = acquire_polygon_stencil_texture(renderer);
+
 	// Set up texture state to use the polygon stencil texture to render to the tile texture.
 	GLUtils::set_full_screen_quad_texture_state(
 			renderer,
-			d_polygon_stencil_texture,
+			polygon_stencil_texture,
 			0/*texture_unit*/,
 			GL_REPLACE);
 
@@ -867,13 +921,13 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 	{
 		render_target_height = d_tile_texel_dimension;
 	}
-	if (render_target_width > d_polygon_stencil_texture->get_width().get())
+	if (render_target_width > d_polygon_stencil_texel_width)
 	{
-		render_target_width = d_polygon_stencil_texture->get_width().get();
+		render_target_width = d_polygon_stencil_texel_width;
 	}
-	if (render_target_height > d_polygon_stencil_texture->get_height().get())
+	if (render_target_height > d_polygon_stencil_texel_height)
 	{
-		render_target_height = d_polygon_stencil_texture->get_height().get();
+		render_target_height = d_polygon_stencil_texel_height;
 	}
 
 	// If framebuffer objects are supported then naturally our render target dimensions will
@@ -882,7 +936,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 	// quads vertex array can't be used fully (because it's populated assuming the render target
 	// dimension is the polygon stencil texture dimension). We can however use the first row
 	// of quads without problem so we'll make the render target height one tile in size.
-	if (render_target_width != d_polygon_stencil_texture->get_width().get())
+	if (render_target_width != d_polygon_stencil_texel_width)
 	{
 		render_target_height = d_tile_texel_dimension;
 	}
@@ -906,6 +960,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 		// Render the filled polygons to the current tile render target.
 		render_filled_polygons_to_polygon_stencil_texture(
 				renderer,
+				polygon_stencil_texture,
 				render_target_width,
 				render_target_height,
 				filled_drawables_iter,
@@ -925,7 +980,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 			cleared_tile_render_target = true;
 		}
 
-		//PROFILE_BLOCK("d_polygon_stencil_quads_vertex_array->gl_draw_range_elements");
+		PROFILE_BLOCK("d_polygon_stencil_quads_vertex_array->gl_draw_range_elements");
 
 		// Render the filled polygons, in the stencil texture, to the current tile render target.
 		//
@@ -950,6 +1005,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 void
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_polygon_stencil_texture(
 		GLRenderer &renderer,
+		const GLTexture::shared_ptr_to_const_type &polygon_stencil_texture,
 		unsigned int render_target_width,
 		unsigned int render_target_height,
 		const filled_polygon_seq_type::const_iterator begin_filled_drawables,
@@ -957,13 +1013,13 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_polygo
 		const GLTransform &projection_transform,
 		const GLTransform &view_transform)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	// Begin a render target that will render the individual filled polygons to the tile texture.
 	// This is also an implicit state block (saves/restores state).
 	GLRenderer::RenderTarget2DScope render_target_scope(
 			renderer,
-			d_polygon_stencil_texture,
+			polygon_stencil_texture,
 			// Limit rendering to a part of the polygon stencil texture if it's too big for render-target...
 			GLViewport(0, 0, render_target_width, render_target_height));
 
@@ -1045,7 +1101,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_polygo
 			current_finite_rotation = filled_drawable.d_transform;
 		}
 
-		//PROFILE_BLOCK("d_polygons_vertex_array->gl_draw_range_elements");
+		PROFILE_BLOCK("d_polygons_vertex_array->gl_draw_range_elements");
 
 		// Render the current filled polygon.
 		d_polygons_vertex_array->gl_draw_range_elements(
@@ -1078,7 +1134,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::get_filled_polygons(
 		filled_polygons_spatial_partition_type::element_const_iterator end_root_filled_polygons,
 		const filled_polygons_spatial_partition_node_list_type &filled_polygons_intersecting_node_list)
 {
-	//PROFILE_FUNC();
+	PROFILE_FUNC();
 
 	// Add the reconstructed polygon meshes in the root of the spatial partition.
 	// These are the meshes that were too large to insert in any face of the cube quad tree partition.
@@ -1110,6 +1166,50 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::get_filled_polygons(
 			transform_sorted_filled_drawables.begin(),
 			transform_sorted_filled_drawables.end(),
 			SortFilledDrawables());
+}
+
+
+GPlatesOpenGL::GLTexture::shared_ptr_to_const_type
+GPlatesOpenGL::GLMultiResolutionFilledPolygons::acquire_polygon_stencil_texture(
+		GLRenderer &renderer)
+{
+	// Acquire an RGBA8 texture.
+	const GLTexture::shared_ptr_type polygon_stencil_texture =
+			renderer.get_context().get_shared_state()->acquire_texture(
+					renderer,
+					GL_TEXTURE_2D,
+					GL_RGBA8,
+					d_polygon_stencil_texel_width,
+					d_polygon_stencil_texel_height);
+
+	// 'acquire_texture' initialises the texture memory (to empty) but does not set the filtering
+	// state when it creates a new texture.
+	// Also even if the texture was cached it might have been used by another client that specified
+	// different filtering settings for it.
+	// So we set the filtering settings each time we acquire.
+
+	//
+	// No mipmaps needed so we specify no mipmap filtering.
+	// We're not using mipmaps because we simply render with one-to-one texel-to-pixel
+	// mapping (using a full screen quad in a render target).
+	//
+	polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	// Clamp texture coordinates to centre of edge texels -
+	// it's easier for hardware to implement - and doesn't affect our calculations.
+	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	{
+		polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
+	else
+	{
+		polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	}
+
+	return polygon_stencil_texture;
 }
 
 
@@ -1180,85 +1280,6 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_tile_texture(
 	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
-
-void
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_polygon_stencil_texture(
-		GLRenderer &renderer)
-{
-	//
-	// The texture dimensions of the single polygon stencil rendering texture.
-	//
-	// This is ideally much larger than the cube quad tree node tile textures to
-	// minimise render target switching.
-	//
-	// We probably don't need too large a texture - just want to fit a reasonable number of
-	// 256x256 tile textures inside it to minimise render target switching.
-	// Each filled polygon gets its own 256x256 section so 4096x4096 is 256 polygons per render target.
-	//
-	unsigned int polygon_stencil_texel_width = 4096;
-	unsigned int polygon_stencil_texel_height = 4096;
-
-	// Our polygon stencil texture should be big enough to cover a regular tile.
-	if (polygon_stencil_texel_width < d_tile_texel_dimension)
-	{
-		polygon_stencil_texel_width = d_tile_texel_dimension;
-	}
-	if (polygon_stencil_texel_height < d_tile_texel_dimension)
-	{
-		polygon_stencil_texel_height = d_tile_texel_dimension;
-	}
-	// But it can't be larger than the maximum texture dimension for the current system.
-	if (polygon_stencil_texel_width > GLContext::get_parameters().texture.gl_max_texture_size)
-	{
-		polygon_stencil_texel_width = GLContext::get_parameters().texture.gl_max_texture_size;
-	}
-	if (polygon_stencil_texel_height > GLContext::get_parameters().texture.gl_max_texture_size)
-	{
-		polygon_stencil_texel_height = GLContext::get_parameters().texture.gl_max_texture_size;
-	}
-	// And it can't be larger than the maximum viewport dimensions for the current system.
-	if (polygon_stencil_texel_width > GLContext::get_parameters().viewport.gl_max_viewport_width)
-	{
-		polygon_stencil_texel_width = GLContext::get_parameters().viewport.gl_max_viewport_width;
-	}
-	if (polygon_stencil_texel_height > GLContext::get_parameters().viewport.gl_max_viewport_height)
-	{
-		polygon_stencil_texel_height = GLContext::get_parameters().viewport.gl_max_viewport_height;
-	}
-
-	d_polygon_stencil_texture = GLTexture::create(renderer);
-
-	//
-	// No mipmaps needed so we specify no mipmap filtering.
-	// We're not using mipmaps because we simply render with one-to-one texel-to-pixel
-	// mapping (using a full screen quad in a render target).
-	//
-	d_polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	d_polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-	// Clamp texture coordinates to centre of edge texels -
-	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
-	{
-		d_polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		d_polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	}
-	else
-	{
-		d_polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		d_polygon_stencil_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	}
-
-	// Create the texture but don't load any data into it.
-	// Leave it uninitialised because we will be rendering into it to initialise it.
-	d_polygon_stencil_texture->gl_tex_image_2D(renderer, GL_TEXTURE_2D, 0, GL_RGBA8,
-			polygon_stencil_texel_width, polygon_stencil_texel_height,
-			0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
-}
-
 ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
@@ -1310,9 +1331,9 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_polygon_stencil_quads_ver
 		GLRenderer &renderer)
 {
 	const unsigned int num_quads_along_polygon_stencil_width =
-			d_polygon_stencil_texture->get_width().get() / d_tile_texel_dimension;
+			d_polygon_stencil_texel_width / d_tile_texel_dimension;
 	const unsigned int num_quads_along_polygon_stencil_height =
-			d_polygon_stencil_texture->get_height().get() / d_tile_texel_dimension;
+			d_polygon_stencil_texel_height / d_tile_texel_dimension;
 
 	const double scale_u = 1.0 / num_quads_along_polygon_stencil_width;
 	const double scale_v = 1.0 / num_quads_along_polygon_stencil_height;
