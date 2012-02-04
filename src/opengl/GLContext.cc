@@ -551,6 +551,7 @@ GPlatesOpenGL::GLContext::disable_opengl_extensions()
 	//__GLEW_ARB_shader_objects = 0;
 	//__GLEW_ARB_fragment_shader = 0;
 	//__GLEW_EXT_texture_edge_clamp = 0; __GLEW_SGIS_texture_edge_clamp = 0;
+	//__GLEW_ARB_map_buffer_range = 0; __GLEW_APPLE_flush_buffer_range = 0;
 }
 
 

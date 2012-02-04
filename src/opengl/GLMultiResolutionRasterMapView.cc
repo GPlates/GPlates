@@ -76,7 +76,7 @@ namespace GPlatesOpenGL
 				"	// Position gets transformed exactly same as fixed-function pipeline.\n"
 				"	gl_Position = ftransform(); //gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
 
-				"	// Transform 3D texture coords (present day posisiont) by cube map projection and\n"
+				"	// Transform 3D texture coords (present day position) by cube map projection and\n"
 				"	// any texture coordinate adjustments before accessing textures.\n"
 				"	// We have two texture transforms but only one texture coordinate.\n"
 				"	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;\n"

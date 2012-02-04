@@ -44,6 +44,8 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "utils/Profile.h"
+
 
 // We use macros in <GL/glew.h> that contain old-style casts.
 DISABLE_GCC_WARNING("-Wold-style-cast")
@@ -375,6 +377,8 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_stream(
 		unsigned int &stream_offset,
 		unsigned int &stream_bytes_available)
 {
+	//PROFILE_FUNC();
+
 	// 'minimum_bytes_to_stream' must be in the half-open range (0, d_size].
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			0 < minimum_bytes_to_stream && minimum_bytes_to_stream <= d_size,
@@ -414,6 +418,13 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_stream(
 
 			// Since we're invalidating the buffer we can consider the entire buffer un-initialised.
 			d_uninitialised_offset = 0;
+
+			// Notify clients that a buffer allocation has occurred.
+			// We haven't really allocated a new buffer, like 'gl_buffer_data()', but we tell
+			// clients we have in case some hardware needs to rebind the buffer objects.
+			// This might be required for ATI hardware which seems to require a rebing when
+			// 'gl_buffer_data()' is called (nVidia doesn't seem to require it).
+			allocated_buffer();
 		}
 		else // client is going to write to un-initialised memory in current buffer...
 		{
@@ -540,6 +551,8 @@ GPlatesOpenGL::GLBufferObject::gl_flush_buffer_stream(
 		target_type target,
 		unsigned int bytes_written)
 {
+	//PROFILE_FUNC();
+
 	// If no data was written then return early.
 	if (bytes_written == 0)
 	{
@@ -593,6 +606,8 @@ GPlatesOpenGL::GLBufferObject::gl_unmap_buffer(
 		GLRenderer &renderer,
 		target_type target)
 {
+	//PROFILE_FUNC();
+
 	// Bind this buffer object.
 	// Revert our buffer binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
@@ -603,9 +618,13 @@ GPlatesOpenGL::GLBufferObject::gl_unmap_buffer(
 
 	const GLboolean unmap_result = glUnmapBufferARB(target);
 
+	if (GLEW_ARB_map_buffer_range)
+	{
+		// Nothing to do.
+	}
 	// Reset to the default flushing behaviour in case 'gl_map_buffer_dynamic' or 'gl_map_buffer_stream'
 	// were called (and we're using the 'GL_APPLE_flush_buffer_range' extension).
-	if (GLEW_APPLE_flush_buffer_range)
+	else if (GLEW_APPLE_flush_buffer_range)
 	{
 		// Restore default flushing behaviour - which is to flush the entire buffer.
 		// NOTE: This is buffer object state (not global state) so it applies to the currently bound buffer object.

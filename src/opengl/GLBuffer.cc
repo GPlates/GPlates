@@ -152,6 +152,33 @@ GPlatesOpenGL::GLBuffer::MapBufferScope::gl_map_buffer_stream(
 }
 
 
+void
+GPlatesOpenGL::GLBuffer::MapBufferScope::gl_flush_buffer_dynamic(
+		unsigned int offset,
+		unsigned int length/*in bytes*/)
+{
+	// Make sure 'gl_map_buffer_dynamic' was called and was successful.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_data,
+			GPLATES_ASSERTION_SOURCE);
+
+	d_buffer.gl_flush_buffer_dynamic(d_renderer, d_target, offset, length);
+}
+
+
+void
+GPlatesOpenGL::GLBuffer::MapBufferScope::gl_flush_buffer_stream(
+		unsigned int bytes_written)
+{
+	// Make sure 'gl_map_buffer_stream' was called and was successful.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_data,
+			GPLATES_ASSERTION_SOURCE);
+
+	d_buffer.gl_flush_buffer_stream(d_renderer, d_target, bytes_written);
+}
+
+
 GLboolean
 GPlatesOpenGL::GLBuffer::MapBufferScope::gl_unmap_buffer()
 {

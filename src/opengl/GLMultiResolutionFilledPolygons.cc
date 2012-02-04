@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include "global/CompilerWarnings.h"
 
@@ -57,64 +58,136 @@
 #include "utils/IntrusiveSinglyLinkedList.h"
 #include "utils/Profile.h"
 
+
 namespace GPlatesOpenGL
 {
 	namespace
 	{
 		//! The inverse of log(2.0).
 		const float INVERSE_LOG2 = 1.0 / std::log(2.0);
+
+		//! Vertex shader source code to render a tile to the scene.
+		const char *RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE =
+				"void main (void)\n"
+				"{\n"
+
+				"	// Ensure position is transformed exactly same as fixed-function pipeline.\n"
+				"	gl_Position = ftransform(); //gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
+
+				"	// Transform present-day position by cube map projection and\n"
+				"	// any texture coordinate adjustments before accessing textures.\n"
+				"	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_Vertex;\n"
+				"	gl_TexCoord[1] = gl_TextureMatrix[1] * gl_Vertex;\n"
+
+				"}\n";
+
+		/**
+		 * Fragment shader source code to render a tile to the scene.
+		 *
+		 * If we're near the edge of a polygon (and there's no adjacent polygon)
+		 * then the fragment alpha will not be 1.0 (also happens if clipped).
+		 * This reduces the anti-aliasing affect of the bilinear filtering since the bilinearly
+		 * filtered alpha will soften the edge (during the alpha-blend stage) but also the RGB colour
+		 * has been bilinearly filtered with black (RGB of zero) which is a double-reduction that
+		 * reduces the softness of the anti-aliasing.
+		 * To get around this we revert the effect of blending with black leaving only the alpha-blending.
+		 */
+		const char *RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE =
+				"uniform sampler2D tile_texture_sampler;\n"
+
+				"#ifdef ENABLE_CLIPPING\n"
+				"uniform sampler2D clip_texture_sampler;\n"
+				"#endif // ENABLE_CLIPPING\n"
+
+				"void main (void)\n"
+				"{\n"
+
+				"	// Projective texturing to handle cube map projection.\n"
+				"	gl_FragColor = texture2DProj(tile_texture_sampler, gl_TexCoord[0]);\n"
+
+				"#ifdef ENABLE_CLIPPING\n"
+				"	gl_FragColor *= texture2DProj(clip_texture_sampler, gl_TexCoord[1]);\n"
+				"#endif // ENABLE_CLIPPING\n"
+
+				"	// Revert effect of blending with black texels near polygon edge.\n"
+				"	if (gl_FragColor.a > 0)\n"
+				"	{\n"
+				"		gl_FragColor.rgb /= gl_FragColor.a;\n"
+				"	}\n"
+
+				"}\n";
+
+		//! Vertex shader source code to render polygons to the polygon stencil texture.
+		const char *RENDER_TO_POLYGON_STENCIL_TEXTURE_VERTEX_SHADER_SOURCE =
+				"attribute vec3 present_day_position;\n"
+				"attribute vec4 fill_colour;\n"
+				"attribute vec4 world_space_quaternion;\n"
+				"// The 'xyzw' values are (translate_x, translate_y, scale_x, scale_y)\n"
+				"attribute vec4 polygon_frustum_to_render_target_clip_space_transform;\n"
+
+				"varying vec4 clip_position_params;\n"
+				"varying vec4 fragment_fill_colour;\n"
+
+				"void main (void)\n"
+				"{\n"
+
+				"	// The polygon fill colour.\n"
+				"	fragment_fill_colour = fill_colour;\n"
+
+				"   // Transform present-day position using finite rotation quaternion.\n"
+				"	vec3 rotated_position = rotate_vector_by_quaternion(world_space_quaternion, present_day_position);\n"
+
+				"	// Transform rotated position by the view/projection matrix.\n"
+				"	// The view/projection matches the polygon frustum.\n"
+				"	vec4 polygon_frustum_position = gl_ModelViewProjectionMatrix * vec4(rotated_position, 1);\n"
+
+				"	// This is also the clip-space the fragment shader uses to cull pixels outside\n"
+				"	// the polygon frustum.\n"
+				"	// Convert to a more convenient form for the fragment shader:\n"
+				"	//   1) Only interested in clip position x, y, w and -w.\n"
+				"	//   2) The z component is depth and we only need to clip to side planes not near/far plane.\n"
+				"	clip_position_params = vec4(\n"
+				"		polygon_frustum_position.xy,\n"
+				"		polygon_frustum_position.w,\n"
+				"		-polygon_frustum_position.w);\n"
+
+				"	// Post-projection translate/scale to position NDC space around render target frustum...\n"
+				"	vec4 render_target_frustum_position = vec4(\n"
+				"		// Scale and translate x component...\n"
+				"		dot(polygon_frustum_to_render_target_clip_space_transform.zx,\n"
+				"				polygon_frustum_position.xw),\n"
+				"		// Scale and translate y component...\n"
+				"		dot(polygon_frustum_to_render_target_clip_space_transform.wy,\n"
+				"				polygon_frustum_position.yw),\n"
+				"		// z and w components unaffected...\n"
+				"		polygon_frustum_position.zw);\n"
+
+				"	gl_Position = render_target_frustum_position;\n"
+
+				"}\n";
+
+		/**
+		 * Fragment shader source to render polygons to the polygon stencil texture.
+		 */
+		const char *RENDER_TO_POLYGON_STENCIL_TEXTURE_FRAGMENT_SHADER_SOURCE =
+				"varying vec4 clip_position_params;\n"
+				"varying vec4 fragment_fill_colour;\n"
+
+				"void main (void)\n"
+				"{\n"
+
+				"	// Discard current pixel if outside the frustum side planes.\n"
+				"	// Inside clip frustum means -1 < x/w < 1 and -1 < y/w < 1 which is same as\n"
+				"	// -w < x < w and -w < y < w.\n"
+				"	// 'clip_position_params' is (x, y, w, -w).\n"
+				"	if (!all(lessThan(clip_position_params.wxwy, clip_position_params.xzyz)))\n"
+				"		discard;\n"
+
+				"	// Output the polygon fill colour.\n"
+				"	gl_FragColor = fragment_fill_colour;\n"
+
+				"}\n";
 	}
-
-	//! Vertex shader source code to render a tile to the scene.
-	const char *RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE =
-			"void main (void)\n"
-			"{\n"
-
-			"	// Ensure position is transformed exactly same as fixed-function pipeline.\n"
-			"	gl_Position = ftransform(); //gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
-
-			"	// Transform present-day position by cube map projection and\n"
-			"	// any texture coordinate adjustments before accessing textures.\n"
-			"	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_Vertex;\n"
-			"	gl_TexCoord[1] = gl_TextureMatrix[1] * gl_Vertex;\n"
-
-			"}\n";
-
-	/**
-	 * Fragment shader source code to render a tile to the scene.
-	 *
-	 * If we're near the edge of a polygon (and there's no adjacent polygon)
-	 * then the fragment alpha will not be 1.0 (also happens if clipped).
-	 * This reduces the anti-aliasing affect of the bilinear filtering since the bilinearly
-	 * filtered alpha will soften the edge (during the alpha-blend stage) but also the RGB colour
-	 * has been bilinearly filtered with black (RGB of zero) which is a double-reduction that
-	 * reduces the softness of the anti-aliasing.
-	 * To get around this we revert the effect of blending with black leaving only the alpha-blending.
-	 */
-	const char *RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE =
-			"uniform sampler2D tile_texture_sampler;\n"
-
-			"#ifdef ENABLE_CLIPPING\n"
-			"uniform sampler2D clip_texture_sampler;\n"
-			"#endif // ENABLE_CLIPPING\n"
-
-			"void main (void)\n"
-			"{\n"
-
-			"	// Projective texturing to handle cube map projection.\n"
-			"	gl_FragColor = texture2DProj(tile_texture_sampler, gl_TexCoord[0]);\n"
-
-			"#ifdef ENABLE_CLIPPING\n"
-			"	gl_FragColor *= texture2DProj(clip_texture_sampler, gl_TexCoord[1]);\n"
-			"#endif // ENABLE_CLIPPING\n"
-
-			"	// Revert effect of blending with black texels near polygon edge.\n"
-			"	if (gl_FragColor.a > 0)\n"
-			"	{\n"
-			"		gl_FragColor.rgb /= gl_FragColor.a;\n"
-			"	}\n"
-
-			"}\n";
 }
 
 
@@ -125,7 +198,9 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::GLMultiResolutionFilledPolygons(
 	d_tile_texel_dimension(DEFAULT_TILE_TEXEL_DIMENSION),
 	d_polygon_stencil_texel_width(0),
 	d_polygon_stencil_texel_height(0),
-	d_multi_resolution_cube_mesh(multi_resolution_cube_mesh)
+	d_multi_resolution_cube_mesh(multi_resolution_cube_mesh),
+	d_stream_multiple_polygons(false),
+	d_identity_quaternion(GPlatesMaths::UnitQuaternion3D::create_identity_rotation())
 {
 	initialise_polygon_stencil_texture_dimensions(renderer);
 
@@ -135,6 +210,19 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::GLMultiResolutionFilledPolygons(
 
 	// If there's support for shader programs then create them.
 	create_shader_programs(renderer);
+
+	// If we have shader programs then we'll stream polygons to the vertex array so that
+	// we can batch *multiple* polygons per OpenGL draw call for a performance gain.
+	//
+	// Note: Do this after calling 'create_shader_programs()'.
+	if (d_render_to_polygon_stencil_texture_program_object)
+	{
+		//d_stream_multiple_polygons = true;
+	}
+
+	// Note: Do this after calling 'create_shader_programs()' and setting 'd_stream_multiple_polygons'
+	// since it depends on both.
+	initialise_polygons_vertex_array(renderer);
 }
 
 
@@ -238,12 +326,15 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::get_level_of_detail(
 }
 
 
-// namespace
-// {
-// 	unsigned int g_num_tiles_rendered = 0;
-// 	unsigned int g_num_render_target_switches = 0;
-// 	unsigned int g_num_polygons_rendered = 0;
-// }
+namespace
+{
+	unsigned int g_num_tiles_rendered = 0;
+	unsigned int g_num_render_target_switches = 0;
+	unsigned int g_num_tile_draw_calls = 0;
+	unsigned int g_num_polygon_stencil_draw_calls = 0;
+	unsigned int g_num_polygons_rendered = 0;
+	unsigned int g_num_triangles_rendered = 0;
+}
 
 void
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::render(
@@ -261,13 +352,19 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render(
 		return;
 	}
 
-// 	g_num_tiles_rendered = 0;
-// 	g_num_render_target_switches = 0;
-// 	g_num_polygons_rendered = 0;
+ 	g_num_tiles_rendered = 0;
+ 	g_num_render_target_switches = 0;
+	g_num_tile_draw_calls = 0;
+	g_num_polygon_stencil_draw_calls = 0;
+	g_num_polygons_rendered = 0;
+	g_num_triangles_rendered = 0;
 
-	// First write the vertices/indices of the filled polygons gathered by the client into
-	// our vertex buffer and vertex element buffer.
-	write_filled_polygon_meshes_to_vertex_array(renderer, filled_polygons);
+	// If we're not streaming polygons (to reduce OpenGL draw calls) then write the vertices/indices
+	// of *all* filled polygons (gathered by the client) into our vertex buffer and vertex element buffer.
+	if (!d_stream_multiple_polygons)
+	{
+		write_filled_polygon_meshes_to_vertex_array(renderer, filled_polygons);
+	}
 
 	// Get the level-of-detail based on the size of viewport pixels projected onto the globe.
 	const unsigned int render_level_of_detail = get_level_of_detail(
@@ -336,7 +433,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render(
 		render_quad_tree(
 				renderer,
 				mesh_quad_tree_root_node,
-				*filled_polygons.d_filled_polygons_spatial_partition,
+				filled_polygons,
 				filled_polygons_spatial_partition_node_list,
 				filled_polygons_intersecting_nodes,
 				*cube_subdivision_cache,
@@ -350,9 +447,14 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render(
 				GLFrustum::ALL_PLANES_ACTIVE_MASK);
 	}
 
-// 	qWarning() << "Tiles rendered: " << g_num_tiles_rendered;
-// 	qWarning() << "RT switches: " << g_num_render_target_switches;
-// 	qWarning() << "Drawables: " << g_num_polygons_rendered;
+// 	qDebug() << "*********************************************";
+// 	qDebug() << "Tiles rendered: " << g_num_tiles_rendered;
+// 	qDebug() << "RT switches: " << g_num_render_target_switches;
+// 	qDebug() << "Tile draw calls: " << g_num_tile_draw_calls;
+// 	qDebug() << "Polygon stencil draw calls: " << g_num_polygon_stencil_draw_calls;
+// 	qDebug() << "Total draw calls: " << g_num_tiles_rendered + g_num_tile_draw_calls + g_num_polygon_stencil_draw_calls;
+// 	qDebug() << "Polygons: " << g_num_polygons_rendered;
+// 	qDebug() << "Triangles: " << g_num_triangles_rendered;
 }
 
 
@@ -360,7 +462,7 @@ void
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_quad_tree(
 		GLRenderer &renderer,
 		const mesh_quad_tree_node_type &mesh_quad_tree_node,
-		const filled_polygons_spatial_partition_type &filled_polygons_spatial_partition,
+		const filled_polygons_type &filled_polygons,
 		const filled_polygons_spatial_partition_node_list_type &parent_filled_polygons_intersecting_node_list,
 		const filled_polygons_intersecting_nodes_type &filled_polygons_intersecting_nodes,
 		cube_subdivision_cache_type &cube_subdivision_cache,
@@ -408,7 +510,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_quad_tree(
 		render_quad_tree_node(
 				renderer,
 				mesh_quad_tree_node,
-				filled_polygons_spatial_partition,
+				filled_polygons,
 				parent_filled_polygons_intersecting_node_list,
 				filled_polygons_intersecting_nodes,
 				cube_subdivision_cache,
@@ -501,7 +603,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_quad_tree(
 			render_quad_tree(
 					renderer,
 					child_mesh_quad_tree_node,
-					filled_polygons_spatial_partition,
+					filled_polygons,
 					child_filled_polygons_intersecting_node_list,
 					child_filled_polygons_intersecting_nodes,
 					cube_subdivision_cache,
@@ -521,7 +623,7 @@ void
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_quad_tree_node(
 		GLRenderer &renderer,
 		const mesh_quad_tree_node_type &mesh_quad_tree_node,
-		const filled_polygons_spatial_partition_type &filled_polygons_spatial_partition,
+		const filled_polygons_type &filled_polygons,
 		const filled_polygons_spatial_partition_node_list_type &parent_filled_polygons_intersecting_node_list,
 		const filled_polygons_intersecting_nodes_type &filled_polygons_intersecting_nodes,
 		cube_subdivision_cache_type &cube_subdivision_cache,
@@ -583,7 +685,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_quad_tree_node(
 	render_tile_to_scene(
 			renderer,
 			mesh_quad_tree_node,
-			filled_polygons_spatial_partition,
+			filled_polygons,
 			filled_polygons_intersecting_node_list,
 			cube_subdivision_cache,
 			cube_subdivision_cache_node,
@@ -776,7 +878,7 @@ void
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_tile_to_scene(
 		GLRenderer &renderer,
 		const mesh_quad_tree_node_type &mesh_quad_tree_node,
-		const filled_polygons_spatial_partition_type &filled_polygons_spatial_partition,
+		const filled_polygons_type &filled_polygons,
 		const filled_polygons_spatial_partition_node_list_type &filled_polygons_intersecting_node_list,
 		cube_subdivision_cache_type &cube_subdivision_cache,
 		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
@@ -787,6 +889,9 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_tile_to_scene(
 
 	// Make sure we leave the OpenGL state the way it was.
 	GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	const filled_polygons_spatial_partition_type &filled_polygons_spatial_partition =
+			*filled_polygons.d_filled_polygons_spatial_partition;
 
 	// Sort the reconstructed polygon meshes by transform.
 	filled_polygon_seq_type transformed_sorted_filled_drawables;
@@ -824,6 +929,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_tile_to_scene(
 	render_filled_polygons_to_tile_texture(
 			renderer,
 			tile_texture,
+			filled_polygons,
 			transformed_sorted_filled_drawables,
 			*projection_transform,
 			*view_transform);
@@ -850,13 +956,14 @@ void
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_texture(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_to_const_type &tile_texture,
+		const filled_polygons_type &filled_polygons,
 		const filled_polygon_seq_type &transformed_sorted_filled_drawables,
 		const GLTransform &projection_transform,
 		const GLTransform &view_transform)
 {
 	PROFILE_FUNC();
 
-	//++g_num_tiles_rendered;
+	++g_num_tiles_rendered;
 
 	// Begin a render target that will render the individual filled polygons to the tile texture.
 	GLRenderer::RenderTarget2DScope render_target_scope(renderer, tile_texture);
@@ -941,9 +1048,10 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 		render_target_height = d_tile_texel_dimension;
 	}
 
+	const unsigned int num_polygon_tiles_along_width = render_target_width / d_tile_texel_dimension;
+	const unsigned int num_polygon_tiles_along_height = render_target_height / d_tile_texel_dimension;
 	const unsigned int num_polygons_per_stencil_texture_render =
-			render_target_width * render_target_height /
-					(d_tile_texel_dimension * d_tile_texel_dimension);
+			num_polygon_tiles_along_width * num_polygon_tiles_along_height;
 
 	unsigned int num_polygons_left_to_render = transformed_sorted_filled_drawables.size();
 	filled_polygon_seq_type::const_iterator filled_drawables_iter = transformed_sorted_filled_drawables.begin();
@@ -961,8 +1069,9 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 		render_filled_polygons_to_polygon_stencil_texture(
 				renderer,
 				polygon_stencil_texture,
-				render_target_width,
-				render_target_height,
+				num_polygon_tiles_along_width,
+				num_polygon_tiles_along_height,
+				filled_polygons,
 				filled_drawables_iter,
 				filled_drawables_group_end,
 				projection_transform,
@@ -995,6 +1104,8 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 				GLVertexElementTraits<stencil_quad_vertex_element_type>::type,
 				0/*indices_offset*/);
 
+		++g_num_tile_draw_calls;
+
 		// Advance to the next group of polygons.
 		filled_drawables_iter = filled_drawables_group_end;
 		num_polygons_left_to_render -= num_polygons_in_group;
@@ -1006,8 +1117,9 @@ void
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_polygon_stencil_texture(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_to_const_type &polygon_stencil_texture,
-		unsigned int render_target_width,
-		unsigned int render_target_height,
+		unsigned int num_polygon_tiles_along_width,
+		unsigned int num_polygon_tiles_along_height,
+		const filled_polygons_type &filled_polygons,
 		const filled_polygon_seq_type::const_iterator begin_filled_drawables,
 		const filled_polygon_seq_type::const_iterator end_filled_drawables,
 		const GLTransform &projection_transform,
@@ -1021,9 +1133,13 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_polygo
 			renderer,
 			polygon_stencil_texture,
 			// Limit rendering to a part of the polygon stencil texture if it's too big for render-target...
-			GLViewport(0, 0, render_target_width, render_target_height));
+			GLViewport(
+					0,
+					0,
+					num_polygon_tiles_along_width * d_tile_texel_dimension,
+					num_polygon_tiles_along_height * d_tile_texel_dimension));
 
-	//++g_num_render_target_switches;
+	++g_num_render_target_switches;
 
 	// Clear the entire colour buffer of the render target.
 	// Clears the entire render target regardless of the current viewport.
@@ -1048,24 +1164,169 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_polygo
 	//renderer.gl_hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 #endif
 
-	renderer.gl_mult_matrix(GL_MODELVIEW, view_transform.get_matrix());
+	renderer.gl_load_matrix(GL_MODELVIEW, view_transform.get_matrix());
 
 	// NOTE: We use the half-texel-expanded projection transform since we want to render the
 	// border pixels (in each tile) exactly on the tile (plane) boundary.
 	// The tile textures are bilinearly filtered and this way the centres of border texels match up
 	// with adjacent tiles.
-	renderer.gl_mult_matrix(GL_PROJECTION, projection_transform.get_matrix());
-
-	const GLMatrix view_matrix = renderer.gl_get_matrix(GL_MODELVIEW);
+	renderer.gl_load_matrix(GL_PROJECTION, projection_transform.get_matrix());
 
 	// Bind the vertex array before using it to draw.
 	d_polygons_vertex_array->gl_bind(renderer);
 
+	// Stream *multiple* polygons per OpenGL draw call if supported since it's faster.
+	if (d_stream_multiple_polygons)
+	{
+		render_filled_polygons_in_groups_to_polygon_stencil_texture(
+				renderer,
+				num_polygon_tiles_along_width,
+				num_polygon_tiles_along_height,
+				filled_polygons,
+				begin_filled_drawables,
+				end_filled_drawables);
+	}
+	else
+	{
+		render_filled_polygons_individually_to_polygon_stencil_texture(
+				renderer,
+				num_polygon_tiles_along_width,
+				num_polygon_tiles_along_height,
+				begin_filled_drawables,
+				end_filled_drawables);
+	}
+
+	++g_num_render_target_switches;
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_in_groups_to_polygon_stencil_texture(
+		GLRenderer &renderer,
+		unsigned int num_polygon_tiles_along_width,
+		unsigned int num_polygon_tiles_along_height,
+		const filled_polygons_type &filled_polygons,
+		const filled_polygon_seq_type::const_iterator begin_filled_drawables,
+		const filled_polygon_seq_type::const_iterator end_filled_drawables)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_render_to_polygon_stencil_texture_program_object,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Bind the shader program for rendering polygons to the polygon stencil texture.
+	renderer.gl_bind_program_object(d_render_to_polygon_stencil_texture_program_object.get());
+
+	// Vertices of *all* polygons.
+	const std::vector<polygon_vertex_type> &all_polygon_vertices = filled_polygons.d_polygon_vertices;
+
+	//
+	// Set up for streaming vertices/indices.
+	//
+
+	// Used when mapping the vertex/index buffers for streaming.
+	GLBuffer::MapBufferScope map_vertex_element_buffer_scope(
+			renderer,
+			*d_polygons_vertex_element_buffer->get_buffer(),
+			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER);
+	GLBuffer::MapBufferScope map_vertex_buffer_scope(
+			renderer,
+			*d_polygons_vertex_buffer->get_buffer(),
+			GLBuffer::TARGET_ARRAY_BUFFER);
+
+	PolygonStream polygon_stream;
+
+	// Start the stream mapping.
+	begin_polygons_vertex_array_streaming(
+			renderer,
+			polygon_stream,
+			map_vertex_element_buffer_scope,
+			map_vertex_buffer_scope);
+
+	// Render each filled polygon to a separate viewport within the polygon stencil texture.
+	unsigned int polygon_tile_x_offset = 0;
+	unsigned int polygon_tile_y_offset = 0;
+	for (filled_polygon_seq_type::const_iterator filled_drawables_iter = begin_filled_drawables;
+		filled_drawables_iter != end_filled_drawables;
+		++filled_drawables_iter)
+	{
+		const filled_polygon_type &filled_polygon = *filled_drawables_iter;
+
+		// The polygon transform.
+		const GPlatesMaths::UnitQuaternion3D &polygon_quat_rotation =
+				filled_polygon.d_transform
+				? filled_polygon.d_transform.get()->get_finite_rotation().unit_quat()
+				: d_identity_quaternion;
+
+		// Post-projection translate/scale to position NDC space around render target frustum.
+		// This takes the clip-space of the current tile frustum (that each polygon is ultimately
+		// rendered to) and positions it into the large polygon stencil texture.
+		// This enables us to render each polygon to a separate viewport of the stencil texture.
+		// The pixel shader takes care of clipping away parts of the polygon outside its viewport
+		// to avoid corrupting adjacent polygon viewports.
+		//
+		// NOTE: The arithmetic is very similar to the inverse transform of GLUtils::QuadTreeClipSpaceTransform.
+		// As there, the scale is applied first (in the shader program) followed the translation.
+		// There's a different scale/translate for the x and y components in case the area of the
+		// polyton stencil texture rendered to is not square.
+		const double polygon_frustum_to_render_target_clip_space_scale_x =
+				1.0 / num_polygon_tiles_along_width;
+		const double polygon_frustum_to_render_target_clip_space_scale_y =
+				1.0 / num_polygon_tiles_along_height;
+		const double polygon_frustum_to_render_target_clip_space_translate_x =
+				(2.0 * polygon_tile_x_offset + 1 - num_polygon_tiles_along_width) *
+						polygon_frustum_to_render_target_clip_space_scale_x;
+		const double polygon_frustum_to_render_target_clip_space_translate_y =
+				(2.0 * polygon_tile_y_offset + 1 - num_polygon_tiles_along_height) *
+						polygon_frustum_to_render_target_clip_space_scale_y;
+
+		// Stream the current polygon to the vertex array (and render the vertex array stream if full).
+		stream_filled_polygon_to_vertex_array(
+				renderer,
+				filled_polygon.d_drawable,
+				polygon_quat_rotation,
+				polygon_frustum_to_render_target_clip_space_scale_x,
+				polygon_frustum_to_render_target_clip_space_scale_y,
+				polygon_frustum_to_render_target_clip_space_translate_x,
+				polygon_frustum_to_render_target_clip_space_translate_y,
+				all_polygon_vertices,
+				polygon_stream,
+				map_vertex_element_buffer_scope,
+				map_vertex_buffer_scope);
+
+		++g_num_polygons_rendered;
+
+		// Move to the next row of viewport subsections if we have to.
+		if (++polygon_tile_x_offset == num_polygon_tiles_along_width)
+		{
+			polygon_tile_x_offset = 0;
+			++polygon_tile_y_offset;
+		}
+	}
+
+	// Stop streaming the last batch of streamed polygon triangles.
+	end_polygons_vertex_array_streaming(
+			renderer,
+			polygon_stream,
+			map_vertex_element_buffer_scope,
+			map_vertex_buffer_scope);
+
+	// Render the last batch of streamed polygon triangles (if any).
+	render_polygons_vertex_array_stream(renderer, polygon_stream);
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_individually_to_polygon_stencil_texture(
+		GLRenderer &renderer,
+		unsigned int num_polygon_tiles_along_width,
+		unsigned int num_polygon_tiles_along_height,
+		const filled_polygon_seq_type::const_iterator begin_filled_drawables,
+		const filled_polygon_seq_type::const_iterator end_filled_drawables)
+{
+	const GLMatrix view_matrix = renderer.gl_get_matrix(GL_MODELVIEW);
+
 	// Start off with the identity model transform and change as needed.
 	boost::optional<GPlatesAppLogic::ReconstructMethodFiniteRotation::non_null_ptr_to_const_type> current_finite_rotation;
-
-	const unsigned int num_viewports_along_stencil_texture_width =
-			render_target_width / d_tile_texel_dimension;
 
 	// Render each filled polygon to a separate viewport within the polygon stencil texture.
 	unsigned int viewport_x_offset = 0;
@@ -1083,7 +1344,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_polygo
 				d_tile_texel_dimension,
 				d_tile_texel_dimension);
 
-		// If the finite rotation has changed then set update it in the renderer...
+		// If the finite rotation has changed then update it in the renderer...
 		if (filled_drawable.d_transform != current_finite_rotation)
 		{
 			renderer.gl_load_matrix(GL_MODELVIEW, view_matrix);
@@ -1101,9 +1362,10 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_polygo
 			current_finite_rotation = filled_drawable.d_transform;
 		}
 
-		PROFILE_BLOCK("d_polygons_vertex_array->gl_draw_range_elements");
+		PROFILE_BLOCK("render_filled_polygons_individually_to_polygon_stencil_texture: gl_draw_range_elements");
 
 		// Render the current filled polygon.
+		// The vertex array buffers have already been filled with 'write_filled_polygon_meshes_to_vertex_array()'.
 		d_polygons_vertex_array->gl_draw_range_elements(
 				renderer,
 				GL_TRIANGLES,
@@ -1113,17 +1375,17 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_polygo
 				GLVertexElementTraits<polygon_vertex_element_type>::type,
 				filled_drawable.d_drawable.indices_offset);
 
-		//++g_num_polygons_rendered;
+		++g_num_polygons_rendered;
+		++g_num_polygon_stencil_draw_calls;
+		g_num_triangles_rendered += filled_drawable.d_drawable.count / 3;
 
 		// Move to the next row of viewport subsections if we have to.
-		if (++viewport_x_offset == num_viewports_along_stencil_texture_width)
+		if (++viewport_x_offset == num_polygon_tiles_along_width)
 		{
 			viewport_x_offset = 0;
 			++viewport_y_offset;
 		}
 	}
-
-	//++g_num_render_target_switches;
 }
 
 
@@ -1298,8 +1560,166 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_polygons_vertex_array(
 	// Set up the vertex buffer.
 	GLBuffer::shared_ptr_type vertex_buffer_data = GLBuffer::create(renderer);
 	d_polygons_vertex_buffer = GLVertexBuffer::create(renderer, vertex_buffer_data);
-	// Attach vertex buffer to the vertex array.
-	bind_vertex_buffer_to_vertex_array<polygon_vertex_type>(renderer, *d_polygons_vertex_array, d_polygons_vertex_buffer);
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionFilledPolygons::initialise_polygons_vertex_array(
+		GLRenderer &renderer)
+{
+	// If we have no shader programs then we won't be streaming polygons to a vertex array.
+	// Instead we'll be allocating a vertex buffer large enough to contain all polygons and
+	// rendering each polygon with its own OpenGL draw call (ie, slow).
+	if (!d_stream_multiple_polygons)
+	{
+		// Attach polygons vertex buffer to the vertex array.
+		bind_vertex_buffer_to_vertex_array<polygon_vertex_type>(
+				renderer,
+				*d_polygons_vertex_array,
+				d_polygons_vertex_buffer);
+
+		return;
+	}
+
+	// Allocate memory for the streaming vertex buffer.
+	//
+	// NOTE: This is not necessary if no streaming is used because
+	// 'write_filled_polygon_meshes_to_vertex_array()' will allocate/initialise the buffer data.
+
+	// If fine-grained streaming is not supported then reduce the size of the buffers because they
+	// won't accept multiple draw calls (streams) into a single buffer allocation but instead the
+	// entire buffer will get allocated for each draw call - depending how far behind the GPU is
+	// from the CPU this could be a reasonable number of buffer allocations in flight.
+
+	// We're using 'GLushort' vertex indices which are 16-bit - make sure we don't overflow them.
+	// 16-bit indices are faster than 32-bit for graphics cards (but again probably not much gain).
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			MAX_NUM_BYTES_IN_STREAMING_VERTEX_BUFFER <= (1 << 16) * sizeof(PolygonStreamVertex),
+			GPLATES_ASSERTION_SOURCE);
+
+	const unsigned int num_bytes_in_streaming_vertex_buffer =
+			d_polygons_vertex_buffer->get_buffer()->asynchronous_map_buffer_stream_supported(renderer)
+			? MAX_NUM_BYTES_IN_STREAMING_VERTEX_BUFFER
+			: MAX_NUM_BYTES_IN_STREAMING_VERTEX_BUFFER / 8;
+
+	const unsigned int num_bytes_in_streaming_vertex_element_buffer =
+			d_polygons_vertex_element_buffer->get_buffer()->asynchronous_map_buffer_stream_supported(renderer)
+			? MAX_NUM_BYTES_IN_STREAMING_VERTEX_ELEMENT_BUFFER
+			: MAX_NUM_BYTES_IN_STREAMING_VERTEX_ELEMENT_BUFFER / 8;
+
+	// Allocate the (uninitialised) buffer data in the polygons vertex buffer.
+	d_polygons_vertex_buffer->get_buffer()->gl_buffer_data(
+			renderer,
+			GLBuffer::TARGET_ARRAY_BUFFER,
+			num_bytes_in_streaming_vertex_buffer,
+			NULL,
+			GLBuffer::USAGE_STREAM_DRAW);
+
+	// Allocate the (uninitialised) buffer data in the polygons vertex element buffer.
+	d_polygons_vertex_element_buffer->get_buffer()->gl_buffer_data(
+			renderer,
+			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
+			num_bytes_in_streaming_vertex_element_buffer,
+			NULL,
+			GLBuffer::USAGE_STREAM_DRAW);
+
+	//
+	// Link the vertex data structure definition with the shader program so it know where the vertex components are.
+	//
+
+	// sizeof() only works on data members if you have an object instantiated...
+	PolygonStreamVertex vertex_for_sizeof; 
+	// Avoid unused variable warning on some compilers not recognising sizeof() as usage.
+	static_cast<void>(vertex_for_sizeof.present_day_position);
+	// Offset of attribute data from start of a vertex.
+	GLint offset = 0;
+
+	// NOTE: We don't need to worry about attribute aliasing (see comment in
+	// 'GLProgramObject::gl_bind_attrib_location') because we are not using any of the built-in
+	// attributes (like 'gl_Vertex').
+	// However we'll start attribute indices at 1 (instead of 0) in case we later decide to use
+	// the most common built-in attribute 'gl_Vertex' (which aliases to attribute index 0).
+	// If we use more built-in attributes then we'll need to modify the attribute indices we use here.
+	GLuint attribute_index = 1;
+
+	// The "present_day_position" attribute data...
+	d_render_to_polygon_stencil_texture_program_object.get()->gl_bind_attrib_location(
+			"present_day_position", attribute_index);
+	d_polygons_vertex_array->set_enable_vertex_attrib_array(
+			renderer, attribute_index, true/*enable*/);
+	d_polygons_vertex_array->set_vertex_attrib_pointer(
+			renderer,
+			d_polygons_vertex_buffer,
+			attribute_index,
+			sizeof(vertex_for_sizeof.present_day_position) / sizeof(vertex_for_sizeof.present_day_position[0]),
+			GL_FLOAT,
+			GL_FALSE/*normalized*/,
+			sizeof(PolygonStreamVertex),
+			offset);
+
+	++attribute_index;
+	offset += sizeof(vertex_for_sizeof.present_day_position);
+
+	// The "fill_colour" attribute data...
+	d_render_to_polygon_stencil_texture_program_object.get()->gl_bind_attrib_location(
+			"fill_colour", attribute_index);
+	d_polygons_vertex_array->set_enable_vertex_attrib_array(
+			renderer, attribute_index, true/*enable*/);
+	d_polygons_vertex_array->set_vertex_attrib_pointer(
+			renderer,
+			d_polygons_vertex_buffer,
+			attribute_index,
+			4/*size*/,
+			GL_UNSIGNED_BYTE,
+			GL_TRUE/*normalized*/,
+			sizeof(PolygonStreamVertex),
+			offset);
+
+	++attribute_index;
+	offset += sizeof(vertex_for_sizeof.fill_colour);
+
+	// The "world_space_quaternion" attribute data...
+	d_render_to_polygon_stencil_texture_program_object.get()->gl_bind_attrib_location(
+			"world_space_quaternion", attribute_index);
+	d_polygons_vertex_array->set_enable_vertex_attrib_array(
+			renderer, attribute_index, true/*enable*/);
+	d_polygons_vertex_array->set_vertex_attrib_pointer(
+			renderer,
+			d_polygons_vertex_buffer,
+			attribute_index,
+			sizeof(vertex_for_sizeof.world_space_quaternion) / sizeof(vertex_for_sizeof.world_space_quaternion[0]),
+			GL_FLOAT,
+			GL_FALSE/*normalized*/,
+			sizeof(PolygonStreamVertex),
+			offset);
+
+	++attribute_index;
+	offset += sizeof(vertex_for_sizeof.world_space_quaternion);
+
+	// The "polygon_frustum_to_render_target_clip_space_transform" attribute data...
+	d_render_to_polygon_stencil_texture_program_object.get()->gl_bind_attrib_location(
+			"polygon_frustum_to_render_target_clip_space_transform", attribute_index);
+	d_polygons_vertex_array->set_enable_vertex_attrib_array(
+			renderer, attribute_index, true/*enable*/);
+	d_polygons_vertex_array->set_vertex_attrib_pointer(
+			renderer,
+			d_polygons_vertex_buffer,
+			attribute_index,
+			sizeof(vertex_for_sizeof.polygon_frustum_to_render_target_clip_space_transform) /
+				sizeof(vertex_for_sizeof.polygon_frustum_to_render_target_clip_space_transform[0]),
+			GL_FLOAT,
+			GL_FALSE/*normalized*/,
+			sizeof(PolygonStreamVertex),
+			offset);
+
+
+	// Now that we've changed the attribute bindings in the program object we need to
+	// re-link it in order for them to take effect.
+	bool link_status;
+	link_status = d_render_to_polygon_stencil_texture_program_object.get()->gl_link_program(renderer);
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			link_status,
+			GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -1308,21 +1728,29 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::write_filled_polygon_meshes_to_v
 		GLRenderer &renderer,
 		const filled_polygons_type &filled_polygons)
 {
+	PROFILE_FUNC();
+
+	// It's not 'stream' because the same filled polygons are accessed many times.
+	// It's not 'dynamic' because we allocate a new buffer (ie, glBufferData does not modify existing buffer).
+	// We really want to encourage this to be in video memory (even though it's only going to live
+	// there for a single rendering frame) because there are many accesses to this buffer as the same
+	// polygons are rendered into multiple tiles (otherwise the PCI bus bandwidth becomes the limiting factor).
+
 	GLBuffer::shared_ptr_type vertex_element_buffer_data = d_polygons_vertex_element_buffer->get_buffer();
 	vertex_element_buffer_data->gl_buffer_data(
 			renderer,
 			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
 			filled_polygons.d_polygon_vertex_elements,
-			// It's not 'stream' because filled polygons can be accessed more than once per 'render' call...
-			GLBuffer::USAGE_DYNAMIC_DRAW);
+			GLBuffer::USAGE_STATIC_DRAW);
 
 	GLBuffer::shared_ptr_type vertex_buffer_data = d_polygons_vertex_buffer->get_buffer();
 	vertex_buffer_data->gl_buffer_data(
 			renderer,
 			GLBuffer::TARGET_ARRAY_BUFFER,
 			filled_polygons.d_polygon_vertices,
-			// It's not 'stream' because filled polygons can be accessed more than once per 'render' call...
-			GLBuffer::USAGE_DYNAMIC_DRAW);
+			GLBuffer::USAGE_STATIC_DRAW);
+
+	//qDebug() << "Writing triangles: " << filled_polygons.d_polygon_vertex_elements.size() / 3;
 }
 
 
@@ -1353,9 +1781,9 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_polygon_stencil_quads_ver
 	std::vector<stencil_quad_vertex_element_type> quad_indices;
 	quad_indices.reserve(num_quad_vertices);
 
-	for (unsigned int y = 0; y < num_quads_along_polygon_stencil_width; ++y)
+	for (unsigned int y = 0; y < num_quads_along_polygon_stencil_height; ++y)
 	{
-		for (unsigned int x = 0; x < num_quads_along_polygon_stencil_height; ++x)
+		for (unsigned int x = 0; x < num_quads_along_polygon_stencil_width; ++x)
 		{
 			// Add four vertices for the current quad.
 			const double u0 = x * scale_u;
@@ -1395,7 +1823,10 @@ void
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_shader_programs(
 		GLRenderer &renderer)
 {
-	// We only make use of shader programs for the final stage of rendering a tile to the scene.
+	//
+	// Shader programs for the final stage of rendering a tile to the scene.
+	// To enhance (or remove effect of) anti-aliasing of polygons edges.
+	//
 
 	// A version without clipping.
 	d_render_tile_to_scene_program_object =
@@ -1416,4 +1847,290 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_shader_programs(
 					renderer,
 					RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE,
 					render_tile_to_scene_with_clipping_shader_source);
+
+	//
+	// Shader program to render *multiple* polygons to the polygon stencil texture.
+	// Improves performance by reducing number of OpenGL draw calls.
+	//
+
+	GLShaderProgramUtils::ShaderSource render_to_polygon_stencil_texture_vertex_shader_source;
+	// Add the GLSL function to rotate by quaternion first.
+	render_to_polygon_stencil_texture_vertex_shader_source.add_shader_source(
+			GLShaderProgramUtils::ROTATE_VECTOR_BY_QUATERNION_SHADER_SOURCE);
+	// Then add the GLSL 'main()' function.
+	render_to_polygon_stencil_texture_vertex_shader_source.add_shader_source(
+			RENDER_TO_POLYGON_STENCIL_TEXTURE_VERTEX_SHADER_SOURCE);
+	// Create the program object.
+	d_render_to_polygon_stencil_texture_program_object =
+			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
+					renderer,
+					render_to_polygon_stencil_texture_vertex_shader_source,
+					RENDER_TO_POLYGON_STENCIL_TEXTURE_FRAGMENT_SHADER_SOURCE);
+
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionFilledPolygons::stream_filled_polygon_to_vertex_array(
+		GLRenderer &renderer,
+		const filled_polygon_type::Drawable &filled_drawable,
+		const GPlatesMaths::UnitQuaternion3D &polygon_quat_rotation,
+		const double &polygon_frustum_to_render_target_clip_space_scale_x,
+		const double &polygon_frustum_to_render_target_clip_space_scale_y,
+		const double &polygon_frustum_to_render_target_clip_space_translate_x,
+		const double &polygon_frustum_to_render_target_clip_space_translate_y,
+		const std::vector<polygon_vertex_type> &all_polygon_vertices,
+		PolygonStream &polygon_stream,
+		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
+		GLBuffer::MapBufferScope &map_vertex_buffer_scope)
+{
+	PROFILE_FUNC();
+
+	PolygonStreamVertex polygon_stream_vertex;
+
+	// The transform is the same for all vertices in a polygon.
+	polygon_stream_vertex.world_space_quaternion[0] = polygon_quat_rotation.x().dval();
+	polygon_stream_vertex.world_space_quaternion[1] = polygon_quat_rotation.y().dval();
+	polygon_stream_vertex.world_space_quaternion[2] = polygon_quat_rotation.z().dval();
+	polygon_stream_vertex.world_space_quaternion[3] = polygon_quat_rotation.w().dval();
+
+	// The post-projection translate/scale is the same for all vertices in a polygon.
+	// The 'xyzw' values are (translate_x, translate_y, scale_x, scale_y).
+	polygon_stream_vertex.polygon_frustum_to_render_target_clip_space_transform[0] =
+			polygon_frustum_to_render_target_clip_space_translate_x;
+	polygon_stream_vertex.polygon_frustum_to_render_target_clip_space_transform[1] =
+			polygon_frustum_to_render_target_clip_space_translate_y;
+	polygon_stream_vertex.polygon_frustum_to_render_target_clip_space_transform[2] =
+			polygon_frustum_to_render_target_clip_space_scale_x;
+	polygon_stream_vertex.polygon_frustum_to_render_target_clip_space_transform[3] =
+			polygon_frustum_to_render_target_clip_space_scale_y;
+
+	// The centroid of the current polygon fan.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			filled_drawable.start < filled_drawable.end &&
+				filled_drawable.end <= all_polygon_vertices.size(),
+			GPLATES_ASSERTION_SOURCE);
+	polygon_vertex_element_type src_vertex_index = filled_drawable.start;
+	const polygon_vertex_type &polygon_centroid = all_polygon_vertices[src_vertex_index];
+	++src_vertex_index;
+
+	// The fill colour is the same for all vertices in a polygon so only need to initialise
+	// it from one vertex (choose the polygon fan centroid vertex since it's the first vertex).
+	polygon_stream_vertex.fill_colour = polygon_centroid.colour;
+
+	// The number of triangles in the current polygon that remain to be streamed (3 indices/triangle).
+	int num_triangles_remaining_in_polygon = filled_drawable.count / 3;
+
+	// Keep streaming the current polygon until it has been completely rendered.
+	while (num_triangles_remaining_in_polygon > 0)
+	{
+		// If there's no room for even a single triangle then flush the buffers, render and re-map.
+		if (polygon_stream.num_streamed_vertices + 3 > polygon_stream.max_num_vertices  ||
+			polygon_stream.num_streamed_vertex_elements + 3 > polygon_stream.max_num_vertex_elements)
+		{
+			end_polygons_vertex_array_streaming(
+					renderer,
+					polygon_stream,
+					map_vertex_element_buffer_scope,
+					map_vertex_buffer_scope);
+
+			render_polygons_vertex_array_stream(renderer, polygon_stream);
+
+			begin_polygons_vertex_array_streaming(
+					renderer,
+					polygon_stream,
+					map_vertex_element_buffer_scope,
+					map_vertex_buffer_scope);
+		}
+
+		// Number of triangles available in vertex element stream.
+		const int num_triangles_available_in_vertex_element_stream =
+				(polygon_stream.max_num_vertex_elements - polygon_stream.num_streamed_vertex_elements) / 3;
+		// Number of triangles available in vertex stream (need 3 vertices for first triangle in
+		// polygon fan followed by 1 vertex per subsequent triangle).
+		const int num_triangles_available_in_vertex_stream =
+				(polygon_stream.max_num_vertices - polygon_stream.num_streamed_vertices) - 2;
+		// Should have space for at least one triangle due to stream check at beginning of loop.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				num_triangles_available_in_vertex_element_stream > 0 &&
+					num_triangles_available_in_vertex_stream > 0,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Stream as many triangles of the current polygon as will fit in the stream buffer(s).
+		const int num_triangles_to_stream =
+				(std::min)(
+						num_triangles_remaining_in_polygon,
+						(std::min)(
+								num_triangles_available_in_vertex_element_stream,
+								num_triangles_available_in_vertex_stream));
+
+		//
+		// Start a polygon fan by streaming its first triangle.
+		// The first triangle requires three vertices and three indices.
+		// Subsequent triangles only require one vertex per triangles
+		// (and three indices) due to vertex reuse.
+		//
+
+		// Vertex index of the polygon centroid in the current stream.
+		const unsigned int centroid_vertex_index =
+				polygon_stream.start_streaming_vertex_count + polygon_stream.num_streamed_vertices;
+
+		// Initialise polygon centroid position.
+		polygon_stream_vertex.present_day_position[0] = polygon_centroid.x;
+		polygon_stream_vertex.present_day_position[1] = polygon_centroid.y;
+		polygon_stream_vertex.present_day_position[2] = polygon_centroid.z;
+
+		// Write the polygon centroid vertex to the stream.
+		*polygon_stream.vertex_stream++ = polygon_stream_vertex;
+		++polygon_stream.num_streamed_vertices;
+
+		const polygon_vertex_type &first_polygon_boundary_vertex = all_polygon_vertices[src_vertex_index];
+		++src_vertex_index;
+
+		// Initialise first polygon boundary position.
+		polygon_stream_vertex.present_day_position[0] = first_polygon_boundary_vertex.x;
+		polygon_stream_vertex.present_day_position[1] = first_polygon_boundary_vertex.y;
+		polygon_stream_vertex.present_day_position[2] = first_polygon_boundary_vertex.z;
+
+		// Write the first polygon boundary vertex to the stream.
+		*polygon_stream.vertex_stream++ = polygon_stream_vertex;
+		++polygon_stream.num_streamed_vertices;
+
+		// Stream the polygon fan triangles.
+		for (int n = 0; n < num_triangles_to_stream; ++n)
+		{
+			// Current vertex index in the current stream.
+			const unsigned int dst_vertex_index =
+					polygon_stream.start_streaming_vertex_count + polygon_stream.num_streamed_vertices;
+
+			const polygon_vertex_type &polygon_boundary_vertex = all_polygon_vertices[src_vertex_index];
+			++src_vertex_index;
+
+			// Initialise the polygon boundary position.
+			polygon_stream_vertex.present_day_position[0] = polygon_boundary_vertex.x;
+			polygon_stream_vertex.present_day_position[1] = polygon_boundary_vertex.y;
+			polygon_stream_vertex.present_day_position[2] = polygon_boundary_vertex.z;
+
+			// Write a polygon boundary vertex to the stream.
+			*polygon_stream.vertex_stream++ = polygon_stream_vertex;
+			++polygon_stream.num_streamed_vertices;
+
+			// Write a polygon fan triangle to the stream.
+			polygon_stream.vertex_element_stream[0] = centroid_vertex_index;
+			polygon_stream.vertex_element_stream[1] = dst_vertex_index - 1;
+			polygon_stream.vertex_element_stream[2] = dst_vertex_index;
+			polygon_stream.vertex_element_stream += 3;
+			polygon_stream.num_streamed_vertex_elements += 3;
+		}
+
+		// Decrement the source vertex index in case we need to loop again to continue streaming
+		// the current polygon. This is because the next triangle will need to emit the same vertex
+		// as the last triangle to begin a new triangle fan.
+		--src_vertex_index;
+
+		num_triangles_remaining_in_polygon -= num_triangles_to_stream;
+	}
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionFilledPolygons::begin_polygons_vertex_array_streaming(
+		GLRenderer &renderer,
+		PolygonStream &polygon_stream,
+		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
+		GLBuffer::MapBufferScope &map_vertex_buffer_scope)
+{
+	PROFILE_FUNC();
+
+	const unsigned int vertex_element_buffer_size =
+			d_polygons_vertex_element_buffer->get_buffer()->get_buffer_size();
+	const unsigned int vertex_buffer_size =
+			d_polygons_vertex_buffer->get_buffer()->get_buffer_size();
+
+	// Start the vertex element stream mapping.
+	unsigned int vertex_element_stream_offset;
+	unsigned int vertex_element_stream_bytes_available;
+	polygon_stream.vertex_element_stream =
+			static_cast<polygon_stream_vertex_element_type *>(
+					map_vertex_element_buffer_scope.gl_map_buffer_stream(
+							vertex_element_buffer_size / MINIMUM_BYTES_TO_STREAM_DIVISOR,
+							vertex_element_stream_offset,
+							vertex_element_stream_bytes_available));
+
+	// Start the vertex stream mapping.
+	unsigned int vertex_stream_offset;
+	unsigned int vertex_stream_bytes_available;
+	polygon_stream.vertex_stream =
+			static_cast<PolygonStreamVertex *>(
+					map_vertex_buffer_scope.gl_map_buffer_stream(
+							vertex_buffer_size / MINIMUM_BYTES_TO_STREAM_DIVISOR,
+							vertex_stream_offset,
+							vertex_stream_bytes_available));
+
+	// Convert bytes to vertex/index counts.
+	polygon_stream.start_streaming_vertex_element_count =
+			vertex_element_stream_offset / sizeof(polygon_stream_vertex_element_type);
+	polygon_stream.max_num_vertex_elements =
+			vertex_element_stream_bytes_available / sizeof(polygon_stream_vertex_element_type);
+	polygon_stream.start_streaming_vertex_count = vertex_stream_offset / sizeof(PolygonStreamVertex);
+	polygon_stream.max_num_vertices = vertex_stream_bytes_available / sizeof(PolygonStreamVertex);
+
+	// Reset number of vertices/indices streamed.
+	polygon_stream.num_streamed_vertex_elements = 0;
+	polygon_stream.num_streamed_vertices = 0;
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionFilledPolygons::end_polygons_vertex_array_streaming(
+		GLRenderer &renderer,
+		PolygonStream &polygon_stream,
+		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
+		GLBuffer::MapBufferScope &map_vertex_buffer_scope)
+{
+	PROFILE_FUNC();
+
+	// Flush the data streamed so far (which could be no data).
+	map_vertex_element_buffer_scope.gl_flush_buffer_stream(
+			polygon_stream.num_streamed_vertex_elements * sizeof(polygon_stream_vertex_element_type));
+	map_vertex_buffer_scope.gl_flush_buffer_stream(
+			polygon_stream.num_streamed_vertices * sizeof(PolygonStreamVertex));
+
+	// FIXME: Check return code in case mapped data got corrupted.
+	map_vertex_element_buffer_scope.gl_unmap_buffer();
+	map_vertex_buffer_scope.gl_unmap_buffer();
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_polygons_vertex_array_stream(
+		GLRenderer &renderer,
+		PolygonStream &polygon_stream)
+{
+	PROFILE_FUNC();
+
+	// Only render if we've got some data to render.
+	if (polygon_stream.num_streamed_vertex_elements == 0)
+	{
+		return;
+	}
+
+	// Draw the primitives.
+	// NOTE: The caller should have already bound this vertex array.
+	d_polygons_vertex_array->gl_draw_range_elements(
+			renderer,
+			GL_TRIANGLES,
+			polygon_stream.start_streaming_vertex_count/*start*/,
+			polygon_stream.start_streaming_vertex_count +
+					polygon_stream.num_streamed_vertices - 1/*end*/,
+			polygon_stream.num_streamed_vertex_elements/*count*/,
+			GLVertexElementTraits<polygon_stream_vertex_element_type>::type,
+			polygon_stream.start_streaming_vertex_element_count *
+					sizeof(polygon_stream_vertex_element_type)/*indices_offset*/);
+
+	++g_num_polygon_stencil_draw_calls;
+	g_num_triangles_rendered += polygon_stream.num_streamed_vertex_elements / 3;
+
+//  	qDebug() << "Rendered tris: " << polygon_stream.num_streamed_vertex_elements / 3
+//  		<< " offset: " << polygon_stream.start_streaming_vertex_element_count / 3;
 }

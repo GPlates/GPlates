@@ -33,6 +33,7 @@
 #include <boost/ref.hpp>
 #include <opengl/OpenGL.h>
 
+#include "GLBuffer.h"
 #include "GLCompiledDrawState.h"
 #include "GLCubeSubdivisionCache.h"
 #include "GLMatrix.h"
@@ -55,6 +56,7 @@
 #include "maths/CubeQuadTree.h"
 #include "maths/CubeQuadTreePartition.h"
 #include "maths/CubeQuadTreePartitionUtils.h"
+#include "maths/UnitQuaternion3D.h"
 #include "maths/UnitVector3D.h"
 
 #include "utils/ObjectCache.h"
@@ -77,11 +79,55 @@ namespace GPlatesOpenGL
 			public GPlatesUtils::ReferenceCount<GLMultiResolutionFilledPolygons>
 	{
 	private:
+		//! Typedef for a vertex element (vertex index) of a polygon.
+		typedef GLuint polygon_vertex_element_type;
+
 		//! Typedef for a coloured vertex of a polygon.
 		typedef GLColourVertex polygon_vertex_type;
 
-		//! Typedef for a vertex element (vertex index) of a polygon.
-		typedef GLuint polygon_vertex_element_type;
+		/**
+		 * Typedef for vertex elements (indices) of *streamed* polygons.
+		 *
+		 * NOTE: Used 16-bit indices here since more efficient for hardware.
+		 */
+		typedef GLuint polygon_stream_vertex_element_type;
+
+		/**
+		 * A vertex of a polygon that's used when streaming polygons to a vertex array.
+		 */
+		struct PolygonStreamVertex
+		{
+			GLfloat present_day_position[3];
+			GPlatesGui::rgba8_t fill_colour;
+			GLfloat world_space_quaternion[4]; // Constant across polygon.
+			GLfloat polygon_frustum_to_render_target_clip_space_transform[4]; // Constant across polygon.
+		};
+
+		/**
+		 * Keeps track of streamed polygon vertices/indices.
+		 */
+		struct PolygonStream
+		{
+			PolygonStream() :
+				start_streaming_vertex_count(0),
+				start_streaming_vertex_element_count(0),
+				max_num_vertices(0),
+				max_num_vertex_elements(0),
+				num_streamed_vertices(0),
+				num_streamed_vertex_elements(0),
+				vertex_stream(NULL),
+				vertex_element_stream(NULL)
+			{  }
+
+			unsigned int start_streaming_vertex_count;
+			unsigned int start_streaming_vertex_element_count;
+			unsigned int max_num_vertices;
+			unsigned int max_num_vertex_elements;
+			unsigned int num_streamed_vertices;
+			unsigned int num_streamed_vertex_elements;
+			PolygonStreamVertex *vertex_stream;
+			polygon_stream_vertex_element_type *vertex_element_stream;
+		};
 
 		/**
 		 * Contains information to render a filled polygon.
@@ -180,7 +226,7 @@ namespace GPlatesOpenGL
 					boost::optional<GPlatesAppLogic::ReconstructMethodFiniteRotation::non_null_ptr_to_const_type> transform = boost::none,
 					const boost::optional<GPlatesMaths::CubeQuadTreeLocation> &cube_quad_tree_location = boost::none)
 			{
-				//PROFILE_FUNC();
+				PROFILE_FUNC();
 
 				const boost::optional<filled_polygon_type::Drawable> drawable =
 						add_filled_polygon_mesh(
@@ -239,6 +285,7 @@ namespace GPlatesOpenGL
 			 */
 			static const unsigned int MAX_SPATIAL_PARTITION_DEPTH = 6;
 
+
 			/**
 			 * The spatial partition of filled polygons.
 			 */
@@ -290,7 +337,7 @@ namespace GPlatesOpenGL
 					const GPlatesMaths::UnitVector3D &centroid,
 					const GPlatesGui::rgba8_t &colour)
 			{
-				//PROFILE_FUNC();
+				PROFILE_FUNC();
 
 				// Need at least three points for a polygon.
 				if (num_points < 3)
@@ -358,6 +405,35 @@ namespace GPlatesOpenGL
 				const filled_polygons_type &filled_polygons);
 
 	private:
+
+		/**
+		 * The default tile size for rendering filled polygons.
+		 */
+		static const unsigned int DEFAULT_TILE_TEXEL_DIMENSION = 256;
+
+		/**
+		 * The maximum number of bytes in the vertex buffer used to stream polygons (if streaming used).
+		 *
+		 * NOTE: Since we're using 16-bit vertex indices we cannot have more than 65536 vertices.
+		 */
+		static const unsigned int MAX_NUM_BYTES_IN_STREAMING_VERTEX_BUFFER = 65536 * sizeof(PolygonStreamVertex);
+
+		/**
+		 * The maximum number of bytes in the vertex element (indices) buffer used to stream (if streaming used).
+		 *
+		 * Since we're using triangle fans we use approximately one vertex and three indices per triangle.
+		 */
+		static const unsigned int MAX_NUM_BYTES_IN_STREAMING_VERTEX_ELEMENT_BUFFER =
+				(MAX_NUM_BYTES_IN_STREAMING_VERTEX_BUFFER / sizeof(PolygonStreamVertex)) *
+					sizeof(polygon_stream_vertex_element_type);
+
+		/**
+		 * The minimum number of bytes to stream in the vertex (element) buffer (if streaming used)
+		 * as a divisor of the actual size of the buffer.
+		 */
+		static const unsigned int MINIMUM_BYTES_TO_STREAM_DIVISOR = 16;
+
+
 		/**
 		 * Typedef for a @a GLCubeSubvision cache.
 		 */
@@ -418,12 +494,6 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The default tile size for rendering filled polygons.
-		 */
-		static const unsigned int DEFAULT_TILE_TEXEL_DIMENSION = 256;
-
-
-		/**
 		 * Cache of tile textures - the textures are not reused over frames though.
 		 */
 		GPlatesUtils::ObjectCache<GLTexture>::shared_ptr_type d_texture_cache;
@@ -481,6 +551,25 @@ namespace GPlatesOpenGL
 		 */
 		boost::optional<GLProgramObject::shared_ptr_type> d_render_tile_to_scene_with_clipping_program_object;
 
+		/**
+		 * Shader program to render *multiple* polygons to the polygon stencil texture.
+		 *
+		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used).
+		 */
+		boost::optional<GLProgramObject::shared_ptr_type> d_render_to_polygon_stencil_texture_program_object;
+
+		/**
+		 * Is true if we are streaming polygons (into the vertex array) in order to draw *multiple*
+		 * polygons per OpenGL draw call to improve performance.
+		 */
+		bool d_stream_multiple_polygons;
+
+		/**
+		 * Simplifies some code since polygon can reference identity quaternion if has no finite rotation.
+		 */
+		GPlatesMaths::UnitQuaternion3D d_identity_quaternion;
+
+
 
 		//! Constructor.
 		GLMultiResolutionFilledPolygons(
@@ -501,7 +590,7 @@ namespace GPlatesOpenGL
 		render_quad_tree(
 				GLRenderer &renderer,
 				const mesh_quad_tree_node_type &mesh_quad_tree_node,
-				const filled_polygons_spatial_partition_type &filled_polygons_spatial_partition,
+				const filled_polygons_type &filled_polygons,
 				const filled_polygons_spatial_partition_node_list_type &parent_filled_polygons_intersecting_node_list,
 				const filled_polygons_intersecting_nodes_type &filled_polygons_intersecting_nodes,
 				cube_subdivision_cache_type &cube_subdivision_cache,
@@ -517,8 +606,7 @@ namespace GPlatesOpenGL
 		render_quad_tree_node(
 				GLRenderer &renderer,
 				const mesh_quad_tree_node_type &mesh_quad_tree_node,
-				const filled_polygons_spatial_partition_type &
-						reconstructed_polygon_meshes_spatial_partition,
+				const filled_polygons_type &filled_polygons,
 				const filled_polygons_spatial_partition_node_list_type &
 						parent_reconstructed_polygon_meshes_intersecting_node_list,
 				const filled_polygons_intersecting_nodes_type &
@@ -549,7 +637,7 @@ namespace GPlatesOpenGL
 		render_tile_to_scene(
 				GLRenderer &renderer,
 				const mesh_quad_tree_node_type &mesh_quad_tree_node,
-				const filled_polygons_spatial_partition_type &filled_polygons_spatial_partition,
+				const filled_polygons_type &filled_polygons,
 				const filled_polygons_spatial_partition_node_list_type &filled_polygons_intersecting_node_list,
 				cube_subdivision_cache_type &cube_subdivision_cache,
 				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
@@ -560,6 +648,7 @@ namespace GPlatesOpenGL
 		render_filled_polygons_to_tile_texture(
 				GLRenderer &renderer,
 				const GLTexture::shared_ptr_to_const_type &tile_texture,
+				const filled_polygons_type &filled_polygons,
 				const filled_polygon_seq_type &transformed_sorted_filled_drawables,
 				const GLTransform &projection_transform,
 				const GLTransform &view_transform);
@@ -568,12 +657,30 @@ namespace GPlatesOpenGL
 		render_filled_polygons_to_polygon_stencil_texture(
 				GLRenderer &renderer,
 				const GLTexture::shared_ptr_to_const_type &polygon_stencil_texture,
-				unsigned int render_target_width,
-				unsigned int render_target_height,
+				unsigned int num_polygon_tiles_along_width,
+				unsigned int num_polygon_tiles_along_height,
+				const filled_polygons_type &filled_polygons,
 				const filled_polygon_seq_type::const_iterator begin_filled_drawables,
 				const filled_polygon_seq_type::const_iterator end_filled_drawables,
 				const GLTransform &projection_transform,
 				const GLTransform &view_transform);
+
+		void
+		render_filled_polygons_in_groups_to_polygon_stencil_texture(
+				GLRenderer &renderer,
+				unsigned int num_polygon_tiles_along_width,
+				unsigned int num_polygon_tiles_along_height,
+				const filled_polygons_type &filled_polygons,
+				const filled_polygon_seq_type::const_iterator begin_filled_drawables,
+				const filled_polygon_seq_type::const_iterator end_filled_drawables);
+
+		void
+		render_filled_polygons_individually_to_polygon_stencil_texture(
+				GLRenderer &renderer,
+				unsigned int num_polygon_tiles_along_width,
+				unsigned int num_polygon_tiles_along_height,
+				const filled_polygon_seq_type::const_iterator begin_filled_drawables,
+				const filled_polygon_seq_type::const_iterator end_filled_drawables);
 
 		void
 		get_filled_polygons(
@@ -600,6 +707,10 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer);
 
 		void
+		initialise_polygons_vertex_array(
+				GLRenderer &renderer);
+
+		void
 		write_filled_polygon_meshes_to_vertex_array(
 				GLRenderer &renderer,
 				const filled_polygons_type &filled_polygons);
@@ -611,6 +722,39 @@ namespace GPlatesOpenGL
 		void
 		create_shader_programs(
 				GLRenderer &renderer);
+
+		void
+		stream_filled_polygon_to_vertex_array(
+				GLRenderer &renderer,
+				const filled_polygon_type::Drawable &filled_drawable,
+				const GPlatesMaths::UnitQuaternion3D &polygon_quat_rotation,
+				const double &polygon_frustum_to_render_target_clip_space_scale_x,
+				const double &polygon_frustum_to_render_target_clip_space_scale_y,
+				const double &polygon_frustum_to_render_target_clip_space_translate_x,
+				const double &polygon_frustum_to_render_target_clip_space_translate_y,
+				const std::vector<polygon_vertex_type> &all_polygon_vertices,
+				PolygonStream &polygon_stream,
+				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
+				GLBuffer::MapBufferScope &map_vertex_buffer_scope);
+
+		void
+		begin_polygons_vertex_array_streaming(
+				GLRenderer &renderer,
+				PolygonStream &polygon_stream,
+				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
+				GLBuffer::MapBufferScope &map_vertex_buffer_scope);
+
+		void
+		end_polygons_vertex_array_streaming(
+				GLRenderer &renderer,
+				PolygonStream &polygon_stream,
+				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
+				GLBuffer::MapBufferScope &map_vertex_buffer_scope);
+
+		void
+		render_polygons_vertex_array_stream(
+				GLRenderer &renderer,
+				PolygonStream &polygon_stream);
 	};
 }
 

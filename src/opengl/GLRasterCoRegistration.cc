@@ -727,7 +727,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_vertex_arrays_and_shader_progr
 	d_streaming_vertex_element_buffer->get_buffer()->gl_buffer_data(
 			renderer,
 			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
-			NUM_BYTES_IN_STREAMING_VERTEX_BUFFER,
+			NUM_BYTES_IN_STREAMING_VERTEX_ELEMENT_BUFFER,
 			NULL,
 			GLBuffer::USAGE_STREAM_DRAW);
 
@@ -735,7 +735,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_vertex_arrays_and_shader_progr
 	d_streaming_vertex_buffer->get_buffer()->gl_buffer_data(
 			renderer,
 			GLBuffer::TARGET_ARRAY_BUFFER,
-			NUM_BYTES_IN_STREAMING_VERTEX_ELEMENT_BUFFER,
+			NUM_BYTES_IN_STREAMING_VERTEX_BUFFER,
 			NULL,
 			GLBuffer::USAGE_STREAM_DRAW);
 
@@ -2390,7 +2390,10 @@ GPlatesOpenGL::GLRasterCoRegistration::group_seed_co_registrations_by_operation(
 						child_seed_geometries_spatial_partition_node,
 						seed_geometries_spatial_partition_depth + 1,
 						// Child is the next reduce stage...
-						GLUtils::QuadTreeClipSpaceTransform(raster_frustum_to_loose_seed_frustum_clip_space_transform, child_x_offset, child_y_offset),
+						GLUtils::QuadTreeClipSpaceTransform(
+								raster_frustum_to_loose_seed_frustum_clip_space_transform,
+								child_x_offset,
+								child_y_offset),
 						reduce_stage_index + 1);
 			}
 			else
@@ -4857,7 +4860,7 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 	seed_co_registration_multi_points_list_type::const_iterator multi_points_end = geometry_lists.multi_points_list.end();
 	for ( ; multi_points_iter != multi_points_end; ++multi_points_iter)
 	{
-		const SeedCoRegistration &seed_co_registration = *points_iter;
+		const SeedCoRegistration &seed_co_registration = *multi_points_iter;
 
 		// Copy the seed geometry's frustum region of the target raster.
 		mask_target_raster_with_region_of_interest(
@@ -4874,7 +4877,7 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 	seed_co_registration_polylines_list_type::const_iterator polylines_end = geometry_lists.polylines_list.end();
 	for ( ; polylines_iter != polylines_end; ++polylines_iter)
 	{
-		const SeedCoRegistration &seed_co_registration = *points_iter;
+		const SeedCoRegistration &seed_co_registration = *polylines_iter;
 
 		// Copy the seed geometry's frustum region of the target raster.
 		mask_target_raster_with_region_of_interest(
@@ -4891,7 +4894,7 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 	seed_co_registration_polygons_list_type::const_iterator polygons_end = geometry_lists.polygons_list.end();
 	for ( ; polygons_iter != polygons_end; ++polygons_iter)
 	{
-		const SeedCoRegistration &seed_co_registration = *points_iter;
+		const SeedCoRegistration &seed_co_registration = *polygons_iter;
 
 		// Copy the seed geometry's frustum region of the target raster.
 		mask_target_raster_with_region_of_interest(
@@ -5053,13 +5056,9 @@ GPlatesOpenGL::GLRasterCoRegistration::end_vertex_array_streaming(
 	stream_target.stop_streaming();
 
 	// Flush the data streamed so far (which could be no data).
-	d_streaming_vertex_element_buffer->get_buffer()->gl_flush_buffer_stream(
-			renderer,
-			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
+	map_vertex_element_buffer_scope.gl_flush_buffer_stream(
 			stream_target.get_num_streamed_vertex_elements() * sizeof(streaming_vertex_element_type));
-	d_streaming_vertex_buffer->get_buffer()->gl_flush_buffer_stream(
-			renderer,
-			GLBuffer::TARGET_ARRAY_BUFFER,
+	map_vertex_element_buffer_scope.gl_flush_buffer_stream(
 			stream_target.get_num_streamed_vertices() * sizeof(StreamingVertexType));
 
 	// FIXME: Check return code in case mapped data got corrupted.

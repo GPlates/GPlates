@@ -466,6 +466,22 @@ namespace GPlatesOpenGL
 					unsigned int &stream_offset,
 					unsigned int &stream_bytes_available);
 
+
+			//! Flushes a range of a currently mapped buffer (mapped via @a gl_map_buffer_dynamic).
+			void
+			gl_flush_buffer_dynamic(
+					unsigned int offset,
+					unsigned int length/*in bytes*/);
+
+			/**
+			 * Specifies the number of bytes streamed after calling @a gl_map_buffer_stream and
+			 * writing data into the region mapped for streaming.
+			 */
+			void
+			gl_flush_buffer_stream(
+					unsigned int bytes_written);
+
+
 			//! Unmaps buffer using parameters passed into constructor.
 			GLboolean
 			gl_unmap_buffer();
