@@ -180,7 +180,7 @@ namespace GPlatesFileIO
 			// part-way through writing the file and didn't remove the file for some reason.
 			// We need to check this here because we don't actually read the cached (encoded)
 			// data until clients request region of the raster (and it's too late to detect errors then).
-			if (total_file_size != static_cast<quint64>(file_info.size()))
+			if (total_file_size != static_cast<qint64>(file_info.size()))
 			{
 				throw FileFormatNotSupportedException(
 						GPLATES_EXCEPTION_SOURCE, "detected a partially written source raster file cache");

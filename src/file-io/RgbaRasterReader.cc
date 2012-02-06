@@ -493,8 +493,8 @@ GPlatesFileIO::RgbaRasterReader::write_source_raster_file_cache(
 	out << static_cast<quint32>(RasterFileCacheFormat::VERSION_NUMBER);
 
 	// Write source raster type.
-	out << static_cast<quint32>(
-			RasterFileCacheFormat::get_type_as_enum<GPlatesPropertyValues::Rgba8RawRaster::element_type>());
+//	out << static_cast<quint32>(
+//			RasterFileCacheFormat::get_type_as_enum<GPlatesPropertyValues::Rgba8RawRaster::element_type>());
 
 	// No coverage is necessary for RGBA rasters (it's embedded in the alpha channel).
 	out << static_cast<quint32>(false/*has_coverage*/);
@@ -513,7 +513,7 @@ GPlatesFileIO::RgbaRasterReader::write_source_raster_file_cache(
 	//
 	// NOTE: The source raster is RGBA which does not have a no-data value.
 	out << static_cast<quint32>(false);
-	out << GPlatesPropertyValues::Rgba8RawRaster::element_type(); // Doesn't matter what gets stored.
+	//out << GPlatesPropertyValues::Rgba8RawRaster::element_type(); // Doesn't matter what gets stored.
 
 	// Write the (optional) raster statistics.
 	//
@@ -747,8 +747,8 @@ GPlatesFileIO::RgbaRasterReader::hilbert_curve_traversal(
 			if (!source_reader.supportsOption(QImageIOHandler::ClipRect) ||
 				// Using 64-bit integer in case uncompressed image is larger than 4Gb...
 				qint64(source_region.width() / 2) * (source_region.height() / 2) * sizeof(GPlatesGui::rgba8_t) <
-					MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT ||
-				read_source_raster_depth == write_source_raster_depth)
+					static_cast<qint64>(MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT ||
+				read_source_raster_depth == write_source_raster_depth))
 			{
 				// Report insufficient memory to load raster.
 				report_failure_to_begin(read_errors, ReadErrors::InsufficientMemoryToLoadRaster);

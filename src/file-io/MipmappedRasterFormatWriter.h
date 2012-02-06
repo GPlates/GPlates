@@ -389,7 +389,7 @@ namespace GPlatesFileIO
 					else
 					{
 						out << static_cast<quint32>(false);
-						out << mipmapped_element_type(); // Doesn't matter what gets stored.
+						//out << mipmapped_element_type(); // Doesn't matter what gets stored.
 					}
 
 					// Write the (optional) raster statistics.
