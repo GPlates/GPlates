@@ -1207,8 +1207,8 @@ GPlatesFileIO::GDALRasterReader::hilbert_curve_traversal(
 			// then report insufficient memory.
 			if (// Using 64-bit integer in case uncompressed image is larger than 4Gb...
 				qint64(source_region.width() / 2) * (source_region.height() / 2) * sizeof(RasterElementType) <
-				static_cast<qint64>(MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT ||
-				read_source_raster_depth == write_source_raster_depth))
+					static_cast<qint64>(MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT) ||
+				read_source_raster_depth == write_source_raster_depth)
 			{
 				// Report insufficient memory to load raster.
 				report_failure_to_begin(read_errors, ReadErrors::InsufficientMemoryToLoadRaster);

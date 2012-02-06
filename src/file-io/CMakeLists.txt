@@ -98,6 +98,7 @@ set(srcs
     LogToFileHandler.cc
     LogToFileHandler.h
     MipmappedRasterFormatReader.h
+    MipmappedRasterFormatWriter.cc
     MipmappedRasterFormatWriter.h
     OgrException.h
     OgrFeatureCollectionWriter.cc

@@ -83,16 +83,41 @@ namespace GPlatesFileIO
 			PROFILE_FUNC();
 
 			const T *end = data + len;
-			PROFILE_BEGIN(profile_first_write, "first write");
-			out << *data;
-			PROFILE_END(profile_first_write);
-			++data;
 			while (data != end)
 			{
 				out << *data;
 				++data;
 			}
 		}
+
+
+		/**
+		 * Returns the NAN no-data value for floating point element types (returns true), otherwise
+		 * returns the default value for the element type (and returns false).
+		 */
+		template <typename RasterElementType>
+		bool
+		get_nan_no_data_value(
+				RasterElementType &no_data_value)
+		{
+			no_data_value = RasterElementType();
+			return false;
+		}
+
+		template <>
+		bool
+		get_nan_no_data_value<double>(
+				double &no_data_value);
+
+		template <>
+		bool
+		get_nan_no_data_value<float>(
+				float &no_data_value);
+
+		template <>
+		bool
+		get_nan_no_data_value<GPlatesGui::rgba8_t>(
+				GPlatesGui::rgba8_t &no_data_value);
 
 
 		template <class ProxiedRawRasterType, class MipmapperType>
@@ -373,23 +398,16 @@ namespace GPlatesFileIO
 					// The latter does not have a no-data value.
 					//
 					// FIXME: Get this value from the mipmapped raster just to be sure.
-					if (boost::is_floating_point<mipmapped_element_type>::value)
+					mipmapped_element_type no_data_value;
+					if (get_nan_no_data_value(no_data_value))
 					{
 						out << static_cast<quint32>(true);
-						typedef typename boost::remove_const<mipmapped_element_type>::type non_const_mipmapped_element_type;
-						if (boost::is_same<double, non_const_mipmapped_element_type>::value)
-						{
-							out << GPlatesMaths::quiet_nan<double>();
-						}
-						else
-						{
-							out << GPlatesMaths::quiet_nan<float>();
-						}
+						out << no_data_value;
 					}
 					else
 					{
 						out << static_cast<quint32>(false);
-						//out << mipmapped_element_type(); // Doesn't matter what gets stored.
+						out << no_data_value; // Doesn't matter what gets stored.
 					}
 
 					// Write the (optional) raster statistics.
