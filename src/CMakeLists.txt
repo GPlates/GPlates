@@ -56,6 +56,8 @@ else (Boost_UNIT_TEST_FRAMEWORK_FOUND)
 	endif (NOT GPLATES_PUBLIC_RELEASE)
 endif (Boost_UNIT_TEST_FRAMEWORK_FOUND)
 
+find_package("GMP")
+
 # Add a target to build the command-line version of GPlates.
 set(ADD_GPLATES_CLI_TARGET TRUE)
 
@@ -475,11 +477,18 @@ set(dependency_LIBS
 	${OPENGL_LIBRARIES}
 	${PROJ4_LIBRARY}
 	${ImageMagick_LIBRARIES})
+	
 if(NOT GPLATES_NO_PYTHON)
 	set(dependency_LIBS
 		${dependency_LIBS}
 		${PYTHON_LIBRARIES})
 endif(NOT GPLATES_NO_PYTHON)
+
+if(GMP_FOUND)
+	set(dependency_LIBS
+		${dependency_LIBS}
+		${GMP_LIBRARY})
+endif(GMP_FOUND)
 
 # Visual Studio and Borland compilers use autolinking for the Boost libraries
 # (where pragma in header file brings in the library).
