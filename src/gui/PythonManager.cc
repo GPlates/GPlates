@@ -385,9 +385,14 @@ GPlatesGui::PythonManager::register_script(
 	}
 	catch (const bp::error_already_set &)
 	{
-		qWarning() << GPlatesApi::PythonUtils::get_error_message();
-		PySys_WriteStderr("The script is not registered.\n");
-		qWarning() << "Failed to register  " << name;
+		//get_error_message() function call is essential here.
+		//The python error bit will be reset in get_error_message(). It is important.
+		GPlatesApi::PythonUtils::get_error_message();
+
+
+		//qDebug() << GPlatesApi::PythonUtils::get_error_message();
+		//PySys_WriteStderr("The script is not registered.\n");
+		//qDebug() << "Failed to register  " << name;
 	}
 }
 
