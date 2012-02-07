@@ -1025,6 +1025,7 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 {
 	QObject::connect(action_Calculate_Reconstruction_Pole, SIGNAL(triggered()),
 			this, SLOT(pop_up_calculate_reconstruction_pole_dialog()));
+	
 	if(GPlatesUtils::ComponentManager::instance().is_enabled(
 			GPlatesUtils::ComponentManager::Component::python()))
 	{
@@ -1038,6 +1039,10 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 		// ----
 		QObject::connect(action_Open_Python_Console, SIGNAL(triggered()),
 				this, SLOT(pop_up_python_console()));
+	}
+	else
+	{
+		hide_python_menu();
 	}
 }
 

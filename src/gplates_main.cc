@@ -348,21 +348,16 @@ int internal_main(int argc, char* argv[])
 		main_window_widget.enable_external_syncing();
 	}
 
-	using namespace GPlatesGui;
-	using namespace GPlatesUtils;
-	if(!ComponentManager::instance().is_enabled(ComponentManager::Component::symbology()))
-	{
-		// main_window_widget.hide_symbol_menu();
-	}
+// 	using namespace GPlatesGui;
+// 	using namespace GPlatesUtils;
+// 	if(!ComponentManager::instance().is_enabled(ComponentManager::Component::symbology()))
+// 	{
+// 		main_window_widget.hide_symbol_menu();
+// 	}
     	
 	main_window_widget.show();
-	
-	if(!ComponentManager::instance().is_enabled(ComponentManager::Component::python()))
-	{
-		main_window_widget.hide_python_menu();
-	}
-
 	int ret = qapplication.exec();
+
 	clean_up();
 	return ret;
 
