@@ -608,13 +608,12 @@ GPlatesQtWidgets::GlobeCanvas::initializeGL()
 	// Pass in the viewport of the window currently attached to the OpenGL context.
 	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, d_gl_viewport);
 
-	// Shouldn't really need these two calls since they set default state and we should already
-	// be in the default OpenGL state.
-	renderer->gl_clear_depth(); // Clear depth to 1.0
-	renderer->gl_clear_color(); // Clear colour to (0,0,0,0).
-
-	// Do the actual clear operation.
-	renderer->gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// NOTE: We don't actually 'glClear()' the framebuffer because:
+	//  1) It's not necessary to do this before calling Globe::initialiseGL(), and
+	//  2) It appears to generate an OpenGL error when GPlatesOpenGL::GLUtils::assert_no_gl_errors()
+	//     is next called ("invalid framebuffer operation") on a Mac-mini system (all other systems
+	//     seem fine) - it's possibly due to the main framebuffer not set up correctly yet - retrieving
+	//     the viewport parameters returns 100x100 pixels which is not the actual size of the canvas.
 
 	// Initialise those parts of globe that require a valid OpenGL context to be bound.
 	d_globe.initialiseGL(*renderer);
