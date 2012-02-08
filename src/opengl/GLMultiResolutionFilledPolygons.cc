@@ -1424,7 +1424,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::get_filled_polygons(
 	}
 
 	// Sort the sequence of filled drawables by transform.
-	std::sort(
+	std::stable_sort(
 			transform_sorted_filled_drawables.begin(),
 			transform_sorted_filled_drawables.end(),
 			SortFilledDrawables());
