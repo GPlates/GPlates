@@ -62,7 +62,14 @@ GPlatesGui::DrawStyleManager::register_style(
 		StyleAdapter* sa,
 		bool built_in)
 {
-	d_styles.push_back(sa); 
+	if(built_in)
+	{
+		d_styles.insert(d_styles.begin(),sa);
+	}
+	else
+	{
+		d_styles.push_back(sa); 
+	}
 	d_styles.back()->d_id = built_in ? BUILT_IN_OFFSET + d_next_style_id : d_next_style_id;
 	++d_next_style_id;
 }

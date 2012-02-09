@@ -289,6 +289,7 @@ namespace GPlatesQtWidgets
 		void
 		handle_configuration_changed()
 		{
+			set_style();
 			refresh_current_icon();
 		}
 

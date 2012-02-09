@@ -406,36 +406,6 @@ endif (ADD_UNIT_TEST_TARGET)
 # Referenced in "Package.cmake" so it knows which executable to package up.
 set(GPLATES_MAIN_TARGET gplates)
 
-# Add Python module library target.
-if(NOT GPLATES_NO_PYTHON)
-
-	foreach(dir ${ALL_GPlates_src_subdirs})
-		AUX_SOURCE_DIRECTORY(${dir} gplates_lib_src)
-		AUX_SOURCE_DIRECTORY("${CMAKE_CURRENT_BINARY_DIR}/${dir}" gplates_lib_src)
-		#message(STATUS "Adding directory ${dir}")
-		#message(STATUS "Adding directory '${CMAKE_CURRENT_BINARY_DIR}/${dir}' ")
-	endforeach(dir)
-
-	message(STATUS "Adding GPlates Python module.")
-	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}")
-	add_library(gplates_lib STATIC EXCLUDE_FROM_ALL ${gplates_lib_src})
-	
-    add_library(pygplates MODULE EXCLUDE_FROM_ALL api/Python.cc )
-    add_dependencies(pygplates gplates_lib)
-	add_dependencies(gplates_lib gplates)
-	
-	if(WIN32)
-		set_target_properties(pygplates PROPERTIES SUFFIX ".pyd")
-	else(WIN32)
-	    set_target_properties(gplates_lib PROPERTIES COMPILE_FLAGS "-fPIC")
-    endif(WIN32)
-
-	set_target_properties(pygplates PROPERTIES PREFIX "")
-	
-endif(NOT GPLATES_NO_PYTHON)
-
-
-
 if (APPLE)
 	# Copy icon file to 'Resources' directory inside application bundle.
 	set_source_files_properties(${GPlates_ICON} PROPERTIES
@@ -524,11 +494,14 @@ endif (ADD_GPLATES_CLI_TARGET)
 if (ADD_UNIT_TEST_TARGET)
 	target_link_libraries(gplates-unit-test ${GPlates_unit_test_LIBS} ${dependency_LIBS} ${GPlates_unit_test_LIBS})
 endif (ADD_UNIT_TEST_TARGET)
-if (NOT GPLATES_NO_PYTHON)
 	
-	target_link_libraries(pygplates gplates_lib ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${dependency_LIBS})
-    
-endif (NOT GPLATES_NO_PYTHON)
+# Add Python module library target.
+if(NOT GPLATES_NO_PYTHON)
+
+	add_subdirectory(pygplates)
+	add_dependencies(pygplates run-gplates-extract-svn-info)
+	
+endif(NOT GPLATES_NO_PYTHON)
 
 # Current binary directory must be included first for g++ pre-compiled headers.
 # There's a '_pch.h' file in current source and current binary directory however the '_pch.h.gch' pre-compiled header
