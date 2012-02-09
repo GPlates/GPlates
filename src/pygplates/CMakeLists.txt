@@ -21,9 +21,10 @@ set(target_name pygplates)
 # - groups files in Visual Studio IDE according to type.
 if(NOT GPLATES_NO_PYTHON)
 
-	#message(STATUS "${ALL_GPlates_src_subdirs}")
+	set(all_subdirs qt-widgets qt-resources view-operations presentation gui canvas-tools app-logic file-io feature-visitors opengl property-values model data-mining api maths utils global)
+	
 	#get all GPlates files
-	foreach(dir ${ALL_GPlates_src_subdirs})
+	foreach(dir ${all_subdirs})
 		FILE(GLOB files ${GPlates_SOURCE_DIR}/src/${dir}/*)
 		set(all_files ${all_files} ${files})
 	endforeach(dir)

@@ -54,6 +54,12 @@ GPlatesGui::DrawStyleManager::DrawStyleManager(bool local_user_pref) :
 		d_user_prefs = new GPlatesAppLogic::UserPreferences(this);
 	else
 		d_user_prefs = &GPlatesPresentation::Application::instance()->get_application_state().get_user_preferences();
+
+	//register built-in categories
+	register_style_catagory("PlateId");
+	register_style_catagory("SingleColour");
+	register_style_catagory("FeatureAge");
+	register_style_catagory("FeatureType");
 }
 
 
@@ -62,14 +68,7 @@ GPlatesGui::DrawStyleManager::register_style(
 		StyleAdapter* sa,
 		bool built_in)
 {
-	if(built_in)
-	{
-		d_styles.insert(d_styles.begin(),sa);
-	}
-	else
-	{
-		d_styles.push_back(sa); 
-	}
+	d_styles.push_back(sa); 
 	d_styles.back()->d_id = built_in ? BUILT_IN_OFFSET + d_next_style_id : d_next_style_id;
 	++d_next_style_id;
 }
@@ -151,7 +150,7 @@ GPlatesGui::DrawStyleManager::register_style_catagory(
 		const QString& desc,
 		bool built_in)
 {
-	StyleCatagory* cata = new StyleCatagory(name,desc);
+	StyleCatagory* cata = new StyleCatagory(name, desc);
 	d_catagories.push_back(cata);
 	d_catagories.back()->d_id = built_in ? BUILT_IN_OFFSET + d_next_cata_id : d_next_cata_id ;
 	++d_next_cata_id;
