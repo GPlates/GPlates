@@ -149,7 +149,8 @@ namespace GPlatesApi
 		}
 
 		void
-		register_draw_style(object &style)
+		register_draw_style(
+				object &style)
 		{
 			using namespace GPlatesGui;
 			try

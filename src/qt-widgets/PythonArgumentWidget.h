@@ -89,15 +89,30 @@ namespace GPlatesQtWidgets
 					SIGNAL(textChanged(const QString&)),
 					this,
 					SLOT(handle_string_changed(const QString&)));
+			
+			QObject::connect(
+					line_edit,
+					SIGNAL(editingFinished()),
+					this,
+					SLOT(handle_editing_finished()));
+			 
 		}
 	private slots:
+		
 		void
 		handle_string_changed(
 				const QString& str)
 		{
 			d_cfg_item->set_value(str.trimmed());
+		}
+
+		void
+		handle_editing_finished()
+		{
 			emit configuration_changed();
 		}
+
+
 	private:
 		GPlatesGui::PythonCfgItem*  d_cfg_item;
 	};

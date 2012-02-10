@@ -172,17 +172,20 @@ namespace GPlatesGui
 		* Get all user defined styles.
 		*/
 		std::vector<StyleAdapter*>
-		get_saved_styles(const StyleCatagory& cata);
+		get_saved_styles(
+				const StyleCatagory& cata);
 
 		/*
 		* Get all built-in styles.
 		*/
 		std::vector<StyleAdapter*>
-		get_built_in_styles(const StyleCatagory& cata);
+		get_built_in_styles(
+				const StyleCatagory& cata);
 
 
 		const StyleAdapter*
-		get_template_style(const StyleCatagory& cata);
+		get_template_style(
+				const StyleCatagory& cata);
 
 
 		const StyleAdapter*
@@ -269,6 +272,8 @@ namespace GPlatesGui
 		const static QString draw_style_prefix;
 		GPlatesAppLogic::UserPreferences* d_user_prefs;
 		GPlatesAppLogic::UserPreferences::KeyValueMap d_values_map;
+
+		const GPlatesGui::StyleAdapter* d_default_style; 
 
 		static bool d_alive_flag;
 		bool d_use_local_user_pref;

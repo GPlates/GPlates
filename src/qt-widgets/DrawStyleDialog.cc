@@ -377,6 +377,15 @@ GPlatesQtWidgets::DrawStyleDialog::handle_remove_button_clicked()
 
 
 void
+GPlatesQtWidgets::DrawStyleDialog::handle_configuration_changed()
+{
+	get_current_style()->set_dirty_flag(true);
+	set_style();
+	refresh_current_icon();
+}
+
+
+void
 GPlatesQtWidgets::DrawStyleDialog::set_style(
 		GPlatesGui::StyleAdapter* _style)
 {

@@ -138,7 +138,8 @@ namespace GPlatesQtWidgets
 		}
 
 		GPlatesGui::StyleAdapter*
-		get_style(QListWidgetItem* item)
+		get_style(
+				QListWidgetItem* item)
 		{
 			QVariant qv = item->data(Qt::UserRole);
 			return static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
@@ -287,11 +288,7 @@ namespace GPlatesQtWidgets
 		handle_add_button_clicked(bool);
 
 		void
-		handle_configuration_changed()
-		{
-			set_style();
-			refresh_current_icon();
-		}
+		handle_configuration_changed();
 
 		void
 		handle_layer_changed(

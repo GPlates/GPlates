@@ -45,6 +45,7 @@ bool GPlatesGui::DrawStyleManager::d_alive_flag = false;
 GPlatesGui::DrawStyleManager::DrawStyleManager(bool local_user_pref) :
 	d_next_cata_id(0),
 	d_next_style_id(0),
+	d_default_style(NULL),
 	d_use_local_user_pref(local_user_pref)
 { 
 	d_alive_flag = true;
@@ -75,7 +76,8 @@ GPlatesGui::DrawStyleManager::register_style(
 
 
 unsigned
-GPlatesGui::DrawStyleManager::get_ref_number(const GPlatesGui::StyleAdapter& style) const
+GPlatesGui::DrawStyleManager::get_ref_number(
+		const GPlatesGui::StyleAdapter& style) const
 {
 	RefenceMap::const_iterator it = d_reference_map.find(&style);
 	if(it == d_reference_map.end())
@@ -90,7 +92,8 @@ GPlatesGui::DrawStyleManager::get_ref_number(const GPlatesGui::StyleAdapter& sty
 
 		
 void
-GPlatesGui::DrawStyleManager::increase_ref(const GPlatesGui::StyleAdapter& style)
+GPlatesGui::DrawStyleManager::increase_ref(
+		const GPlatesGui::StyleAdapter& style)
 {
 	RefenceMap::iterator it = d_reference_map.find(&style);
 	if(it == d_reference_map.end())
@@ -105,7 +108,8 @@ GPlatesGui::DrawStyleManager::increase_ref(const GPlatesGui::StyleAdapter& style
 
 		
 void
-GPlatesGui::DrawStyleManager::decrease_ref(const GPlatesGui::StyleAdapter& style)
+GPlatesGui::DrawStyleManager::decrease_ref(
+		const GPlatesGui::StyleAdapter& style)
 {
 	RefenceMap::iterator it = d_reference_map.find(&style);
 	if(it == d_reference_map.end())
@@ -124,7 +128,8 @@ GPlatesGui::DrawStyleManager::decrease_ref(const GPlatesGui::StyleAdapter& style
 
 
 const GPlatesGui::StyleAdapter*
-GPlatesGui::DrawStyleManager::get_template_style(const GPlatesGui::StyleCatagory& cata)
+GPlatesGui::DrawStyleManager::get_template_style(
+		const GPlatesGui::StyleCatagory& cata)
 {
 	TemplateMap::const_iterator it = d_template_map.find(&cata);
 	if(it!=d_template_map.end())
@@ -137,10 +142,35 @@ GPlatesGui::DrawStyleManager::get_template_style(const GPlatesGui::StyleCatagory
 const GPlatesGui::StyleAdapter*
 GPlatesGui::DrawStyleManager::default_style()
 {
-	if(d_styles.empty())
-		return NULL;
+	if(!d_default_style)
+	{
+		const StyleCatagory* cat = get_catagory("PlateId");
+		if(cat)
+		{
+			const StyleContainer& styles = get_styles(*cat);
 
-	return d_styles[0];
+			BOOST_FOREACH(const StyleAdapter* s, styles)
+			{
+				if(s->name() == "Default")
+				{
+					d_default_style = s;
+				}
+			}
+		}
+		if(!d_default_style)
+		{
+			qWarning() << "Cannot find default draw style setting.";
+			boost::shared_ptr<const ColourScheme> cs (
+					new GenericColourScheme<GPlatesAppLogic::PlateIdPropertyExtractor>(
+							DefaultPlateIdColourPalette::create(),
+							GPlatesAppLogic::PlateIdPropertyExtractor()));
+			const StyleCatagory* temp_cata = new StyleCatagory("PlateID");
+			d_default_style = new ColourStyleAdapter(cs,*temp_cata,"Default");
+			qWarning() << "A temporary default draw style has been created.";
+		}
+	}
+
+	return d_default_style;
 }
 
 
@@ -187,7 +217,8 @@ GPlatesGui::DrawStyleManager::remove_style(GPlatesGui::StyleAdapter* style)
 
 
 const GPlatesGui::StyleCatagory*
-GPlatesGui::DrawStyleManager::get_catagory(const QString& _name) const
+GPlatesGui::DrawStyleManager::get_catagory(
+		const QString& _name) const
 {
 	BOOST_FOREACH(const GPlatesGui::StyleCatagory* s_cat, d_catagories)
 	{
@@ -199,7 +230,8 @@ GPlatesGui::DrawStyleManager::get_catagory(const QString& _name) const
 
 
 GPlatesGui::DrawStyleManager::StyleContainer
-GPlatesGui::DrawStyleManager::get_styles(const GPlatesGui::StyleCatagory& cata)
+GPlatesGui::DrawStyleManager::get_styles(
+		const GPlatesGui::StyleCatagory& cata)
 {
 	StyleContainer ret;
 	BOOST_FOREACH(StyleContainer::value_type s, d_styles)
@@ -322,7 +354,8 @@ namespace
 }
 
 std::vector<GPlatesGui::StyleAdapter*>
-GPlatesGui::DrawStyleManager::get_built_in_styles(const GPlatesGui::StyleCatagory& cata) 
+GPlatesGui::DrawStyleManager::get_built_in_styles(
+		const GPlatesGui::StyleCatagory& cata) 
 {
 	std::vector<StyleAdapter*> ret;
 	static const char* color_names[] = {"white","blue","black","silver","gold","pink","green","orange"};

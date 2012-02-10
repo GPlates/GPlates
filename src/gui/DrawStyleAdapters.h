@@ -90,6 +90,14 @@ namespace GPlatesGui
 			return d_cfg;
 		}
 
+
+		void
+		set_dirty_flag(
+				bool flag)
+		{
+			d_cfg_dirty = flag;
+		}
+
 		const QString&
 		name() const
 		{
@@ -125,7 +133,8 @@ namespace GPlatesGui
 
 		virtual
 		bool
-		operator==(const StyleAdapter& other)
+		operator==(
+				const StyleAdapter& other)
 		{
 			return d_id == other.d_id;
 		}
@@ -152,7 +161,8 @@ namespace GPlatesGui
 
 				
 		const DrawStyle
-		get_style(GPlatesModel::FeatureHandle::weak_ref f) const;
+		get_style(
+				GPlatesModel::FeatureHandle::weak_ref f) const;
 
 		
 		StyleAdapter*
@@ -169,7 +179,8 @@ namespace GPlatesGui
 		* Callers pass boost python dictionary by reference, into which this function output result data.
 		*/
 		void
-		populate_py_dict(boost::python::dict& cfgs) const;
+		populate_py_dict(
+				boost::python::dict& cfgs) const;
 
 		/*
 		* Read python configuration information from python script and create empty Configuration items.
@@ -187,7 +198,8 @@ namespace GPlatesGui
 		* Create configuration items according to the config definition map.
 		*/
 		PythonCfgItem*
-		create_cfg_item(const std::map<QString, QString>& data);
+		create_cfg_item(
+				const std::map<QString, QString>& data);
 
 	private:
 		mutable bp::object d_py_obj;
@@ -214,7 +226,8 @@ namespace GPlatesGui
 		
 		
 		const DrawStyle
-		get_style(GPlatesModel::FeatureHandle::weak_ref f) const;
+		get_style(
+				GPlatesModel::FeatureHandle::weak_ref f) const;
 
 		
 		StyleAdapter*
