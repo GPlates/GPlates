@@ -54,7 +54,6 @@ namespace
 			QObject *qreceiver,
 			QEvent *qevent)
 	{
-#ifdef GPLATES_DEBUG
 		// For debug builds we don't want to catch exceptions because
 		// if we do then we lose the debugger call stack trace which is
 		// much more detailed than our own stack trace implementation that
@@ -76,7 +75,8 @@ namespace
 			//use exception to exit gplates is better than call exit(0) directly.
 			return true;
 		}
-#else
+
+#ifndef GPLATES_DEBUGe
 		catch (GPlatesGlobal::Exception &exc)
 		{
 			// Get exception to write its message.
