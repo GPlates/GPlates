@@ -60,8 +60,7 @@ namespace
 		// much more detailed than our own stack trace implementation that
 		// currently requires placing TRACK_CALL_STACK macros around the code.
 		// And, of course, debugging relies on the native debugger stack trace.
-		return func();
-#else
+		
 		std::string error_message_std;
 		std::string call_stack_trace_std;
 
@@ -69,6 +68,15 @@ namespace
 		{
 			return func();
 		}
+		catch (GPlatesGlobal::NeedExitException &ex)
+		{
+			std::ostringstream os;
+			os << ex;
+			qDebug() << os.str().c_str();
+			//use exception to exit gplates is better than call exit(0) directly.
+			return true;
+		}
+#else
 		catch (GPlatesGlobal::Exception &exc)
 		{
 			// Get exception to write its message.

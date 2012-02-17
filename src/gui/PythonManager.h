@@ -220,6 +220,21 @@ namespace GPlatesGui
 			d_python_home = str;
 		}
 
+		inline
+		void
+		set_python_prefix(
+				const QString& str);
+
+
+		inline
+		void
+		set_python_prefix();
+
+
+		inline
+		QString
+		get_python_prefix_from_preferences();
+
 
 		void
 		python_runner_started();
@@ -370,7 +385,7 @@ namespace GPlatesGui
 		*/
 		GPlatesGui::EventBlackout d_event_blackout;
 
-		bool d_show_python_init_fail_dlg;
+		bool d_show_python_init_fail_dlg, d_clear_python_prefix_flag;
 
 		QString d_python_home;
 		

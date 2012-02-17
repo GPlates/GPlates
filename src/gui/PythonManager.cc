@@ -54,7 +54,8 @@ GPlatesGui::PythonManager::PythonManager() :
 	d_sleeper(NULL),
 	d_inited(false), 
 	d_python_console_dialog_ptr(NULL),
-	d_stopped_event_blackout_for_python_runner(false)
+	d_stopped_event_blackout_for_python_runner(false),
+	d_clear_python_prefix_flag(true)
 {
 	//this UserPreferences must be local.
 	//don't use global UserPreferences because it hasn't been constructed yet.
@@ -93,6 +94,7 @@ GPlatesGui::PythonManager::initialize()
 		check_python_capability();
 
 		d_inited = true;
+		set_python_prefix();
 		register_utils_scripts();
 		init_python_console();
 	}
@@ -140,8 +142,9 @@ GPlatesGui::PythonManager::set_python_home()
 {
 	if(validate_python_home())
 	{
-		if( QString(getenv("PYTHONHOME")) != d_python_home)
+		if( get_python_prefix_from_preferences().simplified() != d_python_home.simplified())
 		{
+			set_python_prefix(d_python_home);
 #ifndef __WINDOWS__
 			QString tmp = QString("PYTHONHOME=") + d_python_home;
 			//qDebug() << "set python home: " << tmp;
@@ -150,8 +153,9 @@ GPlatesGui::PythonManager::set_python_home()
 #else
 			_putenv_s("PYTHONHOME", d_python_home.toAscii().data());
 #endif
+			d_clear_python_prefix_flag = false;
 			QProcess::startDetached(QCoreApplication::applicationFilePath(), QStringList());
-			exit(0);
+			throw GPlatesGlobal::NeedExitException(GPLATES_EXCEPTION_SOURCE);
 		}
 		//std::cout << getenv("PYTHONHOME") << std::endl;
 	}
@@ -189,6 +193,11 @@ GPlatesGui::PythonManager::find_python()
 
 GPlatesGui::PythonManager::~PythonManager()
 {
+	if(d_clear_python_prefix_flag)
+	{
+		set_python_prefix("");//clear python prefix
+	}
+
 	// Stop the Python execution thread.
 	static const int WAIT_TIME = 1000 /* milliseconds */;
 	if(d_python_execution_thread)
@@ -208,18 +217,45 @@ GPlatesGui::PythonManager::~PythonManager()
 
 
 void
-GPlatesGui::PythonManager::set_show_init_fail_dlg(\
+GPlatesGui::PythonManager::set_show_init_fail_dlg(
 		bool b) 
 {
 	d_show_python_init_fail_dlg = b;
 	GPlatesAppLogic::UserPreferences(NULL).set_value(
-		"python/show_python_init_fail_dialog",
-		b);
+			"python/show_python_init_fail_dialog",
+			b);
 }
 
 
 void
-GPlatesGui::PythonManager::init_python_interpreter(std::string program_name)
+GPlatesGui::PythonManager::set_python_prefix(
+		const QString& str)
+{
+	GPlatesAppLogic::UserPreferences(NULL).set_value(
+			"python/prefix",
+			str);
+}
+
+
+void
+GPlatesGui::PythonManager::set_python_prefix()
+{
+	bp::object module = bp::import("sys");
+	const char* prefix = bp::extract<const char*>(module.attr("prefix"));
+	set_python_prefix(QString(prefix));
+}
+
+
+QString
+GPlatesGui::PythonManager::get_python_prefix_from_preferences()
+{
+	return GPlatesAppLogic::UserPreferences(NULL).get_value("python/prefix").toString();
+}
+
+
+void
+GPlatesGui::PythonManager::init_python_interpreter(
+		std::string program_name)
 {
 	using namespace boost::python;
 
