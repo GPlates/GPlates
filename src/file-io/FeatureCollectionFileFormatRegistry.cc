@@ -478,9 +478,11 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::read_feature_collection(
 	const boost::optional<Format> file_format = get_file_format(file_ref.get_file_info().get_qfileinfo());
 	if (!file_format)
 	{
+
 		throw FileFormatNotSupportedException(
 				GPLATES_EXCEPTION_SOURCE,
-				"No registered file formats for this file.");
+				("No registered file formats for this file: " +
+				file_ref.get_file_info().get_display_name(true)).toStdString().c_str());
 	}
 
 	const FileFormatInfo &file_format_info = get_file_format_info(file_format.get());

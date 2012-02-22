@@ -82,7 +82,10 @@ namespace
 		const std::vector<QString> s_recon_files = to_str_vector(recon_files);
 	
 		boost::scoped_ptr<FeatureCollectionFileFormat::Registry> registry(new FeatureCollectionFileFormat::Registry());
-
+		
+		GPlatesModel::ModelInterface  model;
+		register_default_file_formats(*registry,model);
+		
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> recon_fc = 
 			utils::load_files(s_recon_files, p_recon_files,*registry);
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> rot_fc = 
