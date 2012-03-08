@@ -480,6 +480,22 @@ namespace
 			count++;
 		} 
 	}
+	
+	/**
+	 * Fills the QMap<QString,QString> @a model_to_attribute_map with default field names from the
+	 * list of default_attributes defined in "PropertyMapper.h"
+	 */
+	void
+	fill_attribute_map_with_default_values(
+			QMap< QString, QString > &model_to_attribute_map)
+	{
+		for (unsigned int i = 0; i < ShapefileAttributes::NUM_PROPERTIES; ++i)
+		{
+			model_to_attribute_map.insert(
+				ShapefileAttributes::model_properties[i],
+				ShapefileAttributes::default_attributes[i]);		
+		}
+	}
 
 	/**
 	 * Fills the QMap<QString,QString> @a model_to_attribute_map from the given xml file
@@ -522,9 +538,16 @@ namespace
 		boost::shared_ptr< GPlatesFileIO::PropertyMapper > mapper,
 		bool remapping)
 	{
-		if (mapper == NULL){
-			return false;
+		// If there's no property mapper then fill the mapping with default values.
+		// If there's no property mapper then 'set_property_mapper()' was never called which
+		// can happen when we not using GPlates as a GUI (eg, importing pygplates into a python
+		// interpreter) - in this case we don't want to abort due to lack of a shapefile mapping.
+		if (mapper == NULL)
+		{
+			fill_attribute_map_with_default_values(model_to_attribute_map);
+			return true;
 		}
+
 		return (mapper->map_properties(filename,field_names,model_to_attribute_map,remapping));
 	}
 

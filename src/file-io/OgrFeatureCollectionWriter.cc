@@ -1113,7 +1113,6 @@ namespace
 	
 	void
 	create_default_model_to_shapefile_map(
-		const GPlatesFileIO::FileInfo &file_info,
 		QMap< QString, QString > &model_to_shapefile_map)
 	{
 		for (unsigned int i = 0; i < ShapefileAttributes::NUM_PROPERTIES; ++i)
@@ -1263,7 +1262,7 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 
 	if (d_model_to_shapefile_map.isEmpty())
 	{
-		create_default_model_to_shapefile_map(file_info, d_model_to_shapefile_map);
+		create_default_model_to_shapefile_map(d_model_to_shapefile_map);
 	}
 
 
