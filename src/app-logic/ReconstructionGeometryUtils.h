@@ -971,56 +971,6 @@ namespace GPlatesAppLogic
 
 			return visitor.get_boundary_polygon();
 		}
-
-		/**
-		 * Determines if there are any small circle features in the collection.
-		 *
-		 * Note: Small Circles are currently not reconstructable (although they may be 
-		 * in the future). 
-		 */
-		class DetectSmallCircleFeatures:
-			public GPlatesModel::ConstFeatureVisitor
-		{
-		public:
-			DetectSmallCircleFeatures() :
-				d_found_small_circle_features(false)
-			{  }
-
-
-			bool
-			has_small_circle_features() const
-			{
-				return d_found_small_circle_features;
-			}
-
-
-			virtual
-			void
-			visit_feature_handle(
-					const GPlatesModel::FeatureHandle &feature_handle)
-			{
-				if (d_found_small_circle_features)
-				{
-					// We've already found a small circle feature so just return.
-					return;
-				}
-
-				static const GPlatesModel::FeatureType small_circle_feature_type = 
-					GPlatesModel::FeatureType::create_gpml("SmallCircle");
-
-				if (feature_handle.feature_type() == small_circle_feature_type)
-				{
-					d_found_small_circle_features = true;
-				}
-
-				// NOTE: We don't actually want to visit the feature's properties
-				// so we're not calling 'visit_feature_properties()'.
-			}
-
-		private:
-			bool d_found_small_circle_features;
-		};
-
 	}
 }
 
