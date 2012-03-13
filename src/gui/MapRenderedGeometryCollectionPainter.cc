@@ -43,14 +43,14 @@
 GPlatesGui::MapRenderedGeometryCollectionPainter::MapRenderedGeometryCollectionPainter(
 		const MapProjection::non_null_ptr_to_const_type &map_projection,
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-		const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
+		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const GPlatesPresentation::VisualLayers &visual_layers,
 		RenderSettings &render_settings,
 		const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_map_projection(map_projection),
 	d_rendered_geometry_collection(rendered_geometry_collection),
-	d_persistent_opengl_objects(persistent_opengl_objects),
+	d_gl_visual_layers(gl_visual_layers),
 	d_visual_layers(visual_layers),
 	d_render_settings(render_settings),
 	d_text_renderer_ptr(text_renderer_ptr),
@@ -103,7 +103,7 @@ GPlatesGui::MapRenderedGeometryCollectionPainter::visit_rendered_geometry_layer(
 	MapRenderedGeometryLayerPainter rendered_geom_layer_painter(
 			d_map_projection,
 			rendered_geometry_layer,
-			d_persistent_opengl_objects,
+			d_gl_visual_layers,
 			d_paint_params->d_inverse_viewport_zoom_factor,
 			d_render_settings,
 			d_text_renderer_ptr,

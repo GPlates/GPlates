@@ -33,6 +33,8 @@
 #include <QWidget>
 #include <QStackedLayout>
 
+#include "global/PointerTraits.h"
+
 #include "gui/ColourScheme.h"
 
 #include "maths/LatLonPoint.h"
@@ -48,6 +50,11 @@
 namespace GPlatesGui
 {
 	class ViewportProjection;
+}
+
+namespace GPlatesOpenGL
+{
+	class GLContext;
 }
 
 namespace GPlatesPresentation
@@ -121,6 +128,16 @@ namespace GPlatesQtWidgets
 		//! Gets the framebuffer for the active view.
 		QImage
 		grab_frame_buffer();
+
+		/**
+		 * Returns the OpenGL context for the active view.
+		 *
+		 * Since both the globe and map views use OpenGL this returns whichever is currently active.
+		 * Note that you should still call "GLContext::make_current()" before using the context
+		 * to ensure it is the currently active OpenGL context.
+		 */
+		GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLContext>::non_null_ptr_type
+		get_active_gl_context();
 
 		void
 		update_canvas();

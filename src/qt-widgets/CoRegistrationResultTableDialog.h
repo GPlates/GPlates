@@ -23,9 +23,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_QTWIDGETS_RESULTTABLEDIALOG_H
-#define GPLATES_QTWIDGETS_RESULTTABLEDIALOG_H
+#ifndef GPLATES_QTWIDGETS_COREGISTRATIONRESULTTABLEDIALOG_H
+#define GPLATES_QTWIDGETS_COREGISTRATIONRESULTTABLEDIALOG_H
 
+#include <boost/weak_ptr.hpp>
 #include <QWidget>
 #include <QAbstractTableModel>
 #include <QTableView>
@@ -35,11 +36,13 @@
 #include <QEvent>
 #include <qevent.h>
 
-#include "ResultTableDialogUi.h"
+#include "CoRegistrationResultTableDialogUi.h"
 #include "SaveFileDialog.h"
 
 #include "data-mining/DataTable.h"
 #include "data-mining/OpaqueDataToQString.h"
+
+#include "presentation/VisualLayer.h"
 
 namespace GPlatesPresentation
 {
@@ -48,12 +51,14 @@ namespace GPlatesPresentation
 
 namespace GPlatesAppLogic
 {
+	class ApplicationState;
 	class FeatureCollectionFileState;
 }
 
 namespace GPlatesQtWidgets
 {
-	using namespace GPlatesDataMining;
+	class ViewportWindow;
+
 	class ResultTableView : 
 		public QTableView
 	{
@@ -105,7 +110,7 @@ namespace GPlatesQtWidgets
 		
 		explicit
 		ResultTableModel(
-				const DataTable& _data_table,
+				const GPlatesDataMining::DataTable& _data_table,
 				QObject *parent_ = NULL) :
 			QAbstractTableModel(parent_),
 			d_table(_data_table)
@@ -191,7 +196,7 @@ namespace GPlatesQtWidgets
 				const QModelIndex &idx,
 				int role) const;
 
-		const DataTable&
+		const GPlatesDataMining::DataTable&
 		data_table()
 		{
 			return d_table;
@@ -199,62 +204,53 @@ namespace GPlatesQtWidgets
 
 	public slots:
 	protected:
-		const DataTable d_table;
+		const GPlatesDataMining::DataTable d_table;
 	};
 
 	/**
 	 * 
 	 */
-	class ResultTableDialog:
+	class CoRegistrationResultTableDialog:
 			public QDialog,
-			protected Ui_ResultTableDialog
+			protected Ui_CoRegistrationResultTableDialog
 	{
 		Q_OBJECT
 	public:
 
-		static const QString filter_csv;
-		static const QString filter_csv_ext;
-		static const QString page_label_format;
-
 		explicit
-		ResultTableDialog(
-				const std::vector< DataTable > data_tables,
+		CoRegistrationResultTableDialog(
 				GPlatesPresentation::ViewState &view_state,
-				QWidget *parent_ = NULL,
-				bool old_version = true);
+				ViewportWindow *viewport_window,
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer,
+				QWidget *parent_ = NULL);
 
-		~ResultTableDialog()
+		~CoRegistrationResultTableDialog()
 		{ }
 
 		void
-		update_page_label();
+		pop_up();
 
 		void
-		update_time_label();
+		set_visual_layer(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
+		{
+			d_visual_layer = visual_layer;
+		}
 
 	public slots:
-	
+
+		/**
+		 * Retrieves co-registration results from the associated co-registration layer proxy.
+		 *
+		 * Internally this is signal/slot connected such that it gets called whenever a new
+		 * reconstruction happens (which in turn happens when the reconstruction time changes or
+		 * any layers/connections/inputs have been changed/modified).
+		 */
 		void
-		accept();
+		update();
 
 		void
 		reject();
-		
-		void
-		handle_next_page();
-
-		void
-		handle_previous_page();
-
-		void 
-		handle_goto_page();
-
-		void
-		handle_save_all();
-
-		void
-		data_arrived(
-				const DataTable&);
 
 		void
 		highlight_seed();
@@ -263,32 +259,26 @@ namespace GPlatesQtWidgets
 		
 	private:
 
-		void
-		update();
+		void	
+		connect_application_state_signals(
+				GPlatesAppLogic::ApplicationState &application_state);
 
 		void
-		init_controls();
+		update_co_registration_data(
+				const GPlatesDataMining::DataTable &co_registration_data_table);
 
 		GPlatesModel::FeatureHandle::weak_ref
 		find_feature_by_id(
 				GPlatesAppLogic::FeatureCollectionFileState& state,
 				const QString& id);
 
-		std::vector< DataTable > d_data_tables;
 		GPlatesPresentation::ViewState &d_view_state;
-		boost::scoped_ptr< ResultTableModel > d_table_model_prt;
-		
-		QTableView* table_view;
-		QLabel* page_label;
-		QLabel* time_label;
-		QSpinBox* spinBox_page;
-		QPushButton* pushButton_next;
-		QPushButton* pushButton_previous;
+		ViewportWindow *d_viewport_window;
+		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_visual_layer;
 
-		unsigned d_page_index;
-		unsigned d_page_num;
-		bool     d_old_version;
+		boost::scoped_ptr< ResultTableModel > d_table_model_prt;
+		QTableView* table_view;
 	};
 }
 
-#endif  // GPLATES_QTWIDGETS_RESULTTABLEDIALOG_H
+#endif  // GPLATES_QTWIDGETS_COREGISTRATIONRESULTTABLEDIALOG_H

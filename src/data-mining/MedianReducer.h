@@ -25,6 +25,7 @@
 #ifndef GPLATESDATAMINING_MEDIANREDUCER_H
 #define GPLATESDATAMINING_MEDIANREDUCER_H
 
+#include <algorithm>
 #include <vector>
 #include <QDebug>
 #include <boost/foreach.hpp>

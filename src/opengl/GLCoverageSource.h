@@ -50,11 +50,6 @@ namespace GPlatesOpenGL
 
 	/**
 	 * An arbitrary dimension source of coverage data extracted from a raster.
-	 *
-	 * NOTE: The inverse of the coverage is returned - this makes it easier to implement
-	 * the combining of age masking (for ocean regions) with polygon masking (for continent regions).
-	 *
-	 * The age grid raster itself is input via a proxied raster.
 	 */
 	class GLCoverageSource :
 			public GLMultiResolutionRasterSource

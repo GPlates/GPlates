@@ -25,7 +25,11 @@
  */
 #include <QDebug>
 #include <QXmlQuery>
+
 #include "ArbitraryXmlReader.h"
+
+#include "utils/Profile.h"
+
 
 void
 GPlatesFileIO::ArbitraryXmlReader::read_file(
@@ -34,6 +38,8 @@ GPlatesFileIO::ArbitraryXmlReader::read_file(
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
+	PROFILE_FUNC();
+
 	SetErrorAccumulation setter(&read_errors,this);
 	profile->populate(file_ref);
 }

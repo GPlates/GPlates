@@ -47,7 +47,12 @@ GPlatesOpenGL::GLPixelBufferImpl::GLPixelBufferImpl(
 {
 	// We should only get here if the pixel buffer object extension is *not* supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			!GPLATES_OPENGL_BOOL(GLEW_ARB_pixel_buffer_object),
+			// We also test for absence of GL_ARB_vertex_buffer_object even though
+			// GL_ARB_pixel_buffer_object can't exist without it - because during debugging
+			// sometimes GL_ARB_vertex_buffer_object is explicitly disabled - see
+			// "GLContext::disable_opengl_extensions()" - this avoids triggering this assertion
+			// failure in that debugging situation.
+			!(GLEW_ARB_pixel_buffer_object && GLEW_ARB_vertex_buffer_object),
 			GPLATES_ASSERTION_SOURCE);
 }
 

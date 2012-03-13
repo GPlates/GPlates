@@ -340,14 +340,10 @@ namespace
 
 		const Reconstruction &reconstruction = application_state.get_current_reconstruction();
 
-		// Get the layer outputs.
-		const GPlatesAppLogic::Reconstruction::layer_output_seq_type &layer_outputs =
-				reconstruction.get_active_layer_outputs();
-
-		// Find those layer outputs that come from velocity field calculator layers.
-		std::vector<GPlatesAppLogic::VelocityFieldCalculatorLayerProxy *> velocity_field_outputs;
-		if (!GPlatesAppLogic::LayerProxyUtils::get_layer_proxy_derived_type_sequence(
-				layer_outputs.begin(), layer_outputs.end(), velocity_field_outputs))
+		// Get the velocity field calculator layer outputs.
+		std::vector<GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::non_null_ptr_type> velocity_field_outputs;
+		if (!reconstruction.get_active_layer_outputs<GPlatesAppLogic::VelocityFieldCalculatorLayerProxy>(
+				velocity_field_outputs))
 		{
 			return;
 		}
@@ -355,11 +351,10 @@ namespace
 		// Iterate over the layers that have velocity field calculator outputs.
 		std::vector<multi_point_vector_field_non_null_ptr_type> multi_point_velocity_fields;
 		BOOST_FOREACH(
-				GPlatesAppLogic::VelocityFieldCalculatorLayerProxy *velocity_field_calculator_layer_proxy,
+				const GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::non_null_ptr_type &velocity_field_calculator_layer_proxy,
 				velocity_field_outputs)
 		{
-			velocity_field_calculator_layer_proxy->get_velocity_multi_point_vector_fields(
-					multi_point_velocity_fields);
+			velocity_field_calculator_layer_proxy->get_velocity_multi_point_vector_fields(multi_point_velocity_fields);
 		}
 
 		// Convert sequence of non_null_ptr_type's to a sequence of raw pointers expected by the caller.
@@ -477,7 +472,7 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 		QString output_basename = calculate_output_basename(output_filename_prefix, velocity_filename);
 		QString full_output_filename = target_dir.absoluteFilePath(output_basename);
 
-		qDebug() << velocity_filename << "->" << full_output_filename << "<<" << vector_fields.front();
+		//qDebug() << velocity_filename << "->" << full_output_filename << "<<" << vector_fields.front();
 
 		// Next, the file writing. Update the dialog status message.
 		d_export_animation_context_ptr->update_status_message(

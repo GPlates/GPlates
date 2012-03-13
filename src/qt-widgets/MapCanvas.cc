@@ -55,7 +55,7 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		MapView *map_view_ptr,
 		const GPlatesOpenGL::GLContext::non_null_ptr_type &gl_context,
-		const GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type &gl_persistent_objects,
+		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		GPlatesGui::RenderSettings &render_settings,
 		GPlatesGui::ViewportZoom &viewport_zoom,
 		const GPlatesGui::ColourScheme::non_null_ptr_type &colour_scheme,
@@ -69,7 +69,7 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 	d_text_overlay(new GPlatesGui::TextOverlay(view_state.get_application_state(), d_text_renderer)),
 	d_map(
 			view_state,
-			gl_persistent_objects,
+			gl_visual_layers,
 			rendered_geometry_collection,
 			view_state.get_visual_layers(),
 			render_settings,

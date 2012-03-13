@@ -374,6 +374,7 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_stream(
 		GLRenderer &renderer,
 		target_type target,
 		unsigned int minimum_bytes_to_stream,
+		unsigned int stream_alignment,
 		unsigned int &stream_offset,
 		unsigned int &stream_bytes_available)
 {
@@ -391,6 +392,14 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_stream(
 			renderer,
 			boost::dynamic_pointer_cast<const GLBufferObject>(shared_from_this()),
 			target);
+
+	// The stream offset must be multiple of 'stream_alignment'.
+	// Note that this does nothing if 'd_uninitialised_offset' is zero (ie, contains no initialised data).
+	const unsigned int stream_offset_adjust = d_uninitialised_offset % stream_alignment;
+	if (stream_offset_adjust)
+	{
+		d_uninitialised_offset += stream_alignment - stream_offset_adjust;
+	}
 
 	// Discard the current buffer allocation if there's not enough un-initialised memory
 	// at the end of the buffer.

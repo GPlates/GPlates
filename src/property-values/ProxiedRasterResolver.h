@@ -54,9 +54,9 @@
 #include "gui/Mipmapper.h"
 #include "gui/RasterColourPalette.h"
 
-#include "utils/ReferenceCount.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/Profile.h"
+#include "utils/ReferenceCount.h"
 
 
 namespace GPlatesPropertyValues

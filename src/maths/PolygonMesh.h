@@ -39,7 +39,7 @@
 namespace GPlatesMaths
 {
 	/**
-	 * A triangular mesh of the interior region of a polygon-on-sphere.
+	 * A triangular mesh of the interior region of a polygon.
 	 *
 	 * Can also be generated from a polyline by closing the gap between the first and last vertices.
 	 *
@@ -47,6 +47,11 @@ namespace GPlatesMaths
 	 * concave circumference of a polygon.
 	 *
 	 * TODO: Need to handle self-intersections (ie, generate mesh in presense of self-intersections).
+	 * UPDATE: Currently polygon stenciling of a polygon fan mesh (ie, a mesh not fully contained
+	 * within the interior of the polygon) is used exclusively for rendering filled polygons and
+	 * used for self-intersecting polygons when reconstructing rasters - polygon stenciling is a
+	 * raster based technique that masks away the regions of the fan mesh outside the polygon - so
+	 * this technique is only useful for raster based applications.
 	 */
 	class PolygonMesh :
 			public GPlatesUtils::ReferenceCount<PolygonMesh>

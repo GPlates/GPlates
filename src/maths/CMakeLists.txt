@@ -71,6 +71,8 @@ set(srcs
     PointOnSphere.cc
     PointOnSphere.h
     PointProximityHitDetail.h
+    PolygonFan.cc
+    PolygonFan.h
     PolygonIntersections.cc
     PolygonIntersections.h
     PolygonMesh.cc

@@ -142,7 +142,7 @@ namespace GPlatesAppLogic
 		create(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				GPlatesModel::FeatureHandle &feature_handle_,
-				GPlatesModel::FeatureHandle::iterator property_iterator_,
+				const GPlatesModel::FeatureHandle::iterator &property_iterator_,
 				const geometry_ptr_type &reconstructed_geometry_,
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_ = boost::none,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none,
@@ -183,7 +183,7 @@ namespace GPlatesAppLogic
 		create(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				GPlatesModel::FeatureHandle &feature_handle_,
-				GPlatesModel::FeatureHandle::iterator property_iterator_,
+				const GPlatesModel::FeatureHandle::iterator &property_iterator_,
 				// NOTE: This is the *unreconstructed* geometry...
 				const geometry_ptr_type &resolved_geometry_,
 				const ReconstructMethodFiniteRotation::non_null_ptr_to_const_type &reconstruct_method_transform_,

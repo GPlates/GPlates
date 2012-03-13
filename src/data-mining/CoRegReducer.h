@@ -29,15 +29,29 @@
 
 #include "OpaqueData.h"
 
+#include "app-logic/ReconstructContext.h"
+
+
 namespace GPlatesAppLogic
 {
 	class ReconstructedFeatureGeometry;
 }
+
 namespace GPlatesDataMining
 {
 	class CoRegReducer
 	{
 	public:
+		typedef std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature>
+				reconstructed_feature_vector_type;
+
+		typedef std::vector<
+				boost::tuple<
+						OpaqueData,
+						GPlatesAppLogic::ReconstructContext::ReconstructedFeature> 
+								> ReducerInDataset;
+
+
 		class Config
 		{
 		public:
@@ -51,12 +65,6 @@ namespace GPlatesDataMining
 
 		virtual
 		~CoRegReducer(){ };
-
-		typedef std::vector<boost::tuple<
-				OpaqueData,
-				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> 
-										> 
-							> ReducerInDataset;
 
 		OpaqueData
 		process(

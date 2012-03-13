@@ -35,8 +35,11 @@
 
 #include "OpaqueData.h"
 
+#include "app-logic/ReconstructContext.h"
+
 #include "file-io/File.h"
 #include "file-io/ReadErrorAccumulation.h"
+
 #include "model/FeatureHandle.h"
 
 namespace GPlatesAppLogic

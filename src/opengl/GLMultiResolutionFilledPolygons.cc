@@ -109,11 +109,12 @@ namespace GPlatesOpenGL
 				"	gl_FragColor *= texture2DProj(clip_texture_sampler, gl_TexCoord[1]);\n"
 				"#endif // ENABLE_CLIPPING\n"
 
+				"	// As a small optimisation discard the pixel if the alpha is zero.\n"
+				"	if (gl_FragColor.a == 0)\n"
+				"		discard;\n"
+
 				"	// Revert effect of blending with black texels near polygon edge.\n"
-				"	if (gl_FragColor.a > 0)\n"
-				"	{\n"
-				"		gl_FragColor.rgb /= gl_FragColor.a;\n"
-				"	}\n"
+				"	gl_FragColor.rgb /= gl_FragColor.a;\n"
 
 				"}\n";
 
@@ -836,6 +837,8 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::set_tile_state(
 			d_render_tile_to_scene_program_object.get()->gl_uniform1i(
 					renderer, "tile_texture_sampler", 0/*texture unit*/);
 		}
+
+		// Instead of alpha-testing, the fragment shader uses 'discard'.
 	}
 	else // Fixed function...
 	{
@@ -857,9 +860,16 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::set_tile_state(
 				GLUtils::set_object_linear_tex_gen_state(renderer, 1/*texture_unit*/);
 			}
 		}
+
+		// Alpha-test state.
+		// This enables alpha texture clipping when tile frustum is smaller than the multi-resolution
+		// cube mesh drawable. It's also a small optimisation for those areas of the tile that are
+		// not covered by any polygons (alpha-testing those pixels away avoids the alpha-blending stage).
+		renderer.gl_enable(GL_ALPHA_TEST);
+		renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
 	}
 
-	// NOTE: We don't set alpha-blending (or alpha-testing) state here because we
+	// NOTE: We don't set alpha-blending state here because we
 	// might not be rendering directly to the final render target and hence we don't
 	// want to double-blend semi-transparent rasters - the alpha value is multiplied by
 	// all channels including alpha during alpha blending (R,G,B,A) -> (A*R,A*G,A*B,A*A) -
@@ -2054,6 +2064,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::begin_polygons_vertex_array_stre
 			static_cast<polygon_stream_vertex_element_type *>(
 					map_vertex_element_buffer_scope.gl_map_buffer_stream(
 							vertex_element_buffer_size / MINIMUM_BYTES_TO_STREAM_DIVISOR,
+							sizeof(polygon_stream_vertex_element_type)/*stream_alignment*/,
 							vertex_element_stream_offset,
 							vertex_element_stream_bytes_available));
 
@@ -2064,6 +2075,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::begin_polygons_vertex_array_stre
 			static_cast<PolygonStreamVertex *>(
 					map_vertex_buffer_scope.gl_map_buffer_stream(
 							vertex_buffer_size / MINIMUM_BYTES_TO_STREAM_DIVISOR,
+							sizeof(PolygonStreamVertex)/*stream_alignment*/,
 							vertex_stream_offset,
 							vertex_stream_bytes_available));
 
@@ -2072,8 +2084,10 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::begin_polygons_vertex_array_stre
 			vertex_element_stream_offset / sizeof(polygon_stream_vertex_element_type);
 	polygon_stream.max_num_vertex_elements =
 			vertex_element_stream_bytes_available / sizeof(polygon_stream_vertex_element_type);
-	polygon_stream.start_streaming_vertex_count = vertex_stream_offset / sizeof(PolygonStreamVertex);
-	polygon_stream.max_num_vertices = vertex_stream_bytes_available / sizeof(PolygonStreamVertex);
+	polygon_stream.start_streaming_vertex_count =
+			vertex_stream_offset / sizeof(PolygonStreamVertex);
+	polygon_stream.max_num_vertices =
+			vertex_stream_bytes_available / sizeof(PolygonStreamVertex);
 
 	// Reset number of vertices/indices streamed.
 	polygon_stream.num_streamed_vertex_elements = 0;

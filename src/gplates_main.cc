@@ -44,8 +44,9 @@
 #include "global/Constants.h"
 #include "global/python.h"
 
-#include "gui/GPlatesQApplication.h"
 #include "gui/DrawStyleManager.h"
+#include "gui/GPlatesQApplication.h"
+#include "gui/PythonManager.h"
 
 #include "maths/MathsUtils.h"
 
@@ -54,10 +55,10 @@
 #include "qt-widgets/PythonInitFailedDialog.h"
 #include "qt-widgets/ViewportWindow.h"
 
-#include "utils/Profile.h"
 #include "utils/CommandLineParser.h"
 #include "utils/ComponentManager.h"
-#include "gui/PythonManager.h"
+#include "utils/Profile.h"
+
 
 namespace
 {

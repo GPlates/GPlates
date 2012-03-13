@@ -37,11 +37,11 @@
 #include <QMouseEvent>
 
 #include "gui/ColourScheme.h"
-#include "gui/PersistentOpenGLObjects.h"
 
 #include "maths/LatLonPoint.h"
 
 #include "opengl/GLContext.h"
+#include "opengl/GLVisualLayers.h"
 
 #include "qt-widgets/SceneView.h"
 
@@ -117,7 +117,7 @@ namespace GPlatesQtWidgets
 				QWidget *parent,
 				const QGLWidget *share_gl_widget,
 				const GPlatesOpenGL::GLContext::non_null_ptr_type &share_gl_context,
-				const GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type &share_persistent_opengl_objects);
+				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &share_gl_visual_layers);
 
 		~MapView();
 
@@ -238,6 +238,15 @@ namespace GPlatesQtWidgets
 
 		QImage
 		grab_frame_buffer();
+
+		/**
+		 * Returns the OpenGL context associated with our QGLWidget viewport.
+		 */
+		GPlatesOpenGL::GLContext::non_null_ptr_type
+		get_gl_context()
+		{
+			return d_gl_context;
+		}
 
 		int
 		width() const;
@@ -393,7 +402,7 @@ namespace GPlatesQtWidgets
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
 
 		//! Keeps track of OpenGL objects that persist from one render to another.
-		GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type d_gl_persistent_objects;
+		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
 
 		/**
 		 * A pointer to the map canvas that this view is associated with. 

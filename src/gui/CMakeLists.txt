@@ -161,8 +161,6 @@ set(srcs
     OpaqueSphere.h
     Palette.cc
     Palette.h
-    PersistentOpenGLObjects.cc
-    PersistentOpenGLObjects.h
     PlateIdColourPalettes.cc
     PlateIdColourPalettes.h
     ProjectionException.h

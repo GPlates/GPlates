@@ -212,10 +212,15 @@ namespace GPlatesOpenGL
 		 *   gl_MultiTexCoord6  14
 		 *   gl_MultiTexCoord7  15
 		 *
-		 * Also this means if you are using the fixed function pipeline don't use
-		 * 'glVertexAttribPointer(0, ...)' even though, on nVidia hardware, this maps to
-		 * 'glVertexPointer'. I did this and it worked on nVidia hardware, but not other hardware,
-		 * most likely due to the above aliasing.
+		 * NOTE: Ensure you use attribute index zero for one of your vertex attributes - it appears
+		 * that some hardware will not work unless this is the case.
+		 * This was discovered on a nVidia 7400M - probably it's expecting either 'glVertexPointer'
+		 * which aliases to index zero or 'glVertexAttribPointer(0, ...)' which specifically uses index zero.
+		 *
+		 * Also, if you are using the fixed function vertex pipeline (ie, not using a vertex shader)
+		 * then don't use 'glVertexAttribPointer(0, ...)' to set vertex data (for the fixed function
+		 * pipeline) even though, on nVidia hardware, this maps to 'glVertexPointer'.
+		 * This worked on nVidia hardware, but not other hardware, most likely due to the above aliasing.
 		 */
 		void
 		gl_bind_attrib_location(

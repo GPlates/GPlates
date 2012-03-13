@@ -479,20 +479,22 @@ endif (NOT WIN32)
 # this extra resolution behaviour.
 if (NOT WIN32 AND NOT APPLE)
 	set(GPlates_LINK_CMD -Xlinker --start-group ${GPlates_LIBS} -Xlinker --end-group)
+	set(GPlates_cli_LINK_CMD -Xlinker --start-group ${GPlates_cli_LIBS} -Xlinker --end-group)
+	set(GPlates_unit_test_LINK_CMD -Xlinker --start-group ${GPlates_unit_test_LIBS} -Xlinker --end-group)
 else (NOT WIN32 AND NOT APPLE)
 	set(GPlates_LINK_CMD ${GPlates_LIBS})	
+	set(GPlates_cli_LINK_CMD ${GPlates_cli_LIBS})
+	set(GPlates_unit_test_LINK_CMD ${GPlates_unit_test_LIBS})
 endif (NOT WIN32 AND NOT APPLE)
 
 # Actual link dependencies get assembled here.
-# The GPlates CLI target doesn't need the extra 'GPlates_LINK_CMD' step above as its
-# dependency list is much smaller.
 target_link_libraries(gplates ${GPlates_LINK_CMD} ${dependency_LIBS})
 target_link_libraries(gplates-no-gui ${GPlates_LINK_CMD} ${dependency_LIBS})
 if (ADD_GPLATES_CLI_TARGET)
-	target_link_libraries(gplates-cli ${GPlates_cli_LIBS} ${dependency_LIBS} ${GPlates_cli_LIBS})
+	target_link_libraries(gplates-cli ${GPlates_cli_LINK_CMD} ${dependency_LIBS})
 endif (ADD_GPLATES_CLI_TARGET)
 if (ADD_UNIT_TEST_TARGET)
-	target_link_libraries(gplates-unit-test ${GPlates_unit_test_LIBS} ${dependency_LIBS} ${GPlates_unit_test_LIBS})
+	target_link_libraries(gplates-unit-test ${GPlates_unit_test_LINK_CMD} ${dependency_LIBS})
 endif (ADD_UNIT_TEST_TARGET)
 	
 # Add Python module library target.

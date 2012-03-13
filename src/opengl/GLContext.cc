@@ -548,6 +548,7 @@ GPlatesOpenGL::GLContext::disable_opengl_extensions()
 	//__GLEW_ARB_vertex_shader = 0;
 	//__GLEW_ARB_multitexture = 0;
 	//__GLEW_ARB_texture_non_power_of_two = 0;
+	//__GLEW_ARB_texture_float = 0;
 	//__GLEW_ARB_shader_objects = 0;
 	//__GLEW_ARB_fragment_shader = 0;
 	//__GLEW_EXT_texture_edge_clamp = 0; __GLEW_SGIS_texture_edge_clamp = 0;

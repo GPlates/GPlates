@@ -281,9 +281,6 @@ namespace GPlatesPropertyValues
 
 	private:
 
-		void
-		update_proxied_raw_rasters();
-
 		composite_value_type d_range_parameters;
 		XsString::non_null_ptr_to_const_type d_file_name;
 		XsString::non_null_ptr_to_const_type d_file_structure;

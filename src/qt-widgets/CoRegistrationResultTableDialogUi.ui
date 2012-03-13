@@ -1,6 +1,6 @@
 <ui version="4.0" >
- <class>ResultTableDialog</class>
- <widget class="QDialog" name="ResultTableDialog" >
+ <class>CoRegistrationResultTableDialog</class>
+ <widget class="QDialog" name="CoRegistrationResultTableDialog" >
   <property name="geometry" >
    <rect>
     <x>0</x>

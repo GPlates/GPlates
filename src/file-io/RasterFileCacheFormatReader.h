@@ -263,6 +263,16 @@ namespace GPlatesFileIO
 			return result;
 		}
 
+
+		/**
+		 * Returns the raster statistics or boost::none if original raster did not provide any.
+		 */
+		const boost::optional<GPlatesPropertyValues::RasterStatistics> &
+		get_raster_statistics() const
+		{
+			return d_raster_statistics;
+		}
+
 	private:
 
 		typedef typename RawRasterType::element_type raster_element_type;

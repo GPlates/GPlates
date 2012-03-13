@@ -36,12 +36,13 @@
 #include "Colour.h"
 #include "ColourScheme.h"
 #include "LayerPainter.h"
-#include "PersistentOpenGLObjects.h"
 #include "TextRenderer.h"
 #include "RenderSettings.h"
 
 #include "maths/DateLineWrapper.h"
 #include "maths/LatLonPoint.h"
+
+#include "opengl/GLVisualLayers.h"
 
 #include "presentation/VisualLayers.h"
 
@@ -83,7 +84,7 @@ namespace GPlatesGui
 		MapRenderedGeometryLayerPainter(
 				const MapProjection::non_null_ptr_to_const_type &map_projection,
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
-				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
+				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const double &inverse_viewport_zoom_factor,
 				GPlatesGui::RenderSettings &render_settings,
 				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
@@ -218,7 +219,7 @@ namespace GPlatesGui
 		/**
 		 * Keeps track of OpenGL-related objects that persist from one render to the next.
 		 */
-		PersistentOpenGLObjects::non_null_ptr_type d_persistent_opengl_objects;
+		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
 
 		const double d_inverse_zoom_factor;
 

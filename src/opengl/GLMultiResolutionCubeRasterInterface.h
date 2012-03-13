@@ -104,12 +104,9 @@ namespace GPlatesOpenGL
 			 * Returns the specified tile's texture or boost::none if there's no texture for this node
 			 * (for example there was no raster covering the node's tile).
 			 *
-			 * @a view_transform and @a projection_transform should match the current node's tile.
-			 * This information is provided by the client since it's usually available during client's
-			 * traversal of cube quad tree and says us memory.
-			 *
 			 * Note that for derived class @a GLMultiResolutionCubeRaster this will always return
-			 * a valid tile texture.
+			 * a valid tile texture since there will be no quad tree nodes over regions where there
+			 * is not raster coverage.
 			 *
 			 * NOTE: The returned texture has nearest neighbour filtering if it's a floating-point
 			 * texture so you should emulate bilinear filtering in a fragment shader.

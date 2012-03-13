@@ -24,39 +24,40 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_GUI_PERSISTENTOPENGLOBJECTS_H
-#define GPLATES_GUI_PERSISTENTOPENGLOBJECTS_H
+#ifndef GPLATES_OPENGL_GLVISUALLAYERS_H
+#define GPLATES_OPENGL_GLVISUALLAYERS_H
 
 #include <map>
+#include <utility>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "Colour.h"
-#include "MapProjection.h"
-#include "RasterColourPalette.h"
+#include "GLCoverageSource.h"
+#include "GLAgeGridMaskSource.h"
+#include "GLContext.h"
+#include "GLMultiResolutionCubeMesh.h"
+#include "GLMultiResolutionCubeRaster.h"
+#include "GLMultiResolutionCubeRasterInterface.h"
+#include "GLMultiResolutionFilledPolygons.h"
+#include "GLMultiResolutionMapCubeMesh.h"
+#include "GLMultiResolutionRaster.h"
+#include "GLMultiResolutionRasterMapView.h"
+#include "GLMultiResolutionStaticPolygonReconstructedRaster.h"
+#include "GLVisualRasterSource.h"
+#include "GLReconstructedStaticPolygonMeshes.h"
+#include "OpenGLFwd.h"
 
 #include "app-logic/Layer.h"
 #include "app-logic/RasterLayerProxy.h"
 #include "app-logic/ReconstructGraph.h"
 #include "app-logic/ResolvedRaster.h"
 
+#include "gui/Colour.h"
+#include "gui/MapProjection.h"
+#include "gui/RasterColourPalette.h"
+
 #include "maths/CubeQuadTreePartition.h"
 #include "maths/types.h"
-
-#include "opengl/GLCoverageSource.h"
-#include "opengl/GLAgeGridMaskSource.h"
-#include "opengl/GLContext.h"
-#include "opengl/GLMultiResolutionCubeMesh.h"
-#include "opengl/GLMultiResolutionCubeRaster.h"
-#include "opengl/GLMultiResolutionCubeRasterInterface.h"
-#include "opengl/GLMultiResolutionFilledPolygons.h"
-#include "opengl/GLMultiResolutionMapCubeMesh.h"
-#include "opengl/GLMultiResolutionRaster.h"
-#include "opengl/GLMultiResolutionRasterMapView.h"
-#include "opengl/GLMultiResolutionStaticPolygonReconstructedRaster.h"
-#include "opengl/GLVisualRasterSource.h"
-#include "opengl/GLReconstructedStaticPolygonMeshes.h"
-#include "opengl/OpenGLFwd.h"
 
 #include "property-values/Georeferencing.h"
 #include "property-values/RawRaster.h"
@@ -75,10 +76,7 @@ namespace GPlatesAppLogic
 namespace GPlatesOpenGL
 {
 	class GLRenderer;
-}
 
-namespace GPlatesGui
-{
 	/**
 	 * Keeps track of any OpenGL-related objects that are persistent beyond one rendering frame.
 	 *
@@ -88,18 +86,18 @@ namespace GPlatesGui
 	 * Each OpenGL context that does not share list objects, such as textures and display lists,
 	 * will require a separate instance of this class.
 	 */
-	class PersistentOpenGLObjects :
+	class GLVisualLayers :
 			public QObject,
-			public GPlatesUtils::ReferenceCount<PersistentOpenGLObjects>
+			public GPlatesUtils::ReferenceCount<GLVisualLayers>
 	{
 		Q_OBJECT
 
 	public:
-		//! A convenience typedef for a shared pointer to a non-const @a PersistentOpenGLObjects.
-		typedef GPlatesUtils::non_null_intrusive_ptr<PersistentOpenGLObjects> non_null_ptr_type;
+		//! A convenience typedef for a shared pointer to a non-const @a GLVisualLayers.
+		typedef GPlatesUtils::non_null_intrusive_ptr<GLVisualLayers> non_null_ptr_type;
 
-		//! A convenience typedef for a shared pointer to a const @a PersistentOpenGLObjects.
-		typedef GPlatesUtils::non_null_intrusive_ptr<const PersistentOpenGLObjects> non_null_ptr_to_const_type;
+		//! A convenience typedef for a shared pointer to a const @a GLVisualLayers.
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GLVisualLayers> non_null_ptr_to_const_type;
 
 		
 		//! Typedef for a collection of filled polygons.
@@ -112,7 +110,7 @@ namespace GPlatesGui
 
 
 		/**
-		 * Creates a new @a PersistentOpenGLObjects object.
+		 * Creates a new @a GLVisualLayers object.
 		 *
 		 * Currently listens for removed layers to determine when to flush objects.
 		 */
@@ -122,11 +120,11 @@ namespace GPlatesGui
 				const GPlatesOpenGL::GLContext::non_null_ptr_type &opengl_context,
 				GPlatesAppLogic::ApplicationState &application_state)
 		{
-			return non_null_ptr_type(new PersistentOpenGLObjects(opengl_context, application_state));
+			return non_null_ptr_type(new GLVisualLayers(opengl_context, application_state));
 		}
 
 		/**
-		 * Creates a @a PersistentOpenGLObjects object and that always shares the non-list objects
+		 * Creates a @a GLVisualLayers object and that always shares the non-list objects
 		 * and only shares the list objects if @a objects_from_another_context uses a context
 		 * that shares the same shared state as @a opengl_context.
 		 *
@@ -138,11 +136,11 @@ namespace GPlatesGui
 		non_null_ptr_type
 		create(
 				const GPlatesOpenGL::GLContext::non_null_ptr_type &opengl_context,
-				const PersistentOpenGLObjects::non_null_ptr_type &objects_from_another_context,
+				const GLVisualLayers::non_null_ptr_type &objects_from_another_context,
 				GPlatesAppLogic::ApplicationState &application_state)
 		{
 			return non_null_ptr_type(
-					new PersistentOpenGLObjects(opengl_context, objects_from_another_context, application_state));
+					new GLVisualLayers(opengl_context, objects_from_another_context, application_state));
 		}
 
 
@@ -162,9 +160,9 @@ namespace GPlatesGui
 		render_raster(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type &source_resolved_raster,
-				const RasterColourPalette::non_null_ptr_to_const_type &source_raster_colour_palette,
-				const Colour &source_raster_modulate_colour = Colour::get_white(),
-				boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection = boost::none);
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &source_raster_colour_palette,
+				const GPlatesGui::Colour &source_raster_modulate_colour = GPlatesGui::Colour::get_white(),
+				boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection = boost::none);
 
 
 		/**
@@ -269,13 +267,13 @@ namespace GPlatesGui
 			void
 			set_raster_colour_palette(
 					GPlatesOpenGL::GLRenderer &renderer,
-					const RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette);
+					const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette);
 
 			//! Sets the raster modulation colour.
 			void
 			set_raster_modulate_colour(
 					GPlatesOpenGL::GLRenderer &renderer,
-					const Colour &raster_modulate_colour);
+					const GPlatesGui::Colour &raster_modulate_colour);
 
 			/**
 			 * Returns multi-resolution raster - rebuilds if out-of-date with respect to its dependencies.
@@ -296,10 +294,10 @@ namespace GPlatesGui
 			GPlatesUtils::ObserverToken d_proxied_raster_observer_token;
 			GPlatesUtils::ObserverToken d_raster_feature_observer_token;
 
-			boost::optional<RasterColourPalette::non_null_ptr_to_const_type> d_raster_colour_palette;
+			boost::optional<GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type> d_raster_colour_palette;
 			bool d_raster_colour_palette_dirty;
 
-			Colour d_raster_modulate_colour;
+			GPlatesGui::Colour d_raster_modulate_colour;
 			bool d_raster_modulate_colour_dirty;
 
 			boost::optional<GPlatesOpenGL::GLVisualRasterSource::non_null_ptr_type> d_visual_raster_source;
@@ -351,30 +349,19 @@ namespace GPlatesGui
 			AgeGridLayerUsage(
 					const GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type &age_grid_raster_layer_proxy);
 
-			//! Specify the current reconstruction time.
-			void
-			set_reconstruction_time(
+			/**
+			 * Returns the multi-resolution age grid *mask* and *coverage* rasters for the specified
+			 * reconstruction time and current raster band (set on the layer).
+			 *
+			 * Rebuilds if out-of-date with respect to its dependencies.
+			 */
+			boost::optional<
+					std::pair<
+							GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid mask*/,
+							GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid coverage*/> >
+			get_multi_resolution_age_grid_mask_and_coverage_rasters(
 					GPlatesOpenGL::GLRenderer &renderer,
 					const double &reconstruction_time);
-
-			/**
-			 * Returns the age grid *mask* multi-resolution raster.
-			 *
-			 * Rebuilds if out-of-date with respect to its dependencies.
-			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type>
-			get_age_grid_mask_multi_resolution_raster(
-					GPlatesOpenGL::GLRenderer &renderer);
-
-			/**
-			 * Returns the age grid *mask* multi-resolution raster.
-			 *
-			 * Rebuilds if out-of-date with respect to its dependencies.
-			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type>
-			get_age_grid_coverage_multi_resolution_raster(
-					GPlatesOpenGL::GLRenderer &renderer);
-
 
 			virtual
 			bool
@@ -383,22 +370,6 @@ namespace GPlatesGui
 
 		private:
 			GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type d_age_grid_raster_layer_proxy;
-			GPlatesUtils::ObserverToken d_age_grid_raster_feature_observer_token;
-
-			GPlatesMaths::real_t d_reconstruction_time;
-			bool d_reconstruction_time_dirty;
-
-			boost::optional<GPlatesOpenGL::GLAgeGridMaskSource::non_null_ptr_type> d_age_grid_mask_multi_resolution_source;
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_age_grid_mask_multi_resolution_raster;
-
-			boost::optional<GPlatesOpenGL::GLCoverageSource::non_null_ptr_type> d_age_grid_coverage_multi_resolution_source;
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_age_grid_coverage_multi_resolution_raster;
-
-			void
-			check_input_raster();
-
-			void
-			update();
 		};
 
 
@@ -413,12 +384,6 @@ namespace GPlatesGui
 			ReconstructedStaticPolygonMeshesLayerUsage(
 					const GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type &reconstructed_polygons_layer_proxy);
 
-			//! Specify the current reconstruction time.
-			void
-			set_reconstruction_time(
-					GPlatesOpenGL::GLRenderer &renderer,
-					const double &reconstruction_time);
-
 			/**
 			 * Returns the reconstructed static polygon meshes.
 			 *
@@ -427,7 +392,8 @@ namespace GPlatesGui
 			GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type
 			get_reconstructed_static_polygon_meshes(
 					GPlatesOpenGL::GLRenderer &renderer,
-					bool reconstructing_with_age_grid);
+					bool reconstructing_with_age_grid,
+					const double &reconstruction_time);
 
 			virtual
 			bool
@@ -436,19 +402,6 @@ namespace GPlatesGui
 
 		private:
 			GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type d_reconstructed_static_polygon_meshes_layer_proxy;
-			GPlatesUtils::ObserverToken d_reconstructed_polygons_observer_token;
-			GPlatesUtils::ObserverToken d_present_day_polygons_observer_token;
-
-			GPlatesMaths::real_t d_reconstruction_time;
-			bool d_reconstruction_time_dirty;
-
-			boost::optional<bool> d_reconstructing_with_age_grid;
-
-			boost::optional<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
-					d_reconstructed_static_polygon_meshes;
-
-			void
-			update();
 		};
 
 
@@ -484,7 +437,8 @@ namespace GPlatesGui
 			 */
 			boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
 			get_static_polygon_reconstructed_raster(
-					GPlatesOpenGL::GLRenderer &renderer);
+					GPlatesOpenGL::GLRenderer &renderer,
+					const double &reconstruction_time);
 
 			virtual
 			bool
@@ -535,7 +489,8 @@ namespace GPlatesGui
 			boost::optional<GPlatesOpenGL::GLMultiResolutionRasterMapView::non_null_ptr_type>
 			get_multi_resolution_raster_map_view(
 					GPlatesOpenGL::GLRenderer &renderer,
-					const GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type &multi_resolution_map_cube_mesh);
+					const GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type &multi_resolution_map_cube_mesh,
+					const double &reconstruction_time);
 
 			virtual
 			bool
@@ -706,7 +661,7 @@ namespace GPlatesGui
 			GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type
 			get_multi_resolution_map_cube_mesh(
 					GPlatesOpenGL::GLRenderer &renderer,
-					const MapProjection &map_projection) const;
+					const GPlatesGui::MapProjection &map_projection) const;
 
 			/**
 			 * Returns the multi-resolution filled polygons renderer.
@@ -759,14 +714,14 @@ namespace GPlatesGui
 
 		//! Constructor.
 		explicit
-		PersistentOpenGLObjects(
+		GLVisualLayers(
 				const GPlatesOpenGL::GLContext::non_null_ptr_type &opengl_context,
 				GPlatesAppLogic::ApplicationState &application_state);
 
 		//! Constructor.
-		PersistentOpenGLObjects(
+		GLVisualLayers(
 				const GPlatesOpenGL::GLContext::non_null_ptr_type &opengl_context,
-				const PersistentOpenGLObjects::non_null_ptr_type &objects_from_another_context,
+				const GLVisualLayers::non_null_ptr_type &objects_from_another_context,
 				GPlatesAppLogic::ApplicationState &application_state);
 
 
@@ -776,4 +731,4 @@ namespace GPlatesGui
 	};
 }
 
-#endif // GPLATES_GUI_PERSISTENTOPENGLOBJECTS_H
+#endif // GPLATES_OPENGL_GLVISUALLAYERS_H

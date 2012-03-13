@@ -32,7 +32,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "MapProjection.h"
-#include "PersistentOpenGLObjects.h"
 #include "RasterColourPalette.h"
 #include "TextRenderer.h"
 
@@ -43,6 +42,7 @@
 #include "opengl/GLVertexArray.h"
 #include "opengl/GLVertexBuffer.h"
 #include "opengl/GLVertexElementBuffer.h"
+#include "opengl/GLVisualLayers.h"
 
 
 namespace GPlatesOpenGL
@@ -106,7 +106,7 @@ namespace GPlatesGui
 					GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
 					GPlatesOpenGL::GLBuffer &vertex_buffer_data,
 					GPlatesOpenGL::GLVertexArray &vertex_array,
-					PersistentOpenGLObjects &persistent_opengl_objects);
+					GPlatesOpenGL::GLVisualLayers &gl_visual_layers);
 
 			/**
 			 * Returns the stream for points of size @a point_size.
@@ -339,7 +339,7 @@ namespace GPlatesGui
 		cache_handle_type
 		end_painting(
 				GPlatesOpenGL::GLRenderer &renderer,
-				PersistentOpenGLObjects &persistent_opengl_objects,
+				GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 				const TextRenderer &text_renderer,
 				float scale);
 
@@ -376,7 +376,7 @@ namespace GPlatesGui
 		cache_handle_type
 		paint_rasters(
 				GPlatesOpenGL::GLRenderer &renderer,
-				PersistentOpenGLObjects &persistent_opengl_objects);
+				GPlatesOpenGL::GLVisualLayers &gl_visual_layers);
 
 		void
 		paint_text_drawables_2D(

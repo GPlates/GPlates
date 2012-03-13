@@ -25,11 +25,58 @@
 
 #include <algorithm>
 #include <boost/foreach.hpp>
+#include <QDebug>
 
 #include "RasterLayerProxy.h"
 
 #include "ExtractRasterFeatureProperties.h"
 #include "ReconstructUtils.h"
+
+#include "property-values/RawRasterUtils.h"
+
+
+const boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &
+GPlatesAppLogic::RasterLayerProxy::get_proxied_raster(
+		const double &reconstruction_time,
+		const GPlatesPropertyValues::TextContent &raster_band_name)
+{
+	// If the reconstruction time has changed then we need to re-resolve the raster feature properties.
+	if (d_cached_resolved_raster_feature_properties.cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time) ||
+		!d_cached_resolved_raster_feature_properties.cached_proxied_raster)
+	{
+		// Attempt to resolve the raster feature.
+		if (!resolve_raster_feature(reconstruction_time, raster_band_name))
+		{
+			invalidate_proxied_raster();
+		}
+
+		d_cached_resolved_raster_feature_properties.cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
+	}
+
+	return d_cached_resolved_raster_feature_properties.cached_proxied_raster;
+}
+
+
+const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
+GPlatesAppLogic::RasterLayerProxy::get_proxied_rasters(
+		const double &reconstruction_time)
+{
+	// If the reconstruction time has changed then we need to re-resolve the raster feature properties.
+	if (d_cached_resolved_raster_feature_properties.cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time) ||
+		!d_cached_resolved_raster_feature_properties.cached_proxied_rasters)
+	{
+		// Attempt to resolve the raster feature.
+		// The raster band is arbitrary here - just use the currently selected raster band name.
+		if (!resolve_raster_feature(reconstruction_time, d_current_raster_band_name))
+		{
+			invalidate_proxied_raster();
+		}
+
+		d_cached_resolved_raster_feature_properties.cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
+	}
+
+	return d_cached_resolved_raster_feature_properties.cached_proxied_rasters;
+}
 
 
 boost::optional<GPlatesAppLogic::ResolvedRaster::non_null_ptr_type>
@@ -66,45 +113,427 @@ GPlatesAppLogic::RasterLayerProxy::get_resolved_raster(
 }
 
 
-const boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &
-GPlatesAppLogic::RasterLayerProxy::get_proxied_raster(
-		const double &reconstruction_time)
+bool
+GPlatesAppLogic::RasterLayerProxy::does_raster_contain_numerical_data(
+		const GPlatesPropertyValues::TextContent &raster_band_name)
 {
-	// If the reconstruction time has changed then we need to re-resolve the raster feature properties.
-	if (d_cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time) ||
-		!d_cached_resolved_raster_feature_properties.proxied_raster)
+	// Get the proxied raster for present day and the specified band name.
+	// Using present day is rather arbitrary but if the raster is time-dependent we're expecting
+	// that has the same raster data type for all rasters in the time sequence.
+	const boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> proxied_raster =
+			get_proxied_raster(0.0/*reconstruction_time*/, raster_band_name);
+	if (!proxied_raster)
 	{
-		// Attempt to resolve the raster feature.
-		if (!resolve_raster_feature(reconstruction_time))
-		{
-			invalidate_proxied_raster();
-		}
-
-		d_cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
+		return false;
 	}
 
-	return d_cached_resolved_raster_feature_properties.proxied_raster;
+	return GPlatesPropertyValues::RawRasterUtils::does_raster_contain_numerical_data(*proxied_raster.get());
 }
 
 
-const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
-GPlatesAppLogic::RasterLayerProxy::get_proxied_rasters(
-		const double &reconstruction_time)
+boost::optional<GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type>
+GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
+		GPlatesOpenGL::GLRenderer &renderer,
+		const double &reconstruction_time,
+		const GPlatesPropertyValues::TextContent &raster_band_name)
 {
-	// If the reconstruction time has changed then we need to re-resolve the raster feature properties.
-	if (d_cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time) ||
-		!d_cached_resolved_raster_feature_properties.proxied_rasters)
+	// The runtime system needs OpenGL floating-point texture support.
+	if (!GPlatesOpenGL::GLDataRasterSource::is_supported(renderer))
 	{
-		// Attempt to resolve the raster feature.
-		if (!resolve_raster_feature(reconstruction_time))
-		{
-			invalidate_proxied_raster();
-		}
-
-		d_cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
+		qWarning() << "RasterLayerProxy::get_multi_resolution_data_raster: "
+			"Floating-point textures not supported on this OpenGL system.";
+		return boost::none;
 	}
 
-	return d_cached_resolved_raster_feature_properties.proxied_rasters;
+	if (!d_current_georeferencing)
+	{
+		// We need georeferencing information to have a multi-resolution raster.
+		return boost::none;
+	}
+
+	// Get the proxied raster for the specified time and band name.
+	// NOTE: If the proxied raster is different than the currently cached proxied raster
+	// (can happen for time-dependent rasters) then this call will invalidate the proxied raster.
+	const boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> proxied_raster =
+			get_proxied_raster(reconstruction_time, raster_band_name);
+	if (!proxied_raster)
+	{
+		return boost::none;
+	}
+
+	// The raster type is expected to contain numerical data, not colour RGBA data.
+	if (!GPlatesPropertyValues::RawRasterUtils::does_raster_contain_numerical_data(*proxied_raster.get()))
+	{
+		qWarning() << "RasterLayerProxy::get_multi_resolution_data_raster: "
+			"Raster does not contain numerical data (contains colours instead).";
+		return boost::none;
+	}
+
+	// If we're not up-to-date with respect to the proxied raster...
+	// This can happen for time-dependent rasters when the time changes.
+	if (!d_proxied_raster_subject_token.is_observer_up_to_date(
+		d_cached_multi_resolution_data_raster.cached_proxied_raster_observer))
+	{
+		// If we have a data raster source then attempt to change the raster first
+		// since it's cheaper than rebuilding the multi-resolution raster.
+		if (d_cached_multi_resolution_data_raster.cached_data_raster_source)
+		{
+			if (!d_cached_multi_resolution_data_raster.cached_data_raster_source.get()->change_raster(
+					renderer, proxied_raster.get()))
+			{
+				// The raster dimensions have probably changed - we'll need to rebuild.
+				d_cached_multi_resolution_data_raster.cached_data_raster_source = boost::none;
+			}
+		}
+
+		// We have taken measures to be up-to-date with respect to the proxied raster.
+		d_proxied_raster_subject_token.update_observer(
+				d_cached_multi_resolution_data_raster.cached_proxied_raster_observer);
+	}
+
+	// Rebuild the data raster source if necessary.
+	if (!d_cached_multi_resolution_data_raster.cached_data_raster_source)
+	{
+		// NOTE: We also invalidate the multi-resolution raster since it must link
+		// to the data raster source and hence must also be rebuilt.
+		d_cached_multi_resolution_data_raster.cached_data_raster = boost::none;
+
+		//qDebug() << "RasterLayerProxy: Rebuilding GLDataRasterSource.";
+
+		boost::optional<GPlatesOpenGL::GLDataRasterSource::non_null_ptr_type> data_raster_source =
+				GPlatesOpenGL::GLDataRasterSource::create(renderer, proxied_raster.get());
+
+		d_cached_multi_resolution_data_raster.cached_data_raster_source = data_raster_source;
+		if (!d_cached_multi_resolution_data_raster.cached_data_raster_source)
+		{
+			// Unable to create a data raster source so nothing we can do.
+			// This can happen if the raster does not contain numerical data (ie, contains RGBA data).
+			qWarning() << "RasterLayerProxy::get_multi_resolution_data_raster: Failed to create raster data source.";
+			return boost::none;
+		}
+	}
+
+	// Rebuild the multi-resolution raster if necessary.
+	if (!d_cached_multi_resolution_data_raster.cached_data_raster)
+	{
+		// NOTE: We also invalidate the multi-resolution cube raster since it must link to the
+		// multi-resolution raster and hence must also be rebuilt (if raster is reconstructed).
+		d_cached_multi_resolution_data_raster.cached_data_cube_raster = boost::none;
+
+		//qDebug() << "RasterLayerProxy: Rebuilding GLMultiResolutionRaster.";
+
+		// Create the multi-resolution raster.
+		//
+		// NOTE: We allow caching of the entire raster because, unlike visualisation where only
+		// a small region of the raster is typically visible (or it's zoomed out and only accessing
+		// a low-resolution mipmap), usually the entire raster is accessed for data processing.
+		// And the present day raster (time-dependent rasters aside) is usually accessed repeatedly
+		// over many frames and you don't want to incur the large performance hit of continuously
+		// reloading tiles from disk (eg, raster co-registration data-mining front-end)
+		// - in this case the user can always choose a lower level of detail if the memory usage is
+		// too high for their system.
+		const GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type multi_resolution_raster =
+				GPlatesOpenGL::GLMultiResolutionRaster::create(
+						renderer,
+						d_current_georeferencing.get(),
+						d_cached_multi_resolution_data_raster.cached_data_raster_source.get(),
+						GPlatesOpenGL::GLMultiResolutionRaster::DEFAULT_FIXED_POINT_TEXTURE_FILTER,
+						GPlatesOpenGL::GLMultiResolutionRaster::CACHE_TILE_TEXTURES_ENTIRE_LEVEL_OF_DETAIL_PYRAMID);
+
+		d_cached_multi_resolution_data_raster.cached_data_raster = multi_resolution_raster;
+	}
+
+	// If we are not currently connected to reconstructed polygons then just return the *unreconstructed* raster.
+	if (!d_current_reconstructed_polygons_layer_proxy)
+	{
+		return GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type(
+			d_cached_multi_resolution_data_raster.cached_data_raster.get());
+	}
+
+	//
+	// From here on we are *reconstructing* the raster...
+	//
+
+	// If we are currently connected to an age grid layer then get the age grid mask/coverage from it.
+	boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> age_grid_mask_raster;
+	boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> age_grid_coverage_raster;
+	if (d_current_age_grid_raster_layer_proxy)
+	{
+		boost::optional<
+				std::pair<
+						GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid mask*/,
+						GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid coverage*/> >
+								age_grid_mask_and_coverage =
+										d_current_age_grid_raster_layer_proxy.get_input_layer_proxy()
+												->get_multi_resolution_age_grid_mask_and_coverage_rasters(
+														renderer,
+														reconstruction_time);
+		if (age_grid_mask_and_coverage)
+		{
+			age_grid_mask_raster = age_grid_mask_and_coverage->first;
+			age_grid_coverage_raster = age_grid_mask_and_coverage->second;
+		}
+		else
+		{
+			qWarning() << "RasterLayerProxy::get_multi_resolution_data_raster: Failed to obtain age grid.";
+		}
+	}
+
+	// If age grid mask and coverage are different objects then the age grid must have been rebuilt
+	// by the age grid layer since last we accessed it.
+	// Note that changes *within* age grid objects are detected and handled by the reconstructed raster
+	// so we don't need to worry about that.
+	if (d_cached_multi_resolution_data_raster.cached_age_grid_mask_raster != age_grid_mask_raster ||
+		d_cached_multi_resolution_data_raster.cached_age_grid_coverage_raster != age_grid_coverage_raster)
+	{
+		d_cached_multi_resolution_data_raster.cached_age_grid_mask_raster = age_grid_mask_raster;
+		d_cached_multi_resolution_data_raster.cached_age_grid_coverage_raster = age_grid_coverage_raster;
+
+		// We need to rebuild the reconstructed raster.
+		d_cached_multi_resolution_data_raster.cached_data_reconstructed_raster = boost::none;
+	}
+
+	// If we have an age grid raster then we are reconstructing with an age grid.
+	const bool reconstructing_with_age_grid =
+			d_cached_multi_resolution_data_raster.cached_age_grid_mask_raster &&
+			d_cached_multi_resolution_data_raster.cached_age_grid_coverage_raster;
+
+	// Get the reconstructed polygon meshes from the layer containing the reconstructed polygons.
+	const GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type reconstructed_polygon_meshes =
+			d_current_reconstructed_polygons_layer_proxy.get_input_layer_proxy()
+					->get_reconstructed_static_polygon_meshes(
+							renderer,
+							reconstructing_with_age_grid,
+							reconstruction_time);
+
+	// If reconstructed polygon meshes is a different object then it must have been rebuilt by
+	// the reconstructed polygons layer since last we accessed it.
+	// Note that changes *within* a GLReconstructedStaticPolygonMeshes object are detected and
+	// handled by the reconstructed raster so we don't need to worry about that.
+	if (d_cached_multi_resolution_data_raster.cached_reconstructed_polygon_meshes != reconstructed_polygon_meshes)
+	{
+		d_cached_multi_resolution_data_raster.cached_reconstructed_polygon_meshes = reconstructed_polygon_meshes;
+
+		// We need to rebuild the reconstructed raster.
+		d_cached_multi_resolution_data_raster.cached_data_reconstructed_raster = boost::none;
+	}
+
+	// Rebuild the multi-resolution cube raster if necessary.
+	if (!d_cached_multi_resolution_data_raster.cached_data_cube_raster)
+	{
+		// NOTE: We also invalidate the multi-resolution *reconstructed* raster since it must link
+		// to the multi-resolution cube raster and hence must also be rebuilt.
+		d_cached_multi_resolution_data_raster.cached_data_reconstructed_raster = boost::none;
+
+		//qDebug() << "RasterLayerProxy: Rebuilding GLMultiResolutionCubeRaster.";
+
+		// Create the multi-resolution cube raster.
+		GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type cube_raster =
+				GPlatesOpenGL::GLMultiResolutionCubeRaster::create(
+						renderer,
+						d_cached_multi_resolution_data_raster.cached_data_raster.get(),
+						GPlatesOpenGL::GLMultiResolutionCubeRaster::DEFAULT_TILE_TEXEL_DIMENSION,
+						true/*adapt_tile_dimension_to_source_resolution*/,
+						GPlatesOpenGL::GLMultiResolutionCubeRaster::DEFAULT_FIXED_POINT_TEXTURE_FILTER);
+
+		d_cached_multi_resolution_data_raster.cached_data_cube_raster = cube_raster;
+	}
+
+	if (!d_cached_multi_resolution_data_raster.cached_data_reconstructed_raster)
+	{
+		// We can only reconstruct with an age grid if we have both age grid mask and coverage rasters.
+		// If one is successfully created then the other one will be too.
+		if (d_cached_multi_resolution_data_raster.cached_age_grid_mask_raster &&
+			d_cached_multi_resolution_data_raster.cached_age_grid_coverage_raster)
+		{
+			//qDebug() << "RasterLayerProxy: Rebuilding GLMultiResolutionStaticPolygonReconstructedRaster with age grid.";
+
+			// Create a reconstructed raster with the age grid.
+			GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type reconstructed_raster =
+					GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create(
+							renderer,
+							d_cached_multi_resolution_data_raster.cached_data_cube_raster.get(),
+							d_cached_multi_resolution_data_raster.cached_reconstructed_polygon_meshes.get(),
+							GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::AgeGridRaster(
+									d_cached_multi_resolution_data_raster.cached_age_grid_mask_raster.get(),
+									d_cached_multi_resolution_data_raster.cached_age_grid_coverage_raster.get()));
+
+			d_cached_multi_resolution_data_raster.cached_data_reconstructed_raster = reconstructed_raster;
+		}
+		else
+		{
+			//qDebug() << "RasterLayerProxy: Rebuilding GLMultiResolutionStaticPolygonReconstructedRaster with no age grid.";
+
+			// Create a reconstructed raster without the age grid.
+			GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type reconstructed_raster =
+					GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create(
+							renderer,
+							d_cached_multi_resolution_data_raster.cached_data_cube_raster.get(),
+							d_cached_multi_resolution_data_raster.cached_reconstructed_polygon_meshes.get());
+
+			d_cached_multi_resolution_data_raster.cached_data_reconstructed_raster = reconstructed_raster;
+		}
+	}
+
+	// Return the *reconstructed* raster.
+	return GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type(
+		d_cached_multi_resolution_data_raster.cached_data_reconstructed_raster.get());
+}
+
+
+boost::optional<
+		std::pair<
+				GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid mask*/,
+				GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid coverage*/> >
+GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_age_grid_mask_and_coverage_rasters(
+		GPlatesOpenGL::GLRenderer &renderer,
+		const double &reconstruction_time,
+		const GPlatesPropertyValues::TextContent &raster_band_name)
+{
+	if (!d_current_georeferencing)
+	{
+		// We need georeferencing information to have a multi-resolution raster.
+		return boost::none;
+	}
+
+	// Get the proxied raster for the present day and the specified band name.
+	// NOTE: The reconstruction time specified by the caller is used to generate the age *mask*
+	// but not used to look up the proxied rasters (since the age grid itself is always present day).
+	const boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> proxied_raster =
+			get_proxied_raster(0/*present-day*/, raster_band_name);
+	if (!proxied_raster)
+	{
+		return boost::none;
+	}
+
+	// The raster type is expected to contain numerical data, not colour RGBA data, because it's an age grid.
+	if (!GPlatesPropertyValues::RawRasterUtils::does_raster_contain_numerical_data(*proxied_raster.get()))
+	{
+		qWarning() << "RasterLayerProxy::get_multi_resolution_age_grid_mask_and_coverage_rasters: "
+				"Raster does not contain numerical data (contains colours instead).";
+		return boost::none;
+	}
+
+	// Rebuild the age grid *mask* source if necessary.
+	if (!d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_source)
+	{
+		d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_raster = boost::none;
+
+		//qDebug() << "RasterLayerProxy: Rebuilding GLAgeGridMaskSource.";
+
+		boost::optional<GPlatesOpenGL::GLAgeGridMaskSource::non_null_ptr_type> age_grid_mask_source =
+				GPlatesOpenGL::GLAgeGridMaskSource::create(
+						renderer,
+						reconstruction_time,
+						proxied_raster.get());
+
+		d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_source = age_grid_mask_source;
+		if (!d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_source)
+		{
+			// Unable to get age grid mask source so nothing we can do.
+			// This can happen if the raster does not contain numerical data (ie, contains RGBA data).
+			qWarning() << "RasterLayerProxy::get_multi_resolution_age_grid_mask_and_coverage_rasters: "
+					"Failed to create age grid mask source.";
+			return boost::none;
+		}
+	}
+
+	// Rebuild the age grid *mask* raster if necessary.
+	if (!d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_raster)
+	{
+		//qDebug() << "RasterLayerProxy: Rebuilding age grid mask GLMultiResolutionRaster.";
+
+		// Create the age grid mask multi-resolution raster.
+		//
+		// NOTE: The age grid can be used for visualisation *and* quantitative analysis.
+		// This is because it is used to assist reconstruction of a raster in another layer and
+		// that raster could be visualised or analysis (eg, raster co-registration).
+		// The visual case does not require caching of the entire raster but the analysis case
+		// can benefit from it - see 'get_multi_resolution_data_raster()' for more details.
+		// So we allow caching of the entire raster because since it satisfies both cases albeit at
+		// the expense of excess memory usage when only visualisation is used.
+		const GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type age_grid_mask_raster =
+				GPlatesOpenGL::GLMultiResolutionRaster::create(
+						renderer,
+						d_current_georeferencing.get(),
+						d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_source.get(),
+						// Avoids blending seams due to anisotropic filtering which gives age grid
+						// coverage alpha values that are not either 0.0 or 1.0...
+						GPlatesOpenGL::GLMultiResolutionRaster::FIXED_POINT_TEXTURE_FILTER_NO_ANISOTROPIC,
+						// Our source GLAgeGridMaskSource has caching that insulates us from the file
+						// system but it doesn't cache the entire level-of-detail pyramid so we
+						// rely on the multi-resolution age grid mask for that...
+						GPlatesOpenGL::GLMultiResolutionRaster::CACHE_TILE_TEXTURES_ENTIRE_LEVEL_OF_DETAIL_PYRAMID);
+
+		d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_raster = age_grid_mask_raster;
+	}
+
+	// Rebuild the age grid *coverage* source if necessary.
+	if (!d_cached_multi_resolution_age_grid_raster.cached_age_grid_coverage_source)
+	{
+		d_cached_multi_resolution_age_grid_raster.cached_age_grid_coverage_raster = boost::none;
+
+		//qDebug() << "RasterLayerProxy: Rebuilding GLCoverageSource.";
+
+		boost::optional<GPlatesOpenGL::GLCoverageSource::non_null_ptr_type> age_grid_coverage_source =
+				GPlatesOpenGL::GLCoverageSource::create(
+						proxied_raster.get(),
+						// The age grid coverage is designed for use with
+						// class 'GLMultiResolutionStaticPolygonReconstructedRaster' so we
+						// distribute the coverage across pixel channels according to what it wants...
+						GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::AgeGridRaster::COVERAGE_TEXTURE_DATA_FORMAT);
+
+		d_cached_multi_resolution_age_grid_raster.cached_age_grid_coverage_source = age_grid_coverage_source;
+		if (!d_cached_multi_resolution_age_grid_raster.cached_age_grid_coverage_source)
+		{
+			// Unable to get age grid coverage source so nothing we can do.
+			// This can happen if the raster does not contain numerical data (ie, contains RGBA data).
+			qWarning() << "RasterLayerProxy::get_multi_resolution_age_grid_mask_and_coverage_rasters: "
+					"Failed to create age grid coverage source.";
+			return boost::none;
+		}
+	}
+
+	// Rebuild the age grid *coverage* raster if necessary.
+	if (!d_cached_multi_resolution_age_grid_raster.cached_age_grid_coverage_raster)
+	{
+		//qDebug() << "RasterLayerProxy: Rebuilding age grid coverage GLMultiResolutionRaster.";
+
+		// Create the age grid coverage multi-resolution raster.
+		//
+		// NOTE: The age grid can be used for visualisation *and* quantitative analysis.
+		// This is because it is used to assist reconstruction of a raster in another layer and
+		// that raster could be visualised or analysis (eg, raster co-registration).
+		// The visual case does not require caching of the entire raster but the analysis case
+		// can benefit from it - see 'get_multi_resolution_data_raster()' for more details.
+		// So we allow caching of the entire raster because since it satisfies both cases albeit at
+		// the expense of excess memory usage when only visualisation is used.
+		const GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type age_grid_coverage_raster =
+				GPlatesOpenGL::GLMultiResolutionRaster::create(
+						renderer,
+						d_current_georeferencing.get(),
+						d_cached_multi_resolution_age_grid_raster.cached_age_grid_coverage_source.get(),
+						// Avoids blending seams due to anisotropic filtering which gives age grid
+						// coverage alpha values that are not either 0.0 or 1.0...
+						GPlatesOpenGL::GLMultiResolutionRaster::FIXED_POINT_TEXTURE_FILTER_NO_ANISOTROPIC,
+						GPlatesOpenGL::GLMultiResolutionRaster::CACHE_TILE_TEXTURES_ENTIRE_LEVEL_OF_DETAIL_PYRAMID);
+
+		d_cached_multi_resolution_age_grid_raster.cached_age_grid_coverage_raster = age_grid_coverage_raster;
+	}
+
+	// Update the age grid mask if the reconstruction time has changed.
+	if (d_cached_multi_resolution_age_grid_raster.cached_age_grid_reconstruction_time != GPlatesMaths::real_t(reconstruction_time))
+	{
+		d_cached_multi_resolution_age_grid_raster.cached_age_grid_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
+
+		// Update the reconstruction time for the age grid mask.
+		d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_source.get()
+				->update_reconstruction_time(reconstruction_time);
+	}
+
+	return std::make_pair(
+			d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_raster.get(),
+			d_cached_multi_resolution_age_grid_raster.cached_age_grid_coverage_raster.get());
 }
 
 
@@ -255,7 +684,13 @@ GPlatesAppLogic::RasterLayerProxy::invalidate_raster_feature()
 void
 GPlatesAppLogic::RasterLayerProxy::invalidate_proxied_raster()
 {
-	d_cached_resolved_raster_feature_properties.reset();
+	d_cached_resolved_raster_feature_properties.invalidate();
+
+	// Invalidate the age grid mask and coverage.
+	// NOTE: The age grid should not be a time-dependent raster since it's only accessed at
+	// present day so it should actually only get invalidated if the raster feature changes.
+	// But we invalidate it here since the age grid accesses it as a proxy with a raster band name.
+	d_cached_multi_resolution_age_grid_raster.invalidate();
 
 	// The proxied raster is different.
 	// Either it's a time-dependent raster and a new time was requested, or
@@ -270,6 +705,8 @@ GPlatesAppLogic::RasterLayerProxy::invalidate_proxied_raster()
 void
 GPlatesAppLogic::RasterLayerProxy::invalidate()
 {
+	d_cached_multi_resolution_data_raster.invalidate();
+
 	// This raster layer proxy has changed in some way.
 	d_subject_token.invalidate();
 }
@@ -277,7 +714,8 @@ GPlatesAppLogic::RasterLayerProxy::invalidate()
 
 bool
 GPlatesAppLogic::RasterLayerProxy::resolve_raster_feature(
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		const GPlatesPropertyValues::TextContent &raster_band_name)
 {
 	if (!d_current_raster_feature)
 	{
@@ -297,7 +735,7 @@ GPlatesAppLogic::RasterLayerProxy::resolve_raster_feature(
 	// Is the selected band name one of the available bands in the raster?
 	// If not, then change the band name to be the first of the available bands.
 	boost::optional<std::size_t> band_name_index_opt =
-			find_raster_band_name(d_current_raster_band_names, d_current_raster_band_name);
+			find_raster_band_name(d_current_raster_band_names, raster_band_name);
 	if (!band_name_index_opt)
 	{
 		return false;
@@ -314,18 +752,17 @@ GPlatesAppLogic::RasterLayerProxy::resolve_raster_feature(
 	// If the proxied rasters have changed then let clients know.
 	// This happens for time-dependent rasters as the reconstruction time is changed far enough
 	// away from the last cached time that a new raster is encountered.
-	if (visitor.get_proxied_rasters() != d_cached_resolved_raster_feature_properties.proxied_rasters ||
-		visitor.get_proxied_rasters().get()[band_name_index] != d_cached_resolved_raster_feature_properties.proxied_raster)
+	if (visitor.get_proxied_rasters() != d_cached_resolved_raster_feature_properties.cached_proxied_rasters ||
+		visitor.get_proxied_rasters().get()[band_name_index] != d_cached_resolved_raster_feature_properties.cached_proxied_raster)
 	{
-		d_proxied_raster_subject_token.invalidate();
+		invalidate_proxied_raster();
 	}
 
 	// Get the proxied raster using the selected band index.
-	d_cached_resolved_raster_feature_properties.proxied_raster =
-			visitor.get_proxied_rasters().get()[band_name_index];
+	d_cached_resolved_raster_feature_properties.cached_proxied_raster = visitor.get_proxied_rasters().get()[band_name_index];
 
 	// Get the list of proxied raw rasters.
-	d_cached_resolved_raster_feature_properties.proxied_rasters = visitor.get_proxied_rasters();
+	d_cached_resolved_raster_feature_properties.cached_proxied_rasters = visitor.get_proxied_rasters();
 
 	return true;
 }

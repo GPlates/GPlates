@@ -56,7 +56,6 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::GLMultiResolutionCubeRaster(
 		std::size_t tile_texel_dimension,
 		bool adapt_tile_dimension_to_source_resolution,
 		FixedPointTextureFilterType fixed_point_texture_filter,
-		bool cache_source_tile_textures,
 		CacheTileTexturesType cache_tile_textures) :
 	d_multi_resolution_raster(multi_resolution_raster),
 	d_tile_texel_dimension(tile_texel_dimension),
@@ -64,14 +63,13 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::GLMultiResolutionCubeRaster(
 	// Start with small size cache and just let the cache grow in size as needed (if caching enabled)...
 	d_texture_cache(tile_texture_cache_type::create(2/* GPU pipeline breathing room in case caching disabled*/)),
 	d_cache_tile_textures(cache_tile_textures),
-	d_cache_source_tile_textures(cache_source_tile_textures),
-	d_cube_quad_tree(cube_quad_tree_type::create())
+	d_cube_quad_tree(cube_quad_tree_type::create()),
+	d_num_source_levels_of_detail_used(1)
 {
 	// Adjust the tile dimension to the source raster resolution if non-power-of-two textures are supported.
 	// The number of levels of detail returned might not be all levels of the source raster -
 	// just the ones used by this cube map raster (the lowest resolutions might get left off).
-	const unsigned int num_levels_of_detail =
-			adjust_tile_texel_dimension(adapt_tile_dimension_to_source_resolution);
+	adjust_tile_texel_dimension(adapt_tile_dimension_to_source_resolution);
 
 	// The, possibly adapted, tile dimension should be a power-of-two *if*
 	// 'GL_ARB_texture_non_power_of_two' is *not* supported.
@@ -85,7 +83,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::GLMultiResolutionCubeRaster(
 		d_tile_texel_dimension = GLContext::get_parameters().texture.gl_max_texture_size;
 	}
 
-	initialise_cube_quad_trees(num_levels_of_detail);
+	initialise_cube_quad_trees();
 
 	// If the client has requested the entire cube quad tree be cached...
 	if (d_cache_tile_textures == CACHE_TILE_TEXTURES_ENTIRE_CUBE_QUAD_TREE)
@@ -100,7 +98,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::GLMultiResolutionCubeRaster(
 // We use macros in <GL/glew.h> that contain old-style casts.
 DISABLE_GCC_WARNING("-Wold-style-cast")
 
-unsigned int
+void
 GPlatesOpenGL::GLMultiResolutionCubeRaster::adjust_tile_texel_dimension(
 		bool adapt_tile_dimension_to_source_resolution)
 {
@@ -161,13 +159,21 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::adjust_tile_texel_dimension(
 		if (log2_viewport_dimension_scale < 0)
 		{
 			// Only one level of detail needed.
-			return 1;
+			d_num_source_levels_of_detail_used = 1;
+			return;
 		}
 
 		// Return number of levels of detail used.
 		// The first '+1' rounds up to the next integer level-of-detail.
 		// The second '+1' converts from integer level-of-detail to number of levels of detail.
-		return static_cast<int>(log2_viewport_dimension_scale + 1) + 1;
+		d_num_source_levels_of_detail_used = static_cast<int>(log2_viewport_dimension_scale + 1) + 1;
+		// Ensure we don't try to use lower-resolution levels than are supplied by the source raster.
+		if (d_num_source_levels_of_detail_used > d_multi_resolution_raster->get_num_levels_of_detail())
+		{
+			d_num_source_levels_of_detail_used = d_multi_resolution_raster->get_num_levels_of_detail();
+		}
+
+		return;
 	}
 
 	// We can have non-power-of-two texture dimensions but we've been asked not to adapt the tile dimension.
@@ -176,13 +182,21 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::adjust_tile_texel_dimension(
 		if (log2_viewport_dimension_scale < 0)
 		{
 			// Only one level of detail needed.
-			return 1;
+			d_num_source_levels_of_detail_used = 1;
+			return;
 		}
 
 		// Return number of levels of detail used.
 		// The first '+1' rounds up to the next integer level-of-detail.
 		// The second '+1' converts from integer level-of-detail to number of levels of detail.
-		return static_cast<int>(log2_viewport_dimension_scale + 1) + 1;
+		d_num_source_levels_of_detail_used = static_cast<int>(log2_viewport_dimension_scale + 1) + 1;
+		// Ensure we don't try to use lower-resolution levels than are supplied by the source raster.
+		if (d_num_source_levels_of_detail_used > d_multi_resolution_raster->get_num_levels_of_detail())
+		{
+			d_num_source_levels_of_detail_used = d_multi_resolution_raster->get_num_levels_of_detail();
+		}
+
+		return;
 	}
 
 	// If the new viewport dimension is less than the original tile dimension then there will only
@@ -194,7 +208,8 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::adjust_tile_texel_dimension(
 		d_tile_texel_dimension = static_cast<int>(viewport_dimension_scale * d_tile_texel_dimension + 1);
 
 		// Only one level of detail needed.
-		return 1;
+		d_num_source_levels_of_detail_used = 1;
+		return;
 	}
 	// The viewport dimension scale is greater than 1...
 
@@ -218,20 +233,25 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::adjust_tile_texel_dimension(
 	d_tile_texel_dimension = static_cast<int>(tile_texel_dimension_scale * d_tile_texel_dimension + 1);
 
 	// Return number of levels of detail used.
-	// Convert to integer (it's already integral - the 0.5 is just to avoid numerical precision issues.
+	// Convert to integer (it's already integral - the 0.5 is just to avoid numerical precision issues).
 	// The '+1' converts from integer level-of-detail to number of levels of detail.
-	return static_cast<int>(log2_viewport_dimension_scale_int + 0.5) + 1;
+	d_num_source_levels_of_detail_used = static_cast<int>(log2_viewport_dimension_scale_int + 0.5) + 1;
+	// Ensure we don't try to use lower-resolution levels than are supplied by the source raster.
+	if (d_num_source_levels_of_detail_used > d_multi_resolution_raster->get_num_levels_of_detail())
+	{
+		d_num_source_levels_of_detail_used = d_multi_resolution_raster->get_num_levels_of_detail();
+	}
 }
 
 ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
 void
-GPlatesOpenGL::GLMultiResolutionCubeRaster::initialise_cube_quad_trees(
-		const unsigned int num_levels_of_detail)
+GPlatesOpenGL::GLMultiResolutionCubeRaster::initialise_cube_quad_trees()
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			num_levels_of_detail > 0,
+			d_num_source_levels_of_detail_used > 0 &&
+				d_num_source_levels_of_detail_used <= d_multi_resolution_raster->get_num_levels_of_detail(),
 			GPLATES_ASSERTION_SOURCE);
 
 	// Create a projection transforms cube quad tree cache so we can determine the view frustum
@@ -274,7 +294,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::initialise_cube_quad_trees(
 						cube_subdivision_cache_root_node,
 						// Start out at the lowest resolution level of detail supported by
 						// the root level of our quad tree...
-						num_levels_of_detail - 1/*level_of_detail*/);
+						d_num_source_levels_of_detail_used - 1/*source_level_of_detail*/);
 
 		// If the source raster covered any part of the current cube face.
 		if (quad_tree_root_node)
@@ -290,7 +310,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 		const GLViewport &viewport,
 		cube_subdivision_cache_type &cube_subdivision_cache,
 		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
-		const unsigned int level_of_detail)
+		const unsigned int source_level_of_detail)
 {
 	//
 	// Setup the model-view and projection matrices and setup the viewport.
@@ -328,15 +348,14 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 	// However if we're forced to use power-of-two dimensions then, as we approach tiles near
 	// the corners/edges of the cube face, we might be able to use lower-resolution level-of-details
 	// due to the texel resolution of those tiles being slightly higher due to the cube map projection.
-	if (tile_level_of_detail < level_of_detail &&
-		// We can't go to a lower resolution than the source raster provides...
-		level_of_detail < d_multi_resolution_raster->get_num_levels_of_detail())
+	//
+	// Don't go to a higher resolution than pre-calculated - this might happen due to numerical
+	// precision and the fact that the viewport dimensions have been adjusted to give almost
+	// exactly integer level-of-detail values (and might get level-of-detail slightly less than
+	// the integer which would get truncated to the next higher resolution LOD).
+	if (tile_level_of_detail < source_level_of_detail)
 	{
-		// Don't go to a higher resolution than pre-calculated - this might happen due to numerical
-		// precision and the fact that the viewport dimensions have been adjusted to give almost
-		// exactly integer level-of-detail values (and might get level-of-detail slightly less than
-		// the integer which would get truncated to the next higher resolution LOD).
-		tile_level_of_detail = level_of_detail;
+		tile_level_of_detail = source_level_of_detail;
 	}
 
 	// Get the source tiles that are visible in the current view frustum.
@@ -372,7 +391,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 
 	// If we have reached the highest resolution level of detail in the source raster
 	// then we don't need to create any child quad tree nodes.
-	if (level_of_detail == 0)
+	if (source_level_of_detail == 0)
 	{
 		return quad_tree_node;
 	}
@@ -401,7 +420,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_quad_tree_node(
 							cube_subdivision_cache,
 							child_cube_subdivision_cache_node,
 							// Child is at a higher resolution level-of-detail...
-							level_of_detail - 1);
+							source_level_of_detail - 1);
 
 			// Add the child node if one was created.
 			if (child_node)
@@ -557,14 +576,13 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 	renderer.gl_load_matrix(GL_PROJECTION, tile.d_projection_transform->get_matrix());
 
 	// Get the source raster to render into the render target using the view frustum
-	// we have provided. We have already cached the visible source raster tiles that need to be
-	// rendered into our frustum to save it a bit of culling work.
+	// we have provided. We have already pre-calculated the list of visible source raster tiles
+	// that need to be rendered into our frustum to save it a bit of culling work.
 	// And that's why we also don't need to test the return value to see if anything was rendered.
 	d_multi_resolution_raster->render(
 			renderer,
 			tile.d_src_raster_tiles,
-			tile_texture.source_cache_handle,
-			d_cache_source_tile_textures);
+			tile_texture.source_cache_handle);
 
 	// This tile texture is now update-to-date with respect to the source multi-resolution raster.
 	d_multi_resolution_raster->get_subject_token().update_observer(

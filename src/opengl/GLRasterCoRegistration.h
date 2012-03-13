@@ -32,10 +32,11 @@
 #include <boost/optional.hpp>
 #include <boost/pool/object_pool.hpp>
 #include <boost/shared_ptr.hpp>
+#include <QString>
 
 #include "GLCubeSubdivisionCache.h"
 #include "GLFrameBufferObject.h"
-#include "GLMultiResolutionRaster.h"
+#include "GLMultiResolutionRasterInterface.h"
 #include "GLPixelBuffer.h"
 #include "GLProgramObject.h"
 #include "GLStreamPrimitives.h"
@@ -66,6 +67,9 @@
 #include "utils/IntrusiveSinglyLinkedList.h"
 #include "utils/ReferenceCount.h"
 
+// Used for visually debugging arbitrary render targets during raster co-registration by saving to image files.
+//#define DEBUG_RASTER_COREGISTRATION_RENDER_TARGET
+
 
 namespace GPlatesOpenGL
 {
@@ -91,6 +95,11 @@ namespace GPlatesOpenGL
 		 * to render the target raster to and to render the seed geometries into.
 		 *
 		 * This should not be too large since each floating-point texel consumes 16 bytes (4 floats - RGBA).
+		 *
+		 * Also graphics cards supporting floating-point textures typically support at least 2048
+		 * dimension textures so probably shouldn't go above that - wouldn't want to anyway because
+		 * the texture memory usage for the reduce stages would become larger than the video memory
+		 * available for most of those cards.
 		 */
 		static const unsigned int TEXTURE_DIMENSION = 1024;
 
@@ -154,17 +163,17 @@ namespace GPlatesOpenGL
 			// a sub-section of that view frustum (enough to completely contain the seed geometry).
 			//
 
-			// Transforms clip-space of raster tile frustum to (loose) quad-tree node (of seed spatial partition)
+			// Transforms clip-space of raster tile frustum to quad-tree node (of seed spatial partition)
 			// containing this seed's geometry).
 			// This takes the clip-space range [-1,1] covering a raster tile frustum and makes it
-			// cover the (loose) seed frustum.
+			// cover the seed frustum.
 			double raster_frustum_to_seed_frustum_post_projection_scale;
 			double raster_frustum_to_seed_frustum_post_projection_translate_x;
 			double raster_frustum_to_seed_frustum_post_projection_translate_y;
 
-			// Transforms clip-space of (loose) quad-tree node (of seed spatial partition) containing
+			// Transforms clip-space of quad-tree node (of seed spatial partition) containing
 			// this seed's geometry) to the sub-viewport of render target to render seed geometry into.
-			// This takes the clip-space range [-1,1] covering the (loose) seed frustum and makes it
+			// This takes the clip-space range [-1,1] covering the seed frustum and makes it
 			// cover the render target frustum - effectively carving out of small sub-section of
 			// the render target to render this seed geometry into.
 			double seed_frustum_to_render_target_post_projection_scale;
@@ -205,6 +214,16 @@ namespace GPlatesOpenGL
 				multi_points_list.clear();
 				polylines_list.clear();
 				polygons_list.clear();
+			}
+
+			//! Returns true if all geometry lists are empty.
+			bool
+			empty() const
+			{
+				return points_list.empty() &&
+					multi_points_list.empty() &&
+					polylines_list.empty() &&
+					polygons_list.empty();
 			}
 
 			//! List of *point* seed co-registrations.
@@ -293,9 +312,9 @@ namespace GPlatesOpenGL
 			//
 			// Operation configuration...
 			//
-			const double d_region_of_interest_radius;
-			const OperationType d_operation;
-			const bool d_fill_polygons;
+			double d_region_of_interest_radius;
+			OperationType d_operation;
+			bool d_fill_polygons;
 
 			/**
 			 * The final co-registration results.
@@ -326,34 +345,45 @@ namespace GPlatesOpenGL
 		 * @a raster_level_of_detail is the level-of-detail at which to process the target raster.
 		 * For the highest resolution this is zero.
 		 * This is used to increase performance and reduce memory usage on systems that need it.
+		 *
+		 * Returns boost::none if @a is_supported returns false.
 		 */
 		static
-		non_null_ptr_type
+		boost::optional<non_null_ptr_type>
 		create(
-				GLRenderer &renderer,
-				const std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature> &seed_features,
-				const GLMultiResolutionRaster::non_null_ptr_type &target_raster,
-				unsigned int raster_level_of_detail)
+				GLRenderer &renderer)
 		{
-			return non_null_ptr_type(
-					new GLRasterCoRegistration(
-							renderer, seed_features, target_raster, raster_level_of_detail));
+			if (!is_supported(renderer))
+			{
+				return boost::none;
+			}
+
+			return non_null_ptr_type(new GLRasterCoRegistration(renderer));
 		}
 
 
 		/**
-		 * For each specified operation the seed features and target raster (both specified in @a create)
-		 * are co-registered.
+		 * For each specified operation the specified (reconstructed) seed features and (possibly
+		 * reconstructed) floating-point target raster are co-registered.
 		 *
-		 * The co-registration results are also returned in @a operations.
+		 * The co-registration results are returned in @a operations.
+		 *
+		 * @a raster_level_of_detail is the level-of-detail at which to process the target raster.
+		 * For the highest resolution this is zero.
+		 * This is used to increase performance and reduce memory usage on systems that need it.
 		 *
 		 * NOTE: It is *much* more efficient to process any, and all, operations in one pass than to
 		 * separate them in individual passes (per operation/region-of-interest).
+		 *
+		 * Returns boost::none if @a is_supported returns false.
 		 */
 		void
 		co_register(
 				GLRenderer &renderer,
-				std::vector<Operation> &operations);
+				std::vector<Operation> &operations,
+				const std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature> &reconstructed_seed_features,
+				const GLMultiResolutionRasterInterface::non_null_ptr_type &reconstructed_target_raster,
+				unsigned int raster_level_of_detail);
 
 	private:
 		/**
@@ -1082,65 +1112,149 @@ namespace GPlatesOpenGL
 		{
 			RenderSeedCoRegistrationParameters(
 					Operation &operation_,
+					const GPlatesMaths::UnitVector3D &cube_face_centre_,
 					const GLTexture::shared_ptr_type &target_raster_texture_,
 					const GLTransform::non_null_ptr_to_const_type &target_raster_view_transform_,
 					const GLTransform::non_null_ptr_to_const_type &target_raster_projection_transform_,
 					ReduceQuadTree &reduce_quad_tree_,
-					unsigned int reduce_stage_index_,
+					unsigned int node_x_offsets_relative_to_root_[],
+					unsigned int node_y_offsets_relative_to_root_[],
+					boost::optional<GLTexture::shared_ptr_type> reduce_stage_textures_[],
+					unsigned int &reduce_stage_index_,
+					SeedCoRegistrationReduceStageLists &operation_reduce_stage_list_,
 					seed_co_registration_reduce_stage_list_type::iterator &seed_co_registration_iter_,
-					const seed_co_registration_reduce_stage_list_type::iterator seed_co_registration_end_,
+					seed_co_registration_reduce_stage_list_type::iterator &seed_co_registration_end_,
+					SeedCoRegistrationGeometryLists seed_co_registration_geometry_lists_[],
 					bool are_seed_geometries_bounded_) :
 				operation(operation_),
+				cube_face_centre(cube_face_centre_),
 				target_raster_texture(target_raster_texture_),
 				target_raster_view_transform(target_raster_view_transform_),
 				target_raster_projection_transform(target_raster_projection_transform_),
 				reduce_quad_tree(reduce_quad_tree_),
+				node_x_offsets_relative_to_root(node_x_offsets_relative_to_root_),
+				node_y_offsets_relative_to_root(node_y_offsets_relative_to_root_),
+				reduce_stage_textures(reduce_stage_textures_),
 				reduce_stage_index(reduce_stage_index_),
+				operation_reduce_stage_list(operation_reduce_stage_list_),
 				seed_co_registration_iter(seed_co_registration_iter_),
 				seed_co_registration_end(seed_co_registration_end_),
+				seed_co_registration_geometry_lists(seed_co_registration_geometry_lists_),
 				are_seed_geometries_bounded(are_seed_geometries_bounded_)
 			{  }
 
 			Operation &operation;
+			const GPlatesMaths::UnitVector3D &cube_face_centre;
 			GLTexture::shared_ptr_type target_raster_texture;
 			GLTransform::non_null_ptr_to_const_type target_raster_view_transform;
 			GLTransform::non_null_ptr_to_const_type target_raster_projection_transform;
 			ReduceQuadTree &reduce_quad_tree;
-			const unsigned int reduce_stage_index;
+			unsigned int *const node_x_offsets_relative_to_root;
+			unsigned int *const node_y_offsets_relative_to_root;
+			boost::optional<GLTexture::shared_ptr_type> *const reduce_stage_textures;
+			unsigned int &reduce_stage_index/*note it's a reference*/;
+			SeedCoRegistrationReduceStageLists &operation_reduce_stage_list;
 			seed_co_registration_reduce_stage_list_type::iterator &seed_co_registration_iter/*note it's a reference*/;
-			const seed_co_registration_reduce_stage_list_type::iterator seed_co_registration_end;
-			SeedCoRegistrationGeometryLists seed_co_registration_geometry_lists;
+			seed_co_registration_reduce_stage_list_type::iterator &seed_co_registration_end/*note it's a reference*/;
+			SeedCoRegistrationGeometryLists *const seed_co_registration_geometry_lists;
 			bool are_seed_geometries_bounded;
 		};
 
 
 		/**
-		 * The seed features - each feature could contain one or more geometries - all geometries
-		 * of a feature are combined to give one co-registration scalar result per operation.
+		 * Parameters used when co-registering a raster with reconstructed seed geometries.
+		 *
+		 * This data would normally be data members of this class (GLRasterCoRegistration) but
+		 * instead are specific to a specific raster and *reconstructed* seed geometries. The data
+		 * members of this class (GLRasterCoRegistration) are now those that are constant across all
+		 * co-registrations runs (eg, shader program objects, streaming vertex buffers, etc).
+		 *
+		 * This simply avoids having to pass each parameter as function parameters during traversal.
 		 */
-		std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature> d_seed_features;
+		struct CoRegistrationParameters
+		{
+			CoRegistrationParameters(
+					const std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature> &seed_features_,
+					const GLMultiResolutionRasterInterface::non_null_ptr_type &target_raster_,
+					unsigned int raster_level_of_detail_,
+					unsigned int raster_texture_cube_quad_tree_depth_,
+					unsigned int seed_geometries_spatial_partition_depth_,
+					const seed_geometries_spatial_partition_type::non_null_ptr_type &seed_geometries_spatial_partition_,
+					std::vector<Operation> &operations_,
+					std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results_,
+					ResultsQueue &results_queue_) :
+				d_seed_features(seed_features_),
+				d_target_raster(target_raster_),
+				d_raster_level_of_detail(raster_level_of_detail_),
+				d_raster_texture_cube_quad_tree_depth(raster_texture_cube_quad_tree_depth_),
+				d_seed_geometries_spatial_partition_depth(seed_geometries_spatial_partition_depth_),
+				seed_geometries_spatial_partition(seed_geometries_spatial_partition_),
+				operations(operations_),
+				seed_feature_partial_results(seed_feature_partial_results_),
+				d_results_queue(results_queue_)
+			{  }
 
-		/**
-		 * The raster that is the co-registration target data (co-registered onto the seed features).
-		 */
-		GLMultiResolutionRaster::non_null_ptr_type d_target_raster;
+			/**
+			 * The seed features - each feature could contain one or more geometries - all geometries
+			 * of a feature are combined to give one co-registration scalar result per operation.
+			 */
+			const std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature> &d_seed_features;
 
-		/**
-		 * The level-of-detail at which to process the target raster.
-		 */
-		unsigned int d_raster_level_of_detail;
+			/**
+			 * The raster that is the co-registration target data (co-registered onto the seed features).
+			 */
+			const GLMultiResolutionRasterInterface::non_null_ptr_type d_target_raster;
 
-		/**
-		 * The quad tree depth (in cube quad tree) to transition from rendering the raster as a
-		 * regular quad tree partition to rendering the raster as a loose (overlapping) set of
-		 * textures.
-		 */
-		unsigned int d_raster_texture_cube_quad_tree_depth;
+			/**
+			 * The level-of-detail at which to process the target raster.
+			 */
+			const unsigned int d_raster_level_of_detail;
 
-		/**
-		 * The maximum depth of the quad tree(s) in the seed geometries spatial partition.
-		 */
-		unsigned int d_seed_geometries_spatial_partition_depth;
+			/**
+			 * The quad tree depth (in cube quad tree) to transition from rendering the raster as a
+			 * regular quad tree partition to rendering the raster as a loose (overlapping) set of
+			 * textures.
+			 */
+			const unsigned int d_raster_texture_cube_quad_tree_depth;
+
+			/**
+			 * The maximum depth of the quad tree(s) in the seed geometries spatial partition.
+			 */
+			const unsigned int d_seed_geometries_spatial_partition_depth;
+
+			/**
+			 * The seed geometries spatial partition.
+			 */
+			const seed_geometries_spatial_partition_type::non_null_ptr_type seed_geometries_spatial_partition;
+
+			/**
+			 * The client-specified co-registration operations.
+			 */
+			std::vector<Operation> &operations;
+
+			/**
+			 * Intermediate co-registration results - each seed feature can have multiple (partial)
+			 * co-registration results that need to be combined into a single result for each seed feature
+			 * before returning results to the caller.
+			 *
+			 * This vector is indexed by operation.
+			 */
+			std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results;
+
+			/**
+			 * Queues asynchronous reading back of results from GPU to CPU memory.
+			 */
+			ResultsQueue &d_results_queue;
+		};
+
+
+		//
+		// NOTE: The data members of this class (GLRasterCoRegistration) are constant across all
+		// co-registrations runs (such as shader program objects, streaming vertex buffers, etc).
+		// Anything specific to a particular raster or set of seed geometries should go into
+		// class @a CoRegistrationParameters instead (or one of the other lower-level nested classes).
+		// This enables an instance of @a GLRasterCoRegistration to be used for all co-registration runs.
+		//
 
 		/**
 		 * Used to render to floating-point textures.
@@ -1241,25 +1355,20 @@ namespace GPlatesOpenGL
 		GLProgramObject::shared_ptr_type d_reduction_max_program_object;
 
 		/**
-		 * Queues asynchronous reading back of results from GPU to CPU memory.
-		 */
-		ResultsQueue d_results_queue;
-
-		/**
 		 * Simplifies some code since seed geometry can reference identity quaternion if has no finite rotation.
 		 */
 		GPlatesMaths::UnitQuaternion3D d_identity_quaternion;
 
+		/**
+		 * Used to retrieve render target data and save to an image file for debugging purposes.
+		 */
+#if defined(DEBUG_RASTER_COREGISTRATION_RENDER_TARGET)
+		GLPixelBuffer::shared_ptr_type d_debug_pixel_buffer;
+#endif
+
 
 		explicit
 		GLRasterCoRegistration(
-				GLRenderer &renderer,
-				const std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature> &seed_features,
-				const GLMultiResolutionRaster::non_null_ptr_type &target_raster,
-				unsigned int raster_level_of_detail);
-
-		void
-		initialise_texture_level_of_detail_parameters(
 				GLRenderer &renderer);
 
 		void
@@ -1304,23 +1413,29 @@ namespace GPlatesOpenGL
 				unsigned int y_quad_offset,
 				unsigned int width_in_quads);
 
+		void
+		initialise_texture_level_of_detail_parameters(
+				GLRenderer &renderer,
+				const GLMultiResolutionRasterInterface::non_null_ptr_type &target_raster,
+				const unsigned int raster_level_of_detail,
+				unsigned int &raster_texture_cube_quad_tree_depth,
+				unsigned int &seed_geometries_spatial_partition_depth);
+
 		seed_geometries_spatial_partition_type::non_null_ptr_type
 		create_reconstructed_seed_geometries_spatial_partition(
-				std::vector<Operation> &operations);
+				std::vector<Operation> &operations,
+				const std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature> &seed_features,
+				const unsigned int seed_geometries_spatial_partition_depth);
 
 		void
 		filter_reduce_seed_geometries_spatial_partition(
 				GLRenderer &renderer,
-				std::vector<Operation> &operations,
-				std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results,
-				seed_geometries_spatial_partition_type &seed_geometries_spatial_partition);
+				const CoRegistrationParameters &co_registration_parameters);
 
 		void
 		filter_reduce_seed_geometries(
 				GLRenderer &renderer,
-				std::vector<Operation> &operations,
-				std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results,
-				seed_geometries_spatial_partition_type &seed_geometries_spatial_partition,
+				const CoRegistrationParameters &co_registration_parameters,
 				seed_geometries_spatial_partition_type::node_reference_type seed_geometries_spatial_partition_node,
 				const seed_geometries_spatial_partition_node_list_type &parent_seed_geometries_intersecting_node_list,
 				const seed_geometries_intersecting_nodes_type &seed_geometries_intersecting_nodes,
@@ -1331,9 +1446,7 @@ namespace GPlatesOpenGL
 		void
 		co_register_seed_geometries(
 				GLRenderer &renderer,
-				std::vector<Operation> &operations,
-				std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results,
-				seed_geometries_spatial_partition_type &seed_geometries_spatial_partition,
+				const CoRegistrationParameters &co_registration_parameters,
 				seed_geometries_spatial_partition_type::node_reference_type seed_geometries_spatial_partition_node,
 				const seed_geometries_spatial_partition_node_list_type &parent_seed_geometries_intersecting_node_list,
 				const seed_geometries_intersecting_nodes_type &seed_geometries_intersecting_nodes,
@@ -1343,9 +1456,7 @@ namespace GPlatesOpenGL
 		void
 		co_register_seed_geometries_with_target_raster(
 				GLRenderer &renderer,
-				std::vector<Operation> &operations,
-				std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results,
-				seed_geometries_spatial_partition_type &seed_geometries_spatial_partition,
+				const CoRegistrationParameters &co_registration_parameters,
 				const seed_geometries_spatial_partition_node_list_type &parent_seed_geometries_intersecting_node_list,
 				const seed_geometries_intersecting_nodes_type &seed_geometries_intersecting_nodes,
 				cube_subdivision_cache_type &cube_subdivision_cache,
@@ -1354,10 +1465,9 @@ namespace GPlatesOpenGL
 		void
 		co_register_seed_geometries_with_target_raster(
 				GLRenderer &renderer,
-				std::vector<Operation> &operations,
-				std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results,
-				seed_geometries_spatial_partition_type &seed_geometries_spatial_partition,
+				const CoRegistrationParameters &co_registration_parameters,
 				const seed_geometries_spatial_partition_node_list_type &seed_geometries_intersecting_node_list,
+				const GPlatesMaths::UnitVector3D &cube_face_centre,
 				const GLTransform::non_null_ptr_to_const_type &view_transform,
 				const GLTransform::non_null_ptr_to_const_type &projection_transform);
 
@@ -1370,47 +1480,44 @@ namespace GPlatesOpenGL
 		void
 		co_register_seed_geometries_with_loose_target_raster(
 				GLRenderer &renderer,
-				std::vector<Operation> &operations,
-				std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results,
-				seed_geometries_spatial_partition_type &seed_geometries_spatial_partition,
+				const CoRegistrationParameters &co_registration_parameters,
 				seed_geometries_spatial_partition_type::node_reference_type seed_geometries_spatial_partition_node,
 				cube_subdivision_cache_type &cube_subdivision_cache,
 				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node);
 
 		void
 		group_seed_co_registrations_by_operation(
+				const CoRegistrationParameters &co_registration_parameters,
 				std::vector<SeedCoRegistrationReduceStageLists> &operations_reduce_stage_lists,
-				seed_geometries_spatial_partition_type &seed_geometries_spatial_partition,
 				seed_geometries_spatial_partition_type::node_reference_type seed_geometries_spatial_partition_node,
-				unsigned int seed_geometries_spatial_partition_depth,
 				const GLUtils::QuadTreeClipSpaceTransform &raster_frustum_to_loose_seed_frustum_clip_space_transform,
 				unsigned int reduce_stage_index);
 
 		void
 		render_seed_geometries_to_reduce_pyramids(
 				GLRenderer &renderer,
-				Operation &operation,
+				const CoRegistrationParameters &co_registration_parameters,
+				unsigned int operation_index,
+				const GPlatesMaths::UnitVector3D &cube_face_centre,
 				const GLTexture::shared_ptr_type &target_raster_texture,
 				const GLTransform::non_null_ptr_to_const_type &target_raster_view_transform,
 				const GLTransform::non_null_ptr_to_const_type &target_raster_projection_transform,
-				SeedCoRegistrationReduceStageLists &operation_reduce_stage_lists,
-				std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results,
+				std::vector<SeedCoRegistrationReduceStageLists> &operation_reduce_stage_lists,
 				bool are_seed_geometries_bounded);
 
 		unsigned int
 		render_seed_geometries_to_reduce_quad_tree_internal_node(
 				GLRenderer &renderer,
 				RenderSeedCoRegistrationParameters &render_params,
-				GLTexture::shared_ptr_type &results_texture,
-				ReduceQuadTreeInternalNode &reduce_quad_tree_internal_node,
-				unsigned int reduce_quad_tree_depth,
-				const GLUtils::QuadTreeClipSpaceTransform &loose_seed_frustum_to_render_target_clip_space_transform);
+				ReduceQuadTreeInternalNode &reduce_quad_tree_internal_node);
 
 		void
 		render_seed_geometries_in_reduce_stage_render_list(
 				GLRenderer &renderer,
-				const GLTexture::shared_ptr_type &results_texture,
+				const GLTexture::shared_ptr_type &reduce_stage_texture,
+				bool clear_reduce_stage_texture,
 				const Operation &operation,
+				const GPlatesMaths::UnitVector3D &cube_face_centre,
 				const GLTexture::shared_ptr_type &target_raster_texture,
 				const GLTransform::non_null_ptr_to_const_type &target_raster_view_transform,
 				const GLTransform::non_null_ptr_to_const_type &target_raster_projection_transform,
@@ -1431,8 +1538,7 @@ namespace GPlatesOpenGL
 				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
 				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 				point_region_of_interest_stream_primitives_type::StreamTarget &point_stream_target,
-				point_region_of_interest_stream_primitives_type::Quads &point_stream_quads,
-				const SeedCoRegistration &seed_co_registration,
+				point_region_of_interest_stream_primitives_type::Primitives &point_stream_quads,
 				const GPlatesMaths::UnitVector3D &point,
 				PointRegionOfInterestVertex &vertex,
 				const double &tan_region_of_interest_angle);
@@ -1451,8 +1557,7 @@ namespace GPlatesOpenGL
 				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
 				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 				point_region_of_interest_stream_primitives_type::StreamTarget &point_stream_target,
-				point_region_of_interest_stream_primitives_type::TriangleMeshes &point_stream_meshes,
-				const SeedCoRegistration &seed_co_registration,
+				point_region_of_interest_stream_primitives_type::Primitives &point_stream_meshes,
 				const GPlatesMaths::UnitVector3D &point,
 				PointRegionOfInterestVertex &vertex,
 				const double &centre_point_weight,
@@ -1472,8 +1577,7 @@ namespace GPlatesOpenGL
 				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
 				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 				line_region_of_interest_stream_primitives_type::StreamTarget &line_stream_target,
-				line_region_of_interest_stream_primitives_type::Quads &line_stream_quads,
-				const SeedCoRegistration &seed_co_registration,
+				line_region_of_interest_stream_primitives_type::Primitives &line_stream_quads,
 				const GPlatesMaths::GreatCircleArc &line,
 				LineRegionOfInterestVertex &vertex,
 				const double &tan_region_of_interest_angle);
@@ -1492,8 +1596,7 @@ namespace GPlatesOpenGL
 				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
 				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 				line_region_of_interest_stream_primitives_type::StreamTarget &line_stream_target,
-				line_region_of_interest_stream_primitives_type::TriangleMeshes &line_stream_meshes,
-				const SeedCoRegistration &seed_co_registration,
+				line_region_of_interest_stream_primitives_type::Primitives &line_stream_meshes,
 				const GPlatesMaths::GreatCircleArc &line,
 				LineRegionOfInterestVertex &vertex,
 				const double &arc_point_weight,
@@ -1524,6 +1627,7 @@ namespace GPlatesOpenGL
 		mask_target_raster_with_regions_of_interest(
 				GLRenderer &renderer,
 				const Operation &operation,
+				const GPlatesMaths::UnitVector3D &cube_face_centre,
 				const GLTexture::shared_ptr_type &target_raster_texture,
 				const GLTexture::shared_ptr_type &region_of_interest_mask_texture,
 				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
@@ -1536,7 +1640,7 @@ namespace GPlatesOpenGL
 				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
 				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 				mask_region_of_interest_stream_primitives_type::StreamTarget &mask_stream_target,
-				mask_region_of_interest_stream_primitives_type::Quads &mask_stream_quads,
+				mask_region_of_interest_stream_primitives_type::Primitives &mask_stream_quads,
 				const SeedCoRegistration &seed_co_registration);
 
 		template <typename StreamingVertexType>
@@ -1561,7 +1665,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				typename GLStaticStreamPrimitives<StreamingVertexType, streaming_vertex_element_type>::StreamTarget &stream_target,
 				const GLVertexArray::shared_ptr_type &vertex_array,
-				GLenum primitive_mode = GL_TRIANGLES);
+				GLenum primitive_mode);
 
 		template <typename StreamingVertexType>
 		void
@@ -1571,7 +1675,7 @@ namespace GPlatesOpenGL
 				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
 				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 				const GLVertexArray::shared_ptr_type &vertex_array,
-				GLenum primitive_mode = GL_TRIANGLES);
+				GLenum primitive_mode);
 
 		void
 		render_reduction_of_reduce_stage(
@@ -1580,6 +1684,7 @@ namespace GPlatesOpenGL
 				const ReduceQuadTreeInternalNode &dst_reduce_quad_tree_node,
 				unsigned int src_child_x_offset,
 				unsigned int src_child_y_offset,
+				bool clear_dst_reduce_stage_texture,
 				const GLTexture::shared_ptr_type &dst_reduce_stage_texture,
 				const GLTexture::shared_ptr_type &src_reduce_stage_texture);
 
@@ -1588,7 +1693,7 @@ namespace GPlatesOpenGL
 				const ReduceQuadTreeInternalNode &parent_reduce_quad_tree_node,
 				unsigned int child_x_offset,
 				unsigned int child_y_offset,
-				unsigned child_quad_tree_node_width_in_quads);
+				unsigned int child_quad_tree_node_width_in_quads);
 
 		/**
 		 * Renders target raster into render texture and returns true if there was any rendering
@@ -1597,6 +1702,7 @@ namespace GPlatesOpenGL
 		bool
 		render_target_raster(
 				GLRenderer &renderer,
+				const CoRegistrationParameters &co_registration_parameters,
 				const GLTexture::shared_ptr_type &target_raster_texture,
 				const GLTransform &view_transform,
 				const GLTransform &projection_transform);
@@ -1613,8 +1719,20 @@ namespace GPlatesOpenGL
 
 		void
 		return_co_registration_results_to_caller(
-				std::vector<Operation> &operations,
-				const std::vector<OperationSeedFeaturePartialResults> seed_feature_partial_results);
+				const CoRegistrationParameters &co_registration_parameters);
+
+#if defined(DEBUG_RASTER_COREGISTRATION_RENDER_TARGET)
+		void
+		debug_fixed_point_render_target(
+				GLRenderer &renderer,
+				const QString &image_file_basename);
+
+		void
+		debug_floating_point_render_target(
+				GLRenderer &renderer,
+				const QString &image_file_basename,
+				bool coverage_is_in_green_channel);
+#endif
 	};
 }
 

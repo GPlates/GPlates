@@ -85,19 +85,32 @@ GPlatesAppLogic::ReconstructContext::reassign_reconstruct_methods_to_features(
 			const GPlatesModel::FeatureHandle::weak_ref feature_ref = (*features_iter)->reference();
 
 			// See if any reconstruct methods can reconstruct the current feature.
-			// If no reconstruct method can reconstruct the current feature then
-			// it defaults to the 'BY_PLATE_ID' reconstruct method.
-			const ReconstructMethod::Type reconstruct_method_type =
-					reconstruct_method_registry.get_reconstruct_method_type_or_default(feature_ref);
+			// If no reconstruct method can reconstruct the current feature then skip the feature.
+			// We could default to the 'BY_PLATE_ID' reconstruct method but ignoring the feature
+			// helps to ensure that features that shouldn't be reconstructed using the
+			// ReconstructContext framework are excluded - such as topological features that need
+			// to be handled by a different framework.
+			// NOTE: Previously this defaulted to 'BY_PLATE_ID' but this picked up topological
+			// features that, although they had no geometry and hence no reconstructed geometry,
+			// they still showed up as a ReconstructContext::ReconstructedFeature (eg, in the
+			// data mining co-registration list of seed features).
+			// The 'BY_PLATE_ID' reconstruct method is very lenient so it should be able pick up
+			// pretty much anything that has a geometry to be reconstructed.
+			const boost::optional<ReconstructMethod::Type> reconstruct_method_type =
+					reconstruct_method_registry.get_reconstruct_method_type(feature_ref);
+			if (!reconstruct_method_type)
+			{
+				continue;
+			}
 
 			// Create a new reconstruct method if one hasn't already been.
-			if (reconstruct_method_indices.find(reconstruct_method_type) ==
+			if (reconstruct_method_indices.find(reconstruct_method_type.get()) ==
 				reconstruct_method_indices.end())
 			{
 				const ReconstructMethodInterface::non_null_ptr_type reconstruct_method =
-						reconstruct_method_registry.get_reconstruct_method(reconstruct_method_type);
+						reconstruct_method_registry.get_reconstruct_method(reconstruct_method_type.get());
 
-				reconstruct_method_indices[reconstruct_method_type] =
+				reconstruct_method_indices[reconstruct_method_type.get()] =
 						d_reconstruct_method_features_seq.size();
 
 				// Add the new reconstruct method.
@@ -107,7 +120,7 @@ GPlatesAppLogic::ReconstructContext::reassign_reconstruct_methods_to_features(
 
 			// Add the current feature to be reconstructed by the reconstruction method.
 			const unsigned int reconstruct_method_index =
-					reconstruct_method_indices[reconstruct_method_type];
+					reconstruct_method_indices[reconstruct_method_type.get()];
 			d_reconstruct_method_features_seq[reconstruct_method_index]
 					.features.push_back(ReconstructMethodFeature(feature_ref));
 		}

@@ -24,6 +24,7 @@
  */
 
 #include <cstring> // for memcpy
+#include <sstream>
 
 #include <boost/scoped_array.hpp>
 /*
@@ -1155,11 +1156,21 @@ GPlatesOpenGL::GLProgramObject::get_uniform_location(
 		const uniform_location_type uniform_location =
 				glGetUniformLocationARB(get_program_resource_handle(), uniform_name);
 
-		GPlatesGlobal::Assert<OpenGLException>(
-				uniform_location >= 0,
-				GPLATES_ASSERTION_SOURCE,
-				"Attempted to set uniform variable, on a shader program, that (1) does not exist, "
-				"(2) is not actively used in the linked shader program or (3) is a reserved name.");
+		if (uniform_location < 0)
+		{
+			std::ostringstream error_string_stream;
+
+			error_string_stream
+					<< "Attempted to set uniform variable '"
+					<< uniform_name
+					<< "', on a shader program, that (1) does not exist, "
+					<< "(2) is not actively used in the linked shader program or (3) is a reserved name.";
+
+			GPlatesGlobal::Assert<OpenGLException>(
+					false,
+					GPLATES_ASSERTION_SOURCE,
+					error_string_stream.str().c_str());
+		}
 
 		// Override the dummy index (location) with the correct one.
 		uniform_insert_result.first->second = uniform_location;

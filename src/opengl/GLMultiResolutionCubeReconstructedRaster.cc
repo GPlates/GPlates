@@ -233,15 +233,6 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::render_raster_data_into
 	// the final render target would then have a source blending contribution of (3A*R,3A*G,3A*B,4A)
 	// which is not what we want - we want (A*R,A*G,A*B,A*A).
 
-	// Alpha-test state.
-	// This enables the alpha texture clipping (done by reconstructed raster renderer) to mask out
-	// source regions as they're being rendered rather than writing RGBA of zero into the render-target
-	// effectively overwriting previously rendered (from same render call) valid data - when the
-	// render-target is used for rendering in turn as a texture it would come out as transparent
-	// blocky regions where there should be valid reconstructed raster data instead.
-	renderer.gl_enable(GL_ALPHA_TEST);
-	renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
-
 	// Reconstruct source raster by rendering into the render target using the view frustum
 	// we have provided.
 	const bool rendered = d_reconstructed_raster->render(renderer, tile_texture.source_cache_handle);

@@ -591,6 +591,89 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Attach to @a GLStreamPrimitives to stream arbitrary primitives where the stream overflow
+		 * check is done at the beginning of the primitive instead of checking at each vertex.
+		 *
+		 * The type of primitives (points, lines, line strips, triangles, triangle fans, triangle meshes, etc)
+		 * is up to the caller to define using appropriate calls to @a add_vertex and @a add_vertex_element.
+		 *
+		 * NOTE: This class is for performance critical code where the overhead of checking for stream
+		 * overflow at each vertex is too costly (eg, when streaming very large numbers of simple primitives).
+		 * Otherwise it's easier to just use the other nested classes.
+		 */
+		class Primitives
+		{
+		public:
+			explicit
+			Primitives(
+					stream_primitives_type &stream_primitives) :
+				d_stream_primitives(stream_primitives),
+				d_base_vertex_element(0)
+			{  }
+
+			/**
+			 * Returns true if the stream has enough space to accommodate the specified number
+			 * of vertices and vertex elements.
+			 *
+			 * You should limit calls to @a add_vertex and @a add_vertex_element to the specified maximum values.
+			 *
+			 * If false is returned then you'll need to stop streaming, render what has been streamed
+			 * so far and then start streaming again with new buffers.
+			 */
+			bool
+			begin_primitive(
+					unsigned int max_num_vertices,
+					unsigned int max_num_vertex_elements)
+			{
+				// Make sure we are currently streaming vertices/indices to a stream target.
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_stream_primitives.d_vertex_stream && d_stream_primitives.d_vertex_element_stream,
+						GPLATES_ASSERTION_SOURCE);
+
+				d_base_vertex_element = d_stream_primitives.get_base_vertex_element();
+
+				// Return true if there is enough space for the specified number of vertices and vertex elements.
+				return d_stream_primitives.d_vertex_stream->remaining() >= max_num_vertices &&
+					d_stream_primitives.d_vertex_element_stream->remaining() >= max_num_vertex_elements;
+			}
+
+			/**
+			 * Adds a vertex to the current primitive.
+			 *
+			 * NOTE: This does *not* check for overflow in the stream buffer (and hence has no return value).
+			 */
+			void
+			add_vertex(
+					const vertex_type &vertex)
+			{
+				d_stream_primitives.d_vertex_stream->write(vertex);
+			}
+
+			/**
+			 * Adds a vertex element to the current primitive.
+			 *
+			 * NOTE: This does *not* check for overflow in the stream buffer (and hence has no return value).
+			 */
+			void
+			add_vertex_element(
+					vertex_element_type vertex_element)
+			{
+				d_stream_primitives.d_vertex_element_stream->write(d_base_vertex_element + vertex_element);
+			}
+
+			void
+			end_primitive()
+			{
+				// Nothing to do
+			}
+
+		private:
+			stream_primitives_type &d_stream_primitives;
+			unsigned int d_base_vertex_element;
+		};
+
+
+		/**
 		 * RAII class to start and stop streaming over a scope and also to temporarily interrupt
 		 * streaming when the vertex buffer or vertex element buffer is full (or when client
 		 * decides to render the stream contents).
@@ -627,17 +710,13 @@ namespace GPlatesOpenGL
 			 * pass a *non-const* reference instead of a const reference (it wasn't to avoid
 			 * copying the vertices because boost::in_place doesn't do that).
 			 *
-			 * NOTE: A typical usage of this method is to use it with 'GLBuffer::gl_map_buffer_static' on
-			 * a vertex buffer and a vertex element buffer and then call 'GLBuffer::gl_unmapBuffer'
-			 * after calling @a stop_streaming. For this you would use @a GLStaticStreamPrimitives.
+			 * NOTE: A typical usage of this method is to use it with 'GLBuffer::gl_map_buffer_stream' on
+			 * a vertex buffer and a vertex element buffer and then call 'GLBuffer::gl_flush_buffer_stream'
+			 * and 'GLBuffer::gl_unmap_buffer' after calling @a stop_streaming.
+			 * For this you would use @a GLStaticStreamPrimitives.
 			 *
 			 * This way @a GLStreamPrimitives is used to fill up a vertex buffer and vertex element
 			 * buffer which can then be used for rendering.
-			 * Note that you can also call GLBuffer::gl_buffer_data with a NULL 'data' parameter to
-			 * prevent the CPU blocking on the GLBuffer::gl_map_buffer_static call (if the GPU is still
-			 * rendering from the contents of the buffers) - OpenGL effectively allocates a new buffer
-			 * behind the scenes if the GPU is still using the previous buffer (all this is done
-			 * behind a single vertex buffer object or vertex element buffer object).
 			 *
 			 * Note that a single begin/end pair of a streaming primitive (such as
 			 * 'LineStrips::begin_line_strips' / 'LineStrips::end_line_strips') can be interrupted

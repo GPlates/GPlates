@@ -88,7 +88,19 @@ namespace GPlatesAppLogic
 		boost::optional<const GPlatesMaths::BoundingSmallCircle &>
 		get_geometry_bounding_small_circle(
 				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
-		
+
+
+		/**
+		 * Converts the specified geometry to a @a PolygonOnSphere if it is a polyline or multipoint
+		 * (or already a polygon) by treating the geometry points as a linear list of polygon points.
+		 *
+		 * Returns boost::none if the specified geometry has less than three points
+		 * (ie, not enough to form a polygon) or the specified geometry is a point geometry.
+		 */
+		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+		convert_geometry_to_polygon(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
+
 
 		/**
 		 * Visits a @a geometry and attempts to

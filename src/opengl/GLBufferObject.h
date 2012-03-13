@@ -247,6 +247,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				target_type target,
 				unsigned int minimum_bytes_to_stream,
+				unsigned int stream_alignment,
 				unsigned int &stream_offset,
 				unsigned int &stream_bytes_available);
 

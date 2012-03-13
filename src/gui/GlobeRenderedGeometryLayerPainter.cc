@@ -95,14 +95,14 @@ const float GPlatesGui::GlobeRenderedGeometryLayerPainter::LINE_WIDTH_ADJUSTMENT
 
 GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter(
 		const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
-		const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
+		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const double &inverse_viewport_zoom_factor,
 		RenderSettings &render_settings,
 		const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_rendered_geometry_layer(rendered_geometry_layer),
-	d_persistent_opengl_objects(persistent_opengl_objects),
+	d_gl_visual_layers(gl_visual_layers),
 	d_inverse_zoom_factor(inverse_viewport_zoom_factor),
 	d_render_settings(render_settings),
 	d_text_renderer_ptr(text_renderer_ptr),
@@ -137,7 +137,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint(
 
 	// Do the actual painting.
 	const cache_handle_type layer_cache =
-			layer_painter.end_painting(renderer, *d_persistent_opengl_objects, *d_text_renderer_ptr, d_scale);
+			layer_painter.end_painting(renderer, *d_gl_visual_layers, *d_text_renderer_ptr, d_scale);
 
 	// We no longer have a layer painter.
 	d_layer_painter = boost::none;

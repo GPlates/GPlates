@@ -133,6 +133,13 @@ namespace GPlatesAppLogic
 				d_feature(feature)
 			{  }
 
+			ReconstructedFeature(
+					const GPlatesModel::FeatureHandle::weak_ref &feature,
+					const reconstruction_seq_type &reconstructions) :
+				d_feature(feature),
+				d_reconstructions(reconstructions)
+			{  }
+
 			/**
 			 * Returns the feature.
 			 */

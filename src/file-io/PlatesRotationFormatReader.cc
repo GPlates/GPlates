@@ -50,6 +50,7 @@
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/TemplateTypeParameterType.h"
 
+#include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -666,6 +667,8 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
+	PROFILE_FUNC();
+
 	const FileInfo &fileinfo = file.get_file_info();
 
 	// By placing all changes to the model under the one changeset, we ensure that

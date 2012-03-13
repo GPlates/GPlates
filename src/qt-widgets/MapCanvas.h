@@ -36,11 +36,11 @@
 
 #include "gui/ColourScheme.h"
 #include "gui/Map.h"
-#include "gui/PersistentOpenGLObjects.h"
 #include "gui/QPainterTextRenderer.h"
 #include "gui/TextOverlay.h"
 
 #include "opengl/GLContext.h"
+#include "opengl/GLVisualLayers.h"
 
 
 namespace GPlatesGui
@@ -76,7 +76,7 @@ namespace GPlatesQtWidgets
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				MapView *map_view_ptr,
 				const GPlatesOpenGL::GLContext::non_null_ptr_type &gl_context,
-				const GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type &gl_persistent_objects,
+				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				GPlatesGui::RenderSettings &render_settings,
 				GPlatesGui::ViewportZoom &viewport_zoom,
 				const GPlatesGui::ColourScheme::non_null_ptr_type &colour_scheme,

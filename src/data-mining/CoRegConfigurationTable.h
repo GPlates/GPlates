@@ -28,23 +28,36 @@
 
 #include <vector>
 #include <map>
+#include <boost/operators.hpp>
 
 #include "CoRegFilter.h"
 #include "Types.h"
 #include "DataTable.h"
-#include "app-logic/FeatureCollectionFileState.h"
+
+#include "app-logic/Layer.h"
+
 #include "global/GPlatesException.h"
+
 #include "model/FeatureHandle.h"
+
 
 namespace GPlatesDataMining
 {
 	struct ConfigurationTableRow
 	{
-		GPlatesModel::FeatureCollectionHandle::const_weak_ref target_fc;
+		ConfigurationTableRow();
+
+		bool
+		operator==(
+				const ConfigurationTableRow &rhs) const;
+
+		GPlatesAppLogic::Layer target_layer;
 		boost::shared_ptr<CoRegFilter::Config> filter_cfg;
 		QString attr_name;
 		AttributeType attr_type;
 		ReducerType reducer_type; //TODO: change to CoRegReducer::config
+		unsigned int raster_level_of_detail; // Only used if target layer is a raster.
+		bool raster_fill_polygons; // Cuurently only used if target layer is a raster.
 		unsigned index;
 	};
 
@@ -70,7 +83,8 @@ namespace GPlatesDataMining
 		}
 	};
 
-	class CoRegConfigurationTable 
+	class CoRegConfigurationTable :
+			public boost::equality_comparable<CoRegConfigurationTable>
 	{
 	public:
 		typedef std::vector<ConfigurationTableRow>::iterator iterator;
@@ -102,6 +116,30 @@ namespace GPlatesDataMining
 		end() const
 		{
 			return d_rows.end();
+		}
+		
+		ConfigurationTableRow &
+		operator[](
+				std::size_t index)
+		{
+			return d_rows[index];
+		}
+		
+		const ConfigurationTableRow &
+		operator[](
+				std::size_t index) const
+		{
+			return d_rows[index];
+		}
+
+		/**
+		 * 'operator!=()' provided by boost::equality_comparable.
+		 */
+		bool
+		operator==(
+				const CoRegConfigurationTable &rhs) const
+		{
+			return d_rows == rhs.d_rows;
 		}
 
 		void

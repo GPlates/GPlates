@@ -45,9 +45,10 @@ namespace GPlatesDataMining
 		{
 		public:
 			CoRegFilter*
-			create_filter(const CoRegFilter::RFGVector& seed)
+			create_filter(
+					const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_seed_feature)
 			{
-				return new SeedSelfFilter(seed);
+				return new SeedSelfFilter(reconstructed_seed_feature);
 			}
 
 			bool
@@ -79,24 +80,23 @@ namespace GPlatesDataMining
 
 		explicit
 		SeedSelfFilter(
-				const CoRegFilter::RFGVector& seed_rfgs):
-			d_seed_rfgs(seed_rfgs)
+				const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_seed_feature):
+			d_reconstructed_seed_feature(reconstructed_seed_feature)
 			{ }
 			
 		void
 		process(
-				CoRegFilter::RFGVector::const_iterator input_begin,
-				CoRegFilter::RFGVector::const_iterator input_end,
-				CoRegFilter::RFGVector& output) 
+				CoRegFilter::reconstructed_feature_vector_type::const_iterator input_begin,
+				CoRegFilter::reconstructed_feature_vector_type::const_iterator input_end,
+				CoRegFilter::reconstructed_feature_vector_type& output) 
 		{
-			output = d_seed_rfgs;
-			return;
+			output.push_back(d_reconstructed_seed_feature);
 		}
 
 		~SeedSelfFilter(){ }
 
 	protected:
-		const CoRegFilter::RFGVector& d_seed_rfgs;
+		const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &d_reconstructed_seed_feature;
 	};
 }
 #endif //GPLATESDATAMINING_SEEDSELFFILTER_H

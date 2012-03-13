@@ -39,7 +39,8 @@
 #include "TextRenderer.h"
 
 #include "gui/ViewportZoom.h"
-#include "gui/PersistentOpenGLObjects.h"
+
+#include "opengl/GLVisualLayers.h"
 
 #include "presentation/ViewState.h"
 #include "presentation/VisualLayers.h"
@@ -70,7 +71,7 @@ namespace GPlatesGui
 
 		Map(
 				GPlatesPresentation::ViewState &view_state,
-				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
+				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,

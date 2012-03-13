@@ -35,7 +35,6 @@
 #include "ColourScheme.h"
 #include "GlobeRenderedGeometryCollectionPainter.h"
 #include "OpaqueSphere.h"
-#include "PersistentOpenGLObjects.h"
 #include "SphericalGrid.h"
 #include "SimpleGlobeOrientation.h"
 #include "Stars.h"
@@ -48,6 +47,7 @@
 
 #include "opengl/GLContext.h"
 #include "opengl/GLMatrix.h"
+#include "opengl/GLVisualLayers.h"
 
 #include "presentation/VisualLayers.h"
 
@@ -84,7 +84,7 @@ namespace GPlatesGui
 
 		Globe(
 				GPlatesPresentation::ViewState &view_state,
-				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
+				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,
@@ -95,7 +95,7 @@ namespace GPlatesGui
 		//! To clone a Globe
 		Globe(
 				Globe &existing_globe,
-				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
+				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme);
@@ -172,7 +172,7 @@ namespace GPlatesGui
 		/**
 		 * Keeps track of OpenGL-related objects that persist from one render to the next.
 		 */
-		const PersistentOpenGLObjects::non_null_ptr_type d_persistent_opengl_objects;
+		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
 			
 		//! Flags to determine what data to show
 		RenderSettings &d_render_settings;

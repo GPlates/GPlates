@@ -65,7 +65,7 @@ GPlatesDataMining::IsCloseEnoughChecker::execute(
 		d_is_close_enough = true;
 		return;
 	}
-	real_t closeness = acos(calculate_closeness(*point1, *point2)) * DEFAULT_RADIUS_OF_EARTH;
+	real_t closeness = acos(calculate_closeness(*point1, *point2)) * DEFAULT_RADIUS_OF_EARTH_KMS;
 
 	#ifdef _DEBUG
 	std::cout << "Checking if a point is close to another point."<< std::endl;
@@ -209,7 +209,7 @@ GPlatesDataMining::IsCloseEnoughChecker::test_proximity(
 	real_t closeness;
 	double thresh_hold = 0;
 	
-	if(range > (DEFAULT_RADIUS_OF_EARTH * PI) )
+	if(range > (DEFAULT_RADIUS_OF_EARTH_KMS * PI) )
 	{
 		thresh_hold = -1;
 	}
@@ -219,7 +219,7 @@ GPlatesDataMining::IsCloseEnoughChecker::test_proximity(
 	}
 	else
 	{
-		thresh_hold = std::cos(range / DEFAULT_RADIUS_OF_EARTH);
+		thresh_hold = std::cos(range / DEFAULT_RADIUS_OF_EARTH_KMS);
 	}
 
 	ProximityCriteria proximity_criteria(
@@ -232,7 +232,7 @@ GPlatesDataMining::IsCloseEnoughChecker::test_proximity(
 	if(hit)
 	{
 		d_is_close_enough = true;
-		d_distance = acos( hit->closeness() ) * DEFAULT_RADIUS_OF_EARTH;
+		d_distance = acos( hit->closeness() ) * DEFAULT_RADIUS_OF_EARTH_KMS;
 
 		#ifdef _DEBUG
 		std::cout << "The distance is: " << d_distance <<std::endl;

@@ -134,8 +134,8 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * A useful class for derived @a LayerProxy classes to use to keep track of changes
-		 * to their input layer proxies.
+		 * A useful class for derived @a LayerProxy classes (or the base @a LayerProxy class)
+		 * to use to keep track of changes to their input layer proxies.
 		 *
 		 * References, and observes for changes, an input layer proxy.
 		 */

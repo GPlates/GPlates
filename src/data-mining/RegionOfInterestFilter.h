@@ -40,9 +40,9 @@ namespace GPlatesDataMining
 	{
 	public:
 		RegionOfInterestFilter(
-				const CoRegFilter::RFGVector& seed, 
+				const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_seed_feature, 
 				const double range):
-			d_seed(seed),
+			d_reconstructed_seed_feature(reconstructed_seed_feature),
 			d_range(range)
 			{	}
 
@@ -55,9 +55,10 @@ namespace GPlatesDataMining
 			{	}
 
 			CoRegFilter*
-			create_filter(const CoRegFilter::RFGVector& seed)
+			create_filter(
+					const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_seed_feature)
 			{
-				return new RegionOfInterestFilter(seed, d_range);
+				return new RegionOfInterestFilter(reconstructed_seed_feature, d_range);
 			}
 
 			bool
@@ -96,51 +97,92 @@ namespace GPlatesDataMining
 			
 			~Config(){ }
 
-		private:
-			double
+			const double &
 			range() const
 			{
 				return d_range;
 			}
 
+		private:
 			double d_range;
 		};
 
 		void
 		process(
-				CoRegFilter::RFGVector::const_iterator input_begin,
-				CoRegFilter::RFGVector::const_iterator input_end,
-				CoRegFilter::RFGVector& output) 
+				CoRegFilter::reconstructed_feature_vector_type::const_iterator input_begin,
+				CoRegFilter::reconstructed_feature_vector_type::const_iterator input_end,
+				CoRegFilter::reconstructed_feature_vector_type& output) 
 		{
+			// Iterate over the reconstructed target features.
 			for(; input_begin != input_end; input_begin++)
 			{
-				if(is_in_region(*input_begin))
+				const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_target_feature =
+						*input_begin;
+
+				// For the current reconstructed target feature filter those geometries that are
+				// within the region of interest of any of our reconstructed seed features.
+				GPlatesAppLogic::ReconstructContext::ReconstructedFeature::reconstruction_seq_type
+						filtered_reconstructed_target_geometries;
+				region_of_interest_filter(
+						filtered_reconstructed_target_geometries,
+						reconstructed_target_feature);
+
+				// If any within ROI then add a filtered reconstructed target feature to the results.
+				if (!filtered_reconstructed_target_geometries.empty())
 				{
-					output.push_back(*input_begin);
+					GPlatesAppLogic::ReconstructContext::ReconstructedFeature filtered_reconstructed_target_feature(
+							reconstructed_target_feature.get_feature(),
+							filtered_reconstructed_target_geometries);
+
+					output.push_back(filtered_reconstructed_target_feature);
 				}
 			}
-			return;
 		}
 
 		~RegionOfInterestFilter(){ }
 
 	protected:
-		bool
-		is_in_region(CoRegFilter::RFGVector::value_type geo)
+
+		void
+		region_of_interest_filter(
+				GPlatesAppLogic::ReconstructContext::ReconstructedFeature::reconstruction_seq_type &filtered_reconstructed_target_geometries,
+				const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_target_feature)
 		{
-			BOOST_FOREACH(const CoRegFilter::RFGVector::value_type& seed_geo, d_seed )
+			const GPlatesAppLogic::ReconstructContext::ReconstructedFeature::reconstruction_seq_type &
+					reconstructed_target_geometries = reconstructed_target_feature.get_reconstructions();
+
+			// Iterate over the reconstructed target feature's geometries first.
+			BOOST_FOREACH(
+					const GPlatesAppLogic::ReconstructContext::Reconstruction &reconstructed_target_geom,
+					reconstructed_target_geometries)
 			{
-				if(is_close_enough(
-						*seed_geo->reconstructed_geometry(), 
-						*geo->reconstructed_geometry(), 
-						d_range))
+				const GPlatesAppLogic::ReconstructContext::ReconstructedFeature::reconstruction_seq_type &
+						reconstructed_seed_geometries = d_reconstructed_seed_feature.get_reconstructions();
+
+				// Iterate over the reconstructed seed feature's geometries.
+				// If the current target geometry is close enough to any of the seed geometries then add it.
+				BOOST_FOREACH(
+						const GPlatesAppLogic::ReconstructContext::Reconstruction &reconstructed_seed_geom,
+						reconstructed_seed_geometries)
 				{
-					return true;
+					if (is_close_enough(
+							*reconstructed_seed_geom.get_reconstructed_feature_geometry()->reconstructed_geometry(), 
+							*reconstructed_target_geom.get_reconstructed_feature_geometry()->reconstructed_geometry(), 
+							d_range))
+					{
+						filtered_reconstructed_target_geometries.push_back(
+								GPlatesAppLogic::ReconstructContext::Reconstruction(
+										reconstructed_target_geom.get_reconstructed_feature_geometry(),
+										reconstructed_target_geom.get_geometry_property_handle()));
+
+						// Only add the current reconstructed target geometry once.
+						break;
+					}
 				}
 			}
-			return false;
 		}
-		const CoRegFilter::RFGVector& d_seed;
+
+		const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &d_reconstructed_seed_feature;
 		double d_range;
 	};
 }

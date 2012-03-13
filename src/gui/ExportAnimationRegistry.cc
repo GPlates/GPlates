@@ -842,8 +842,8 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::CSV_COMMA),
 			ExportCoRegistrationAnimationStrategy::const_configuration_ptr(
 					new ExportCoRegistrationAnimationStrategy::Configuration(
-							"co_registration_data_%0.2fMa.csv")),
+							"co_registration_data%P_%0.2fMa.csv")),
 			&create_animation_strategy<ExportCoRegistrationAnimationStrategy>,
 			&create_null_export_options_widget,
-			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 }

@@ -26,6 +26,7 @@
 #ifndef GPLATES_APP_LOGIC_RASTERLAYERPROXY_H
 #define GPLATES_APP_LOGIC_RASTERLAYERPROXY_H
 
+#include <utility>
 #include <boost/optional.hpp>
 
 #include "LayerProxy.h"
@@ -38,6 +39,15 @@
 
 #include "model/FeatureHandle.h"
 
+#include "opengl/GLAgeGridMaskSource.h"
+#include "opengl/GLCoverageSource.h"
+#include "opengl/GLDataRasterSource.h"
+#include "opengl/GLMultiResolutionCubeRaster.h"
+#include "opengl/GLMultiResolutionRaster.h"
+#include "opengl/GLMultiResolutionRasterInterface.h"
+#include "opengl/GLMultiResolutionStaticPolygonReconstructedRaster.h"
+#include "opengl/GLReconstructedStaticPolygonMeshes.h"
+
 #include "property-values/Georeferencing.h"
 #include "property-values/GpmlRasterBandNames.h"
 #include "property-values/RawRaster.h"
@@ -45,6 +55,11 @@
 
 #include "utils/SubjectObserverToken.h"
 
+
+namespace GPlatesOpenGL
+{
+	class GLRenderer;
+}
 
 namespace GPlatesAppLogic
 {
@@ -74,60 +89,13 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the resolved raster for the current reconstruction time.
-		 *
-		 * Returns boost::none if there is no input raster feature connected or it cannot be resolved.
+		 * Returns the georeferencing of the raster feature.
 		 */
-		boost::optional<ResolvedRaster::non_null_ptr_type>
-		get_resolved_raster()
+		const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
+		get_georeferencing() const
 		{
-			return get_resolved_raster(d_current_reconstruction_time);
+			return d_current_georeferencing;
 		}
-
-		/**
-		 * Returns the resolved raster for the specified time.
-		 *
-		 * Returns boost::none if there is no input raster feature connected or it cannot be resolved.
-		 */
-		boost::optional<ResolvedRaster::non_null_ptr_type>
-		get_resolved_raster(
-				const double &reconstruction_time);
-
-
-		/**
-		 * Returns the proxied raw raster, for the current reconstruction time, of the band
-		 * of the raster selected for processing.
-		 */
-		const boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &
-		get_proxied_raster()
-		{
-			return get_proxied_raster(d_current_reconstruction_time);
-		}
-
-		/**
-		 * Returns the proxied raw raster, for the specified time, of the band
-		 * of the raster selected for processing.
-		 */
-		const boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &
-		get_proxied_raster(
-				const double &reconstruction_time);
-
-
-		/**
-		 * Returns the list of proxied rasters, for the current reconstruction time, for the raster bands.
-		 */
-		const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
-		get_proxied_rasters()
-		{
-			return get_proxied_rasters(d_current_reconstruction_time);
-		}
-
-		/**
-		 * Returns the list of proxied rasters, for the specified time, for the raster bands.
-		 */
-		const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
-		get_proxied_rasters(
-				const double &reconstruction_time);
 
 
 		/**
@@ -150,13 +118,227 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the georeferencing of the raster feature.
+		 * Returns the proxied raw raster, for the current reconstruction time, of the band
+		 * of the raster selected for processing.
 		 */
-		const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
-		get_georeferencing() const
+		const boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &
+		get_proxied_raster()
 		{
-			return d_current_georeferencing;
+			return get_proxied_raster(d_current_reconstruction_time, d_current_raster_band_name);
 		}
+
+		/**
+		 * Returns the proxied raw raster, for the current reconstruction time and specified raster band name.
+		 */
+		const boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &
+		get_proxied_raster(
+				const GPlatesPropertyValues::TextContent &raster_band_name)
+		{
+			return get_proxied_raster(d_current_reconstruction_time, raster_band_name);
+		}
+
+		/**
+		 * Returns the proxied raw raster, current raster band name and the specified time.
+		 */
+		const boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &
+		get_proxied_raster(
+				const double &reconstruction_time)
+		{
+			return get_proxied_raster(reconstruction_time, d_current_raster_band_name);
+		}
+
+		/**
+		 * Returns the proxied raw raster, for the specified time and specified raster band name.
+		 */
+		const boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &
+		get_proxied_raster(
+				const double &reconstruction_time,
+				const GPlatesPropertyValues::TextContent &raster_band_name);
+
+
+		/**
+		 * Returns the list of proxied rasters, for the current reconstruction time, for the raster bands.
+		 */
+		const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
+		get_proxied_rasters()
+		{
+			return get_proxied_rasters(d_current_reconstruction_time);
+		}
+
+		/**
+		 * Returns the list of proxied rasters, for the specified time, for the raster bands.
+		 */
+		const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
+		get_proxied_rasters(
+				const double &reconstruction_time);
+
+
+		/**
+		 * Returns the resolved raster for the current reconstruction time.
+		 *
+		 * This is currently (a derivation of @a ReconstructionGeometry) that just references this
+		 * layer proxy and the optional age grid and reconstructed polygon layer proxies.
+		 * An example client of @a ResolvedRaster is @a GLVisualLayers which is
+		 * responsible for *visualising* the raster on the screen.
+		 *
+		 * Returns boost::none if there is no input raster feature connected or it cannot be resolved.
+		 */
+		boost::optional<ResolvedRaster::non_null_ptr_type>
+		get_resolved_raster()
+		{
+			return get_resolved_raster(d_current_reconstruction_time);
+		}
+
+		/**
+		 * Returns the resolved raster for the specified time.
+		 *
+		 * Returns boost::none if there is no input raster feature connected or it cannot be resolved.
+		 */
+		boost::optional<ResolvedRaster::non_null_ptr_type>
+		get_resolved_raster(
+				const double &reconstruction_time);
+
+
+		/**
+		 * Returns true if the raster (in the specified band) contains numerical data (such as
+		 * floating-point or integer pixels, but not RGBA colour pixels).
+		 *
+		 * If this returns false then @a get_multi_resolution_data_raster will always return boost::none
+		 * for the same raster band name.
+		 */
+		bool
+		does_raster_contain_numerical_data(
+				const GPlatesPropertyValues::TextContent &raster_band_name);
+
+
+		/**
+		 * Returns the possibly reconstructed (multi-resolution) *data* raster for the current
+		 * reconstruction time and current raster band.
+		 *
+		 * This is used to render (possibly reconstructed) floating-point numerical raster data
+		 * to a floating-point render target. The data can then either be processed on the GPU or
+		 * read back to the CPU or both - the raster co-registration client actually does both.
+		 *
+		 * NOTE: Returns boost::none if the raster does not contain *numerical* data (see
+		 * @a does_raster_contain_numerical_data). Also returns boost::none for various errors
+		 * such as lack of OpenGL floating-point texture support on the runtime system.
+		 * Raster *visualisation* is currently handled by @a get_resolved_raster in conjunction
+		 * with "GLVisualLayers::render_raster()" - ie, handled at the visualisation tier
+		 * because this is application logic code that knows nothing about presentation (nor should it).
+		 *
+		 * NOTE: We allow caching of the entire raster because, unlike visualisation where only
+		 * a small region of the raster is typically visible (or it's zoomed out and only accessing
+		 * a low-resolution mipmap), usually the entire raster can be accessed for data processing.
+		 * And the present day raster (time-dependent rasters aside) is usually accessed repeatedly
+		 * over many frames and you don't want to incur the large performance hit of continuously
+		 * reloading tiles from disk (eg, raster co-registration data-mining front-end).
+		 * In this case you should provide the user with an option to choose a lower level of detail
+		 * (see the multi-resolution raster interface) and the user can judge when/if the memory usage
+		 * is too high for their system (eg, if their hard drive starts to thrash).
+		 */
+		boost::optional<GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type>
+		get_multi_resolution_data_raster(
+				GPlatesOpenGL::GLRenderer &renderer)
+		{
+			return get_multi_resolution_data_raster(renderer, d_current_reconstruction_time, d_current_raster_band_name);
+		}
+
+		/**
+		 * Returns the possibly reconstructed (multi-resolution) *data* raster, for the current
+		 * reconstruction time and specified raster band name.
+		 */
+		boost::optional<GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type>
+		get_multi_resolution_data_raster(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const GPlatesPropertyValues::TextContent &raster_band_name)
+		{
+			return get_multi_resolution_data_raster(renderer, d_current_reconstruction_time, raster_band_name);
+		}
+
+		/**
+		 * Returns the possibly reconstructed (multi-resolution) *data* raster, current raster
+		 * band name and the specified time.
+		 */
+		boost::optional<GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type>
+		get_multi_resolution_data_raster(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const double &reconstruction_time)
+		{
+			return get_multi_resolution_data_raster(renderer, reconstruction_time, d_current_raster_band_name);
+		}
+
+		/**
+		 * Returns the possibly reconstructed (multi-resolution) *data* raster, for the specified
+		 * time and specified raster band name.
+		 */
+		boost::optional<GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type>
+		get_multi_resolution_data_raster(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const double &reconstruction_time,
+				const GPlatesPropertyValues::TextContent &raster_band_name);
+
+
+		/**
+		 * Returns the multi-resolution age grid *mask* and *coverage* rasters for the current
+		 * reconstruction time and current raster band.
+		 *
+		 * This is used to assist with reconstruction of a data raster in another layer.
+		 */
+		boost::optional<
+				std::pair<
+						GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid mask*/,
+						GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid coverage*/> >
+		get_multi_resolution_age_grid_mask_and_coverage_rasters(
+				GPlatesOpenGL::GLRenderer &renderer)
+		{
+			return get_multi_resolution_age_grid_mask_and_coverage_rasters(
+					renderer, d_current_reconstruction_time, d_current_raster_band_name);
+		}
+
+		/**
+		 * Returns the multi-resolution age grid *mask* and *coverage* rasters for the current
+		 * reconstruction time and specified raster band.
+		 */
+		boost::optional<
+				std::pair<
+						GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid mask*/,
+						GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid coverage*/> >
+		get_multi_resolution_age_grid_mask_and_coverage_rasters(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const GPlatesPropertyValues::TextContent &raster_band_name)
+		{
+			return get_multi_resolution_age_grid_mask_and_coverage_rasters(
+					renderer, d_current_reconstruction_time, raster_band_name);
+		}
+
+		/**
+		 * Returns the multi-resolution age grid *mask* and *coverage* rasters for the specified
+		 * reconstruction time and current raster band.
+		 */
+		boost::optional<
+				std::pair<
+						GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid mask*/,
+						GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid coverage*/> >
+		get_multi_resolution_age_grid_mask_and_coverage_rasters(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const double &reconstruction_time)
+		{
+			return get_multi_resolution_age_grid_mask_and_coverage_rasters(
+					renderer, reconstruction_time, d_current_raster_band_name);
+		}
+
+		/**
+		 * Returns the multi-resolution age grid *mask* and *coverage* rasters for the specified
+		 * reconstruction time and specified raster band.
+		 */
+		boost::optional<
+				std::pair<
+						GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid mask*/,
+						GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid coverage*/> >
+		get_multi_resolution_age_grid_mask_and_coverage_rasters(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const double &reconstruction_time,
+				const GPlatesPropertyValues::TextContent &raster_band_name);
 
 
 		/**
@@ -286,17 +468,153 @@ namespace GPlatesAppLogic
 		struct ResolvedRasterFeatureProperties
 		{
 			void
-			reset()
+			invalidate()
 			{
-				proxied_raster = boost::none;
-				proxied_rasters = boost::none;
+				cached_proxied_raster = boost::none;
+				cached_proxied_rasters = boost::none;
 			}
 
 			//! The proxied raw raster of the currently selected raster band.
-			boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> proxied_raster;
+			boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> cached_proxied_raster;
 
 			//! The proxied raw raster for all the raster bands.
-			boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > proxied_rasters;
+			boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > cached_proxied_rasters;
+
+			/**
+			 * The reconstruction time of the cached reconstructed polygon meshes.
+			 */
+			boost::optional<GPlatesMaths::real_t> cached_reconstruction_time;
+		};
+
+
+		/**
+		 * A cached OpenGL multi-resolution *data* raster (and its raster data source) containing numerical raster data.
+		 *
+		 * The raster is reconstructed if we are connected to a reconstructed polygons layer.
+		 */
+		struct MultiResolutionDataRaster
+		{
+			void
+			invalidate()
+			{
+				// NOTE: We don't actually clear the OpenGL multi-resolution (unreconstructed) *data* raster
+				// because it has its own observer token so it can track when it needs to be rebuilt.
+				// Allows it to more efficiently rebuild in the presence of time-dependent rasters.
+
+				// We do however invalidate the reconstructed raster since it depends on other layers such as
+				// the reconstructed polygons layer and the age grid layer.
+				cached_data_reconstructed_raster = boost::none;
+
+				// Invalidate structures from other layers used to reconstruct the raster.
+				cached_reconstructed_polygon_meshes = boost::none;
+				cached_age_grid_mask_raster = boost::none;
+				cached_age_grid_coverage_raster = boost::none;
+			}
+
+			/**
+			 * Determines when/if the multi-resolution raster should be rebuilt because out-of-date.
+			 *
+			 * NOTE: Allows more efficient rebuilds in the presence of time-dependent rasters.
+			 */
+			GPlatesUtils::ObserverToken cached_proxied_raster_observer;
+
+			/**
+			 * Cached OpenGL raster data source (for the currently cached proxied raster).
+			 *
+			 * NOTE: If raster is RGBA (ie, not numerical data) then it is never cached.
+			 * This is application logic level data that has nothing to do with visualisation (ie, colour).
+			 */
+			boost::optional<GPlatesOpenGL::GLDataRasterSource::non_null_ptr_type> cached_data_raster_source;
+
+			/**
+			 * Cached OpenGL (unreconstructed) multi-resolution *data* raster (for the currently cached proxied raster).
+			 */
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> cached_data_raster;
+
+			/**
+			 * Cached OpenGL multi-resolution cube *data* raster (for the currently cached proxied raster).
+			 */
+			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> cached_data_cube_raster;
+
+			/**
+			 * Cached OpenGL reconstructed polygon meshes (from another layer) for reconstructing the raster.
+			 */
+			boost::optional<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
+					cached_reconstructed_polygon_meshes;
+
+			/**
+			 * Cached OpenGL age grid mask (from another layer) for reconstructing the raster.
+			 *
+			 * NOTE: This is different than the age grid in @a MultiResolutionAgeGridRaster.
+			 * Here the age grid refers to *another* layer (not this layer).
+			 */
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> cached_age_grid_mask_raster;
+
+			/**
+			 * Cached OpenGL age grid coverage (from another layer) for reconstructing the raster.
+			 *
+			 * NOTE: This is different than the age grid in @a MultiResolutionAgeGridRaster.
+			 * Here the age grid refers to *another* layer (not this layer).
+			 */
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> cached_age_grid_coverage_raster;
+
+			/**
+			 * Cached OpenGL (reconstructed) multi-resolution *data* raster (for the currently cached proxied raster).
+			 *
+			 * This is only valid if we are currently connected to a reconstructed polygons layer.
+			 */
+			boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
+					cached_data_reconstructed_raster;
+		};
+
+
+		/**
+		 * A cached OpenGL multi-resolution *age grid* raster.
+		 *
+		 * The following are used if *this* layer is treated as an age grid.
+		 * In other words if *this* layer is used to assist with the reconstruction of a raster
+		 * in *another* layer.
+		 *
+		 * NOTE: A raster layer can simultaneously serve as a regular raster and an age grid raster.
+		 * This happens when the age grid raster is visualised/analysed *and* assists with the
+		 * reconstruction of *another* raster (in a different layer).
+		 */
+		struct MultiResolutionAgeGridRaster
+		{
+			void
+			invalidate()
+			{
+				cached_age_grid_mask_source = boost::none;
+				cached_age_grid_mask_raster = boost::none;
+				cached_age_grid_coverage_source = boost::none;
+				cached_age_grid_coverage_raster = boost::none;
+				cached_age_grid_reconstruction_time = boost::none;
+			}
+
+			/**
+			 * Cached OpenGL age grid mask source (for the currently cached proxied raster).
+			 */
+			boost::optional<GPlatesOpenGL::GLAgeGridMaskSource::non_null_ptr_type> cached_age_grid_mask_source;
+
+			/**
+			 * Cached OpenGL multi-resolution age grid mask (for the currently cached proxied raster).
+			 */
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> cached_age_grid_mask_raster;
+
+			/**
+			 * Cached OpenGL age grid coverage source (for the currently cached proxied raster).
+			 */
+			boost::optional<GPlatesOpenGL::GLCoverageSource::non_null_ptr_type> cached_age_grid_coverage_source;
+
+			/**
+			 * Cached OpenGL multi-resolution age grid coverage (for the currently cached proxied raster).
+			 */
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> cached_age_grid_coverage_raster;
+
+			/**
+			 * The reconstruction time of the cached age grid.
+			 */
+			boost::optional<GPlatesMaths::real_t> cached_age_grid_reconstruction_time;
 		};
 
 
@@ -329,13 +647,14 @@ namespace GPlatesAppLogic
 		 */
 		double d_current_reconstruction_time;
 
-		/**
-		 * Cached reconstruction time.
-		 */
-		boost::optional<GPlatesMaths::real_t> d_cached_reconstruction_time;
-
 		//! Time-varying (potentially) raster feature properties.
 		ResolvedRasterFeatureProperties d_cached_resolved_raster_feature_properties;
+
+		//! An OpenGL (possibly reconstructed) multi-resolution *data* raster containing numerical raster data.
+		MultiResolutionDataRaster d_cached_multi_resolution_data_raster;
+
+		//! An OpenGL multi-resolution *age grid* raster.
+		MultiResolutionAgeGridRaster d_cached_multi_resolution_age_grid_raster;
 
 		/**
 		 * Used to notify polling observers that we've been updated.
@@ -378,7 +697,8 @@ namespace GPlatesAppLogic
 		 */
 		bool
 		resolve_raster_feature(
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				const GPlatesPropertyValues::TextContent &raster_band_name);
 
 
 		//! Sets some raster parameters.

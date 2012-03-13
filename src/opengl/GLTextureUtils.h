@@ -48,7 +48,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Initialises the specified texture object as a 1D texture matching the specified parameters.
 		 *
-		 * NOTE: The dimensions must be a power-of-two.
+		 * NOTE: The dimensions do *not* need to be a power-of-two.
 		 *
 		 * NOTE: The specified texture will have its level zero initialised (memory allocated for image)
 		 * but the image data will be unspecified.
@@ -70,7 +70,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Initialises the specified texture object as a 2D texture matching the specified parameters.
 		 *
-		 * NOTE: The dimensions must be a power-of-two.
+		 * NOTE: The dimensions do *not* need to be a power-of-two.
 		 *
 		 * NOTE: The specified texture will have its level zero initialised (memory allocated for image)
 		 * but the image data will be unspecified.
@@ -93,7 +93,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Initialises the specified texture object as a 3D texture matching the specified parameters.
 		 *
-		 * NOTE: The dimensions must be a power-of-two.
+		 * NOTE: The dimensions do *not* need to be a power-of-two.
 		 *
 		 * NOTE: The specified texture will have its level zero initialised (memory allocated for image)
 		 * but the image data will be unspecified.

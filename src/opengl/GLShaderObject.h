@@ -142,7 +142,7 @@ namespace GPlatesOpenGL
 		/**
 		 * The default shader version to compile.
 		 *
-		 * Version 1.2 is chosen instead of 1.1 since most hardware supporting OpenGL 2.0 supports 2.1.
+		 * Version 1.2 is chosen instead of 1.1 since most hardware supporting OpenGL 2.0 also supports OpenGL 2.1.
 		 */
 		static const ShaderVersion DEFAULT_SHADER_VERSION = GLSL_1_2;
 

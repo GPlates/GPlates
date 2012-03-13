@@ -71,6 +71,7 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 
+#include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -1281,6 +1282,8 @@ GPlatesFileIO::ShapefileReader::read_file(
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
+	PROFILE_FUNC();
+
 	const FileInfo &fileinfo = file_ref.get_file_info();
 
 	// By placing all changes to the model under the one changeset, we ensure that

@@ -44,9 +44,10 @@ namespace GPlatesAppLogic
 	/**
 	 * A type of @a ReconstructionGeometry representing a raster.
 	 *
-	 * Used to represent a constant or time-dependent raster, but not
-	 * a reconstructed raster (a raster divided into polygons where each polygon
-	 * is rotated independently according to its plate id).
+	 * Used to represent a constant or time-dependent (possibly reconstructed) raster.
+	 * This currently just references the raster layer proxy and the optional age grid and
+	 * reconstructed polygon layer proxies (if raster is reconstructed) - clients will be required
+	 * to use those layer proxy interfaces.
 	 */
 	class ResolvedRaster :
 			public ReconstructionGeometry,
@@ -65,12 +66,6 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Create a @a ResolvedRaster.
-		 *
-		 * @a created_from_layer is the layer this resolved raster was created in.
-		 * This is currently used so we can keep track of which persistent OpenGL objects
-		 * were created for which layer so that we can destroy them when the layer is destroyed.
-		 * FIXME: This is temporary until we implement a better way to handle persistent
-		 * objects downstream from the reconstruction process.
 		 */
 		static
 		const non_null_ptr_type

@@ -106,6 +106,30 @@ namespace GPlatesFileIO
 				unsigned int y_offset,
 				unsigned int width,
 				unsigned int height) const = 0;
+
+
+		/**
+		 * Returns the raster statistics or boost::none if original raster did not provide any.
+		 */
+		virtual
+		boost::optional<GPlatesPropertyValues::RasterStatistics>
+		get_raster_statistics() const = 0;
+
+
+		/**
+		 * Retrieves information about the file that we are reading.
+		 */
+		virtual
+		QFileInfo
+		get_file_info() const = 0;
+
+
+		/**
+		 * Returns the filename of the file that we are reading.
+		 */
+		virtual
+		QString
+		get_filename() const = 0;
 	};
 
 
@@ -291,8 +315,27 @@ namespace GPlatesFileIO
 
 
 		/**
+		 * Returns the raster statistics or boost::none if original raster did not provide any.
+		 */
+		virtual
+		boost::optional<GPlatesPropertyValues::RasterStatistics>
+		get_raster_statistics() const
+		{
+			if (d_is_closed)
+			{
+				return boost::none;
+			}
+			else
+			{
+				return d_impl->get_raster_statistics();
+			}
+		}
+
+
+		/**
 		 * Retrieves information about the file that we are reading.
 		 */
+		virtual
 		QFileInfo
 		get_file_info() const
 		{
@@ -302,6 +345,7 @@ namespace GPlatesFileIO
 		/**
 		 * Returns the filename of the file that we are reading.
 		 */
+		virtual
 		QString
 		get_filename() const
 		{
@@ -338,6 +382,10 @@ namespace GPlatesFileIO
 					unsigned int y_offset,
 					unsigned int width,
 					unsigned int height) = 0;
+
+			virtual
+			boost::optional<GPlatesPropertyValues::RasterStatistics>
+			get_raster_statistics() const = 0;
 		};
 
 
@@ -442,6 +490,13 @@ namespace GPlatesFileIO
 					unsigned int height)
 			{
 				return d_raster_file_cache_reader->read_coverage(x_offset, y_offset, width, height);
+			}
+
+			virtual
+			boost::optional<GPlatesPropertyValues::RasterStatistics>
+			get_raster_statistics() const
+			{
+				return d_raster_file_cache_reader->get_raster_statistics();
 			}
 
 		private:

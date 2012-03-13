@@ -93,6 +93,12 @@ namespace
 			"void main (void)\n"
 			"{\n"
 
+			"	// Discard the pixel if it has been clipped by the clip texture as an\n"
+			"	// early rejection test since a lot of pixels will be outside the tile region.\n"
+			"	float clip_mask = texture2DProj(clip_texture_sampler, gl_TexCoord[1]).a;\n"
+			"	if (clip_mask == 0)\n"
+			"		discard;\n"
+
 			"	// Do the texture transform projective divide \n"
 			"	vec2 tile_texture_coords = gl_TexCoord[0].st / gl_TexCoord[0].q;\n"
 
@@ -100,9 +106,15 @@ namespace
 			"	vec4 tile_texture_bilinear = bilinearly_interpolate(\n"
 			"	     tile_texture_sampler, tile_texture_coords, tile_texture_dimensions);\n"
 
+			"	// We need to reject the pixel if its coverage/alpha is zero - this is because\n"
+			"	// it might be an age masked tile - zero coverage, in this case, means don't draw\n"
+			"	// because the age test failed - if we draw then we'd overwrite valid data.\n"
+			"	// NOTE: For floating-point textures we've placed the coverage/alpha in the green channel.\n"
+			"	if (tile_texture_bilinear.g == 0)\n"
+			"		discard;\n"
+
 			"	// Projective texturing to handle cube map projection.\n"
-			"	gl_FragColor = tile_texture_bilinear * \n"
-			"	               texture2DProj(clip_texture_sampler, gl_TexCoord[1]);\n"
+			"	gl_FragColor = tile_texture_bilinear;\n"
 
 			"}\n";
 
@@ -141,12 +153,25 @@ namespace
 			"	// Load the source texture.\n"
 			"	// NOTE: Even though source texture coordinates have a texture transform,\n"
 			"	//       the transform is not projective so we don't need 'texture2DProj'.\n"
-			"	gl_FragColor = texture2D(source_texture_sampler, gl_TexCoord[0].st);\n"
+			"	vec4 source_colour = texture2D(source_texture_sampler, gl_TexCoord[0].st);\n"
+
+			"	// Get the age mask.\n"
+			"	float age_mask = texture2D(age_mask_texture_sampler, gl_TexCoord[1].st).a;\n"
 
 			"	// Modulate the source texture's coverage with the age-mask texture's coverage.\n"
 			"	// NOTE: For floating-point textures we've placed the coverage/alpha in the green channel.\n"
 			"	//       But the age-mask is still fixed-point and has its coverage in the alpha channel.\n"
-			"	gl_FragColor.g *= texture2D(age_mask_texture_sampler, gl_TexCoord[1].st).a;\n"
+			"	source_colour.g *= age_mask;\n"
+
+			"	// We discard the current pixel if the coverage is zero so that the data value is also\n"
+			"	// zero (the clear colour) - alternatively we could have set the data value to zero.\n"
+			"	// Doing this ensures bilinear filtering of the age-masked source texture will give\n"
+			"	// the correct results - this is also important for the raster co-registration since\n"
+			"	// it normalises pixels (divides by coverage) in its 'minimum-value' operation.\n"
+			"	if (source_colour.g == 0)\n"
+			"		discard;\n"
+
+			"	gl_FragColor = source_colour;\n"
 
 			"}\n";
 }
@@ -273,11 +298,12 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_subject_to
 }
 
 
-unsigned int
+float
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_level_of_detail(
-		const GLViewport &viewport,
 		const GLMatrix &model_view_transform,
-		const GLMatrix &projection_transform) const
+		const GLMatrix &projection_transform,
+		const GLViewport &viewport,
+		float level_of_detail_bias) const
 {
 	// Get the minimum size of a pixel in the current viewport when projected
 	// onto the unit sphere (in model space).
@@ -285,14 +311,13 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_level_of_d
 				viewport, model_view_transform, projection_transform);
 
 	//
-	// Calculate the level-of-detail.
+	// Calculate the cube quad tree depth we need to traverse to satisfy the resolution of the view frustum.
 	// This is the equivalent of:
 	//
-	//    t = t0 * 2 ^ (-lod)
+	//    t = t0 * 2 ^ (-depth)
 	//
-	// ...where 't0' is the texel size of the *highest* resolution level-of-detail
-	// (note that, unlike GLMultiResolutionRaster, larger LOD values mean higher resolution)
-	// and 't' is the projected size of a pixel of the viewport.
+	// ...where 't0' is the texel size of the *highest* resolution level-of-detail and
+	// 't' is the projected size of a pixel of the viewport.
 	//
 
 	// The maximum texel size of any texel projected onto the unit sphere occurs at the centre
@@ -302,43 +327,79 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_level_of_d
 	// that is much higher than what we need.
 	const float max_highest_resolution_texel_size_on_unit_sphere = 2.0 / d_tile_texel_dimension;
 
-	const float level_of_detail_factor = INVERSE_LOG2 *
+	const float cube_quad_tree_depth = INVERSE_LOG2 *
 			(std::log(max_highest_resolution_texel_size_on_unit_sphere) -
 					std::log(min_pixel_size_on_unit_sphere));
 
-	// We need to round up instead of down and then clamp to zero.
-	// We don't have an upper limit - as we traverse the quad tree to higher and higher
-	// resolution nodes we might eventually reach the leaf nodes of the tree without
-	// having satisfied the requested level-of-detail resolution - in this case we'll
-	// just render the leaf nodes as that's the highest we can provide.
-	int level_of_detail = static_cast<int>(level_of_detail_factor + 0.99f);
-	// Clamp to lowest resolution level of detail.
-	if (level_of_detail < 0)
+	// Need to convert cube quad tree depth to the level-of-detail recognised by the source raster.
+	// They are the inverse of each other - the highest resolution source level-of-detail is zero
+	// which corresponds to a cube quad tree depth of 'get_num_levels_of_detail() - 1' while
+	// a cube quad tree depth of zero corresponds to the lowest (used) source level-of-detail of
+	// 'get_num_levels_of_detail() - 1'.
+	// Also note that 'level_of_detail' can be negative which means rendering at a resolution that is
+	// actually higher than the source raster can supply (useful if age grid mask is even higher resolution).
+	const float level_of_detail = (get_num_levels_of_detail() - 1) - cube_quad_tree_depth;
+
+	// 'level_of_detail_bias' is used by clients to allow the largest texel in a drawn texture to be
+	// larger than a pixel in the viewport (which can result in blockiness in places in the rendered scene).
+	return level_of_detail + level_of_detail_bias;
+}
+
+
+int
+GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::clamp_level_of_detail(
+		float level_of_detail_float) const
+{
+	// NOTE: A negative LOD is allowed and is useful when reconstructed raster uses an age grid mask
+	// that is higher resolution than the source raster itself - this allows us to render the
+	// source raster at a higher resolution than it supports but at a resolution still supported by
+	// the age grid (so the raster will appear blurry but its age grid masking/modulation will not).
+	if (level_of_detail_float < 0)
 	{
-		// If we get there then even our lowest resolution level of detail
-		// had too much resolution - but this is pretty unlikely for all but the very
-		// smallest of viewports.
-		level_of_detail = 0;
+		// We want to round *down* to the next negative integer but static_cast<int> rounds
+		// *towards* zero - so we subtract one before truncating.
+		return static_cast<int>(level_of_detail_float - 1);
 	}
 
-	return boost::numeric_cast<unsigned int>(level_of_detail);
+	// Truncate the level-of-detail.
+	int level_of_detail = static_cast<int>(level_of_detail_float);
+
+	const unsigned int num_levels_of_detail = get_num_levels_of_detail();
+
+	// Clamp to lowest resolution level of detail.
+	if (level_of_detail >= boost::numeric_cast<int>(num_levels_of_detail))
+	{
+		// If we get there then even our lowest resolution level of detail had too much resolution
+		// for the specified level of detail - but this is pretty unlikely for all but the very
+		// smallest of viewports.
+		level_of_detail = num_levels_of_detail - 1;
+	}
+
+	return level_of_detail;
 }
 
 
 bool
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 		GLRenderer &renderer,
+		int level_of_detail,
 		cache_handle_type &cache_handle)
 {
 	PROFILE_FUNC();
 
-	// Get the level-of-detail based on the size of viewport pixels projected onto the globe.
-	// We'll try to render of this level of detail if our quad tree is deep enough.
-	const unsigned int render_level_of_detail =
-			get_level_of_detail(
-					renderer.gl_get_viewport(),
-					renderer.gl_get_matrix(GL_MODELVIEW),
-					renderer.gl_get_matrix(GL_PROJECTION));
+	// Convert the source raster level-of-detail to cube quad tree depth.
+	// They are the inverse of each other - the highest resolution source level-of-detail is zero
+	// which corresponds to a cube quad tree depth of 'get_num_levels_of_detail() - 1' while
+	// a cube quad tree depth of zero corresponds to the lowest (used) source level-of-detail of
+	// 'get_num_levels_of_detail() - 1'.
+	// Also note that 'level_of_detail' can be negative which means rendering at a resolution that is
+	// actually higher than the source raster can supply (useful if age grid mask is even higher resolution).
+	int render_cube_quad_tree_depth = (get_num_levels_of_detail() - 1) - level_of_detail;
+	// The GLMultiResolutionRasterInterface interface says an exception is thrown if level-of-detail
+	// is outside the valid range.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			render_cube_quad_tree_depth >= 0,
+			GPLATES_ASSERTION_SOURCE);
 
 	// The polygon mesh drawables and polygon mesh cube quad tree node intersections.
 	const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables =
@@ -505,8 +566,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 							cube_subdivision_cache_root_node,
 							*clip_cube_subdivision_cache,
 							clip_cube_subdivision_cache_root_node,
-							0/*level_of_detail*/,
-							render_level_of_detail,
+							0/*cube_quad_tree_depth*/,
+							render_cube_quad_tree_depth,
 							frustum_planes,
 							// There are six frustum planes initially active
 							GLFrustum::ALL_PLANES_ACTIVE_MASK,
@@ -534,8 +595,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 					cube_subdivision_cache_root_node,
 					*clip_cube_subdivision_cache,
 					clip_cube_subdivision_cache_root_node,
-					0/*level_of_detail*/,
-					render_level_of_detail,
+					0/*cube_quad_tree_depth*/,
+					render_cube_quad_tree_depth,
 					frustum_planes,
 					// There are six frustum planes initially active
 					GLFrustum::ALL_PLANES_ACTIVE_MASK,
@@ -570,8 +631,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
 		clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
 		const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
-		unsigned int level_of_detail,
-		unsigned int render_level_of_detail,
+		unsigned int cube_quad_tree_depth,
+		unsigned int render_cube_quad_tree_depth,
 		const GLFrustum &frustum_planes,
 		boost::uint32_t frustum_plane_mask,
 		unsigned int &num_tiles_rendered_to_scene)
@@ -595,7 +656,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 	// - we're at the correct level of detail for rendering, or
 	// - we've reached a leaf node of the source raster (highest resolution supplied by the source raster),
 	// ...then render the current source raster tile.
-	if (level_of_detail == render_level_of_detail ||
+	if (cube_quad_tree_depth == render_cube_quad_tree_depth ||
 		source_raster_quad_tree_node.is_leaf_node())
 	{
 		render_source_raster_tile_to_scene(
@@ -696,8 +757,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 					child_cube_subdivision_cache_node,
 					clip_cube_subdivision_cache,
 					child_clip_cube_subdivision_cache_node,
-					level_of_detail + 1,
-					render_level_of_detail,
+					cube_quad_tree_depth + 1,
+					render_cube_quad_tree_depth,
 					frustum_planes,
 					frustum_plane_mask,
 					num_tiles_rendered_to_scene);
@@ -727,8 +788,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
 		clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
 		const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
-		unsigned int level_of_detail,
-		unsigned int render_level_of_detail,
+		unsigned int cube_quad_tree_depth,
+		unsigned int render_cube_quad_tree_depth,
 		const GLFrustum &frustum_planes,
 		boost::uint32_t frustum_plane_mask,
 		unsigned int &num_tiles_rendered_to_scene)
@@ -756,7 +817,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 	// Note that we've already reached the highest resolution of the source raster which is why
 	// we are uv scaling it.
 	if (
-			level_of_detail == render_level_of_detail ||
+			cube_quad_tree_depth == render_cube_quad_tree_depth ||
 			(
 				age_grid_mask_quad_tree_node.is_leaf_node() ||
 				age_grid_coverage_quad_tree_node.is_leaf_node()
@@ -925,8 +986,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 					child_cube_subdivision_cache_node,
 					clip_cube_subdivision_cache,
 					child_clip_cube_subdivision_cache_node,
-					level_of_detail + 1,
-					render_level_of_detail,
+					cube_quad_tree_depth + 1,
+					render_cube_quad_tree_depth,
 					frustum_planes,
 					frustum_plane_mask,
 					num_tiles_rendered_to_scene);
@@ -956,8 +1017,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
 		clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
 		const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
-		unsigned int level_of_detail,
-		unsigned int render_level_of_detail,
+		unsigned int cube_quad_tree_depth,
+		unsigned int render_cube_quad_tree_depth,
 		const GLFrustum &frustum_planes,
 		boost::uint32_t frustum_plane_mask,
 		unsigned int &num_tiles_rendered_to_scene)
@@ -984,7 +1045,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 	// ...then render the current source raster tile.
 	// Note that we've already reached the highest resolution of the age grid which is why
 	// we are uv scaling it.
-	if (level_of_detail == render_level_of_detail ||
+	if (cube_quad_tree_depth == render_cube_quad_tree_depth ||
 		source_raster_quad_tree_node.is_leaf_node())
 	{
 		render_source_raster_and_age_grid_tile_to_scene(
@@ -1113,8 +1174,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 					child_cube_subdivision_cache_node,
 					clip_cube_subdivision_cache,
 					child_clip_cube_subdivision_cache_node,
-					level_of_detail + 1,
-					render_level_of_detail,
+					cube_quad_tree_depth + 1,
+					render_cube_quad_tree_depth,
 					frustum_planes,
 					frustum_plane_mask,
 					num_tiles_rendered_to_scene);
@@ -1143,8 +1204,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
 		clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
 		const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
-		unsigned int level_of_detail,
-		unsigned int render_level_of_detail,
+		unsigned int cube_quad_tree_depth,
+		unsigned int render_cube_quad_tree_depth,
 		const GLFrustum &frustum_planes,
 		boost::uint32_t frustum_plane_mask,
 		unsigned int &num_tiles_rendered_to_scene)
@@ -1173,7 +1234,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 	// The second condition means the source raster and the age grid rasters reached their
 	// maximum resolutions at the same quad tree depth.
 	if (
-			level_of_detail == render_level_of_detail ||
+			cube_quad_tree_depth == render_cube_quad_tree_depth ||
 			(
 				source_raster_quad_tree_node.is_leaf_node() &&
 				(
@@ -1354,8 +1415,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 						child_cube_subdivision_cache_node,
 						clip_cube_subdivision_cache,
 						child_clip_cube_subdivision_cache_node,
-						level_of_detail + 1,
-						render_level_of_detail,
+						cube_quad_tree_depth + 1,
+						render_cube_quad_tree_depth,
 						frustum_planes,
 						frustum_plane_mask,
 						num_tiles_rendered_to_scene);
@@ -1411,8 +1472,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 						child_cube_subdivision_cache_node,
 						clip_cube_subdivision_cache,
 						child_clip_cube_subdivision_cache_node,
-						level_of_detail + 1,
-						render_level_of_detail,
+						cube_quad_tree_depth + 1,
+						render_cube_quad_tree_depth,
 						frustum_planes,
 						frustum_plane_mask,
 						num_tiles_rendered_to_scene);
@@ -1443,8 +1504,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 						child_cube_subdivision_cache_node,
 						clip_cube_subdivision_cache,
 						child_clip_cube_subdivision_cache_node,
-						level_of_detail,
-						render_level_of_detail,
+						cube_quad_tree_depth,
+						render_cube_quad_tree_depth,
 						frustum_planes,
 						frustum_plane_mask,
 						num_tiles_rendered_to_scene);
@@ -1473,8 +1534,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_quad_tr
 					child_cube_subdivision_cache_node,
 					clip_cube_subdivision_cache,
 					child_clip_cube_subdivision_cache_node,
-					level_of_detail + 1,
-					render_level_of_detail,
+					cube_quad_tree_depth + 1,
+					render_cube_quad_tree_depth,
 					frustum_planes,
 					frustum_plane_mask,
 					num_tiles_rendered_to_scene);
@@ -1626,6 +1687,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 		// Set the clip texture sampler to texture unit 1.
 		d_render_floating_point_tile_to_scene_program_object.get()->gl_uniform1i(
 				renderer, "clip_texture_sampler", 1/*texture unit*/);
+
+		// We don't need to enable alpha-testing because the fragment shader uses 'discard' instead.
 	}
 	else // Fixed function...
 	{
@@ -1645,9 +1708,21 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 			// Set up texture coordinate generation from the vertices (x,y,z) on texture unit 1.
 			GLUtils::set_object_linear_tex_gen_state(renderer, 1/*texture_unit*/);
 		}
+
+		// Alpha-test state.
+		// This enables the alpha texture clipping (done by reconstructed raster renderer) to mask out
+		// source regions as they're being rendered rather than writing RGBA of zero into the render-target
+		// effectively overwriting previously rendered (from same render call) valid data - when the
+		// render-target is used for rendering in turn as a texture it would come out as transparent
+		// blocky regions where there should be valid reconstructed raster data instead.
+		//
+		// NOTE: This is needed not only for texture clipping but also in case the source raster
+		// is age-masked in which case zero alpha also means don't draw due to age test.
+		renderer.gl_enable(GL_ALPHA_TEST);
+		renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
 	}
 
-	// NOTE: We don't set alpha-blending (or alpha-testing) state here because we
+	// NOTE: We don't set alpha-blending state here because we
 	// might not be rendering directly to the final render target and hence we don't
 	// want to double-blend semi-transparent rasters - the alpha value is multiplied by
 	// all channels including alpha during alpha blending (R,G,B,A) -> (A*R,A*G,A*B,A*A) -
@@ -1779,12 +1854,12 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_polygon
 		polygon_mesh_index != boost::dynamic_bitset<>::npos;
 		polygon_mesh_index = polygon_mesh_membership.find_next(polygon_mesh_index))
 	{
-		const boost::optional<GLCompiledDrawState::non_null_ptr_to_const_type> &polygon_mesh_drawable =
+		const boost::optional<GLReconstructedStaticPolygonMeshes::PolygonMeshDrawable> &polygon_mesh_drawable =
 				polygon_mesh_drawables[polygon_mesh_index];
 
 		if (polygon_mesh_drawable)
 		{
-			renderer.apply_compiled_draw_state(*polygon_mesh_drawable.get());
+			renderer.apply_compiled_draw_state(*polygon_mesh_drawable->drawable);
 		}
 	}
 }

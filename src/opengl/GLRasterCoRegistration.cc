@@ -25,7 +25,9 @@
 
 #include <cmath>
 #include <limits>
+#include <boost/cstdint.hpp>
 #include <boost/foreach.hpp>
+#include <boost/utility/in_place_factory.hpp>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
  * Must be included before the OpenGL headers (which also means before Qt headers).
@@ -33,18 +35,24 @@
  */
 #include <GL/glew.h>
 #include <opengl/OpenGL.h>
+#include <QImage>
+#include <QString>
 
 #include "GLRasterCoRegistration.h"
 
 #include "GLBuffer.h"
 #include "GLContext.h"
 #include "GLCubeSubdivision.h"
+#include "GLDataRasterSource.h"
 #include "GLRenderer.h"
 #include "GLShaderProgramUtils.h"
 #include "GLStreamPrimitives.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
 
+#include "gui/Colour.h"
+
+#include "maths/CubeCoordinateFrame.h"
 #include "maths/types.h"
 
 #include "utils/Base2Utils.h"
@@ -64,19 +72,19 @@ namespace GPlatesOpenGL
 		 */
 		const char *RENDER_REGION_OF_INTEREST_GEOMETRIES_FRAGMENT_SHADER_SOURCE =
 				"#ifdef POINT_REGION_OF_INTEREST\n"
-				"#ifdef SMALL_ROI_ANGLE"
+				"#ifdef SMALL_ROI_ANGLE\n"
 				"	uniform float tan_squared_region_of_interest_angle;\n"
 				"#endif\n"
-				"#ifdef LARGE_ROI_ANGLE"
+				"#ifdef LARGE_ROI_ANGLE\n"
 				"	uniform float cos_region_of_interest_angle;\n"
 				"#endif\n"
 				"#endif\n"
 
 				"#ifdef LINE_REGION_OF_INTEREST\n"
-				"#ifdef SMALL_ROI_ANGLE"
+				"#ifdef SMALL_ROI_ANGLE\n"
 				"	uniform float sin_region_of_interest_angle;\n"
 				"#endif\n"
-				"#ifdef LARGE_ROI_ANGLE"
+				"#ifdef LARGE_ROI_ANGLE\n"
 				"	uniform float tan_squared_region_of_interest_complementary_angle;\n"
 				"#endif\n"
 				"#endif\n"
@@ -102,7 +110,7 @@ namespace GPlatesOpenGL
 
 				"#ifdef POINT_REGION_OF_INTEREST\n"
 				"	// Discard current pixel if outside region-of-interest radius about point centre.\n"
-				"#ifdef SMALL_ROI_ANGLE"
+				"#ifdef SMALL_ROI_ANGLE\n"
 				"	// Since acos (region-of-interest angle) is very inaccurate for very small angles we instead use:\n"
 				"	//   tan(angle) = sin(angle) / cos(angle) = |cross(x1,x2)| / dot(x1,x2)\n"
 				"	// 'present_day_point_centre' is constant (and unit length) across the primitive but\n"
@@ -115,7 +123,7 @@ namespace GPlatesOpenGL
 				"	if (sin_squared_angle > cos_squared_angle * tan_squared_region_of_interest_angle)\n"
 				"		discard;\n"
 				"#endif\n"
-				"#ifdef LARGE_ROI_ANGLE"
+				"#ifdef LARGE_ROI_ANGLE\n"
 				"	// However acos (region-of-interest angle) is fine for larger angles.\n"
 				"	// Also the 'tan' (used for small angles) is not valid at 90 degrees.\n"
 				"	// 'present_day_point_centre' is constant (and unit length) across the primitive but\n"
@@ -127,14 +135,14 @@ namespace GPlatesOpenGL
 
 				"#ifdef LINE_REGION_OF_INTEREST\n"
 				"	// Discard current pixel if outside region-of-interest of line (great circle arc).\n"
-				"#ifdef SMALL_ROI_ANGLE"
+				"#ifdef SMALL_ROI_ANGLE\n"
 				"	// For very small region-of-interest angles sin(angle) is fine.\n"
 				"	// 'present_day_line_arc_normal' is constant (and unit length) across the primitive but\n"
 				"	// 'present_day_position' varies and is not unit length (so must be normalised).\n"
-				"	if (abs(dot(normalized(present_day_position), present_day_line_arc_normal)) > sin_region_of_interest_angle)\n"
+				"	if (abs(dot(normalize(present_day_position), present_day_line_arc_normal)) > sin_region_of_interest_angle)\n"
 				"		discard;\n"
 				"#endif\n"
-				"#ifdef LARGE_ROI_ANGLE"
+				"#ifdef LARGE_ROI_ANGLE\n"
 				"	// Since asin (region-of-interest angle) is very inaccurate for angles near 90 degrees we instead use:\n"
 				"	//   tan(90-angle) = sin(90-angle) / cos(90-angle) = |cross(x,N)| / dot(x,N)\n"
 				"	// where 'N' is the arc normal and 'x' is the position vector.\n"
@@ -321,6 +329,11 @@ namespace GPlatesOpenGL
 				"uniform sampler2D target_raster_texture_sampler;\n"
 				"uniform sampler2D region_of_interest_mask_texture_sampler;\n"
 
+				"#ifdef FILTER_MOMENTS\n"
+				"	uniform vec3 cube_face_centre;\n"
+				"	varying vec4 view_position;\n"
+				"#endif\n"
+
 				"void main (void)\n"
 				"{\n"
 
@@ -336,18 +349,40 @@ namespace GPlatesOpenGL
 				"	float data = target_raster.r;\n"
 				"	float coverage = target_raster.g;\n"
 
+				"	// Due to bilinear filtering of the source raster (data and coverage) the data\n"
+				"	// value can be reduced depending on the bi-linearly filtered coverage value.\n"
+				"	// So we need to undo that effect as best we can - this is important for MIN/MAX\n"
+				"	// operations and also ensures MEAN correlates with MIN/MAX - ie, a single pixel\n"
+				"	// ROI should give same value for MIN/MAX and MEAN.\n"
+				"	// This typically occurs near a boundary between opaque and transparent regions.\n"
+				"	if (coverage > 0)\n"
+				"		data /= coverage;\n"
+
+				"	// The coverage is modulated by the region-of-interest mask.\n"
+				"	// Currently the ROI mask is either zero or one so this doesn't do anything\n"
+				"	// (because of the above discard) but will if smoothing near ROI boundary is added.\n"
+				"	coverage *= region_of_interest_mask;\n"
+
 				"#ifdef FILTER_MOMENTS\n"
+				"	// Adjust the coverage based on the area of the current pixel.\n"
+				"	// The adjustment will be 1.0 at the cube face centre less than 1.0 elsewhere.\n"
+				"	// NOTE: 'view_position' only needs to be a vec3 and not a vec4 because we do not\n"
+				"	// need to do the projective divide by w because we are normalising anyway.\n"
+				"	// We normalize to project the view position onto the surface of the globe.\n"
+				"	// NOTE: We only need to do this adjustment for area-weighted operations.\n"
+				"	coverage *= dot(cube_face_centre, normalize(view_position.xyz));\n"
+
 				"	// Output (r, g, a) channels as (C*D, C*D*D, C).\n"
 				"	// Where C is coverage and D is data value.\n"
 				"	// This is enough to cover both mean and standard deviation.\n"
-				"	gl_FragColor = region_of_interest_mask * vec4(coverage * data, coverage * data * data, 0, coverage);\n"
+				"	gl_FragColor = vec4(coverage * data, coverage * data * data, 0, coverage);\n"
 				"#endif\n"
 
 				"#ifdef FILTER_MIN_MAX\n"
 				"	// Output (r, a) channels as (D, C).\n"
 				"	// Where C is coverage and D is data value.\n"
 				"	// This is enough to cover both minimum and maximum.\n"
-				"	gl_FragColor = vec4(data, 0, 0, region_of_interest_mask * coverage);\n"
+				"	gl_FragColor = vec4(data, 0, 0, coverage);\n"
 				"#endif\n"
 
 				"}\n";
@@ -365,6 +400,10 @@ namespace GPlatesOpenGL
 				"attribute vec3 raster_frustum_to_seed_frustum_clip_space_transform;\n"
 				"// The 'xyz' values are (translate_x, translate_y, scale)\n"
 				"attribute vec3 seed_frustum_to_render_target_clip_space_transform;\n"
+
+				"#ifdef FILTER_MOMENTS\n"
+				"	varying vec4 view_position;\n"
+				"#endif\n"
 
 				"void main (void)\n"
 				"{\n"
@@ -391,6 +430,13 @@ namespace GPlatesOpenGL
 				"				screen_space_position.yw),\n"
 				"		// z and w components unaffected...\n"
 				"		screen_space_position.zw);\n"
+
+				"#ifdef FILTER_MOMENTS\n"
+				"	// Convert from the screen-space of the raster frustum to view-space using\n"
+				"	// the inverse view-projection *inverse* matrix.\n"
+				"	// The view position is used in the fragment shader to adjust for cube map distortion.\n"
+				"	view_position = gl_ModelViewProjectionMatrixInverse * raster_frustum_position;\n"
+				"#endif\n"
 
 				"	// Post-projection translate/scale to position NDC space around render target frustum.\n"
 				"	// This takes the 'screen_space_position' range [-1,1] and makes it cover the \n"
@@ -455,13 +501,13 @@ namespace GPlatesOpenGL
 
 				"	vec4 src[4];\n"
 				"	// Sample the four source texels.\n"
-				"	vec4 src[0] = texture2D(reduce_source_texture_sampler, st00);\n"
-				"	vec4 src[1] = texture2D(reduce_source_texture_sampler, st01);\n"
-				"	vec4 src[2] = texture2D(reduce_source_texture_sampler, st10);\n"
-				"	vec4 src[3] = texture2D(reduce_source_texture_sampler, st11);\n"
+				"	src[0] = texture2D(reduce_source_texture_sampler, st00);\n"
+				"	src[1] = texture2D(reduce_source_texture_sampler, st01);\n"
+				"	src[2] = texture2D(reduce_source_texture_sampler, st10);\n"
+				"	src[3] = texture2D(reduce_source_texture_sampler, st11);\n"
 
 				"#ifdef REDUCTION_SUM\n"
-				"	vec4 sum = 0;\n"
+				"	vec4 sum = vec4(0);\n"
 
 				"	// Apply the reduction operation on the four source texels.\n"
 				"	for (int n = 0; n < 4; ++n)\n"
@@ -504,7 +550,7 @@ namespace GPlatesOpenGL
 				"		discard;\n"
 
 				"	// First find the minimum value.\n"
-				"	vec3 min_value = min(min(src[0].rgb, src[1].rgb), min(src[2].rgb, min[3].rgb));\n"
+				"	vec3 min_value = min(min(src[0].rgb, src[1].rgb), min(src[2].rgb, src[3].rgb));\n"
 
 				"	// Apply the reduction operation on the four source texels.\n"
 				"	vec3 max_covered_value = min_value;\n"
@@ -549,9 +595,18 @@ GPlatesOpenGL::GLRasterCoRegistration::is_supported(
 {
 	const GLContext::Parameters &context_parameters = GLContext::get_parameters();
 
+	// Note that we don't specifically request GL_ARB_vertex_buffer_object and GL_ARB_pixel_buffer_object
+	// because we have fall back paths for vertex and pixel buffers (using client memory instead of buffers)
+	// in case those extensions are not supported on the run-time system. The fall back path is handled
+	// by the interface classes GLVertexBuffer, GLVertexElementBuffer and GLPixelBuffer.
+	//
+	// In any case the most stringent requirement will likely be GL_ARB_texture_float.
 	const bool supported =
 			// Need floating-point textures...
 			context_parameters.texture.gl_ARB_texture_float &&
+			GLDataRasterSource::is_supported(renderer) &&
+			// Max texture dimension supported should be large enough...
+			context_parameters.texture.gl_max_texture_size >= TEXTURE_DIMENSION &&
 			// Need vertex/fragment shader programs...
 			context_parameters.shader.gl_ARB_shader_objects &&
 			context_parameters.shader.gl_ARB_vertex_shader &&
@@ -582,15 +637,7 @@ GPlatesOpenGL::GLRasterCoRegistration::is_supported(
 
 
 GPlatesOpenGL::GLRasterCoRegistration::GLRasterCoRegistration(
-		GLRenderer &renderer,
-		const std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature> &seed_features,
-		const GLMultiResolutionRaster::non_null_ptr_type &target_raster,
-		unsigned int raster_level_of_detail) :
-	d_seed_features(seed_features),
-	d_target_raster(target_raster),
-	d_raster_level_of_detail(raster_level_of_detail),
-	d_raster_texture_cube_quad_tree_depth(0),
-	d_seed_geometries_spatial_partition_depth(1),
+		GLRenderer &renderer) :
 	d_framebuffer_object(renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(renderer)),
 	d_streaming_vertex_element_buffer(GLVertexElementBuffer::create(renderer, GLBuffer::create(renderer))),
 	d_streaming_vertex_buffer(GLVertexBuffer::create(renderer, GLBuffer::create(renderer))),
@@ -599,7 +646,6 @@ GPlatesOpenGL::GLRasterCoRegistration::GLRasterCoRegistration(
 	d_fill_region_of_interest_vertex_array(GLVertexArray::create(renderer)),
 	d_mask_region_of_interest_vertex_array(GLVertexArray::create(renderer)),
 	d_reduction_vertex_array(GLVertexArray::create(renderer)),
-	d_results_queue(renderer),
 	d_identity_quaternion(GPlatesMaths::UnitQuaternion3D::create_identity_rotation())
 {
 	// Raster co-registration queries must be supported.
@@ -612,106 +658,26 @@ GPlatesOpenGL::GLRasterCoRegistration::GLRasterCoRegistration(
 			GPLATES_ASSERTION_SOURCE);
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			GPlatesUtils::Base2::is_power_of_two(MINIMUM_SEED_GEOMETRIES_VIEWPORT_DIMENSION) &&
+				// All seed geometries get reduced (to one pixel) so minimum viewport should be larger than one pixel...
+				MINIMUM_SEED_GEOMETRIES_VIEWPORT_DIMENSION > 1 &&
+				// Want multiple seed geometry minimum-size viewports to fit inside a texture...
 				TEXTURE_DIMENSION > MINIMUM_SEED_GEOMETRIES_VIEWPORT_DIMENSION,
 			GPLATES_ASSERTION_SOURCE);
 
-	// Initialise details to do with texture viewports and cube quad tree level-of-detail
-	// transitions that depend on the target raster *resolution*.
-	initialise_texture_level_of_detail_parameters(renderer);
+	// A pixel buffer object for debugging render targets.
+#if defined(DEBUG_RASTER_COREGISTRATION_RENDER_TARGET)
+	GLBuffer::shared_ptr_type debug_pixel_buffer = GLBuffer::create(renderer);
+	debug_pixel_buffer->gl_buffer_data(
+			renderer,
+			GLBuffer::TARGET_PIXEL_PACK_BUFFER,
+			TEXTURE_DIMENSION * TEXTURE_DIMENSION * 4 * sizeof(GLfloat),
+			NULL, // Uninitialised memory.
+			GLBuffer::USAGE_STREAM_READ);
+	d_debug_pixel_buffer = GLPixelBuffer::create(renderer, debug_pixel_buffer);
+#endif
 
 	// Initialise vertex arrays and shader programs to perform the various rendering tasks.
 	initialise_vertex_arrays_and_shader_programs(renderer);
-}
-
-
-void
-GPlatesOpenGL::GLRasterCoRegistration::initialise_texture_level_of_detail_parameters(
-		GLRenderer &renderer)
-{
-	GLCubeSubdivision::non_null_ptr_to_const_type cube_subdivision = GLCubeSubdivision::create();
-
-	// Get the projection transforms of an entire cube face (the lowest resolution level-of-detail).
-	const GLTransform::non_null_ptr_to_const_type projection_transform =
-			cube_subdivision->get_projection_transform(
-					0/*level_of_detail*/, 0/*tile_u_offset*/, 0/*tile_v_offset*/);
-
-	// Get the view transform - it doesn't matter which cube face we choose because, although
-	// the view transforms are different, it won't matter to us since we're projecting onto
-	// a spherical globe from its centre and all faces project the same way.
-	const GLTransform::non_null_ptr_to_const_type view_transform =
-			cube_subdivision->get_view_transform(
-					GPlatesMaths::CubeCoordinateFrame::POSITIVE_X);
-
-	// Determine the scale factor for our viewport dimensions required to capture the resolution
-	// of target raster level-of-detail into an entire cube face.
-	//
-	// This tells us how many textures of square dimension 'TEXTURE_DIMENSION' will be needed
-	// to tile a single cube face.
-	double viewport_dimension_scale = d_target_raster->get_viewport_dimension_scale(
-			view_transform->get_matrix(),
-			projection_transform->get_matrix(),
-			GLViewport(0, 0, TEXTURE_DIMENSION, TEXTURE_DIMENSION),
-			d_raster_level_of_detail);
-
-	double log2_viewport_dimension_scale = std::log(viewport_dimension_scale) / std::log(2.0);
-
-	// We always acquire the same-sized textures instead of creating the optimal non-power-of-two
-	// texture for the target raster because we want raster queries for all size target rasters to
-	// re-use the same textures - these textures use quite a lot of memory so we really need to
-	// be able to re-use them once they are created.
-	//
-	// Determine the cube quad tree level-of-detail at which to render the target raster into
-	// the processing texture.
-	// Note that this is only used if there are seed geometries stored in the cube quad tree partition
-	// in levels [0, raster_texture_cube_quad_tree_depth].
-	// If there are seed geometries stored in the cube quad tree partition in levels
-	// [raster_texture_cube_quad_tree_depth + 1, inf) then they'll get processed using 'loose' textures.
-	d_raster_texture_cube_quad_tree_depth =
-			(log2_viewport_dimension_scale < 0)
-					// The entire cube face can fit in a single TEXTURE_DIMENSION x TEXTURE_DIMENSION texture.
-					? 0
-					// The '1 - 1e-4' rounds up to the next integer level-of-detail.
-					: static_cast<int>(log2_viewport_dimension_scale + 1 - 1e-4);
-
-	//
-	// NOTE: Previously we only rendered to part of the TEXTURE_DIMENSION x TEXTURE_DIMENSION
-	// render texture - only enough to adequately capture the resolution of the target raster.
-	//
-	// However this presented various problems and so now we just render to the entire texture
-	// even though it means some sized target rasters will get more resolution than they need.
-	//
-	// Some of the problems encountered (and solved by always using a power-of-two dimension) were:
-	//  - difficultly having a reduce quad tree (a quad tree is a simple and elegant solution to this problem),
-	//  - dealing with reduced viewports that were not of integer dimensions,
-	//  - having to deal with odd dimension viewports and their effect on the 2x2 reduce filter,
-	//  - having to keep track of more detailed mesh quads (used when reducing rendered seed geometries)
-	//    which is simplified greatly by using a quad tree.
-	//
-#if 0
-	// The target raster is rendered into the...
-	//
-	//    'd_target_raster_viewport_dimension' x 'd_target_raster_viewport_dimension'
-	//
-	// ...region of the 'TEXTURE_DIMENSION' x 'TEXTURE_DIMENSION' processing texture.
-	// This is enough to retain the resolution of the target raster.
-	d_target_raster_viewport_dimension = static_cast<int>(
-			viewport_dimension_scale / std::pow(2.0, double(d_raster_texture_cube_quad_tree_depth))
-					* TEXTURE_DIMENSION
-							// Equivalent to rounding up to the next texel...
-							+ 1 - 1e-4);
-#endif
-
-	// The maximum depth of the seed geometries spatial partition is enough to render seed
-	// geometries (at the maximum depth) such that the pixel dimension of the 'loose' tile needed
-	// to bound them covers 'MINIMUM_SEED_GEOMETRIES_VIEWPORT_DIMENSION' pixels.
-	// We don't need a deeper spatial partition than this in order to get good batching of seed geometries.
-	//
-	// The '+1' is because at depth 'd_raster_texture_cube_quad_tree_depth' the non-loose tile has
-	// dimension TEXTURE_DIMENSION and at depth 'd_raster_texture_cube_quad_tree_depth + 1' the
-	// *loose* tile (that's the depth at which we switch from non-loose to loose tiles) also has
-	// dimension TEXTURE_DIMENSION (after which the tile dimension then halves with each depth increment).
-	d_seed_geometries_spatial_partition_depth = d_raster_texture_cube_quad_tree_depth + 1 +
-			GPlatesUtils::Base2::log2_power_of_two(TEXTURE_DIMENSION / MINIMUM_SEED_GEOMETRIES_VIEWPORT_DIMENSION);
 }
 
 
@@ -812,7 +778,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_point_region_of_interest_shade
 	// However we'll start attribute indices at 1 (instead of 0) in case we later decide to use
 	// the most common built-in attribute 'gl_Vertex' (which aliases to attribute index 0).
 	// If we use more built-in attributes then we'll need to modify the attribute indices we use here.
-	GLuint attribute_index = 1;
+	// UPDATE: It turns out some hardware (nVidia 7400M) does not function unless the index starts
+	// at zero (it's probably expecting either a generic vertex attribute at index zero or 'gl_Vertex').
+	GLuint attribute_index = 0;
 
 	// The "point_centre" attribute data...
 	d_render_points_of_seed_geometries_with_small_roi_angle_program_object->gl_bind_attrib_location(
@@ -984,7 +952,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader
 	// However we'll start attribute indices at 1 (instead of 0) in case we later decide to use
 	// the most common built-in attribute 'gl_Vertex' (which aliases to attribute index 0).
 	// If we use more built-in attributes then we'll need to modify the attribute indices we use here.
-	GLuint attribute_index = 1;
+	// UPDATE: It turns out some hardware (nVidia 7400M) does not function unless the index starts
+	// at zero (it's probably expecting either a generic vertex attribute at index zero or 'gl_Vertex').
+	GLuint attribute_index = 0;
 
 	// The "line_arc_start_point" attribute data...
 	d_render_lines_of_seed_geometries_with_small_roi_angle_program_object->gl_bind_attrib_location(
@@ -1158,7 +1128,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_fill_region_of_interest_shader
 	// However we'll start attribute indices at 1 (instead of 0) in case we later decide to use
 	// the most common built-in attribute 'gl_Vertex' (which aliases to attribute index 0).
 	// If we use more built-in attributes then we'll need to modify the attribute indices we use here.
-	GLuint attribute_index = 1;
+	// UPDATE: It turns out some hardware (nVidia 7400M) does not function unless the index starts
+	// at zero (it's probably expecting either a generic vertex attribute at index zero or 'gl_Vertex').
+	GLuint attribute_index = 0;
 
 	// The "fill_position" attribute data...
 	d_render_fill_of_seed_geometries_program_object->gl_bind_attrib_location(
@@ -1245,13 +1217,20 @@ void
 GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader_program(
 		GLRenderer &renderer)
 {
-	// Compile the common vertex shader used by all mask region-of-interest shader programs.
-	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_vertex_shader =
+	// Vertex shader to copy target raster moments into seed sub-viewport with region-of-interest masking.
+	GLShaderProgramUtils::ShaderSource mask_region_of_interest_moments_vertex_shader_source;
+	// Add the '#define' first.
+	mask_region_of_interest_moments_vertex_shader_source.add_shader_source("#define FILTER_MOMENTS\n");
+	// Then add the GLSL 'main()' function.
+	mask_region_of_interest_moments_vertex_shader_source.add_shader_source(
+			MASK_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE);
+	// Compile the vertex shader.
+	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_moments_vertex_shader =
 			GLShaderProgramUtils::compile_vertex_shader(
 					renderer,
-					MASK_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE);
+					mask_region_of_interest_moments_vertex_shader_source);
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			mask_region_of_interest_vertex_shader ,
+			mask_region_of_interest_moments_vertex_shader ,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Fragment shader to copy target raster moments into seed sub-viewport with region-of-interest masking.
@@ -1273,17 +1252,33 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	boost::optional<GLProgramObject::shared_ptr_type> mask_region_of_interest_moments_program_object =
 			GLShaderProgramUtils::link_vertex_fragment_program(
 					renderer,
-					*mask_region_of_interest_vertex_shader.get(),
+					*mask_region_of_interest_moments_vertex_shader.get(),
 					*mask_region_of_interest_moments_fragment_shader.get());
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			mask_region_of_interest_moments_program_object,
 			GPLATES_ASSERTION_SOURCE);
 	d_mask_region_of_interest_moments_program_object = mask_region_of_interest_moments_program_object.get();
 
+	// Vertex shader to copy target raster min/max into seed sub-viewport with region-of-interest masking.
+	GLShaderProgramUtils::ShaderSource mask_region_of_interest_minmax_vertex_shader_source;
+	// Add the '#define' first.
+	mask_region_of_interest_minmax_vertex_shader_source.add_shader_source("#define FILTER_MIN_MAX\n");
+	// Then add the GLSL 'main()' function.
+	mask_region_of_interest_minmax_vertex_shader_source.add_shader_source(
+			MASK_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE);
+	// Compile the vertex shader.
+	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_minmax_vertex_shader =
+			GLShaderProgramUtils::compile_vertex_shader(
+					renderer,
+					mask_region_of_interest_minmax_vertex_shader_source);
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			mask_region_of_interest_minmax_vertex_shader ,
+			GPLATES_ASSERTION_SOURCE);
+
 	// Fragment shader to copy target raster min/max into seed sub-viewport with region-of-interest masking.
 	GLShaderProgramUtils::ShaderSource mask_region_of_interest_minmax_fragment_shader_source;
 	// Add the '#define' first.
-	mask_region_of_interest_minmax_fragment_shader_source.add_shader_source("#define FILTER_MINMAX\n");
+	mask_region_of_interest_minmax_fragment_shader_source.add_shader_source("#define FILTER_MIN_MAX\n");
 	// Then add the GLSL 'main()' function.
 	mask_region_of_interest_minmax_fragment_shader_source.add_shader_source(
 			MASK_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE);
@@ -1299,7 +1294,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	boost::optional<GLProgramObject::shared_ptr_type> mask_region_of_interest_minmax_program_object =
 			GLShaderProgramUtils::link_vertex_fragment_program(
 					renderer,
-					*mask_region_of_interest_vertex_shader.get(),
+					*mask_region_of_interest_minmax_vertex_shader.get(),
 					*mask_region_of_interest_minmax_fragment_shader.get());
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			mask_region_of_interest_minmax_program_object,
@@ -1332,7 +1327,9 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	// However we'll start attribute indices at 1 (instead of 0) in case we later decide to use
 	// the most common built-in attribute 'gl_Vertex' (which aliases to attribute index 0).
 	// If we use more built-in attributes then we'll need to modify the attribute indices we use here.
-	GLuint attribute_index = 1;
+	// UPDATE: It turns out some hardware (nVidia 7400M) does not function unless the index starts
+	// at zero (it's probably expecting either a generic vertex attribute at index zero or 'gl_Vertex').
+	GLuint attribute_index = 0;
 
 	// The "screen_space_position" attribute data...
 	d_mask_region_of_interest_moments_program_object->gl_bind_attrib_location(
@@ -1634,9 +1631,112 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_vertex_array_in_quad
 
 
 void
+GPlatesOpenGL::GLRasterCoRegistration::initialise_texture_level_of_detail_parameters(
+		GLRenderer &renderer,
+		const GLMultiResolutionRasterInterface::non_null_ptr_type &target_raster,
+		const unsigned int raster_level_of_detail,
+		unsigned int &raster_texture_cube_quad_tree_depth,
+		unsigned int &seed_geometries_spatial_partition_depth)
+{
+	GLCubeSubdivision::non_null_ptr_to_const_type cube_subdivision = GLCubeSubdivision::create();
+
+	// Get the projection transforms of an entire cube face (the lowest resolution level-of-detail).
+	const GLTransform::non_null_ptr_to_const_type projection_transform =
+			cube_subdivision->get_projection_transform(
+					0/*level_of_detail*/, 0/*tile_u_offset*/, 0/*tile_v_offset*/);
+
+	// Get the view transform - it doesn't matter which cube face we choose because, although
+	// the view transforms are different, it won't matter to us since we're projecting onto
+	// a spherical globe from its centre and all faces project the same way.
+	const GLTransform::non_null_ptr_to_const_type view_transform =
+			cube_subdivision->get_view_transform(
+					GPlatesMaths::CubeCoordinateFrame::POSITIVE_X);
+
+	// Determine the scale factor for our viewport dimensions required to capture the resolution
+	// of target raster level-of-detail into an entire cube face.
+	//
+	// This tells us how many textures of square dimension 'TEXTURE_DIMENSION' will be needed
+	// to tile a single cube face.
+	double viewport_dimension_scale =
+			target_raster->get_viewport_dimension_scale(
+					view_transform->get_matrix(),
+					projection_transform->get_matrix(),
+					GLViewport(0, 0, TEXTURE_DIMENSION, TEXTURE_DIMENSION),
+					raster_level_of_detail);
+
+	double log2_viewport_dimension_scale = std::log(viewport_dimension_scale) / std::log(2.0);
+
+	// We always acquire the same-sized textures instead of creating the optimal non-power-of-two
+	// texture for the target raster because we want raster queries for all size target rasters to
+	// re-use the same textures - these textures use quite a lot of memory so we really need to
+	// be able to re-use them once they are created.
+	// In any case our reduction textures need to be power-of-two since they are subdivided using
+	// a quad tree and the reduction texture dimensions need to match the raster texture dimensions.
+	//
+	// Determine the cube quad tree level-of-detail at which to render the target raster into
+	// the processing texture.
+	// Note that this is only used if there are seed geometries stored in the cube quad tree partition
+	// in levels [0, raster_texture_cube_quad_tree_depth].
+	// If there are seed geometries stored in the cube quad tree partition in levels
+	// [raster_texture_cube_quad_tree_depth + 1, inf) then they'll get processed using 'loose' textures.
+	raster_texture_cube_quad_tree_depth =
+			(log2_viewport_dimension_scale < 0)
+					// The entire cube face can fit in a single TEXTURE_DIMENSION x TEXTURE_DIMENSION texture.
+					? 0
+					// The '1 - 1e-4' rounds up to the next integer level-of-detail.
+					: static_cast<int>(log2_viewport_dimension_scale + 1 - 1e-4);
+
+	//
+	// NOTE: Previously we only rendered to part of the TEXTURE_DIMENSION x TEXTURE_DIMENSION
+	// render texture - only enough to adequately capture the resolution of the target raster.
+	//
+	// However this presented various problems and so now we just render to the entire texture
+	// even though it means some sized target rasters will get more resolution than they need.
+	//
+	// Some of the problems encountered (and solved by always using a power-of-two dimension) were:
+	//  - difficultly having a reduce quad tree (a quad tree is a simple and elegant solution to this problem),
+	//  - dealing with reduced viewports that were not of integer dimensions,
+	//  - having to deal with odd dimension viewports and their effect on the 2x2 reduce filter,
+	//  - having to keep track of more detailed mesh quads (used when reducing rendered seed geometries)
+	//    which is simplified greatly by using a quad tree.
+	//
+#if 0
+	// The target raster is rendered into the...
+	//
+	//    'target_raster_viewport_dimension' x 'target_raster_viewport_dimension'
+	//
+	// ...region of the 'TEXTURE_DIMENSION' x 'TEXTURE_DIMENSION' processing texture.
+	// This is enough to retain the resolution of the target raster.
+	target_raster_viewport_dimension = static_cast<int>(
+			viewport_dimension_scale / std::pow(2.0, double(raster_texture_cube_quad_tree_depth))
+					* TEXTURE_DIMENSION
+							// Equivalent to rounding up to the next texel...
+							+ 1 - 1e-4);
+#endif
+
+	// The maximum depth of the seed geometries spatial partition is enough to render seed
+	// geometries (at the maximum depth) such that the pixel dimension of the 'loose' tile needed
+	// to bound them covers 'MINIMUM_SEED_GEOMETRIES_VIEWPORT_DIMENSION' pixels.
+	// We don't need a deeper spatial partition than this in order to get good batching of seed geometries.
+	//
+	// The '+1' is because at depth 'd_raster_texture_cube_quad_tree_depth' the non-loose tile has
+	// dimension TEXTURE_DIMENSION and at depth 'd_raster_texture_cube_quad_tree_depth + 1' the
+	// *loose* tile (that's the depth at which we switch from non-loose to loose tiles) also has
+	// dimension TEXTURE_DIMENSION (after which the tile dimension then halves with each depth increment).
+	seed_geometries_spatial_partition_depth =
+			raster_texture_cube_quad_tree_depth + 1 +
+				GPlatesUtils::Base2::log2_power_of_two(
+					TEXTURE_DIMENSION / MINIMUM_SEED_GEOMETRIES_VIEWPORT_DIMENSION);
+}
+
+
+void
 GPlatesOpenGL::GLRasterCoRegistration::co_register(
 		GLRenderer &renderer,
-		std::vector<Operation> &operations)
+		std::vector<Operation> &operations,
+		const std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature> &seed_features,
+		const GLMultiResolutionRasterInterface::non_null_ptr_type &target_raster,
+		unsigned int raster_level_of_detail)
 {
 	PROFILE_FUNC();
 
@@ -1644,9 +1744,24 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register(
 	// We don't really need this (since we already save/restore where needed) but put it here just in case.
 	GLRenderer::StateBlockScope save_restore_state(renderer);
 
+
 	//
 	// The following is *preparation* for co-registration processing...
 	//
+
+	// Ensure the raster level of detail is within a valid range.
+	raster_level_of_detail = target_raster->clamp_level_of_detail(raster_level_of_detail);
+
+	// Initialise details to do with texture viewports and cube quad tree level-of-detail
+	// transitions that depend on the target raster *resolution*.
+	unsigned int raster_texture_cube_quad_tree_depth;
+	unsigned int seed_geometries_spatial_partition_depth;
+	initialise_texture_level_of_detail_parameters(
+			renderer,
+			target_raster,
+			raster_level_of_detail,
+			raster_texture_cube_quad_tree_depth,
+			seed_geometries_spatial_partition_depth);
 
 	// Intermediate co-registration results - each seed feature can have multiple (partial)
 	// co-registration results that need to be combined into a single result for each seed feature
@@ -1661,12 +1776,16 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register(
 		// There is one result for each seed feature.
 		// Initially all the results are N/A (equal to boost::none).
 		operation.d_results.clear();
-		operation.d_results.resize(d_seed_features.size());
+		operation.d_results.resize(seed_features.size());
 
 		// There is one list of (partial) co-registration results for each seed feature.
-		OperationSeedFeaturePartialResults &operation_seed_feature_partial_results = seed_feature_partial_results[operation_index];
-		operation_seed_feature_partial_results.partial_result_lists.resize(d_seed_features.size());
+		OperationSeedFeaturePartialResults &operation_seed_feature_partial_results =
+				seed_feature_partial_results[operation_index];
+		operation_seed_feature_partial_results.partial_result_lists.resize(seed_features.size());
 	}
+
+	// Queues asynchronous reading back of results from GPU to CPU memory.
+	ResultsQueue results_queue(renderer);
 
 
 	//
@@ -1676,15 +1795,26 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register(
 	// From the seed geometries create a spatial partition of SeedCoRegistration objects.
 	const seed_geometries_spatial_partition_type::non_null_ptr_type
 			seed_geometries_spatial_partition =
-					create_reconstructed_seed_geometries_spatial_partition(operations);
+					create_reconstructed_seed_geometries_spatial_partition(
+							operations,
+							seed_features,
+							seed_geometries_spatial_partition_depth);
+
+	// This simply avoids having to pass each parameter as function parameters during traversal.
+	CoRegistrationParameters co_registration_parameters(
+			seed_features,
+			target_raster,
+			raster_level_of_detail,
+			raster_texture_cube_quad_tree_depth,
+			seed_geometries_spatial_partition_depth,
+			seed_geometries_spatial_partition,
+			operations,
+			seed_feature_partial_results,
+			results_queue);
 
 	// Start co-registering the seed geometries with the raster.
 	// The co-registration results are generated here.
-	filter_reduce_seed_geometries_spatial_partition(
-			renderer,
-			operations,
-			seed_feature_partial_results,
-			*seed_geometries_spatial_partition);
+	filter_reduce_seed_geometries_spatial_partition(renderer, co_registration_parameters);
 
 	// Finally make sure the results from the GPU are flushed before we return results to the caller.
 	// This is done last to minimise any blocking required to wait for the GPU to finish generating
@@ -1693,11 +1823,11 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register(
 	// TODO: Delay this until the caller actually retrieves the results - then we can advise clients
 	// to delay the retrieval of results by doing other work in between initiating the co-registration
 	// (this method) and actually reading the results (allowing greater parallelism between GPU and CPU).
-	d_results_queue.flush_results(renderer, seed_feature_partial_results);
+	results_queue.flush_results(renderer, seed_feature_partial_results);
 
 	// Now that the results have all been retrieved from the GPU we need combine multiple
 	// (potentially partial) co-registration results into a single result per seed feature.
-	return_co_registration_results_to_caller(operations, seed_feature_partial_results);
+	return_co_registration_results_to_caller(co_registration_parameters);
 
 
 	//
@@ -1713,13 +1843,17 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register(
 
 GPlatesOpenGL::GLRasterCoRegistration::seed_geometries_spatial_partition_type::non_null_ptr_type
 GPlatesOpenGL::GLRasterCoRegistration::create_reconstructed_seed_geometries_spatial_partition(
-		std::vector<Operation> &operations)
+		std::vector<Operation> &operations,
+		const std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature> &seed_features,
+		const unsigned int seed_geometries_spatial_partition_depth)
 {
+	//PROFILE_FUNC();
+
 	// Create a reconstructed seed geometries spatial partition.
 	seed_geometries_spatial_partition_type::non_null_ptr_type
 			seed_geometries_spatial_partition =
 					seed_geometries_spatial_partition_type::create(
-							d_seed_geometries_spatial_partition_depth);
+							seed_geometries_spatial_partition_depth);
 
 	// Each operation specifies a region-of-interest radius so convert this to a bounding circle expansion.
 	std::vector<seed_geometries_spatial_partition_type::BoundingCircleExtent> operation_regions_of_interest;
@@ -1731,9 +1865,9 @@ GPlatesOpenGL::GLRasterCoRegistration::create_reconstructed_seed_geometries_spat
 	}
 
 	// Add the seed feature geometries to the spatial partition.
-	for (unsigned int feature_index = 0; feature_index < d_seed_features.size(); ++feature_index)
+	for (unsigned int feature_index = 0; feature_index < seed_features.size(); ++feature_index)
 	{
-		const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_feature = d_seed_features[feature_index];
+		const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_feature = seed_features[feature_index];
 
 		// Each seed feature could have multiple geometries.
 		const GPlatesAppLogic::ReconstructContext::ReconstructedFeature::reconstruction_seq_type &reconstructions =
@@ -1814,10 +1948,10 @@ GPlatesOpenGL::GLRasterCoRegistration::create_reconstructed_seed_geometries_spat
 void
 GPlatesOpenGL::GLRasterCoRegistration::filter_reduce_seed_geometries_spatial_partition(
 		GLRenderer &renderer,
-		std::vector<Operation> &operations,
-		std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results,
-		seed_geometries_spatial_partition_type &seed_geometries_spatial_partition)
+		const CoRegistrationParameters &co_registration_parameters)
 {
+	//PROFILE_FUNC();
+
 	// Create a subdivision cube quad tree traversal.
 	// No caching is required since we're only visiting each subdivision node once.
 	//
@@ -1842,7 +1976,7 @@ GPlatesOpenGL::GLRasterCoRegistration::filter_reduce_seed_geometries_spatial_par
 		// that intersect the target raster cube quad tree.
 		seed_geometries_intersecting_nodes_type
 				seed_geometries_intersecting_nodes(
-						seed_geometries_spatial_partition,
+						*co_registration_parameters.seed_geometries_spatial_partition,
 						cube_face);
 
 		// The root node of the seed geometries spatial partition.
@@ -1851,7 +1985,7 @@ GPlatesOpenGL::GLRasterCoRegistration::filter_reduce_seed_geometries_spatial_par
 		// the current cube face of the target raster.
 		const seed_geometries_spatial_partition_type::node_reference_type
 				seed_geometries_spatial_partition_root_node =
-						seed_geometries_spatial_partition.get_quad_tree_root_node(cube_face);
+						co_registration_parameters.seed_geometries_spatial_partition->get_quad_tree_root_node(cube_face);
 
 		// Get the cube subdivision root node.
 		const cube_subdivision_cache_type::node_reference_type
@@ -1863,9 +1997,7 @@ GPlatesOpenGL::GLRasterCoRegistration::filter_reduce_seed_geometries_spatial_par
 
 		filter_reduce_seed_geometries(
 				renderer,
-				operations,
-				seed_feature_partial_results,
-				seed_geometries_spatial_partition,
+				co_registration_parameters,
 				seed_geometries_spatial_partition_root_node,
 				seed_geometries_spatial_partition_node_list,
 				seed_geometries_intersecting_nodes,
@@ -1879,9 +2011,7 @@ GPlatesOpenGL::GLRasterCoRegistration::filter_reduce_seed_geometries_spatial_par
 void
 GPlatesOpenGL::GLRasterCoRegistration::filter_reduce_seed_geometries(
 		GLRenderer &renderer,
-		std::vector<Operation> &operations,
-		std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results,
-		seed_geometries_spatial_partition_type &seed_geometries_spatial_partition,
+		const CoRegistrationParameters &co_registration_parameters,
 		seed_geometries_spatial_partition_type::node_reference_type seed_geometries_spatial_partition_node,
 		const seed_geometries_spatial_partition_node_list_type &parent_seed_geometries_intersecting_node_list,
 		const seed_geometries_intersecting_nodes_type &seed_geometries_intersecting_nodes,
@@ -1890,13 +2020,11 @@ GPlatesOpenGL::GLRasterCoRegistration::filter_reduce_seed_geometries(
 		unsigned int level_of_detail)
 {
 	// If we've reached the level-of-detail at which to render the target raster .
-	if (level_of_detail == d_raster_texture_cube_quad_tree_depth)
+	if (level_of_detail == co_registration_parameters.d_raster_texture_cube_quad_tree_depth)
 	{
 		co_register_seed_geometries(
 				renderer,
-				operations,
-				seed_feature_partial_results,
-				seed_geometries_spatial_partition,
+				co_registration_parameters,
 				seed_geometries_spatial_partition_node,
 				parent_seed_geometries_intersecting_node_list,
 				seed_geometries_intersecting_nodes,
@@ -1985,9 +2113,7 @@ GPlatesOpenGL::GLRasterCoRegistration::filter_reduce_seed_geometries(
 			// Recurse into child node.
 			filter_reduce_seed_geometries(
 					renderer,
-					operations,
-					seed_feature_partial_results,
-					seed_geometries_spatial_partition,
+					co_registration_parameters,
 					child_seed_geometries_spatial_partition_node,
 					child_seed_geometries_intersecting_node_list,
 					child_seed_geometries_intersecting_nodes,
@@ -2002,9 +2128,7 @@ GPlatesOpenGL::GLRasterCoRegistration::filter_reduce_seed_geometries(
 void
 GPlatesOpenGL::GLRasterCoRegistration::co_register_seed_geometries(
 		GLRenderer &renderer,
-		std::vector<Operation> &operations,
-		std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results,
-		seed_geometries_spatial_partition_type &seed_geometries_spatial_partition,
+		const CoRegistrationParameters &co_registration_parameters,
 		seed_geometries_spatial_partition_type::node_reference_type seed_geometries_spatial_partition_node,
 		const seed_geometries_spatial_partition_node_list_type &parent_seed_geometries_intersecting_node_list,
 		const seed_geometries_intersecting_nodes_type &seed_geometries_intersecting_nodes,
@@ -2014,9 +2138,7 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register_seed_geometries(
 	// Co-register any seed geometries collected so far during the cube quad tree traversal.
 	co_register_seed_geometries_with_target_raster(
 			renderer,
-			operations,
-			seed_feature_partial_results,
-			seed_geometries_spatial_partition,
+			co_registration_parameters,
 			parent_seed_geometries_intersecting_node_list,
 			seed_geometries_intersecting_nodes,
 			cube_subdivision_cache,
@@ -2053,9 +2175,7 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register_seed_geometries(
 
 				co_register_seed_geometries_with_loose_target_raster(
 						renderer,
-						operations,
-						seed_feature_partial_results,
-						seed_geometries_spatial_partition,
+						co_registration_parameters,
 						child_seed_geometries_spatial_partition_node,
 						cube_subdivision_cache,
 						child_cube_subdivision_cache_node);
@@ -2068,9 +2188,7 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register_seed_geometries(
 void
 GPlatesOpenGL::GLRasterCoRegistration::co_register_seed_geometries_with_target_raster(
 		GLRenderer &renderer,
-		std::vector<Operation> &operations,
-		std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results,
-		seed_geometries_spatial_partition_type &seed_geometries_spatial_partition,
+		const CoRegistrationParameters &co_registration_parameters,
 		const seed_geometries_spatial_partition_node_list_type &parent_seed_geometries_intersecting_node_list,
 		const seed_geometries_intersecting_nodes_type &seed_geometries_intersecting_nodes,
 		cube_subdivision_cache_type &cube_subdivision_cache,
@@ -2118,7 +2236,8 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register_seed_geometries_with_target_r
 
 	// If there are no seed geometries collected so far then there's nothing to do so return early.
 	if (seed_geometries_intersecting_node_list.empty() &&
-		seed_geometries_spatial_partition.begin_root_elements() == seed_geometries_spatial_partition.end_root_elements())
+		co_registration_parameters.seed_geometries_spatial_partition->begin_root_elements() ==
+			co_registration_parameters.seed_geometries_spatial_partition->end_root_elements())
 	{
 		return;
 	}
@@ -2132,13 +2251,19 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register_seed_geometries_with_target_r
 	const GLTransform::non_null_ptr_to_const_type projection_transform =
 			cube_subdivision_cache.get_projection_transform(cube_subdivision_cache_node);
 
+	// The centre of the cube fact currently being visited.
+	// This is used to adjust for the area-sampling distortion of pixels introduced by the cube map.
+	const GPlatesMaths::UnitVector3D &cube_face_centre =
+		GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
+					cube_subdivision_cache_node.get_cube_face(),
+					GPlatesMaths::CubeCoordinateFrame::Z_AXIS);
+
 	// Now that we have a list of seed geometries we can co-register them with the current target raster tile.
 	co_register_seed_geometries_with_target_raster(
 			renderer,
-			operations,
-			seed_feature_partial_results,
-			seed_geometries_spatial_partition,
+			co_registration_parameters,
 			seed_geometries_intersecting_node_list,
+			cube_face_centre,
 			view_transform,
 			projection_transform);
 }
@@ -2147,10 +2272,9 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register_seed_geometries_with_target_r
 void
 GPlatesOpenGL::GLRasterCoRegistration::co_register_seed_geometries_with_target_raster(
 		GLRenderer &renderer,
-		std::vector<Operation> &operations,
-		std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results,
-		seed_geometries_spatial_partition_type &seed_geometries_spatial_partition,
+		const CoRegistrationParameters &co_registration_parameters,
 		const seed_geometries_spatial_partition_node_list_type &seed_geometries_intersecting_node_list,
+		const GPlatesMaths::UnitVector3D &cube_face_centre,
 		const GLTransform::non_null_ptr_to_const_type &view_transform,
 		const GLTransform::non_null_ptr_to_const_type &projection_transform)
 {
@@ -2158,7 +2282,7 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register_seed_geometries_with_target_r
 	GLTexture::shared_ptr_type target_raster_texture = acquire_rgba_float_texture(renderer);
 
 	// Render the target raster into the view frustum (into render texture).
-	if (!render_target_raster(renderer, target_raster_texture, *view_transform, *projection_transform))
+	if (!render_target_raster(renderer, co_registration_parameters, target_raster_texture, *view_transform, *projection_transform))
 	{
 		// There was no rendering of target raster into the current view frustum so there's no
 		// co-registration of seed geometries in the current view frustum.
@@ -2170,30 +2294,34 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register_seed_geometries_with_target_r
 	//
 	// NOTE: However we only use reduce stage index 0 (the other stages are only needed,
 	// for rendering seed geometries to, when rendering seeds in the smaller 'loose' tiles).
-	std::vector<SeedCoRegistrationReduceStageLists> operations_reduce_stage_lists(operations.size());
+	std::vector<SeedCoRegistrationReduceStageLists> operations_reduce_stage_lists(
+			co_registration_parameters.operations.size());
 
 	// Iterate over the list of seed geometries and group by operation.
 	// This is because the reducing is done per-operation (cannot mix operations while reducing).
 	// Note that seed geometries from the root of the spatial partition as well as the node list are grouped.
 	group_seed_co_registrations_by_operation_to_reduce_stage_zero(
 			operations_reduce_stage_lists,
-			seed_geometries_spatial_partition,
+			*co_registration_parameters.seed_geometries_spatial_partition,
 			seed_geometries_intersecting_node_list);
 
 	// Iterate over the operations and co-register the seed geometries associated with each operation.
-	for (unsigned int operation_index = 0; operation_index < operations.size(); ++operation_index)
+	for (unsigned int operation_index = 0;
+		operation_index < co_registration_parameters.operations.size();
+		++operation_index)
 	{
 		// Note that we always render the seed geometries into reduce stage *zero* here - it's only
 		// when we recurse further down and render *loose* target raster tiles that we start rendering
 		// to the other reduce stages (because the loose raster tiles are smaller - need less reducing).
 		render_seed_geometries_to_reduce_pyramids(
 				renderer,
-				operations[operation_index],
+				co_registration_parameters,
+				operation_index,
+				cube_face_centre,
 				target_raster_texture,
 				view_transform,
 				projection_transform,
-				operations_reduce_stage_lists[operation_index],
-				seed_feature_partial_results,
+				operations_reduce_stage_lists,
 				// Seed geometries are *not* bounded by loose cube quad tree tiles...
 				false/*are_seed_geometries_bounded*/);
 	}
@@ -2206,6 +2334,8 @@ GPlatesOpenGL::GLRasterCoRegistration::group_seed_co_registrations_by_operation_
 		seed_geometries_spatial_partition_type &seed_geometries_spatial_partition,
 		const seed_geometries_spatial_partition_node_list_type &seed_geometries_intersecting_node_list)
 {
+	//PROFILE_FUNC();
+
 	// Iterate over the seed geometries in the root (unpartitioned) of the spatial partition.
 	seed_geometries_spatial_partition_type::element_iterator root_seeds_iter =
 			seed_geometries_spatial_partition.begin_root_elements();
@@ -2258,9 +2388,7 @@ GPlatesOpenGL::GLRasterCoRegistration::group_seed_co_registrations_by_operation_
 void
 GPlatesOpenGL::GLRasterCoRegistration::co_register_seed_geometries_with_loose_target_raster(
 		GLRenderer &renderer,
-		std::vector<Operation> &operations,
-		std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results,
-		seed_geometries_spatial_partition_type &seed_geometries_spatial_partition,
+		const CoRegistrationParameters &co_registration_parameters,
 		seed_geometries_spatial_partition_type::node_reference_type seed_geometries_spatial_partition_node,
 		cube_subdivision_cache_type &cube_subdivision_cache,
 		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node)
@@ -2275,7 +2403,7 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register_seed_geometries_with_loose_ta
 			cube_subdivision_cache.get_loose_projection_transform(cube_subdivision_cache_node);
 
 	// Render the target raster into the view frustum (into render texture).
-	if (!render_target_raster(renderer, target_raster_texture, *view_transform, *projection_transform))
+	if (!render_target_raster(renderer, co_registration_parameters, target_raster_texture, *view_transform, *projection_transform))
 	{
 		// There was no rendering of target raster into the current view frustum so there's no
 		// co-registration of seed geometries in the current view frustum.
@@ -2284,7 +2412,8 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register_seed_geometries_with_loose_ta
 
 	// Working lists used during co-registration processing.
 	// Each operation has a list for each reduce stage.
-	std::vector<SeedCoRegistrationReduceStageLists> operations_reduce_stage_lists(operations.size());
+	std::vector<SeedCoRegistrationReduceStageLists> operations_reduce_stage_lists(
+			co_registration_parameters.operations.size());
 
 	// As we recurse into the seed geometries spatial partition we need to translate/scale the
 	// clip-space (post-projection space) to account for progressively smaller *loose* tile regions.
@@ -2295,27 +2424,35 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register_seed_geometries_with_loose_ta
 	// seed co-registrations by operation.
 	// This is because the reducing is done per-operation (cannot mix operations while reducing).
 	group_seed_co_registrations_by_operation(
+			co_registration_parameters,
 			operations_reduce_stage_lists,
-			seed_geometries_spatial_partition,
 			seed_geometries_spatial_partition_node,
-			// The current depth of the spatial partition...
-			cube_subdivision_cache_node.get_level_of_detail(),
 			raster_frustum_to_loose_seed_frustum_clip_space_transform,
 			// At the current quad tree depth we are rendering seed geometries into a
 			// TEXTURE_DIMENSION tile which means it's the highest resolution reduce stage...
 			0/*reduce_stage_index*/);
 
+	// The centre of the cube fact currently being visited.
+	// This is used to adjust for the area-sampling distortion of pixels introduced by the cube map.
+	const GPlatesMaths::UnitVector3D &cube_face_centre =
+		GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
+					cube_subdivision_cache_node.get_cube_face(),
+					GPlatesMaths::CubeCoordinateFrame::Z_AXIS);
+
 	// Iterate over the operations and co-register the seed geometries associated with each operation.
-	for (unsigned int operation_index = 0; operation_index < operations.size(); ++operation_index)
+	for (unsigned int operation_index = 0;
+		operation_index < co_registration_parameters.operations.size();
+		++operation_index)
 	{
 		render_seed_geometries_to_reduce_pyramids(
 				renderer,
-				operations[operation_index],
+				co_registration_parameters,
+				operation_index,
+				cube_face_centre,
 				target_raster_texture,
 				view_transform,
 				projection_transform,
-				operations_reduce_stage_lists[operation_index],
-				seed_feature_partial_results,
+				operations_reduce_stage_lists,
 				// Seed geometries are bounded by loose cube quad tree tiles (even reduce stage zero)...
 				true/*are_seed_geometries_bounded*/);
 	}
@@ -2324,13 +2461,20 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register_seed_geometries_with_loose_ta
 
 void
 GPlatesOpenGL::GLRasterCoRegistration::group_seed_co_registrations_by_operation(
+		const CoRegistrationParameters &co_registration_parameters,
 		std::vector<SeedCoRegistrationReduceStageLists> &operations_reduce_stage_lists,
-		seed_geometries_spatial_partition_type &seed_geometries_spatial_partition,
 		seed_geometries_spatial_partition_type::node_reference_type seed_geometries_spatial_partition_node,
-		unsigned int seed_geometries_spatial_partition_depth,
 		const GLUtils::QuadTreeClipSpaceTransform &raster_frustum_to_loose_seed_frustum_clip_space_transform,
 		unsigned int reduce_stage_index)
 {
+	//PROFILE_FUNC();
+
+	// Things are set up so that seed geometries at the maximum spatial partition depth will
+	// render into the reduce stage that has dimension MINIMUM_SEED_GEOMETRIES_VIEWPORT_DIMENSION.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			reduce_stage_index < NUM_REDUCE_STAGES - boost::static_log2<MINIMUM_SEED_GEOMETRIES_VIEWPORT_DIMENSION>::value,
+			GPLATES_ASSERTION_SOURCE);
+
 	// The clip-space scale/translate for the current *loose* spatial partition node.
 	const double raster_frustum_to_loose_seed_frustum_post_projection_scale =
 			raster_frustum_to_loose_seed_frustum_clip_space_transform.get_loose_scale();
@@ -2379,34 +2523,16 @@ GPlatesOpenGL::GLRasterCoRegistration::group_seed_co_registrations_by_operation(
 				continue;
 			}
 
-			// Once we've reached the maximum depth of the seed geometries spatial partition
-			// we assign all seed geometries (in the sub-tree) to the same reduce stage and
-			// we stop scaling/translating their clip-space.
-			if (seed_geometries_spatial_partition_depth < d_seed_geometries_spatial_partition_depth)
-			{
-				group_seed_co_registrations_by_operation(
-						operations_reduce_stage_lists,
-						seed_geometries_spatial_partition,
-						child_seed_geometries_spatial_partition_node,
-						seed_geometries_spatial_partition_depth + 1,
-						// Child is the next reduce stage...
-						GLUtils::QuadTreeClipSpaceTransform(
-								raster_frustum_to_loose_seed_frustum_clip_space_transform,
-								child_x_offset,
-								child_y_offset),
-						reduce_stage_index + 1);
-			}
-			else
-			{
-				group_seed_co_registrations_by_operation(
-						operations_reduce_stage_lists,
-						seed_geometries_spatial_partition,
-						child_seed_geometries_spatial_partition_node,
-						seed_geometries_spatial_partition_depth + 1,
-						// Child is *not* the next reduce stage...
-						raster_frustum_to_loose_seed_frustum_clip_space_transform,
-						reduce_stage_index);
-			}
+			group_seed_co_registrations_by_operation(
+					co_registration_parameters,
+					operations_reduce_stage_lists,
+					child_seed_geometries_spatial_partition_node,
+					// Child is the next reduce stage...
+					GLUtils::QuadTreeClipSpaceTransform(
+							raster_frustum_to_loose_seed_frustum_clip_space_transform,
+							child_x_offset,
+							child_y_offset),
+					reduce_stage_index + 1);
 		}
 	}
 }
@@ -2415,123 +2541,145 @@ GPlatesOpenGL::GLRasterCoRegistration::group_seed_co_registrations_by_operation(
 void
 GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_to_reduce_pyramids(
 		GLRenderer &renderer,
-		Operation &operation,
+		const CoRegistrationParameters &co_registration_parameters,
+		unsigned int operation_index,
+		const GPlatesMaths::UnitVector3D &cube_face_centre,
 		const GLTexture::shared_ptr_type &target_raster_texture,
 		const GLTransform::non_null_ptr_to_const_type &target_raster_view_transform,
 		const GLTransform::non_null_ptr_to_const_type &target_raster_projection_transform,
-		SeedCoRegistrationReduceStageLists &operation_reduce_stage_lists,
-		std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results,
+		std::vector<SeedCoRegistrationReduceStageLists> &operation_reduce_stage_lists,
 		bool are_seed_geometries_bounded)
 {
-	// Create a reduce quad tree to track the final co-registration results.
-	// Each reduce quad tree maps to a reduces TEXTURE_DIMENSION x TEXTURE_DIMENSION texture
-	// and carries as many co-registration results as pixels in the texture.
-	ReduceQuadTree::non_null_ptr_type reduce_quad_tree = ReduceQuadTree::create();
+	//PROFILE_FUNC();
 
-	// A texture to contain co-registration results associated with 'reduce_quad_tree'.
-	// It's currently null but will get initialised during traversal of a reduce quad tree.
-	GLTexture::shared_ptr_type results_texture;
+	SeedCoRegistrationReduceStageLists &operation_reduce_stage_list =
+			operation_reduce_stage_lists[operation_index];
 
-	// Iterate over the reduce stages.
-	for (unsigned int reduce_stage_index = 0; reduce_stage_index < NUM_REDUCE_STAGES; ++reduce_stage_index)
+	// We start with reduce stage zero and increase until stage 'NUM_REDUCE_STAGES - 1' is reached.
+	// This ensures that the reduce quad tree traversal fills up properly optimally and it also
+	// keeps the reduce stage textures in sync with the reduce quad tree(s).
+	unsigned int reduce_stage_index = 0;
+
+	// Advance to the first *non-empty* reduce stage.
+	while (operation_reduce_stage_list.reduce_stage_lists[reduce_stage_index].begin() ==
+		operation_reduce_stage_list.reduce_stage_lists[reduce_stage_index].end())
 	{
-		// Get the list of seed geometries for the current reduce stage.
-		seed_co_registration_reduce_stage_list_type::iterator seed_co_registration_iter =
-				operation_reduce_stage_lists.reduce_stage_lists[reduce_stage_index].begin();
-		const seed_co_registration_reduce_stage_list_type::iterator seed_co_registration_end =
-				operation_reduce_stage_lists.reduce_stage_lists[reduce_stage_index].end();
-
-		// While there are seed geometries in the current reduce stage we will render them into
-		// reduce quad trees - as many quad trees as needed (each quad tree can handle
-		// TEXTURE_DIMENSION x TEXTURE_DIMENSION seed geometries).
-		while (seed_co_registration_iter != seed_co_registration_end)
+		++reduce_stage_index;
+		if (reduce_stage_index == NUM_REDUCE_STAGES)
 		{
-			// Parameters used during traversal of reduce quad tree. Saves having to pass them as function
-			// parameters during traversal (the ones that are not dependent on quad tree depth).
-			RenderSeedCoRegistrationParameters render_parameters(
-					operation,
-					target_raster_texture,
-					target_raster_view_transform,
-					target_raster_projection_transform,
-					*reduce_quad_tree,
-					reduce_stage_index,
-					seed_co_registration_iter,
-					seed_co_registration_end,
-					are_seed_geometries_bounded);
-
-			// When we've recursed deep enough into the reduce quad tree (when we've reached the
-			// current reduce stage 'reduce_stage_index') then we need to start keeping track of
-			// which quad-tree sub-viewport of the reduce stage render target a seed geometry
-			// should be rendered into.
-			const GLUtils::QuadTreeClipSpaceTransform loose_seed_frustum_to_render_target_clip_space_transform;
-
-			// Recursively render the seed geometries (in the current reduce stage list) and
-			// perform reduction as we traverse back up the quad tree to the root.
-			const unsigned int num_new_leaf_nodes =
-					render_seed_geometries_to_reduce_quad_tree_internal_node(
-							renderer,
-							render_parameters,
-							results_texture,
-							reduce_quad_tree->get_root_node(),
-							0/*reduce_quad_tree_depth*/,
-							loose_seed_frustum_to_render_target_clip_space_transform);
-
-			// Keep track of leaf node numbers so we can determine when the reduce quad tree is full.
-			reduce_quad_tree->get_root_node().accumulate_descendant_leaf_node_count(num_new_leaf_nodes);
-
-			// If the current reduce quad tree is full then queue it for read back from GPU to CPU.
-			if (reduce_quad_tree->get_root_node().is_sub_tree_full())
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-						results_texture,
-						GPLATES_ASSERTION_SOURCE);
-
-				// Queue the results (stored in the final reduce texture).
-				// This starts asynchronous read back of the texture to CPU memory via a pixel buffer.
-				d_results_queue.queue_reduce_pyramid_output(
-						renderer,
-						d_framebuffer_object,
-						results_texture,
-						reduce_quad_tree,
-						seed_feature_partial_results);
-
-				// The asynchronous read back of the results texture has begun so we can release
-				// the texture for re-use. We could just use the same texture again but we acquire then
-				// release (the release happens naturally after the acquire in the assignment below)
-				// which gives us a different texture - this might be beneficial if it avoids the GPU
-				// having to wait until it can copy the results to the CPU before it starts rendering
-				// into the texture for the next results iteration.
-				results_texture.reset();
-
-				// Create a new reduce quad tree and keep going.
-				reduce_quad_tree = ReduceQuadTree::create();
-			}
+			// There were no geometries to begin with.
+			// Shouldn't really be able to get here since should only be called if have geometries.
+			return;
 		}
 	}
 
-	// Flush/queue any remaining results for read back from GPU to CPU.
-	if (!reduce_quad_tree->empty())
+	// Get the list of seed geometries for the current reduce stage to start things off.
+	// NOTE: These iterators will change reduce stages as the reduce stage index changes during traversal.
+	seed_co_registration_reduce_stage_list_type::iterator seed_co_registration_iter =
+			operation_reduce_stage_list.reduce_stage_lists[reduce_stage_index].begin();
+	seed_co_registration_reduce_stage_list_type::iterator seed_co_registration_end =
+			operation_reduce_stage_list.reduce_stage_lists[reduce_stage_index].end();
+
+	// Seed geometry render lists for each reduce stage.
+	SeedCoRegistrationGeometryLists seed_co_registration_geometry_lists[NUM_REDUCE_STAGES];
+
+	// Keep rendering into reduce quad trees until we've run out of seed geometries in all reduce stages.
+	// Each reduce quad tree can handle TEXTURE_DIMENSION x TEXTURE_DIMENSION seed geometries.
+	do
 	{
+		// Create a reduce quad tree to track the final co-registration results.
+		// Each reduce quad tree maps to a TEXTURE_DIMENSION x TEXTURE_DIMENSION texture
+		// and carries as many co-registration results as pixels in the texture.
+		ReduceQuadTree::non_null_ptr_type reduce_quad_tree = ReduceQuadTree::create();
+
+		// A set of reduce textures to generate/reduce co-registration results associated with 'reduce_quad_tree'.
+		// All are null but will get initialised as needed during reduce quad tree traversal.
+		// The last reduce stage will contain the final (reduced) results and the location of
+		// each seed's result is determined by the reduce quad tree.
+		boost::optional<GLTexture::shared_ptr_type> reduce_stage_textures[NUM_REDUCE_STAGES];
+
+		// Offsets of reduce quad tree nodes relative to the root node.
+		// This is used to generate appropriate scale/translate parameters for rendering seed geometries
+		// into the reduce stage textures when keeping track of which quad-tree sub-viewport of a
+		// reduce stage render target a seed geometry should be rendered into.
+		unsigned int node_x_offsets_relative_to_root[NUM_REDUCE_STAGES];
+		unsigned int node_y_offsets_relative_to_root[NUM_REDUCE_STAGES];
+		// Initialise to zero to begin with.
+		for (unsigned int n = 0; n < NUM_REDUCE_STAGES; ++n)
+		{
+			node_x_offsets_relative_to_root[n] = node_y_offsets_relative_to_root[n] = 0;
+		}
+
+		// Parameters used during traversal of reduce quad tree. Saves having to pass them as function
+		// parameters during traversal (the ones that are not dependent on quad tree depth).
+		RenderSeedCoRegistrationParameters render_parameters(
+				co_registration_parameters.operations[operation_index],
+				cube_face_centre,
+				target_raster_texture,
+				target_raster_view_transform,
+				target_raster_projection_transform,
+				*reduce_quad_tree,
+				node_x_offsets_relative_to_root,
+				node_y_offsets_relative_to_root,
+				reduce_stage_textures,
+				reduce_stage_index/*passed by *non-const* reference*/,
+				operation_reduce_stage_list,
+				seed_co_registration_iter/*passed by *non-const* reference*/,
+				seed_co_registration_end/*passed by *non-const* reference*/,
+				seed_co_registration_geometry_lists,
+				are_seed_geometries_bounded);
+
+		// Recursively render the seed geometries and perform reduction as we traverse back up
+		// the quad tree to the root.
+		const unsigned int num_new_leaf_nodes =
+				render_seed_geometries_to_reduce_quad_tree_internal_node(
+						renderer,
+						render_parameters,
+						reduce_quad_tree->get_root_node());
+
+		// Keep track of leaf node numbers so we can determine when the reduce quad tree is full.
+		reduce_quad_tree->get_root_node().accumulate_descendant_leaf_node_count(num_new_leaf_nodes);
+
+		//
+		// Queue the current reduce quad tree for read back from GPU to CPU.
+		//
+
+		// The final reduce stage texture should exist.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				results_texture,
+				reduce_stage_textures[NUM_REDUCE_STAGES - 1],
+				GPLATES_ASSERTION_SOURCE);
+		// We must be no partial results left in any other reduce stage textures.
+		for (unsigned int n = 0; n < NUM_REDUCE_STAGES - 1; ++n)
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					!reduce_stage_textures[n],
+					GPLATES_ASSERTION_SOURCE);
+		}
+
+		// The reduce quad tree should not be empty.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				!reduce_quad_tree->empty(),
+				GPLATES_ASSERTION_SOURCE);
+
+		// If the reduce quad tree is *not* full then it means we must have finished.
+		// If it is full then we also might have finished but it's more likely that
+		// we need another reduce quad tree.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				reduce_quad_tree->get_root_node().is_sub_tree_full() ||
+					// Finished ? ...
+					reduce_stage_index == NUM_REDUCE_STAGES,
 				GPLATES_ASSERTION_SOURCE);
 
 		// Queue the results (stored in the final reduce texture).
 		// This starts asynchronous read back of the texture to CPU memory via a pixel buffer.
-		d_results_queue.queue_reduce_pyramid_output(
+		co_registration_parameters.d_results_queue.queue_reduce_pyramid_output(
 				renderer,
 				d_framebuffer_object,
-				results_texture,
+				reduce_stage_textures[NUM_REDUCE_STAGES - 1].get(),
 				reduce_quad_tree,
-				seed_feature_partial_results);
-
-		// The asynchronous read back of the results texture has begun so we can release the
-		// results texture for re-use.
-		// The GPU will make sure the texture data does not get overwritten, by a subsequent
-		// render, before the data has finished transferring to the CPU (if/when we
-		// re-acquire the same texture later for rendering to).
-		results_texture.reset();
+				co_registration_parameters.seed_feature_partial_results);
 	}
+	while (reduce_stage_index < NUM_REDUCE_STAGES); // While not yet finished with all reduce stages.
 }
 
 
@@ -2539,30 +2687,34 @@ unsigned int
 GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_to_reduce_quad_tree_internal_node(
 		GLRenderer &renderer,
 		RenderSeedCoRegistrationParameters &render_params,
-		GLTexture::shared_ptr_type &results_texture,
-		ReduceQuadTreeInternalNode &reduce_quad_tree_internal_node,
-		unsigned int reduce_quad_tree_depth,
-		const GLUtils::QuadTreeClipSpaceTransform &loose_seed_frustum_to_render_target_clip_space_transform)
+		ReduceQuadTreeInternalNode &reduce_quad_tree_internal_node)
 {
 	unsigned int num_new_leaf_nodes = 0;
+
+	const unsigned int parent_reduce_stage_index = reduce_quad_tree_internal_node.get_reduce_stage_index();
+	const unsigned int child_reduce_stage_index = parent_reduce_stage_index - 1;
 
 	// Recurse into the child reduce quad tree nodes.
 	for (unsigned int child_y_offset = 0; child_y_offset < 2; ++child_y_offset)
 	{
+		// Keep track of the location of the current child node relative to the root node.
+		render_params.node_y_offsets_relative_to_root[child_reduce_stage_index] =
+				(render_params.node_y_offsets_relative_to_root[parent_reduce_stage_index] << 1) +
+						child_y_offset;
+
 		for (unsigned int child_x_offset = 0; child_x_offset < 2; ++child_x_offset)
 		{
-			// Results (if any) from the current child - the child is responsible for acquiring this texture.
-			GLTexture::shared_ptr_type child_results_texture;
+			// Keep track of the location of the current child node relative to the root node.
+			render_params.node_x_offsets_relative_to_root[child_reduce_stage_index] =
+					(render_params.node_x_offsets_relative_to_root[parent_reduce_stage_index] << 1) +
+							child_x_offset;
 
-			// If the next layer deep in the reduce quad tree is the leaf node layer...
-			if (reduce_quad_tree_internal_node.get_reduce_stage_index() == 1)
+			// If the child layer is the leaf node layer...
+			if (child_reduce_stage_index == 0)
 			{
-				// Search for a leaf node slot that has *not* yet been taken.
-				// At least one of the four child slots should be available otherwise we shouldn't be here.
-				if (reduce_quad_tree_internal_node.get_child_leaf_node(child_x_offset, child_y_offset))
-				{
-					continue;
-				}
+				//
+				// Create a child leaf node and add the next seed co-registration to it.
+				//
 
 				// Remove a seed geometry from the list.
 				SeedCoRegistration &seed_co_registration = *render_params.seed_co_registration_iter;
@@ -2576,173 +2728,186 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_to_reduce_quad_tre
 						child_y_offset,
 						seed_co_registration);
 
-				// Keep track of leaf node numbers so we can determine when sub-trees fill up.
-				++num_new_leaf_nodes;
-				reduce_quad_tree_internal_node.accumulate_descendant_leaf_node_count(1);
-
 				// Add the seed geometry to the list of point/outline/fill primitives to be rendered
 				// depending on the seed geometry type.
 				AddSeedCoRegistrationToGeometryLists add_geometry_to_list_visitor(
-						render_params.seed_co_registration_geometry_lists,
+						render_params.seed_co_registration_geometry_lists[render_params.reduce_stage_index],
 						seed_co_registration);
 				seed_co_registration.geometry.accept_visitor(add_geometry_to_list_visitor);
 
-				// If we've recursed deeper into the reduce quad tree than the reduce stage at which
-				// we're rendering seed geometries then we need to track the quad-tree sub-viewport
-				// of the reduce stage render target that this seed geometry will be rendered into.
-				const GLUtils::QuadTreeClipSpaceTransform child_loose_seed_frustum_to_render_target_clip_space_transform =
-						(reduce_quad_tree_internal_node.get_reduce_stage_index() - 1 < render_params.reduce_stage_index)
-						? GLUtils::QuadTreeClipSpaceTransform(
-								loose_seed_frustum_to_render_target_clip_space_transform,
-								child_x_offset,
-								child_y_offset)
-						// Otherwise just use parent transform which will be the identity transform...
-						: loose_seed_frustum_to_render_target_clip_space_transform;
+				//
+				// Determine the quad-tree sub-viewport of the reduce stage render target that this
+				// seed geometry will be rendered into.
+				//
 
-				// Record the transformation from clip-space of (loose) seed frustum to the sub-viewport
-				// of render target to render seed geometry into.
+				const unsigned int node_x_offset_relative_to_reduce_stage =
+						render_params.node_x_offsets_relative_to_root[0/*child_reduce_stage_index*/] -
+							(render_params.node_x_offsets_relative_to_root[render_params.reduce_stage_index]
+									<< render_params.reduce_stage_index);
+				const unsigned int node_y_offset_relative_to_reduce_stage =
+						render_params.node_y_offsets_relative_to_root[0/*child_reduce_stage_index*/] -
+							(render_params.node_y_offsets_relative_to_root[render_params.reduce_stage_index]
+									<< render_params.reduce_stage_index);
+
+				const double reduce_stage_inverse_scale = 1.0 / (1 << render_params.reduce_stage_index);
+
+				// Record the transformation from clip-space of the (loose or non-loose - both source
+				// code paths go through here) seed frustum to the sub-viewport of render target to
+				// render seed geometry into.
+				//
+				// This code mirrors that of the *inverse* transform in class GLUtils::QuadTreeClipSpaceTransform.
 				//
 				// NOTE: We use the 'inverse' since takes the clip-space range [-1,1] covering the
-				// (loose) seed frustum and makes it cover the render target frustum - so this is
-				// descendant -> ancestor (rather than ancestor -> descendant).
-				seed_co_registration.seed_frustum_to_render_target_post_projection_scale =
-						child_loose_seed_frustum_to_render_target_clip_space_transform.get_inverse_scale();
+				// (loose or non-loose) seed frustum and makes it cover the render target frustum -
+				// so this is descendant -> ancestor (rather than ancestor -> descendant).
+				//
+				// NOTE: Even though both loose and non-loose source code paths come through here
+				// we do *not* use the *loose* inverse transform because the notion of looseness
+				// only applies when transforming from loose *raster* frustum to loose seed frustum
+				// (also the other path is regular raster frustum to regular seed frustum) and this
+				// is the transform from seed frustum to *render target* frustum.
+				seed_co_registration.seed_frustum_to_render_target_post_projection_scale = reduce_stage_inverse_scale;
 				seed_co_registration.seed_frustum_to_render_target_post_projection_translate_x =
-						child_loose_seed_frustum_to_render_target_clip_space_transform.get_inverse_translate_x();
+						-1 + reduce_stage_inverse_scale * (1 + 2 * node_x_offset_relative_to_reduce_stage);
 				seed_co_registration.seed_frustum_to_render_target_post_projection_translate_y =
-						child_loose_seed_frustum_to_render_target_clip_space_transform.get_inverse_translate_y();
+						-1 + reduce_stage_inverse_scale * (1 + 2 * node_y_offset_relative_to_reduce_stage);
+
+
+				// Keep track of leaf node numbers so we can determine when sub-trees fill up.
+				++num_new_leaf_nodes;
+				reduce_quad_tree_internal_node.accumulate_descendant_leaf_node_count(1);
 			}
 			else // Child node is an internal node (not a leaf node)...
 			{
-				// Search for a child node slot that is not full (ie, not fully populated with leaf nodes).
-				// At least one of the four child slots should be available otherwise we shouldn't be here.
-				ReduceQuadTreeInternalNode *child_reduce_quad_tree_internal_node =
-						reduce_quad_tree_internal_node.get_child_internal_node(
-								child_x_offset, child_y_offset);
-				if (!child_reduce_quad_tree_internal_node)
-				{
-					// Create the child *internal* node.
-					child_reduce_quad_tree_internal_node =
-							&render_params.reduce_quad_tree.create_child_internal_node(
+				// Create a child *internal* node.
+				ReduceQuadTreeInternalNode &child_reduce_quad_tree_internal_node =
+						render_params.reduce_quad_tree.create_child_internal_node(
 									reduce_quad_tree_internal_node,
 									child_x_offset,
 									child_y_offset);
-				}
-				else if (child_reduce_quad_tree_internal_node->is_sub_tree_full())
-				{
-					// This child sub-tree is full but one of the other children should not be.
-					continue;
-				}
-
-				// If we've recursed deeper into the reduce quad tree than the reduce stage at which
-				// we're rendering seed geometries then we need to track quad-tree sub-viewports.
-				const GLUtils::QuadTreeClipSpaceTransform child_loose_seed_frustum_to_render_target_clip_space_transform =
-						(reduce_quad_tree_internal_node.get_reduce_stage_index() - 1 < render_params.reduce_stage_index)
-						? GLUtils::QuadTreeClipSpaceTransform(
-								loose_seed_frustum_to_render_target_clip_space_transform,
-								child_x_offset,
-								child_y_offset)
-						// Otherwise just use parent transform which will be the identity transform...
-						: loose_seed_frustum_to_render_target_clip_space_transform;
 
 				// Recurse into the child reduce quad tree *internal* node.
 				const unsigned int num_new_leaf_nodes_from_child =
 						render_seed_geometries_to_reduce_quad_tree_internal_node(
 								renderer,
 								render_params,
-								child_results_texture,
-								*child_reduce_quad_tree_internal_node,
-								reduce_quad_tree_depth + 1,
-								child_loose_seed_frustum_to_render_target_clip_space_transform);
+								child_reduce_quad_tree_internal_node);
 
 				// Keep track of leaf node numbers so we can determine when sub-trees fill up.
 				num_new_leaf_nodes += num_new_leaf_nodes_from_child;
 				reduce_quad_tree_internal_node.accumulate_descendant_leaf_node_count(num_new_leaf_nodes_from_child);
 			}
 
-			// If we are further down the reduce stage pipeline than the reduce stage currently
-			// being processed then it means we need to perform a 2x2 -> 1x1 reduction of the child
-			// reduce stage texture into our (parent) reduce stage texture - for example this might be
-			// a reduction of TEXTURE_DIMENSION x TEXTURE_DIMENSION pixels into a quarter as many pixels.
-			// NOTE: It could also be a reduction of much less to even less (if the child reduce
-			// stage texture did not get filled up before running out of seed geometries).
-			if (reduce_quad_tree_internal_node.get_reduce_stage_index() > render_params.reduce_stage_index)
+			// If the child sub-tree just visited has geometries in its render list then we need to
+			// render that list of points/outlines/fills.
+			//
+			// The reason for the render list (instead of rendering each seed geometry as we
+			// encounter it) is to minimise the number of draw calls (improved OpenGL batching) -
+			// each draw call submission to OpenGL is quite expensive (in CPU cycles) especially
+			// if we're rendering thousands or hundreds of thousands of seed geometries in which
+			// case it could get quite overwhelming.
+			if (!render_params.seed_co_registration_geometry_lists[child_reduce_stage_index].empty())
 			{
-				// If the child sub-tree just visited is at the same reduce stage as currently
-				// being processed then we need to render the reduce stage render list of
-				// points/outlines/fills because either:
-				//  1) Every sub-viewport of the reduce stage texture has been claimed for rendering, or
-				//  2) There weren't enough seed geometries to claim the entire texture but nonetheless
-				//     this is the natural point at which to render them.
-				//
-				// The reason for the render list (instead of rendering each seed geometry as we
-				// encounter it) is to minimise the number of draw calls (improved OpenGL batching) -
-				// each draw call submission to OpenGL is quite expensive (in CPU cycles) especially
-				// if we're rendering thousands or hundreds of thousands of seed geometries in which
-				// case it could get quite overwhelming.
-				if (reduce_quad_tree_internal_node.get_reduce_stage_index() - 1 == render_params.reduce_stage_index)
+				// If a reduce stage texture currently exists then it means it contains
+				// partial results (is waiting to be fully filled before being reduced and released).
+				// Which means it shouldn't be cleared before rendering more results into it.
+				bool clear_reduce_texture = false;
+
+				// Get the reduce stage texture.
+				if (!render_params.reduce_stage_textures[child_reduce_stage_index])
 				{
-					// Should *not* have a valid child results texture yet.
-					GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-							!child_results_texture,
-							GPLATES_ASSERTION_SOURCE);
+					// Acquire a reduce texture.
+					render_params.reduce_stage_textures[child_reduce_stage_index] =
+							acquire_rgba_float_texture(renderer);
 
-					// Acquire a results texture render into - this is the beginning of the reduction
-					// process (as we traverse back up the reduce quad tree towards the root).
-					child_results_texture = acquire_rgba_float_texture(renderer);
-
-					render_seed_geometries_in_reduce_stage_render_list(
-							renderer,
-							child_results_texture,
-							render_params.operation,
-							render_params.target_raster_texture,
-							render_params.target_raster_view_transform,
-							render_params.target_raster_projection_transform,
-							render_params.seed_co_registration_geometry_lists,
-							render_params.are_seed_geometries_bounded);
-
-					// We've finished rendering the lists so clear them for the next batch in the current reduce stage.
-					render_params.seed_co_registration_geometry_lists.clear();
+					// Clear acquired texture - there are no partial results.
+					clear_reduce_texture = true;
 				}
 
-				// If we're visiting the first child (of four) then we need to acquire a texture to
-				// reduce the child into. The other three children (if visited) will also reduce into
-				// this same texture. Our parent reduce quad tree node will then do the same with us.
-				//
-				// NOTE: We could have just allocated these textures as we traversed *down* into the
-				// reduce quad tree but that requires more textures (more memory). By acquiring
-				// as we traverse back *up* towards the root we can re-use textures that have been
-				// used and subsequently released from further down in the quad tree so we should
-				// need only two textures at any time instead of the number of reduce stages (used).
-				if (!results_texture)
-				{
-					// Acquire a results texture to reduce into.
-					results_texture = acquire_rgba_float_texture(renderer);
-				}
+				// Render the geometries into the reduce stage texture.
+				render_seed_geometries_in_reduce_stage_render_list(
+						renderer,
+						render_params.reduce_stage_textures[child_reduce_stage_index].get(),
+						clear_reduce_texture,
+						render_params.operation,
+						render_params.cube_face_centre,
+						render_params.target_raster_texture,
+						render_params.target_raster_view_transform,
+						render_params.target_raster_projection_transform,
+						render_params.seed_co_registration_geometry_lists[child_reduce_stage_index],
+						render_params.are_seed_geometries_bounded);
 
-				// Should always have a valid child results texture.
-				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-						child_results_texture,
-						GPLATES_ASSERTION_SOURCE);
+				// We've finished rendering the lists so clear them for the next batch in the current reduce stage.
+				render_params.seed_co_registration_geometry_lists[child_reduce_stage_index].clear();
+			}
+
+			// If there's a child reduce stage texture then it means we need to perform a 2x2 -> 1x1
+			// reduction of the child reduce stage texture into our (parent) reduce stage texture.
+			if (render_params.reduce_stage_textures[child_reduce_stage_index])
+			{
+				// If a parent reduce stage texture currently exists then it means it contains
+				// partial results (is waiting to be fully filled before being reduced and released).
+				// Which means it shouldn't be cleared before reducing more results into it.
+				bool clear_parent_reduce_texture = false;
+
+				// Get the parent reduce stage texture.
+				if (!render_params.reduce_stage_textures[parent_reduce_stage_index])
+				{
+					// Acquire a parent reduce texture.
+					render_params.reduce_stage_textures[parent_reduce_stage_index] =
+							acquire_rgba_float_texture(renderer);
+
+					// Clear acquired texture - there are no partial results.
+					clear_parent_reduce_texture = true;
+				}
 
 				// Do the 2x2 -> 1x1 reduction.
+				//
+				// NOTE: If we ran out of geometries before the child sub-tree could be filled then
+				// this could be a reduction of *less* than TEXTURE_DIMENSION x TEXTURE_DIMENSION pixels.
 				render_reduction_of_reduce_stage(
 						renderer,
 						render_params.operation,
 						reduce_quad_tree_internal_node,
 						child_x_offset,
 						child_y_offset,
+						clear_parent_reduce_texture,
 						// The destination (1x1) stage...
-						results_texture,
+						render_params.reduce_stage_textures[parent_reduce_stage_index].get(),
 						// The source (2x2) stage...
-						child_results_texture);
+						render_params.reduce_stage_textures[child_reduce_stage_index].get());
+
+				// The child texture has been reduced so we can release it for re-use.
+				// This also signals the next acquire to clear the texture before re-using.
+				render_params.reduce_stage_textures[child_reduce_stage_index] = boost::none;
 			}
 
-			// If there are no more seed geometries to render then we're done with the current
-			// reduce stage so return early (all the way back to the reduce quad tree *root* node).
-			if (render_params.seed_co_registration_iter == render_params.seed_co_registration_end)
+			// If there are no more seed geometries in *any* reduce stages then return early
+			// (all the way back to the root node without visiting any more sub-trees - but we still
+			// perform any unflushed rendering and reduction on the way back up to the root though).
+			if (render_params.reduce_stage_index == NUM_REDUCE_STAGES)
 			{
 				return num_new_leaf_nodes;
+			}
+
+			// Advance to the next *non-empty* reduce stage if there are no more seed geometries
+			// in the current reduce stage.
+			while (render_params.seed_co_registration_iter == render_params.seed_co_registration_end)
+			{
+				++render_params.reduce_stage_index;
+				if (render_params.reduce_stage_index == NUM_REDUCE_STAGES)
+				{
+					// No seed geometries left in any reduce stages - we're finished.
+					return num_new_leaf_nodes;
+				}
+
+				// Change the seed co-registration iterators to refer to the next reduce stage.
+				render_params.seed_co_registration_iter =
+						render_params.operation_reduce_stage_list.reduce_stage_lists[
+								render_params.reduce_stage_index].begin();
+				render_params.seed_co_registration_end =
+						render_params.operation_reduce_stage_list.reduce_stage_lists[
+								render_params.reduce_stage_index].end();
 			}
 		}
 	}
@@ -2754,14 +2919,18 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_to_reduce_quad_tre
 void
 GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_render_list(
 		GLRenderer &renderer,
-		const GLTexture::shared_ptr_type &results_texture,
+		const GLTexture::shared_ptr_type &reduce_stage_texture,
+		bool clear_reduce_stage_texture,
 		const Operation &operation,
+		const GPlatesMaths::UnitVector3D &cube_face_centre,
 		const GLTexture::shared_ptr_type &target_raster_texture,
 		const GLTransform::non_null_ptr_to_const_type &target_raster_view_transform,
 		const GLTransform::non_null_ptr_to_const_type &target_raster_projection_transform,
 		const SeedCoRegistrationGeometryLists &geometry_lists,
 		bool are_seed_geometries_bounded)
 {
+	//PROFILE_FUNC();
+
 	//
 	// Set up for streaming vertices/indices into region-of-interest vertex/index buffers.
 	//
@@ -2787,6 +2956,10 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 			true/*reset_to_default_state*/);
 
 	// Acquire a fixed-point texture to render the region-of-interest masks into.
+	//
+	// The reason for acquiring a separate fixed-point texture for masking is the polygon fill is
+	// implemented with alpha-blending and alpha-blending with floating-point textures is
+	// unsupported on a lot of hardware - so we use a fixed-point texture instead.
 	GLTexture::shared_ptr_type region_of_interest_mask_texture = acquire_rgba_fixed_texture(renderer);
 
 	// Render to the fixed-point region-of-interest mask texture.
@@ -2797,6 +2970,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	// Render to the entire regions-of-interest texture - same dimensions as reduce stage textures.
 	renderer.gl_viewport(0, 0, TEXTURE_DIMENSION, TEXTURE_DIMENSION);
 
+	// Clear the region-of-interest mask fixed-point texture.
 	// Clear colour to all zeros - only those areas inside the regions-of-interest will be non-zero.
 	renderer.gl_clear_color();
 	renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
@@ -2834,62 +3008,68 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	// This means geometries that are polylines and polygons.
 	//
 
-	if (are_seed_geometries_bounded)
+	// We only need to render the region-of-interest geometries if the ROI radius is non-zero.
+	// If it's zero then only rendering of single pixel points and single pixel-wide lines is necessary.
+	if (GPlatesMaths::real_t(operation.d_region_of_interest_radius) > 0)
 	{
-		// Render the line region-of-interest geometries (quads).
-		// The seed geometry is bounded by a loose cube quad tree tile.
-		render_bounded_line_region_of_interest_geometries(
-				renderer,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				geometry_lists,
-				operation.d_region_of_interest_radius);
-	}
-	else
-	{
-		// Render the line region-of-interest geometries (meshes).
-		// The seed geometry is *not* bounded by a loose cube quad tree tile.
-		render_unbounded_line_region_of_interest_geometries(
-				renderer,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				geometry_lists,
-				operation.d_region_of_interest_radius);
-	}
+		if (are_seed_geometries_bounded)
+		{
+			// Render the line region-of-interest geometries (quads).
+			// The seed geometry is bounded by a loose cube quad tree tile.
+			render_bounded_line_region_of_interest_geometries(
+					renderer,
+					map_vertex_element_buffer_scope,
+					map_vertex_buffer_scope,
+					geometry_lists,
+					operation.d_region_of_interest_radius);
+		}
+		else
+		{
+			// Render the line region-of-interest geometries (meshes).
+			// The seed geometry is *not* bounded by a loose cube quad tree tile.
+			render_unbounded_line_region_of_interest_geometries(
+					renderer,
+					map_vertex_element_buffer_scope,
+					map_vertex_buffer_scope,
+					geometry_lists,
+					operation.d_region_of_interest_radius);
+		}
 
-	//
-	// Render the point regions-of-interest of all seed geometries.
-	// This means geometries that are points, multipoints, polylines and polygons.
-	//
+		//
+		// Render the point regions-of-interest of all seed geometries.
+		// This means geometries that are points, multipoints, polylines and polygons.
+		//
 
-	if (are_seed_geometries_bounded)
-	{
-		// Render the point region-of-interest geometries (quads).
-		// The seed geometry is bounded by a loose cube quad tree tile.
-		render_bounded_point_region_of_interest_geometries(
-				renderer,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				geometry_lists,
-				operation.d_region_of_interest_radius);
-	}
-	else
-	{
-		// Render the point region-of-interest geometries (meshes).
-		// The seed geometry is *not* bounded by a loose cube quad tree tile.
-		render_unbounded_point_region_of_interest_geometries(
-				renderer,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				geometry_lists,
-				operation.d_region_of_interest_radius);
+		if (are_seed_geometries_bounded)
+		{
+			// Render the point region-of-interest geometries (quads).
+			// The seed geometry is bounded by a loose cube quad tree tile.
+			render_bounded_point_region_of_interest_geometries(
+					renderer,
+					map_vertex_element_buffer_scope,
+					map_vertex_buffer_scope,
+					geometry_lists,
+					operation.d_region_of_interest_radius);
+		}
+		else
+		{
+			// Render the point region-of-interest geometries (meshes).
+			// The seed geometry is *not* bounded by a loose cube quad tree tile.
+			render_unbounded_point_region_of_interest_geometries(
+					renderer,
+					map_vertex_element_buffer_scope,
+					map_vertex_buffer_scope,
+					geometry_lists,
+					operation.d_region_of_interest_radius);
+		}
 	}
 
 	// As an extra precaution we also render the line region-of-interest geometries as lines (not quads) of
 	// line width 1 (with no anti-aliasing). This is done in case the region-of-interest radius is so
 	// small that the line quads fall between pixels in the render target because the lines are so thin.
 	//
-	// TODO: Only call this when necessary (detect when the lines are too thin).
+	// UPDATE: This is also required for the case when a zero region-of-interest radius is specified
+	// which can be used to indicate point-sampling (along the line) rather than area sampling.
 	render_single_pixel_wide_line_region_of_interest_geometries(
 			renderer,
 			map_vertex_element_buffer_scope,
@@ -2900,12 +3080,15 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	// point size 1 (with no anti-aliasing). This is done in case the region-of-interest radius is so
 	// small that the point quads fall between pixels in the render target because the points are so small.
 	//
-	// TODO: Only call this when necessary (detect when the points are too small).
+	// UPDATE: This is also required for the case when a zero region-of-interest radius is specified
+	// which can be used to indicate point-sampling rather than area sampling.
 	render_single_pixel_size_point_region_of_interest_geometries(
 			renderer,
 			map_vertex_element_buffer_scope,
 			map_vertex_buffer_scope,
 			geometry_lists);
+
+	//debug_fixed_point_render_target(renderer, "region_of_interest_mask");
 
 	//
 	// Now that we've generated the region-of-interest masks we can copy seed sub-viewport sections
@@ -2914,34 +3097,47 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	// Prepare for rendering into the reduce stage floating-point texture.
 	//
 
-	// Make sure we leave the OpenGL state the way it was.
-	GLRenderer::StateBlockScope save_restore_state_copy_to_reduce_stage(
-			renderer,
-			// We're rendering to a render target so reset to the default OpenGL state...
-			true/*reset_to_default_state*/);
-
 	// Render to the floating-point reduce stage texture.
 	d_framebuffer_object->gl_attach(
-			renderer, GL_TEXTURE_2D, results_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
+			renderer, GL_TEXTURE_2D, reduce_stage_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
 	renderer.gl_bind_frame_buffer(d_framebuffer_object);
 
-	// Render to the entire reduce stage texture - all reduce stage textures have the same dimensions.
-	renderer.gl_viewport(0, 0, TEXTURE_DIMENSION, TEXTURE_DIMENSION);
+	// No need to change the viewport - it's already TEXTURE_DIMENSION x TEXTURE_DIMENSION;
 
-	// Clear colour to all zeros - this means pixels outside the regions-of-interest will
-	// have coverage values of zero (causing them to not contribute to the co-registration result).
-	renderer.gl_clear_color();
-	renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
+	// If the reduce stage texture does not contain partial results then it'll need to be cleared.
+	// This happens when starting afresh with a newly acquired reduce stage texture.
+	if (clear_reduce_stage_texture)
+	{
+		// Clear colour to all zeros - this means pixels outside the regions-of-interest will
+		// have coverage values of zero (causing them to not contribute to the co-registration result).
+		renderer.gl_clear_color();
+		renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
+	}
 
-	// NOTE: Use the default identity view and projection matrices.
+	// We use the same view and projection matrices (set for the target raster) but,
+	// in the vertex shader, we don't transform the vertex position using them.
 	// This is because the vertices will be in screen-space (range [-1,1]) and will only need
 	// a translate/scale adjustment of the 'x' and 'y' components to effectively map its texture
 	// coordinates to the appropriate sub-viewport of the target raster texture and map its position
 	// to the appropriate sub-viewport of the render target.
 	// And these adjustments will be transferred to the vertex shader using vertex data (attributes).
 	//
-	// Actually it doesn't really matter anyway since we're using a vertex shader and it doesn't
-	// access these view/projection matrices (but we keep it this way just in case that changes).
+	// We do however use the inverse view and projection matrices, provided as built-in uniform
+	// shader constants from our GL_MODELVIEW and GL_PROJECTION transforms courtesy of OpenGL, to
+	// inverse transform from screen-space back to view space so we can then perform a dot-product
+	// of the (normalised) view space position with the cube face centre in order to adjust the
+	// raster coverage to counteract the distortion of a pixel's area on the surface of the globe.
+	// Near the face corners a cube map pixel projects to a smaller area on the globe than at the
+	// cube face centre. This can affect area-weighted operations like mean and standard deviation
+	// which assume each pixel projects to the same area on the globe. The dot product or cosine
+	// adjustment counteracts that (assuming each pixel is infinitesimally small - which is close
+	// enough for small pixels).
+	//
+	// We could have done the cube map distortion adjustment when rendering the region-of-interest
+	// geometries but that's done to a fixed-point (8-bit per component) render target and the
+	// lack of precision would introduce noise into the co-registration operation (eg, mean, std-dev).
+	// So we do it with the floating-point render target here instead.
+	//
 
 	//
 	// Render the seed sub-viewports of the regions-of-interest of all seed geometries.
@@ -2952,11 +3148,15 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	mask_target_raster_with_regions_of_interest(
 			renderer,
 			operation,
+			cube_face_centre,
 			target_raster_texture,
 			region_of_interest_mask_texture,
 			map_vertex_element_buffer_scope,
 			map_vertex_buffer_scope,
 			geometry_lists);
+
+	//debug_floating_point_render_target(
+	//		renderer, "region_of_interest_masked_raster", false/*coverage_is_in_green_channel*/);
 }
 
 
@@ -2968,6 +3168,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 		const SeedCoRegistrationGeometryLists &geometry_lists,
 		const double &region_of_interest_radius)
 {
+	//PROFILE_FUNC();
+
 	//
 	// Some uniform shader parameters.
 	//
@@ -3006,9 +3208,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 			map_vertex_element_buffer_scope,
 			map_vertex_buffer_scope);
 
-	point_region_of_interest_stream_primitives_type::Quads point_stream_quads(point_stream);
-
-	point_stream_quads.begin_quads();
+	point_region_of_interest_stream_primitives_type::Primitives point_stream_quads(point_stream);
 
 	// Iterate over the point geometries.
 	seed_co_registration_points_list_type::const_iterator points_iter = geometry_lists.points_list.begin();
@@ -3031,7 +3231,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 				map_vertex_buffer_scope,
 				point_stream_target,
 				point_stream_quads,
-				seed_co_registration,
 				point_on_sphere.position_vector(),
 				vertex,
 				tan_region_of_interest_angle);
@@ -3065,7 +3264,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 					map_vertex_buffer_scope,
 					point_stream_target,
 					point_stream_quads,
-					seed_co_registration,
 					point.position_vector(),
 					vertex,
 					tan_region_of_interest_angle);
@@ -3102,7 +3300,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 					map_vertex_buffer_scope,
 					point_stream_target,
 					point_stream_quads,
-					seed_co_registration,
 					point.position_vector(),
 					vertex,
 					tan_region_of_interest_angle);
@@ -3139,14 +3336,11 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 					map_vertex_buffer_scope,
 					point_stream_target,
 					point_stream_quads,
-					seed_co_registration,
 					point.position_vector(),
 					vertex,
 					tan_region_of_interest_angle);
 		}
 	}
-
-	point_stream_quads.end_quads();
 
 	// Stop streaming point region-of-interest geometries so we can render the last batch.
 	end_vertex_array_streaming<PointRegionOfInterestVertex>(
@@ -3159,7 +3353,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 	render_vertex_array_stream<PointRegionOfInterestVertex>(
 			renderer,
 			point_stream_target,
-			d_point_region_of_interest_vertex_array);
+			d_point_region_of_interest_vertex_array,
+			GL_TRIANGLES);
 }
 
 
@@ -3169,13 +3364,29 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
 		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 		point_region_of_interest_stream_primitives_type::StreamTarget &point_stream_target,
-		point_region_of_interest_stream_primitives_type::Quads &point_stream_quads,
-		const SeedCoRegistration &seed_co_registration,
+		point_region_of_interest_stream_primitives_type::Primitives &point_stream_quads,
 		const GPlatesMaths::UnitVector3D &point,
 		PointRegionOfInterestVertex &vertex,
 		const double &tan_region_of_interest_angle)
 {
-	// NOTE: There are four vertices for the current point (each point gets a quad).
+	//PROFILE_FUNC();
+
+	// There are four vertices for the current point (each point gets a quad) and
+	// two triangles (three indices each).
+	if (!point_stream_quads.begin_primitive(
+			4/*max_num_vertices*/,
+			6/*max_num_vertex_elements*/))
+	{
+		// There's not enough vertices or indices so render what we have so far and
+		// obtain new stream buffers.
+		suspend_render_resume_vertex_array_streaming<PointRegionOfInterestVertex>(
+				renderer,
+				point_stream_target,
+				map_vertex_element_buffer_scope,
+				map_vertex_buffer_scope,
+				d_point_region_of_interest_vertex_array,
+				GL_TRIANGLES);
+	}
 
 	vertex.point_centre[0] = point.x().dval();
 	vertex.point_centre[1] = point.y().dval();
@@ -3184,55 +3395,33 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 
 	vertex.tangent_frame_weights[0] = -tan_region_of_interest_angle;
 	vertex.tangent_frame_weights[1] = -tan_region_of_interest_angle;
-	if (!point_stream_quads.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<PointRegionOfInterestVertex>(
-				renderer,
-				point_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_point_region_of_interest_vertex_array);
-		point_stream_quads.add_vertex(vertex);
-	}
+	point_stream_quads.add_vertex(vertex);
 
 	vertex.tangent_frame_weights[0] = -tan_region_of_interest_angle;
 	vertex.tangent_frame_weights[1] = tan_region_of_interest_angle;
-	if (!point_stream_quads.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<PointRegionOfInterestVertex>(
-				renderer,
-				point_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_point_region_of_interest_vertex_array);
-		point_stream_quads.add_vertex(vertex);
-	}
+	point_stream_quads.add_vertex(vertex);
 
 	vertex.tangent_frame_weights[0] = tan_region_of_interest_angle;
 	vertex.tangent_frame_weights[1] = tan_region_of_interest_angle;
-	if (!point_stream_quads.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<PointRegionOfInterestVertex>(
-				renderer,
-				point_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_point_region_of_interest_vertex_array);
-		point_stream_quads.add_vertex(vertex);
-	}
+	point_stream_quads.add_vertex(vertex);
 
 	vertex.tangent_frame_weights[0] = tan_region_of_interest_angle;
 	vertex.tangent_frame_weights[1] = -tan_region_of_interest_angle;
-	if (!point_stream_quads.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<PointRegionOfInterestVertex>(
-				renderer,
-				point_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_point_region_of_interest_vertex_array);
-		point_stream_quads.add_vertex(vertex);
-	}
+	point_stream_quads.add_vertex(vertex);
+
+	//
+	// Add the quad triangles.
+	//
+
+	point_stream_quads.add_vertex_element(0);
+	point_stream_quads.add_vertex_element(1);
+	point_stream_quads.add_vertex_element(2);
+
+	point_stream_quads.add_vertex_element(0);
+	point_stream_quads.add_vertex_element(2);
+	point_stream_quads.add_vertex_element(3);
+
+	point_stream_quads.end_primitive();
 }
 
 
@@ -3244,6 +3433,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 		const SeedCoRegistrationGeometryLists &geometry_lists,
 		const double &region_of_interest_radius)
 {
+	//PROFILE_FUNC();
+
 	//
 	// Some uniform shader parameters.
 	//
@@ -3310,7 +3501,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 			map_vertex_element_buffer_scope,
 			map_vertex_buffer_scope);
 
-	point_region_of_interest_stream_primitives_type::TriangleMeshes point_stream_meshes(point_stream);
+	point_region_of_interest_stream_primitives_type::Primitives point_stream_meshes(point_stream);
 
 	// Iterate over the point geometries.
 	seed_co_registration_points_list_type::const_iterator points_iter = geometry_lists.points_list.begin();
@@ -3333,7 +3524,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 				map_vertex_buffer_scope,
 				point_stream_target,
 				point_stream_meshes,
-				seed_co_registration,
 				point_on_sphere.position_vector(),
 				vertex,
 				centre_point_weight,
@@ -3368,7 +3558,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 					map_vertex_buffer_scope,
 					point_stream_target,
 					point_stream_meshes,
-					seed_co_registration,
 					point.position_vector(),
 					vertex,
 					centre_point_weight,
@@ -3406,7 +3595,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 					map_vertex_buffer_scope,
 					point_stream_target,
 					point_stream_meshes,
-					seed_co_registration,
 					point.position_vector(),
 					vertex,
 					centre_point_weight,
@@ -3444,7 +3632,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 					map_vertex_buffer_scope,
 					point_stream_target,
 					point_stream_meshes,
-					seed_co_registration,
 					point.position_vector(),
 					vertex,
 					centre_point_weight,
@@ -3463,7 +3650,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 	render_vertex_array_stream<PointRegionOfInterestVertex>(
 			renderer,
 			point_stream_target,
-			d_point_region_of_interest_vertex_array);
+			d_point_region_of_interest_vertex_array,
+			GL_TRIANGLES);
 }
 
 
@@ -3473,16 +3661,30 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
 		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 		point_region_of_interest_stream_primitives_type::StreamTarget &point_stream_target,
-		point_region_of_interest_stream_primitives_type::TriangleMeshes &point_stream_meshes,
-		const SeedCoRegistration &seed_co_registration,
+		point_region_of_interest_stream_primitives_type::Primitives &point_stream_meshes,
 		const GPlatesMaths::UnitVector3D &point,
 		PointRegionOfInterestVertex &vertex,
 		const double &centre_point_weight,
 		const double &tangent_weight)
 {
-	point_stream_meshes.begin_mesh();
+	//PROFILE_FUNC();
 
-	// NOTE: There are four vertices for the current point (each point gets a quad).
+	// There are five vertices for the current point (each point gets a fan mesh) and
+	// four triangles (three indices each).
+	if (!point_stream_meshes.begin_primitive(
+			5/*max_num_vertices*/,
+			12/*max_num_vertex_elements*/))
+	{
+		// There's not enough vertices or indices so render what we have so far and
+		// obtain new stream buffers.
+		suspend_render_resume_vertex_array_streaming<PointRegionOfInterestVertex>(
+				renderer,
+				point_stream_target,
+				map_vertex_element_buffer_scope,
+				map_vertex_buffer_scope,
+				d_point_region_of_interest_vertex_array,
+				GL_TRIANGLES);
+	}
 
 	vertex.point_centre[0] = point.x().dval();
 	vertex.point_centre[1] = point.y().dval();
@@ -3492,16 +3694,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 	vertex.tangent_frame_weights[0] = 0;
 	vertex.tangent_frame_weights[1] = 0;
 	vertex.tangent_frame_weights[2] = 1;
-	if (!point_stream_meshes.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<PointRegionOfInterestVertex>(
-				renderer,
-				point_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_point_region_of_interest_vertex_array);
-		point_stream_meshes.add_vertex(vertex);
-	}
+	point_stream_meshes.add_vertex(vertex);
 
 	//
 	// Add the four fan mesh outer vertices.
@@ -3523,105 +3716,41 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 
 	vertex.tangent_frame_weights[0] = -tangent_weight;
 	vertex.tangent_frame_weights[1] = -tangent_weight;
-	if (!point_stream_meshes.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<PointRegionOfInterestVertex>(
-				renderer,
-				point_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_point_region_of_interest_vertex_array);
-		point_stream_meshes.add_vertex(vertex);
-	}
+	point_stream_meshes.add_vertex(vertex);
 
 	vertex.tangent_frame_weights[0] = -tangent_weight;
 	vertex.tangent_frame_weights[1] = tangent_weight;
-	if (!point_stream_meshes.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<PointRegionOfInterestVertex>(
-				renderer,
-				point_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_point_region_of_interest_vertex_array);
-		point_stream_meshes.add_vertex(vertex);
-	}
+	point_stream_meshes.add_vertex(vertex);
 
 	vertex.tangent_frame_weights[0] = tangent_weight;
 	vertex.tangent_frame_weights[1] = tangent_weight;
-	if (!point_stream_meshes.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<PointRegionOfInterestVertex>(
-				renderer,
-				point_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_point_region_of_interest_vertex_array);
-		point_stream_meshes.add_vertex(vertex);
-	}
+	point_stream_meshes.add_vertex(vertex);
 
 	vertex.tangent_frame_weights[0] = tangent_weight;
 	vertex.tangent_frame_weights[1] = -tangent_weight;
-	if (!point_stream_meshes.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<PointRegionOfInterestVertex>(
-				renderer,
-				point_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_point_region_of_interest_vertex_array);
-		point_stream_meshes.add_vertex(vertex);
-	}
+	point_stream_meshes.add_vertex(vertex);
 
 	//
 	// Add the mesh triangles.
 	//
 
-	if (!point_stream_meshes.add_triangle(0, 1, 2))
-	{
-		suspend_render_resume_vertex_array_streaming<PointRegionOfInterestVertex>(
-				renderer,
-				point_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_point_region_of_interest_vertex_array);
-		point_stream_meshes.add_triangle(0, 1, 2);
-	}
+	point_stream_meshes.add_vertex_element(0);
+	point_stream_meshes.add_vertex_element(1);
+	point_stream_meshes.add_vertex_element(2);
 
-	if (!point_stream_meshes.add_triangle(0, 2, 3))
-	{
-		suspend_render_resume_vertex_array_streaming<PointRegionOfInterestVertex>(
-				renderer,
-				point_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_point_region_of_interest_vertex_array);
-		point_stream_meshes.add_triangle(0, 2, 3);
-	}
+	point_stream_meshes.add_vertex_element(0);
+	point_stream_meshes.add_vertex_element(2);
+	point_stream_meshes.add_vertex_element(3);
 
-	if (!point_stream_meshes.add_triangle(0, 3, 4))
-	{
-		suspend_render_resume_vertex_array_streaming<PointRegionOfInterestVertex>(
-				renderer,
-				point_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_point_region_of_interest_vertex_array);
-		point_stream_meshes.add_triangle(0, 3, 4);
-	}
+	point_stream_meshes.add_vertex_element(0);
+	point_stream_meshes.add_vertex_element(3);
+	point_stream_meshes.add_vertex_element(4);
 
-	if (!point_stream_meshes.add_triangle(0, 4, 1))
-	{
-		suspend_render_resume_vertex_array_streaming<PointRegionOfInterestVertex>(
-				renderer,
-				point_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_point_region_of_interest_vertex_array);
-		point_stream_meshes.add_triangle(0, 4, 1);
-	}
+	point_stream_meshes.add_vertex_element(0);
+	point_stream_meshes.add_vertex_element(4);
+	point_stream_meshes.add_vertex_element(1);
 
-	point_stream_meshes.end_mesh();
+	point_stream_meshes.end_primitive();
 }
 
 
@@ -3633,6 +3762,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 		const SeedCoRegistrationGeometryLists &geometry_lists,
 		const double &region_of_interest_radius)
 {
+	//PROFILE_FUNC();
+
 	// Nothing to do if there's no polylines and no polygons.
 	if (geometry_lists.polylines_list.empty() && geometry_lists.polygons_list.empty())
 	{
@@ -3677,9 +3808,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 			map_vertex_element_buffer_scope,
 			map_vertex_buffer_scope);
 
-	line_region_of_interest_stream_primitives_type::Quads line_stream_quads(line_stream);
-
-	line_stream_quads.begin_quads();
+	line_region_of_interest_stream_primitives_type::Primitives line_stream_quads(line_stream);
 
 	// Iterate over the polyline geometries.
 	seed_co_registration_polylines_list_type::const_iterator polylines_iter = geometry_lists.polylines_list.begin();
@@ -3718,7 +3847,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 					map_vertex_buffer_scope,
 					line_stream_target,
 					line_stream_quads,
-					seed_co_registration,
 					line,
 					vertex,
 					tan_region_of_interest_angle);
@@ -3762,14 +3890,11 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 					map_vertex_buffer_scope,
 					line_stream_target,
 					line_stream_quads,
-					seed_co_registration,
 					line,
 					vertex,
 					tan_region_of_interest_angle);
 		}
 	}
-
-	line_stream_quads.end_quads();
 
 	// Stop streaming line region-of-interest geometries so we can render the last batch.
 	end_vertex_array_streaming<LineRegionOfInterestVertex>(
@@ -3782,7 +3907,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 	render_vertex_array_stream<LineRegionOfInterestVertex>(
 			renderer,
 			line_stream_target,
-			d_line_region_of_interest_vertex_array);
+			d_line_region_of_interest_vertex_array,
+			GL_TRIANGLES);
 }
 
 
@@ -3792,12 +3918,28 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
 		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 		line_region_of_interest_stream_primitives_type::StreamTarget &line_stream_target,
-		line_region_of_interest_stream_primitives_type::Quads &line_stream_quads,
-		const SeedCoRegistration &seed_co_registration,
+		line_region_of_interest_stream_primitives_type::Primitives &line_stream_quads,
 		const GPlatesMaths::GreatCircleArc &line,
 		LineRegionOfInterestVertex &vertex,
 		const double &tan_region_of_interest_angle)
 {
+	// There are four vertices for the current line (each line gets a quad) and
+	// two triangles (three indices each).
+	if (!line_stream_quads.begin_primitive(
+			4/*max_num_vertices*/,
+			6/*max_num_vertex_elements*/))
+	{
+		// There's not enough vertices or indices so render what we have so far and
+		// obtain new stream buffers.
+		suspend_render_resume_vertex_array_streaming<LineRegionOfInterestVertex>(
+				renderer,
+				line_stream_target,
+				map_vertex_element_buffer_scope,
+				map_vertex_buffer_scope,
+				d_line_region_of_interest_vertex_array,
+				GL_TRIANGLES);
+	}
+
 	// We should only be called if line (arc) has a rotation axis.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			!line.is_zero_length(),
@@ -3809,8 +3951,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 
 	const GLfloat first_point_gl[3] = { first_point.x().dval(), first_point.y().dval(), first_point.z().dval() };
 	const GLfloat second_point_gl[3] = { second_point.x().dval(), second_point.y().dval(), second_point.z().dval() };
-
-	// NOTE: There are four vertices for the current line (each line gets a quad).
 
 	// All four vertices have the same arc normal.
 	vertex.line_arc_normal[0] = arc_normal.x().dval();
@@ -3824,28 +3964,10 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 	vertex.line_arc_start_point[2] = first_point_gl[2];
 
 	vertex.tangent_frame_weights[0] = -tan_region_of_interest_angle;
-	if (!line_stream_quads.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<LineRegionOfInterestVertex>(
-				renderer,
-				line_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_line_region_of_interest_vertex_array);
-		line_stream_quads.add_vertex(vertex);
-	}
+	line_stream_quads.add_vertex(vertex);
 
 	vertex.tangent_frame_weights[0] = tan_region_of_interest_angle;
-	if (!line_stream_quads.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<LineRegionOfInterestVertex>(
-				renderer,
-				line_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_line_region_of_interest_vertex_array);
-		line_stream_quads.add_vertex(vertex);
-	}
+	line_stream_quads.add_vertex(vertex);
 
 	// The last two vertices have the start point as the *second* GCA point.
 	vertex.line_arc_start_point[0] = second_point_gl[0];
@@ -3853,28 +3975,24 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 	vertex.line_arc_start_point[2] = second_point_gl[2];
 
 	vertex.tangent_frame_weights[0] = tan_region_of_interest_angle;
-	if (!line_stream_quads.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<LineRegionOfInterestVertex>(
-				renderer,
-				line_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_line_region_of_interest_vertex_array);
-		line_stream_quads.add_vertex(vertex);
-	}
+	line_stream_quads.add_vertex(vertex);
 
 	vertex.tangent_frame_weights[0] = -tan_region_of_interest_angle;
-	if (!line_stream_quads.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<LineRegionOfInterestVertex>(
-				renderer,
-				line_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_line_region_of_interest_vertex_array);
-		line_stream_quads.add_vertex(vertex);
-	}
+	line_stream_quads.add_vertex(vertex);
+
+	//
+	// Add the mesh triangles.
+	//
+
+	line_stream_quads.add_vertex_element(0);
+	line_stream_quads.add_vertex_element(1);
+	line_stream_quads.add_vertex_element(2);
+
+	line_stream_quads.add_vertex_element(0);
+	line_stream_quads.add_vertex_element(2);
+	line_stream_quads.add_vertex_element(3);
+
+	line_stream_quads.end_primitive();
 }
 
 
@@ -3886,6 +4004,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 		const SeedCoRegistrationGeometryLists &geometry_lists,
 		const double &region_of_interest_radius)
 {
+	//PROFILE_FUNC();
+
 	// Nothing to do if there's no polylines and no polygons.
 	if (geometry_lists.polylines_list.empty() && geometry_lists.polygons_list.empty())
 	{
@@ -3958,7 +4078,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 			map_vertex_element_buffer_scope,
 			map_vertex_buffer_scope);
 
-	line_region_of_interest_stream_primitives_type::TriangleMeshes line_stream_meshes(line_stream);
+	line_region_of_interest_stream_primitives_type::Primitives line_stream_meshes(line_stream);
 
 	// Iterate over the polyline geometries.
 	seed_co_registration_polylines_list_type::const_iterator polylines_iter = geometry_lists.polylines_list.begin();
@@ -3997,7 +4117,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 					map_vertex_buffer_scope,
 					line_stream_target,
 					line_stream_meshes,
-					seed_co_registration,
 					line,
 					vertex,
 					arc_point_weight,
@@ -4042,7 +4161,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 					map_vertex_buffer_scope,
 					line_stream_target,
 					line_stream_meshes,
-					seed_co_registration,
 					line,
 					vertex,
 					arc_point_weight,
@@ -4061,7 +4179,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 	render_vertex_array_stream<LineRegionOfInterestVertex>(
 			renderer,
 			line_stream_target,
-			d_line_region_of_interest_vertex_array);
+			d_line_region_of_interest_vertex_array,
+			GL_TRIANGLES);
 }
 
 
@@ -4071,14 +4190,28 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
 		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 		line_region_of_interest_stream_primitives_type::StreamTarget &line_stream_target,
-		line_region_of_interest_stream_primitives_type::TriangleMeshes &line_stream_meshes,
-		const SeedCoRegistration &seed_co_registration,
+		line_region_of_interest_stream_primitives_type::Primitives &line_stream_meshes,
 		const GPlatesMaths::GreatCircleArc &line,
 		LineRegionOfInterestVertex &vertex,
 		const double &arc_point_weight,
 		const double &tangent_weight)
 {
-	line_stream_meshes.begin_mesh();
+	// There are six vertices for the current line (each line gets a mesh) and 
+	// four triangles (three indices each).
+	if (!line_stream_meshes.begin_primitive(
+			6/*max_num_vertices*/,
+			12/*max_num_vertex_elements*/))
+	{
+		// There's not enough vertices or indices so render what we have so far and
+		// obtain new stream buffers.
+		suspend_render_resume_vertex_array_streaming<LineRegionOfInterestVertex>(
+				renderer,
+				line_stream_target,
+				map_vertex_element_buffer_scope,
+				map_vertex_buffer_scope,
+				d_line_region_of_interest_vertex_array,
+				GL_TRIANGLES);
+	}
 
 	// We should only be called if line (arc) has a rotation axis.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -4091,8 +4224,6 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 
 	const GLfloat first_point_gl[3] = { first_point.x().dval(), first_point.y().dval(), first_point.z().dval() };
 	const GLfloat second_point_gl[3] = { second_point.x().dval(), second_point.y().dval(), second_point.z().dval() };
-
-	// NOTE: There are six vertices for the current line (each line gets a mesh).
 
 	//
 	// Two mesh vertices remain at the line (arc) end points, another two lie in the plane containing
@@ -4131,16 +4262,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 	// First vertex is weighted to remain at the *first* GCA point.
 	vertex.tangent_frame_weights[0] = 0;
 	vertex.tangent_frame_weights[1] = 1; // 'weight_start_point'.
-	if (!line_stream_meshes.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<LineRegionOfInterestVertex>(
-				renderer,
-				line_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_line_region_of_interest_vertex_array);
-		line_stream_meshes.add_vertex(vertex);
-	}
+	line_stream_meshes.add_vertex(vertex);
 
 	// The next two vertices are either side of the *first* GCA point (and in the plane
 	// containing the *first* GCA point and the arc normal point - this is what achieves
@@ -4148,29 +4270,11 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 
 	vertex.tangent_frame_weights[0] = -tangent_weight;
 	vertex.tangent_frame_weights[1] = arc_point_weight;
-	if (!line_stream_meshes.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<LineRegionOfInterestVertex>(
-				renderer,
-				line_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_line_region_of_interest_vertex_array);
-		line_stream_meshes.add_vertex(vertex);
-	}
+	line_stream_meshes.add_vertex(vertex);
 
 	vertex.tangent_frame_weights[0] = tangent_weight;
 	vertex.tangent_frame_weights[1] = arc_point_weight;
-	if (!line_stream_meshes.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<LineRegionOfInterestVertex>(
-				renderer,
-				line_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_line_region_of_interest_vertex_array);
-		line_stream_meshes.add_vertex(vertex);
-	}
+	line_stream_meshes.add_vertex(vertex);
 
 	// The last three vertices have the start point as the *second* GCA point.
 	vertex.line_arc_start_point[0] = second_point_gl[0];
@@ -4180,16 +4284,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 	// Fourth vertex is weighted to remain at the *second* GCA point.
 	vertex.tangent_frame_weights[0] = 0;
 	vertex.tangent_frame_weights[1] = 1; // 'weight_start_point'.
-	if (!line_stream_meshes.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<LineRegionOfInterestVertex>(
-				renderer,
-				line_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_line_region_of_interest_vertex_array);
-		line_stream_meshes.add_vertex(vertex);
-	}
+	line_stream_meshes.add_vertex(vertex);
 
 	// The next two vertices are either side of the *second* GCA point (and in the plane
 	// containing the *second* GCA point and the arc normal point - this is what achieves
@@ -4197,29 +4292,11 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 
 	vertex.tangent_frame_weights[0] = -tangent_weight;
 	vertex.tangent_frame_weights[1] = arc_point_weight;
-	if (!line_stream_meshes.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<LineRegionOfInterestVertex>(
-				renderer,
-				line_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_line_region_of_interest_vertex_array);
-		line_stream_meshes.add_vertex(vertex);
-	}
+	line_stream_meshes.add_vertex(vertex);
 
 	vertex.tangent_frame_weights[0] = tangent_weight;
 	vertex.tangent_frame_weights[1] = arc_point_weight;
-	if (!line_stream_meshes.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<LineRegionOfInterestVertex>(
-				renderer,
-				line_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_line_region_of_interest_vertex_array);
-		line_stream_meshes.add_vertex(vertex);
-	}
+	line_stream_meshes.add_vertex(vertex);
 
 	//
 	// Add the four mesh triangles.
@@ -4230,51 +4307,23 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 	// |/|
 	// 1-4
 
-	if (!line_stream_meshes.add_triangle(0, 1, 3))
-	{
-		suspend_render_resume_vertex_array_streaming<LineRegionOfInterestVertex>(
-				renderer,
-				line_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_line_region_of_interest_vertex_array);
-		line_stream_meshes.add_triangle(0, 1, 3);
-	}
+	line_stream_meshes.add_vertex_element(0);
+	line_stream_meshes.add_vertex_element(1);
+	line_stream_meshes.add_vertex_element(3);
 
-	if (!line_stream_meshes.add_triangle(1, 4, 3))
-	{
-		suspend_render_resume_vertex_array_streaming<LineRegionOfInterestVertex>(
-				renderer,
-				line_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_line_region_of_interest_vertex_array);
-		line_stream_meshes.add_triangle(1, 4, 3);
-	}
+	line_stream_meshes.add_vertex_element(1);
+	line_stream_meshes.add_vertex_element(4);
+	line_stream_meshes.add_vertex_element(3);
 
-	if (!line_stream_meshes.add_triangle(0, 3, 5))
-	{
-		suspend_render_resume_vertex_array_streaming<LineRegionOfInterestVertex>(
-				renderer,
-				line_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_line_region_of_interest_vertex_array);
-		line_stream_meshes.add_triangle(0, 3, 5);
-	}
+	line_stream_meshes.add_vertex_element(0);
+	line_stream_meshes.add_vertex_element(3);
+	line_stream_meshes.add_vertex_element(5);
 
-	if (!line_stream_meshes.add_triangle(0, 5, 2))
-	{
-		suspend_render_resume_vertex_array_streaming<LineRegionOfInterestVertex>(
-				renderer,
-				line_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_line_region_of_interest_vertex_array);
-		line_stream_meshes.add_triangle(0, 5, 2);
-	}
+	line_stream_meshes.add_vertex_element(0);
+	line_stream_meshes.add_vertex_element(5);
+	line_stream_meshes.add_vertex_element(2);
 
-	line_stream_meshes.end_mesh();
+	line_stream_meshes.end_primitive();
 }
 
 
@@ -4285,6 +4334,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 		const SeedCoRegistrationGeometryLists &geometry_lists)
 {
+	//PROFILE_FUNC();
+
 	//
 	// Leave the point size state as the default (point size of 1 and no anti-aliasing).
 	// We're rendering actual points here instead of small quads (to ensure the small quads didn't fall
@@ -4496,6 +4547,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 		const SeedCoRegistrationGeometryLists &geometry_lists)
 {
+	//PROFILE_FUNC();
+
 	// Nothing to do if there's no polylines and no polygons.
 	if (geometry_lists.polylines_list.empty() && geometry_lists.polygons_list.empty())
 	{
@@ -4645,6 +4698,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 		const SeedCoRegistrationGeometryLists &geometry_lists)
 {
+	//PROFILE_FUNC();
+
 	// Nothing to do if there's no polygons.
 	if (geometry_lists.polygons_list.empty())
 	{
@@ -4707,7 +4762,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 					fill_stream_target,
 					map_vertex_element_buffer_scope,
 					map_vertex_buffer_scope,
-					d_fill_region_of_interest_vertex_array);
+					d_fill_region_of_interest_vertex_array,
+					GL_TRIANGLES);
 			fill_stream_triangle_fans.add_vertex(vertex);
 		}
 
@@ -4730,7 +4786,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 						fill_stream_target,
 						map_vertex_element_buffer_scope,
 						map_vertex_buffer_scope,
-						d_fill_region_of_interest_vertex_array);
+						d_fill_region_of_interest_vertex_array,
+						GL_TRIANGLES);
 				fill_stream_triangle_fans.add_vertex(vertex);
 			}
 		}
@@ -4747,7 +4804,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 					fill_stream_target,
 					map_vertex_element_buffer_scope,
 					map_vertex_buffer_scope,
-					d_fill_region_of_interest_vertex_array);
+					d_fill_region_of_interest_vertex_array,
+					GL_TRIANGLES);
 			fill_stream_triangle_fans.add_vertex(vertex);
 		}
 
@@ -4765,7 +4823,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 	render_vertex_array_stream<FillRegionOfInterestVertex>(
 			renderer,
 			fill_stream_target,
-			d_fill_region_of_interest_vertex_array);
+			d_fill_region_of_interest_vertex_array,
+			GL_TRIANGLES);
 
 	// Set the blend state back to the default state.
 	renderer.gl_enable(GL_BLEND, false);
@@ -4777,12 +4836,15 @@ void
 GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_interest(
 		GLRenderer &renderer,
 		const Operation &operation,
+		const GPlatesMaths::UnitVector3D &cube_face_centre,
 		const GLTexture::shared_ptr_type &target_raster_texture,
 		const GLTexture::shared_ptr_type &region_of_interest_mask_texture,
 		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
 		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 		const SeedCoRegistrationGeometryLists &geometry_lists)
 {
+	//PROFILE_FUNC();
+
 	// Determine which filter operation to use.
 	GLProgramObject::shared_ptr_type mask_region_of_interest_program_object;
 	switch (operation.d_operation)
@@ -4791,6 +4853,8 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 	case OPERATION_MEAN:
 	case OPERATION_STANDARD_DEVIATION:
 		mask_region_of_interest_program_object = d_mask_region_of_interest_moments_program_object;
+		// Set the cube face centre - needed to adjust for cube map area-weighting distortion.
+		mask_region_of_interest_program_object->gl_uniform3f(renderer, "cube_face_centre", cube_face_centre);
 		break;
 
 		// Both min and max are filtered using minmax.
@@ -4834,9 +4898,7 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 			map_vertex_element_buffer_scope,
 			map_vertex_buffer_scope);
 
-	mask_region_of_interest_stream_primitives_type::Quads mask_stream_quads(mask_stream);
-
-	mask_stream_quads.begin_quads();
+	mask_region_of_interest_stream_primitives_type::Primitives mask_stream_quads(mask_stream);
 
 	// Iterate over the seed points.
 	seed_co_registration_points_list_type::const_iterator points_iter = geometry_lists.points_list.begin();
@@ -4906,8 +4968,6 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 				seed_co_registration);
 	}
 
-	mask_stream_quads.end_quads();
-
 	// Stop streaming so we can render the last batch.
 	end_vertex_array_streaming<MaskRegionOfInterestVertex>(
 			renderer,
@@ -4919,7 +4979,8 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 	render_vertex_array_stream<MaskRegionOfInterestVertex>(
 			renderer,
 			mask_stream_target,
-			d_mask_region_of_interest_vertex_array);
+			d_mask_region_of_interest_vertex_array,
+			GL_TRIANGLES);
 }
 
 
@@ -4929,76 +4990,72 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_region_of_interes
 		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
 		GLBuffer::MapBufferScope &map_vertex_buffer_scope,
 		mask_region_of_interest_stream_primitives_type::StreamTarget &mask_stream_target,
-		mask_region_of_interest_stream_primitives_type::Quads &mask_stream_quads,
+		mask_region_of_interest_stream_primitives_type::Primitives &mask_stream_quads,
 		const SeedCoRegistration &seed_co_registration)
 {
+	// There are four vertices for the current quad and two triangles (three indices each).
+	if (!mask_stream_quads.begin_primitive(
+			4/*max_num_vertices*/,
+			6/*max_num_vertex_elements*/))
+	{
+		// There's not enough vertices or indices so render what we have so far and
+		// obtain new stream buffers.
+		suspend_render_resume_vertex_array_streaming<MaskRegionOfInterestVertex>(
+				renderer,
+				mask_stream_target,
+				map_vertex_element_buffer_scope,
+				map_vertex_buffer_scope,
+				d_mask_region_of_interest_vertex_array,
+				GL_TRIANGLES);
+	}
+
 	// Some of the vertex data is the same for all vertices for the current quad.
 	// The quad maps to the subsection used for the current seed geometry.
 	MaskRegionOfInterestVertex vertex;
+
 	vertex.raster_frustum_to_seed_frustum_clip_space_transform[0] =
 			seed_co_registration.raster_frustum_to_seed_frustum_post_projection_translate_x;
 	vertex.raster_frustum_to_seed_frustum_clip_space_transform[1] =
 			seed_co_registration.raster_frustum_to_seed_frustum_post_projection_translate_y;
 	vertex.raster_frustum_to_seed_frustum_clip_space_transform[2] =
 			seed_co_registration.raster_frustum_to_seed_frustum_post_projection_scale;
+
 	vertex.seed_frustum_to_render_target_clip_space_transform[0] =
-			seed_co_registration.seed_frustum_to_render_target_post_projection_scale;
-	vertex.seed_frustum_to_render_target_clip_space_transform[1] =
 			seed_co_registration.seed_frustum_to_render_target_post_projection_translate_x;
-	vertex.seed_frustum_to_render_target_clip_space_transform[2] =
+	vertex.seed_frustum_to_render_target_clip_space_transform[1] =
 			seed_co_registration.seed_frustum_to_render_target_post_projection_translate_y;
+	vertex.seed_frustum_to_render_target_clip_space_transform[2] =
+			seed_co_registration.seed_frustum_to_render_target_post_projection_scale;
 
 	vertex.screen_space_position[0] = -1;
 	vertex.screen_space_position[1] = -1;
-	if (!mask_stream_quads.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<MaskRegionOfInterestVertex>(
-				renderer,
-				mask_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_mask_region_of_interest_vertex_array);
-		mask_stream_quads.add_vertex(vertex);
-	}
+	mask_stream_quads.add_vertex(vertex);
 
 	vertex.screen_space_position[0] = -1;
 	vertex.screen_space_position[1] = 1;
-	if (!mask_stream_quads.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<MaskRegionOfInterestVertex>(
-				renderer,
-				mask_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_mask_region_of_interest_vertex_array);
-		mask_stream_quads.add_vertex(vertex);
-	}
+	mask_stream_quads.add_vertex(vertex);
 
 	vertex.screen_space_position[0] = 1;
 	vertex.screen_space_position[1] = 1;
-	if (!mask_stream_quads.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<MaskRegionOfInterestVertex>(
-				renderer,
-				mask_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_mask_region_of_interest_vertex_array);
-		mask_stream_quads.add_vertex(vertex);
-	}
+	mask_stream_quads.add_vertex(vertex);
 
 	vertex.screen_space_position[0] = 1;
 	vertex.screen_space_position[1] = -1;
-	if (!mask_stream_quads.add_vertex(vertex))
-	{
-		suspend_render_resume_vertex_array_streaming<MaskRegionOfInterestVertex>(
-				renderer,
-				mask_stream_target,
-				map_vertex_element_buffer_scope,
-				map_vertex_buffer_scope,
-				d_mask_region_of_interest_vertex_array);
-		mask_stream_quads.add_vertex(vertex);
-	}
+	mask_stream_quads.add_vertex(vertex);
+
+	//
+	// Add the quad triangles.
+	//
+
+	mask_stream_quads.add_vertex_element(0);
+	mask_stream_quads.add_vertex_element(1);
+	mask_stream_quads.add_vertex_element(2);
+
+	mask_stream_quads.add_vertex_element(0);
+	mask_stream_quads.add_vertex_element(2);
+	mask_stream_quads.add_vertex_element(3);
+
+	mask_stream_quads.end_primitive();
 }
 
 
@@ -5010,11 +5067,14 @@ GPlatesOpenGL::GLRasterCoRegistration::begin_vertex_array_streaming(
 		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
 		GLBuffer::MapBufferScope &map_vertex_buffer_scope)
 {
+	//PROFILE_FUNC();
+
 	// Start the vertex element stream mapping.
 	unsigned int vertex_element_stream_offset;
 	unsigned int vertex_element_stream_bytes_available;
 	void *vertex_element_data = map_vertex_element_buffer_scope.gl_map_buffer_stream(
 			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+			sizeof(streaming_vertex_element_type)/*stream_alignment*/,
 			vertex_element_stream_offset,
 			vertex_element_stream_bytes_available);
 
@@ -5023,14 +5083,19 @@ GPlatesOpenGL::GLRasterCoRegistration::begin_vertex_array_streaming(
 	unsigned int vertex_stream_bytes_available;
 	void *vertex_data = map_vertex_buffer_scope.gl_map_buffer_stream(
 			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
+			sizeof(StreamingVertexType)/*stream_alignment*/,
 			vertex_stream_offset,
 			vertex_stream_bytes_available);
 
 	// Convert bytes to vertex/index counts.
+	unsigned int base_vertex_element_offset =
+			vertex_element_stream_offset / sizeof(streaming_vertex_element_type);
 	unsigned int num_vertex_elements_available =
 			vertex_element_stream_bytes_available / sizeof(streaming_vertex_element_type);
-	unsigned int base_vertex_offset = vertex_stream_offset / sizeof(StreamingVertexType);
-	unsigned int num_vertices_available = vertex_stream_bytes_available / sizeof(StreamingVertexType);
+	unsigned int base_vertex_offset =
+			vertex_stream_offset / sizeof(StreamingVertexType);
+	unsigned int num_vertices_available =
+			vertex_stream_bytes_available / sizeof(StreamingVertexType);
 
 	// Start streaming into the newly mapped vertex/index buffers.
 	stream_target.start_streaming(
@@ -5041,7 +5106,8 @@ GPlatesOpenGL::GLRasterCoRegistration::begin_vertex_array_streaming(
 					base_vertex_offset/*initial_count*/),
 			boost::in_place(
 					static_cast<streaming_vertex_element_type *>(vertex_element_data),
-					num_vertex_elements_available));
+					num_vertex_elements_available,
+					base_vertex_element_offset/*initial_count*/));
 }
 
 
@@ -5053,17 +5119,24 @@ GPlatesOpenGL::GLRasterCoRegistration::end_vertex_array_streaming(
 		GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
 		GLBuffer::MapBufferScope &map_vertex_buffer_scope)
 {
+	//PROFILE_FUNC();
+
 	stream_target.stop_streaming();
 
 	// Flush the data streamed so far (which could be no data).
 	map_vertex_element_buffer_scope.gl_flush_buffer_stream(
 			stream_target.get_num_streamed_vertex_elements() * sizeof(streaming_vertex_element_type));
-	map_vertex_element_buffer_scope.gl_flush_buffer_stream(
+	map_vertex_buffer_scope.gl_flush_buffer_stream(
 			stream_target.get_num_streamed_vertices() * sizeof(StreamingVertexType));
 
-	// FIXME: Check return code in case mapped data got corrupted.
-	map_vertex_element_buffer_scope.gl_unmap_buffer();
-	map_vertex_buffer_scope.gl_unmap_buffer();
+	// Check return code in case mapped data got corrupted.
+	// This shouldn't happen but we'll emit a warning message if it does.
+	const bool vertex_element_buffer_unmap_result = map_vertex_element_buffer_scope.gl_unmap_buffer();
+	const bool vertex_buffer_unmap_result = map_vertex_buffer_scope.gl_unmap_buffer();
+	if (!vertex_element_buffer_unmap_result || !vertex_buffer_unmap_result)
+	{
+		qWarning() << "GLRasterCoRegistration: Failed to unmap vertex stream.";
+	}
 }
 
 
@@ -5075,6 +5148,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_vertex_array_stream(
 		const GLVertexArray::shared_ptr_type &vertex_array,
 		GLenum primitive_mode)
 {
+	//PROFILE_FUNC();
+
 	// Only render if we've got some data to render.
 	if (stream_target.get_num_streamed_vertex_elements() == 0)
 	{
@@ -5126,9 +5201,12 @@ GPlatesOpenGL::GLRasterCoRegistration::render_reduction_of_reduce_stage(
 		const ReduceQuadTreeInternalNode &dst_reduce_quad_tree_node,
 		unsigned int src_child_x_offset,
 		unsigned int src_child_y_offset,
+		bool clear_dst_reduce_stage_texture,
 		const GLTexture::shared_ptr_type &dst_reduce_stage_texture,
 		const GLTexture::shared_ptr_type &src_reduce_stage_texture)
 {
+	//PROFILE_FUNC();
+
 	// Make sure we leave the OpenGL state the way it was.
 	GLRenderer::StateBlockScope save_restore_state(
 			renderer,
@@ -5143,10 +5221,15 @@ GPlatesOpenGL::GLRasterCoRegistration::render_reduction_of_reduce_stage(
 	// Render to the entire reduce stage texture.
 	renderer.gl_viewport(0, 0, TEXTURE_DIMENSION, TEXTURE_DIMENSION);
 
-	// Clear colour to all zeros - this means when texels with zero coverage get discarded the framebuffer
-	// will have coverage values of zero (causing them to not contribute to the co-registration result).
-	renderer.gl_clear_color();
-	renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
+	// If the destination reduce stage texture does not contain partial results then it'll need to be cleared.
+	// This happens when starting afresh with a newly acquired destination reduce stage texture.
+	if (clear_dst_reduce_stage_texture)
+	{
+		// Clear colour to all zeros - this means when texels with zero coverage get discarded the framebuffer
+		// will have coverage values of zero (causing them to not contribute to the co-registration result).
+		renderer.gl_clear_color();
+		renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
+	}
 
 	// Determine which reduction operation to use.
 	GLProgramObject::shared_ptr_type reduction_program_object;
@@ -5219,6 +5302,9 @@ GPlatesOpenGL::GLRasterCoRegistration::render_reduction_of_reduce_stage(
 			6 * num_reduce_quads_spanned/*count*/,   // Each quad has two triangles of three indices each.
 			GLVertexElementTraits<reduction_vertex_element_type>::type,
 			0/*indices_offset*/);
+
+	//debug_floating_point_render_target(
+	//		renderer, "reduction_raster", false/*coverage_is_in_green_channel*/);
 }
 
 
@@ -5227,7 +5313,7 @@ GPlatesOpenGL::GLRasterCoRegistration::find_number_reduce_vertex_array_quads_spa
 		const ReduceQuadTreeInternalNode &parent_reduce_quad_tree_node,
 		unsigned int child_x_offset,
 		unsigned int child_y_offset,
-		unsigned child_quad_tree_node_width_in_quads)
+		unsigned int child_quad_tree_node_width_in_quads)
 {
 	// Should never get zero coverage of quads across child quad tree node.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -5265,6 +5351,18 @@ GPlatesOpenGL::GLRasterCoRegistration::find_number_reduce_vertex_array_quads_spa
 		return child_quad_tree_node_width_in_quads * child_quad_tree_node_width_in_quads;
 	}
 
+	// Each quad in the reduce vertex array can only span MINIMUM_SEED_GEOMETRIES_VIEWPORT_DIMENSION
+	// pixels dimension. Whereas the reduction operation eventually reduces each seed co-registration
+	// results down to a single pixel. So the quads cannot represent this fine a detail so we just
+	// work in blocks of dimension MINIMUM_SEED_GEOMETRIES_VIEWPORT_DIMENSION. When the block is not
+	// full (ie, not all of a block contains data being reduced) it just means that OpenGL is
+	// processing/reducing some pixels that it doesn't need to (but they don't get used anyway).
+	if (child_quad_tree_node_width_in_quads == 1)
+	{
+		// One MINIMUM_SEED_GEOMETRIES_VIEWPORT_DIMENSION x MINIMUM_SEED_GEOMETRIES_VIEWPORT_DIMENSION.
+		return 1;
+	}
+
 	// The number of quads spanned by the current child node.
 	unsigned int num_quads_spanned = 0;
 
@@ -5290,10 +5388,13 @@ GPlatesOpenGL::GLRasterCoRegistration::find_number_reduce_vertex_array_quads_spa
 bool
 GPlatesOpenGL::GLRasterCoRegistration::render_target_raster(
 		GLRenderer &renderer,
+		const CoRegistrationParameters &co_registration_parameters,
 		const GLTexture::shared_ptr_type &target_raster_texture,
 		const GLTransform &view_transform,
 		const GLTransform &projection_transform)
 {
+	//PROFILE_FUNC();
+
 	// Make sure we leave the OpenGL state the way it was.
 	GLRenderer::StateBlockScope save_restore_state(
 			renderer,
@@ -5314,13 +5415,17 @@ GPlatesOpenGL::GLRasterCoRegistration::render_target_raster(
 	renderer.gl_load_matrix(GL_PROJECTION, projection_transform.get_matrix());
 
 	// Render the target raster into the view frustum.
-	//
-	// NOTE: It doesn't matter if we cache source tile textures or not here because the source
-	// GLMultiResolutionRaster has been asked to cache its entire level-of-detail pyramid so
-	// it'll cache internally regardless.
-	GLMultiResolutionRaster::cache_handle_type cache_handle;
+	GLMultiResolutionRasterInterface::cache_handle_type cache_handle;
 	// Render target raster and return true if there was any rendering into the view frustum.
-	return d_target_raster->render(renderer, d_raster_level_of_detail, cache_handle, false/*cache_tile_textures*/);
+	const bool raster_rendered = co_registration_parameters.d_target_raster->render(
+			renderer,
+			co_registration_parameters.d_raster_level_of_detail,
+			cache_handle);
+
+	//debug_floating_point_render_target(
+	//		renderer, "raster", true/*coverage_is_in_green_channel*/);
+
+	return raster_rendered;
 }
 
 
@@ -5417,20 +5522,21 @@ GPlatesOpenGL::GLRasterCoRegistration::acquire_rgba_fixed_texture(
 
 void
 GPlatesOpenGL::GLRasterCoRegistration::return_co_registration_results_to_caller(
-		std::vector<Operation> &operations,
-		const std::vector<OperationSeedFeaturePartialResults> seed_feature_partial_results)
+		const CoRegistrationParameters &co_registration_parameters)
 {
 	// Now that the results have all been retrieved from the GPU we need combine multiple
 	// (potentially partial) co-registration results into a single result per seed feature.
-	for (unsigned int operation_index = 0; operation_index < operations.size(); ++operation_index)
+	for (unsigned int operation_index = 0;
+		operation_index < co_registration_parameters.operations.size();
+		++operation_index)
 	{
-		Operation &operation = operations[operation_index];
+		Operation &operation = co_registration_parameters.operations[operation_index];
 
 		// There is one list of (partial) co-registration results for each seed feature.
 		const OperationSeedFeaturePartialResults &operation_seed_feature_partial_results =
-				seed_feature_partial_results[operation_index];
+				co_registration_parameters.seed_feature_partial_results[operation_index];
 
-		const unsigned int num_seed_features = d_seed_features.size();
+		const unsigned int num_seed_features = co_registration_parameters.d_seed_features.size();
 		for (unsigned int feature_index = 0; feature_index < num_seed_features; ++feature_index)
 		{
 			const seed_co_registration_partial_result_list_type &partial_results_list =
@@ -5517,8 +5623,9 @@ GPlatesOpenGL::GLRasterCoRegistration::return_co_registration_results_to_caller(
 						const double mean = inverse_coverage * coverage_weighted_mean;
 
 						// Store final standard deviation result.
-						operation.d_results[feature_index] = std::sqrt(
-								inverse_coverage * coverage_weighted_second_moment - mean * mean);
+						const double variance = inverse_coverage * coverage_weighted_second_moment - mean * mean;
+						// Protect 'sqrt' in case variance is slightly negative due to numerical precision.
+						operation.d_results[feature_index] = (variance > 0) ? std::sqrt(variance) : 0;
 					}
 				}
 				break;
@@ -5611,6 +5718,178 @@ GPlatesOpenGL::GLRasterCoRegistration::return_co_registration_results_to_caller(
 }
 
 
+#if defined (DEBUG_RASTER_COREGISTRATION_RENDER_TARGET)
+void
+GPlatesOpenGL::GLRasterCoRegistration::debug_fixed_point_render_target(
+		GLRenderer &renderer,
+		const QString &image_file_basename)
+{
+	// Make sure we leave the OpenGL state the way it was.
+	GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	// Bind the pixel buffer so that all subsequent 'gl_read_pixels()' calls go into that buffer.
+	d_debug_pixel_buffer->gl_bind_pack(renderer);
+
+	// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT (rows aligned to 4 bytes)
+	// since our data is RGBA (already 4-byte aligned).
+	d_debug_pixel_buffer->gl_read_pixels(
+			renderer,
+			0,
+			0,
+			TEXTURE_DIMENSION,
+			TEXTURE_DIMENSION,
+			GL_RGBA,
+			GL_UNSIGNED_BYTE,
+			0);
+
+	// Map the pixel buffer to access its data.
+	GLBuffer::MapBufferScope map_pixel_buffer_scope(
+			renderer,
+			*d_debug_pixel_buffer->get_buffer(),
+			GLBuffer::TARGET_PIXEL_PACK_BUFFER);
+
+	// Map the pixel buffer data.
+	const void *result_data = map_pixel_buffer_scope.gl_map_buffer_static(GLBuffer::ACCESS_READ_ONLY);
+	const GPlatesGui::rgba8_t *result_rgba8_data = static_cast<const GPlatesGui::rgba8_t *>(result_data);
+
+	boost::scoped_array<GPlatesGui::rgba8_t> rgba8_data(new GPlatesGui::rgba8_t[TEXTURE_DIMENSION * TEXTURE_DIMENSION]);
+
+	for (unsigned int y = 0; y < TEXTURE_DIMENSION; ++y)
+	{
+		for (unsigned int x = 0; x < TEXTURE_DIMENSION; ++x)
+		{
+			const GPlatesGui::rgba8_t &result_pixel = result_rgba8_data[y * TEXTURE_DIMENSION + x];
+
+			GPlatesGui::rgba8_t colour(0, 0, 0, 255);
+			if (result_pixel.alpha == 0)
+			{
+				// Use blue to represent areas not in region-of-interest.
+				colour.blue = 255;
+			}
+			else
+			{
+				colour.red = colour.green = colour.blue = 255;
+			}
+
+			rgba8_data.get()[y * TEXTURE_DIMENSION + x] = colour;
+		}
+	}
+
+	const bool unmap_success = map_pixel_buffer_scope.gl_unmap_buffer();
+
+	boost::scoped_array<boost::uint32_t> argb32_data(new boost::uint32_t[TEXTURE_DIMENSION * TEXTURE_DIMENSION]);
+
+	// Convert to a format supported by QImage.
+	GPlatesGui::convert_rgba8_to_argb32(
+			rgba8_data.get(),
+			argb32_data.get(),
+			TEXTURE_DIMENSION * TEXTURE_DIMENSION);
+
+	QImage qimage(
+			static_cast<const uchar *>(static_cast<const void *>(argb32_data.get())),
+			TEXTURE_DIMENSION,
+			TEXTURE_DIMENSION,
+			QImage::Format_ARGB32);
+
+	static unsigned int s_image_count = 0;
+	++s_image_count;
+
+	// Save the image to a file.
+	QString image_filename = QString("%1%2.png").arg(image_file_basename).arg(s_image_count);
+	qimage.save(image_filename, "PNG");
+}
+
+
+void
+GPlatesOpenGL::GLRasterCoRegistration::debug_floating_point_render_target(
+		GLRenderer &renderer,
+		const QString &image_file_basename,
+		bool coverage_is_in_green_channel)
+{
+	// Make sure we leave the OpenGL state the way it was.
+	GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	// Bind the pixel buffer so that all subsequent 'gl_read_pixels()' calls go into that buffer.
+	d_debug_pixel_buffer->gl_bind_pack(renderer);
+
+	// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT (rows aligned to 4 bytes)
+	// since our data is floats (each float is already 4-byte aligned).
+	d_debug_pixel_buffer->gl_read_pixels(
+			renderer,
+			0,
+			0,
+			TEXTURE_DIMENSION,
+			TEXTURE_DIMENSION,
+			GL_RGBA,
+			GL_FLOAT,
+			0);
+
+	// Map the pixel buffer to access its data.
+	GLBuffer::MapBufferScope map_pixel_buffer_scope(
+			renderer,
+			*d_debug_pixel_buffer->get_buffer(),
+			GLBuffer::TARGET_PIXEL_PACK_BUFFER);
+
+	// Map the pixel buffer data.
+	const void *result_data = map_pixel_buffer_scope.gl_map_buffer_static(GLBuffer::ACCESS_READ_ONLY);
+	const ResultPixel *result_pixel_data = static_cast<const ResultPixel *>(result_data);
+
+	boost::scoped_array<GPlatesGui::rgba8_t> rgba8_data(new GPlatesGui::rgba8_t[TEXTURE_DIMENSION * TEXTURE_DIMENSION]);
+
+	// Convert data from floating-point to fixed-point.
+	const float range = 100.0f; // Change this depending on the range of the specific raster being debugged.
+	const float inv_range = 1 / range;
+	for (unsigned int y = 0; y < TEXTURE_DIMENSION; ++y)
+	{
+		for (unsigned int x = 0; x < TEXTURE_DIMENSION; ++x)
+		{
+			const ResultPixel &result_pixel = result_pixel_data[y * TEXTURE_DIMENSION + x];
+
+			GPlatesGui::rgba8_t colour(0, 0, 0, 255);
+			if ((coverage_is_in_green_channel && GPlatesMaths::are_almost_exactly_equal(result_pixel.green, 0)) ||
+				(!coverage_is_in_green_channel && GPlatesMaths::are_almost_exactly_equal(result_pixel.alpha, 0)))
+			{
+				// Use blue to represent transparent areas or areas not in region-of-interest.
+				colour.blue = 255;
+			}
+			else
+			{
+				// Transition from red to green over a periodic range to visualise raster pattern.
+				const float rem = std::fabs(std::fmod(result_pixel.red, range));
+				colour.red = boost::uint8_t(255 * rem * inv_range);
+				colour.green = 255 - colour.red;
+			}
+
+			rgba8_data.get()[y * TEXTURE_DIMENSION + x] = colour;
+		}
+	}
+
+	const bool unmap_success = map_pixel_buffer_scope.gl_unmap_buffer();
+
+	boost::scoped_array<boost::uint32_t> argb32_data(new boost::uint32_t[TEXTURE_DIMENSION * TEXTURE_DIMENSION]);
+
+	// Convert to a format supported by QImage.
+	GPlatesGui::convert_rgba8_to_argb32(
+			rgba8_data.get(),
+			argb32_data.get(),
+			TEXTURE_DIMENSION * TEXTURE_DIMENSION);
+
+	QImage qimage(
+			static_cast<const uchar *>(static_cast<const void *>(argb32_data.get())),
+			TEXTURE_DIMENSION,
+			TEXTURE_DIMENSION,
+			QImage::Format_ARGB32);
+
+	static unsigned int s_image_count = 0;
+	++s_image_count;
+
+	// Save the image to a file.
+	QString image_filename = QString("%1%2.png").arg(image_file_basename).arg(s_image_count);
+	qimage.save(image_filename, "PNG");
+}
+#endif
+
+
 void
 GPlatesOpenGL::GLRasterCoRegistration::PointRegionOfInterestVertex::initialise_seed_geometry_constants(
 		const SeedCoRegistration &seed_co_registration)
@@ -5628,11 +5907,11 @@ GPlatesOpenGL::GLRasterCoRegistration::PointRegionOfInterestVertex::initialise_s
 			seed_co_registration.raster_frustum_to_seed_frustum_post_projection_scale;
 
 	seed_frustum_to_render_target_clip_space_transform[0] =
-			seed_co_registration.seed_frustum_to_render_target_post_projection_scale;
-	seed_frustum_to_render_target_clip_space_transform[1] =
 			seed_co_registration.seed_frustum_to_render_target_post_projection_translate_x;
-	seed_frustum_to_render_target_clip_space_transform[2] =
+	seed_frustum_to_render_target_clip_space_transform[1] =
 			seed_co_registration.seed_frustum_to_render_target_post_projection_translate_y;
+	seed_frustum_to_render_target_clip_space_transform[2] =
+			seed_co_registration.seed_frustum_to_render_target_post_projection_scale;
 }
 
 
@@ -5653,11 +5932,11 @@ GPlatesOpenGL::GLRasterCoRegistration::LineRegionOfInterestVertex::initialise_se
 			seed_co_registration.raster_frustum_to_seed_frustum_post_projection_scale;
 
 	seed_frustum_to_render_target_clip_space_transform[0] =
-			seed_co_registration.seed_frustum_to_render_target_post_projection_scale;
-	seed_frustum_to_render_target_clip_space_transform[1] =
 			seed_co_registration.seed_frustum_to_render_target_post_projection_translate_x;
-	seed_frustum_to_render_target_clip_space_transform[2] =
+	seed_frustum_to_render_target_clip_space_transform[1] =
 			seed_co_registration.seed_frustum_to_render_target_post_projection_translate_y;
+	seed_frustum_to_render_target_clip_space_transform[2] =
+			seed_co_registration.seed_frustum_to_render_target_post_projection_scale;
 }
 
 
@@ -5678,11 +5957,11 @@ GPlatesOpenGL::GLRasterCoRegistration::FillRegionOfInterestVertex::initialise_se
 			seed_co_registration.raster_frustum_to_seed_frustum_post_projection_scale;
 
 	seed_frustum_to_render_target_clip_space_transform[0] =
-			seed_co_registration.seed_frustum_to_render_target_post_projection_scale;
-	seed_frustum_to_render_target_clip_space_transform[1] =
 			seed_co_registration.seed_frustum_to_render_target_post_projection_translate_x;
-	seed_frustum_to_render_target_clip_space_transform[2] =
+	seed_frustum_to_render_target_clip_space_transform[1] =
 			seed_co_registration.seed_frustum_to_render_target_post_projection_translate_y;
+	seed_frustum_to_render_target_clip_space_transform[2] =
+			seed_co_registration.seed_frustum_to_render_target_post_projection_scale;
 }
 
 
@@ -5760,6 +6039,8 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::queue_reduce_pyramid_output
 		const ReduceQuadTree::non_null_ptr_to_const_type &reduce_quad_tree,
 		std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results)
 {
+	//PROFILE_FUNC();
+
 	// Make sure we leave the OpenGL state the way it was.
 	GLRenderer::StateBlockScope save_restore_state(renderer);
 
@@ -5828,6 +6109,8 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::flush_least_recently_queued
 		GLRenderer &renderer,
 		std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results)
 {
+	//PROFILE_FUNC();
+
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			!d_results_queue.empty(),
 			GPLATES_ASSERTION_SOURCE);

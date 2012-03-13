@@ -58,6 +58,8 @@ set(srcs
     GLMultiResolutionMapCubeMesh.h
     GLMultiResolutionRaster.cc
     GLMultiResolutionRaster.h
+    GLMultiResolutionRasterInterface.cc
+    GLMultiResolutionRasterInterface.h
     GLMultiResolutionRasterMapView.cc
     GLMultiResolutionRasterMapView.h
     GLMultiResolutionRasterSource.h
@@ -129,6 +131,8 @@ set(srcs
     GLVertexElementBufferObject.cc
     GLVertexElementBufferObject.h
     GLViewport.h
+    GLVisualLayers.cc
+    GLVisualLayers.h
     GLVisualRasterSource.cc
     GLVisualRasterSource.h
     OpenGL.h

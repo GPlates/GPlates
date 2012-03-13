@@ -32,16 +32,23 @@
 #include "global/CompilerWarnings.h"
 DISABLE_GCC_WARNING("-Wshadow")
 
-#include "unit-test/CoregTest.h"
+#include "CoregTest.h"
+
 #include "app-logic/CoRegistrationData.h"
 #include "app-logic/ReconstructionTreeCreator.h"
+
 #include "data-mining/DataSelector.h"
 #include "data-mining/DataMiningUtils.h"
 #include "data-mining/OpaqueDataToQString.h"
 #include "data-mining/RegionOfInterestFilter.h"
-#include "model/ModelInterface.h"
+
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
+
+#include "global/NotYetImplementedException.h"
+
+#include "model/ModelInterface.h"
+
 
 //./gplates-unit-test --detect_memory_leaks=0 --G_test_to_run=*/Coreg
 
@@ -110,6 +117,13 @@ GPlatesUnitTest::CoregTest::load_test_data()
 void
 GPlatesUnitTest::CoregTest::test(double time)
 {
+#if 1
+	// TODO: Re-implement this test when the lower-level python API is implemented.
+	// This will use the same functionality to access co-registration without reference to layers.
+	qWarning() << "GPlatesUnitTest::CoregTest::test: not implemented.";
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+
+#else
 	ReconstructMethodRegistry reconstruct_method_registry;
 	register_default_reconstruct_method_types(reconstruct_method_registry);
 
@@ -152,7 +166,9 @@ GPlatesUnitTest::CoregTest::test(double time)
 	selector->select(
 			reconstructed_seeds, 
 			reconstructed_coreg, 
-			data_ptr->data_table());
+			time,
+			data_ptr->data_table(),
+			boost::none);
 
 	DataSelector::set_data_table(data_ptr->data_table());
 	d_output_prefix = load_one_line_cfg(unit_test_data_path + cfg_file, "output prefix");
@@ -160,7 +176,7 @@ GPlatesUnitTest::CoregTest::test(double time)
 #ifdef _DEBUG
 	std::cout << data_ptr->data_table() << std::endl;
 #endif
-	return;
+#endif
 }
 
 #include <fstream>
@@ -231,6 +247,13 @@ GPlatesUnitTest::CoregTest::populate_cfg_table(
 		GPlatesDataMining::CoRegConfigurationTable& table,
 		const QString& filename)
 {
+#if 1
+	// TODO: Re-implement this test when the lower-level python API is implemented.
+	// This will use the same functionality to access co-registration without reference to layers.
+	qWarning() << "GPlatesUnitTest::CoregTest::populate_cfg_table: not implemented.";
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+
+#else
 	enum ColName
 	{
 		FC_NAME,//0
@@ -274,7 +297,7 @@ GPlatesUnitTest::CoregTest::populate_cfg_table(
 			if(file->get_reference().get_file_info().get_display_name(false) == items[FC_NAME])
 			{
 				qDebug() << "Find the feature collection.";
-				row.target_fc = file->get_reference().get_feature_collection();
+				row.target_layer = file->get_reference().get_feature_collection();
 			} 
 		}
 
@@ -288,18 +311,19 @@ GPlatesUnitTest::CoregTest::populate_cfg_table(
 		row.filter_cfg.reset(new RegionOfInterestFilter::Config(d));
 
 		std::map<QString, AttributeType>::iterator it = attr_map.find(items[ATTR_NAME].trimmed());
-		row.attr_type = it != attr_map.end() ?  it->second : CO_REGISTRATION_ATTRIBUTE;
+		row.attr_type = it != attr_map.end() ?  it->second : CO_REGISTRATION_GPML_ATTRIBUTE;
 		row.attr_name = items[ATTR_NAME].trimmed();
 		
 		row.reducer_type = data_op_map[items[DATA_OP].trimmed()];
 
 		if(items[SHAPE_ATTR].trimmed() == "true")
 		{
-			row.attr_type = SHAPE_FILE_ATTRIBUTE;
+			row.attr_type = CO_REGISTRATION_SHAPEFILE_ATTRIBUTE;
 		}
 
 		table.push_back(row);
 	}
+#endif
 }
 
 std::vector<QString>
@@ -425,6 +449,11 @@ GPlatesUnitTest::CoregTestSuite::construct_maps()
 	boost::shared_ptr<CoregTest> instance(
 		new CoregTest());
 
+#if 1
+	// TODO: Add these tests back when the lower-level python API is implemented.
+	// This will use the same functionality to access co-registration without reference to layers.
+	qWarning() << "GPlatesUnitTest::CoregTest: not implemented - skipping tests.";
+#else
 	ADD_TESTCASE(CoregTest,test_case_1);
 	ADD_TESTCASE(CoregTest,test_case_2);
 	ADD_TESTCASE(CoregTest,test_case_3);
@@ -432,5 +461,6 @@ GPlatesUnitTest::CoregTestSuite::construct_maps()
 	ADD_TESTCASE(CoregTest,test_case_5);
 	ADD_TESTCASE(CoregTest,test_case_6);
 	ADD_TESTCASE(CoregTest,test_case_7);
+#endif
 }
 

@@ -336,6 +336,67 @@ namespace
 
 
 	/**
+	 * Uses the points in a derived @a GeometryOnSphere object to create a polygon.
+	 */
+	class ConvertGeometryToPolygon :
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+		const boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> &
+		get_polygon() const
+		{
+			return d_polygon;
+		}
+
+
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+			// Cannot form a polygon from a point.
+		}
+
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+			if (multi_point_on_sphere->number_of_points() >= 3)
+			{
+				d_polygon = GPlatesMaths::PolygonOnSphere::create_on_heap(
+						multi_point_on_sphere->begin(),
+						multi_point_on_sphere->end());
+			}
+		}
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			d_polygon = polygon_on_sphere;
+		}
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			if (polyline_on_sphere->number_of_vertices() >= 3)
+			{
+				d_polygon = GPlatesMaths::PolygonOnSphere::create_on_heap(
+						polyline_on_sphere->vertex_begin(),
+						polyline_on_sphere->vertex_end());
+			}
+		}
+
+	private:
+		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> d_polygon;
+	};
+
+
+	/**
 	 * Visits a @a GeometryOnSphere and creates a suitable property value for it.
 	 */
 	class CreateGeometryProperty :
@@ -441,6 +502,18 @@ GPlatesAppLogic::GeometryUtils::get_geometry_bounding_small_circle(
 	geometry_on_sphere.accept_visitor(visitor);
 
 	return visitor.get_bounding_small_circle();
+}
+
+
+boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+GPlatesAppLogic::GeometryUtils::convert_geometry_to_polygon(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
+{
+	ConvertGeometryToPolygon visitor;
+
+	geometry_on_sphere.accept_visitor(visitor);
+
+	return visitor.get_polygon();
 }
 
 

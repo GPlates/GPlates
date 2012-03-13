@@ -47,7 +47,7 @@
 
 GPlatesGui::Map::Map(
 		GPlatesPresentation::ViewState &view_state,
-		const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
+		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		const GPlatesPresentation::VisualLayers &visual_layers,
 		RenderSettings &render_settings,
@@ -65,7 +65,7 @@ GPlatesGui::Map::Map(
 	d_rendered_geom_collection_painter(
 			d_map_projection,
 			rendered_geometry_collection,
-			persistent_opengl_objects,
+			gl_visual_layers,
 			visual_layers,
 			d_render_settings,
 			text_renderer,

@@ -60,7 +60,7 @@ namespace GPlatesDataMining
 		{
 			if(column_index >= d_data.size())
 			{
-				qWarning() << "The column index which is used to get table cell is invalid";
+				qWarning() << "Invalid column index into co-registration data row.";
 				return;
 			}
 			ret = d_data[column_index];			

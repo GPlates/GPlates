@@ -84,8 +84,8 @@ GPlatesDataMining::DataMiningUtils::shortest_distance(
 	double dist = -1;
 	BOOST_FOREACH(const GPlatesAppLogic::ReconstructedFeatureGeometry* seed, seed_geos)
 	{
-		//use (DEFAULT_RADIUS_OF_EARTH * PI) as range, so the distance can always be calculated.
-		IsCloseEnoughChecker checker((DEFAULT_RADIUS_OF_EARTH * PI), true);
+		//use (DEFAULT_RADIUS_OF_EARTH_KMS * PI) as range, so the distance can always be calculated.
+		IsCloseEnoughChecker checker((DEFAULT_RADIUS_OF_EARTH_KMS * PI), true);
 		DualGeometryVisitor< IsCloseEnoughChecker > dual_visitor(
 				*(geo->reconstructed_geometry()),
 				*(seed->reconstructed_geometry()),
@@ -188,9 +188,9 @@ GPlatesDataMining::DataMiningUtils::get_shape_file_value_by_name(
 			(*it)->accept_visitor(visitor);
 			if(1 < std::distance(visitor.found_qvariants_begin(),visitor.found_qvariants_end()))
 			{
-				qDebug() << "More than one property found in shape file attribute.";
-				qDebug() << "But this is a one to one mapping. So, only return the first value.";
-				qDebug() << "More than one shape file attributes have the same name. Please check you data.";
+				qWarning() << "Found more than one shape file attribute with same attribute name.";
+				qWarning() << "Since this is a one-to-one mapping only the first value will be used.";
+				qWarning() << "Please check your data.";
 			}
 			if(0 == std::distance(visitor.found_qvariants_begin(),visitor.found_qvariants_end()))
 			{

@@ -25,6 +25,7 @@
 #ifndef GPLATESDATAMINING_MAXREDUCER_H
 #define GPLATESDATAMINING_MAXREDUCER_H
 
+#include <algorithm>
 #include <vector>
 #include <QDebug>
 #include <boost/foreach.hpp>
@@ -60,7 +61,10 @@ namespace GPlatesDataMining
 			extract_opaque_data(first, last, data);
 			std::vector<double> buf;
 			DataMiningUtils::convert_to_double_vector(data.begin(), data.end(), buf);
-			return OpaqueData(*max_element(buf.begin(),buf.end()));
+
+			return buf.empty()
+					? OpaqueData(EmptyData)
+					: OpaqueData(*std::max_element(buf.begin(),buf.end()));
 		}
 	};
 }

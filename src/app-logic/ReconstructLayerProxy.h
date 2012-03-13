@@ -36,6 +36,8 @@
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionLayerProxy.h"
 
+#include "opengl/GLReconstructedStaticPolygonMeshes.h"
+
 #include "maths/CubeQuadTreePartition.h"
 #include "maths/GeometryOnSphere.h"
 #include "maths/PolygonMesh.h"
@@ -429,6 +431,35 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time);
 
 
+		/**
+		 * The (reconstructed) present day polygon meshes in OpenGL form at the specified reconstruction time.
+		 *
+		 * If @a reconstructing_with_age_grid is true then the polygon meshes are expected to be
+		 * used to reconstruct a raster (in another layer) with the assistance of an age grid
+		 * (in yet another layer).
+		 *
+		 * NOTE: Only those polygons that are reconstructed with finite rotations are returned
+		 * since the polygon mesh is static and hence can only be rigidly rotated (eg, no deformation).
+		 */
+		GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type
+		get_reconstructed_static_polygon_meshes(
+				GPlatesOpenGL::GLRenderer &renderer,
+				bool reconstructing_with_age_grid,
+				const double &reconstruction_time);
+
+		/**
+		 * The (reconstructed) present day polygon meshes in OpenGL form at the current reconstruction time.
+		 */
+		GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type
+		get_reconstructed_static_polygon_meshes(
+				GPlatesOpenGL::GLRenderer &renderer,
+				bool reconstructing_with_age_grid)
+		{
+			return get_reconstructed_static_polygon_meshes(
+					renderer, reconstructing_with_age_grid, d_current_reconstruction_time);
+		}
+
+
 		//
 		// Getting current reconstruct params and reconstruction time as set by the layer system.
 		//
@@ -683,6 +714,92 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Contains optional cached present day geometries and polygon meshes.
+		 */
+		struct PresentDayInfo
+		{
+			void
+			invalidate()
+			{
+				cached_present_day_geometries = boost::none;
+				cached_present_day_polygon_meshes = boost::none;
+				cached_present_day_geometries_spatial_partition = boost::none;
+				cached_present_day_geometries_spatial_partition_locations = boost::none;
+			}
+
+			/**
+			 * The cached present day geometries of the reconstructable features.
+			 */
+			boost::optional<const std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> &>
+					cached_present_day_geometries;
+
+			/**
+			 * The cached present day polygon meshes of the reconstructable features (where applicable).
+			 */
+			boost::optional<std::vector<boost::optional<GPlatesMaths::PolygonMesh::non_null_ptr_to_const_type> > >
+					cached_present_day_polygon_meshes;
+
+			/**
+			 * The cached present day geometries spatial partition.
+			 */
+			boost::optional<geometries_spatial_partition_type::non_null_ptr_type>
+					cached_present_day_geometries_spatial_partition;
+
+			/**
+			 * The cached locations of the present day geometries in the spatial partition.
+			 */
+			boost::optional<std::vector<GPlatesMaths::CubeQuadTreeLocation> >
+					cached_present_day_geometries_spatial_partition_locations;
+		};
+
+
+		/**
+		 * Contains optional cached reconstructed polygon meshes.
+		 *
+		 * NOTE: Even though it generates *reconstructed* polygon meshes (and hence it not purely
+		 * a present day cache) we don't store it in @a ReconstructionInfo which means it doesn't
+		 * get cleared (to boost::none) when the reconstruction time changes (instead it gets
+		 * updated with the new time).
+		 * Putting it here also means we have only one instance instead of multiple instances
+		 * which would be the case with the @a ReconstructionInfo cache.
+		 */
+		struct GLReconstructedPolygonMeshes
+		{
+			void
+			invalidate()
+			{
+				cached_reconstructed_static_polygon_meshes = boost::none;
+				cached_reconstruction_time = boost::none;
+				cached_reconstructing_with_age_grid = boost::none;
+			}
+
+			/**
+			 * The cached reconstructed polygon meshes in OpenGL vertex array form - used to render
+			 * a reconstructed raster.
+			 */
+			boost::optional<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
+					cached_reconstructed_static_polygon_meshes;
+
+			/**
+			 * The reconstruction time of the cached reconstructed polygon meshes.
+			 */
+			boost::optional<GPlatesMaths::real_t> cached_reconstruction_time;
+
+			/**
+			 * Were cached reconstructed polygon meshes last updated for use with age grids ?
+			 */
+			boost::optional<bool> cached_reconstructing_with_age_grid;
+
+			/**
+			 * Used to determine if the reconstructed polygon geometries have changed (aside from
+			 * a change in reconstruction time) - for example, if the input reconstruction tree layer
+			 * has been modified, forcing us to 'update' the reconstructed polygon meshes.
+			 */
+			GPlatesUtils::ObserverToken cached_reconstructed_polygons_observer_token;
+		};
+
+
+		/**
 		 * Used to associate features with reconstruct methods.
 		 */
 		const ReconstructMethodRegistry &d_reconstruct_method_registry;
@@ -717,31 +834,21 @@ namespace GPlatesAppLogic
 		/**
 		 * The various reconstructions cached according to reconstruction time and reconstruct params.
 		 */
-		reconstruction_cache_type d_reconstruction_cache;
+		reconstruction_cache_type d_cached_reconstructions;
 
 		/**
-		 * The cached present day geometries of the reconstructable features.
+		 * The cached present day geometries and polygon meshes.
 		 */
-		boost::optional<const std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> &>
-				d_cached_present_day_geometries;
+		PresentDayInfo d_cached_present_day_info;
 
 		/**
-		 * The cached present day polygon meshes of the reconstructable features (where applicable).
+		 * The cached present day polygon meshes in OpenGL vertex array form.
+		 *
+		 * NOTE: They are also reconstructed to a reconstruction time without having to
+		 * re-create the present day polygon meshes vertex array (which is why it is here
+		 * instead of in @a ReconstructionInfo).
 		 */
-		boost::optional<std::vector<boost::optional<GPlatesMaths::PolygonMesh::non_null_ptr_to_const_type> > >
-				d_cached_present_day_polygon_meshes;
-
-		/**
-		 * The cached present day geometries spatial partition.
-		 */
-		boost::optional<geometries_spatial_partition_type::non_null_ptr_type>
-				d_cached_present_day_geometries_spatial_partition;
-
-		/**
-		 * The cached locations of the present day geometries in the spatial partition.
-		 */
-		boost::optional<std::vector<GPlatesMaths::CubeQuadTreeLocation> >
-				d_cached_present_day_geometries_spatial_partition_locations;
+		GLReconstructedPolygonMeshes d_cached_reconstructed_polygon_meshes;
 
 		/**
 		 * Used to notify polling observers that we've been updated.

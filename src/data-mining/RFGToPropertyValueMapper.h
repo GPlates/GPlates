@@ -59,21 +59,24 @@ namespace GPlatesDataMining
 		{
 			for(; input_begin != input_end; input_begin++)
 			{
+				const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_target_feature =
+						*input_begin;
+
 				if(!d_is_shapefile_attr)
 				{
 					output.push_back(boost::make_tuple(
 							DataMiningUtils::get_property_value_by_name(
-									input_begin->first, 
+									reconstructed_target_feature.get_feature(), 
 									d_attr_name),
-							input_begin->second));
+							reconstructed_target_feature));
 				}
 				else
 				{
 					output.push_back(boost::make_tuple(
 							DataMiningUtils::get_shape_file_value_by_name(
-									input_begin->first, 
+									reconstructed_target_feature.get_feature(), 
 									d_attr_name),
-							input_begin->second));
+							reconstructed_target_feature));
 				}
 			}
 			return;

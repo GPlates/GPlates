@@ -255,6 +255,25 @@ namespace GPlatesFileIO
 		}
 
 		/**
+		 * Returns the raster statistics or boost::none if original raster did not provide any.
+		 *
+		 * NOTE: Currently the statistics are the same for each mipmap level.
+		 */
+		boost::optional<GPlatesPropertyValues::RasterStatistics>
+		get_raster_statistics(
+				unsigned int level) const
+		{
+			if (d_is_closed)
+			{
+				return boost::none;
+			}
+			else
+			{
+				return d_impl->get_raster_statistics(level);
+			}
+		}
+
+		/**
 		 * Retrieves information about the file that we are reading.
 		 */
 		QFileInfo
@@ -304,6 +323,11 @@ namespace GPlatesFileIO
 					unsigned int y_offset,
 					unsigned int width,
 					unsigned int height) = 0;
+
+			virtual
+			boost::optional<GPlatesPropertyValues::RasterStatistics>
+			get_raster_statistics(
+					unsigned int level) const = 0;
 		};
 
 		/**
@@ -432,6 +456,19 @@ namespace GPlatesFileIO
 				}
 
 				return d_raster_file_cache_readers[level]->read_coverage(x_offset, y_offset, width, height);
+			}
+
+			virtual
+			boost::optional<GPlatesPropertyValues::RasterStatistics>
+			get_raster_statistics(
+					unsigned int level) const
+			{
+				if (level >= d_level_infos.size())
+				{
+					return boost::none;
+				}
+
+				return d_raster_file_cache_readers[level]->get_raster_statistics();
 			}
 
 		private:

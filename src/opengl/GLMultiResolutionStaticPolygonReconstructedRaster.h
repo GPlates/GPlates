@@ -37,6 +37,7 @@
 #include "GLCubeSubdivisionCache.h"
 #include "GLMatrix.h"
 #include "GLMultiResolutionCubeRaster.h"
+#include "GLMultiResolutionRasterInterface.h"
 #include "GLProgramObject.h"
 #include "GLReconstructedStaticPolygonMeshes.h"
 #include "GLTexture.h"
@@ -51,7 +52,6 @@
 #include "maths/CubeQuadTreePartitionUtils.h"
 
 #include "utils/ObjectCache.h"
-#include "utils/ReferenceCount.h"
 #include "utils/SubjectObserverToken.h"
 
 
@@ -64,7 +64,7 @@ namespace GPlatesOpenGL
 	 * reconstructing the polygons (and hence partitioned pieces of the raster).
 	 */
 	class GLMultiResolutionStaticPolygonReconstructedRaster :
-			public GPlatesUtils::ReferenceCount<GLMultiResolutionStaticPolygonReconstructedRaster>
+			public GLMultiResolutionRasterInterface
 	{
 	public:
 		//! A convenience typedef for a shared pointer to a non-const @a GLMultiResolutionStaticPolygonReconstructedRaster.
@@ -76,7 +76,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Typedef for an opaque object that caches a particular render of this raster.
 		 */
-		typedef boost::shared_ptr<void> cache_handle_type;
+		typedef GLMultiResolutionRasterInterface::cache_handle_type cache_handle_type;
 
 		/**
 		 * Age grid mask and coverage rasters.
@@ -146,23 +146,85 @@ namespace GPlatesOpenGL
 		 * Returns a subject token that clients can observe to see if they need to update themselves
 		 * (such as any cached data we render for them) by getting us to re-render.
 		 */
+		virtual
 		const GPlatesUtils::SubjectToken &
 		get_subject_token() const;
 
 
 		/**
-		 * Renders the reconstructed raster visible in the view frustum (determined by the
-		 * current viewport and model-view/projection transforms of @a renderer).
+		 * Returns the number of levels of detail.
 		 *
-		 * @a cache_handle can be stored by the client to keep textures (and vertices), used during this render, cached.
-		 *
-		 * Returns true if any rendering was performed (this can be false if reconstructed raster is
-		 * not a global raster, for example, and does not intersect the view frustum).
+		 * See base class for more details.
 		 */
+		virtual
+		std::size_t
+		get_num_levels_of_detail() const
+		{
+			return d_raster_to_reconstruct->get_num_levels_of_detail();
+		}
+
+
+		/**
+		 * Returns the unclamped exact floating-point level-of-detail that theoretically represents
+		 * the exact level-of-detail that would be required to fulfill the resolution needs of a
+		 * render target (as defined by the specified viewport and view/projection matrices).
+		 *
+		 * See base class for more details.
+		 */
+		virtual
+		float
+		get_level_of_detail(
+				const GLMatrix &model_view_transform,
+				const GLMatrix &projection_transform,
+				const GLViewport &viewport,
+				float level_of_detail_bias = 0.0f) const;
+
+
+		/**
+		 * Takes an unclamped level-of-detail (see @a get_level_of_detail) and clamps it to lie
+		 * within the range [-Infinity, @a get_num_levels_of_detail - 1].
+		 *
+		 * NOTE: The returned level-of-detail is a *signed* integer because a *reconstructed* raster
+		 * can have a negative LOD (useful when reconstructed raster uses an age grid mask that is
+		 * higher resolution than the source raster itself).
+		 *
+		 * See base class for more details.
+		 */
+		virtual
+		int
+		clamp_level_of_detail(
+				float level_of_detail) const;
+
+
+		using GLMultiResolutionRasterInterface::render;
+
+
+		/**
+		 * Renders all tiles visible in the view frustum (determined by the current model-view/projection
+		 * transforms of @a renderer) and returns true if any tiles were rendered.
+		 *
+		 * Throws exception if @a level_of_detail is outside the valid range.
+		 * Use @a clamp_level_of_detail to clamp to a valid range before calling this method.
+		 *
+		 * See base class for more details.
+		 */
+		virtual
 		bool
 		render(
 				GLRenderer &renderer,
+				int level_of_detail,
 				cache_handle_type &cache_handle);
+
+
+		/**
+		 * Returns the tile texel dimension of this raster which is also the tile texel dimension
+		 * of the source cube raster.
+		 */
+		std::size_t
+		get_tile_texel_dimension() const
+		{
+			return d_tile_texel_dimension;
+		}
 
 
 		/**
@@ -223,12 +285,7 @@ namespace GPlatesOpenGL
 								false/*adapt_tile_dimension_to_source_resolution*/,
 								// Avoids blending seams due to bilinear and/or anisotropic filtering which
 								// gives age grid mask alpha values that are not either 0.0 or 1.0...
-								GPlatesOpenGL::GLMultiResolutionCubeRaster::FIXED_POINT_TEXTURE_FILTER_MAG_NEAREST,
-								// Use non-default here - our source GLMultiResolutionRaster in turn references
-								// a GLAgeGridMaskSource which has some caching to insulate us from the
-								// file system so we don't really need any caching in GLMultiResolutionRaster
-								// and can save texture memory usage as a result...
-								false/*cache_source_tile_textures*/)),
+								GPlatesOpenGL::GLMultiResolutionCubeRaster::FIXED_POINT_TEXTURE_FILTER_MAG_NEAREST)),
 				age_grid_coverage_cube_raster(
 						// Create an age grid coverage multi-resolution cube raster.
 						GPlatesOpenGL::GLMultiResolutionCubeRaster::create(
@@ -239,11 +296,7 @@ namespace GPlatesOpenGL
 								false/*adapt_tile_dimension_to_source_resolution*/,
 								// Avoids blending seams due to bilinear and/or anisotropic filtering which
 								// gives age grid coverage alpha values that are not either 0.0 or 1.0...
-								GPlatesOpenGL::GLMultiResolutionCubeRaster::FIXED_POINT_TEXTURE_FILTER_MAG_NEAREST,
-								// Use default here - our source GLMultiResolutionRaster in turn references
-								// a GLCoverageSource which has no caching to insulate us from the
-								// file system so we need caching in GLMultiResolutionRaster...
-								true/*cache_source_tile_textures*/))
+								GPlatesOpenGL::GLMultiResolutionCubeRaster::FIXED_POINT_TEXTURE_FILTER_MAG_NEAREST))
 
 			{  }
 
@@ -547,13 +600,6 @@ namespace GPlatesOpenGL
 				const GLReconstructedStaticPolygonMeshes::non_null_ptr_type &reconstructed_static_polygon_meshes,
 				boost::optional<AgeGridRaster> age_grid_raster);
 
-
-		unsigned int
-		get_level_of_detail(
-				const GLViewport &viewport,
-				const GLMatrix &model_view_transform,
-				const GLMatrix &projection_transform) const;
-
 		void
 		render_quad_tree_source_raster(
 				GLRenderer &renderer,
@@ -570,8 +616,8 @@ namespace GPlatesOpenGL
 				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
 				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
 				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
-				unsigned int level_of_detail,
-				unsigned int render_level_of_detail,
+				unsigned int cube_quad_tree_depth,
+				unsigned int render_cube_quad_tree_depth,
 				const GLFrustum &frustum_planes,
 				boost::uint32_t frustum_plane_mask,
 				unsigned int &num_tiles_rendered_to_scene);
@@ -597,8 +643,8 @@ namespace GPlatesOpenGL
 				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
 				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
 				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
-				unsigned int level_of_detail,
-				unsigned int render_level_of_detail,
+				unsigned int cube_quad_tree_depth,
+				unsigned int render_cube_quad_tree_depth,
 				const GLFrustum &frustum_planes,
 				boost::uint32_t frustum_plane_mask,
 				unsigned int &num_tiles_rendered_to_scene);
@@ -624,8 +670,8 @@ namespace GPlatesOpenGL
 				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
 				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
 				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
-				unsigned int level_of_detail,
-				unsigned int render_level_of_detail,
+				unsigned int cube_quad_tree_depth,
+				unsigned int render_cube_quad_tree_depth,
 				const GLFrustum &frustum_planes,
 				boost::uint32_t frustum_plane_mask,
 				unsigned int &num_tiles_rendered_to_scene);
@@ -650,8 +696,8 @@ namespace GPlatesOpenGL
 				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
 				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
 				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
-				unsigned int level_of_detail,
-				unsigned int render_level_of_detail,
+				unsigned int cube_quad_tree_depth,
+				unsigned int render_cube_quad_tree_depth,
 				const GLFrustum &frustum_planes,
 				boost::uint32_t frustum_plane_mask,
 				unsigned int &num_tiles_rendered_to_scene);

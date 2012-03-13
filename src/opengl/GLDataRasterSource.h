@@ -50,7 +50,7 @@ namespace GPlatesOpenGL
 	 * An arbitrary dimension source of floating-point data made accessible by a proxied raster.
 	 *
 	 * However, in contrast to @a GLVisualRasterSource, this raster is meant for data analysis and
-	 * *not* for visual display. It expects a raster with a raster band containing floating-point
+	 * *not* for visual display. It expects a raster with a raster band containing floating-point (or integer)
 	 * pixel data. There is no usage of colour palettes or standard colour formats such as JPEG as
 	 * those are all for visual display purposes. Note that a floating-point raster can also be used
 	 * with @a GLVisualRasterSource but in that case a colour palette is applied to convert each pixel
@@ -78,6 +78,17 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Returns true if @a GLDataRasterSource is supported on the runtime system.
+		 *
+		 * The runtime system requires the OpenGL extension 'GL_ARB_texture_float'.
+		 */
+		static
+		bool
+		is_supported(
+				GLRenderer &renderer);
+
+
+		/**
 		 * Creates a @a GLDataRasterSource object.
 		 *
 		 * @a tile_texel_dimension must be a power-of-two - it is the OpenGL square texture
@@ -86,16 +97,35 @@ namespace GPlatesOpenGL
 		 * If @a tile_texel_dimension is greater than the maximum texture size supported
 		 * by the run-time system then it will be reduced to the maximum texture size.
 		 *
-		 * Returns false if @a raster is not a proxy raster or if it's uninitialised.
-		 *
-		 * NOTE: The raster is expected to be floating-point - if it's not then @a load_tile
-		 * will load zero valued data.
+		 * Returns false if @a raster is not a proxy raster or if it's uninitialised or if it doesn't
+		 * contain numerical floating-point or integer data (ie, contains colour RGBA pixels) or
+		 * if @a is_supported returns false.
+		 * NOTE: The raster is expected to be floating-point (or integer), otherwise boost::none is returned.
 		 */
 		static
 		boost::optional<non_null_ptr_type>
 		create(
+				GLRenderer &renderer,
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &data_raster,
 				unsigned int tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION);
+
+
+		/**
+		 * Change to a new data raster of the same dimensions as the current internal raster.
+		 *
+		 * This method is useful for time-dependent rasters sharing the same georeferencing
+		 * and raster dimensions.
+		 *
+		 * Returns false if @a raster has different dimensions than the current internal raster.
+		 * In this case you'll need to create a new @a GLDataRasterSource.
+		 *
+		 * NOTE: The opposite, changing the georeferencing without changing the raster,
+		 * will require creating a new @a GLMultiResolutionRaster object.
+		 */
+		bool
+		change_raster(
+				GLRenderer &renderer,
+				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &data_raster);
 
 
 		virtual
@@ -140,7 +170,7 @@ namespace GPlatesOpenGL
 
 	private:
 		/**
-		 * The proxied raster resolver to get floating-point data (and coverage) from the raster.
+		 * The proxied raster resolver to get floating-point (or integer) data (and coverage) from the raster.
 		 */
 		GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type
 				d_proxied_raster_resolver;
@@ -160,6 +190,12 @@ namespace GPlatesOpenGL
 		 * Uses as temporary space to pack data and coverage into red/green channels before loading texture.
 		 */
 		boost::scoped_array<float> d_tile_pack_working_space;
+
+		/**
+		 * Uses as temporary space to duplicate a tile's vertical or horizontal edge when the data in
+		 * the tile does not consume the full @a d_tile_texel_dimension x @a d_tile_texel_dimension area.
+		 */
+		boost::scoped_array<float> d_tile_edge_working_space;
 
 		/**
 		 * We log a load-tile-failure warning message only once for each data raster source.
@@ -192,7 +228,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Packs raster data/coverage values into target texture.
 		 *
-		 * Returns false if raw raster is not a floating-point raster.
+		 * Returns false if raw raster is not a floating-point raster (or integer).
 		 */
 		bool
 		pack_raster_data_into_tile_working_space(

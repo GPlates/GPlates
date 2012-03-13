@@ -41,7 +41,6 @@
 
 #include "gui/ColourScheme.h"
 #include "gui/Globe.h"
-#include "gui/PersistentOpenGLObjects.h"
 #include "gui/TextRenderer.h"
 #include "gui/ViewportZoom.h"
 
@@ -52,6 +51,7 @@
 #include "opengl/GLContext.h"
 #include "opengl/GLMatrix.h"
 #include "opengl/GLViewport.h"
+#include "opengl/GLVisualLayers.h"
 
 #include "qt-widgets/SceneView.h"
 
@@ -263,7 +263,11 @@ namespace GPlatesQtWidgets
 		QImage
 		grab_frame_buffer();
 
-		//! Returns the @a GLContext associated with this QGLWidget so it can be shared across widgets.
+		/**
+		 * Returns the OpenGL context associated with this QGLWidget.
+		 *
+		 * This also enables it to be shared across widgets.
+		 */
 		GPlatesOpenGL::GLContext::non_null_ptr_type
 		get_gl_context()
 		{
@@ -271,10 +275,10 @@ namespace GPlatesQtWidgets
 		}
 
 		//! Returns the persistent OpenGL objects associated with this widget's OpenGL context so it can be shared across widgets.
-		GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type
-		get_persistent_opengl_objects()
+		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type
+		get_gl_visual_layers()
 		{
-			return d_gl_persistent_objects;
+			return d_gl_visual_layers;
 		}
 
 	public slots:
@@ -576,7 +580,7 @@ namespace GPlatesQtWidgets
 		GPlatesOpenGL::GLMatrix d_gl_projection_transform_include_stars;
 
 		//! Keeps track of OpenGL objects that persist from one render to another.
-		GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type d_gl_persistent_objects;
+		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
 
 		/**
 		 * Enables frame-to-frame caching of persistent OpenGL resources.

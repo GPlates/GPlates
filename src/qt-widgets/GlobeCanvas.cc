@@ -208,8 +208,8 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*this)))),
 	d_make_context_current(*d_gl_context),
 	d_gl_viewport(0, 0, width(), height()),
-	d_gl_persistent_objects(
-			GPlatesGui::PersistentOpenGLObjects::create(
+	d_gl_visual_layers(
+			GPlatesOpenGL::GLVisualLayers::create(
 					d_gl_context, view_state.get_application_state())),
 	// The following unit-vector initialisation value is arbitrary.
 	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
@@ -218,7 +218,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			GPlatesGui::QGLWidgetTextRenderer::create(this)),
 	d_globe(
 			view_state,
-			d_gl_persistent_objects,
+			d_gl_visual_layers,
 			view_state.get_rendered_geometry_collection(),
 			view_state.get_visual_layers(),
 			view_state.get_render_settings(),
@@ -261,12 +261,12 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*this)))),
 	d_make_context_current(*d_gl_context),
 	d_gl_viewport(0, 0, width(), height()),
-	d_gl_persistent_objects(
+	d_gl_visual_layers(
 			// Attempt to share OpenGL resources across contexts.
 			// This will depend on whether the two 'GLContext's share any state.
-			GPlatesGui::PersistentOpenGLObjects::create(
+			GPlatesOpenGL::GLVisualLayers::create(
 					d_gl_context,
-					existing_globe_canvas->d_gl_persistent_objects,
+					existing_globe_canvas->d_gl_visual_layers,
 					view_state_.get_application_state())),
 	d_virtual_mouse_pointer_pos_on_globe(virtual_mouse_pointer_pos_on_globe_),
 	d_mouse_pointer_is_on_globe(mouse_pointer_is_on_globe_),
@@ -274,7 +274,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			GPlatesGui::QGLWidgetTextRenderer::create(this)),
 	d_globe(
 			existing_globe_,
-			d_gl_persistent_objects,
+			d_gl_visual_layers,
 			d_text_renderer,
 			GPlatesGui::GlobeVisibilityTester(*this),
 			colour_scheme_),

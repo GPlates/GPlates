@@ -50,31 +50,16 @@ namespace GPlatesDataMining
 	class CoRegMapper
 	{
 	public:
-#if BOOST_VERSION > 103600
-		typedef boost::unordered_map< 
-				const GPlatesModel::FeatureHandle*,
-				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> 
-									> MapperInDataset;
+		typedef std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature>
+				reconstructed_feature_vector_type;
 
-		typedef std::vector<boost::tuple<
-				OpaqueData,
-				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> 
-										> 
-							>MapperOutDataset;
-#else
-		typedef std::map<
-                                const GPlatesModel::FeatureHandle*,
-                                std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>
-                                                                        > MapperInDataset;
+		typedef reconstructed_feature_vector_type MapperInDataset;
 
-                typedef std::vector<boost::tuple<
-                                OpaqueData,
-                                std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>
-                                                                                >
-                                                        >MapperOutDataset;
-#endif
 		typedef std::vector<
-			const GPlatesAppLogic::ReconstructedFeatureGeometry*> RFGVector;
+				boost::tuple<
+						OpaqueData,
+						GPlatesAppLogic::ReconstructContext::ReconstructedFeature> 
+								> MapperOutDataset;
 
 		virtual
 		void

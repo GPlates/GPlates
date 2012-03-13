@@ -58,11 +58,6 @@ GPlatesOpenGL::GLTextureUtils::initialise_texture_object_1D(
 		GLint border,
 		bool mipmapped)
 {
-	// And dimensions should be a power-of-two.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPlatesUtils::Base2::is_power_of_two(width),
-			GPLATES_ASSERTION_SOURCE);
-
 	// Generate level zero and the mip levels if requested.
 	GLint level = 0;
 	do
@@ -72,6 +67,8 @@ GPlatesOpenGL::GLTextureUtils::initialise_texture_object_1D(
 				renderer, target, level, internalformat, width, border,
 				GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
+		// For non-power-of-two dimensions the GL_ARB_texture_non_power_of_two extension
+		// specifies the floor convention for determining the next smaller mipmap dimension.
 		width >>= 1;
 		++level;
 	}
@@ -90,12 +87,6 @@ GPlatesOpenGL::GLTextureUtils::initialise_texture_object_2D(
 		GLint border,
 		bool mipmapped)
 {
-	// And dimensions should be a power-of-two.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPlatesUtils::Base2::is_power_of_two(width) &&
-				GPlatesUtils::Base2::is_power_of_two(height),
-			GPLATES_ASSERTION_SOURCE);
-
 	// Generate level zero and the mip levels if requested.
 	GLint level = 0;
 	do
@@ -105,6 +96,8 @@ GPlatesOpenGL::GLTextureUtils::initialise_texture_object_2D(
 				renderer, target, level, internalformat, width, height, border,
 				GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
+		// For non-power-of-two dimensions the GL_ARB_texture_non_power_of_two extension
+		// specifies the floor convention for determining the next smaller mipmap dimension.
 		width >>= 1;
 		height >>= 1;
 		++level;
@@ -125,13 +118,6 @@ GPlatesOpenGL::GLTextureUtils::initialise_texture_object_3D(
 		GLint border,
 		bool mipmapped)
 {
-	// And dimensions should be a power-of-two.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPlatesUtils::Base2::is_power_of_two(width) &&
-				GPlatesUtils::Base2::is_power_of_two(height) &&
-				GPlatesUtils::Base2::is_power_of_two(depth),
-			GPLATES_ASSERTION_SOURCE);
-
 	// Generate level zero and the mip levels if requested.
 	GLint level = 0;
 	do
@@ -141,6 +127,8 @@ GPlatesOpenGL::GLTextureUtils::initialise_texture_object_3D(
 				renderer, target, level, internalformat, width, height, depth, border,
 				GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
+		// For non-power-of-two dimensions the GL_ARB_texture_non_power_of_two extension
+		// specifies the floor convention for determining the next smaller mipmap dimension.
 		width >>= 1;
 		height >>= 1;
 		depth >>= 1;

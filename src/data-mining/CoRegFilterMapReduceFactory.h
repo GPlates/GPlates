@@ -32,6 +32,9 @@
 #include "CoRegMapper.h"
 #include "CoRegReducer.h"
 
+#include "app-logic/ReconstructContext.h"
+
+
 namespace GPlatesAppLogic
 {
 	class ReconstructedFeatureGeometry;
@@ -51,7 +54,7 @@ namespace GPlatesDataMining
 		CoRegFilter*
 		create(
 				const ConfigurationTableRow&,
-				const GPlatesDataMining::CoRegFilter::RFGVector&);
+				const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_seed_feature);
 	};
 
 	class CoRegMapperFactory
@@ -61,7 +64,7 @@ namespace GPlatesDataMining
 		CoRegMapper*
 		create(
 				const ConfigurationTableRow& row,
-				const GPlatesDataMining::CoRegFilter::RFGVector&);
+				const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_seed_feature);
 	};
 
 	class CoRegReducerFactory
@@ -71,7 +74,7 @@ namespace GPlatesDataMining
 		CoRegReducer*
 		create(
 				const ConfigurationTableRow& row,
-				const GPlatesDataMining::CoRegFilter::RFGVector&);
+				const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_seed_feature);
 	};
 
 	inline
@@ -81,13 +84,13 @@ namespace GPlatesDataMining
 			boost::shared_ptr<CoRegReducer> 
 				>
 	create_filter_map_reduce(
-			const ConfigurationTableRow& r,
-			const GPlatesDataMining::CoRegFilter::RFGVector& s)
+			const ConfigurationTableRow& row,
+			const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_seed_feature)
 	{
 		return boost::make_tuple(
-			boost::shared_ptr<CoRegFilter>(CoRegFilterFactory::create(r,s)),
-			boost::shared_ptr<CoRegMapper>(CoRegMapperFactory::create(r,s)),
-			boost::shared_ptr<CoRegReducer>(CoRegReducerFactory::create(r,s)));
+			boost::shared_ptr<CoRegFilter>(CoRegFilterFactory::create(row, reconstructed_seed_feature)),
+			boost::shared_ptr<CoRegMapper>(CoRegMapperFactory::create(row, reconstructed_seed_feature)),
+			boost::shared_ptr<CoRegReducer>(CoRegReducerFactory::create(row, reconstructed_seed_feature)));
 	}
 }
 

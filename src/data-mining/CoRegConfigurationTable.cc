@@ -35,11 +35,11 @@ namespace
 	using namespace GPlatesDataMining;
 	
 	bool
-	compare_feature_collection(
+	compare_layer(
 			const ConfigurationTableRow& row_1,
 			const ConfigurationTableRow& row_2)
 	{
-		return row_1.target_fc.handle_ptr() < row_2.target_fc.handle_ptr();
+		return row_1.target_layer < row_2.target_layer;
 	}
 
 	bool
@@ -73,14 +73,14 @@ GPlatesDataMining::CoRegConfigurationTable::group_and_sort()
 	for(std::size_t i=0; i<d_rows.size(); i++)//keep the original index.
 		d_rows[i].index = i;
 
-	//group by feature collection
-	std::sort(begin(), end(), compare_feature_collection);
+	//group by layer
+	std::sort(begin(), end(), compare_layer);
 	
 	iterator it = begin(), it_end = end();
 	while(it != it_end)
 	{
 		std::pair<iterator,iterator> bounds;
-		bounds = std::equal_range(it, it_end, *it, compare_feature_collection);
+		bounds = std::equal_range(it, it_end, *it, compare_layer);
 		it = bounds.second;
 		iterator inner_it = bounds.first, inner_it_end =--bounds.second;
 		std::sort(inner_it, inner_it_end, compare_filter_type); // sort by filter type
@@ -98,8 +98,26 @@ GPlatesDataMining::CoRegConfigurationTable::group_and_sort()
 }
 
 
+GPlatesDataMining::ConfigurationTableRow::ConfigurationTableRow() :
+	attr_type(CO_REGISTRATION_GPML_ATTRIBUTE/*arbitrary*/),
+	reducer_type(REDUCER_MIN/*arbitrary*/),
+	raster_level_of_detail(0),
+	raster_fill_polygons(false),
+	index(0)
+{
+}
 
 
-
-
-
+bool
+GPlatesDataMining::ConfigurationTableRow::operator==(
+		const ConfigurationTableRow &rhs) const
+{
+	return target_layer == rhs.target_layer &&
+		*filter_cfg == *rhs.filter_cfg && // Dereference to use 'CoRegFilter::Config' equality operator.
+		attr_name == rhs.attr_name &&
+		attr_type == rhs.attr_type &&
+		reducer_type == rhs.reducer_type &&
+		raster_level_of_detail == rhs.raster_level_of_detail &&
+		raster_fill_polygons == rhs.raster_fill_polygons &&
+		index == rhs.index;
+}

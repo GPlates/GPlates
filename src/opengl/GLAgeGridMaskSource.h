@@ -82,7 +82,10 @@ namespace GPlatesOpenGL
 		 * If @a tile_texel_dimension is greater than the maximum texture size supported
 		 * by the run-time system then it will be reduced to the maximum texture size.
 		 *
-		 * Returns false if @a raster is not a proxy raster or if it's uninitialised.
+		 * Returns false if @a raster is not a proxy raster or if it's uninitialised or if it doesn't
+		 * contain numerical floating-point or integer data (ie, contains colour RGBA pixels) or
+		 * if @a is_supported returns false.
+		 * NOTE: The raster is expected to be floating-point (or integer), otherwise boost::none is returned.
 		 */
 		static
 		boost::optional<non_null_ptr_type>

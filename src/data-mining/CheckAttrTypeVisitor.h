@@ -287,7 +287,7 @@ namespace GPlatesDataMining
 		}
 
 		inline
-		std::multimap< QString, GPlatesDataMining::AttributeTypeEnum >&
+		const std::multimap< QString, GPlatesDataMining::AttributeTypeEnum >&
 		shape_map()
 		{
 			return d_map;

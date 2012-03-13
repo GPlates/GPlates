@@ -29,6 +29,7 @@
 
 #include <vector>
 #include <boost/optional.hpp>
+#include <boost/scoped_array.hpp>
 #include <QImage>
 
 #include "GLCompiledDrawState.h"
@@ -97,6 +98,34 @@ namespace GPlatesOpenGL
 				unsigned int tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION);
 
 
+		/**
+		 * Change to a new raster of the same dimensions as the current internal raster.
+		 *
+		 * This method is useful for time-dependent rasters sharing the same georeferencing
+		 * and raster dimensions.
+		 *
+		 * Returns false if @a raster has different dimensions than the current internal raster.
+		 * In this case you'll need to create a new @a GLVisualRasterSource.
+		 *
+		 * NOTE: The opposite, changing the georeferencing without changing the raster,
+		 * will require creating a new @a GLMultiResolutionRaster object.
+		 */
+		bool
+		change_raster(
+				GLRenderer &renderer,
+				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette);
+
+
+		/**
+		 * Change the colour to modulate the raster texture with.
+		 */
+		void
+		change_modulate_colour(
+				GLRenderer &renderer,
+				const GPlatesGui::Colour &raster_modulate_colour);
+
+
 		virtual
 		unsigned int
 		get_raster_width() const
@@ -140,34 +169,6 @@ namespace GPlatesOpenGL
 				unsigned int texel_height,
 				const GLTexture::shared_ptr_type &target_texture,
 				GLRenderer &renderer);
-
-
-		/**
-		 * Change to a new raster of the same dimensions as the current internal raster.
-		 *
-		 * This method is useful for time-dependent rasters sharing the same georeferencing
-		 * and raster dimensions.
-		 *
-		 * Returns false if @a raster has different dimensions than the current internal raster.
-		 * In this case you'll need to create a new @a GLVisualRasterSource.
-		 *
-		 * NOTE: The opposite, changing the georeferencing without changing the raster,
-		 * will require creating a new @a GLMultiResolutionRaster object.
-		 */
-		bool
-		change_raster(
-				GLRenderer &renderer,
-				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster,
-				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette);
-
-
-		/**
-		 * Change the colour to modulate the raster texture with.
-		 */
-		void
-		change_modulate_colour(
-				GLRenderer &renderer,
-				const GPlatesGui::Colour &raster_modulate_colour);
 
 	private:
 		class Tile
@@ -295,6 +296,12 @@ namespace GPlatesOpenGL
 		 * The vertex colours are @a d_raster_modulate_colour.
 		 */
 		GLCompiledDrawState::non_null_ptr_to_const_type d_full_screen_quad_drawable;
+
+		/**
+		 * Uses as temporary space to duplicate a tile's vertical or horizontal edge when the data in
+		 * the tile does not consume the full @a d_tile_texel_dimension x @a d_tile_texel_dimension area.
+		 */
+		boost::scoped_array<GPlatesGui::rgba8_t> d_tile_edge_working_space;
 
 		/**
 		 * Images containing error messages when fail to load proxied raster tiles.

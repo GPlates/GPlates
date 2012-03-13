@@ -48,11 +48,52 @@
 #include "utils/Profile.h"
 
 
+bool
+GPlatesOpenGL::GLDataRasterSource::is_supported(
+		GLRenderer &renderer)
+{
+	const GLContext::Parameters &context_parameters = GLContext::get_parameters();
+
+	const bool supported =
+			// Need floating-point textures...
+			context_parameters.texture.gl_ARB_texture_float;
+
+	if (!supported)
+	{
+		// Only emit warning message once.
+		static bool emitted_warning = false;
+		if (!emitted_warning)
+		{
+			qWarning() <<
+					"GLDataRasterSource: Floating-point OpenGL texture support 'GL_ARB_texture_float' is required.\n";
+			emitted_warning = true;
+		}
+
+		return false;
+	}
+
+	// Supported.
+	return true;
+}
+
+
 boost::optional<GPlatesOpenGL::GLDataRasterSource::non_null_ptr_type>
 GPlatesOpenGL::GLDataRasterSource::create(
+		GLRenderer &renderer,
 		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &data_raster,
 		unsigned int tile_texel_dimension)
 {
+	if (!is_supported(renderer))
+	{
+		return boost::none;
+	}
+
+	// The raster type is expected to contain numerical data, not colour RGBA data.
+	if (!GPlatesPropertyValues::RawRasterUtils::does_raster_contain_numerical_data(*data_raster))
+	{
+		return boost::none;
+	}
+
 	boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxy_resolver_opt =
 			GPlatesPropertyValues::ProxiedRasterResolver::create(data_raster);
 	if (!proxy_resolver_opt)
@@ -109,12 +150,58 @@ GPlatesOpenGL::GLDataRasterSource::GLDataRasterSource(
 					? 2 * tile_texel_dimension * tile_texel_dimension
 					// RGBA format...
 					: 4 * tile_texel_dimension * tile_texel_dimension]),
+	d_tile_edge_working_space(
+			new float[
+					GPLATES_OPENGL_BOOL(GLEW_ARB_texture_rg)
+					// RG format...
+					? 2 * tile_texel_dimension
+					// RGBA format...
+					: 4 * tile_texel_dimension]),
 	d_logged_tile_load_failure_warning(false)
 {
 	// Floating-point textures must be supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			GPLATES_OPENGL_BOOL(GLEW_ARB_texture_float),
 			GPLATES_ASSERTION_SOURCE);
+}
+
+
+bool
+GPlatesOpenGL::GLDataRasterSource::change_raster(
+		GLRenderer &renderer,
+		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &new_data_raster)
+{
+	// Get the raster dimensions.
+	boost::optional<std::pair<unsigned int, unsigned int> > new_raster_dimensions =
+			GPlatesPropertyValues::RawRasterUtils::get_raster_size(*new_data_raster);
+
+	// If raster happens to be uninitialised then return false.
+	if (!new_raster_dimensions)
+	{
+		return false;
+	}
+
+	// If the new raster dimensions don't match our current internal raster then return false.
+	if (new_raster_dimensions->first != d_raster_width ||
+		new_raster_dimensions->second != d_raster_height)
+	{
+		return false;
+	}
+
+	// Create a new proxied raster resolver to perform region queries for the new raster data.
+	boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxy_resolver_opt =
+			GPlatesPropertyValues::ProxiedRasterResolver::create(new_data_raster);
+	if (!proxy_resolver_opt)
+	{
+		return false;
+	}
+	d_proxied_raster_resolver = proxy_resolver_opt.get();
+
+	// Invalidate any raster data that clients may have cached.
+	invalidate();
+
+	// Successfully changed to a new raster of the same dimensions as the previous one.
+	return true;
 }
 
 
@@ -222,6 +309,71 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 				GL_FLOAT,
 				texel_width,
 				texel_height);
+	}
+
+	// If the region does not occupy the entire tile then it means we've reached the right edge
+	// of the raster - we duplicate the last column of texels into the adjacent column to ensure
+	// that subsequent sampling of the texture at the right edge of the last column of texels
+	// will generate the texel colour at the texel centres (for both nearest and bilinear filtering).
+	// This sampling happens when rendering a raster into a multi-resolution cube map that has
+	// an cube frustum overlap of half a texel - normally, for a full tile, the OpenGL clamp-to-edge
+	// filter will ensure the texture border colour is not used - however for partially filled
+	// textures we need to duplicate the edge to achieve the same effect otherwise numerical precision
+	// in the graphics hardware and nearest neighbour filtering could sample a garbage texel.
+	if (texel_width < d_tile_texel_dimension)
+	{
+		const unsigned int texel_size_in_floats = GPLATES_OPENGL_BOOL(GLEW_ARB_texture_rg) ? 2 : 4;
+		// Copy the right edge of the region into the working space.
+		float *working_space = d_tile_edge_working_space.get();
+		// The last pixel in the first row of the region.
+		const float *region_last_column = d_tile_pack_working_space.get() + texel_size_in_floats * (texel_width - 1);
+		for (unsigned int y = 0; y < texel_height; ++y)
+		{
+			*working_space = *region_last_column;
+			working_space += texel_size_in_floats;
+			region_last_column += texel_size_in_floats * texel_width;
+		}
+
+		// Load the one-pixel wide column of data from column 'texel_width-1' into column 'texel_width'.
+		GLTextureUtils::load_image_into_texture_2D(
+				renderer,
+				target_texture,
+				d_tile_edge_working_space.get(),
+				GPLATES_OPENGL_BOOL(GLEW_ARB_texture_rg) ? GL_RG : GL_RGBA,
+				GL_FLOAT,
+				1/*image_width*/,
+				texel_height,
+				texel_width/*texel_u_offset*/);
+	}
+
+	// Same applies if we've reached the bottom edge of raster (and the raster height is not an
+	// integer multiple of the tile texel dimension).
+	if (texel_height < d_tile_texel_dimension)
+	{
+		const unsigned int texel_size_in_floats = GPLATES_OPENGL_BOOL(GLEW_ARB_texture_rg) ? 2 : 4;
+		// Copy the bottom edge of the region into the working space.
+		float *working_space = d_tile_edge_working_space.get();
+		// The first pixel in the last row of the region.
+		const float *region_last_row =
+				d_tile_pack_working_space.get() + texel_size_in_floats * (texel_height - 1) * texel_width;
+		for (unsigned int x = 0; x < texel_width; ++x)
+		{
+			*working_space = *region_last_row;
+			working_space += texel_size_in_floats;
+			region_last_row += texel_size_in_floats;
+		}
+
+		// Load the one-pixel wide row of data from row 'texel_height-1' into row 'texel_height'.
+		GLTextureUtils::load_image_into_texture_2D(
+				renderer,
+				target_texture,
+				d_tile_edge_working_space.get(),
+				GPLATES_OPENGL_BOOL(GLEW_ARB_texture_rg) ? GL_RG : GL_RGBA,
+				GL_FLOAT,
+				texel_width,
+				1/*image_height*/,
+				0/*texel_u_offset*/,
+				texel_height/*texel_v_offset*/);
 	}
 
 	// Nothing needs caching.
@@ -351,6 +503,90 @@ GPlatesOpenGL::GLDataRasterSource::pack_raster_data_into_tile_working_space(
 	{
 		pack_raster_data_into_tile_working_space(
 				double_region_tile.get()->data(),
+				raster_coverage->data(),
+				texel_width,
+				texel_height);
+
+		return true;
+	}
+
+	boost::optional<GPlatesPropertyValues::Int8RawRaster::non_null_ptr_type> int8_region_tile =
+			GPlatesPropertyValues::RawRasterUtils::try_raster_cast<
+					GPlatesPropertyValues::Int8RawRaster>(*raster_region);
+	if (int8_region_tile)
+	{
+		pack_raster_data_into_tile_working_space(
+				int8_region_tile.get()->data(),
+				raster_coverage->data(),
+				texel_width,
+				texel_height);
+
+		return true;
+	}
+
+	boost::optional<GPlatesPropertyValues::UInt8RawRaster::non_null_ptr_type> uint8_region_tile =
+			GPlatesPropertyValues::RawRasterUtils::try_raster_cast<
+					GPlatesPropertyValues::UInt8RawRaster>(*raster_region);
+	if (uint8_region_tile)
+	{
+		pack_raster_data_into_tile_working_space(
+				uint8_region_tile.get()->data(),
+				raster_coverage->data(),
+				texel_width,
+				texel_height);
+
+		return true;
+	}
+
+	boost::optional<GPlatesPropertyValues::Int16RawRaster::non_null_ptr_type> int16_region_tile =
+			GPlatesPropertyValues::RawRasterUtils::try_raster_cast<
+					GPlatesPropertyValues::Int16RawRaster>(*raster_region);
+	if (int16_region_tile)
+	{
+		pack_raster_data_into_tile_working_space(
+				int16_region_tile.get()->data(),
+				raster_coverage->data(),
+				texel_width,
+				texel_height);
+
+		return true;
+	}
+
+	boost::optional<GPlatesPropertyValues::UInt16RawRaster::non_null_ptr_type> uint16_region_tile =
+			GPlatesPropertyValues::RawRasterUtils::try_raster_cast<
+					GPlatesPropertyValues::UInt16RawRaster>(*raster_region);
+	if (uint16_region_tile)
+	{
+		pack_raster_data_into_tile_working_space(
+				uint16_region_tile.get()->data(),
+				raster_coverage->data(),
+				texel_width,
+				texel_height);
+
+		return true;
+	}
+
+	boost::optional<GPlatesPropertyValues::Int32RawRaster::non_null_ptr_type> int32_region_tile =
+			GPlatesPropertyValues::RawRasterUtils::try_raster_cast<
+					GPlatesPropertyValues::Int32RawRaster>(*raster_region);
+	if (int32_region_tile)
+	{
+		pack_raster_data_into_tile_working_space(
+				int32_region_tile.get()->data(),
+				raster_coverage->data(),
+				texel_width,
+				texel_height);
+
+		return true;
+	}
+
+	boost::optional<GPlatesPropertyValues::UInt32RawRaster::non_null_ptr_type> uint32_region_tile =
+			GPlatesPropertyValues::RawRasterUtils::try_raster_cast<
+					GPlatesPropertyValues::UInt32RawRaster>(*raster_region);
+	if (uint32_region_tile)
+	{
+		pack_raster_data_into_tile_working_space(
+				uint32_region_tile.get()->data(),
 				raster_coverage->data(),
 				texel_width,
 				texel_height);

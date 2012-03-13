@@ -28,7 +28,6 @@
 #define GPLATES_APP_LOGIC_COREGISTRATIONLAYERTASK_H
 
 #include <utility>
-#include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QString>
 #include <QObject>
@@ -63,24 +62,15 @@ namespace GPlatesAppLogic
 			set_cfg_table(
 					const GPlatesDataMining::CoRegConfigurationTable& table)
 			{
-				// TODO: Make a copy of the table just to be sure we're never left with a dangling pointer.
-				// For now keep a reference in case the data gets changed without our notification.
-				d_cfg_table = &table;
+				// Copy the updated configuration table.
+				d_cfg_table = table;
 
 				// Let the owning @a CoRegistrationLayerTask object know the configuration has changed.
 				d_set_cfg_table_called = true;
 			}
 
-			void
-			set_call_back(
-					boost::function<void(const GPlatesDataMining::DataTable&)> call_back)
-			{
-				d_call_back = call_back;
-			}
-
 		private:
-			const GPlatesDataMining::CoRegConfigurationTable *d_cfg_table;
-			boost::function<void(const GPlatesDataMining::DataTable &)> d_call_back;
+			GPlatesDataMining::CoRegConfigurationTable d_cfg_table;
 
 			/**
 			 * Is true @a set_cfg_table has been called.
@@ -88,12 +78,6 @@ namespace GPlatesAppLogic
 			 * Used to let CoRegistrationLayerTask know that an external client has modified this state.
 			 *
 			 * CoRegistrationLayerTask will reset this explicitly.
-			 *
-			 * This is not really used just yet because we keep a reference to the configuration
-			 * table - so if it changes without us knowing then we'll be using the latest configuration
-			 * data - TODO: make a copy instead of a reference and make sure clients set the table
-			 * through us rather than underneath us - this will allow the layer proxy to cache
-			 * result data and know when to flush its cache.
 			 */
 			bool d_set_cfg_table_called;
 
@@ -225,10 +209,6 @@ namespace GPlatesAppLogic
 				d_using_default_reconstruction_layer_proxy(true),
 				d_coregistration_layer_proxy(CoRegistrationLayerProxy::create())
 		{  }
-
-		void
-		refresh_data(
-				const GPlatesDataMining::DataTable& table);
 	};
 }
 

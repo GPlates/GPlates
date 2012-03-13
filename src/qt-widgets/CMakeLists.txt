@@ -80,11 +80,14 @@ set(srcs
     ConnectWFSDialog.cc
     ConnectWFSDialog.h
     ConnectWFSDialogUi.ui
+    CoRegistrationLayerConfigurationDialog.cc
+    CoRegistrationLayerConfigurationDialog.h
+    CoRegistrationLayerConfigurationDialogUi.ui
     CoRegistrationOptionsWidget.h
     CoRegistrationOptionsWidgetUi.ui
-    CoRegLayerConfigurationDialog.cc
-    CoRegLayerConfigurationDialog.h
-    CoRegLayerConfigurationDialogUi.ui
+    CoRegistrationResultTableDialog.cc
+    CoRegistrationResultTableDialog.h
+    CoRegistrationResultTableDialogUi.ui
     CreateFeatureDialog.cc
     CreateFeatureDialog.h
     CreateFeatureDialogUi.ui
@@ -345,9 +348,6 @@ set(srcs
     ReconstructLayerOptionsWidget.cc
     ReconstructLayerOptionsWidget.h
     ReconstructLayerOptionsWidgetUi.ui
-    ResultTableDialog.cc
-    ResultTableDialog.h
-    ResultTableDialogUi.ui
     SaveFileDialog.cc
     SaveFileDialog.h
     SaveFileDialogImpl.cc

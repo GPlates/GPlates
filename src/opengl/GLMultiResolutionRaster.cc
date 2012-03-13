@@ -81,7 +81,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create(
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 		const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
 		FixedPointTextureFilterType fixed_point_texture_filter,
-		bool cache_entire_raster_level_of_detail_pyramid,
+		CacheTileTexturesType cache_tile_textures,
 		RasterScanlineOrderType raster_scanline_order)
 {
 	return non_null_ptr_type(
@@ -90,7 +90,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create(
 					georeferencing,
 					raster_source,
 					fixed_point_texture_filter,
-					cache_entire_raster_level_of_detail_pyramid,
+					cache_tile_textures,
 					raster_scanline_order));
 }
 
@@ -100,7 +100,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
 		const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
 		FixedPointTextureFilterType fixed_point_texture_filter,
-		bool cache_entire_raster_level_of_detail_pyramid,
+		CacheTileTexturesType cache_tile_textures,
 		RasterScanlineOrderType raster_scanline_order) :
 	d_georeferencing(georeferencing),
 	d_raster_source(raster_source),
@@ -115,6 +115,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 	d_max_highest_resolution_texel_size_on_unit_sphere((std::numeric_limits<float>::min)()),
 	// Start with small size cache and just let the cache grow in size as needed if caching enabled...
 	d_tile_texture_cache(tile_texture_cache_type::create(2/* GPU pipeline breathing room in case caching disabled*/)),
+	d_cache_tile_textures(cache_tile_textures),
 	// Start with smallest size cache and just let the cache grow in size as needed...
 	d_tile_vertices_cache(tile_vertices_cache_type::create())
 {
@@ -127,7 +128,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 	// This does not consume memory until each individual tile is requested.
 	// For example, if all level 0 tiles are accessed but none of the other levels then memory
 	// will only be used for the level 0 tiles.
-	if (cache_entire_raster_level_of_detail_pyramid)
+	if (d_cache_tile_textures == CACHE_TILE_TEXTURES_ENTIRE_LEVEL_OF_DETAIL_PYRAMID)
 	{
 		// This effectively disables any recycling that would otherwise happen in the cache.
 		d_tile_texture_cache->set_min_num_objects(d_tiles.size());
@@ -194,21 +195,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_level_of_detail(
 }
 
 
-float
-GPlatesOpenGL::GLMultiResolutionRaster::get_viewport_dimension_scale(
-		const GLMatrix &model_view_transform,
-		const GLMatrix &projection_transform,
-		const GLViewport &viewport,
-		float level_of_detail) const
-{
-	const float current_level_of_detail = get_level_of_detail(model_view_transform, projection_transform, viewport);
-
-	// new_viewport_dimension = viewport_dimension * pow(2, (get_level_of_detail - lod))
-	return std::pow(2.0f, current_level_of_detail - level_of_detail);
-}
-
-
-unsigned int
+int
 GPlatesOpenGL::GLMultiResolutionRaster::clamp_level_of_detail(
 		float level_of_detail_float) const
 {
@@ -327,36 +314,16 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
 bool
 GPlatesOpenGL::GLMultiResolutionRaster::render(
 		GLRenderer &renderer,
-		cache_handle_type &cache_handle,
-		bool cache_tile_textures,
-		float level_of_detail_bias)
+		int level_of_detail,
+		cache_handle_type &cache_handle)
 {
-	const GLViewport &viewport = renderer.gl_get_viewport();
-	const GLMatrix &model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
-	const GLMatrix &projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
+	// The GLMultiResolutionRasterInterface interface says an exception is thrown if level-of-detail
+	// is outside the valid range.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			level_of_detail >= 0 &&
+				level_of_detail < boost::numeric_cast<int>(get_num_levels_of_detail()),
+			GPLATES_ASSERTION_SOURCE);
 
-	// Get the tiles visible in the view frustum of the render target in 'renderer'.
-	std::vector<tile_handle_type> visible_tiles;
-	get_visible_tiles(visible_tiles, model_view_transform, projection_transform, viewport, level_of_detail_bias);
-
-	// Return early if there are no tiles to render.
-	if (visible_tiles.empty())
-	{
-		cache_handle = cache_handle_type();
-		return false;
-	}
-
-	return render(renderer, visible_tiles, cache_handle, cache_tile_textures);
-}
-
-
-bool
-GPlatesOpenGL::GLMultiResolutionRaster::render(
-		GLRenderer &renderer,
-		unsigned int level_of_detail,
-		cache_handle_type &cache_handle,
-		bool cache_tile_textures)
-{
 	const GLMatrix &model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
 	const GLMatrix &projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
 
@@ -371,7 +338,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 		return false;
 	}
 
-	return render(renderer, visible_tiles, cache_handle, cache_tile_textures);
+	return render(renderer, visible_tiles, cache_handle);
 }
 
 
@@ -379,9 +346,10 @@ bool
 GPlatesOpenGL::GLMultiResolutionRaster::render(
 		GLRenderer &renderer,
 		const std::vector<tile_handle_type> &tiles,
-		cache_handle_type &cache_handle,
-		bool cache_tile_textures)
+		cache_handle_type &cache_handle)
 {
+	PROFILE_FUNC();
+
 	// Make sure we leave the OpenGL state the way it was.
 	GLRenderer::StateBlockScope save_restore_state(renderer);
 
@@ -443,7 +411,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 		//
 		// Note that none of this has any effect if the client specified the entire level-of-detail
 		// pyramid be cached (in the 'create()' method) in which case it'll get cached regardless.
-		cached_tiles->push_back(ClientCacheTile(tile, cache_tile_textures));
+		cached_tiles->push_back(ClientCacheTile(tile, d_cache_tile_textures));
 	}
 
 	// Return cached tiles to the caller.
@@ -1226,13 +1194,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::bound_level_of_detail_tile(
 	GLIntersect::OrientedBoundingBoxBuilder obb_builder = create_oriented_bounding_box_builder(
 			tile_centre_x_geo_coord, tile_centre_y_geo_coord);
 
-	// Expand the oriented bounding box to include all vertices of the current tile.
-	// We only need the boundary vertices to accomplish this because the interior
-	// vertices will then be bounded along the OBB's x and y axes (due to the boundary vertices)
-	// and the z-axis will be bounded along its negative direction (due to the boundary vertices)
-	// and the z-axis will be bounded along its positive direction due to the extremal point
-	// already added in 'create_oriented_bounding_box_builder()'.
-
 	// Set up some variables before calculating the boundary vertices.
 	const double x_pixels_per_quad =
 			static_cast<double>(lod_tile.x_geo_end - lod_tile.x_geo_start) /
@@ -1241,25 +1202,58 @@ GPlatesOpenGL::GLMultiResolutionRaster::bound_level_of_detail_tile(
 			static_cast<double>(lod_tile.y_geo_end - lod_tile.y_geo_start) /
 					(lod_tile.y_num_vertices - 1);
 
-	// Bound the tile's top and bottom edge vertices.
-	for (unsigned int i = 0; i < lod_tile.x_num_vertices; ++i)
+	// Expand the oriented bounding box to include all vertices of the current tile.
+	// The value of '4' is because:
+	//  1) the lowest resolution can wrap around the entire globe (for a global raster), and
+	//  2) the second lowest resolution can also wrap around the entire globe if the dimension,
+	//     in pixels, of this level-of-detail is slightly above the tile dimension, and
+	//  3) the third lowest resolution can wrap around *half* the entire globe, and
+	//  4) the fourth lowest resolution can wrap around a *quarter* of the entire globe.
+	// ...so, for the fourth lowest resolution (and higher resolutions), it is fine to exclude interior points.
+	if (lod_tile.lod_level <= d_level_of_detail_pyramid.size() - 4)
 	{
-		obb_builder.add(convert_pixel_coord_to_geographic_coord(
-				lod_tile.x_geo_start + i * x_pixels_per_quad,
-				lod_tile.y_geo_start));
-		obb_builder.add(convert_pixel_coord_to_geographic_coord(
-				lod_tile.x_geo_start + i * x_pixels_per_quad,
-				lod_tile.y_geo_end));
+		// For high enough resolutions we only need the boundary vertices to accomplish this because
+		// the interior vertices will then be bounded along the OBB's x and y axes (due to the boundary
+		// vertices) and the z-axis will be bounded along its negative direction (due to the boundary
+		// vertices) and the z-axis will be bounded along its positive direction due to the extremal
+		// point already added in 'create_oriented_bounding_box_builder()'.
+
+		// Bound the tile's top and bottom edge vertices.
+		for (unsigned int i = 0; i < lod_tile.x_num_vertices; ++i)
+		{
+			obb_builder.add(convert_pixel_coord_to_geographic_coord(
+					lod_tile.x_geo_start + i * x_pixels_per_quad,
+					lod_tile.y_geo_start));
+			obb_builder.add(convert_pixel_coord_to_geographic_coord(
+					lod_tile.x_geo_start + i * x_pixels_per_quad,
+					lod_tile.y_geo_end));
+		}
+		// Bound the tile's left and right edge vertices (excluding corner points already bounded).
+		for (unsigned int j = 1; j < lod_tile.y_num_vertices - 1; ++j)
+		{
+			obb_builder.add(convert_pixel_coord_to_geographic_coord(
+					lod_tile.x_geo_start,
+					lod_tile.y_geo_start + j * y_pixels_per_quad));
+			obb_builder.add(convert_pixel_coord_to_geographic_coord(
+					lod_tile.x_geo_end,
+					lod_tile.y_geo_start + j * y_pixels_per_quad));
+		}
 	}
-	// Bound the tile's left and right edge vertices (excluding corner points already bounded).
-	for (unsigned int j = 1; j < lod_tile.y_num_vertices - 1; ++j)
+	else // The lowest resolution levels of detail...
 	{
-		obb_builder.add(convert_pixel_coord_to_geographic_coord(
-				lod_tile.x_geo_start,
-				lod_tile.y_geo_start + j * y_pixels_per_quad));
-		obb_builder.add(convert_pixel_coord_to_geographic_coord(
-				lod_tile.x_geo_end,
-				lod_tile.y_geo_start + j * y_pixels_per_quad));
+		// Bound the tile's interior and exterior points since the level-of-detail is a low enough
+		// resolution that (for a global raster) it could wrap around the globe more than 90 degrees.
+		// This means we cannot exclude the interior points.
+		for (unsigned int j = 0; j < lod_tile.y_num_vertices; ++j)
+		{
+			// Bound the tile's top and bottom edge vertices.
+			for (unsigned int i = 0; i < lod_tile.x_num_vertices; ++i)
+			{
+				obb_builder.add(convert_pixel_coord_to_geographic_coord(
+						lod_tile.x_geo_start + i * x_pixels_per_quad,
+						lod_tile.y_geo_start + j * y_pixels_per_quad));
+			}
+		}
 	}
 
 	return obb_builder.get_oriented_bounding_box();

@@ -560,6 +560,27 @@ namespace GPlatesPropertyValues
 
 
 		/**
+		 * Returns true if the specified raster contains numerical data such as floating-point
+		 * or integer pixels (but not RGBA colour pixels).
+		 */
+		bool
+		does_raster_contain_numerical_data(
+				RawRaster &raster);
+
+		/**
+		 * Returns true if the specified raster contains colour data such as RGBA pixel
+		 * (but not numerical data such as floating-point or integer pixels).
+		 */
+		inline
+		bool
+		does_raster_contain_colour_data(
+				RawRaster &raster)
+		{
+			return !does_raster_contain_numerical_data(raster);
+		}
+
+
+		/**
 		 * Converts the integer @a source_raster into a floating-point raw raster.
 		 *
 		 * The @a element_type of @a FromRawRasterType must be an integral type.

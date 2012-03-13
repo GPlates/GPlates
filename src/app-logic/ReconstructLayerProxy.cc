@@ -25,10 +25,13 @@
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
+#include <QDebug>
 
 #include "ReconstructLayerProxy.h"
 
 #include "maths/CubeQuadTreePartitionUtils.h"
+
+#include "utils/Profile.h"
 
 
 namespace GPlatesAppLogic
@@ -78,7 +81,7 @@ GPlatesAppLogic::ReconstructLayerProxy::ReconstructLayerProxy(
 	d_current_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
 	d_current_reconstruction_time(0),
 	d_current_reconstruct_params(reconstruct_params),
-	d_reconstruction_cache(&create_empty_reconstruction_info, max_num_reconstructions_in_cache)
+	d_cached_reconstructions(&create_empty_reconstruction_info, max_num_reconstructions_in_cache)
 {
 }
 
@@ -94,7 +97,7 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries(
 
 	// Lookup the cached ReconstructionInfo associated with the reconstruction time and reconstruct params.
 	const reconstruction_cache_key_type reconstruction_cache_key(reconstruction_time, reconstruct_params);
-	ReconstructionInfo &reconstruction_info = d_reconstruction_cache.get_value(reconstruction_cache_key);
+	ReconstructionInfo &reconstruction_info = d_cached_reconstructions.get_value(reconstruction_cache_key);
 
 	// If the cached reconstruction info has not been initialised or has been evicted from the cache...
 	if (!reconstruction_info.cached_reconstructed_feature_geometries)
@@ -151,7 +154,7 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructions(
 
 	// Lookup the cached ReconstructionInfo associated with the reconstruction time and reconstruct params.
 	const reconstruction_cache_key_type reconstruction_cache_key(reconstruction_time, reconstruct_params);
-	ReconstructionInfo &reconstruction_info = d_reconstruction_cache.get_value(reconstruction_cache_key);
+	ReconstructionInfo &reconstruction_info = d_cached_reconstructions.get_value(reconstruction_cache_key);
 
 	// If the cached reconstruction info has not been initialised or has been evicted from the cache...
 	if (!reconstruction_info.cached_reconstructions)
@@ -201,7 +204,7 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_geometries_spa
 
 	// Lookup the cached ReconstructionInfo associated with the reconstruction time and reconstruct params.
 	const reconstruction_cache_key_type reconstruction_cache_key(reconstruction_time, reconstruct_params);
-	ReconstructionInfo &reconstruction_info = d_reconstruction_cache.get_value(reconstruction_cache_key);
+	ReconstructionInfo &reconstruction_info = d_cached_reconstructions.get_value(reconstruction_cache_key);
 
 	// If the cached reconstruction info has not been initialised or has been evicted from the cache...
 	if (!reconstruction_info.cached_reconstructed_feature_geometries_spatial_partition)
@@ -253,7 +256,7 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructions_spatial_partition(
 
 	// Lookup the cached ReconstructionInfo associated with the reconstruction time and reconstruct params.
 	const reconstruction_cache_key_type reconstruction_cache_key(reconstruction_time, reconstruct_params);
-	ReconstructionInfo &reconstruction_info = d_reconstruction_cache.get_value(reconstruction_cache_key);
+	ReconstructionInfo &reconstruction_info = d_cached_reconstructions.get_value(reconstruction_cache_key);
 
 	// If the cached reconstruction info has not been initialised or has been evicted from the cache...
 	if (!reconstruction_info.cached_reconstructions_spatial_partition)
@@ -284,7 +287,7 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_features(
 
 	// Lookup the cached ReconstructionInfo associated with the reconstruction time and reconstruct params.
 	const reconstruction_cache_key_type reconstruction_cache_key(reconstruction_time, reconstruct_params);
-	ReconstructionInfo &reconstruction_info = d_reconstruction_cache.get_value(reconstruction_cache_key);
+	ReconstructionInfo &reconstruction_info = d_cached_reconstructions.get_value(reconstruction_cache_key);
 
 	// If the cached reconstruction info has not been initialised or has been evicted from the cache...
 	if (!reconstruction_info.cached_reconstructed_features)
@@ -302,32 +305,130 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_features(
 }
 
 
+GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type
+GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_static_polygon_meshes(
+		GPlatesOpenGL::GLRenderer &renderer,
+		bool reconstructing_with_age_grid,
+		const double &reconstruction_time)
+{
+	//PROFILE_FUNC();
+
+	bool need_to_update = false;
+
+	// Rebuild the GLReconstructedStaticPolygonMeshes object if necessary.
+	// If it doesn't exist then either it has never been requested or it was invalidated
+	// because the reconstructable feature collections have changed in some way causing the
+	// present day polygon meshes to (possibly) change.
+	if (!d_cached_reconstructed_polygon_meshes.cached_reconstructed_static_polygon_meshes)
+	{
+		//qDebug() << "ReconstructLayerProxy: Rebuilding GLReconstructedStaticPolygonMeshes.";
+
+		GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type reconstructed_polygon_meshes =
+				GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create(
+						renderer,
+						get_present_day_polygon_meshes(),
+						get_present_day_geometries(),
+						get_reconstructions_spatial_partition(reconstruction_time));
+		d_cached_reconstructed_polygon_meshes.cached_reconstructed_static_polygon_meshes = reconstructed_polygon_meshes;
+
+		// Even though we just created the 'GLReconstructedStaticPolygonMeshes' we still need to
+		// update it in case we're using age grids which need a reconstructions spatial partition
+		// that ignores the active time periods of features.
+		need_to_update = true;
+
+		// We have taken measures to be up-to-date with respect to the reconstructed polygon geometries.
+		get_subject_token().update_observer(
+				d_cached_reconstructed_polygon_meshes.cached_reconstructed_polygons_observer_token);
+	}
+
+	// Update if the reconstruction time has changed...
+	if (d_cached_reconstructed_polygon_meshes.cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time))
+	{
+		need_to_update = true;
+
+		d_cached_reconstructed_polygon_meshes.cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
+	}
+
+	// Update if we're changing decision to reconstruct with an age grid...
+	if (d_cached_reconstructed_polygon_meshes.cached_reconstructing_with_age_grid != reconstructing_with_age_grid)
+	{
+		need_to_update = true;
+
+		d_cached_reconstructed_polygon_meshes.cached_reconstructing_with_age_grid = reconstructing_with_age_grid;
+	}
+
+	// Update if we're not up-to-date with respect to the reconstructed polygon geometries...
+	if (!get_subject_token().is_observer_up_to_date(
+			d_cached_reconstructed_polygon_meshes.cached_reconstructed_polygons_observer_token))
+	{
+		need_to_update = true;
+
+		// We have taken measures to be up-to-date with respect to the reconstructed polygon geometries.
+		get_subject_token().update_observer(
+				d_cached_reconstructed_polygon_meshes.cached_reconstructed_polygons_observer_token);
+	}
+
+	if (need_to_update)
+	{
+		//
+		// Update our cached reconstructed polygon meshes.
+		//
+
+		// The reconstructions spatial partition for *active* features.
+		const GPlatesAppLogic::ReconstructLayerProxy::reconstructions_spatial_partition_type::non_null_ptr_to_const_type
+				reconstructions_spatial_partition =
+						get_reconstructions_spatial_partition(reconstruction_time);
+
+		// The reconstructions spatial partition for *active* or *inactive* features.
+		boost::optional<GPlatesAppLogic::ReconstructLayerProxy::reconstructions_spatial_partition_type::non_null_ptr_to_const_type>
+						active_or_inactive_reconstructions_spatial_partition;
+		// It's only needed if we've been asked to help reconstruct a raster with the aid of an age grid.
+		if (reconstructing_with_age_grid)
+		{
+			// Use the same reconstruct params but specify that reconstructions should include *inactive* features also.
+			GPlatesAppLogic::ReconstructParams reconstruct_params = get_current_reconstruct_params();
+			reconstruct_params.set_reconstruct_by_plate_id_outside_active_time_period(true);
+
+			// Get a new reconstructions spatial partition that includes *inactive* reconstructions.
+			active_or_inactive_reconstructions_spatial_partition =
+					get_reconstructions_spatial_partition(reconstruct_params, reconstruction_time);
+		}
+
+		d_cached_reconstructed_polygon_meshes.cached_reconstructed_static_polygon_meshes.get()->update(
+				reconstructions_spatial_partition,
+				active_or_inactive_reconstructions_spatial_partition);
+	}
+
+	return d_cached_reconstructed_polygon_meshes.cached_reconstructed_static_polygon_meshes.get();
+}
+
+
 const std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> &
 GPlatesAppLogic::ReconstructLayerProxy::get_present_day_geometries()
 {
-	if (!d_cached_present_day_geometries)
+	if (!d_cached_present_day_info.cached_present_day_geometries)
 	{
-		d_cached_present_day_geometries = d_reconstruct_context.get_present_day_geometries();
+		d_cached_present_day_info.cached_present_day_geometries = d_reconstruct_context.get_present_day_geometries();
 	}
 
-	return d_cached_present_day_geometries.get();
+	return d_cached_present_day_info.cached_present_day_geometries.get();
 }
 
 
 const std::vector<boost::optional<GPlatesMaths::PolygonMesh::non_null_ptr_to_const_type> > &
 GPlatesAppLogic::ReconstructLayerProxy::get_present_day_polygon_meshes()
 {
-	if (!d_cached_present_day_polygon_meshes)
+	if (!d_cached_present_day_info.cached_present_day_polygon_meshes)
 	{
 		// First get the present day geometries.
 		const std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> &
 				present_day_geometries = get_present_day_geometries();
 
 		// Start off with an empty sequence of polygon meshes.
-		d_cached_present_day_polygon_meshes =
+		d_cached_present_day_info.cached_present_day_polygon_meshes =
 				std::vector<boost::optional<GPlatesMaths::PolygonMesh::non_null_ptr_to_const_type> >();
 		std::vector<boost::optional<GPlatesMaths::PolygonMesh::non_null_ptr_to_const_type> > &
-				present_day_polygon_meshes = d_cached_present_day_polygon_meshes.get();
+				present_day_polygon_meshes = d_cached_present_day_info.cached_present_day_polygon_meshes.get();
 		present_day_polygon_meshes.reserve(present_day_geometries.size());
 
 		BOOST_FOREACH(
@@ -341,14 +442,14 @@ GPlatesAppLogic::ReconstructLayerProxy::get_present_day_polygon_meshes()
 		}
 	}
 
-	return d_cached_present_day_polygon_meshes.get();
+	return d_cached_present_day_info.cached_present_day_polygon_meshes.get();
 }
 
 
 GPlatesAppLogic::ReconstructLayerProxy::geometries_spatial_partition_type::non_null_ptr_to_const_type
 GPlatesAppLogic::ReconstructLayerProxy::get_present_day_geometries_spatial_partition()
 {
-	if (!d_cached_present_day_geometries_spatial_partition)
+	if (!d_cached_present_day_info.cached_present_day_geometries_spatial_partition)
 	{
 		// Get the present day geometries.
 		const std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> &
@@ -356,16 +457,16 @@ GPlatesAppLogic::ReconstructLayerProxy::get_present_day_geometries_spatial_parti
 
 		// Generate the location of each present day geometry in the spatial partition.
 		// This is in case it's later requested by the client.
-		d_cached_present_day_geometries_spatial_partition_locations =
+		d_cached_present_day_info.cached_present_day_geometries_spatial_partition_locations =
 				std::vector<GPlatesMaths::CubeQuadTreeLocation>();
 		std::vector<GPlatesMaths::CubeQuadTreeLocation> &spatial_partition_locations =
-				d_cached_present_day_geometries_spatial_partition_locations.get();
+				d_cached_present_day_info.cached_present_day_geometries_spatial_partition_locations.get();
 
 		// Start out creating a default-constructed location for each present day geometry.
 		spatial_partition_locations.resize(present_day_geometries.size());
 
 		// Add the present day geometries to a new spatial partition to return to the caller.
-		d_cached_present_day_geometries_spatial_partition =
+		d_cached_present_day_info.cached_present_day_geometries_spatial_partition =
 				geometries_spatial_partition_type::create(DEFAULT_SPATIAL_PARTITION_DEPTH);
 
 		unsigned int present_day_geometry_index = 0;
@@ -375,7 +476,7 @@ GPlatesAppLogic::ReconstructLayerProxy::get_present_day_geometries_spatial_parti
 		{
 			// The first argument is what's inserted into the partition.
 			// The second argument is what determines the location at which to insert.
-			d_cached_present_day_geometries_spatial_partition.get()->add(
+			d_cached_present_day_info.cached_present_day_geometries_spatial_partition.get()->add(
 					present_day_geometry,
 					*present_day_geometry,
 					// Write the location, at which the geometry is added, to our sequence...
@@ -385,20 +486,20 @@ GPlatesAppLogic::ReconstructLayerProxy::get_present_day_geometries_spatial_parti
 		}
 	}
 
-	return d_cached_present_day_geometries_spatial_partition.get();
+	return d_cached_present_day_info.cached_present_day_geometries_spatial_partition.get();
 }
 
 
 const std::vector<GPlatesMaths::CubeQuadTreeLocation> &
 GPlatesAppLogic::ReconstructLayerProxy::get_present_day_geometries_spatial_partition_locations()
 {
-	if (!d_cached_present_day_geometries_spatial_partition_locations)
+	if (!d_cached_present_day_info.cached_present_day_geometries_spatial_partition_locations)
 	{
 		// The locations are generated when the spatial partition is built.
 		get_present_day_geometries_spatial_partition();
 	}
 
-	return d_cached_present_day_geometries_spatial_partition_locations.get();
+	return d_cached_present_day_info.cached_present_day_geometries_spatial_partition_locations.get();
 }
 
 
@@ -560,7 +661,7 @@ void
 GPlatesAppLogic::ReconstructLayerProxy::reset_reconstructed_feature_geometry_caches()
 {
 	// Clear any cached reconstructed feature geometries for any reconstruction times and reconstruct params.
-	d_reconstruction_cache.clear();
+	d_cached_reconstructions.clear();
 }
 
 
@@ -568,10 +669,11 @@ void
 GPlatesAppLogic::ReconstructLayerProxy::reset_reconstructable_feature_collection_caches()
 {
 	// Clear anything that depends on the reconstructable feature collections.
-	d_cached_present_day_geometries = boost::none;
-	d_cached_present_day_polygon_meshes = boost::none;
-	d_cached_present_day_geometries_spatial_partition = boost::none;
-	d_cached_present_day_geometries_spatial_partition_locations = boost::none;
+	d_cached_present_day_info.invalidate();
+
+	// These are *reconstructed* polygon meshes but they depend on the *present day* polygon meshes
+	// which in turn depend on the reconstructable feature collections.
+	d_cached_reconstructed_polygon_meshes.invalidate();
 }
 
 
@@ -662,11 +764,14 @@ GPlatesAppLogic::ReconstructLayerProxy::cache_reconstructions_spatial_partition(
 		BOOST_FOREACH(const ReconstructContext::Reconstruction &reconstruction, reconstructions)
 		{
 			// NOTE: To avoid reconstructing geometries on the CPU when it might not be needed
-			// (graphics card can transform much faster so when only visualising it's not needed)
 			// we add the *unreconstructed* geometry (and a finite rotation) to the spatial partition.
 			// The spatial partition will rotate only the centroid of the *unreconstructed*
 			// geometry (instead of reconstructing the entire geometry) and then use that as the
 			// insertion location (along with the *unreconstructed* geometry's bounding circle extents).
+			// Examples where transforming might not be needed are:
+			//  1) Graphics card can transform much faster so when only visualising it's not needed,
+			//  2) Data mining co-registration might not need to transform all geometries to
+			//     determine if seed and target features are close enough within a region of interest.
 
 			const ReconstructedFeatureGeometry::non_null_ptr_type &rfg =
 					reconstruction.get_reconstructed_feature_geometry();

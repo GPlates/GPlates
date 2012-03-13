@@ -28,14 +28,20 @@
 
 #include <boost/bind.hpp>
 
-#include "CoRegLayerConfigurationDialog.h"
+#include "CoRegistrationLayerConfigurationDialog.h"
 #include "CoRegistrationOptionsWidgetUi.h"
 #include "LayerOptionsWidget.h"
-#include "ResultTableDialog.h"
+#include "CoRegistrationResultTableDialog.h"
 
 #include "app-logic/CoRegistrationLayerTask.h"
+
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
 #include "file-io/File.h"
+
 #include "presentation/VisualLayer.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -76,6 +82,7 @@ namespace GPlatesQtWidgets
 			return new CoRegistrationOptionsWidget(
 					application_state,
 					view_state,
+					viewport_window,
 					parent_);
 		}
 
@@ -88,31 +95,39 @@ namespace GPlatesQtWidgets
 		{
 			d_current_visual_layer = visual_layer;
 			
-			if(d_coreg_layer_config_dialog)
+			//
+			// Create the dialogs in 'set_data()' since it's the only place we know what
+			// layer to associate with the dialogs.
+			//
+
+			if (d_coreg_layer_config_dialog)
 			{
 				d_coreg_layer_config_dialog->set_visual_layer(d_current_visual_layer);
 			}
 			else
 			{
 				d_coreg_layer_config_dialog.reset(
-						new CoRegLayerConfigurationDialog(
+						new CoRegistrationLayerConfigurationDialog(
 								d_view_state,
+								d_viewport_window,
 								d_current_visual_layer));
 			}
 
-			boost::shared_ptr<GPlatesPresentation::VisualLayer> layer = d_current_visual_layer.lock();
-				GPlatesAppLogic::CoRegistrationLayerTask::Params* params = 
-					dynamic_cast<GPlatesAppLogic::CoRegistrationLayerTask::Params*> 
-							(&layer->get_reconstruct_graph_layer().get_layer_task_params());
-			if(params)
+			if (d_result_dialog)
 			{
-				params->set_cfg_table(
-						d_coreg_layer_config_dialog->cfg_table());
-				params->set_call_back(
-						boost::bind(
-								&ResultTableDialog::data_arrived, d_result_dialog.get(),_1));
+				d_result_dialog->set_visual_layer(d_current_visual_layer);
 			}
-			
+			else
+			{
+				d_result_dialog.reset(
+						new CoRegistrationResultTableDialog(
+								d_view_state,
+								d_viewport_window,
+								d_current_visual_layer));
+			}
+
+			// NOTE: Each dialog is responsible for communicating with the layer when either the
+			// co-registration configuration has changed or new co-registration results are available.
 		}
 
 
@@ -132,13 +147,12 @@ namespace GPlatesQtWidgets
 		void
 		handle_co_registration_configuration_button_clicked()
 		{
-			if(!d_coreg_layer_config_dialog)
-			{
-				d_coreg_layer_config_dialog.reset(
-						new CoRegLayerConfigurationDialog(
-								d_view_state,
-								d_current_visual_layer));
-			}
+			// 'set_data()' should have created the dialog before it's possible for the user to
+			// click the co-registration configuration button.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					d_coreg_layer_config_dialog,
+					GPLATES_ASSERTION_SOURCE);
+
 			d_coreg_layer_config_dialog->pop_up();
 
 		}
@@ -146,31 +160,28 @@ namespace GPlatesQtWidgets
 		void
 		handle_view_result_button_clicked()
 		{
-			if(!d_result_dialog)
-			{
-				d_result_dialog.reset(
-						new ResultTableDialog(
-								std::vector< DataTable >(),
-								d_view_state,
-								this,
-								false));
-			}
-			d_application_state.reconstruct();
-			d_result_dialog->show();
- 			d_result_dialog->activateWindow();
- 			d_result_dialog->raise();
+			// 'set_data()' should have created the dialog before it's possible for the user to
+			// click the view result button.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					d_result_dialog,
+					GPLATES_ASSERTION_SOURCE);
+
+			d_result_dialog->pop_up();
 		}
 
 	private:
 		CoRegistrationOptionsWidget(
 				GPlatesAppLogic::ApplicationState &application_state,
 				GPlatesPresentation::ViewState &view_state,
+				ViewportWindow *viewport_window,
 				QWidget *parent_) :
 			LayerOptionsWidget(parent_),
 			d_application_state(application_state),
-			d_view_state(view_state)
+			d_view_state(view_state),
+			d_viewport_window(viewport_window)
 			{
 				setupUi(this);
+
 				QObject::connect(
 						co_registration_configuration_button,
 						SIGNAL(clicked()),
@@ -182,27 +193,18 @@ namespace GPlatesQtWidgets
 						SIGNAL(clicked()),
 						this,
 						SLOT(handle_view_result_button_clicked()));
-				
-				if(!d_result_dialog)
-				{
-					d_result_dialog.reset(
-							new ResultTableDialog(
-									std::vector< DataTable >(),
-									d_view_state,
-									this,
-									false));
-				}
 			}
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;
+		ViewportWindow *d_viewport_window;
 
 		/**
 		 * The visual layer for which we are currently displaying options.
 		 */
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_current_visual_layer;
-		boost::shared_ptr<CoRegLayerConfigurationDialog> d_coreg_layer_config_dialog;
-		boost::shared_ptr<ResultTableDialog> d_result_dialog;
+		boost::shared_ptr<CoRegistrationLayerConfigurationDialog> d_coreg_layer_config_dialog;
+		boost::shared_ptr<CoRegistrationResultTableDialog> d_result_dialog;
 	};
 }
 

@@ -66,7 +66,7 @@ GPlatesQtWidgets::MapView::MapView(
 		QWidget *parent_,
 		const QGLWidget *share_gl_widget,
 		const GPlatesOpenGL::GLContext::non_null_ptr_type &share_gl_context,
-		const GPlatesGui::PersistentOpenGLObjects::non_null_ptr_type &share_persistent_opengl_objects) :
+		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &share_gl_visual_layers) :
 	d_gl_widget_ptr(
 			new QGLWidget(
 				// We turn *off* multisampling because lines actually look better without it...
@@ -83,12 +83,12 @@ GPlatesQtWidgets::MapView::MapView(
 			: GPlatesOpenGL::GLContext::create(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
 							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*d_gl_widget_ptr)))),
-	d_gl_persistent_objects(
+	d_gl_visual_layers(
 			// Attempt to share OpenGL resources across contexts.
 			// This will depend on whether the two 'GLContext's share any state.
-			GPlatesGui::PersistentOpenGLObjects::create(
+			GPlatesOpenGL::GLVisualLayers::create(
 					d_gl_context,
-					share_persistent_opengl_objects,
+					share_gl_visual_layers,
 					view_state.get_application_state())),
 	d_map_canvas_ptr(
 			new MapCanvas(
@@ -96,7 +96,7 @@ GPlatesQtWidgets::MapView::MapView(
 				view_state.get_rendered_geometry_collection(),
 				this,
 				d_gl_context,
-				d_gl_persistent_objects,
+				d_gl_visual_layers,
 				view_state.get_render_settings(),
 				view_state.get_viewport_zoom(),
 				colour_scheme,
@@ -785,7 +785,6 @@ GPlatesQtWidgets::MapView::grab_frame_buffer()
 {
 	return d_gl_widget_ptr->grabFrameBuffer();
 }
-
 
 int
 GPlatesQtWidgets::MapView::width() const

@@ -43,6 +43,8 @@
 #include "gui/ViewportProjection.h"
 #include "gui/ViewportZoom.h"
 
+#include "opengl/GLContext.h"
+
 #include "presentation/ViewState.h"
 
 
@@ -64,7 +66,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 				this,
 				d_globe_canvas_ptr.get(),
 				d_globe_canvas_ptr->get_gl_context(),
-				d_globe_canvas_ptr->get_persistent_opengl_objects())),
+				d_globe_canvas_ptr->get_gl_visual_layers())),
 	d_layout(new QStackedLayout(this)),
 	d_active_view_ptr(d_globe_canvas_ptr.get()),
 	d_zoom_enabled(true)
@@ -94,7 +96,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 				this,
 				d_globe_canvas_ptr.get(),
 				d_globe_canvas_ptr->get_gl_context(),
-				d_globe_canvas_ptr->get_persistent_opengl_objects())),
+				d_globe_canvas_ptr->get_gl_visual_layers())),
 	d_layout(new QStackedLayout(this)),
 	d_active_view_ptr(
 			existing_globe_and_map_widget_ptr->is_globe_active()
@@ -316,6 +318,18 @@ QImage
 GPlatesQtWidgets::GlobeAndMapWidget::grab_frame_buffer()
 {
 	return d_active_view_ptr->grab_frame_buffer();
+}
+
+
+GPlatesOpenGL::GLContext::non_null_ptr_type
+GPlatesQtWidgets::GlobeAndMapWidget::get_active_gl_context()
+{
+	if (d_active_view_ptr == d_globe_canvas_ptr.get())
+	{
+		return d_globe_canvas_ptr->get_gl_context();
+	}
+
+	return d_map_view_ptr->get_gl_context();
 }
 
 

@@ -356,6 +356,11 @@ namespace GPlatesOpenGL
 		 * @a minimum_bytes_to_stream must be in the half-open range (0, buffer_size] where
 		 * 'buffer_size' is determined by @a gl_buffer_data.
 		 *
+		 * @a stream_alignment ensures the returned pointer is an integer multiple of @a stream_alignment
+		 * bytes from the beginning of the internal buffer. This also means @a stream_offset will
+		 * be an integer multiple of @a stream_alignment. This is useful for ensuring vertices are
+		 * indexed correctly - in which case the alignment should be set to the size of the vertex.
+		 *
 		 * This call must be followed up with a single call to @a gl_flush_buffer_stream
 		 * (before @a gl_unmap_buffer is called but after modifying the buffer) to specify the
 		 * number of bytes that were streamed.
@@ -382,6 +387,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				target_type target,
 				unsigned int minimum_bytes_to_stream,
+				unsigned int stream_alignment,
 				unsigned int &stream_offset,
 				unsigned int &stream_bytes_available) = 0;
 
@@ -463,6 +469,7 @@ namespace GPlatesOpenGL
 			GLvoid *
 			gl_map_buffer_stream(
 					unsigned int minimum_bytes_to_stream,
+					unsigned int stream_alignment,
 					unsigned int &stream_offset,
 					unsigned int &stream_bytes_available);
 

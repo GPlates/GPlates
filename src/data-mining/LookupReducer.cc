@@ -22,6 +22,8 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */	
+
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
@@ -86,12 +88,29 @@ GPlatesDataMining::LookupReducer::exec(
 				double, 
 				ReducerInDataset::value_type > ResultMap;
 
+		std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> seed_geos;
+		BOOST_FOREACH(
+				const GPlatesAppLogic::ReconstructContext::Reconstruction &seed_geo_recon,
+				d_reconstructed_seed_feature.get_reconstructions())
+		{
+			seed_geos.push_back(seed_geo_recon.get_reconstructed_feature_geometry().get());
+		}
+
 		ResultMap tmp_map;
 		for(; input_begin != input_end; input_begin++)
 		{
-			std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> rfgs;
-			boost::tie(boost::tuples::ignore,rfgs) = *input_begin;
-			double t = DataMiningUtils::shortest_distance(rfgs,d_seeds);
+			const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_target_feature =
+					boost::get<1>(*input_begin);
+
+			std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> target_geos;
+			BOOST_FOREACH(
+					const GPlatesAppLogic::ReconstructContext::Reconstruction &target_geo_recon,
+					reconstructed_target_feature.get_reconstructions())
+			{
+				target_geos.push_back(target_geo_recon.get_reconstructed_feature_geometry().get());
+			}
+
+			double t = DataMiningUtils::shortest_distance(target_geos, seed_geos);
 			tmp_map.insert(std::make_pair(t, *input_begin));
 		}
 
@@ -110,10 +129,19 @@ GPlatesDataMining::LookupReducer::exec(
 			boost::optional<ReducerInDataset::value_type> val = boost::none;
 			for(; s != e; ++s)
 			{
-				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> rfgs;
-				boost::tie(boost::tuples::ignore,rfgs) = s->second;
+				const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_target_feature =
+						boost::get<1>(s->second);
+
+				std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> target_geos;
+				BOOST_FOREACH(
+						const GPlatesAppLogic::ReconstructContext::Reconstruction &target_geo_recon,
+						reconstructed_target_feature.get_reconstructions())
+				{
+					target_geos.push_back(target_geo_recon.get_reconstructed_feature_geometry().get());
+				}
+
 				boost::optional<GPlatesMaths::real_t> tmp;
-				tmp = test_polygon_area(d_seeds,rfgs);
+				tmp = test_polygon_area(seed_geos, target_geos);
 				if(!tmp)
 					continue;
 				if(!area || *tmp < *area)
@@ -129,8 +157,8 @@ GPlatesDataMining::LookupReducer::exec(
 		}
 		else if(std::distance(the_pair.first,the_pair.second) != 1)
 		{
-			qWarning() << "Lookup reducer found multiple values and cannot determine which one should be return.";
-			qWarning() << "So, just return the first one in the list";
+			qWarning() << "Lookup reducer found multiple values and cannot determine which one should be returned.";
+			qWarning() << "Returning the first one found.";
 		}
 		return ret;
 	}

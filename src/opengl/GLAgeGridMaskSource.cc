@@ -58,6 +58,12 @@ GPlatesOpenGL::GLAgeGridMaskSource::create(
 		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &age_grid_raster,
 		unsigned int tile_texel_dimension)
 {
+	// The raster type is expected to contain numerical data, not colour RGBA data.
+	if (!GPlatesPropertyValues::RawRasterUtils::does_raster_contain_numerical_data(*age_grid_raster))
+	{
+		return boost::none;
+	}
+
 	boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxy_resolver_opt =
 			GPlatesPropertyValues::ProxiedRasterResolver::create(age_grid_raster);
 	if (!proxy_resolver_opt)

@@ -74,6 +74,7 @@
 #include "property-values/UninterpretedPropertyValue.h"
 #include "property-values/XsBoolean.h"
 
+#include "utils/Profile.h"
 #include "utils/StringUtils.h"
 #include "utils/UnicodeStringUtils.h"
 
@@ -586,6 +587,8 @@ GPlatesFileIO::GpmlOnePointSixReader::read_file(
 		ReadErrorAccumulation &read_errors,
 		bool use_gzip)
 {
+	PROFILE_FUNC();
+
 	const FileInfo &fileinfo = file.get_file_info();
 
 	// By placing all changes to the model under the one changeset, we ensure that

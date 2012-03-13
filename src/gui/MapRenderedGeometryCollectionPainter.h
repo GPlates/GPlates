@@ -32,11 +32,11 @@
 
 #include "ColourScheme.h"
 #include "LayerPainter.h"
-#include "PersistentOpenGLObjects.h"
 #include "RenderSettings.h"
 #include "TextRenderer.h"
 
 #include "opengl/GLContext.h"
+#include "opengl/GLVisualLayers.h"
 
 #include "presentation/VisualLayers.h"
 
@@ -77,7 +77,7 @@ namespace GPlatesGui
 		MapRenderedGeometryCollectionPainter(
 				const MapProjection::non_null_ptr_to_const_type &map_projection,
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
+				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,
 				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
@@ -140,7 +140,7 @@ namespace GPlatesGui
 		/**
 		 * Keeps track of OpenGL-related objects that persist from one render to the next.
 		 */
-		PersistentOpenGLObjects::non_null_ptr_type d_persistent_opengl_objects;
+		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
 
 		const GPlatesPresentation::VisualLayers &d_visual_layers;
 

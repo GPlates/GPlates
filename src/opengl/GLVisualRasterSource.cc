@@ -141,6 +141,7 @@ GPlatesOpenGL::GLVisualRasterSource::GLVisualRasterSource(
 			GLUtils::create_full_screen_2D_coloured_textured_quad(
 					renderer,
 					GPlatesGui::Colour::to_rgba8(raster_modulate_colour))),
+	d_tile_edge_working_space(new GPlatesGui::rgba8_t[tile_texel_dimension]),
 	d_logged_tile_load_failure_warning(false)
 {
 	initialise_level_of_detail_pyramid();
@@ -413,6 +414,62 @@ GPlatesOpenGL::GLVisualRasterSource::load_proxied_raster_data_into_raster_textur
 				raster_region_opt.get()->data(),
 				texel_width,
 				texel_height);
+
+		// If the region does not occupy the entire tile then it means we've reached the right edge
+		// of the raster - we duplicate the last column of texels into the adjacent column to ensure
+		// that subsequent sampling of the texture at the right edge of the last column of texels
+		// will generate the texel colour at the texel centres (for both nearest and bilinear filtering).
+		// This sampling happens when rendering a raster into a multi-resolution cube map that has
+		// an cube frustum overlap of half a texel - normally, for a full tile, the OpenGL clamp-to-edge
+		// filter will ensure the texture border colour is not used - however for partially filled
+		// textures we need to duplicate the edge to achieve the same effect otherwise numerical precision
+		// in the graphics hardware and nearest neighbour filtering could sample a garbage texel.
+		if (texel_width < d_tile_texel_dimension)
+		{
+			// Copy the right edge of the region into the working space.
+			GPlatesGui::rgba8_t *const working_space = d_tile_edge_working_space.get();
+			// The last pixel in the first row of the region.
+			const GPlatesGui::rgba8_t *region_last_column = raster_region_opt.get()->data() + texel_width - 1;
+			for (unsigned int y = 0; y < texel_height; ++y)
+			{
+				working_space[y] = *region_last_column;
+				region_last_column += texel_width;
+			}
+
+			// Load the one-pixel wide column of data from column 'texel_width-1' into column 'texel_width'.
+			GLTextureUtils::load_image_into_rgba8_texture_2D(
+					renderer,
+					raster_texture,
+					d_tile_edge_working_space.get(),
+					1/*image_width*/,
+					texel_height,
+					texel_width/*texel_u_offset*/);
+		}
+
+		// Same applies if we've reached the bottom edge of raster (and the raster height is not an
+		// integer multiple of the tile texel dimension).
+		if (texel_height < d_tile_texel_dimension)
+		{
+			// Copy the bottom edge of the region into the working space.
+			GPlatesGui::rgba8_t *const working_space = d_tile_edge_working_space.get();
+			// The first pixel in the last row of the region.
+			const GPlatesGui::rgba8_t *const region_last_row =
+					raster_region_opt.get()->data() + (texel_height - 1) * texel_width;
+			for (unsigned int x = 0; x < texel_width; ++x)
+			{
+				working_space[x] = region_last_row[x];
+			}
+
+			// Load the one-pixel wide row of data from row 'texel_height-1' into row 'texel_height'.
+			GLTextureUtils::load_image_into_rgba8_texture_2D(
+					renderer,
+					raster_texture,
+					d_tile_edge_working_space.get(),
+					texel_width,
+					1/*image_height*/,
+					0/*texel_u_offset*/,
+					texel_height/*texel_v_offset*/);
+		}
 	}
 	else
 	{

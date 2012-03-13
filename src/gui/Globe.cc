@@ -46,7 +46,7 @@ namespace
 
 GPlatesGui::Globe::Globe(
 		GPlatesPresentation::ViewState &view_state,
-		const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
+		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesPresentation::VisualLayers &visual_layers,
 		RenderSettings &render_settings,
@@ -54,14 +54,14 @@ GPlatesGui::Globe::Globe(
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_view_state(view_state),
-	d_persistent_opengl_objects(persistent_opengl_objects),
+	d_gl_visual_layers(gl_visual_layers),
 	d_render_settings(render_settings),
 	d_rendered_geom_collection(rendered_geom_collection),
 	d_visual_layers(visual_layers),
 	d_globe_orientation_ptr(new SimpleGlobeOrientation()),
 	d_rendered_geom_collection_painter(
 			rendered_geom_collection,
-			persistent_opengl_objects,
+			gl_visual_layers,
 			visual_layers,
 			d_render_settings,
 			text_renderer_ptr,
@@ -72,19 +72,19 @@ GPlatesGui::Globe::Globe(
 
 GPlatesGui::Globe::Globe(
 		Globe &existing_globe,
-		const PersistentOpenGLObjects::non_null_ptr_type &persistent_opengl_objects,
+		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_view_state(existing_globe.d_view_state),
-	d_persistent_opengl_objects(persistent_opengl_objects),
+	d_gl_visual_layers(gl_visual_layers),
 	d_render_settings(existing_globe.d_render_settings),
 	d_rendered_geom_collection(existing_globe.d_rendered_geom_collection),
 	d_visual_layers(existing_globe.d_visual_layers),
 	d_globe_orientation_ptr(existing_globe.d_globe_orientation_ptr),
 	d_rendered_geom_collection_painter(
 			d_rendered_geom_collection,
-			persistent_opengl_objects,
+			gl_visual_layers,
 			d_visual_layers,
 			d_render_settings,
 			text_renderer_ptr,

@@ -25,6 +25,7 @@
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
+#include <boost/utility/in_place_factory.hpp>
 
 #include "CoRegistrationLayerProxy.h"
 
@@ -33,6 +34,8 @@
 #include "ReconstructionTreeCreator.h"
 
 #include "data-mining/DataSelector.h"
+
+#include "opengl/GLRasterCoRegistration.h"
 
 
 GPlatesAppLogic::CoRegistrationLayerProxy::CoRegistrationLayerProxy() :
@@ -55,13 +58,10 @@ GPlatesAppLogic::CoRegistrationLayerProxy::~CoRegistrationLayerProxy()
 
 boost::optional<GPlatesAppLogic::coregistration_data_non_null_ptr_type>
 GPlatesAppLogic::CoRegistrationLayerProxy::get_coregistration_data(
+		GPlatesOpenGL::GLRenderer &renderer,
 		const double &reconstruction_time)
 {
-	// If we have no configuration table then we cannot proceed.
-	if (!d_current_coregistration_configuration_table)
-	{
-		return boost::none;
-	}
+	// We have at least an empty co-registration configuration table we can always proceed past that.
 
 	// See if the reconstruction time has changed.
 	if (d_cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time))
@@ -80,26 +80,34 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_coregistration_data(
 
 	if (!d_cached_coregistration_data)
 	{
-		// Get the co-registration reconstructed seed geometries from the input seed layer proxies.
-		std::vector<reconstructed_feature_geometry_non_null_ptr_type> reconstructed_seed_geometries;
+		// Get the co-registration reconstructed seed features from the input seed layer proxies.
+		std::vector<ReconstructContext::ReconstructedFeature> reconstructed_seed_features;
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &seed_layer_proxy,
-				d_current_coregistration_seed_layer_proxies.get_input_layer_proxies())
+				d_current_seed_layer_proxies.get_input_layer_proxies())
 		{
-			seed_layer_proxy.get_input_layer_proxy()->get_reconstructed_feature_geometries(
-					reconstructed_seed_geometries,
+			seed_layer_proxy.get_input_layer_proxy()->get_reconstructed_features(
+					reconstructed_seed_features,
 					reconstruction_time);
 		}
 
-		// Get the co-registration reconstructed target geometries from the input target layer proxies.
-		std::vector<reconstructed_feature_geometry_non_null_ptr_type> reconstructed_target_geometries;
+		// The target layer proxies (reconstructed geometries and/or rasters).
+		std::vector<LayerProxy::non_null_ptr_type> target_layer_proxies;
+
+		// Get the co-registration target (reconstructed geometries) layer proxies.
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &target_layer_proxy,
-				d_current_coregistration_target_layer_proxies.get_input_layer_proxies())
+				d_current_target_reconstruct_layer_proxies.get_input_layer_proxies())
 		{
-			target_layer_proxy.get_input_layer_proxy()->get_reconstructed_feature_geometries(
-					reconstructed_target_geometries,
-					reconstruction_time);
+			target_layer_proxies.push_back(target_layer_proxy.get_input_layer_proxy());
+		}
+
+		// Get the co-registration target (raster) layer proxies.
+		BOOST_FOREACH(
+				LayerProxyUtils::InputLayerProxy<RasterLayerProxy> &target_layer_proxy,
+				d_current_target_raster_layer_proxies.get_input_layer_proxies())
+		{
+			target_layer_proxies.push_back(target_layer_proxy.get_input_layer_proxy());
 		}
 
 		// Get the reconstruction tree for the requested reconstruction time.
@@ -111,13 +119,27 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_coregistration_data(
 
 		// Does the actual co-registration work.
 		boost::shared_ptr<GPlatesDataMining::DataSelector> selector =
-				GPlatesDataMining::DataSelector::create(d_current_coregistration_configuration_table.get());
+				GPlatesDataMining::DataSelector::create(
+						d_current_coregistration_configuration_table);
+
+		// Co-register rasters if we can (if the run-time system supports it).
+		boost::optional<GPlatesDataMining::DataSelector::RasterCoRegistration> co_register_rasters;
+		if (get_raster_co_registration(renderer))
+		{
+			// Pass GPlatesDataMining::DataSelector::RasterCoRegistration constructor parameters to
+			// construct a new object directly in-place.
+			co_register_rasters = boost::in_place(
+					boost::ref(renderer),
+					boost::ref(get_raster_co_registration(renderer).get()));
+		}
 		
-		// Fill the data table with results.
+		// Fill the co-registration data table with results.
 		selector->select(
-				reconstructed_seed_geometries, 
-				reconstructed_target_geometries, 
-				d_cached_coregistration_data.get()->data_table());
+				reconstructed_seed_features,
+				target_layer_proxies,
+				reconstruction_time,
+				d_cached_coregistration_data.get()->data_table(),
+				co_register_rasters);
 	}
 
 	return d_cached_coregistration_data.get();
@@ -165,7 +187,7 @@ void
 GPlatesAppLogic::CoRegistrationLayerProxy::add_coregistration_seed_layer_proxy(
 		const ReconstructLayerProxy::non_null_ptr_type &coregistration_seed_layer_proxy)
 {
-	d_current_coregistration_seed_layer_proxies.add_input_layer_proxy(coregistration_seed_layer_proxy);
+	d_current_seed_layer_proxies.add_input_layer_proxy(coregistration_seed_layer_proxy);
 
 	// The co-registration data is now invalid.
 	reset_cache();
@@ -179,7 +201,7 @@ void
 GPlatesAppLogic::CoRegistrationLayerProxy::remove_coregistration_seed_layer_proxy(
 		const ReconstructLayerProxy::non_null_ptr_type &coregistration_seed_layer_proxy)
 {
-	d_current_coregistration_seed_layer_proxies.remove_input_layer_proxy(coregistration_seed_layer_proxy);
+	d_current_seed_layer_proxies.remove_input_layer_proxy(coregistration_seed_layer_proxy);
 
 	// The co-registration data is now invalid.
 	reset_cache();
@@ -193,7 +215,7 @@ void
 GPlatesAppLogic::CoRegistrationLayerProxy::add_coregistration_target_layer_proxy(
 		const ReconstructLayerProxy::non_null_ptr_type &coregistration_target_layer_proxy)
 {
-	d_current_coregistration_target_layer_proxies.add_input_layer_proxy(coregistration_target_layer_proxy);
+	d_current_target_reconstruct_layer_proxies.add_input_layer_proxy(coregistration_target_layer_proxy);
 
 	// The co-registration data is now invalid.
 	reset_cache();
@@ -207,7 +229,35 @@ void
 GPlatesAppLogic::CoRegistrationLayerProxy::remove_coregistration_target_layer_proxy(
 		const ReconstructLayerProxy::non_null_ptr_type &coregistration_target_layer_proxy)
 {
-	d_current_coregistration_target_layer_proxies.remove_input_layer_proxy(coregistration_target_layer_proxy);
+	d_current_target_reconstruct_layer_proxies.remove_input_layer_proxy(coregistration_target_layer_proxy);
+
+	// The co-registration data is now invalid.
+	reset_cache();
+
+	// Polling observers need to update themselves with respect to us.
+	d_subject_token.invalidate();
+}
+
+
+void
+GPlatesAppLogic::CoRegistrationLayerProxy::add_coregistration_target_layer_proxy(
+		const RasterLayerProxy::non_null_ptr_type &coregistration_target_layer_proxy)
+{
+	d_current_target_raster_layer_proxies.add_input_layer_proxy(coregistration_target_layer_proxy);
+
+	// The co-registration data is now invalid.
+	reset_cache();
+
+	// Polling observers need to update themselves with respect to us.
+	d_subject_token.invalidate();
+}
+
+
+void
+GPlatesAppLogic::CoRegistrationLayerProxy::remove_coregistration_target_layer_proxy(
+		const RasterLayerProxy::non_null_ptr_type &coregistration_target_layer_proxy)
+{
+	d_current_target_raster_layer_proxies.remove_input_layer_proxy(coregistration_target_layer_proxy);
 
 	// The co-registration data is now invalid.
 	reset_cache();
@@ -221,6 +271,11 @@ void
 GPlatesAppLogic::CoRegistrationLayerProxy::set_current_coregistration_configuration_table(
 		const GPlatesDataMining::CoRegConfigurationTable &coregistration_configuration_table)
 {
+	if (d_current_coregistration_configuration_table == coregistration_configuration_table)
+	{
+		// The current configuration hasn't changed so avoid updating any observers unnecessarily.
+		return;
+	}
 	d_current_coregistration_configuration_table = coregistration_configuration_table;
 
 	// The co-registration data is now invalid.
@@ -269,16 +324,47 @@ GPlatesAppLogic::CoRegistrationLayerProxy::check_input_layer_proxies()
 	// See if any reconstructed seed layer proxies have changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &seed_layer_proxy,
-			d_current_coregistration_seed_layer_proxies.get_input_layer_proxies())
+			d_current_seed_layer_proxies.get_input_layer_proxies())
 	{
 		check_input_layer_proxy(seed_layer_proxy);
 	}
 
-	// See if any reconstructed target layer proxies have changed.
+	// See if any target (reconstructed geometries) layer proxies have changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &target_layer_proxy,
-			d_current_coregistration_target_layer_proxies.get_input_layer_proxies())
+			d_current_target_reconstruct_layer_proxies.get_input_layer_proxies())
 	{
 		check_input_layer_proxy(target_layer_proxy);
 	}
+
+	// See if any target (raster) layer proxies have changed.
+	BOOST_FOREACH(
+			LayerProxyUtils::InputLayerProxy<RasterLayerProxy> &target_layer_proxy,
+			d_current_target_raster_layer_proxies.get_input_layer_proxies())
+	{
+		check_input_layer_proxy(target_layer_proxy);
+	}
+}
+
+
+boost::optional<GPlatesOpenGL::GLRasterCoRegistration &>
+GPlatesAppLogic::CoRegistrationLayerProxy::get_raster_co_registration(
+		GPlatesOpenGL::GLRenderer &renderer)
+{
+	// Attempt to create raster co-registration if not already created.
+	if (!d_raster_co_registration)
+	{
+		// Returns boost::none if the required OpenGL extensions are not available.
+		d_raster_co_registration = GPlatesOpenGL::GLRasterCoRegistration::create(renderer);
+	}
+
+	// Convert from a non_null_ptr to a reference (if raster co-registration supported).
+	if (d_raster_co_registration)
+	{
+		GPlatesOpenGL::GLRasterCoRegistration &raster_co_registration = *d_raster_co_registration.get();
+
+		return raster_co_registration;
+	}
+
+	return boost::none;
 }

@@ -137,6 +137,7 @@ GPlatesOpenGL::GLBuffer::MapBufferScope::gl_map_buffer_dynamic()
 GLvoid *
 GPlatesOpenGL::GLBuffer::MapBufferScope::gl_map_buffer_stream(
 		unsigned int minimum_bytes_to_stream,
+		unsigned int stream_alignment,
 		unsigned int &stream_offset,
 		unsigned int &stream_bytes_available)
 {
@@ -146,7 +147,12 @@ GPlatesOpenGL::GLBuffer::MapBufferScope::gl_map_buffer_stream(
 			GPLATES_ASSERTION_SOURCE);
 
 	d_data = d_buffer.gl_map_buffer_stream(
-			d_renderer, d_target, minimum_bytes_to_stream, stream_offset, stream_bytes_available);
+			d_renderer,
+			d_target,
+			minimum_bytes_to_stream,
+			stream_alignment,
+			stream_offset,
+			stream_bytes_available);
 
 	return d_data;
 }

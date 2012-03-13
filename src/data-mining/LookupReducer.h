@@ -39,7 +39,6 @@ namespace GPlatesDataMining
 {
 	class LookupReducer : public CoRegReducer
 	{
-		typedef std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*> RFGs;
 	public:
 		class Config : public CoRegReducer::Config
 		{
@@ -54,8 +53,9 @@ namespace GPlatesDataMining
 		};
 
 		explicit
-		LookupReducer(const RFGs& seeds) :
-			d_seeds(seeds)
+		LookupReducer(
+				const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_seed_feature) :
+			d_reconstructed_seed_feature(reconstructed_seed_feature)
 		{ }
 		
 		virtual
@@ -67,7 +67,7 @@ namespace GPlatesDataMining
 				ReducerInDataset::const_iterator input_begin,
 				ReducerInDataset::const_iterator input_end) ;
 	protected:
-		RFGs d_seeds;
+		const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &d_reconstructed_seed_feature;
 	};
 }
 #endif

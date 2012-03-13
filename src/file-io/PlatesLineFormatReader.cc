@@ -40,10 +40,9 @@
 #include "ReadErrors.h"
 #include "LineReader.h"
 
-#include "global/types.h"
+#include "feature-visitors/PropertyValueFinder.h"
 
-#include "utils/StringUtils.h"
-#include "utils/UnicodeStringUtils.h"
+#include "global/types.h"
 
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
@@ -82,7 +81,9 @@
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/TemplateTypeParameterType.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
+#include "utils/Profile.h"
+#include "utils/StringUtils.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 namespace
@@ -2331,6 +2332,8 @@ GPlatesFileIO::PlatesLineFormatReader::read_file(
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
+	PROFILE_FUNC();
+
 	const FileInfo &fileinfo = file.get_file_info();
 
 	// By placing all changes to the model under the one changeset, we ensure that

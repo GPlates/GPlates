@@ -114,7 +114,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 		GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
 		GPlatesOpenGL::GLBuffer &vertex_buffer_data,
 		GPlatesOpenGL::GLVertexArray &vertex_array,
-		PersistentOpenGLObjects &persistent_opengl_objects)
+		GPlatesOpenGL::GLVisualLayers &gl_visual_layers)
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
@@ -127,7 +127,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 	// is similar (in fact identical) to the state set for rasters.
 	//
 
-	persistent_opengl_objects.render_filled_polygons(renderer, d_filled_polygons);
+	gl_visual_layers.render_filled_polygons(renderer, d_filled_polygons);
 	// Now that the filled polygons have been rendered we should clear them for the next render call.
 	d_filled_polygons.clear();
 
@@ -294,7 +294,7 @@ GPlatesGui::LayerPainter::begin_painting(
 GPlatesGui::LayerPainter::cache_handle_type
 GPlatesGui::LayerPainter::end_painting(
 		GPlatesOpenGL::GLRenderer &renderer,
-		PersistentOpenGLObjects &persistent_opengl_objects,
+		GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 		const TextRenderer &text_renderer,
 		float scale)
 {
@@ -381,7 +381,7 @@ GPlatesGui::LayerPainter::end_painting(
 	renderer.gl_depth_mask(GL_FALSE);
 
 	// Paint a raster if there is one (note there should only be one raster in a layer).
-	const cache_handle_type rasters_cache_handle = paint_rasters(renderer, persistent_opengl_objects);
+	const cache_handle_type rasters_cache_handle = paint_rasters(renderer, gl_visual_layers);
 
 	{
 		// Make sure we leave the OpenGL state the way it was.
@@ -402,7 +402,7 @@ GPlatesGui::LayerPainter::end_painting(
 				*d_vertex_element_buffer->get_buffer(),
 				*d_vertex_buffer->get_buffer(),
 				*d_vertex_array,
-				persistent_opengl_objects);
+				gl_visual_layers);
 	}
 
 	// Even though these primitives are opaque they are still rendered with polygon anti-aliasing
@@ -412,14 +412,14 @@ GPlatesGui::LayerPainter::end_painting(
 			*d_vertex_element_buffer->get_buffer(),
 			*d_vertex_buffer->get_buffer(),
 			*d_vertex_array,
-			persistent_opengl_objects);
+			gl_visual_layers);
 
 	translucent_drawables_on_the_sphere.end_painting(
 			renderer,
 			*d_vertex_element_buffer->get_buffer(),
 			*d_vertex_buffer->get_buffer(),
 			*d_vertex_array,
-			persistent_opengl_objects);
+			gl_visual_layers);
 
 	// Render any 2D text last (text specified at 2D viewport positions).
 	paint_text_drawables_2D(renderer, text_renderer, scale);
@@ -448,18 +448,18 @@ GPlatesGui::LayerPainter::end_painting(
 GPlatesGui::LayerPainter::cache_handle_type
 GPlatesGui::LayerPainter::paint_rasters(
 		GPlatesOpenGL::GLRenderer &renderer,
-		PersistentOpenGLObjects &persistent_opengl_objects)
+		GPlatesOpenGL::GLVisualLayers &gl_visual_layers)
 {
 	// The cached view is a sequence of raster caches for the caller to keep alive until the next frame.
-	boost::shared_ptr<std::vector<PersistentOpenGLObjects::cache_handle_type> > cache_handle(
-			new std::vector<PersistentOpenGLObjects::cache_handle_type>());
+	boost::shared_ptr<std::vector<GPlatesOpenGL::GLVisualLayers::cache_handle_type> > cache_handle(
+			new std::vector<GPlatesOpenGL::GLVisualLayers::cache_handle_type>());
 	cache_handle->reserve(rasters.size());
 
 	BOOST_FOREACH(const RasterDrawable &raster_drawable, rasters)
 	{
 		// We don't want to rebuild the OpenGL structures that render the raster each frame
 		// so those structures need to persist from one render to the next.
-		const cache_handle_type raster_cache_handle = persistent_opengl_objects.render_raster(
+		const cache_handle_type raster_cache_handle = gl_visual_layers.render_raster(
 				renderer,
 				raster_drawable.source_resolved_raster,
 				raster_drawable.source_raster_colour_palette,
