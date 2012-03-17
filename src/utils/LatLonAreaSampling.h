@@ -294,7 +294,7 @@ namespace GPlatesUtils
 
 				// If the number of potential sample bins exceeds a threshold then
 				// use a slower but lower memory lookup method.
-				d_use_high_speed_lookup = (num_sample_bins < MAX_SAMPLE_BINS_FOR_HIGH_SPEED_LOOKUP);
+				d_use_high_speed_lookup = (static_cast<unsigned int>(num_sample_bins) < MAX_SAMPLE_BINS_FOR_HIGH_SPEED_LOOKUP);
 
 				if (d_use_high_speed_lookup)
 				{
