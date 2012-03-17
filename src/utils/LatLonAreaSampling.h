@@ -289,8 +289,8 @@ namespace GPlatesUtils
 				// the associated overflow problem converting longitude to an index later.
 				static const double EPSILON = 1e-3;
 
-				const unsigned int num_sample_bins = static_cast<unsigned int>(
-						360.0 / longitude_spacing + EPSILON) + 1;
+				// Cast to 'int' instead of 'unsigned int' because Visual Studio generates faster code.
+				const int num_sample_bins = static_cast<int>(360.0 / longitude_spacing + EPSILON) + 1;
 
 				// If the number of potential sample bins exceeds a threshold then
 				// use a slower but lower memory lookup method.
@@ -356,8 +356,7 @@ namespace GPlatesUtils
 					longitude += 360;
 				}
 
-				const unsigned int sample_bin_index = static_cast<unsigned int>(
-						longitude * d_inverse_longitude_spacing);
+				const int sample_bin_index = static_cast<int>(longitude * d_inverse_longitude_spacing);
 
 				return get_sample_bin(sample_bin_index);
 			}
@@ -605,13 +604,13 @@ namespace GPlatesUtils
 					latitude_abs = -latitude;
 				}
 
-				const unsigned int longitude_lookup_index = static_cast<unsigned int>(
-						latitude_abs * d_inverse_latitude_spacing);
+				// Cast to 'int' instead of 'unsigned int' because Visual Studio generates faster code.
+				const int longitude_lookup_index = static_cast<int>(latitude_abs * d_inverse_latitude_spacing);
 
 #if 0
 				GPlatesGlobal::Assert(
 						longitude_lookup_index <
-								boost::numeric_cast<unsigned int>(longitude_lookup_seq->size()),
+								boost::numeric_cast<int>(longitude_lookup_seq->size()),
 						GPlatesGlobal::AssertionFailureException(GPLATES_EXCEPTION_SOURCE));
 #endif
 
@@ -642,7 +641,8 @@ namespace GPlatesUtils
 				// the associated overflow problem converting latitude to an index later.
 				static const double EPSILON = 1e-3;
 
-				const unsigned int num_latitude_spacings_per_hemisphere = static_cast<unsigned int>(
+				// Cast to 'int' instead of 'unsigned int' because Visual Studio generates faster code.
+				const int num_latitude_spacings_per_hemisphere = static_cast<int>(
 						90.0 / latitude_spacing + EPSILON) + 1;
 
 				d_northern_longitude_lookups.reserve(num_latitude_spacings_per_hemisphere);
@@ -651,7 +651,7 @@ namespace GPlatesUtils
 				const double latitude_spacing_radians =
 						latitude_spacing * (GPlatesMaths::PI / 180.0);
 
-				for (unsigned int latitude_index = 0;
+				for (int latitude_index = 0;
 					latitude_index < num_latitude_spacings_per_hemisphere;
 					++latitude_index)
 				{

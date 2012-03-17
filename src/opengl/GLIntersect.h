@@ -39,7 +39,7 @@ namespace GPlatesOpenGL
 	 * Contains intersection routines used for view frustum culling and pixel/texel
 	 * projections from screen-space to world-space (used for level-of-detail selection).
 	 *
-	 * FIXME: Some of these intersection tests should probably eventually be moved to the
+	 * FIXME: Some of these intersection tests could probably eventually be moved to the
 	 * "maths/" directory as they might be useful for implementing spatial trees
 	 * (used to speed up object co-registration in the data mining preprocessor).
 	 */

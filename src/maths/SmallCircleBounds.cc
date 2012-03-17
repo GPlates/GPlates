@@ -31,6 +31,7 @@
 
 #include "FiniteRotation.h"
 #include "Rotation.h"
+#include "types.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -286,12 +287,35 @@ GPlatesMaths::BoundingSmallCircleBuilder::add(
 
 
 void
-GPlatesMaths::BoundingSmallCircleBuilder::expand_bound(
-		const BoundingSmallCircleBuilder &other_builder)
+GPlatesMaths::BoundingSmallCircleBuilder::add(
+		const BoundingSmallCircle &bounding_small_circle)
 {
-	if (other_builder.d_min_dot_product < d_min_dot_product)
+	//
+	// new_bounding_angle = angle_between_centres + other_small_circle_bounding_angle
+	// cos(new_bounding_angle) = cos(angle_between_centres + other_small_circle_bounding_angle)
+	//                         = cos(angle_between_centres) * cos(other_small_circle_bounding_angle) -
+	//                           sin(angle_between_centres) * sin(other_small_circle_bounding_angle)
+	//
+	// ...and where cos(angle_between_centres) = dot(centre_circle_1, centre_circle_2).
+	//
+
+	// Get the cosine/sine of angle between the centres of both small circles.
+	const double cosine = dot(d_small_circle_centre, bounding_small_circle.get_centre()).dval();
+	const double cosine_square = cosine * cosine;
+	// Use epsilon test (real_t) to avoid sqrt calculation when small circle centres coincide.
+	const double sine = (real_t(cosine_square) < 1) ? std::sqrt(1 - cosine_square) : 0;
+
+	// The cosine of the angle from our small circle centre to the small circle that encompasses
+	// the other small circle.
+	const double min_dot_product_bounding_other_small_circle =
+			cosine * bounding_small_circle.get_small_circle_boundary_cosine() -
+			sine * bounding_small_circle.get_small_circle_boundary_sine();
+
+	// If the other small circle bound intersects or is outside our small circle then expand our
+	// small circle to include it.
+	if (min_dot_product_bounding_other_small_circle < d_min_dot_product)
 	{
-		d_min_dot_product = other_builder.d_min_dot_product;
+		d_min_dot_product = min_dot_product_bounding_other_small_circle;
 	}
 }
 
@@ -620,17 +644,164 @@ GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::add(
 
 
 void
-GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::expand_bounds(
-		const InnerOuterBoundingSmallCircleBuilder &other_builder)
+GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::add(
+		const BoundingSmallCircle &bounding_small_circle)
 {
-	if (other_builder.d_min_dot_product < d_min_dot_product)
+	//
+	// new_outer_bounding_angle = angle_between_centres + other_small_circle_bounding_angle
+	// cos(new_outer_bounding_angle) = cos(angle_between_centres + other_small_circle_bounding_angle)
+	//                         = cos(angle_between_centres) * cos(other_small_circle_bounding_angle) -
+	//                           sin(angle_between_centres) * sin(other_small_circle_bounding_angle)
+	//
+	// ...and where cos(angle_between_centres) = dot(centre_circle_1, centre_circle_2).
+	//
+
+	// Get the cosine/sine of angle between the centres of both small circles.
+	const double cosine = dot(d_small_circle_centre, bounding_small_circle.get_centre()).dval();
+	const double cosine_square = cosine * cosine;
+	// Use epsilon test (real_t) to avoid sqrt calculation when small circle centres coincide.
+	const double sine = (real_t(cosine_square) < 1) ? std::sqrt(1 - cosine_square) : 0;
+
+	// The cosine of the angle from our small circle centre to the outer small circle that encompasses
+	// the other small circle.
+	const double min_dot_product_bounding_other_small_circle =
+			cosine * bounding_small_circle.get_small_circle_boundary_cosine() -
+			sine * bounding_small_circle.get_small_circle_boundary_sine();
+
+	// If the other small circle bound intersects or is outside our outer small circle then expand
+	// our outer small circle to include it.
+	if (min_dot_product_bounding_other_small_circle < d_min_dot_product)
 	{
-		d_min_dot_product = other_builder.d_min_dot_product;
+		d_min_dot_product = min_dot_product_bounding_other_small_circle;
 	}
 
-	if (other_builder.d_max_dot_product > d_max_dot_product)
+	// First test to see if the other small circle overlaps our small circle centre...
+	if (cosine < bounding_small_circle.get_small_circle_boundary_cosine())
 	{
-		d_max_dot_product = other_builder.d_max_dot_product;
+		// Our small circle centre is *not* contained within the other small circle.
+
+		//
+		// new_inner_bounding_angle = angle_between_centres - other_small_circle_bounding_angle
+		// cos(new_inner_bounding_angle) = cos(angle_between_centres - other_small_circle_bounding_angle)
+		//                         = cos(angle_between_centres) * cos(other_small_circle_bounding_angle) +
+		//                           sin(angle_between_centres) * sin(other_small_circle_bounding_angle)
+		//
+		// ...and where cos(angle_between_centres) = dot(centre_circle_1, centre_circle_2).
+		//
+
+		// The cosine of the angle from our small circle centre to the inner small circle that
+		// puts the other small circle outside of it.
+		const double max_dot_product_excluding_other_small_circle =
+				cosine * bounding_small_circle.get_small_circle_boundary_cosine() +
+				sine * bounding_small_circle.get_small_circle_boundary_sine();
+
+		// If the other small circle bound intersects or is inside our inner small circle then
+		// contract our inner small circle to exclude it.
+		if (max_dot_product_excluding_other_small_circle > d_max_dot_product)
+		{
+			d_max_dot_product = max_dot_product_excluding_other_small_circle;
+		}
+	}
+	else
+	{
+		// The other small circle overlaps our small circle centre which effectively removes
+		// our inner small circle (shrinks it to a radius of zero).
+		d_max_dot_product = 1;
+	}
+}
+
+
+void
+GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::add(
+		const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle)
+{
+	//
+	// new_outer_bounding_angle = angle_between_centres + other_small_circle_outer_bounding_angle
+	// cos(new_outer_bounding_angle) = cos(angle_between_centres + other_small_circle_outer_bounding_angle)
+	//                         = cos(angle_between_centres) * cos(other_small_circle_outer_bounding_angle) -
+	//                           sin(angle_between_centres) * sin(other_small_circle_outer_bounding_angle)
+	//
+	// ...and where cos(angle_between_centres) = dot(centre_circle_1, centre_circle_2).
+	//
+
+	// Get the cosine/sine of angle between the centres of both small circles.
+	const double cosine = dot(d_small_circle_centre, inner_outer_bounding_small_circle.get_centre()).dval();
+	const double cosine_square = cosine * cosine;
+	// Use epsilon test (real_t) to avoid sqrt calculation when small circle centres coincide.
+	const double sine = (real_t(cosine_square) < 1) ? std::sqrt(1 - cosine_square) : 0;
+
+	// The cosine of the angle from our small circle centre to the outer small circle that encompasses
+	// the other outer small circle.
+	const double min_dot_product_bounding_other_small_circle =
+			cosine * inner_outer_bounding_small_circle.get_outer_bounding_small_circle().get_small_circle_boundary_cosine() -
+			sine * inner_outer_bounding_small_circle.get_outer_bounding_small_circle().get_small_circle_boundary_sine();
+
+	// If the other small circle outer bound intersects or is outside our outer small circle then expand
+	// our outer small circle to include it.
+	if (min_dot_product_bounding_other_small_circle < d_min_dot_product)
+	{
+		d_min_dot_product = min_dot_product_bounding_other_small_circle;
+	}
+
+	// First test to see if the other small circle *inner* bound overlaps our small circle centre...
+	if (cosine > inner_outer_bounding_small_circle.get_inner_small_circle_boundary_cosine())
+	{
+		// Our small circle centre is *inside* the other small circle's inner bound.
+
+		//
+		// new_inner_bounding_angle = other_small_circle_inner_bounding_angle - angle_between_centres
+		// cos(new_inner_bounding_angle) = cos(other_small_circle_inner_bounding_angle - angle_between_centres)
+		//                         = cos(other_small_circle_inner_bounding_angle) * cos(angle_between_centres) +
+		//                           sin(other_small_circle_inner_bounding_angle) * sin(angle_between_centres)
+		//
+		// ...and where cos(angle_between_centres) = dot(centre_circle_1, centre_circle_2).
+		//
+
+		// The cosine of the angle from our small circle centre to the inner small circle that
+		// excludes the other small circle inner bound.
+		const double max_dot_product_excluding_other_small_circle =
+				cosine * inner_outer_bounding_small_circle.get_inner_small_circle_boundary_cosine() +
+				sine * inner_outer_bounding_small_circle.get_inner_small_circle_boundary_sine();
+
+		// If the other small circle inner bound intersects or is inside our inner small circle then
+		// contract our inner small circle to exclude it.
+		if (max_dot_product_excluding_other_small_circle > d_max_dot_product)
+		{
+			d_max_dot_product = max_dot_product_excluding_other_small_circle;
+		}
+	}
+	// Next test to see if the other small circle *outer* bound overlaps our small circle centre...
+	else if (cosine < inner_outer_bounding_small_circle.get_outer_bounding_small_circle().get_small_circle_boundary_cosine())
+	{
+		// Our small circle centre is *outside* the other small circle's outer bound.
+
+		//
+		// new_inner_bounding_angle = angle_between_centres - other_small_circle_outer_bounding_angle
+		// cos(new_inner_bounding_angle) = cos(angle_between_centres - other_small_circle_bounding_angle)
+		//                         = cos(angle_between_centres) * cos(other_small_circle_bounding_angle) +
+		//                           sin(angle_between_centres) * sin(other_small_circle_bounding_angle)
+		//
+		// ...and where cos(angle_between_centres) = dot(centre_circle_1, centre_circle_2).
+		//
+
+		// The cosine of the angle from our small circle centre to the inner small circle that
+		// excludes the other small circle outer bound.
+		const double max_dot_product_excluding_other_small_circle =
+				cosine * inner_outer_bounding_small_circle.get_outer_bounding_small_circle().get_small_circle_boundary_cosine() +
+				sine * inner_outer_bounding_small_circle.get_outer_bounding_small_circle().get_small_circle_boundary_sine();
+
+		// If the other small circle outer bound intersects or is inside our inner small circle then
+		// contract our inner small circle to exclude it.
+		if (max_dot_product_excluding_other_small_circle > d_max_dot_product)
+		{
+			d_max_dot_product = max_dot_product_excluding_other_small_circle;
+		}
+	}
+	else
+	{
+		// The other small circle region (between its inner and outer small circles) overlaps our small
+		// circle centre which effectively removes our inner small circle (shrinks it to a radius of zero).
+		d_max_dot_product = 1;
 	}
 }
 

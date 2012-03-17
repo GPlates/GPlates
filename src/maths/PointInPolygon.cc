@@ -759,11 +759,10 @@ namespace GPlatesMaths
 				LeafNode(
 						edge_sequence_index_type edge_sequences_start_index_,
 						unsigned int num_edge_sequences_,
-						const InnerOuterBoundingSmallCircleBuilder &antipodal_centroid_bounds_builder_) :
+						const InnerOuterBoundingSmallCircle &antipodal_centroid_bounds_) :
 					edge_sequences_start_index(edge_sequences_start_index_),
 					num_edge_sequences(num_edge_sequences_),
-					antipodal_centroid_bounds(
-							antipodal_centroid_bounds_builder_.get_inner_outer_bounding_small_circle())
+					antipodal_centroid_bounds(antipodal_centroid_bounds_)
 				{  }
 
 				/**
@@ -1397,16 +1396,21 @@ namespace GPlatesMaths
 						sub_tree_edge_sequence.begin, sub_tree_edge_sequence.end);
 			}
 
+			// Get the leaf node inner/outer bounding small circle.
+			const InnerOuterBoundingSmallCircle leaf_node_inner_outer_bounding_small_circle =
+					leaf_node_bounds_data_builder.get_inner_outer_bounding_small_circle();
+
 			// Expand/contract the outer/inner bounds of the entire spherical lune tree
 			// to include the current leaf node bounds.
-			d_bounds_data_builder.d_antipodal_centroid_bounds_builder.expand_bounds(
-					leaf_node_bounds_data_builder);
+			d_bounds_data_builder.d_antipodal_centroid_bounds_builder.add(
+					leaf_node_inner_outer_bounding_small_circle);
 
 			// Create a leaf node - it references edges that will be stored in the global list.
 			const LeafNode leaf_node(
 					d_tree_data.d_edge_sequences.size(),
 					sub_tree_edge_sequences.size(),
-					leaf_node_bounds_data_builder);
+					leaf_node_inner_outer_bounding_small_circle);
+
 			// Insert the edges that intersect the current spherical lune into the global list.
 			d_tree_data.d_edge_sequences.insert(d_tree_data.d_edge_sequences.end(),
 					sub_tree_edge_sequences.begin(), sub_tree_edge_sequences.end());
