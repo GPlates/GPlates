@@ -656,6 +656,12 @@ GPlatesFileIO::RgbaRasterReader::write_source_raster_file_cache_image_data(
 		}
 	}
 
+	// Some rasters have dimensions less than RasterFileCacheFormat::BLOCK_SIZE.
+	const unsigned int dimension =
+			(source_raster_dimension_next_power_of_two > RasterFileCacheFormat::BLOCK_SIZE)
+			? source_raster_dimension_next_power_of_two
+			: RasterFileCacheFormat::BLOCK_SIZE;
+
 	// Traverse the Hilbert curve of blocks of the source raster using quad-tree recursion.
 	// The leaf nodes of the traversal correspond to the blocks in the source raster.
 	hilbert_curve_traversal(
@@ -664,7 +670,7 @@ GPlatesFileIO::RgbaRasterReader::write_source_raster_file_cache_image_data(
 			write_source_raster_depth,
 			0/*x_offset*/,
 			0/*y_offset*/,
-			source_raster_dimension_next_power_of_two/*dimension*/,
+			dimension,
 			0/*hilbert_start_point*/,
 			0/*hilbert_end_point*/,
 			out,
