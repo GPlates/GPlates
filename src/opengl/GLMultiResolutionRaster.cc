@@ -1210,7 +1210,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::bound_level_of_detail_tile(
 	//  3) the third lowest resolution can wrap around *half* the entire globe, and
 	//  4) the fourth lowest resolution can wrap around a *quarter* of the entire globe.
 	// ...so, for the fourth lowest resolution (and higher resolutions), it is fine to exclude interior points.
-	if (lod_tile.lod_level <= d_level_of_detail_pyramid.size() - 4)
+	if (lod_tile.lod_level + 4 <= d_level_of_detail_pyramid.size())
 	{
 		// For high enough resolutions we only need the boundary vertices to accomplish this because
 		// the interior vertices will then be bounded along the OBB's x and y axes (due to the boundary
