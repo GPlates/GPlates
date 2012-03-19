@@ -63,6 +63,8 @@ namespace GPlatesMaths
 					boost::equality_comparable<Real> > >
 			// NOTE: For same reason we are *not* inheriting from 'GPlatesUtils::QtStreamable<Real>'
 			// and instead explicitly providing 'operator <<' overloads as non-member functions.
+			//
+			//public GPlatesUtils::QtStreamable<Real>
 	{
 	public:
 
@@ -174,10 +176,10 @@ namespace GPlatesMaths
 
 	/**
 	 * Gives us:
-	 *    qDebug() << derived_object;
-	 *    qWarning() << derived_object;
-	 *    qCritical() << derived_object;
-	 *    qFatal() << derived_object;
+	 *    qDebug() << r;
+	 *    qWarning() << r;
+	 *    qCritical() << r;
+	 *    qFatal() << r;
 	 */
 	QDebug
 	operator <<(
@@ -188,7 +190,7 @@ namespace GPlatesMaths
 	/**
 	 * Gives us:
 	 *    QTextStream text_stream(device);
-	 *    text_stream << derived_object;
+	 *    text_stream << r;
 	 */
 	QTextStream &
 	operator <<(

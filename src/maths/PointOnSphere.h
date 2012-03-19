@@ -30,6 +30,8 @@
 
 #include <iosfwd>
 #include <iterator>  // std::distance
+#include <QDebug>
+#include <QTextStream>
 
 #include "GeometryOnSphere.h"
 #include "UnitVector3D.h"
@@ -56,9 +58,13 @@ namespace GPlatesMaths
 	 * will definitely lie on the surface of the sphere.
 	 */
 	class PointOnSphere:
-			public GeometryOnSphere,
-			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
-			public GPlatesUtils::QtStreamable<PointOnSphere>
+			public GeometryOnSphere
+			// NOTE: We are *not* inheriting from 'GPlatesUtils::QtStreamable<Real>' in order to
+			// avoid bloating sizeof(PointOnSphere) due to multiple inheritance (even from empty
+			// base class) - this reduces sizeof(PointOnSphere) from 40 to 32.
+			// Instead we explicitly provide 'operator <<' overloads as non-member functions.
+			//
+			//public GPlatesUtils::QtStreamable<PointOnSphere>
 	{
 	public:
 
@@ -493,6 +499,30 @@ namespace GPlatesMaths
 	std::ostream &
 	operator<<(
 			std::ostream &os,
+			const PointOnSphere &p);
+
+
+	/**
+	 * Gives us:
+	 *    qDebug() << p;
+	 *    qWarning() << p;
+	 *    qCritical() << p;
+	 *    qFatal() << p;
+	 */
+	QDebug
+	operator <<(
+			QDebug dbg,
+			const PointOnSphere &p);
+
+
+	/**
+	 * Gives us:
+	 *    QTextStream text_stream(device);
+	 *    text_stream << p;
+	 */
+	QTextStream &
+	operator <<(
+			QTextStream &stream,
 			const PointOnSphere &p);
 
 
