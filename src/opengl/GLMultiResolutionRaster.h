@@ -30,6 +30,7 @@
 #include <cstddef> // For std::size_t
 #include <map>
 #include <vector>
+#include <boost/cstdint.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -771,6 +772,9 @@ namespace GPlatesOpenGL
 				std::pair<unsigned int,unsigned int>,
 				GLVertexElementBuffer::shared_ptr_to_const_type> vertex_element_buffer_map_type;
 
+		//! A 16:16 fixed point type to get fractional values without floating-point precision issues.
+		typedef boost::uint32_t texels_per_vertex_fixed_point_type;
+
 
 		/**
 		 * Georeferencing information to position the raster onto the globe.
@@ -803,6 +807,16 @@ namespace GPlatesOpenGL
 		 * The number of texels along a tiles edge (horizontal or vertical since it's square).
 		 */
 		unsigned int d_tile_texel_dimension;
+
+		/**
+		 * The (fractional) number of texels between two adjacent vertices along a horizontal or
+		 * vertical edge of the tile.
+		 *
+		 * This is a 16:16 fixed point type to allow fractional values without floating-point precision issues.
+		 *
+		 * See @a MAX_NUM_TEXELS_PER_VERTEX for more details.
+		 */
+		texels_per_vertex_fixed_point_type d_num_texels_per_vertex;
 
 		/**
 		 * All tiles of all resolution are grouped into one array for easy lookup for clients.
@@ -857,8 +871,13 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The number of texels between two adjacent vertices along a horizontal or
+		 * The maximum number of texels between two adjacent vertices along a horizontal or
 		 * vertical edge of the tile.
+		 *
+		 * For most rasters this is the texel density used. However for very low resolution rasters
+		 * a smaller texel density is needed (especially for global rasters) otherwise the vertex
+		 * mesh is too coarse and the raster no longer looks like a spherical surface but instead
+		 * looks like a coarse polyhedron embedded inside the globe.
 		 *
 		 * This is relatively small to minimise texel deviation on the sphere.
 		 * In other words we want each texel to be positioned approximately where it
@@ -871,13 +890,11 @@ namespace GPlatesOpenGL
 		 * a threshold but there are benefits to having a simple mesh and GPUs are
 		 * fast enough that having more vertices than we need won't slow it down.
 		 * See http://developer.nvidia.com/docs/IO/8230/BatchBatchBatch.pdf
-		 * FIXME: Move these relatively dense meshes to vertex buffer objects so they
-		 * reside on the GPU and we're not transferring them to the GPU each time we draw.
 		 *
-		 * NOTE: This means there are NUM_TEXELS_PER_VERTEX * NUM_TEXELS_PER_VERTEX
+		 * NOTE: This means there are at most MAX_NUM_TEXELS_PER_VERTEX * MAX_NUM_TEXELS_PER_VERTEX
 		 * texels between four adjacent vertices that form a quad (two mesh triangles).
 		 */
-		static const unsigned int NUM_TEXELS_PER_VERTEX = 16;
+		static const unsigned int MAX_NUM_TEXELS_PER_VERTEX = 16;
 
 
 		/**
@@ -902,6 +919,13 @@ namespace GPlatesOpenGL
 		 */
 		void
 		initialise_level_of_detail_pyramid();
+
+
+		/**
+		 * Calculates the (fractional) number of texels per vertex required for the entire raster.
+		 */
+		texels_per_vertex_fixed_point_type
+		calculate_num_texels_per_vertex();
 
 
 		/**
@@ -978,19 +1002,6 @@ namespace GPlatesOpenGL
 		calc_max_texel_size_on_unit_sphere(
 				const unsigned int lod_level,
 				const LevelOfDetailTile &lod_tile) const;
-
-
-		/**
-		 * Calculates the number of vertices required for the specified tile.
-		 */
-		const std::pair<unsigned int, unsigned int>
-		calculate_num_vertices_along_tile_edges(
-				const unsigned int x_geo_start,
-				const unsigned int x_geo_end,
-				const unsigned int y_geo_start,
-				const unsigned int y_geo_end,
-				const unsigned int num_u_texels,
-				const unsigned int num_v_texels);
 
 
 		/**

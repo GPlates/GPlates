@@ -37,6 +37,7 @@
  */
 #include <GL/glew.h>
 #include <opengl/OpenGL.h>
+#include <QDebug>
 
 #include "GLMultiResolutionRaster.h"
 
@@ -110,6 +111,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 	d_raster_scanline_order(raster_scanline_order),
 	d_fixed_point_texture_filter(fixed_point_texture_filter),
 	d_tile_texel_dimension(raster_source->get_tile_texel_dimension()),
+	d_num_texels_per_vertex(/*default*/MAX_NUM_TEXELS_PER_VERTEX << 16), // ...a 16:16 fixed-point type.
 	// The parentheses around min are to prevent the windows min macros
 	// from stuffing numeric_limits' min.
 	d_max_highest_resolution_texel_size_on_unit_sphere((std::numeric_limits<float>::min)()),
@@ -119,6 +121,12 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 	// Start with smallest size cache and just let the cache grow in size as needed...
 	d_tile_vertices_cache(tile_vertices_cache_type::create())
 {
+	// Determine number of texels between two adjacent vertices along a horizontal/vertical tile edge.
+	// For most rasters this is the maximum texel density.
+	// For very low resolution rasters a smaller texel density is needed to keep the mesh surface
+	// looking smooth and curved instead of coarsely tessellated on the globe.
+	d_num_texels_per_vertex = calculate_num_texels_per_vertex();
+
 	// Create the levels of details and within each one create an oriented bounding box
 	// tree (used to quickly find visible tiles) where the drawable tiles are in the
 	// leaf nodes of the OBB tree.
@@ -376,6 +384,12 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 	// all channels including alpha during alpha blending (R,G,B,A) -> (A*R,A*G,A*B,A*A) -
 	// the final render target would then have a source blending contribution of (3A*R,3A*G,3A*B,4A)
 	// which is not what we want - we want (A*R,A*G,A*B,A*A).
+
+#if 0
+	// Used to render as wire-frame meshes instead of filled textured meshes for
+	// visualising mesh density.
+	renderer.gl_polygon_mode(GL_FRONT_AND_BACK, GL_LINE);
+#endif
 
 	// The cached view is a sequence of tiles for the caller to keep alive until the next frame.
 	boost::shared_ptr<std::vector<ClientCacheTile> > cached_tiles(new std::vector<ClientCacheTile>());
@@ -722,6 +736,123 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 			vertex_buffer_data,
 			// We update the vertex buffer occasionally (ie, dynamic)...
 			GLBuffer::USAGE_DYNAMIC_DRAW);
+}
+
+
+GPlatesOpenGL::GLMultiResolutionRaster::texels_per_vertex_fixed_point_type
+GPlatesOpenGL::GLMultiResolutionRaster::calculate_num_texels_per_vertex()
+{
+	// We're calculating the texel sampling density for the entire raster.
+	const unsigned int x_geo_start = 0;
+	const unsigned int x_geo_end = d_raster_width;
+	const unsigned int y_geo_start = 0;
+	const unsigned int y_geo_end = d_raster_height;
+
+	// Centre point of the raster.
+	const double x_geo_centre = 0.5 * (x_geo_start + x_geo_end);
+	const double y_geo_centre = 0.5 * (y_geo_start + y_geo_end);
+
+	// The nine boundary points including corners and midpoints and one centre point.
+	const GPlatesMaths::PointOnSphere sample_points[3][3] =
+	{
+		{
+			convert_pixel_coord_to_geographic_coord(x_geo_start, y_geo_start),
+			convert_pixel_coord_to_geographic_coord(x_geo_centre, y_geo_start),
+			convert_pixel_coord_to_geographic_coord(x_geo_end, y_geo_start)
+		},
+		{
+			convert_pixel_coord_to_geographic_coord(x_geo_start, y_geo_centre),
+			convert_pixel_coord_to_geographic_coord(x_geo_centre, y_geo_centre),
+			convert_pixel_coord_to_geographic_coord(x_geo_end, y_geo_centre)
+		},
+		{
+			convert_pixel_coord_to_geographic_coord(x_geo_start, y_geo_end),
+			convert_pixel_coord_to_geographic_coord(x_geo_centre, y_geo_end),
+			convert_pixel_coord_to_geographic_coord(x_geo_end, y_geo_end)
+		}
+	};
+
+	// Calculate the maximum angle spanned by the raster in the x direction.
+	GPlatesMaths::real_t x_min_half_span = 1;
+
+	// Iterate over the half segments and calculate dot products in the x direction.
+	for (unsigned int i = 0; i < 3; ++i)
+	{
+		for (unsigned int j = 0; j < 2; ++j)
+		{
+			const GPlatesMaths::real_t x_half_span = dot(
+					sample_points[i][j].position_vector(),
+					sample_points[i][j+1].position_vector());
+			if (x_half_span < x_min_half_span)
+			{
+				x_min_half_span = x_half_span;
+			}
+		}
+	}
+
+	// Calculate the maximum angle spanned by the raster in the y direction.
+	GPlatesMaths::real_t y_min_half_span = 1;
+
+	// Iterate over the half segments and calculate dot products in the y direction.
+	for (unsigned int j = 0; j < 3; ++j)
+	{
+		for (unsigned int i = 0; i < 2; ++i)
+		{
+			const GPlatesMaths::real_t y_half_span = dot(
+					sample_points[i][j].position_vector(),
+					sample_points[i+1][j].position_vector());
+			if (y_half_span < y_min_half_span)
+			{
+				y_min_half_span = y_half_span;
+			}
+		}
+	}
+
+	// Convert from dot product to angle.
+	const GPlatesMaths::real_t x_max_spanned_angle_in_radians = 2 * acos(x_min_half_span);
+	const GPlatesMaths::real_t y_max_spanned_angle_in_radians = 2 * acos(y_min_half_span);
+
+	// Determine number of quads (segments) along each edge.
+	const GPlatesMaths::real_t x_num_quads_based_on_distance_real =
+			GPlatesMaths::convert_rad_to_deg(x_max_spanned_angle_in_radians) /
+					MAX_ANGLE_IN_DEGREES_BETWEEN_VERTICES;
+	const GPlatesMaths::real_t y_num_quads_based_on_distance_real =
+			GPlatesMaths::convert_rad_to_deg(y_max_spanned_angle_in_radians) /
+					MAX_ANGLE_IN_DEGREES_BETWEEN_VERTICES;
+
+	// Determine the texel-per-vertex density along each edge.
+	const GPlatesMaths::real_t x_num_texels_per_vertex =
+			GPlatesMaths::real_t(d_raster_width) / x_num_quads_based_on_distance_real;
+	const GPlatesMaths::real_t y_num_texels_per_vertex =
+			GPlatesMaths::real_t(d_raster_height) / y_num_quads_based_on_distance_real;
+
+	// Choose the minimum number of texels per vertex.
+	// If the raster is very low resolution then it will need more vertices per texel to keep
+	// the mesh tessellated finely enough (so it looks smooth and curve when drawn on the globe).
+	const GPlatesMaths::real_t num_texels_per_vertex =
+			(x_num_texels_per_vertex.dval() < y_num_texels_per_vertex.dval())
+			? x_num_texels_per_vertex
+			: y_num_texels_per_vertex;
+
+	// Convert to 16:16 fixed-point format.
+	texels_per_vertex_fixed_point_type num_texels_per_vertex_fixed_point = MAX_NUM_TEXELS_PER_VERTEX << 16;
+	if (num_texels_per_vertex.dval() < MAX_NUM_TEXELS_PER_VERTEX)
+	{
+		num_texels_per_vertex_fixed_point =
+				static_cast<texels_per_vertex_fixed_point_type>(
+						num_texels_per_vertex.dval() * (1 << 16));
+
+		// If, for some reason, the floating-point value is so low that we don't have enough
+		// fixed-point precision (16-bits) to capture it then set it to the lowest fixed-point value.
+		if (num_texels_per_vertex_fixed_point == 0)
+		{
+			num_texels_per_vertex_fixed_point = 1;
+		}
+	}
+
+	//qDebug() << "texels/vertex: " << num_texels_per_vertex_fixed_point / 65536.0;
+
+	return num_texels_per_vertex_fixed_point;
 }
 
 
@@ -1149,14 +1280,56 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_level_of_detail_tile(
 		v_end = 0; // y_geo_end begins exactly on a texel boundary
 	}
 
-	// Determine the number of vertices required for the tile.
-	const std::pair<unsigned int, unsigned int> num_vertices_along_tile_edges =
-			calculate_num_vertices_along_tile_edges(
-					x_geo_start, x_geo_end,
-					y_geo_start, y_geo_end,
-					num_u_texels, num_v_texels);
-	const unsigned int x_num_vertices = num_vertices_along_tile_edges.first;
-	const unsigned int y_num_vertices = num_vertices_along_tile_edges.second;
+	// Determine the number of quads along each tile edge based on the texel resolution.
+	// 'd_num_texels_per_vertex' is a 16:16 fixed-point type to allow fractional values without
+	// floating-point precision issues potentially causing adjacent tiles to have different
+	// tessellation (different number of vertices along common edge) and hence create gaps/cracks.
+	//
+	// Make sure we don't overflow the fixed-point calculation.
+	// For tile dimensions less than 65,536 we should be fine.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			num_u_texels < (1 << 16) && num_v_texels < (1 << 16),
+			GPLATES_ASSERTION_SOURCE);
+	unsigned int x_num_quads = (num_u_texels << 16) / d_num_texels_per_vertex;
+	unsigned int y_num_quads = (num_v_texels << 16) / d_num_texels_per_vertex;
+
+	// Make sure non-zero.
+	if (x_num_quads == 0)
+	{
+		x_num_quads = 1;
+	}
+	if (y_num_quads == 0)
+	{
+		y_num_quads = 1;
+	}
+
+	// The number of vertices each edge is the number of quads along each edge "+1".
+	//
+	// -------
+	// | | | |
+	// -------
+	// | | | |
+	// -------
+	// | | | |
+	// -------
+	//
+	// ...the above shows 3x3=9 quads but there's 4x4=16 vertices.
+	//
+	unsigned int x_num_vertices = x_num_quads + 1;
+	unsigned int y_num_vertices = y_num_quads + 1;
+
+	// Since we're using GLushort to store our vertex indices, we can't have
+	// more than 65535 vertices per tile.
+	if (x_num_vertices > (1 << (8 * sizeof(vertex_element_type) / 2/*sqrt*/)))
+	{
+		x_num_vertices = (1 << (8 * sizeof(vertex_element_type) / 2/*sqrt*/));
+	}
+	if (y_num_vertices > (1 << (8 * sizeof(vertex_element_type) / 2/*sqrt*/)))
+	{
+		y_num_vertices = (1 << (8 * sizeof(vertex_element_type) / 2/*sqrt*/));
+	}
+
+	//qDebug() << "Num vertices: " << x_num_vertices << ", " << y_num_vertices;
 
 	// Create the level-of-detail tile now that we have all the information we need.
 	LevelOfDetailTile::non_null_ptr_type lod_tile = LevelOfDetailTile::create(
@@ -1257,134 +1430,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::bound_level_of_detail_tile(
 	}
 
 	return obb_builder.get_oriented_bounding_box();
-}
-
-
-const std::pair<unsigned int, unsigned int>
-GPlatesOpenGL::GLMultiResolutionRaster::calculate_num_vertices_along_tile_edges(
-		const unsigned int x_geo_start,
-		const unsigned int x_geo_end,
-		const unsigned int y_geo_start,
-		const unsigned int y_geo_end,
-		const unsigned int num_u_texels,
-		const unsigned int num_v_texels)
-{
-	// Centre point of the tile.
-	const double x_geo_centre = 0.5 * (x_geo_start + x_geo_end);
-	const double y_geo_centre = 0.5 * (y_geo_start + y_geo_end);
-
-	// The nine boundary points including corners and midpoints and one centre point.
-	const GPlatesMaths::PointOnSphere tile_points[3][3] =
-	{
-		{
-			convert_pixel_coord_to_geographic_coord(x_geo_start, y_geo_start),
-			convert_pixel_coord_to_geographic_coord(x_geo_centre, y_geo_start),
-			convert_pixel_coord_to_geographic_coord(x_geo_end, y_geo_start)
-		},
-		{
-			convert_pixel_coord_to_geographic_coord(x_geo_start, y_geo_centre),
-			convert_pixel_coord_to_geographic_coord(x_geo_centre, y_geo_centre),
-			convert_pixel_coord_to_geographic_coord(x_geo_end, y_geo_centre)
-		},
-		{
-			convert_pixel_coord_to_geographic_coord(x_geo_start, y_geo_end),
-			convert_pixel_coord_to_geographic_coord(x_geo_centre, y_geo_end),
-			convert_pixel_coord_to_geographic_coord(x_geo_end, y_geo_end)
-		}
-	};
-
-	// Calculate the maximum angle spanned by the current tile in the x direction.
-	GPlatesMaths::real_t x_tile_min_half_span = 1;
-
-	// Iterate over the half segments and calculate dot products in the x direction.
-	for (unsigned int i = 0; i < 3; ++i)
-	{
-		for (unsigned int j = 0; j < 2; ++j)
-		{
-			GPlatesMaths::real_t x_tile_half_span = dot(
-					tile_points[i][j].position_vector(), tile_points[i][j+1].position_vector());
-			if (x_tile_half_span < x_tile_min_half_span)
-			{
-				x_tile_min_half_span = x_tile_half_span;
-			}
-		}
-	}
-
-	// Calculate the maximum angle spanned by the current tile in the y direction.
-	GPlatesMaths::real_t y_tile_min_half_span = 1;
-
-	// Iterate over the half segments and calculate dot products in the y direction.
-	for (unsigned int j = 0; j < 3; ++j)
-	{
-		for (unsigned int i = 0; i < 2; ++i)
-		{
-			GPlatesMaths::real_t y_tile_half_span = dot(
-					tile_points[i][j].position_vector(), tile_points[i+1][j].position_vector());
-			if (y_tile_half_span < y_tile_min_half_span)
-			{
-				y_tile_min_half_span = y_tile_half_span;
-			}
-		}
-	}
-#if 0
-	// Convert from dot product to angle.
-	const GPlatesMaths::real_t x_tile_max_spanned_angle_in_radians = 2 * acos(x_tile_min_half_span);
-	const GPlatesMaths::real_t y_tile_max_spanned_angle_in_radians = 2 * acos(y_tile_min_half_span);
-
-	// Determine number of quads (segments) along each edge.
-	const GPlatesMaths::real_t x_num_quads_based_on_distance_real =
-			GPlatesMaths::convert_rad_to_deg(x_tile_max_spanned_angle_in_radians) /
-					MAX_ANGLE_IN_DEGREES_BETWEEN_VERTICES;
-	const GPlatesMaths::real_t y_num_quads_based_on_distance_real =
-			GPlatesMaths::convert_rad_to_deg(y_tile_max_spanned_angle_in_radians) /
-					MAX_ANGLE_IN_DEGREES_BETWEEN_VERTICES;
-#endif
-	// Determine the number of quads along each tile edge based on the texel resolution.
-	const unsigned int x_num_quads_based_on_texels = num_u_texels / NUM_TEXELS_PER_VERTEX;
-	const unsigned int y_num_quads_based_on_texels = num_v_texels / NUM_TEXELS_PER_VERTEX;
-
-#if 1
-	unsigned int x_num_quads = x_num_quads_based_on_texels;
-	unsigned int y_num_quads = y_num_quads_based_on_texels;
-#else
-	// Rounded up to integer.
-	const unsigned int x_num_quads_based_on_distance =
-			static_cast<unsigned int>(x_num_quads_based_on_distance_real.dval() + 0.99);
-	const unsigned int y_num_quads_based_on_distance =
-			static_cast<unsigned int>(y_num_quads_based_on_distance_real.dval() + 0.99);
-
-	unsigned int x_num_quads = (std::max)(x_num_quads_based_on_distance, x_num_quads_based_on_texels);
-	unsigned int y_num_quads = (std::max)(y_num_quads_based_on_distance, y_num_quads_based_on_texels);
-#endif
-
-	// Make sure non-zero.
-	if (x_num_quads == 0)
-	{
-		x_num_quads = 1;
-	}
-	if (y_num_quads == 0)
-	{
-		y_num_quads = 1;
-	}
-
-	// The number of vertices each edge is the number of quads along each edge "+1".
-	//
-	// -------
-	// | | | |
-	// -------
-	// | | | |
-	// -------
-	// | | | |
-	// -------
-	//
-	// ...the above shows 3x3=9 quads but there's 4x4=16 vertices.
-	//
-	const unsigned int x_num_vertices = x_num_quads + 1;
-	const unsigned int y_num_vertices = y_num_quads + 1;
-
-	//std::cout << "Num vertices: " << x_num_vertices << ", " << y_num_vertices << std::endl;
-
-	return std::make_pair(x_num_vertices, y_num_vertices);
 }
 
 
