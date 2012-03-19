@@ -33,6 +33,8 @@
 #include <limits>
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <boost/operators.hpp>
+#include <QDebug>
+#include <QTextStream>
 
 #include "MathsUtils.h"
 
@@ -54,11 +56,13 @@ namespace GPlatesMaths
 	 * provided by the standard floating-point types.
 	 */
 	class Real :
-			public boost::less_than_comparable<Real>,
-			public boost::equivalent<Real>,
-			public boost::equality_comparable<Real>,
-			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
-			public GPlatesUtils::QtStreamable<Real>
+			// NOTE: Base class chaining is used to avoid bloating sizeof(Real) due to multiple
+			// inheritance from several empty base classes - this reduces sizeof(Real) from 16 to 8...
+			public boost::less_than_comparable<Real,
+					boost::equivalent<Real,
+					boost::equality_comparable<Real> > >
+			// NOTE: For same reason we are *not* inheriting from 'GPlatesUtils::QtStreamable<Real>'
+			// and instead explicitly providing 'operator <<' overloads as non-member functions.
 	{
 	public:
 
@@ -166,6 +170,30 @@ namespace GPlatesMaths
 	operator>>(
 			std::istream &,
 			Real &r);
+
+
+	/**
+	 * Gives us:
+	 *    qDebug() << derived_object;
+	 *    qWarning() << derived_object;
+	 *    qCritical() << derived_object;
+	 *    qFatal() << derived_object;
+	 */
+	QDebug
+	operator <<(
+			QDebug dbg,
+			const Real &r);
+
+
+	/**
+	 * Gives us:
+	 *    QTextStream text_stream(device);
+	 *    text_stream << derived_object;
+	 */
+	QTextStream &
+	operator <<(
+			QTextStream &stream,
+			const Real &r);
 
 
 	/**

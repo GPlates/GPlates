@@ -42,7 +42,7 @@ namespace GPlatesPropertyValues
 
 	class GpmlKeyValueDictionaryElement :
 			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
-			public GPlatesUtils::QtStreamable<GeoTimeInstant>
+			public GPlatesUtils::QtStreamable<GpmlKeyValueDictionaryElement>
 	{
 
 	public:

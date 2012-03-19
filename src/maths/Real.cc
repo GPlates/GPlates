@@ -27,6 +27,7 @@
 
 #include <sstream>
 #include <iostream>
+#include <QString>
 
 #include "Real.h"
 
@@ -285,3 +286,30 @@ GPlatesMaths::operator>>(std::istream &is, Real &r)
 	return is;
 }
 
+
+QDebug
+GPlatesMaths::operator <<(
+		QDebug dbg,
+		const Real &r)
+{
+	std::ostringstream output_string_stream;
+	output_string_stream << r;
+
+	dbg.nospace() << QString::fromStdString(output_string_stream.str());
+
+	return dbg.space();
+}
+
+
+QTextStream &
+GPlatesMaths::operator <<(
+		QTextStream &stream,
+		const Real &r)
+{
+	std::ostringstream output_string_stream;
+	output_string_stream << r;
+
+	stream << QString::fromStdString(output_string_stream.str());
+
+	return stream;
+}
