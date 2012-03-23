@@ -61,7 +61,7 @@ namespace GPlatesCli
 		std::string
 		get_command_description() const
 		{
-			return "assigns plate ids to regular features using topological closed plate boundaries";
+			return "assign plate ids to regular features using dynamic or static polygons";
 		}
 
 
@@ -77,7 +77,7 @@ namespace GPlatesCli
 
 		//! Interprets the parsed command-line and config file options stored in @a vm and runs this command.
 		virtual
-		int
+		void
 		run(
 				const boost::program_options::variables_map &vm);
 

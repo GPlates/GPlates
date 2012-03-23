@@ -126,6 +126,8 @@ namespace
 			// Only do this if we're in the Qt event thread otherwise
 			// it seems to crash (if an exception is thrown in 'main()' before
 			// QApplication::exec() is called).
+			// This also applies when GPlates is used for command-line processing
+			// (ie, when it's not used as a GUI).
 			QMessageBox::critical(NULL,
 					QObject::tr("Error: unhandled GPlates exception"),
 					error_message,
@@ -150,6 +152,7 @@ namespace
 
 		// If we have an installed message handler then this will output to a log file.
 		// This is where the core dump or debugger trigger happens on debug builds.
+		// On release builds this exits the application with a return value of 1.
 		qFatal("Exiting due to exception caught");
 
 		// Shouldn't get past qFatal - this just keeps compiler happy.

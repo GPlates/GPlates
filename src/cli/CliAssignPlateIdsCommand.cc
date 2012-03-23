@@ -49,10 +49,10 @@
 
 namespace
 {
-	//! Option name for topological close plate boundary feature collection file(s).
-	const char *TOPOLOGICAL_BOUNDARY_FILES_OPTION_NAME = "load-topological-boundaries";
-	//! Option name with short version for topological close plate boundary file(s).
-	const char *TOPOLOGICAL_BOUNDARY_FILES_OPTION_NAME_WITH_SHORT_OPTION = "load-topological-boundaries,p";
+	//! Option name for partitioning feature collection file(s).
+	const char *PARTITIONING_FILES_OPTION_NAME = "load-partitioning-features";
+	//! Option name with short version for partitioning file(s).
+	const char *PARTITIONING_FILES_OPTION_NAME_WITH_SHORT_OPTION = "load-partitioning-features,p";
 
 	//! Option name for feature collection file(s) having plate ids (re)assigned.
 	const char *ASSIGN_PLATE_ID_FILES_OPTION_NAME = "load-assign-plate-id-files";
@@ -165,11 +165,11 @@ GPlatesCli::AssignPlateIdsCommand::add_options(
 {
 	config_options.add_options()
 		(
-			TOPOLOGICAL_BOUNDARY_FILES_OPTION_NAME_WITH_SHORT_OPTION,
+			PARTITIONING_FILES_OPTION_NAME_WITH_SHORT_OPTION,
 			// std::vector allows multiple load files and
 			// 'composing()' allows merging of command-line and config files.
 			boost::program_options::value< std::vector<std::string> >()->composing(),
-			"load topological boundaries feature collection file (multiple options allowed)"
+			"load partitioning feature collection file - dynamic or static polygons (multiple options allowed)"
 		)
 		(
 			ASSIGN_PLATE_ID_FILES_OPTION_NAME_WITH_SHORT_OPTION,
@@ -254,7 +254,7 @@ GPlatesCli::AssignPlateIdsCommand::add_options(
 }
 
 
-int
+void
 GPlatesCli::AssignPlateIdsCommand::run(
 		const boost::program_options::variables_map &vm)
 {
@@ -264,9 +264,11 @@ GPlatesCli::AssignPlateIdsCommand::run(
 	// Load the feature collection files
 	//
 
-	// The topological closed plate boundary features and the boundary features they reference.
-	FeatureCollectionFileIO::feature_collection_file_seq_type topological_boundary_files =
-			file_io.load_files(TOPOLOGICAL_BOUNDARY_FILES_OPTION_NAME);
+	// The partitioning features. Either:
+	//   * topological closed plate boundary features and the boundary features they reference, or
+	//   * static polygon features.
+	FeatureCollectionFileIO::feature_collection_file_seq_type partitioning_files =
+			file_io.load_files(PARTITIONING_FILES_OPTION_NAME);
 	// The features that will have their plate ids (re)assigned.
 	FeatureCollectionFileIO::feature_collection_file_seq_type assign_plate_ids_files =
 			file_io.load_files(ASSIGN_PLATE_ID_FILES_OPTION_NAME);
@@ -292,11 +294,11 @@ GPlatesCli::AssignPlateIdsCommand::run(
 
 	// Extract the feature collections from the owning files.
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
-			topological_boundary_feature_collections,
+			partitioning_feature_collections,
 			assign_plate_ids_feature_collections,
 			reconstruction_feature_collections;
 	FeatureCollectionFileIO::extract_feature_collections(
-			topological_boundary_feature_collections, topological_boundary_files);
+			partitioning_feature_collections, partitioning_files);
 	FeatureCollectionFileIO::extract_feature_collections(
 			assign_plate_ids_feature_collections, assign_plate_ids_files);
 	FeatureCollectionFileIO::extract_feature_collections(
@@ -313,7 +315,7 @@ GPlatesCli::AssignPlateIdsCommand::run(
 	const GPlatesAppLogic::AssignPlateIds::non_null_ptr_type plate_id_assigner =
 			GPlatesAppLogic::AssignPlateIds::create(
 					assign_plate_ids_method,
-					topological_boundary_feature_collections,
+					partitioning_feature_collections,
 					reconstruction_feature_collections,
 					d_recon_time,
 					d_anchor_plate_id);
@@ -350,6 +352,4 @@ GPlatesCli::AssignPlateIdsCommand::run(
 		// Save the file with (re)assigned plate ids.
 		file_io.save_file(save_file_info, feature_collection);
 	}
-
-	return 0;
 }

@@ -41,6 +41,8 @@
 #include "file-io/FileInfo.h"
 #include "file-io/ReadErrorAccumulation.h"
 
+#include "global/LogException.h"
+
 #include "maths/LatLonPoint.h"
 
 #include "model/Model.h"
@@ -123,7 +125,7 @@ GPlatesCli::RelativeTotalRotationCommand::add_options(
 }
 
 
-int
+void
 GPlatesCli::RelativeTotalRotationCommand::run(
 		const boost::program_options::variables_map &vm)
 {
@@ -172,7 +174,9 @@ GPlatesCli::RelativeTotalRotationCommand::run(
 	if (!reconstruction_tree_edge)
 	{
 		// Return failure if fixed/moving plate pair was not found in the reconstruction tree.
-		return 1;
+		throw GPlatesGlobal::LogException(
+				GPLATES_EXCEPTION_SOURCE,
+				"Unable to find fixed/moving plate pair.");
 	}
 
 	// Get the relative rotation.
@@ -197,6 +201,4 @@ GPlatesCli::RelativeTotalRotationCommand::run(
 				<< GPlatesMaths::convert_rad_to_deg(finite_rotation_params.angle).dval()
 				<< ")" << std::endl;
 	}
-
-	return 0;
 }

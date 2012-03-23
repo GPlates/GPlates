@@ -109,10 +109,10 @@ namespace GPlatesCli
 		 * Precondition: check that @a command_name is a recognised command with
 		 * @a is_recognised_command.
 		 *
-		 * Returns 0 on success otherwise non-zero.
+		 * Throws exception on failure.
 		 * @throws PreconditionViolationError if @a command_name is not a recognised command.
 		 */
-		int
+		void
 		run(
 				const std::string &command_name,
 				const boost::program_options::variables_map &vm);

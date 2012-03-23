@@ -111,7 +111,7 @@ GPlatesCli::ConvertFileFormatCommand::add_options(
 }
 
 
-int
+void
 GPlatesCli::ConvertFileFormatCommand::run(
 		const boost::program_options::variables_map &vm)
 {
@@ -149,6 +149,4 @@ GPlatesCli::ConvertFileFormatCommand::run(
 		// Save the file with (re)assigned plate ids.
 		file_io.save_file(save_file_info, feature_collection);
 	}
-
-	return 0;
 }

@@ -58,9 +58,6 @@ endif (Boost_UNIT_TEST_FRAMEWORK_FOUND)
 
 find_package("GMP")
 
-# Add a target to build the command-line version of GPlates.
-set(ADD_GPLATES_CLI_TARGET TRUE)
-
 # Mac OS 10.4 produced alot of "error: template with C linkage" errors when using -isystem for 'src/system-fixes' directory.
 # Mac OS 10.5 was fine though - could just be the g++ compiler version (was 4.0.0 on OS 10.4 and 4.0.1 on OS 10.5).
 # Just disable on all Macs for now.
@@ -156,11 +153,6 @@ set(GPlates_SRCS
 set(GPlates_no_gui_SRCS
 	gplates_demo_no_gui_main.cc)
 
-if (ADD_GPLATES_CLI_TARGET)
-	set(GPlates_cli_SRCS
-		gplates_cli_main.cc)
-endif (ADD_GPLATES_CLI_TARGET)
-
 if (ADD_UNIT_TEST_TARGET)
     set(GPlates_unit_test_SRCS
 	    gplates_unit_test_main.cc)
@@ -171,9 +163,8 @@ endif (ADD_UNIT_TEST_TARGET)
 # feature-visitors.  (This stops weird "undefined reference to 
 # vtable for blah" error messages occurring.)
 #
-# NOTE: 'opengl' is an app library since it can be used to reconstruct
-# floating-point rasters using an off-screen context (can be used by
-# command-line version of GPlates to export reconstructed rasters for example).
+# NOTE: 'opengl' is an app library since it can be used to reconstruct floating-point
+# rasters using an off-screen context (which is an application logic level operation).
 set(gui_LIBS
 	qt-widgets qt-resources)
 set(presentation_LIBS
@@ -183,10 +174,8 @@ set(app_LIBS
 set(util_LIBS
 	maths utils global)
 
-if (ADD_GPLATES_CLI_TARGET)
-	set(cli_LIBS
-		cli)
-endif (ADD_GPLATES_CLI_TARGET)
+set(cli_LIBS
+	cli)
 
 if (ADD_UNIT_TEST_TARGET)
 set(unit_test_LIBS
@@ -194,27 +183,9 @@ set(unit_test_LIBS
 endif (ADD_UNIT_TEST_TARGET)
 
 # Libraries used by the GUI version of GPlates.
+# NOTE: The command-line version of GPlates is no longer a separate executable to the GUI version of GPlates.
 set(GPlates_LIBS
-	${gui_LIBS} ${presentation_LIBS} ${app_LIBS} ${util_LIBS})
-
-# Libraries used by the command-line (cli) version of GPlates.
-# Note that the gui and presentation libraries are not present -
-# if you get compile/linker errors then it could be that you are
-# referencing these libraries - if that is the case then either
-# you can question whether you should be referencing them or
-# the code you are referencing needs to be refactored such that
-# the functionality that you need to reference is moved out of
-# those libraries and into the app logic, for example.
-if (ADD_GPLATES_CLI_TARGET)
-	set(GPlates_cli_LIBS
-		${cli_LIBS} ${app_LIBS} ${util_LIBS})
-    # Adding 'gui' lib because some useful functionality
-    # (such as colour conversion used by file-io) is in the 'gui' lib.
-    # TODO: Need to do something to avoid including Qt gui libraries when
-    # they're not used.
-	set(GPlates_cli_LIBS
-		${GPlates_cli_LIBS} ${presentation_LIBS})
-endif (ADD_GPLATES_CLI_TARGET)
+	${cli_LIBS} ${gui_LIBS} ${presentation_LIBS} ${app_LIBS} ${util_LIBS})
 
 # Libraries used by the GPlates unit test application.
 # This currently includes all GPlates internal libraries
@@ -323,7 +294,7 @@ file(WRITE ${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH} "")
 # The 'qt-widgets' target generates header files so it should get built before anything that depends on it.
 #
 # NOTE: there's a bug in CMake 2.4.6 in 'add_dependencies'. 
-#   It seems that subdirs are built in order in they  are listed provided you don't run a parallel build (eg, 'make -j').
+#   It seems that subdirs are built in the order they are listed provided you don't run a parallel build (eg, 'make -j').
 if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.4.6")
     add_dependencies(canvas-tools qt-widgets)
     add_dependencies(view-operations qt-widgets)
@@ -347,9 +318,6 @@ endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" ST
 # - groups files in Visual Studio IDE according to type.
 GPLATES_GENERATE_TARGET_SOURCES(gplates target_GPlates_SRCS ${GPlates_SRCS})
 GPLATES_GENERATE_TARGET_SOURCES(gplates-no-gui target_GPlates_no_gui_SRCS ${GPlates_no_gui_SRCS})
-if (ADD_GPLATES_CLI_TARGET)
-	GPLATES_GENERATE_TARGET_SOURCES(gplates-cli target_GPlates_cli_SRCS ${GPlates_cli_SRCS})
-endif (ADD_GPLATES_CLI_TARGET)
 
 if (ADD_UNIT_TEST_TARGET)
 	GPLATES_GENERATE_TARGET_SOURCES(gplates-unit-test target_GPlates_unit_test_SRCS ${GPlates_unit_test_SRCS})
@@ -386,14 +354,6 @@ GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates TRUE)
 # it is not built by default.
 add_executable(gplates-no-gui EXCLUDE_FROM_ALL ${target_GPlates_no_gui_SRCS})
 GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-no-gui FALSE)
-
-if (ADD_GPLATES_CLI_TARGET)
-    message(STATUS "Adding executable for GPlates command line application.")
-	add_executable(gplates-cli EXCLUDE_FROM_ALL
-		${target_GPlates_cli_SRCS}
-		${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH})
-	GPLATES_FIX_MACOS_LIBRARY_PATHS_IN_EXECUTABLE_TARGET(gplates-cli FALSE)
-endif (ADD_GPLATES_CLI_TARGET)
 
 if (ADD_UNIT_TEST_TARGET)
     message(STATUS "Adding executable for GPlates unit test application.")
@@ -479,20 +439,16 @@ endif (NOT WIN32)
 # this extra resolution behaviour.
 if (NOT WIN32 AND NOT APPLE)
 	set(GPlates_LINK_CMD -Xlinker --start-group ${GPlates_LIBS} -Xlinker --end-group)
-	set(GPlates_cli_LINK_CMD -Xlinker --start-group ${GPlates_cli_LIBS} -Xlinker --end-group)
 	set(GPlates_unit_test_LINK_CMD -Xlinker --start-group ${GPlates_unit_test_LIBS} -Xlinker --end-group)
 else (NOT WIN32 AND NOT APPLE)
 	set(GPlates_LINK_CMD ${GPlates_LIBS})	
-	set(GPlates_cli_LINK_CMD ${GPlates_cli_LIBS})
 	set(GPlates_unit_test_LINK_CMD ${GPlates_unit_test_LIBS})
 endif (NOT WIN32 AND NOT APPLE)
 
 # Actual link dependencies get assembled here.
+# NOTE: The command-line version of GPlates is no longer a separate executable to the GUI version of GPlates.
 target_link_libraries(gplates ${GPlates_LINK_CMD} ${dependency_LIBS})
 target_link_libraries(gplates-no-gui ${GPlates_LINK_CMD} ${dependency_LIBS})
-if (ADD_GPLATES_CLI_TARGET)
-	target_link_libraries(gplates-cli ${GPlates_cli_LINK_CMD} ${dependency_LIBS})
-endif (ADD_GPLATES_CLI_TARGET)
 if (ADD_UNIT_TEST_TARGET)
 	target_link_libraries(gplates-unit-test ${GPlates_unit_test_LINK_CMD} ${dependency_LIBS})
 endif (ADD_UNIT_TEST_TARGET)
@@ -522,9 +478,6 @@ include_directories(${internal_INCLUDE_DIRS})
 # require access to directory and target properties (eg, include directories).
 GPLATES_POST_ADD_TARGET(gplates target_GPlates_SRCS)
 GPLATES_POST_ADD_TARGET(gplates-no-gui target_GPlates_no_gui_SRCS)
-if (ADD_GPLATES_CLI_TARGET)
-	GPLATES_POST_ADD_TARGET(gplates-cli target_GPlates_cli_SRCS)
-endif (ADD_GPLATES_CLI_TARGET)
 
 if (ADD_UNIT_TEST_TARGET)
 	GPLATES_POST_ADD_TARGET(gplates-unit-test target_GPlates_unit_test_SRCS)
@@ -558,12 +511,12 @@ endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" STRGREATER "2.5")
 
 # We have a nasty case of a variable shadow warning in the boost program_options library.
 # Since it's a system header it should not emit a warning but it does on g++ 4.1.2 and g++ 4.1.3 
-# only ones tested so far). Luckily this library is only used by gplates_cli_main.cc and so we can
-# use the nasty hack of turning off shadow warnings just for this source file.
+# only ones tested so far).
+# We use the nasty hack of turning off shadow warnings for the source files involved.
 # 'COMPILE_FLAGS' just adds to the default compiler flags.
 # TODO: find a better way of doing this sort of thing.
 if (CMAKE_COMPILER_IS_GNUCXX)
-	set_source_files_properties(gplates_cli_main.cc PROPERTIES COMPILE_FLAGS "-Wno-shadow")
+	set_source_files_properties(gplates_main.cc gplates_cli.cc gplates_unit_test_main.cc PROPERTIES COMPILE_FLAGS "-Wno-shadow")
 endif (CMAKE_COMPILER_IS_GNUCXX)
 
 # Test whether Python embedding works.

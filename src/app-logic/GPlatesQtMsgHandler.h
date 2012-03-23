@@ -102,14 +102,6 @@ namespace GPlatesAppLogic
 				boost::shared_ptr<MessageHandler> handler);
 
 
-		/**
-		 * This delegates the message to our various MessageHandler derivations.
-		 */
-		void
-		handle_qt_message(
-				QtMsgType msg_type,
-				const char *msg);
-
 
 	private:
 		//
@@ -132,6 +124,14 @@ namespace GPlatesAppLogic
 		//
 		// Instance methods
 		//
+
+		/**
+		 * This delegates the message to our various MessageHandler derivations.
+		 */
+		void
+		handle_qt_message(
+				QtMsgType msg_type,
+				const char *msg);
 
 		/**
 		 * Returns true if should install message handler.

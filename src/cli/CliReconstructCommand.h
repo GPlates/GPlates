@@ -61,7 +61,7 @@ namespace GPlatesCli
 		std::string
 		get_command_description() const
 		{
-			return "reconstructs loaded feature collections";
+			return "reconstruct loaded feature collections to a paleo time";
 		}
 
 
@@ -77,7 +77,7 @@ namespace GPlatesCli
 
 		//! Interprets the parsed command-line and config file options stored in @a vm and runs this command.
 		virtual
-		int
+		void
 		run(
 				const boost::program_options::variables_map &vm);
 

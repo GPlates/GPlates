@@ -173,7 +173,7 @@ GPlatesCli::ReconstructCommand::add_options(
 }
 
 
-int
+void
 GPlatesCli::ReconstructCommand::run(
 		const boost::program_options::variables_map &vm)
 {
@@ -183,7 +183,7 @@ GPlatesCli::ReconstructCommand::run(
 	// Load the feature collection files
 	//
 
-	qDebug() << "Single: " << d_export_single_output_file;
+	//qDebug() << "Single: " << d_export_single_output_file;
 
 	FeatureCollectionFileIO::feature_collection_file_seq_type reconstructable_files =
 			file_io.load_files(LOAD_RECONSTRUCTABLE_OPTION_NAME);
@@ -203,8 +203,7 @@ GPlatesCli::ReconstructCommand::run(
 	const std::string export_file_type = get_export_file_type(vm);
 
 	//
-	// Currently we just reconstruct feature collections
-	// and export reconstructed geometries to GMT format.
+	// Reconstruct feature collections and export reconstructed geometries.
 	//
 
 	// Perform reconstruction.
@@ -253,6 +252,4 @@ GPlatesCli::ReconstructCommand::run(
 				d_recon_time,
 				d_export_single_output_file/*export_single_output_file*/,
 				!d_export_single_output_file/*export_per_input_file*/);
-
-	return 0;
 }

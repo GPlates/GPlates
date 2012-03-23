@@ -32,6 +32,7 @@
 #include <utility>
 #include <algorithm>
 #include <vector>
+#include <QDebug>
 #include <QStringList>
 #include <QTextStream>
 
@@ -41,7 +42,10 @@
 #include "api/PythonInterpreterLocker.h"
 #include "api/Sleeper.h"
 
+#include "cli/CliCommandDispatcher.h"
+
 #include "global/Constants.h"
+#include "global/NotYetImplementedException.h"
 #include "global/python.h"
 
 #include "gui/DrawStyleManager.h"
@@ -63,87 +67,199 @@
 namespace
 {
 	/**
-	 * The results of parsing the command-line options.
+	 * Option name to print usage of a specific GPlates command (non-GUI).
 	 */
-	class CommandLineOptions
+	const char *HELP_COMMAND_OPTION_NAME = "help-command";
+
+	/**
+	 * The option name used to extract the first positional command-line argument which
+	 * is the GPlates command that the user wishes to execute (for non-GUI GPlates).
+	 * Each command has its own set of options.
+	 * This allows the user to select different functionality using a single
+	 * command-line GPlates executable.
+	 */
+	const char *COMMAND_OPTION_NAME = "command";
+
+
+	/**
+	 * The results of parsing the GUI command-line options.
+	 *
+	 * Any command-line options specific to a particular non-GUI command are handled by
+	 * GPlatesCli::CommandDispatcher (when GPlates is *not* used as the familiar GUI application).
+	 */
+	class GuiCommandLineOptions
 	{
 	public:
-		CommandLineOptions() :
+		GuiCommandLineOptions() :
 			debug_gui(false),
-			enable_external_syncing(false)
-		{ }
+			enable_python(true), // Enabled by default.
+			enable_external_syncing(false),
+			enable_data_mining(false),
+			enable_symbol_table(false)
+		{
+#if defined(GPLATES_NO_PYTHON)
+			enable_python = false;
+#endif
+		}
 
-		QStringList line_format_filenames;
-		QStringList rotation_format_filenames;
+		QStringList feature_collection_filenames;
 		bool debug_gui;
+		bool enable_python;
 		bool enable_external_syncing;
+		bool enable_data_mining;
+		bool enable_symbol_table;
 	};
 	
-	const char *ROTATION_FILE_OPTION_NAME_WITH_SHORT_OPTION = "rotation-file,r";
-	const char *LINE_FILE_OPTION_NAME_WITH_SHORT_OPTION = "line-file,l";
+	//! Option name for loading feature collection file(s).
+	const char *FEATURE_COLLECTION_FILENAMES_OPTION_NAME = "file";
+	//! Option name for loading feature collection file(s) with short version.
+	const char *FEATURE_COLLECTION_FILENAMES_OPTION_NAME_WITH_SHORT_OPTION = "file,f";
 
-	const char *ROTATION_FILE_OPTION_NAME = "rotation-file";
-	const char *LINE_FILE_OPTION_NAME = "line-file";
+	//! Enable the debug GUI menu.
 	const char *DEBUG_GUI_OPTION_NAME = "debug-gui";
-	//enable data-mining feature by secret command line option.
+
+	//! Enable data-mining feature by secret command line option.
 	const char *DATA_MINING_OPTION_NAME = "data-mining";
-	//enable symbol-table feature by secret command line option.
+
+	//! Enable symbol-table feature by secret command line option.
 	const char *SYMBOL_TABLE_OPTION_NAME = "symbol-table";
-	//enable python by secret command line option.
+
+	//! Enable python by secret command line option.
 	const char *NO_PYTHON_OPTION_NAME = "no-python";
-	// Enable communication with external programs
+
+	//! Enable communication with external programs
 	const char *ENABLE_EXTERNAL_SYNCING_OPTION_NAME = "enable-external-syncing";
 
+
+	/**
+	 * Prints program usage to @a os.
+	 */
 	void
 	print_usage(
 			std::ostream &os,
 			const GPlatesUtils::CommandLineParser::InputOptions &input_options)
 	{
+		typedef std::vector<GPlatesCli::CommandDispatcher::command_name_and_description_type>
+				command_name_and_desc_seq_type;
 
-		// Print the visible options.
-		os
-			<< GPlatesUtils::CommandLineParser::get_visible_options(input_options)
-			<< std::endl;
+		// Get the list of commands.
+		GPlatesCli::CommandDispatcher command_dispatcher;
+		const command_name_and_desc_seq_type command_names_and_descriptions =
+				command_dispatcher.get_command_names_and_descriptions();
 
-		// Let the user know that the line format filenames are positional arguments
-		// and hence the '-l' is optional for them.
+		// Print an basic introduction about how to use the command-line interface.
 		os
-			<< "NOTE: The line files do not need to be prefixed with '"
-			<< LINE_FILE_OPTION_NAME_WITH_SHORT_OPTION
-			<< "'"
-		   	<< std::endl;
+				<< std::endl
+				<< "Using GPlates to process a command (no graphical user interface):"
+				<< std::endl
+				<< "----------------------------------------------------------------"
+				<< std::endl
+				<< std::endl
+				<< "gplates [<command> <command options ...>]"
+				<< std::endl
+				<< "            where <command> includes:"
+				<< std::endl
+				<< std::endl;
+
+		// Print the list of commands.
+		command_name_and_desc_seq_type::const_iterator iter = command_names_and_descriptions.begin();
+		command_name_and_desc_seq_type::const_iterator end = command_names_and_descriptions.end();
+		for ( ; iter != end; ++iter)
+		{
+			const std::string &command_name = iter->first;
+			const std::string &command_desc = iter->second;
+			os << command_name.c_str() << " - " << command_desc.c_str() << std::endl;
+		}
+
+		os
+				<< std::endl
+				<< "Use --help-command <command> to see the command-specific options."
+				<< std::endl;
+
+		// Print the GUI (visible) options.
+		os
+				<< std::endl
+				<< std::endl
+				<< "Starting the GPlates graphical user interface application:"
+				<< std::endl
+				<< "---------------------------------------------------------"
+				<< std::endl
+				<< std::endl
+				<< GPlatesUtils::CommandLineParser::get_visible_options(input_options)
+				<< std::endl;
 	}
 
+	/**
+	 * Adds the help command option (non-GUI).
+	 */
 	void
-	print_usage_and_exit(
-			std::ostream &os,
-			const GPlatesUtils::CommandLineParser::InputOptions &input_options)
+	add_help_command_option(
+			GPlatesUtils::CommandLineParser::InputOptions &input_options)
 	{
-
-		print_usage(os, input_options);
-		exit(1);
+		input_options.generic_options.add_options()
+			(HELP_COMMAND_OPTION_NAME,
+			boost::program_options::value<std::string>(),
+			"print options available for the specified command");
 	}
 
-	CommandLineOptions
-	process_command_line_options(
+	/**
+	 * Prints usage for to @a os.
+	 */
+	void
+	print_command_usage(
+			std::ostream &os,
+			const GPlatesUtils::CommandLineParser::InputOptions &input_options,
+			const std::string &command)
+	{
+		GPlatesCli::CommandDispatcher command_dispatcher;
+
+		// Add options for the command specified so that they become visible
+		// when we print out the usage for the command.
+		if (!command_dispatcher.is_recognised_command(command))
+		{
+			// The command was not a recognised command.
+			qWarning()
+					<< "Command-line argument '"
+					<< command.c_str()
+					<< "' is not a recognised command.";
+			exit(1);
+		}
+
+		// Get the command's options.
+		GPlatesUtils::CommandLineParser::InputOptions command_options;
+		command_dispatcher.add_options_for_command(
+				command,
+				command_options.generic_options,
+				command_options.config_options,
+				command_options.hidden_options,
+				command_options.positional_options);
+
+		// Just print the options belonging to the command and nothing else.
+		std::cout << GPlatesUtils::CommandLineParser::get_visible_options(command_options) << std::endl;
+	}
+
+	GuiCommandLineOptions
+	parse_gui_command_line_options(
 			int argc, 
 			char *argv[])
 	{
 		GPlatesUtils::CommandLineParser::InputOptions input_options;
-		
+
 		// Add simple help, version, etc.
 		input_options.add_simple_options();
-		
+
 		// Add generic, visible options more specific to GPlates use.
 		input_options.generic_options.add_options()
-			(ROTATION_FILE_OPTION_NAME_WITH_SHORT_OPTION, boost::program_options::value< std::vector<std::string> >(),
-			"specify rotation files")
-			(LINE_FILE_OPTION_NAME_WITH_SHORT_OPTION, boost::program_options::value< std::vector<std::string> >(),
-			"specify line files")
+			(FEATURE_COLLECTION_FILENAMES_OPTION_NAME_WITH_SHORT_OPTION,
+			boost::program_options::value< std::vector<std::string> >(),
+			"specify files to load (rotation/geometry/topology/etc)")
 			;
-		
-		input_options.positional_options.add(LINE_FILE_OPTION_NAME, -1);
-		
+
+		// NOTE: There are no positional options since GPlates can now be used as a non-GUI
+		// command-line processor that accepts a (processor) command as the first positional argument.
+		//
+		//input_options.positional_options.add(FEATURE_COLLECTION_FILENAMES_OPTION_NAME, -1);
+
 		// Add secret developer options.
 		input_options.hidden_options.add_options()
 			(DEBUG_GUI_OPTION_NAME, "Enable GUI debugging menu")
@@ -169,47 +285,54 @@ namespace
 
 		try
 		{
-			parse_command_line_options(
+			GPlatesUtils::CommandLineParser::parse_command_line_options(
 				vm, argc, argv, input_options);
 		}
-		catch(std::exception& exc)
+		catch (std::exception &exc)
 		{
-			//TODO: process the exception instead of printing out error message
-			std::cout<<"Error processing command-line: "<<exc.what()<<std::endl;
+			qWarning() << "Error parsing command-line arguments: " << exc.what();
+			exit(1);
 		}
-
-		if (GPlatesUtils::CommandLineParser::is_help_requested(vm))
-		{	
-			print_usage_and_exit(std::cout, input_options);
+		catch(...)
+		{
+			qWarning() << "Error parsing command-line arguments: Unknown error";
+			exit(1);
 		}
 
 		// Print GPlates version if requested.
 		if (GPlatesUtils::CommandLineParser::is_version_requested(vm))
 		{
 			std::cout << GPlatesGlobal::VersionString << std::endl;
-			exit(1);
+			exit(0);
+		}
+
+		// Print GPlates program usage if requested.
+		if (GPlatesUtils::CommandLineParser::is_help_requested(vm))
+		{	
+			print_usage(std::cout, input_options);
+			exit(0);
+		}
+
+		// Print the usage for a specific command (non-GUI).
+		// Add the help for the non-GUI commands even though it's not related to GUI command-line
+		// options - this is because the help printout should still mention it.
+		if (vm.count(HELP_COMMAND_OPTION_NAME))
+		{
+			const std::string command = vm[HELP_COMMAND_OPTION_NAME].as<std::string>();
+			print_command_usage(std::cout, input_options, command);
+			exit(0);
 		}
 
 		// Create our return structure.
-		CommandLineOptions command_line_options;
+		GuiCommandLineOptions command_line_options;
 
-		if(vm.count(ROTATION_FILE_OPTION_NAME))
+		if(vm.count(FEATURE_COLLECTION_FILENAMES_OPTION_NAME))
 		{
-			std::vector<std::string> rotation_files =
-				vm[ROTATION_FILE_OPTION_NAME].as<std::vector<std::string> >();
-			for(unsigned int i=0; i<rotation_files.size(); i++)
+			std::vector<std::string> files =
+					vm[FEATURE_COLLECTION_FILENAMES_OPTION_NAME].as<std::vector<std::string> >();
+			for (unsigned int i=0; i<files.size(); i++)
 			{
-				command_line_options.rotation_format_filenames.push_back(rotation_files[i].c_str());
-			}
-
-		}
-		if(vm.count(LINE_FILE_OPTION_NAME))
-		{
-			std::vector<std::string> line_files =
-				vm[LINE_FILE_OPTION_NAME].as<std::vector<std::string> >();
-			for(unsigned int i=0; i<line_files.size(); i++)
-			{
-				command_line_options.line_format_filenames.push_back(line_files[i].c_str());
+				command_line_options.feature_collection_filenames.push_back(files[i].c_str());
 			}
 		}
 		if(vm.count(DEBUG_GUI_OPTION_NAME))
@@ -217,18 +340,15 @@ namespace
 			command_line_options.debug_gui = true;
 		}
 
-		using namespace GPlatesUtils;
 		if(vm.count(DATA_MINING_OPTION_NAME))
 		{
-			ComponentManager::instance().enable(
-				ComponentManager::Component::data_mining());
+			command_line_options.enable_data_mining = true;
 		}
 
 		//enable symbol-table feature by command line option.
 		if(vm.count(SYMBOL_TABLE_OPTION_NAME))
 		{
-			ComponentManager::instance().enable(
-				ComponentManager::Component::symbology());
+			command_line_options.enable_symbol_table = true;
 		}
 
 		if(vm.count(ENABLE_EXTERNAL_SYNCING_OPTION_NAME))
@@ -236,69 +356,197 @@ namespace
 			command_line_options.enable_external_syncing = true;
 		}
 
-
-		//enable python by command line option.
+		// Disable python if command line option specified.
+#if !defined(GPLATES_NO_PYTHON)
 		if(vm.count(NO_PYTHON_OPTION_NAME))
 		{
-			ComponentManager::instance().disable(
-				ComponentManager::Component::python());
+			command_line_options.enable_python = false;
 		}
-		#if defined(GPLATES_NO_PYTHON)
-		ComponentManager::instance().disable(
-				ComponentManager::Component::python());
-		#endif
+#endif
 
 		return command_line_options;
 	}
-}
 
-void
-clean_up()
-{
-	if(GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
+
+	/**
+	 * Parses command-line assuming first argument is a recognised command and executes command.
+	 */
+	void
+	parse_and_run_command(
+			const std::string &command,
+			GPlatesCli::CommandDispatcher &command_dispatcher,
+			int argc,
+			char* argv[])
 	{
-#if !defined(GPLATES_NO_PYTHON)
-		GPlatesApi::PythonInterpreterLocker lock;
-#endif
-		delete GPlatesGui::DrawStyleManager::instance(); //delete draw style manager singleton.
-		delete GPlatesPresentation::Application::instance(); //delete the application singleton.
-	}
-	delete GPlatesGui::PythonManager::instance();
-}
+		// Add some simple options.
+		GPlatesUtils::CommandLineParser::InputOptions input_options;
+		input_options.add_simple_options();
+		add_help_command_option(input_options);
 
-int internal_main(int argc, char* argv[])
-{
-	//on Ubuntu Natty, we need to set this env variable to avoid the funny looking of spherical grid.
-	#if defined(linux) || defined(__linux__) || defined(__linux)
+		// Since we have parsed a command we know that the user must specify a single
+		// positional option (ie, not a regular option like "--command <cmd>" or
+		// "-c <cmd>" but simply "<cmd>") to select which functionality they desire (and
+		// each command has its own group of options used to configure it - these get added later).
+		// This is really just letting the boost parser know that it should expect a
+		// positional argument so that it parses correctly (we won't retrieve the argument's
+		// value from the boost parsers though).
+		// NOTE: each positional option must have an associated normal option (that's just
+		// how boost positional options work) - it doesn't mean the user can use
+		// "--command <cmd>" though (they must still use "<cmd>").
+		input_options.positional_options.add(COMMAND_OPTION_NAME, 1);
+		input_options.hidden_options.add_options()(COMMAND_OPTION_NAME, "GPlates command");
+
+		//
+		// Get the GPlates command dispatcher to add its options depending on the GPlates command.
+		//
+		command_dispatcher.add_options_for_command(
+				command,
+				input_options.generic_options,
+				input_options.config_options,
+				input_options.hidden_options,
+				input_options.positional_options);
+
+		boost::program_options::variables_map vm;
+
+		try
+		{
+			// Parse the command-line options.
+			GPlatesUtils::CommandLineParser::parse_command_line_options(
+					vm, argc, argv, input_options);
+		}
+		catch (std::exception &exc)
+		{
+			qWarning() << "Error parsing command-line arguments: " << exc.what();
+			exit(1);
+		}
+		catch(...)
+		{
+			qWarning() << "Error parsing command-line arguments: Unknown error";
+			exit(1);
+		}
+
+		//
+		// Get the GPlates command dispatcher to look at the parsed options and run
+		// whatever tasks it decides to based on them.
+		//
+		command_dispatcher.run(command, vm);
+	}
+
+	/**
+	 * Classifies the type of the first command-line argument.
+	 */
+	enum FirstCommandLineArgumentType
 	{
-	    char v[]= "MESA_NO_SSE=1"; 
-	    putenv(v);
+		FIRST_ARG_IS_COMMAND,
+		FIRST_ARG_IS_UNRECOGNISED_COMMAND,
+		FIRST_ARG_IS_OPTION,
+		FIRST_ARG_IS_NONEXISTENT
+	};
+
+	/**
+	 * Parses the command-line to determine the command specified by the user but
+	 * doesn't parse any options specific to that command since we don't yet know the command.
+	 */
+	FirstCommandLineArgumentType
+	get_command(
+			std::string &command,
+			GPlatesCli::CommandDispatcher &command_dispatcher,
+			int argc,
+			char* argv[])
+	{
+		if (argc < 2)
+		{
+			command.clear();
+			// Is there a command-line argument to test even ?
+			return FIRST_ARG_IS_NONEXISTENT;
+		}
+
+		const std::string first_arg = argv[1];
+		command = first_arg;
+
+		// See if the first command-line argument is a recognised command.
+		if (!command_dispatcher.is_recognised_command(first_arg))
+		{
+			// See if the first argument looks like an option.
+			if (!first_arg.empty() && first_arg[0] == '-')
+			{
+				// It looks like an option since it starts with the '-' character.
+				return FIRST_ARG_IS_OPTION;
+			}
+
+			// It doesn't look like an option so it's an unrecognised command.
+			return FIRST_ARG_IS_UNRECOGNISED_COMMAND;
+		}
+
+		return FIRST_ARG_IS_COMMAND;
 	}
-	#endif
-	// Sanity check: Proceed only if we have access to infinity and NaN.
-	// This should pass on all systems that we support.
-	GPlatesMaths::assert_has_infinity_and_nan();
 
-	// This will only install handler if any of the following conditions are satisfied:
-	//   1) GPLATES_PUBLIC_RELEASE is defined (automatically handled by CMake build system), or
-	//   2) GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment variable is set to case-insensitive
-	//      "true", "1", "yes" or "on".
-	// Note: Installing handler overrides default Qt message handler.
-	//       And does not log messages to the console.
-	GPlatesAppLogic::GPlatesQtMsgHandler::install_qt_message_handler();
+	/**
+	 * Parses command-line options and either:
+	 *  1) processes a non-GUI command (with its own options), or
+	 *  2) parses GUI command-line options.
+	 *
+	 * Returns boost::none for case (1) to indicate that the GUI version of GPlates should not
+	 * be started (because GPlates is being used only to process a command and then exit).
+	 */
+	boost::optional<GuiCommandLineOptions>
+	process_command_line_options(
+			int argc, 
+			char *argv[])
+	{
+		/*
+		 * This object handles all interpretation of command-line options for different
+		 * commands and executes a specified command.
+		 *
+		 * We create only one instance of this object because it creates all possible commands
+		 * in its constructor and we might as well only do that once.
+		 */
+		GPlatesCli::CommandDispatcher command_dispatcher;
 
-	// GPlatesQApplication is a QApplication that also handles uncaught exceptions
-	// in the Qt event thread.
-	GPlatesGui::GPlatesQApplication qapplication(argc, argv);
+		// Get the user-specified command (this is the first positional argument on the
+		// command-line).
+		std::string command;
+		const FirstCommandLineArgumentType first_arg_type =
+				get_command(command, command_dispatcher, argc, argv);
 
-	Q_INIT_RESOURCE(qt_widgets);
+		switch (first_arg_type)
+		{
+		case FIRST_ARG_IS_NONEXISTENT:
+		case FIRST_ARG_IS_OPTION:
+			// First command-line argument was not a recognised command and it didn't
+			// look like a command so parse the command-line to see if any
+			// GUI options (or simple options such as help and version) were specified.
+			//
+			// NOTE: This is the only case where GPlates runs as the familiar GUI application.
+			return parse_gui_command_line_options(argc, argv);
 
-	CommandLineOptions command_line_options = process_command_line_options(
-			qapplication.argc(), qapplication.argv());
+		case FIRST_ARG_IS_UNRECOGNISED_COMMAND:
+			// The first command-line argument was not a recognised command but it did
+			// look like a command (rather than an option).
+			qWarning()
+					<< "First command-line argument '"
+					<< command.c_str()
+					<< "' looks like a command but is not a recognised command.";
+			exit(1);
+			break; // ...in case compiler complains.
 
-	
-	if(GPlatesUtils::ComponentManager::instance().is_enabled(
-			GPlatesUtils::ComponentManager::Component::python()))
+		case FIRST_ARG_IS_COMMAND:
+			// Process the specified command.
+			parse_and_run_command(command, command_dispatcher, argc, argv);
+			// Notify the caller that the GPlates GUI should *not* be started since the user
+			// has requested GPlates process a command instead.
+			return boost::none;
+
+		default:
+			break;
+		}
+
+		// We only get here if the above switch statement doesn't catch all cases.
+		throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+	}
+
+	void
+	initialise_python()
 	{
 		GPlatesGui::PythonManager* mgr = GPlatesGui::PythonManager::instance();
 
@@ -332,26 +580,117 @@ int internal_main(int argc, char* argv[])
 #endif
 	}
 
+	void
+	clean_up()
+	{
+		if(GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
+		{
+	#if !defined(GPLATES_NO_PYTHON)
+			GPlatesApi::PythonInterpreterLocker lock;
+	#endif
+			delete GPlatesGui::DrawStyleManager::instance(); //delete draw style manager singleton.
+			delete GPlatesPresentation::Application::instance(); //delete the application singleton.
+		}
+		delete GPlatesGui::PythonManager::instance();
+	}
+}
+
+int
+internal_main(int argc, char* argv[])
+{
+	//on Ubuntu Natty, we need to set this env variable to avoid the funny looking of spherical grid.
+	#if defined(linux) || defined(__linux__) || defined(__linux)
+	{
+	    char v[]= "MESA_NO_SSE=1"; 
+	    putenv(v);
+	}
+	#endif
+	// Sanity check: Proceed only if we have access to infinity and NaN.
+	// This should pass on all systems that we support.
+	GPlatesMaths::assert_has_infinity_and_nan();
+
+	// Process the command-line options.
+	// NOTE: We do this before setting up anything GUI-related such as QApplication in case
+	// GPlates is being used *only* for command-line processing and then exiting.
+	// This is because GPlates now doubles as the familiar GPlates GUI application *and*
+	// what was previously a separate GPlates command-line application.
+	// GPlates can be used either way depending on the command-line options.
+	boost::optional<GuiCommandLineOptions> gui_command_line_options = process_command_line_options(argc, argv);
+	if (!gui_command_line_options)
+	{
+		// Note that a return value of zero (from 'main') means success.
+		// If there's an error then an exception would have been thrown and caught in 'main()' via
+		// 'GPlatesGui::GPlatesQApplication::call_main()' which logs the error and calls qFatal()
+		// which calls exit(1) where the '1' indicates error (since it's non-zero).
+		return 0;
+	}
+
+	// This will only install handler if any of the following conditions are satisfied:
+	//   1) GPLATES_PUBLIC_RELEASE is defined (automatically handled by CMake build system), or
+	//   2) GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment variable is set to case-insensitive
+	//      "true", "1", "yes" or "on".
+	// Note: Installing handler overrides default Qt message handler.
+	//       And does not log messages to the console.
+	GPlatesAppLogic::GPlatesQtMsgHandler::install_qt_message_handler();
+
+	// GPlatesQApplication is a QApplication that also handles uncaught exceptions in the Qt event thread.
+	GPlatesGui::GPlatesQApplication qapplication(argc, argv);
+
+	Q_INIT_RESOURCE(qt_widgets);
+
+	// Enable data mining if specified on the command-line.
+	if (gui_command_line_options->enable_data_mining)
+	{
+		GPlatesUtils::ComponentManager::instance().enable(
+				GPlatesUtils::ComponentManager::Component::data_mining());
+	}
+
+	// Enable temporary symbol table if specified on the command-line.
+	if (gui_command_line_options->enable_symbol_table)
+	{
+		GPlatesUtils::ComponentManager::instance().enable(
+				GPlatesUtils::ComponentManager::Component::symbology());
+	}
+
+	// Enable or disable python as specified on command-line (and whether GPLATES_NO_PYTHON defined).
+	if (gui_command_line_options->enable_python)
+	{
+		GPlatesUtils::ComponentManager::instance().enable(
+			GPlatesUtils::ComponentManager::Component::python());
+	}
+	else
+	{
+		GPlatesUtils::ComponentManager::instance().disable(
+			GPlatesUtils::ComponentManager::Component::python());
+	}
+
+	// Initialise python if it's enabled.
+	if(GPlatesUtils::ComponentManager::instance().is_enabled(
+			GPlatesUtils::ComponentManager::Component::python()))
+	{
+		initialise_python();
+	}
+
 	GPlatesPresentation::Application *app = GPlatesPresentation::Application::instance();
 	GPlatesQtWidgets::ViewportWindow &main_window_widget = app->get_viewport_window();
 	
 	// Set up the main window widget.
-	main_window_widget.load_files(
-			command_line_options.line_format_filenames +
-			command_line_options.rotation_format_filenames);
+	// Also load any feature collection files specified on the command-line.
+	main_window_widget.load_files(gui_command_line_options->feature_collection_filenames);
 
 	// Install an extra menu for developers to help debug GUI problems.
-	if (command_line_options.debug_gui)
+	if (gui_command_line_options->debug_gui)
 	{
 		main_window_widget.install_gui_debug_menu();
 	}
-	if (command_line_options.enable_external_syncing){
+	// Enable external program syncing with GPlates.
+	if (gui_command_line_options->enable_external_syncing)
+	{
 		main_window_widget.enable_external_syncing();
 	}
 
-// 	using namespace GPlatesGui;
-// 	using namespace GPlatesUtils;
-// 	if(!ComponentManager::instance().is_enabled(ComponentManager::Component::symbology()))
+// 	if (!GPlatesUtils::ComponentManager::instance().is_enabled(
+// 		GPlatesUtils::ComponentManager::Component::symbology()))
 // 	{
 // 		main_window_widget.hide_symbol_menu();
 // 	}
@@ -360,12 +699,14 @@ int internal_main(int argc, char* argv[])
 	int ret = qapplication.exec();
 
 	clean_up();
+
 	return ret;
 
 	// Note: Because we are using Boost.Python, Py_Finalize() should not be called.
 }
 
-int main(int argc, char* argv[])
+int
+main(int argc, char* argv[])
 {
 	// The first of two reasons to wrap 'main()' around 'internal_main()' is to
 	// handle any uncaught exceptions that occur in main() but outside the Qt event thread.
