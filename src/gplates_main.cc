@@ -245,15 +245,19 @@ namespace
 	{
 		GPlatesUtils::CommandLineParser::InputOptions input_options;
 
-		// Add simple help, version, etc.
-		input_options.add_simple_options();
-
 		// Add generic, visible options more specific to GPlates use.
 		input_options.generic_options.add_options()
 			(FEATURE_COLLECTION_FILENAMES_OPTION_NAME_WITH_SHORT_OPTION,
 			boost::program_options::value< std::vector<std::string> >(),
 			"specify files to load (rotation/geometry/topology/etc)")
 			;
+
+		// Add simple help, version, etc.
+		input_options.add_simple_options();
+
+		// Add the help command option even though it's not a GUI option because all non-command
+		// options go through here.
+		add_help_command_option(input_options);
 
 		// NOTE: There are no positional options since GPlates can now be used as a non-GUI
 		// command-line processor that accepts a (processor) command as the first positional argument.
