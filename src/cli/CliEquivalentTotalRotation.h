@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2011 The University of Sydney, Australia
+ * Copyright (C) 2012 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_CLI_CLIRELATIVETOTALROTATION_H
-#define GPLATES_CLI_CLIRELATIVETOTALROTATION_H
+#ifndef GPLATES_CLI_CLIEQUIVALENTTOTALROTATION_H
+#define GPLATES_CLI_CLIEQUIVALENTTOTALROTATION_H
 
 #include <string>
 #include <vector>
@@ -40,11 +40,11 @@
 
 namespace GPlatesCli
 {
-	class RelativeTotalRotationCommand :
+	class EquivalentTotalRotationCommand :
 			public Command
 	{
 	public:
-		RelativeTotalRotationCommand();
+		EquivalentTotalRotationCommand();
 
 
 		//! Name of this command as seen on the command-line.
@@ -52,7 +52,7 @@ namespace GPlatesCli
 		std::string
 		get_command_name() const
 		{
-			return "relative-total-rotation";
+			return "equivalent-total-rotation";
 		}
 
 
@@ -61,7 +61,7 @@ namespace GPlatesCli
 		std::string
 		get_command_description() const
 		{
-			return "print the relative (moving/fixed plate pair) total rotation pole";
+			return "print the equivalent (to the anchor plate) total rotation pole";
 		}
 
 
@@ -87,11 +87,11 @@ namespace GPlatesCli
 
 		GPlatesModel::ModelInterface d_model;
 		double d_recon_time;
-		GPlatesModel::integer_plate_id_type d_fixed_plate_id;
-		GPlatesModel::integer_plate_id_type d_moving_plate_id;
+		GPlatesModel::integer_plate_id_type d_anchor_plate_id;
+		GPlatesModel::integer_plate_id_type d_plate_id;
 
 		std::string d_export_filename;
 	};
 }
 
-#endif // GPLATES_CLI_CLIRELATIVETOTALROTATION_H
+#endif // GPLATES_CLI_CLIEQUIVALENTTOTALROTATION_H

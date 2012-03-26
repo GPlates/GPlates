@@ -19,6 +19,8 @@ set(srcs
     CliCommandRegistry.h
     CliConvertFileFormatCommand.cc
     CliConvertFileFormatCommand.h
+    CliEquivalentTotalRotation.cc
+    CliEquivalentTotalRotation.h
     CliFeatureCollectionFileIO.cc
     CliFeatureCollectionFileIO.h
     CliInvalidOptionValue.h

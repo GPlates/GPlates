@@ -31,6 +31,7 @@
 
 #include "CliAssignPlateIdsCommand.h"
 #include "CliConvertFileFormatCommand.h"
+#include "CliEquivalentTotalRotation.h"
 #include "CliReconstructCommand.h"
 #include "CliRelativeTotalRotation.h"
 
@@ -46,7 +47,8 @@ namespace GPlatesCli
 				AssignPlateIdsCommand,
 				ConvertFileFormatCommand,
 				ReconstructCommand,
-				RelativeTotalRotationCommand
+				RelativeTotalRotationCommand,
+				EquivalentTotalRotationCommand
 		> command_types;
 	}
 }
