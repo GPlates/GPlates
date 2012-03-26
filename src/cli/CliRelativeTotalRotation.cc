@@ -63,17 +63,13 @@ namespace
 
 	//! Option name for moving plate id with short version.
 	const char *MOVING_PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION = "moving-plate-id,m";
-
-	//! Option name for anchor plate id with short version.
-	const char *ANCHOR_PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION = "anchor-plate-id,a";
 }
 
 
 GPlatesCli::RelativeTotalRotationCommand::RelativeTotalRotationCommand() :
 	d_recon_time(0),
 	d_fixed_plate_id(0),
-	d_moving_plate_id(0),
-	d_anchor_plate_id(0)
+	d_moving_plate_id(0)
 {
 }
 
@@ -110,12 +106,6 @@ GPlatesCli::RelativeTotalRotationCommand::add_options(
 					&d_moving_plate_id)->default_value(0),
 			"set moving plate id (defaults to zero)"
 		)
-		(
-			ANCHOR_PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION,
-			boost::program_options::value<GPlatesModel::integer_plate_id_type>(
-					&d_anchor_plate_id)->default_value(0),
-			"set anchor plate id (defaults to zero)"
-		)
 		;
 
 	// The feature collection files can also be specified directly on command-line
@@ -141,10 +131,12 @@ GPlatesCli::RelativeTotalRotationCommand::run(
 			reconstruction_feature_collections, reconstruction_files);
 
 	// Create a reconstruction tree from the rotation features.
+	// Note that we set the anchor plate id to zero - it doesn't matter what the value is
+	// because we're only returning a *relative* rotation between a moving/fixed plate pair.
 	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_type reconstruction_tree =
 			GPlatesAppLogic::create_reconstruction_tree(
 					d_recon_time,
-					d_anchor_plate_id,
+					0/*anchor_plate_id*/,
 					reconstruction_feature_collections);
 
 	// Find those edges matching the user-specified moving plate id.
