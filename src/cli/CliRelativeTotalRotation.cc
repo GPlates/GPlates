@@ -65,6 +65,9 @@ namespace
 	const char *MOVING_PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION = "moving-plate-id,m";
 
 	//! Option name for replacing 'Indeterminate' rotations with zero-angle north pole.
+	const char *INDETERMINATE_IS_ZERO_ANGLE_NORTH_POLE_OPTION_NAME =
+			"indeterminate-is-zero-angle-north-pole";
+	//! Option name for replacing 'Indeterminate' rotations with zero-angle north pole with short version.
 	const char *INDETERMINATE_IS_ZERO_ANGLE_NORTH_POLE_OPTION_NAME_WITH_SHORT_OPTION =
 			"indeterminate-is-zero-angle-north-pole,i";
 }
@@ -129,7 +132,7 @@ GPlatesCli::RelativeTotalRotationCommand::run(
 {
 	// Output 'Indeterminate' unless specified otherwise.
 	const bool output_indeterminate_for_identity_rotations =
-			vm.count(INDETERMINATE_IS_ZERO_ANGLE_NORTH_POLE_OPTION_NAME_WITH_SHORT_OPTION) == 0;
+			vm.count(INDETERMINATE_IS_ZERO_ANGLE_NORTH_POLE_OPTION_NAME) == 0;
 
 	FeatureCollectionFileIO file_io(d_model, vm);
 
