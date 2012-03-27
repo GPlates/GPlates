@@ -63,6 +63,10 @@ namespace
 
 	//! Option name for moving plate id with short version.
 	const char *MOVING_PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION = "moving-plate-id,m";
+
+	//! Option name for replacing 'Indeterminate' rotations with zero-angle north pole.
+	const char *INDETERMINATE_IS_ZERO_ANGLE_NORTH_POLE_OPTION_NAME_WITH_SHORT_OPTION =
+			"indeterminate-is-zero-angle-north-pole,i";
 }
 
 
@@ -106,6 +110,10 @@ GPlatesCli::RelativeTotalRotationCommand::add_options(
 					&d_moving_plate_id)->default_value(0),
 			"set moving plate id (defaults to zero)"
 		)
+		(
+			INDETERMINATE_IS_ZERO_ANGLE_NORTH_POLE_OPTION_NAME_WITH_SHORT_OPTION,
+			"output '(90.0, 0.0, 0.0)' instead of 'Indeterminate' for identity rotations"
+		)
 		;
 
 	// The feature collection files can also be specified directly on command-line
@@ -119,6 +127,10 @@ void
 GPlatesCli::RelativeTotalRotationCommand::run(
 		const boost::program_options::variables_map &vm)
 {
+	// Output 'Indeterminate' unless specified otherwise.
+	const bool output_indeterminate_for_identity_rotations =
+			vm.count(INDETERMINATE_IS_ZERO_ANGLE_NORTH_POLE_OPTION_NAME_WITH_SHORT_OPTION) == 0;
+
 	FeatureCollectionFileIO file_io(d_model, vm);
 
 	// Load the reconstruction feature collection files
@@ -168,7 +180,7 @@ GPlatesCli::RelativeTotalRotationCommand::run(
 		// Return failure if fixed/moving plate pair was not found in the reconstruction tree.
 		throw GPlatesGlobal::LogException(
 				GPLATES_EXCEPTION_SOURCE,
-				"Unable to find fixed/moving plate pair.");
+				"Unable to find moving/fixed plate pair.");
 	}
 
 	// Get the relative rotation.
@@ -177,7 +189,14 @@ GPlatesCli::RelativeTotalRotationCommand::run(
 	
 	if (GPlatesMaths::represents_identity_rotation(unit_quaternion)) 
 	{
-		std::cout << "Indeterminate" << std::endl;
+		if (output_indeterminate_for_identity_rotations)
+		{
+			std::cout << "Indeterminate" << std::endl;
+		}
+		else
+		{
+			std::cout << "(90.0, 0.0, 0.0)" << std::endl;
+		}
 	} 
 	else 
 	{

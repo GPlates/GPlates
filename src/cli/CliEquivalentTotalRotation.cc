@@ -63,6 +63,10 @@ namespace
 
 	//! Option name for plate id with short version.
 	const char *PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION = "plate-id,p";
+
+	//! Option name for replacing 'Indeterminate' rotations with zero-angle north pole.
+	const char *INDETERMINATE_IS_ZERO_ANGLE_NORTH_POLE_OPTION_NAME_WITH_SHORT_OPTION =
+			"indeterminate-is-zero-angle-north-pole,i";
 }
 
 
@@ -106,6 +110,10 @@ GPlatesCli::EquivalentTotalRotationCommand::add_options(
 					&d_plate_id)->default_value(0),
 			"set plate id (defaults to zero)"
 		)
+		(
+			INDETERMINATE_IS_ZERO_ANGLE_NORTH_POLE_OPTION_NAME_WITH_SHORT_OPTION,
+			"output '(90.0, 0.0, 0.0)' instead of 'Indeterminate' for identity rotations"
+		)
 		;
 
 	// The feature collection files can also be specified directly on command-line
@@ -119,6 +127,10 @@ void
 GPlatesCli::EquivalentTotalRotationCommand::run(
 		const boost::program_options::variables_map &vm)
 {
+	// Output 'Indeterminate' unless specified otherwise.
+	const bool output_indeterminate_for_identity_rotations =
+			vm.count(INDETERMINATE_IS_ZERO_ANGLE_NORTH_POLE_OPTION_NAME_WITH_SHORT_OPTION) == 0;
+
 	FeatureCollectionFileIO file_io(d_model, vm);
 
 	// Load the reconstruction feature collection files
@@ -143,8 +155,6 @@ GPlatesCli::EquivalentTotalRotationCommand::run(
 
 	if (equivalent_rotation_result.second == GPlatesAppLogic::ReconstructionTree::NoPlateIdMatchesFound)
 	{
-		std::cout << "Indeterminate" << std::endl;
-
 		// Return failure if plate is was not found in the reconstruction tree.
 		throw GPlatesGlobal::LogException(
 				GPLATES_EXCEPTION_SOURCE,
@@ -155,15 +165,29 @@ GPlatesCli::EquivalentTotalRotationCommand::run(
 	const GPlatesMaths::FiniteRotation &equivalent_rotation = equivalent_rotation_result.first;
 	const GPlatesMaths::UnitQuaternion3D &unit_quaternion = equivalent_rotation.unit_quat();
 	
-	GPlatesMaths::UnitQuaternion3D::RotationParams finite_rotation_params =
-			unit_quaternion.get_rotation_params(equivalent_rotation.axis_hint());
+	if (GPlatesMaths::represents_identity_rotation(unit_quaternion)) 
+	{
+		if (output_indeterminate_for_identity_rotations)
+		{
+			std::cout << "Indeterminate" << std::endl;
+		}
+		else
+		{
+			std::cout << "(90.0, 0.0, 0.0)" << std::endl;
+		}
+	} 
+	else 
+	{
+		GPlatesMaths::UnitQuaternion3D::RotationParams finite_rotation_params =
+				unit_quaternion.get_rotation_params(equivalent_rotation.axis_hint());
 
-	GPlatesMaths::PointOnSphere euler_pole(finite_rotation_params.axis);
-	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(euler_pole);
+		GPlatesMaths::PointOnSphere euler_pole(finite_rotation_params.axis);
+		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(euler_pole);
 
-	std::cout << "("
-			<< llp.latitude() << ", "
-			<< llp.longitude() << ", "
-			<< GPlatesMaths::convert_rad_to_deg(finite_rotation_params.angle).dval()
-			<< ")" << std::endl;
+		std::cout << "("
+				<< llp.latitude() << ", "
+				<< llp.longitude() << ", "
+				<< GPlatesMaths::convert_rad_to_deg(finite_rotation_params.angle).dval()
+				<< ")" << std::endl;
+	}
 }
