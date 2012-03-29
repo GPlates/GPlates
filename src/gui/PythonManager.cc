@@ -142,7 +142,11 @@ GPlatesGui::PythonManager::set_python_home()
 {
 	if(validate_python_home())
 	{
-		if( get_python_prefix_from_preferences().simplified() != d_python_home.simplified())
+		//Use QDir to determine if python prefix in preference equals the python home we are going to use.
+		//WARNING! LOOK HERE PLS! ***DON'T COMPARE THE TWO QSTRINGS***
+		//because the GPlates' Preference code might add extra "\" on some platforms.
+		//if python prefix equals python home, it means we have tried this python home and it doesn't work. So, skip it.
+		if( QDir(get_python_prefix_from_preferences()) != QDir(d_python_home))
 		{
 			set_python_prefix(d_python_home);
 #ifndef __WINDOWS__
