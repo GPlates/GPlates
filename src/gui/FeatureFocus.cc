@@ -115,10 +115,12 @@ GPlatesGui::FeatureFocus::set_focus(
 		return;
 	}
 
-	d_focused_feature = new_feature_ref;
+	d_focused_feature = d_callback_focused_feature = new_feature_ref;
 	// Attach callback to feature handle weak-ref so we can unset the focus when
 	// the feature is deactivated in the model.
-	d_focused_feature.attach_callback(new FocusedFeatureDeactivatedCallback(*this));
+	// NOTE: See data member comment for 'd_callback_focused_feature' for an explanation of
+	// why there's a separate callback weak ref.
+	d_callback_focused_feature.attach_callback(new FocusedFeatureDeactivatedCallback(*this));
 
 	d_associated_reconstruction_geometry = new_associated_rg.get();
 
@@ -154,10 +156,12 @@ GPlatesGui::FeatureFocus::set_focus(
 		return;
 	}
 
-	d_focused_feature = new_feature_ref;
+	d_focused_feature = d_callback_focused_feature = new_feature_ref;
 	// Attach callback to feature handle weak-ref so we can unset the focus when
 	// the feature is deactivated in the model.
-	d_focused_feature.attach_callback(new FocusedFeatureDeactivatedCallback(*this));
+	// NOTE: See data member comment for 'd_callback_focused_feature' for an explanation of
+	// why there's a separate callback weak ref.
+	d_callback_focused_feature.attach_callback(new FocusedFeatureDeactivatedCallback(*this));
 
 	d_associated_reconstruction_geometry = NULL;
 	d_associated_geometry_property = new_associated_property;
@@ -202,7 +206,7 @@ GPlatesGui::FeatureFocus::set_focus(
 void
 GPlatesGui::FeatureFocus::unset_focus()
 {
-	d_focused_feature = GPlatesModel::FeatureHandle::weak_ref();
+	d_focused_feature = d_callback_focused_feature = GPlatesModel::FeatureHandle::weak_ref();
 	d_associated_reconstruction_geometry = NULL;
 	d_associated_geometry_property = GPlatesModel::FeatureHandle::iterator();
 

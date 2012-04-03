@@ -251,6 +251,16 @@ namespace GPlatesGui
 		GPlatesModel::FeatureHandle::weak_ref d_focused_feature;
 
 		/**
+		 * Keep another reference to the currently focused feature to contain our model callback.
+		 *
+		 * This avoids the problem where the callback is copied when the weak ref is copied.
+		 * Having a separate weak ref means the callback cannot escape into the wild and cause
+		 * a crash during shutdown when the view state is destroyed before the application-logic state
+		 * (the callback then references a destroyed @a FeatureFocus object).
+		 */
+		GPlatesModel::FeatureHandle::weak_ref d_callback_focused_feature;
+
+		/**
 		 * The ReconstructionGeometry associated with the currently-focused feature.
 		 *
 		 * Note that there may not be a RG associated with the currently-focused feature.
