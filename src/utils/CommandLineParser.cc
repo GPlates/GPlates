@@ -89,27 +89,6 @@ namespace
 
 
 	/**
-	* Parse specified options using @a command_line_parser and store parsed
-	* results in @a vm.
-	*/
-	void
-	parse_options(
-			boost::program_options::variables_map &vm,
-			boost::program_options::command_line_parser &command_line_parser,
-			const boost::program_options::options_description &cmdline_options,
-			const boost::program_options::positional_options_description &positional_options)
-	{
-		command_line_parser.options(cmdline_options).positional(positional_options);
-
-		// Parse options.
-		const boost::program_options::parsed_options parsed = command_line_parser.run();
-
-		// Store parsed options.
-		boost::program_options::store(parsed, vm);
-	}
-
-
-	/**
 	* Parse the command-line arguments defined by @a argc and @a argv.
 	*/
 	void
@@ -118,18 +97,50 @@ namespace
 			int argc,
 			char* argv[],
 			const boost::program_options::options_description &cmdline_options,
-			const boost::program_options::positional_options_description &positional_options)
+			const boost::program_options::positional_options_description &positional_options,
+			int command_line_style)
 	{
 		// Setup the parser for the command-line.
 		boost::program_options::command_line_parser command_line_parser(argc, argv);
 		command_line_parser.extra_parser(at_option_parser);
 
-		// Parse options and store in 'vm'.
-		parse_options(
-			vm,
-			command_line_parser,
-			cmdline_options,
-			positional_options);
+		// Set the command-line style of processing.
+		command_line_parser.style(command_line_style);
+
+		// Setup the options to parse.
+		command_line_parser.options(cmdline_options).positional(positional_options);
+
+		// Mac OS X sometimes (not sure exactly when) adds the '-psn...' command-line argument to
+		// the applications argument list (for example '-psn_0_548998').
+		// To avoid an unknown argument exception we allow unrecognised options and explicitly
+		// throw an exception ourselves if any unrecognised option does not match '-psn'.
+		// Note that we end up ignoring the '-psn...' option.
+#if defined(__APPLE__)
+		command_line_parser.allow_unregistered();
+
+		// Parse options.
+		const boost::program_options::parsed_options parsed = command_line_parser.run();
+
+		const std::vector<std::string> unrecognised_options =
+				boost::program_options::collect_unrecognized(
+						parsed.options,
+						boost::program_options::exclude_positional);
+		if (!unrecognised_options.empty())
+		{
+			if (unrecognised_options.size() > 1 ||
+				unrecognised_options[0].substr(0, 4) != "-psn")
+			{
+				throw boost::program_options::unknown_option(unrecognised_options[0]);
+			}
+		}
+#else
+		// Parse options.
+		// If an unrecognised option is encountered then boost will thrown an exception.
+		const boost::program_options::parsed_options parsed = command_line_parser.run();
+#endif
+
+		// Store parsed options in the variables map.
+		boost::program_options::store(parsed, vm);
 	}
 
 	/**
@@ -263,19 +274,25 @@ namespace
 	parse_response_file(
 			boost::program_options::variables_map &vm,
 			const boost::program_options::options_description &cmdline_options,
-			const boost::program_options::positional_options_description &positional_options)
+			const boost::program_options::positional_options_description &positional_options,
+			int command_line_style)
 	{
 		const std::vector<std::string> args = read_response_file(vm);
 
 		// Setup the parser.
 		boost::program_options::command_line_parser command_line_parser(args);
 
-		// Parse options and store in 'vm'.
-		parse_options(
-			vm,
-			command_line_parser,
-			cmdline_options,
-			positional_options);
+		// Set the command-line style of processing.
+		command_line_parser.style(command_line_style);
+
+		// Setup the options to parse.
+		command_line_parser.options(cmdline_options).positional(positional_options);
+
+		// Parse options.
+		const boost::program_options::parsed_options parsed = command_line_parser.run();
+
+		// Store parsed options in the variables map.
+		boost::program_options::store(parsed, vm);
 	}
 }
 
@@ -284,7 +301,8 @@ GPlatesUtils::CommandLineParser::parse_command_line_options(
 		boost::program_options::variables_map &vm,
 		int argc,
 		char* argv[],
-		const GPlatesUtils::CommandLineParser::InputOptions &input_options)
+		const GPlatesUtils::CommandLineParser::InputOptions &input_options,
+		int command_line_style)
 {
 	// All command-line options.
 	boost::program_options::options_description cmdline_options =
@@ -297,6 +315,7 @@ GPlatesUtils::CommandLineParser::parse_command_line_options(
 	// All options visible to the user (displayed in help/usage).
 	boost::program_options::options_description visible =
 		get_visible_options(input_options);
+
 
 	//
 	// We parse the command-line before the config file.
@@ -313,11 +332,15 @@ GPlatesUtils::CommandLineParser::parse_command_line_options(
 		argc,
 		argv,
 		cmdline_options,
-		input_options.positional_options);
+		input_options.positional_options,
+		command_line_style);
 
 	// Parse response file if it exists.
 	parse_response_file(
-		vm, cmdline_options, input_options.positional_options);
+		vm,
+		cmdline_options,
+		input_options.positional_options,
+		command_line_style);
 
 	// Parse any config files the user specified on the command-line (or in response file).
 	// This should be done after parsing the response file since the response file

@@ -88,6 +88,8 @@ namespace GPlatesUtils
 		* Parse the command-line options and also parse any response file and config files
 		* that are specified and store parsed results in @a vm.
 		*
+		* @a command_line_style contains options for how boost::program_options processes the command-line.
+		*
 		* Can throw std::exception for some invalid command-lines.
 		*/
 		void
@@ -95,7 +97,8 @@ namespace GPlatesUtils
 				boost::program_options::variables_map &vm,
 				int argc,
 				char* argv[],
-				const InputOptions &input_options);
+				const InputOptions &input_options,
+				int command_line_style = boost::program_options::command_line_style::default_style);
 
 		/**
 		 * Returns true if help was requested in the parsed command-line arguments.
