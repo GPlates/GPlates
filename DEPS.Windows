@@ -115,6 +115,8 @@ NetCDF
        o So download the associated source code from "ftp://ftp.unidata.ucar.edu/pub/netcdf/contrib/win32/".
        o For example, "ftp://ftp.unidata.ucar.edu/pub/netcdf/contrib/win32/netcdf-4.1.1-win32-src.zip".
     3. Copy the "netcdf.h" from step 2 into the extracted location from step 1 (eg, "C:\SDK\netcdf\netcdf-4.1.1").
+	   o There appears to be two different "netcdf.h" files (in the 'libsrc/' and 'libsrc4/' subdirectories).
+	   o If this is the case then copy the "netcdf.h" from the 'libsrc4' subdirectory.
     4. Also add this location to the PATH environment variable (so the NetCDF DLL can be found at run-time).
        o Eg, Add "C:\SDK\netcdf\netcdf-4.1.1" to the PATH environment variable.
     5. This library will get compiled into GDAL (see GDAL below).
@@ -134,7 +136,7 @@ GDAL
        o Run "makegdal_gen.bat 8.00 > makegdal80.vcproj" if you are using Visual Studio 2005.
        o Run "makegdal_gen.bat 9.00 > makegdal90.vcproj" if you are using Visual Studio 2008.
     5. Use Visual Studio to build GDAL.
-       o Eg, by opening the 'makegdal80.sln' solution file with Visual Studio 2005 or 2008.
+       o For example, by opening the 'makegdal80.vcproj' project file with Visual Studio 2005.
        o Selecting 'Release' as the build type.
     6. Set the 'GDAL_DIR' environment variable to the root path of GDAL (eg, "C:\SDK\gdal\gdal-1.9.0").
     7. Also add the root path of GDAL to the PATH environment variable (so the GDAL DLL can be found at run-time).
