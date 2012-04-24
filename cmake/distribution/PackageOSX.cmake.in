@@ -237,6 +237,16 @@ ELSE (MAKE_SCRIPTS_DIR_RESULT)
 	ENDIF (COPY_SCRIPTS_DIR_RESULT)
 ENDIF (MAKE_SCRIPTS_DIR_RESULT)
 
+MESSAGE(STATUS "copying python framework libraries into bundle -- @PYTHON_FRAMEWORK_ROOT@.")
+	EXECUTE_PROCESS(
+                        COMMAND "@CMAKE_COMMAND@" -E copy_directory 
+                                "@PYTHON_FRAMEWORK_ROOT@"
+                                "${OSX_GET_BUNDLE_STAGING_AREA_LOCATION}/@GPLATES_MAIN_TARGET@.app/Contents/Frameworks/Python.Framework/Versions/@PYTHON_FRAMEWORK_VERSION@"
+                        RESULT_VARIABLE COPY_PYTHON_FRAMEWORK_RESULT
+                        )
+
+
+
 # Invoke CPack to package up the standalone bundle into an installer.
 EXECUTE_PROCESS(
 		COMMAND "@OSX_CREATE_INSTALLER_FROM_STANDALONE_BUNDLE_SHELL_SCRIPT@"
