@@ -395,8 +395,11 @@ GPlatesGui::LayerPainter::end_painting(
 			renderer.gl_depth_mask(GL_TRUE);
 		}
 
-		// Even though these primitives are (or should be) opaque they are still rendered with
-		// polygon anti-aliasing which relies on alpha-blending (so we don't disable it here).
+		// As mentioned above these off-sphere primitives should not be rendered with any anti-aliasing
+		// (including polygon anti-aliasing - which we no longer use due to artifacts at triangle edges).
+		renderer.gl_enable(GL_POINT_SMOOTH, false);
+		renderer.gl_enable(GL_LINE_SMOOTH, false);
+
 		drawables_off_the_sphere.end_painting(
 				renderer,
 				*d_vertex_element_buffer->get_buffer(),
