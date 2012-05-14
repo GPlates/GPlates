@@ -566,6 +566,8 @@ function(fixup_bundle_item resolved_embedded_item exepath dirs)
     message(FATAL_ERROR "cannot fixup an item that is not in the bundle...")
   endif()
 
+  execute_process(COMMAND chmod u+w "${resolved_embedded_item}")
+
   set(prereqs "")
   get_prerequisites("${resolved_embedded_item}" prereqs 1 0 "${exepath}" "${dirs}")
 
@@ -583,9 +585,9 @@ function(fixup_bundle_item resolved_embedded_item exepath dirs)
     endif(NOT "${${rkey}_EMBEDDED_ITEM}" STREQUAL "")
   endforeach(pr)
 
-  if(BU_CHMOD_BUNDLE_ITEMS)
-    execute_process(COMMAND chmod u+w "${resolved_embedded_item}")
-  endif()
+  #if(BU_CHMOD_BUNDLE_ITEMS)
+    #execute_process(COMMAND chmod u+w "${resolved_embedded_item}")
+  #endif()
 
   # Change this item's id and all of its references in one call
   # to install_name_tool:

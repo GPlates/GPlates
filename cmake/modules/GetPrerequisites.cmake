@@ -487,11 +487,11 @@ function(get_prerequisites target prerequisites_var exclude_system recurse exepa
   #It is still a mystery why, on Mac OS, cmake tries to include python executable in package and check prerequisites for it.
   #The checking will fail.
   #As far as I know, we don't need python executable. Hence, the checking is unnecessary and unsucessful. So, skip it.
-  get_filename_component(exe_filename "${target}" NAME_WE)
-  if("${exe_filename}" STREQUAL "Python")
-    message(STATUS "Skip prerequisites checking for python executable.")
-    return()
-  endif("${exe_filename}" STREQUAL "Python")
+  #get_filename_component(exe_filename "${target}" NAME_WE)
+  #if("${exe_filename}" STREQUAL "Python")
+  #  message(STATUS "Skip prerequisites checking for python executable.")
+  #  return()
+  #endif("${exe_filename}" STREQUAL "Python")
   #end of Michael Chin's code for skip python executable.
 
   # <setup-gp_tool-vars>
