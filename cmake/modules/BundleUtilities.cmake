@@ -688,7 +688,12 @@ function(verify_bundle_prerequisites bundle result_var info_var)
   file(GLOB_RECURSE file_list "${bundle}/*")
   foreach(f ${file_list})
     is_file_executable("${f}" is_executable)
-    if(is_executable)
+
+  # For now, we only care about gplates executable.
+  # The problem with previous code is when Python framework has been copied into bundle,
+  # some python files look like executable files. 
+  # Those files should be verified here and some of them cannot pass the verification.  
+  if(is_executable AND (${f} MATCHES ".*gplates$"))
       get_filename_component(exepath "${f}" PATH)
       math(EXPR count "${count} + 1")
 
@@ -727,7 +732,7 @@ function(verify_bundle_prerequisites bundle result_var info_var)
         set(result 0)
         set(info ${info} "external prerequisites found:\nf='${f}'\nexternal_prereqs='${external_prereqs}'\n")
       endif(external_prereqs)
-    endif(is_executable)
+    endif(is_executable AND (${f} MATCHES ".*gplates$"))
   endforeach(f)
 
   if(result)
