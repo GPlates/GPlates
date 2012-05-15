@@ -661,8 +661,14 @@ function(fixup_bundle app libs dirs)
 
     message(STATUS "fixup_bundle: cleaning up...")
     clear_bundle_keys(keys)
-
-    message(STATUS "fixup_bundle: verifying...")
+	
+	file(GLOB_RECURSE file_list "${exepath}/../Framework/Python.framework")
+	foreach(file ${file_list)
+		message(STATUS "fixing up '${file}")
+        fixup_bundle_item("${file}" "${exepath}" "${dirs}")
+	endforeach(file)
+    
+	message(STATUS "fixup_bundle: verifying...")
     verify_app("${app}")
   else(valid)
     message(SEND_ERROR "error: fixup_bundle: not a valid bundle")
