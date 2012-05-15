@@ -514,7 +514,7 @@ function(copy_resolved_framework_into_bundle resolved_item resolved_embedded_ite
   if("${resolved_item_compare}" STREQUAL "${resolved_embedded_item_compare}")
     message(STATUS "warning: resolved_item == resolved_embedded_item - not copying...")
   else()
-    if(BU_COPY_FULL_FRAMEWORK_CONTENTS)
+    if(BU_COPY_FULL_FRAMEWORK_CONTENTS OR (${resolved_item} MATCHES ".*Python.framework.*"))
       # Full Framework (everything):
       get_filename_component(resolved_dir "${resolved_item}" PATH)
       get_filename_component(resolved_dir "${resolved_dir}/../.." ABSOLUTE)
@@ -638,8 +638,8 @@ function(fixup_bundle app libs dirs)
 
       if(${${key}_COPYFLAG})
         set(item "${${key}_ITEM}")
-        if(item MATCHES "[^/]+\\.framework/")
-          copy_resolved_framework_into_bundle("${${key}_RESOLVED_ITEM}"
+	if(item MATCHES "[^/]+\\.framework/")
+	   copy_resolved_framework_into_bundle("${${key}_RESOLVED_ITEM}"
             "${${key}_RESOLVED_EMBEDDED_ITEM}")
         else()
           copy_resolved_item_into_bundle("${${key}_RESOLVED_ITEM}"
