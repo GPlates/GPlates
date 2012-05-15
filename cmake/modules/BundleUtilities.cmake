@@ -659,14 +659,6 @@ function(fixup_bundle app libs dirs)
       endif(APPLE)
     endforeach(key)
 
-    file(GLOB_RECURSE file_list "${exepath}/../Frameworks/Python.framework/*.so")
-    #message(STATUS "the dir:  ${exepath}/../Frameworks/Python.framework/")
-    foreach(file ${file_list})
-        #message(STATUS "fixing up '${file}")
-        fixup_bundle_item("${file}" "${exepath}" "${dirs}")
-    endforeach(file)
-
-
     message(STATUS "fixup_bundle: cleaning up...")
     clear_bundle_keys(keys)
 	
