@@ -17,6 +17,7 @@
 #   copy_resolved_item_into_bundle
 #   copy_resolved_framework_into_bundle
 #   fixup_bundle_item
+#   fixup_python_framework
 #   verify_bundle_prerequisites
 #   verify_bundle_symlinks
 # Requires CMake 2.6 or greater because it uses function, break and
@@ -592,10 +593,65 @@ function(fixup_bundle_item resolved_embedded_item exepath dirs)
   # Change this item's id and all of its references in one call
   # to install_name_tool:
   #
+  #message(STATUS "changes: ${changes}")
+  #message(STATUS "ikey_emb_item: ${${ikey}_EMBEDDED_ITEM}")
+  #message(STATUS "resolved_embedded_item: ${resolved_embedded_item}")
   execute_process(COMMAND install_name_tool
     ${changes} -id "${${ikey}_EMBEDDED_ITEM}" "${resolved_embedded_item}"
   )
 endfunction(fixup_bundle_item)
+
+#fixup the dynamic load libraries in python framework.
+function(fixup_python_framework exepath dirs)
+
+if(APPLE)
+	message(STATUS "Begin fixup python framework")
+	file(GLOB_RECURSE file_list "${exepath}/../Frameworks/Python.framework/*.so")
+
+	set(depends "")
+	set(file_need_fix "")
+	
+	foreach(file ${file_list})
+        	set(prereqs "")
+		get_prerequisites("${file}" prereqs 1 1 "${exepath}" "${dirs}")
+
+		if(prereqs)
+			gp_append_unique(file_need_fix  "${file}")
+			foreach(pr ${prereqs})
+				gp_append_unique(depends  "${pr}")
+			endforeach(pr)
+		endif(prereqs)
+	endforeach(file)
+
+	set(embed_deps "")
+	foreach(dep ${depends})
+		GET_FILENAME_COMPONENT(dep_name "${dep}" NAME)
+		if(NOT EXISTS "${exepath}/../MacOS/${dep_name}")	
+			execute_process(COMMAND ${CMAKE_COMMAND} -E copy "${dep}" "${exepath}/../MacOS")
+			gp_append_unique(embed_deps  "${exepath}/../MacOS/${dep_name}")
+		endif(NOT EXISTS "${exepath}/../MacOS/${dep_name}")
+	endforeach(dep)
+
+	set(file_list ${file_need_fix} ${embed_deps})
+
+	foreach(f ${file_list})
+		GET_FILENAME_COMPONENT(fname "${f}" NAME)
+
+		set(prereqs "")
+		get_prerequisites("${f}" prereqs 1 0 "${exepath}" "${dirs}")
+		set(changes "")
+		foreach(pr ${prereqs})
+			GET_FILENAME_COMPONENT(pfname "${pr}" NAME)
+			set(changes ${changes} "-change" "${pr}" "@executable_path/../MacOS/${pfname}")
+		endforeach(pr)
+
+	execute_process(COMMAND chmod u+w "${f}")
+	execute_process(COMMAND install_name_tool
+		${changes} -id "@executable_path/../MacOS/${fname}" "${f}")
+	endforeach(f)
+	message(STATUS "end fixup python framework")
+endif(APPLE)
+endfunction(fixup_python_framework)
 
 
 function(fixup_bundle app libs dirs)
@@ -661,6 +717,8 @@ function(fixup_bundle app libs dirs)
 
     message(STATUS "fixup_bundle: cleaning up...")
     clear_bundle_keys(keys)
+
+    fixup_python_framework("${exepath}" "${Dirs}")
 	
     message(STATUS "fixup_bundle: verifying...")
     verify_app("${app}")
