@@ -451,8 +451,9 @@ GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 	style_list->setUniformItemSizes(true);
 	style_list->setWordWrap(true);
 
-	QPixmap blank_pixmap(ICON_SIZE, ICON_SIZE);
-	blank_pixmap.fill(*GPlatesGui::HTMLColourNames::instance().get_colour("slategray"));
+	QPixmap blank_pixmap(ICON_SIZE,ICON_SIZE);
+	blank_pixmap.load(":/preview_not_available.png","PNG");
+	//blank_pixmap.fill(*GPlatesGui::HTMLColourNames::instance().get_colour("slategray"));
 	d_blank_icon = QIcon(blank_pixmap);
 	d_image = d_globe_and_map_widget_ptr->grab_frame_buffer();
 	d_style_mgr = GPlatesGui::DrawStyleManager::instance();
