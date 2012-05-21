@@ -157,7 +157,7 @@ void
 GPlatesQtWidgets::LayerGroupComboBox::insert_all()
 {
 	QVariant qv; qv.setValue(boost::weak_ptr<GPlatesPresentation::VisualLayer>());
-	static const QIcon empty_icon(QPixmap(16, 16));
+	static const QIcon empty_icon(QPixmap(":/gnome_stock_color_16.png"));
 	insertItem(0, empty_icon, "(All)", qv);
 	setCurrentIndex(0);
 }
