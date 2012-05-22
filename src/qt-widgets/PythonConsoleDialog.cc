@@ -89,11 +89,15 @@ namespace
 		QFont font("Consolas");
 #endif
 		font.setStyleHint(QFont::Courier);
-#if defined(Q_WS_MAC)
-		font.setPointSize(14);
-#else
-		font.setPointSize(9);
-#endif
+
+
+// #if defined(Q_WS_MAC)
+// 		font.setPointSize(14);
+// #else
+// 		//font.setPointSize(9);
+// #endif
+
+		font.setPixelSize(15);
 		return font;
 	}
 
