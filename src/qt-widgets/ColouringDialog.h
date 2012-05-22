@@ -72,7 +72,7 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 
 	public:
-
+		friend class DrawStyleDialog;
 		/**
 		 * Constructs a ColouringDialog. Clones @a existing_globe_canvas for the
 		 * previews.

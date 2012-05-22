@@ -430,11 +430,18 @@ GPlatesQtWidgets::DrawStyleDialog::set_style()
 	}
 }
 
+#include "ColouringDialog.h"
+#include "presentation/Application.h"
 void
 GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 {
 	setupUi(this);
-	d_globe_and_map_widget_ptr = new GlobeAndMapWidget(d_view_state, style_list);
+	 GPlatesUtils::non_null_intrusive_ptr<ColouringDialog::PreviewColourScheme> preview_colour_scheme(
+		new ColouringDialog::PreviewColourScheme(d_view_state.get_colour_scheme_delegator()));
+	d_globe_and_map_widget_ptr = new GlobeAndMapWidget(
+			&GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget().globe_and_map_widget(),
+			preview_colour_scheme,
+			style_list);
 	categories_table->horizontalHeader()->setResizeMode(0, QHeaderView::Stretch);
 	categories_table->horizontalHeader()->hide();
 	categories_table->verticalHeader()->hide();
