@@ -92,6 +92,10 @@ namespace GPlatesQtWidgets
 				GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 				QWidget *parent_ = NULL);
 
+		GlobeAndMapWidget *
+		clone_with_shared_opengl_context(
+				QWidget *parent_ = NULL);
+
 		~GlobeAndMapWidget();
 
 		GlobeCanvas &
@@ -215,6 +219,10 @@ namespace GPlatesQtWidgets
 				bool mouse_down);
 
 	private:
+
+		GlobeAndMapWidget(
+				const GlobeAndMapWidget *existing_widget,
+				QWidget *parent_ = NULL);
 
 		void
 		make_signal_slot_connections();

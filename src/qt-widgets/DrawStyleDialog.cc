@@ -43,8 +43,6 @@
 #include "gui/DrawStyleAdapters.h"
 #include "gui/DrawStyleManager.h"
 #include "gui/HTMLColourNames.h"
-#include "gui/GenericColourScheme.h"
-#include "gui/SingleColourScheme.h"
 #include "gui/PlateIdColourPalettes.h"
 #include "gui/PythonConfiguration.h"
 #include "gui/ViewportProjection.h"
@@ -54,7 +52,6 @@
 #include "presentation/VisualLayer.h"
 #include "presentation/VisualLayers.h"
 
-#include "ColouringDialog.h"
 #include "GlobeAndMapWidget.h"
 #include "GlobeCanvas.h"
 #include "MapCanvas.h"
@@ -438,12 +435,11 @@ void
 GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 {
 	setupUi(this);
-	 GPlatesUtils::non_null_intrusive_ptr<ColouringDialog::PreviewColourScheme> preview_colour_scheme(
-		new ColouringDialog::PreviewColourScheme(d_view_state.get_colour_scheme_delegator()));
-	d_globe_and_map_widget_ptr = new GlobeAndMapWidget(
-			&GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget().globe_and_map_widget(),
-			preview_colour_scheme,
-			style_list);
+	
+	d_globe_and_map_widget_ptr = 
+		GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget() \
+		.globe_and_map_widget().clone_with_shared_opengl_context(style_list);
+
 	categories_table->horizontalHeader()->setResizeMode(0, QHeaderView::Stretch);
 	categories_table->horizontalHeader()->hide();
 	categories_table->verticalHeader()->hide();
