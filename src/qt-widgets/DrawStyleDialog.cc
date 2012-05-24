@@ -24,6 +24,7 @@
  */
 #include "global/python.h"
 #include <boost/optional.hpp>
+#include <QBuffer>
 #include <QFileDialog>
 #include <QColorDialog>
 #include <QHeaderView>
@@ -48,10 +49,12 @@
 #include "gui/PythonConfiguration.h"
 #include "gui/ViewportProjection.h"
 
+#include "presentation/Application.h"
 #include "presentation/ReconstructVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
 #include "presentation/VisualLayers.h"
 
+#include "ColouringDialog.h"
 #include "GlobeAndMapWidget.h"
 #include "GlobeCanvas.h"
 #include "MapCanvas.h"
@@ -430,8 +433,7 @@ GPlatesQtWidgets::DrawStyleDialog::set_style()
 	}
 }
 
-#include "ColouringDialog.h"
-#include "presentation/Application.h"
+
 void
 GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 {
@@ -482,7 +484,7 @@ GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 	if(QT_VERSION >= 0x040600)
 		d_globe_and_map_widget_ptr->move(style_list->spacing()+4, style_list->spacing()+3); 
 #else
-	d_globe_and_map_widget_ptr->move(1- ICON_SIZE, 1- ICON_SIZE);
+		d_globe_and_map_widget_ptr->move(1- ICON_SIZE, 1- ICON_SIZE);
 #endif
 	splitter->setStretchFactor(splitter->indexOf(categories_table),1);
 	splitter->setStretchFactor(splitter->indexOf(right_side_frame),4);
@@ -515,7 +517,7 @@ GPlatesQtWidgets::DrawStyleDialog::handle_categories_table_cell_changed(
 {
 	if(current_row < 0)
 	{
-		qWarning() << "The index of current row is negative number. Do nothing and return.";
+		qDebug() << "The index of current row is negative number. Do nothing and return.";
 		return;
 	}
 	QTableWidgetItem* item = categories_table->currentItem();
@@ -643,7 +645,26 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 		#else
 			d_globe_and_map_widget_ptr->repaint_canvas();
 		#endif
-			
+
+
+		#ifdef MASSIVE
+			//workaround for massive.
+			//On massive.org.Au, the QPixmap::fromImage() funtion returns a corrupted QPixmap object.
+			//use "cmake . -DCMAKE_CXX_FLAGS=-DMASSIVE" to define "MASSIVE"
+			QByteArray ba;
+			QBuffer buffer(&ba);
+			buffer.open(QIODevice::WriteOnly);
+			d_image.save(&buffer, "BMP");
+
+			QPixmap qp;
+			qp.loadFromData(ba, "BMP");
+
+			current_item->setIcon(qp);
+		#else
+			current_item->setIcon(QIcon(QPixmap::fromImage(d_image)));
+		#endif
+
+
 			current_item->setIcon(QIcon(QPixmap::fromImage(d_image)));
 		}
 	
