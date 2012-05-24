@@ -663,9 +663,6 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 		#else
 			current_item->setIcon(QIcon(QPixmap::fromImage(d_image)));
 		#endif
-
-
-			current_item->setIcon(QIcon(QPixmap::fromImage(d_image)));
 		}
 	
 		d_globe_and_map_widget_ptr->hide();
