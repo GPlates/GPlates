@@ -112,7 +112,8 @@ namespace GPlatesQtWidgets
 		init_dlg();
 
 		void
-		reset(boost::weak_ptr<GPlatesPresentation::VisualLayer> layer);
+		reset(
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> layer);
 
 	protected:
 		void
@@ -131,7 +132,8 @@ namespace GPlatesQtWidgets
 		show_preview_icon();
 
 		GPlatesGui::StyleCatagory*
-		get_catagory(QTableWidgetItem& item)
+		get_catagory(
+				QTableWidgetItem& item)
 		{
 			QVariant qv = item.data(Qt::UserRole);
 			return static_cast<GPlatesGui::StyleCatagory*>(qv.value<void*>());
@@ -150,7 +152,8 @@ namespace GPlatesQtWidgets
 
 #if !defined(GPLATES_NO_PYTHON)			
 		QWidget *
-		create_cfg_widget(GPlatesGui::PythonCfgItem* item)
+		create_cfg_widget(
+				GPlatesGui::PythonCfgItem* item)
 		{
 			//this function is temporary.
 			if(dynamic_cast<GPlatesGui::PythonCfgColor*>(item) != 0)
@@ -206,6 +209,14 @@ namespace GPlatesQtWidgets
 
 		void
 		apply_style_to_all_layers();
+
+		void	
+		showEvent ( 
+				QShowEvent * event )
+		{
+			QDialog::showEvent(event);
+			focus_style();
+		}
 
 	private slots:
 		void
@@ -266,7 +277,8 @@ namespace GPlatesQtWidgets
 		focus_style();
 
 		void
-		handle_show_thumbnails_changed(int state)
+		handle_show_thumbnails_changed(
+				int state)
 		{
 			d_show_thumbnails = (state == Qt::Checked);
 			QTableWidgetItem* item = categories_table->currentItem();
@@ -282,10 +294,12 @@ namespace GPlatesQtWidgets
 
 		
 		void
-		handle_cfg_name_changed(const QString& new_cfg_name);
+		handle_cfg_name_changed(
+				const QString& new_cfg_name);
 
 		void
-		handle_add_button_clicked(bool);
+		handle_add_button_clicked(
+				bool);
 
 		void
 		handle_configuration_changed();

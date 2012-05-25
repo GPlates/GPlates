@@ -183,6 +183,11 @@ GPlatesQtWidgets::DrawStyleDialog::focus_style(
 {
 	if(NULL == style_)
 	{
+		const GPlatesGui::StyleAdapter* default_style = d_style_mgr->default_style();
+		if(default_style)
+		{
+			focus_style(default_style);
+		}
 		return;
 	}
 
@@ -379,8 +384,16 @@ GPlatesQtWidgets::DrawStyleDialog::handle_remove_button_clicked()
 void
 GPlatesQtWidgets::DrawStyleDialog::handle_configuration_changed()
 {
-	get_current_style()->set_dirty_flag(true);
-	set_style();
+	GPlatesGui::StyleAdapter* current_style = get_current_style();
+	
+	if(!current_style)
+	{
+		qDebug() << "DrawStyleDialog::handle_configuration_changed(): Cannot find current style setting.";
+		return;
+	}
+
+	current_style->set_dirty_flag(true);
+	set_style(current_style);
 	refresh_current_icon();
 }
 
@@ -521,12 +534,15 @@ GPlatesQtWidgets::DrawStyleDialog::handle_categories_table_cell_changed(
 	{
 		GPlatesGui::StyleCatagory* cata = get_catagory(*item);
 		if(cata)
+		{
 			load_category(*cata);
+		}
 	}
 }
 
 void
-GPlatesQtWidgets::DrawStyleDialog::load_category(const GPlatesGui::StyleCatagory& cata)
+GPlatesQtWidgets::DrawStyleDialog::load_category(
+		const GPlatesGui::StyleCatagory& cata)
 {
 	using namespace GPlatesGui;
 
@@ -727,6 +743,8 @@ GPlatesQtWidgets::DrawStyleDialog::handle_add_button_clicked(bool )
 				new_style->set_name(new_name);
 				d_style_mgr->register_style(new_style);
 				load_category(*current_cata);
+				focus_style(new_style);
+
 			}
 		}
 	}
@@ -853,6 +871,10 @@ GPlatesQtWidgets::DrawStyleDialog::focus_style()
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
 	{
 		focus_style(locked_visual_layer->get_visual_layer_params()->style_adapter());
+	}
+	else
+	{
+		focus_style(d_style_of_all);
 	}
 }
 
