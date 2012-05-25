@@ -212,9 +212,9 @@ namespace GPlatesQtWidgets
 
 		void	
 		showEvent ( 
-				QShowEvent * event )
+				QShowEvent * e )
 		{
-			QDialog::showEvent(event);
+			QDialog::showEvent(e);
 			focus_style();
 		}
 
