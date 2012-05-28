@@ -25,8 +25,10 @@
 
 #include <cmath>
 #include <limits>
+#include <new> // For placement new.
 #include <boost/bind.hpp>
 #include <boost/cast.hpp>
+#include <boost/cstdint.hpp>
 #include <boost/foreach.hpp>
 #include <boost/scoped_array.hpp>
 
@@ -44,6 +46,7 @@
 #include "GLContext.h"
 #include "GLFrustum.h"
 #include "GLIntersect.h"
+#include "GLNormalMapSource.h"
 #include "GLProjectionUtils.h"
 #include "GLRenderer.h"
 #include "GLShaderProgramUtils.h"
@@ -58,21 +61,116 @@
 #include "utils/Profile.h"
 
 
-namespace
+namespace GPlatesOpenGL
 {
-	//! The inverse of log(2.0).
-	const float INVERSE_LOG2 = 1.0 / std::log(2.0);
+	namespace
+	{
+		//! The inverse of log(2.0).
+		const float INVERSE_LOG2 = 1.0 / std::log(2.0);
 
-	//! Fragment shader source code to render raster.
-	const char *RENDER_RASTER_FRAGMENT_SHADER_SOURCE =
-			"uniform sampler2D raster_texture_sampler;\n"
+		/**
+		 * Fragment shader source code to render a source raster as either a floating-point raster or
+		 * a normal-map raster.
+		 *
+		 * For a normal-map raster this converts the surface normals from tangent-space to world-space so
+		 * that they can be captured in a cube raster (which is decoupled from the raster geo-referencing,
+		 * or local tangent-space of raster).
+		 */
+		const char *RENDER_RASTER_FRAGMENT_SHADER_SOURCE =
+				"uniform sampler2D raster_texture_sampler;\n"
 
-			"void main (void)\n"
-			"{\n"
+				"void main (void)\n"
+				"{\n"
 
-			"   gl_FragColor = texture2D(raster_texture_sampler, gl_TexCoord[0].st);\n"
+				"#ifdef SURFACE_NORMALS\n"
 
-			"}\n";
+				"	// Sample the tangent-space normal in the source raster.\n"
+				"   vec3 tangent_space_normal = texture2D(raster_texture_sampler, gl_TexCoord[0].st).xyz;\n"
+				"	// Need to convert the x and y components from unsigned to signed ([0,1] -> [-1,1]).\n"
+				"	// The z component is always positive (in range [0,1]) so does not need conversion.\n"
+				"	tangent_space_normal.xy = 2 * tangent_space_normal.xy - 1;\n"
+
+				"	// Normalize each interpolated 3D texture coordinate.\n"
+				"	// They are unit length at vertices but not necessarily between vertices.\n"
+				"	// TODO: Might need to be careful if any interpolated vectors are zero length.\n"
+				"	vec3 tangent = normalize(gl_TexCoord[1].xyz);\n"
+				"	vec3 binormal = normalize(gl_TexCoord[2].xyz);\n"
+				"	vec3 normal = normalize(gl_TexCoord[3].xyz);\n"
+
+				"	// Convert tangent-space normal to world-space normal.\n"
+				"	vec3 world_space_normal = normalize(\n"
+				"		mat3(tangent, binormal, normal) * tangent_space_normal);\n"
+
+				"	// All components of world-space normal are signed and need to be converted to\n"
+				"	// unsigned ([-1,1] -> [0,1]) before storing in fixed-point 8-bit RGBA render target.\n"
+				"	gl_FragColor.xyz = 0.5 * world_space_normal + 0.5;\n"
+				"	gl_FragColor.w = 1;\n"
+
+				"#else\n"
+
+				"	// Just return the source raster.\n"
+				"   gl_FragColor = texture2D(raster_texture_sampler, gl_TexCoord[0].st);\n"
+
+				"#endif\n"
+
+				"}\n";
+	}
+}
+
+
+bool
+GPlatesOpenGL::GLMultiResolutionRaster::supports_normal_map_source(
+		GLRenderer &renderer)
+{
+	static bool supported = false;
+
+	// Only test for support the first time we're called.
+	static bool tested_for_support = false;
+	if (!tested_for_support)
+	{
+		tested_for_support = true;
+
+		// Need support for GLNormalMapSource.
+		if (!GLNormalMapSource::is_supported(renderer))
+		{
+			return false;
+		}
+
+		// Need vertex/fragment shader support.
+		if (!GLContext::get_parameters().shader.gl_ARB_vertex_shader ||
+			!GLContext::get_parameters().shader.gl_ARB_fragment_shader)
+		{
+			//qDebug() <<
+			//		"GLMultiResolutionRaster: Disabling normal map raster lighting in OpenGL - requires vertex/fragment shader programs.";
+			return false;
+		}
+
+		//
+		// Try to compile our surface normals fragment shader program.
+		// If that fails then it could be exceeding some resource limit on the runtime system
+		// such as number of shader instructions allowed.
+		// We do this test because we are promising to support normal maps in a shader
+		// program regardless on the complexity of the shader.
+		//
+
+		GLShaderProgramUtils::ShaderSource fragment_shader_source;
+		fragment_shader_source.add_shader_source("#define SURFACE_NORMALS\n");
+		fragment_shader_source.add_shader_source(RENDER_RASTER_FRAGMENT_SHADER_SOURCE);
+
+		// Attempt to create the test shader program.
+		if (!GLShaderProgramUtils::compile_and_link_fragment_program(
+				renderer, fragment_shader_source))
+		{
+			//qDebug() <<
+			//		"GLMultiResolutionRaster: Disabling normal map raster lighting in OpenGL - unable to compile and link shader program.";
+			return false;
+		}
+
+		// If we get this far then we have support.
+		supported = true;
+	}
+
+	return supported;
 }
 
 
@@ -119,7 +217,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 	d_tile_texture_cache(tile_texture_cache_type::create(2/* GPU pipeline breathing room in case caching disabled*/)),
 	d_cache_tile_textures(cache_tile_textures),
 	// Start with smallest size cache and just let the cache grow in size as needed...
-	d_tile_vertices_cache(tile_vertices_cache_type::create())
+	d_tile_vertices_cache(tile_vertices_cache_type::create()),
+	// Is the source raster is a normal map...
+	d_source_raster_is_normal_map(dynamic_cast<GLNormalMapSource *>(raster_source.get()) != NULL)
 {
 	// Determine number of texels between two adjacent vertices along a horizontal/vertical tile edge.
 	// For most rasters this is the maximum texel density.
@@ -132,6 +232,14 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 	// leaf nodes of the OBB tree.
 	initialise_level_of_detail_pyramid();
 
+	// If the source raster is a normal map then adjust its height field scale depending its resolution.
+	if (d_source_raster_is_normal_map)
+	{
+		GPlatesUtils::dynamic_pointer_cast<GLNormalMapSource>(raster_source)
+				->set_max_highest_resolution_texel_size_on_unit_sphere(
+						d_max_highest_resolution_texel_size_on_unit_sphere);
+	}
+
 	// If the client has requested the entire level-of-detail pyramid be cached.
 	// This does not consume memory until each individual tile is requested.
 	// For example, if all level 0 tiles are accessed but none of the other levels then memory
@@ -143,30 +251,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 		d_tile_vertices_cache->set_min_num_objects(d_tiles.size());
 	}
 
-	// If the source raster is floating-point (ie, not coloured as fixed-point for visual display)
-	// then use a shader program instead of the fixed-function pipeline.
-	if (GLTexture::is_format_floating_point(d_raster_source->get_target_texture_internal_format()))
-	{
-		// If shader programs are supported then use them to render the raster tile.
-		//
-		// If floating-point textures are supported then shader programs should also be supported.
-		// If they are not for some reason (pretty unlikely) then revert to using the fixed-function pipeline.
-		//
-		// NOTE: The reason for doing this (instead of just using the fixed-function pipeline always)
-		// is to prevent clamping (to [0,1] range) of floating-point textures.
-		// The raster texture might be rendered as floating-point (if we're being used for
-		// data analysis instead of visualisation). The programmable pipeline has no clamping by default
-		// whereas the fixed-function pipeline does (both clamping at the fragment output and internal
-		// clamping in the texture environment stages). This clamping can be controlled by the
-		// 'GL_ARB_color_buffer_float' extension (which means we could use the fixed-function pipeline
-		// always) but that extension is not available on Mac OSX 10.5 (Leopard) on any hardware
-		// (rectified in 10.6) so instead we'll just use the programmable pipeline whenever it's
-		// available (and all platforms that support GL_ARB_texture_float should also support shaders).
-		d_render_floating_point_raster_program_object =
-				GLShaderProgramUtils::compile_and_link_fragment_program(
-						renderer,
-						RENDER_RASTER_FRAGMENT_SHADER_SOURCE);
-	}
+	// Use a shader program for rendering a floating-point raster or a normal-map raster
+	// (otherwise don't create a shader program and just use the fixed-function pipeline).
+	create_shader_program_if_necessary(renderer);
 }
 
 
@@ -203,12 +290,10 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_level_of_detail(
 }
 
 
-int
+float
 GPlatesOpenGL::GLMultiResolutionRaster::clamp_level_of_detail(
-		float level_of_detail_float) const
+		float level_of_detail) const
 {
-	// Truncate level-of-detail factor and clamp to the range of our levels of details.
-	int level_of_detail = static_cast<int>(level_of_detail_float);
 	// Clamp to highest resolution level of detail.
 	if (level_of_detail < 0)
 	{
@@ -216,15 +301,18 @@ GPlatesOpenGL::GLMultiResolutionRaster::clamp_level_of_detail(
 		// resolution for the specified level of detail but it'll have to do since its the
 		// highest resolution we have to offer.
 		// This is where the user will start to see magnification of the raster.
-		level_of_detail = 0;
+		return 0;
 	}
+
 	// Clamp to lowest resolution level of detail.
-	if (level_of_detail >= boost::numeric_cast<int>(d_level_of_detail_pyramid.size()))
+	if (level_of_detail > d_level_of_detail_pyramid.size() - 1)
 	{
 		// If we get there then even our lowest resolution level of detail had too much resolution
 		// for the specified level of detail - but this is pretty unlikely for all but the very
 		// smallest of viewports.
-		level_of_detail = d_level_of_detail_pyramid.size() - 1;
+		//
+		// Note that float can represent integers (up to 23 bits) exactly so returning as float is fine.
+		return d_level_of_detail_pyramid.size() - 1;
 	}
 
 	return level_of_detail;
@@ -236,15 +324,18 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
 		std::vector<tile_handle_type> &visible_tiles,
 		const GLMatrix &model_view_transform,
 		const GLMatrix &projection_transform,
-		unsigned int level_of_detail) const
+		float level_of_detail) const
 {
 	// There should be levels of detail and the specified level of detail should be in range.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			!d_level_of_detail_pyramid.empty() &&
-				level_of_detail < d_level_of_detail_pyramid.size(),
+				level_of_detail >= 0 &&
+				level_of_detail <= d_level_of_detail_pyramid.size() - 1,
 			GPLATES_ASSERTION_SOURCE);
 
-	const LevelOfDetail &lod = *d_level_of_detail_pyramid[level_of_detail];
+	// Truncate floating-point level of detail down to an integer level-of-detail.
+	const unsigned int pyramid_level = boost::numeric_cast<unsigned int>(level_of_detail);
+	const LevelOfDetail &lod = *d_level_of_detail_pyramid[pyramid_level];
 
 	//
 	// Traverse the OBB tree of the level-of-detail and gather of list of tiles that
@@ -322,14 +413,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
 bool
 GPlatesOpenGL::GLMultiResolutionRaster::render(
 		GLRenderer &renderer,
-		int level_of_detail,
+		float level_of_detail,
 		cache_handle_type &cache_handle)
 {
 	// The GLMultiResolutionRasterInterface interface says an exception is thrown if level-of-detail
 	// is outside the valid range.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			level_of_detail >= 0 &&
-				level_of_detail < boost::numeric_cast<int>(get_num_levels_of_detail()),
+			level_of_detail >= 0 && level_of_detail <= get_num_levels_of_detail() - 1,
 			GPLATES_ASSERTION_SOURCE);
 
 	const GLMatrix &model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
@@ -362,13 +452,21 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 	GLRenderer::StateBlockScope save_restore_state(renderer);
 
 	// Use shader program (if supported), otherwise the fixed-function pipeline.
-	// A valid shader program means we have a floating-point source raster.
-	if (d_render_floating_point_raster_program_object)
+	// A valid shader program means we have either a floating-point source raster or
+	// a normal-map source raster (both of which require a shader program to render).
+	unsigned int vertex_size = sizeof(vertex_type);
+	if (d_render_raster_program_object)
 	{
 		// Bind the shader program.
-		renderer.gl_bind_program_object(d_render_floating_point_raster_program_object.get());
+		renderer.gl_bind_program_object(d_render_raster_program_object.get());
 		// Set the raster texture sampler to texture unit 0.
-		d_render_floating_point_raster_program_object.get()->gl_uniform1i(renderer, "raster_texture_sampler", 0/*texture unit*/);
+		d_render_raster_program_object.get()->gl_uniform1i(renderer, "raster_texture_sampler", 0/*texture unit*/);
+
+		// When rendering a normal map the vertex size is larger due to the per-vertex tangent-space frame.
+		if (d_source_raster_is_normal_map)
+		{
+			vertex_size = sizeof(normal_map_vertex_type);
+		}
 	}
 	else // Fixed function...
 	{
@@ -377,13 +475,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 		renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
 		renderer.gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 	}
-
-	// NOTE: We don't set alpha-blending (or alpha-testing) state here because we
-	// might not be rendering directly to the final render target and hence we don't
-	// want to double-blend semi-transparent rasters - the alpha value is multiplied by
-	// all channels including alpha during alpha blending (R,G,B,A) -> (A*R,A*G,A*B,A*A) -
-	// the final render target would then have a source blending contribution of (3A*R,3A*G,3A*B,4A)
-	// which is not what we want - we want (A*R,A*G,A*B,A*A).
 
 #if 0
 	// Used to render as wire-frame meshes instead of filled textured meshes for
@@ -407,7 +498,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 		tile.tile_vertices->vertex_array->gl_bind(renderer);
 
 		const unsigned int num_vertices =
-				tile.tile_vertices->vertex_buffer->get_buffer()->get_buffer_size() / sizeof(vertex_type);
+				tile.tile_vertices->vertex_buffer->get_buffer()->get_buffer_size() / vertex_size;
 		const unsigned int num_indices =
 				tile.tile_vertices->vertex_element_buffer->get_buffer()->get_buffer_size() / sizeof(vertex_element_type);
 
@@ -637,8 +728,17 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile_vertices(
 			// Bind the new vertex buffer to the new vertex array.
 			// This only needs to be done once since the vertex buffer and vertex array
 			// are always created together.
-			bind_vertex_buffer_to_vertex_array<vertex_type>(
-					renderer, *tile_vertices->vertex_array, tile_vertices->vertex_buffer);
+			if (d_source_raster_is_normal_map)
+			{
+				// Normal-map vertices are larger due to per-vertex tangent-space frame.
+				bind_vertex_buffer_to_vertex_array<normal_map_vertex_type>(
+						renderer, *tile_vertices->vertex_array, tile_vertices->vertex_buffer);
+			}
+			else
+			{
+				bind_vertex_buffer_to_vertex_array<vertex_type>(
+						renderer, *tile_vertices->vertex_array, tile_vertices->vertex_buffer);
+			}
 		}
 
 		// Get the vertex indices for this tile.
@@ -674,26 +774,24 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 	const unsigned int num_vertices_in_tile =
 			lod_tile.x_num_vertices * lod_tile.y_num_vertices;
 
-	// Allocate memory for the vertex array.
-	std::vector<vertex_type> vertex_buffer_data;
-	vertex_buffer_data.reserve(num_vertices_in_tile);
 
-	//
-	// Initialise the vertices
-	//
+	// Allocate memory for the geo-referenced vertex positions.
+	// If we're rendering surface normals then we need extra positions around the border
+	// of the tile so we can calculate tangent-space frames for each tile vertex.
+	std::vector<GPlatesMaths::UnitVector3D> vertex_positions;
+	vertex_positions.reserve(num_vertices_in_tile);
 
-	// Set up some variables before initialising the vertices.
+	// Set up some variables before initialising the geo-referenced vertex positions.
 	const double inverse_x_num_quads = 1.0 / (lod_tile.x_num_vertices - 1);
 	const double inverse_y_num_quads = 1.0 / (lod_tile.y_num_vertices - 1);
 	const double x_pixels_per_quad =
 			inverse_x_num_quads * (lod_tile.x_geo_end - lod_tile.x_geo_start);
 	const double y_pixels_per_quad =
 			inverse_y_num_quads * (lod_tile.y_geo_end - lod_tile.y_geo_start);
-	const double u_increment_per_quad = inverse_x_num_quads * (lod_tile.u_end - lod_tile.u_start);
-	const double v_increment_per_quad = inverse_y_num_quads * (lod_tile.v_end - lod_tile.v_start);
 
-	// Calculate the vertices.
-	for (unsigned int j = 0; j < lod_tile.y_num_vertices; ++j)
+	// Calculate the geo-referenced vertex positions.
+	unsigned int j;
+	for (j = 0; j < lod_tile.y_num_vertices; ++j)
 	{
 		// NOTE: The positions of the last row of vertices should
 		// match up identically with the adjacent tile otherwise
@@ -702,9 +800,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 		const double y = (j == lod_tile.y_num_vertices - 1)
 				? lod_tile.y_geo_end
 				: lod_tile.y_geo_start + j * y_pixels_per_quad;
-
-		// The 'v' texture coordinate.
-		const double v = lod_tile.v_start + j * v_increment_per_quad;
 
 		for (unsigned int i = 0; i < lod_tile.x_num_vertices; ++i)
 		{
@@ -720,22 +815,231 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 			const GPlatesMaths::PointOnSphere vertex_position =
 					convert_pixel_coord_to_geographic_coord(x, y);
 
-			// The 'u' texture coordinate.
-			const double u = lod_tile.u_start + i * u_increment_per_quad;
-
-			// Add the vertex.
-			const vertex_type vertex(vertex_position.position_vector(), u, v);
-			vertex_buffer_data.push_back(vertex);
+			vertex_positions.push_back(vertex_position.position_vector());
 		}
 	}
 
-	// Copy vertices into the vertex buffer.
+	// Allocate memory for the vertex array.
+	const unsigned int vertex_buffer_size_in_bytes = num_vertices_in_tile *
+			(d_source_raster_is_normal_map ? sizeof(normal_map_vertex_type) : sizeof(vertex_type));
+
+	// The memory is allocated directly in the vertex buffer.
+	//
+	// NOTE: We could use USAGE_DYNAMIC_DRAW but that is useful if updating every few frames or so.
+	// In our case we typically update much less frequently than that so it's better to use USAGE_STATIC_DRAW
+	// to hint to the driver to store vertices in faster video memory rather than AGP memory.
 	tile_vertices.vertex_buffer->get_buffer()->gl_buffer_data(
 			renderer,
 			GLBuffer::TARGET_ARRAY_BUFFER,
-			vertex_buffer_data,
-			// We update the vertex buffer occasionally (ie, dynamic)...
-			GLBuffer::USAGE_DYNAMIC_DRAW);
+			vertex_buffer_size_in_bytes,
+			NULL/*data*/, // We allocating memory but not initialising it yet.
+			GLBuffer::USAGE_STATIC_DRAW);
+
+	// Get access to the allocated buffer.
+	// The buffer will be unmapped at scope exit.
+	GLBuffer::MapBufferScope map_vertex_buffer_scope(
+			renderer,
+			*tile_vertices.vertex_buffer->get_buffer(),
+			GLBuffer::TARGET_ARRAY_BUFFER);
+	// NOTE: This is a write-only pointer - it might reference video memory - and cannot be read from.
+	GLvoid *vertex_data_write_ptr =
+			map_vertex_buffer_scope.gl_map_buffer_static(GLBuffer::ACCESS_WRITE_ONLY);
+
+	//
+	// Initialise the vertices
+	//
+
+	// Set up some variables before initialising the vertices.
+	const double u_increment_per_quad = inverse_x_num_quads * (lod_tile.u_end - lod_tile.u_start);
+	const double v_increment_per_quad = inverse_y_num_quads * (lod_tile.v_end - lod_tile.v_start);
+
+	// Calculate the vertices.
+	for (j = 0; j < lod_tile.y_num_vertices; ++j)
+	{
+		// The 'v' texture coordinate.
+		const double v = lod_tile.v_start + j * v_increment_per_quad;
+
+		for (unsigned int i = 0; i < lod_tile.x_num_vertices; ++i)
+		{
+			// Get the geo-referenced vertex position.
+			const GPlatesMaths::UnitVector3D &vertex_position =
+					vertex_positions[i + j * lod_tile.x_num_vertices];
+
+			// The 'u' texture coordinate.
+			const double u = lod_tile.u_start + i * u_increment_per_quad;
+
+			if (d_source_raster_is_normal_map)
+			{
+				// Calculate the vertex positions above/below/left/right of the current vertex.
+				// This is so we can calculate the tangent-space frame.
+				const GPlatesMaths::UnitVector3D vertex_position01 =
+						(i != 0)
+						? vertex_positions[i - 1 + j * lod_tile.x_num_vertices] // vertex in tile
+						: ((lod_tile.x_geo_start != 0)
+								? convert_pixel_coord_to_geographic_coord( // vertex outside tile but in raster
+										lod_tile.x_geo_start - x_pixels_per_quad,
+										lod_tile.y_geo_start + j * y_pixels_per_quad).position_vector()
+								: vertex_position); // vertex outside raster - just use raster edge
+				const GPlatesMaths::UnitVector3D vertex_position21 =
+						(i != lod_tile.x_num_vertices - 1)
+						? vertex_positions[i + 1 + j * lod_tile.x_num_vertices] // vertex in tile
+						: ((lod_tile.x_geo_end != d_raster_width)
+								? convert_pixel_coord_to_geographic_coord( // vertex outside tile but in raster
+										lod_tile.x_geo_end + x_pixels_per_quad,
+										lod_tile.y_geo_start + j * y_pixels_per_quad).position_vector()
+								: vertex_position); // vertex outside raster - just use raster edge
+				const GPlatesMaths::UnitVector3D &vertex_position10 =
+						(j != 0)
+						? vertex_positions[i + (j - 1) * lod_tile.x_num_vertices] // vertex in tile
+						: ((lod_tile.y_geo_start != 0)
+								? convert_pixel_coord_to_geographic_coord( // vertex outside tile but in raster
+										lod_tile.x_geo_start + i * x_pixels_per_quad,
+										lod_tile.y_geo_start - y_pixels_per_quad).position_vector()
+								: vertex_position); // vertex outside raster - just use raster edge
+				const GPlatesMaths::UnitVector3D &vertex_position12 =
+						(j != lod_tile.y_num_vertices - 1)
+						? vertex_positions[i + (j + 1) * lod_tile.x_num_vertices] // vertex in tile
+						: ((lod_tile.y_geo_end != d_raster_height)
+								? convert_pixel_coord_to_geographic_coord( // vertex outside tile but in raster
+										lod_tile.x_geo_start + i * x_pixels_per_quad,
+										lod_tile.y_geo_end + y_pixels_per_quad).position_vector()
+								: vertex_position); // vertex outside raster - just use raster edge
+
+				// Calculate the tangent-space frame of the current vertex.
+				const TangentSpaceFrame tangent_space_frame = calculate_tangent_space_frame(
+						vertex_position,
+						vertex_position01, vertex_position21, vertex_position10, vertex_position12);
+
+				// Write the vertex to vertex buffer memory.
+				normal_map_vertex_type *vertex = static_cast<normal_map_vertex_type *>(vertex_data_write_ptr);
+
+				// Write directly into (un-initialised) memory in the vertex buffer.
+				// NOTE: We cannot read this memory.
+				new (vertex) normal_map_vertex_type(
+						vertex_position,
+						u, v,
+						tangent_space_frame.tangent, tangent_space_frame.binormal, tangent_space_frame.normal);
+
+				// Advance the vertex buffer write pointer.
+				vertex_data_write_ptr = vertex + 1;
+			}
+			else // source raster is *not* a normal map...
+			{
+				// Write the vertex to vertex buffer memory.
+				vertex_type *vertex = static_cast<vertex_type *>(vertex_data_write_ptr);
+
+				// Write directly into (un-initialised) memory in the vertex buffer.
+				// NOTE: We cannot read this memory.
+				new (vertex) vertex_type(vertex_position, u, v);
+
+				// Advance the vertex buffer write pointer.
+				vertex_data_write_ptr = vertex + 1;
+			}
+		}
+	}
+}
+
+
+GPlatesOpenGL::GLMultiResolutionRaster::TangentSpaceFrame
+GPlatesOpenGL::GLMultiResolutionRaster::calculate_tangent_space_frame(
+		const GPlatesMaths::UnitVector3D &vertex_position,
+		const GPlatesMaths::UnitVector3D &vertex_position01,
+		const GPlatesMaths::UnitVector3D &vertex_position21,
+		const GPlatesMaths::UnitVector3D &vertex_position10,
+		const GPlatesMaths::UnitVector3D &vertex_position12)
+{
+	// Calculate the tangent-space frame of the specified vertex.
+	//
+	// NOTE: Depending on how the raster is geo-referenced onto the globe we could get
+	// a left-handed or right-handed tangent-space coordinate system. In other words you
+	// could imagine flipping a raster about one of its two geo-referenced coordinates
+	// and this would change from left (or right) coordinate system to right (or left).
+	//
+	// NOTE: The tangent-space frame is not necessarily orthogonal and so the tangent and
+	// binormal can be non-orthogonal to each other (but still orthogonal to the normal).
+	// This depends on the geo-referencing and is fine - the shader program will still
+	// normalise each (world-space) surface normal pixel.
+
+	boost::optional<GPlatesMaths::UnitVector3D> tangent;
+	boost::optional<GPlatesMaths::UnitVector3D> binormal;
+	// The surface normal points outwards from the sphere regardless of tangent and binormal.
+	const GPlatesMaths::UnitVector3D &normal = vertex_position;
+
+	// Vector of constant 'u' coming into current vertex.
+	GPlatesMaths::Vector3D delta_u10 =
+			GPlatesMaths::Vector3D(vertex_position) - GPlatesMaths::Vector3D(vertex_position01);
+	// Vector of constant 'u' going out of current vertex.
+	GPlatesMaths::Vector3D delta_u21 =
+			GPlatesMaths::Vector3D(vertex_position21) - GPlatesMaths::Vector3D(vertex_position);
+	// Normalise, unless the length is zero (in which case it won't contribute).
+	if (!are_almost_exactly_equal(delta_u10.magSqrd(), 0))
+	{
+		delta_u10 = (1.0 / delta_u10.magnitude()) * delta_u10;
+	}
+	if (!are_almost_exactly_equal(delta_u21.magSqrd(), 0))
+	{
+		delta_u21 = (1.0 / delta_u21.magnitude()) * delta_u21;
+	}
+
+	// The tangent is the average of the vectors of constant 'u'.
+	GPlatesMaths::Vector3D delta_u = delta_u21 + delta_u10;
+	// Normalise, unless the length is zero (in which case tangent could not be determined).
+	if (!are_almost_exactly_equal(delta_u.magSqrd(), 0))
+	{
+		tangent = delta_u.get_normalisation();
+	}
+
+	// Vector of constant 'v' coming into current vertex.
+	GPlatesMaths::Vector3D delta_v10 =
+			GPlatesMaths::Vector3D(vertex_position) - GPlatesMaths::Vector3D(vertex_position10);
+	// Vector of constant 'v' going out of current vertex.
+	GPlatesMaths::Vector3D delta_v21 =
+			GPlatesMaths::Vector3D(vertex_position12) - GPlatesMaths::Vector3D(vertex_position);
+	// Normalise, unless the length is zero (in which case it won't contribute).
+	if (!are_almost_exactly_equal(delta_v10.magSqrd(), 0))
+	{
+		delta_v10 = (1.0 / delta_v10.magnitude()) * delta_v10;
+	}
+	if (!are_almost_exactly_equal(delta_v21.magSqrd(), 0))
+	{
+		delta_v21 = (1.0 / delta_v21.magnitude()) * delta_v21;
+	}
+
+	// The tangent is the average of the vectors of constant 'v'.
+	GPlatesMaths::Vector3D delta_v = delta_v21 + delta_v10;
+	// Normalise, unless the length is zero (in which case binormal could not be determined).
+	if (!are_almost_exactly_equal(delta_v.magSqrd(), 0))
+	{
+		binormal = delta_v.get_normalisation();
+	}
+
+	// If both tangent and binormal could not be determined then generate any arbitrary
+	// orthonormal frame using 'normal'. This could happen near the north or south pole.
+	// Typically the height pixels should all be the same when they're all bunched near
+	// a pole like that and so the surface normals should all be normal to the surface
+	// (ie, no tangent/binormal components) and hence the arbitrary tangent/binormal frame
+	// won't get used in the shader program when converting surface normals to world-space.
+	if (!tangent && !binormal)
+	{
+		tangent = generate_perpendicular(normal);
+		// Cross-product produces very close to unit vector but not good enough for
+		// UnitVector3D constructor so using 'get_normalisation()' instead.
+		binormal = cross(normal, tangent.get()).get_normalisation();
+	}
+	else if (!tangent)
+	{
+		// Cross-product produces very close to unit vector but not good enough for
+		// UnitVector3D constructor so using 'get_normalisation()' instead.
+		tangent = cross(binormal.get(), normal).get_normalisation();
+	}
+	else if (!binormal)
+	{
+		// Cross-product produces very close to unit vector but not good enough for
+		// UnitVector3D constructor so using 'get_normalisation()' instead.
+		binormal = cross(normal, tangent.get()).get_normalisation();
+	}
+
+	return TangentSpaceFrame(tangent.get(), binormal.get(), normal);
 }
 
 
@@ -853,6 +1157,72 @@ GPlatesOpenGL::GLMultiResolutionRaster::calculate_num_texels_per_vertex()
 	//qDebug() << "texels/vertex: " << num_texels_per_vertex_fixed_point / 65536.0;
 
 	return num_texels_per_vertex_fixed_point;
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
+		GLRenderer &renderer)
+{
+	// If the source raster is a normal map then use a shader program instead of the fixed-function pipeline.
+	// This converts the surface normals from tangent-space to world-space so they can be captured
+	// in a cube raster (which is decoupled from the raster geo-referencing or tangent-space).
+	if (d_source_raster_is_normal_map)
+	{
+		GLShaderProgramUtils::ShaderSource fragment_shader_source;
+
+		// Configure shader for converting tangent-space surface normals to world-space.
+		fragment_shader_source.add_shader_source("#define SURFACE_NORMALS\n");
+
+		// Finally add the GLSL 'main()' function.
+		fragment_shader_source.add_shader_source(RENDER_RASTER_FRAGMENT_SHADER_SOURCE);
+
+		d_render_raster_program_object =
+				GLShaderProgramUtils::compile_and_link_fragment_program(
+						renderer,
+						fragment_shader_source);
+
+		// We should be able to compile/link the shader program since the client should have
+		// called 'supports_normal_map_source()' which does a test compile/link.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				d_render_raster_program_object,
+				GPLATES_ASSERTION_SOURCE);
+	}
+	// Else if the source raster is floating-point (ie, not coloured as fixed-point for visual display)
+	// then use a shader program instead of the fixed-function pipeline.
+	else if (GLTexture::is_format_floating_point(d_raster_source->get_target_texture_internal_format()))
+	{
+		// If shader programs are supported then use them to render the raster tile.
+		//
+		// If floating-point textures are supported then shader programs should also be supported.
+		// If they are not for some reason (pretty unlikely) then revert to using the fixed-function pipeline.
+		//
+		// NOTE: The reason for doing this (instead of just using the fixed-function pipeline always)
+		// is to prevent clamping (to [0,1] range) of floating-point textures.
+		// The raster texture might be rendered as floating-point (if we're being used for
+		// data analysis instead of visualisation). The programmable pipeline has no clamping by default
+		// whereas the fixed-function pipeline does (both clamping at the fragment output and internal
+		// clamping in the texture environment stages). This clamping can be controlled by the
+		// 'GL_ARB_color_buffer_float' extension (which means we could use the fixed-function pipeline
+		// always) but that extension is not available on Mac OSX 10.5 (Leopard) on any hardware
+		// (rectified in 10.6) so instead we'll just use the programmable pipeline whenever it's
+		// available (and all platforms that support GL_ARB_texture_float should also support shaders).
+		d_render_raster_program_object =
+				GLShaderProgramUtils::compile_and_link_fragment_program(
+						renderer,
+						RENDER_RASTER_FRAGMENT_SHADER_SOURCE);
+
+		// The shader cannot get any simpler so if it fails to compile/link then something is wrong.
+		// Also the client will have called 'GLDataRasterSource::is_supported()' which verifies
+		// vertex/fragment shader support - so that should not be the reason for failure.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				d_render_raster_program_object,
+				GPLATES_ASSERTION_SOURCE);
+	}
+	else
+	{
+		// Don't create a shader program - using fixed-function pipeline.
+	}
 }
 
 

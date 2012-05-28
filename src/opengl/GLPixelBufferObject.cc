@@ -143,10 +143,16 @@ GPlatesOpenGL::GLPixelBufferObject::gl_tex_image_2D(
 		GLenum type,
 		GLint offset) const
 {
+	// For cube map textures the target to bind is different than the target specifying the cube face.
+	const GLenum bind_target =
+			(target >= GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB && target <= GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_ARB)
+			? GL_TEXTURE_CUBE_MAP_ARB
+			: target;
+
 	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
 	// Revert our texture binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	GLRenderer::BindTextureAndApply save_restore_bind_texture(renderer, texture, GL_TEXTURE0, target);
+	GLRenderer::BindTextureAndApply save_restore_bind_texture(renderer, texture, GL_TEXTURE0, bind_target);
 
 	// Bind this pixel buffer to the *unpack* target.
 	GLRenderer::BindBufferObjectAndApply save_restore_bind_pixel_buffer(renderer, d_buffer, get_unpack_target_type());
@@ -225,10 +231,16 @@ GPlatesOpenGL::GLPixelBufferObject::gl_tex_sub_image_2D(
 		GLenum type,
 		GLint offset) const
 {
+	// For cube map textures the target to bind is different than the target specifying the cube face.
+	const GLenum bind_target =
+			(target >= GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB && target <= GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_ARB)
+			? GL_TEXTURE_CUBE_MAP_ARB
+			: target;
+
 	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
 	// Revert our texture binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	GLRenderer::BindTextureAndApply save_restore_bind_texture(renderer, texture, GL_TEXTURE0, target);
+	GLRenderer::BindTextureAndApply save_restore_bind_texture(renderer, texture, GL_TEXTURE0, bind_target);
 
 	// Bind this pixel buffer to the *unpack* target.
 	GLRenderer::BindBufferObjectAndApply save_restore_bind_pixel_buffer(renderer, d_buffer, get_unpack_target_type());

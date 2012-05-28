@@ -52,28 +52,42 @@ bool
 GPlatesOpenGL::GLDataRasterSource::is_supported(
 		GLRenderer &renderer)
 {
-	const GLContext::Parameters &context_parameters = GLContext::get_parameters();
+	static bool supported = false;
 
-	const bool supported =
-			// Need floating-point textures...
-			context_parameters.texture.gl_ARB_texture_float;
-
-	if (!supported)
+	// Only test for support the first time we're called.
+	static bool tested_for_support = false;
+	if (!tested_for_support)
 	{
-		// Only emit warning message once.
-		static bool emitted_warning = false;
-		if (!emitted_warning)
+		tested_for_support = true;
+
+		// Need floating-point texture support.
+		// Also need vertex/fragment shader support in various other classes to render floating-point rasters.
+		//
+		// NOTE: The reason for doing this (instead of just using the fixed-function pipeline always)
+		// is to prevent clamping (to [0,1] range) of floating-point textures.
+		// The raster texture might be rendered as floating-point (if we're being used for
+		// data analysis instead of visualisation). The programmable pipeline has no clamping by default
+		// whereas the fixed-function pipeline does (both clamping at the fragment output and internal
+		// clamping in the texture environment stages). This clamping can be controlled by the
+		// 'GL_ARB_color_buffer_float' extension (which means we could use the fixed-function pipeline
+		// always) but that extension is not available on Mac OSX 10.5 (Leopard) on any hardware
+		// (rectified in 10.6) so instead we'll just use the programmable pipeline whenever it's available.
+		if (!GLContext::get_parameters().texture.gl_ARB_texture_float ||
+			!GLContext::get_parameters().shader.gl_ARB_vertex_shader ||
+			!GLContext::get_parameters().shader.gl_ARB_fragment_shader)
 		{
-			qWarning() <<
-					"GLDataRasterSource: Floating-point OpenGL texture support 'GL_ARB_texture_float' is required.\n";
-			emitted_warning = true;
+			// Any system with floating-point textures will typically also have shaders so only
+			// need to mention lack of floating-point texture support.
+			qDebug() <<
+					"GLDataRasterSource: Disabling floating-point texture support in OpenGL - requires 'GL_ARB_texture_float'.";
+			return false;
 		}
 
-		return false;
+		// If we get this far then we have support.
+		supported = true;
 	}
 
-	// Supported.
-	return true;
+	return supported;
 }
 
 
@@ -159,10 +173,6 @@ GPlatesOpenGL::GLDataRasterSource::GLDataRasterSource(
 					: 4 * tile_texel_dimension]),
 	d_logged_tile_load_failure_warning(false)
 {
-	// Floating-point textures must be supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_texture_float),
-			GPLATES_ASSERTION_SOURCE);
 }
 
 

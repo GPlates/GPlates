@@ -230,6 +230,9 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render(
 {
 	PROFILE_FUNC();
 
+	// Make sure we leave the OpenGL state the way it was.
+	GLRenderer::StateBlockScope save_restore_state(renderer);
+
 	// First see if the map projection central meridian has changed.
 	// If so then we need to invalidate the source raster cube map cache because it is aligned with
 	// the central meridian and must be regenerated.
@@ -258,10 +261,6 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render(
 		// Note that this invalidates all cached textures so we only want to call it if the transform changed.
 		d_multi_resolution_cube_raster->set_world_transform(GLMatrix(world_transform.quat()));
 	}
-
-
-	// Make sure we leave the OpenGL state the way it was.
-	GLRenderer::StateBlockScope save_restore_state(renderer);
 
 	// Determine the size of a viewport pixel in map projection coordinates.
 	const double viewport_pixel_size_in_map_projection =
@@ -661,13 +660,6 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::set_tile_state(
 			}
 		}
 	}
-
-	// NOTE: We don't set alpha-blending (or alpha-testing) state here because we
-	// might not be rendering directly to the final render target and hence we don't
-	// want to double-blend semi-transparent rasters - the alpha value is multiplied by
-	// all channels including alpha during alpha blending (R,G,B,A) -> (A*R,A*G,A*B,A*A) -
-	// the final render target would then have a source blending contribution of (3A*R,3A*G,3A*B,4A)
-	// which is not what we want - we want (A*R,A*G,A*B,A*A).
 
 #if 0
 	// Used to render as wire-frame meshes instead of filled textured meshes for

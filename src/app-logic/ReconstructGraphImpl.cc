@@ -527,6 +527,16 @@ GPlatesAppLogic::ReconstructGraphImpl::detect_cycle_in_graph(
 		const Layer *originating_layer,
 		const Layer *input_layer)
 {
+	// UPDATE: From a purely graph point-of-view cycles are actually allowed.
+	// For example, a raster can use an age-grid during reconstruction but also the age-grid
+	// can use the raster as a normal map for its surface lighting. This is a cycle but it's
+	// OK because there's a disconnect between a layer's input and output. In this example
+	// there's a disconnect in the raster layer between the age-grid input and the normal map
+	// output - they are unrelated and don't depend on each other. So in this example while there
+	// is a cycle in the connection graph there is no actual cycle in the dependencies.
+	// TODO: For now we'll just disable cycle checking - if it's reintroduced it'll need to
+	// be smarter and get help from the layer proxies to determine dependency cycles.
+#if 0
 	const LayerInputConnections::connection_seq_type input_layer_connections =
 			input_layer->get_input_connections().get_input_connections();
 
@@ -558,6 +568,7 @@ GPlatesAppLogic::ReconstructGraphImpl::detect_cycle_in_graph(
 			}
 		}
 	}
+#endif
 
 	return false;
 }

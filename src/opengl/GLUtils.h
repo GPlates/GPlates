@@ -59,7 +59,8 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Creates a full-screen quad vertex array with 2D texture coordinates (in [0,1] range).
+		 * Creates a full-screen quad vertex array with 2D texture coordinates (in [0,1] range) and
+		 * with all vertices containing the colour white - RGBA(1.0, 1.0, 1.0, 1.0).
 		 *
 		 * The full-screen quad's vertices are stored in an internally created vertex array.
 		 *
@@ -92,9 +93,16 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Creates a full-screen quad vertex array that is a combination of
-		 * @a create_full_screen_2D_coloured_quad and @a create_full_screen_2D_textured_quad
-		 * in that the quad contains texture coordinates and vertex colours.
+		 * Creates a full-screen quad vertex array with 2D texture coordinates (in [0,1] range) and
+		 * with all vertices containing the specified vertex colour.
+		 *
+		 * The full-screen quad's vertices are stored in an internally created vertex array.
+		 *
+		 * The returned compiled draw state can be used to draw a full-screen quad in order to apply
+		 * a texture to the screen-space of a render target.
+		 *
+		 * NOTE: This creates a new vertex buffer, vertex element buffer and vertex array so ideally
+		 * you should reuse the returned compiled draw state rather than recreating it where possible.
 		 */
 		GLCompiledDrawState::non_null_ptr_type
 		create_full_screen_2D_coloured_textured_quad(

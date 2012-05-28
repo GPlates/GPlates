@@ -869,13 +869,6 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::set_tile_state(
 		renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
 	}
 
-	// NOTE: We don't set alpha-blending state here because we
-	// might not be rendering directly to the final render target and hence we don't
-	// want to double-blend semi-transparent rasters - the alpha value is multiplied by
-	// all channels including alpha during alpha blending (R,G,B,A) -> (A*R,A*G,A*B,A*A) -
-	// the final render target would then have a source blending contribution of (3A*R,3A*G,3A*B,4A)
-	// which is not what we want - we want (A*R,A*G,A*B,A*A).
-
 #if 0
 	// Used to render as wire-frame meshes instead of filled textured meshes for
 	// visualising mesh density.

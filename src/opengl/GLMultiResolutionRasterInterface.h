@@ -143,16 +143,18 @@ namespace GPlatesOpenGL
 		 *   1) Regular raster:       the range [0, @a get_num_levels_of_detail - 1],
 		 *   2) Reconstructed raster: the range [-Infinity, @a get_num_levels_of_detail - 1],
 		 *
-		 * NOTE: The returned level-of-detail is a *signed* integer because a *reconstructed* raster
+		 * NOTE: The returned level-of-detail is *signed* because a *reconstructed* raster
 		 * can have a negative LOD (useful when reconstructed raster uses an age grid mask that is
 		 * higher resolution than the source raster itself).
 		 *
-		 * NOTE: It also rounds down to the next *integer* level-of-detail which means rounding
-		 * to the closest *higher* resolution level-of-detail (eg, 0.9 is rounded to 0.0 instead of 1.0).
+		 * NOTE: The returned level-of-detail is a float instead of an integer.
+		 * Float can represent clamped integers (up to 23 bits) exactly so returning as float is fine.
 		 * Tiles only exist (and hence can only be rendered) at *integer* levels of details.
+		 * So conversion to integer is done, for example, when the raster is rendered.
+		 * This conversion rounds *down* (including negative numbers, eg, -2.1 becomes -3).
 		 */
 		virtual
-		int
+		float
 		clamp_level_of_detail(
 				float level_of_detail) const = 0;
 
@@ -204,7 +206,7 @@ namespace GPlatesOpenGL
 		 * This differs from the above @a render method in that the current viewport is *not* used
 		 * to determine the level-of-detail (because the level-of-detail is explicitly provided).
 		 *
-		 * NOTE: @a level_of_detail is a *signed* integer - see @a clamp_level_of_detail for details.
+		 * NOTE: @a level_of_detail is a float - see @a clamp_level_of_detail for details.
 		 *
 		 * See the first overload of @a render for more details.
 		 *
@@ -215,7 +217,7 @@ namespace GPlatesOpenGL
 		bool
 		render(
 				GLRenderer &renderer,
-				int level_of_detail,
+				float level_of_detail,
 				cache_handle_type &cache_handle) = 0;
 	};
 }

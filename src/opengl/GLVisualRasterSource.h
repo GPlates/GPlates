@@ -65,6 +65,29 @@ namespace GPlatesOpenGL
 	 * such as JPEG.
 	 *
 	 * There is also support for modulating the opacity and intensity of the raster for visual purposes.
+	 *
+	 * The data is also in pre-multiplied alpha format.
+	 * This is where the RGB channels have already been multiplied by the alpha channel (R*A,G*A,B*A,A).
+	 * This requires alpha-blending to have (src,dst) blend factors of (1, 1-src_alpha) instead
+	 * of (src_alpha, 1-src_alpha).
+	 * This is done in case we are drawing to a render texture which will, in turn, be used
+	 * as a texture to render into another render target (such as the main view window).
+	 * If we didn't do this then we'd end up double-blending semi-transparent rasters
+	 * (or the semi-transparent boundaries of opaque rasters). This is because with normal blending
+	 * the alpha value is multiplied by all channels including alpha such that...
+	 *   (R,G,B,A) -> (A*R,A*G,A*B,A*A)
+	 * ...and the final render target would then have a source blending contribution of...
+	 *   (3A*R,3A*G,3A*B,4A)
+	 * which is not what we want - we want (A*R,A*G,A*B,A).
+	 * With pre-multiplied alpha we essentially get...
+	 *   (R*A,G*A,B*A,A) -> (R*A,G*A,B*A,A)
+	 * ...in other words unchanged.
+	 * And where there's overlap in blending (due to differently rotated polygons overlapping
+	 * each other) while rendering reconstructed raster into a render texture, the destination
+	 * alpha channel (in the render texture) will record the correct amount of contributions,
+	 * due to alpha, of the overlapping polygons. That way when the render texture is finally
+	 * blended into the main view window (for example) it will be blended as if the intermediate
+	 * render texture were bypassed and the overlapping polygons blended directly into the main view window.
 	 */
 	class GLVisualRasterSource :
 			public GLMultiResolutionRasterSource

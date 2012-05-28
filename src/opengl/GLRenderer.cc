@@ -190,7 +190,7 @@ GPlatesOpenGL::GLRenderer::end_render()
 	// End a rendering frame.
 	d_context->end_render();
 
-	// If a QPainter (using OpenGL) was specified in 'begin_render' then resume it suspend it so the
+	// If a QPainter (using OpenGL) was specified in 'begin_render' then resume it so the
 	// client can continue using the QPainter for rendering.
 	// NOTE: We are currently in the default OpenGL state which is required before we can resume the QPainter.
 	if (d_qpainter)
@@ -1802,7 +1802,7 @@ GPlatesOpenGL::GLRenderer::begin_framebuffer_object_2D(
 		RenderTextureTarget &render_texture_target)
 {
 	// Attach the texture to the framebuffer object.
-	d_framebuffer_object.get()->gl_attach(
+	d_framebuffer_object.get()->gl_attach_2D(
 			*this,
 			GL_TEXTURE_2D,
 			render_texture_target.texture,
@@ -1860,7 +1860,7 @@ GPlatesOpenGL::GLRenderer::end_framebuffer_object_2D(
 
 	// The parent render target is now the active render target.
 	// Attach the texture, of the parent render target, to the framebuffer object.
-	d_framebuffer_object.get()->gl_attach(
+	d_framebuffer_object.get()->gl_attach_2D(
 			*this,
 			GL_TEXTURE_2D,
 			parent_render_texture_target->texture,

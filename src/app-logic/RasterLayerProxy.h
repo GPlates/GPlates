@@ -40,7 +40,6 @@
 #include "model/FeatureHandle.h"
 
 #include "opengl/GLAgeGridMaskSource.h"
-#include "opengl/GLCoverageSource.h"
 #include "opengl/GLDataRasterSource.h"
 #include "opengl/GLMultiResolutionCubeRaster.h"
 #include "opengl/GLMultiResolutionRaster.h"
@@ -279,63 +278,57 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the multi-resolution age grid *mask* and *coverage* rasters for the current
+		 * Returns the multi-resolution age grid mask cube raster for the current
 		 * reconstruction time and current raster band.
 		 *
 		 * This is used to assist with reconstruction of a data raster in another layer.
+		 *
+		 * NOTE: If 'GLMultiResolutionStaticPolygonReconstructedRaster::supports_age_mask_generation()'
+		 * is true then a floating-point raster containing actual age values is returned
+		 * (see GLDataRasterSource), otherwise a fixed-point raster containing pre-generated age masks,
+		 * the results of age comparisons against a specific reconstruction time
+		 * (see GLAgeGridMaskSource), is returned.
 		 */
-		boost::optional<
-				std::pair<
-						GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid mask*/,
-						GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid coverage*/> >
-		get_multi_resolution_age_grid_mask_and_coverage_rasters(
+		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
+		get_multi_resolution_age_grid_mask(
 				GPlatesOpenGL::GLRenderer &renderer)
 		{
-			return get_multi_resolution_age_grid_mask_and_coverage_rasters(
+			return get_multi_resolution_age_grid_mask(
 					renderer, d_current_reconstruction_time, d_current_raster_band_name);
 		}
 
 		/**
-		 * Returns the multi-resolution age grid *mask* and *coverage* rasters for the current
+		 * Returns the multi-resolution age grid mask cube raster for the current
 		 * reconstruction time and specified raster band.
 		 */
-		boost::optional<
-				std::pair<
-						GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid mask*/,
-						GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid coverage*/> >
-		get_multi_resolution_age_grid_mask_and_coverage_rasters(
+		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
+		get_multi_resolution_age_grid_mask(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const GPlatesPropertyValues::TextContent &raster_band_name)
 		{
-			return get_multi_resolution_age_grid_mask_and_coverage_rasters(
+			return get_multi_resolution_age_grid_mask(
 					renderer, d_current_reconstruction_time, raster_band_name);
 		}
 
 		/**
-		 * Returns the multi-resolution age grid *mask* and *coverage* rasters for the specified
+		 * Returns the multi-resolution age grid mask cube raster for the specified
 		 * reconstruction time and current raster band.
 		 */
-		boost::optional<
-				std::pair<
-						GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid mask*/,
-						GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid coverage*/> >
-		get_multi_resolution_age_grid_mask_and_coverage_rasters(
+		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
+		get_multi_resolution_age_grid_mask(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const double &reconstruction_time)
 		{
-			return get_multi_resolution_age_grid_mask_and_coverage_rasters(
+			return get_multi_resolution_age_grid_mask(
 					renderer, reconstruction_time, d_current_raster_band_name);
 		}
 
 		/**
-		 * Returns the multi-resolution age grid *mask* and *coverage* rasters for the specified
+		 * Returns the multi-resolution age grid mask cube raster for the specified
 		 * reconstruction time and specified raster band.
 		 */
-		boost::optional<
-				std::pair<
-						GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid mask*/,
-						GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid coverage*/> >
-		get_multi_resolution_age_grid_mask_and_coverage_rasters(
+		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
+		get_multi_resolution_age_grid_mask(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const double &reconstruction_time,
 				const GPlatesPropertyValues::TextContent &raster_band_name);
@@ -438,6 +431,13 @@ namespace GPlatesAppLogic
 				boost::optional<RasterLayerProxy::non_null_ptr_type> age_grid_raster_layer_proxy);
 
 		/**
+		 * Set the normal map raster layer proxy.
+		 */
+		void
+		set_current_normal_map_raster_layer_proxy(
+				boost::optional<RasterLayerProxy::non_null_ptr_type> normal_map_raster_layer_proxy);
+
+		/**
 		 * Specify the raster feature.
 		 */
 		void
@@ -507,8 +507,7 @@ namespace GPlatesAppLogic
 
 				// Invalidate structures from other layers used to reconstruct the raster.
 				cached_reconstructed_polygon_meshes = boost::none;
-				cached_age_grid_mask_raster = boost::none;
-				cached_age_grid_coverage_raster = boost::none;
+				cached_age_grid_mask_cube_raster = boost::none;
 			}
 
 			/**
@@ -548,15 +547,7 @@ namespace GPlatesAppLogic
 			 * NOTE: This is different than the age grid in @a MultiResolutionAgeGridRaster.
 			 * Here the age grid refers to *another* layer (not this layer).
 			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> cached_age_grid_mask_raster;
-
-			/**
-			 * Cached OpenGL age grid coverage (from another layer) for reconstructing the raster.
-			 *
-			 * NOTE: This is different than the age grid in @a MultiResolutionAgeGridRaster.
-			 * Here the age grid refers to *another* layer (not this layer).
-			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> cached_age_grid_coverage_raster;
+			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> cached_age_grid_mask_cube_raster;
 
 			/**
 			 * Cached OpenGL (reconstructed) multi-resolution *data* raster (for the currently cached proxied raster).
@@ -586,15 +577,14 @@ namespace GPlatesAppLogic
 			{
 				cached_age_grid_mask_source = boost::none;
 				cached_age_grid_mask_raster = boost::none;
-				cached_age_grid_coverage_source = boost::none;
-				cached_age_grid_coverage_raster = boost::none;
+				cached_age_grid_mask_cube_raster = boost::none;
 				cached_age_grid_reconstruction_time = boost::none;
 			}
 
 			/**
 			 * Cached OpenGL age grid mask source (for the currently cached proxied raster).
 			 */
-			boost::optional<GPlatesOpenGL::GLAgeGridMaskSource::non_null_ptr_type> cached_age_grid_mask_source;
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRasterSource::non_null_ptr_type> cached_age_grid_mask_source;
 
 			/**
 			 * Cached OpenGL multi-resolution age grid mask (for the currently cached proxied raster).
@@ -602,19 +592,29 @@ namespace GPlatesAppLogic
 			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> cached_age_grid_mask_raster;
 
 			/**
-			 * Cached OpenGL age grid coverage source (for the currently cached proxied raster).
+			 * Cached OpenGL multi-resolution age grid mask cube raster (for the currently cached proxied raster).
 			 */
-			boost::optional<GPlatesOpenGL::GLCoverageSource::non_null_ptr_type> cached_age_grid_coverage_source;
-
-			/**
-			 * Cached OpenGL multi-resolution age grid coverage (for the currently cached proxied raster).
-			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> cached_age_grid_coverage_raster;
+			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> cached_age_grid_mask_cube_raster;
 
 			/**
 			 * The reconstruction time of the cached age grid.
 			 */
 			boost::optional<GPlatesMaths::real_t> cached_age_grid_reconstruction_time;
+
+			/**
+			 * If returns true then use a floating-point raster containing actual age values instead
+			 * of a fixed-point raster containing age masks (results of age comparisons against
+			 * a specific reconstruction time).
+			 */
+			bool
+			use_age_grid_data_source(
+					GPlatesOpenGL::GLRenderer &renderer) const;
+
+		private:
+			/**
+			 * If true then use a GLDataRasterSource for age grid (instead of GLAgeGridMaskSource).
+			 */
+			mutable boost::optional<bool> d_use_age_grid_data_source;
 		};
 
 
@@ -627,6 +627,13 @@ namespace GPlatesAppLogic
 		 * Optional age grid raster input.
 		 */
 		LayerProxyUtils::OptionalInputLayerProxy<RasterLayerProxy> d_current_age_grid_raster_layer_proxy;
+
+		/**
+		 * Optional normal map raster input.
+		 *
+		 * FIXME: A normal map is for visualisation so shouldn't be in app-logic code.
+		 */
+		LayerProxyUtils::OptionalInputLayerProxy<RasterLayerProxy> d_current_normal_map_raster_layer_proxy;
 
 		/**
 		 * The raster input feature.

@@ -357,7 +357,29 @@ GPlatesGui::LayerPainter::end_painting(
 	//
 
 
-	// Set the alpha-blend state in case filled polygons are semi-transparent.
+	// Turn off depth writes.
+	renderer.gl_depth_mask(GL_FALSE);
+
+	// Set up raster alpha blending for pre-multiplied alpha.
+	// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
+	// This is where the RGB channels have already been multiplied by the alpha channel.
+	// See class GLVisualRasterSource for why this is done.
+	//
+	// Note: The render target (main framebuffer) is fixed-point RGBA (and not floating-point) so we
+	// don't need to worry about alpha-blending not being available for floating-point render targets.
+	renderer.gl_enable(GL_BLEND);
+	renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Enable alpha testing as an optimisation for culling transparent raster pixels.
+	renderer.gl_enable(GL_ALPHA_TEST);
+	renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
+
+	// Paint a raster if there is one (note there should only be one raster in a layer).
+	// In particular pre-multiplied alpha-blending is used for reasons explained in the raster rendering code.
+	const cache_handle_type rasters_cache_handle = paint_rasters(renderer, gl_visual_layers);
+
+
+	// Set the alpha-blend state for the vector geometries.
 	renderer.gl_enable(GL_BLEND);
 	renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -376,12 +398,6 @@ GPlatesGui::LayerPainter::end_painting(
 
 	// Turn on depth testing if the client has requested to use the depth buffer.
 	renderer.gl_enable(GL_DEPTH_TEST, d_use_depth_buffer);
-
-	// Turn off depth writes.
-	renderer.gl_depth_mask(GL_FALSE);
-
-	// Paint a raster if there is one (note there should only be one raster in a layer).
-	const cache_handle_type rasters_cache_handle = paint_rasters(renderer, gl_visual_layers);
 
 	{
 		// Make sure we leave the OpenGL state the way it was.
@@ -467,6 +483,8 @@ GPlatesGui::LayerPainter::paint_rasters(
 				raster_drawable.source_resolved_raster,
 				raster_drawable.source_raster_colour_palette,
 				raster_drawable.source_raster_modulate_colour,
+				raster_drawable.scene_lighting_params,
+				raster_drawable.view_orientation,
 				raster_drawable.map_projection);
 
 		cache_handle->push_back(raster_cache_handle);

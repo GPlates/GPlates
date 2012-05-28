@@ -1652,7 +1652,7 @@ namespace GPlatesOpenGL
 				const GLdouble &w);
 
 		//! Returns the default @a param_type for 'this' state.
-		const param_type &
+		param_type
 		get_default_param() const;
 	};
 
@@ -1700,15 +1700,13 @@ namespace GPlatesOpenGL
 		//! The boost::variant itself.
 		typedef boost::make_variant_over<param_data_types>::type param_type;
 
-		static const param_type DEFAULT_ENV_MODE;
-
 		GLenum d_texture_unit;
 		GLenum d_target;
 		GLenum d_pname;
 		param_type d_param;
 
 		//! Returns the default @a param_type for 'this' state.
-		const param_type &
+		param_type
 		get_default_param() const;
 	};
 

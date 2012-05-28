@@ -328,6 +328,7 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_static_polygon_meshes(
 						renderer,
 						get_present_day_polygon_meshes(),
 						get_present_day_geometries(),
+						reconstruction_time,
 						get_reconstructions_spatial_partition(reconstruction_time));
 		d_cached_reconstructed_polygon_meshes.cached_reconstructed_static_polygon_meshes = reconstructed_polygon_meshes;
 
@@ -395,6 +396,7 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_static_polygon_meshes(
 		}
 
 		d_cached_reconstructed_polygon_meshes.cached_reconstructed_static_polygon_meshes.get()->update(
+				reconstruction_time,
 				reconstructions_spatial_partition,
 				active_or_inactive_reconstructions_spatial_partition);
 	}

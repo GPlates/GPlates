@@ -94,7 +94,7 @@ GPlatesOpenGL::GLFrameBufferObject::GLFrameBufferObject(
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::gl_attach(
+GPlatesOpenGL::GLFrameBufferObject::gl_attach_1D(
 		GLRenderer &renderer,
 		GLenum texture_target,
 		const GLTexture::shared_ptr_to_const_type &texture,
@@ -103,11 +103,59 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach(
 {
 	//PROFILE_FUNC();
 
-	// The texture must be initialised with a width and a height.
-	// If not then its either a 1D texture or it has not been initialised with
-	// GLTexture::gl_tex_image_2D or GLTexture::gl_tex_image_3D.
+	// The texture must be initialised with a width and no height and no depth.
+	// If not then its either a 2D/3D texture or it has not been initialised with GLTexture::gl_tex_image_1D.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			texture->get_width() && texture->get_height(),
+			texture->get_width() && !texture->get_height() && !texture->get_depth(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
+
+	// We should only get here if the framebuffer object extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object) &&
+				colour_attachment >= GL_COLOR_ATTACHMENT0_EXT &&
+				colour_attachment < GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Attach to the texture.
+	glFramebufferTexture1DEXT(
+			GL_FRAMEBUFFER_EXT,
+			colour_attachment,
+			texture_target,
+			texture->get_texture_resource_handle(),
+			level);
+
+	// Keep track of the colour attachment.
+	const ColourAttachment attachment =
+	{
+		colour_attachment,
+		GL_TEXTURE_1D, // glFramebufferTexture1DEXT
+		texture_target,
+		texture,
+		level,
+		boost::none
+	};
+	d_colour_attachments[colour_attachment - GL_COLOR_ATTACHMENT0_EXT] = attachment;
+}
+
+
+void
+GPlatesOpenGL::GLFrameBufferObject::gl_attach_2D(
+		GLRenderer &renderer,
+		GLenum texture_target,
+		const GLTexture::shared_ptr_to_const_type &texture,
+		GLint level,
+		GLenum colour_attachment)
+{
+	//PROFILE_FUNC();
+
+	// The texture must be initialised with a width and a height and no depth.
+	// If not then its either a 1D/3D texture or it has not been initialised with GLTexture::gl_tex_image_2D.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			texture->get_width() && texture->get_height() && !texture->get_depth(),
 			GPLATES_ASSERTION_SOURCE);
 
 	// Revert our framebuffer binding on return so we don't affect changes made by clients.
@@ -132,10 +180,63 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach(
 	// Keep track of the colour attachment.
 	const ColourAttachment attachment =
 	{
-		texture,
+		colour_attachment,
+		GL_TEXTURE_2D, // glFramebufferTexture2DEXT
 		texture_target,
+		texture,
 		level,
-		colour_attachment
+		boost::none
+	};
+	d_colour_attachments[colour_attachment - GL_COLOR_ATTACHMENT0_EXT] = attachment;
+}
+
+
+void
+GPlatesOpenGL::GLFrameBufferObject::gl_attach_3D(
+		GLRenderer &renderer,
+		GLenum texture_target,
+		const GLTexture::shared_ptr_to_const_type &texture,
+		GLint level,
+		GLint zoffset,
+		GLenum colour_attachment)
+{
+	//PROFILE_FUNC();
+
+	// The texture must be initialised with a width and a height and a depth.
+	// If not then its either a 1D/2D texture or it has not been initialised with GLTexture::gl_tex_image_3D.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			texture->get_width() && texture->get_height() && texture->get_depth(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
+
+	// We should only get here if the framebuffer object extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object) &&
+				colour_attachment >= GL_COLOR_ATTACHMENT0_EXT &&
+				colour_attachment < GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Attach to the texture.
+	glFramebufferTexture3DEXT(
+			GL_FRAMEBUFFER_EXT,
+			colour_attachment,
+			texture_target,
+			texture->get_texture_resource_handle(),
+			level,
+			zoffset);
+
+	// Keep track of the colour attachment.
+	const ColourAttachment attachment =
+	{
+		colour_attachment,
+		GL_TEXTURE_3D_EXT, // glFramebufferTexture3DEXT
+		texture_target,
+		texture,
+		level,
+		zoffset
 	};
 	d_colour_attachments[colour_attachment - GL_COLOR_ATTACHMENT0_EXT] = attachment;
 }
@@ -168,12 +269,46 @@ GPlatesOpenGL::GLFrameBufferObject::gl_detach(
 	}
 
 	// Detach by binding to texture object zero.
-	glFramebufferTexture2DEXT(
-			GL_FRAMEBUFFER_EXT,
-			attachment->attachment,
-			attachment->texture_target,
-			0/*texture*/,
-			attachment->level);
+	//
+	// NOTE: I don't think we need to match the function call and parameters when the texture object
+	// is zero (at least the parameters are supposed to be ignored) but we'll do it anyway.
+	switch (attachment->framebuffer_texture_type)
+	{
+	case GL_TEXTURE_1D:
+		glFramebufferTexture1DEXT(
+				GL_FRAMEBUFFER_EXT,
+				attachment->attachment,
+				attachment->texture_target,
+				0/*texture*/,
+				attachment->level);
+		break;
+
+	case GL_TEXTURE_2D:
+		glFramebufferTexture2DEXT(
+				GL_FRAMEBUFFER_EXT,
+				attachment->attachment,
+				attachment->texture_target,
+				0/*texture*/,
+				attachment->level);
+		break;
+
+	case GL_TEXTURE_3D_EXT:
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				attachment->zoffset,
+				GPLATES_ASSERTION_SOURCE);
+		glFramebufferTexture3DEXT(
+				GL_FRAMEBUFFER_EXT,
+				attachment->attachment,
+				attachment->texture_target,
+				0/*texture*/,
+				attachment->level,
+				attachment->zoffset.get());
+		break;
+
+	default:
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		break;
+	}
 
 	// No longer tracking the colour attachment point.
 	d_colour_attachments[colour_attachment - GL_COLOR_ATTACHMENT0_EXT] = boost::none;
@@ -184,30 +319,17 @@ void
 GPlatesOpenGL::GLFrameBufferObject::gl_detach_all(
 		GLRenderer &renderer)
 {
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
-	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
-
 	// We should only get here if the framebuffer object extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
 			GPLATES_ASSERTION_SOURCE);
 
 	// Detach any currently attached attachment points.
-	BOOST_FOREACH(boost::optional<ColourAttachment> &colour_attachment, d_colour_attachments)
+	BOOST_FOREACH(const boost::optional<ColourAttachment> &colour_attachment, d_colour_attachments)
 	{
 		if (colour_attachment)
 		{
-			// Detach by binding to texture object zero.
-			glFramebufferTexture2DEXT(
-					GL_FRAMEBUFFER_EXT,
-					colour_attachment->attachment,
-					colour_attachment->texture_target,
-					0/*texture*/,
-					colour_attachment->level);
-
-			// No longer tracking the colour attachment point.
-			colour_attachment = boost::none;
+			gl_detach(renderer, colour_attachment->attachment);
 		}
 	}
 }

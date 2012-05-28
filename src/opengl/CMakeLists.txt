@@ -23,8 +23,6 @@ set(srcs
     GLCompiledDrawState.h
     GLContext.cc
     GLContext.h
-    GLCoverageSource.cc
-    GLCoverageSource.h
     GLCubeMeshGenerator.cc
     GLCubeMeshGenerator.h
     GLCubeSubdivision.cc
@@ -41,6 +39,8 @@ set(srcs
     GLIntersect.h
     GLIntersectPrimitives.cc
     GLIntersectPrimitives.h
+    GLLight.cc
+    GLLight.h
     GLMapCubeMeshGenerator.cc
     GLMapCubeMeshGenerator.h
     GLMatrix.cc
@@ -65,6 +65,8 @@ set(srcs
     GLMultiResolutionRasterSource.h
     GLMultiResolutionStaticPolygonReconstructedRaster.cc
     GLMultiResolutionStaticPolygonReconstructedRaster.h
+    GLNormalMapSource.cc
+    GLNormalMapSource.h
     GLObject.h
     GLObjectResource.h
     GLObjectResourceManager.h

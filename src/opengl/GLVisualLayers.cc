@@ -104,9 +104,19 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 		const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type &resolved_raster,
 		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &source_raster_colour_palette,
 		const GPlatesGui::Colour &source_raster_modulate_colour,
+		const GPlatesGui::SceneLightingParams &scene_lighting_params,
+		const GLMatrix &view_orientation,
 		boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection)
 {
 	PROFILE_FUNC();
+
+	// Set/update the scene lighting.
+	// Temporary: disable lighting for now until implement canvas tool to control/specify lighting.
+	boost::optional<GLLight::non_null_ptr_type> light /*= d_list_objects->get_light(renderer)*/;
+	if (light)
+	{
+		light.get()->set_scene_lighting(renderer, scene_lighting_params, view_orientation, map_projection);
+	}
 
 	// Get the GL layer corresponding to the layer the raster came from.
 	GLLayer &gl_raster_layer = d_list_objects->gl_layers.get_layer(
@@ -136,6 +146,17 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 		age_grid_layer_usage = gl_age_grid_layer.get_age_grid_layer_usage();
 	}
 
+	// The normal map layer usage comes from another layer.
+	boost::optional<GPlatesUtils::non_null_intrusive_ptr<NormalMapLayerUsage> > normal_map_layer_usage;
+	if (resolved_raster->get_normal_map_layer_proxy())
+	{
+		// Get the GL layer corresponding to the layer the normal map came from.
+		GLLayer &gl_normal_map_layer = d_list_objects->gl_layers.get_layer(
+				resolved_raster->get_normal_map_layer_proxy().get());
+
+		normal_map_layer_usage = gl_normal_map_layer.get_normal_map_layer_usage();
+	}
+
 	// Get the raster layer usage so we can set the colour palette.
 	const GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> raster_layer_usage =
 			gl_raster_layer.get_raster_layer_usage();
@@ -150,10 +171,12 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 			static_polygon_reconstructed_raster_layer_usage =
 					gl_raster_layer.get_static_polygon_reconstructed_raster_layer_usage();
 
-	// Set/udate the layer usage inputs.
+	// Set/update the layer usage inputs.
 	static_polygon_reconstructed_raster_layer_usage->set_layer_inputs(
 			reconstructed_polygon_meshes_layer_usage,
-			age_grid_layer_usage);
+			age_grid_layer_usage,
+			normal_map_layer_usage,
+			light);
 
 	// Get the map raster layer usage.
 	const GPlatesUtils::non_null_intrusive_ptr<MapRasterLayerUsage> map_raster_layer_usage =
@@ -482,15 +505,12 @@ GPlatesOpenGL::GLVisualLayers::AgeGridLayerUsage::AgeGridLayerUsage(
 }
 
 
-boost::optional<
-		std::pair<
-				GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid mask*/,
-				GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid coverage*/> >
-GPlatesOpenGL::GLVisualLayers::AgeGridLayerUsage::get_multi_resolution_age_grid_mask_and_coverage_rasters(
+boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
+GPlatesOpenGL::GLVisualLayers::AgeGridLayerUsage::get_multi_resolution_age_grid_mask(
 		GLRenderer &renderer,
 		const double &reconstruction_time)
 {
-	return d_age_grid_raster_layer_proxy->get_multi_resolution_age_grid_mask_and_coverage_rasters(
+	return d_age_grid_raster_layer_proxy->get_multi_resolution_age_grid_mask(
 			renderer,
 			reconstruction_time);
 }
@@ -501,6 +521,132 @@ GPlatesOpenGL::GLVisualLayers::AgeGridLayerUsage::is_required_direct_or_indirect
 		const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy_handle) const
 {
 	return layer_proxy_handle == d_age_grid_raster_layer_proxy;
+}
+
+
+GPlatesOpenGL::GLVisualLayers::NormalMapLayerUsage::NormalMapLayerUsage(
+		const GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type &normal_map_raster_layer_proxy) :
+	d_raster_layer_proxy(normal_map_raster_layer_proxy)
+{
+}
+
+
+boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
+GPlatesOpenGL::GLVisualLayers::NormalMapLayerUsage::get_normal_map(
+		GLRenderer &renderer)
+{
+	if (!d_raster_layer_proxy->get_proxied_raster())
+	{
+		d_normal_map_raster_source = boost::none;
+
+		// There's no proxied raster so nothing we can do.
+		return boost::none;
+	}
+
+	if (!d_raster_layer_proxy->get_georeferencing())
+	{
+		d_multi_resolution_raster = boost::none;
+
+		// There's no georeferencing so nothing we can do.
+		return boost::none;
+	}
+
+	// If we're not up-to-date with respect to the proxied raster in the raster layer proxy...
+	// This can happen for time-dependent rasters when the time changes.
+	if (!d_raster_layer_proxy->get_proxied_raster_subject_token().is_observer_up_to_date(
+				d_proxied_raster_observer_token))
+	{
+		// If we have a normal map raster source then attempt to change the raster first
+		// since it's cheaper than rebuilding the multi-resolution raster.
+		if (d_normal_map_raster_source)
+		{
+			if (!d_normal_map_raster_source.get()->change_raster(
+					renderer,
+					d_raster_layer_proxy->get_proxied_raster().get()))
+			{
+				// Change raster was unsuccessful, so rebuild visual raster source.
+				d_normal_map_raster_source = boost::none;
+			}
+		}
+
+		// We have taken measures to be up-to-date with respect to the proxied raster in the raster layer proxy.
+		d_raster_layer_proxy->get_proxied_raster_subject_token().update_observer(
+				d_proxied_raster_observer_token);
+	}
+
+	// Rebuild the normal map raster source if necessary.
+	if (!d_normal_map_raster_source)
+	{
+		// NOTE: We also invalidate the multi-resolution raster since it must link
+		// to the normal map raster source and hence must also be rebuilt.
+		d_multi_resolution_raster = boost::none;
+
+		//qDebug() << "Rebuilding GLNormalMapSource.";
+
+		d_normal_map_raster_source = GLNormalMapSource::create(
+				renderer,
+				d_raster_layer_proxy->get_proxied_raster().get());
+		if (!d_normal_map_raster_source)
+		{
+			// Unable to create a source proxy raster so nothing we can do.
+			return boost::none;
+		}
+	}
+
+	// If we're not up-to-date with respect to the raster feature in the raster layer proxy then rebuild.
+	if (!d_raster_layer_proxy->get_raster_feature_subject_token().is_observer_up_to_date(
+			d_raster_feature_observer_token))
+	{
+		d_multi_resolution_raster = boost::none;
+
+		// We have taken measures to be up-to-date with respect to the raster feature in the raster layer proxy.
+		d_raster_layer_proxy->get_raster_feature_subject_token().update_observer(
+				d_raster_feature_observer_token);
+	}
+
+	// Rebuild the multi-resolution raster if necessary.
+	if (!d_multi_resolution_raster)
+	{
+		// We need to rebuild the multi-resolution cube raster.
+		d_multi_resolution_cube_raster = boost::none;
+
+		//qDebug() << "Rebuilding GLMultiResolutionRaster for normal map.";
+
+		const GLMultiResolutionRaster::non_null_ptr_type multi_resolution_raster =
+				GLMultiResolutionRaster::create(
+						renderer,
+						d_raster_layer_proxy->get_georeferencing().get(),
+						d_normal_map_raster_source.get());
+
+		d_multi_resolution_raster = multi_resolution_raster;
+	}
+
+	if (!d_multi_resolution_cube_raster)
+	{
+		if (!d_multi_resolution_raster)
+		{
+			// There's no multi-resolution raster so nothing we can do.
+			return boost::none;
+		}
+
+		//qDebug() << "Rebuilding GLMultiResolutionCubeRaster for normal map.";
+
+		// Attempt to create the multi-resolution cube raster.
+		d_multi_resolution_cube_raster =
+				GLMultiResolutionCubeRaster::create(
+						renderer,
+						d_multi_resolution_raster.get());
+	}
+
+	return d_multi_resolution_cube_raster.get();
+}
+
+
+bool
+GPlatesOpenGL::GLVisualLayers::NormalMapLayerUsage::is_required_direct_or_indirect_dependency(
+		const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy_handle) const
+{
+	return layer_proxy_handle == d_raster_layer_proxy;
 }
 
 
@@ -543,7 +689,9 @@ void
 GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::set_layer_inputs(
 		const boost::optional<GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> > &
 				reconstructed_polygon_meshes_layer_usage,
-		const boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > &age_grid_layer_usage)
+		const boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > &age_grid_layer_usage,
+		const boost::optional<GPlatesUtils::non_null_intrusive_ptr<NormalMapLayerUsage> > &normal_map_layer_usage,
+		boost::optional<GLLight::non_null_ptr_type> light)
 {
 	// See if we've switched layer usages.
 	if (d_reconstructed_polygon_meshes_layer_usage != reconstructed_polygon_meshes_layer_usage)
@@ -554,15 +702,26 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::set_l
 		d_reconstructed_polygon_meshes = boost::none;
 		d_reconstructed_polygon_meshes_layer_usage = reconstructed_polygon_meshes_layer_usage;
 	}
+
 	if (d_age_grid_layer_usage != age_grid_layer_usage)
 	{
 		// Then we need to rebuild the reconstructed raster.
 		d_reconstructed_raster = boost::none;
 
-		d_age_grid_mask_raster = boost::none;
-		d_age_grid_coverage_raster = boost::none;
+		d_age_grid_mask_cube_raster = boost::none;
 		d_age_grid_layer_usage = age_grid_layer_usage;
 	}
+
+	if (d_normal_map_layer_usage != normal_map_layer_usage)
+	{
+		// Then we need to rebuild the reconstructed raster.
+		d_reconstructed_raster = boost::none;
+
+		d_normal_map_cube_raster = boost::none;
+		d_normal_map_layer_usage = normal_map_layer_usage;
+	}
+
+	d_light = light;
 }
 
 
@@ -628,33 +787,50 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::get_s
 	}
 
 	// If we are using an age grid to assist reconstruction...
-	boost::optional<GLMultiResolutionRaster::non_null_ptr_type> age_grid_mask_raster;
-	boost::optional<GLMultiResolutionRaster::non_null_ptr_type> age_grid_coverage_raster;
+	boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> age_grid_mask_cube_raster;
 	if (d_age_grid_layer_usage)
 	{
-		// Get the age grid mask/coverage.
-		boost::optional<
-				std::pair<
-						GLMultiResolutionRaster::non_null_ptr_type/*age grid mask*/,
-						GLMultiResolutionRaster::non_null_ptr_type/*age grid coverage*/> >
-								age_grid_mask_and_coverage = d_age_grid_layer_usage.get()
-										->get_multi_resolution_age_grid_mask_and_coverage_rasters(
-												renderer,
-												reconstruction_time);
+		// Get the age grid mask.
+		age_grid_mask_cube_raster =
+				d_age_grid_layer_usage.get()->get_multi_resolution_age_grid_mask(
+						renderer,
+						reconstruction_time);
 
-		if (age_grid_mask_and_coverage)
+		if (!age_grid_mask_cube_raster)
 		{
-			age_grid_mask_raster = age_grid_mask_and_coverage->first;
-			age_grid_coverage_raster = age_grid_mask_and_coverage->second;
+			qWarning() << "GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::get_static_polygon_reconstructed_raster: "
+				"Failed to obtain age grid.";
 		}
 	}
 
-	// If the age grid rasters are different objects...
-	if (d_age_grid_mask_raster != age_grid_mask_raster ||
-		d_age_grid_coverage_raster != age_grid_coverage_raster)
+	// If the age grid cube rasters are different objects...
+	if (d_age_grid_mask_cube_raster != age_grid_mask_cube_raster)
 	{
-		d_age_grid_mask_raster = age_grid_mask_raster;
-		d_age_grid_coverage_raster = age_grid_coverage_raster;
+		d_age_grid_mask_cube_raster = age_grid_mask_cube_raster;
+
+		// We need to rebuild the reconstructed raster.
+		d_reconstructed_raster = boost::none;
+	}
+
+	// If we are using a normal map to enhance surface lighting detail and normal maps are supported...
+	boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> normal_map_cube_raster;
+	if (d_normal_map_layer_usage &&
+		GLMultiResolutionStaticPolygonReconstructedRaster::supports_normal_map(renderer))
+	{
+		// Get the normal map.
+		normal_map_cube_raster = d_normal_map_layer_usage.get()->get_normal_map(renderer);
+
+		if (!normal_map_cube_raster)
+		{
+			qWarning() << "GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::get_static_polygon_reconstructed_raster: "
+				"Failed to obtain normal map.";
+		}
+	}
+
+	// If the normal map cube rasters are different objects...
+	if (d_normal_map_cube_raster != normal_map_cube_raster)
+	{
+		d_normal_map_cube_raster = normal_map_cube_raster;
 
 		// We need to rebuild the reconstructed raster.
 		d_reconstructed_raster = boost::none;
@@ -662,33 +838,19 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::get_s
 
 	if (!d_reconstructed_raster)
 	{
-		// We can only reconstruct with an age grid if we have both rasters.
-		// If one is successfully created then typically the other one will be too.
-		if (d_age_grid_mask_raster && d_age_grid_coverage_raster)
-		{
-			//qDebug() << "Rebuilding GLMultiResolutionStaticPolygonReconstructedRaster with age grid.";
+		//qDebug() << "Rebuilding GLMultiResolutionStaticPolygonReconstructedRaster "
+		//		<< (d_age_grid_mask_cube_raster ? "with" : "without") << " age grid and "
+		//		<< (d_normal_map_cube_raster ? "with" : "without") << " normal map.";
 
-			// Create a reconstructed raster with the age grid.
-			d_reconstructed_raster =
-					GLMultiResolutionStaticPolygonReconstructedRaster::create(
-							renderer,
-							d_multi_resolution_cube_raster.get(),
-							d_reconstructed_polygon_meshes.get(),
-							GLMultiResolutionStaticPolygonReconstructedRaster::AgeGridRaster(
-									d_age_grid_mask_raster.get(),
-									d_age_grid_coverage_raster.get()));
-		}
-		else
-		{
-			//qDebug() << "Rebuilding GLMultiResolutionStaticPolygonReconstructedRaster with no age grid.";
-
-			// Create a reconstructed raster without the age grid.
-			d_reconstructed_raster =
-					GLMultiResolutionStaticPolygonReconstructedRaster::create(
-							renderer,
-							d_multi_resolution_cube_raster.get(),
-							d_reconstructed_polygon_meshes.get());
-		}
+		// Create a reconstructed raster.
+		d_reconstructed_raster =
+				GLMultiResolutionStaticPolygonReconstructedRaster::create(
+						renderer,
+						d_multi_resolution_cube_raster.get(),
+						d_reconstructed_polygon_meshes.get(),
+						d_age_grid_mask_cube_raster,
+						d_normal_map_cube_raster,
+						d_light);
 	}
 
 	return d_reconstructed_raster;
@@ -721,8 +883,7 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::remov
 
 	// Stop using the age grid layer usage.
 	d_age_grid_layer_usage = boost::none;
-	d_age_grid_mask_raster = boost::none;
-	d_age_grid_coverage_raster = boost::none;
+	d_age_grid_mask_cube_raster = boost::none;
 
 	// We'll need to rebuild our reconstructed raster.
 	d_reconstructed_raster = boost::none;
@@ -914,6 +1075,29 @@ GPlatesOpenGL::GLVisualLayers::GLLayer::get_age_grid_layer_usage()
 	}
 
 	return GPlatesUtils::dynamic_pointer_cast<AgeGridLayerUsage>(d_layer_usages[layer_usage_type].get());
+}
+
+
+GPlatesUtils::non_null_intrusive_ptr<GPlatesOpenGL::GLVisualLayers::NormalMapLayerUsage>
+GPlatesOpenGL::GLVisualLayers::GLLayer::get_normal_map_layer_usage()
+{
+	const LayerUsage::Type layer_usage_type = LayerUsage::NORMAL_MAP;
+
+	if (!d_layer_usages[layer_usage_type])
+	{
+		// This will throw an exception (or abort in debug mode) if the dynamic cast fails
+		// but that's because it's a program error if it fails.
+		const GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type normal_map_layer_proxy =
+				GPlatesUtils::dynamic_pointer_cast<GPlatesAppLogic::RasterLayerProxy>(d_layer_proxy);
+
+		// Create a new RasterLayerUsage object.
+		d_layer_usages[layer_usage_type] = 
+				GPlatesUtils::non_null_intrusive_ptr<NormalMapLayerUsage>(
+						new NormalMapLayerUsage(
+								normal_map_layer_proxy));
+	}
+
+	return GPlatesUtils::dynamic_pointer_cast<NormalMapLayerUsage>(d_layer_usages[layer_usage_type].get());
 }
 
 
@@ -1135,4 +1319,23 @@ GPlatesOpenGL::GLVisualLayers::ListObjects::get_multi_resolution_filled_polygons
 	}
 
 	return d_multi_resolution_filled_polygons.get();
+}
+
+
+boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type>
+GPlatesOpenGL::GLVisualLayers::ListObjects::get_light(
+		GPlatesOpenGL::GLRenderer &renderer) const
+{
+	if (!GLLight::is_supported(renderer))
+	{
+		return boost::none;
+	}
+
+	// Create light if first time called.
+	if (!d_light)
+	{
+		d_light = GLLight::create(renderer);
+	}
+
+	return d_light;
 }

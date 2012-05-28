@@ -37,8 +37,9 @@
 #include "GLMultiResolutionCubeReconstructedRaster.h"
 
 #include "GLContext.h"
-#include "GLRenderer.h"
 #include "GLProjectionUtils.h"
+#include "GLRenderer.h"
+#include "GLTexture.h"
 #include "GLUtils.h"
 #include "GLViewport.h"
 
@@ -226,12 +227,26 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::render_raster_data_into
 	// The projection matrix.
 	renderer.gl_load_matrix(GL_PROJECTION, tile.d_projection_transform->get_matrix());
 
-	// NOTE: We don't set alpha-blending state here because we
-	// might not be rendering directly to the final render target and hence we don't
-	// want to double-blend semi-transparent rasters - the alpha value is multiplied by
-	// all channels including alpha during alpha blending (R,G,B,A) -> (A*R,A*G,A*B,A*A) -
-	// the final render target would then have a source blending contribution of (3A*R,3A*G,3A*B,4A)
-	// which is not what we want - we want (A*R,A*G,A*B,A*A).
+	// If the render target is floating-point...
+	if (tile_texture.texture->is_floating_point())
+	{
+		// A lot of graphics hardware does not support blending to floating-point targets so we don't enable it.
+		// And a floating-point render target is used for data rasters (ie, not coloured as fixed-point
+		// for visual display) - where the coverage (or alpha) is in the green channel instead of the alpha channel.
+	}
+	else // an RGBA render target...
+	{
+		// Set up alpha blending for pre-multiplied alpha.
+		// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
+		// This is where the RGB channels have already been multiplied by the alpha channel.
+		// See class GLVisualRasterSource for why this is done.
+		renderer.gl_enable(GL_BLEND);
+		renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+		// Enable alpha testing as an optimisation for culling transparent raster pixels.
+		renderer.gl_enable(GL_ALPHA_TEST);
+		renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
+	}
 
 	// Reconstruct source raster by rendering into the render target using the view frustum
 	// we have provided.

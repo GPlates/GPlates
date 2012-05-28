@@ -187,12 +187,12 @@ namespace GPlatesOpenGL
 		unsigned int d_tile_texel_dimension;
 
 		/**
-		 * Uses as temporary space to pack data and coverage into red/green channels before loading texture.
+		 * Used as temporary space to pack data and coverage into red/green channels before loading texture.
 		 */
 		boost::scoped_array<float> d_tile_pack_working_space;
 
 		/**
-		 * Uses as temporary space to duplicate a tile's vertical or horizontal edge when the data in
+		 * Used as temporary space to duplicate a tile's vertical or horizontal edge when the data in
 		 * the tile does not consume the full @a d_tile_texel_dimension x @a d_tile_texel_dimension area.
 		 */
 		boost::scoped_array<float> d_tile_edge_working_space;

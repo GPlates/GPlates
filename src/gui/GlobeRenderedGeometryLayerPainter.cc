@@ -32,6 +32,7 @@
 #include "ColourScheme.h"
 #include "GlobeRenderedGeometryLayerPainter.h"
 #include "LayerPainter.h"
+#include "SceneLightingParams.h"
 
 #include "maths/EllipseGenerator.h"
 #include "maths/Real.h"
@@ -100,6 +101,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter
 		RenderSettings &render_settings,
 		const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
+		const GlobeOrientation &globe_orientation,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_rendered_geometry_layer(rendered_geometry_layer),
 	d_gl_visual_layers(gl_visual_layers),
@@ -107,6 +109,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter
 	d_render_settings(render_settings),
 	d_text_renderer_ptr(text_renderer_ptr),
 	d_visibility_tester(visibility_tester),
+	d_globe_orientation(globe_orientation),
 	d_colour_scheme(colour_scheme),
 	d_scale(1.0f)
 {
@@ -335,12 +338,23 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_resolved_raster(
 		const GPlatesViewOperations::RenderedResolvedRaster &rendered_resolved_raster)
 {
+	// TODO: Move this into ViewState and add a lighting canvas tool.
+	// It's just here for testing purposes for now.
+	const GPlatesOpenGL::GLMatrix view_orientation(
+			GPlatesMaths::UnitQuaternion3D::create_rotation(
+					d_globe_orientation.rotation_axis(),
+					d_globe_orientation.rotation_angle()));
+	SceneLightingParams scene_lighting_params;
+	scene_lighting_params.enable_lighting(true);
+
 	// Queue the raster primitive for painting.
 	d_layer_painter->rasters.push_back(
 			LayerPainter::RasterDrawable(
 					rendered_resolved_raster.get_resolved_raster(),
 					rendered_resolved_raster.get_raster_colour_palette(),
-					rendered_resolved_raster.get_raster_modulate_colour()));
+					rendered_resolved_raster.get_raster_modulate_colour(),
+					scene_lighting_params,
+					view_orientation));
 }
 
 

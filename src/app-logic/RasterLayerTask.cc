@@ -45,6 +45,8 @@ const QString GPlatesAppLogic::RasterLayerTask::RECONSTRUCTED_POLYGONS_CHANNEL_N
 		"Reconstructed polygons";
 const QString GPlatesAppLogic::RasterLayerTask::AGE_GRID_RASTER_CHANNEL_NAME =
 		"Age grid raster";
+const QString GPlatesAppLogic::RasterLayerTask::NORMAL_MAP_RASTER_CHANNEL_NAME =
+		"Surface lighting raster";
 
 
 bool
@@ -93,6 +95,16 @@ GPlatesAppLogic::RasterLayerTask::get_input_channel_types() const
 					AGE_GRID_RASTER_CHANNEL_NAME,
 					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
 					LayerTaskType::RASTER));
+	
+	// Temporary: disable lighting for now until implement canvas tool to control/specify lighting.
+#if 0
+	// Channel definition for the normal map raster.
+	input_channel_types.push_back(
+			LayerInputChannelType(
+					NORMAL_MAP_RASTER_CHANNEL_NAME,
+					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
+					LayerTaskType::RASTER));
+#endif
 
 	return input_channel_types;
 }
@@ -245,6 +257,18 @@ GPlatesAppLogic::RasterLayerTask::add_input_layer_proxy_connection(
 					GPlatesUtils::get_non_null_pointer(raster_layer_proxy.get()));
 		}
 	}
+	else if (input_channel_name == NORMAL_MAP_RASTER_CHANNEL_NAME)
+	{
+		// Make sure the input layer proxy is a raster layer proxy.
+		boost::optional<RasterLayerProxy *> raster_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<
+						RasterLayerProxy>(layer_proxy);
+		if (raster_layer_proxy)
+		{
+			d_raster_layer_proxy->set_current_normal_map_raster_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(raster_layer_proxy.get()));
+		}
+	}
 }
 
 
@@ -274,6 +298,17 @@ GPlatesAppLogic::RasterLayerTask::remove_input_layer_proxy_connection(
 		if (raster_layer_proxy)
 		{
 			d_raster_layer_proxy->set_current_age_grid_raster_layer_proxy(boost::none);
+		}
+	}
+	else if (input_channel_name == NORMAL_MAP_RASTER_CHANNEL_NAME)
+	{
+		// Make sure the input layer proxy is a raster layer proxy.
+		boost::optional<RasterLayerProxy *> raster_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<
+						RasterLayerProxy>(layer_proxy);
+		if (raster_layer_proxy)
+		{
+			d_raster_layer_proxy->set_current_normal_map_raster_layer_proxy(boost::none);
 		}
 	}
 }

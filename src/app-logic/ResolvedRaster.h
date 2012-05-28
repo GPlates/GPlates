@@ -75,7 +75,8 @@ namespace GPlatesAppLogic
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const raster_layer_proxy_non_null_ptr_type &raster_layer_proxy,
 				const boost::optional<reconstruct_layer_proxy_non_null_ptr_type> &reconstructed_polygons_layer_proxy,
-				const boost::optional<raster_layer_proxy_non_null_ptr_type> &age_grid_raster_layer_proxy)
+				const boost::optional<raster_layer_proxy_non_null_ptr_type> &age_grid_raster_layer_proxy,
+				const boost::optional<raster_layer_proxy_non_null_ptr_type> &normal_map_raster_layer_proxy)
 		{
 			return non_null_ptr_type(
 					new ResolvedRaster(
@@ -84,7 +85,8 @@ namespace GPlatesAppLogic
 							reconstruction_tree_,
 							raster_layer_proxy,
 							reconstructed_polygons_layer_proxy,
-							age_grid_raster_layer_proxy));
+							age_grid_raster_layer_proxy,
+							normal_map_raster_layer_proxy));
 		}
 
 
@@ -129,6 +131,16 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Returns the optional normal map layer proxy.
+		 */
+		const boost::optional<raster_layer_proxy_non_null_ptr_type> &
+		get_normal_map_layer_proxy() const
+		{
+			return d_normal_map_raster_layer_proxy;
+		}
+
+
+		/**
 		 * Accept a ConstReconstructionGeometryVisitor instance.
 		 */
 		virtual
@@ -163,7 +175,8 @@ namespace GPlatesAppLogic
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const raster_layer_proxy_non_null_ptr_type &raster_layer_proxy,
 				const boost::optional<reconstruct_layer_proxy_non_null_ptr_type> &reconstructed_polygons_layer_proxy,
-				const boost::optional<raster_layer_proxy_non_null_ptr_type> &age_grid_raster_layer_proxy);
+				const boost::optional<raster_layer_proxy_non_null_ptr_type> &age_grid_raster_layer_proxy,
+				const boost::optional<raster_layer_proxy_non_null_ptr_type> &normal_map_raster_layer_proxy);
 
 	private:
 		/**
@@ -185,6 +198,11 @@ namespace GPlatesAppLogic
 		 * The optional age grid layer proxy.
 		 */
 		boost::optional<raster_layer_proxy_non_null_ptr_type> d_age_grid_raster_layer_proxy;
+
+		/**
+		 * The optional normal map layer proxy.
+		 */
+		boost::optional<raster_layer_proxy_non_null_ptr_type> d_normal_map_raster_layer_proxy;
 	};
 }
 

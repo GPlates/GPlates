@@ -92,32 +92,9 @@ GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_type
 GPlatesOpenGL::GLUtils::create_full_screen_2D_textured_quad(
 		GLRenderer &renderer)
 {
-	// The vertices for the full-screen quad.
-	const GLTextureVertex quad_vertices[4] =
-	{  //  x,  y, z, u, v
-		GLTextureVertex(-1, -1, 0, 0, 0),
-		GLTextureVertex(1, -1, 0, 1, 0),
-		GLTextureVertex(1,  1, 0, 1, 1),
-		GLTextureVertex(-1,  1, 0, 0, 1)
-	};
-
-	// The indices for the full-screen quad.
-	const GLushort quad_indices[4] = { 0, 1, 2, 3 };
-
-	// Create the vertex array.
-	const GLVertexArray::shared_ptr_type vertex_array = GLVertexArray::create(renderer);
-
-	// Store the vertices/indices in the vertex array and compile into a draw call.
-	//
-	// NOTE: Even though we don't return 'vertex_array' the compiled draw state maintains
-	// shared references to the internal vertex buffer, etc - enough to be able to draw the
-	// full-screen quad even though 'vertex_array' will no longer exist.
-	return compile_vertex_array_draw_state(
+	return create_full_screen_2D_coloured_textured_quad(
 			renderer,
-			*vertex_array,
-			std::vector<GLTextureVertex>(quad_vertices, quad_vertices + 4),
-			std::vector<GLushort>(quad_indices, quad_indices + 4),
-			GL_QUADS);
+			GPlatesGui::rgba8_t(255, 255, 255, 255/*white*/));
 }
 
 

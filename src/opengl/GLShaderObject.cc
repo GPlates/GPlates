@@ -249,8 +249,8 @@ GPlatesOpenGL::GLShaderObject::gl_compile_shader(
 		// ...the returned string is null-terminated.
 
 		// Log the shader info log.
-		qWarning() << "Unable to compile OpenGL shader source code: ";
-		qWarning() << info_log.get();
+		qDebug() << "Unable to compile OpenGL shader source code: ";
+		qDebug() << info_log.get();
 
 		return false;
 	}

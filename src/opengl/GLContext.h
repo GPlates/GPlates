@@ -257,6 +257,8 @@ namespace GPlatesOpenGL
 			/**
 			 * Creates a compiled draw state that can render a full-screen textured quad.
 			 *
+			 * The vertex colours are white - RGBA(1.0, 1.0, 1.0, 1.0).
+			 *
 			 * The returned compiled draw state can be used to draw a full-screen quad in order apply a
 			 * texture to the screen-space of a render target.
 			 *
@@ -614,6 +616,15 @@ namespace GPlatesOpenGL
 				 */
 				GLuint gl_max_texture_size; // GL_MAX_TEXTURE_SIZE query result
 
+				/**
+				 * The maximum cube map texture size (dimension) this OpenGL implementation/driver will support.
+				 * This is without texture borders and will be a power-of-two.
+				 */
+				GLuint gl_max_cube_map_texture_size; // GL_MAX_CUBE_MAP_TEXTURE_SIZE query result
+
+				//! Is GL_ARB_texture_cube_map supported?
+				bool gl_ARB_texture_cube_map;
+
 				//! Is GL_ARB_texture_non_power_of_two supported?
 				bool gl_ARB_texture_non_power_of_two;
 
@@ -671,6 +682,12 @@ namespace GPlatesOpenGL
 
 				//! Is GL_SGIS_texture_edge_clamp supported? Same as GL_EXT_texture_edge_clamp extension really.
 				bool gl_SGIS_texture_edge_clamp;
+
+				//! Is GL_ARB_texture_env_combine supported?
+				bool gl_ARB_texture_env_combine;
+
+				//! Is GL_ARB_texture_env_dot3 supported?
+				bool gl_ARB_texture_env_dot3;
 
 				//! Is GL_EXT_texture3D supported?
 				bool gl_EXT_texture3D;

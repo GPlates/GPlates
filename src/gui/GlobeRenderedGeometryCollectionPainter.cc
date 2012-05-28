@@ -47,6 +47,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollect
 		RenderSettings &render_settings,
 		const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
+		const GlobeOrientation &globe_orientation,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_rendered_geometry_collection(rendered_geometry_collection),
 	d_gl_visual_layers(gl_visual_layers),
@@ -54,6 +55,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollect
 	d_render_settings(render_settings),
 	d_text_renderer_ptr(text_renderer_ptr),
 	d_visibility_tester(visibility_tester),
+	d_globe_orientation(globe_orientation),
 	d_colour_scheme(colour_scheme),
 	d_scale(1.0f),
 	d_visual_layers_reversed(false)
@@ -107,6 +109,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 			d_render_settings,
 			d_text_renderer_ptr,
 			d_visibility_tester,
+			d_globe_orientation,
 			d_colour_scheme);
 	rendered_geom_layer_painter.set_scale(d_scale);
 

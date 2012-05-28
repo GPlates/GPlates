@@ -320,6 +320,93 @@ namespace GPlatesOpenGL
 			GLVertexArray &vertex_array,
 			const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
 			GLint offset);
+
+
+	/**
+	 * A vertex with 3D position, 2D texture coordinates and a tangent-space frame consisting
+	 * of three 3D texture coordinates representing the three frame axes.
+	 *
+	 * The 2D texture coordinates are on texture unit 0.
+	 * The tangent, binormal and normal of the tangent-space frame are on texture units 1, 2, and 3 respectively.
+	 */
+	struct GLTextureTangentSpaceVertex
+	{
+		//! NOTE: Default constructor does *not* initialise !
+		GLTextureTangentSpaceVertex()
+		{  }
+
+		GLTextureTangentSpaceVertex(
+				GLfloat x_,
+				GLfloat y_,
+				GLfloat z_,
+				GLfloat u_,
+				GLfloat v_,
+				GLfloat tangent_x_,
+				GLfloat tangent_y_,
+				GLfloat tangent_z_,
+				GLfloat binormal_x_,
+				GLfloat binormal_y_,
+				GLfloat binormal_z_,
+				GLfloat normal_x_,
+				GLfloat normal_y_,
+				GLfloat normal_z_) :
+			x(x_),
+			y(y_),
+			z(z_),
+			u(u_),
+			v(v_),
+			tangent_x(tangent_x_),
+			tangent_y(tangent_y_),
+			tangent_z(tangent_z_),
+			binormal_x(binormal_x_),
+			binormal_y(binormal_y_),
+			binormal_z(binormal_z_),
+			normal_x(normal_x_),
+			normal_y(normal_y_),
+			normal_z(normal_z_)
+		{  }
+
+		GLTextureTangentSpaceVertex(
+				const GPlatesMaths::UnitVector3D &vertex_,
+				GLfloat u_,
+				GLfloat v_,
+				const GPlatesMaths::UnitVector3D &tangent_,
+				const GPlatesMaths::UnitVector3D &binormal_,
+				const GPlatesMaths::UnitVector3D &normal_) :
+			x(vertex_.x().dval()),
+			y(vertex_.y().dval()),
+			z(vertex_.z().dval()),
+			u(u_),
+			v(v_),
+			tangent_x(tangent_.x().dval()),
+			tangent_y(tangent_.y().dval()),
+			tangent_z(tangent_.z().dval()),
+			binormal_x(binormal_.x().dval()),
+			binormal_y(binormal_.y().dval()),
+			binormal_z(binormal_.z().dval()),
+			normal_x(normal_.x().dval()),
+			normal_y(normal_.y().dval()),
+			normal_z(normal_.z().dval())
+		{  }
+
+
+		GLfloat x, y, z;
+		GLfloat u, v;
+		GLfloat tangent_x, tangent_y, tangent_z;
+		GLfloat binormal_x, binormal_y, binormal_z;
+		GLfloat normal_x, normal_y, normal_z;
+	};
+
+	/**
+	 * Binds a @a GLVertexBuffer, containing vertices of type @a GLTextureTangentSpaceVertex, to a @a GLVertexArray.
+	 */
+	template <>
+	void
+	bind_vertex_buffer_to_vertex_array<GLTextureTangentSpaceVertex>(
+			GLRenderer &renderer,
+			GLVertexArray &vertex_array,
+			const GLVertexBuffer::shared_ptr_to_const_type &vertex_buffer,
+			GLint offset);
 }
 
 

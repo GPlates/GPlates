@@ -363,12 +363,20 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_resolved_raster(
 		const GPlatesViewOperations::RenderedResolvedRaster &rendered_resolved_raster)
 {
+	// TODO: Move this into ViewState and add a lighting canvas tool.
+	// It's just here for testing purposes for now.
+	const GPlatesOpenGL::GLMatrix view_orientation;
+	SceneLightingParams scene_lighting_params;
+	scene_lighting_params.enable_lighting(true);
+
 	// Queue the raster primitive for painting.
 	d_layer_painter->rasters.push_back(
 			LayerPainter::RasterDrawable(
 					rendered_resolved_raster.get_resolved_raster(),
 					rendered_resolved_raster.get_raster_colour_palette(),
 					rendered_resolved_raster.get_raster_modulate_colour(),
+					scene_lighting_params,
+					view_orientation,
 					d_map_projection));
 }
 

@@ -197,6 +197,9 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: If @a pixels is NULL then the texture is created but the image data is left uninitialised.
 		 *
+		 * NOTE: For cube map textures @a target is one of GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, etc
+		 * specifying the cube face (and not the bind target GL_TEXTURE_CUBE_MAP_ARB).
+		 *
 		 * NOTE: There's no need to unbind pixel buffer objects (to ensure sourcing from client memory)
 		 * because that is taken care of internally.
 		 */
@@ -215,6 +218,9 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Performs same function as the glTexImage2D OpenGL function.
+		 *
+		 * NOTE: For cube map textures @a target is one of GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, etc
+		 * specifying the cube face (and not the bind target GL_TEXTURE_CUBE_MAP_ARB).
 		 *
 		 * NOTE: The image data is read beginning at offset @a offset in the specified pixel buffer.
 		 */
@@ -303,6 +309,9 @@ namespace GPlatesOpenGL
 		 * Note that this is part of @a GLTexture instead of @a GLRenderer because it initialises
 		 * the texture (sets up the internal object storage, etc) as opposed to
 		 * GLRenderer::gl_copy_tex_sub_image_2D which copies into an already initialised texture object.
+		 *
+		 * NOTE: For cube map textures @a target is one of GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, etc
+		 * specifying the cube face (and not the bind target GL_TEXTURE_CUBE_MAP_ARB).
 		 */
 		void
 		gl_copy_tex_image_2D(
@@ -363,6 +372,9 @@ namespace GPlatesOpenGL
 		/**
 		 * Performs same function as the glTexSubImage2D OpenGL function.
 		 *
+		 * NOTE: For cube map textures @a target is one of GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, etc
+		 * specifying the cube face (and not the bind target GL_TEXTURE_CUBE_MAP_ARB).
+		 *
 		 * NOTE: There's no need to unbind pixel buffer objects (to ensure sourcing from client memory)
 		 * because that is taken care of internally.
 		 *
@@ -383,6 +395,9 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Performs same function as the glTexSubImage2D OpenGL function.
+		 *
+		 * NOTE: For cube map textures @a target is one of GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB, etc
+		 * specifying the cube face (and not the bind target GL_TEXTURE_CUBE_MAP_ARB).
 		 *
 		 * NOTE: The image data is read beginning at offset @a offset in the specified pixel buffer.
 		 *
@@ -472,6 +487,8 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Returns the height of the texture (level 0).
+		 *
+		 * Note that this is also the number of array layers for a texture array (eg, GL_TEXTURE_2D_ARRAY target).
 		 *
 		 * Returns boost::none unless @a gl_tex_image_2D, @a gl_tex_image_3D or @a gl_copy_tex_image_2D have been called.
 		 */

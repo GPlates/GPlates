@@ -198,9 +198,15 @@ namespace GPlatesOpenGL
 		 *
 		 * If @a cache_tile_textures is 'CACHE_TILE_TEXTURES_ENTIRE_CUBE_QUAD_TREE' then the internal
 		 * texture cache is allowed to grow to encompass all existing cube quad tree nodes/tiles.
-		 * WARNING: This should normally be turned off (especially for visualisation of rasters where
-		 * only a small part of the raster is ever visible at any time - otherwise memory usage will
-		 * grow excessively large).
+		 * WARNING: This should normally be set to 'CACHE_TILE_TEXTURES_INDIVIDUAL_TILES'
+		 * (especially for visualisation of rasters where only a small part of the raster is ever
+		 * visible at any time - otherwise memory usage will grow excessively large).
+		 * WARNING: 'CACHE_TILE_TEXTURES_NONE' should be used with care since the texture returned by
+		 * 'GLMultiResolutionCubeRasterInterface::QuadTreeNode::get_tile_texture()' can be recycled
+		 * and overwritten by a subsequent call - so the returned texture should be used/drawn before a
+		 * subsequent call. And keeping the returned texture shared pointer alive is *not* sufficient
+		 * to prevent a texture from being recycled (specifying 'CACHE_TILE_TEXTURES_INDIVIDUAL_TILES'
+		 * and keeping the returned 'cache_handle_type' alive will prevent recycling).
 		 * See similar variable in @a GLMultiResolutionRaster::create for more details.
 		 * If it's turned on then it should ideally only be turned on either there or here.
 		 */

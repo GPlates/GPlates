@@ -46,6 +46,7 @@
 
 #include "gui/Colour.h"
 
+#include "maths/UnitQuaternion3D.h"
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
 
@@ -706,6 +707,30 @@ namespace GPlatesOpenGL
 				GLdouble value_w = 1)
 		{
 			gl_uniform4d(renderer, name, value_xyz.x().dval(), value_xyz.y().dval(), value_xyz.z().dval(), value_w);
+		}
+
+		//! Writes @a UnitQuaternion as single-precision (x,y,z,w).
+		void
+		gl_uniform4f(
+				GLRenderer &renderer,
+				const char *name,
+				const GPlatesMaths::UnitQuaternion3D &unit_quat)
+		{
+			gl_uniform4f(renderer, name, unit_quat.x().dval(), unit_quat.y().dval(), unit_quat.z().dval(), unit_quat.w().dval());
+		}
+
+		/**
+		 * Writes @a UnitQuaternion as double-precision (x,y,z,w).
+		 *
+		 * NOTE: Requires 'GL_ARB_gpu_shader_fp64'.
+		 */
+		void
+		gl_uniform4d(
+				GLRenderer &renderer,
+				const char *name,
+				const GPlatesMaths::UnitQuaternion3D &unit_quat)
+		{
+			gl_uniform4d(renderer, name, unit_quat.x().dval(), unit_quat.y().dval(), unit_quat.z().dval(), unit_quat.w().dval());
 		}
 
 		//! Writes @a value as single-precision (r,g,b,a).

@@ -336,6 +336,40 @@ GPlatesOpenGL::GLStateSetKeys::get_tex_env_key(
 		{
 		case GL_TEXTURE_ENV_MODE:
 			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_TEX_ENV_MODE);
+		case GL_TEXTURE_ENV_COLOR:
+			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_TEX_ENV_COLOR);
+		case GL_COMBINE_RGB_ARB:
+			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_COMBINE_RGB);
+		case GL_COMBINE_ALPHA_ARB:
+			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_COMBINE_ALPHA);
+		case GL_SOURCE0_RGB_ARB:
+			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_SOURCE0_RGB);
+		case GL_SOURCE0_ALPHA_ARB:
+			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_SOURCE0_ALPHA);
+		case GL_SOURCE1_RGB_ARB:
+			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_SOURCE1_RGB);
+		case GL_SOURCE1_ALPHA_ARB:
+			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_SOURCE1_ALPHA);
+		case GL_SOURCE2_RGB_ARB:
+			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_SOURCE2_RGB);
+		case GL_SOURCE2_ALPHA_ARB:
+			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_SOURCE2_ALPHA);
+		case GL_OPERAND0_RGB_ARB:
+			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_OPERAND0_RGB);
+		case GL_OPERAND0_ALPHA_ARB:
+			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_OPERAND0_ALPHA);
+		case GL_OPERAND1_RGB_ARB:
+			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_OPERAND1_RGB);
+		case GL_OPERAND1_ALPHA_ARB:
+			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_OPERAND1_ALPHA);
+		case GL_OPERAND2_RGB_ARB:
+			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_OPERAND2_RGB);
+		case GL_OPERAND2_ALPHA_ARB:
+			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_OPERAND2_ALPHA);
+		case GL_RGB_SCALE_ARB:
+			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_RGB_SCALE);
+		case GL_ALPHA_SCALE:
+			return get_texture_image_unit_key_from_key_offset(texture_unit, TEXTURE_IMAGE_UNIT_KEY_ALPHA_SCALE);
 		default:
 			// Unsupported pname.
 			GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);

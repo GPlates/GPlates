@@ -66,6 +66,7 @@ GPlatesGui::Globe::Globe(
 			d_render_settings,
 			text_renderer_ptr,
 			visibility_tester,
+			*d_globe_orientation_ptr,
 			colour_scheme)
 {  }
 
@@ -89,6 +90,7 @@ GPlatesGui::Globe::Globe(
 			d_render_settings,
 			text_renderer_ptr,
 			visibility_tester,
+			*d_globe_orientation_ptr,
 			colour_scheme)
 {  }
 

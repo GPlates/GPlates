@@ -367,6 +367,26 @@ namespace GPlatesOpenGL
 				return true;
 			}
 		};
+
+
+		//! Converts an array of 4 numbers into a std::vector.
+		template <typename Type>
+		std::vector<Type>
+		create_4_vector(
+				const Type &x,
+				const Type &y,
+				const Type &z,
+				const Type &w)
+		{
+			std::vector<Type> vec4(4);
+
+			vec4[0] = x;
+			vec4[1] = y;
+			vec4[2] = z;
+			vec4[3] = w;
+
+			return vec4;
+		}
 	}
 }
 
@@ -2734,9 +2754,11 @@ void
 GPlatesOpenGL::GLTexGenStateSet::apply_from_default_state(
 		GLState &last_applied_state) const
 {
+	const param_type default_param = get_default_param();
+
 	// Return early if no state change...
 	// Determine if the texture coordinate generation state is the same or not.
-	if (boost::apply_visitor(EqualityVisitor(), d_param, get_default_param()))
+	if (boost::apply_visitor(EqualityVisitor(), d_param, default_param))
 	{
 		return;
 	}
@@ -2752,7 +2774,7 @@ void
 GPlatesOpenGL::GLTexGenStateSet::apply_to_default_state(
 		GLState &last_applied_state) const
 {
-	const param_type &default_param = get_default_param();
+	const param_type default_param = get_default_param();
 
 	// Return early if no state change...
 	// Determine if the texture coordinate generation state is the same or not.
@@ -2768,7 +2790,7 @@ GPlatesOpenGL::GLTexGenStateSet::apply_to_default_state(
 	boost::apply_visitor(TexGenVisitor(d_coord, d_pname), default_param);
 }
 
-const GPlatesOpenGL::GLTexGenStateSet::param_type &
+GPlatesOpenGL::GLTexGenStateSet::param_type
 GPlatesOpenGL::GLTexGenStateSet::get_default_param() const
 {
 	switch (d_pname)
@@ -2807,8 +2829,6 @@ GPlatesOpenGL::GLTexGenStateSet::get_default_param() const
 }
 
 
-const GPlatesOpenGL::GLTexEnvStateSet::param_type GPlatesOpenGL::GLTexEnvStateSet::DEFAULT_ENV_MODE = GL_MODULATE;
-
 void
 GPlatesOpenGL::GLTexEnvStateSet::apply_state(
 		const GLStateSet &last_applied_state_set,
@@ -2835,9 +2855,11 @@ void
 GPlatesOpenGL::GLTexEnvStateSet::apply_from_default_state(
 		GLState &last_applied_state) const
 {
+	const param_type default_param = get_default_param();
+
 	// Return early if no state change...
 	// Determine if the texture environment state is the same or not.
-	if (boost::apply_visitor(EqualityVisitor(), d_param, get_default_param()))
+	if (boost::apply_visitor(EqualityVisitor(), d_param, default_param))
 	{
 		return;
 	}
@@ -2853,7 +2875,7 @@ void
 GPlatesOpenGL::GLTexEnvStateSet::apply_to_default_state(
 		GLState &last_applied_state) const
 {
-	const param_type &default_param = get_default_param();
+	const param_type default_param = get_default_param();
 
 	// Return early if no state change...
 	// Determine if the texture environment state is the same or not.
@@ -2869,7 +2891,7 @@ GPlatesOpenGL::GLTexEnvStateSet::apply_to_default_state(
 	boost::apply_visitor(TexEnvVisitor(d_target, d_pname), default_param);
 }
 
-const GPlatesOpenGL::GLTexEnvStateSet::param_type &
+GPlatesOpenGL::GLTexEnvStateSet::param_type
 GPlatesOpenGL::GLTexEnvStateSet::get_default_param() const
 {
 	switch (d_target)
@@ -2878,7 +2900,44 @@ GPlatesOpenGL::GLTexEnvStateSet::get_default_param() const
 		switch (d_pname)
 		{
 		case GL_TEXTURE_ENV_MODE:
-			return DEFAULT_ENV_MODE;
+			return GL_MODULATE;
+		case GL_TEXTURE_ENV_COLOR:
+			{
+				static const param_type DEFAULT_TEX_ENV_COLOR(create_4_vector<GLfloat>(0, 0, 0, 0));
+				return DEFAULT_TEX_ENV_COLOR;
+			}
+		case GL_COMBINE_RGB_ARB:
+			return GL_MODULATE;
+		case GL_COMBINE_ALPHA_ARB:
+			return GL_MODULATE;
+		case GL_SOURCE0_RGB_ARB:
+			return GL_TEXTURE;
+		case GL_SOURCE0_ALPHA_ARB:
+			return GL_TEXTURE;
+		case GL_SOURCE1_RGB_ARB:
+			return GL_PREVIOUS_ARB;
+		case GL_SOURCE1_ALPHA_ARB:
+			return GL_PREVIOUS_ARB;
+		case GL_SOURCE2_RGB_ARB:
+			return GL_CONSTANT_ARB;
+		case GL_SOURCE2_ALPHA_ARB:
+			return GL_CONSTANT_ARB;
+		case GL_OPERAND0_RGB_ARB:
+			return GL_SRC_COLOR;
+		case GL_OPERAND0_ALPHA_ARB:
+			return GL_SRC_ALPHA;
+		case GL_OPERAND1_RGB_ARB:
+			return GL_SRC_COLOR;
+		case GL_OPERAND1_ALPHA_ARB:
+			return GL_SRC_ALPHA;
+		case GL_OPERAND2_RGB_ARB:
+			return GL_SRC_ALPHA;
+		case GL_OPERAND2_ALPHA_ARB:
+			return GL_SRC_ALPHA;
+		case GL_RGB_SCALE_ARB:
+			return GLfloat(1.0);
+		case GL_ALPHA_SCALE:
+			return GLfloat(1.0);
 
 		default:
 			// Fall through to the abort.
@@ -2895,7 +2954,7 @@ GPlatesOpenGL::GLTexEnvStateSet::get_default_param() const
 	GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
 
 	// To keep compiler happy - shouldn't be able to get here.
-	return DEFAULT_ENV_MODE;
+	return GLint(0);
 }
 
 

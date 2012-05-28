@@ -60,7 +60,13 @@ namespace GPlatesOpenGL
 	class GLRenderer;
 
 	/**
-	 * An arbitrary dimension source of RGBA data made accessible by a proxied raster.
+	 * An age grid mask raster that generates a mask for a specific reconstruction time.
+	 *
+	 * The mask has value 1.0 where the age-grid age pixels are earlier (more in the geological past)
+	 * than the reconstruction time, and 0.0 otherwise.
+	 *
+	 * The mask is replicated into the RGB channels and the age grid coverage (where age grid has
+	 * valid age values) is stored in the Alpha channel.
 	 */
 	class GLAgeGridMaskSource :
 			public GLMultiResolutionRasterSource

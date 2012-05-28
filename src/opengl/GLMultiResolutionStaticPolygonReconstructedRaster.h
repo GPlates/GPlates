@@ -29,12 +29,13 @@
 #include <cstddef> // For std::size_t
 #include <vector>
 #include <boost/optional.hpp>
+#include <boost/pool/object_pool.hpp>
 #include <boost/ref.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "GLCompiledDrawState.h"
-#include "GLCoverageSource.h"
 #include "GLCubeSubdivisionCache.h"
+#include "GLLight.h"
 #include "GLMatrix.h"
 #include "GLMultiResolutionCubeRaster.h"
 #include "GLMultiResolutionRasterInterface.h"
@@ -46,10 +47,13 @@
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
 
+#include "gui/SceneLightingParams.h"
+
 #include "maths/MathsFwd.h"
 #include "maths/CubeQuadTree.h"
 #include "maths/CubeQuadTreePartition.h"
 #include "maths/CubeQuadTreePartitionUtils.h"
+#include "maths/UnitQuaternion3D.h"
 
 #include "utils/ObjectCache.h"
 #include "utils/SubjectObserverToken.h"
@@ -78,31 +82,6 @@ namespace GPlatesOpenGL
 		 */
 		typedef GLMultiResolutionRasterInterface::cache_handle_type cache_handle_type;
 
-		/**
-		 * Age grid mask and coverage rasters.
-		 */
-		struct AgeGridRaster
-		{
-			AgeGridRaster(
-					const GLMultiResolutionRaster::non_null_ptr_type &age_grid_mask_raster_,
-					const GLMultiResolutionRaster::non_null_ptr_type &age_grid_coverage_raster_) :
-				age_grid_mask_raster(age_grid_mask_raster_),
-				age_grid_coverage_raster(age_grid_coverage_raster_)
-			{  }
-
-			GLMultiResolutionRaster::non_null_ptr_type age_grid_mask_raster;
-			GLMultiResolutionRaster::non_null_ptr_type age_grid_coverage_raster;
-
-			/**
-			 * The distribution of an age grid coverage value in the pixel channels of the coverage raster.
-			 *
-			 * This is here because @a GLMultiResolutionStaticPolygonReconstructedRaster internal
-			 * rendering expects a specific distribution.
-			 */
-			static const GLCoverageSource::TextureDataFormat COVERAGE_TEXTURE_DATA_FORMAT =
-					GLCoverageSource::TEXTURE_DATA_FORMAT_FIXED_POINT_RGBA8_COVERAGE_INVERT_A;
-		};
-
 
 		/**
 		 * Returns true if *reconstructed* rasters are supported on the runtime system.
@@ -117,28 +96,77 @@ namespace GPlatesOpenGL
 		is_supported(
 				GLRenderer &renderer);
 
+		/**
+		 * Returns true if age masks can be generated on the runtime system.
+		 *
+		 * This means a floating-point raster containing actual age values can be passed into
+		 * @a create (if using age grids) instead of a fixed-point raster containing pre-generated
+		 * age masks (results of age comparisons against a specific reconstruction time).
+		 *
+		 * The age comparisons are then done by a shader program using the current reconstruction time.
+		 *
+		 * NOTE: Age masking can still be used if this function returns false - it's just not as
+		 * fast and not as good quality.
+		 */
+		static
+		bool
+		supports_age_mask_generation(
+				GLRenderer &renderer);
+
+		/**
+		 * Returns true if a normal map can be used on the runtime system to accentuate surface lighting.
+		 *
+		 * NOTE: Internally this also calls 'GLMultiResolutionRaster::supports_normal_map_source()'.
+		 */
+		static
+		bool
+		supports_normal_map(
+				GLRenderer &renderer);
+
 
 		/**
 		 * Creates a @a GLMultiResolutionStaticPolygonReconstructedRaster object.
 		 *
-		 * @param raster_to_reconstruct the raster to be reconstructed.
+		 * NOTE: The following applies when using an age grid (ie, a non-null @a age_grid_raster)...
+		 * If @a supports_age_mask_generation returns true then @a age_grid_raster *must*
+		 * be sourced from a @a GLDataRasterSource (containing actual age values), otherwise it *must*
+		 * be sourced from a @a GLAgeGridMaskSource (containing results of age comparisons against
+		 * a specific reconstruction time.
+		 *
+		 * @param source_raster the raster to be reconstructed.
 		 * @param reconstructed_static_polygon_meshes the reconstructed present day polygon meshes.
-		 * @param age_grid_raster is the optional age grid mask and coverage rasters.
+		 * @param age_grid_raster is the optional age grid raster.
+		 * @param normal_map_raster is the optional normal map raster (used during surface lighting).
+		 * @param light is the light direction used for surface lighting.
+		 *
+		 * NOTE: @a normal_map_raster and @a light are only used for surface lighting and
+		 * surface lighting is ignored for a floating-point source raster (from a @a GLDataRasterSource)
+		 * because it is analysed and not visualised.
+		 * NOTE: If @a light is specified without @a normal_map_raster then lighting is still applied
+		 * but without the perturbed lighting due to the bumps in a normal map.
+		 *
+		 * NOTE: If @a light is specified but lighting is not supported on the run-time system
+		 * (eg, due to exceeding shader instructions limit) then the raster will not be rendered
+		 * with surface lighting.
 		 */
 		static
 		non_null_ptr_type
 		create(
 				GLRenderer &renderer,
-				const GLMultiResolutionCubeRaster::non_null_ptr_type &raster_to_reconstruct,
+				const GLMultiResolutionCubeRaster::non_null_ptr_type &source_raster,
 				const GLReconstructedStaticPolygonMeshes::non_null_ptr_type &reconstructed_static_polygon_meshes,
-				boost::optional<AgeGridRaster> age_grid_raster = boost::none)
+				boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> age_grid_raster = boost::none,
+				boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> normal_map_raster = boost::none,
+				boost::optional<GLLight::non_null_ptr_type> light = boost::none)
 		{
 			return non_null_ptr_type(
 					new GLMultiResolutionStaticPolygonReconstructedRaster(
 							renderer,
-							raster_to_reconstruct,
+							source_raster,
 							reconstructed_static_polygon_meshes,
-							age_grid_raster));
+							age_grid_raster,
+							normal_map_raster,
+							light));
 		}
 
 
@@ -160,7 +188,7 @@ namespace GPlatesOpenGL
 		std::size_t
 		get_num_levels_of_detail() const
 		{
-			return d_raster_to_reconstruct->get_num_levels_of_detail();
+			return d_source_raster->get_num_levels_of_detail();
 		}
 
 
@@ -191,7 +219,7 @@ namespace GPlatesOpenGL
 		 * See base class for more details.
 		 */
 		virtual
-		int
+		float
 		clamp_level_of_detail(
 				float level_of_detail) const;
 
@@ -212,7 +240,7 @@ namespace GPlatesOpenGL
 		bool
 		render(
 				GLRenderer &renderer,
-				int level_of_detail,
+				float level_of_detail,
 				cache_handle_type &cache_handle);
 
 
@@ -223,7 +251,7 @@ namespace GPlatesOpenGL
 		std::size_t
 		get_tile_texel_dimension() const
 		{
-			return d_tile_texel_dimension;
+			return d_source_raster_tile_texel_dimension;
 		}
 
 
@@ -241,22 +269,46 @@ namespace GPlatesOpenGL
 		get_target_texture_internal_format() const
 		{
 			// Delegate to our source raster input.
-			return d_raster_to_reconstruct->get_tile_texture_internal_format();
+			return d_source_raster->get_tile_texture_internal_format();
 		}
 
 	private:
 		/**
-		 * Typedef for a @a GLCubeSubvision cache.
+		 * Typedef for the source raster @a GLCubeSubvision cache.
 		 */
 		typedef GLCubeSubdivisionCache<
 				true/*CacheProjectionTransform*/, false/*CacheLooseProjectionTransform*/,
 				false/*CacheFrustum*/, false/*CacheLooseFrustum*/,
 				false/*CacheBoundingPolygon*/, false/*CacheLooseBoundingPolygon*/,
 				true/*CacheBounds*/, false/*CacheLooseBounds*/>
-						cube_subdivision_cache_type;
+						source_raster_cube_subdivision_cache_type;
 
 		/**
-		 * Typedef for a @a GLCubeSubvision cache.
+		 * Typedef for the age grid @a GLCubeSubvision cache.
+		 *
+		 * Note that it doesn't not cache bounds like @a source_raster_cube_subdivision_cache_type.
+		 */
+		typedef GLCubeSubdivisionCache<
+				true/*CacheProjectionTransform*/, false/*CacheLooseProjectionTransform*/,
+				false/*CacheFrustum*/, false/*CacheLooseFrustum*/,
+				false/*CacheBoundingPolygon*/, false/*CacheLooseBoundingPolygon*/,
+				false/*CacheBounds*/, false/*CacheLooseBounds*/>
+						age_grid_cube_subdivision_cache_type;
+
+		/**
+		 * Typedef for the normal map @a GLCubeSubvision cache.
+		 *
+		 * Note that it doesn't not cache bounds like @a source_raster_cube_subdivision_cache_type.
+		 */
+		typedef GLCubeSubdivisionCache<
+				true/*CacheProjectionTransform*/, false/*CacheLooseProjectionTransform*/,
+				false/*CacheFrustum*/, false/*CacheLooseFrustum*/,
+				false/*CacheBoundingPolygon*/, false/*CacheLooseBoundingPolygon*/,
+				false/*CacheBounds*/, false/*CacheLooseBounds*/>
+						normal_map_cube_subdivision_cache_type;
+
+		/**
+		 * Typedef for clip @a GLCubeSubvision cache.
 		 */
 		typedef GLCubeSubdivisionCache<
 				true/*CacheProjectionTransform*/, false/*CacheLooseProjectionTransform*/,
@@ -267,83 +319,69 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Age grid mask and coverage cube rasters.
+		 * Age grid cube raster.
 		 */
 		struct AgeGridCubeRaster
 		{
+			explicit
 			AgeGridCubeRaster(
-					GLRenderer &renderer,
-					const AgeGridRaster &age_grid_raster,
-					std::size_t tile_texel_dimension) :
-				age_grid_mask_cube_raster(
-						// Create an age grid mask multi-resolution cube raster.
-						GPlatesOpenGL::GLMultiResolutionCubeRaster::create(
-								renderer,
-								age_grid_raster.age_grid_mask_raster,
-								tile_texel_dimension,
-								// We want the tile dimension to match the source raster exactly...
-								false/*adapt_tile_dimension_to_source_resolution*/,
-								// Avoids blending seams due to bilinear and/or anisotropic filtering which
-								// gives age grid mask alpha values that are not either 0.0 or 1.0...
-								GPlatesOpenGL::GLMultiResolutionCubeRaster::FIXED_POINT_TEXTURE_FILTER_MAG_NEAREST)),
-				age_grid_coverage_cube_raster(
-						// Create an age grid coverage multi-resolution cube raster.
-						GPlatesOpenGL::GLMultiResolutionCubeRaster::create(
-								renderer,
-								age_grid_raster.age_grid_coverage_raster,
-								tile_texel_dimension,
-								// We want the tile dimension to match the source raster exactly...
-								false/*adapt_tile_dimension_to_source_resolution*/,
-								// Avoids blending seams due to bilinear and/or anisotropic filtering which
-								// gives age grid coverage alpha values that are not either 0.0 or 1.0...
-								GPlatesOpenGL::GLMultiResolutionCubeRaster::FIXED_POINT_TEXTURE_FILTER_MAG_NEAREST))
-
+					GLMultiResolutionCubeRaster::non_null_ptr_type age_grid_mask_cube_raster_) :
+				cube_raster(age_grid_mask_cube_raster_),
+				tile_texel_dimension(age_grid_mask_cube_raster_->get_tile_texel_dimension()),
+				inverse_tile_texel_dimension(1.0f / age_grid_mask_cube_raster_->get_tile_texel_dimension()),
+				tile_root_uv_transform(
+						GLUtils::QuadTreeUVTransform::get_expand_tile_ratio(
+								age_grid_mask_cube_raster_->get_tile_texel_dimension(),
+								0.5/*tile_border_overlap_in_texels*/))
 			{  }
 
-			GLMultiResolutionCubeRaster::non_null_ptr_type age_grid_mask_cube_raster;
-			GLMultiResolutionCubeRaster::non_null_ptr_type age_grid_coverage_cube_raster;
+			GLMultiResolutionCubeRaster::non_null_ptr_type cube_raster;
+
+			//! The age grid tile texture dimension.
+			unsigned int tile_texel_dimension;
+
+			//! 1.0 / 'tile_texel_dimension'.
+			float inverse_tile_texel_dimension;
+
+			//! Age grid tile UV scaling/translating starts with this root UV transform (has texel overlap built in).
+			GLUtils::QuadTreeUVTransform tile_root_uv_transform;
 
 			// Keep track of changes to the age grid input rasters.
-			mutable GPlatesUtils::ObserverToken d_age_grid_mask_cube_raster_observer_token;
-			mutable GPlatesUtils::ObserverToken d_age_grid_coverage_cube_raster_observer_token;
+			mutable GPlatesUtils::ObserverToken cube_raster_observer_token;
 		};
 
 
 		/**
-		 * Maintains an age-masked source tile (render-texture) and its source tile cache handles
-		 * (such as source raster, age grid mask and coverage rasters).
+		 * Normal map cube raster.
 		 */
-		struct AgeMaskedSourceTileTexture
+		struct NormalMapCubeRaster
 		{
 			explicit
-			AgeMaskedSourceTileTexture(
-					GLRenderer &renderer_) :
-				texture(GLTexture::create_as_auto_ptr(renderer_))
+			NormalMapCubeRaster(
+					GLMultiResolutionCubeRaster::non_null_ptr_type normal_map_cube_raster_) :
+				cube_raster(normal_map_cube_raster_),
+				tile_texel_dimension(normal_map_cube_raster_->get_tile_texel_dimension()),
+				inverse_tile_texel_dimension(1.0f / normal_map_cube_raster_->get_tile_texel_dimension()),
+				tile_root_uv_transform(
+						GLUtils::QuadTreeUVTransform::get_expand_tile_ratio(
+								normal_map_cube_raster_->get_tile_texel_dimension(),
+								0.5/*tile_border_overlap_in_texels*/))
 			{  }
 
-			/**
-			 * Clears the source caches.
-			 *
-			 * Called when 'this' tile texture is returned to the cache (so texture can be reused).
-			 */
-			void
-			returned_to_cache()
-			{
-				source_raster_cache_handle.reset();
-				age_grid_mask_cache_handle.reset();
-				age_grid_coverage_cache_handle.reset();
-			}
+			GLMultiResolutionCubeRaster::non_null_ptr_type cube_raster;
 
-			GLTexture::shared_ptr_type texture;
-			GLMultiResolutionRaster::cache_handle_type source_raster_cache_handle;
-			GLMultiResolutionRaster::cache_handle_type age_grid_mask_cache_handle;
-			GLMultiResolutionRaster::cache_handle_type age_grid_coverage_cache_handle;
+			//! The age grid tile texture dimension.
+			unsigned int tile_texel_dimension;
+
+			//! 1.0 / 'tile_texel_dimension'.
+			float inverse_tile_texel_dimension;
+
+			//! Age grid tile UV scaling/translating starts with this root UV transform (has texel overlap built in).
+			GLUtils::QuadTreeUVTransform tile_root_uv_transform;
+
+			// Keep track of changes to the age grid input rasters.
+			mutable GPlatesUtils::ObserverToken cube_raster_observer_token;
 		};
-
-		/**
-		 * Typedef for a cache of age masked source tile textures.
-		 */
-		typedef GPlatesUtils::ObjectCache<AgeMaskedSourceTileTexture> age_masked_source_tile_texture_cache_type;
 
 
 		/**
@@ -351,19 +389,58 @@ namespace GPlatesOpenGL
 		 *
 		 * The cube quad tree containing these nodes is destroyed at the end of each render.
 		 *
-		 * NOTE: The members are optional because the internal nodes of the cube quad tree will not get rendered.
+		 * NOTE: The members are optional because the internal nodes don't get rendered.
 		 */
 		struct RenderQuadTreeNode
 		{
+			struct TileDrawState
+			{
+				explicit
+				TileDrawState(
+						const GLCompiledDrawState::non_null_ptr_to_const_type &compiled_draw_state_,
+						boost::optional<GLProgramObject::shared_ptr_type> program_object_ = boost::none) :
+					compiled_draw_state(compiled_draw_state_),
+					program_object(program_object_)
+				{  }
+
+				// Any state set by calling GLRenderer.
+				GLCompiledDrawState::non_null_ptr_to_const_type compiled_draw_state;
+
+				// Optional program object if not using the fixed-function pipeline.
+				boost::optional<GLProgramObject::shared_ptr_type> program_object;
+
+				// Optional uniform variables in program object.
+				// These cannot be stored in a 'GLCompiledDrawState'.
+
+				boost::optional<GLMatrix> source_raster_texture_transform;
+				boost::optional<unsigned int> source_texture_sampler;
+
+				boost::optional<GLMatrix> clip_texture_transform;
+				boost::optional<unsigned int> clip_texture_sampler;
+
+				boost::optional<GLMatrix> age_grid_texture_transform;
+				boost::optional<unsigned int> age_grid_texture_sampler;
+				boost::optional<GLfloat> reconstruction_time;
+
+				boost::optional<GLMatrix> normal_map_texture_transform;
+				boost::optional<unsigned int> normal_map_texture_sampler;
+
+				boost::optional<GLfloat> light_ambient_contribution;
+				boost::optional<GPlatesMaths::UnitVector3D> world_space_light_direction;
+				boost::optional<unsigned int> light_direction_cube_texture_sampler;
+			};
+
 			/**
-			 * The state set used to render a tile (also references the tile source texture).
+			 * The compiled draw state used to render a tile.
+			 *
+			 * NOTE: Is actually a vector of compiled draw states since age grid rendering needs one
+			 * each for active and inactive polygons.
 			 *
 			 * NOTE: Since our cube quad tree is destroyed at the end of the render call we
 			 * don't need to worry about the chance of indefinitely holding a reference to any
-			 * cached state such as a tile texture which would prevent it from being re-used
-			 * (even if this tile is not visible later on).
+			 * cached state such as a tile texture.
 			 */
-			boost::optional<GLCompiledDrawState::non_null_ptr_to_const_type> scene_tile_compiled_draw_state;
+			boost::optional< std::vector<TileDrawState> > scene_tile_draw_state;
 		};
 
 		/**
@@ -387,18 +464,23 @@ namespace GPlatesOpenGL
 		struct ClientCacheQuadTreeNode
 		{
 			/**
-			 * The age masked render texture - prevents it from being recycled.
-			 *
-			 * NOTE: This is only used when an age grid raster *is* involved.
-			 */
-			boost::optional<age_masked_source_tile_texture_cache_type::object_shared_ptr_type> age_masked_source_tile_texture;
-
-			/**
 			 * The cache handle for the source raster - prevents source raster tile being recycled.
-			 *
-			 * NOTE: This is only used when an age grid raster is *not* involved.
 			 */
 			boost::optional<GLMultiResolutionCubeRaster::cache_handle_type> source_raster_cache_handle;
+
+			/*
+			 * The cache handle for the age grid mask raster - prevents tile being recycled.
+			 *
+			 * NOTE: This is only used when an age grid raster is involved.
+			 */
+			boost::optional<GLMultiResolutionCubeRaster::cache_handle_type> age_grid_mask_cache_handle;
+
+			/*
+			 * The cache handle for the normal map raster - prevents tile being recycled.
+			 *
+			 * NOTE: This is only used when a normal map raster is involved.
+			 */
+			boost::optional<GLMultiResolutionCubeRaster::cache_handle_type> normal_map_cache_handle;
 		};
 
 		/**
@@ -415,53 +497,29 @@ namespace GPlatesOpenGL
 		 */
 		struct QuadTreeNode
 		{
-			explicit
-			QuadTreeNode(
-					const age_masked_source_tile_texture_cache_type::volatile_object_ptr_type &age_masked_source_tile_texture_) :
-				age_masked_source_tile_texture(age_masked_source_tile_texture_)
-			{  }
-
-			/**
-			 * Keeps tracks of whether the source raster has changed underneath us and
-			 * we need to re-render our age-masked tile texture.
-			 */
-			mutable GPlatesUtils::ObserverToken source_raster_observer_token;
-
-			/**
-			 * Keeps tracks of whether the age grid mask raster has changed underneath us and
-			 * we need to re-render our age-masked tile texture.
-			 */
-			mutable GPlatesUtils::ObserverToken age_grid_mask_observer_token;
-
-			/**
-			 * Keeps tracks of whether the age grid coverage raster has changed underneath us and
-			 * we need to re-render our age-masked tile texture.
-			 */
-			mutable GPlatesUtils::ObserverToken age_grid_coverage_observer_token;
-
-			/**
-			 * The (volatile) cached age-masked source tile texture.
-			 */
-			age_masked_source_tile_texture_cache_type::volatile_object_ptr_type age_masked_source_tile_texture;
+			// Currently this is empty.
+			// It used to contain the cached age-masked source textures but that's no longer needed.
+			// Keeping this anyway in case something needs to be added in the future.
 		};
 
 		/**
 		 * Typedef for a cube quad tree that persists from one render call to the next.
 		 *
-		 * The primary purpose of this cube quad tree is to cache age-masked render textures
+		 * The primary purpose of this cube quad tree used to be to cache age-masked render textures
 		 * that are visible so they can be re-used is subsequent render calls (frames).
+		 * That's no longer needed but we keep this in case something needs to be added in the future.
 		 */
 		typedef GPlatesMaths::CubeQuadTree<QuadTreeNode> cube_quad_tree_type;
 
 
 		//! Typedef for a raster cube quad tree node.
-		typedef GLMultiResolutionCubeRaster::quad_tree_node_type raster_quad_tree_node_type;
+		typedef GLMultiResolutionCubeRaster::quad_tree_node_type source_raster_quad_tree_node_type;
 
 		//! Typedef for a cube quad tree of age grid mask tiles.
 		typedef GLMultiResolutionCubeRaster::quad_tree_node_type age_grid_mask_quad_tree_node_type;
 
-		//! Typedef for a cube quad tree of age grid coverage tiles.
-		typedef GLMultiResolutionCubeRaster::quad_tree_node_type age_grid_coverage_quad_tree_node_type;
+		//! Typedef for a cube quad tree of normal map tiles.
+		typedef GLMultiResolutionCubeRaster::quad_tree_node_type normal_map_quad_tree_node_type;
 
 		//! Typedef for a sequence of present day polygon mesh drawables.
 		typedef GLReconstructedStaticPolygonMeshes::present_day_polygon_mesh_drawables_seq_type
@@ -497,12 +555,12 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The re-sampled raster we are reconstructing.
+		 * The re-sampled source raster we are reconstructing.
 		 */
-		GLMultiResolutionCubeRaster::non_null_ptr_type d_raster_to_reconstruct;
+		GLMultiResolutionCubeRaster::non_null_ptr_type d_source_raster;
 
-		//! Keep track of changes to @a d_raster_to_reconstruct.
-		mutable GPlatesUtils::ObserverToken d_raster_to_reconstruct_texture_observer_token;
+		//! Keep track of changes to @a d_source_raster.
+		mutable GPlatesUtils::ObserverToken d_source_raster_texture_observer_token;
 
 		/**
 		 * The reconstructed present day static polygon meshes.
@@ -513,31 +571,32 @@ namespace GPlatesOpenGL
 		mutable GPlatesUtils::ObserverToken d_reconstructed_static_polygon_meshes_observer_token;
 
 		/**
-		 * Optional age grid mask and coverage rasters.
+		 * Optional age grid raster.
 		 *
-		 * If these are not specified then no age-grid smoothing takes place during reconstruction.
+		 * If this is not specified then no age-grid smoothing takes place during reconstruction.
 		 */
 		boost::optional<AgeGridCubeRaster> d_age_grid_cube_raster;
 
 		/**
-		 * The texture dimension of a cube quad tree tile.
-		 */
-		unsigned int d_tile_texel_dimension;
-
-		//! 1.0 / 'd_tile_texel_dimension'.
-		float d_inverse_tile_texel_dimension;
-
-		/**
-		 * Tile UV scaling/translating starts with this root UV transform (has texel overlap built in).
+		 * Optional normal map raster.
 		 *
-		 * Can be used for both source raster tile and age-grid tile since both have same texel dimension.
+		 * If this is not specified then surface lighting (if applied) uses the unperturbed sphere
+		 * normals instead of the perturbed surface normals in the normal map.
 		 */
-		GLUtils::QuadTreeUVTransform d_tile_root_uv_transform;
+		boost::optional<NormalMapCubeRaster> d_normal_map_cube_raster;
 
 		/**
-		 * Cache of textures for age-masked source tiles.
+		 * The source raster tile texture dimension.
 		 */
-		age_masked_source_tile_texture_cache_type::shared_ptr_type d_age_masked_source_tile_texture_cache;
+		unsigned int d_source_raster_tile_texel_dimension;
+
+		//! 1.0 / 'd_source_raster_tile_texel_dimension'.
+		float d_source_raster_inverse_tile_texel_dimension;
+
+		/**
+		 * Source raster tile UV scaling/translating starts with this root UV transform (has texel overlap built in).
+		 */
+		GLUtils::QuadTreeUVTransform d_source_raster_tile_root_uv_transform;
 
 		/**
 		 * Texture used to clip parts of a mesh that hang over a tile (in the cube face x/y plane).
@@ -565,22 +624,60 @@ namespace GPlatesOpenGL
 		// Used to draw a textured full-screen quad into render texture.
 		GLCompiledDrawState::non_null_ptr_to_const_type d_full_screen_quad_drawable;
 
-		/**
-		 * Shader program to render *floating-point* texture tiles to the scene.
-		 *
-		 * Is boost::none if source raster is fixed-point or if shader programs not supported
-		 * (in which case fixed-function pipeline is used).
-		 */
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_floating_point_tile_to_scene_program_object;
+		//
+		// Shader programs to render raster tiles to the scene.
+		//
+		// 'boost::none' means shader program variation not needed.
+		//
+
+		//! Render a floating-point source raster.
+		boost::optional<GLProgramObject::shared_ptr_type> d_render_floating_point_program_object;
+
+		//! Render a floating-point source raster using an age grid with active polygons.
+		boost::optional<GLProgramObject::shared_ptr_type>
+				d_render_floating_point_with_age_grid_with_active_polygons_program_object;
+		//! Render a floating-point source raster using an age grid with inactive polygons.
+		boost::optional<GLProgramObject::shared_ptr_type>
+				d_render_floating_point_with_age_grid_with_inactive_polygons_program_object;
+
+		//! Render a fixed-point source raster.
+		boost::optional<GLProgramObject::shared_ptr_type> d_render_fixed_point_program_object;
+
+		//! Render a fixed-point source raster using an age grid with active polygons.
+		boost::optional<GLProgramObject::shared_ptr_type>
+				d_render_fixed_point_with_age_grid_with_active_polygons_program_object;
+		//! Render a fixed-point source raster using an age grid with inactive polygons.
+		boost::optional<GLProgramObject::shared_ptr_type>
+				d_render_fixed_point_with_age_grid_with_inactive_polygons_program_object;
+
+		//! Render a fixed-point source raster using an age grid with active polygons with surface lighting.
+		boost::optional<GLProgramObject::shared_ptr_type>
+				d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program_object;
+		//! Render a fixed-point source raster using an age grid with inactive polygons with surface lighting.
+		boost::optional<GLProgramObject::shared_ptr_type>
+				d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program_object;
+
+		//! Render a fixed-point source raster with surface lighting.
+		boost::optional<GLProgramObject::shared_ptr_type> d_render_fixed_point_with_surface_lighting_program_object;
+
+		//! Render a fixed-point source raster with surface lighting with a normal map.
+		boost::optional<GLProgramObject::shared_ptr_type> d_render_fixed_point_with_normal_map_program_object;
+
+		//! Render a fixed-point source raster using an age grid with active polygons with surface lighting with a normal map.
+		boost::optional<GLProgramObject::shared_ptr_type>
+				d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program_object;
+		//! Render a fixed-point source raster using an age grid with inactive polygons with surface lighting with a normal map.
+		boost::optional<GLProgramObject::shared_ptr_type>
+				d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program_object;
+
 
 		/**
-		 * Shader program to modulate a *floating-point* source raster tile with a (fixed-point) age mask.
-		 *
-		 * Is boost::none if source raster is fixed-point or if shader programs not supported
-		 * (in which case fixed-function pipeline is used).
+		 * The light (direction) used during surface lighting.
 		 */
-		boost::optional<GLProgramObject::shared_ptr_type>
-				d_render_floating_point_age_masked_source_raster_third_pass_program_object;
+		boost::optional<GLLight::non_null_ptr_type> d_light;
+
+		//! Keep track of changes to @a d_light.
+		mutable GPlatesUtils::ObserverToken d_light_observer_token;
 
 		/**
 		 * Caches age-masked render textures for the cube quad tree tiles for re-use over multiple frames.
@@ -596,277 +693,132 @@ namespace GPlatesOpenGL
 		//! Constructor.
 		GLMultiResolutionStaticPolygonReconstructedRaster(
 				GLRenderer &renderer,
-				const GLMultiResolutionCubeRaster::non_null_ptr_type &raster_to_reconstruct,
+				const GLMultiResolutionCubeRaster::non_null_ptr_type &source_raster,
 				const GLReconstructedStaticPolygonMeshes::non_null_ptr_type &reconstructed_static_polygon_meshes,
-				boost::optional<AgeGridRaster> age_grid_raster);
+				boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> age_grid_raster,
+				boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> normal_map_raster,
+				boost::optional<GLLight::non_null_ptr_type> light);
 
 		void
-		render_quad_tree_source_raster(
+		render_quad_tree(
 				GLRenderer &renderer,
+				boost::object_pool<GLUtils::QuadTreeUVTransform> &pool_quad_tree_uv_transforms,
 				render_traversal_cube_quad_tree_type &render_traversal_cube_quad_tree,
 				render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
 				client_cache_cube_quad_tree_type &client_cache_cube_quad_tree,
 				client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-				const raster_quad_tree_node_type &source_raster_quad_tree_node,
-				const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
-				const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables,
-				const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
-				const present_day_polygon_meshes_intersection_partition_type::node_type &intersections_quad_tree_node,
-				cube_subdivision_cache_type &cube_subdivision_cache,
-				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
-				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
-				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
-				unsigned int cube_quad_tree_depth,
-				unsigned int render_cube_quad_tree_depth,
-				const GLFrustum &frustum_planes,
-				boost::uint32_t frustum_plane_mask,
-				unsigned int &num_tiles_rendered_to_scene);
-
-		void
-		render_quad_tree_scaled_source_raster_and_unscaled_age_grid(
-				GLRenderer &renderer,
-				cube_quad_tree_type::node_type &cube_quad_tree_node,
-				render_traversal_cube_quad_tree_type &render_traversal_cube_quad_tree,
-				render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
-				client_cache_cube_quad_tree_type &client_cache_cube_quad_tree,
-				client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-				const raster_quad_tree_node_type &source_raster_quad_tree_node,
+				const source_raster_quad_tree_node_type &source_raster_quad_tree_node,
 				const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
-				const age_grid_mask_quad_tree_node_type &age_grid_mask_quad_tree_node,
-				const age_grid_coverage_quad_tree_node_type &age_grid_coverage_quad_tree_node,
-				const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
+				const boost::optional<age_grid_mask_quad_tree_node_type> &age_grid_mask_quad_tree_node,
+				boost::optional<const GLUtils::QuadTreeUVTransform &> age_grid_uv_transform,
+				const boost::optional<age_grid_mask_quad_tree_node_type> &normal_map_quad_tree_node,
+				boost::optional<const GLUtils::QuadTreeUVTransform &> normal_map_uv_transform,
 				const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
 				const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables,
 				const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
 				const present_day_polygon_meshes_intersection_partition_type::node_type &intersections_quad_tree_node,
-				cube_subdivision_cache_type &cube_subdivision_cache,
-				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
+				source_raster_cube_subdivision_cache_type &source_raster_cube_subdivision_cache,
+				const source_raster_cube_subdivision_cache_type::node_reference_type &source_raster_cube_subdivision_cache_node,
+				boost::optional<age_grid_cube_subdivision_cache_type::non_null_ptr_type> &age_grid_cube_subdivision_cache,
+				const boost::optional<age_grid_cube_subdivision_cache_type::node_reference_type> &age_grid_cube_subdivision_cache_root_node,
+				boost::optional<age_grid_cube_subdivision_cache_type::non_null_ptr_type> &normal_map_cube_subdivision_cache,
+				const boost::optional<age_grid_cube_subdivision_cache_type::node_reference_type> &normal_map_cube_subdivision_cache_node,
 				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
 				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
 				unsigned int cube_quad_tree_depth,
-				unsigned int render_cube_quad_tree_depth,
+				const unsigned int source_raster_render_cube_quad_tree_depth,
+				const unsigned int age_grid_render_cube_quad_tree_depth,
+				const unsigned int normal_map_render_cube_quad_tree_depth,
 				const GLFrustum &frustum_planes,
 				boost::uint32_t frustum_plane_mask,
-				unsigned int &num_tiles_rendered_to_scene);
-
-		void
-		render_quad_tree_unscaled_source_raster_and_scaled_age_grid(
-				GLRenderer &renderer,
-				cube_quad_tree_type::node_type &cube_quad_tree_node,
-				render_traversal_cube_quad_tree_type &render_traversal_cube_quad_tree,
-				render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
-				client_cache_cube_quad_tree_type &client_cache_cube_quad_tree,
-				client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-				const raster_quad_tree_node_type &source_raster_quad_tree_node,
-				const age_grid_mask_quad_tree_node_type &age_grid_mask_quad_tree_node,
-				const age_grid_coverage_quad_tree_node_type &age_grid_coverage_quad_tree_node,
-				const GLUtils::QuadTreeUVTransform &age_grid_uv_transform,
-				const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
-				const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
-				const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables,
-				const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
-				const present_day_polygon_meshes_intersection_partition_type::node_type &intersections_quad_tree_node,
-				cube_subdivision_cache_type &cube_subdivision_cache,
-				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
-				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
-				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
-				unsigned int cube_quad_tree_depth,
-				unsigned int render_cube_quad_tree_depth,
-				const GLFrustum &frustum_planes,
-				boost::uint32_t frustum_plane_mask,
-				unsigned int &num_tiles_rendered_to_scene);
-
-		void
-		render_quad_tree_source_raster_and_age_grid(
-				GLRenderer &renderer,
-				cube_quad_tree_type::node_type &cube_quad_tree_node,
-				render_traversal_cube_quad_tree_type &render_traversal_cube_quad_tree,
-				render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
-				client_cache_cube_quad_tree_type &client_cache_cube_quad_tree,
-				client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-				const raster_quad_tree_node_type &source_raster_quad_tree_node,
-				const age_grid_mask_quad_tree_node_type &age_grid_mask_quad_tree_node,
-				const age_grid_coverage_quad_tree_node_type &age_grid_coverage_quad_tree_node,
-				const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
-				const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
-				const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables,
-				const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
-				const present_day_polygon_meshes_intersection_partition_type::node_type &intersections_quad_tree_node,
-				cube_subdivision_cache_type &cube_subdivision_cache,
-				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
-				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
-				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
-				unsigned int cube_quad_tree_depth,
-				unsigned int render_cube_quad_tree_depth,
-				const GLFrustum &frustum_planes,
-				boost::uint32_t frustum_plane_mask,
-				unsigned int &num_tiles_rendered_to_scene);
+				unsigned int &num_polygons_rendered_to_scene);
 
 		bool
 		cull_quad_tree(
 				const present_day_polygon_mesh_membership_type &reconstructed_polygon_mesh_membership,
 				const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
 				const present_day_polygon_meshes_intersection_partition_type::node_type &intersections_quad_tree_node,
-				cube_subdivision_cache_type &cube_subdivision_cache,
-				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
+				source_raster_cube_subdivision_cache_type &source_raster_cube_subdivision_cache,
+				const source_raster_cube_subdivision_cache_type::node_reference_type &source_raster_cube_subdivision_cache_node,
 				const GLFrustum &frustum_planes,
 				boost::uint32_t &frustum_plane_mask);
-
-		GLCompiledDrawState::non_null_ptr_to_const_type
-		create_scene_tile_compiled_draw_state(
-				GLRenderer &renderer,
-				const GLTexture::shared_ptr_to_const_type &scene_tile_texture,
-				const GLUtils::QuadTreeUVTransform &scene_tile_uv_transform,
-				cube_subdivision_cache_type &cube_subdivision_cache,
-				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
-				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
-				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node);
-
-		void
-		render_source_raster_tile_to_scene(
-				GLRenderer &renderer,
-				render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
-				client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-				const raster_quad_tree_node_type &source_raster_quad_tree_node,
-				const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
-				const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
-				const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
-				const present_day_polygon_meshes_intersection_partition_type::node_type &intersections_quad_tree_node,
-				const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables,
-				cube_subdivision_cache_type &cube_subdivision_cache,
-				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
-				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
-				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
-				unsigned int &num_tiles_rendered_to_scene);
 
 		void
 		render_tile_to_scene(
 				GLRenderer &renderer,
-				const GLCompiledDrawState::non_null_ptr_to_const_type &render_scene_tile_compiled_draw_state,
-				const present_day_polygon_mesh_membership_type &reconstructed_polygon_mesh_membership,
-				const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
-				const present_day_polygon_meshes_intersection_partition_type::node_type &intersections_quad_tree_node,
-				const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables,
-				unsigned int &num_tiles_rendered_to_scene);
-
-		void
-		render_polygon_drawables(
-				GLRenderer &renderer,
-				const boost::dynamic_bitset<> &polygon_mesh_membership,
-				const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables);
-
-		void
-		render_source_raster_and_age_grid_tile_to_scene(
-				GLRenderer &renderer,
-				cube_quad_tree_type::node_type &cube_quad_tree_node,
 				render_traversal_cube_quad_tree_type::node_type &render_traversal_cube_quad_tree_node,
 				client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-				const raster_quad_tree_node_type &source_raster_quad_tree_node,
+				const source_raster_quad_tree_node_type &source_raster_quad_tree_node,
 				const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
-				const age_grid_mask_quad_tree_node_type &age_grid_mask_quad_tree_node,
-				const age_grid_coverage_quad_tree_node_type &age_grid_coverage_quad_tree_node,
-				const GLUtils::QuadTreeUVTransform &age_grid_uv_transform,
-				const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
+				const boost::optional<age_grid_mask_quad_tree_node_type> &age_grid_mask_quad_tree_node,
+				boost::optional<const GLUtils::QuadTreeUVTransform &> age_grid_uv_transform,
+				const boost::optional<age_grid_mask_quad_tree_node_type> &normal_map_quad_tree_node,
+				boost::optional<const GLUtils::QuadTreeUVTransform &> normal_map_uv_transform,
 				const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
 				const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
 				const present_day_polygon_meshes_intersection_partition_type::node_type &intersections_quad_tree_node,
 				const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables,
-				cube_subdivision_cache_type &cube_subdivision_cache,
-				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
+				source_raster_cube_subdivision_cache_type &source_raster_cube_subdivision_cache,
+				const source_raster_cube_subdivision_cache_type::node_reference_type &source_raster_cube_subdivision_cache_node,
+				boost::optional<age_grid_cube_subdivision_cache_type::non_null_ptr_type> &age_grid_cube_subdivision_cache,
+				const boost::optional<age_grid_cube_subdivision_cache_type::node_reference_type> &age_grid_cube_subdivision_cache_node,
+		boost::optional<age_grid_cube_subdivision_cache_type::non_null_ptr_type> &normal_map_cube_subdivision_cache,
+		const boost::optional<age_grid_cube_subdivision_cache_type::node_reference_type> &normal_map_cube_subdivision_cache_node,
 				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
 				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
-				unsigned int &num_tiles_rendered_to_scene);
+				unsigned int &num_polygons_rendered_to_scene);
 
-		GLTexture::shared_ptr_to_const_type
-		get_age_masked_source_raster_tile(
+		boost::optional<GLProgramObject::shared_ptr_type>
+		get_shader_program_for_tile(
+				bool source_raster_is_floating_point,
+				bool using_age_grid_tile,
+				bool using_normal_map_tile,
+				bool active_polygons);
+
+		RenderQuadTreeNode::TileDrawState
+		create_scene_tile_draw_state(
 				GLRenderer &renderer,
-				cube_quad_tree_type::node_type &cube_quad_tree_node,
-				client_cache_cube_quad_tree_type::node_type &client_cache_cube_quad_tree_node,
-				const raster_quad_tree_node_type &source_raster_quad_tree_node,
+				boost::optional<GLProgramObject::shared_ptr_type> render_tile_to_scene_program_object,
+				const GLTexture::shared_ptr_to_const_type &source_raster_tile_texture,
 				const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
-				const age_grid_mask_quad_tree_node_type &age_grid_mask_quad_tree_node,
-				const age_grid_coverage_quad_tree_node_type &age_grid_coverage_quad_tree_node,
-				const GLUtils::QuadTreeUVTransform &age_grid_uv_transform,
-				const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
+				boost::optional<GLTexture::shared_ptr_to_const_type> age_grid_tile_texture,
+				boost::optional<const GLUtils::QuadTreeUVTransform &> age_grid_uv_transform,
+				boost::optional<GLTexture::shared_ptr_to_const_type> normal_map_tile_texture,
+				boost::optional<const GLUtils::QuadTreeUVTransform &> normal_map_uv_transform,
+				source_raster_cube_subdivision_cache_type &source_raster_cube_subdivision_cache,
+				const source_raster_cube_subdivision_cache_type::node_reference_type &source_raster_cube_subdivision_cache_node,
+				boost::optional<age_grid_cube_subdivision_cache_type::non_null_ptr_type> &age_grid_cube_subdivision_cache,
+				const boost::optional<age_grid_cube_subdivision_cache_type::node_reference_type> &age_grid_cube_subdivision_cache_node,
+				boost::optional<age_grid_cube_subdivision_cache_type::non_null_ptr_type> &normal_map_cube_subdivision_cache,
+				const boost::optional<age_grid_cube_subdivision_cache_type::node_reference_type> &normal_map_cube_subdivision_cache_node,
+				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
+				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node,
+				bool active_polygons);
+
+		void
+		render_tile_polygon_drawables(
+				GLRenderer &renderer,
+				const RenderQuadTreeNode::TileDrawState &render_scene_tile_draw_state,
+				const GPlatesMaths::UnitQuaternion3D &reconstructed_polygon_mesh_rotation,
+				const present_day_polygon_mesh_membership_type &reconstructed_polygon_mesh_membership,
 				const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
 				const present_day_polygon_meshes_intersection_partition_type::node_type &intersections_quad_tree_node,
 				const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables,
-				cube_subdivision_cache_type &cube_subdivision_cache,
-				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node);
+				unsigned int &num_polygons_rendered_to_scene);
 
 		void
-		render_age_masked_source_raster_into_tile(
+		apply_tile_shader_program_state(
 				GLRenderer &renderer,
-				AgeMaskedSourceTileTexture &age_masked_source_tile_texture,
-				cube_quad_tree_type::node_type &cube_quad_tree_node,
-				const raster_quad_tree_node_type &source_raster_quad_tree_node,
-				const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
-				const age_grid_mask_quad_tree_node_type &age_grid_mask_quad_tree_node,
-				const age_grid_coverage_quad_tree_node_type &age_grid_coverage_quad_tree_node,
-				const GLUtils::QuadTreeUVTransform &age_grid_uv_transform,
-				const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
-				const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections,
-				const present_day_polygon_meshes_intersection_partition_type::node_type &intersections_quad_tree_node,
-				const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables,
-				cube_subdivision_cache_type &cube_subdivision_cache,
-				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node);
+				const RenderQuadTreeNode::TileDrawState &tile_draw_state);
 
 		void
-		render_floating_point_age_masked_source_raster_into_tile(
-				GLRenderer &renderer,
-				const GLTexture::shared_ptr_type &age_mask_source_texture,
-				const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
-				const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables,
-				const present_day_polygon_mesh_membership_type &present_day_polygons_intersecting_tile,
-				const GLTransform &half_texel_expanded_projection_transform,
-				const GLTransform &view_transform,
-				const GLMatrix &source_raster_tile_coverage_texture_matrix,
-				const GLMatrix &age_grid_partial_tile_coverage_texture_matrix,
-				const GLTexture::shared_ptr_to_const_type &source_raster_texture,
-				const GLTexture::shared_ptr_to_const_type &age_grid_mask_texture,
-				const GLTexture::shared_ptr_to_const_type &age_grid_coverage_texture);
-
-		void
-		render_fixed_point_age_masked_source_raster_into_tile(
-				GLRenderer &renderer,
-				const GLTexture::shared_ptr_type &age_mask_source_texture,
-				const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
-				const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables,
-				const present_day_polygon_mesh_membership_type &present_day_polygons_intersecting_tile,
-				const GLTransform &half_texel_expanded_projection_transform,
-				const GLTransform &view_transform,
-				const GLMatrix &source_raster_tile_coverage_texture_matrix,
-				const GLMatrix &age_grid_partial_tile_coverage_texture_matrix,
-				const GLTexture::shared_ptr_to_const_type &source_raster_texture,
-				const GLTexture::shared_ptr_to_const_type &age_grid_mask_texture,
-				const GLTexture::shared_ptr_to_const_type &age_grid_coverage_texture);
-
-		void
-		render_fixed_function_pipeline_first_pass_age_masked_source_raster(
-				GLRenderer &renderer,
-				const GLTexture::shared_ptr_to_const_type &age_grid_mask_texture,
-				const GLMatrix &age_grid_partial_tile_coverage_texture_matrix);
-
-		void
-		render_fixed_function_pipeline_second_pass_age_masked_source_raster(
-				GLRenderer &renderer,
-				const GLTexture::shared_ptr_to_const_type &age_grid_coverage_texture,
-				const GLMatrix &age_grid_partial_tile_coverage_texture_matrix,
-				const GLTransform &half_texel_expanded_projection_transform,
-				const GLTransform &view_transform,
-				const reconstructed_polygon_mesh_transform_groups_type &reconstructed_polygon_mesh_transform_groups,
-				const present_day_polygon_mesh_membership_type &present_day_polygons_intersecting_tile,
-				const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables);
-
-		void
-		render_fixed_function_pipeline_third_pass_age_masked_source_raster(
-				GLRenderer &renderer,
-				const GLTexture::shared_ptr_to_const_type &source_raster_texture,
-				const GLMatrix &source_raster_tile_coverage_texture_matrix);
-
-		void
-		create_floating_point_shader_programs(
+		create_shader_programs(
 				GLRenderer &renderer);
+
+		boost::optional<GLProgramObject::shared_ptr_type>
+		create_shader_program(
+				GLRenderer &renderer,
+				const char *vertex_and_fragment_shader_defines = "");
 	};
 }
 

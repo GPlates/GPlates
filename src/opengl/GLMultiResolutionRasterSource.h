@@ -42,7 +42,7 @@ namespace GPlatesOpenGL
 	class GLRenderer;
 
 	/**
-	 * Interface for an arbitrary dimension source of RGBA data that's used as input
+	 * Interface for an arbitrary dimension source of raster data that's used as input
 	 * to a @a GLMultiResolutionRaster.
 	 */
 	class GLMultiResolutionRasterSource :
@@ -165,16 +165,13 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Loads RGBA8 data into @a target_texture using the specified tile offsets
-		 * and level.
+		 * Loads raster data into @a target_texture using the specified tile offsets and level.
 		 *
 		 * The caller must ensure that @a target_texture has been created in OpenGL -
 		 * in other words, not only allocated by also created using gl_tex_image_2D
 		 * (you can pass NULL to gl_tex_image_2D to create without loading image data).
 		 *
 		 * @a renderer is provided in case the data needs to be rendered into the texture.
-		 * @a render_target_usage dictates the render target usage if @a target_texture
-		 * is rendered to.
 		 *
 		 * @a texel_x_offset and @a texel_y_offset are guaranteed to be a multiple of
 		 * the tile texel dimension.
@@ -196,7 +193,7 @@ namespace GPlatesOpenGL
 		 * and vertically by
 		 *   [texel_y_offset, texel_y_offset + texel_height)
 		 *
-		 * The dimension of the Rgba8 raster region loaded is 'texel_height' * 'texel_height'.
+		 * The dimension of the raster region loaded is 'texel_height' * 'texel_height'.
 		 *
 		 * @a level of zero is the original source raster (the highest resolution level-of-detail).
 		 *

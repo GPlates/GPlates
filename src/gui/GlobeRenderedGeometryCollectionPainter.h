@@ -31,6 +31,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "ColourScheme.h"
+#include "GlobeOrientation.h"
 #include "GlobeVisibilityTester.h"
 #include "LayerPainter.h"
 #include "RenderSettings.h"
@@ -80,6 +81,7 @@ namespace GPlatesGui
 				RenderSettings &render_settings,
 				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
+				const GlobeOrientation &globe_orientation,
 				ColourScheme::non_null_ptr_type colour_scheme);
 
 		/**
@@ -155,6 +157,9 @@ namespace GPlatesGui
 
 		//! Used for determining whether a particular point on the globe is visible
 		GlobeVisibilityTester d_visibility_tester;
+
+		//! Used to determine the view-space to world-space transform.
+		const GlobeOrientation &d_globe_orientation;
 
 		//! For assigning colours to RenderedGeometry
 		ColourScheme::non_null_ptr_type d_colour_scheme;

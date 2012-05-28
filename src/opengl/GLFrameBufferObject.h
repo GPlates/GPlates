@@ -128,21 +128,54 @@ namespace GPlatesOpenGL
 		}
 
 
-
 		/**
-		 * Attaches the specified mip-level of @a texture to the specified colour attachment point.
+		 * Performs same function as the glFramebufferTexture1D OpenGL function.
 		 *
 		 * @throws PreconditionViolationError if @a colour_attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
 		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments_EXT).
 		 */
 		void
-		gl_attach(
+		gl_attach_1D(
 				GLRenderer &renderer,
 				GLenum texture_target,
 				const GLTexture::shared_ptr_to_const_type &texture,
 				GLint level,
 				GLenum colour_attachment);
+
+
+		/**
+		 * Performs same function as the glFramebufferTexture2D OpenGL function.
+		 *
+		 * @throws PreconditionViolationError if @a colour_attachment is not in the half-open range:
+		 *   [GL_COLOR_ATTACHMENT0_EXT,
+		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments_EXT).
+		 */
+		void
+		gl_attach_2D(
+				GLRenderer &renderer,
+				GLenum texture_target,
+				const GLTexture::shared_ptr_to_const_type &texture,
+				GLint level,
+				GLenum colour_attachment);
+
+
+		/**
+		 * Performs same function as the glFramebufferTexture3D OpenGL function.
+		 *
+		 * @throws PreconditionViolationError if @a colour_attachment is not in the half-open range:
+		 *   [GL_COLOR_ATTACHMENT0_EXT,
+		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments_EXT).
+		 */
+		void
+		gl_attach_3D(
+				GLRenderer &renderer,
+				GLenum texture_target,
+				const GLTexture::shared_ptr_to_const_type &texture,
+				GLint level,
+				GLint zoffset,
+				GLenum colour_attachment);
+
 
 		/**
 		 * Detaches specified colour attachment point.
@@ -206,10 +239,12 @@ namespace GPlatesOpenGL
 		 */
 		struct ColourAttachment
 		{
-			GLTexture::shared_ptr_to_const_type texture;
-			GLenum texture_target;
-			GLint level;
 			GLenum attachment;
+			GLenum framebuffer_texture_type; // GL_TEXTURE_1D, GL_TEXTURE_2D or GL_TEXTURE_3D_EXT
+			GLenum texture_target;
+			GLTexture::shared_ptr_to_const_type texture;
+			GLint level;
+			boost::optional<GLint> zoffset; // Only used for glFramebufferTexture3DEXT.
 		};
 
 		//! Typedef for a sequence of colour attachments.

@@ -25,6 +25,7 @@
 
 #include <cmath>
 #include <limits>
+#include <boost/cast.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
@@ -351,6 +352,10 @@ namespace GPlatesOpenGL
 
 				"	// Due to bilinear filtering of the source raster (data and coverage) the data\n"
 				"	// value can be reduced depending on the bi-linearly filtered coverage value.\n"
+				"	// For example half of the four bilinearly filtered pixels might have zero coverage\n"
+				"	// and hence zero data values so we'd get '0.25 * (P00 + P01) + 0 * (P10 + P11)'\n"
+				"	// which gives us '0.25 * (D00 + D01)' for data and 0.25 * (1 + 1) for coverage\n"
+				"	// but we want '0.5 * (D00 + D01)' for data which is obtained by dividing by coverage.\n"
 				"	// So we need to undo that effect as best we can - this is important for MIN/MAX\n"
 				"	// operations and also ensures MEAN correlates with MIN/MAX - ie, a single pixel\n"
 				"	// ROI should give same value for MIN/MAX and MEAN.\n"
@@ -1694,7 +1699,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_texture_level_of_detail_parame
 	// even though it means some sized target rasters will get more resolution than they need.
 	//
 	// Some of the problems encountered (and solved by always using a power-of-two dimension) were:
-	//  - difficultly having a reduce quad tree (a quad tree is a simple and elegant solution to this problem),
+	//  - difficulty having a reduce quad tree (a quad tree is a simple and elegant solution to this problem),
 	//  - dealing with reduced viewports that were not of integer dimensions,
 	//  - having to deal with odd dimension viewports and their effect on the 2x2 reduce filter,
 	//  - having to keep track of more detailed mesh quads (used when reducing rendered seed geometries)
@@ -1750,7 +1755,8 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register(
 	//
 
 	// Ensure the raster level of detail is within a valid range.
-	raster_level_of_detail = target_raster->clamp_level_of_detail(raster_level_of_detail);
+	raster_level_of_detail = boost::numeric_cast<unsigned int>(
+			target_raster->clamp_level_of_detail(raster_level_of_detail));
 
 	// Initialise details to do with texture viewports and cube quad tree level-of-detail
 	// transitions that depend on the target raster *resolution*.
@@ -2963,7 +2969,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	GLTexture::shared_ptr_type region_of_interest_mask_texture = acquire_rgba_fixed_texture(renderer);
 
 	// Render to the fixed-point region-of-interest mask texture.
-	d_framebuffer_object->gl_attach(
+	d_framebuffer_object->gl_attach_2D(
 			renderer, GL_TEXTURE_2D, region_of_interest_mask_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
 	renderer.gl_bind_frame_buffer(d_framebuffer_object);
 
@@ -3098,7 +3104,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	//
 
 	// Render to the floating-point reduce stage texture.
-	d_framebuffer_object->gl_attach(
+	d_framebuffer_object->gl_attach_2D(
 			renderer, GL_TEXTURE_2D, reduce_stage_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
 	renderer.gl_bind_frame_buffer(d_framebuffer_object);
 
@@ -5214,7 +5220,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_reduction_of_reduce_stage(
 			true/*reset_to_default_state*/);
 
 	// Begin rendering to the destination reduce stage texture.
-	d_framebuffer_object->gl_attach(
+	d_framebuffer_object->gl_attach_2D(
 			renderer, GL_TEXTURE_2D, dst_reduce_stage_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
 	renderer.gl_bind_frame_buffer(d_framebuffer_object);
 
@@ -5402,7 +5408,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_target_raster(
 			true/*reset_to_default_state*/);
 
 	// Begin rendering to the 2D texture.
-	d_framebuffer_object->gl_attach(renderer, GL_TEXTURE_2D, target_raster_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
+	d_framebuffer_object->gl_attach_2D(renderer, GL_TEXTURE_2D, target_raster_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
 	renderer.gl_bind_frame_buffer(d_framebuffer_object);
 
 	// Render to the entire texture.
@@ -6062,7 +6068,7 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::queue_reduce_pyramid_output
 	//
 	// Note that since we're using 'GL_COLOR_ATTACHMENT0_EXT' we don't need to call 'glReadBuffer'
 	// because binding to a framebuffer object automatically does that for us.
-	framebuffer_object->gl_attach(renderer, GL_TEXTURE_2D, results_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
+	framebuffer_object->gl_attach_2D(renderer, GL_TEXTURE_2D, results_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
 	renderer.gl_bind_frame_buffer(framebuffer_object);
 
 	// Start an asynchronous read back of the results texture to CPU memory (the pixel buffer).

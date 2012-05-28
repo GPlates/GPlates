@@ -164,8 +164,8 @@ GPlatesOpenGL::GLProgramObject::gl_link_program(
 		// ...the returned string is null-terminated.
 
 		// Log the program info log.
-		qWarning() << "Unable to link OpenGL program: ";
-		qWarning() << info_log.get();
+		qDebug() << "Unable to link OpenGL program: ";
+		qDebug() << info_log.get();
 
 		return false;
 	}

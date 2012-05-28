@@ -32,9 +32,10 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "GLCoverageSource.h"
 #include "GLAgeGridMaskSource.h"
 #include "GLContext.h"
+#include "GLLight.h"
+#include "GLMatrix.h"
 #include "GLMultiResolutionCubeMesh.h"
 #include "GLMultiResolutionCubeRaster.h"
 #include "GLMultiResolutionCubeRasterInterface.h"
@@ -43,6 +44,7 @@
 #include "GLMultiResolutionRaster.h"
 #include "GLMultiResolutionRasterMapView.h"
 #include "GLMultiResolutionStaticPolygonReconstructedRaster.h"
+#include "GLNormalMapSource.h"
 #include "GLVisualRasterSource.h"
 #include "GLReconstructedStaticPolygonMeshes.h"
 #include "OpenGLFwd.h"
@@ -55,9 +57,11 @@
 #include "gui/Colour.h"
 #include "gui/MapProjection.h"
 #include "gui/RasterColourPalette.h"
+#include "gui/SceneLightingParams.h"
 
 #include "maths/CubeQuadTreePartition.h"
 #include "maths/types.h"
+#include "maths/UnitQuaternion3D.h"
 
 #include "property-values/Georeferencing.h"
 #include "property-values/RawRaster.h"
@@ -153,6 +157,11 @@ namespace GPlatesOpenGL
 		 * @a source_raster_modulate_colour can be used to modulate the raster by the specified
 		 * colour (eg, to enable semi-transparent rasters).
 		 *
+		 * @a scene_lighting_params contains the scene lighting parameters used to render raster with.
+		 *
+		 * @a view_orientation is the orientation of the view direction relative to the globe.
+		 * This only really makes sense in the 3D globe view (not 2D map views).
+		 *
 		 * If @a map_projection is specified then the raster is rendered using the specified
 		 * 2D map projection, otherwise it's rendered to the 3D globe.
 		 */
@@ -162,6 +171,8 @@ namespace GPlatesOpenGL
 				const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type &source_resolved_raster,
 				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &source_raster_colour_palette,
 				const GPlatesGui::Colour &source_raster_modulate_colour = GPlatesGui::Colour::get_white(),
+				const GPlatesGui::SceneLightingParams &scene_lighting_params = GPlatesGui::SceneLightingParams(),
+				const GLMatrix &view_orientation = GLMatrix::IDENTITY,
 				boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection = boost::none);
 
 
@@ -215,6 +226,7 @@ namespace GPlatesOpenGL
 				RASTER,
 				CUBE_RASTER,
 				AGE_GRID,
+				NORMAL_MAP,
 				RECONSTRUCTED_STATIC_POLYGON_MESHES,
 				STATIC_POLYGON_RECONSTRUCTED_RASTER,
 				MAP_RASTER,
@@ -227,7 +239,7 @@ namespace GPlatesOpenGL
 			{  }
 
 			/**
-			 * Returns true if this layer usage depends (directory, or indirectly via dependency
+			 * Returns true if this layer usage depends (directly, or indirectly via dependency
 			 * layer usages) on the specified layer proxy.
 			 *
 			 * This is used to determine which layer usages to remove when a layer proxy is removed.
@@ -350,16 +362,13 @@ namespace GPlatesOpenGL
 					const GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type &age_grid_raster_layer_proxy);
 
 			/**
-			 * Returns the multi-resolution age grid *mask* and *coverage* rasters for the specified
+			 * Returns the multi-resolution age grid mask cube raster for the specified
 			 * reconstruction time and current raster band (set on the layer).
 			 *
 			 * Rebuilds if out-of-date with respect to its dependencies.
 			 */
-			boost::optional<
-					std::pair<
-							GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid mask*/,
-							GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type/*age grid coverage*/> >
-			get_multi_resolution_age_grid_mask_and_coverage_rasters(
+			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
+			get_multi_resolution_age_grid_mask(
 					GPlatesOpenGL::GLRenderer &renderer,
 					const double &reconstruction_time);
 
@@ -370,6 +379,42 @@ namespace GPlatesOpenGL
 
 		private:
 			GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type d_age_grid_raster_layer_proxy;
+		};
+
+
+		/**
+		 * A normal map raster used to add surface lighting detail to another raster.
+		 */
+		class NormalMapLayerUsage :
+				public LayerUsage
+		{
+		public:
+			explicit
+			NormalMapLayerUsage(
+					const GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type &normal_map_raster_layer_proxy);
+
+			/**
+			 * Returns the normal map raster.
+			 *
+			 * Rebuilds if out-of-date with respect to its dependencies.
+			 */
+			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
+			get_normal_map(
+					GPlatesOpenGL::GLRenderer &renderer);
+
+			virtual
+			bool
+			is_required_direct_or_indirect_dependency(
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const;
+
+		private:
+			GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type d_raster_layer_proxy;
+			GPlatesUtils::ObserverToken d_proxied_raster_observer_token;
+			GPlatesUtils::ObserverToken d_raster_feature_observer_token;
+
+			boost::optional<GPlatesOpenGL::GLNormalMapSource::non_null_ptr_type> d_normal_map_raster_source;
+			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_multi_resolution_raster;
+			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> d_multi_resolution_cube_raster;
 		};
 
 
@@ -419,7 +464,7 @@ namespace GPlatesOpenGL
 					const GPlatesUtils::non_null_intrusive_ptr<CubeRasterLayerUsage> &cube_raster_layer_usage);
 
 			/**
-			 * Set/update the layer usages that come from other layers.
+			 * Set/update the layer usages that come from other layers (and the global light input).
 			 *
 			 * This is done in case the user connects to new layers or disconnects.
 			 */
@@ -427,7 +472,9 @@ namespace GPlatesOpenGL
 			set_layer_inputs(
 					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> > &
 							reconstructed_polygon_meshes_layer_usage,
-					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > &age_grid_layer_usage);
+					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > &age_grid_layer_usage,
+					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<NormalMapLayerUsage> > &normal_map_layer_usage,
+					boost::optional<GLLight::non_null_ptr_type> light);
 
 			/**
 			 * Returns the static polygon reconstructed raster.
@@ -459,9 +506,13 @@ namespace GPlatesOpenGL
 			boost::optional<GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> >
 					d_reconstructed_polygon_meshes_layer_usage;
 
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_age_grid_mask_raster;
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_age_grid_coverage_raster;
+			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> d_age_grid_mask_cube_raster;
 			boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > d_age_grid_layer_usage;
+
+			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> d_normal_map_cube_raster;
+			boost::optional<GPlatesUtils::non_null_intrusive_ptr<NormalMapLayerUsage> > d_normal_map_layer_usage;
+
+			boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type> d_light;
 
 			boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
 					d_reconstructed_raster;
@@ -541,6 +592,10 @@ namespace GPlatesOpenGL
 			//! Returns the age grid layer usage (creates one if does not yet exist).
 			GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage>
 			get_age_grid_layer_usage();
+
+			//! Returns the normal map layer usage (creates one if does not yet exist).
+			GPlatesUtils::non_null_intrusive_ptr<NormalMapLayerUsage>
+			get_normal_map_layer_usage();
 
 			//! Returns the reconstructed static polygon meshes layer usage (creates one if does not yet exist).
 			GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage>
@@ -672,6 +727,15 @@ namespace GPlatesOpenGL
 			get_multi_resolution_filled_polygons(
 					GPlatesOpenGL::GLRenderer &renderer) const;
 
+			/**
+			 * Returns the light used for surface lighting or false if not supported on run-time system.
+			 *
+			 * NOTE: This must be called when an OpenGL context is currently active.
+			 */
+			boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type>
+			get_light(
+					GPlatesOpenGL::GLRenderer &renderer) const;
+
 		private:
 			const NonListObjects &d_non_list_objects;
 
@@ -704,6 +768,11 @@ namespace GPlatesOpenGL
 			 */
 			mutable boost::optional<GPlatesOpenGL::GLMultiResolutionFilledPolygons::non_null_ptr_type>
 					d_multi_resolution_filled_polygons;
+
+			/**
+			 * Used for surface lighting in 3D globe and 2D map views.
+			 */
+			mutable boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type> d_light;
 		};
 
 

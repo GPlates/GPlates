@@ -51,7 +51,7 @@ GPlatesOpenGL::GLMultiResolutionRasterInterface::render(
 		float level_of_detail_bias)
 {
 	// Get the level-of-detail based on the size of viewport pixels projected onto the globe.
-	const int level_of_detail =
+	const float level_of_detail =
 			clamp_level_of_detail(
 					get_level_of_detail(
 							renderer.gl_get_matrix(GL_MODELVIEW),

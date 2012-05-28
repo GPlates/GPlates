@@ -114,11 +114,7 @@ namespace GPlatesOpenGL
 			 *
 			 * @a renderer is used if the tile's texture is not currently cached and needs to be re-rendered.
 			 *
-			 * @a cache_handle can be stored by the client to keep textures (and vertices) cached.
-			 *
-			 * NOTE: The returned texture shared pointer should only be used for rendering
-			 * and then discarded. This is because the texture is part of a texture cache and it might
-			 * get used during a subsequent call to @a get_tile_texture if it isn't being cached.
+			 * @a cache_handle is to be stored by the client to keep textures (and vertices) cached.
 			 */
 			boost::optional<GLTexture::shared_ptr_to_const_type>
 			get_tile_texture(

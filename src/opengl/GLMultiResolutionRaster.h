@@ -71,6 +71,12 @@ namespace GPlatesOpenGL
 	 * The meshes generated for each texture tile are dense enough to ensure that each texel
 	 * in the raster is bounded in its deviation from its true position on the globe.
 	 * This bound is a constant times the size of a texel on the globe.
+	 *
+	 * Note that this class can also be used to render a normal-map raster where the raster pixels
+	 * are surface normals instead of colours.
+	 * During rendering the surface normals are converted from tangent-space to world-space so that
+	 * they can be captured in a cube raster (which is decoupled from the raster geo-referencing,
+	 * or local tangent-space of raster). The surface lighting is then applied using the cube raster.
 	 */
 	class GLMultiResolutionRaster :
 			public GLMultiResolutionRasterInterface
@@ -156,9 +162,27 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Returns true if a normal map (@a GLNormalMapSource) can be used as raster source on the runtime system.
+		 *
+		 * This is useful for rendering surface normals into a cube raster to be used to provide
+		 * surface detail for another raster by giving it a bumpy appearance due to diffuse lighting
+		 * on a non-smooth surface.
+		 *
+		 * The normal map is converted from tangent-space to world-space by a shader program and
+		 * the rendered output consists of 8-bit RGB pixels containing the world-space surface normals.
+		 *
+		 * NOTE: This calls 'GLNormalMapSource::is_supported()' internally.
+		 */
+		static
+		bool
+		supports_normal_map_source(
+				GLRenderer &renderer);
+
+
+		/**
 		 * Creates a @a GLMultiResolutionRaster object.
 		 *
-		 * Returns false if @a raster is not a proxy raster or if it's uninitialised.
+		 * @a raster_source is the source of raster data.
 		 *
 		 * Default fixed-point texture filtering mode for the internal textures rendered during
 		 * @a render is nearest neighbour (with anisotropic) filtering.
@@ -243,7 +267,7 @@ namespace GPlatesOpenGL
 		 * See base class for more details.
 		 */
 		virtual
-		int
+		float
 		clamp_level_of_detail(
 				float level_of_detail) const;
 
@@ -264,7 +288,7 @@ namespace GPlatesOpenGL
 		bool
 		render(
 				GLRenderer &renderer,
-				int level_of_detail,
+				float level_of_detail,
 				cache_handle_type &cache_handle);
 
 
@@ -279,14 +303,14 @@ namespace GPlatesOpenGL
 		 * the model-view and projection transforms specified here and in @a get_level_of_detail
 		 * should match.
 		 *
-		 * NOTE: @a level_of_detail must be in the half-open range [0, @a get_num_levels_of_detail).
+		 * NOTE: @a level_of_detail must be in the range [0, @a get_num_levels_of_detail - 1].
 		 */
 		void
 		get_visible_tiles(
 				std::vector<tile_handle_type> &visible_tiles,
 				const GLMatrix &model_view_transform,
 				const GLMatrix &projection_transform,
-				unsigned int level_of_detail) const;
+				float level_of_detail) const;
 
 
 		/**
@@ -761,8 +785,29 @@ namespace GPlatesOpenGL
 		//! Typedef for a sequence of level-of-details.
 		typedef std::vector<LevelOfDetail::non_null_ptr_type> level_of_detail_seq_type;
 
+
+		//! The tangent space coordinate frame (not necessarily orthogonal) at a position on the sphere.
+		struct TangentSpaceFrame
+		{
+			TangentSpaceFrame(
+					const GPlatesMaths::UnitVector3D &tangent_,
+					const GPlatesMaths::UnitVector3D &binormal_,
+					const GPlatesMaths::UnitVector3D &normal_) :
+				tangent(tangent_),
+				binormal(binormal_),
+				normal(normal_)
+			{  }
+
+			GPlatesMaths::UnitVector3D tangent;
+			GPlatesMaths::UnitVector3D binormal;
+			GPlatesMaths::UnitVector3D normal;
+		};
+
 		//! Typedef for vertices.
 		typedef GLTextureVertex vertex_type;
+
+		//! Typedef for normal-map vertices.
+		typedef GLTextureTangentSpaceVertex normal_map_vertex_type;
 
 		//! Typedef for vertex indices.
 		typedef GLushort vertex_element_type;
@@ -863,11 +908,16 @@ namespace GPlatesOpenGL
 		vertex_element_buffer_map_type d_vertex_element_buffers;
 
 		/**
-		 * Shader program to render *floating-point* raster.
+		 * Shader program to render either a *floating-point* raster or a normal-map raster.
 		 *
-		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used).
+		 * Otherwise is boost::none (only the fixed-function pipeline is needed).
 		 */
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_floating_point_raster_program_object;
+		boost::optional<GLProgramObject::shared_ptr_type> d_render_raster_program_object;
+
+		/**
+		 * Is true if the source raster is a normal map.
+		 */
+		bool d_source_raster_is_normal_map;
 
 
 		/**
@@ -912,6 +962,10 @@ namespace GPlatesOpenGL
 				FixedPointTextureFilterType fixed_point_texture_filter,
 				CacheTileTexturesType cache_tile_textures,
 				RasterScanlineOrderType raster_scanline_order);
+
+		void
+		create_shader_program_if_necessary(
+				GLRenderer &renderer);
 
 		/**
 		 * Creates the level-of-detail pyramid structures.
@@ -1082,6 +1136,13 @@ namespace GPlatesOpenGL
 				const LevelOfDetailTile &lod_tile,
 				TileVertices &tile_vertices);
 
+		TangentSpaceFrame
+		calculate_tangent_space_frame(
+				const GPlatesMaths::UnitVector3D &vertex_position,
+				const GPlatesMaths::UnitVector3D &vertex_position01,
+				const GPlatesMaths::UnitVector3D &vertex_position21,
+				const GPlatesMaths::UnitVector3D &vertex_position10,
+				const GPlatesMaths::UnitVector3D &vertex_position12);
 
 		/**
 		 * Converts from raster pixel coordinates to a position on the globe.

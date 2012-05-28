@@ -33,9 +33,12 @@
 
 #include "MapProjection.h"
 #include "RasterColourPalette.h"
+#include "SceneLightingParams.h"
 #include "TextRenderer.h"
 
 #include "app-logic/ResolvedRaster.h"
+
+#include "maths/UnitQuaternion3D.h"
 
 #include "opengl/GLMultiResolutionFilledPolygons.h"
 #include "opengl/GLStreamPrimitives.h"
@@ -301,16 +304,22 @@ namespace GPlatesGui
 					const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type source_resolved_raster_,
 					const RasterColourPalette::non_null_ptr_to_const_type source_raster_colour_palette_,
 					const Colour &source_raster_modulate_colour_,
+					const SceneLightingParams &scene_lighting_params_,
+					const GPlatesOpenGL::GLMatrix &view_orientation_ = GPlatesOpenGL::GLMatrix::IDENTITY,
 					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection_ = boost::none) :
 				source_resolved_raster(source_resolved_raster_),
 				source_raster_colour_palette(source_raster_colour_palette_),
 				source_raster_modulate_colour(source_raster_modulate_colour_),
+				scene_lighting_params(scene_lighting_params_),
+				view_orientation(view_orientation_),
 				map_projection(map_projection_)
 			{  }
 
 			GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type source_resolved_raster;
 			RasterColourPalette::non_null_ptr_to_const_type source_raster_colour_palette;
 			Colour source_raster_modulate_colour;
+			SceneLightingParams scene_lighting_params;
+			GPlatesOpenGL::GLMatrix view_orientation;
 			boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection;
 		};
 

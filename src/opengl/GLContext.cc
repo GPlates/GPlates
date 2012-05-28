@@ -318,6 +318,18 @@ GPlatesOpenGL::GLContext::initialise_texture_parameters(
 	// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
 	texture_parameters.gl_max_texture_size = max_texture_size;
 
+	// Get the maximum cube map texture size (dimension).
+	if (GLEW_ARB_texture_cube_map)
+	{
+		texture_parameters.gl_ARB_texture_cube_map = true;;
+		qDebug() << "  GL_ARB_texture_cube_map";
+
+		GLint max_cube_map_texture_size;
+		glGetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE_ARB, &max_cube_map_texture_size);
+		// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
+		texture_parameters.gl_max_cube_map_texture_size = max_cube_map_texture_size;
+	}
+
 	// Are non-power-of-two dimension textures supported?
 	if (GLEW_ARB_texture_non_power_of_two)
 	{
@@ -386,6 +398,22 @@ GPlatesOpenGL::GLContext::initialise_texture_parameters(
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &texture_parameters.gl_texture_max_anisotropy);
 
 		qDebug() << "  GL_EXT_texture_filter_anisotropic";
+	}
+
+	// Is GLEW_ARB_texture_env_combine supported?
+	if (GLEW_ARB_texture_env_combine)
+	{
+		texture_parameters.gl_ARB_texture_env_combine = true;
+
+		qDebug() << "  GL_ARB_texture_env_combine";
+	}
+
+	// Is GLEW_ARB_texture_env_dot3 supported?
+	if (GLEW_ARB_texture_env_dot3)
+	{
+		texture_parameters.gl_ARB_texture_env_dot3 = true;
+
+		qDebug() << "  GL_ARB_texture_env_dot3";
 	}
 
 	// Are 3D textures supported?
@@ -934,6 +962,8 @@ GPlatesOpenGL::GLContext::Parameters::Shader::Shader() :
 
 GPlatesOpenGL::GLContext::Parameters::Texture::Texture() :
 	gl_max_texture_size(gl_min_texture_size),
+	gl_max_cube_map_texture_size(16/*OpenGL minimum value*/),
+	gl_ARB_texture_cube_map(false),
 	gl_ARB_texture_non_power_of_two(false),
 	gl_max_texture_units(1),
 	gl_max_texture_image_units(1),
@@ -941,6 +971,8 @@ GPlatesOpenGL::GLContext::Parameters::Texture::Texture() :
 	gl_texture_max_anisotropy(1.0f),
 	gl_EXT_texture_edge_clamp(false),
 	gl_SGIS_texture_edge_clamp(false),
+	gl_ARB_texture_env_combine(false),
+	gl_ARB_texture_env_dot3(false),
 	gl_EXT_texture3D(false),
 	gl_EXT_texture_array(false),
 	gl_max_texture_array_layers(1),

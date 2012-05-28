@@ -286,10 +286,16 @@ GPlatesOpenGL::GLTexture::gl_copy_tex_image_2D(
 		GLsizei height,
 		GLint border)
 {
+	// For cube map textures the target to bind is different than the target specifying the cube face.
+	const GLenum bind_target =
+			(target >= GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB && target <= GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_ARB)
+			? GL_TEXTURE_CUBE_MAP_ARB
+			: target;
+
 	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
 	// Revert our texture binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
-	GLRenderer::BindTextureAndApply save_restore_bind(renderer, shared_from_this(), GL_TEXTURE0, target);
+	GLRenderer::BindTextureAndApply save_restore_bind(renderer, shared_from_this(), GL_TEXTURE0, bind_target);
 
 	glCopyTexImage2D(target, level, internalformat, x, y, width, height, border);
 

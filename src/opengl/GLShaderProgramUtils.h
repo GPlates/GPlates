@@ -218,6 +218,9 @@ namespace GPlatesOpenGL
 		 * Shader source code to bilinearly interpolate a *non-mipmapped*,
 		 * *non-anisotropically filtered* 2D texture.
 		 *
+		 * The first overload of 'bilinearly_interpolate' returns the interpolated texture result
+		 * while the second overload returns the four sampled texels and the interpolation coefficients.
+		 *
 		 * 'tex_dimensions' should contain the following (xyzw) components:
 		 *    x: texture width,
 		 *    y: texture height,
@@ -228,11 +231,16 @@ namespace GPlatesOpenGL
 		 * in earlier hardware.
 		 */
 		const char *const BILINEAR_FILTER_SHADER_SOURCE =
-			"vec4\n"
+			"void\n"
 			"bilinearly_interpolate(\n"
 			"		sampler2D tex_sampler,\n"
 			"		vec2 tex_coords,\n"
-			"		vec4 tex_dimensions)\n"
+			"		vec4 tex_dimensions,\n"
+			"		out vec4 tex11,\n"
+			"		out vec4 tex21,\n"
+			"		out vec4 tex12,\n"
+			"		out vec4 tex22,\n"
+			"		out vec2 interp)\n"
 			"{\n"
 
 			"	// Multiply tex coords by texture dimensions to convert to unnormalised form.\n"
@@ -246,18 +254,42 @@ namespace GPlatesOpenGL
 			"	st.zw = st.xy + 1;\n"
 
 			"	// The bilinear interpolation coefficients.\n"
-			"	vec2 t = uv - st.xy;\n"
+			"	interp = uv - st.xy;\n"
 
 			"	// Multiply tex coords by inverse texture dimensions to return to normalised form.\n"
 			"	st *= tex_dimensions.zwzw;\n"
 
-			"	vec4 tex11 = texture2D(tex_sampler, st.xy);\n"
-			"	vec4 tex21 = texture2D(tex_sampler, st.zy);\n"
-			"	vec4 tex12 = texture2D(tex_sampler, st.xw);\n"
-			"	vec4 tex22 = texture2D(tex_sampler, st.zw);\n"
+			"	// The first texture access starts a new indirection phase since it accesses a temporary\n"
+			"	// written in the current phase (see issue 24 in GL_ARB_fragment_program spec).\n"
+			"	tex11 = texture2D(tex_sampler, st.xy);\n"
+			"	tex21 = texture2D(tex_sampler, st.zy);\n"
+			"	tex12 = texture2D(tex_sampler, st.xw);\n"
+			"	tex22 = texture2D(tex_sampler, st.zw);\n"
+
+			"}\n"
+
+			"vec4\n"
+			"bilinearly_interpolate(\n"
+			"		sampler2D tex_sampler,\n"
+			"		vec2 tex_coords,\n"
+			"		vec4 tex_dimensions)\n"
+			"{\n"
+
+			"	// The 2x2 texture sample to interpolate.\n"
+			"	vec4 tex11;\n"
+			"	vec4 tex21;\n"
+			"	vec4 tex12;\n"
+			"	vec4 tex22;\n"
+
+			"	// The bilinear interpolation coefficients.\n"
+			"	vec2 interp;\n"
+
+			"	// Call the other overload of 'bilinearly_interpolate()'.\n"
+			"	bilinearly_interpolate(\n"
+			"		tex_sampler, tex_coords, tex_dimensions, tex11, tex21, tex12, tex22, interp);\n"
 
 			"	// Bilinearly interpolate the four texels.\n"
-			"	return mix(mix(tex11, tex21, t.x), mix(tex12, tex22, t.x), t.y);\n"
+			"	return mix(mix(tex11, tex21, interp.x), mix(tex12, tex22, interp.x), interp.y);\n"
 
 			"}\n";
 
