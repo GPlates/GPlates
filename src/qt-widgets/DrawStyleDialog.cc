@@ -659,10 +659,10 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 		#endif
 
 
-		#ifdef MASSIVE
-			//workaround for massive.
-			//On massive.org.Au, the QPixmap::fromImage() funtion returns a corrupted QPixmap object.
-			//use "cmake . -DCMAKE_CXX_FLAGS=-DMASSIVE" to define "MASSIVE"
+		#ifdef GPLATES_USE_VGL
+			//workaround for using VirtualGL.
+			//With VirtualGL, the QPixmap::fromImage() funtion returns a corrupted QPixmap object.
+			//use "cmake . -DCMAKE_CXX_FLAGS=-DGPLATES_USE_VGL" to define "GPLATES_USE_VGL"
 			QByteArray ba;
 			QBuffer buffer(&ba);
 			buffer.open(QIODevice::WriteOnly);
