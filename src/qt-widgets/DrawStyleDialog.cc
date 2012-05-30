@@ -103,6 +103,29 @@ namespace
 			GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER);
 		return (t == t1 || t == t2 || t == t3);
 	}
+
+	inline
+	QPixmap
+	to_QPixmap(
+			const QImage& img)
+	{
+#ifdef GPLATES_USE_VGL
+		//workaround for using VirtualGL.
+		//With VirtualGL, the QPixmap::fromImage() funtion returns a corrupted QPixmap object.
+		//use "cmake . -DCMAKE_CXX_FLAGS=-DGPLATES_USE_VGL" to define "GPLATES_USE_VGL"
+		QByteArray ba;
+		QBuffer buffer(&ba);
+		buffer.open(QIODevice::WriteOnly);
+		img.save(&buffer, "BMP");
+
+		QPixmap qp;
+		qp.loadFromData(ba, "BMP");
+		return qp;
+#else
+		return QPixmap::fromImage(img);
+#endif
+	}
+
 }
 
 #if 0
@@ -657,24 +680,8 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 		#else
 			d_globe_and_map_widget_ptr->repaint_canvas();
 		#endif
-
-
-		#ifdef GPLATES_USE_VGL
-			//workaround for using VirtualGL.
-			//With VirtualGL, the QPixmap::fromImage() funtion returns a corrupted QPixmap object.
-			//use "cmake . -DCMAKE_CXX_FLAGS=-DGPLATES_USE_VGL" to define "GPLATES_USE_VGL"
-			QByteArray ba;
-			QBuffer buffer(&ba);
-			buffer.open(QIODevice::WriteOnly);
-			d_image.save(&buffer, "BMP");
-
-			QPixmap qp;
-			qp.loadFromData(ba, "BMP");
-
-			current_item->setIcon(qp);
-		#else
-			current_item->setIcon(QIcon(QPixmap::fromImage(d_image)));
-		#endif
+			
+			current_item->setIcon(QIcon(to_QPixmap(d_image)));
 		}
 	
 		d_globe_and_map_widget_ptr->hide();
@@ -710,7 +717,7 @@ GPlatesQtWidgets::DrawStyleDialog::refresh_current_icon()
 			QApplication::processEvents();
 
 
-		current_item->setIcon(QIcon(QPixmap::fromImage(d_image)));
+		current_item->setIcon(QIcon(to_QPixmap(d_image)));
 	}
 	d_globe_and_map_widget_ptr->hide();
 }
@@ -744,7 +751,6 @@ GPlatesQtWidgets::DrawStyleDialog::handle_add_button_clicked(bool )
 				d_style_mgr->register_style(new_style);
 				load_category(*current_cata);
 				focus_style(new_style);
-
 			}
 		}
 	}
