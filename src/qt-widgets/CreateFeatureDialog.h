@@ -27,6 +27,7 @@
 #ifndef GPLATES_QTWIDGETS_CREATEFEATUREDIALOG_H
 #define GPLATES_QTWIDGETS_CREATEFEATUREDIALOG_H
 
+#include <utility>
 #include <boost/optional.hpp>
 
 #include <QCheckBox>
@@ -35,10 +36,13 @@
 
 #include "app-logic/ReconstructMethodType.h"
 
+#include "gui/CanvasToolWorkflows.h"
+
 #include "maths/GeometryOnSphere.h"
 
 #include "model/ModelInterface.h"
 #include "model/FeatureHandle.h"
+
 
 class QComboBox;
 
@@ -158,6 +162,11 @@ namespace GPlatesQtWidgets
 		void
 		handle_feature_type_changed();
 		
+		void
+		handle_canvas_tool_triggered(
+				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
+				GPlatesGui::CanvasToolWorkflows::ToolType tool);
+
 	private:
 	
 		void
@@ -182,6 +191,7 @@ namespace GPlatesQtWidgets
 		add_geometry(
 		    GPlatesModel::FeatureHandle::weak_ref &feature,
 		    const GPlatesModel::PropertyName &geom_prop_name);
+
 
 		/**
 		 * The Model interface, used to create new features.
@@ -306,6 +316,21 @@ namespace GPlatesQtWidgets
 		 *  Checkbox for creating conjugate isochron.                                                                    
 		 */
 		QCheckBox *d_create_conjugate_isochron_checkbox;
+
+		/**
+		 * The last canvas tool explicitly chosen by the user (i.e. not the
+		 * result of an automatic switch of canvas tool by GPlates code).
+		 *
+		 * In particular, this is used to switch back to the Click Geometry tool
+		 * after the user clicks "Clone Geometry" and completes the "Create
+		 * Feature" dialog; this is because "Clone Geometry" automatically takes
+		 * the user to a digitisation tool.
+		 */
+		boost::optional<
+				std::pair<
+						GPlatesGui::CanvasToolWorkflows::WorkflowType,
+						GPlatesGui::CanvasToolWorkflows::ToolType> >
+								d_canvas_tool_last_chosen_by_user;
 	};
 }
 

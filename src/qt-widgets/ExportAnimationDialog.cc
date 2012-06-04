@@ -40,22 +40,20 @@
 
 
 GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
-		GPlatesGui::AnimationController &animation_controller,
 		GPlatesPresentation::ViewState &view_state_,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		QWidget *parent_):
-	QDialog(
+	GPlatesDialog(
 			parent_, 
 			Qt::Window),
 	d_export_animation_context_ptr(
 			new GPlatesGui::ExportAnimationContext(
 					*this,
-					animation_controller,
+					view_state_.get_animation_controller(),
 					view_state_,
 					viewport_window_),
 			GPlatesUtils::NullIntrusivePointerHandler()),
-	d_animation_controller_ptr(
-			&animation_controller),
+	d_animation_controller_ptr(&view_state_.get_animation_controller()),
 	d_configure_parameters_dialog_ptr(
 			new GPlatesQtWidgets::ConfigureExportParametersDialog(
 					d_export_animation_context_ptr, this)),

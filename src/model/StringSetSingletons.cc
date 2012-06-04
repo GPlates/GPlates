@@ -39,7 +39,8 @@ GPlatesModel::StringSetSingletons::feature_type_instance()
 {
 	return GPlatesUtils::Singleton<
 		GPlatesUtils::StringSet,
-		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		GPlatesUtils::CreateUsingNew,
+		GPlatesUtils::DefaultLifetime,
 		FeatureTypeInstance>::instance();
 }
 
@@ -48,7 +49,8 @@ GPlatesModel::StringSetSingletons::property_name_instance()
 {
 	return GPlatesUtils::Singleton<
 		GPlatesUtils::StringSet,
-		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		GPlatesUtils::CreateUsingNew,
+		GPlatesUtils::DefaultLifetime,
 		PropertyNameInstance>::instance();
 }
 
@@ -57,7 +59,8 @@ GPlatesModel::StringSetSingletons::template_type_parameter_type_instance()
 {
 	return GPlatesUtils::Singleton<
 		GPlatesUtils::StringSet,
-		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		GPlatesUtils::CreateUsingNew,
+		GPlatesUtils::DefaultLifetime,
 		TemplateTypeParameterTypeInstance>::instance();
 }
 
@@ -66,7 +69,8 @@ GPlatesModel::StringSetSingletons::text_content_instance()
 {
 	return GPlatesUtils::Singleton<
 		GPlatesUtils::StringSet,
-		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		GPlatesUtils::CreateUsingNew,
+		GPlatesUtils::DefaultLifetime,
 		TextContentInstance>::instance();
 }
 
@@ -75,7 +79,8 @@ GPlatesModel::StringSetSingletons::xml_attribute_name_instance()
 {
 	return GPlatesUtils::Singleton<
 		GPlatesUtils::StringSet,
-		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		GPlatesUtils::CreateUsingNew,
+		GPlatesUtils::DefaultLifetime,
 		XMLAttributeNameInstance>::instance();
 }
 
@@ -84,7 +89,8 @@ GPlatesModel::StringSetSingletons::xml_attribute_value_instance()
 {
 	return GPlatesUtils::Singleton<
 		GPlatesUtils::StringSet,
-		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		GPlatesUtils::CreateUsingNew,
+		GPlatesUtils::DefaultLifetime,
 		XMLAttributeValueInstance>::instance();
 }
 
@@ -93,7 +99,8 @@ GPlatesModel::StringSetSingletons::xml_namespace_instance()
 {
 	return GPlatesUtils::Singleton<
 		GPlatesUtils::StringSet,
-		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		GPlatesUtils::CreateUsingNew,
+		GPlatesUtils::DefaultLifetime,
 		XMLNamespaceInstance>::instance();
 }
 
@@ -102,7 +109,8 @@ GPlatesModel::StringSetSingletons::xml_namespace_alias_instance()
 {
 	return GPlatesUtils::Singleton<
 		GPlatesUtils::StringSet,
-		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		GPlatesUtils::CreateUsingNew,
+		GPlatesUtils::DefaultLifetime,
 		XMLNamespaceAliasInstance>::instance();
 }
 
@@ -111,7 +119,8 @@ GPlatesModel::StringSetSingletons::xml_element_name_instance()
 {
 	return GPlatesUtils::Singleton<
 		GPlatesUtils::StringSet,
-		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		GPlatesUtils::CreateUsingNew,
+		GPlatesUtils::DefaultLifetime,
 		XMLElementNameInstance>::instance();
 }
 
@@ -120,7 +129,8 @@ GPlatesModel::StringSetSingletons::enumeration_content_instance()
 {
 	return GPlatesUtils::Singleton<
 		GPlatesUtils::StringSet,
-		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		GPlatesUtils::CreateUsingNew,
+		GPlatesUtils::DefaultLifetime,
 		EnumerationContentInstance>::instance();
 }
 
@@ -129,7 +139,8 @@ GPlatesModel::StringSetSingletons::enumeration_type_instance()
 {
 	return GPlatesUtils::Singleton<
 		GPlatesUtils::StringSet,
-		GPlatesUtils::DefaultSingletonFactory<GPlatesUtils::StringSet>,
+		GPlatesUtils::CreateUsingNew,
+		GPlatesUtils::DefaultLifetime,
 		EnumerationTypeInstance>::instance();
 }
 

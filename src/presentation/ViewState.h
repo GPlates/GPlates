@@ -62,18 +62,21 @@ namespace GPlatesAppLogic
 
 namespace GPlatesGui
 {
+	class AnimationController;
 	class Colour;
 	class ColourScheme;
 	class ColourSchemeContainer;
 	class ColourSchemeDelegator;
 	class ExportAnimationRegistry;
-	class GeometryFocusHighlight;
+	class FeatureTableModel;
 	class FeatureFocus;
+	class GeometryFocusHighlight;
 	class GraticuleSettings;
 	class MapTransform;
 	class PythonManager;
 	class RenderSettings;
 	class TextOverlaySettings;
+	class TopologySectionsContainer;
 	class ViewportProjection;
 	class ViewportZoom;
 
@@ -86,6 +89,8 @@ namespace GPlatesQtWidgets
 
 namespace GPlatesViewOperations
 {
+	class FocusedFeatureGeometryManipulator;
+	class GeometryBuilder;
 	class ReconstructView;
 	class RenderedGeometryCollection;
 }
@@ -147,6 +152,10 @@ namespace GPlatesPresentation
 		///////////////////////////////////
 
 
+		GPlatesGui::AnimationController &
+		get_animation_controller();
+
+
 		GPlatesViewOperations::RenderedGeometryCollection &
 		get_rendered_geometry_collection();
 
@@ -155,12 +164,24 @@ namespace GPlatesPresentation
 		get_feature_focus();
 
 
+		GPlatesGui::FeatureTableModel &
+		get_feature_table_model();
+
+
 		GPlatesGui::ViewportZoom &
 		get_viewport_zoom();
 
 
 		GPlatesGui::ViewportProjection &
 		get_viewport_projection();
+
+
+		GPlatesViewOperations::GeometryBuilder &
+		get_digitise_geometry_builder();
+
+
+		GPlatesViewOperations::GeometryBuilder &
+		get_focused_feature_geometry_builder();
 
 
 		//! Returns all loaded colour schemes, sorted by category.
@@ -269,6 +290,15 @@ namespace GPlatesPresentation
 		GPlatesGui::ExportAnimationRegistry &
 		get_export_animation_registry() const;
 
+
+		GPlatesGui::TopologySectionsContainer &
+		get_topology_boundary_sections_container();
+
+
+		GPlatesGui::TopologySectionsContainer &
+		get_topology_interior_sections_container();
+
+
 		GPlatesGui::PythonManager&
 		get_python_manager()
 		{
@@ -308,8 +338,21 @@ namespace GPlatesPresentation
 		// FIXME: remove this when refactored
 		GPlatesQtWidgets::ViewportWindow *d_other_view_state;
 
+		//! Handles logic for animating the reconstruction time (for time slider and export).
+		boost::scoped_ptr<GPlatesGui::AnimationController> d_animation_controller;
+
 		//! Contains all rendered geometries for this view state.
 		boost::scoped_ptr<GPlatesViewOperations::RenderedGeometryCollection> d_rendered_geometry_collection;
+
+		/**
+		 * Tracks the currently focused feature (if any).
+		 *
+		 * Depends on @a d_rendered_geometry_collection.
+		 */
+		boost::scoped_ptr<GPlatesGui::FeatureFocus> d_feature_focus;
+
+		//! The 'Clicked' table. Depends on FeatureFocus. NOTE: Not parented by Qt.	
+		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_feature_table_model_ptr;
 
 		//! Holds all loaded colour schemes, sorted by category.
 		boost::scoped_ptr<GPlatesGui::ColourSchemeContainer> d_colour_scheme_container;
@@ -323,6 +366,15 @@ namespace GPlatesPresentation
 		//! The viewport projection state.
 		boost::scoped_ptr<GPlatesGui::ViewportProjection> d_viewport_projection;
 
+		//! Builds geometry for digitised geometry.
+		boost::scoped_ptr<GPlatesViewOperations::GeometryBuilder> d_digitise_geometry_builder;
+
+		//! Builds geometry for the focused feature.
+		boost::scoped_ptr<GPlatesViewOperations::GeometryBuilder> d_focused_feature_geometry_builder;
+
+		//! Depends on @a d_focused_feature_geometry_builder and @a d_feature_focus.
+		boost::scoped_ptr<GPlatesViewOperations::FocusedFeatureGeometryManipulator> d_focused_feature_geom_manipulator;
+
 		/**
 		 * Holds map of feature type to symbol.
 		 */
@@ -334,13 +386,6 @@ namespace GPlatesPresentation
 		 * Depends on d_rendered_geometry_collection.
 		 */
 		boost::scoped_ptr<GPlatesGui::GeometryFocusHighlight> d_geometry_focus_highlight;
-
-		/**
-		 * Tracks the currently focused feature (if any).
-		 *
-		 * Depends on d_reconstruct.
-		 */
-		boost::scoped_ptr<GPlatesGui::FeatureFocus> d_feature_focus;
 
 		/**
 		 * Manages the various layers (usually corresponding to each loaded feature collection)
@@ -396,7 +441,13 @@ namespace GPlatesPresentation
 		 * Stores information about the export animation types.
 		 */
 		boost::scoped_ptr<GPlatesGui::ExportAnimationRegistry> d_export_animation_registry;
-			
+
+		//! The data behind the Topology Sections table (containing boundary sections).
+		boost::scoped_ptr<GPlatesGui::TopologySectionsContainer> d_topology_boundary_sections_container_ptr;
+
+		//! The data behind the Topology Sections table (containing interior sections).
+		boost::scoped_ptr<GPlatesGui::TopologySectionsContainer> d_topology_interior_sections_container_ptr;
+
 		GPlatesGui::PythonManager* d_python_manager_ptr;
 	};
 }

@@ -37,67 +37,45 @@
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
-#include <QtGlobal>
-#include <QFileDialog>
-#include <QLocale>
-#include <QString>
-#include <QStringList>
-#include <QHeaderView>
-#include <QMessageBox>
-#include <QColor>
-#include <QInputDialog>
-#include <QProgressBar>
-#include <QDockWidget>
 #include <QActionGroup>
+#include <QColor>
+#include <QCoreApplication>
+#include <QDesktopServices>
+#include <QDockWidget>
 #include <QDragEnterEvent>
 #include <QDropEvent>
-#include <QCoreApplication>
+#include <QFileDialog>
+#include <QHeaderView>
+#include <QInputDialog>
+#include <QLocale>
+#include <QMessageBox>
 #include <QProcess>
-#include <QDesktopServices>
+#include <QProgressBar>
+#include <QString>
+#include <QStringList>
+#include <QtGlobal>
+#include <QToolBar>
 
 #include "ViewportWindow.h"
 
-#include "AboutDialog.h"
-#include "AnimateDialog.h"
 #include "ActionButtonBox.h"
-#include "AssignReconstructionPlateIdsDialog.h"
-#include "CalculateReconstructionPoleDialog.h"
+#include "CanvasToolBarDockWidget.h"
 #include "ChooseFeatureCollectionDialog.h"
-#include "ColouringDialog.h"
-#include "ConfigureGraticulesDialog.h"
-#include "ConfigureTextOverlayDialog.h"
-#include "ConnectWFSDialog.h"
 #include "CreateFeatureDialog.h"
-#include "CreateVGPDialog.h"
 #include "DigitisationWidget.h"
 #include "DockWidget.h"
-#include "DrawStyleDialog.h"
-#include "ExportAnimationDialog.h"
 #include "FeaturePropertiesDialog.h"
 #include "GlobeCanvas.h"
 #include "GlobeAndMapWidget.h"
 #include "ImportRasterDialog.h"
-#include "InformationDialog.h"
-#include "ManageFeatureCollectionsDialog.h"
-#include "ManageFeatureCollectionsEditConfigurations.h"
 #include "MapView.h"
-#include "MeshDialog.h"
-#include "PreferencesDialog.h"
 #include "PythonConsoleDialog.h"
 #include "QtWidgetUtils.h"
 #include "ReadErrorAccumulationDialog.h"
 #include "ReconstructionViewWidget.h"
-#include "DrawStyleDialog.h"
 #include "SaveFileDialog.h"
-#include "SetCameraViewpointDialog.h"
-#include "SetProjectionDialog.h"
-#include "ShapefileAttributeViewerDialog.h"
-#include "ShapefilePropertyMapper.h"
-#include "SpecifyAnchoredPlateIdDialog.h"
-#include "SymbolManagerDialog.h"
+#include "SearchResultsDockWidget.h"
 #include "TaskPanel.h"
-#include "TotalReconstructionPolesDialog.h"
-#include "TotalReconstructionSequencesDialog.h"
 #include "VisualLayersDialog.h"
 
 #include "api/DeferredApiCall.h"
@@ -112,146 +90,81 @@
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/SessionManagement.h"
 
+#include "canvas-tools/GeometryOperationState.h"
 #include "canvas-tools/MeasureDistanceState.h"
-
-#include "feature-visitors/GeometryTypeFinder.h"
+#include "canvas-tools/ModifyGeometryState.h"
 
 #include "file-io/ReadErrorAccumulation.h"
-#include "file-io/ErrorOpeningFileForReadingException.h"
-#include "file-io/FileFormatNotSupportedException.h"
-#include "file-io/ErrorOpeningPipeFromGzipException.h"
-#include "file-io/FileInfo.h"
-#include "file-io/FeatureCollectionFileFormat.h"
-#include "file-io/RasterReader.h"
-#include "file-io/ShapefileReader.h"
 #include "file-io/SymbolFileReader.h"
-#include "file-io/ErrorOpeningFileForWritingException.h"
 
+#include "global/GPlatesAssert.h"
 #include "global/GPlatesException.h"
 #include "global/SubversionInfo.h"
-#include "global/UnexpectedEmptyFeatureCollectionException.h"
 #include "global/config.h"
 #include "global/python.h"
 
-#include "gui/AddClickedGeometriesToFeatureTable.h"
-#include "gui/ChooseCanvasTool.h"
+#include "gui/AnimationController.h"
+#include "gui/CanvasToolWorkflows.h"
+#include "gui/ColourSchemeDelegator.h"
 #include "gui/DockState.h"
 #include "gui/Dialogs.h"
-#include "gui/EnableCanvasTool.h"
 #include "gui/FeatureFocus.h"
-#include "gui/FeatureTableModel.h"
 #include "gui/FileIOFeedback.h"
-#include "gui/GlobeCanvasToolAdapter.h"
-#include "gui/GlobeCanvasToolChoice.h"
+#include "gui/FullScreenMode.h"
 #include "gui/GuiDebug.h"
 #include "gui/ImportMenu.h"
-#include "gui/MapCanvasToolAdapter.h"
-#include "gui/MapCanvasToolChoice.h"
-#include "gui/ProjectionException.h"
+#include "gui/PythonManager.h"
 #include "gui/SessionMenu.h"
 #include "gui/SvgExport.h"
-#include "gui/TopologySectionsContainer.h"
-#include "gui/TopologySectionsTable.h"
 #include "gui/TrinketArea.h"
 #include "gui/UnsavedChangesTracker.h"
 #include "gui/UtilitiesMenu.h"
-#include "gui/ViewportProjection.h"
-
-#include "maths/PolylineIntersections.h"
-#include "maths/PointOnSphere.h"
-#include "maths/LatLonPoint.h"
-#include "maths/InvalidLatLonException.h"
-#include "maths/Real.h"
 
 #include "model/Model.h"
 #include "model/types.h"
 
-#include "opengl/OpenGLBadAllocException.h"
-#include "opengl/OpenGLException.h"
-
-#include "presentation/Application.h"
 #include "presentation/ViewState.h"
-
-#include "qt-widgets/MapCanvas.h"
-#include "qt-widgets/ShapefilePropertyMapper.h"
 
 #include "utils/ComponentManager.h"
 #include "utils/DeferredCallEvent.h"
-#include "utils/ExternalSyncController.h"
 #include "utils/Profile.h"
-#include "utils/ComponentManager.h"
-#include "gui/PythonManager.h"
 
-#include "view-operations/ActiveGeometryOperation.h"
 #include "view-operations/CloneOperation.h"
 #include "view-operations/DeleteFeatureOperation.h"
-#include "view-operations/FocusedFeatureGeometryManipulator.h"
-#include "view-operations/GeometryBuilder.h"
-#include "view-operations/GeometryOperationTarget.h"
 #include "view-operations/RenderedGeometryParameters.h"
 #include "view-operations/UndoRedo.h"
 
-void
-GPlatesQtWidgets::ViewportWindow::load_files(
-		const QStringList &filenames)
+
+namespace GPlatesQtWidgets
 {
-	d_file_io_feedback_ptr->open_files(filenames);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::reconstruct_to_time(
-		const double &recon_time)
-{
-	// Setting the reconstruction time will trigger a new reconstruction.
-	get_application_state().set_reconstruction_time(recon_time);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_read_errors(
-		GPlatesAppLogic::FeatureCollectionFileIO &,
-		const GPlatesFileIO::ReadErrorAccumulation &new_read_errors)
-{
-	// Pop up errors only if we have new read errors.
-	if (new_read_errors.is_empty())
+	namespace
 	{
-		return;
-	}
+		const char *STATUS_MESSAGE_SUFFIX_FOR_GLOBE = QT_TR_NOOP("Ctrl+drag to re-orient the globe.");
+		const char *STATUS_MESSAGE_SUFFIX_FOR_MAP = QT_TR_NOOP("Ctrl+drag to pan the map.");
 
-	// Populate the dialog.
-	d_read_errors_dialog_ptr->clear();
-	d_read_errors_dialog_ptr->read_errors().accumulate(new_read_errors);
-	d_read_errors_dialog_ptr->update();
-	
-	// At this point we can either throw the dialog in the user's face,
-	// or pop up a small icon in the status bar which they can click to see the errors.
-	// How do we decide? Well, until we get UserPreferences, let's just pop up the icon
-	// on warnings, and show the whole dialog on any kind of real error.
-	GPlatesFileIO::ReadErrors::Severity severity = new_read_errors.most_severe_error_type();
-	if (severity > GPlatesFileIO::ReadErrors::Warning) {
-		d_read_errors_dialog_ptr->show();
-	} else {
-		d_trinket_area_ptr->read_errors_trinket().setVisible(true);
-	}
-}
+		void
+		canvas_tool_status_message(
+				GPlatesQtWidgets::ViewportWindow &viewport_window,
+				const char *message)
+		{
+			viewport_window.status_message(
+					GPlatesQtWidgets::ViewportWindow::tr(message) + " " +
+					GPlatesQtWidgets::ViewportWindow::tr(
+						viewport_window.reconstruction_view_widget().globe_is_active() ?
+							STATUS_MESSAGE_SUFFIX_FOR_GLOBE : STATUS_MESSAGE_SUFFIX_FOR_MAP));
+		}
 
-
-namespace
-{
-	const char *STATUS_MESSAGE_SUFFIX_FOR_GLOBE = QT_TR_NOOP("Ctrl+drag to re-orient the globe.");
-	const char *STATUS_MESSAGE_SUFFIX_FOR_MAP = QT_TR_NOOP("Ctrl+drag to pan the map.");
-
-	void
-	canvas_tool_status_message(
-			GPlatesQtWidgets::ViewportWindow &viewport_window,
-			const char *message)
-	{
-		viewport_window.status_message(
-				GPlatesQtWidgets::ViewportWindow::tr(message) + " " +
-				GPlatesQtWidgets::ViewportWindow::tr(
-					viewport_window.reconstruction_view_widget().globe_is_active() ?
-						STATUS_MESSAGE_SUFFIX_FOR_GLOBE : STATUS_MESSAGE_SUFFIX_FOR_MAP));
+		void
+		add_shortcut_to_tooltip(
+				QAction *action)
+		{
+			if (!action->shortcut().isEmpty())
+			{
+				action->setToolTip(QString()); // Reset to default.
+				action->setToolTip(action->toolTip() + "  " +
+						action->shortcut().toString(QKeySequence::NativeText));
+			}
+		}
 	}
 }
 
@@ -262,10 +175,36 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 		GPlatesPresentation::ViewState &view_state) :
 	d_application_state(application_state),
 	d_view_state(view_state),
-	d_animation_controller(get_application_state()),
-	d_full_screen_mode(*this),
+	d_geometry_operation_state_ptr(
+			new GPlatesCanvasTools::GeometryOperationState()),
+	d_modify_geometry_state(
+			new GPlatesCanvasTools::ModifyGeometryState()),
+	d_measure_distance_state_ptr(
+			new GPlatesCanvasTools::MeasureDistanceState(
+				get_view_state().get_rendered_geometry_collection(),
+				*d_geometry_operation_state_ptr)),
+	d_canvas_tool_workflows(
+			new GPlatesGui::CanvasToolWorkflows()),
+	d_clone_operation_ptr(
+			new GPlatesViewOperations::CloneOperation(
+				*d_canvas_tool_workflows,
+				get_view_state().get_digitise_geometry_builder(),
+				get_view_state().get_focused_feature_geometry_builder(),
+				get_view_state())),
+	d_delete_feature_operation_ptr(
+			new GPlatesViewOperations::DeleteFeatureOperation(
+				get_view_state().get_feature_focus(),
+				get_application_state())),
+	d_dialogs_ptr(
+			new GPlatesGui::Dialogs(
+				get_application_state(),
+				get_view_state(),
+				*this,
+				this)),
+	d_full_screen_mode(
+			new GPlatesGui::FullScreenMode(*this)),
 	d_trinket_area_ptr(
-			new GPlatesGui::TrinketArea(*this)),
+			new GPlatesGui::TrinketArea(*d_dialogs_ptr, *this)),
 	d_unsaved_changes_tracker_ptr(
 			new GPlatesGui::UnsavedChangesTracker(
 				*this,
@@ -284,121 +223,26 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 				get_application_state(),
 				*d_file_io_feedback_ptr,
 				this)),
+	d_import_menu_ptr(NULL), // Needs to be set up after call to setupUi.
+	d_utilities_menu_ptr(NULL), // Needs to be set up after call to setupUi.
 	d_dock_state_ptr(
 			new GPlatesGui::DockState(
 				*this,
 				this)),
-	d_dialogs_ptr(
-			new GPlatesGui::Dialogs(
-				get_application_state(),
-				get_view_state(),
-				*this,
-				this)),
-	d_info_dock_ptr(NULL),
+	d_search_results_dock_ptr(NULL),
+	d_canvas_tools_dock_ptr(NULL),
 	d_reconstruction_view_widget_ptr(
 			new ReconstructionViewWidget(
-				d_animation_controller,
 				*this,
 				get_view_state(),
 				this)),
-	d_about_dialog_ptr(NULL),
-	d_animate_dialog_ptr(NULL),
-	d_assign_recon_plate_ids_dialog_ptr(
-			new AssignReconstructionPlateIdsDialog(
-				get_application_state(), get_view_state(), this)),
-	d_calculate_reconstruction_pole_dialog_ptr(NULL),
-	d_colouring_dialog_ptr(NULL),
-	d_draw_style_dialog_ptr(NULL),
-	d_connect_wfs_dialog_ptr(NULL),
-	d_create_vgp_dialog_ptr(NULL),
-	d_export_animation_dialog_ptr(NULL),
-	d_feature_properties_dialog_ptr(
-			new FeaturePropertiesDialog(
-				get_view_state(),
-				this)),
-	d_manage_feature_collections_dialog_ptr(
-			new ManageFeatureCollectionsDialog(
-				get_application_state().get_feature_collection_file_state(),
-				get_application_state().get_feature_collection_file_io(),
-				*d_file_io_feedback_ptr,
-				get_view_state(),
-				this)),
-	d_mesh_dialog_ptr(NULL),
-	d_read_errors_dialog_ptr(
-			new ReadErrorAccumulationDialog(this)),
-	d_set_camera_viewpoint_dialog_ptr(NULL),
-	d_set_projection_dialog_ptr(NULL),
-	d_shapefile_attribute_viewer_dialog_ptr(
-			new ShapefileAttributeViewerDialog(
-				get_application_state().get_feature_collection_file_state(),
-				this)),
-	d_specify_anchored_plate_id_dialog_ptr(
-			new SpecifyAnchoredPlateIdDialog(
-				this)),
-	d_total_reconstruction_poles_dialog_ptr(NULL),
-	d_total_reconstruction_sequences_dialog_ptr(
-			new TotalReconstructionSequencesDialog(
-				get_application_state().get_feature_collection_file_state(),
-				get_view_state(),
-				this)),
-	d_visual_layers_dialog_ptr(NULL),
-	d_choose_canvas_tool(
-			new GPlatesGui::ChooseCanvasTool(*this)),
-	d_digitise_geometry_builder(
-			new GPlatesViewOperations::GeometryBuilder()),
-	d_focused_feature_geometry_builder(
-			new GPlatesViewOperations::GeometryBuilder()),
-	d_geometry_operation_target(
-			new GPlatesViewOperations::GeometryOperationTarget(
-				*d_digitise_geometry_builder,
-				*d_focused_feature_geometry_builder,
-				get_view_state().get_feature_focus(),
-				*d_choose_canvas_tool)),
-	d_clone_operation_ptr(
-			new GPlatesViewOperations::CloneOperation(
-				d_choose_canvas_tool.get(),
-				d_digitise_geometry_builder.get(),
-				d_focused_feature_geometry_builder.get(),
-				get_view_state())),
-	d_delete_feature_operation_ptr(
-			new GPlatesViewOperations::DeleteFeatureOperation(
-				get_view_state().get_feature_focus(),
-				get_application_state())),
-	d_active_geometry_operation(
-			new GPlatesViewOperations::ActiveGeometryOperation()),
-	d_focused_feature_geom_manipulator(
-			new GPlatesViewOperations::FocusedFeatureGeometryManipulator(
-				*d_focused_feature_geometry_builder,
-				get_view_state())),
-	d_enable_canvas_tool(
-			new GPlatesGui::EnableCanvasTool(
-				*this,
-				get_view_state().get_feature_focus(),
-				*d_geometry_operation_target,
-				*d_choose_canvas_tool)),
-	d_measure_distance_state_ptr(
-			new GPlatesCanvasTools::MeasureDistanceState(
-				get_view_state().get_rendered_geometry_collection(),
-				*d_geometry_operation_target)),
-	d_topology_boundary_sections_container_ptr(
-			new GPlatesGui::TopologySectionsContainer()),
-	d_topology_interior_sections_container_ptr(
-			new GPlatesGui::TopologySectionsContainer()),
-	d_feature_table_model_ptr(
-			new GPlatesGui::FeatureTableModel(
-				get_view_state())),
 	d_task_panel_ptr(NULL),
-	d_canvas_tool_last_chosen_by_user(
-			GPlatesCanvasTools::CanvasToolType::DRAG_GLOBE),
 	d_undo_action_ptr(
 			GPlatesViewOperations::UndoRedo::instance().get_undo_group().createUndoAction(this, tr("&Undo"))),
 	d_redo_action_ptr(
 			GPlatesViewOperations::UndoRedo::instance().get_undo_group().createRedoAction(this, tr("Re&do"))),
 	d_inside_update_undo_action_tooltip(false),
-	d_inside_update_redo_action_tooltip(false),
-	d_import_menu_ptr(NULL), // Needs to be set up after call to setupUi.
-	d_utilities_menu_ptr(NULL), // Needs to be set up after call to setupUi.
-	d_external_sync_controller_ptr(NULL)
+	d_inside_update_redo_action_tooltip(false)
 {
 	setupUi(this);
 
@@ -409,40 +253,77 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	// the method will eventually get removed when the state has been moved over.
 	get_view_state().set_other_view_state(*this);
 
-	// Register the default edit configurations for those file formats that have configurations.
-	ManageFeatureCollections::register_default_edit_configurations(
-			*d_manage_feature_collections_dialog_ptr,
-			get_application_state().get_model_interface());
+	//
+	// Currently the order of initialisation of canvas tools dock, canvas tool workflows and task panel
+	// is precarious due to references to each other via ViewportWindow.
+	// So the order that currently works is:
+	//  (1) canvas tools dock,
+	//  (2) task panel,
+	//  (3) canvas tool workflows.
+	//
 
-	// Initialise the Shapefile property mapper before we start reading.
-	// FIXME: Not sure where this should go since it involves qt widgets (logical place is
-	// in FeatureCollectionFileIO but that is application state and shouldn't know about
-	// qt widgets).
-	boost::shared_ptr<GPlatesQtWidgets::ShapefilePropertyMapper> shapefile_property_mapper(
-			new GPlatesQtWidgets::ShapefilePropertyMapper(this));
-	GPlatesFileIO::ShapefileReader::set_property_mapper(shapefile_property_mapper);
+	// Create the tabbed search results dock widget.
+	d_search_results_dock_ptr = new SearchResultsDockWidget(
+			*d_dock_state_ptr,
+			get_view_state().get_feature_table_model(),
+			*this);
+	d_search_results_dock_ptr->dock_at_bottom();
 
-	std::auto_ptr<TaskPanel> task_panel_auto_ptr(new TaskPanel(
-			get_view_state(),
-			*d_digitise_geometry_builder,
-			*d_geometry_operation_target,
-			*d_active_geometry_operation,
+	// Create the tabbed canvas toolbar dock widget.
+	d_canvas_tools_dock_ptr = new CanvasToolBarDockWidget(
+			*d_dock_state_ptr,
+			canvas_tool_workflows(),
+			*this);
+	d_canvas_tools_dock_ptr->dock_at_left();
+
+	// Specify which dock widget area should occupy the bottom left corner of the main window.
+	//
+	// Previously the canvas tools were in a QToolBar which is a primary window around the central
+	// widget (so it wasn't affected by the bottom 'search results' dock window).
+	// See the layout diagram at http://doc.trolltech.com/4.4/qdockwidget.html#details
+	// Now the canvas tools are in a QDockWindow (which is a secondary window) so we have to specify
+	// which dock window gets the corner areas.
+	//
+	// Handle cases where user docks canvas toolbar to the left or right while search results dock is at *bottom*.
+	setCorner(Qt::BottomLeftCorner, Qt::LeftDockWidgetArea);
+	setCorner(Qt::BottomRightCorner, Qt::RightDockWidgetArea);
+	// Handle cases where user docks canvas toolbar to the left or right while search results dock is at *top*.
+	setCorner(Qt::TopLeftCorner, Qt::LeftDockWidgetArea);
+	setCorner(Qt::TopRightCorner, Qt::RightDockWidgetArea);
+
+	d_task_panel_ptr = new TaskPanel(
+			get_view_state().get_digitise_geometry_builder(),
+			*d_geometry_operation_state_ptr,
+			*d_modify_geometry_state,
 			*d_measure_distance_state_ptr,
-			*this,
 			d_undo_action_ptr,
 			d_redo_action_ptr,
-			*d_choose_canvas_tool,
-			this));
-	d_task_panel_ptr = task_panel_auto_ptr.get();
+			*d_canvas_tool_workflows,
+			get_view_state(),
+			*this,
+			this);
 
-	// New wrapper for Dock stuff, TEMPORARY CODE while I am in the middle of refactoring out all
-	// the "Info Dock" code away from ViewportWindow. Thanks for your patience --JC
-	d_info_dock_ptr = new DockWidget(tr(""), *d_dock_state_ptr, *this);
-	d_info_dock_ptr->setWidget(tabWidget);		// Note the hack here. It's not so bad, Qt reparents it.
-	dock_search_results->hide();
-	d_info_dock_ptr->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable |
-			QDockWidget::DockWidgetFloatable | QDockWidget::DockWidgetVerticalTitleBar);
-	d_info_dock_ptr->dock_at_bottom();
+	// Switch to the appropriate task panel tab when a canvas tool is activated.
+	QObject::connect(
+			&canvas_tool_workflows(),
+			SIGNAL(canvas_tool_activated(
+					GPlatesGui::CanvasToolWorkflows::WorkflowType,
+					GPlatesGui::CanvasToolWorkflows::ToolType)),
+			this,
+			SLOT(handle_canvas_tool_activated(
+					GPlatesGui::CanvasToolWorkflows::WorkflowType,
+					GPlatesGui::CanvasToolWorkflows::ToolType)));
+
+	// Now that the canvas tools dock and task panel have been setup we can create the
+	// canvas tool workflows/tools and activate the default canvas workflow/tool.
+	// This will also activate the default canvas tool to start things going.
+	canvas_tool_workflows().initialise(
+			*d_geometry_operation_state_ptr,
+			*d_modify_geometry_state,
+			*d_measure_distance_state_ptr,
+			boost::bind(&canvas_tool_status_message, boost::ref(*this), _1),
+			get_view_state(),
+			*this);
 
 	// Connect all the Signal/Slot relationships of ViewportWindow's
 	// toolbar buttons and menu items.
@@ -450,274 +331,59 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 
 	// Duplicate the menu structure for the full-screen-mode GMenu.
 	populate_gmenu_from_menubar();
+
 	// Initialise various elements for full-screen-mode that must wait until after setupUi().
-	d_full_screen_mode.init();
+	d_full_screen_mode->init();
+
 	// Initialise the Recent Session menu (that must wait until after setupUi()).
 	d_session_menu_ptr->init(*menu_Open_Recent_Session);
 	
-	// Set up an emergency context menu to control QDockWidgets even if
-	// they're no longer behaving properly.
-	set_up_dock_context_menus();
-	
 	// FIXME: Set up the Task Panel in a more detailed fashion here.
 #if 1
-	d_reconstruction_view_widget_ptr->insert_task_panel(task_panel_auto_ptr);
+	d_reconstruction_view_widget_ptr->insert_task_panel(d_task_panel_ptr);
 #else
 	// Stretchable Task Panel hack for testing: Make the Task Panel
 	// into a QDockWidget, undocked by default.
 	QDockWidget *task_panel_dock = new QDockWidget(tr("Task Panel"), this);
 	task_panel_dock->setObjectName("TaskPanelDock");
-	task_panel_dock->setWidget(task_panel_auto_ptr.release());
+	task_panel_dock->setWidget(d_task_panel_ptr);
 	task_panel_dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 	addDockWidget(Qt::RightDockWidgetArea, task_panel_dock);
 	task_panel_dock->setFloating(true);
 #endif
 	set_up_task_panel_actions();
 
-	// Enable/disable canvas tools according to the current state.
-	d_enable_canvas_tool->initialise();
 	// Disable the feature-specific Actions as there is no currently focused feature to act on.
 	enable_or_disable_feature_actions(get_view_state().get_feature_focus());
-	QObject::connect(&get_view_state().get_feature_focus(), SIGNAL(focus_changed(
-					GPlatesGui::FeatureFocus &)),
-			this, SLOT(enable_or_disable_feature_actions(GPlatesGui::FeatureFocus &)));
-
-	// Set up the Specify Anchored Plate ID dialog.
-	// Perform a reconstruction when the anchor plate id changes.
 	QObject::connect(
-			d_specify_anchored_plate_id_dialog_ptr.get(),
-			SIGNAL(value_changed(GPlatesModel::integer_plate_id_type)),
-			&get_application_state(),
-			SLOT(set_anchored_plate_id(GPlatesModel::integer_plate_id_type)));
+			&get_view_state().get_feature_focus(),
+			SIGNAL(focus_changed(GPlatesGui::FeatureFocus &)),
+			this,
+			SLOT(enable_or_disable_feature_actions(GPlatesGui::FeatureFocus &)));
 
 	// Set up the Reconstruction View widget.
 	setCentralWidget(d_reconstruction_view_widget_ptr);
 
-	connect_feature_collection_file_io_signals();
-
-	// Set up the Clicked table (which is now actually a tree in disguise).
-	// FIXME: All the Clicked Table stuff (the below, the d_feature_table_model_ptr,
-	//        FeatureTableModel::handle_selection_change,
-	//        ViewportWindow::highlight_first_clicked_feature_table_row() ) should
-	//        be put in their own class.
-	tree_view_clicked_geometries->setRootIsDecorated(false);
-	tree_view_clicked_geometries->setModel(d_feature_table_model_ptr.get());
-	GPlatesGui::FeatureTableModel::set_default_resize_modes(*tree_view_clicked_geometries->header());
-	tree_view_clicked_geometries->header()->setMinimumSectionSize(60);
-	tree_view_clicked_geometries->header()->setMovable(true);
-	// When the user selects a row of the table, we should focus that feature.
-	// RJW: This is what triggers the highlighting of the geometry on the canvas.
-	QObject::connect(tree_view_clicked_geometries->selectionModel(),
-			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-			d_feature_table_model_ptr.get(),
-			SLOT(handle_selection_change(const QItemSelection &, const QItemSelection &)));
-	// And if the focus is changed programatically, from e.g. Clone Feature, ensure the Clicked
-	// Table still displays it
-	QObject::connect(&get_view_state().get_feature_focus(),
-			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
+	// Listen for file read errors so can update/display read errors dialog.
+	QObject::connect(
+			&get_application_state().get_feature_collection_file_io(),
+			SIGNAL(handle_read_errors(
+					GPlatesAppLogic::FeatureCollectionFileIO &,
+					const GPlatesFileIO::ReadErrorAccumulation &)),
 			this,
-			SLOT(highlight_focused_feature_in_table()));
+			SLOT(handle_read_errors(
+					GPlatesAppLogic::FeatureCollectionFileIO &,
+					const GPlatesFileIO::ReadErrorAccumulation &)));
 
 
-	// Set up the Topology Sections Table, now that the table widget has been created.
-	d_topology_sections_table_ptr.reset(
-			new GPlatesGui::TopologySectionsTable(
-					*table_widget_topology_sections,
-					*d_topology_boundary_sections_container_ptr, 
-					*d_topology_interior_sections_container_ptr,
-					get_application_state(),
-					get_view_state().get_feature_focus()));
+	// After modifying the move-nearby-vertices widget, this will reset the focus to the globe/map.
+	// FIXME: Find a more general way to do this for changes made by the user in the task panel tabs.
+	QObject::connect(
+			d_modify_geometry_state.get(),
+			SIGNAL(snap_vertices_setup_changed(bool,double,bool,GPlatesModel::integer_plate_id_type)),
+			d_reconstruction_view_widget_ptr,
+			SLOT(setFocus()));
 
-	// If the focused feature is modified, we may need to update the ShapefileAttributeViewerDialog.
-	QObject::connect(&get_view_state().get_feature_focus(),
-			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
-			d_shapefile_attribute_viewer_dialog_ptr.get(), SLOT(update()));
-
-	// Create canvas tools.
-	GPlatesGui::Globe &globe = globe_canvas().globe();
-	MapCanvas &map_canvas = map_view().map_canvas();
-	GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection =
-		get_view_state().get_rendered_geometry_collection();
-	GPlatesGui::FeatureFocus &feature_focus = get_view_state().get_feature_focus();
-	GlobeAndMapWidget &globe_and_map_widget = d_reconstruction_view_widget_ptr->globe_and_map_widget();
-	GPlatesGui::MapTransform &map_transform = get_view_state().get_map_transform();
-	GPlatesCanvasTools::CanvasTool::status_bar_callback_type status_bar_callback =
-		boost::bind(
-				&::canvas_tool_status_message,
-				boost::ref(*this),
-				_1);
-
-	GPlatesCanvasTools::ClickGeometry::non_null_ptr_type click_geometry_tool =
-		GPlatesCanvasTools::ClickGeometry::create(
-				status_bar_callback,
-				rendered_geom_collection,
-				*this,
-				*d_feature_table_model_ptr,
-				*d_feature_properties_dialog_ptr,
-				feature_focus,
-				get_application_state());
-	GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type digitise_polyline_tool =
-		GPlatesCanvasTools::DigitiseGeometry::create(
-				status_bar_callback,
-				GPlatesViewOperations::GeometryType::POLYLINE,
-				*d_geometry_operation_target,
-				*d_active_geometry_operation,
-				rendered_geom_collection,
-				*d_choose_canvas_tool,
-				GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYLINE,
-				globe_and_map_widget);
-	GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type digitise_multipoint_tool =
-		GPlatesCanvasTools::DigitiseGeometry::create(
-				status_bar_callback,
-				GPlatesViewOperations::GeometryType::MULTIPOINT,
-				*d_geometry_operation_target,
-				*d_active_geometry_operation,
-				rendered_geom_collection,
-				*d_choose_canvas_tool,
-				GPlatesCanvasTools::CanvasToolType::DIGITISE_MULTIPOINT,
-				globe_and_map_widget);
-	GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type digitise_polygon_tool =
-		GPlatesCanvasTools::DigitiseGeometry::create(
-				status_bar_callback,
-				GPlatesViewOperations::GeometryType::POLYGON,
-				*d_geometry_operation_target,
-				*d_active_geometry_operation,
-				rendered_geom_collection,
-				*d_choose_canvas_tool,
-				GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYGON,
-				globe_and_map_widget);
-	GPlatesCanvasTools::MoveVertex::non_null_ptr_type move_vertex_tool =
-		GPlatesCanvasTools::MoveVertex::create(
-				status_bar_callback,
-				*d_geometry_operation_target,
-				*d_active_geometry_operation,
-				rendered_geom_collection,
-				*d_choose_canvas_tool,
-				globe_and_map_widget,
-				this);
-	GPlatesCanvasTools::DeleteVertex::non_null_ptr_type delete_vertex_tool =
-		GPlatesCanvasTools::DeleteVertex::create(
-				status_bar_callback,
-				*d_geometry_operation_target,
-				*d_active_geometry_operation,
-				rendered_geom_collection,
-				*d_choose_canvas_tool,
-				globe_and_map_widget);
-	GPlatesCanvasTools::InsertVertex::non_null_ptr_type insert_vertex_tool =
-		GPlatesCanvasTools::InsertVertex::create(
-				status_bar_callback,
-				*d_geometry_operation_target,
-				*d_active_geometry_operation,
-				rendered_geom_collection,
-				*d_choose_canvas_tool,
-				globe_and_map_widget);
-	GPlatesCanvasTools::SplitFeature::non_null_ptr_type split_feature_tool =
-		GPlatesCanvasTools::SplitFeature::create(
-				status_bar_callback,
-				feature_focus,
-				get_view_state(),
-				*d_geometry_operation_target,
-				*d_active_geometry_operation,
-				rendered_geom_collection,
-				*d_choose_canvas_tool,
-				globe_and_map_widget);
-	GPlatesCanvasTools::ManipulatePole::non_null_ptr_type manipulate_pole_tool =
-		GPlatesCanvasTools::ManipulatePole::create(
-				status_bar_callback,
-				rendered_geom_collection,
-				d_task_panel_ptr->modify_reconstruction_pole_widget());
-	GPlatesCanvasTools::BuildTopology::non_null_ptr_type build_topology_tool =
-		GPlatesCanvasTools::BuildTopology::create(
-				status_bar_callback,
-				get_view_state(),
-				*this,
-				*d_feature_table_model_ptr,
-				//*d_topology_boundary_sections_container_ptr,
-				d_task_panel_ptr->topology_tools_widget(),
-				get_application_state());
-	GPlatesCanvasTools::EditTopology::non_null_ptr_type edit_topology_tool =
-		GPlatesCanvasTools::EditTopology::create(
-				status_bar_callback,
-				get_view_state(),
-				*this,
-				*d_feature_table_model_ptr,
-				//*d_topology_boundary_sections_container_ptr,
-				d_task_panel_ptr->topology_tools_widget(),
-				get_application_state());
-	GPlatesCanvasTools::MeasureDistance::non_null_ptr_type measure_distance_tool =
-		GPlatesCanvasTools::MeasureDistance::create(
-				status_bar_callback,
-				rendered_geom_collection,
-				*d_measure_distance_state_ptr);
-	GPlatesCanvasTools::CreateSmallCircle::non_null_ptr_type create_small_circle_tool =
-		GPlatesCanvasTools::CreateSmallCircle::create(
-				status_bar_callback,
-				rendered_geom_collection,
-				d_task_panel_ptr->small_circle_widget());
-
-	// Set up the Map and Globe Canvas Tools Choices.
-	d_globe_canvas_tool_choice_ptr.reset(
-			new GPlatesGui::GlobeCanvasToolChoice(
-				globe,
-				globe_canvas(),
-				*this,
-				get_view_state(),
-				click_geometry_tool,
-				digitise_polyline_tool,
-				digitise_multipoint_tool,
-				digitise_polygon_tool,
-				move_vertex_tool,
-				delete_vertex_tool,
-				insert_vertex_tool,
-				split_feature_tool,
-				manipulate_pole_tool,
-				build_topology_tool,
-				edit_topology_tool,
-				measure_distance_tool,
-				create_small_circle_tool));
-	d_map_canvas_tool_choice_ptr.reset(
-			new GPlatesGui::MapCanvasToolChoice(
-				map_canvas,
-				map_view(),
-				*this,
-				map_transform,
-				get_view_state().get_viewport_zoom(),
-				click_geometry_tool,
-				digitise_polyline_tool,
-				digitise_multipoint_tool,
-				digitise_polygon_tool,
-				move_vertex_tool,
-				delete_vertex_tool,
-				insert_vertex_tool,
-				split_feature_tool,
-				manipulate_pole_tool,
-				build_topology_tool,
-				edit_topology_tool,
-				measure_distance_tool,
-				create_small_circle_tool));
-
-	// Set up the Map and Globe Canvas Tool Adapters for handling globe click and drag events.
-	// FIXME:  This is, of course, very exception-unsafe.  This whole class needs to be nuked.
-	d_globe_canvas_tool_adapter_ptr.reset(new GPlatesGui::GlobeCanvasToolAdapter(
-			*d_globe_canvas_tool_choice_ptr));
-	d_map_canvas_tool_adapter_ptr.reset(new GPlatesGui::MapCanvasToolAdapter(
-			*d_map_canvas_tool_choice_ptr));
-
-	connect_canvas_tools();
-
-
-	// If the user creates a new feature with the DigitisationWidget, we need to reconstruct to
-	// make sure everything is displayed properly.
-	QObject::connect(&(d_task_panel_ptr->digitisation_widget().get_create_feature_dialog()),
-			SIGNAL(feature_created(GPlatesModel::FeatureHandle::weak_ref)),
-			&get_application_state(),
-			SLOT(reconstruct()));
-
-
-	// After modifying the move-nearby-vertices widget, this will reset the focus to the globe/map. 
-	QObject::connect(d_task_panel_ptr,
-					SIGNAL(vertex_data_changed(bool,double,bool,GPlatesModel::integer_plate_id_type)),
-					d_reconstruction_view_widget_ptr,SLOT(setFocus()));
 	// Initialise the "Trinket Area", a class which manages the various icons present in the
 	// status bar. This must occur after ViewportWindow::setupUi().
 	d_trinket_area_ptr->init();
@@ -725,12 +391,6 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 	// Initialise the "Unsaved Changes" tracking aspect of the GUI, now that setupUi() has
 	// been called and all the widgets that are used to notify the user are in place.
 	d_unsaved_changes_tracker_ptr->init();
-
-	// Render everything on the screen in present-day positions.
-	get_application_state().reconstruct();
-
-	// Initialise the default range of the animation slider based on UserPreferences.
-	d_animation_controller.init_default_time_range();
 
 	// Synchronise the "Show X Features" menu items with RenderSettings.
 	GPlatesGui::RenderSettings &render_settings = get_view_state().get_render_settings();
@@ -767,18 +427,43 @@ GPlatesQtWidgets::ViewportWindow::~ViewportWindow()
 }
 
 
-namespace
+void
+GPlatesQtWidgets::ViewportWindow::load_files(
+		const QStringList &filenames)
 {
-	void
-	add_shortcut_to_tooltip(
-			QAction *action)
+	d_file_io_feedback_ptr->open_files(filenames);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_read_errors(
+		GPlatesAppLogic::FeatureCollectionFileIO &,
+		const GPlatesFileIO::ReadErrorAccumulation &new_read_errors)
+{
+	// Pop up errors only if we have new read errors.
+	if (new_read_errors.is_empty())
 	{
-		if (!action->shortcut().isEmpty())
-		{
-			action->setToolTip(QString()); // Reset to default.
-			action->setToolTip(action->toolTip() + "  " +
-					action->shortcut().toString(QKeySequence::NativeText));
-		}
+		return;
+	}
+
+	// Populate the read errors dialog.
+	ReadErrorAccumulationDialog &read_errors_dialog = dialogs().read_error_accumulation_dialog();
+	read_errors_dialog.clear();
+	read_errors_dialog.read_errors().accumulate(new_read_errors);
+	read_errors_dialog.update();
+	
+	// At this point we can either throw the dialog in the user's face,
+	// or pop up a small icon in the status bar which they can click to see the errors.
+	// How do we decide? Well, until we get UserPreferences, let's just pop up the icon
+	// on warnings, and show the whole dialog on any kind of real error.
+	GPlatesFileIO::ReadErrors::Severity severity = new_read_errors.most_severe_error_type();
+	if (severity > GPlatesFileIO::ReadErrors::Warning)
+	{
+		read_errors_dialog.show();
+	}
+	else
+	{
+		d_trinket_area_ptr->read_errors_trinket().setVisible(true);
 	}
 }
 
@@ -834,15 +519,15 @@ GPlatesQtWidgets::ViewportWindow::connect_file_menu_actions()
 			this);
 	// ----
 	QObject::connect(action_Manage_Feature_Collections, SIGNAL(triggered()),
-			this, SLOT(pop_up_manage_feature_collections_dialog()));
+			&dialogs(), SLOT(pop_up_manage_feature_collections_dialog()));
 	QObject::connect(action_File_Errors, SIGNAL(triggered()),
-			this, SLOT(pop_up_read_errors_dialog()));
+			&dialogs(), SLOT(pop_up_read_error_accumulation_dialog()));
 	// ----
 	QObject::connect(action_Quit, SIGNAL(triggered()),
 			this, SLOT(close()));
 
 	QObject::connect(actionConnect_WFS, SIGNAL(triggered()),
-			this, SLOT(pop_up_connect_wfs()));
+			&dialogs(), SLOT(pop_up_connect_wfs_dialog()));
 }
 
 
@@ -878,9 +563,9 @@ GPlatesQtWidgets::ViewportWindow::connect_edit_menu_actions()
 	add_shortcut_to_tooltip(d_redo_action_ptr);
 	// ----
 	QObject::connect(action_Query_Feature, SIGNAL(triggered()),
-			d_feature_properties_dialog_ptr.get(), SLOT(choose_query_widget_and_open()));
+			&dialogs().feature_properties_dialog(), SLOT(choose_query_widget_and_open()));
 	QObject::connect(action_Edit_Feature, SIGNAL(triggered()),
-			d_feature_properties_dialog_ptr.get(), SLOT(choose_edit_widget_and_open()));
+			&dialogs().feature_properties_dialog(), SLOT(choose_edit_widget_and_open()));
 	QObject::connect(action_Clone_Geometry, SIGNAL(triggered()),
 			d_clone_operation_ptr.get(), SLOT(clone_focused_geometry()));
 	QObject::connect(action_Clone_Feature, SIGNAL(triggered()),
@@ -900,7 +585,7 @@ GPlatesQtWidgets::ViewportWindow::connect_edit_menu_actions()
 	menu_Edit->removeAction(action_Clear_Placeholder);
 	// ----
 	QObject::connect(action_Preferences, SIGNAL(triggered()),
-			&(dialogs().preferences_dialog()), SLOT(pop_up()));
+			&dialogs(), SLOT(pop_up_preferences_dialog()));
 }
 
 
@@ -908,10 +593,10 @@ void
 GPlatesQtWidgets::ViewportWindow::connect_view_menu_actions()
 {
 	QObject::connect(action_Set_Projection, SIGNAL(triggered()),
-			this, SLOT(pop_up_set_projection_dialog()));
+			&dialogs(), SLOT(pop_up_set_projection_dialog()));
 	// ----
 	QObject::connect(action_Set_Camera_Viewpoint, SIGNAL(triggered()),
-			this, SLOT(pop_up_set_camera_viewpoint_dialog()));
+			&dialogs(), SLOT(pop_up_set_camera_viewpoint_dialog()));
 	QObject::connect(action_Move_Camera_Up, SIGNAL(triggered()),
 			this, SLOT(handle_move_camera_up()));
 	QObject::connect(action_Move_Camera_Down, SIGNAL(triggered()),
@@ -938,9 +623,9 @@ GPlatesQtWidgets::ViewportWindow::connect_view_menu_actions()
 			&get_view_state().get_viewport_zoom(), SLOT(reset_zoom()));
 	// ----
 	QObject::connect(action_Configure_Text_Overlay, SIGNAL(triggered()),
-			this, SLOT(pop_up_configure_text_overlay_dialog()));
+			&dialogs(), SLOT(pop_up_configure_text_overlay_dialog()));
 	QObject::connect(action_Configure_Graticules, SIGNAL(triggered()),
-			this, SLOT(pop_up_configure_graticules_dialog()));
+			&dialogs(), SLOT(pop_up_configure_graticules_dialog()));
 	QObject::connect(action_Choose_Background_Colour, SIGNAL(triggered()),
 			this, SLOT(pop_up_background_colour_picker()));
 	QObject::connect(action_Show_Stars, SIGNAL(triggered()),
@@ -965,12 +650,12 @@ GPlatesQtWidgets::ViewportWindow::connect_features_menu_actions()
 	if(!GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
 	{
 	QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
-			this, SLOT(pop_up_colouring_dialog()));
+			&dialogs(), SLOT(pop_up_colouring_dialog()));
 	}
 	else
 	{
 		QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
-				this, SLOT(pop_up_draw_style_dialog()));
+			&dialogs(), SLOT(pop_up_draw_style_dialog()));
 	}
 	// ----
 	QObject::connect(action_Load_Symbol, SIGNAL(triggered()),
@@ -979,16 +664,16 @@ GPlatesQtWidgets::ViewportWindow::connect_features_menu_actions()
 			this, SLOT(handle_unload_symbol_file()));
 	// ----
 	QObject::connect(action_View_Total_Reconstruction_Sequences, SIGNAL(triggered()),
-			this, SLOT(pop_up_total_reconstruction_sequences_dialog()));
+			&dialogs(), SLOT(pop_up_total_reconstruction_sequences_dialog()));
 	QObject::connect(action_View_Shapefile_Attributes, SIGNAL(triggered()),
-			this, SLOT(pop_up_shapefile_attribute_viewer_dialog()));
+			&dialogs(), SLOT(pop_up_shapefile_attribute_viewer_dialog()));
 	// ----
 	QObject::connect(action_Create_VGP, SIGNAL(triggered()),
-		this, SLOT(pop_up_create_vgp_dialog()));
+			&dialogs(), SLOT(pop_up_create_vgp_dialog()));
 	QObject::connect(action_Assign_Plate_IDs, SIGNAL(triggered()),
-			this, SLOT(pop_up_assign_reconstruction_plate_ids_dialog()));
+			&dialogs(), SLOT(pop_up_assign_reconstruction_plate_ids_dialog()));
 	QObject::connect(action_Generate_Mesh_Cap, SIGNAL(triggered()),
-			this, SLOT(generate_mesh_cap()));
+			&dialogs(), SLOT(pop_up_mesh_dialog()));
 }
 
 
@@ -998,25 +683,25 @@ GPlatesQtWidgets::ViewportWindow::connect_reconstruction_menu_actions()
 	QObject::connect(action_Reconstruct_to_Time, SIGNAL(triggered()),
 			d_reconstruction_view_widget_ptr, SLOT(activate_time_spinbox()));
 	QObject::connect(action_Increment_Animation_Time_Forwards, SIGNAL(triggered()),
-			&d_animation_controller, SLOT(step_forward()));
+			&get_view_state().get_animation_controller(), SLOT(step_forward()));
 	QObject::connect(action_Increment_Animation_Time_Backwards, SIGNAL(triggered()),
-			&d_animation_controller, SLOT(step_back()));
+			&get_view_state().get_animation_controller(), SLOT(step_back()));
 	QObject::connect(action_Reset_Animation, SIGNAL(triggered()),
-			&d_animation_controller, SLOT(seek_beginning()));
+			&get_view_state().get_animation_controller(), SLOT(seek_beginning()));
 	QObject::connect(action_Play, SIGNAL(triggered(bool)),
-			&d_animation_controller, SLOT(set_play_or_pause(bool)));
-	QObject::connect(&d_animation_controller, SIGNAL(animation_state_changed(bool)),
+			&get_view_state().get_animation_controller(), SLOT(set_play_or_pause(bool)));
+	QObject::connect(&get_view_state().get_animation_controller(), SIGNAL(animation_state_changed(bool)),
 			action_Play, SLOT(setChecked(bool)));
 	QObject::connect(action_Animate, SIGNAL(triggered()),
-			this, SLOT(pop_up_animate_dialog()));
+			&dialogs(), SLOT(pop_up_animate_dialog()));
 	// ----
 	QObject::connect(action_Specify_Anchored_Plate_ID, SIGNAL(triggered()),
-			this, SLOT(pop_up_specify_anchored_plate_id_dialog()));
+			&dialogs(), SLOT(pop_up_specify_anchored_plate_id_dialog()));
 	QObject::connect(action_View_Reconstruction_Poles, SIGNAL(triggered()),
-			this, SLOT(pop_up_total_reconstruction_poles_dialog()));
+			&dialogs(), SLOT(pop_up_total_reconstruction_poles_dialog()));
 	// ----
 	QObject::connect(action_Export, SIGNAL(triggered()),
-			this, SLOT(pop_up_export_animation_dialog()));
+			&dialogs(), SLOT(pop_up_export_animation_dialog()));
 }
 
 
@@ -1024,7 +709,7 @@ void
 GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 {
 	QObject::connect(action_Calculate_Reconstruction_Pole, SIGNAL(triggered()),
-			this, SLOT(pop_up_calculate_reconstruction_pole_dialog()));
+			&dialogs(), SLOT(pop_up_calculate_reconstruction_pole_dialog()));
 	
 	if(GPlatesUtils::ComponentManager::instance().is_enabled(
 			GPlatesUtils::ComponentManager::Component::python()))
@@ -1054,61 +739,33 @@ GPlatesQtWidgets::ViewportWindow::connect_tools_menu_actions()
 	// which don't need to be hooked up here, however there are a few little
 	// extras which aren't regular canvas tools and should be connected here:-
 	QObject::connect(action_Use_Small_Icons, SIGNAL(toggled(bool)),
-		this, SLOT(use_small_canvas_tool_icons(bool)));
+		d_canvas_tools_dock_ptr, SLOT(use_small_canvas_tool_icons(bool)));
 
-	// Canvas Tools:
-	// The canvas tools are special; we only want one of them to be checked at any time.
-	// We can do this quite easily by adding all the actions on the toolbar to a QActionGroup.
-	QList<QAction *> canvas_tools_actions_list = toolbar_canvas_tools->actions();
-	QActionGroup* canvas_tools_group = new QActionGroup(this);	// parented to ViewportWindow.
-	Q_FOREACH(QAction *tool_action, canvas_tools_actions_list) {
-		canvas_tools_group->addAction(tool_action);
+	// Populate the Tools menu with a sub-menu for each canvas tool workflow.
+	// And for each workflow populate its sub-menu with the workflow tool actions.
+	for (unsigned int tool_workflow = 0;
+		tool_workflow < GPlatesGui::CanvasToolWorkflows::NUM_WORKFLOWS;
+		++tool_workflow)
+	{
+		const GPlatesGui::CanvasToolWorkflows::WorkflowType canvas_tool_workflow =
+				static_cast<GPlatesGui::CanvasToolWorkflows::WorkflowType>(tool_workflow);
+
+		// Create a new sub-menu for the current workflow.
+		const QString workflow_menu_name =
+				d_canvas_tools_dock_ptr->get_workflow_tool_menu_name(canvas_tool_workflow);
+		QMenu *canvas_workflow_menu = new QMenu(workflow_menu_name, menu_Tools);
+		menu_Tools->addMenu(canvas_workflow_menu);
+
+		// Get the tool actions for the current workflow.
+		QList<QAction *> canvas_tool_actions =
+				d_canvas_tools_dock_ptr->get_workflow_tool_menu_actions(canvas_tool_workflow);
+
+		// Add the workflow tool actions to the sub-menu.
+		Q_FOREACH(QAction *canvas_tool_action, canvas_tool_actions)
+		{
+			canvas_workflow_menu->addAction(canvas_tool_action);
+		}
 	}
-	// We also want to populate the Tools menu based on the actions added to the toolbar.
-	Q_FOREACH(QAction *tool_action, canvas_tools_actions_list) {
-		menu_Tools->addAction(tool_action);
-	}
-
-	// Canvas Tool connections:
-	QObject::connect(action_Drag_Globe, SIGNAL(triggered()),
-			this, SLOT(handle_drag_globe_triggered()));
-	QObject::connect(action_Zoom_Globe, SIGNAL(triggered()),
-			this, SLOT(handle_zoom_globe_triggered()));
-	QObject::connect(action_Measure_Distance, SIGNAL(triggered()),
-			this, SLOT(handle_measure_distance_triggered()));
-	QObject::connect(action_Click_Geometry, SIGNAL(triggered()),
-			this, SLOT(handle_click_geometry_triggered()));
-	QObject::connect(action_Digitise_New_Polyline, SIGNAL(triggered()),
-			this, SLOT(handle_digitise_new_polyline_triggered()));
-	QObject::connect(action_Digitise_New_MultiPoint, SIGNAL(triggered()),
-			this, SLOT(handle_digitise_new_multipoint_triggered()));
-	QObject::connect(action_Digitise_New_Polygon, SIGNAL(triggered()),
-			this, SLOT(handle_digitise_new_polygon_triggered()));
-#if 0
-	QObject::connect(action_Move_Geometry, SIGNAL(triggered()),
-			this, SLOT(choose_move_geometry_tool()));
-#else
-	// FIXME: The Move Geometry tool, although it has an awesome icon,
-	// is to be disabled until it can be implemented.
-	action_Move_Geometry->setVisible(false);
-#endif
-	QObject::connect(action_Move_Vertex, SIGNAL(triggered()),
-			this, SLOT(handle_move_vertex_triggered()));
-	QObject::connect(action_Delete_Vertex, SIGNAL(triggered()),
-			this, SLOT(handle_delete_vertex_triggered()));
-	QObject::connect(action_Insert_Vertex, SIGNAL(triggered()),
-			this, SLOT(handle_insert_vertex_triggered()));
-	QObject::connect(action_Split_Feature, SIGNAL(triggered()),
-			this, SLOT(handle_split_feature_triggered()));
-	QObject::connect(action_Manipulate_Pole, SIGNAL(triggered()),
-			this, SLOT(handle_manipulate_pole_triggered()));
-	QObject::connect(action_Build_Topology, SIGNAL(triggered()),
-			this, SLOT(handle_build_topology_triggered()));
-	QObject::connect(action_Edit_Topology, SIGNAL(triggered()),
-			this, SLOT(handle_edit_topology_triggered()));
-
-	QObject::connect(action_Create_Small_Circle, SIGNAL(triggered()),
-			this, SLOT(handle_create_small_circle_triggered()));
 }
 
 
@@ -1123,17 +780,17 @@ GPlatesQtWidgets::ViewportWindow::connect_window_menu_actions()
 	QObject::connect(action_Show_Layers, SIGNAL(triggered(bool)),
 			this, SLOT(set_visual_layers_dialog_visibility(bool)));
 
-	QAction *action_show_bottom_panel = d_info_dock_ptr->toggleViewAction();
+	QAction *action_show_bottom_panel = d_search_results_dock_ptr->toggleViewAction();
 	action_show_bottom_panel->setText(tr("Show &Bottom Panel"));
 	action_show_bottom_panel->setObjectName("action_Show_Bottom_Panel");
 	menu_Window->insertAction(action_Show_Bottom_Panel_Placeholder, action_show_bottom_panel);
 	menu_Window->removeAction(action_Show_Bottom_Panel_Placeholder);
 
 	QObject::connect(action_Log_Dialog, SIGNAL(triggered()),
-			&dialogs(), SLOT(lazy_pop_up_log_dialog()));
+			&dialogs(), SLOT(pop_up_log_dialog()));
 	// ----
 	QObject::connect(action_Full_Screen, SIGNAL(triggered(bool)),
-			&d_full_screen_mode, SLOT(toggle_full_screen(bool)));
+			d_full_screen_mode, SLOT(toggle_full_screen(bool)));
 }
 
 
@@ -1144,7 +801,21 @@ GPlatesQtWidgets::ViewportWindow::connect_help_menu_actions()
 			this, SLOT(open_online_documentation()));
 	// ----
 	QObject::connect(action_About, SIGNAL(triggered()),
-			this, SLOT(pop_up_about_dialog()));
+			&dialogs(), SLOT(pop_up_about_dialog()));
+}
+
+
+GPlatesQtWidgets::CanvasToolBarDockWidget &
+GPlatesQtWidgets::ViewportWindow::canvas_tool_bar_dock_widget()
+{
+	return *d_canvas_tools_dock_ptr;
+}
+
+
+GPlatesQtWidgets::SearchResultsDockWidget &
+GPlatesQtWidgets::ViewportWindow::search_results_dock_widget()
+{
+	return *d_search_results_dock_ptr;
 }
 
 
@@ -1183,30 +854,46 @@ GPlatesQtWidgets::ViewportWindow::dialogs() const
 }
 
 
-GPlatesQtWidgets::DrawStyleDialog*
-GPlatesQtWidgets::ViewportWindow::draw_style_dialog()
+GPlatesGui::FileIOFeedback &
+GPlatesQtWidgets::ViewportWindow::file_io_feedback()
 {
-	if(!d_draw_style_dialog_ptr)
-	{
-
-		d_draw_style_dialog_ptr = new GPlatesQtWidgets::DrawStyleDialog(get_view_state(), this);
-	}
-	return d_draw_style_dialog_ptr;
+	return *d_file_io_feedback_ptr;
 }
 
 
-void	
-GPlatesQtWidgets::ViewportWindow::connect_feature_collection_file_io_signals()
+GPlatesGui::CanvasToolWorkflows &
+GPlatesQtWidgets::ViewportWindow::canvas_tool_workflows()
 {
-	QObject::connect(
-			&get_application_state().get_feature_collection_file_io(),
-			SIGNAL(handle_read_errors(
-					GPlatesAppLogic::FeatureCollectionFileIO &,
-					const GPlatesFileIO::ReadErrorAccumulation &)),
-			this,
-			SLOT(handle_read_errors(
-					GPlatesAppLogic::FeatureCollectionFileIO &,
-					const GPlatesFileIO::ReadErrorAccumulation &)));
+	return *d_canvas_tool_workflows;
+}
+
+
+
+GPlatesGui::TrinketArea &
+GPlatesQtWidgets::ViewportWindow::trinket_area()
+{
+	return *d_trinket_area_ptr;
+}
+
+
+GPlatesQtWidgets::TaskPanel *
+GPlatesQtWidgets::ViewportWindow::task_panel_ptr() const
+{
+	return d_task_panel_ptr;
+}
+
+
+GPlatesGui::ImportMenu &
+GPlatesQtWidgets::ViewportWindow::import_menu()
+{
+	return *d_import_menu_ptr;
+}
+
+
+GPlatesGui::UtilitiesMenu &
+GPlatesQtWidgets::ViewportWindow::utilities_menu()
+{
+	return *d_utilities_menu_ptr;
 }
 
 
@@ -1246,98 +933,16 @@ GPlatesQtWidgets::ViewportWindow::get_view_state()
 }
 
 
-void
-GPlatesQtWidgets::ViewportWindow::connect_canvas_tools()
+GPlatesQtWidgets::ReconstructionViewWidget &
+GPlatesQtWidgets::ViewportWindow::reconstruction_view_widget()
 {
-	GlobeCanvas *globe_canvas_ptr = &globe_canvas();
+	return *d_reconstruction_view_widget_ptr;
+}
 
-	QObject::connect(globe_canvas_ptr, SIGNAL(mouse_pressed(const GPlatesMaths::PointOnSphere &,
-		const GPlatesMaths::PointOnSphere &, bool, Qt::MouseButton,
-		Qt::KeyboardModifiers)),
-		d_globe_canvas_tool_adapter_ptr.get(), SLOT(handle_press(const GPlatesMaths::PointOnSphere &,
-		const GPlatesMaths::PointOnSphere &, bool, Qt::MouseButton,
-		Qt::KeyboardModifiers)));
-
-
-	QObject::connect(globe_canvas_ptr, SIGNAL(mouse_clicked(const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool, Qt::MouseButton,
-					Qt::KeyboardModifiers)),
-			d_globe_canvas_tool_adapter_ptr.get(), SLOT(handle_click(const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool, Qt::MouseButton,
-					Qt::KeyboardModifiers)));
-
-	QObject::connect(globe_canvas_ptr, SIGNAL(mouse_dragged(const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
-					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
-					const GPlatesMaths::PointOnSphere &,
-					Qt::MouseButton, Qt::KeyboardModifiers)),
-			d_globe_canvas_tool_adapter_ptr.get(), SLOT(handle_drag(const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
-					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
-					const GPlatesMaths::PointOnSphere &,
-					Qt::MouseButton, Qt::KeyboardModifiers)));
-
-	QObject::connect(globe_canvas_ptr, SIGNAL(mouse_released_after_drag(const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
-					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
-					const GPlatesMaths::PointOnSphere &,
-					Qt::MouseButton, Qt::KeyboardModifiers)),
-			d_globe_canvas_tool_adapter_ptr.get(), SLOT(handle_release_after_drag(const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
-					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
-					const GPlatesMaths::PointOnSphere &,
-					Qt::MouseButton, Qt::KeyboardModifiers)));
-
-	QObject::connect(globe_canvas_ptr, SIGNAL(mouse_moved_without_drag(
-					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
-					const GPlatesMaths::PointOnSphere &)),
-					d_globe_canvas_tool_adapter_ptr.get(), SLOT(handle_move_without_drag(
-					const GPlatesMaths::PointOnSphere &,
-					const GPlatesMaths::PointOnSphere &, bool,
-					const GPlatesMaths::PointOnSphere &)));
-
-	QObject::connect(&map_view(), SIGNAL(mouse_pressed(const QPointF &,
-		bool, Qt::MouseButton,
-		Qt::KeyboardModifiers)),
-		d_map_canvas_tool_adapter_ptr.get(), SLOT(handle_press(const QPointF &,
-		bool, Qt::MouseButton,
-		Qt::KeyboardModifiers)));
-
-	QObject::connect(&map_view(), SIGNAL(mouse_clicked(const QPointF &,
-					 bool, Qt::MouseButton,
-					Qt::KeyboardModifiers)),
-			d_map_canvas_tool_adapter_ptr.get(), SLOT(handle_click(const QPointF &,
-				    bool, Qt::MouseButton,
-					Qt::KeyboardModifiers)));
-
-
-	QObject::connect(&map_view(), SIGNAL(mouse_dragged(const QPointF &,
-					 bool, const QPointF &, bool,
-					Qt::MouseButton, Qt::KeyboardModifiers, const QPointF &)),
-			d_map_canvas_tool_adapter_ptr.get(), SLOT(handle_drag(const QPointF &,
-					 bool, const QPointF &, bool,
-					Qt::MouseButton, Qt::KeyboardModifiers, const QPointF &)));
-
-	QObject::connect(&map_view(), SIGNAL(mouse_released_after_drag(const QPointF &,
-					 bool, const QPointF &, bool, const QPointF &,
-					Qt::MouseButton, Qt::KeyboardModifiers)),
-			d_map_canvas_tool_adapter_ptr.get(), SLOT(handle_release_after_drag(const QPointF &,
-					 bool, const QPointF &, bool, const QPointF &,
-					Qt::MouseButton, Qt::KeyboardModifiers)));
-
-
-	QObject::connect(&map_view(), SIGNAL(mouse_moved_without_drag(
-					const QPointF &,
-					bool, const QPointF &)),
-					d_map_canvas_tool_adapter_ptr.get(), SLOT(handle_move_without_drag(
-					const QPointF &,
-					bool, const QPointF &)));
-
+const GPlatesQtWidgets::ReconstructionViewWidget &
+GPlatesQtWidgets::ViewportWindow::reconstruction_view_widget() const
+{
+	return *d_reconstruction_view_widget_ptr;
 }
 
 
@@ -1364,205 +969,16 @@ GPlatesQtWidgets::ViewportWindow::set_up_task_panel_actions()
 
 
 void
-GPlatesQtWidgets::ViewportWindow::set_up_dock_context_menus()
-{
-	// Search Results Dock:
-	dock_search_results->addAction(action_Information_Dock_At_Top);
-	dock_search_results->addAction(action_Information_Dock_At_Bottom);
-	QObject::connect(action_Information_Dock_At_Top, SIGNAL(triggered()),
-			this, SLOT(dock_search_results_at_top()));
-	QObject::connect(action_Information_Dock_At_Bottom, SIGNAL(triggered()),
-			this, SLOT(dock_search_results_at_bottom()));
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::dock_search_results_at_top()
-{
-	dock_search_results->setFloating(false);
-	addDockWidget(Qt::TopDockWidgetArea, dock_search_results);
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::dock_search_results_at_bottom()
-{
-	dock_search_results->setFloating(false);
-	addDockWidget(Qt::BottomDockWidgetArea, dock_search_results);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::highlight_first_clicked_feature_table_row()
-{
-	QModelIndex idx = d_feature_table_model_ptr->index(0, 0);
-
-	if (idx.isValid()) {
-		tree_view_clicked_geometries->selectionModel()->clear();
-		tree_view_clicked_geometries->selectionModel()->select(idx,
-				QItemSelectionModel::Select |
-				QItemSelectionModel::Current |
-				QItemSelectionModel::Rows);
-	}
-	tree_view_clicked_geometries->scrollToTop();
-	// The columns of the table (especially the last column) tend not to adjust
-	// properly for some reason, unless we force them to:-
-	for (int i=0; i<d_feature_table_model_ptr->columnCount(); ++i) {
-		tree_view_clicked_geometries->resizeColumnToContents(i);
-	}
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::highlight_focused_feature_in_table()
-{
-	GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type rg_maybe_ptr = 
-			get_view_state().get_feature_focus().associated_reconstruction_geometry();
-	if ( ! rg_maybe_ptr) {
-		return;
-	}
-	GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type rg_ptr(rg_maybe_ptr.get());
-	
-	// Check to see if this newly focused feature is in the Clicked table already.
-	QModelIndex idx = d_feature_table_model_ptr->get_index_for_geometry(rg_ptr);
-	if (idx.isValid()) {
-		// It is. Move the highlight to that line (if we've been good, this won't cause
-		// an infinite loop of 'change' signals because FeatureFocus won't emit anything
-		// if we tell it to focus something that's already focused)
-		tree_view_clicked_geometries->selectionModel()->clear();
-		tree_view_clicked_geometries->selectionModel()->select(idx,
-				QItemSelectionModel::Select |
-				QItemSelectionModel::Current |
-				QItemSelectionModel::Rows);
-	} else {
-		// It is not in there. Most likely this is from the Clone Feature action setting
-		// the focus directly. 'Unshift' it onto the start of the Clicked list.
-		GPlatesGui::add_geometry_to_top_of_feature_table(rg_ptr, *d_feature_table_model_ptr,
-				get_application_state().get_reconstruct_graph());
-		highlight_first_clicked_feature_table_row();
-	}
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_specify_anchored_plate_id_dialog()
-{
-	// note: this dialog is created in the constructor
-
-	d_specify_anchored_plate_id_dialog_ptr->populate(
-			get_application_state().get_current_anchored_plate_id(),
-			get_view_state().get_feature_focus().focused_feature());
-	QtWidgetUtils::pop_up_dialog(d_specify_anchored_plate_id_dialog_ptr.get());
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_set_camera_viewpoint_dialog()
-{
-	if (!d_set_camera_viewpoint_dialog_ptr)
-	{
-		d_set_camera_viewpoint_dialog_ptr.reset(new SetCameraViewpointDialog(*this, this));
-	}
-
-	boost::optional<GPlatesMaths::LatLonPoint> cur_llp_opt = d_reconstruction_view_widget_ptr->camera_llp();
-	GPlatesMaths::LatLonPoint cur_llp = cur_llp_opt ? *cur_llp_opt : GPlatesMaths::LatLonPoint(0.0, 0.0);
-
-	d_set_camera_viewpoint_dialog_ptr->set_lat_lon(cur_llp.latitude(), cur_llp.longitude());
-	if (d_set_camera_viewpoint_dialog_ptr->exec())
-	{
-		// Note: d_set_camera_viewpoint_dialog_ptr is modal and should not need the 'raise' hacks
-		// that the other dialogs use.
-		try {
-			GPlatesMaths::LatLonPoint desired_centre(
-					d_set_camera_viewpoint_dialog_ptr->latitude(),
-					d_set_camera_viewpoint_dialog_ptr->longitude());
-			
-			d_reconstruction_view_widget_ptr->active_view().set_camera_viewpoint(desired_centre);
-
-		} catch (GPlatesMaths::InvalidLatLonException &) {
-			// The argument name in the above expression was removed to
-			// prevent "unreferenced local variable" compiler warnings under MSVC.
-
-			// User somehow managed to specify an invalid lat,lon. Pretend it didn't happen.
-		}
-	}
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_total_reconstruction_poles_dialog()
-{
-	if (!d_total_reconstruction_poles_dialog_ptr)
-	{
-		d_total_reconstruction_poles_dialog_ptr.reset(
-				new TotalReconstructionPolesDialog(get_view_state(), this));
-	}
-
-	QtWidgetUtils::pop_up_dialog(d_total_reconstruction_poles_dialog_ptr.get());
-	d_total_reconstruction_poles_dialog_ptr->update();
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_total_reconstruction_poles_dialog(
-		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
-{
-	if (!d_total_reconstruction_poles_dialog_ptr)
-	{
-		d_total_reconstruction_poles_dialog_ptr.reset(
-				new TotalReconstructionPolesDialog(get_view_state(), this));
-	}
-
-	QtWidgetUtils::pop_up_dialog(d_total_reconstruction_poles_dialog_ptr.get());
-	d_total_reconstruction_poles_dialog_ptr->update(visual_layer);
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_animate_dialog()
-{
-	if (!d_animate_dialog_ptr)
-	{
-		d_animate_dialog_ptr.reset(new AnimateDialog(d_animation_controller, this));
-	}
-
-	QtWidgetUtils::pop_up_dialog(d_animate_dialog_ptr.get());
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_about_dialog()
-{
-	if (!d_about_dialog_ptr)
-	{
-		d_about_dialog_ptr.reset(new AboutDialog(this));
-	}
-
-	d_about_dialog_ptr->exec();
-}
-
-
-void
 GPlatesQtWidgets::ViewportWindow::set_visual_layers_dialog_visibility(
 		bool visible)
 {
-	if (!d_visual_layers_dialog_ptr)
-	{
-		d_visual_layers_dialog_ptr.reset(
-				new VisualLayersDialog(
-					get_view_state().get_visual_layers(),
-					get_application_state(),
-					get_view_state(),
-					this,
-					this));
-
-		QtWidgetUtils::reposition_to_side_of_parent(
-				d_visual_layers_dialog_ptr.get());
-	}
-
 	if (visible)
 	{
-		QtWidgetUtils::pop_up_dialog(d_visual_layers_dialog_ptr.get());
+		dialogs().visual_layers_dialog().pop_up();
 	}
 	else
 	{
-		d_visual_layers_dialog_ptr->hide();
+		dialogs().visual_layers_dialog().hide();
 	}
 }
 
@@ -1570,34 +986,7 @@ GPlatesQtWidgets::ViewportWindow::set_visual_layers_dialog_visibility(
 void
 GPlatesQtWidgets::ViewportWindow::handle_window_menu_about_to_show()
 {
-	action_Show_Layers->setChecked(
-			d_visual_layers_dialog_ptr &&
-			d_visual_layers_dialog_ptr->isVisible());
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_colouring_dialog()
-{
-	if (!d_colouring_dialog_ptr)
-	{
-		d_colouring_dialog_ptr.reset(
-				new ColouringDialog(
-					get_view_state(),
-					d_reconstruction_view_widget_ptr->globe_and_map_widget(),
-					*d_read_errors_dialog_ptr,
-					this));
-	}
-
-	QtWidgetUtils::pop_up_dialog(d_colouring_dialog_ptr.get());
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_draw_style_dialog()
-{
-	draw_style_dialog()->init_catagory_table();
-	QtWidgetUtils::pop_up_dialog(draw_style_dialog());
+	action_Show_Layers->setChecked(dialogs().visual_layers_dialog().isVisible());
 }
 
 
@@ -1609,6 +998,10 @@ GPlatesQtWidgets::ViewportWindow::handle_load_symbol_file()
 		    QObject::tr("Open symbol file"),
 		    get_view_state().get_last_open_directory(),
 		    QObject::tr("Symbol file (*.sym)"));
+	if (filename.isNull())
+	{
+		return;
+	}
 
     try
 	{
@@ -1637,482 +1030,19 @@ GPlatesQtWidgets::ViewportWindow::handle_unload_symbol_file()
 
 
 void
-GPlatesQtWidgets::ViewportWindow::pop_up_symbol_manager_dialog()
-{
-    if (!d_symbol_manager_dialog_ptr)
-    {
-	d_symbol_manager_dialog_ptr.reset(
-		    new SymbolManagerDialog(
-			this));
-    }
-
-    d_symbol_manager_dialog_ptr->show();
-    d_symbol_manager_dialog_ptr->activateWindow();
-    d_symbol_manager_dialog_ptr->raise();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_connect_wfs()
-{
-	if (!d_connect_wfs_dialog_ptr)
-	{
-		d_connect_wfs_dialog_ptr.reset(
-				new ConnectWFSDialog(
-						get_application_state()));
-	}
-	QtWidgetUtils::pop_up_dialog(d_connect_wfs_dialog_ptr.get());
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_export_animation_dialog()
-{
-	if (!d_export_animation_dialog_ptr)
-	{
-		d_export_animation_dialog_ptr.reset(new ExportAnimationDialog(d_animation_controller, get_view_state(), *this, this));
-	}
-
-	// FIXME: Should Export Animation be modal?
-	QtWidgetUtils::pop_up_dialog(d_export_animation_dialog_ptr.get());
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_assign_reconstruction_plate_ids_dialog()
-{
-	// d_assign_recon_plate_ids_dialog_ptr is modal and should not need the 'raise' hack
-	// other dialogs use.
-	d_assign_recon_plate_ids_dialog_ptr->exec_partition_features_dialog();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::enable_drag_globe_tool(
-		bool enable)
-{
-	action_Drag_Globe->setEnabled(enable);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::enable_zoom_globe_tool(
-		bool enable)
-{
-	action_Zoom_Globe->setEnabled(enable);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::enable_click_geometry_tool(
-		bool enable)
-{
-	action_Click_Geometry->setEnabled(enable);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::enable_digitise_polyline_tool(
-		bool enable)
-{
-	action_Digitise_New_Polyline->setEnabled(enable);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::enable_digitise_multipoint_tool(
-		bool enable)
-{
-	action_Digitise_New_MultiPoint->setEnabled(enable);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::enable_digitise_polygon_tool(
-		bool enable)
-{
-	action_Digitise_New_Polygon->setEnabled(enable);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::enable_move_geometry_tool(
-		bool enable)
-{
-	action_Move_Geometry->setEnabled(enable);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::enable_move_vertex_tool(
-		bool enable)
-{
-	action_Move_Vertex->setEnabled(enable);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::enable_delete_vertex_tool(
-		bool enable)
-{
-	action_Delete_Vertex->setEnabled(enable);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::enable_insert_vertex_tool(
-		bool enable)
-{
-	action_Insert_Vertex->setEnabled(enable);
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::enable_split_feature_tool(
-	bool enable)
-{
-	action_Split_Feature->setEnabled(enable);
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::enable_manipulate_pole_tool(
-		bool enable)
-{
-	action_Manipulate_Pole->setEnabled(enable);
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::enable_build_topology_tool(
-		bool enable)
-{
-	action_Build_Topology->setEnabled(enable);
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::enable_edit_topology_tool(
-		bool enable)
-{
-	action_Edit_Topology->setEnabled(enable);
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::enable_measure_distance_tool(
-		bool enable)
-{
-	action_Measure_Distance->setEnabled(enable);
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::enable_create_small_circle_tool(
-	bool enable)
-{
-	action_Create_Small_Circle->setEnabled(enable);
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_drag_globe_triggered()
-{
-	d_choose_canvas_tool->choose_drag_globe_tool();
-	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::DRAG_GLOBE;
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_drag_globe_tool()
-{
-	action_Drag_Globe->setChecked(true);
-	d_globe_canvas_tool_choice_ptr->choose_reorient_globe_tool();
-	d_map_canvas_tool_choice_ptr->choose_pan_map_tool();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_zoom_globe_triggered()
-{
-	d_choose_canvas_tool->choose_zoom_globe_tool();
-	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::ZOOM_GLOBE;
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_zoom_globe_tool()
-{
-	action_Zoom_Globe->setChecked(true);
-	d_globe_canvas_tool_choice_ptr->choose_zoom_globe_tool();
-	d_map_canvas_tool_choice_ptr->choose_zoom_map_tool();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_click_geometry_triggered()
-{
-	d_choose_canvas_tool->choose_click_geometry_tool();
-	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::CLICK_GEOMETRY;
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_click_geometry_tool()
-{
-	action_Click_Geometry->setChecked(true);
-	d_globe_canvas_tool_choice_ptr->choose_click_geometry_tool();
-	d_map_canvas_tool_choice_ptr->choose_click_geometry_tool();
-
-	d_task_panel_ptr->choose_feature_tab();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_digitise_new_polyline_triggered()
-{
-	d_choose_canvas_tool->choose_digitise_polyline_tool();
-	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYLINE;
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_digitise_polyline_tool()
-{
-	action_Digitise_New_Polyline->setChecked(true);
-	d_globe_canvas_tool_choice_ptr->choose_digitise_polyline_tool();
-	d_map_canvas_tool_choice_ptr->choose_digitise_polyline_tool();
-	d_task_panel_ptr->choose_digitisation_tab();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_digitise_new_multipoint_triggered()
-{
-	d_choose_canvas_tool->choose_digitise_multipoint_tool();
-	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::DIGITISE_MULTIPOINT;
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_digitise_multipoint_tool()
-{
-	action_Digitise_New_MultiPoint->setChecked(true);
-	d_globe_canvas_tool_choice_ptr->choose_digitise_multipoint_tool();
-	d_map_canvas_tool_choice_ptr->choose_digitise_multipoint_tool();
-	d_task_panel_ptr->choose_digitisation_tab();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_digitise_new_polygon_triggered()
-{
-	d_choose_canvas_tool->choose_digitise_polygon_tool();
-	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::DIGITISE_POLYGON;
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_digitise_polygon_tool()
-{
-	action_Digitise_New_Polygon->setChecked(true);
-	d_globe_canvas_tool_choice_ptr->choose_digitise_polygon_tool();
-	d_map_canvas_tool_choice_ptr->choose_digitise_polygon_tool();
-	d_task_panel_ptr->choose_digitisation_tab();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_move_geometry_tool()
-{
-	// The MoveGeometry tool is not yet implemented.
-#if 0
-	action_Move_Geometry->setChecked(true);
-	d_globe_canvas_tool_choice_ptr->choose_move_geometry_tool();
-	d_task_panel_ptr->choose_feature_tab();
-#endif
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_move_vertex_triggered()
-{
-	d_choose_canvas_tool->choose_move_vertex_tool();
-	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::MOVE_VERTEX;
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_move_vertex_tool()
-{
-	action_Move_Vertex->setChecked(true);
-	d_globe_canvas_tool_choice_ptr->choose_move_vertex_tool();
-	d_map_canvas_tool_choice_ptr->choose_move_vertex_tool();
-	d_task_panel_ptr->choose_modify_geometry_tab();
-	d_task_panel_ptr->enable_move_nearby_vertices_widget(true);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_delete_vertex_triggered()
-{
-	d_choose_canvas_tool->choose_delete_vertex_tool();
-	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::DELETE_VERTEX;
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_delete_vertex_tool()
-{
-	action_Delete_Vertex->setChecked(true);
-	d_globe_canvas_tool_choice_ptr->choose_delete_vertex_tool();
-	d_map_canvas_tool_choice_ptr->choose_delete_vertex_tool();
-
-	d_task_panel_ptr->choose_modify_geometry_tab();
-	d_task_panel_ptr->enable_move_nearby_vertices_widget(false);	
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_insert_vertex_triggered()
-{
-	d_choose_canvas_tool->choose_insert_vertex_tool();
-	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::INSERT_VERTEX;
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_insert_vertex_tool()
-{
-	action_Insert_Vertex->setChecked(true);
-	d_globe_canvas_tool_choice_ptr->choose_insert_vertex_tool();
-	d_map_canvas_tool_choice_ptr->choose_insert_vertex_tool();
-
-	d_task_panel_ptr->choose_modify_geometry_tab();
-	d_task_panel_ptr->enable_move_nearby_vertices_widget(false);	
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_split_feature_triggered()
-{
-	d_choose_canvas_tool->choose_split_feature_tool();
-	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::SPLIT_FEATURE;
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_split_feature_tool()
-{
-	action_Split_Feature->setChecked(true);
-	d_globe_canvas_tool_choice_ptr->choose_split_feature_tool();
-	d_map_canvas_tool_choice_ptr->choose_split_feature_tool();
-
-	d_task_panel_ptr->choose_modify_geometry_tab();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_measure_distance_triggered()
-{
-	d_choose_canvas_tool->choose_measure_distance_tool();
-	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::MEASURE_DISTANCE;
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_measure_distance_tool()
-{
-	action_Measure_Distance->setChecked(true);
-	d_globe_canvas_tool_choice_ptr->choose_measure_distance_tool();
-	d_map_canvas_tool_choice_ptr->choose_measure_distance_tool();
-
-	d_task_panel_ptr->choose_measure_distance_tab();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_manipulate_pole_triggered()
-{
-	d_choose_canvas_tool->choose_manipulate_pole_tool();
-	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::MANIPULATE_POLE;
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_manipulate_pole_tool()
-{
-	action_Manipulate_Pole->setChecked(true);
-	d_globe_canvas_tool_choice_ptr->choose_manipulate_pole_tool();
-	d_map_canvas_tool_choice_ptr->choose_manipulate_pole_tool();
-
-	d_task_panel_ptr->choose_modify_pole_tab();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_build_topology_triggered()
-{
-	d_choose_canvas_tool->choose_build_topology_tool();
-	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::BUILD_TOPOLOGY;
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_build_topology_tool()
-{
-	action_Build_Topology->setChecked(true);
-	d_globe_canvas_tool_choice_ptr->choose_build_topology_tool();
-	d_map_canvas_tool_choice_ptr->choose_build_topology_tool();
-
-	d_task_panel_ptr->choose_topology_tools_tab();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_edit_topology_triggered()
-{
-	d_choose_canvas_tool->choose_edit_topology_tool();
-	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::EDIT_TOPOLOGY;
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_edit_topology_tool()
-{
-	action_Edit_Topology->setChecked(true);
-	d_globe_canvas_tool_choice_ptr->choose_edit_topology_tool();
-	d_map_canvas_tool_choice_ptr->choose_edit_topology_tool();
-
-	d_task_panel_ptr->choose_topology_tools_tab();
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::handle_create_small_circle_triggered()
-{
-	d_choose_canvas_tool->choose_create_small_circle_tool();
-	d_canvas_tool_last_chosen_by_user = GPlatesCanvasTools::CanvasToolType::CREATE_SMALL_CIRCLE;
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_create_small_circle_tool()
-{
-	action_Create_Small_Circle->setChecked(true);
-	d_globe_canvas_tool_choice_ptr->choose_create_small_circle_tool();
-	d_map_canvas_tool_choice_ptr->choose_create_small_circle_tool();
-
-	d_task_panel_ptr->choose_small_circle_tab();
-}
-
-
-void
 GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
 		GPlatesGui::FeatureFocus &feature_focus)
 {
-	// Note: enabling/disabling canvas tools is now done in class 'EnableCanvasTool'.
-	bool enable_canvas_tool_actions = feature_focus.focused_feature().is_valid();
+	// Note: Enabling/disabling canvas tools is now done in class 'EnableCanvasTool'.
+	bool is_feature_focused = feature_focus.focused_feature().is_valid();
 	
-	action_Query_Feature->setEnabled(enable_canvas_tool_actions);
-	action_Edit_Feature->setEnabled(enable_canvas_tool_actions);
-	action_Delete_Feature->setEnabled(enable_canvas_tool_actions);
-	action_Clone_Feature->setEnabled(enable_canvas_tool_actions);
+	action_Query_Feature->setEnabled(is_feature_focused);
+	action_Edit_Feature->setEnabled(is_feature_focused);
+	action_Delete_Feature->setEnabled(is_feature_focused);
+	action_Clone_Feature->setEnabled(is_feature_focused);
 
-	action_Clone_Geometry->setEnabled(enable_canvas_tool_actions &&
-			d_focused_feature_geometry_builder->has_geometry());
+	action_Clone_Geometry->setEnabled(is_feature_focused &&
+			get_view_state().get_focused_feature_geometry_builder().has_geometry());
 
 #if 0
 	// FIXME: Add to Selection is unimplemented and should stay disabled for now.
@@ -2120,51 +1050,6 @@ GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
 	// we may want to modify this method to also test for a nonempty selection of features.
 	action_Add_Feature_To_Selection->setEnabled(enable_canvas_tool_actions);
 #endif
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_clicked_geometry_table()
-{
-	tabWidget->setCurrentWidget(tab_clicked);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::choose_topology_sections_table()
-{
-	tabWidget->setCurrentWidget(tab_topology);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::use_small_canvas_tool_icons(
-		bool use_small_icons)
-{
-	int s = use_small_icons ? 16 : 35;
-	toolbar_canvas_tools->setIconSize(QSize(s, s));
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_read_errors_dialog()
-{
-	// note: this dialog is created in the constructor
-	
-	QtWidgetUtils::pop_up_dialog(d_read_errors_dialog_ptr.get());
-
-	// Finally, if we're showing the Read Errors dialog, the user already knows about
-	// the errors and doesn't need to see the reminder in the status bar.
-	d_trinket_area_ptr->read_errors_trinket().setVisible(false);
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_manage_feature_collections_dialog()
-{
-	// note: this dialog is created in the constructor
-	
-	QtWidgetUtils::pop_up_dialog(d_manage_feature_collections_dialog_ptr.get());
 }
 
 
@@ -2303,44 +1188,6 @@ GPlatesQtWidgets::ViewportWindow::enable_stars_display()
 }
 
 void
-GPlatesQtWidgets::ViewportWindow::pop_up_import_raster_dialog(
-		bool time_dependent_raster)
-{
-	// Note: the ImportRasterDialog needs to be reconstructed each time we want to
-	// use it, unlike the other dialogs, otherwise the pages are incorrectly initialised.
-	ImportRasterDialog import_raster_dialog(
-			get_application_state(),
-			get_view_state(),
-			d_unsaved_changes_tracker_ptr.data(),
-			d_file_io_feedback_ptr.data(),
-			this);
-
-	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_errors_dialog_ptr->read_errors();
-	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
-
-	import_raster_dialog.display(time_dependent_raster, &read_errors);
-
-	d_read_errors_dialog_ptr->update();
-	GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
-	if (num_initial_errors != num_final_errors)
-	{
-		d_read_errors_dialog_ptr->show();
-	}
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_import_raster_dialog()
-{
-	pop_up_import_raster_dialog(false);
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_import_time_dependent_raster_dialog()
-{
-	pop_up_import_raster_dialog(true);
-}
-
-void
 GPlatesQtWidgets::ViewportWindow::update_tools_and_status_message()
 {	
 // FIXME: 
@@ -2397,31 +1244,102 @@ GPlatesQtWidgets::ViewportWindow::handle_reset_camera_orientation()
 }
 
 void
-GPlatesQtWidgets::ViewportWindow::pop_up_set_projection_dialog()
+GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
+		GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
+		GPlatesGui::CanvasToolWorkflows::ToolType tool)
 {
-	if (!d_set_projection_dialog_ptr)
+	// Need to switch to the proper task panel tab depending on which canvas tool was just activated.
+	switch (tool)
 	{
-		d_set_projection_dialog_ptr.reset(new SetProjectionDialog(*this,this));
-	}
-
-	d_set_projection_dialog_ptr->setup();
-
-	if (d_set_projection_dialog_ptr->exec())
-	{
-		try {
-			// Notify the view state of the projection change.
-			// It will handle the rest.
-			GPlatesGui::ViewportProjection &viewport_projection =
-					get_view_state().get_viewport_projection();
-			viewport_projection.set_projection_type(
-					d_set_projection_dialog_ptr->get_projection_type());
-			viewport_projection.set_central_meridian(
-					d_set_projection_dialog_ptr->central_meridian());
-		}
-		catch(GPlatesGui::ProjectionException &e)
+	case GPlatesGui::CanvasToolWorkflows::TOOL_DRAG_GLOBE:
+	case GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM_GLOBE:
+		// We have to pick a tab otherwise the previous tab from another canvas tool workflow will remain.
+		// Use the feature tab for the Feature Inspection workflow.
+		// Use the digitisation tab for the Digitisation workflow.
+		switch (workflow)
 		{
-			std::cerr << e << std::endl;
+		case GPlatesGui::CanvasToolWorkflows::WORKFLOW_FEATURE_INSPECTION:
+			d_task_panel_ptr->choose_feature_tab();
+			break;
+
+		case GPlatesGui::CanvasToolWorkflows::WORKFLOW_DIGITISATION:
+			d_task_panel_ptr->choose_digitisation_tab();
+			break;
+
+		case GPlatesGui::CanvasToolWorkflows::WORKFLOW_TOPOLOGY:
+			d_task_panel_ptr->choose_topology_tools_tab();
+			break;
+
+		case GPlatesGui::CanvasToolWorkflows::WORKFLOW_POLE_MANIPULATION:
+			d_task_panel_ptr->choose_modify_pole_tab();
+			break;
+
+		case GPlatesGui::CanvasToolWorkflows::WORKFLOW_SMALL_CIRCLE:
+			d_task_panel_ptr->choose_small_circle_tab();
+			break;
+
+		default:
+			// Shouldn't get here - if we do then do nothing - just let that previous tab remain.
+			break;
 		}
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_CLICK_GEOMETRY:
+		d_task_panel_ptr->choose_feature_tab();
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYLINE:
+		d_task_panel_ptr->choose_digitisation_tab();
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_DIGITISE_NEW_MULTIPOINT:
+		d_task_panel_ptr->choose_digitisation_tab();
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYGON:
+		d_task_panel_ptr->choose_digitisation_tab();
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_MOVE_VERTEX:
+		d_task_panel_ptr->choose_modify_geometry_tab(true/*enable_move_nearby_vertices*/);
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_DELETE_VERTEX:
+		d_task_panel_ptr->choose_modify_geometry_tab(false/*enable_move_nearby_vertices*/);
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_INSERT_VERTEX:
+		d_task_panel_ptr->choose_modify_geometry_tab(false/*enable_move_nearby_vertices*/);
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_SPLIT_FEATURE:
+		d_task_panel_ptr->choose_modify_geometry_tab(false/*enable_move_nearby_vertices*/);
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_MEASURE_DISTANCE:
+		d_task_panel_ptr->choose_measure_distance_tab();
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_MANIPULATE_POLE:
+		d_task_panel_ptr->choose_modify_pole_tab();
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_TOPOLOGY:
+		d_task_panel_ptr->choose_topology_tools_tab();
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_EDIT_TOPOLOGY:
+		d_task_panel_ptr->choose_topology_tools_tab();
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE:
+		d_task_panel_ptr->choose_small_circle_tab();
+		break;
+
+	default:
+		// Shouldn't get here.
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		break;
 	}
 }
 
@@ -2437,67 +1355,6 @@ GPlatesQtWidgets::ViewportWindow::install_gui_debug_menu()
 	static GPlatesGui::GuiDebug *gui_debug = new GPlatesGui::GuiDebug(*this,
 			get_application_state(), this);
 	gui_debug->setObjectName("GuiDebug");
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_shapefile_attribute_viewer_dialog()
-{
-	// note: this dialog is created in the constructor
-	
-	QtWidgetUtils::pop_up_dialog(d_shapefile_attribute_viewer_dialog_ptr.get());
-	d_shapefile_attribute_viewer_dialog_ptr->update(
-			get_application_state().get_feature_collection_file_state());
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_total_reconstruction_sequences_dialog()
-{
-	// note: this dialog is created in the constructor
-	
-	QtWidgetUtils::pop_up_dialog(d_total_reconstruction_sequences_dialog_ptr.get());
-	d_total_reconstruction_sequences_dialog_ptr->update();
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::generate_mesh_cap()
-{
-	if (!d_mesh_dialog_ptr)
-	{
-		d_mesh_dialog_ptr = new MeshDialog(
-				get_view_state(),
-				*d_manage_feature_collections_dialog_ptr,
-				this);
-	}
-
-	QtWidgetUtils::pop_up_dialog(d_mesh_dialog_ptr);
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_create_vgp_dialog()
-{
-	if (!d_create_vgp_dialog_ptr)
-	{
-		d_create_vgp_dialog_ptr.reset(new CreateVGPDialog(get_view_state(),this));
-	}
-
-	d_create_vgp_dialog_ptr->reset();
-	d_create_vgp_dialog_ptr->exec();
-
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::pop_up_calculate_reconstruction_pole_dialog()
-{
-	if (!d_calculate_reconstruction_pole_dialog_ptr)
-	{
-		d_calculate_reconstruction_pole_dialog_ptr.reset(
-			new CalculateReconstructionPoleDialog(get_view_state(),this));
-	}
-
-	QtWidgetUtils::pop_up_dialog(d_calculate_reconstruction_pole_dialog_ptr.get());
 }
 
 
@@ -2534,80 +1391,6 @@ GPlatesQtWidgets::ViewportWindow::set_internal_release_window_title()
 		}
 
 		setWindowTitle(window_title);
-	}
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::restore_canvas_tool_last_chosen_by_user()
-{
-	using namespace GPlatesCanvasTools::CanvasToolType;
-
-	switch (d_canvas_tool_last_chosen_by_user)
-	{
-		case DRAG_GLOBE:
-			d_choose_canvas_tool->choose_drag_globe_tool();
-			break;
-
-		case ZOOM_GLOBE:
-			d_choose_canvas_tool->choose_zoom_globe_tool();
-			break;
-
-		case CLICK_GEOMETRY:
-			d_choose_canvas_tool->choose_click_geometry_tool();
-			break;
-
-		case DIGITISE_POLYLINE:
-			d_choose_canvas_tool->choose_digitise_polyline_tool();
-			break;
-
-		case DIGITISE_MULTIPOINT:
-			d_choose_canvas_tool->choose_digitise_multipoint_tool();
-			break;
-
-		case DIGITISE_POLYGON:
-			d_choose_canvas_tool->choose_digitise_polygon_tool();
-			break;
-
-		case MOVE_GEOMETRY:
-			d_choose_canvas_tool->choose_move_geometry_tool();
-			break;
-
-		case MOVE_VERTEX:
-			d_choose_canvas_tool->choose_move_vertex_tool();
-			break;
-
-		case DELETE_VERTEX:
-			d_choose_canvas_tool->choose_delete_vertex_tool();
-			break;
-
-		case INSERT_VERTEX:
-			d_choose_canvas_tool->choose_insert_vertex_tool();
-			break;
-
-		case SPLIT_FEATURE:
-			d_choose_canvas_tool->choose_split_feature_tool();
-			break;
-
-		case MANIPULATE_POLE:
-			d_choose_canvas_tool->choose_manipulate_pole_tool();
-			break;
-
-		case BUILD_TOPOLOGY:
-			d_choose_canvas_tool->choose_build_topology_tool();
-			break;
-
-		case EDIT_TOPOLOGY:
-			d_choose_canvas_tool->choose_edit_topology_tool();
-			break;
-
-		case MEASURE_DISTANCE:
-			d_choose_canvas_tool->choose_measure_distance_tool();
-			break;
-
-		default:
-			// Do nothing.
-			break;
 	}
 }
 
@@ -2678,51 +1461,51 @@ GPlatesQtWidgets::ViewportWindow::pop_up_background_colour_picker()
 
 
 void
-GPlatesQtWidgets::ViewportWindow::pop_up_configure_text_overlay_dialog()
+GPlatesQtWidgets::ViewportWindow::pop_up_import_raster_dialog(
+		bool time_dependent_raster)
 {
-	if (!d_configure_text_overlay_dialog_ptr)
-	{
-		d_configure_text_overlay_dialog_ptr.reset(
-				new ConfigureTextOverlayDialog(this));
-	}
+	// Note: the ImportRasterDialog needs to be reconstructed each time we want to
+	// use it, unlike the other dialogs, otherwise the pages are incorrectly initialised.
+	ImportRasterDialog import_raster_dialog(
+			get_application_state(),
+			get_view_state(),
+			d_unsaved_changes_tracker_ptr.data(),
+			d_file_io_feedback_ptr.data(),
+			this);
 
-	if (d_configure_text_overlay_dialog_ptr->exec(
-				get_view_state().get_text_overlay_settings()) == QDialog::Accepted)
+	ReadErrorAccumulationDialog &read_errors_dialog = dialogs().read_error_accumulation_dialog();
+
+	GPlatesFileIO::ReadErrorAccumulation &read_errors = read_errors_dialog.read_errors();
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
+
+	import_raster_dialog.display(time_dependent_raster, &read_errors);
+
+	read_errors_dialog.update();
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
+	if (num_initial_errors != num_final_errors)
 	{
-		reconstruction_view_widget().update();
+		read_errors_dialog.show();
 	}
 }
 
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_import_raster_dialog()
+{
+	pop_up_import_raster_dialog(false);
+}
 
 void
-GPlatesQtWidgets::ViewportWindow::pop_up_configure_graticules_dialog()
+GPlatesQtWidgets::ViewportWindow::pop_up_import_time_dependent_raster_dialog()
 {
-	if (!d_configure_graticules_dialog_ptr)
-	{
-		d_configure_graticules_dialog_ptr.reset(
-				new ConfigureGraticulesDialog(this));
-	}
-
-	if (d_configure_graticules_dialog_ptr->exec(
-			get_view_state().get_graticule_settings()) == QDialog::Accepted)
-	{
-		reconstruction_view_widget().update();
-	}
+	pop_up_import_raster_dialog(true);
 }
 
 
 void
 GPlatesQtWidgets::ViewportWindow::clone_feature_with_dialog()
 {
-	if (!d_choose_feature_collection_dialog_ptr)
-	{
-		d_choose_feature_collection_dialog_ptr.reset(
-				new ChooseFeatureCollectionDialog(
-					get_application_state().get_reconstruct_method_registry(),
-					get_application_state().get_feature_collection_file_state(),
-					get_application_state().get_feature_collection_file_io(),
-					this));
-	}
+	ChooseFeatureCollectionDialog &choose_feature_collection_dialog =
+			dialogs().choose_feature_collection_dialog();;
 
 	GPlatesModel::FeatureHandle::weak_ref feature_ref = get_view_state().get_feature_focus().focused_feature();
 	if (!feature_ref.is_valid())
@@ -2737,7 +1520,7 @@ GPlatesQtWidgets::ViewportWindow::clone_feature_with_dialog()
 	}
 
 	boost::optional<std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_reference, bool> > dialog_result =
-		d_choose_feature_collection_dialog_ptr->get_file_reference(feature_collection_ptr->reference());
+		choose_feature_collection_dialog.get_file_reference(feature_collection_ptr->reference());
 	if (dialog_result)
 	{
 		d_clone_operation_ptr->clone_focused_feature(
@@ -2796,22 +1579,4 @@ GPlatesQtWidgets::ViewportWindow::showEvent(
 	// View-dependent menu items are configured appropriately; this is largely because of
 	// the definition of ReconstructionViewWidget::globe_is_active().
 	update_tools_and_status_message();
-}
-
-void
-GPlatesQtWidgets::ViewportWindow::enable_external_syncing(
-	bool gplates_is_master)
-{
-	if (!d_external_sync_controller_ptr)
-	{
-		d_external_sync_controller_ptr.reset(
-			new GPlatesUtils::ExternalSyncController(
-			gplates_is_master,
-			this,
-			&get_view_state()));
-
-
-	}
-	d_external_sync_controller_ptr->enable_external_syncing();
-
 }

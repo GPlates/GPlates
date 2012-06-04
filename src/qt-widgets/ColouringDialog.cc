@@ -208,7 +208,7 @@ GPlatesQtWidgets::ColouringDialog::ColouringDialog(
 		const GlobeAndMapWidget &existing_globe_and_map_widget,
 		ReadErrorAccumulationDialog &read_error_accumulation_dialog,
 		QWidget *parent_):
-	QDialog(parent_, Qt::Window),
+	GPlatesDialog(parent_, Qt::Window),
 	d_application_state(view_state.get_application_state()),
 	d_existing_globe_and_map_widget_ptr(&existing_globe_and_map_widget),
 	d_read_error_accumulation_dialog_ptr(&read_error_accumulation_dialog),

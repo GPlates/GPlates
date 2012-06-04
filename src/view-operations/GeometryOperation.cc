@@ -45,8 +45,8 @@ GPlatesViewOperations::GeometryOperation::emit_highlight_point_signal(
 			return;
 		}
 
-		emit unhighlight_point_in_geometry(geometry_builder,
-				d_highlight_geometry_index, d_highlight_point_index);
+		emit unhighlight_point_in_geometry(
+				geometry_builder, d_highlight_geometry_index, d_highlight_point_index);
 	}
 
 	d_point_is_highlighted = true;
@@ -70,7 +70,7 @@ GPlatesViewOperations::GeometryOperation::emit_unhighlight_signal(
 	{
 		d_point_is_highlighted = false;
 
-		emit unhighlight_point_in_geometry(geometry_builder,
-				d_highlight_geometry_index, d_highlight_point_index);
+		emit unhighlight_point_in_geometry(
+				geometry_builder, d_highlight_geometry_index, d_highlight_point_index);
 	}
 }

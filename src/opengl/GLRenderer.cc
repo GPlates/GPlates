@@ -33,6 +33,7 @@
  */
 #include <GL/glew.h>
 #include <QDebug>
+#include <QPaintEngine>
 
 #include "GLRenderer.h"
 

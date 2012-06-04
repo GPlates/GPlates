@@ -21,8 +21,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_UTILS_EXTERNALSYNCCONTROLLER_H
-#define GPLATES_UTILS_EXTERNALSYNCCONTROLLER_H
+#ifndef GPLATES_GUI_EXTERNALSYNCCONTROLLER_H
+#define GPLATES_GUI_EXTERNALSYNCCONTROLLER_H
 
 #include "boost/optional.hpp"
 
@@ -34,11 +34,6 @@
 
 //#define SYNCDEBUG
 
-namespace GPlatesGui
-{
-    class AnimationController;
-    class ViewportZoom;
-}
 
 namespace GPlatesMaths
 {
@@ -56,13 +51,16 @@ namespace GPlatesQtWidgets
     class ViewportWindow;
 }
 
-namespace GPlatesUtils
+namespace GPlatesGui
 {
-    /**
+	class AnimationController;
+	class ViewportZoom;
+
+   /**
      * Thread for monitoring stdIn
      */
-    class StdInThread:
-	public QThread
+    class StdInThread :
+		public QThread
     {
        Q_OBJECT;
     public:
@@ -80,7 +78,7 @@ namespace GPlatesUtils
 	    QString str);
     };
 
-    class ExternalSyncController:
+    class ExternalSyncController :
 	    public QObject
     {
 	Q_OBJECT;
@@ -349,4 +347,4 @@ namespace GPlatesUtils
 
 }
 
-#endif // GPLATES_UTILS_EXTERNALSYNCCONTROLLER_H
+#endif // GPLATES_GUI_EXTERNALSYNCCONTROLLER_H

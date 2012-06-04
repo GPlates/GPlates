@@ -107,11 +107,11 @@ namespace GPlatesPropertyValues
 		}
 
 		void
-		set_d_intersection_geometry(
+		set_intersection_geometry(
 				GpmlPropertyDelegate::non_null_ptr_type intersection_geom)
 		{
 			d_intersection_geometry = intersection_geom;
-		} 
+		}
 
 
 		// access to reference point

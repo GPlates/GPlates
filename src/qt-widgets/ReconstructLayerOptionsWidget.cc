@@ -32,9 +32,14 @@
 #include "ViewportWindow.h"
 #include "VisualLayersDialog.h"
 
+#include "gui/Dialogs.h"
+
 #include "presentation/ReconstructVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
+
 #include "utils/ComponentManager.h"
+
+
 GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
@@ -44,7 +49,7 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 	d_application_state(application_state),
 	d_viewport_window(viewport_window),
 	d_set_vgp_visibility_dialog(NULL),
-	d_draw_style_dialog_ptr(viewport_window->draw_style_dialog())
+	d_draw_style_dialog_ptr(&viewport_window->dialogs().draw_style_dialog())
 {
 	setupUi(this);
 
@@ -137,7 +142,7 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::open_vgp_visibility_dialog()
 	{
 		d_set_vgp_visibility_dialog = new SetVGPVisibilityDialog(
 				d_application_state,
-				&d_viewport_window->visual_layers_dialog());
+				&d_viewport_window->dialogs().visual_layers_dialog());
 	}
 
 	d_set_vgp_visibility_dialog->populate(d_current_visual_layer);

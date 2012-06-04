@@ -29,7 +29,6 @@
 
 #include "SplitFeatureGeometryOperation.h"
 
-#include "ActiveGeometryOperation.h"
 #include "GeometryBuilderUndoCommands.h"
 #include "GeometryOperationUndo.h"
 #include "RenderedGeometryProximity.h"
@@ -40,59 +39,42 @@
 #include "RenderedGeometryUtils.h"
 #include "UndoRedo.h"
 #include "SplitFeatureUndoCommand.h"
-#include "gui/ChooseCanvasTool.h"
+
+#include "canvas-tools/GeometryOperationState.h"
+
+#include "gui/ChooseCanvasToolUndoCommand.h"
+
 #include "maths/GreatCircleArc.h"
 #include "maths/PointOnSphere.h"
 #include "maths/ProximityCriteria.h"
+
 #include "utils/GeometryCreationUtils.h"
 
 
 GPlatesViewOperations::SplitFeatureGeometryOperation::SplitFeatureGeometryOperation(
 		GPlatesGui::FeatureFocus &feature_focus,
-		GPlatesPresentation::ViewState	&view_state,	
-		GeometryOperationTarget &geometry_operation_target,
-		ActiveGeometryOperation &active_geometry_operation,
-		RenderedGeometryCollection *rendered_geometry_collection,
-		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+		GPlatesModel::ModelInterface model_interface,	
+		GeometryBuilder &geometry_builder,
+		GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
+		RenderedGeometryCollection &rendered_geometry_collection,
+		RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
+		GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 		const QueryProximityThreshold &query_proximity_threshold) :
-	d_geometry_builder(NULL),
-	d_feature_focus(&feature_focus),
-	d_view_state(&view_state),
-	d_geometry_operation_target(&geometry_operation_target),
-	d_active_geometry_operation(&active_geometry_operation),
+	d_feature_focus(feature_focus),
+	d_model_interface(model_interface),
+	d_geometry_builder(geometry_builder),
+	d_geometry_operation_state(geometry_operation_state),
 	d_rendered_geometry_collection(rendered_geometry_collection),
-	d_choose_canvas_tool(&choose_canvas_tool),
-	d_query_proximity_threshold(&query_proximity_threshold)
+	d_main_rendered_layer_type(main_rendered_layer_type),
+	d_canvas_tool_workflows(canvas_tool_workflows),
+	d_query_proximity_threshold(query_proximity_threshold)
 { }
 
 void
-GPlatesViewOperations::SplitFeatureGeometryOperation::activate(
-		GeometryBuilder *geometry_builder,
-		RenderedGeometryCollection::MainLayerType main_layer_type)
+GPlatesViewOperations::SplitFeatureGeometryOperation::activate()
 {
-	// Do nothing if NULL geometry builder.
-	if (geometry_builder == NULL)
-	{
-		return;
-	}
-
 	// Let others know we're the currently activated GeometryOperation.
-	d_active_geometry_operation->set_active_geometry_operation(this);
-
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	RenderedGeometryCollection::UpdateGuard update_guard;
-
-	d_geometry_builder = geometry_builder;
-	d_main_layer_type = main_layer_type;
-
-	// Activate the main rendered layer.
-	d_rendered_geometry_collection->set_main_layer_active(main_layer_type);
-
-	// Deactivate all rendered geometry layers of our main rendered layer.
-	// This hides what other tools have drawn into our main rendered layer.
-	RenderedGeometryUtils::deactivate_rendered_geometry_layers(
-			*d_rendered_geometry_collection, main_layer_type);
+	d_geometry_operation_state.set_active_geometry_operation(this);
 
 	connect_to_geometry_builder_signals();
 
@@ -113,33 +95,22 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::activate(
 void
 GPlatesViewOperations::SplitFeatureGeometryOperation::deactivate()
 {
-	// Do nothing if NULL geometry builder.
-	if (d_geometry_builder == NULL)
-	{
-		return;
-	}
-
 	// Let others know there's no currently activated GeometryOperation.
-	d_active_geometry_operation->set_no_active_geometry_operation();
-
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	RenderedGeometryCollection::UpdateGuard update_guard;
+	d_geometry_operation_state.set_no_active_geometry_operation();
 
 	disconnect_from_geometry_builder_signals();
 
-	// NOTE: we don't deactivate our rendered layers because they still need
-	// to be visible even after we've deactivated.  They will remain in existance
-	// until activate() is called again on this object.
-
-	// We will however destroy the highlight rendered geometry layer.
-	// This is so the highlights are not visible when we switch to the drag or zoom
-	// tool. The highlights layer will be recreated and populated when 'activate()'
-	// is called again.
-	d_highlight_layer_ptr.reset();
-
-	// Not using this GeometryBuilder anymore.
-	d_geometry_builder = NULL;
+	// Get rid of all render layers, not just the highlighting, even if switching to drag or zoom tool
+	// (which normally previously would display the most recent tool's layers).
+	// This is because once we are deactivated we won't be able to update the render layers when/if
+	// the reconstruction time changes.
+	// This means the user won't see this tool's render layers while in the drag or zoom tool.
+	d_line_segments_layer_ptr->set_active(false);
+	d_points_layer_ptr->set_active(false);
+	d_highlight_layer_ptr->set_active(false);
+	d_line_segments_layer_ptr->clear_rendered_geometries();
+	d_points_layer_ptr->clear_rendered_geometries();
+	d_highlight_layer_ptr->clear_rendered_geometries();
 }
 
 void
@@ -147,33 +118,20 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::left_click(
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
-	// Do nothing if NULL geometry builder.
-	if (d_geometry_builder == NULL)
-	{
-		return;
-	}
-
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	RenderedGeometryCollection::UpdateGuard update_guard;
-
 	// See if mouse position is on, or very near, an existing line segment.
 	boost::optional<RenderedGeometryProximityHit> closest_line_hit = test_proximity_to_rendered_geom_layer(
 			*d_line_segments_layer_ptr, oriented_pos_on_sphere, closeness_inclusion_threshold);
 
-	if (closest_line_hit)
+	if (!closest_line_hit)
 	{
-		const unsigned int line_segment_index = closest_line_hit->d_rendered_geom_index;
-
-		
-		split_feature(
-				line_segment_index, oriented_pos_on_sphere, closeness_inclusion_threshold);
-	}
-	else
-	{
-		// We are not close enough to any line segments. We do nothing but return.
+		// We are not close enough to any line segments so return early.
 		return;
 	}
+
+	const unsigned int line_segment_index = closest_line_hit->d_rendered_geom_index;
+
+	split_feature(
+			line_segment_index, oriented_pos_on_sphere, closeness_inclusion_threshold);
 
 #if 0 //dont't do this. this will disable undo
 
@@ -183,10 +141,8 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::left_click(
 
 #endif
 
-	// Render the highlight line segments to show user where the next mouse click will
-	// insert the next vertex.
-	// We do this now in case the mouse doesn't move again for a while (ie, if we get no
-	// 'mouse_move' event).
+	// Render the highlight line segments to show user where the next mouse click split the feature geometry.
+	// We do this now in case the mouse doesn't move again for a while (ie, if we get no 'mouse_move' event).
 	update_highlight_rendered_layer(oriented_pos_on_sphere, closeness_inclusion_threshold);
 }
 
@@ -196,10 +152,6 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::split_feature(
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
-	// First make sure we are not too close to an existing point.
-	// If we are then the user will need to zoom in the view in order to
-	// insert the vertex that close.
-
 	// Test closeness to the points in the points rendered geometry layer.
 	boost::optional<GPlatesViewOperations::RenderedGeometryProximityHit> hit= 
 		test_proximity_to_rendered_geom_layer(
@@ -241,15 +193,15 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::project_point_onto_line_se
 	// Line segment could be the last segment in a polygon in which case the segment start point
 	// is the last point in polygon and the segment end point is first point in polygon.
 	// Note for polylines this can't happen so this only applies to polygons.
-	if (start_point_index == d_geometry_builder->get_num_points_in_geometry(geom_index) - 1)
+	if (start_point_index == d_geometry_builder.get_num_points_in_geometry(geom_index) - 1)
 	{
-		line_segment_start = &d_geometry_builder->get_geometry_point(geom_index, start_point_index);
-		line_segment_end = &d_geometry_builder->get_geometry_point(geom_index, 0);
+		line_segment_start = &d_geometry_builder.get_geometry_point(geom_index, start_point_index);
+		line_segment_end = &d_geometry_builder.get_geometry_point(geom_index, 0);
 	}
 	else
 	{
-		line_segment_start = &d_geometry_builder->get_geometry_point(geom_index, start_point_index);
-		line_segment_end = &d_geometry_builder->get_geometry_point(geom_index, start_point_index + 1);
+		line_segment_start = &d_geometry_builder.get_geometry_point(geom_index, start_point_index);
+		line_segment_end = &d_geometry_builder.get_geometry_point(geom_index, start_point_index + 1);
 	}
 
 
@@ -265,16 +217,6 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::mouse_move(
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
-	// Do nothing if NULL geometry builder.
-	if (d_geometry_builder == NULL)
-	{
-		return;
-	}
-
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	RenderedGeometryCollection::UpdateGuard update_guard;
-
 	// Render the highlight line segments to show user where the vertex will get inserted.
 	update_highlight_rendered_layer(oriented_pos_on_sphere, closeness_inclusion_threshold);
 }
@@ -290,14 +232,6 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::update_highlight_rendered_
 	//
 	// If clicked point is on a line segment then highlight that line segment.
 	//
-	// Otherwise:
-	// If the geometry type we're trying to build (not necessarily same as what
-	//   we've actually got) is a *polyline* then highlight a new temporary line segment from
-	//   clicked point to the nearest end of the entire polyline.
-	// If the geometry type we're trying to build (not necessarily same as what
-	//   we've actually got) is a *polygon* then highlight two new temporary line segments from
-	//   clicked point to both ends of the polygon.
-	//
 
 	// See if mouse position is on, or very near, an existing line segment.
 	boost::optional<RenderedGeometryProximityHit> closest_line_hit = test_proximity_to_rendered_geom_layer(
@@ -310,11 +244,6 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::update_highlight_rendered_
 		add_rendered_highlight_on_line_segment(
 				line_segment_index, oriented_pos_on_sphere, closeness_inclusion_threshold);
 	}
-	else
-	{
-		// We are not close enough to any line segments.
-		//add_rendered_highlight_off_line_segment(oriented_pos_on_sphere);
-	}
 }
 
 void
@@ -323,9 +252,9 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::add_rendered_highlight_on_
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
-	// First make sure we are not too close to an existing point.
-	// If we are then the user will need to zoom in the view in order to
-	// insert the vertex that close.
+	// Avoid highlighting line segment if too close to an existing point.
+	// This is to discourage the user from splitting a feature near an existing point -
+	// the user can still split the feature there though.
 
 	// Test closeness to the points in the points rendered geometry layer.
 	if (!test_proximity_to_rendered_geom_layer(
@@ -348,12 +277,12 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::add_rendered_highlight_lin
 	// is the last point in polygon and the segment end point is first point in polygon.
 	// Note for polylines this can't happen so this only applies to polygons.
 	unsigned int highlight_start_point_index = d_line_to_point_mapping[highlight_line_segment_index];
-	if (highlight_start_point_index == d_geometry_builder->get_num_points_in_geometry(geom_index) - 1)
+	if (highlight_start_point_index == d_geometry_builder.get_num_points_in_geometry(geom_index) - 1)
 	{
 		const GPlatesMaths::PointOnSphere &start_point =
-				d_geometry_builder->get_geometry_point(geom_index, highlight_start_point_index);
+				d_geometry_builder.get_geometry_point(geom_index, highlight_start_point_index);
 		const GPlatesMaths::PointOnSphere &end_point =
-				d_geometry_builder->get_geometry_point(geom_index, 0);
+				d_geometry_builder.get_geometry_point(geom_index, 0);
 
 		add_rendered_highlight_line_segment(start_point, end_point);
 	}
@@ -361,7 +290,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::add_rendered_highlight_lin
 	{
 		// Get point at start of line segment.
 		GeometryBuilder::point_const_iterator_type line_segment_begin =
-				d_geometry_builder->get_geometry_point_begin(geom_index);
+				d_geometry_builder.get_geometry_point_begin(geom_index);
 		std::advance(line_segment_begin, highlight_start_point_index);
 
 		GeometryBuilder::point_const_iterator_type line_segment_end = line_segment_begin;
@@ -439,7 +368,7 @@ boost::optional<const GPlatesViewOperations::GeometryBuilder::PointIndex>
 GPlatesViewOperations::SplitFeatureGeometryOperation::get_closest_geometry_point_to(
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
 {
-	if (d_geometry_builder->get_num_geometries() == 0)
+	if (d_geometry_builder.get_num_geometries() == 0)
 	{
 		return boost::none;
 	}
@@ -448,7 +377,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::get_closest_geometry_point
 	const GeometryBuilder::GeometryIndex geom_index = 0;
 
 	const GeometryBuilder::PointIndex num_points_in_geom =
-			d_geometry_builder->get_num_points_in_geometry(geom_index);
+			d_geometry_builder.get_num_points_in_geometry(geom_index);
 
 	// Closeness varies from -1 for antipodal points to 1 for coincident points.
 	GPlatesMaths::real_t max_closeness(-1);
@@ -460,7 +389,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::get_closest_geometry_point
 		point_on_sphere_index < num_points_in_geom;
 		++point_on_sphere_index)
 	{
-		const GPlatesMaths::PointOnSphere &point_on_sphere = d_geometry_builder->get_geometry_point(
+		const GPlatesMaths::PointOnSphere &point_on_sphere = d_geometry_builder.get_geometry_point(
 				geom_index, point_on_sphere_index);
 
 		GPlatesMaths::real_t closeness = calculate_closeness(point_on_sphere, oriented_pos_on_sphere);
@@ -478,27 +407,23 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::get_closest_geometry_point
 void
 GPlatesViewOperations::SplitFeatureGeometryOperation::create_rendered_geometry_layers()
 {
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	RenderedGeometryCollection::UpdateGuard update_guard;
-
 	// Create a rendered layer to draw the line segments of polylines and polygons.
 	d_line_segments_layer_ptr =
-		d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
-				d_main_layer_type);
+		d_rendered_geometry_collection.create_child_rendered_layer_and_transfer_ownership(
+				d_main_rendered_layer_type);
 
 	// Create a rendered layer to draw the points in the geometry on top of the lines.
 	// NOTE: this must be created second to get drawn on top.
 	d_points_layer_ptr =
-		d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
-				d_main_layer_type);
+		d_rendered_geometry_collection.create_child_rendered_layer_and_transfer_ownership(
+				d_main_rendered_layer_type);
 
 	// Create a rendered layer to draw a single point in the geometry on top of the usual points
 	// when the mouse cursor hovers over one of them.
 	// NOTE: this must be created third to get drawn on top of the points.
 	d_highlight_layer_ptr =
-		d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
-				d_main_layer_type);
+		d_rendered_geometry_collection.create_child_rendered_layer_and_transfer_ownership(
+				d_main_rendered_layer_type);
 
 	// In both cases above we store the returned object as a data member and it
 	// automatically destroys the created layer for us when 'this' object is destroyed.
@@ -511,7 +436,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::connect_to_geometry_builde
 
 	// GeometryBuilder has just finished updating geometry.
 	QObject::connect(
-			d_geometry_builder,
+			&d_geometry_builder,
 			SIGNAL(stopped_updating_geometry()),
 			this,
 			SLOT(geometry_builder_stopped_updating_geometry()));
@@ -521,7 +446,7 @@ void
 GPlatesViewOperations::SplitFeatureGeometryOperation::disconnect_from_geometry_builder_signals()
 {
 	// Disconnect all signals from the current geometry builder.
-	QObject::disconnect(d_geometry_builder, 0, this, 0);
+	QObject::disconnect(&d_geometry_builder, 0, this, 0);
 }
 
 void
@@ -541,16 +466,11 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::split_feature(
 		const GeometryBuilder::PointIndex insert_vertex_index,
 		boost::optional<const GPlatesMaths::PointOnSphere> insert_pos_on_sphere)
 {
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	RenderedGeometryCollection::UpdateGuard update_guard;
-
 	// The command that does the actual splitting feature.
 	std::auto_ptr<QUndoCommand> split_feature_command(
 			new SplitFeatureUndoCommand(
 					d_feature_focus,
-					d_view_state,
-					d_geometry_builder,
+					d_model_interface,
 					insert_vertex_index,
 					insert_pos_on_sphere));
 
@@ -560,10 +480,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::split_feature(
 					QObject::tr("split feature"),
 					split_feature_command,
 					this,
-					d_geometry_operation_target,
-					d_main_layer_type,
-					d_choose_canvas_tool,
-					&GPlatesGui::ChooseCanvasTool::choose_split_feature_tool));
+					d_canvas_tool_workflows));
 
 	// Push command onto undo list.
 	// Note: the command's redo() gets executed inside the push() call and this is where
@@ -574,10 +491,6 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::split_feature(
 void
 GPlatesViewOperations::SplitFeatureGeometryOperation::update_rendered_geometries()
 {
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	RenderedGeometryCollection::UpdateGuard update_guard;
-
 	// Clear all RenderedGeometry objects from the render layers first.
 	d_line_segments_layer_ptr->clear_rendered_geometries();
 	d_points_layer_ptr->clear_rendered_geometries();
@@ -585,7 +498,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::update_rendered_geometries
 
 	// Iterate through the internal geometries (currently only one is supported).
 	for (GeometryBuilder::GeometryIndex geom_index = 0;
-		geom_index < d_geometry_builder->get_num_geometries();
+		geom_index < d_geometry_builder.get_num_geometries();
 		++geom_index)
 	{
 		update_rendered_geometry(geom_index);
@@ -600,7 +513,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::update_rendered_geometry(
 	add_rendered_points(geom_index);
 
 	const GeometryType::Value actual_geom_type =
-		d_geometry_builder->get_actual_type_of_geometry(geom_index);
+		d_geometry_builder.get_actual_type_of_geometry(geom_index);
 
 	if (actual_geom_type == GeometryType::POLYLINE ||
 		actual_geom_type == GeometryType::POLYGON)
@@ -614,7 +527,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::add_rendered_lines(
 		GeometryBuilder::GeometryIndex geom_index,
 		const GeometryType::Value actual_geom_type)
 {
-	const unsigned int num_points_in_geom = d_geometry_builder->get_num_points_in_geometry(geom_index);
+	const unsigned int num_points_in_geom = d_geometry_builder.get_num_points_in_geometry(geom_index);
 	d_line_to_point_mapping.clear();
 
 	if (num_points_in_geom < 2)
@@ -625,7 +538,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::add_rendered_lines(
 
 	// Get start and end of point sequence in current geometry.
 	GeometryBuilder::point_const_iterator_type builder_geom_begin =
-		d_geometry_builder->get_geometry_point_begin(geom_index);
+		d_geometry_builder.get_geometry_point_begin(geom_index);
 
 	// Create a separate rendered geometry for each polyline line segment.
 	// This is so we can test proximity to individual line segments.
@@ -707,9 +620,14 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::add_rendered_points(
 		GeometryBuilder::GeometryIndex geom_index)
 {
 	GeometryBuilder::point_const_iterator_type builder_geom_begin =
-		d_geometry_builder->get_geometry_point_begin(geom_index);
+		d_geometry_builder.get_geometry_point_begin(geom_index);
 	GeometryBuilder::point_const_iterator_type builder_geom_end =
-		d_geometry_builder->get_geometry_point_end(geom_index);
+		d_geometry_builder.get_geometry_point_end(geom_index);
+
+	if (builder_geom_begin == builder_geom_end)
+	{
+		return;
+	}
 
 	GeometryBuilder::point_const_iterator_type builder_geom_iter;
 	for (builder_geom_iter = builder_geom_begin;
@@ -717,26 +635,6 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::add_rendered_points(
 		++builder_geom_iter)
 	{
 		const GPlatesMaths::PointOnSphere &point_on_sphere = *builder_geom_iter;
-
-		if(builder_geom_iter == builder_geom_begin)
-		{
-			RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_point_on_sphere(
-				point_on_sphere,
-				GeometryOperationParameters::SPLIT_FEATURE_START_POINT_COLOUR,
-				GeometryOperationParameters::LARGE_POINT_SIZE_HINT);
-			d_points_layer_ptr->add_rendered_geometry(rendered_geom);
-			continue;
-		}
-
-		if(builder_geom_iter == builder_geom_end - 1)
-		{
-			RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_point_on_sphere(
-				point_on_sphere,
-				GeometryOperationParameters::SPLIT_FEATURE_END_POINT_COLOUR,
-				GeometryOperationParameters::LARGE_POINT_SIZE_HINT);
-			d_points_layer_ptr->add_rendered_geometry(rendered_geom);
-			continue;
-		}
 
 		RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_point_on_sphere(
 			point_on_sphere,
@@ -746,5 +644,24 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::add_rendered_points(
 		// Add to the points layer.
 		d_points_layer_ptr->add_rendered_geometry(rendered_geom);
 	}
-}
 
+	//
+	// Draw the coloured end points last so they are always drawn on top.
+	//
+
+	// Start point.
+	const GPlatesMaths::PointOnSphere &start_point_on_sphere = *builder_geom_begin;
+	RenderedGeometry start_point_rendered_geom = RenderedGeometryFactory::create_rendered_point_on_sphere(
+			start_point_on_sphere,
+			GeometryOperationParameters::SPLIT_FEATURE_START_POINT_COLOUR,
+			GeometryOperationParameters::LARGE_POINT_SIZE_HINT);
+	d_points_layer_ptr->add_rendered_geometry(start_point_rendered_geom);
+
+	// End point.
+	const GPlatesMaths::PointOnSphere &end_point_on_sphere = *(builder_geom_end - 1);
+	RenderedGeometry end_point_rendered_geom = RenderedGeometryFactory::create_rendered_point_on_sphere(
+			end_point_on_sphere,
+			GeometryOperationParameters::SPLIT_FEATURE_END_POINT_COLOUR,
+			GeometryOperationParameters::LARGE_POINT_SIZE_HINT);
+	d_points_layer_ptr->add_rendered_geometry(end_point_rendered_geom);
+}

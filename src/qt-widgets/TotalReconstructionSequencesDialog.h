@@ -33,9 +33,14 @@
 #include <boost/shared_ptr.hpp>
 
 #include "TotalReconstructionSequencesDialogUi.h"
+
+#include "GPlatesDialog.h"
+
 #include "app-logic/TRSUtils.h"
+
 #include "model/FeatureHandle.h"
 #include "model/types.h"
+
 #include "utils/ReferenceCount.h"
 
 
@@ -80,7 +85,7 @@ namespace GPlatesQtWidgets
 	class TotalReconstructionSequencesSearchIndex;
 
 	class TotalReconstructionSequencesDialog:
-		public QDialog,
+		public GPlatesDialog,
 		protected Ui_TotalReconstructionSequencesDialog
 	{
 		Q_OBJECT

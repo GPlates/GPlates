@@ -37,16 +37,17 @@
 #include "DigitisationWidget.h"
 
 #include "ActionButtonBox.h"
+#include "ConnectWFSDialog.h"
 #include "CreateFeatureDialog.h"
 #include "ExportCoordinatesDialog.h"
 #include "LatLonCoordinatesTable.h"
 #include "QtWidgetUtils.h"
-#include "ConnectWFSDialog.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
 
-#include "gui/ChooseCanvasTool.h"
+#include "gui/ChooseCanvasToolUndoCommand.h"
+#include "gui/Dialogs.h"
 
 #include "maths/InvalidLatLonException.h"
 #include "maths/InvalidLatLonCoordinateException.h"
@@ -62,12 +63,13 @@
 
 
 GPlatesQtWidgets::DigitisationWidget::DigitisationWidget(
-		GPlatesViewOperations::GeometryBuilder &new_geometry_builder,
+		GPlatesViewOperations::GeometryBuilder &digitise_geometry_builder,
+		GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
 		GPlatesPresentation::ViewState &view_state_,
 		ViewportWindow &viewport_window_,
 		QAction *clear_action,
 		QAction *undo_action,
-		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+		GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 		QWidget *parent_):
 	TaskPanelWidget(parent_),
 	d_viewport_window( &viewport_window_ ),
@@ -80,8 +82,8 @@ GPlatesQtWidgets::DigitisationWidget::DigitisationWidget(
 				view_state_,
 				viewport_window_,
 				GPlatesQtWidgets::CreateFeatureDialog::NORMAL, this)),
-	d_new_geom_builder(&new_geometry_builder),
-	d_choose_canvas_tool(&choose_canvas_tool)
+	d_new_geom_builder(&digitise_geometry_builder),
+	d_canvas_tool_workflows(&canvas_tool_workflows)
 {
 	setupUi(this);
 
@@ -104,8 +106,8 @@ GPlatesQtWidgets::DigitisationWidget::DigitisationWidget(
 
 	// Get a wrapper around coordinates table that listens to a GeometryBuilder
 	// and fills in the table accordingly.
-	d_lat_lon_coordinates_table.reset(new LatLonCoordinatesTable(
-			coordinates_table(), &new_geometry_builder));
+	d_lat_lon_coordinates_table.reset(
+			new LatLonCoordinatesTable(coordinates_table(), geometry_operation_state));
 	
 	make_signal_slot_connections();
 }
@@ -179,8 +181,8 @@ GPlatesQtWidgets::DigitisationWidget::handle_use_in_wfs()
 	if (geometry_opt_ptr) {
 
 		// Give a GeometryOnSphere::non_null_ptr_to_const_type to the dialog.
-		d_viewport_window->pop_up_connect_wfs();
-		d_viewport_window->wfs_dialog().set_request_geometry( *geometry_opt_ptr );
+		d_viewport_window->dialogs().pop_up_connect_wfs_dialog();
+		d_viewport_window->dialogs().connect_wfs_dialog().set_request_geometry( *geometry_opt_ptr );
 		
 	} else {
 		QMessageBox::warning(this, tr("No geometry to export"),
@@ -251,16 +253,13 @@ GPlatesQtWidgets::DigitisationWidget::handle_clear_action_triggered()
 
 	// Add child undo command for clearing all geometries.
 	new GPlatesViewOperations::GeometryBuilderClearAllGeometries(
-			d_new_geom_builder,
+			*d_new_geom_builder,
 			undo_command.get());
 
 	// Add child undo command for selecting the most recently selected digitise geometry tool.
 	// When or if this undo/redo command gets called one of the digitisation tools may not
 	// be active so make sure it gets activated so user can see what's being undone/redone.
-	new GPlatesGui::ChooseCanvasToolUndoCommand(
-			d_choose_canvas_tool,
-			&GPlatesGui::ChooseCanvasTool::choose_most_recent_digitise_geometry_tool,
-			undo_command.get());
+	new GPlatesGui::ChooseCanvasToolUndoCommand(*d_canvas_tool_workflows, undo_command.get());
 
 	// Push command onto undo list.
 	// Note: the command's redo() gets executed inside the push() call and this is where

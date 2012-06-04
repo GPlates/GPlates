@@ -41,12 +41,9 @@
 
 #include "ViewportWindowUi.h"
 
-#include "app-logic/FeatureCollectionFileState.h"
+#include "canvas-tools/CanvasTool.h"
 
-#include "canvas-tools/CanvasToolType.h"
-
-#include "gui/AnimationController.h"
-#include "gui/FullScreenMode.h"
+#include "gui/CanvasToolWorkflows.h"
 
 
 namespace GPlatesAppLogic
@@ -57,7 +54,9 @@ namespace GPlatesAppLogic
 
 namespace GPlatesCanvasTools
 {
+	class GeometryOperationState;
 	class MeasureDistanceState;
+	class ModifyGeometryState;
 }
 
 namespace GPlatesFileIO
@@ -67,21 +66,14 @@ namespace GPlatesFileIO
 
 namespace GPlatesGui
 {
-	class ChooseCanvasTool;
 	class Dialogs;
 	class DockState;
 	class EnableCanvasTool;
 	class FeatureFocus;
-	class FeatureTableModel;
 	class FileIOFeedback;
-	class GlobeCanvasToolAdapter;
-	class GlobeCanvasToolChoice;
+	class FullScreenMode;
 	class ImportMenu;
-	class MapCanvasToolAdapter;
-	class MapCanvasToolChoice;
 	class SessionMenu;
-	class TopologySectionsTable;
-	class TopologySectionsContainer;
 	class TrinketArea;
 	class UnsavedChangesTracker;
 	class UtilitiesMenu;
@@ -95,53 +87,21 @@ namespace GPlatesPresentation
 
 namespace GPlatesViewOperations
 {
-	class ActiveGeometryOperation;
 	class CloneOperation;
 	class DeleteFeatureOperation;
-	class FocusedFeatureGeometryManipulator;
-	class GeometryBuilder;
-	class GeometryOperationTarget;
-}
-
-namespace GPlatesUtils
-{
-	class ExternalSyncController;
 }
 
 namespace GPlatesQtWidgets
 {
-	class AboutDialog;
-	class AnimateDialog;
-	class AssignReconstructionPlateIdsDialog;
-	class CalculateReconstructionPoleDialog;
-	class ChooseFeatureCollectionDialog;
-	class ColouringDialog;
-	class ConnectWFSDialog;
-	class ConfigureGraticulesDialog;
-	class ConfigureTextOverlayDialog;
+	class CanvasToolBarDockWidget;
 	class DockWidget;
-	class DrawStyleDialog;
-	class CreateVGPDialog;
-	class ExportAnimationDialog;
-	class FeaturePropertiesDialog;
 	class GlobeCanvas;
-	class ManageFeatureCollectionsDialog;
 	class MapView;
-	class MeshDialog;
 	class PythonConsoleDialog;
-	class ReadErrorAccumulationDialog;
 	class ReconstructionViewWidget;
-	class SaveFileDialog;
-	class SetCameraViewpointDialog;
-	class SetProjectionDialog;
-	class ShapefileAttributeViewerDialog;
+	class SearchResultsDockWidget;
 	class SmallCircleManager;
-	class SpecifyAnchoredPlateIdDialog;
-	class SymbolManagerDialog;
 	class TaskPanel;
-	class TotalReconstructionPolesDialog;
-	class TotalReconstructionSequencesDialog;
-	class VisualLayersDialog;
 
 	class ViewportWindow :
 			public QMainWindow, 
@@ -159,31 +119,31 @@ namespace GPlatesQtWidgets
 		virtual
 		~ViewportWindow();
 
+
 		void
 		load_files(
 				const QStringList &filenames);
 
-		void
-		reconstruct_to_time(
-				const double &recon_time);
 
-		GPlatesQtWidgets::ReconstructionViewWidget &
-		reconstruction_view_widget()
-		{
-			return *d_reconstruction_view_widget_ptr;
-		}
+		//! Returns the application state.
+		GPlatesAppLogic::ApplicationState &
+		get_application_state();
 
-		const GPlatesQtWidgets::ReconstructionViewWidget &
-		reconstruction_view_widget() const
-		{
-			return *d_reconstruction_view_widget_ptr;
-		}
+		//! Returns the view state.
+		GPlatesPresentation::ViewState &
+		get_view_state();
 
-		GPlatesQtWidgets::ConnectWFSDialog &
-		wfs_dialog()
-		{
-			return *d_connect_wfs_dialog_ptr;
-		}
+		ReconstructionViewWidget &
+		reconstruction_view_widget();
+
+		const ReconstructionViewWidget &
+		reconstruction_view_widget() const;
+
+		CanvasToolBarDockWidget &
+		canvas_tool_bar_dock_widget();
+
+		SearchResultsDockWidget &
+		search_results_dock_widget();
 
 		GlobeCanvas &
 		globe_canvas();
@@ -205,94 +165,29 @@ namespace GPlatesQtWidgets
 		GPlatesGui::Dialogs &
 		dialogs() const;
 
+		GPlatesGui::FileIOFeedback &
+		file_io_feedback();
+
+		GPlatesGui::CanvasToolWorkflows &
+		canvas_tool_workflows();
 
 		void
 		create_svg_file(
 				const QString &filename);
 
 
-		GPlatesGui::FeatureTableModel &
-		feature_table_model() 
-		{
-			return *d_feature_table_model_ptr;
-		}
-
 		GPlatesGui::TrinketArea &
-		trinket_area() 
-		{
-			return *d_trinket_area_ptr;
-		}
-
-		/** Get a pointer to the TopologySectionsContainer */
-		GPlatesGui::TopologySectionsContainer &
-		topology_boundary_sections_container()
-		{
-			return *d_topology_boundary_sections_container_ptr;	
-		}
-
-		/** Get a pointer to the TopologySectionsContainer */
-		GPlatesGui::TopologySectionsContainer &
-		topology_interior_sections_container()
-		{
-			return *d_topology_interior_sections_container_ptr;	
-		}
+		trinket_area();
 
 		/** Get a pointer to the TaskPanel */
-		GPlatesQtWidgets::TaskPanel *
-		task_panel_ptr() const
-		{
-			return d_task_panel_ptr;
-		}
-
-		ReadErrorAccumulationDialog &
-		read_errors_dialog()
-		{
-			return *d_read_errors_dialog_ptr;
-		}
-
-		TotalReconstructionPolesDialog &
-		total_reconstruction_poles_dialog()
-		{
-			return *d_total_reconstruction_poles_dialog_ptr;
-		}
-
-		VisualLayersDialog &
-		visual_layers_dialog()
-		{
-			return *d_visual_layers_dialog_ptr;
-		}
-
-		DrawStyleDialog*
-		draw_style_dialog();
-		
-		void
-		restore_canvas_tool_last_chosen_by_user();
+		TaskPanel *
+		task_panel_ptr() const;
 
 		GPlatesGui::ImportMenu &
-		import_menu()
-		{
-			return *d_import_menu_ptr;
-		}
+		import_menu();
 
 		GPlatesGui::UtilitiesMenu &
-		utilities_menu()
-		{
-			return *d_utilities_menu_ptr;
-		}
-	
-		/**
-		 * Enable  communication.
-		 *
-		 * We need to control this from the viewport
-		 * window for situations where gplates is
-		 * launched remotely and acts as the "slave"
-		 * application. This would also disable the ability
-		 * to open the external-sync-dialog from
-		 * GPlates.
-		 */
-		void
-		enable_external_syncing(
-		    bool gplates_is_master = false);
+		utilities_menu();
 
 	public slots:
 		
@@ -301,179 +196,9 @@ namespace GPlatesQtWidgets
 				const QString &message,
 				int timeout = 20000);
 
-		/**
-		 * Highlights the first row in the "Clicked" feature table.
-		 */
-		void
-		highlight_first_clicked_feature_table_row();
-
-		/**
-		 * Highlights the row of the table that corresponds to the focused feature.
-		 */
-		void
-		highlight_focused_feature_in_table();
-
-		void
-		enable_drag_globe_tool(
-				bool enable = true);
-
-		void
-		enable_zoom_globe_tool(
-				bool enable = true);
-
-		void
-		enable_click_geometry_tool(
-				bool enable = true);
-
-		void
-		enable_digitise_polyline_tool(
-				bool enable = true);
-
-		void
-		enable_digitise_multipoint_tool(
-				bool enable = true);
-
-		void
-		enable_digitise_polygon_tool(
-				bool enable = true);
-
-		void
-		enable_move_geometry_tool(
-				bool enable = true);
-
-		void
-		enable_move_vertex_tool(
-				bool enable = true);
-
-		void
-		enable_delete_vertex_tool(
-				bool enable = true);
-
-		void
-		enable_insert_vertex_tool(
-				bool enable = true);
-
-		void
-		enable_split_feature_tool(
-			bool enable = true);
-
-		void
-		enable_manipulate_pole_tool(
-				bool enable = true);
-
-		void
-		enable_build_topology_tool(
-				bool enable = true);
-
-		void
-		enable_edit_topology_tool(
-				bool enable = true);
-
-		void
-		enable_measure_distance_tool(
-				bool enable = true);
-
-		void
-		enable_create_small_circle_tool(
-				bool enable = true);
-
-		void
-		choose_drag_globe_tool();
-
-		void
-		choose_zoom_globe_tool();
-
-		void
-		choose_click_geometry_tool();
-
-		void
-		choose_digitise_polyline_tool();
-
-		void
-		choose_digitise_multipoint_tool();
-
-		void
-		choose_digitise_polygon_tool();
-
-		void
-		choose_move_geometry_tool();
-
-		void
-		choose_move_vertex_tool();
-
-		void
-		choose_delete_vertex_tool();
-
-		void
-		choose_insert_vertex_tool();
-
-		void
-		choose_split_feature_tool();
-
-		void
-		choose_manipulate_pole_tool();
-
-		void
-		choose_build_topology_tool();
-
-		void
-		choose_edit_topology_tool();
-
-		void
-		choose_create_small_circle_tool();
-
-		void
-		choose_measure_distance_tool();
-
 		void
 		enable_or_disable_feature_actions(
 				GPlatesGui::FeatureFocus &feature_focus);
-
-		void
-		choose_clicked_geometry_table();
-
-		void
-		choose_topology_sections_table();
-
-		void
-		set_topology_sections_table_tab_text(QString s)
-		{
-			tabWidget->setTabText(1, s);
-		}
-
-		void
-		pop_up_read_errors_dialog();
-
-		void
-		pop_up_manage_feature_collections_dialog();
-
-		void
-		pop_up_export_animation_dialog();
-
-		void
-		pop_up_assign_reconstruction_plate_ids_dialog();
-
-		void
-		pop_up_total_reconstruction_poles_dialog();
-
-		void
-		pop_up_total_reconstruction_poles_dialog(
-				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
-	
-		void
-		pop_up_animate_dialog();
-
-		void
-		pop_up_configure_text_overlay_dialog();
-
-		void
-		pop_up_configure_graticules_dialog();
-
-		void
-		pop_up_colouring_dialog();
-
-		void
-		pop_up_draw_style_dialog();
 
 		void
 		handle_load_symbol_file();
@@ -482,17 +207,7 @@ namespace GPlatesQtWidgets
 		handle_unload_symbol_file();
 
 		void
-		pop_up_symbol_manager_dialog();
-
-		void
-		pop_up_connect_wfs();
-
-		void
 		update_tools_and_status_message();
-
-		void
-		use_small_canvas_tool_icons(
-				bool use_small_icons);
 
 		void
 		handle_read_errors(
@@ -517,18 +232,6 @@ namespace GPlatesQtWidgets
 		hide_python_menu()
 		{
 			action_Open_Python_Console->setVisible(false);
-		}
-
-		void
-		set_time(const double time)
-		{
-			d_animation_controller.set_view_time(time);
-		}
-
-		GPlatesGui::AnimationController&
-		get_animation_controller()
-		{
-			return d_animation_controller;
 		}
 
 	protected:
@@ -567,24 +270,6 @@ namespace GPlatesQtWidgets
 				QShowEvent *ev);
 
 	private:
-
-		//! Returns the application state.
-		GPlatesAppLogic::ApplicationState &
-		get_application_state();
-
-
-		//! Returns the view state.
-		GPlatesPresentation::ViewState &
-		get_view_state();
-
-		/**
-		 * Temporarily enables or disables a reconstruction tree by adding or
-		 * removing it from the list of active reconstruction files. This does not
-		 * un-load the file.
-		 * Connects Signal/Slots for the map- and globe- canvas tools.
-		 */
-		void
-		connect_canvas_tools();
 
 		/**
 		 * Connects all the Signal/Slot relationships for ViewportWindow toolbar
@@ -628,24 +313,11 @@ namespace GPlatesQtWidgets
 		populate_gmenu_from_menubar();
 
 		/**
-		 * Connects signals of @a FeatureCollectionFileIO to slots of 'this'.
-		 */
-		void
-		connect_feature_collection_file_io_signals();
-
-		/**
 		 * Configures the ActionButtonBox inside the Feature tab of the Task Panel
 		 * with some of the QActions that ViewportWindow has on the menu bar.
 		 */
 		void
 		set_up_task_panel_actions();
-
-		/**
-		 * Creates a context menu to allow the user to dock DockWidgets even if
-		 * they are misbehaving and not docking when dragged over the main window.
-		 */
-		void
-		set_up_dock_context_menus();
 
 		void
 		set_internal_release_window_title();
@@ -656,26 +328,11 @@ namespace GPlatesQtWidgets
 		private slots:
 
 		void
-		pop_up_specify_anchored_plate_id_dialog();
-
-		void
-		pop_up_set_camera_viewpoint_dialog();
-		
-		void
-		pop_up_about_dialog();
-
-		void
 		set_visual_layers_dialog_visibility(
 				bool visible);
 
 		void
 		handle_window_menu_about_to_show();
-		
-		void
-		dock_search_results_at_top();
-		
-		void
-		dock_search_results_at_bottom();
 
 		void
 		enable_point_display();
@@ -694,9 +351,6 @@ namespace GPlatesQtWidgets
 
 		void
 		enable_stars_display();
-
-		void
-		pop_up_shapefile_attribute_viewer_dialog();
 
 		void
 		handle_move_camera_up();
@@ -720,20 +374,10 @@ namespace GPlatesQtWidgets
 		handle_reset_camera_orientation();
 
 		void
-		pop_up_set_projection_dialog();
-		
-		void
-		pop_up_create_vgp_dialog();
-		
-		void
-		generate_mesh_cap();
+		handle_canvas_tool_activated(
+				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
+				GPlatesGui::CanvasToolWorkflows::ToolType tool);
 
-		void
-		pop_up_calculate_reconstruction_pole_dialog();
-
-		void
-		handle_colour_scheme_delegator_changed();
-		
 		void
 		pop_up_import_raster_dialog();
 
@@ -745,56 +389,11 @@ namespace GPlatesQtWidgets
 		pop_up_import_time_dependent_raster_dialog();
 
 		void
-		pop_up_total_reconstruction_sequences_dialog();
+		handle_colour_scheme_delegator_changed();
 
 		void
 		handle_visual_layer_added(
 				size_t index);
-
-		void
-		handle_drag_globe_triggered();
-
-		void
-		handle_zoom_globe_triggered();
-
-		void
-		handle_click_geometry_triggered();
-
-		void
-		handle_digitise_new_polyline_triggered();
-
-		void
-		handle_digitise_new_multipoint_triggered();
-
-		void
-		handle_digitise_new_polygon_triggered();
-
-		void
-		handle_move_vertex_triggered();
-
-		void
-		handle_delete_vertex_triggered();
-
-		void
-		handle_insert_vertex_triggered();
-
-		void
-		handle_split_feature_triggered();
-
-		void
-		handle_manipulate_pole_triggered();
-
-		void
-		handle_build_topology_triggered();
-
-		void
-		handle_edit_topology_triggered();
-
-		void
-		handle_create_small_circle_triggered();
-
-		void
-		handle_measure_distance_triggered();
 
 		void
 		open_new_window();
@@ -819,14 +418,56 @@ namespace GPlatesQtWidgets
 		
 	private:
 
+		//
+		// Some pointers below are QPointer and some are boost::scoped_ptr.
+		//
+		// QPointer is used when deletion of the object is taken care of because it has a parent
+		// (and the object inherits from QObject since QPointer only works with QObject derivations).
+		//
+		// boost::scoped_ptr is used when the object must be deleted because no one owns it.
+		// The object could be a regular object or one derived from QObject.
+		// In the case of QObject it must be explicitly deleted because it has no parent.
+		//
+		// Note: Apparently the Qt memory management system can detect if an object
+		// (derived from QObject) has already been deleted (prematurely) and avoid a double-delete.
+		// It's a nice safeguard in case of a programming error, but it shouldn't be relied upon.
+		//
+
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;
 
-		GPlatesGui::AnimationController d_animation_controller;
-		GPlatesGui::FullScreenMode d_full_screen_mode;
+		//! The state targeted by geometry operation canvas tools and displayed in task panel.
+		boost::scoped_ptr<GPlatesCanvasTools::GeometryOperationState> d_geometry_operation_state_ptr;
+
+		//! The state targeted by canvas tools that modify geometry and displayed in task panel.
+		boost::scoped_ptr<GPlatesCanvasTools::ModifyGeometryState> d_modify_geometry_state;
+
+		//! The state targeted by measure distance canvas tool and displayed in task panel.
+		boost::scoped_ptr<GPlatesCanvasTools::MeasureDistanceState> d_measure_distance_state_ptr;
+
+		//! The selected canvas tool state.
+		boost::scoped_ptr<GPlatesGui::CanvasToolWorkflows> d_canvas_tool_workflows;
+
+		//! For cloning a feature.
+		boost::scoped_ptr<GPlatesViewOperations::CloneOperation> d_clone_operation_ptr;
+
+		//! For deleting a feature.
+		boost::scoped_ptr<GPlatesViewOperations::DeleteFeatureOperation> d_delete_feature_operation_ptr;
+
+
+		/**
+		 * Manages all the major dialogs that would otherwise clutter up ViewportWindow.
+		 *
+		 * NOTE: This is one of the first data members other data members rely on it and
+		 * its constructor doesn't initialise any dialog so its creation has few dependencies.
+		 */
+		QPointer<GPlatesGui::Dialogs> d_dialogs_ptr;
+
+		//! Handles transitions to/from fullscreen mode.
+		QPointer<GPlatesGui::FullScreenMode> d_full_screen_mode;
 
 		//! Manages the icons in the status bar
-		boost::scoped_ptr<GPlatesGui::TrinketArea> d_trinket_area_ptr;
+		QPointer<GPlatesGui::TrinketArea> d_trinket_area_ptr;
 
 		/**
 		 * Tracks changes to saved/unsaved status of files and manages user notification of same.
@@ -853,158 +494,49 @@ namespace GPlatesQtWidgets
 		QPointer<GPlatesGui::SessionMenu> d_session_menu_ptr;
 
 		/**
+		 * Encapsulates logic regarding the Import submenu of the File menu.
+		 */
+		QPointer<GPlatesGui::ImportMenu> d_import_menu_ptr;
+
+		/**
+		 * Allows Python scripts to be run from the Utilities menu.
+		 */
+		QPointer<GPlatesGui::UtilitiesMenu> d_utilities_menu_ptr;
+
+		/**
 		 * Deals with all the micro-management of the ViewportWindow's docks.
 		 */
 		QPointer<GPlatesGui::DockState> d_dock_state_ptr;
 
 		/**
-		 * Manages all the major dialogs that would otherwise clutter up ViewportWindow.
+		 * A tabbed search results dock widget.
 		 */
-		QPointer<GPlatesGui::Dialogs> d_dialogs_ptr;
+		QPointer<SearchResultsDockWidget> d_search_results_dock_ptr;
 
 		/**
-		 * A temporary position for the new DockWidget for Clicked/Topology
-		 * while I refactor it out of ViewportWindow --JC
+		 * A tabbed toolbar for the canvas tools.
 		 */
-		QPointer<DockWidget> d_info_dock_ptr;
-
-		ReconstructionViewWidget *d_reconstruction_view_widget_ptr;
-
-		/*
-		* Fixme: some of the scoped pointers below are not necessary since
-		* most of the dialogs have a parent which means Qt will handle the memory for us.
-		* There is no "double free" problem because the boost::scoped_ptr goes out of scope first, 
-		* when the pointer has been deleted by boost::scoped_ptr, Qt memory management system can
-		* detect the deletion of the pointer because the object is derived from QObject.
-		*/
-		boost::scoped_ptr<AboutDialog> d_about_dialog_ptr;
-		boost::scoped_ptr<AnimateDialog> d_animate_dialog_ptr;
-		boost::scoped_ptr<AssignReconstructionPlateIdsDialog> d_assign_recon_plate_ids_dialog_ptr;
-		boost::scoped_ptr<CalculateReconstructionPoleDialog> d_calculate_reconstruction_pole_dialog_ptr;
-		boost::scoped_ptr<ChooseFeatureCollectionDialog> d_choose_feature_collection_dialog_ptr;
-		boost::scoped_ptr<ColouringDialog> d_colouring_dialog_ptr;
-		DrawStyleDialog* d_draw_style_dialog_ptr;
-		boost::scoped_ptr<ConnectWFSDialog> d_connect_wfs_dialog_ptr;
-		boost::scoped_ptr<ConfigureGraticulesDialog> d_configure_graticules_dialog_ptr;
-		boost::scoped_ptr<ConfigureTextOverlayDialog> d_configure_text_overlay_dialog_ptr;
-		boost::scoped_ptr<CreateVGPDialog> d_create_vgp_dialog_ptr;
-		boost::scoped_ptr<ExportAnimationDialog> d_export_animation_dialog_ptr;
-		boost::scoped_ptr<FeaturePropertiesDialog> d_feature_properties_dialog_ptr;
-		boost::scoped_ptr<ManageFeatureCollectionsDialog> d_manage_feature_collections_dialog_ptr;
-		MeshDialog* d_mesh_dialog_ptr;
-		boost::scoped_ptr<ReadErrorAccumulationDialog> d_read_errors_dialog_ptr;
-		boost::scoped_ptr<SetCameraViewpointDialog> d_set_camera_viewpoint_dialog_ptr;
-		boost::scoped_ptr<SetProjectionDialog> d_set_projection_dialog_ptr;
-		boost::scoped_ptr<ShapefileAttributeViewerDialog> d_shapefile_attribute_viewer_dialog_ptr;
-		boost::scoped_ptr<SpecifyAnchoredPlateIdDialog> d_specify_anchored_plate_id_dialog_ptr;
-		boost::scoped_ptr<SymbolManagerDialog> d_symbol_manager_dialog_ptr;
-		boost::scoped_ptr<TotalReconstructionPolesDialog> d_total_reconstruction_poles_dialog_ptr;
-		boost::scoped_ptr<TotalReconstructionSequencesDialog> d_total_reconstruction_sequences_dialog_ptr;
-		boost::scoped_ptr<VisualLayersDialog> d_visual_layers_dialog_ptr;
-
-		boost::shared_ptr<SaveFileDialog> d_export_geometry_snapshot_dialog_ptr;
-
-		boost::scoped_ptr<GPlatesGui::ChooseCanvasTool> d_choose_canvas_tool;
-
-		boost::scoped_ptr<GPlatesViewOperations::GeometryBuilder> d_digitise_geometry_builder;
-
-		boost::scoped_ptr<GPlatesViewOperations::GeometryBuilder> d_focused_feature_geometry_builder;
-
-		// Depends on d_digitise_geometry_builder, d_focused_feature_geometry_builder,
-		// d_geometry_operation_target.
-		boost::scoped_ptr<GPlatesViewOperations::GeometryOperationTarget> d_geometry_operation_target;
-
-		boost::scoped_ptr<GPlatesViewOperations::CloneOperation> d_clone_operation_ptr;
-
-		boost::scoped_ptr<GPlatesViewOperations::DeleteFeatureOperation> d_delete_feature_operation_ptr;
-
-		boost::scoped_ptr<GPlatesViewOperations::ActiveGeometryOperation> d_active_geometry_operation;
-
-		// Depends on d_focused_feature_geometry_builder.
-		boost::scoped_ptr<GPlatesViewOperations::FocusedFeatureGeometryManipulator>
-				d_focused_feature_geom_manipulator;
-
-		// Depends on d_geometry_operation_target, d_choose_canvas_tool.
-		boost::scoped_ptr<GPlatesGui::EnableCanvasTool> d_enable_canvas_tool;
-
-		// Depends on d_geometry_operation_target.
-		boost::scoped_ptr<GPlatesCanvasTools::MeasureDistanceState> d_measure_distance_state_ptr;
-
-		//! The data behind the Topology Sections table.
-		boost::scoped_ptr<GPlatesGui::TopologySectionsContainer> d_topology_boundary_sections_container_ptr;
-		boost::scoped_ptr<GPlatesGui::TopologySectionsContainer> d_topology_interior_sections_container_ptr;
+		QPointer<CanvasToolBarDockWidget> d_canvas_tools_dock_ptr;
 
 		/**
-		 * Manages the 'Topology Sections' table, and is parented to it - Qt will clean up when the table disappears!
-		 * Depends on d_topology_sections_container_ptr.
+		 * The central widget in the main window containing everything except the menubar,
+		 * search results dock and canvas tools dock.
 		 */
-		boost::scoped_ptr<GPlatesGui::TopologySectionsTable> d_topology_sections_table_ptr;
-
-		//! The 'Clicked' table. Should be in ViewState. Depends on FeatureFocus.		
-		boost::scoped_ptr<GPlatesGui::FeatureTableModel> d_feature_table_model_ptr;
-
-		//
-		// Tool Adapter and Choice for the Globe.
-		//
-
-		// Depends on d_topology_sections_container_ptr, d_feature_table_model_ptr,
-		// d_measure_distance_state_ptr, d_feature_table_model_ptr, d_feature_properties_dialog,
-		// d_geometry_operation_target, d_active_geometry_operation, d_choose_canvas_tool.
-		boost::scoped_ptr<GPlatesGui::GlobeCanvasToolChoice> d_globe_canvas_tool_choice_ptr;
-		// Depends on d_globe_canvas_tool_choice_ptr.
-		boost::scoped_ptr<GPlatesGui::GlobeCanvasToolAdapter> d_globe_canvas_tool_adapter_ptr;
-
-		//
-		// Tool Adapter and Choice for the Map.
-		//
-
-		// Depends on d_topology_sections_container_ptr, d_feature_table_model_ptr,
-		// d_measure_distance_state_ptr, d_feature_table_model_ptr, d_feature_properties_dialog,
-		// d_geometry_operation_target, d_active_geometry_operation, d_choose_canvas_tool.
-		boost::scoped_ptr<GPlatesGui::MapCanvasToolChoice> d_map_canvas_tool_choice_ptr;
-		// Depends on d_map_canvas_tool_choice_ptr.
-		boost::scoped_ptr<GPlatesGui::MapCanvasToolAdapter> d_map_canvas_tool_adapter_ptr;
-
+		QPointer<ReconstructionViewWidget> d_reconstruction_view_widget_ptr;
 
 		/**
 		 * Depends on FeatureFocus, Model, topology sections container.
 		 * Is parented by 'this' - Qt will clean up when 'this' is destroyed.
 		 */
-		TaskPanel *d_task_panel_ptr;
+		QPointer<TaskPanel> d_task_panel_ptr;
 
-		/**
-		 * The last canvas tool explicitly chosen by the user (i.e. not the
-		 * result of an automatic switch of canvas tool by GPlates code).
-		 *
-		 * In particular, this is used to switch back to the Click Geometry tool
-		 * after the user clicks "Clone Geometry" and completes the "Create
-		 * Feature" dialog; this is because "Clone Geometry" automatically takes
-		 * the user to a digitisation tool.
-		 */
-		GPlatesCanvasTools::CanvasToolType::Value d_canvas_tool_last_chosen_by_user;
+		QPointer<QAction> d_undo_action_ptr;
 
-		QAction *d_undo_action_ptr;
-
-		QAction *d_redo_action_ptr;
+		QPointer<QAction> d_redo_action_ptr;
 
 		// To prevent infinite loops.
 		bool d_inside_update_undo_action_tooltip;
 		bool d_inside_update_redo_action_tooltip;
-
-		/**
-		 * Encapsulates logic regarding the Import submenu of the File menu.
-		 */
-		GPlatesGui::ImportMenu *d_import_menu_ptr;
-
-		/**
-		 * Allows Python scripts to be run from the Utilities menu.
-		 */
-		GPlatesGui::UtilitiesMenu *d_utilities_menu_ptr;
-
-		/**
-		 * Controller for external communication.
-		 */
-		boost::scoped_ptr<GPlatesUtils::ExternalSyncController> d_external_sync_controller_ptr;	
 	};
 }
 

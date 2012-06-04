@@ -180,7 +180,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 		GPlatesGui::FileIOFeedback &gui_file_io_feedback,
 		GPlatesPresentation::ViewState &view_state, 
 		QWidget *parent_):
-	QDialog(parent_, Qt::Window),
+	GPlatesDialog(parent_, Qt::Window),
 	d_file_format_registry(view_state.get_application_state().get_feature_collection_file_format_registry()),
 	d_file_state(file_state),
 	d_feature_collection_file_io(&feature_collection_file_io),

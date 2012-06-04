@@ -34,7 +34,7 @@ GPlatesQtWidgets::ChooseFeatureCollectionDialog::ChooseFeatureCollectionDialog(
 		GPlatesAppLogic::FeatureCollectionFileState &file_state,
 		GPlatesAppLogic::FeatureCollectionFileIO &file_io,
 		QWidget *parent_) :
-	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
+	GPlatesDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_choose_widget(
 			new ChooseFeatureCollectionWidget(
 				reconstruct_method_registry,

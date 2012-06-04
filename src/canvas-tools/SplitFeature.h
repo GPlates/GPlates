@@ -31,12 +31,21 @@
 #include "CanvasTool.h"
 
 #include "model/FeatureHandle.h"
+#include "model/ModelInterface.h"
+
 #include "presentation/ViewState.h"
 
+#include "view-operations/RenderedGeometryCollection.h"
+
+
+namespace GPlatesCanvasTools
+{
+	class GeometryOperationState;
+}
 
 namespace GPlatesGui
 {
-	class ChooseCanvasTool;
+	class CanvasToolWorkflows;
 }
 
 namespace GPlatesQtWidgets
@@ -46,9 +55,8 @@ namespace GPlatesQtWidgets
 
 namespace GPlatesViewOperations
 {
-	class ActiveGeometryOperation;
+	class GeometryBuilder;
 	class SplitFeatureGeometryOperation;
-	class GeometryOperationTarget;
 	class QueryProximityThreshold;
 	class RenderedGeometryCollection;
 }
@@ -73,21 +81,23 @@ namespace GPlatesCanvasTools
 		create(
 				const status_bar_callback_type &status_bar_callback,
 				GPlatesGui::FeatureFocus &feature_focus,
-				GPlatesPresentation::ViewState &view_state,
-				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+				GPlatesModel::ModelInterface model_interface,
+				GPlatesViewOperations::GeometryBuilder &geometry_builder,
+				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
+				GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold)
 		{
 			return new SplitFeature(
 					status_bar_callback,
 					feature_focus,
-					view_state,
-					geometry_operation_target,
-					active_geometry_operation,
+					model_interface,
+					geometry_builder,
+					geometry_operation_state,
 					rendered_geometry_collection,
-					choose_canvas_tool,
+					main_rendered_layer_type,
+					canvas_tool_workflows,
 					query_proximity_threshold);
 		}
 
@@ -135,31 +145,18 @@ namespace GPlatesCanvasTools
 		SplitFeature(
 				const status_bar_callback_type &status_bar_callback,
 				GPlatesGui::FeatureFocus &feature_focus,
-				GPlatesPresentation::ViewState &view_state,
-				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+				GPlatesModel::ModelInterface model_interface,
+				GPlatesViewOperations::GeometryBuilder &geometry_builder,
+				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
+				GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold);
-
-		GPlatesGui::FeatureFocus *d_feature_focus;
-
-		GPlatesPresentation::ViewState *d_view_state;
-		/**
-		 * Used to set main rendered layer.
-		 */
-		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
-		
-		/**
-		 * Used to select target of our insert vertex operation.
-		 */
-		GPlatesViewOperations::GeometryOperationTarget *d_geometry_operation_target;
 
 		/**
 		 * Digitise operation for inserting a vertex into digitised or focused feature geometry.
 		 */
-		boost::scoped_ptr<GPlatesViewOperations::SplitFeatureGeometryOperation>
-			d_split_feature_geometry_operation;
+		boost::scoped_ptr<GPlatesViewOperations::SplitFeatureGeometryOperation> d_split_feature_geometry_operation;
 	};
 }
 

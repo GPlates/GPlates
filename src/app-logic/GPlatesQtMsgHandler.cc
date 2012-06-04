@@ -32,6 +32,10 @@
 
 #include "file-io/LogToFileHandler.h"
 #include "file-io/ErrorOpeningFileForWritingException.h"
+
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
 #include "utils/Environment.h"
 
 
@@ -112,17 +116,42 @@ GPlatesAppLogic::GPlatesQtMsgHandler::qt_message_handler(
 	instance().handle_qt_message(msg_type, msg);
 
 	// Call the original Qt message handler if there is one.
-	if (s_prev_msg_handler)	{
+	if (s_prev_msg_handler)
+	{
 		s_prev_msg_handler(msg_type, msg);
 	}
 }
 
 
-void
+GPlatesAppLogic::GPlatesQtMsgHandler::message_handler_id_type
 GPlatesAppLogic::GPlatesQtMsgHandler::add_handler(
 		boost::shared_ptr<GPlatesAppLogic::GPlatesQtMsgHandler::MessageHandler> handler)
 {
-	d_message_handlers.push_back(handler);
+	// Add the message handler to the list.
+	d_message_handler_list.push_back(handler);
+
+	// Get iterator to list element just added.
+	message_handle_list_type::iterator handler_iter = d_message_handler_list.end();
+	--handler_iter;
+
+	// Reference to message handler just added.
+	const message_handler_id_type handler_id = d_message_handler_iterators.size();
+	d_message_handler_iterators.push_back(handler_iter);
+
+	return handler_id;
+}
+
+
+void
+GPlatesAppLogic::GPlatesQtMsgHandler::remove_handler(
+		message_handler_id_type handler_id)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			handler_id < d_message_handler_iterators.size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	message_handle_list_type::iterator handler_iter = d_message_handler_iterators[handler_id];
+	d_message_handler_list.erase(handler_iter);
 }
 
 
@@ -131,9 +160,10 @@ GPlatesAppLogic::GPlatesQtMsgHandler::handle_qt_message(
 		QtMsgType msg_type,
 		const char *msg)
 {
-	BOOST_FOREACH(boost::shared_ptr<MessageHandler> handler, d_message_handlers)
+	BOOST_FOREACH(boost::shared_ptr<MessageHandler> handler, d_message_handler_list)
 	{
-		if (handler) {
+		if (handler)
+		{
 			handler->handle_qt_message(msg_type, msg);
 		}
 	}

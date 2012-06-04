@@ -440,7 +440,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::TotalReconstructionSequenc
 		GPlatesAppLogic::FeatureCollectionFileState &file_state,
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
-	QDialog(parent_, Qt::Window),
+	GPlatesDialog(parent_, Qt::Window),
 	d_file_state_ptr(&file_state),
 	d_search_index_ptr(new TotalReconstructionSequencesSearchIndex()),
 	d_current_item(0),

@@ -31,38 +31,60 @@
 #include "ClickGeometry.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/TopologyInternalUtils.h"
+
 #include "gui/AddClickedGeometriesToFeatureTable.h"
+
 #include "maths/PointOnSphere.h"
+
 #include "qt-widgets/FeaturePropertiesDialog.h"
+
 #include "view-operations/RenderedGeometryCollection.h"
+#include "view-operations/RenderedGeometryUtils.h"
 
 
 GPlatesCanvasTools::ClickGeometry::ClickGeometry(
 		const status_bar_callback_type &status_bar_callback,
+		GPlatesViewOperations::GeometryBuilder &focused_feature_geometry_builder,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+		GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
 		GPlatesQtWidgets::ViewportWindow &view_state_,
 		GPlatesGui::FeatureTableModel &clicked_table_model_,
 		GPlatesQtWidgets::FeaturePropertiesDialog &fp_dialog_,
 		GPlatesGui::FeatureFocus &feature_focus_,
 		GPlatesAppLogic::ApplicationState &application_state_) :
 	CanvasTool(status_bar_callback),
-	d_rendered_geom_collection(&rendered_geom_collection),
-	d_view_state_ptr(&view_state_),
-	d_clicked_table_model_ptr(&clicked_table_model_),
-	d_fp_dialog_ptr(&fp_dialog_),
-	d_feature_focus_ptr(&feature_focus_),
-	d_reconstruct_graph(application_state_.get_reconstruct_graph())
+	d_focused_feature_geometry_builder(focused_feature_geometry_builder),
+	d_rendered_geom_collection(rendered_geom_collection),
+	d_main_rendered_layer_type(main_rendered_layer_type),
+	d_view_state_ptr(view_state_),
+	d_clicked_table_model_ptr(clicked_table_model_),
+	d_fp_dialog_ptr(fp_dialog_),
+	d_feature_focus_ptr(feature_focus_),
+	d_reconstruct_graph(application_state_.get_reconstruct_graph()),
+	d_filter_reconstruction_geometry_predicate(
+			&GPlatesGui::default_filter_reconstruction_geometry_predicate)
 {  }
 
 
 void
 GPlatesCanvasTools::ClickGeometry::handle_activation()
 {
-	set_status_bar_message(QT_TR_NOOP("Click a geometry to choose a feature. Shift+click to query immediately."));
+	// Activate the focused feature geometry highlight main rendered layer.
+	d_rendered_geom_collection.set_main_layer_active(
+			GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER);
 
-	// Activate the geometry focus hightlight layer.
-	d_rendered_geom_collection->set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER);
+	set_status_bar_message(QT_TR_NOOP("Click a geometry to choose a feature. Shift+click to query immediately."));
+}
+
+
+void
+GPlatesCanvasTools::ClickGeometry::handle_deactivation()
+{
+	// Deactivate the focused feature geometry highlight main rendered layer.
+	d_rendered_geom_collection.set_main_layer_active(
+			GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER,
+			false/*active*/);
 }
 
 
@@ -72,13 +94,20 @@ GPlatesCanvasTools::ClickGeometry::handle_left_click(
 		bool is_on_earth,
 		double proximity_inclusion_threshold)
 {
-	GPlatesGui::add_clicked_geometries_to_feature_table(
+	d_clicked_geom_seq.clear();
+
+	GPlatesGui::get_clicked_geometries(
+			d_clicked_geom_seq,
 			point_on_sphere,
 			proximity_inclusion_threshold,
-			*d_view_state_ptr,
-			*d_clicked_table_model_ptr,
-			*d_feature_focus_ptr,
-			*d_rendered_geom_collection,
+			d_rendered_geom_collection,
+			d_filter_reconstruction_geometry_predicate);
+
+	GPlatesGui::add_clicked_geometries_to_feature_table(
+			d_clicked_geom_seq,
+			d_view_state_ptr,
+			d_clicked_table_model_ptr,
+			d_feature_focus_ptr,
 			d_reconstruct_graph);
 }
 
@@ -95,7 +124,8 @@ GPlatesCanvasTools::ClickGeometry::handle_shift_left_click(
 			proximity_inclusion_threshold);
 
 	// If there is a feature focused, we'll assume that the user wants to look at it in detail.
-	if (d_feature_focus_ptr->is_valid()) {
+	if (d_feature_focus_ptr.is_valid())
+	{
 		fp_dialog().choose_query_widget_and_open();
 	}
 }

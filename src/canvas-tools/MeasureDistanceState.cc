@@ -27,12 +27,13 @@
 
 #include "MeasureDistanceState.h"
 
+#include "canvas-tools/GeometryOperationState.h"
+
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/MathsUtils.h"
 #include "maths/SphericalArea.h"
 
 #include "view-operations/GeometryBuilder.h"
-#include "view-operations/GeometryOperationTarget.h"
 #include "view-operations/GeometryType.h"
 #include "view-operations/RenderedGeometryLayer.h"
 
@@ -122,38 +123,28 @@ GPlatesCanvasTools::MeasureDistanceState::DEFAULT_RADIUS_OF_EARTH = 6378.1;
 
 GPlatesCanvasTools::MeasureDistanceState::MeasureDistanceState(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target) :
-	d_main_layer_ptr(rendered_geom_collection.get_main_rendered_layer(
-				GPlatesViewOperations::RenderedGeometryCollection::MEASURE_DISTANCE_LAYER)),
-	d_highlight_layer_ptr(rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::MEASURE_DISTANCE_LAYER)),
-	d_label_layer_ptr(rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::MEASURE_DISTANCE_LAYER)),
+		GPlatesCanvasTools::GeometryOperationState &geometry_operation_state) :
 	d_radius(GPlatesCanvasTools::MeasureDistanceState::DEFAULT_RADIUS_OF_EARTH),
-	d_geometry_operation_target_ptr(&geometry_operation_target),
+	d_geometry_operation_state_ptr(&geometry_operation_state),
 	d_current_geometry_builder_ptr(NULL),
 	d_is_active(false),
 	d_is_quick_measure_highlighted(false),
 	d_is_feature_measure_highlighted(false)
 {
-	make_signal_slot_connections_for_geometry_operation_target();
-	d_highlight_layer_ptr->set_active(true);
-	d_label_layer_ptr->set_active(true);
+	make_signal_slot_connections_for_geometry_operation_state();
 }
 
 
 void
-GPlatesCanvasTools::MeasureDistanceState::make_signal_slot_connections_for_geometry_operation_target()
+GPlatesCanvasTools::MeasureDistanceState::make_signal_slot_connections_for_geometry_operation_state()
 {
-	// listen to GeometryOperationTarget for changes to which GeometryBuilder we are using
+	// listen to GeometryOperationState for changes to which GeometryBuilder we are using
 	QObject::connect(
-			d_geometry_operation_target_ptr,
+			d_geometry_operation_state_ptr,
 			SIGNAL(switched_geometry_builder(
-					GPlatesViewOperations::GeometryOperationTarget &,
 					GPlatesViewOperations::GeometryBuilder *)),
 			this,
 			SLOT(switch_geometry_builder(
-					GPlatesViewOperations::GeometryOperationTarget &,
 					GPlatesViewOperations::GeometryBuilder *)));
 }
 
@@ -190,7 +181,6 @@ GPlatesCanvasTools::MeasureDistanceState::disconnect_signal_slot_connections_for
 
 void
 GPlatesCanvasTools::MeasureDistanceState::switch_geometry_builder(
-		GPlatesViewOperations::GeometryOperationTarget &,
 		GPlatesViewOperations::GeometryBuilder *geometry_builder)
 {
 	disconnect_signal_slot_connections_for_geometry_builder();
@@ -300,10 +290,7 @@ GPlatesCanvasTools::MeasureDistanceState::handle_activation()
 {
 	d_is_active = true;
 
-	// get and process the current geometry builder
-	d_current_geometry_builder_ptr =
-		d_geometry_operation_target_ptr->get_and_set_current_geometry_builder_for_newly_activated_tool(
-				GPlatesCanvasTools::CanvasToolType::MEASURE_DISTANCE);
+	// Process the current geometry builder
 	make_signal_slot_connections_for_geometry_builder();
 	process_geometry_builder(d_current_geometry_builder_ptr);
 

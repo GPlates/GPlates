@@ -35,7 +35,7 @@ GPlatesViewOperations::GeometryBuilderInsertPointUndoCommand::redo()
 	// Add point to geometry builder.
 	// This will also cause GeometryBuilder to emit a signal to
 	// its observers.
-	d_undo_operation = d_geometry_builder->insert_point_into_current_geometry(
+	d_undo_operation = d_geometry_builder.insert_point_into_current_geometry(
 		d_point_index_to_insert_at,
 		d_oriented_pos_on_globe);
 }
@@ -50,7 +50,7 @@ GPlatesViewOperations::GeometryBuilderInsertPointUndoCommand::undo()
 
 	// The undo operation will also cause GeometryBuilder to emit
 	// a signal to its observers.
-	d_geometry_builder->undo(d_undo_operation);
+	d_geometry_builder.undo(d_undo_operation);
 }
 
 
@@ -64,7 +64,7 @@ GPlatesViewOperations::GeometryBuilderRemovePointUndoCommand::redo()
 	// Remove point from geometry builder.
 	// This will also cause GeometryBuilder to emit a signal to
 	// its observers.
-	d_undo_operation = d_geometry_builder->remove_point_from_current_geometry(
+	d_undo_operation = d_geometry_builder.remove_point_from_current_geometry(
 		d_point_index_to_remove_at);
 }
 
@@ -78,7 +78,7 @@ GPlatesViewOperations::GeometryBuilderRemovePointUndoCommand::undo()
 
 	// The undo operation will also cause GeometryBuilder to emit
 	// a signal to its observers.
-	d_geometry_builder->undo(d_undo_operation);
+	d_geometry_builder.undo(d_undo_operation);
 }
 
 
@@ -98,7 +98,7 @@ GPlatesViewOperations::GeometryBuilderMovePointUndoCommand::redo()
 		secondary_points.push_back(d_oriented_pos_on_globe);
 	}
 
-	d_undo_operation = d_geometry_builder->move_point_in_current_geometry(
+	d_undo_operation = d_geometry_builder.move_point_in_current_geometry(
 		d_point_index_to_move,
 		d_oriented_pos_on_globe,
 		d_secondary_geometries,
@@ -117,7 +117,7 @@ GPlatesViewOperations::GeometryBuilderMovePointUndoCommand::undo()
 
 	// The undo operation will also cause GeometryBuilder to emit
 	// a signal to its observers.
-	d_geometry_builder->undo(d_undo_operation);
+	d_geometry_builder.undo(d_undo_operation);
 }
 
 
@@ -185,7 +185,7 @@ GPlatesViewOperations::GeometryBuilderSetGeometryTypeUndoCommand::redo()
 	// Set geometry type to build in geometry builder.
 	// This will also cause GeometryBuilder to emit a signal to
 	// its observers.
-	d_undo_operation = d_geometry_builder->set_geometry_type_to_build(
+	d_undo_operation = d_geometry_builder.set_geometry_type_to_build(
 		d_geom_type_to_build);
 }
 
@@ -199,7 +199,7 @@ GPlatesViewOperations::GeometryBuilderSetGeometryTypeUndoCommand::undo()
 
 	// The undo operation will also cause GeometryBuilder to emit
 	// a signal to its observers.
-	d_geometry_builder->undo(d_undo_operation);
+	d_geometry_builder.undo(d_undo_operation);
 }
 
 
@@ -210,7 +210,7 @@ GPlatesViewOperations::GeometryBuilderClearAllGeometries::redo()
 	// until end of current scope block.
 	RenderedGeometryCollection::UpdateGuard update_guard;
 
-	d_undo_operation = d_geometry_builder->clear_all_geometries();
+	d_undo_operation = d_geometry_builder.clear_all_geometries();
 }
 
 
@@ -221,7 +221,7 @@ GPlatesViewOperations::GeometryBuilderClearAllGeometries::undo()
 	// until end of current scope block.
 	RenderedGeometryCollection::UpdateGuard update_guard;
 
-	d_geometry_builder->undo(d_undo_operation);
+	d_geometry_builder.undo(d_undo_operation);
 }
 
 

@@ -32,10 +32,17 @@
 
 #include "model/FeatureHandle.h"
 
+#include "view-operations/RenderedGeometryCollection.h"
+
+
+namespace GPlatesCanvasTools
+{
+	class GeometryOperationState;
+}
 
 namespace GPlatesGui
 {
-	class ChooseCanvasTool;
+	class CanvasToolWorkflows;
 }
 
 namespace GPlatesQtWidgets
@@ -45,11 +52,9 @@ namespace GPlatesQtWidgets
 
 namespace GPlatesViewOperations
 {
-	class ActiveGeometryOperation;
 	class DeleteVertexGeometryOperation;
-	class GeometryOperationTarget;
+	class GeometryBuilder;
 	class QueryProximityThreshold;
-	class RenderedGeometryCollection;
 }
 
 namespace GPlatesCanvasTools
@@ -74,18 +79,20 @@ namespace GPlatesCanvasTools
 		const non_null_ptr_type
 		create(
 				const status_bar_callback_type &status_bar_callback,
-				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+				GPlatesViewOperations::GeometryBuilder &geometry_builder,
+				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
+				GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold)
 		{
 			return new DeleteVertex(
 					status_bar_callback,
-					geometry_operation_target,
-					active_geometry_operation,
+					geometry_builder,
+					geometry_operation_state,
 					rendered_geometry_collection,
-					choose_canvas_tool,
+					main_rendered_layer_type,
+					canvas_tool_workflows,
 					query_proximity_threshold);
 		}
 
@@ -120,27 +127,17 @@ namespace GPlatesCanvasTools
 		 */
 		DeleteVertex(
 				const status_bar_callback_type &status_bar_callback,
-				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+				GPlatesViewOperations::GeometryBuilder &geometry_builder,
+				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
+				GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold);
-
-		/**
-		 * Used to set main rendered layer.
-		 */
-		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
-		
-		/**
-		 * Used to select target of our delete vertex operation.
-		 */
-		GPlatesViewOperations::GeometryOperationTarget *d_geometry_operation_target;
 
 		/**
 		 * Digitise operation for deleting a vertex from digitised or focused feature geometry.
 		 */
-		boost::scoped_ptr<GPlatesViewOperations::DeleteVertexGeometryOperation>
-			d_delete_vertex_geometry_operation;
+		boost::scoped_ptr<GPlatesViewOperations::DeleteVertexGeometryOperation> d_delete_vertex_geometry_operation;
 	};
 }
 

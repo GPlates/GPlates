@@ -28,23 +28,27 @@
 
 #include <boost/scoped_ptr.hpp>
 
-#include "canvas-tools/CanvasToolType.h"
 #include "CanvasTool.h"
-#include "view-operations/GeometryType.h"
 
+#include "view-operations/GeometryType.h"
+#include "view-operations/RenderedGeometryCollection.h"
+
+
+namespace GPlatesCanvasTools
+{
+	class GeometryOperationState;
+}
 
 namespace GPlatesGui
 {
-	class ChooseCanvasTool;
+	class CanvasToolWorkflows;
 }
 
 namespace GPlatesViewOperations
 {
-	class ActiveGeometryOperation;
 	class AddPointGeometryOperation;
-	class GeometryOperationTarget;
+	class GeometryBuilder;
 	class QueryProximityThreshold;
-	class RenderedGeometryCollection;
 }
 
 namespace GPlatesCanvasTools
@@ -67,21 +71,21 @@ namespace GPlatesCanvasTools
 		create(
 				const status_bar_callback_type &status_bar_callback,
 				GPlatesViewOperations::GeometryType::Value geom_type,
-				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+				GPlatesViewOperations::GeometryBuilder &geometry_builder,
+				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-				GPlatesCanvasTools::CanvasToolType::Value canvas_tool_type,
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
+				GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold)
 		{
 			return new DigitiseGeometry(
 					status_bar_callback,
 					geom_type,
-					geometry_operation_target,
-					active_geometry_operation,
+					geometry_builder,
+					geometry_operation_state,
 					rendered_geometry_collection,
-					choose_canvas_tool,
-					canvas_tool_type,
+					main_rendered_layer_type,
+					canvas_tool_workflows,
 					query_proximity_threshold);
 		}
 
@@ -112,39 +116,24 @@ namespace GPlatesCanvasTools
 		DigitiseGeometry(
 				const status_bar_callback_type &status_bar_callback,
 				GPlatesViewOperations::GeometryType::Value geom_type,
-				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+				GPlatesViewOperations::GeometryBuilder &geometry_builder,
+				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
-				GPlatesCanvasTools::CanvasToolType::Value canvas_tool_type,
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
+				GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 				const GPlatesViewOperations::QueryProximityThreshold &query_proximity_threshold);	
 
 		/**
-		 * Used to set main rendered layer.
-		 */
-		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
-		
-		/**
-		 * Used to select target of our add point operation.
-		 */
-		GPlatesViewOperations::GeometryOperationTarget *d_geometry_operation_target;
-
-		/**
-		* The type of this canvas tool.
-		*/
-		GPlatesCanvasTools::CanvasToolType::Value d_canvas_tool_type;
-
-		/**
-		 * This is the type of geometry this particular DigitiseGeometry tool
-		 * should default to.
+		 * This is the type of geometry this particular DigitiseGeometry tool should default to.
 		 */
 		GPlatesViewOperations::GeometryType::Value d_default_geom_type;
+
+		GPlatesViewOperations::GeometryBuilder &d_geometry_builder;
 
 		/**
 		 * Digitise operation for adding a point to digitised geometry.
 		 */
-		boost::scoped_ptr<GPlatesViewOperations::AddPointGeometryOperation>
-			d_add_point_geometry_operation;
+		boost::scoped_ptr<GPlatesViewOperations::AddPointGeometryOperation> d_add_point_geometry_operation;
 	};
 }
 

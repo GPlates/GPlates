@@ -29,6 +29,7 @@
 
 #include "feature-visitors/GeometryTypeFinder.h"
 
+#include "gui/CanvasToolWorkflows.h"
 #include "gui/FeatureFocus.h"
 
 #include "model/FeatureHandle.h"
@@ -40,51 +41,52 @@
 void
 GPlatesViewOperations::CloneOperation::clone_focused_geometry()
 {
-	// There might not be a geometry in the focused feature geometry builder.
-	// This can happen when the user selects a topological plate boundary - it is not
-	// inserted into the builder because it shouldn't be modified (because it references
-	// other features).
-	//
-	// FIXME: we should disable the 'clone geometry' button in this case so that this
-	// code never gets called (and so the user doesn't think they can clone a topology).
-	//
-	// Actually it probably should be possible to clone the geometry of a topological polygon -
-	// the only reason it's prevented in FocusedFeatureGeometryManipulator is so tools
+	// It's currently possible to clone the geometry of a topological polygon -
+	// the only reason it's prevented (in FocusedFeatureGeometryManipulator) is so tools
 	// like MoveVertex, etc don't try to move a vertex in a topology which makes little sense.
-	// This would require some significant changes though so it'll have to wait a while.
-	//
-	// For now simply refuse to clone geometry if the focused feature geometry builder
-	// contains no geometry.
-	if (!d_focused_feature_geometry_builder->has_geometry())
+	// But cloning a reconstruction-time snapshot of the dynamic polygon is fine.
+	// Also a resolved topological network can be cloned but only the boundary is cloned.
+
+	if (!d_focused_feature_geometry_builder.has_geometry())
 	{
 		return;
 	}
 
-	GPlatesViewOperations::GeometryType::Value type = 
-		d_focused_feature_geometry_builder->get_actual_type_of_current_geometry();
+	const GPlatesViewOperations::GeometryType::Value geometry_type = 
+		d_focused_feature_geometry_builder.get_actual_type_of_current_geometry();
 
-	switch (type)
+	// NOTE: We access the focused feature geometry builder *before* we switch to the
+	// digitise workflow because once we switch there's no longer a feature in focus and hence
+	// there's no longer any geometry in the focused feature geometry builder.
+	d_digitise_geometry_builder.set_geometry(
+			geometry_type,
+			d_focused_feature_geometry_builder.get_geometry_point_begin(0),
+			d_focused_feature_geometry_builder.get_geometry_point_end(0));
+
+	switch (geometry_type)
 	{
-	case GPlatesViewOperations::GeometryType::POLYLINE: 
-		d_choose_canvas_tool->choose_digitise_polyline_tool();		
+	case GPlatesViewOperations::GeometryType::POLYLINE:
+		d_canvas_tool_workflows.choose_canvas_tool(
+				GPlatesGui::CanvasToolWorkflows::WORKFLOW_DIGITISATION,
+				GPlatesGui::CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYLINE);
 		break;
 
 	case GPlatesViewOperations::GeometryType::MULTIPOINT:
-		d_choose_canvas_tool->choose_digitise_multipoint_tool();
+		d_canvas_tool_workflows.choose_canvas_tool(
+				GPlatesGui::CanvasToolWorkflows::WORKFLOW_DIGITISATION,
+				GPlatesGui::CanvasToolWorkflows::TOOL_DIGITISE_NEW_MULTIPOINT);
 		break;
 
 	case GPlatesViewOperations::GeometryType::POLYGON:
-		d_choose_canvas_tool->choose_digitise_polygon_tool();	
+		d_canvas_tool_workflows.choose_canvas_tool(
+				GPlatesGui::CanvasToolWorkflows::WORKFLOW_DIGITISATION,
+				GPlatesGui::CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYGON);
 		break;
 
 	default:
 		// A digitise geometry tool has never been chosen yet, so do nothing.
 		return;
 	}
-	d_digitise_geometry_builder->set_geometry(
-			type,
-			d_focused_feature_geometry_builder->get_geometry_point_begin(0),
-			d_focused_feature_geometry_builder->get_geometry_point_end(0));
 }
 
 void 
@@ -137,9 +139,9 @@ GPlatesViewOperations::CloneOperation::clone_focused_feature(
 	//create the geometry property and append to feature
 	GPlatesModel::ModelUtils::append_property_value_to_feature(
 		*GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
-		d_focused_feature_geometry_builder->get_geometry_point_begin(0), 
-		d_focused_feature_geometry_builder->get_geometry_point_end(0),
-		d_focused_feature_geometry_builder->get_actual_type_of_current_geometry()), 
+		d_focused_feature_geometry_builder.get_geometry_point_begin(0), 
+		d_focused_feature_geometry_builder.get_geometry_point_end(0),
+		d_focused_feature_geometry_builder.get_actual_type_of_current_geometry()), 
 		(*geo_property_iter)->property_name(),
 		new_feature_ref);
 #endif

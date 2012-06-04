@@ -23,28 +23,38 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_VIEWOPERATIONS_ACTIVEGEOMETRYOPERATION_H
-#define GPLATES_VIEWOPERATIONS_ACTIVEGEOMETRYOPERATION_H
+#ifndef GPLATES_CANVASTOOLS_GEOMETRYOPERATIONSTATE_H
+#define GPLATES_CANVASTOOLS_GEOMETRYOPERATIONSTATE_H
 
 #include <QObject>
 
 
 namespace GPlatesViewOperations
 {
+	class GeometryBuilder;
 	class GeometryOperation;
+}
 
+namespace GPlatesCanvasTools
+{
 	/**
-	 * Keeps track of which @a GeometryOperation is currently active.
+	 * Keeps track of which @a GeometryOperation is currently active and
+	 * which @a GeometryBuilder contains the geometry.
+	 *
+	 * This is used to let @a ModifyGeometryWidget and @a DigitisationWidget, in the task panel,
+	 * deal with several canvas tools that can modify either digitised or focused feature geometry.
+	 *
 	 * Only one geometry operation is active at any time.
 	 */
-	class ActiveGeometryOperation :
+	class GeometryOperationState :
 			public QObject
 	{
 		Q_OBJECT
 
 	public:
-		ActiveGeometryOperation() :
-			d_active_geometry_operation(NULL)
+		GeometryOperationState() :
+			d_active_geometry_operation(NULL),
+			d_active_geometry_builder(NULL)
 		{  }
 
 
@@ -55,7 +65,7 @@ namespace GPlatesViewOperations
 		 */
 		void
 		set_active_geometry_operation(
-				GeometryOperation *geometry_operation)
+				GPlatesViewOperations::GeometryOperation *geometry_operation)
 		{
 			// If we're activating a new geometry operation then emit a signal.
 			if (geometry_operation != d_active_geometry_operation)
@@ -69,8 +79,7 @@ namespace GPlatesViewOperations
 
 		/**
 		 * Since only one @a GeometryOperation is active at any time this
-		 * method let's listeners know that there's currently no active
-		 * @a GeometryOperation.
+		 * method let's listeners know that there's currently no active @a GeometryOperation.
 		 * This method should be called by a @a GeometryOperation derived class.
 		 */
 		void
@@ -86,6 +95,43 @@ namespace GPlatesViewOperations
 		}
 
 
+		/**
+		 * The newly activated @a GeometryBuilder calls this to indicate it's active.
+		 * If the active @a GeometryBuilder has switched then notify listeners
+		 * of our @a switched_geometry_builder signal.
+		 */
+		void
+		set_active_geometry_builder(
+				GPlatesViewOperations::GeometryBuilder *geometry_builder)
+		{
+			// If we're activating a new geometry builder then emit a signal.
+			if (geometry_builder != d_active_geometry_builder)
+			{
+				d_active_geometry_builder = geometry_builder;
+
+				emit switched_geometry_builder(geometry_builder);
+			}
+		}
+
+
+		/**
+		 * Since only one @a GeometryBuilder is active at any time this
+		 * method let's listeners know that there's currently no active @a GeometryBuilder.
+		 * This method should be called by a @a GeometryBuilder derived class.
+		 */
+		void
+		set_no_active_geometry_builder()
+		{
+			// If we're activating a new geometry builder then emit a signal.
+			if (NULL != d_active_geometry_builder)
+			{
+				d_active_geometry_builder = NULL;
+
+				emit switched_geometry_builder(NULL);
+			}
+		}
+
+
 	signals:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
@@ -94,17 +140,26 @@ namespace GPlatesViewOperations
 		/**
 		 * The geometry operation emitting signals has changed.
 		 * Only one geometry operation is active as any time.
-		 * @a geometry_operation is NULL if no @a GeometryOperation
-		 * is currently activated.
+		 * @a geometry_operation is NULL if no @a GeometryOperation is currently activated.
 		 */
 		void
 		switched_geometry_operation(
 				GPlatesViewOperations::GeometryOperation *geometry_operation);
 
+		/**
+		 * The geometry builder emitting signals has changed.
+		 * Only one geometry builder is active as any time.
+		 * @a geometry_builder is NULL if no @a GeometryBuilder is currently activated.
+		 */
+		void
+		switched_geometry_builder(
+				GPlatesViewOperations::GeometryBuilder *geometry_builder);
+
 
 	private:
-		GeometryOperation *d_active_geometry_operation;
+		GPlatesViewOperations::GeometryOperation *d_active_geometry_operation;
+		GPlatesViewOperations::GeometryBuilder *d_active_geometry_builder;
 	};
 }
 
-#endif // GPLATES_VIEWOPERATIONS_ACTIVEGEOMETRYOPERATION_H
+#endif // GPLATES_CANVASTOOLS_GEOMETRYOPERATIONSTATE_H

@@ -27,13 +27,16 @@
 #define GPLATES_QTWIDGETS_LICENSEDIALOG_H
 
 #include <QDialog>
+
 #include "InformationDialogUi.h"
+
+#include "GPlatesDialog.h"
 
 
 namespace GPlatesQtWidgets
 {
 	class LicenseDialog: 
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_InformationDialog 
 	{
 		Q_OBJECT

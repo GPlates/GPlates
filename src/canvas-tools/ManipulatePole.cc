@@ -51,10 +51,6 @@ GPlatesCanvasTools::ManipulatePole::handle_activation()
 {
 	set_status_bar_message(QT_TR_NOOP("Drag or Shift+drag the current geometry to modify its reconstruction pole."));
 
-	// Activate the pole manipulation rendered layer.
-	d_rendered_geom_collection->set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_LAYER);
-
 	d_pole_widget_ptr->activate();
 }
 

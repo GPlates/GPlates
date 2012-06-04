@@ -31,10 +31,10 @@
 #include <QPointer>
 #include <QTimer>
 
-#include "app-logic/ApplicationState.h"
 #include "GPlatesDialog.h"
-
 #include "LogDialogUi.h"
+
+#include "app-logic/ApplicationState.h"
 
 
 namespace GPlatesGui

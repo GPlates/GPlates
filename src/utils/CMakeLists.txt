@@ -31,8 +31,6 @@ set(srcs
     DeferredCallEvent.h
     Environment.cc
     Environment.h
-    ExternalSyncController.cc
-    ExternalSyncController.h
     FeatureUtils.cc
     FeatureUtils.h
     FunctionTypes.h

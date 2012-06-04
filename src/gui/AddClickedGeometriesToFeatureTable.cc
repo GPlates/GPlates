@@ -37,6 +37,7 @@
 
 #include "presentation/ViewState.h"
 
+#include "qt-widgets/SearchResultsDockWidget.h"
 #include "qt-widgets/ViewportWindow.h"
 
 #include "view-operations/RenderedGeometryProximity.h"
@@ -44,19 +45,13 @@
 
 
 void
-GPlatesGui::add_clicked_geometries_to_feature_table(
-		const GPlatesMaths::PointOnSphere &point_on_sphere,
+GPlatesGui::get_clicked_geometries(
+		GPlatesViewOperations::RenderedGeometryUtils::reconstruction_geom_seq_type &clicked_geom_seq,
+		const GPlatesMaths::PointOnSphere &click_point_on_sphere,
 		double proximity_inclusion_threshold,
-		GPlatesQtWidgets::ViewportWindow &view_state,
-		GPlatesGui::FeatureTableModel &clicked_table_model,
-		GPlatesGui::FeatureFocus &feature_focus,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-		const GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 		filter_reconstruction_geometry_predicate_type filter_recon_geom_predicate)
 {
-	// Clear the 'Clicked' FeatureTableModel, ready to be populated (or not).
-	clicked_table_model.clear();
-
 	//
 	// See if any interesting reconstruction geometries were clicked by the user.
 	//
@@ -70,28 +65,39 @@ GPlatesGui::add_clicked_geometries_to_feature_table(
 	// layers) then they don't get tested.
 	// Only what's visible gets tested which is what we want.
 	GPlatesMaths::ProximityCriteria criteria(
-			point_on_sphere, proximity_inclusion_threshold);
+			click_point_on_sphere, proximity_inclusion_threshold);
 	GPlatesViewOperations::test_proximity(
 			sorted_hits,
 			rendered_geometry_collection,
 			criteria);
 
-	// The sequence of ReconstructionGeometry's clicked by the user.
-	GPlatesViewOperations::RenderedGeometryUtils::reconstruction_geom_seq_type new_recon_geom_seq;
-
 	// Get any ReconstructionGeometry objects that are referenced by the clicked
 	// RenderedGeometry objects.
 	GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries(
-			new_recon_geom_seq, sorted_hits);
+			clicked_geom_seq, sorted_hits);
 
 	// Remove those reconstruction geometries that the caller is not interested in.
 	// Remove reconstruction geometry if it does not satisfy the caller's predicate.
-	new_recon_geom_seq.erase(
-			std::remove_if(new_recon_geom_seq.begin(), new_recon_geom_seq.end(),
+	clicked_geom_seq.erase(
+			std::remove_if(clicked_geom_seq.begin(), clicked_geom_seq.end(),
 					!boost::lambda::bind(filter_recon_geom_predicate, boost::lambda::_1)),
-			new_recon_geom_seq.end());
+			clicked_geom_seq.end());
+}
 
-	if (new_recon_geom_seq.empty())
+
+void
+GPlatesGui::add_clicked_geometries_to_feature_table(
+		const GPlatesViewOperations::RenderedGeometryUtils::reconstruction_geom_seq_type &clicked_geom_seq,
+		GPlatesQtWidgets::ViewportWindow &view_state,
+		GPlatesGui::FeatureTableModel &clicked_table_model,
+		GPlatesGui::FeatureFocus &feature_focus,
+		const GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+		bool highlight_first_clicked_feature_in_table)
+{
+	// Clear the 'Clicked' FeatureTableModel, ready to be populated (or not).
+	clicked_table_model.clear();
+
+	if (clicked_geom_seq.empty())
 	{
 		// None of the hits were interesting to us so clear the currently focused feature.
 		feature_focus.unset_focus();
@@ -102,8 +108,7 @@ GPlatesGui::add_clicked_geometries_to_feature_table(
 	// Add the interesting geometries to the feature table.
 	//
 
-	clicked_table_model.begin_insert_features(
-			0, static_cast<int>(new_recon_geom_seq.size()) - 1);
+	clicked_table_model.begin_insert_features(0, static_cast<int>(clicked_geom_seq.size()) - 1);
 
 	// The sequence of ReconstructionGeometry we are going to add to.
 	GPlatesGui::FeatureTableModel::geometry_sequence_type &clicked_table_recon_geom_seq =
@@ -111,8 +116,8 @@ GPlatesGui::add_clicked_geometries_to_feature_table(
 
 	// Add the reconstruction geometries to the clicked table model.
 	std::transform(
-			new_recon_geom_seq.begin(),
-			new_recon_geom_seq.end(),
+			clicked_geom_seq.begin(),
+			clicked_geom_seq.end(),
 			std::inserter(
 					clicked_table_recon_geom_seq,
 					// Add to the beginning of the current geometry sequence.
@@ -128,17 +133,32 @@ GPlatesGui::add_clicked_geometries_to_feature_table(
 	clicked_table_model.end_insert_features();
 
 	// Give the user some useful feedback in the status bar.
-	if (new_recon_geom_seq.size() == 1)
+	if (clicked_geom_seq.size() == 1)
 	{
 		view_state.status_message(QObject::tr("Clicked 1 geometry."));
 	}
 	else
 	{
 		view_state.status_message(
-				QObject::tr("Clicked %1 geometries.").arg(new_recon_geom_seq.size()));
+				QObject::tr("Clicked %1 geometries.").arg(clicked_geom_seq.size()));
 	}
 
-	view_state.highlight_first_clicked_feature_table_row();
+	if (highlight_first_clicked_feature_in_table)
+	{
+		view_state.search_results_dock_widget().highlight_first_clicked_feature_table_row();
+	}
+	else
+	{
+		// We want to highlight the currently focused feature.
+		// However it's possible the clicked geometries (just added above) are old ReconstructionGeometry
+		// objects that need to be updated to the current ReconstructionGeometry's for the current
+		// reconstruction time.
+		// We need to update them otherwise the focused feature geometry might not be found in
+		// the updated clicked table.
+		clicked_table_model.handle_rendered_geometry_collection_update();
+
+		view_state.search_results_dock_widget().highlight_focused_feature_in_table(feature_focus);
+	}
 }
 
 

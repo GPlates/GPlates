@@ -472,14 +472,24 @@ namespace
 				coordinates_iterator_ranges.end());
 	}
 
-	
-	class GzipFactory
+
+	template <typename T/*unused*/>
+	class GzipCreationPolicy
 	{
 	public:
+		static
 		GPlatesFileIO::ExternalProgram *
 		create_instance()
 		{
 			return new GPlatesFileIO::ExternalProgram("gzip", "gzip --version");
+		}
+
+		static
+		void
+		destroy_instance(
+				GPlatesFileIO::ExternalProgram *external_program)
+		{
+			boost::checked_delete(external_program);
 		}
 	};
 }
@@ -488,7 +498,7 @@ namespace
 const GPlatesFileIO::ExternalProgram &
 GPlatesFileIO::GpmlOnePointSixOutputVisitor::gzip_program()
 {
-	return GPlatesUtils::Singleton<ExternalProgram, GzipFactory>::instance();
+	return GPlatesUtils::Singleton<ExternalProgram, GzipCreationPolicy>::instance();
 }
 
 

@@ -41,6 +41,11 @@
 #include "UndoRedo.h"
 
 
+namespace GPlatesCanvasTools
+{
+	class GeometryOperationState;
+}
+
 namespace GPlatesMaths
 {
 	class PointOnSphere;
@@ -48,16 +53,13 @@ namespace GPlatesMaths
 
 namespace GPlatesGui
 {
-	class ChooseCanvasTool;
+	class CanvasToolWorkflows;
 }
 
 namespace GPlatesViewOperations
 {
-	class ActiveGeometryOperation;
 	class GeometryBuilder;
-	class GeometryOperationTarget;
 	class QueryProximityThreshold;
-	class RenderedGeometryCollection;
 	class RenderedGeometryLayer;
 	struct RenderedGeometryProximityHit;
 
@@ -73,21 +75,19 @@ namespace GPlatesViewOperations
 
 	public:
 		InsertVertexGeometryOperation(
-				GeometryOperationTarget &geometry_operation_target,
-				ActiveGeometryOperation &active_geometry_operation,
-				RenderedGeometryCollection *rendered_geometry_collection,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				GeometryBuilder &geometry_builder,
+				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
+				RenderedGeometryCollection &rendered_geometry_collection,
+				RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
+				GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 				const QueryProximityThreshold &query_proximity_threshold);
 
 		/**
-		 * Activate this operation and attach to specified @a GeometryBuilder
-		 * and render into specified main rendered layer.
+		 * Activate this operation.
 		 */
 		virtual
 		void
-		activate(
-				GeometryBuilder *,
-				RenderedGeometryCollection::MainLayerType main_layer_type);
+		activate();
 
 		//! Deactivate this operation.
 		virtual
@@ -115,6 +115,7 @@ namespace GPlatesViewOperations
 		geometry_builder_stopped_updating_geometry();
 
 	private:
+
 		//! Enumeration for the closest end point of the geometry to the insertion point.
 		enum ClosestEndPoint
 		{
@@ -125,27 +126,22 @@ namespace GPlatesViewOperations
 		/**
 		 * This is used to build geometry. We insert vertices with it.
 		 */
-		GeometryBuilder *d_geometry_builder;
-
-		/**
-		 * Used by undo/redo.
-		 */
-		GeometryOperationTarget *d_geometry_operation_target;
+		GeometryBuilder &d_geometry_builder;
 
 		/**
 		 * We call this when we activate/deactivate.
 		 */
-		ActiveGeometryOperation *d_active_geometry_operation;
+		GPlatesCanvasTools::GeometryOperationState &d_geometry_operation_state;
 
 		/**
 		 * This is where we render our geometries and activate our render layer.
 		 */
-		RenderedGeometryCollection *d_rendered_geometry_collection;
+		RenderedGeometryCollection &d_rendered_geometry_collection;
 
 		/**
 		 * The main rendered layer we're currently rendering into.
 		 */
-		RenderedGeometryCollection::MainLayerType d_main_layer_type;
+		RenderedGeometryCollection::MainLayerType d_main_rendered_layer_type;
 
 		/**
 		 * Rendered geometry layer used for line segments.
@@ -175,12 +171,12 @@ namespace GPlatesViewOperations
 		 * Used by undo/redo to make sure appropriate tool is active
 		 * when the undo/redo happens.
 		 */
-		GPlatesGui::ChooseCanvasTool *d_choose_canvas_tool;
+		GPlatesGui::CanvasToolWorkflows &d_canvas_tool_workflows;
 
 		/**
 		 * Used to query the proximity threshold based on position on globe.
 		 */
-		const QueryProximityThreshold *d_query_proximity_threshold;
+		const QueryProximityThreshold &d_query_proximity_threshold;
 
 		/**
 		* Insert a vertex on the specified line segment.

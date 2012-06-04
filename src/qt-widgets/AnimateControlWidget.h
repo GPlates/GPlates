@@ -39,8 +39,6 @@ namespace GPlatesGui
 
 namespace GPlatesQtWidgets
 {
-	class ViewportWindow;		// ViewportWindow for pop_up_animate_dialog().
-
 	/**
 	 * This widget resides inside a QDockWidget. The dock is usually hidden
 	 * from view, but can pop up and sit in the top dock slot if the user

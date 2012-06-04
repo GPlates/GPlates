@@ -112,7 +112,7 @@ namespace GPlatesGui
 		/**
 		 * The layer of rendered geometries which is used for highlighting.
 		 */
-		GPlatesViewOperations::RenderedGeometryLayer *d_highlight_layer_ptr;
+		GPlatesViewOperations::RenderedGeometryLayer *d_geometry_focus_highlight_layer_ptr;
 
 		/**
 		 * A reference to the viewstate's feature-type-to-symbol-map

@@ -315,7 +315,7 @@ GPlatesGui::Globe::paint_vector_output(
 
 	// Turn off rendering of digitisation layer.
 	d_rendered_geom_collection.set_main_layer_active(
-			GPlatesViewOperations::RenderedGeometryCollection::DIGITISATION_LAYER,
+			GPlatesViewOperations::RenderedGeometryCollection::DIGITISATION_CANVAS_TOOL_WORKFLOW_LAYER,
 			false);
 
 	// Draw the rendered geometries in the depth range [0, 0.7].

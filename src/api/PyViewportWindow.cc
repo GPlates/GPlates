@@ -22,21 +22,28 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+
 #include <sstream>
 
 #include "PythonUtils.h"
 #include "PyFeature.h"
+
 #include "global/CompilerWarnings.h"
 #include "global/python.h"
+
 #include "gui/AnimationController.h"
 #include "gui/FeatureFocus.h"
 
-#include "presentation/Application.h"
-#include "qt-widgets/ReconstructionViewWidget.h"
-#include "qt-widgets/SceneView.h"
 #include "maths/InvalidLatLonException.h"
 #include "maths/LatLonPoint.h"
+
+#include "presentation/Application.h"
+
+#include "qt-widgets/ReconstructionViewWidget.h"
+#include "qt-widgets/SceneView.h"
+
 #include "utils/FeatureUtils.h"
+
 
 #if !defined(GPLATES_NO_PYTHON)
 namespace bp = boost::python;
@@ -47,9 +54,9 @@ namespace GPlatesApi
 	{
 	public:
 		ViewportWindow() :
-			d_viewport(GPlatesPresentation::Application::instance()->get_viewport_window()),
+			d_viewport(GPlatesPresentation::Application::instance().get_main_window()),
 			d_scene_view(d_viewport.reconstruction_view_widget().active_view()),
-			d_zoom(GPlatesPresentation::Application::instance()->get_view_state().get_viewport_zoom())
+			d_zoom(GPlatesPresentation::Application::instance().get_view_state().get_viewport_zoom())
 		{  }
 
 		void
@@ -178,9 +185,9 @@ namespace GPlatesApi
 		{
 			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::set_focus, this, feature));
 
-			GPlatesPresentation::Application* app = GPlatesPresentation::Application::instance();
+			GPlatesPresentation::Application &app = GPlatesPresentation::Application::instance();
 			//set focus
-			app->get_view_state().get_feature_focus().set_focus(GPlatesModel::FeatureHandle::weak_ref(feature));
+			app.get_view_state().get_feature_focus().set_focus(GPlatesModel::FeatureHandle::weak_ref(feature));
 
 			boost::optional<const GPlatesMaths::LatLonPoint> point = GPlatesGui::locate_focus();
 			if(point)
@@ -193,9 +200,9 @@ namespace GPlatesApi
 		{
 			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::set_focus_by_id, this, id));
 			
-			GPlatesPresentation::Application* app = GPlatesPresentation::Application::instance();
+			GPlatesPresentation::Application &app = GPlatesPresentation::Application::instance();
 			std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> files =
-				app->get_application_state().get_feature_collection_file_state().get_loaded_files();
+				app.get_application_state().get_feature_collection_file_state().get_loaded_files();
 			
 			BOOST_FOREACH(GPlatesAppLogic::FeatureCollectionFileState::file_reference& file_ref, files)
 			{
@@ -209,14 +216,6 @@ namespace GPlatesApi
 				}
 			}
 			qWarning() << QString("Cannot found the feature by id: %1").arg(QString(boost::python::extract<const char*>(id)));
-		}
-
-		void
-		set_time(const double time)
-		{			
-			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::set_time, this, time));
-
-			d_viewport.set_time(time);
 		}
 
 	private:
@@ -248,7 +247,6 @@ export_main_window()
 		.def("set_zoom_percent", &ViewportWindow::set_zoom_percent)
 		.def("set_focus", &ViewportWindow::set_focus_by_id)
 		.def("set_focus", &ViewportWindow::set_focus)
-		.def("set_time", &ViewportWindow::set_time)
 		;
 }
 #endif

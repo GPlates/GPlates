@@ -274,9 +274,7 @@ namespace GPlatesGui
 
 		
 		/**
-		 * Sneaky method to find the ManageFeatureCollectionsDialog via
-		 * ViewportWindow and the Qt object tree. Means we don't have
-		 * to pass yet more things in through the constructor.
+		 * Returns the ManageFeatureCollectionsDialog via ViewportWindow.
 		 */
 		GPlatesQtWidgets::ManageFeatureCollectionsDialog &
 		manage_feature_collections_dialog();

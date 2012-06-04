@@ -55,8 +55,6 @@
 #include "model/types.h"
 #include "model/FeatureHandle.h"
 
-#include "presentation/ViewState.h"
-
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GeoTimeInstant.h"
@@ -66,6 +64,7 @@
 #include "utils/QtFormattingUtils.h"
 #include "utils/UnicodeStringUtils.h"
 
+#include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryUtils.h"
 
 
@@ -608,11 +607,12 @@ GPlatesGui::FeatureTableModel::ReconstructionGeometryRow::ReconstructionGeometry
 
 
 GPlatesGui::FeatureTableModel::FeatureTableModel(
-		GPlatesPresentation::ViewState &view_state,
+		FeatureFocus &feature_focus,
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		QObject *parent_):
 	QAbstractTableModel(parent_),
-	d_feature_focus_ptr(&view_state.get_feature_focus()),
-	d_rendered_geometry_collection(view_state.get_rendered_geometry_collection())
+	d_feature_focus_ptr(&feature_focus),
+	d_rendered_geometry_collection(rendered_geometry_collection)
 {
 	// Get notified whenever the rendered geometry collection gets updated.
 	QObject::connect(

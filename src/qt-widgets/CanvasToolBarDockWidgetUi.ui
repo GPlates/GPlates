@@ -1,0 +1,642 @@
+<ui version="4.0" >
+ <class>CanvasToolBarDockWidget</class>
+ <widget class="QDockWidget" name="CanvasToolBarDockWidget" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>91</width>
+    <height>507</height>
+   </rect>
+  </property>
+  <property name="sizePolicy" >
+   <sizepolicy vsizetype="Preferred" hsizetype="Maximum" >
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="features" >
+   <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::DockWidgetVerticalTitleBar</set>
+  </property>
+  <property name="allowedAreas" >
+   <set>Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
+  </property>
+  <widget class="QWidget" name="dock_canvas_tools_contents" >
+   <property name="sizePolicy" >
+    <sizepolicy vsizetype="Preferred" hsizetype="Maximum" >
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout" >
+    <property name="spacing" >
+     <number>0</number>
+    </property>
+    <property name="margin" >
+     <number>0</number>
+    </property>
+    <item>
+     <widget class="QTabWidget" name="tab_widget_canvas_tools" >
+      <property name="sizePolicy" >
+       <sizepolicy vsizetype="Expanding" hsizetype="Maximum" >
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="tabPosition" >
+       <enum>QTabWidget::West</enum>
+      </property>
+      <property name="currentIndex" >
+       <number>0</number>
+      </property>
+      <property name="iconSize" >
+       <size>
+        <width>35</width>
+        <height>35</height>
+       </size>
+      </property>
+      <widget class="QWidget" name="tab_feature_inspection" >
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Preferred" hsizetype="Preferred" >
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <attribute name="title" >
+        <string/>
+       </attribute>
+       <attribute name="icon" >
+        <iconset resource="../qt-resources/qt_widgets.qrc" >
+         <normaloff>:/select_plate_35.png</normaloff>:/select_plate_35.png</iconset>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_2" >
+        <property name="spacing" >
+         <number>0</number>
+        </property>
+        <property name="sizeConstraint" >
+         <enum>QLayout::SetDefaultConstraint</enum>
+        </property>
+        <property name="margin" >
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QWidget" native="1" name="feature_inspection_toolbar_placeholder" >
+          <property name="sizePolicy" >
+           <sizepolicy vsizetype="Minimum" hsizetype="Preferred" >
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="feature_inspection_spacer" >
+          <property name="orientation" >
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0" >
+           <size>
+            <width>20</width>
+            <height>463</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_digitisation" >
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Preferred" hsizetype="Preferred" >
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <attribute name="title" >
+        <string/>
+       </attribute>
+       <attribute name="icon" >
+        <iconset resource="../qt-resources/qt_widgets.qrc" >
+         <normaloff>:/digitise_polyline_35.png</normaloff>:/digitise_polyline_35.png</iconset>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_3" >
+        <property name="spacing" >
+         <number>0</number>
+        </property>
+        <property name="margin" >
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QWidget" native="1" name="digitisation_toolbar_placeholder" >
+          <property name="sizePolicy" >
+           <sizepolicy vsizetype="Minimum" hsizetype="Preferred" >
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="digitisation_spacer" >
+          <property name="orientation" >
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0" >
+           <size>
+            <width>20</width>
+            <height>463</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_topology" >
+       <attribute name="title" >
+        <string/>
+       </attribute>
+       <attribute name="icon" >
+        <iconset resource="../qt-resources/qt_widgets.qrc" >
+         <normaloff>:/topology_blank_35.png</normaloff>:/topology_blank_35.png</iconset>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_4" >
+        <property name="spacing" >
+         <number>0</number>
+        </property>
+        <property name="margin" >
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QWidget" native="1" name="topology_toolbar_placeholder" >
+          <property name="sizePolicy" >
+           <sizepolicy vsizetype="Minimum" hsizetype="Preferred" >
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="topology_spacer" >
+          <property name="orientation" >
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0" >
+           <size>
+            <width>20</width>
+            <height>498</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_pole_manipulation" >
+       <attribute name="title" >
+        <string/>
+       </attribute>
+       <attribute name="icon" >
+        <iconset resource="../qt-resources/qt_widgets.qrc" >
+         <normaloff>:/plate_pole_modification_35.png</normaloff>:/plate_pole_modification_35.png</iconset>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_5" >
+        <property name="spacing" >
+         <number>0</number>
+        </property>
+        <property name="margin" >
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QWidget" native="1" name="pole_manipulation_toolbar_placeholder" >
+          <property name="sizePolicy" >
+           <sizepolicy vsizetype="Minimum" hsizetype="Preferred" >
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="pole_manipulation_spacer" >
+          <property name="orientation" >
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0" >
+           <size>
+            <width>20</width>
+            <height>498</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_small_circle" >
+       <property name="sizePolicy" >
+        <sizepolicy vsizetype="Preferred" hsizetype="Preferred" >
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <attribute name="title" >
+        <string/>
+       </attribute>
+       <attribute name="icon" >
+        <iconset resource="../qt-resources/qt_widgets.qrc" >
+         <normaloff>:/small_circle_35.png</normaloff>:/small_circle_35.png</iconset>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_6" >
+        <property name="spacing" >
+         <number>0</number>
+        </property>
+        <property name="margin" >
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QWidget" native="1" name="small_circle_toolbar_placeholder" >
+          <property name="sizePolicy" >
+           <sizepolicy vsizetype="Minimum" hsizetype="Preferred" >
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="small_circle_spacer" >
+          <property name="orientation" >
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0" >
+           <size>
+            <width>20</width>
+            <height>498</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <action name="action_Drag_Globe" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>true</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/drag_globe_35.png</normaloff>:/drag_globe_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>&amp;Drag Globe</string>
+   </property>
+   <property name="toolTip" >
+    <string>Drag Globe  D</string>
+   </property>
+   <property name="shortcut" >
+    <string>D</string>
+   </property>
+  </action>
+  <action name="action_Zoom_Globe" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/zoom_globe_35.png</normaloff>:/zoom_globe_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>&amp;Zoom In</string>
+   </property>
+   <property name="toolTip" >
+    <string>Zoom In  Z</string>
+   </property>
+   <property name="shortcut" >
+    <string>Z</string>
+   </property>
+  </action>
+  <action name="action_Measure_Distance" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/measure_distance_35.png</normaloff>:/measure_distance_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Mea&amp;sure</string>
+   </property>
+   <property name="toolTip" >
+    <string>Measure  S</string>
+   </property>
+   <property name="shortcut" >
+    <string>S</string>
+   </property>
+  </action>
+  <action name="action_Click_Geometry" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/focus_feature_35.png</normaloff>:/focus_feature_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Choose &amp;Feature</string>
+   </property>
+   <property name="iconText" >
+    <string>Choose &amp;Feature</string>
+   </property>
+   <property name="toolTip" >
+    <string>Choose Feature  F</string>
+   </property>
+   <property name="shortcut" >
+    <string>F</string>
+   </property>
+  </action>
+  <action name="action_Digitise_New_Polyline" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/digitise_polyline_35.png</normaloff>:/digitise_polyline_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Digitise New Poly&amp;line Geometry</string>
+   </property>
+   <property name="iconText" >
+    <string>Digitise New Poly&amp;line Geometry</string>
+   </property>
+   <property name="toolTip" >
+    <string>Digitise New Polyline Geometry  L</string>
+   </property>
+   <property name="shortcut" >
+    <string>L</string>
+   </property>
+  </action>
+  <action name="action_Digitise_New_MultiPoint" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/digitise_multipoint_35.png</normaloff>:/digitise_multipoint_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Digitise New &amp;Multi-point Geometry</string>
+   </property>
+   <property name="iconText" >
+    <string>Digitise New &amp;Multi-point Geometry</string>
+   </property>
+   <property name="toolTip" >
+    <string>Digitise New Multi-point Geometry  M</string>
+   </property>
+   <property name="shortcut" >
+    <string>M</string>
+   </property>
+  </action>
+  <action name="action_Digitise_New_Polygon" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/digitise_polygon_35.png</normaloff>:/digitise_polygon_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Digitise New Polygon &amp;Geometry</string>
+   </property>
+   <property name="iconText" >
+    <string>Digitise New Polygon &amp;Geometry</string>
+   </property>
+   <property name="toolTip" >
+    <string>Digitise New Polygon Geometry  G</string>
+   </property>
+   <property name="shortcut" >
+    <string>G</string>
+   </property>
+  </action>
+  <action name="action_Move_Geometry" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/move_geometry_35.png</normaloff>:/move_geometry_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Move Geometr&amp;y</string>
+   </property>
+   <property name="iconText" >
+    <string>Move Geometr&amp;y</string>
+   </property>
+   <property name="toolTip" >
+    <string>Move Geometry  Y</string>
+   </property>
+   <property name="shortcut" >
+    <string>Y</string>
+   </property>
+  </action>
+  <action name="action_Move_Vertex" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/move_vertex_35.png</normaloff>:/move_vertex_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Mo&amp;ve Vertex</string>
+   </property>
+   <property name="iconText" >
+    <string>Mo&amp;ve Vertex</string>
+   </property>
+   <property name="toolTip" >
+    <string>Move Vertex  V</string>
+   </property>
+   <property name="shortcut" >
+    <string>V</string>
+   </property>
+  </action>
+  <action name="action_Delete_Vertex" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/delete_vertex_35.png</normaloff>:/delete_vertex_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Delete Verte&amp;x</string>
+   </property>
+   <property name="iconText" >
+    <string>Delete Verte&amp;x</string>
+   </property>
+   <property name="toolTip" >
+    <string>Delete Vertex  X</string>
+   </property>
+   <property name="shortcut" >
+    <string>X</string>
+   </property>
+  </action>
+  <action name="action_Insert_Vertex" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/insert_vertex_35.png</normaloff>:/insert_vertex_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>&amp;Insert Vertex</string>
+   </property>
+   <property name="iconText" >
+    <string>&amp;Insert Vertex</string>
+   </property>
+   <property name="toolTip" >
+    <string>Insert Vertex  I</string>
+   </property>
+   <property name="shortcut" >
+    <string>I</string>
+   </property>
+  </action>
+  <action name="action_Split_Feature" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/split_geometry_35.png</normaloff>:/split_geometry_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Spli&amp;t Feature</string>
+   </property>
+   <property name="toolTip" >
+    <string>Split Feature  T</string>
+   </property>
+   <property name="shortcut" >
+    <string>T</string>
+   </property>
+  </action>
+  <action name="action_Manipulate_Pole" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/plate_pole_modification_35.png</normaloff>:/plate_pole_modification_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Modify Reconstruction &amp;Pole</string>
+   </property>
+   <property name="toolTip" >
+    <string>Modify Reconstruction Pole  P</string>
+   </property>
+   <property name="shortcut" >
+    <string>P</string>
+   </property>
+  </action>
+  <action name="action_Build_Topology" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/topology_build_35.png</normaloff>:/topology_build_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>&amp;Build New Topology</string>
+   </property>
+   <property name="iconText" >
+    <string>Build New Topology</string>
+   </property>
+   <property name="toolTip" >
+    <string>Build New Topology  B</string>
+   </property>
+   <property name="shortcut" >
+    <string>B</string>
+   </property>
+  </action>
+  <action name="action_Edit_Topology" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="checked" >
+    <bool>false</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/topology_edit_35.png</normaloff>:/topology_edit_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>&amp;Edit Topology Sections</string>
+   </property>
+   <property name="iconText" >
+    <string>Edit Topology Sections</string>
+   </property>
+   <property name="toolTip" >
+    <string>Edit Topology Sections  E</string>
+   </property>
+   <property name="shortcut" >
+    <string>E</string>
+   </property>
+  </action>
+  <action name="action_Create_Small_Circle" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="icon" >
+    <iconset resource="../qt-resources/qt_widgets.qrc" >
+     <normaloff>:/small_circle_35.png</normaloff>:/small_circle_35.png</iconset>
+   </property>
+   <property name="text" >
+    <string>Create Small &amp;Circle</string>
+   </property>
+   <property name="toolTip" >
+    <string>Create Small Circle  C</string>
+   </property>
+   <property name="shortcut" >
+    <string>C</string>
+   </property>
+  </action>
+ </widget>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
+ <connections/>
+</ui>

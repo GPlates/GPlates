@@ -33,7 +33,7 @@
 GPlatesQtWidgets::AnimateDialog::AnimateDialog(
 		GPlatesGui::AnimationController &animation_controller,
 		QWidget *parent_):
-	QDialog(parent_, Qt::Window),
+	GPlatesDialog(parent_, Qt::Window),
 	d_animation_controller_ptr(&animation_controller)
 {
 	setupUi(this);

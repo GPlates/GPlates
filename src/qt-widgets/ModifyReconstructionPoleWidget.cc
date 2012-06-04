@@ -97,6 +97,11 @@ void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::activate()
 {
 	d_is_active = true;
+
+	// Activate both rendered layers.
+	d_initial_geom_layer_ptr->set_active();
+	d_dragged_geom_layer_ptr->set_active();
+
 	set_focus(d_view_state_ptr->get_feature_focus());
 	draw_initial_geometries_at_activation();
 }
@@ -106,6 +111,10 @@ void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::deactivate()
 {
 	d_is_active = false;
+
+	// Deactivate both rendered layers.
+	d_initial_geom_layer_ptr->set_active(false);
+	d_dragged_geom_layer_ptr->set_active(false);
 }
 
 
@@ -784,8 +793,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 	if (d_reconstructed_feature_geometries.empty()) {
 		// That's pretty strange.  We expected at least one geometry here, or else, what's
 		// the user dragging?
-		std::cerr << "No initial geometries found ModifyReconstructionPoleWidget::populate_initial_geometries!"
-				<< std::endl;
+		qWarning() << "No initial geometries found ModifyReconstructionPoleWidget::populate_initial_geometries!";
 	}
 	
 }
@@ -996,20 +1004,16 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::create_child_rendered_layers()
 	// Create a rendered layer to draw the initial geometries.
 	d_initial_geom_layer_ptr =
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
 
 	// Create a rendered layer to draw the initial geometries.
 	// NOTE: this must be created second to get drawn on top.
 	d_dragged_geom_layer_ptr =
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
 
 	// In both cases above we store the returned object as a data member and it
 	// automatically destroys the created layer for us when 'this' object is destroyed.
-
-	// Activate both layers.
-	d_initial_geom_layer_ptr->set_active();
-	d_dragged_geom_layer_ptr->set_active();
 }
 
 

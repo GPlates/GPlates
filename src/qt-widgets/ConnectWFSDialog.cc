@@ -49,7 +49,11 @@
 
 
 GPlatesQtWidgets::ConnectWFSDialog::ConnectWFSDialog(
-		GPlatesAppLogic::ApplicationState& app_state):
+		GPlatesAppLogic::ApplicationState& app_state,
+		QWidget *parent_) :
+	GPlatesDialog(
+			parent_, 
+			Qt::Window),
 	d_app_state(app_state),
 	d_request_id(0),
 	d_httpRequestAborted(false)

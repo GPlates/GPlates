@@ -84,7 +84,7 @@ namespace
 
 GPlatesQtWidgets::SpecifyAnchoredPlateIdDialog::SpecifyAnchoredPlateIdDialog(
 		QWidget *parent_):
-	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
+	GPlatesDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
 	d_fill_menu(new QMenu(this))
 {
 	setupUi(this);

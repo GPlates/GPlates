@@ -41,7 +41,9 @@
 #include "ReconstructionPoleWidget.h"
 #include "TopologyToolsWidget.h"
 
+#include "gui/CanvasToolWorkflows.h"
 #include "gui/FeatureFocus.h"
+
 #include "presentation/ViewState.h"
 
 
@@ -111,15 +113,15 @@ namespace
 
 
 GPlatesQtWidgets::TaskPanel::TaskPanel(
-		GPlatesPresentation::ViewState &view_state,
 		GPlatesViewOperations::GeometryBuilder &digitise_geometry_builder,
-		GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-		GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+		GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
+		GPlatesCanvasTools::ModifyGeometryState &modify_geometry_state,
 		GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
-		ViewportWindow &viewport_window,
 		QAction *undo_action_ptr,
 		QAction *redo_action_ptr,
-		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+		GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
+		GPlatesPresentation::ViewState &view_state,
+		ViewportWindow &viewport_window,
 		QWidget *parent_):
 	QWidget(parent_),
 	d_stacked_widget_ptr(
@@ -128,7 +130,7 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 			new ActionButtonBox(5, 22, this)),
 	d_snap_nearby_vertices_widget_ptr(
 			new SnapNearbyVerticesWidget(
-				this,
+				modify_geometry_state,
 				view_state)),
 	d_clear_action(new QAction(this)),
 	d_feature_summary_widget_ptr(
@@ -138,16 +140,16 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	d_digitisation_widget_ptr(
 			new DigitisationWidget(
 				digitise_geometry_builder,
+				geometry_operation_state,
 				view_state,
 				viewport_window,
 				d_clear_action,
 				undo_action_ptr,
-				choose_canvas_tool,
+				canvas_tool_workflows,
 				this)),
 	d_modify_geometry_widget_ptr(
 			new ModifyGeometryWidget(
-				geometry_operation_target,
-				active_geometry_operation,
+				geometry_operation_state,
 				this)),
 	d_modify_reconstruction_pole_widget_ptr(
 			new ModifyReconstructionPoleWidget(
@@ -160,7 +162,7 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 				view_state,
 				viewport_window,
 				d_clear_action,
-				choose_canvas_tool,
+				canvas_tool_workflows,
 				this)),
 	d_measure_distance_widget_ptr(
 			new MeasureDistanceWidget(
@@ -420,9 +422,11 @@ GPlatesQtWidgets::TaskPanel::choose_digitisation_tab()
 
 
 void
-GPlatesQtWidgets::TaskPanel::choose_modify_geometry_tab()
+GPlatesQtWidgets::TaskPanel::choose_modify_geometry_tab(
+		bool enable_move_nearby_vertices)
 {
 	choose_tab(MODIFY_GEOMETRY);
+	enable_move_nearby_vertices_widget(enable_move_nearby_vertices);
 }
 
 
@@ -484,15 +488,3 @@ GPlatesQtWidgets::TaskPanel::enable_move_nearby_vertices_widget(
 	}
 
 }
-
-
-void
-GPlatesQtWidgets::TaskPanel::emit_vertex_data_changed_signal(
-		bool should_check_nearby_vertices, 
-		double threshold, 
-		bool should_use_plate_id, 
-		GPlatesModel::integer_plate_id_type plate_id)
-{
-	emit vertex_data_changed(should_check_nearby_vertices,threshold,should_use_plate_id,plate_id);
-}
-

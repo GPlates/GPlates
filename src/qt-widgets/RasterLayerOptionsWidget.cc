@@ -43,6 +43,7 @@
 
 #include "gui/ColourPaletteAdapter.h"
 #include "gui/CptColourPalette.h"
+#include "gui/Dialogs.h"
 
 #include "presentation/RasterVisualLayerParams.h"
 #include "presentation/VisualLayer.h"
@@ -236,7 +237,7 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_select_palette_filename_butto
 			return;
 		}
 
-		ReadErrorAccumulationDialog &read_errors_dialog = d_viewport_window->read_errors_dialog();
+		ReadErrorAccumulationDialog &read_errors_dialog = d_viewport_window->dialogs().read_error_accumulation_dialog();
 		GPlatesFileIO::ReadErrorAccumulation &read_errors = read_errors_dialog.read_errors();
 		GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
 

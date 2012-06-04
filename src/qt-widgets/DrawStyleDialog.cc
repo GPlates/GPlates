@@ -61,7 +61,7 @@
 GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 		GPlatesPresentation::ViewState &view_state,
 		QWidget* parent_) :
-	QDialog(parent_),
+	GPlatesDialog(parent_),
 	d_show_thumbnails(true),
 	d_repaint_flag(true),
 	d_view_state(view_state),
@@ -80,7 +80,7 @@ GPlatesQtWidgets::DrawStyleDialog::reset(
 	//qDebug() << "reseting draw style dialog...";
 	d_combo_box->set_selected_visual_layer(layer);
 	d_visual_layer = layer;
-	init_catagory_table();
+	init_category_table();
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock())
 	{
 		focus_style(locked_visual_layer->get_visual_layer_params()->style_adapter());
@@ -132,7 +132,7 @@ namespace
 void
 GPlatesQtWidgets::DrawStyleDialog::showEvent ( QShowEvent *  )
 {
-	init_catagory_table();
+	init_category_table();
 	d_visual_layer = d_combo_box->get_selected_visual_layer();
 	handle_layer_changed(d_visual_layer);
 }
@@ -214,12 +214,12 @@ GPlatesQtWidgets::DrawStyleDialog::focus_style(
 		return;
 	}
 
-	const GPlatesGui::StyleCatagory* cata = &style_->catagory();
+	const GPlatesGui::StyleCategory* cata = &style_->catagory();
 	int row_num = categories_table->rowCount();
 	for(int i=0; i<row_num; i++)
 	{
 		QTableWidgetItem* item = categories_table->item(i,0);
-		GPlatesGui::StyleCatagory* tmp_cat = static_cast<GPlatesGui::StyleCatagory*>(item->data(Qt::UserRole).value<void*>());
+		GPlatesGui::StyleCategory* tmp_cat = static_cast<GPlatesGui::StyleCategory*>(item->data(Qt::UserRole).value<void*>());
 		if(tmp_cat == cata)
 		{
 			categories_table->setCurrentItem(item, QItemSelectionModel::SelectCurrent);
@@ -243,7 +243,7 @@ GPlatesQtWidgets::DrawStyleDialog::focus_style(
 
 
 void
-GPlatesQtWidgets::DrawStyleDialog::init_catagory_table()
+GPlatesQtWidgets::DrawStyleDialog::init_category_table()
 {
 	categories_table->clear();
 	GPlatesGui::DrawStyleManager::CatagoryContainer& catas = d_style_mgr->all_catagories();
@@ -300,7 +300,7 @@ GPlatesQtWidgets::DrawStyleDialog::make_signal_slot_connections()
 
 #if defined(Q_OS_MAC)
 	QObject::connect(
-			&GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget().globe_and_map_widget(),
+			&GPlatesPresentation::Application::instance().get_main_window().reconstruction_view_widget().globe_and_map_widget(),
 			SIGNAL(repainted(bool)),
 			this,
 			SLOT(handle_main_repaint(bool)));
@@ -325,7 +325,7 @@ GPlatesQtWidgets::DrawStyleDialog::make_signal_slot_connections()
 			SLOT(handle_cfg_name_changed(const QString&)));
 
 	QObject::connect(
-			&GPlatesPresentation::Application::instance()->get_viewport_window().globe_canvas(),
+			&GPlatesPresentation::Application::instance().get_main_window().globe_canvas(),
 			SIGNAL(mouse_released_after_drag(
 					const GPlatesMaths::PointOnSphere &,
 					const GPlatesMaths::PointOnSphere &, bool,
@@ -337,7 +337,7 @@ GPlatesQtWidgets::DrawStyleDialog::make_signal_slot_connections()
 			SLOT(handle_release_after_drag()));
 
 	QObject::connect(
-			&GPlatesPresentation::Application::instance()->get_viewport_window().map_view(),
+			&GPlatesPresentation::Application::instance().get_main_window().map_view(),
 			SIGNAL(mouse_released_after_drag(const QPointF &,
 					bool, const QPointF &, bool, const QPointF &,
 					Qt::MouseButton, Qt::KeyboardModifiers)),
@@ -473,7 +473,7 @@ GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 	setupUi(this);
 	
 	d_globe_and_map_widget_ptr = 
-		GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget() \
+		GPlatesPresentation::Application::instance().get_main_window().reconstruction_view_widget() \
 		.globe_and_map_widget().clone_with_shared_opengl_context(style_list);
 
 	categories_table->horizontalHeader()->setResizeMode(0, QHeaderView::Stretch);
@@ -499,7 +499,7 @@ GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 	d_image = d_globe_and_map_widget_ptr->grab_frame_buffer();
 	d_style_mgr = GPlatesGui::DrawStyleManager::instance();
 	
-	//init_catagory_table();
+	//init_category_table();
 	make_signal_slot_connections();
 	
 	open_button->hide();
@@ -555,7 +555,7 @@ GPlatesQtWidgets::DrawStyleDialog::handle_categories_table_cell_changed(
 	QTableWidgetItem* item = categories_table->currentItem();
 	if(item)
 	{
-		GPlatesGui::StyleCatagory* cata = get_catagory(*item);
+		GPlatesGui::StyleCategory* cata = get_catagory(*item);
 		if(cata)
 		{
 			load_category(*cata);
@@ -565,7 +565,7 @@ GPlatesQtWidgets::DrawStyleDialog::handle_categories_table_cell_changed(
 
 void
 GPlatesQtWidgets::DrawStyleDialog::load_category(
-		const GPlatesGui::StyleCatagory& cata)
+		const GPlatesGui::StyleCategory& cata)
 {
 	using namespace GPlatesGui;
 
@@ -639,7 +639,7 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 	{
 		//sync the camera point
 		GPlatesQtWidgets::ReconstructionViewWidget & view_widget = 
-			GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget();
+			GPlatesPresentation::Application::instance().get_main_window().reconstruction_view_widget();
 		boost::optional<GPlatesMaths::LatLonPoint> camera_point = view_widget.camera_llp();
 	
 		if(camera_point)
@@ -733,7 +733,7 @@ GPlatesQtWidgets::DrawStyleDialog::handle_add_button_clicked(bool )
 	 if(!cur_cata_item)
 		 return;
 
-	StyleCatagory* current_cata = get_catagory(*cur_cata_item);
+	StyleCategory* current_cata = get_catagory(*cur_cata_item);
 	if(current_cata)
 	{
 		const StyleAdapter* style_temp = d_style_mgr->get_template_style(*current_cata);
@@ -825,7 +825,7 @@ GPlatesQtWidgets::DrawStyleDialog::handle_cfg_name_changed(const QString& cfg_na
 
 bool
 GPlatesQtWidgets::DrawStyleDialog::is_style_name_valid(
-		const GPlatesGui::StyleCatagory& catagory,
+		const GPlatesGui::StyleCategory& catagory,
 		const QString& cfg_name)
 {
 	if(cfg_name.contains('/'))// '/' cannot be in style name.
@@ -844,7 +844,7 @@ GPlatesQtWidgets::DrawStyleDialog::is_style_name_valid(
 
 const QString
 GPlatesQtWidgets::DrawStyleDialog::generate_new_valid_style_name(
-		const GPlatesGui::StyleCatagory& catagory,
+		const GPlatesGui::StyleCategory& catagory,
 		const QString& cfg_name)
 {
 	QString new_name_base = cfg_name;
@@ -894,7 +894,7 @@ GPlatesQtWidgets::PreviewGuard::PreviewGuard(
 	dlg.categories_table->setDisabled(true);
 
 	GPlatesQtWidgets::ReconstructionViewWidget & view_widget = 
-		GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget();
+		GPlatesPresentation::Application::instance().get_main_window().reconstruction_view_widget();
 	if(view_widget.globe_is_active())
 	{
 		view_widget.globe_canvas().set_disable_update(true);
@@ -912,7 +912,7 @@ GPlatesQtWidgets::PreviewGuard::~PreviewGuard()
 	d_dlg.categories_table->setDisabled(false);
 			
 	GPlatesQtWidgets::ReconstructionViewWidget & view_widget = 
-		GPlatesPresentation::Application::instance()->get_viewport_window().reconstruction_view_widget();
+		GPlatesPresentation::Application::instance().get_main_window().reconstruction_view_widget();
 			
 	if(view_widget.globe_is_active())
 	{

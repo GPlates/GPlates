@@ -42,11 +42,6 @@ namespace GPlatesAppLogic
 	class ReconstructGraph;
 }
 
-namespace GPlatesPresentation
-{
-	class ViewState;
-}
-
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryCollection;
@@ -98,7 +93,8 @@ namespace GPlatesGui
 	
 		explicit
 		FeatureTableModel(
-				GPlatesPresentation::ViewState &view_state,
+				FeatureFocus &feature_focus,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				QObject *parent_ = NULL);
 		
 		/**

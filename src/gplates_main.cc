@@ -587,13 +587,17 @@ namespace
 	void
 	clean_up()
 	{
+		// FIXME: If we can merge multiple singletons into a single singleton that would be better
+		// from a management/organisation point-of-view and also when destructor of single singleton
+		// is called then contained objects are destroyed in correct order.
+		// Also we should be careful about excessive use of singletons because they are essentially global data.
+
 		if(GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
 		{
 	#if !defined(GPLATES_NO_PYTHON)
 			GPlatesApi::PythonInterpreterLocker lock;
 	#endif
 			delete GPlatesGui::DrawStyleManager::instance(); //delete draw style manager singleton.
-			delete GPlatesPresentation::Application::instance(); //delete the application singleton.
 		}
 		delete GPlatesGui::PythonManager::instance();
 	}
@@ -640,6 +644,20 @@ internal_main(int argc, char* argv[])
 	// GPlatesQApplication is a QApplication that also handles uncaught exceptions in the Qt event thread.
 	GPlatesGui::GPlatesQApplication qapplication(argc, argv);
 
+	// GPlatesPresentation::Application is a singleton which is normally only accessed via 'Application::instance()'.
+	// However we also need to control its lifetime and ensure it gets destroyed before QApplication
+	// otherwise Qt will crash since the QApplication object will already have gone out of scope and
+	// afterwards we would be trying to access destructors of QWidgets when the 'Application' is
+	// finally destroyed after returning from 'main()'.
+	//
+	// It can still be accessed via 'Application::instance()' provided 'application' is in scope.
+	//
+	// An exception will be thrown if 'Application::instance()' is called before here or if it
+	// is called after 'application' goes out of scope.
+	//
+	// Note that python references 'Application' so this should be instantiated before python is initialised.
+	GPlatesPresentation::Application application;
+
 	Q_INIT_RESOURCE(qt_widgets);
 
 	// Enable data mining if specified on the command-line.
@@ -675,32 +693,28 @@ internal_main(int argc, char* argv[])
 		initialise_python();
 	}
 
-	GPlatesPresentation::Application *app = GPlatesPresentation::Application::instance();
-	GPlatesQtWidgets::ViewportWindow &main_window_widget = app->get_viewport_window();
-	
-	// Set up the main window widget.
 	// Also load any feature collection files specified on the command-line.
-	main_window_widget.load_files(gui_command_line_options->feature_collection_filenames);
+	application.get_main_window().load_files(gui_command_line_options->feature_collection_filenames);
 
 	// Install an extra menu for developers to help debug GUI problems.
 	if (gui_command_line_options->debug_gui)
 	{
-		main_window_widget.install_gui_debug_menu();
+		application.get_main_window().install_gui_debug_menu();
 	}
 	// Enable external program syncing with GPlates.
 	if (gui_command_line_options->enable_external_syncing)
 	{
-		main_window_widget.enable_external_syncing();
+		application.enable_syncing_with_external_applications();
 	}
 
 // 	if (!GPlatesUtils::ComponentManager::instance().is_enabled(
 // 		GPlatesUtils::ComponentManager::Component::symbology()))
 // 	{
-// 		main_window_widget.hide_symbol_menu();
+// 		application.get_main_window().hide_symbol_menu();
 // 	}
     	
-	main_window_widget.show();
-	int ret = qapplication.exec();
+	application.get_main_window().show();
+	const int ret = qapplication.exec();
 
 	clean_up();
 

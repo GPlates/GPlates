@@ -26,22 +26,24 @@
 #ifndef GPLATES_GUI_MAPCANVASTOOLADAPTER_H
 #define GPLATES_GUI_MAPCANVASTOOLADAPTER_H
 
+#include <boost/optional.hpp>
 #include <QObject>
 
+
 class QPointF;
+
+namespace GPlatesQtWidgets
+{
+	class MapView;
+}
 
 namespace GPlatesGui
 {
 	class MapCanvasTool;
-	class MapCanvasToolChoice;
-
 
 	/**
-	 * This class adapts the interface of MapCanvasTool to the interface expected by the
-	 * mouse-click and mouse-drag signals of MapView.
-	 *
-	 * This class provides slots to be connected to the signals emitted by MapView.  It
-	 * invokes the appropriate handler function of the current choice of MapCanvasTool.
+	 * This class adapts the interface of MapCanvasTool to the interface expected by the mouse-click
+	 * and mouse-drag signals of MapView and directs them to the activate canvas tool.
 	 */
 	class MapCanvasToolAdapter:
 			public QObject
@@ -52,21 +54,27 @@ namespace GPlatesGui
 		/**
 		 * Construct a MapCanvasToolAdapter instance.
 		 */
+		explicit
 		MapCanvasToolAdapter(
-				const MapCanvasToolChoice &map_canvas_tool_choice_):
-			d_map_canvas_tool_choice_ptr(&map_canvas_tool_choice_)
-		{  }
+				GPlatesQtWidgets::MapView &map_view);
 
 		~MapCanvasToolAdapter()
 		{  }
 
-		const MapCanvasToolChoice &
-		map_canvas_tool_choice() const
-		{
-			return *d_map_canvas_tool_choice_ptr;
-		}
+		/**
+		 * Connects mouse signals from @a MapView to the specified canvas tool.
+		 */
+		void
+		activate_canvas_tool(
+				MapCanvasTool &map_canvas_tool);
 
-	public slots:
+		/**
+		 * Disconnects mouse signals from @a MapView to the currently active canvas tool.
+		 */
+		void
+		deactivate_canvas_tool();
+
+	private slots:
 	
 		void
 		handle_press(
@@ -113,18 +121,22 @@ namespace GPlatesGui
 				const QPointF &translation);
 
 	private:
-		const MapCanvasToolChoice *d_map_canvas_tool_choice_ptr;
 
-		// This constructor should never be defined, because we don't want/need to allow
-		// copy-construction.
-		MapCanvasToolAdapter(
-				const MapCanvasToolAdapter &);
+		GPlatesQtWidgets::MapView &d_map_view;
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment.
-		MapCanvasToolAdapter &
-		operator=(
-				const MapCanvasToolAdapter &);
+		boost::optional<MapCanvasTool &> d_active_map_canvas_tool;
+
+
+		//! Connects to mouse signals from the map view.
+		void
+		connect_to_map_view();
+
+		//! Disconnects from mouse signals from the map view.
+		void
+		disconnect_from_map_view();
+
+		MapCanvasTool &
+		get_active_map_canvas_tool();
 	};
 }
 

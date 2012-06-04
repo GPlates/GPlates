@@ -34,10 +34,14 @@
 #include <QObject>
 
 #include "InternalGeometryBuilder.h"
+
 #include "app-logic/ReconstructedFeatureGeometry.h"
+
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/PointOnSphere.h"
+
 #include "utils/GeometryCreationUtils.h"
+
 
 namespace GPlatesViewOperations
 {

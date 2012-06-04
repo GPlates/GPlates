@@ -407,7 +407,7 @@ namespace GPlatesGui
 			static PythonManager* inst = new PythonManager();
 			return inst;
 		}
-		void initialize(GPlatesPresentation::Application& app){app.get_viewport_window().hide_python_menu();}
+		void initialize(GPlatesPresentation::Application& app){app.get_main_window().hide_python_menu();}
 		void pop_up_python_console(){}
 	};
 }

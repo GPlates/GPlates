@@ -31,6 +31,8 @@
 
 #include "ChooseFeatureCollectionDialogUi.h"
 
+#include "GPlatesDialog.h"
+
 #include "app-logic/FeatureCollectionFileState.h"
 
 
@@ -45,7 +47,7 @@ namespace GPlatesQtWidgets
 	class ChooseFeatureCollectionWidget;
 
 	class ChooseFeatureCollectionDialog : 
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_ChooseFeatureCollectionDialog 
 	{
 	public:

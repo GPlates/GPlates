@@ -124,7 +124,7 @@ namespace GPlatesAppLogic
 		{
 			return GPlatesUtils::get_age(
 					&feature, 
-					GPlatesPresentation::Application::instance()->get_application_state().get_current_reconstruction_time());
+					GPlatesPresentation::Application::instance().get_application_state().get_current_reconstruction_time());
 		}
 	
 	private:

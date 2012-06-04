@@ -31,7 +31,7 @@
 #include "GeometryBuilder.h"
 #include "RenderedGeometryCollection.h"
 #include "UndoRedo.h"
-#include "gui/ChooseCanvasTool.h"
+#include "gui/ChooseCanvasToolUndoCommand.h"
 #include "maths/PointOnSphere.h"
 
 
@@ -45,14 +45,14 @@ namespace GPlatesViewOperations
 	{
 	public:
 		GeometryBuilderInsertPointUndoCommand(
-				GeometryBuilder* digitisation_state_ptr,
+				GeometryBuilder &digitisation_state_ptr,
 				GeometryBuilder::PointIndex point_index_to_insert_at,
 				const GPlatesMaths::PointOnSphere& oriented_pos_on_globe,
 				QUndoCommand *parent = 0) :
-		QUndoCommand(parent),
-		d_geometry_builder(digitisation_state_ptr),
-		d_point_index_to_insert_at(point_index_to_insert_at),
-		d_oriented_pos_on_globe(oriented_pos_on_globe)
+			QUndoCommand(parent),
+			d_geometry_builder(digitisation_state_ptr),
+			d_point_index_to_insert_at(point_index_to_insert_at),
+			d_oriented_pos_on_globe(oriented_pos_on_globe)
 		{
 			setText(QObject::tr("add point"));
 		}
@@ -66,7 +66,7 @@ namespace GPlatesViewOperations
 		undo();
 
 	private:
-		GeometryBuilder* d_geometry_builder;
+		GeometryBuilder &d_geometry_builder;
 		GeometryBuilder::PointIndex d_point_index_to_insert_at;
 		GPlatesMaths::PointOnSphere d_oriented_pos_on_globe;
 		GeometryBuilder::UndoOperation d_undo_operation;
@@ -81,12 +81,12 @@ namespace GPlatesViewOperations
 	{
 	public:
 		GeometryBuilderRemovePointUndoCommand(
-				GeometryBuilder* geometry_builder,
+				GeometryBuilder &geometry_builder,
 				GeometryBuilder::PointIndex point_index_to_remove_at,
 				QUndoCommand *parent = 0) :
-		QUndoCommand(parent),
-		d_geometry_builder(geometry_builder),
-		d_point_index_to_remove_at(point_index_to_remove_at)
+			QUndoCommand(parent),
+			d_geometry_builder(geometry_builder),
+			d_point_index_to_remove_at(point_index_to_remove_at)
 		{
 			setText(QObject::tr("remove point"));
 		}
@@ -100,7 +100,7 @@ namespace GPlatesViewOperations
 		undo();
 
 	private:
-		GeometryBuilder* d_geometry_builder;
+		GeometryBuilder &d_geometry_builder;
 		GeometryBuilder::PointIndex d_point_index_to_remove_at;
 		GeometryBuilder::UndoOperation d_undo_operation;
 	};
@@ -114,17 +114,17 @@ namespace GPlatesViewOperations
 	{
 	public:
 		GeometryBuilderMovePointUndoCommand(
-				GeometryBuilder* geometry_builder,
+				GeometryBuilder &geometry_builder,
 				GeometryBuilder::PointIndex point_index_to_move,
 				const GPlatesMaths::PointOnSphere& oriented_pos_on_globe,
 				bool is_intermediate_move,
 				QUndoCommand *parent = 0) :
-		QUndoCommand(parent),
-		d_geometry_builder(geometry_builder),
-		d_point_index_to_move(point_index_to_move),
-		d_oriented_pos_on_globe(oriented_pos_on_globe),
-		d_secondary_geometries(geometry_builder->get_secondary_geometries()),
-		d_is_intermediate_move(is_intermediate_move)
+			QUndoCommand(parent),
+			d_geometry_builder(geometry_builder),
+			d_point_index_to_move(point_index_to_move),
+			d_oriented_pos_on_globe(oriented_pos_on_globe),
+			d_secondary_geometries(geometry_builder.get_secondary_geometries()),
+			d_is_intermediate_move(is_intermediate_move)
 		{
 			setText(QObject::tr("move vertex"));
 		}
@@ -151,7 +151,7 @@ namespace GPlatesViewOperations
 		mergeWith(
 				const QUndoCommand *other_command);
 	private:
-		GeometryBuilder* d_geometry_builder;
+		GeometryBuilder &d_geometry_builder;
 		GeometryBuilder::PointIndex d_point_index_to_move;
 		GPlatesMaths::PointOnSphere d_oriented_pos_on_globe;
 		std::vector<GPlatesViewOperations::SecondaryGeometry> &d_secondary_geometries;
@@ -171,14 +171,14 @@ namespace GPlatesViewOperations
 		 * Default command id is -1 which prevents merging of commands.
 		 */
 		GeometryBuilderSetGeometryTypeUndoCommand(
-				GeometryBuilder* geometry_builder,
+				GeometryBuilder &geometry_builder,
 				GeometryType::Value geom_type_to_build,
 				UndoRedo::CommandId commandId = UndoRedo::CommandId(),
 				QUndoCommand *parent = 0) :
-		QUndoCommand(parent),
-		d_geometry_builder(geometry_builder),
-		d_geom_type_to_build(geom_type_to_build),
-		d_commandId(commandId)
+			QUndoCommand(parent),
+			d_geometry_builder(geometry_builder),
+			d_geom_type_to_build(geom_type_to_build),
+			d_commandId(commandId)
 		{
 			setText(QObject::tr("set geometry type"));
 		}
@@ -204,7 +204,7 @@ namespace GPlatesViewOperations
 		undo();
 
 	private:
-		GeometryBuilder* d_geometry_builder;
+		GeometryBuilder &d_geometry_builder;
 		GeometryType::Value d_geom_type_to_build;
 		GeometryBuilder::UndoOperation d_undo_operation;
 		UndoRedo::CommandId d_commandId;
@@ -219,10 +219,10 @@ namespace GPlatesViewOperations
 	{
 	public:
 		GeometryBuilderClearAllGeometries(
-				GPlatesViewOperations::GeometryBuilder* geometry_builder,
+				GPlatesViewOperations::GeometryBuilder &geometry_builder,
 				QUndoCommand *parent = 0) :
-		QUndoCommand(parent),
-		d_geometry_builder(geometry_builder)
+			QUndoCommand(parent),
+			d_geometry_builder(geometry_builder)
 		{
 			setText(QObject::tr("clear geometry"));
 		}
@@ -236,7 +236,7 @@ namespace GPlatesViewOperations
 		undo();
 
 	private:
-		GeometryBuilder* d_geometry_builder;
+		GeometryBuilder &d_geometry_builder;
 		GeometryBuilder::UndoOperation d_undo_operation;
 	};
 }

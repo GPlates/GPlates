@@ -31,16 +31,17 @@
 
 #include "MeshDialogUi.h"
 
+#include "GPlatesDialog.h"
 #include "InformationDialog.h"
-#include "ManageFeatureCollectionsDialog.h"
 #include "OpenDirectoryDialog.h"
 
 #include "presentation/ViewState.h"
 
+
 namespace GPlatesQtWidgets
 {
 	class MeshDialog: 
-		public QDialog,
+		public GPlatesDialog,
 		protected Ui_MeshDialog 
 	{
 		Q_OBJECT
@@ -48,7 +49,6 @@ namespace GPlatesQtWidgets
 	public:
 		MeshDialog(
 				GPlatesPresentation::ViewState &,
-				GPlatesQtWidgets::ManageFeatureCollectionsDialog&,
 				QWidget *parent_ = NULL);
 		
 		virtual
@@ -81,7 +81,6 @@ namespace GPlatesQtWidgets
 		InformationDialog *d_help_dialog_resolution;
 		InformationDialog *d_help_dialog_output;
 		std::string d_file_name_template;
-		GPlatesQtWidgets::ManageFeatureCollectionsDialog &d_manage_feature_collections_dialog;
 		OpenDirectoryDialog d_open_directory_dialog;
 	};
 }

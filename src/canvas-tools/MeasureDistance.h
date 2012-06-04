@@ -38,6 +38,7 @@
 #include "view-operations/GeometryBuilder.h"
 #include "view-operations/RenderedGeometryCollection.h"
 
+
 namespace GPlatesGui
 {
 	class Colour;
@@ -50,11 +51,13 @@ namespace GPlatesMaths
 
 namespace GPlatesViewOperations
 {
+	class GeometryBuilder;
 	class RenderedGeometryLayer;
 }
 
 namespace GPlatesCanvasTools
 {
+	class GeometryOperationState;
 	class MeasureDistanceState;
 
 	/**
@@ -77,12 +80,18 @@ namespace GPlatesCanvasTools
 		const non_null_ptr_type
 		create(
 				const status_bar_callback_type &status_bar_callback,
+				GPlatesViewOperations::GeometryBuilder &geometry_builder,
+				GeometryOperationState &geometry_operation_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
 				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state)
 		{
 			return new MeasureDistance(
 					status_bar_callback,
+					geometry_builder,
+					geometry_operation_state,
 					rendered_geom_collection,
+					main_rendered_layer_type,
 					measure_distance_state);
 		}
 
@@ -111,10 +120,27 @@ namespace GPlatesCanvasTools
 		
 	private:
 
+		//! Convenience typedef for GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+		typedef GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type child_layer_ptr_type;
+
+
 		MeasureDistance(
 				const status_bar_callback_type &status_bar_callback,
+				GPlatesViewOperations::GeometryBuilder &geometry_builder,
+				GeometryOperationState &geometry_operation_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
 				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state);
+
+		/**
+		 * The geometry builder (either digitised geometry or focused feature geometry) to measure.
+		 */
+		GPlatesViewOperations::GeometryBuilder &d_geometry_builder;
+
+		/**
+		 * Lets others know which geometry builder we are targeting.
+		 */
+		GeometryOperationState &d_geometry_operation_state;
 
 		//! For rendering purposes
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection_ptr;
@@ -122,9 +148,6 @@ namespace GPlatesCanvasTools
 		//! A pointer to the state of the measure distance tool
 		GPlatesCanvasTools::MeasureDistanceState *d_measure_distance_state_ptr;
 
-		//! Main rendered geometry layer
-		GPlatesViewOperations::RenderedGeometryLayer *d_main_layer_ptr;
-		
 		/**
 		 * A mapping from rendered line segment indices to point indices, such that the
 		 * i-th element of this vector is the index of the point at the beginning of the
@@ -133,8 +156,13 @@ namespace GPlatesCanvasTools
 		 */
 		std::vector<GPlatesViewOperations::GeometryBuilder::PointIndex> d_line_to_point_mapping;
 
-		//! Convenience typedef for GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-		typedef GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type child_layer_ptr_type;
+		/**
+		 * The main rendered layer we're currently rendering into.
+		 */
+		GPlatesViewOperations::RenderedGeometryCollection::MainLayerType d_main_rendered_layer_type;
+
+		//! Rendered geometry layer for drawing geometry
+		child_layer_ptr_type d_geometry_layer_ptr;
 
 		//! Rendered geometry layer for mouse-over highlighting
 		child_layer_ptr_type d_highlight_layer_ptr;

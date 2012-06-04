@@ -60,7 +60,7 @@ GPlatesGui::PythonStyleAdapter::get_style(
 
 GPlatesGui::PythonStyleAdapter::PythonStyleAdapter(
 		boost::python::object& obj,
-		const GPlatesGui::StyleCatagory& cata) : 
+		const GPlatesGui::StyleCategory& cata) : 
 	StyleAdapter(cata),	
 	d_py_obj(obj)
 {

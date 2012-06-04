@@ -36,11 +36,6 @@
 #include "ColourSchemeInfo.h"
 
 
-namespace GPlatesPresentation
-{
-	class ViewState;
-}
-
 namespace GPlatesGui
 {
 	namespace ColourSchemeCategory
@@ -177,8 +172,7 @@ namespace GPlatesGui
 		 *
 		 * Loads a set of built-in colour schemes into this ColourSchemeContainer.
 		 */
-		ColourSchemeContainer(
-				GPlatesPresentation::ViewState &view_state);
+		ColourSchemeContainer();
 
 		/**
 		 * Returns a 'begin' iterator over the colour schemes in @a category.
@@ -251,8 +245,7 @@ namespace GPlatesGui
 		 * Creates the built-in colour schemes and places them into the categories.
 		 */
 		void
-		create_built_in_colour_schemes(
-				GPlatesPresentation::ViewState &view_state);
+		create_built_in_colour_schemes();
 
 		ColourSchemeInfo
 		create_single_colour_scheme(

@@ -293,7 +293,7 @@ namespace {
 GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog(
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
-	QDialog(parent_, Qt::Window),
+	GPlatesDialog(parent_, Qt::Window),
 	d_view_state(view_state),
 	d_application_state(view_state.get_application_state()),
 	d_plate(0),

@@ -100,7 +100,7 @@ GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 		GPlatesPresentation::ViewState &view_state_,
 		ViewportWindow &viewport_window_,
 		QAction *clear_action,
-		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+		GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 		QWidget *parent_):
 	TaskPanelWidget(parent_),
 	d_feature_focus_ptr(&view_state_.get_feature_focus()),
@@ -115,7 +115,7 @@ GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 		new GPlatesGui::TopologyTools(
 			view_state_, 
 			viewport_window_,
-			choose_canvas_tool) 
+			canvas_tool_workflows) 
 	),
 	d_feature_summary_widget_ptr(
 		new FeatureSummaryWidget(view_state_)

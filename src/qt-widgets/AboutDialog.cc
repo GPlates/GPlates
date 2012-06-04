@@ -29,16 +29,21 @@
 #include "global/Constants.h"  // the copyright string macro
 #include "global/SubversionInfo.h"
 
+#include "gui/Dialogs.h"
+
 
 GPlatesQtWidgets::AboutDialog::AboutDialog(
+		GPlatesGui::Dialogs &dialogs,
 		QWidget *parent_):
-	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
+	GPlatesDialog(
+			parent_,
+			Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
 	d_license_dialog_ptr(NULL)
 {
 	setupUi(this);
 
 	QObject::connect(button_License, SIGNAL(clicked()),
-			this, SLOT(pop_up_license_dialog()));
+			&dialogs, SLOT(pop_up_license_dialog()));
 
 	// Set GPlates version label text.
 	QString version(QObject::tr(GPlatesGlobal::VersionString));
@@ -79,33 +84,3 @@ GPlatesQtWidgets::AboutDialog::AboutDialog(
 	QString copyright(QObject::tr(GPlatesGlobal::HtmlCopyrightString));
 	text_Copyright->setHtml(copyright);
 }
-
-
-GPlatesQtWidgets::AboutDialog::~AboutDialog()
-{
-	// close license dialog if it somehow is still there
-	if (d_license_dialog_ptr)
-	{
-		d_license_dialog_ptr->reject();
-	}
-}
-
-
-void
-GPlatesQtWidgets::AboutDialog::pop_up_license_dialog()
-{
-	if (!d_license_dialog_ptr)
-	{
-		d_license_dialog_ptr.reset(new LicenseDialog(this));
-	}
-
-	d_license_dialog_ptr->show();
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	d_license_dialog_ptr->activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	d_license_dialog_ptr->raise();
-}
-

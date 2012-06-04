@@ -44,7 +44,7 @@ namespace GPlatesAppLogic
 
 namespace GPlatesGui
 {
-	class ChooseCanvasTool;
+	class CanvasToolWorkflows;
 	class FeatureFocus;
 //	class TopologyTools;
 }
@@ -83,7 +83,7 @@ namespace GPlatesQtWidgets
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesQtWidgets::ViewportWindow &viewport_window,
 				QAction *clear_action,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 				QWidget *parent_ = NULL);
 
 		~TopologyToolsWidget();

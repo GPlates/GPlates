@@ -343,7 +343,7 @@ QFileInfoList
 GPlatesGui::PythonManager::get_scripts()
 {
 	GPlatesAppLogic::UserPreferences& user_prefs = 
-		GPlatesPresentation::Application::instance()->get_application_state().get_user_preferences();
+		GPlatesPresentation::Application::instance().get_application_state().get_user_preferences();
 	QFileInfoList file_list;
 	//The ".pyc" files will be generated every time the python script is executed.
 	//And this caused duplicate menu items.
@@ -443,9 +443,9 @@ GPlatesGui::PythonManager::init_python_console()
 	if(!d_python_console_dialog_ptr)
 	{
 		d_python_console_dialog_ptr = new GPlatesQtWidgets::PythonConsoleDialog(
-				Application::instance()->get_application_state(),
-				Application::instance()->get_view_state(),
-				&Application::instance()->get_viewport_window());
+				Application::instance().get_application_state(),
+				Application::instance().get_view_state(),
+				&Application::instance().get_main_window());
 		d_event_blackout.add_blackout_exemption(d_python_console_dialog_ptr);
 	}
 }

@@ -91,7 +91,7 @@ namespace GPlatesViewOperations
 	 *   RenderedGeometry objects from one container don't overlap or interleave visually with
 	 *   RenderedGeometry objects from another container.
      * * Another concept of layer at a higher scope is a main layer like RECONSTRUCTION_LAYER,
-	 *   DIGITISATION_LAYER, etc. These are enumerations in the RenderedGeometryCollection.
+	 *   DIGITISATION_CANVAS_TOOL_WORKFLOW_LAYER, etc. These are enumerations in the RenderedGeometryCollection.
      * * Within each main layer there's a single default main RenderedGeometryLayer object that
 	 *   doesn't need to be created (it's embedded inside the RenderedGeometryCollection).
      * * Also optionally there can be one or more child RenderedGeometryLayer objects
@@ -104,8 +104,8 @@ namespace GPlatesViewOperations
 	 *   has one container for the base geometry and another container for the yellow highlights
 	 *   drawn on top of base geometry - in which case it needs to explicitly create the
 	 *   child containers. It doesn't actually use the single default main RenderedGeometryLayer
-	 *   belonging to DIGITISATION_LAYER - it could but it just creates child layers of
-	 *   DIGITISATION_LAYER instead. And the reason for multiple containers here is so the
+	 *   belonging to DIGITISATION_CANVAS_TOOL_WORKFLOW_LAYER - it could but it just creates child layers of
+	 *   DIGITISATION_CANVAS_TOOL_WORKFLOW_LAYER instead. And the reason for multiple containers here is so the
 	 *   yellow highlights in one container get drawn on top of the base geometry
 	 *   in the other container.
      * * Regarding activation you can activate an entire layer (such as RECONSTRUCTION_LAYER)
@@ -113,10 +113,10 @@ namespace GPlatesViewOperations
      * * If you activate an individual container it still won't get rendered unless you also
 	 *   activate the entire layer that it belongs to. So in the move vertex tool
 	 *   example above, we can activate the child RenderedGeometryLayer objects but if
-	 *   the DIGITISATION_LAYER is not active then none of the child RenderedGeometryLayer
+	 *   the DIGITISATION_CANVAS_TOOL_WORKFLOW_LAYER is not active then none of the child RenderedGeometryLayer
 	 *   objects will get rendered.
      * * The main reason for having activation/deactivation of an entire layer (such as
-	 *   DIGITISATION_LAYER) is to avoid having to deactivate each RenderedGeometryLayer container
+	 *   DIGITISATION_CANVAS_TOOL_WORKFLOW_LAYER) is to avoid having to deactivate each RenderedGeometryLayer container
 	 *   within it when switching to a different canvas tool.
      * * AddPointDigitiseOperation is used to add a point when digitising and is used by both
 	 *   globe and map tools. There are other similar operations for
@@ -140,13 +140,18 @@ namespace GPlatesViewOperations
 		 */
 		enum MainLayerType
 		{
+			// All reconstructed geometries, etc get rendered into this layer...
 			RECONSTRUCTION_LAYER,
-			DIGITISATION_LAYER,
-			TOPOLOGY_TOOL_LAYER,
-			SMALL_CIRCLE_LAYER,
+
+			// The focused feature geometry highlight gets rendered into this layer...
 			GEOMETRY_FOCUS_HIGHLIGHT_LAYER,
-			POLE_MANIPULATION_LAYER,
-			MEASURE_DISTANCE_LAYER,
+
+			// Canvas tool workflow layers...
+			FEATURE_INSPECTION_CANVAS_TOOL_WORKFLOW_LAYER,
+			DIGITISATION_CANVAS_TOOL_WORKFLOW_LAYER,
+			TOPOLOGY_CANVAS_TOOL_WORKFLOW_LAYER,
+			POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER,
+			SMALL_CIRCLE_CANVAS_TOOL_WORKFLOW_LAYER,
 
 			NUM_LAYERS // Must be the last enum.
 		};

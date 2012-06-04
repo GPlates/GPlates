@@ -52,7 +52,7 @@ GPlatesQtWidgets::SmallCircleWidget::SmallCircleWidget(
 	d_application_state_ptr(&view_state.get_application_state()),
         d_create_small_circle_dialog_ptr(new CreateSmallCircleDialog(this,view_state.get_application_state(),this)),
 	d_small_circle_layer(view_state.get_rendered_geometry_collection().get_main_rendered_layer(
-                GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_LAYER))
+                GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_CANVAS_TOOL_WORKFLOW_LAYER))
 {
 	setupUi(this);
 	

@@ -36,6 +36,7 @@
 
 #include "AssignReconstructionPlateIdsDialogUi.h"
 
+#include "GPlatesDialog.h"
 #include "InformationDialog.h"
 
 #include "app-logic/AssignPlateIds.h"
@@ -69,7 +70,7 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	class AssignReconstructionPlateIdsDialog:
-			public QDialog, 
+			public GPlatesDialog, 
 			protected Ui_AssignReconstructionPlateIdsDialog
 	{
 		Q_OBJECT

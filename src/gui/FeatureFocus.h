@@ -59,7 +59,7 @@ namespace GPlatesGui
 		
 		explicit
 		FeatureFocus(
-				GPlatesPresentation::ViewState &view_state);
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection);
 
 		virtual
 		~FeatureFocus()

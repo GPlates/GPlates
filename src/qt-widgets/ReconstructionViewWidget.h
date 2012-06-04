@@ -86,7 +86,6 @@ namespace GPlatesQtWidgets
 	public:
 
 		ReconstructionViewWidget(
-				GPlatesGui::AnimationController &animation_controller,
 				ViewportWindow &viewport_window,
 				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = NULL);
@@ -105,7 +104,7 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		insert_task_panel(
-				std::auto_ptr<GPlatesQtWidgets::TaskPanel> task_panel);
+				GPlatesQtWidgets::TaskPanel *task_panel);
 
 		GlobeCanvas &
 		globe_canvas();

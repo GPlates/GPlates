@@ -28,6 +28,8 @@
 
 #include <QDialog>
 
+#include "GPlatesDialog.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -46,7 +48,7 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 
 	class VisualLayersDialog :
-			public QDialog
+			public GPlatesDialog
 	{
 	public:
 

@@ -27,10 +27,10 @@
 #define GPLATES_GUI_GLOBECANVASTOOLADAPTER_H
 
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 #include <QObject>
 #include <Qt>
 
-#include <boost/optional.hpp>
 
 namespace GPlatesMaths
 {
@@ -38,23 +38,18 @@ namespace GPlatesMaths
 	class LatLonPoint;
 }
 
-namespace GPlatesViewOperations
+namespace GPlatesQtWidgets
 {
-	class RenderedGeometryCollection;
+	class GlobeCanvas;
 }
 
 namespace GPlatesGui
 {
 	class GlobeCanvasTool;
-	class GlobeCanvasToolChoice;
-
 
 	/**
-	 * This class adapts the interface of GlobeCanvasTool to the interface expected by the
-	 * mouse-click and mouse-drag signals of GlobeCanvas.
-	 *
-	 * This class provides slots to be connected to the signals emitted by GlobeCanvas.  It
-	 * invokes the appropriate handler function of the current choice of GlobeCanvasTool.
+	 * This class adapts the interface of GlobeCanvasTool to the interface expected by the mouse-click
+	 * and mouse-drag signals of GlobeCanvas and directs them to the activate canvas tool.
 	 */
 	class GlobeCanvasToolAdapter:
 			public QObject,
@@ -66,30 +61,35 @@ namespace GPlatesGui
 		/**
 		 * Construct a GlobeCanvasToolAdapter instance.
 		 */
+		explicit
 		GlobeCanvasToolAdapter(
-				const GlobeCanvasToolChoice &canvas_tool_choice_):
-		d_canvas_tool_choice_ptr(&canvas_tool_choice_)
-		{  }
+				GPlatesQtWidgets::GlobeCanvas &globe_canvas);
 
 		~GlobeCanvasToolAdapter()
 		{  }
 
-		const GlobeCanvasToolChoice &
-		canvas_tool_choice() const
-		{
-			return *d_canvas_tool_choice_ptr;
-		}
+		/**
+		 * Connects mouse signals from @a GlobeCanvas to the specified canvas tool.
+		 */
+		void
+		activate_canvas_tool(
+				GlobeCanvasTool &globe_canvas_tool);
 
-	public slots:
+		/**
+		 * Disconnects mouse signals from @a GlobeCanvas to the currently active canvas tool.
+		 */
+		void
+		deactivate_canvas_tool();
+
+	private slots:
 	
 		void
 		handle_press(
-			const GPlatesMaths::PointOnSphere &press_pos_on_globe,
-			const GPlatesMaths::PointOnSphere &oriented_press_pos_on_globe,
-			bool is_on_globe,
-			Qt::MouseButton button,
-			Qt::KeyboardModifiers modifiers);	
-	
+				const GPlatesMaths::PointOnSphere &press_pos_on_globe,
+				const GPlatesMaths::PointOnSphere &oriented_press_pos_on_globe,
+				bool is_on_globe,
+				Qt::MouseButton button,
+				Qt::KeyboardModifiers modifiers);	
 	
 		void
 		handle_click(
@@ -134,7 +134,22 @@ namespace GPlatesGui
 				const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport);
 
 	private:
-		const GlobeCanvasToolChoice *d_canvas_tool_choice_ptr;
+
+		GPlatesQtWidgets::GlobeCanvas &d_globe_canvas;
+
+		boost::optional<GlobeCanvasTool &> d_active_globe_canvas_tool;
+
+
+		//! Connects to mouse signals from the globe canvas.
+		void
+		connect_to_globe_canvas();
+
+		//! Disconnects from mouse signals from the globe canvas.
+		void
+		disconnect_from_globe_canvas();
+
+		GlobeCanvasTool &
+		get_active_globe_canvas_tool();
 	};
 }
 

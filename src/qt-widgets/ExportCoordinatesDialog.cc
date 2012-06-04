@@ -40,12 +40,15 @@
 #include "ExportCoordinatesDialog.h"
 
 #include "InformationDialog.h"
+
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
+
 #include "file-io/GMTFormatGeometryExporter.h"
 #include "file-io/OgrException.h"
 #include "file-io/OgrGeometryExporter.h"
 #include "file-io/PlatesLineFormatGeometryExporter.h"
+
 #include "qt-widgets/SaveFileDialog.h"
 
 
@@ -372,11 +375,13 @@ GPlatesQtWidgets::ExportCoordinatesDialog::export_geometry_to_file(
 			GPLATES_EXCEPTION_SOURCE);
 
 	// Export the geometry.
-	try{
+	try
+	{
 		geometry_exporter->export_geometry(*d_geometry_opt_ptr);
 	}
-	catch(GPlatesFileIO::OgrException &)
+	catch (GPlatesFileIO::OgrException &exc)
 	{
+		qWarning() << exc; // Also log the detailed error message.
 		
 		QString message = tr("An OGR error occurred.");
 		QMessageBox::critical(this, tr("Error Saving File"), message,

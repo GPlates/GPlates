@@ -33,6 +33,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/TopologyInternalUtils.h"
+#include "app-logic/TopologyUtils.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
@@ -49,6 +50,7 @@
 #include "property-values/XsString.h"
 
 #include "qt-widgets/GlobeCanvas.h"
+#include "qt-widgets/SearchResultsDockWidget.h"
 #include "qt-widgets/TopologyToolsWidget.h"
 #include "qt-widgets/ViewportWindow.h"
 
@@ -89,26 +91,11 @@ GPlatesCanvasTools::EditTopology::handle_activation()
 
 	// else check type 
 
-	//
-	// FIXME: Do this check based on feature properties rather than feature type.
-	// So if something looks like a TCPB (because it has a topology polygon property)
-	// then treat it like one. For this to happen we first need TopologicalNetwork to
-	// use a property type different than TopologicalPolygon.
-	//
-	static const GPlatesModel::FeatureType plate_type =
-		GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary");
-	static const GPlatesModel::FeatureType network_type =
-		GPlatesModel::FeatureType::create_gpml("TopologicalNetwork");
-	static const GPlatesModel::FeatureType slab_type =
-		GPlatesModel::FeatureType::create_gpml("TopologicalSlabBoundary");
-
-	const GPlatesModel::FeatureType &feature_type = d_feature_focus_ptr->focused_feature()->feature_type();
+	const GPlatesModel::FeatureHandle::weak_ref focused_feature = d_feature_focus_ptr->focused_feature();
 
 	// Only activate for topologies
-	if (
-		feature_type != plate_type && 
-		feature_type != network_type &&
-		feature_type != slab_type)
+	if (!GPlatesAppLogic::TopologyUtils::is_topological_closed_plate_boundary_feature(*focused_feature.handle_ptr()) &&
+		!GPlatesAppLogic::TopologyUtils::is_topological_network_feature(*focused_feature.handle_ptr()))
 	{
 		// unset the focus
  		d_feature_focus_ptr->unset_focus();
@@ -117,10 +104,6 @@ GPlatesCanvasTools::EditTopology::handle_activation()
 	}
 
 	// else, all checks passed , continue to activate the low level tools 
-
-	// Activate rendered layer.
-	d_rendered_geom_collection->set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
 
 	d_topology_tools_widget_ptr->activate( GPlatesGui::TopologyTools::EDIT );
 
@@ -141,9 +124,9 @@ GPlatesCanvasTools::EditTopology::handle_left_click(
 		double proximity_inclusion_threshold)
 {
 	// Show the 'Clicked' Feature Table
-	d_viewport_window_ptr->choose_clicked_geometry_table();
+	d_viewport_window_ptr->search_results_dock_widget().choose_clicked_geometry_table();
 
-	GPlatesGui::add_clicked_geometries_to_feature_table(
+	GPlatesGui::get_and_add_clicked_geometries_to_feature_table(
 			point_on_sphere,
 			proximity_inclusion_threshold,
 			*d_viewport_window_ptr,

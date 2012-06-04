@@ -25,6 +25,7 @@
  
 #ifndef GPLATES_QTWIDGETS_CONNECTWFSDIALOG_H
 #define GPLATES_QTWIDGETS_CONNECTWFSDIALOG_H
+
 #include <set>
 #include <boost/shared_ptr.hpp>
 
@@ -33,13 +34,15 @@
 #include <QUrl>
 #include <QProgressDialog>
 
+#include "ConnectWFSDialogUi.h"
+
+#include "EditTimePeriodWidget.h"
+#include "GPlatesDialog.h"
+
 #include "maths/GeometryOnSphere.h"
 
 #include "feature-visitors/GeometryTypeFinder.h"
 
-#include "ConnectWFSDialogUi.h"
-
-#include "EditTimePeriodWidget.h"
 
 class QDialogButtonBox;
 class QFile;
@@ -60,15 +63,17 @@ namespace GPlatesQtWidgets
 {
 	
 	class ConnectWFSDialog : 
-			public QDialog, 
+			public GPlatesDialog, 
 			protected Ui_ConnectWFSDialog
 	{
 		Q_OBJECT
 
 	public:
 
+		explicit
 		ConnectWFSDialog(
-				GPlatesAppLogic::ApplicationState& app_state);
+				GPlatesAppLogic::ApplicationState& app_state,
+				QWidget *parent_ = NULL);
 
 		~ConnectWFSDialog();
 

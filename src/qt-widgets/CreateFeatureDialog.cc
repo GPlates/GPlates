@@ -36,6 +36,7 @@
 
 #include "CreateFeatureDialog.h"
 
+#include "CanvasToolBarDockWidget.h"
 #include "ChooseFeatureCollectionWidget.h"
 #include "ChooseFeatureTypeWidget.h"
 #include "ChooseGeometryPropertyWidget.h"
@@ -59,6 +60,8 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "gui/Dialogs.h"
+
 #include "model/types.h"
 #include "model/Model.h"
 #include "model/PropertyName.h"
@@ -71,9 +74,9 @@
 
 #include "presentation/ViewState.h"
 
-#include "utils/UnicodeStringUtils.h"
-
 #include "property-values/Enumeration.h"
+
+#include "utils/UnicodeStringUtils.h"
 
 
 #define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
@@ -456,6 +459,19 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 			this, SLOT(handle_page_change(int)));
 	// Send a fake page change event to ensure buttons are set up properly at start.
 	handle_page_change(0);
+
+	// Handle explicit *user* triggering of a canvas tool action so we can restore the last
+	// *user* selected tool once the user completes the "Create Feature" dialog.
+	// Note that this excludes automatic canvas tool selection by GPlates.
+	QObject::connect(
+			&viewport_window_.canvas_tool_bar_dock_widget(),
+			SIGNAL(canvas_tool_triggered_by_user(
+					GPlatesGui::CanvasToolWorkflows::WorkflowType,
+					GPlatesGui::CanvasToolWorkflows::ToolType)),
+			this,
+			SLOT(handle_canvas_tool_triggered(
+					GPlatesGui::CanvasToolWorkflows::WorkflowType,
+					GPlatesGui::CanvasToolWorkflows::ToolType)));
 }
 
 
@@ -925,7 +941,12 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 		// "Clone Geometry" button whilst in the Click Geometry tool, for
 		// example, they get taken back to the Click Geometry tool instead of
 		// remaining in a digitisation tool.
-		d_viewport_window_ptr->restore_canvas_tool_last_chosen_by_user();
+		if (d_canvas_tool_last_chosen_by_user)
+		{
+			d_viewport_window_ptr->canvas_tool_workflows().choose_canvas_tool(
+					d_canvas_tool_last_chosen_by_user->first,
+					d_canvas_tool_last_chosen_by_user->second);
+		}
 
 		accept();
 	}
@@ -944,7 +965,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create_and_save()
 	handle_create();
 
 	// and now open the manage feature collections dialog
-	d_viewport_window_ptr->pop_up_manage_feature_collections_dialog();
+	d_viewport_window_ptr->dialogs().pop_up_manage_feature_collections_dialog();
 }
 
 void 
@@ -1189,4 +1210,13 @@ GPlatesQtWidgets::CreateFeatureDialog::add_geometry(
 			*geometry_value_opt));
     }
 
+}
+
+
+void
+GPlatesQtWidgets::CreateFeatureDialog::handle_canvas_tool_triggered(
+		GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
+		GPlatesGui::CanvasToolWorkflows::ToolType tool)
+{
+	d_canvas_tool_last_chosen_by_user = std::make_pair(workflow, tool);
 }

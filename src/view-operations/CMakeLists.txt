@@ -11,7 +11,6 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
-    ActiveGeometryOperation.h
     AddPointGeometryOperation.cc
     AddPointGeometryOperation.h
     CloneOperation.cc
@@ -28,8 +27,6 @@ set(srcs
     GeometryBuilderUndoCommands.h
     GeometryOperation.cc
     GeometryOperation.h
-    GeometryOperationTarget.cc
-    GeometryOperationTarget.h
     GeometryOperationUndo.cc
     GeometryOperationUndo.h
     GeometryType.h

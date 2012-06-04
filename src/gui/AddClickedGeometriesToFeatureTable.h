@@ -26,6 +26,7 @@
 #ifndef GPLATES_GUI_ADDCLICKEDGEOMETRIESTOFEATURETABLE_H
 #define GPLATES_GUI_ADDCLICKEDGEOMETRIESTOFEATURETABLE_H
 
+#include <vector>
 #include <boost/function.hpp>
 
 #include "app-logic/ReconstructionGeometry.h"
@@ -81,21 +82,56 @@ namespace GPlatesGui
 
 
 	/**
+	 * Returns a sequence of clicked geometries given a click position.
+	 *
 	 * Tests if any rendered geometries (referencing reconstruction geometries)
 	 * contained in @a rendered_geometry_collection are selected by the
 	 * clicked point @a click_point_on_sphere and adds any reconstruction geometries
-	 * found to @a clicked_table_model.
+	 * found to @a clicked_geom_seq.
 	 *
 	 * NOTE: The reconstruction geometries must also give a result of 'true' when
 	 * passed to @a filter_recon_geom_predicate.
+	 */
+	void
+	get_clicked_geometries(
+			std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type> &clicked_geom_seq,
+			const GPlatesMaths::PointOnSphere &click_point_on_sphere,
+			double proximity_inclusion_threshold,
+			GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+			filter_reconstruction_geometry_predicate_type filter_recon_geom_predicate =
+					&default_filter_reconstruction_geometry_predicate);
+
+
+	/**
+	 * Adds the clicked geometries in @a clicked_geom_seq to the clicked feature table.
 	 *
-	 * Also updates status bar of @a view_state with the number of clicked
-	 * rendered geometries (that reference reconstruction geometries and pass
-	 * the @a filter_recon_geom_predicate test).
+	 * Also updates status bar of @a view_state with the number of clicked rendered geometries.
 	 * Also unsets the feature focus if no reconstruction geometries were clicked.
+	 *
+	 * If @a highlight_first_clicked_feature_in_table is true then the first clicked feature in the
+	 * table will be highlighted (will be the focused feature), otherwise the currently focused
+	 * feature will be highlighted.
+	 * Setting @a highlight_first_clicked_feature_in_table to true is useful when the user just
+	 * clicked on the globe (so you want to ignore the previously focused feature).
+	 * Setting @a highlight_first_clicked_feature_in_table to false is useful when restoring the
+	 * clicked table (and focused feature) to a previous state.
 	 */
 	void
 	add_clicked_geometries_to_feature_table(
+			const std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type> &clicked_geom_seq,
+			GPlatesQtWidgets::ViewportWindow &view_state,
+			GPlatesGui::FeatureTableModel &clicked_table_model,
+			GPlatesGui::FeatureFocus &feature_focus,
+			const GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+			bool highlight_first_clicked_feature_in_table = true);
+
+
+	/**
+	 * Combines the above two functions (@a get_clicked_geometries and @a add_clicked_geometries_to_feature_table).
+	 */
+	inline
+	void
+	get_and_add_clicked_geometries_to_feature_table(
 			const GPlatesMaths::PointOnSphere &click_point_on_sphere,
 			double proximity_inclusion_threshold,
 			GPlatesQtWidgets::ViewportWindow &view_state,
@@ -104,7 +140,26 @@ namespace GPlatesGui
 			GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 			const GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 			filter_reconstruction_geometry_predicate_type filter_recon_geom_predicate =
-					&default_filter_reconstruction_geometry_predicate);
+					&default_filter_reconstruction_geometry_predicate,
+			bool highlight_first_clicked_feature_in_table = true)
+	{
+		std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type> clicked_geom_seq;
+
+		get_clicked_geometries(
+				clicked_geom_seq,
+				click_point_on_sphere,
+				proximity_inclusion_threshold,
+				rendered_geometry_collection,
+				filter_recon_geom_predicate);
+
+		add_clicked_geometries_to_feature_table(
+				clicked_geom_seq,
+				view_state,
+				clicked_table_model,
+				feature_focus,
+				reconstruct_graph,
+				highlight_first_clicked_feature_in_table);
+	}
 
 
 	/**

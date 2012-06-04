@@ -318,7 +318,6 @@ namespace{
 				layer_name.toStdString().c_str(),&spatial_reference,wkb_type,0));
 			if (*ogr_layer == NULL)
 			{
-				qDebug() << "Error creating OGR layer.";
 				throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR layer.");
 			}
 			if (key_value_dictionary && !((*key_value_dictionary)->is_empty()))
@@ -342,7 +341,6 @@ namespace{
 
 		if (data_source_ptr == NULL)
 		{
-			qDebug() << "Creation of data source failed.";
 			throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"Ogr data source creation failed.");
 		}
 	}
@@ -357,7 +355,6 @@ namespace{
 
 		if (ogr_data_source_ptr == NULL)
 		{
-			qDebug() << "Creation of data source failed.";
 			throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"OGR data source creation failed.");
 		}
 		
@@ -655,7 +652,6 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 	d_ogr_driver_ptr = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(driver_name.toStdString().c_str());
 	if (d_ogr_driver_ptr == NULL)
 	{
-		qDebug() << "Driver not available.";
 		throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"OGR driver not available.");
 	}
 
@@ -669,15 +665,14 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 		QString folder_name = path + QDir::separator() + basename;
 		QDir qdir(folder_name);
 		
-		qDebug() << "Path: " << path;
-		qDebug() << "Basename: " << basename;
-		qDebug() << "Folder name: " << folder_name;
+		//qDebug() << "Path: " << path;
+		//qDebug() << "Basename: " << basename;
+		//qDebug() << "Folder name: " << folder_name;
 		
 		if (!qdir.exists())
 		{
 			if (!QDir(path).mkdir(basename))
 			{
-				qDebug() << "Failed to create directory.";
 				throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"Failed to create directory for multiple geometry-type files.");
 			}
 		}
@@ -758,7 +753,6 @@ GPlatesFileIO::OgrWriter::write_point_feature(
 
 	if (ogr_feature == NULL)
 	{
-		qDebug() << "Error creating OGR feature.";
 		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR feature.");
 	}
 
@@ -779,7 +773,6 @@ GPlatesFileIO::OgrWriter::write_point_feature(
 	// Add the new feature to the layer.
 	if ((*d_ogr_point_layer)->CreateFeature(ogr_feature) != OGRERR_NONE)
 	{
-		qDebug() << "Failed to create point feature.";
 		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Failed to create point feature.");
 	}
 
@@ -820,7 +813,6 @@ GPlatesFileIO::OgrWriter::write_multi_point_feature(
 
 	if (ogr_feature == NULL)
 	{
-		qDebug() << "Error creating OGR feature.";
 		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR feature.");
 	}
 
@@ -850,7 +842,6 @@ GPlatesFileIO::OgrWriter::write_multi_point_feature(
 	// Add the new feature to the layer.
 	if ((*d_ogr_multi_point_layer)->CreateFeature(ogr_feature) != OGRERR_NONE)
 	{
-		qDebug() << "Failed to create multi-point feature.";
 		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Failed to create multi-point feature.");
 	}
 
@@ -932,7 +923,6 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polyline_feature(
 
 	if (ogr_feature == NULL)
 	{
-		qDebug() << "Error creating OGR feature.";
 		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR feature.");
 	}
 
@@ -954,8 +944,7 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polyline_feature(
 	// Add the new feature to the layer.
 	if ((*d_ogr_polyline_layer)->CreateFeature(ogr_feature) != OGRERR_NONE)
 	{
-		qDebug() << "Failed to create multi polyline feature.";
-		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Failed to create polyline feature.");
+		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Failed to create multi polyline feature.");
 	}
 
 	OGRFeature::DestroyFeature(ogr_feature);
@@ -1028,7 +1017,6 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polygon_feature(
 
 	if (ogr_feature == NULL)
 	{
-		qDebug() << "Error creating OGR feature.";
 		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Error creating OGR feature.");
 	}
 
@@ -1049,7 +1037,6 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polygon_feature(
 	// Add the new feature to the layer.
 	if ((*d_ogr_polygon_layer)->CreateFeature(ogr_feature) != OGRERR_NONE)
 	{
-		qDebug() << "Failed to create polygon feature.";
 		throw OgrException(GPLATES_EXCEPTION_SOURCE,"Failed to create polygon feature.");
 	}
 

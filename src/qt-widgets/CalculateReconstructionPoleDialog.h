@@ -28,10 +28,13 @@
 
 #include <QWidget>
 
-#include "maths/Rotation.h"
+#include "CalculateReconstructionPoleDialogUi.h"
+
+#include "GPlatesDialog.h"
 #include "ReconstructionPoleWidget.h"
 
-#include "CalculateReconstructionPoleDialogUi.h"
+#include "maths/Rotation.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -57,7 +60,7 @@ namespace GPlatesQtWidgets
 	 * Dialog to calculate a reconstruction pole from a VGP.                                                                     
 	 */
 	class CalculateReconstructionPoleDialog:
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_CalculateReconstructionPoleDialog
 	{
 		Q_OBJECT

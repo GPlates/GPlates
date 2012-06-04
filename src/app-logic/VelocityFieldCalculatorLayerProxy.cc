@@ -103,7 +103,6 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 
 		// Topological closed plate polygons...
 		std::vector<resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
-		std::vector<reconstructed_feature_geometry_non_null_ptr_type> rfgs;
 
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<TopologyBoundaryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
@@ -111,7 +110,6 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 		{
 			topological_boundary_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_boundaries(
 					resolved_topological_boundaries,
-					rfgs,
 					reconstruction_time);
 		}
 

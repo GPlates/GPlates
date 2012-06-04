@@ -27,13 +27,16 @@
 #ifndef GPLATES_APP_LOGIC_LOGMODEL_H
 #define GPLATES_APP_LOGIC_LOGMODEL_H
 
+#include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 #include <QAbstractListModel>
 #include <QList>
 #include <QString>
 #include <QtGlobal>
 #include <QPointer>
 #include <QTimer>
-#include <boost/noncopyable.hpp>
+
+#include "GPlatesQtMsgHandler.h"
 
 
 namespace GPlatesAppLogic
@@ -130,8 +133,7 @@ namespace GPlatesAppLogic
 				QObject *_parent);
 		
 		virtual
-		~LogModel()
-		{  }
+		~LogModel();
 		
 		/**
 		 * Our accessor for appending new log entries.
@@ -189,6 +191,11 @@ namespace GPlatesAppLogic
 		 * Timer used to prevent flooding.
 		 */
 		QPointer<QTimer> d_buffer_timeout;
+
+		/**
+		 * Handle to the installed message handler so can remove it in destructor.
+		 */
+		boost::optional<GPlatesQtMsgHandler::message_handler_id_type> d_message_handler_id;
 	};
 			
 }

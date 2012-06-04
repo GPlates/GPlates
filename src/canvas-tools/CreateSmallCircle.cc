@@ -41,7 +41,7 @@ GPlatesCanvasTools::CreateSmallCircle::CreateSmallCircle(
 	CanvasTool(status_bar_callback),
 	d_rendered_geom_collection_ptr(&rendered_geom_collection),
 	d_small_circle_layer_ptr(rendered_geom_collection.get_main_rendered_layer(
-			GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_LAYER)),
+			GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_CANVAS_TOOL_WORKFLOW_LAYER)),
 	d_small_circle_widget_ptr(&small_circle_widget),
 	d_small_circle_collection_ref(small_circle_widget.small_circle_collection()),
 	d_circle_is_being_drawn(false)
@@ -58,7 +58,7 @@ GPlatesCanvasTools::CreateSmallCircle::handle_activation()
 
 	// activate rendered layer
         d_rendered_geom_collection_ptr->set_main_layer_active(
-			GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_LAYER);
+			GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_CANVAS_TOOL_WORKFLOW_LAYER);
 
 	d_small_circle_layer_ptr->set_active();
 }

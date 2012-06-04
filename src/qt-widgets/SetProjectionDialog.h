@@ -30,6 +30,8 @@
 
 #include "SetProjectionDialogUi.h"
 
+#include "GPlatesDialog.h"
+
 #include "gui/MapProjection.h"
 
 
@@ -39,7 +41,7 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 
 	class SetProjectionDialog: 
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_SetProjectionDialog
 	{
 		Q_OBJECT

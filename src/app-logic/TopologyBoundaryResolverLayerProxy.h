@@ -75,12 +75,10 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_resolved_topological_boundaries(
-				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
-				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &rfgs)
+				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries)
 		{
 			get_resolved_topological_boundaries(
 					resolved_topological_boundaries, 
-					rfgs,
 					d_current_reconstruction_time);
 		}
 
@@ -92,7 +90,6 @@ namespace GPlatesAppLogic
 		void
 		get_resolved_topological_boundaries(
 				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
-				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &rfgs,
 				const double &reconstruction_time);
 
 
@@ -207,13 +204,10 @@ namespace GPlatesAppLogic
 		double d_current_reconstruction_time;
 
 		/**
-		 * The cached resolved topo boundaries, and reconstructed feature geometries.
+		 * The cached resolved topological boundaries.
 		 */
 		boost::optional< std::vector<resolved_topological_boundary_non_null_ptr_type> >
 				d_cached_resolved_topological_boundaries;
-
-		boost::optional< std::vector<reconstructed_feature_geometry_non_null_ptr_type> >
-				d_cached_reconstructed_feature_geometries;
 
 		/**
 		 * Cached reconstruction time.

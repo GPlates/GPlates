@@ -49,6 +49,7 @@
 #include "property-values/XsString.h"
 
 #include "qt-widgets/GlobeCanvas.h"
+#include "qt-widgets/SearchResultsDockWidget.h"
 #include "qt-widgets/TopologyToolsWidget.h"
 #include "qt-widgets/ViewportWindow.h"
 
@@ -79,10 +80,6 @@ GPlatesCanvasTools::BuildTopology::BuildTopology(
 void
 GPlatesCanvasTools::BuildTopology::handle_activation()
 {
-	// Activate rendered layer.
-	d_rendered_geom_collection->set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
-
 	// ONLY allow this tool to active with no foucs
 	if ( d_feature_focus_ptr->is_valid() )
 	{
@@ -110,9 +107,9 @@ GPlatesCanvasTools::BuildTopology::handle_left_click(
 		double proximity_inclusion_threshold)
 {
 	// Show the 'Clicked' Feature Table
-	d_viewport_window_ptr->choose_clicked_geometry_table();
+	d_viewport_window_ptr->search_results_dock_widget().choose_clicked_geometry_table();
 	
-	GPlatesGui::add_clicked_geometries_to_feature_table(
+	GPlatesGui::get_and_add_clicked_geometries_to_feature_table(
 			point_on_sphere,
 			proximity_inclusion_threshold,
 			*d_viewport_window_ptr,
@@ -129,18 +126,10 @@ GPlatesCanvasTools::BuildTopology::handle_left_shift_click(
 		bool is_on_earth,
 		double proximity_inclusion_threshold)
 {
-	// Show the 'Clicked' Feature Table
-	d_viewport_window_ptr->choose_clicked_geometry_table();
-	
-	GPlatesGui::add_clicked_geometries_to_feature_table(
+	handle_left_click(
 			point_on_sphere,
-			proximity_inclusion_threshold,
-			*d_viewport_window_ptr,
-			*d_clicked_table_model_ptr,
-			*d_feature_focus_ptr,
-			*d_rendered_geom_collection,
-			d_reconstruct_graph,
-			&GPlatesAppLogic::TopologyInternalUtils::include_only_reconstructed_feature_geometries);
+			is_on_earth,
+			proximity_inclusion_threshold);
 }
 
 void
@@ -150,9 +139,9 @@ GPlatesCanvasTools::BuildTopology::handle_left_control_click(
 		double proximity_inclusion_threshold)
 {
 	// Show the 'Clicked' Feature Table
-	d_viewport_window_ptr->choose_clicked_geometry_table();
+	d_viewport_window_ptr->search_results_dock_widget().choose_clicked_geometry_table();
 	
-	GPlatesGui::add_clicked_geometries_to_feature_table(
+	GPlatesGui::get_and_add_clicked_geometries_to_feature_table(
 			point_on_sphere,
 			proximity_inclusion_threshold,
 			*d_viewport_window_ptr,

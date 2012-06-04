@@ -71,13 +71,18 @@ namespace GPlatesGui
 				GPlatesQtWidgets::DockWidget &dock);
 
 		/**
-		 * A replacement for the addDockWidget() etc methods on ViewportWindow (QMainWindow).
+		 * Check if docking is possible for given location.
+		 *
+		 * NOTE: If @a dock is tabified at @a area then it can dock there - this untabifies it
+		 * and docks it alongside the other dock(s) in @a area.
+		 *
+		 * @a dock - a reference to the DockWidget that would be docking into @a area;
+		 * this is required since one should not attempt to dock to an area one is already docked at.
 		 */
-		void
-		move_dock(
-				GPlatesQtWidgets::DockWidget &dock,
+		bool
+		can_dock(
 				Qt::DockWidgetArea area,
-				bool tabify_as_appropriate);
+				const GPlatesQtWidgets::DockWidget &dock) const;
 
 		/**
 		 * Check if tabification with another DockWidget is possible for given location.
@@ -88,7 +93,16 @@ namespace GPlatesGui
 		bool
 		can_tabify(
 				Qt::DockWidgetArea area,
-				const GPlatesQtWidgets::DockWidget &dock);
+				const GPlatesQtWidgets::DockWidget &dock) const;
+
+		/**
+		 * A replacement for the addDockWidget() etc methods on ViewportWindow (QMainWindow).
+		 */
+		void
+		move_dock(
+				GPlatesQtWidgets::DockWidget &dock,
+				Qt::DockWidgetArea area,
+				bool tabify_as_appropriate);
 
 	signals:
 
@@ -98,19 +112,47 @@ namespace GPlatesGui
 	private slots:
 
 		void
-		react_dockwidget_change(
+		react_dockwidget_location_change(
 				GPlatesQtWidgets::DockWidget &dock,
 				Qt::DockWidgetArea area,
 				bool floating);
 
 	private:
 
+		bool
+		can_dock(
+				const GPlatesQtWidgets::DockWidget &dock,
+				const QList< QPointer<GPlatesQtWidgets::DockWidget> > &docked_area_list,
+				const QList< QPointer<GPlatesQtWidgets::DockWidget> > &tabified_area_list) const;
+
+		bool
+		can_tabify(
+				const GPlatesQtWidgets::DockWidget &dock,
+				const QList< QPointer<GPlatesQtWidgets::DockWidget> > &docked_area_list,
+				const QList< QPointer<GPlatesQtWidgets::DockWidget> > &tabified_area_list) const;
+
+		bool
+		tabify(
+				GPlatesQtWidgets::DockWidget &dock,
+				QList< QPointer<GPlatesQtWidgets::DockWidget> > &docked_area_list,
+				QList< QPointer<GPlatesQtWidgets::DockWidget> > &tabified_area_list);
+
 		/**
 		 * Remove the given DockWidget from all the 'dock location' lists,
 		 * typically so that it can be added to a new location.
 		 */
 		void
-		remove_from_location_lists(
+		remove_from_docked_lists(
+				GPlatesQtWidgets::DockWidget *remove);
+
+		/**
+		 * Remove the given DockWidget from all the 'tabified' dock area lists.
+		 *
+		 * If @a remove is removed from a tabified list and there is only one remaining dock
+		 * in that area then it is also removed from the list (because it is also no longer tabified).
+		 */
+		void
+		remove_from_tabified_lists(
 				GPlatesQtWidgets::DockWidget *remove);
 
 		/**
@@ -130,10 +172,17 @@ namespace GPlatesGui
 		 * those docks being deleted (which should never happen until app exit anyway).
 		 */
 		QList< QPointer<GPlatesQtWidgets::DockWidget> > d_floating;
+
 		QList< QPointer<GPlatesQtWidgets::DockWidget> > d_docked_top;
 		QList< QPointer<GPlatesQtWidgets::DockWidget> > d_docked_bottom;
 		QList< QPointer<GPlatesQtWidgets::DockWidget> > d_docked_left;
 		QList< QPointer<GPlatesQtWidgets::DockWidget> > d_docked_right;
+
+		// List of dock widgets that are tabified in each dock area.
+		QList< QPointer<GPlatesQtWidgets::DockWidget> > d_tabified_top;
+		QList< QPointer<GPlatesQtWidgets::DockWidget> > d_tabified_bottom;
+		QList< QPointer<GPlatesQtWidgets::DockWidget> > d_tabified_left;
+		QList< QPointer<GPlatesQtWidgets::DockWidget> > d_tabified_right;
 	};
 }
 

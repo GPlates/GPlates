@@ -41,9 +41,10 @@ namespace GPlatesQtWidgets
 
 namespace GPlatesGui
 {
+	class Dialogs;
+
 	/**
-	 * This GUI class manages the icons displayed in the QStatusBar of the
-	 * ViewportWindow.
+	 * This GUI class manages the icons displayed in the QStatusBar of the ViewportWindow.
 	 */
 	class TrinketArea: 
 			public QObject
@@ -54,6 +55,7 @@ namespace GPlatesGui
 	
 		explicit
 		TrinketArea(
+				Dialogs &dialogs,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_,
 				QObject *parent_ = NULL);
 

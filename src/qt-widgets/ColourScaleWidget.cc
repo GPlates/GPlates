@@ -48,6 +48,7 @@
 #include "gui/Colour.h"
 #include "gui/ColourPaletteAdapter.h"
 #include "gui/ColourPaletteVisitor.h"
+#include "gui/Dialogs.h"
 
 
 namespace
@@ -565,7 +566,7 @@ GPlatesQtWidgets::ColourScaleWidget::contextMenuEvent(
 			if (!success)
 			{
 				QMessageBox::critical(
-						&d_viewport_window->visual_layers_dialog(),
+						&d_viewport_window->dialogs().visual_layers_dialog(),
 						tr("Save Image As"),
 						tr("GPlates could not save to the chosen file. Please choose another location."));
 			}

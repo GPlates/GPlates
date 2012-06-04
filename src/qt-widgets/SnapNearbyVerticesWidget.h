@@ -28,9 +28,15 @@
 #include <QWidget>
 #include "boost/optional.hpp"
 
+#include "SnapNearbyVerticesWidgetUi.h"
+
 #include "model/FeatureHandle.h"
 #include "model/types.h"
-#include "SnapNearbyVerticesWidgetUi.h"
+
+namespace GPlatesCanvasTools
+{
+	class ModifyGeometryState;
+}
 
 namespace GPlatesPresentation
 {
@@ -53,9 +59,9 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 	public:
 		SnapNearbyVerticesWidget(
-			GPlatesQtWidgets::TaskPanel *task_panel,
-			GPlatesPresentation::ViewState &view_state,
-			QWidget *parent_ = NULL);
+				GPlatesCanvasTools::ModifyGeometryState &modify_geometry_state,
+				GPlatesPresentation::ViewState &view_state,
+				QWidget *parent_ = NULL);
 			
 
 		
@@ -86,7 +92,7 @@ namespace GPlatesQtWidgets
 		
 	private:
 	
-		TaskPanel *d_task_panel_ptr;
+		GPlatesCanvasTools::ModifyGeometryState &d_modify_geometry_state;
 		GPlatesGui::FeatureFocus *d_feature_focus_ptr;
 		boost::optional<GPlatesModel::integer_plate_id_type> d_conjugate_plate_id;
 		GPlatesModel::FeatureHandle::const_weak_ref d_focused_feature;

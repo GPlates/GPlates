@@ -83,8 +83,8 @@ namespace
 
 
 GPlatesGui::FeatureFocus::FeatureFocus(
-		GPlatesPresentation::ViewState &view_state):
-	d_rendered_geometry_collection(view_state.get_rendered_geometry_collection())
+		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection):
+	d_rendered_geometry_collection(rendered_geometry_collection)
 {
 	// Get notified whenever the rendered geometry collection gets updated.
 	QObject::connect(
@@ -391,8 +391,8 @@ private:
 boost::optional<const GPlatesMaths::LatLonPoint>
 GPlatesGui::locate_focus()
 {
-	GPlatesPresentation::Application* app = GPlatesPresentation::Application::instance();
-	FeatureFocus& focus = app->get_view_state().get_feature_focus();
+	GPlatesPresentation::Application &app = GPlatesPresentation::Application::instance();
+	FeatureFocus& focus = app.get_view_state().get_feature_focus();
 			
 	ReconstructionGeometryLocator locator;
 	GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type geo = focus.associated_reconstruction_geometry();

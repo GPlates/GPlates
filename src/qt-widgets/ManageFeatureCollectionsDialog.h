@@ -34,8 +34,12 @@
 #include <QString>
 
 #include "ManageFeatureCollectionsDialogUi.h"
+
+#include "GPlatesDialog.h"
 #include "SaveFileDialog.h"
+
 #include "app-logic/FeatureCollectionFileState.h"
+
 #include "file-io/FeatureCollectionFileFormat.h"
 
 
@@ -73,7 +77,7 @@ namespace GPlatesQtWidgets
 	}
 
 	class ManageFeatureCollectionsDialog:
-			public QDialog, 
+			public GPlatesDialog, 
 			protected Ui_ManageFeatureCollectionsDialog
 	{
 		Q_OBJECT

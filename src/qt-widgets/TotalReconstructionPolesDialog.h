@@ -34,6 +34,7 @@
 
 #include "TotalReconstructionPolesDialogUi.h"
 
+#include "GPlatesDialog.h"
 #include "SaveFileDialog.h"
 
 #include "presentation/VisualLayer.h"
@@ -55,7 +56,7 @@ namespace GPlatesQtWidgets
 	class VisualLayersComboBox;
 
 	class TotalReconstructionPolesDialog:
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_TotalReconstructionPolesDialog
 	{
 		Q_OBJECT

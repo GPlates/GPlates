@@ -30,8 +30,9 @@
 
 #include "FeaturePropertiesDialogUi.h"
 
-#include "QueryFeaturePropertiesWidget.h"
 #include "EditFeaturePropertiesWidget.h"
+#include "GPlatesDialog.h"
+#include "QueryFeaturePropertiesWidget.h"
 #include "ViewFeatureGeometriesWidget.h"
 
 #include "gui/FeatureFocus.h"
@@ -49,7 +50,7 @@ namespace GPlatesQtWidgets
 	class ChangeFeatureTypeDialog;
 
 	class FeaturePropertiesDialog :
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_FeaturePropertiesDialog
 	{
 		Q_OBJECT
@@ -115,9 +116,6 @@ namespace GPlatesQtWidgets
 
 	private:
 		
-		void
-		pop_up();
-
 		/**
 		 * The Feature observed by the dialog.
 		 * Note that this could become invalid at any time.

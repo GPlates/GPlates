@@ -33,10 +33,13 @@
 
 #include "TopologySectionsTable.h"
 
+#include "FeatureFocus.h"
 #include "TopologySectionsContainer.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/LayerProxyUtils.h"
+
+#include "presentation/ViewState.h"
 
 #include "qt-widgets/ActionButtonBox.h"
 #include "qt-widgets/InsertionPointWidget.h"
@@ -157,8 +160,7 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 		QTableWidget &table,
 		TopologySectionsContainer &boundary_container,
 		TopologySectionsContainer &interior_container,
-		GPlatesAppLogic::ApplicationState &application_state,
-		GPlatesGui::FeatureFocus &feature_focus):
+		GPlatesPresentation::ViewState &view_state):
 	d_table(&table),
 	d_boundary_container_ptr(&boundary_container),
 	d_interior_container_ptr(&interior_container),
@@ -168,8 +170,8 @@ GPlatesGui::TopologySectionsTable::TopologySectionsTable(
 	d_insert_below_action(new QAction(&table)),
 	d_cancel_insertion_point_action(new QAction(&table)),
 	d_suppress_update_notification_guard(false),
-	d_application_state(application_state),
-	d_feature_focus_ptr(&feature_focus)
+	d_application_state(view_state.get_application_state()),
+	d_feature_focus_ptr(&view_state.get_feature_focus())
 {
 	// Set up the actions we can use.
 	set_up_actions();

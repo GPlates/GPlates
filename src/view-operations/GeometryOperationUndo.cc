@@ -27,18 +27,14 @@
 
 #include "GeometryOperation.h"
 
-#include "gui/ChooseCanvasTool.h"
-#include "view-operations/GeometryOperationTarget.h"
+#include "gui/ChooseCanvasToolUndoCommand.h"
 
 
 GPlatesViewOperations::GeometryOperationUndoCommand::GeometryOperationUndoCommand(
 		const QString &text_,
 		std::auto_ptr<QUndoCommand> geometry_operation_command,
 		GeometryOperation *geometry_operation,
-		GeometryOperationTarget *geometry_operation_target,
-		RenderedGeometryCollection::MainLayerType main_layer_type,
-		GPlatesGui::ChooseCanvasTool *choose_canvas_tool,
-		void (GPlatesGui::ChooseCanvasTool::*choose_geometry_operation_tool)(),
+		GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 		UndoRedo::CommandId command_id,
 		QUndoCommand *parent_) :
 	QUndoCommand(text_, parent_),
@@ -46,14 +42,9 @@ GPlatesViewOperations::GeometryOperationUndoCommand::GeometryOperationUndoComman
 	d_command_id(command_id),
 	d_geometry_operation_command(geometry_operation_command.release()),
 	d_geometry_operation(geometry_operation),
-	d_geometry_operation_target(geometry_operation_target),
-	d_geometry_operation_target_undo_command(
-			new GeometryOperationTargetUndoCommand(geometry_operation_target)),
-	d_main_layer_type(main_layer_type),
 	d_choose_canvas_tool_command(
-		// Add undo command for selecting the geometry operation tool.
-		new GPlatesGui::ChooseCanvasToolUndoCommand(
-				choose_canvas_tool, choose_geometry_operation_tool))
+			// Add undo command for selecting the geometry operation tool.
+			new GPlatesGui::ChooseCanvasToolUndoCommand(canvas_tool_workflows))
 {
 }
 
@@ -66,39 +57,20 @@ GPlatesViewOperations::GeometryOperationUndoCommand::~GeometryOperationUndoComma
 void
 GPlatesViewOperations::GeometryOperationUndoCommand::redo()
 {
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
-
 	// Visit child commands.
 	//
-	// 1) Restore the GeometryOperationTarget state to what it was.
-	//    This is done before changing the canvas tool because the GeometryOperationTarget
-	//    listens for tool changes and uses this to determine the current geometry builder.
-	// 2) Activate canvas tool - shows appropriate high-level GUI stuff.
-	// 3) Activate geometry operation so it's in same state as when
+	// 1) Activate canvas tool - shows appropriate high-level GUI stuff.
+	// 2) Activate geometry operation so it's in same state as when
 	//    it performed the original operation.
-	//    This needs to done because the canvas tool, and hence the geometry operation,
-	//    only changes geometry builder target when the tool changes and the tool
-	//    might not change (eg, the user might do a move vertex on the focused geometry
-	//    and then do a move vertex on the digitised geometry - so the tool hasn't
-	//    changed but the geometry builder target has).
-	// 4) Redo the geometry operation.
+	// 3) Redo the geometry operation.
 
-	d_geometry_operation_target_undo_command->redo();
 	d_choose_canvas_tool_command->redo();
 
 	// Don't do anything the first call to 'redo()' because the
 	// geometry operation is already activated.
 	if (!d_first_redo)
 	{
-		d_geometry_operation->deactivate();
-		// Activate using the geometry builder determined by the
-		// GeometryOperationTarget - this should be the same geometry builder
-		// that was targetted in the initial operation.
-		d_geometry_operation->activate(
-				d_geometry_operation_target->get_current_geometry_builder(),
-				d_main_layer_type);
+		d_geometry_operation->activate();
 	}
 
 	d_geometry_operation_command->redo();
@@ -110,34 +82,15 @@ GPlatesViewOperations::GeometryOperationUndoCommand::redo()
 void
 GPlatesViewOperations::GeometryOperationUndoCommand::undo()
 {
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
-
 	// Visit child commands.
 	//
-	// 1) Restore the GeometryOperationTarget state to what it was.
-	//    This is done before changing the canvas tool because the GeometryOperationTarget
-	//    listens for tool changes and uses this to determine the current geometry builder.
-	// 2) Activate canvas tool - shows appropriate high-level GUI stuff.
-	// 3) Activate geometry operation so it's in same state as when
+	// 1) Activate canvas tool - shows appropriate high-level GUI stuff.
+	// 2) Activate geometry operation so it's in same state as when
 	//    it performed the original operation.
-	//    This needs to done because the canvas tool, and hence the geometry operation,
-	//    only changes geometry builder target when the tool changes and the tool
-	//    might not change (eg, the user might do a move vertex on the focused geometry
-	//    and then do a move vertex on the digitised geometry - so the tool hasn't
-	//    changed but the geometry builder target has).
-	// 4) Undo the geometry operation.
-	d_geometry_operation_target_undo_command->undo();
+	// 3) Undo the geometry operation.
 	d_choose_canvas_tool_command->undo();
 
-	d_geometry_operation->deactivate();
-	// Activate using the geometry builder determined by the
-	// GeometryOperationTarget - this should be the same geometry builder
-	// that was targetted in the initial operation.
-	d_geometry_operation->activate(
-			d_geometry_operation_target->get_current_geometry_builder(),
-			d_main_layer_type);
+	d_geometry_operation->activate();
 
 	d_geometry_operation_command->undo();
 }

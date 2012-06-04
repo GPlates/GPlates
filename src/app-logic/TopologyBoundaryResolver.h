@@ -74,17 +74,14 @@ namespace GPlatesAppLogic
 		/**
 		 * The resolved dynamic polygons are appended to @a resolved_topological_boundaries.
 		 *
-		 * The 'reconstructed' dynamic topological lines are appended to @a reconstructed_feature_geometries.
-		 * 
 		 * @param reconstruction_tree is associated with the output resolved topological boundaries.
 		 * @param topological_sections_reconstruct_handles is a list of reconstruct handles that
 		 *        identifies the subset, of all RFGs observing the topological section features,
 		 *        that should be searched when resolving the topological boundaries.
-		 *        This is useful to avoid outdated RFGs still in existence among other scenarios.
+		 *        This is useful to avoid outdated RFGs still in existence (and other scenarios).
 		 */
 		TopologyBoundaryResolver(
 				std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
-				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles);
 
@@ -223,21 +220,15 @@ namespace GPlatesAppLogic
 		std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &d_resolved_topological_boundaries;
 
 		/**
-		 * The @a ReconstructedFeatureGeometry objects generated during reconstruction.
-		 */
-		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &d_reconstructed_feature_geometries;
-
-		/**
 		 * The reconstruction tree associated with the resolved topological boundaries begin generated.
 		 */
 		ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;
 
 		/**
-		 * The reconstructed topogical boundary sections we're using to assemble our dynamic polygons.
+		 * A list of reconstruct handles that identifies the subset, of all RFGs observing the
+		 * topological section features, that should be searched when resolving the topological boundaries.
 		 *
-		 * NOTE: We don't reference them directly but by forcing clients to produce them we
-		 * ensure they exist while we search for them indirectly via feature observers.
-		 * If the client didn't produce them, or forgot to, then we'd find no RFGs during the global search.
+		 * This is useful to avoid outdated RFGs still in existence (and other scenarios).
 		 */
 		boost::optional<std::vector<ReconstructHandle::type> > d_topological_sections_reconstruct_handles;
 

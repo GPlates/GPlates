@@ -35,6 +35,11 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 }
 
+namespace GPlatesViewOperations
+{
+	class RenderedGeometryCollection;
+}
+
 namespace GPlatesCanvasTools
 {
 	/**
@@ -52,14 +57,20 @@ namespace GPlatesCanvasTools
 		ReorientGlobe(
 				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				GPlatesQtWidgets::ViewportWindow &view_state_):
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				GPlatesQtWidgets::ViewportWindow &viewport_window_) :
 			GlobeCanvasTool(globe_, globe_canvas_),
-			d_view_state_ptr(&view_state_)
+			d_rendered_geometry_collection(rendered_geometry_collection),
+			d_viewport_window_ptr(&viewport_window_)
 		{  }
 
 		virtual
 		void
 		handle_activation();
+
+		virtual
+		void
+		handle_deactivation();
 
 		virtual
 		void
@@ -108,9 +119,14 @@ namespace GPlatesCanvasTools
 	private:
 
 		/**
+		 * Used to activate/deactivate focused geometry highlight rendered layer.
+		 */
+		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
+
+		/**
 		 * This is the View State used to pass messages to the status bar.
 		 */
-		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		GPlatesQtWidgets::ViewportWindow *d_viewport_window_ptr;
 	};
 }
 

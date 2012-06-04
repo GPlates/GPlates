@@ -30,6 +30,8 @@
 
 #include "ShapefileAttributeViewerDialogUi.h"
 
+#include "GPlatesDialog.h"
+
 #include "file-io/File.h"
 
 
@@ -43,7 +45,7 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 
 	class ShapefileAttributeViewerDialog:
-		public QDialog,
+		public GPlatesDialog,
 		protected Ui_ShapefileAttributeViewerDialog
 	{
 		Q_OBJECT

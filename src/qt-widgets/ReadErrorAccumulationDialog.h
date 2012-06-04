@@ -29,14 +29,17 @@
 #include <QObject>
 #include <QString>
 
-#include "ReadErrorAccumulationDialogUi.h"
-#include "file-io/ReadErrorAccumulation.h"
+#include "GPlatesDialog.h"
 #include "InformationDialog.h"
+#include "ReadErrorAccumulationDialogUi.h"
+
+#include "file-io/ReadErrorAccumulation.h"
+
 
 namespace GPlatesQtWidgets
 {
 	class ReadErrorAccumulationDialog:
-			public QDialog, 
+			public GPlatesDialog, 
 			protected Ui_ReadErrorAccumulationDialog
 	{
 		Q_OBJECT

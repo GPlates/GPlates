@@ -50,7 +50,7 @@
 GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
-	QDialog(parent_, Qt::Window),
+	GPlatesDialog(parent_, Qt::Window),
 	d_query_feature_properties_widget(
 			new QueryFeaturePropertiesWidget(
 				view_state_,
@@ -168,20 +168,6 @@ GPlatesQtWidgets::FeaturePropertiesDialog::choose_geometries_widget_and_open()
 {
 	tabwidget_query_edit->setCurrentWidget(d_view_feature_geometries_widget);
 	pop_up();
-}
-
-
-void
-GPlatesQtWidgets::FeaturePropertiesDialog::pop_up()
-{
-	show();
-	// In most cases, 'show()' is sufficient. However, selecting the menu entry
-	// a second time, when the dialog is still open, should make the dialog 'active'
-	// and return keyboard focus to it.
-	activateWindow();
-	// On platforms which do not keep dialogs on top of their parent, a call to
-	// raise() may also be necessary to properly 're-pop-up' the dialog.
-	raise();
 }
 
 

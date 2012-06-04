@@ -17,8 +17,12 @@ set(srcs
     AgeColourPalettes.h
     AnimationController.cc
     AnimationController.h
-    ChooseCanvasTool.cc
-    ChooseCanvasTool.h
+    CanvasToolWorkflow.cc
+    CanvasToolWorkflow.h
+    CanvasToolWorkflows.cc
+    CanvasToolWorkflows.h
+    ChooseCanvasToolUndoCommand.cc
+    ChooseCanvasToolUndoCommand.h
     Colour.cc
     Colour.h
     ColourFilter.h
@@ -50,14 +54,14 @@ set(srcs
     CsvExport.h
     Dialogs.cc
     Dialogs.h
+    DigitisationCanvasToolWorkflow.cc
+    DigitisationCanvasToolWorkflow.h
     DockState.cc
     DockState.h
     DrawStyleAdapters.cc
     DrawStyleAdapters.h
     DrawStyleManager.cc
     DrawStyleManager.h
-    EnableCanvasTool.cc
-    EnableCanvasTool.h
     EventBlackout.cc
     EventBlackout.h
     ExportAnimationContext.cc
@@ -91,8 +95,12 @@ set(srcs
     ExportSvgAnimationStrategy.h
     ExportVelocityAnimationStrategy.cc
     ExportVelocityAnimationStrategy.h
+    ExternalSyncController.cc
+    ExternalSyncController.h
     FeatureFocus.cc
     FeatureFocus.h
+    FeatureInspectionCanvasToolWorkflow.cc
+    FeatureInspectionCanvasToolWorkflow.h
     FeaturePropertyTableModel.cc
     FeaturePropertyTableModel.h
     FeatureTableModel.cc
@@ -112,8 +120,6 @@ set(srcs
     GlobeCanvasTool.h
     GlobeCanvasToolAdapter.cc
     GlobeCanvasToolAdapter.h
-    GlobeCanvasToolChoice.cc
-    GlobeCanvasToolChoice.h
     GlobeOrientation.h
     GlobeRenderedGeometryCollectionPainter.cc
     GlobeRenderedGeometryCollectionPainter.h
@@ -143,8 +149,6 @@ set(srcs
     MapCanvasTool.h
     MapCanvasToolAdapter.cc
     MapCanvasToolAdapter.h
-    MapCanvasToolChoice.cc
-    MapCanvasToolChoice.h
     MapGrid.cc
     MapGrid.h
     MapProjection.cc
@@ -163,6 +167,8 @@ set(srcs
     Palette.h
     PlateIdColourPalettes.cc
     PlateIdColourPalettes.h
+    PoleManipulationCanvasToolWorkflow.cc
+    PoleManipulationCanvasToolWorkflow.h
     ProjectionException.h
     PythonConfiguration.cc
     PythonConfiguration.h
@@ -185,6 +191,8 @@ set(srcs
     SimpleGlobeOrientation.h
     SingleColourScheme.cc
     SingleColourScheme.h
+    SmallCircleCanvasToolWorkflow.cc
+    SmallCircleCanvasToolWorkflow.h
     SphericalGrid.cc
     SphericalGrid.h
     Stars.cc
@@ -199,6 +207,8 @@ set(srcs
     TextOverlaySettings.h
     TextRenderer.cc
     TextRenderer.h
+    TopologyCanvasToolWorkflow.cc
+    TopologyCanvasToolWorkflow.h
     TopologySectionsContainer.cc
     TopologySectionsContainer.h
     TopologySectionsTable.cc

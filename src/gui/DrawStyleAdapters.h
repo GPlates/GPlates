@@ -50,7 +50,7 @@
 namespace GPlatesGui
 {
 	class DrawStyleManager;
-	class StyleCatagory;
+	class StyleCategory;
 
 	struct DrawStyle
 	{
@@ -64,7 +64,7 @@ namespace GPlatesGui
 		friend class DrawStyleManager;
 	public:
 		explicit
-		StyleAdapter(const StyleCatagory& cata) :
+		StyleAdapter(const StyleCategory& cata) :
 			d_catagory(cata),
 			d_name("Unnamed"),
 			d_cfg_dirty(true)
@@ -117,7 +117,7 @@ namespace GPlatesGui
 		deep_clone() const = 0;
 
 		
-		const StyleCatagory&
+		const StyleCategory&
 		catagory() const
 		{
 			return d_catagory;
@@ -140,7 +140,7 @@ namespace GPlatesGui
 		}
 
 	protected:
-		const StyleCatagory& d_catagory;
+		const StyleCategory& d_catagory;
 		unsigned d_id;
 		QString d_name;
 		mutable bool d_cfg_dirty;
@@ -157,7 +157,7 @@ namespace GPlatesGui
 	public:
 		PythonStyleAdapter(
 				bp::object& obj,
-				const StyleCatagory& cata) ;
+				const StyleCategory& cata) ;
 
 				
 		const DrawStyle
@@ -216,7 +216,7 @@ namespace GPlatesGui
 	public:
 		ColourStyleAdapter(
 				boost::shared_ptr<const ColourScheme> scheme,
-				const StyleCatagory& cata,
+				const StyleCategory& cata,
 				const QString s_name = QString()) : 
 			StyleAdapter(cata),
 			d_scheme(scheme)

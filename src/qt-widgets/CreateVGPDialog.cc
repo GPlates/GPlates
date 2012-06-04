@@ -226,7 +226,7 @@ namespace
 GPlatesQtWidgets::CreateVGPDialog::CreateVGPDialog(
 		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
-	QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
+	GPlatesDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_model_ptr(view_state_.get_application_state().get_model_interface()),
 	d_file_state(view_state_.get_application_state().get_feature_collection_file_state()),
 	d_file_io(view_state_.get_application_state().get_feature_collection_file_io()),
@@ -266,7 +266,7 @@ GPlatesQtWidgets::CreateVGPDialog::setup_connections()
 	QObject::connect(d_choose_feature_collection_widget, SIGNAL(item_activated()),
 		button_create, SLOT(setFocus()));
 
-	QObject::connect(this,SIGNAL(feature_created(GPlatesModel::FeatureHandle::weak_ref)),
+	QObject::connect(this,SIGNAL(feature_created()),
 			d_application_state_ptr,SLOT(reconstruct()));
 }
 

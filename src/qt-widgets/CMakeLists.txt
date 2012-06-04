@@ -41,6 +41,9 @@ set(srcs
     CalculateReconstructionPoleDialog.cc
     CalculateReconstructionPoleDialog.h
     CalculateReconstructionPoleDialogUi.ui
+    CanvasToolBarDockWidget.cc
+    CanvasToolBarDockWidget.h
+    CanvasToolBarDockWidgetUi.ui
     ChangeFeatureTypeDialog.cc
     ChangeFeatureTypeDialog.h
     ChangeFeatureTypeDialogUi.ui
@@ -353,6 +356,9 @@ set(srcs
     SaveFileDialogImpl.cc
     SaveFileDialogImpl.h
     SceneView.h
+    SearchResultsDockWidget.cc
+    SearchResultsDockWidget.h
+    SearchResultsDockWidgetUi.ui
     SelectionWidget.cc
     SelectionWidget.h
     SetCameraViewpointDialog.cc

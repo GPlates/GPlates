@@ -34,6 +34,7 @@
 
 #include "FileIOFeedback.h"
 
+#include "Dialogs.h"
 #include "FeatureFocus.h"
 #include "UnsavedChangesTracker.h"
 
@@ -753,15 +754,7 @@ GPlatesGui::FileIOFeedback::app_state()
 GPlatesQtWidgets::ManageFeatureCollectionsDialog &
 GPlatesGui::FileIOFeedback::manage_feature_collections_dialog()
 {
-	// Obtain a pointer to the dialog once, via the ViewportWindow and Qt magic.
-	static GPlatesQtWidgets::ManageFeatureCollectionsDialog *dialog_ptr = 
-			viewport_window().findChild<GPlatesQtWidgets::ManageFeatureCollectionsDialog *>(
-					"ManageFeatureCollectionsDialog");
-	// The dialog not existing is a serious error.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			dialog_ptr != NULL,
-			GPLATES_ASSERTION_SOURCE);
-	return *dialog_ptr;
+	return d_viewport_window_ptr->dialogs().manage_feature_collections_dialog();
 }
 
 

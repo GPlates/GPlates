@@ -226,7 +226,7 @@ GPlatesQtWidgets::MapCanvas::draw_svg_output()
 
 	// Turn off rendering of digitisation layer.
 	d_rendered_geometry_collection->set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::DIGITISATION_LAYER,
+		GPlatesViewOperations::RenderedGeometryCollection::DIGITISATION_CANVAS_TOOL_WORKFLOW_LAYER,
 		false);
 
 	update();

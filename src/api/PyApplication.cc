@@ -80,12 +80,12 @@ namespace GPlatesApi
 	class Application
 	{
 	public:
-		Application() : d_app(*GPlatesPresentation::Application::instance()) { }
+		Application() : d_app(GPlatesPresentation::Application::instance()) { }
 
 		GPlatesQtWidgets::ViewportWindow&
 		get_viewport_window()
 		{
-			return GPlatesPresentation::Application::instance()->get_viewport_window();
+			return GPlatesPresentation::Application::instance().get_main_window();
 		}
 
 		void
@@ -136,7 +136,7 @@ namespace GPlatesApi
 				object name = utility.attr("name");
 				utility.attr("__call__");//make sure it has __call__ function.
 
-				GPlatesGui::UtilitiesMenu &utilities_menu = d_app.get_viewport_window().utilities_menu();
+				GPlatesGui::UtilitiesMenu &utilities_menu = d_app.get_main_window().utilities_menu();
 				utilities_menu.add_utility(
 						PythonUtils::to_QString(category),
 						PythonUtils::to_QString(name),
@@ -161,7 +161,7 @@ namespace GPlatesApi
 				QString cata_name	=  QString::fromUtf8(boost::python::extract<const char*>(py_class.attr("__name__")));
 
 				DrawStyleManager* mgr = DrawStyleManager::instance();
-				const StyleCatagory* sc = mgr->get_catagory(cata_name);
+				const StyleCategory* sc = mgr->get_catagory(cata_name);
 			
 				if(!sc)
 					sc = mgr->register_style_catagory(cata_name);
@@ -269,7 +269,7 @@ export_instance()
 
 	class_<Application, boost::noncopyable>("Application")
 		//.def("get_main_window",
-		//		&Application::get_viewport_window,
+		//		&Application::get_main_window,
 		//		return_value_policy<reference_existing_object>()) // ViewportWindow is noncopyable 
 		//.def("exec_gui_file", &Application::exec_gui_file)
 		//.def("exec_gui_string", &Application::exec_gui_string)

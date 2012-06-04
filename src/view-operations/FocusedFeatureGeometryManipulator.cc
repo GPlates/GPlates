@@ -37,6 +37,7 @@
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
+#include "app-logic/ResolvedTopologicalNetwork.h"
 
 #include "feature-visitors/GeometrySetter.h"
 
@@ -326,6 +327,18 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::get_geometry_from_feat
 	{
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_geom =
 				focused_rtb.get()->resolved_topology_geometry();
+		return resolved_geom;
+	}
+
+	// See if the focused reconstruction geometry is a resolved topological network.
+	// If so then we'll use it's boundary polygon as the geometry and ignore the interior nodes, etc.
+	boost::optional<const GPlatesAppLogic::ResolvedTopologicalNetwork *> focused_rtn =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					const GPlatesAppLogic::ResolvedTopologicalNetwork>(d_focused_geometry);
+	if (focused_rtn)
+	{
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_geom =
+				focused_rtn.get()->boundary_polygon();
 		return resolved_geom;
 	}
 

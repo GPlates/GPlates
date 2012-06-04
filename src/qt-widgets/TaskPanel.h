@@ -42,6 +42,8 @@
 namespace GPlatesCanvasTools
 {
 	class MeasureDistanceState;
+	class ModifyGeometryState;
+	class GeometryOperationState;
 }
 
 namespace GPlatesAppLogic
@@ -51,14 +53,12 @@ namespace GPlatesAppLogic
 
 namespace GPlatesGui
 {
-	class ChooseCanvasTool;
+	class CanvasToolWorkflows;
 }
 
 namespace GPlatesViewOperations
 {
-	class ActiveGeometryOperation;
 	class GeometryBuilder;
-	class GeometryOperationTarget;
 	class RenderedGeometryCollection;
 }
 
@@ -107,15 +107,15 @@ namespace GPlatesQtWidgets
 
 		explicit
 		TaskPanel(
-				GPlatesPresentation::ViewState &view_state,
 				GPlatesViewOperations::GeometryBuilder &digitise_geometry_builder,
-				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target,
-				GPlatesViewOperations::ActiveGeometryOperation &active_geometry_operation,
+				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
+				GPlatesCanvasTools::ModifyGeometryState &modify_geometry_state,
 				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
-				ViewportWindow &viewport_window_,
 				QAction *undo_action_ptr,
 				QAction *redo_action_ptr,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
+				GPlatesPresentation::ViewState &view_state,
+				ViewportWindow &viewport_window_,
 				QWidget *parent_ = NULL);
 		
 		/**
@@ -141,6 +141,18 @@ namespace GPlatesQtWidgets
 		digitisation_widget() const
 		{
 			return *d_digitisation_widget_ptr;
+		}
+
+		/**
+		 * Accessor for the Modify Geometry Widget of the Modify Geometry Tab.
+		 *
+		 * This lets the geometry modification canvas tools interact with the
+		 * ModifyGeometryWidget.
+		 */
+		ModifyGeometryWidget &
+		modify_geometry_widget() const
+		{
+			return *d_modify_geometry_widget_ptr;
 		}
 
 		/**
@@ -196,18 +208,6 @@ namespace GPlatesQtWidgets
 		{
 			return d_clear_action;
 		}
-
-		void
-		emit_vertex_data_changed_signal(
-				bool should_check_nearby_vertices,
-				double threshold,
-				bool should_use_plate_id,
-				GPlatesModel::integer_plate_id_type plate_id);
-			
-	signals:
-		
-		void
-		vertex_data_changed(bool,double,bool,GPlatesModel::integer_plate_id_type);
 	
 	public slots:
 		
@@ -242,7 +242,8 @@ namespace GPlatesQtWidgets
 		choose_digitisation_tab();
 		
 		void
-		choose_modify_geometry_tab();
+		choose_modify_geometry_tab(
+				bool enable_move_nearby_vertices);
 
 		void
 		choose_modify_pole_tab();
@@ -255,10 +256,6 @@ namespace GPlatesQtWidgets
 
 		void
 		choose_small_circle_tab();
-
-		void
-		enable_move_nearby_vertices_widget(
-				bool enable);
 
 	private slots:
 
@@ -333,6 +330,13 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		set_up_small_circle_tab();
+
+		/**
+		 * Configure the 'modify geometry' tab enable snapping to nearby vertices.
+		 */
+		void
+		enable_move_nearby_vertices_widget(
+				bool enable);
 
 
 		/**

@@ -29,18 +29,26 @@
 #include <QObject>
 
 #include "MeasureDistance.h"
+
+#include "GeometryOperationState.h"
 #include "MeasureDistanceState.h"
+
 #include "gui/Colour.h"
 #include "gui/ColourProxy.h"
+
 #include "maths/GreatCircleArc.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/ProximityCriteria.h"
+
 #include "utils/GeometryCreationUtils.h"
+
 #include "view-operations/GeometryType.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryProximity.h"
+#include "view-operations/RenderedGeometryUtils.h"
+
 
 const GPlatesGui::Colour
 GPlatesCanvasTools::MeasureDistance::QUICK_MEASURE_LINE_COLOUR = GPlatesGui::Colour::get_grey();
@@ -74,17 +82,25 @@ GPlatesCanvasTools::MeasureDistance::LABEL_Y_OFFSET = 5;
 
 GPlatesCanvasTools::MeasureDistance::MeasureDistance(
 		const status_bar_callback_type &status_bar_callback,
+		GPlatesViewOperations::GeometryBuilder &geometry_builder,
+		GeometryOperationState &geometry_operation_state,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+		GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
 		GPlatesCanvasTools::MeasureDistanceState &measure_distance_state) :
 	CanvasTool(status_bar_callback),
+	d_geometry_builder(geometry_builder),
+	d_geometry_operation_state(geometry_operation_state),
 	d_rendered_geom_collection_ptr(&rendered_geom_collection),
 	d_measure_distance_state_ptr(&measure_distance_state),
-	d_main_layer_ptr(measure_distance_state.get_main_layer_ptr()),
-	d_highlight_layer_ptr(measure_distance_state.get_highlight_layer_ptr()),
-	d_label_layer_ptr(measure_distance_state.get_label_layer_ptr())
+	d_main_rendered_layer_type(main_rendered_layer_type),
+	d_geometry_layer_ptr(
+			rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(main_rendered_layer_type)),
+	d_highlight_layer_ptr(
+			rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(main_rendered_layer_type)),
+	d_label_layer_ptr(
+			rendered_geom_collection.create_child_rendered_layer_and_transfer_ownership(main_rendered_layer_type))
 {
 	make_signal_slot_connections();
-	d_main_layer_ptr->set_active(true);
 }
 
 void
@@ -115,14 +131,15 @@ GPlatesCanvasTools::MeasureDistance::handle_activation()
 {
 	d_measure_distance_state_ptr->handle_activation();
 
-	set_status_bar_message(QT_TR_NOOP("Click to measure the distance between arbitrary points."));
-
-	// activate rendered layer
-	d_rendered_geom_collection_ptr->set_main_layer_active(
-			GPlatesViewOperations::RenderedGeometryCollection::MEASURE_DISTANCE_LAYER);
+	// Activate our render layers so they become visible.
+	d_geometry_layer_ptr->set_active(true);
+	d_highlight_layer_ptr->set_active(true);
+	d_label_layer_ptr->set_active(true);
 
 	// redraw everything
 	paint();
+
+	set_status_bar_message(QT_TR_NOOP("Click to measure the distance between arbitrary points."));
 }
 
 void
@@ -130,8 +147,14 @@ GPlatesCanvasTools::MeasureDistance::handle_deactivation()
 {
 	d_measure_distance_state_ptr->handle_deactivation();
 
-	// remove the highlighting (e.g. if switching to rotate globe tool)
-	remove_distance_label_and_highlight();
+	// Deactivate all render layers, not just the highlighting, even if switching to drag or zoom tool
+	// (which normally previously would display the most recent tool's layers).
+	// This is because once we are deactivated we won't be able to update the render layers when/if
+	// the reconstruction time changes.
+	// This means the user won't see this tool's render layers while in the drag or zoom tool.
+	d_geometry_layer_ptr->set_active(false);
+	d_highlight_layer_ptr->set_active(false);
+	d_label_layer_ptr->set_active(false);
 }
 
 void
@@ -142,7 +165,7 @@ GPlatesCanvasTools::MeasureDistance::paint()
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 
 	// clear the rendered geometries
-	d_main_layer_ptr->clear_rendered_geometries();
+	d_geometry_layer_ptr->clear_rendered_geometries();
 	d_highlight_layer_ptr->clear_rendered_geometries();
 	d_label_layer_ptr->clear_rendered_geometries();
 
@@ -168,12 +191,12 @@ GPlatesCanvasTools::MeasureDistance::paint_quick_measure()
 		if (!end)
 		{
 			// just draw a point if only one point, to provide some visual feedback
-			render_point_on_sphere(*start, QUICK_MEASURE_LINE_COLOUR, d_main_layer_ptr);
+			render_point_on_sphere(*start, QUICK_MEASURE_LINE_COLOUR, d_geometry_layer_ptr);
 		}
 		if (end)
 		{
 			// for two points, draw the line and no points
-			render_line(*start, *end, QUICK_MEASURE_LINE_COLOUR, d_main_layer_ptr);
+			render_line(*start, *end, QUICK_MEASURE_LINE_COLOUR, d_geometry_layer_ptr);
 		}
 	}
 }
@@ -203,7 +226,7 @@ GPlatesCanvasTools::MeasureDistance::paint_feature_measure()
 
 		// draw lines
 		bool is_polygon = geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYGON;
-		render_multiple_line_segments(begin, end, FEATURE_MEASURE_LINE_COLOUR, is_polygon, d_main_layer_ptr);
+		render_multiple_line_segments(begin, end, FEATURE_MEASURE_LINE_COLOUR, is_polygon, d_geometry_layer_ptr);
 	}
 }
 
@@ -287,7 +310,7 @@ GPlatesCanvasTools::MeasureDistance::handle_move_without_drag(
 		if (GPlatesViewOperations::test_proximity(
 					sorted_hits,
 					proximity_criteria,
-					*d_main_layer_ptr))
+					*d_geometry_layer_ptr))
 		{
 			// a close hit found
 			const GPlatesViewOperations::RenderedGeometryProximityHit &closest_hit = sorted_hits.front();

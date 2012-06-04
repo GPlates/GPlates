@@ -31,10 +31,13 @@
 
 #include "CreateVGPDialogUi.h"
 
+#include "GPlatesDialog.h"
+
 #include "app-logic/FeatureCollectionFileState.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -53,7 +56,7 @@ namespace GPlatesQtWidgets
 	class ChooseFeatureCollectionWidget;
 
 	class CreateVGPDialog :
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_CreateVGPDialog
 	{
 		Q_OBJECT

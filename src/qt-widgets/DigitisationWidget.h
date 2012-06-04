@@ -47,9 +47,14 @@ namespace GPlatesAppLogic
 	class FeatureCollectionFileState;
 }
 
+namespace GPlatesCanvasTools
+{
+	class GeometryOperationState;
+}
+
 namespace GPlatesGui
 {
-	class ChooseCanvasTool;
+	class CanvasToolWorkflows;
 }
 
 namespace GPlatesPresentation
@@ -80,12 +85,13 @@ namespace GPlatesQtWidgets
 
 		explicit
 		DigitisationWidget(
-				GPlatesViewOperations::GeometryBuilder &new_geometry_builder,
+				GPlatesViewOperations::GeometryBuilder &digitise_geometry_builder,
+				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
 				GPlatesPresentation::ViewState &view_state_,
 				ViewportWindow &viewport_window_,
 				QAction *clear_action,
 				QAction *undo_action,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+				GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 				QWidget *parent_ = NULL);
 
 		~DigitisationWidget();
@@ -185,7 +191,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * Used by clear geometry undo operation.
 		 */
-		GPlatesGui::ChooseCanvasTool *d_choose_canvas_tool;
+		GPlatesGui::CanvasToolWorkflows *d_canvas_tool_workflows;
 
 		/**
 		 * A wrapper around coordinates table that listens to a GeometryBuilder

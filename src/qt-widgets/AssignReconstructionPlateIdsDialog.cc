@@ -192,7 +192,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::AssignReconstructionPlateI
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
-	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
+	GPlatesDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
 	d_help_partitioning_layer_dialog(
 			new InformationDialog(
 					HELP_PARTITIONING_LAYER_DIALOG_TEXT,

@@ -127,7 +127,6 @@ namespace GPlatesAppLogic
 		void
 		resolve_topological_boundaries(
 				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
-				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_closed_plate_polygon_features_collection,
 				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none);
@@ -137,7 +136,7 @@ namespace GPlatesAppLogic
 		 * Returns a structure for partitioning geometry using the polygon
 		 * of each @a ResolvedTopologicalBoundary in @a resolved_topological_boundaries.
 		 *
-		 * The returned structure can tested tested like a bool - it's true if
+		 * The returned structure can be tested like a bool - it's true if
 		 * @a resolved_topological_boundaries is not empty.
 		 */
 		resolved_boundaries_for_geometry_partitioning_query_type

@@ -22,16 +22,21 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include "LinkWidget.h"
+
 #include "TopologyNetworkResolverLayerOptionsWidget.h"
 
+#include "LinkWidget.h"
 #include "TotalReconstructionPolesDialog.h"
+#include "QtWidgetUtils.h"
 #include "ViewportWindow.h"
 
+#include "gui/Dialogs.h"
+
 #include "presentation/TopologyNetworkVisualLayerParams.h"
-#include "QtWidgetUtils.h"
 
 #include "utils/ComponentManager.h"
+
+
 GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkResolverLayerOptionsWidget(
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
@@ -41,7 +46,7 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 	d_application_state(application_state),
 	d_view_state(view_state),
 	d_viewport_window(viewport_window),
-	d_draw_style_dialog_ptr(viewport_window->draw_style_dialog())
+	d_draw_style_dialog_ptr(&viewport_window->dialogs().draw_style_dialog())
 {
 	setupUi(this);
 

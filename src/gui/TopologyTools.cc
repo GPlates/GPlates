@@ -53,7 +53,7 @@
 
 #include "TopologyTools.h"
 
-#include "ChooseCanvasTool.h"
+#include "ChooseCanvasToolUndoCommand.h"
 #include "FeatureFocus.h"
 
 #include "app-logic/ApplicationState.h"
@@ -74,6 +74,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
 
+#include "gui/CanvasToolWorkflows.h"
 #include "gui/FeatureTableModel.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
@@ -120,6 +121,7 @@
 #include "qt-widgets/CreateFeatureDialog.h"
 #include "qt-widgets/ExportCoordinatesDialog.h"
 #include "qt-widgets/GlobeCanvas.h"
+#include "qt-widgets/SearchResultsDockWidget.h"
 #include "qt-widgets/TaskPanel.h"
 #include "qt-widgets/TopologyToolsWidget.h"
 #include "qt-widgets/ViewportWindow.h"
@@ -175,19 +177,19 @@ namespace
 GPlatesGui::TopologyTools::TopologyTools(
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesQtWidgets::ViewportWindow &viewport_window,
-		GPlatesGui::ChooseCanvasTool &choose_canvas_tool):
+		GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows):
 	d_rendered_geom_collection(&view_state.get_rendered_geometry_collection()),
 	d_feature_focus_ptr(&view_state.get_feature_focus()),
 	d_application_state_ptr(&view_state.get_application_state()),
 	d_viewport_window_ptr(&viewport_window),
-	d_choose_canvas_tool(&choose_canvas_tool)
+	d_canvas_tool_workflows(&canvas_tool_workflows)
 {
 	// set up the drawing
 	create_child_rendered_layers();
 
 	// Set pointer to TopologySectionsContainer
-	d_boundary_sections_container_ptr = &(d_viewport_window_ptr->topology_boundary_sections_container());
-	d_interior_sections_container_ptr = &(d_viewport_window_ptr->topology_interior_sections_container());
+	d_boundary_sections_container_ptr = &(view_state.get_topology_boundary_sections_container());
+	d_interior_sections_container_ptr = &(view_state.get_topology_interior_sections_container());
 
 	// set the internal state flags
 	d_is_active = false;
@@ -329,7 +331,7 @@ GPlatesGui::TopologyTools::activate_edit_mode()
 	unset_focus();
 
 	// Flip the ViewportWindow to the Topology Sections Table
-	d_viewport_window_ptr->choose_topology_sections_table();
+	d_viewport_window_ptr->search_results_dock_widget().choose_topology_sections_table();
 
 	// Flip the TopologyToolsWidget to the Toplogy Tab
 	d_topology_tools_widget_ptr->choose_topology_tab();
@@ -350,7 +352,7 @@ GPlatesGui::TopologyTools::deactivate()
 	}
 
 	// Flip the ViewportWindow to the Clicked Geometry Table
-	d_viewport_window_ptr->choose_clicked_geometry_table();
+	d_viewport_window_ptr->search_results_dock_widget().choose_clicked_geometry_table();
 
 	// Clear out all old data.
 	// NOTE: We should be connected to the topology sections container
@@ -384,7 +386,7 @@ void
 GPlatesGui::TopologyTools::clear_widgets_and_data()
 {
 	// clear the tables
-	d_viewport_window_ptr->feature_table_model().clear();
+	d_viewport_window_ptr->get_view_state().get_feature_table_model().clear();
 
 	// Clear the TopologySectionsContainer.
 	// NOTE: This will generate a signal that will call our 'react_cleared_FOO()'
@@ -554,13 +556,13 @@ GPlatesGui::TopologyTools::connect_to_interior_sections_container_signals( bool 
 int
 GPlatesGui::TopologyTools::get_number_of_sections_boundary()
 {
-	return ( d_viewport_window_ptr->topology_boundary_sections_container() ).size();
+	return ( d_viewport_window_ptr->get_view_state().get_topology_boundary_sections_container() ).size();
 }
 
 int
 GPlatesGui::TopologyTools::get_number_of_sections_interior()
 {
-	return ( d_viewport_window_ptr->topology_interior_sections_container() ).size();
+	return ( d_viewport_window_ptr->get_view_state().get_topology_interior_sections_container() ).size();
 }
 
 
@@ -580,17 +582,17 @@ GPlatesGui::TopologyTools::create_child_rendered_layers()
 	// the topology vertices are drawn on the bottom layer
 	d_topology_geometry_layer_ptr =
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_CANVAS_TOOL_WORKFLOW_LAYER);
 
 	// the segments resulting from intersections of line data come next
 	d_segments_layer_ptr =
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_CANVAS_TOOL_WORKFLOW_LAYER);
 
 	// points where line data intersects and cuts the src geometry
 	d_intersection_points_layer_ptr =
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_CANVAS_TOOL_WORKFLOW_LAYER);
 
 	// NOTE: the boundary and interior layers are above vertices, segments, and intersections
 	// to help highlight the different lists of sections 
@@ -598,12 +600,12 @@ GPlatesGui::TopologyTools::create_child_rendered_layers()
 	// boundary polygon
 	d_boundary_geometry_layer_ptr =
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_CANVAS_TOOL_WORKFLOW_LAYER);
 
 	// interior segments 
 	d_interior_geometry_layer_ptr =
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_CANVAS_TOOL_WORKFLOW_LAYER);
 
 #if 0
 // NOTE: this was just getting confusing so, remove it.
@@ -616,12 +618,12 @@ GPlatesGui::TopologyTools::create_child_rendered_layers()
 	// insert neighbors
 	d_insertion_neighbors_layer_ptr =
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_CANVAS_TOOL_WORKFLOW_LAYER);
 
 	// Put the focus layer on top
 	d_focused_feature_layer_ptr =
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_CANVAS_TOOL_WORKFLOW_LAYER);
 
 	// In both cases above we store the returned object as a data member and it
 	// automatically destroys the created layer for us when 'this' object is destroyed.
@@ -717,7 +719,7 @@ GPlatesGui::TopologyTools::unset_focus()
 	d_feature_focus_ptr->unset_focus();
 
 	// NOTE: the call to unset_focus does not clear the "Clicked" table, so do it here
-	d_viewport_window_ptr->feature_table_model().clear();
+	d_viewport_window_ptr->get_view_state().get_feature_table_model().clear();
 }
 
 
@@ -788,7 +790,7 @@ GPlatesGui::TopologyTools::display_focused_feature()
 		// focused feature was found in topology ... check where and highlight it 
 
 		// Set the ViewportWindow to the Topology Sections Table
-		d_viewport_window_ptr->choose_topology_sections_table();
+		d_viewport_window_ptr->search_results_dock_widget().choose_topology_sections_table();
 
 		// Pretend we clicked in the table row corresponding to the first occurrence
 		// of the focused feature geometry in the topology sections lists
@@ -1337,7 +1339,7 @@ GPlatesGui::TopologyTools::handle_add_feature_boundary()
 	synchronize_seq_num( 0 );
 
 	// Flip the ViewportWindow to the Topology Sections Table
-	d_viewport_window_ptr->choose_topology_sections_table();
+	d_viewport_window_ptr->search_results_dock_widget().choose_topology_sections_table();
 
 	// Check for ReconstructionGeometry
 	const GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type rg_ptr =
@@ -1394,7 +1396,7 @@ GPlatesGui::TopologyTools::handle_add_feature_interior()
 	synchronize_seq_num( 1 );
 	
 	// Flip the ViewportWindow to the Topology Sections Table
-	d_viewport_window_ptr->choose_topology_sections_table();
+	d_viewport_window_ptr->search_results_dock_widget().choose_topology_sections_table();
 
 	// Check for ReconstructionGeometry
 	const GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type rg_ptr =
@@ -1523,7 +1525,7 @@ GPlatesGui::TopologyTools::handle_sections_combobox_index_changed(int i)
 	}
 
 	// change the text on the table tab to match the current seq
-	d_viewport_window_ptr->set_topology_sections_table_tab_text( s );
+	d_viewport_window_ptr->search_results_dock_widget().set_topology_sections_table_tab_text( s );
 
 	// Update topology and redraw.; changing the combo box changes the color scheme 
 	update_and_redraw_topology();
@@ -1540,8 +1542,8 @@ GPlatesGui::TopologyTools::handle_remove_all_sections()
 	// NOTE: This will generate a signal that will call our 'react_cleared_FOO()' functions
 	// which clear out our internal section sequence and redraw.
 
-	( d_viewport_window_ptr->topology_boundary_sections_container() ).clear();
-	( d_viewport_window_ptr->topology_interior_sections_container() ).clear();
+	( d_viewport_window_ptr->get_view_state().get_topology_boundary_sections_container() ).clear();
+	( d_viewport_window_ptr->get_view_state().get_topology_interior_sections_container() ).clear();
 }
 
 
@@ -1561,7 +1563,9 @@ GPlatesGui::TopologyTools::handle_apply()
 	// Now that we're finished building/editing the topology switch to the
 	// tool used to choose a feature - this will allow the user to select
 	// another topology for editing or do something else altogether.
-	d_choose_canvas_tool->choose_click_geometry_tool();
+	d_canvas_tool_workflows->choose_canvas_tool(
+			CanvasToolWorkflows::WORKFLOW_TOPOLOGY,
+			CanvasToolWorkflows::TOOL_CLICK_GEOMETRY);
 }
 
 
@@ -1977,7 +1981,7 @@ GPlatesGui::TopologyTools::draw_insertion_neighbors()
 		local_visible_section_seq = d_visible_boundary_section_seq;
 
 		topology_sections_container_ptr = 
-			&(d_viewport_window_ptr->topology_boundary_sections_container());
+			&(d_viewport_window_ptr->get_view_state().get_topology_boundary_sections_container());
 
 	}
 	else if ( d_seq_num == 1)
@@ -1986,7 +1990,7 @@ GPlatesGui::TopologyTools::draw_insertion_neighbors()
 		local_visible_section_seq = d_visible_interior_section_seq;
 
 		topology_sections_container_ptr = 
-			&(d_viewport_window_ptr->topology_interior_sections_container());
+			&(d_viewport_window_ptr->get_view_state().get_topology_interior_sections_container());
 	}
 	else
 		return;

@@ -46,7 +46,7 @@ GPlatesGui::GeometryFocusHighlight::GeometryFocusHighlight(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesGui::symbol_map_type &symbol_map):
 	d_rendered_geom_collection(rendered_geom_collection),
-	d_highlight_layer_ptr(
+	d_geometry_focus_highlight_layer_ptr(
 			rendered_geom_collection.get_main_rendered_layer(
 					GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER)),
 	d_symbol_map(symbol_map)
@@ -78,11 +78,11 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 	// until end of current scope block.
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 
-	// Activate our layer.
-	d_highlight_layer_ptr->set_active();
+	// Activate the main rendered layer within the GEOMETRY_FOCUS_HIGHLIGHT_LAYER layer.
+	d_geometry_focus_highlight_layer_ptr->set_active();
 
 	// Clear all geometries from layer before adding them.
-	d_highlight_layer_ptr->clear_rendered_geometries();
+	d_geometry_focus_highlight_layer_ptr->clear_rendered_geometries();
 
 	if (!d_focused_geometry)
 	{
@@ -145,6 +145,6 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 
 		reconstruction_geometry->accept_visitor(highlighted_geometry_renderer);
 
-		highlighted_geometry_renderer.end_render(*d_highlight_layer_ptr);
+		highlighted_geometry_renderer.end_render(*d_geometry_focus_highlight_layer_ptr);
 	}
 }

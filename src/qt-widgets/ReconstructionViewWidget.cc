@@ -176,7 +176,6 @@ namespace
 
 
 GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
-		GPlatesGui::AnimationController &animation_controller,
 		ViewportWindow &viewport_window,
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
@@ -192,7 +191,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	// down so it goes to the left of the splitter, giving the TaskPanel some more
 	// room.
 	std::auto_ptr<QWidget> awesomebar_one = construct_awesomebar_one(
-			animation_controller, viewport_window);
+			view_state.get_animation_controller(), viewport_window);
 
 	// Construct the "View Bar" for the bottom.
 	std::auto_ptr<QWidget> viewbar = 
@@ -577,11 +576,11 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar_with_projections(
 
 void
 GPlatesQtWidgets::ReconstructionViewWidget::insert_task_panel(
-		std::auto_ptr<GPlatesQtWidgets::TaskPanel> task_panel)
+		GPlatesQtWidgets::TaskPanel *task_panel)
 {
 	// Add the Task Panel to the right-hand edge of the QSplitter in
 	// the middle of the ReconstructionViewWidget.
-	d_splitter_widget->addWidget(task_panel.release());
+	d_splitter_widget->addWidget(task_panel);
 }
 
 

@@ -58,6 +58,7 @@
 #include "file-io/File.h"
 #include "file-io/FileInfo.h"
 
+#include "gui/Dialogs.h"
 #include "gui/VisualLayersListModel.h"
 #include "gui/VisualLayersProxy.h"
 
@@ -723,7 +724,7 @@ GPlatesQtWidgets::VisualLayerWidget::handle_rename_layer_link_activated()
 			*(locked_visual_layer->get_custom_name()) : QString();
 		bool ok;
 		QString new_name = QInputDialog::getText(
-				&d_viewport_window->visual_layers_dialog(),
+				&d_viewport_window->dialogs().visual_layers_dialog(),
 				tr("Rename Layer"),
 				tr("Enter a custom name for the %1 layer.\n"
 					"Leave the field blank if you would like GPlates to assign a name automatically.")
@@ -752,7 +753,7 @@ GPlatesQtWidgets::VisualLayerWidget::handle_delete_layer_link_activated()
 	{
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
 		if (QMessageBox::question(
-					&d_viewport_window->visual_layers_dialog(),
+					&d_viewport_window->dialogs().visual_layers_dialog(),
 					tr("Delete Layer"),
 					tr("Deleting this layer does not unload any corresponding feature collections. "
 						"To unload feature collections, click on Manage Feature Collections on the File menu.\n"

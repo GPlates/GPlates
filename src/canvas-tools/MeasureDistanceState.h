@@ -41,10 +41,14 @@
 #include "view-operations/RenderedGeometryCollection.h"
 
 
+namespace GPlatesCanvasTools
+{
+	class GeometryOperationState;
+}
+
 namespace GPlatesViewOperations
 {
 	class GeometryBuilder;
-	class GeometryOperationTarget;
 	class RenderedGeometryLayer;
 }
 
@@ -69,7 +73,7 @@ namespace GPlatesCanvasTools
 		explicit
 		MeasureDistanceState(
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-				GPlatesViewOperations::GeometryOperationTarget &geometry_operation_target);
+				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state);
 
 		//! Add a new point for the Quick Measure tool
 		void
@@ -158,24 +162,6 @@ namespace GPlatesCanvasTools
 			return d_current_geometry_builder_ptr;
 		}
 
-		GPlatesViewOperations::RenderedGeometryLayer *
-		get_main_layer_ptr()
-		{
-			return d_main_layer_ptr;
-		}
-
-		child_layer_ptr_type
-		get_highlight_layer_ptr()
-		{
-			return d_highlight_layer_ptr;
-		}
-
-		child_layer_ptr_type
-		get_label_layer_ptr()
-		{
-			return d_label_layer_ptr;
-		}
-
 		void
 		set_quick_measure_highlight(
 				bool is_highlighted);
@@ -185,15 +171,6 @@ namespace GPlatesCanvasTools
 				bool is_highlighted);
 
 	private:
-		
-		//! Main layer on which to render lines
-		GPlatesViewOperations::RenderedGeometryLayer *d_main_layer_ptr;
-
-		//! Layer for mouse-over line highlight
-		child_layer_ptr_type d_highlight_layer_ptr;
-
-		//! Layer for mouse-over label
-		child_layer_ptr_type d_label_layer_ptr;
 
 		//! The radius of the earth in kilometres
 		real_t d_radius;
@@ -205,9 +182,9 @@ namespace GPlatesCanvasTools
 		boost::optional<GPlatesMaths::PointOnSphere> d_quick_measure_end;
 
 		//! Determines which GeometryBuilder to get points from
-		GPlatesViewOperations::GeometryOperationTarget *d_geometry_operation_target_ptr;
+		GPlatesCanvasTools::GeometryOperationState *d_geometry_operation_state_ptr;
 
-		//! The current geometry builder as returned by GeometryOperationTarget
+		//! The current geometry builder
 		GPlatesViewOperations::GeometryBuilder *d_current_geometry_builder_ptr;
 
 		//! The calculated total distance for Feature Measure tool; boost::none if no feature
@@ -237,7 +214,7 @@ namespace GPlatesCanvasTools
 		DEFAULT_RADIUS_OF_EARTH;
 
 		void
-		make_signal_slot_connections_for_geometry_operation_target();
+		make_signal_slot_connections_for_geometry_operation_state();
 
 		void
 		make_signal_slot_connections_for_geometry_builder();
@@ -259,7 +236,6 @@ namespace GPlatesCanvasTools
 
 		void
 		switch_geometry_builder(
-				GPlatesViewOperations::GeometryOperationTarget &,
 				GPlatesViewOperations::GeometryBuilder *);
 
 		void

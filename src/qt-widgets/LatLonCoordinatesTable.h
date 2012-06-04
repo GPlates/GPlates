@@ -33,8 +33,14 @@
 #include <QTreeWidget>
 
 #include "gui/TreeWidgetBuilder.h"
+
 #include "view-operations/GeometryBuilder.h"
 
+
+namespace GPlatesCanvasTools
+{
+	class GeometryOperationState;
+}
 
 namespace GPlatesGui
 {
@@ -43,7 +49,6 @@ namespace GPlatesGui
 
 namespace GPlatesViewOperations
 {
-	class ActiveGeometryOperation;
 	class GeometryOperation;
 }
 
@@ -58,21 +63,12 @@ namespace GPlatesQtWidgets
 		explicit
 		LatLonCoordinatesTable(
 				QTreeWidget *coordinates_table,
-				GPlatesViewOperations::GeometryBuilder *initial_geom_builder = NULL,
-				GPlatesViewOperations::ActiveGeometryOperation *active_geometry_operation = NULL);
-
-		/**
-		 * Disconnects from the previous @a GeometryBuilder, if any, and
-		 * connects to the specified @a GeometryBuilder.
-		 */
-		void
-		set_geometry_builder(
-				GPlatesViewOperations::GeometryBuilder *geom_builder);
+				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state);
 
 		void
 		reload_if_necessary();
 
-	public slots:
+	private slots:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
@@ -106,13 +102,19 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * The geometry operation emitting signals has changed.
-		 * Only one geometry operation is active as any time.
-		 * @a geometry_operation is NULL if no @a GeometryOperation
-		 * is currently activated.
+		 * @a geometry_operation is NULL if no @a GeometryOperation is currently activated.
 		 */
 		void
 		switched_geometry_operation(
 				GPlatesViewOperations::GeometryOperation *geometry_operation);
+
+		/**
+		 * The geometry builder emitting signals has changed.
+		 * @a geometry_builder is NULL if no @a GeometryBuilder is currently activated.
+		 */
+		void
+		switched_geometry_builder(
+				GPlatesViewOperations::GeometryBuilder *geometry_builder);
 
 		/**
 		 * The point at index @a point_index was in the geometry at
@@ -163,8 +165,8 @@ namespace GPlatesQtWidgets
 		bool d_need_to_reload_data;
 
 		void
-		connect_to_active_geometry_operation_signals(
-				GPlatesViewOperations::ActiveGeometryOperation *active_geometry_operation);
+		connect_to_geometry_operation_state_signals(
+				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state);
 
 		void
 		connect_to_current_geometry_operation();

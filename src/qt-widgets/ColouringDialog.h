@@ -34,6 +34,7 @@
 
 #include "ColouringDialogUi.h"
 
+#include "GPlatesDialog.h"
 #include "OpenFileDialog.h"
 
 #include "app-logic/FeatureCollectionFileState.h"
@@ -66,7 +67,7 @@ namespace GPlatesQtWidgets
 	class ReadErrorAccumulationDialog;
 
 	class ColouringDialog : 
-			public QDialog, 
+			public GPlatesDialog, 
 			protected Ui_ColouringDialog 
 	{
 		Q_OBJECT

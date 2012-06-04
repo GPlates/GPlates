@@ -30,16 +30,20 @@
 
 #include "GeometryBuilder.h"
 
-#include "gui/ChooseCanvasTool.h"
+#include "gui/ChooseCanvasToolUndoCommand.h"
 
 #include "model/FeatureCollectionHandle.h"
 
 #include "presentation/ViewState.h"
 
 
+namespace GPlatesGui
+{
+	class CanvasToolWorkflows;
+}
+
 namespace GPlatesViewOperations
 {
-	
 	class CloneOperation :
 		public QObject
 	{
@@ -47,11 +51,11 @@ namespace GPlatesViewOperations
 
 	public:
 		CloneOperation(
-				GPlatesGui::ChooseCanvasTool* choose_canvas_tool,
-				GPlatesViewOperations::GeometryBuilder* digitise_geometry_builder,
-				GPlatesViewOperations::GeometryBuilder* focused_feature_geometry_builder,
-				GPlatesPresentation::ViewState & view_state) :
-			d_choose_canvas_tool(choose_canvas_tool),
+				GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
+				GPlatesViewOperations::GeometryBuilder &digitise_geometry_builder,
+				GPlatesViewOperations::GeometryBuilder &focused_feature_geometry_builder,
+				GPlatesPresentation::ViewState &view_state) :
+			d_canvas_tool_workflows(canvas_tool_workflows),
 			d_digitise_geometry_builder(digitise_geometry_builder),
 			d_focused_feature_geometry_builder(focused_feature_geometry_builder),
 			d_view_state(view_state)
@@ -72,13 +76,13 @@ namespace GPlatesViewOperations
 					GPlatesModel::FeatureCollectionHandle::weak_ref());
 
 	private:
-		GPlatesGui::ChooseCanvasTool* d_choose_canvas_tool;
+		GPlatesGui::CanvasToolWorkflows &d_canvas_tool_workflows;
 
-		GPlatesViewOperations::GeometryBuilder* d_digitise_geometry_builder;
+		GPlatesViewOperations::GeometryBuilder &d_digitise_geometry_builder;
 
-		GPlatesViewOperations::GeometryBuilder* d_focused_feature_geometry_builder;
+		GPlatesViewOperations::GeometryBuilder &d_focused_feature_geometry_builder;
 
-		GPlatesPresentation::ViewState & d_view_state;
+		GPlatesPresentation::ViewState &d_view_state;
 	};
 }
 

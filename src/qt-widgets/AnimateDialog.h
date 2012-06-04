@@ -27,7 +27,10 @@
 #define GPLATES_QTWIDGETS_ANIMATEDIALOG_H
 
 #include <QDialog>
+
 #include "AnimateDialogUi.h"
+
+#include "GPlatesDialog.h"
 
 
 namespace GPlatesGui
@@ -39,7 +42,7 @@ namespace GPlatesGui
 namespace GPlatesQtWidgets
 {
 	class AnimateDialog: 
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_AnimateDialog 
 	{
 		Q_OBJECT

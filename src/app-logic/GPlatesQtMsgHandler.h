@@ -28,6 +28,7 @@
 
 #include "utils/Singleton.h"
 
+#include <list>
 #include <vector>
 #include <boost/shared_ptr.hpp>
 #include <QtGlobal>
@@ -47,6 +48,9 @@ namespace GPlatesAppLogic
 
 	public:
 		~GPlatesQtMsgHandler();
+
+		//! Typedef for a message handler identifier (so it can be removed after adding).
+		typedef unsigned int message_handler_id_type;
 
 		/**
 		 * Abstract base for a simple handler class that we can use to delegate
@@ -97,10 +101,16 @@ namespace GPlatesAppLogic
 		 * Add one of our own MessageHandler derivatives to the list of handlers that
 		 * can process messages.
 		 */
-		void
+		message_handler_id_type
 		add_handler(
 				boost::shared_ptr<MessageHandler> handler);
 
+		/**
+		 * Remove a message handler added with @a add_handler.
+		 */
+		void
+		remove_handler(
+				message_handler_id_type handler_id);
 
 
 	private:
@@ -115,11 +125,18 @@ namespace GPlatesAppLogic
 		// Instance member data
 		//
 
+		typedef std::list<boost::shared_ptr<MessageHandler> > message_handle_list_type;
+
 		/**
 		 * Store all MessageHandler derivations registered with this class, so we can pass
 		 * the messages to them all.
 		 */
-		std::vector<boost::shared_ptr<MessageHandler> > d_message_handlers;
+		message_handle_list_type d_message_handler_list;
+
+		/**
+		 * Index by @a message_handler_id_type to find the message handler in @a d_message_handler_list.
+		 */
+		std::vector<message_handle_list_type::iterator> d_message_handler_iterators;
 
 		//
 		// Instance methods

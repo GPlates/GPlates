@@ -29,7 +29,6 @@
 
 #include "DeleteVertexGeometryOperation.h"
 
-#include "ActiveGeometryOperation.h"
 #include "GeometryOperationUndo.h"
 #include "GeometryBuilderUndoCommands.h"
 #include "RenderedGeometryProximity.h"
@@ -39,54 +38,36 @@
 #include "RenderedGeometryParameters.h"
 #include "RenderedGeometryUtils.h"
 #include "UndoRedo.h"
-#include "gui/ChooseCanvasTool.h"
+
+#include "canvas-tools/GeometryOperationState.h"
+
+#include "gui/ChooseCanvasToolUndoCommand.h"
+
 #include "maths/PointOnSphere.h"
 #include "maths/ProximityCriteria.h"
 
 
 GPlatesViewOperations::DeleteVertexGeometryOperation::DeleteVertexGeometryOperation(
-		GeometryOperationTarget &geometry_operation_target,
-		ActiveGeometryOperation &active_geometry_operation,
-		RenderedGeometryCollection *rendered_geometry_collection,
-		GPlatesGui::ChooseCanvasTool &choose_canvas_tool,
+		GeometryBuilder &geometry_builder,
+		GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
+		RenderedGeometryCollection &rendered_geometry_collection,
+		RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
+		GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 		const QueryProximityThreshold &query_proximity_threshold) :
-d_geometry_builder(NULL),
-d_geometry_operation_target(&geometry_operation_target),
-d_active_geometry_operation(&active_geometry_operation),
-d_rendered_geometry_collection(rendered_geometry_collection),
-d_choose_canvas_tool(&choose_canvas_tool),
-d_query_proximity_threshold(&query_proximity_threshold)
+	d_geometry_builder(geometry_builder),
+	d_geometry_operation_state(geometry_operation_state),
+	d_rendered_geometry_collection(rendered_geometry_collection),
+	d_main_rendered_layer_type(main_rendered_layer_type),
+	d_canvas_tool_workflows(canvas_tool_workflows),
+	d_query_proximity_threshold(query_proximity_threshold)
 {
 }
 
 void
-GPlatesViewOperations::DeleteVertexGeometryOperation::activate(
-		GeometryBuilder *geometry_builder,
-		RenderedGeometryCollection::MainLayerType main_layer_type)
+GPlatesViewOperations::DeleteVertexGeometryOperation::activate()
 {
-	// Do nothing if NULL geometry builder.
-	if (geometry_builder == NULL)
-	{
-		return;
-	}
-
 	// Let others know we're the currently activated GeometryOperation.
-	d_active_geometry_operation->set_active_geometry_operation(this);
-
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	RenderedGeometryCollection::UpdateGuard update_guard;
-
-	d_geometry_builder = geometry_builder;
-	d_main_layer_type = main_layer_type;
-
-	// Activate the main rendered layer.
-	d_rendered_geometry_collection->set_main_layer_active(main_layer_type);
-
-	// Deactivate all rendered geometry layers of our main rendered layer.
-	// This hides what other tools have drawn into our main rendered layer.
-	RenderedGeometryUtils::deactivate_rendered_geometry_layers(
-			*d_rendered_geometry_collection, main_layer_type);
+	d_geometry_operation_state.set_active_geometry_operation(this);
 
 	connect_to_geometry_builder_signals();
 
@@ -107,28 +88,24 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::activate(
 void
 GPlatesViewOperations::DeleteVertexGeometryOperation::deactivate()
 {
-	// Do nothing if NULL geometry builder.
-	if (d_geometry_builder == NULL)
-	{
-		return;
-	}
-
-	emit_unhighlight_signal(d_geometry_builder);
+	emit_unhighlight_signal(&d_geometry_builder);
 
 	// Let others know there's no currently activated GeometryOperation.
-	d_active_geometry_operation->set_no_active_geometry_operation();
-
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	RenderedGeometryCollection::UpdateGuard update_guard;
+	d_geometry_operation_state.set_no_active_geometry_operation();
 
 	disconnect_from_geometry_builder_signals();
 
-	// Get rid of the highlighting (e.g. if switching to rotate globe tool)
+	// Get rid of all render layers, not just the highlighting, even if switching to drag or zoom tool
+	// (which normally previously would display the most recent tool's layers).
+	// This is because once we are deactivated we won't be able to update the render layers when/if
+	// the reconstruction time changes.
+	// This means the user won't see this tool's render layers while in the drag or zoom tool.
+	d_lines_layer_ptr->set_active(false);
+	d_points_layer_ptr->set_active(false);
+	d_highlight_point_layer_ptr->set_active(false);
+	d_lines_layer_ptr->clear_rendered_geometries();
+	d_points_layer_ptr->clear_rendered_geometries();
 	d_highlight_point_layer_ptr->clear_rendered_geometries();
-
-	// Not using this GeometryBuilder anymore.
-	d_geometry_builder = NULL;
 }
 
 void
@@ -136,21 +113,11 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::left_click(
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
-	// Do nothing if NULL geometry builder.
-	if (d_geometry_builder == NULL)
-	{
-		return;
-	}
-
 	// Return early if user is not allowed to delete a vertex.
 	if (!allow_delete_vertex())
 	{
 		return;
 	}
-
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	RenderedGeometryCollection::UpdateGuard update_guard;
 
 	//
 	// See if the user selected a vertex with their mouse click.
@@ -176,21 +143,11 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::mouse_move(
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
 		const double &closeness_inclusion_threshold)
 {
-	// Do nothing if NULL geometry builder.
-	if (d_geometry_builder == NULL)
-	{
-		return;
-	}
-
 	// Return early if user is not allowed to delete a vertex.
 	if (!allow_delete_vertex())
 	{
 		return;
 	}
-
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	RenderedGeometryCollection::UpdateGuard update_guard;
 
 	//
 	// See if the mouse cursor is near a vertex and highlight it if it is.
@@ -210,21 +167,21 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::mouse_move(
 		// Currently only one internal geometry is supported so set geometry index to zero.
 		const GeometryBuilder::GeometryIndex geometry_index = 0;
 
-		emit_highlight_point_signal(d_geometry_builder,
+		emit_highlight_point_signal(&d_geometry_builder,
 				geometry_index,
 				highlight_vertex_index,
 				GeometryOperationParameters::DELETE_COLOUR);
 	}
 	else
 	{
-		emit_unhighlight_signal(d_geometry_builder);
+		emit_unhighlight_signal(&d_geometry_builder);
 	}
 }
 
 bool
 GPlatesViewOperations::DeleteVertexGeometryOperation::allow_delete_vertex() const
 {
-	if (d_geometry_builder->get_num_geometries() == 0)
+	if (d_geometry_builder.get_num_geometries() == 0)
 	{
 		// Number of points in the geometry (is zero if no geometry).
 		return false;
@@ -232,9 +189,9 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::allow_delete_vertex() cons
 
 	// We currently only support one internal geometry so set geom index to zero.
 	const unsigned int num_points_in_geom =
-			d_geometry_builder->get_num_points_in_geometry(0/*geom_index*/);
+			d_geometry_builder.get_num_points_in_geometry(0/*geom_index*/);
 
-	const GeometryType::Value geometry_type = d_geometry_builder->get_geometry_build_type();
+	const GeometryType::Value geometry_type = d_geometry_builder.get_geometry_build_type();
 
 	// If there is zero or one point in geometry then don't allow user to delete it.
 	// This is to ensure that we don't get a feature that contains a geometry property
@@ -288,27 +245,23 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::test_proximity_to_points(
 void
 GPlatesViewOperations::DeleteVertexGeometryOperation::create_rendered_geometry_layers()
 {
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	RenderedGeometryCollection::UpdateGuard update_guard;
-
 	// Create a rendered layer to draw the line segments of polylines and polygons.
 	d_lines_layer_ptr =
-		d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
-				d_main_layer_type);
+		d_rendered_geometry_collection.create_child_rendered_layer_and_transfer_ownership(
+				d_main_rendered_layer_type);
 
 	// Create a rendered layer to draw the points in the geometry on top of the lines.
 	// NOTE: this must be created second to get drawn on top.
 	d_points_layer_ptr =
-		d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
-				d_main_layer_type);
+		d_rendered_geometry_collection.create_child_rendered_layer_and_transfer_ownership(
+				d_main_rendered_layer_type);
 
 	// Create a rendered layer to draw a single point in the geometry on top of the usual points
 	// when the mouse cursor hovers over one of them.
 	// NOTE: this must be created third to get drawn on top of the points.
 	d_highlight_point_layer_ptr =
-		d_rendered_geometry_collection->create_child_rendered_layer_and_transfer_ownership(
-				d_main_layer_type);
+		d_rendered_geometry_collection.create_child_rendered_layer_and_transfer_ownership(
+				d_main_rendered_layer_type);
 
 	// In both cases above we store the returned object as a data member and it
 	// automatically destroys the created layer for us when 'this' object is destroyed.
@@ -321,7 +274,7 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::connect_to_geometry_builde
 
 	// GeometryBuilder has just finished updating geometry.
 	QObject::connect(
-			d_geometry_builder,
+			&d_geometry_builder,
 			SIGNAL(stopped_updating_geometry()),
 			this,
 			SLOT(geometry_builder_stopped_updating_geometry()));
@@ -331,7 +284,7 @@ void
 GPlatesViewOperations::DeleteVertexGeometryOperation::disconnect_from_geometry_builder_signals()
 {
 	// Disconnect all signals from the current geometry builder.
-	QObject::disconnect(d_geometry_builder, 0, this, 0);
+	QObject::disconnect(&d_geometry_builder, 0, this, 0);
 }
 
 void
@@ -350,14 +303,10 @@ void
 GPlatesViewOperations::DeleteVertexGeometryOperation::delete_vertex(
 		const GeometryBuilder::PointIndex delete_vertex_index)
 {
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	RenderedGeometryCollection::UpdateGuard update_guard;
-
 	// We're about to delete a vertex so unhighlight it now otherwise if this
 	// is the last point in the geometry and we unhighlight it later (eg, in
 	// 'deactivate()') then we will could crash because the vertex won't exist then.
-	emit_unhighlight_signal(d_geometry_builder);
+	emit_unhighlight_signal(&d_geometry_builder);
 
 	// The command that does the actual deleting of vertex.
 	std::auto_ptr<QUndoCommand> delete_vertex_command(
@@ -372,10 +321,7 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::delete_vertex(
 					QObject::tr("delete vertex"),
 					delete_vertex_command,
 					this,
-					d_geometry_operation_target,
-					d_main_layer_type,
-					d_choose_canvas_tool,
-					&GPlatesGui::ChooseCanvasTool::choose_delete_vertex_tool));
+					d_canvas_tool_workflows));
 
 	// Push command onto undo list.
 	// Note: the command's redo() gets executed inside the push() call and this is where
@@ -386,10 +332,6 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::delete_vertex(
 void
 GPlatesViewOperations::DeleteVertexGeometryOperation::update_rendered_geometries()
 {
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	RenderedGeometryCollection::UpdateGuard update_guard;
-
 	// Clear all RenderedGeometry objects from the render layers first.
 	d_lines_layer_ptr->clear_rendered_geometries();
 	d_points_layer_ptr->clear_rendered_geometries();
@@ -397,7 +339,7 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::update_rendered_geometries
 
 	// Iterate through the internal geometries (currently only one is supported).
 	for (GeometryBuilder::GeometryIndex geom_index = 0;
-		geom_index < d_geometry_builder->get_num_geometries();
+		geom_index < d_geometry_builder.get_num_geometries();
 		++geom_index)
 	{
 		update_rendered_geometry(geom_index);
@@ -412,7 +354,7 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::update_rendered_geometry(
 	add_rendered_points(geom_index);
 
 	const GeometryType::Value actual_geom_type =
-		d_geometry_builder->get_actual_type_of_geometry(geom_index);
+		d_geometry_builder.get_actual_type_of_geometry(geom_index);
 
 	switch (actual_geom_type)
 	{
@@ -436,9 +378,9 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::add_rendered_lines_for_pol
 {
 	// Get start and end of point sequence in current geometry.
 	GeometryBuilder::point_const_iterator_type builder_geom_begin =
-		d_geometry_builder->get_geometry_point_begin(geom_index);
+		d_geometry_builder.get_geometry_point_begin(geom_index);
 	GeometryBuilder::point_const_iterator_type builder_geom_end =
-		d_geometry_builder->get_geometry_point_end(geom_index);
+		d_geometry_builder.get_geometry_point_end(geom_index);
 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
 		GPlatesMaths::PolylineOnSphere::create_on_heap(builder_geom_begin, builder_geom_end);
@@ -458,9 +400,9 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::add_rendered_lines_for_pol
 {
 	// Get start and end of point sequence in current geometry.
 	GeometryBuilder::point_const_iterator_type builder_geom_begin =
-		d_geometry_builder->get_geometry_point_begin(geom_index);
+		d_geometry_builder.get_geometry_point_begin(geom_index);
 	GeometryBuilder::point_const_iterator_type builder_geom_end =
-		d_geometry_builder->get_geometry_point_end(geom_index);
+		d_geometry_builder.get_geometry_point_end(geom_index);
 
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
 		GPlatesMaths::PolygonOnSphere::create_on_heap(builder_geom_begin, builder_geom_end);
@@ -479,9 +421,9 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::add_rendered_points(
 		GeometryBuilder::GeometryIndex geom_index)
 {
 	GeometryBuilder::point_const_iterator_type builder_geom_begin =
-		d_geometry_builder->get_geometry_point_begin(geom_index);
+		d_geometry_builder.get_geometry_point_begin(geom_index);
 	GeometryBuilder::point_const_iterator_type builder_geom_end =
-		d_geometry_builder->get_geometry_point_end(geom_index);
+		d_geometry_builder.get_geometry_point_end(geom_index);
 
 	GeometryBuilder::point_const_iterator_type builder_geom_iter;
 	for (builder_geom_iter = builder_geom_begin;
@@ -509,7 +451,7 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::add_highlight_rendered_poi
 
 	// Get the highlighted point.
 	const GPlatesMaths::PointOnSphere &highlight_point_on_sphere =
-			d_geometry_builder->get_geometry_point(geometry_index, highlight_point_index);
+			d_geometry_builder.get_geometry_point(geometry_index, highlight_point_index);
 
 	RenderedGeometry rendered_geom = RenderedGeometryFactory::create_rendered_point_on_sphere(
 		highlight_point_on_sphere,

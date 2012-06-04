@@ -86,9 +86,8 @@ namespace
 
 GPlatesQtWidgets::MeshDialog::MeshDialog(
 		GPlatesPresentation::ViewState &view_state,
-		GPlatesQtWidgets::ManageFeatureCollectionsDialog& manage_feature_collections_dialog,
 		QWidget *parent_ ) :
-	QDialog(
+	GPlatesDialog(
 			parent_, 
 			Qt::CustomizeWindowHint | 
 			Qt::WindowTitleHint | 
@@ -109,8 +108,6 @@ GPlatesQtWidgets::MeshDialog::MeshDialog(
 					this)),
 	d_file_name_template(
 			DENSITY_PLACE_HOLDER+".mesh."+CAP_NUM_PLACE_HOLDER),
-	d_manage_feature_collections_dialog(
-			manage_feature_collections_dialog),
 	d_open_directory_dialog(
 			this,
 			tr("Select Path"),

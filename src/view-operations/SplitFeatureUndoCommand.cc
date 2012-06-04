@@ -34,8 +34,10 @@
 #include "feature-visitors/GeometrySetter.h"
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "model/Model.h"
 #include "model/NotificationGuard.h"
 #include "model/TopLevelPropertyInline.h"
+
 
 void
 GPlatesViewOperations::SplitFeatureUndoCommand::redo()
@@ -44,11 +46,9 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many as we incrementally modify the feature below.
-	GPlatesModel::NotificationGuard model_notification_guard(
-			d_view_state->get_application_state().get_model_interface().access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(d_model_interface.access_model());
 
-	d_old_feature = 
-		d_feature_focus->focused_feature();
+	d_old_feature =  d_feature_focus->focused_feature();
 	if (!(*d_old_feature).is_valid())
 	{
 		return;
@@ -247,8 +247,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::undo()
 	
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many as we incrementally modify the feature below.
-	GPlatesModel::NotificationGuard model_notification_guard(
-			d_view_state->get_application_state().get_model_interface().access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(d_model_interface.access_model());
 
 	//restore the old geometry
 	GPlatesAppLogic::GeometryUtils::remove_geometry_properties_from_feature(*d_old_feature);

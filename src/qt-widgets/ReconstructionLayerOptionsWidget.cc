@@ -25,13 +25,15 @@
 
 #include "ReconstructionLayerOptionsWidget.h"
 
-#include "app-logic/ApplicationState.h"
-#include "app-logic/ReconstructGraph.h"
-
 #include "LinkWidget.h"
 #include "QtWidgetUtils.h"
 #include "TotalReconstructionPolesDialog.h"
 #include "ViewportWindow.h"
+
+#include "app-logic/ApplicationState.h"
+#include "app-logic/ReconstructGraph.h"
+
+#include "gui/Dialogs.h"
 
 
 GPlatesQtWidgets::ReconstructionLayerOptionsWidget::ReconstructionLayerOptionsWidget(
@@ -110,7 +112,7 @@ GPlatesQtWidgets::ReconstructionLayerOptionsWidget::get_title()
 void
 GPlatesQtWidgets::ReconstructionLayerOptionsWidget::handle_view_total_reconstruction_poles_link_activated()
 {
-	d_viewport_window->pop_up_total_reconstruction_poles_dialog(d_current_visual_layer);
+	d_viewport_window->dialogs().pop_up_total_reconstruction_poles_dialog(d_current_visual_layer);
 }
 
 

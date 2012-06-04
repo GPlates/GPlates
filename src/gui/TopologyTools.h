@@ -88,7 +88,7 @@ namespace GPlatesQtWidgets
 
 namespace GPlatesGui
 {
-	class ChooseCanvasTool;
+	class CanvasToolWorkflows;
 	class FeatureFocus;
 
 
@@ -110,7 +110,7 @@ namespace GPlatesGui
 		TopologyTools(
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesQtWidgets::ViewportWindow &viewport_window,
-				GPlatesGui::ChooseCanvasTool &choose_canvas_tool);
+				GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows);
 
 		void
 		activate(
@@ -438,7 +438,7 @@ namespace GPlatesGui
 		/**
 		 * To change the canvas tool when we are finished editing/building topology.
 		 */
-		GPlatesGui::ChooseCanvasTool *d_choose_canvas_tool;
+		GPlatesGui::CanvasToolWorkflows *d_canvas_tool_workflows;
 
 
 		/** Keeps track of what canvas tool mode activated this object */

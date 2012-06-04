@@ -32,6 +32,7 @@
 #include "ExportAnimationDialogUi.h"
 
 #include "ConfigureExportParametersDialog.h"
+#include "GPlatesDialog.h"
 #include "OpenDirectoryDialog.h"
 
 #include "gui/ExportAnimationContext.h"
@@ -54,7 +55,7 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 
 	class ExportAnimationDialog: 
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_ExportAnimationDialog 
 	{
 		Q_OBJECT
@@ -62,7 +63,6 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		ExportAnimationDialog(
-				GPlatesGui::AnimationController &animation_controller,
 				GPlatesPresentation::ViewState &view_state_,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_,
 				QWidget *parent_ = NULL);

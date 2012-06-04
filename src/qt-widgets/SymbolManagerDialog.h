@@ -25,33 +25,35 @@
 #define GPLATES_QTWIDGETS_SYMBOLMANAGERDIALOG_H
 
 #include <QDialog>
+
 #include "SymbolManagerDialogUi.h"
+
+#include "GPlatesDialog.h"
+
 
 namespace GPlatesQtWidgets
 {
-
-
     class SymbolManagerDialog :
-	public QDialog,
-	protected Ui_SymbolManagerDialog
+			public GPlatesDialog,
+			protected Ui_SymbolManagerDialog
     {
-	Q_OBJECT
+		Q_OBJECT
 
-    public:
-	explicit
-	SymbolManagerDialog(
-	    QWidget *parent = 0);
+	public:
+		explicit
+		SymbolManagerDialog(
+				QWidget *parent = 0);
 
 
-    private slots:
+	private slots:
 
-	void
-	handle_close();
+		void
+			handle_close();
 
-    private:
+	private:
 
-	void
-	set_up_connections();
+		void
+			set_up_connections();
     };
 
 }

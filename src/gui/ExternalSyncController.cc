@@ -30,13 +30,16 @@
 
 #include "ExternalSyncController.h"
 
+#include "AnimationController.h"
+#include "ViewportZoom.h"
 
 #include "app-logic/ApplicationState.h"
-#include "gui/AnimationController.h"
-#include "gui/ViewportZoom.h"
+
 #include "maths/LatLonPoint.h"
 #include "maths/UnitVector3D.h"
+
 #include "presentation/ViewState.h"
+
 #include "qt-widgets/ReconstructionViewWidget.h"
 #include "qt-widgets/SceneView.h"
 #include "qt-widgets/ViewportWindow.h"
@@ -236,14 +239,14 @@ namespace
 	}
 }
 
-GPlatesUtils::ExternalSyncController::ExternalSyncController(
+GPlatesGui::ExternalSyncController::ExternalSyncController(
 	const bool &gplates_is_master,
     GPlatesQtWidgets::ViewportWindow *viewport_window_ptr,
     GPlatesPresentation::ViewState *view_state_ptr):
-    d_std_in_thread_ptr(new GPlatesUtils::StdInThread()),
+    d_std_in_thread_ptr(new StdInThread()),
     d_process(new QProcess(this)),
     d_viewport_window_ptr(viewport_window_ptr),
-    d_animation_controller_ptr(&viewport_window_ptr->get_animation_controller()),
+    d_animation_controller_ptr(&view_state_ptr->get_animation_controller()),
     d_reconstruction_view_widget_ptr(&viewport_window_ptr->reconstruction_view_widget()),
     d_view_state_ptr(view_state_ptr),
     d_should_sync_view(false),
@@ -257,7 +260,7 @@ GPlatesUtils::ExternalSyncController::ExternalSyncController(
 {
 }
 
-GPlatesUtils::ExternalSyncController::~ExternalSyncController()
+GPlatesGui::ExternalSyncController::~ExternalSyncController()
 {
     if (d_std_in_thread_ptr)
     {
@@ -275,7 +278,7 @@ GPlatesUtils::ExternalSyncController::~ExternalSyncController()
 }
 
 void
-GPlatesUtils::ExternalSyncController::process_external_command(
+GPlatesGui::ExternalSyncController::process_external_command(
 	const QString &command_string)
 {
 
@@ -333,7 +336,7 @@ GPlatesUtils::ExternalSyncController::process_external_command(
 }
 
 void
-GPlatesUtils::ExternalSyncController::process_time_command(
+GPlatesGui::ExternalSyncController::process_time_command(
 		const QStringList &commands)
 {
 	boost::optional<double> time = get_time_from_argument_list(commands);
@@ -351,7 +354,7 @@ GPlatesUtils::ExternalSyncController::process_time_command(
 }
 
 void
-GPlatesUtils::ExternalSyncController::process_viewport_centre_command(
+GPlatesGui::ExternalSyncController::process_viewport_centre_command(
 	const QStringList &commands)
 {
 	boost::optional<GPlatesMaths::LatLonPoint> desired_centre = get_centre_from_argument_list(commands);
@@ -367,7 +370,7 @@ GPlatesUtils::ExternalSyncController::process_viewport_centre_command(
 }
 
 void
-GPlatesUtils::ExternalSyncController::process_zoom_command(
+GPlatesGui::ExternalSyncController::process_zoom_command(
 	const QStringList &commands)
 {
 	boost::optional<double> zoom_percent = get_zoom_from_argument_list(commands);
@@ -384,7 +387,7 @@ GPlatesUtils::ExternalSyncController::process_zoom_command(
 }
 
 void
-GPlatesUtils::ExternalSyncController::process_gain_focus_command()
+GPlatesGui::ExternalSyncController::process_gain_focus_command()
 {
 	// Hmmm. Nothing I do here seems to raise the window to the front. Focus, yes, but not raise it above the
     // calling application.
@@ -395,7 +398,7 @@ GPlatesUtils::ExternalSyncController::process_gain_focus_command()
 }
 
 void
-GPlatesUtils::ExternalSyncController::process_open_file_command(
+GPlatesGui::ExternalSyncController::process_open_file_command(
 	const QStringList &commands)
 {
 	QStringList filenames = get_filenames_from_argument_list(commands);
@@ -403,7 +406,7 @@ GPlatesUtils::ExternalSyncController::process_open_file_command(
 }
 
 void
-GPlatesUtils::ExternalSyncController::process_orientation_command(
+GPlatesGui::ExternalSyncController::process_orientation_command(
 	const QStringList &commands)
 {
 	boost::optional<GPlatesMaths::Rotation> rotation = get_orientation_from_argument_list(commands);
@@ -420,7 +423,7 @@ GPlatesUtils::ExternalSyncController::process_orientation_command(
 }
 
 void
-GPlatesUtils::ExternalSyncController::send_external_time_command(
+GPlatesGui::ExternalSyncController::send_external_time_command(
 	double time)
 {
     if (d_should_sync_time)
@@ -432,7 +435,7 @@ GPlatesUtils::ExternalSyncController::send_external_time_command(
 }
 
 void
-GPlatesUtils::ExternalSyncController::send_external_camera_command(
+GPlatesGui::ExternalSyncController::send_external_camera_command(
 	double lat, double lon)
 {
     if (d_should_sync_view)
@@ -445,7 +448,7 @@ GPlatesUtils::ExternalSyncController::send_external_camera_command(
 }
 
 void
-GPlatesUtils::ExternalSyncController::send_external_zoom_command(
+GPlatesGui::ExternalSyncController::send_external_zoom_command(
 	double zoom)
 {
     if (d_should_sync_view)
@@ -458,7 +461,7 @@ GPlatesUtils::ExternalSyncController::send_external_zoom_command(
 }
 
 void
-GPlatesUtils::ExternalSyncController::send_external_orientation_command(
+GPlatesGui::ExternalSyncController::send_external_orientation_command(
 	GPlatesMaths::Rotation &rotation)
 {
 	if (d_should_sync_view)
@@ -475,7 +478,7 @@ GPlatesUtils::ExternalSyncController::send_external_orientation_command(
 }
 
 void
-GPlatesUtils::ExternalSyncController::enable_external_syncing()
+GPlatesGui::ExternalSyncController::enable_external_syncing()
 {
     d_should_sync_view = true;
     d_should_sync_time = true;
@@ -486,25 +489,14 @@ GPlatesUtils::ExternalSyncController::enable_external_syncing()
 }
 
 void
-GPlatesUtils::StdInThread::run()
-{
-	std::string input_line;
-	while(true)
-	{
-		std::getline(std::cin, input_line);
-		emit std_in_string_read(QString(input_line.c_str()));
-	}
-}
-
-void
-GPlatesUtils::ExternalSyncController::handle_command_received(
+GPlatesGui::ExternalSyncController::handle_command_received(
 	QString command_string)
 {
 	process_external_command(command_string);
 }
 
 void
-GPlatesUtils::ExternalSyncController::start_external_process(
+GPlatesGui::ExternalSyncController::start_external_process(
     const QString &process_string)
 {
     if(!(d_process->state() & QProcess::Running))
@@ -520,85 +512,85 @@ GPlatesUtils::ExternalSyncController::start_external_process(
 }
 
 void
-GPlatesUtils::ExternalSyncController::auto_sync_view(
+GPlatesGui::ExternalSyncController::auto_sync_view(
     bool should_sync)
 {
     d_should_sync_view = should_sync;
 }
 
 void
-GPlatesUtils::ExternalSyncController::auto_sync_time(
+GPlatesGui::ExternalSyncController::auto_sync_time(
     bool should_sync)
 {
     d_should_sync_time = should_sync;
 }
 
 double
-GPlatesUtils::ExternalSyncController::get_time()
+GPlatesGui::ExternalSyncController::get_time()
 {
     return d_view_state_ptr->get_application_state().get_current_reconstruction_time();
 }
 
 boost::optional<GPlatesMaths::LatLonPoint>
-GPlatesUtils::ExternalSyncController::get_projection_centre()
+GPlatesGui::ExternalSyncController::get_projection_centre()
 {
     return d_reconstruction_view_widget_ptr->active_view().camera_llp();
 }
 
 double
-GPlatesUtils::ExternalSyncController::get_zoom()
+GPlatesGui::ExternalSyncController::get_zoom()
 {
     return d_view_state_ptr->get_viewport_zoom().zoom_percent();
 }
 
 boost::optional<GPlatesMaths::Rotation>
-GPlatesUtils::ExternalSyncController::get_orientation()
+GPlatesGui::ExternalSyncController::get_orientation()
 {
 	return d_reconstruction_view_widget_ptr->active_view().orientation();
 }
 
 void
-GPlatesUtils::ExternalSyncController::set_time(
+GPlatesGui::ExternalSyncController::set_time(
 	const double &time)
 {
 	d_animation_controller_ptr->set_view_time(time);
 }
 
 void
-GPlatesUtils::ExternalSyncController::set_projection_centre(
+GPlatesGui::ExternalSyncController::set_projection_centre(
 	const GPlatesMaths::LatLonPoint &llp)
 {
 	d_reconstruction_view_widget_ptr->active_view().set_camera_viewpoint(llp);
 }
 
 void
-GPlatesUtils::ExternalSyncController::set_orientation(
+GPlatesGui::ExternalSyncController::set_orientation(
 	const GPlatesMaths::Rotation &rotation)
 {
 	d_reconstruction_view_widget_ptr->active_view().set_orientation(rotation);
 }
 
 void
-GPlatesUtils::ExternalSyncController::set_zoom(
+GPlatesGui::ExternalSyncController::set_zoom(
 	const double &zoom)
 {
 	d_view_state_ptr->get_viewport_zoom().set_zoom_percent(zoom);
 }
 
 void
-GPlatesUtils::ExternalSyncController::enable_time_commands()
+GPlatesGui::ExternalSyncController::enable_time_commands()
 {
     d_should_sync_time = true;
 }
 
 void
-GPlatesUtils::ExternalSyncController::enable_view_commands()
+GPlatesGui::ExternalSyncController::enable_view_commands()
 {
     d_should_sync_view = true;
 }
 
 void
-GPlatesUtils::ExternalSyncController::start_thread()
+GPlatesGui::ExternalSyncController::start_thread()
 {
     if (d_std_in_thread_ptr && !d_std_in_thread_ptr->isRunning())
     {
@@ -607,7 +599,7 @@ GPlatesUtils::ExternalSyncController::start_thread()
 }
 
 void
-GPlatesUtils::ExternalSyncController::connect_message_signals()
+GPlatesGui::ExternalSyncController::connect_message_signals()
 {
     QObject::connect(
 	    d_std_in_thread_ptr,
@@ -669,7 +661,7 @@ GPlatesUtils::ExternalSyncController::connect_message_signals()
 }
 
 void
-GPlatesUtils::ExternalSyncController::sync_external_time()
+GPlatesGui::ExternalSyncController::sync_external_time()
 {
 	d_should_sync_time = true;
 	double time = get_time();
@@ -679,7 +671,7 @@ GPlatesUtils::ExternalSyncController::sync_external_time()
 }
 
 void
-GPlatesUtils::ExternalSyncController::sync_external_view()
+GPlatesGui::ExternalSyncController::sync_external_view()
 {
 	d_should_sync_view = true;
 	boost::optional<GPlatesMaths::LatLonPoint> llp = get_projection_centre();
@@ -704,20 +696,20 @@ GPlatesUtils::ExternalSyncController::sync_external_view()
 }
 
 void
-GPlatesUtils::ExternalSyncController::sync_gplates_time()
+GPlatesGui::ExternalSyncController::sync_gplates_time()
 {
 	set_time(d_most_recent_time);
 }
 
 void
-GPlatesUtils::ExternalSyncController::sync_gplates_view()
+GPlatesGui::ExternalSyncController::sync_gplates_view()
 {
 	set_orientation(d_most_recent_orientation);
 	set_zoom(d_most_recent_zoom);
 }
 
 void
-GPlatesUtils::ExternalSyncController::handle_process_finished(
+GPlatesGui::ExternalSyncController::handle_process_finished(
 	int exit_code,
 	QProcess::ExitStatus exit_status)
 {
@@ -726,7 +718,7 @@ GPlatesUtils::ExternalSyncController::handle_process_finished(
 }
 
 void
-GPlatesUtils::ExternalSyncController::handle_process_error(
+GPlatesGui::ExternalSyncController::handle_process_error(
 	QProcess::ProcessError error)
 {
 	std::cout << "Error with external process started from GPlates." << std::endl;
@@ -736,13 +728,13 @@ GPlatesUtils::ExternalSyncController::handle_process_error(
 }
 
 void
-GPlatesUtils::ExternalSyncController::handle_process_started()
+GPlatesGui::ExternalSyncController::handle_process_started()
 {
 	// nothing to do here at the moment. 
 }
 
 void
-GPlatesUtils::ExternalSyncController::read_process_output()
+GPlatesGui::ExternalSyncController::read_process_output()
 {
 	// What we do here only makes sense when gplates is controlling external software. 
 	if (!d_gplates_is_master)
@@ -770,7 +762,7 @@ GPlatesUtils::ExternalSyncController::read_process_output()
 }
 
 void
-GPlatesUtils::ExternalSyncController::send_external_command(
+GPlatesGui::ExternalSyncController::send_external_command(
 	QString &command)
 {
 	if (!d_should_send_output)
@@ -793,5 +785,16 @@ GPlatesUtils::ExternalSyncController::send_external_command(
 	{
 		// We send to std::out
 		std::cout << command.toStdString() << std::endl << std::flush;
+	}
+}
+
+void
+GPlatesGui::StdInThread::run()
+{
+	std::string input_line;
+	while(true)
+	{
+		std::getline(std::cin, input_line);
+		emit std_in_string_read(QString(input_line.c_str()));
 	}
 }

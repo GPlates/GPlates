@@ -35,8 +35,6 @@
 
 #include "app-logic/PropertyExtractors.h"
 
-#include "presentation/ViewState.h"
-
 
 GPlatesGui::ColourSchemeInfo::ColourSchemeInfo(
 		ColourScheme::non_null_ptr_type colour_scheme_ptr_,
@@ -89,11 +87,10 @@ GPlatesGui::ColourSchemeCategory::get_description(
 }
 
 
-GPlatesGui::ColourSchemeContainer::ColourSchemeContainer(
-		GPlatesPresentation::ViewState &view_state) :
+GPlatesGui::ColourSchemeContainer::ColourSchemeContainer() :
 	d_next_id(0)
 {
-	create_built_in_colour_schemes(view_state);
+	create_built_in_colour_schemes();
 }
 
 
@@ -148,8 +145,7 @@ GPlatesGui::ColourSchemeContainer::get(
 
 
 void
-GPlatesGui::ColourSchemeContainer::create_built_in_colour_schemes(
-		GPlatesPresentation::ViewState &view_state)
+GPlatesGui::ColourSchemeContainer::create_built_in_colour_schemes()
 {
 	// Plate ID colouring schemes:
 	add(

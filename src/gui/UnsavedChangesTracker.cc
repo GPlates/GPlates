@@ -31,17 +31,22 @@
 
 #include "UnsavedChangesTracker.h"
 
+#include "Dialogs.h"
+#include "FileIOFeedback.h"
+#include "TrinketArea.h"
+
 #include "file-io/File.h"
 #include "file-io/FileInfo.h"
+
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
-#include "gui/FileIOFeedback.h"
-#include "gui/TrinketArea.h"
+
+#include "model/FeatureCollectionHandle.h"
+#include "model/WeakReferenceCallback.h"
+
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/UnsavedChangesWarningDialog.h"
 #include "qt-widgets/ManageFeatureCollectionsDialog.h"
-#include "model/FeatureCollectionHandle.h"
-#include "model/WeakReferenceCallback.h"
 
 
 namespace
@@ -320,15 +325,7 @@ GPlatesGui::UnsavedChangesTracker::handle_file_state_file_about_to_be_removed(
 GPlatesQtWidgets::ManageFeatureCollectionsDialog &
 GPlatesGui::UnsavedChangesTracker::manage_feature_collections_dialog()
 {
-	// Obtain a pointer to the dialog once, via the ViewportWindow and Qt magic.
-	static GPlatesQtWidgets::ManageFeatureCollectionsDialog *dialog_ptr = 
-			viewport_window().findChild<GPlatesQtWidgets::ManageFeatureCollectionsDialog *>(
-					"ManageFeatureCollectionsDialog");
-	// The dialog not existing is a serious error.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			dialog_ptr != NULL,
-			GPLATES_ASSERTION_SOURCE);
-	return *dialog_ptr;
+	return d_viewport_window_ptr->dialogs().manage_feature_collections_dialog();
 }
 
 

@@ -40,12 +40,14 @@
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/TemporaryFileRegistry.h"
 
+#include "gui/AnimationController.h"
 #include "gui/ColourSchemeContainer.h"
 #include "gui/ColourSchemeDelegator.h"
 #include "gui/ColourPaletteAdapter.h"
 #include "gui/CptColourPalette.h"
 #include "gui/ExportAnimationRegistry.h"
 #include "gui/FeatureFocus.h"
+#include "gui/FeatureTableModel.h"
 #include "gui/GeometryFocusHighlight.h"
 #include "gui/GraticuleSettings.h"
 #include "gui/MapTransform.h"
@@ -54,12 +56,15 @@
 #include "gui/RenderSettings.h"
 #include "gui/Symbol.h"
 #include "gui/TextOverlaySettings.h"
+#include "gui/TopologySectionsContainer.h"
 #include "gui/ViewportProjection.h"
 #include "gui/ViewportZoom.h"
 
 #include "maths/MathsUtils.h"
 #include "maths/Real.h"
 
+#include "view-operations/FocusedFeatureGeometryManipulator.h"
+#include "view-operations/GeometryBuilder.h"
 #include "view-operations/RenderedGeometryCollection.h"
 
 
@@ -88,20 +93,36 @@ GPlatesPresentation::ViewState::ViewState(
 		GPlatesAppLogic::ApplicationState &application_state) :
 	d_application_state(application_state),
 	d_other_view_state(NULL), // FIXME: remove this when refactored
+	d_animation_controller(
+			new GPlatesGui::AnimationController(application_state)),
 	d_rendered_geometry_collection(
 			new GPlatesViewOperations::RenderedGeometryCollection()),
+	d_feature_focus(
+			new GPlatesGui::FeatureFocus(*d_rendered_geometry_collection)),
+	d_feature_table_model_ptr(
+			new GPlatesGui::FeatureTableModel(
+				*d_feature_focus,
+				*d_rendered_geometry_collection)),
 	d_colour_scheme_container(
-			new GPlatesGui::ColourSchemeContainer(*this)),
+			new GPlatesGui::ColourSchemeContainer()),
 	d_colour_scheme(
 			new GPlatesGui::ColourSchemeDelegator(*d_colour_scheme_container)),
 	d_viewport_zoom(
 			new GPlatesGui::ViewportZoom()),
 	d_viewport_projection(
 			new GPlatesGui::ViewportProjection(GPlatesGui::MapProjection::ORTHOGRAPHIC)),
+	d_digitise_geometry_builder(
+			new GPlatesViewOperations::GeometryBuilder()),
+	d_focused_feature_geometry_builder(
+			new GPlatesViewOperations::GeometryBuilder()),
+	d_focused_feature_geom_manipulator(
+			new GPlatesViewOperations::FocusedFeatureGeometryManipulator(
+				*d_focused_feature_geometry_builder,
+				*this)),
 	d_geometry_focus_highlight(
-			new GPlatesGui::GeometryFocusHighlight(*d_rendered_geometry_collection,d_feature_type_symbol_map)),
-	d_feature_focus(
-			new GPlatesGui::FeatureFocus(*this)),
+			new GPlatesGui::GeometryFocusHighlight(
+					*d_rendered_geometry_collection,
+					d_feature_type_symbol_map)),
 	d_visual_layers(
 			new VisualLayers(
 				d_application_state,
@@ -128,6 +149,10 @@ GPlatesPresentation::ViewState::ViewState(
 			new GPlatesGui::TextOverlaySettings()),
 	d_export_animation_registry(
 			new GPlatesGui::ExportAnimationRegistry()),
+	d_topology_boundary_sections_container_ptr(
+			new GPlatesGui::TopologySectionsContainer()),
+	d_topology_interior_sections_container_ptr(
+			new GPlatesGui::TopologySectionsContainer()),
 	d_python_manager_ptr(GPlatesGui::PythonManager::instance())
 {
 	// Override a few defaults to the user's taste.
@@ -186,6 +211,12 @@ GPlatesPresentation::ViewState::ViewState(
 }
 
 
+GPlatesPresentation::ViewState::~ViewState()
+{
+	// boost::scoped_ptr destructor requires complete type.
+}
+
+
 void
 GPlatesPresentation::ViewState::initialise_from_user_preferences()
 {
@@ -195,17 +226,19 @@ GPlatesPresentation::ViewState::initialise_from_user_preferences()
 }
 
 
-GPlatesPresentation::ViewState::~ViewState()
-{
-	// boost::scoped_ptr destructor requires complete type.
-}
-
-
 GPlatesAppLogic::ApplicationState &
 GPlatesPresentation::ViewState::get_application_state()
 {
 	return d_application_state;
 }
+
+
+GPlatesGui::AnimationController&
+GPlatesPresentation::ViewState::get_animation_controller()
+{
+	return *d_animation_controller;
+}
+
 
 GPlatesViewOperations::RenderedGeometryCollection &
 GPlatesPresentation::ViewState::get_rendered_geometry_collection()
@@ -221,6 +254,13 @@ GPlatesPresentation::ViewState::get_feature_focus()
 }
 
 
+GPlatesGui::FeatureTableModel &
+GPlatesPresentation::ViewState::get_feature_table_model()
+{
+	return *d_feature_table_model_ptr;
+}
+
+
 GPlatesGui::ViewportZoom &
 GPlatesPresentation::ViewState::get_viewport_zoom()
 {
@@ -232,6 +272,20 @@ GPlatesGui::ViewportProjection &
 GPlatesPresentation::ViewState::get_viewport_projection()
 {
 	return *d_viewport_projection;
+}
+
+
+GPlatesViewOperations::GeometryBuilder &
+GPlatesPresentation::ViewState::get_digitise_geometry_builder()
+{
+	return *d_digitise_geometry_builder;
+}
+
+
+GPlatesViewOperations::GeometryBuilder &
+GPlatesPresentation::ViewState::get_focused_feature_geometry_builder()
+{
+	return *d_focused_feature_geometry_builder;
 }
 
 
@@ -344,33 +398,6 @@ GPlatesPresentation::ViewState::setup_rendered_geometry_collection()
 	// Reconstruction rendered layer is always active.
 	d_rendered_geometry_collection->set_main_layer_active(
 		GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
-
-
-		
-	d_rendered_geometry_collection->set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_LAYER);	
-		
-	
-			
-
-	// Activate the main rendered layer.
-	// Specify which main rendered layers are orthogonal to each other - when
-	// one is activated the others are automatically deactivated.
-	GPlatesViewOperations::RenderedGeometryCollection::orthogonal_main_layers_type orthogonal_main_layers;
-	orthogonal_main_layers.set(
-			GPlatesViewOperations::RenderedGeometryCollection::DIGITISATION_LAYER);
-	orthogonal_main_layers.set(
-			GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_LAYER);
-	orthogonal_main_layers.set(
-			GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER);
-	orthogonal_main_layers.set(
-			GPlatesViewOperations::RenderedGeometryCollection::MEASURE_DISTANCE_LAYER);
-	orthogonal_main_layers.set(
-			GPlatesViewOperations::RenderedGeometryCollection::TOPOLOGY_TOOL_LAYER);
-	orthogonal_main_layers.set(
-			GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_LAYER);
-
-	d_rendered_geometry_collection->set_orthogonal_main_layers(orthogonal_main_layers);
 }
 
 
@@ -506,4 +533,18 @@ GPlatesGui::ExportAnimationRegistry &
 GPlatesPresentation::ViewState::get_export_animation_registry() const
 {
 	return *d_export_animation_registry;
+}
+
+
+GPlatesGui::TopologySectionsContainer &
+GPlatesPresentation::ViewState::get_topology_boundary_sections_container()
+{
+	return *d_topology_boundary_sections_container_ptr;	
+}
+
+
+GPlatesGui::TopologySectionsContainer &
+GPlatesPresentation::ViewState::get_topology_interior_sections_container()
+{
+	return *d_topology_interior_sections_container_ptr;	
 }

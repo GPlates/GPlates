@@ -34,17 +34,22 @@
 
 #include "LatLonCoordinatesTable.h"
 
+#include "canvas-tools/GeometryOperationState.h"
+
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
+
 #include "gui/Colour.h"
+
 #include "maths/InvalidLatLonException.h"
 #include "maths/InvalidLatLonCoordinateException.h"
 #include "maths/LatLonPoint.h"
 #include "maths/GeometryOnSphere.h"
 #include "maths/Real.h"
+
 #include "utils/GeometryCreationUtils.h"
 #include "utils/StringFormattingUtils.h"
-#include "view-operations/ActiveGeometryOperation.h"
+
 #include "view-operations/GeometryOperation.h"
 #include "view-operations/GeometryType.h"
 
@@ -230,62 +235,38 @@ namespace
 
 GPlatesQtWidgets::LatLonCoordinatesTable::LatLonCoordinatesTable(
 		QTreeWidget *coordinates_table,
-		GPlatesViewOperations::GeometryBuilder *initial_geom_builder,
-		GPlatesViewOperations::ActiveGeometryOperation *active_geometry_operation) :
-d_coordinates_table(coordinates_table),
-d_tree_widget_builder(coordinates_table),
-d_current_geometry_builder(NULL),
-d_current_geometry_operation(NULL),
-d_need_to_reload_data(false)
+		GPlatesCanvasTools::GeometryOperationState &geometry_operation_state) :
+	d_coordinates_table(coordinates_table),
+	d_tree_widget_builder(coordinates_table),
+	d_current_geometry_builder(NULL),
+	d_current_geometry_operation(NULL),
+	d_need_to_reload_data(false)
 {
-	if (active_geometry_operation)
-	{
-		connect_to_active_geometry_operation_signals(active_geometry_operation);
-	}
-
-	set_geometry_builder(initial_geom_builder);
-}
-
-void
-GPlatesQtWidgets::LatLonCoordinatesTable::set_geometry_builder(
-		GPlatesViewOperations::GeometryBuilder *geom_builder)
-{
-	// If the new geometry builder is the same as current one then do nothing.
-	if (geom_builder == d_current_geometry_builder)
-	{
-		return;
-	}
-
-	if (d_current_geometry_builder != NULL)
-	{
-		disconnect_from_current_geometry_builder();
-	}
-
-	d_current_geometry_builder = geom_builder;
-
-
-	if (d_current_geometry_builder != NULL)
-	{
-		connect_to_current_geometry_builder();
-
-		initialise_table_from_current_geometry_builder();
-	}
+	connect_to_geometry_operation_state_signals(geometry_operation_state);
 }
 
 
 void
-GPlatesQtWidgets::LatLonCoordinatesTable::connect_to_active_geometry_operation_signals(
-		GPlatesViewOperations::ActiveGeometryOperation *active_geometry_operation)
+GPlatesQtWidgets::LatLonCoordinatesTable::connect_to_geometry_operation_state_signals(
+		GPlatesCanvasTools::GeometryOperationState &geometry_operation_state)
 {
-	// Connect to the geometry operation's signals.
-	// GeometryOperation has just highlighted a vertex.
+	// Connect to the geometry operation state's signals.
+
 	QObject::connect(
-			active_geometry_operation,
+			&geometry_operation_state,
 			SIGNAL(switched_geometry_operation(
 					GPlatesViewOperations::GeometryOperation *)),
 			this,
 			SLOT(switched_geometry_operation(
 					GPlatesViewOperations::GeometryOperation *)));
+
+	QObject::connect(
+			&geometry_operation_state,
+			SIGNAL(switched_geometry_builder(
+					GPlatesViewOperations::GeometryBuilder *)),
+			this,
+			SLOT(switched_geometry_builder(
+					GPlatesViewOperations::GeometryBuilder *)));
 }
 
 
@@ -448,6 +429,34 @@ GPlatesQtWidgets::LatLonCoordinatesTable::switched_geometry_operation(
 	if (d_current_geometry_operation != NULL)
 	{
 		connect_to_current_geometry_operation();
+	}
+}
+
+
+void
+GPlatesQtWidgets::LatLonCoordinatesTable::switched_geometry_builder(
+		GPlatesViewOperations::GeometryBuilder *geometry_builder)
+{
+	// If the new geometry builder is the same as current one then do nothing.
+	if (geometry_builder == d_current_geometry_builder)
+	{
+		return;
+	}
+
+	if (d_current_geometry_builder != NULL)
+	{
+		disconnect_from_current_geometry_builder();
+	}
+
+	d_current_geometry_builder = geometry_builder;
+
+	d_need_to_reload_data = false;
+
+	if (d_current_geometry_builder != NULL)
+	{
+		connect_to_current_geometry_builder();
+
+		initialise_table_from_current_geometry_builder();
 	}
 }
 

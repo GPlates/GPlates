@@ -72,11 +72,9 @@
 
 GPlatesAppLogic::TopologyBoundaryResolver::TopologyBoundaryResolver(
 		std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
-		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles) :
 	d_resolved_topological_boundaries(resolved_topological_boundaries),
-	d_reconstructed_feature_geometries(reconstructed_feature_geometries),
 	d_reconstruction_tree(reconstruction_tree),
 	d_topological_sections_reconstruct_handles(topological_sections_reconstruct_handles),
 	d_reconstruction_params(reconstruction_tree->get_reconstruction_time())
@@ -250,15 +248,15 @@ GPlatesAppLogic::TopologyBoundaryResolver::record_topological_sections(
 
 void
 GPlatesAppLogic::TopologyBoundaryResolver::visit_gpml_topological_line_section(
-		GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
+		GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_topological_line_section)
 {  
 	const GPlatesModel::FeatureId source_feature_id =
-			gpml_toplogical_line_section.get_source_geometry()->feature_id();
+			gpml_topological_line_section.get_source_geometry()->feature_id();
 
 	boost::optional<ResolvedBoundary::Section> section =
 			record_topological_section_reconstructed_geometry(
 					source_feature_id,
-					*gpml_toplogical_line_section.get_source_geometry());
+					*gpml_topological_line_section.get_source_geometry());
 	if (!section)
 	{
 		// Return without adding topological section to the list of boundary sections.
@@ -266,22 +264,22 @@ GPlatesAppLogic::TopologyBoundaryResolver::visit_gpml_topological_line_section(
 	}
 
 	// Set reverse flag.
-	section->d_use_reverse = gpml_toplogical_line_section.get_reverse_order();
+	section->d_use_reverse = gpml_topological_line_section.get_reverse_order();
 
 	// Record start intersection information.
-	if (gpml_toplogical_line_section.get_start_intersection())
+	if (gpml_topological_line_section.get_start_intersection())
 	{
 		const GPlatesMaths::PointOnSphere reference_point =
-				*gpml_toplogical_line_section.get_start_intersection()->reference_point()->point();
+				*gpml_topological_line_section.get_start_intersection()->reference_point()->point();
 
 		section->d_start_intersection = ResolvedBoundary::Intersection(reference_point);
 	}
 
 	// Record end intersection information.
-	if (gpml_toplogical_line_section.get_end_intersection())
+	if (gpml_topological_line_section.get_end_intersection())
 	{
 		const GPlatesMaths::PointOnSphere reference_point =
-				*gpml_toplogical_line_section.get_end_intersection()->reference_point()->point();
+				*gpml_topological_line_section.get_end_intersection()->reference_point()->point();
 
 		section->d_end_intersection = ResolvedBoundary::Intersection(reference_point);
 	}
@@ -694,8 +692,6 @@ GPlatesAppLogic::TopologyBoundaryResolver::create_resolved_topology_boundary(boo
 				property,
 				*boundary_as_polyline
 			);
-
-        d_reconstructed_feature_geometries.push_back(rfg_ptr);
 	}
 
 

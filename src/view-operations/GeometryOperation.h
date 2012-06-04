@@ -29,7 +29,6 @@
 #include <QObject>
 
 #include "GeometryBuilder.h"
-#include "RenderedGeometryCollection.h"
 
 
 namespace GPlatesGui
@@ -53,14 +52,11 @@ namespace GPlatesViewOperations
 		{  }
 
 		/**
-		 * Activate this operation and attach to specified @a GeometryBuilder
-		 * and render into specified main rendered layer.
+		 * Activate this operation.
 		 */
 		virtual
 		void
-		activate(
-				GeometryBuilder *,
-				RenderedGeometryCollection::MainLayerType main_layer_type) = 0;
+		activate() = 0;
 
 		/**
 		 * Deactivate this operation.

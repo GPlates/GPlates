@@ -36,13 +36,13 @@
 GPlatesQtWidgets::DockWidget::DockWidget(
 		const QString &title,
 		GPlatesGui::DockState &dock_state,
-		ViewportWindow &main_window):
+		ViewportWindow &main_window,
+		boost::optional<QString> object_name_suffix):
 	QDockWidget(title, &main_window),
-	d_dock_state_ptr(&dock_state),
-	d_viewport_window_ptr(&main_window)
+	d_dock_state_ptr(&dock_state)
 {
 	// All GUI stuff should have an object name so we can e.g. hide it in F11.
-	setObjectName(QString("Dock_%1").arg(title));
+	setObjectName(QString("Dock_%1").arg(object_name_suffix ? object_name_suffix.get() : title));
 
 	// Connect to some of our own slots, so we can re-emit to DockState.
 	connect(this, SIGNAL(topLevelChanged(bool)),
@@ -56,9 +56,16 @@ GPlatesQtWidgets::DockWidget::DockWidget(
 	// so we know to update our menu items.
 	connect(d_dock_state_ptr, SIGNAL(dock_configuration_changed()),
 			this, SLOT(hide_menu_items_as_appropriate()));
+	
+	// React to changes to the allowed dock areas (when 'setAllowedAreas()' called).
+	connect(this, SIGNAL(allowedAreasChanged(Qt::DockWidgetAreas)),
+			this, SLOT(hide_menu_items_as_appropriate()));
 
 	// No designer setupUi() here, we define our own UI elements manually.
 	set_up_context_menu();
+
+	// Handle case where some areas are not allowed.
+	hide_menu_items_as_appropriate();
 }
 
 
@@ -189,9 +196,33 @@ GPlatesQtWidgets::DockWidget::handle_location_change(
 void
 GPlatesQtWidgets::DockWidget::hide_menu_items_as_appropriate()
 {
-	d_action_Tabify_At_Top->setVisible(d_dock_state_ptr->can_tabify(Qt::TopDockWidgetArea, *this));
-	d_action_Tabify_At_Bottom->setVisible(d_dock_state_ptr->can_tabify(Qt::BottomDockWidgetArea, *this));
-	d_action_Tabify_At_Left->setVisible(d_dock_state_ptr->can_tabify(Qt::LeftDockWidgetArea, *this));
-	d_action_Tabify_At_Right->setVisible(d_dock_state_ptr->can_tabify(Qt::RightDockWidgetArea, *this));
-}
+	const Qt::DockWidgetAreas allowed_areas = allowedAreas();
 
+	// Can dock at any allowed location except the current dock location (cause already there).
+	d_action_Dock_At_Top->setVisible(
+			allowed_areas.testFlag(Qt::TopDockWidgetArea) &&
+			d_dock_state_ptr->can_dock(Qt::TopDockWidgetArea, *this));
+	d_action_Dock_At_Bottom->setVisible(
+			allowed_areas.testFlag(Qt::BottomDockWidgetArea) &&
+			d_dock_state_ptr->can_dock(Qt::BottomDockWidgetArea, *this));
+	d_action_Dock_At_Left->setVisible(
+			allowed_areas.testFlag(Qt::LeftDockWidgetArea) &&
+			d_dock_state_ptr->can_dock(Qt::LeftDockWidgetArea, *this));
+	d_action_Dock_At_Right->setVisible(
+			allowed_areas.testFlag(Qt::RightDockWidgetArea) &&
+			d_dock_state_ptr->can_dock(Qt::RightDockWidgetArea, *this));
+
+	// Can tabify at any allowed location except the current dock location (cause already there).
+	d_action_Tabify_At_Top->setVisible(
+			allowed_areas.testFlag(Qt::TopDockWidgetArea) &&
+			d_dock_state_ptr->can_tabify(Qt::TopDockWidgetArea, *this));
+	d_action_Tabify_At_Bottom->setVisible(
+			allowed_areas.testFlag(Qt::BottomDockWidgetArea) &&
+			d_dock_state_ptr->can_tabify(Qt::BottomDockWidgetArea, *this));
+	d_action_Tabify_At_Left->setVisible(
+			allowed_areas.testFlag(Qt::LeftDockWidgetArea) &&
+			d_dock_state_ptr->can_tabify(Qt::LeftDockWidgetArea, *this));
+	d_action_Tabify_At_Right->setVisible(
+			allowed_areas.testFlag(Qt::RightDockWidgetArea) &&
+			d_dock_state_ptr->can_tabify(Qt::RightDockWidgetArea, *this));
+}

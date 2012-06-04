@@ -25,17 +25,21 @@
  
 #ifndef GPLATES_QTWIDGETS_DRAWSTYLEDIALOG_H
 #define GPLATES_QTWIDGETS_DRAWSTYLEDIALOG_H
+
 #include <boost/thread/mutex.hpp>
 #include <boost/weak_ptr.hpp>
 
 #include <QMutex>
 #include <QMutexLocker>
 
-#include "presentation/Application.h"
 #include "DrawStyleDialogUi.h"
-#include "gui/PythonConfiguration.h"
+#include "GPlatesDialog.h"
 #include "PythonArgumentWidget.h"
 #include "VisualLayersComboBox.h"
+
+#include "gui/PythonConfiguration.h"
+
+#include "presentation/Application.h"
 
 
 namespace GPlatesAppLogic
@@ -47,7 +51,7 @@ namespace GPlatesGui
 {
 	class ColourSchemeContainer;
 	class DrawStyleManager;
-	class StyleCatagory;
+	class StyleCategory;
 	class StyleAdapter;
 	class Configuration;
 }
@@ -91,7 +95,7 @@ namespace GPlatesQtWidgets
 	class PreviewGuard;
 
 	class DrawStyleDialog  : 
-			public QDialog, 
+			public GPlatesDialog, 
 			protected Ui_DrawStyleDialog
 	{
 		Q_OBJECT
@@ -106,7 +110,7 @@ namespace GPlatesQtWidgets
 		~DrawStyleDialog();
 		
 		void
-		init_catagory_table();
+		init_category_table();
 
 		void
 		init_dlg();
@@ -126,17 +130,17 @@ namespace GPlatesQtWidgets
 		set_style(GPlatesGui::StyleAdapter* style);
 
 		void
-		load_category(const GPlatesGui::StyleCatagory& );
+		load_category(const GPlatesGui::StyleCategory& );
 
 		void
 		show_preview_icon();
 
-		GPlatesGui::StyleCatagory*
+		GPlatesGui::StyleCategory*
 		get_catagory(
 				QTableWidgetItem& item)
 		{
 			QVariant qv = item.data(Qt::UserRole);
-			return static_cast<GPlatesGui::StyleCatagory*>(qv.value<void*>());
+			return static_cast<GPlatesGui::StyleCategory*>(qv.value<void*>());
 		}
 
 		GPlatesGui::StyleAdapter*
@@ -194,13 +198,13 @@ namespace GPlatesQtWidgets
 
 		bool
 		is_style_name_valid(
-				const GPlatesGui::StyleCatagory&,
+				const GPlatesGui::StyleCategory&,
 				const QString&);
 
 
 		const QString
 		generate_new_valid_style_name(
-				const GPlatesGui::StyleCatagory&,
+				const GPlatesGui::StyleCategory&,
 				const QString&);
 
 		void
@@ -284,7 +288,7 @@ namespace GPlatesQtWidgets
 			QTableWidgetItem* item = categories_table->currentItem();
 			if(item)
 			{
-				GPlatesGui::StyleCatagory* cata = get_catagory(*item);
+				GPlatesGui::StyleCategory* cata = get_catagory(*item);
 				if(cata)
 				{
 					load_category(*cata);
