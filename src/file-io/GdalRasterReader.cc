@@ -275,6 +275,43 @@ GPlatesFileIO::GDALRasterReader::GDALRasterReader(
 	}
 #endif
 
+	//
+	// UPDATE:
+	//
+	// It looks like there's a few bugs in GDAL related to flipping.
+	// The changesets related to image flipping in the netCDF driver...
+	//
+	//  http://trac.osgeo.org/gdal/log/trunk/gdal/frmts/netcdf/netcdfdataset.cpp
+	//
+	// ...are...
+	//
+	//  http://trac.osgeo.org/gdal/changeset/18151/trunk/gdal/frmts/netcdf/netcdfdataset.cpp
+	//     (the fix we currently work around in GPlates)
+	//  http://trac.osgeo.org/gdal/changeset/20006/trunk/gdal/frmts/netcdf/netcdfdataset.cpp
+	//  http://trac.osgeo.org/gdal/changeset/23615/trunk/gdal/frmts/netcdf/netcdfdataset.cpp
+	//  http://trac.osgeo.org/gdal/changeset/23617/trunk/gdal/frmts/netcdf/netcdfdataset.cpp
+	//
+	// So it looks like any workarounds we come up with might depend on the content of each netCDF
+	// raster file and we don't want to analyse that in GPlates.
+	// Probably the best bet is to increase the minimum GDAL requirement
+	// (although that may be difficult with the Ubuntu systems).
+	// Which means avoiding certain GDAL versions between the first bug-fix changeset listed above
+	// and the last (and write that off as unknown territory).
+	//
+	// According to the history of GDAL releases...
+	//
+	//   http://trac.osgeo.org/gdal/browser/tags
+	//
+	// ...it looks like the above changesets probably went into the following releases...
+	//
+	// 18151 -> 1.7.0
+	// 20006 -> 1.7.3
+	// 23615 -> 1.9.0
+	// 23617 -> 1.9.0
+	//
+	// Testing with GDAL 1.9.0 worked on two rasters where one of those rasters was incorrectly
+	// flipped on GDAL 1.7.
+
 	if (!can_read())
 	{
 		report_failure_to_begin(read_errors, ReadErrors::ErrorReadingRasterFile);
