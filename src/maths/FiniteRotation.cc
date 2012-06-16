@@ -220,7 +220,11 @@ GPlatesMaths::FiniteRotation::operator*(
 #endif
 	}
 
-	return UnitVector3D(v_rot.x(), v_rot.y(), v_rot.z());
+	// NOTE: We don't check validity because we've already ensured unit magnitude above and
+	// avoiding the validity check improves CPU performance quite noticeably.
+	// Now the CPU time is spent mostly in the quaternion-vector multiply above instead of being
+	// dwarfed by the validity check.
+	return UnitVector3D(v_rot.x(), v_rot.y(), v_rot.z(), false/*check_validity*/);
 }
 
 

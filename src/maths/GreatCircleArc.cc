@@ -27,6 +27,7 @@
 
 #include <sstream>
 #include <boost/optional.hpp>
+#include <boost/utility/in_place_factory.hpp>
 
 #include "GreatCircleArc.h"
 #include "FiniteRotation.h"
@@ -35,140 +36,6 @@
 #include "PolylineOnSphere.h"
 #include "Rotation.h"
 #include "Vector3D.h"
-
-
-namespace
-{
-	template<class T>
-	bool
-	opt_eq(
-			const boost::optional<T> &opt1,
-			const boost::optional<T> &opt2)
-	{
-		if (opt1)
-		{
-			if (!opt2)
-			{
-				return false;
-			}
-			return *opt1 == *opt2;
-		}
-		else
-		{
-			return !opt2;
-		}
-	}
-}
-
-
-GPlatesMaths::GreatCircleArc::ConstructionParameterValidity
-GPlatesMaths::GreatCircleArc::evaluate_construction_parameter_validity(
-		const PointOnSphere &p1,
-		const PointOnSphere &p2)
-{
-	const UnitVector3D &u1 = p1.position_vector();
-	const UnitVector3D &u2 = p2.position_vector();
-
-	real_t dp = dot(u1, u2);
-
-#if 0  // Identical endpoints are now valid.
-	if (dp >= 1.0) {
-
-		// parallel => start-point same as end-point => no arc
-		return INVALID_IDENTICAL_ENDPOINTS;
-	}
-#endif
-	if (dp <= -1.0) {
-
-		// antiparallel => start-point and end-point antipodal =>
-		// indeterminate arc
-		return INVALID_ANTIPODAL_ENDPOINTS;
-	}
-
-	return VALID;
-}
-
-
-const GPlatesMaths::GreatCircleArc
-GPlatesMaths::GreatCircleArc::create(
-		const PointOnSphere &p1,
-		const PointOnSphere &p2)
-{
-	ConstructionParameterValidity cpv = evaluate_construction_parameter_validity(p1, p2);
-
-	/*
-	 * First, we ensure that these two endpoints do in fact define a single
-	 * unique great-circle arc.
-	 */
-	if (cpv == INVALID_ANTIPODAL_ENDPOINTS) {
-
-		// start-point and end-point antipodal => indeterminate arc
-		std::ostringstream oss;
-
-		oss
-		 << "Attempted to calculate a great-circle arc from "
-		 << "antipodal endpoints "
-		 << p1
-		 << " and "
-		 << p2
-		 << ".";
-		throw IndeterminateResultException(GPLATES_EXCEPTION_SOURCE,
-				oss.str().c_str());
-	}
-
-	/*
-	 * Now we want to calculate the unit vector normal to the plane
-	 * of rotation (this vector also known as the "rotation axis").
-	 *
-	 * To do this, we calculate the cross product.
-	 */
-	const UnitVector3D &u1 = p1.position_vector();
-	const UnitVector3D &u2 = p2.position_vector();
-
-	Vector3D v = cross(u1, u2);
-
-	/*
-	 * Since u1 and u2 are unit vectors which might be parallel (but won't be antiparallel),
-	 * the magnitude of v will be in the range [0, 1], and will be equal to the sine of the
-	 * smaller of the two angles between u1 and u2.
-	 */
-	if (v.magSqrd() <= 0.0) {
-		// The points are coincident, which means there is no determinate rotation axis.
-		return GreatCircleArc(p1, p2);
-	} else {
-		// The points are non-coincident, which means there is a determinate rotation axis.
-		UnitVector3D rot_axis = v.get_normalisation();
-		return GreatCircleArc(p1, p2, rot_axis);
-	}
-}
-
-
-const GPlatesMaths::GreatCircleArc
-GPlatesMaths::GreatCircleArc::create_rotated_arc(
-		const FiniteRotation &rot,
-		const GreatCircleArc &arc)
-{
-	PointOnSphere start = rot * arc.start_point();
-	PointOnSphere end   = rot * arc.end_point();
-	if (arc.is_zero_length()) {
-		// The arc is pointlike, so there is no determinate rotation axis.
-		return GreatCircleArc(start, end);
-	} else {
-		// There is a determinate rotation axis.
-		UnitVector3D rot_axis = rot * arc.rotation_axis();
-		return GreatCircleArc(start, end, rot_axis);
-	}
-}
-
-
-const GPlatesMaths::UnitVector3D &
-GPlatesMaths::GreatCircleArc::rotation_axis() const
-{
-	if (is_zero_length()) {
-		throw IndeterminateArcRotationAxisException(GPLATES_EXCEPTION_SOURCE, *this);
-	}
-	return *d_rot_axis;
-}
 
 
 namespace
@@ -286,6 +153,103 @@ namespace
 }
 
 
+const GPlatesMaths::GreatCircleArc
+GPlatesMaths::GreatCircleArc::create(
+		const PointOnSphere &p1,
+		const PointOnSphere &p2)
+{
+	const UnitVector3D &u1 = p1.position_vector();
+	const UnitVector3D &u2 = p2.position_vector();
+
+	const real_t dot_p1_p2 = dot(u1, u2);
+
+	const ConstructionParameterValidity cpv = evaluate_construction_parameter_validity(u1, u2, dot_p1_p2);
+
+	/*
+	 * First, we ensure that these two endpoints do in fact define a single
+	 * unique great-circle arc.
+	 */
+	if (cpv == INVALID_ANTIPODAL_ENDPOINTS) {
+
+		// start-point and end-point antipodal => indeterminate arc
+		std::ostringstream oss;
+
+		oss
+		 << "Attempted to calculate a great-circle arc from "
+		 << "antipodal endpoints "
+		 << p1
+		 << " and "
+		 << p2
+		 << ".";
+		throw IndeterminateResultException(GPLATES_EXCEPTION_SOURCE,
+				oss.str().c_str());
+	}
+
+	return GreatCircleArc(p1, p2, dot_p1_p2);
+}
+
+
+const GPlatesMaths::GreatCircleArc
+GPlatesMaths::GreatCircleArc::create_rotated_arc(
+		const FiniteRotation &rot,
+		const GreatCircleArc &arc)
+{
+	const PointOnSphere rot_start = rot * arc.start_point();
+	const PointOnSphere rot_end   = rot * arc.end_point();
+
+	// Create the GCA without a cached rotation axis.
+	GreatCircleArc gca(rot_start, rot_end, arc.dot_of_endpoints());
+
+	if (arc.is_zero_length())
+	{
+		// The arc is pointlike, so there is no determinate rotation axis.
+
+		// NOTE: Boost 1.34 does not support nullary in-place (ie, "boost::in_place()") so we
+		// use copy-assignment instead.
+		gca.d_rotation_info = RotationInfo();
+	}
+	else
+	{
+		// There is a determinate rotation axis.
+		const UnitVector3D rot_axis = rot * arc.rotation_axis();
+
+		// Set the cached rotation axis.
+		gca.d_rotation_info = boost::in_place(boost::cref(rot_axis));
+	}
+
+	return gca;
+}
+
+
+bool
+GPlatesMaths::GreatCircleArc::is_zero_length() const
+{
+	if (!d_rotation_info)
+	{
+		calculate_rotation_info();
+	}
+
+	return d_rotation_info->d_is_zero_length;
+}
+
+
+const GPlatesMaths::UnitVector3D &
+GPlatesMaths::GreatCircleArc::rotation_axis() const
+{
+	if (is_zero_length())
+	{
+		throw IndeterminateArcRotationAxisException(GPLATES_EXCEPTION_SOURCE, *this);
+	}
+
+	if (!d_rotation_info)
+	{
+		calculate_rotation_info();
+	}
+
+	return d_rotation_info->d_rot_axis;
+}
+
+
 bool
 GPlatesMaths::GreatCircleArc::is_close_to(
 		const PointOnSphere &test_point,
@@ -356,6 +320,64 @@ GPlatesMaths::GreatCircleArc::get_closest_point(
 
 	return start_point().get_non_null_pointer();
 }
+
+GPlatesMaths::GreatCircleArc::ConstructionParameterValidity
+GPlatesMaths::GreatCircleArc::evaluate_construction_parameter_validity(
+		const UnitVector3D &p1,
+		const UnitVector3D &p2,
+		const real_t &dot_p1_p2)
+{
+#if 0  // Identical endpoints are now valid.
+	if (dp >= 1.0) {
+
+		// parallel => start-point same as end-point => no arc
+		return INVALID_IDENTICAL_ENDPOINTS;
+	}
+#endif
+
+	if (dot_p1_p2 <= -1.0)
+	{
+
+		// antiparallel => start-point and end-point antipodal =>
+		// indeterminate arc
+		return INVALID_ANTIPODAL_ENDPOINTS;
+	}
+
+	return VALID;
+}
+
+
+void
+GPlatesMaths::GreatCircleArc::calculate_rotation_info() const
+{
+	/*
+	 * Now we want to calculate the unit vector normal to the plane
+	 * of rotation (this vector also known as the "rotation axis").
+	 *
+	 * To do this, we calculate the cross product.
+	 */
+	const Vector3D v = cross(d_start_point.position_vector(), d_end_point.position_vector());
+
+	/*
+	 * Since start/end points are unit vectors which might be parallel (but won't be antiparallel),
+	 * the magnitude of v will be in the range [0, 1], and will be equal to the sine of the
+	 * smaller of the two angles between p1 and p2.
+	 */
+	if (v.magSqrd() <= 0.0)
+	{
+		// The points are coincident, which means there is no determinate rotation axis.
+		// NOTE: Boost 1.34 does not support nullary in-place (ie, "boost::in_place()") so we
+		// use copy-assignment instead.
+		d_rotation_info = RotationInfo();
+	}
+	else
+	{
+		// The points are non-coincident, which means there is a determinate rotation axis.
+		const UnitVector3D rot_axis = v.get_normalisation();
+		d_rotation_info = boost::in_place(boost::cref(rot_axis));
+	}
+}
+
 
 void
 GPlatesMaths::tessellate(
@@ -504,10 +526,9 @@ bool
 GPlatesMaths::GreatCircleArc::operator==(
 		const GreatCircleArc &other) const
 {
+	// Note that we don't need to check for the derived data members since they are
+	// uniquely determined by the start and end points (note that an exception is thrown when
+	// trying to create an arc with antipodal points).
 	return d_start_point == other.d_start_point &&
-		d_end_point == other.d_end_point &&
-		d_dot_of_endpoints == other.d_dot_of_endpoints &&
-		d_is_zero_length == other.d_is_zero_length &&
-		opt_eq(d_rot_axis, other.d_rot_axis);
+		d_end_point == other.d_end_point;
 }
-

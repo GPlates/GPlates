@@ -31,6 +31,7 @@
 #include <functional>  /* std::unary_function */
 #include <utility>  /* std::pair */
 #include <vector>
+#include <boost/cstdint.hpp>
 #include <boost/optional.hpp>  /* boost::optional */
 #include <boost/none.hpp>  /* boost::none */
 
@@ -87,7 +88,13 @@ namespace GPlatesMaths
 		ConstructionParameterValidity
 		evaluate_construction_parameter_validity(
 				const PointOnSphere &p1,
-				const PointOnSphere &p2);
+				const PointOnSphere &p2)
+		{
+			const UnitVector3D &u1 = p1.position_vector();
+			const UnitVector3D &u2 = p2.position_vector();
+
+			return evaluate_construction_parameter_validity(u1, u2, dot(u1, u2));
+		}
 
 		/**
 		 * Make a great circle arc beginning at @a p1 and
@@ -95,9 +102,7 @@ namespace GPlatesMaths
 		 *
 		 * @throws IndeterminateResultException when one of the 
 		 *   following occurs:
-		 *   - @a p1 and @a p2 are the same;
-		 *   - @a p1 and @a p2 are antipodal (that is, they are
-		 *     diametrically opposite on the globe).
+		 *   - @a p1 and @a p2 are antipodal (that is, they are diametrically opposite on the globe).
 		 */
 		static
 		const GreatCircleArc
@@ -148,10 +153,7 @@ namespace GPlatesMaths
 		 * IndeterminateArcRotationAxisException being thrown.
 		 */
 		bool
-		is_zero_length() const
-		{
-			return d_is_zero_length;
-		}
+		is_zero_length() const;
 
 		/**
 		 * Return the rotation axis of the arc.
@@ -200,43 +202,70 @@ namespace GPlatesMaths
 	protected:
 
 		/**
-		 * Construct a great-circle arc instance of non-zero length, with a determinate
-		 * rotation axis.
+		 * Construct a great-circle arc instance.
 		 */
 		GreatCircleArc(
 				const PointOnSphere &p1,
 				const PointOnSphere &p2,
-				const UnitVector3D &rot_axis):
+				const real_t &dot_p1_p2):
 			d_start_point(p1),
 			d_end_point(p2),
-			d_dot_of_endpoints(dot(p1.position_vector(), p2.position_vector())),
-			d_is_zero_length(false),
-			d_rot_axis(rot_axis)
-		{  }
-
-		/**
-		 * Construct a great-circle arc instance of zero length, without a determinate
-		 * rotation axis.
-		 */
-		GreatCircleArc(
-				const PointOnSphere &p1,
-				const PointOnSphere &p2):
-			d_start_point(p1),
-			d_end_point(p2),
-			d_dot_of_endpoints(dot(p1.position_vector(), p2.position_vector())),
-			d_is_zero_length(true),
-			d_rot_axis(boost::none)
+			d_dot_of_endpoints(dot_p1_p2)
 		{  }
 
 	private:
+
+		struct RotationInfo
+		{
+			//! For creating a *zero* length GCA.
+			RotationInfo() :
+				d_rot_axis(UnitVector3D::zBasis()/*dummy vector - not used*/),
+				d_is_zero_length(true)
+			{  }
+
+			//! For creating a *non-zero* length GCA.
+			explicit
+			RotationInfo(
+					const UnitVector3D &rot_axis_) :
+				d_rot_axis(rot_axis_),
+				d_is_zero_length(false)
+			{  }
+
+			/**
+			 * The rotation axis - only valid if @a d_is_zero_length is false.
+			 */
+			UnitVector3D d_rot_axis;
+
+			/**
+			 * Whether the arc is zero-length and hence has no valid rotation axis.
+			 */
+			bool d_is_zero_length;
+		};
+
 
 		PointOnSphere d_start_point, d_end_point;
 
 		real_t d_dot_of_endpoints;
 
-		bool d_is_zero_length;
+		/**
+		 * The rotation information.
+		 *
+		 * This is only calculated when needed - if boost::none then means it hasn't been calculated yet.
+		 * This saves a noticeable amount of CPU time when the rotation axis is not actually needed
+		 * such as displaying reconstructed polylines while animating the reconstruction time.
+		 */
+		mutable boost::optional<RotationInfo> d_rotation_info;
 
-		boost::optional<UnitVector3D> d_rot_axis;
+
+		static
+		ConstructionParameterValidity
+		evaluate_construction_parameter_validity(
+				const UnitVector3D &p1,
+				const UnitVector3D &p2,
+				const real_t &dot_p1_p2);
+
+		void
+		calculate_rotation_info() const;
 	};
 
 
