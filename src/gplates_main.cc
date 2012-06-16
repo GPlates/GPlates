@@ -633,6 +633,32 @@ internal_main(int argc, char* argv[])
 		return 0;
 	}
 
+	// Enable data mining if specified on the command-line.
+	if (gui_command_line_options->enable_data_mining)
+	{
+		GPlatesUtils::ComponentManager::instance().enable(
+				GPlatesUtils::ComponentManager::Component::data_mining());
+	}
+
+	// Enable temporary symbol table if specified on the command-line.
+	if (gui_command_line_options->enable_symbol_table)
+	{
+		GPlatesUtils::ComponentManager::instance().enable(
+				GPlatesUtils::ComponentManager::Component::symbology());
+	}
+
+	// Enable or disable python as specified on command-line (and whether GPLATES_NO_PYTHON defined).
+	if (gui_command_line_options->enable_python)
+	{
+		GPlatesUtils::ComponentManager::instance().enable(
+			GPlatesUtils::ComponentManager::Component::python());
+	}
+	else
+	{
+		GPlatesUtils::ComponentManager::instance().disable(
+			GPlatesUtils::ComponentManager::Component::python());
+	}
+
 	// This will only install handler if any of the following conditions are satisfied:
 	//   1) GPLATES_PUBLIC_RELEASE is defined (automatically handled by CMake build system), or
 	//   2) GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment variable is set to case-insensitive
@@ -659,32 +685,6 @@ internal_main(int argc, char* argv[])
 	GPlatesPresentation::Application application;
 
 	Q_INIT_RESOURCE(qt_widgets);
-
-	// Enable data mining if specified on the command-line.
-	if (gui_command_line_options->enable_data_mining)
-	{
-		GPlatesUtils::ComponentManager::instance().enable(
-				GPlatesUtils::ComponentManager::Component::data_mining());
-	}
-
-	// Enable temporary symbol table if specified on the command-line.
-	if (gui_command_line_options->enable_symbol_table)
-	{
-		GPlatesUtils::ComponentManager::instance().enable(
-				GPlatesUtils::ComponentManager::Component::symbology());
-	}
-
-	// Enable or disable python as specified on command-line (and whether GPLATES_NO_PYTHON defined).
-	if (gui_command_line_options->enable_python)
-	{
-		GPlatesUtils::ComponentManager::instance().enable(
-			GPlatesUtils::ComponentManager::Component::python());
-	}
-	else
-	{
-		GPlatesUtils::ComponentManager::instance().disable(
-			GPlatesUtils::ComponentManager::Component::python());
-	}
 
 	// Initialise python if it's enabled.
 	if(GPlatesUtils::ComponentManager::instance().is_enabled(
