@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
 
@@ -121,32 +122,30 @@ namespace GPlatesViewOperations
 
 			/**
 			 * Removes duplicate @a ReconstructionGeometry objects from an unsorted sequence.
+			 *
+			 * NOTE: This keeps the original sort order which is important if the (rendered) geometries
+			 * are sorted by mouse click proximity - we don't want to lose that sort order.
 			 */
 			void
 			remove_duplicates(
 					reconstruction_geom_seq_type &reconstruction_geom_seq)
 			{
-				std::sort(
-						reconstruction_geom_seq.begin(),
-						reconstruction_geom_seq.end(),
-						boost::lambda::bind(
-								&GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type::get,
-								boost::lambda::_1) <
-								boost::lambda::bind(
-										&GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type::get,
-										boost::lambda::_2));
+				// Instead of using std::sort, std::unique and erase we keep the reconstruction geometry
+				// sequence in its original order.
+				const reconstruction_geom_seq_type original_reconstruction_geom_seq(reconstruction_geom_seq);
+				reconstruction_geom_seq.clear();
 
-				reconstruction_geom_seq.erase(
-						std::unique(
-								reconstruction_geom_seq.begin(),
-								reconstruction_geom_seq.end(),
-								boost::lambda::bind(
-										&GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type::get,
-										boost::lambda::_1) ==
-										boost::lambda::bind(
-												&GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type::get,
-												boost::lambda::_2)),
-						reconstruction_geom_seq.end());
+				BOOST_FOREACH(
+					const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &recon_geom,
+					original_reconstruction_geom_seq)
+				{
+					// Add reconstruction geometry is it isn't already in the sequence.
+					if (std::find(reconstruction_geom_seq.begin(), reconstruction_geom_seq.end(), recon_geom)
+						== reconstruction_geom_seq.end())
+					{
+						reconstruction_geom_seq.push_back(recon_geom);
+					}
+				}
 			}
 		}
 	}
