@@ -83,7 +83,8 @@ namespace GPlatesFileIO
 		 * @param export_per_input_file specifies whether to group
 		 *        reconstruction geometries according to the input files their features came from
 		 *        and write to corresponding output files.
-		 * @param wrap_to_dateline if true then exported geometries are wrapped/clipped to the dateline.
+		 * @param wrap_to_dateline if true then exported geometries are wrapped/clipped to
+		 *        the dateline (currently only applies to @a SHAPEFILE format).
 		 *
 		 * Note that both @a export_single_output_file and @a export_per_input_file can be true
 		 * in which case both a single output file is exported as well as grouped output files.

@@ -97,6 +97,13 @@ namespace GPlatesCli
 		 * If this is false then there is an output file for each input file.
 		 */
 		bool d_export_single_output_file;
+
+		/**
+		 * Wraps reconstructed geometries to the dateline.
+		 *
+		 * This currently only applies to Shapefiles.
+		 */
+		bool d_wrap_to_dateline;
 	};
 }
 
