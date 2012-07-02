@@ -527,7 +527,9 @@ function(copy_resolved_framework_into_bundle resolved_item resolved_embedded_ite
       get_filename_component(resolved_dir "${resolved_item}" PATH)
       get_filename_component(resolved_embedded_dir "${resolved_embedded_item}" PATH)
       #message(STATUS "copying COMMAND ${CMAKE_COMMAND} -E copy_directory '${resolved_dir}' '${resolved_embedded_dir}'")
-      execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory "${resolved_dir}" "${resolved_embedded_dir}")
+      file(COPY "${resolved_dir}" DESTINATION "${resolved_embedded_dir}")
+      #follow Florian's suggestion, use file(COPY...) to avoid dereferencing symbol links.
+      #execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory "${resolved_dir}" "${resolved_embedded_dir}")
     else()
       # Framework lib itself:
       #message(STATUS "copying COMMAND ${CMAKE_COMMAND} -E copy ${resolved_item} ${resolved_embedded_item}")
