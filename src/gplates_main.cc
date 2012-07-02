@@ -47,6 +47,7 @@
 #include "global/Constants.h"
 #include "global/NotYetImplementedException.h"
 #include "global/python.h"
+#include "global/SubversionInfo.h"
 
 #include "gui/DrawStyleManager.h"
 #include "gui/GPlatesQApplication.h"
@@ -306,7 +307,29 @@ namespace
 		// Print GPlates version if requested.
 		if (GPlatesUtils::CommandLineParser::is_version_requested(vm))
 		{
+			// Specify the major.minor version.
 			std::cout << GPlatesGlobal::VersionString << std::endl;
+
+			// Specify the build revision (using the subversion info).
+			QString subversion_version_number = GPlatesGlobal::SubversionInfo::get_working_copy_version_number();
+			if (!subversion_version_number.isEmpty())
+			{
+				QString subversion_info = "Build: " + subversion_version_number;
+				QString subversion_branch_name = GPlatesGlobal::SubversionInfo::get_working_copy_branch_name();
+				if (!subversion_branch_name.isEmpty())
+				{
+					if (subversion_branch_name == "trunk")
+					{
+						subversion_info.append(" (trunk)");
+					}
+					else
+					{
+						subversion_info.append(" (").append(subversion_branch_name).append(" branch)");
+					}
+				}
+				std::cout << subversion_info.toAscii().constData() << std::endl;
+			}
+
 			exit(0);
 		}
 
