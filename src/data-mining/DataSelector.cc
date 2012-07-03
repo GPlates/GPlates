@@ -330,6 +330,14 @@ GPlatesDataMining::DataSelector::co_register_target_reconstructed_geometries(
 		const GPlatesAppLogic::ReconstructContext::ReconstructedFeature &reconstructed_seed_feature =
 				reconstructed_seed_features[reconstructed_seed_feature_index];
 
+		if(reconstructed_seed_feature.get_reconstructions().size() == 0)
+		{
+			//No reconstructed-feature-geometry means the seed feature is inactive at this time.
+			//if the seed is inactive, no need to calculate any data for it.
+			//leave all data in inactive seed row as "Nan". -- fix for Jo
+			continue;
+		}
+
 		DataRow &result_data_row = *result_data_table[reconstructed_seed_feature_index];
 
 		CoRegFilterCache filter_cache;
