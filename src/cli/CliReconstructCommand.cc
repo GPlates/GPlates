@@ -241,7 +241,7 @@ GPlatesCli::ReconstructCommand::run(
 	loaded_feature_collection_file_seq_type::const_iterator file_end = reconstructable_files.end();
 	for ( ; file_iter != file_end; ++file_iter)
 	{
-		reconstructable_file_ptrs.push_back(&(*file_iter)->get_reference());
+		reconstructable_file_ptrs.push_back(file_iter->get());
 	}
 
 	// Export filename.

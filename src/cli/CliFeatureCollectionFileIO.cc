@@ -155,7 +155,13 @@ GPlatesCli::FeatureCollectionFileIO::load_feature_collections(
 		GPlatesFileIO::ReadErrorAccumulation read_errors;
 		d_file_format_registry.read_feature_collection(file->get_reference(), read_errors);
 
-		files.push_back(file);
+		// Add the feature collection to be managed by the model.
+		// This enables clients to retrieve the model from the features or feature collection when
+		// creating model notification guards.
+		GPlatesFileIO::File::Reference::non_null_ptr_type file_reference =
+				file->add_feature_collection_to_model(d_model);
+
+		files.push_back(file_reference);
 	}
 }
 
@@ -170,7 +176,7 @@ GPlatesCli::FeatureCollectionFileIO::extract_feature_collections(
 	FeatureCollectionFileIO::feature_collection_file_seq_type::iterator file_end = files.end();
 	for ( ; file_iter != file_end; ++file_iter)
 	{
-		feature_collections.push_back((*file_iter)->get_reference().get_feature_collection());
+		feature_collections.push_back((*file_iter)->get_feature_collection());
 	}
 }
 

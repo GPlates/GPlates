@@ -56,7 +56,7 @@ namespace GPlatesCli
 		/**
 		 * Typedef for a sequence of files each containing a feature collection.
 		 */
-		typedef std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_file_seq_type;
+		typedef std::vector<GPlatesFileIO::File::Reference::non_null_ptr_type> feature_collection_file_seq_type;
 
 
 		/**

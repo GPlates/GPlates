@@ -337,14 +337,14 @@ GPlatesCli::AssignPlateIdsCommand::run(
 		file_index < assign_plate_ids_files.size();
 		++file_index)
 	{
-		const GPlatesFileIO::File &input_file = *assign_plate_ids_files[file_index];
+		const GPlatesFileIO::File::Reference &input_file = *assign_plate_ids_files[file_index];
 		const GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection =
 				assign_plate_ids_feature_collections[file_index];
 
 		// Get the save filename.
 		const GPlatesFileIO::FileInfo save_file_info =
 				file_io.get_save_file_info(
-						input_file.get_reference().get_file_info(),
+						input_file.get_file_info(),
 						save_file_type,
 						d_save_file_prefix.c_str(),
 						d_save_file_suffix.c_str());
