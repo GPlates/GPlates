@@ -425,7 +425,7 @@ GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::GenericF
 void
 GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::assign_property_values(
 		const GPlatesModel::FeatureHandle::weak_ref &partitioned_feature,
-		const boost::optional<GPlatesModel::FeatureHandle::const_weak_ref> &partitioning_feature)
+		boost::optional<GPlatesModel::FeatureHandle::const_weak_ref> partitioning_feature)
 {
 	// Merge model events across this scope to avoid excessive number of model callbacks.
 	GPlatesModel::NotificationGuard model_notification_guard(partitioned_feature->model_ptr());
@@ -476,7 +476,7 @@ GPlatesAppLogic::PartitionFeatureUtils::add_partitioned_geometry_to_feature(
 		const GPlatesModel::PropertyName &geometry_property_name,
 		PartitionedFeatureManager &partitioned_feature_manager,
 		const ReconstructionTree &reconstruction_tree,
-		const boost::optional<const ReconstructionGeometry *> &partition)
+		boost::optional<const ReconstructionGeometry *> partition)
 {
 	// Calculate the reverse rotation if we did not cookie cut at present day AND
 	// if there's a partitioning polygon AND it has a plate id.
@@ -539,7 +539,7 @@ GPlatesAppLogic::PartitionFeatureUtils::add_partitioned_geometry_to_feature(
 				geometry_property_name,
 				partitioned_feature_manager,
 				reconstruction_tree,
-				partition.reconstruction_geometry);
+				partition.reconstruction_geometry.get());
 	}
 }
 
@@ -549,7 +549,7 @@ GPlatesAppLogic::PartitionFeatureUtils::add_partitioned_geometry_to_feature(
 		const GPlatesModel::TopLevelProperty::non_null_ptr_type &geometry_property,
 		PartitionFeatureUtils::PartitionedFeatureManager &partitioned_feature_manager,
 		const ReconstructionTree &reconstruction_tree,
-		const boost::optional<const ReconstructionGeometry *> &partition)
+		boost::optional<const ReconstructionGeometry *> partition)
 {
 	const GPlatesModel::FeatureHandle::weak_ref feature =
 			partitioned_feature_manager.get_feature_for_partition(partition);
@@ -592,7 +592,7 @@ GPlatesAppLogic::PartitionFeatureUtils::find_partition_containing_most_geometry(
 	// If there's only one partition then we return it.
 	if (partitions.size() == 1)
 	{
-		return partitions.front().reconstruction_geometry;
+		return partitions.front().reconstruction_geometry.get();
 	}
 
 	GeometrySizeMetric max_partition_size_metric;
@@ -615,7 +615,7 @@ GPlatesAppLogic::PartitionFeatureUtils::find_partition_containing_most_geometry(
 		if (partition_size_metric > max_partition_size_metric)
 		{
 			max_partition_size_metric = partition_size_metric;
-			max_partition = partition.reconstruction_geometry;
+			max_partition = partition.reconstruction_geometry.get();
 		}
 	}
 
@@ -675,7 +675,7 @@ GPlatesAppLogic::PartitionFeatureUtils::find_partition_containing_most_geometry(
 
 			// Get the map entry keyed by the partition's partitioning reconstruction geometry.
 			GeometrySizeMetric &partition_size_metric =
-					partition_size_metrics[partition.reconstruction_geometry];
+					partition_size_metrics[partition.reconstruction_geometry.get()];
 
 			// Accumulate the geometry metric for partitioned inside geometries
 			// of the current partition.
@@ -687,7 +687,7 @@ GPlatesAppLogic::PartitionFeatureUtils::find_partition_containing_most_geometry(
 			if (partition_size_metric > max_partition_size_metric)
 			{
 				max_partition_size_metric = partition_size_metric;
-				max_partition = partition.reconstruction_geometry;
+				max_partition = partition.reconstruction_geometry.get();
 			}
 		}
 	}
@@ -711,7 +711,7 @@ GPlatesAppLogic::PartitionFeatureUtils::does_feature_exist_at_reconstruction_tim
 
 boost::optional<GPlatesMaths::FiniteRotation>
 GPlatesAppLogic::PartitionFeatureUtils::get_reverse_reconstruction(
-		const boost::optional<const ReconstructionGeometry *> &partition,
+		boost::optional<const ReconstructionGeometry *> partition,
 		const ReconstructionTree &reconstruction_tree)
 {
 	const GPlatesMaths::real_t reconstruction_time = reconstruction_tree.get_reconstruction_time();
@@ -757,7 +757,7 @@ GPlatesAppLogic::PartitionFeatureUtils::get_reconstruction_plate_id_from_feature
 
 void
 GPlatesAppLogic::PartitionFeatureUtils::assign_reconstruction_plate_id_to_feature(
-		const boost::optional<GPlatesModel::integer_plate_id_type> &reconstruction_plate_id,
+		boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 {
 	// Merge model events across this scope to avoid excessive number of model callbacks.
@@ -805,7 +805,7 @@ GPlatesAppLogic::PartitionFeatureUtils::get_valid_time_from_feature(
 
 void
 GPlatesAppLogic::PartitionFeatureUtils::assign_valid_time_to_feature(
-		const boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> &valid_time,
+		boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> valid_time,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 {
 	// First remove any that might already exist.
@@ -858,7 +858,7 @@ GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeatureManager::PartitionedFe
 
 GPlatesModel::FeatureHandle::weak_ref
 GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeatureManager::get_feature_for_partition(
-		const boost::optional<const ReconstructionGeometry *> &partition)
+		boost::optional<const ReconstructionGeometry *> partition)
 {
 	// See if we've already mapped the partition to a feature.
 	partition_to_feature_map_type::iterator feature_iter =
@@ -898,7 +898,7 @@ GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeatureManager::create_featur
 void
 GPlatesAppLogic::PartitionFeatureUtils::PartitionedFeatureManager::assign_property_values(
 		const GPlatesModel::FeatureHandle::weak_ref &partitioned_feature,
-		const boost::optional<const ReconstructionGeometry *> &partition)
+		boost::optional<const ReconstructionGeometry *> partition)
 {
 	boost::optional<GPlatesModel::FeatureHandle::const_weak_ref> partitioning_feature_opt;
 

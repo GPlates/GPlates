@@ -90,6 +90,21 @@ namespace GPlatesCli
 		 */
 		double d_recon_time;
 
+		/**
+		 * Assign plate ids (from the partitioning features).
+		 */
+		bool d_assign_plate_id;
+
+		/**
+		 * Assign time period (from the partitioning features).
+		 */
+		bool d_assign_time_period;
+
+		/**
+		 * Only partition features that exist at the reconstruction time.
+		 */
+		bool d_respect_time_period;
+
 		GPlatesModel::integer_plate_id_type d_anchor_plate_id;
 
 		std::string d_save_file_prefix;

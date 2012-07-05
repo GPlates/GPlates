@@ -69,6 +69,15 @@ namespace
 	//! Option name for assign plate ids method with short version.
 	const char *ASSIGN_METHOD_OPTION_NAME_WITH_SHORT_OPTION = "assign-method,m";
 
+	//! Option name for assign plate id with short version.
+	const char *ASSIGN_PLATE_ID_WITH_SHORT_OPTION = "assign-plate-id,d";
+
+	//! Option name for assign time period with short version.
+	const char *ASSIGN_TIME_PERIOD_WITH_SHORT_OPTION = "assign-time-period,e";
+
+	//! Option name for respect time period with short version.
+	const char *RESPECT_TIME_PERIOD_WITH_SHORT_OPTION = "respect-time-period,i";
+
 	//! Option name for type of file to save.
 	const char *SAVE_FILE_TYPE_OPTION_NAME = "save-file-type";
 	//! Option name for type of file to save with short version.
@@ -151,6 +160,9 @@ namespace
 
 GPlatesCli::AssignPlateIdsCommand::AssignPlateIdsCommand() :
 	d_recon_time(0),
+	d_assign_plate_id(true),
+	d_assign_time_period(false),
+	d_respect_time_period(false),
 	d_anchor_plate_id(0)
 {
 }
@@ -190,10 +202,10 @@ GPlatesCli::AssignPlateIdsCommand::add_options(
 		(
 			ASSIGN_METHOD_OPTION_NAME_WITH_SHORT_OPTION,
 			boost::program_options::value<unsigned int>()->default_value(
-					ASSIGN_METHOD_ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE),
+					ASSIGN_METHOD_PARTITION_FEATURE),
 			(std::string("method used to assign plate ids (defaults to '")
 					+ boost::lexical_cast<std::string>(
-							ASSIGN_METHOD_ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE)
+							ASSIGN_METHOD_PARTITION_FEATURE)
 					+ "') - valid values are:\n"
 					+ boost::lexical_cast<std::string>(
 							ASSIGN_METHOD_ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE)
@@ -204,6 +216,21 @@ GPlatesCli::AssignPlateIdsCommand::add_options(
 					+ boost::lexical_cast<std::string>(
 							ASSIGN_METHOD_PARTITION_FEATURE)
 					+ " - partition features into plates\n").c_str()
+		)
+		(
+			ASSIGN_PLATE_ID_WITH_SHORT_OPTION,
+			boost::program_options::value<bool>(&d_assign_plate_id)->default_value(true),
+			"assign reconstruction plate id (defaults to 'true')."
+		)
+		(
+			ASSIGN_TIME_PERIOD_WITH_SHORT_OPTION,
+			boost::program_options::value<bool>(&d_assign_time_period)->default_value(false),
+			"assign time period (defaults to 'false')."
+		)
+		(
+			RESPECT_TIME_PERIOD_WITH_SHORT_OPTION,
+			boost::program_options::value<bool>(&d_respect_time_period)->default_value(false),
+			"only partition features that exist at the reconstruction time (defaults to 'false')."
 		)
 		(
 			SAVE_FILE_TYPE_OPTION_NAME_WITH_SHORT_OPTION,
@@ -308,6 +335,17 @@ GPlatesCli::AssignPlateIdsCommand::run(
 	const GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType assign_plate_ids_method =
 			get_assign_plate_ids_method(vm);
 
+	// Get the feature properties to assign.
+	GPlatesAppLogic::AssignPlateIds::feature_property_flags_type assign_feature_property_flags;
+	if (d_assign_plate_id)
+	{
+		assign_feature_property_flags.set(GPlatesAppLogic::AssignPlateIds::RECONSTRUCTION_PLATE_ID);
+	}
+	if (d_assign_time_period)
+	{
+		assign_feature_property_flags.set(GPlatesAppLogic::AssignPlateIds::VALID_TIME);
+	}
+
 	// The save filename information used to save the feature collections.
 	const std::string save_file_type = get_save_file_type(vm);
 
@@ -318,7 +356,12 @@ GPlatesCli::AssignPlateIdsCommand::run(
 					partitioning_feature_collections,
 					reconstruction_feature_collections,
 					d_recon_time,
-					d_anchor_plate_id);
+					d_anchor_plate_id,
+					assign_feature_property_flags,
+					true/*allow_partitioning_using_topological_plate_polygons*/,
+					true/*allow_partitioning_using_topological_networks*/,
+					true/*allow_partitioning_using_static_polygons*/,
+					d_respect_time_period);
 
 	// Assign plate ids to the features.
 	// Do this after checking all command-line parameters since assigning plate ids

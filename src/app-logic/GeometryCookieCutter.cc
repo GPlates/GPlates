@@ -253,7 +253,7 @@ GPlatesAppLogic::GeometryCookieCutter::partition_point(
 		if (partitioning_geometry.d_polygon_intersections->partition_point(point) !=
 			GPlatesMaths::PolygonIntersections::GEOMETRY_OUTSIDE)
 		{
-			return partitioning_geometry.d_reconstruction_geometry;
+			return partitioning_geometry.d_reconstruction_geometry.get();
 		}
 	}
 
@@ -356,7 +356,7 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_reconstructed_feature_po
 GPlatesAppLogic::GeometryCookieCutter::PartitioningGeometry::PartitioningGeometry(
 		const reconstruction_geometry_non_null_ptr_type &reconstruction_geometry,
 		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon) :
-	d_reconstruction_geometry(reconstruction_geometry.get()),
+	d_reconstruction_geometry(reconstruction_geometry),
 	d_polygon_intersections(
 			GPlatesMaths::PolygonIntersections::create(partitioning_polygon))
 {

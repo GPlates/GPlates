@@ -62,11 +62,11 @@ namespace GPlatesAppLogic
 		{
 		public:
 			Partition(
-					const ReconstructionGeometry *reconstruction_geometry_) :
+					const reconstruction_geometry_non_null_ptr_to_const_type &reconstruction_geometry_) :
 				reconstruction_geometry(reconstruction_geometry_)
 			{ }
 
-			const ReconstructionGeometry *reconstruction_geometry;
+			reconstruction_geometry_non_null_ptr_to_const_type reconstruction_geometry;
 			partitioned_geometry_seq_type partitioned_geometries;
 		};
 
@@ -184,7 +184,7 @@ namespace GPlatesAppLogic
 					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon);
 
 
-			const ReconstructionGeometry *d_reconstruction_geometry;
+			reconstruction_geometry_non_null_ptr_to_const_type d_reconstruction_geometry;
 			GPlatesMaths::PolygonIntersections::non_null_ptr_type d_polygon_intersections;
 
 			//! Used to sort by plate id.
