@@ -54,7 +54,7 @@ namespace GPlatesGui
 		 * it gives good visual contrast/results for the user to start off with.
 		 */
 		SceneLightingParameters() :
-			d_lighting_enabled(true),
+			d_lighting_enabled(false),
 			d_light_direction_attached_to_view_frame(true),
 			d_ambient_light_contribution(0.4),
 			d_light_direction(1, 0, 0)
