@@ -60,6 +60,7 @@
 #include "property-values/GpmlPropertyDelegate.h"
 #include "property-values/GpmlRasterBandNames.h"
 #include "property-values/GpmlRevisionId.h"
+#include "property-values/GpmlScalarField3DFile.h"
 #include "property-values/GpmlStringList.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTimeWindow.h"

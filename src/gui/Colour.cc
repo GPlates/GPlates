@@ -25,9 +25,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iostream>
 #include <cmath>
+#include <iostream>
 #include <limits>
+#include <sstream>
 #include <QDataStream>
 #include <QSysInfo>
 
@@ -222,6 +223,34 @@ GPlatesGui::operator<<(
 			<< c.alpha() << ")";
 
 	return os;
+}
+
+
+QDebug
+GPlatesGui::operator <<(
+		QDebug dbg,
+		const Colour &c)
+{
+	std::ostringstream output_string_stream;
+	output_string_stream << c;
+
+	dbg.nospace() << QString::fromStdString(output_string_stream.str());
+
+	return dbg.space();
+}
+
+
+QTextStream &
+GPlatesGui::operator <<(
+		QTextStream &stream,
+		const Colour &c)
+{
+	std::ostringstream output_string_stream;
+	output_string_stream << c;
+
+	stream << QString::fromStdString(output_string_stream.str());
+
+	return stream;
 }
 
 

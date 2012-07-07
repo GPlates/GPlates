@@ -968,6 +968,8 @@ GPlatesOpenGL::GLState::SharedData::initialise_gl_clear_state_set_slots(
 	set_state_set_slot_flag(gl_clear_state_set_slots, GLStateSetKeys::KEY_CLEAR_DEPTH);
 	set_state_set_slot_flag(gl_clear_state_set_slots, GLStateSetKeys::KEY_CLEAR_STENCIL);
 	set_state_set_slot_flag(gl_clear_state_set_slots, GLStateSetKeys::KEY_COLOR_MASK);
+	set_state_set_slot_flag(gl_clear_state_set_slots, GLStateSetKeys::KEY_DEPTH_MASK);
+	set_state_set_slot_flag(gl_clear_state_set_slots, GLStateSetKeys::KEY_STENCIL_MASK);
 	set_state_set_slot_flag(gl_clear_state_set_slots, GLStateSetKeys::KEY_ENABLE_SCISSOR_TEST);
 	set_state_set_slot_flag(gl_clear_state_set_slots, GLStateSetKeys::KEY_SCISSOR);
 }

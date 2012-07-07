@@ -32,7 +32,7 @@
 #include "ColourScheme.h"
 #include "GlobeRenderedGeometryLayerPainter.h"
 #include "LayerPainter.h"
-#include "SceneLightingParams.h"
+#include "SceneLightingParameters.h"
 
 #include "maths/EllipseGenerator.h"
 #include "maths/Real.h"
@@ -60,6 +60,7 @@
 #include "view-operations/RenderedPolygonOnSphere.h"
 #include "view-operations/RenderedPolylineOnSphere.h"
 #include "view-operations/RenderedResolvedRaster.h"
+#include "view-operations/RenderedResolvedScalarField3D.h"
 #include "view-operations/RenderedSquareSymbol.h"
 #include "view-operations/RenderedCircleSymbol.h"
 #include "view-operations/RenderedString.h"
@@ -96,22 +97,22 @@ const float GPlatesGui::GlobeRenderedGeometryLayerPainter::LINE_WIDTH_ADJUSTMENT
 
 GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter(
 		const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
-		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const double &inverse_viewport_zoom_factor,
 		RenderSettings &render_settings,
 		const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
-		const GlobeOrientation &globe_orientation,
-		ColourScheme::non_null_ptr_type colour_scheme) :
+		ColourScheme::non_null_ptr_type colour_scheme,
+		PaintRegionType paint_region,
+		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture) :
 	d_rendered_geometry_layer(rendered_geometry_layer),
-	d_gl_visual_layers(gl_visual_layers),
 	d_inverse_zoom_factor(inverse_viewport_zoom_factor),
 	d_render_settings(render_settings),
 	d_text_renderer_ptr(text_renderer_ptr),
 	d_visibility_tester(visibility_tester),
-	d_globe_orientation(globe_orientation),
 	d_colour_scheme(colour_scheme),
-	d_scale(1.0f)
+	d_scale(1.0f),
+	d_paint_region(paint_region),
+	d_surface_occlusion_texture(surface_occlusion_texture)
 {
 }
 
@@ -134,13 +135,16 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint(
 
 	// Visit the rendered geometries in the rendered layer.
 	//
-	// NOTE: Rasters get painted as they are visited - it's really mainly the point/line/polygon
-	// primitives that get batched up into vertex streams for efficient rendering.
+	// The point/line/polygon primitives get batched up into vertex streams for efficient rendering.
 	visit_rendered_geometries(renderer);
 
 	// Do the actual painting.
 	const cache_handle_type layer_cache =
-			layer_painter.end_painting(renderer, *d_gl_visual_layers, *d_text_renderer_ptr, d_scale);
+			layer_painter.end_painting(
+					renderer,
+					*d_text_renderer_ptr,
+					d_scale,
+					d_surface_occlusion_texture);
 
 	// We no longer have a layer painter.
 	d_layer_painter = boost::none;
@@ -153,6 +157,11 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 		const GPlatesViewOperations::RenderedPointOnSphere &rendered_point_on_sphere)
 {
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
 	if (!d_render_settings.show_points())
 	{
 		return;
@@ -207,6 +216,11 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_multi_point_on_sphere(
 		const GPlatesViewOperations::RenderedMultiPointOnSphere &rendered_multi_point_on_sphere)
 {
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
 	if (!d_render_settings.show_multipoints())
 	{
 		return;
@@ -257,6 +271,11 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere(
 		const GPlatesViewOperations::RenderedPolylineOnSphere &rendered_polyline_on_sphere)
 {
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
 	if (!d_render_settings.show_lines())
 	{
 		return;
@@ -290,6 +309,11 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 		const GPlatesViewOperations::RenderedPolygonOnSphere &rendered_polygon_on_sphere)
 {
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
 	if (!d_render_settings.show_polygons())
 	{
 		return;
@@ -314,7 +338,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 				*polygon_on_sphere,
 				Colour::to_rgba8(colour.get()),
 				boost::none/*transform*/,
-				d_layer_painter->current_cube_quad_tree_location);
+				d_current_cube_quad_tree_location);
 
 		return;
 	}
@@ -338,23 +362,36 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_resolved_raster(
 		const GPlatesViewOperations::RenderedResolvedRaster &rendered_resolved_raster)
 {
-	// TODO: Move this into ViewState and add a lighting canvas tool.
-	// It's just here for testing purposes for now.
-	const GPlatesOpenGL::GLMatrix view_orientation(
-			GPlatesMaths::UnitQuaternion3D::create_rotation(
-					d_globe_orientation.rotation_axis(),
-					d_globe_orientation.rotation_angle()));
-	SceneLightingParams scene_lighting_params;
-	scene_lighting_params.enable_lighting(true);
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
 
 	// Queue the raster primitive for painting.
 	d_layer_painter->rasters.push_back(
 			LayerPainter::RasterDrawable(
 					rendered_resolved_raster.get_resolved_raster(),
 					rendered_resolved_raster.get_raster_colour_palette(),
-					rendered_resolved_raster.get_raster_modulate_colour(),
-					scene_lighting_params,
-					view_orientation));
+					rendered_resolved_raster.get_raster_modulate_colour()));
+}
+
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_resolved_scalar_field_3d(
+		const GPlatesViewOperations::RenderedResolvedScalarField3D &rendered_resolved_scalar_field)
+{
+	if (d_paint_region != PAINT_SUB_SURFACE)
+	{
+		return;
+	}
+
+	// Queue the scalar field for painting.
+	d_layer_painter->scalar_fields.push_back(
+			LayerPainter::ScalarField3DDrawable(
+					rendered_resolved_scalar_field.get_resolved_scalar_field_3d(),
+					rendered_resolved_scalar_field.get_scalar_field_iso_value(),
+					rendered_resolved_scalar_field.get_scalar_field_colour_palette(),
+					rendered_resolved_scalar_field.get_shader_test_variables()));
 }
 
 
@@ -362,6 +399,11 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_direction_arrow(
 		const GPlatesViewOperations::RenderedDirectionArrow &rendered_direction_arrow)
 {
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
 	if (!d_render_settings.show_arrows())
 	{
 		return;
@@ -449,6 +491,11 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_string(
 		const GPlatesViewOperations::RenderedString &rendered_string)
 {
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
 	if (!d_render_settings.show_strings())
 	{
 		return;
@@ -473,6 +520,11 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_small_circle(
 		const GPlatesViewOperations::RenderedSmallCircle &rendered_small_circle)
 {
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
 	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_small_circle);
 	if (!colour)
 	{
@@ -509,6 +561,11 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_small_circle_arc(
 		const GPlatesViewOperations::RenderedSmallCircleArc &rendered_small_circle_arc)
 {
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
 	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_small_circle_arc);
 	if (!colour)
 	{
@@ -545,6 +602,11 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_ellipse(
 		const GPlatesViewOperations::RenderedEllipse &rendered_ellipse)
 {
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
 	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_ellipse);
 	if (!colour)
 	{
@@ -565,6 +627,11 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_arrowed_polyline(
 		const GPlatesViewOperations::RenderedArrowedPolyline &rendered_arrowed_polyline)
 {
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
 	// Based on the "visit_rendered_direction_arrow" code 
 
 	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_arrowed_polyline);
@@ -630,6 +697,11 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_triangle_symbol(
 	const GPlatesViewOperations::RenderedTriangleSymbol &rendered_triangle_symbol)
 {
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
     boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_triangle_symbol);
     if (!colour)
     {
@@ -724,6 +796,11 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_square_symbol(
 	const GPlatesViewOperations::RenderedSquareSymbol &rendered_square_symbol)
 {
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
     boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_square_symbol);
     if (!colour)
     {
@@ -827,6 +904,11 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
 	const GPlatesViewOperations::RenderedCircleSymbol &rendered_circle_symbol)
 {
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
     boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_circle_symbol);
     if (!colour)
     {
@@ -912,6 +994,11 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_cross_symbol(
 	const GPlatesViewOperations::RenderedCrossSymbol &rendered_cross_symbol)
 {
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
     boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_cross_symbol);
     if (!colour)
     {
@@ -993,6 +1080,8 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_geometries(
 		GPlatesOpenGL::GLRenderer &renderer)
 {
+	d_current_cube_quad_tree_location = boost::none;
+
 	// See if there's a spatial partition of rendered geometries.
 	boost::optional<const rendered_geometries_spatial_partition_type &>
 			rendered_geometries_spatial_partition_opt = d_rendered_geometry_layer.get_rendered_geometries();
@@ -1025,7 +1114,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition(
 	// Visit the rendered geometries in the root of the cube quad tree.
 	// These are unpartitioned and hence must be rendered regardless of the view frustum.
 	// Start out at the root of the cube quad tree.
-	d_layer_painter->current_cube_quad_tree_location = boost::none;
+	d_current_cube_quad_tree_location = boost::none;
 	std::for_each(
 		rendered_geometries_spatial_partition.begin_root_elements(),
 		rendered_geometries_spatial_partition.end_root_elements(),
@@ -1113,7 +1202,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition_quad_tre
 	}
 
 	// Visit the rendered geometries in the current quad tree node.
-	d_layer_painter->current_cube_quad_tree_location = cube_quad_tree_node_location;
+	d_current_cube_quad_tree_location = cube_quad_tree_node_location;
 	std::for_each(
 		rendered_geometries_quad_tree_node.begin(),
 		rendered_geometries_quad_tree_node.end(),

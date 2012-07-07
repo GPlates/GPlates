@@ -28,6 +28,8 @@ set(srcs
     CoRegistrationLayerTask.h
     ExtractRasterFeatureProperties.cc
     ExtractRasterFeatureProperties.h
+    ExtractScalarField3DFeatureProperties.cc
+    ExtractScalarField3DFeatureProperties.h
     FeatureCollectionFileIO.cc
     FeatureCollectionFileIO.h
     FeatureCollectionFileState.cc
@@ -155,11 +157,17 @@ set(srcs
     ReconstructUtils.h
     ResolvedRaster.cc
     ResolvedRaster.h
+    ResolvedScalarField3D.cc
+    ResolvedScalarField3D.h
     ResolvedTopologicalBoundary.cc
     ResolvedTopologicalBoundary.h
     ResolvedTopologicalBoundarySubSegment.h
     ResolvedTopologicalNetwork.cc
     ResolvedTopologicalNetwork.h
+    ScalarField3DLayerProxy.cc
+    ScalarField3DLayerProxy.h
+    ScalarField3DLayerTask.cc
+    ScalarField3DLayerTask.h
     Serialization.cc
     Serialization.h
     Session.cc

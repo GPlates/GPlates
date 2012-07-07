@@ -94,6 +94,10 @@ namespace GPlatesAppLogic
 	typedef GPlatesGlobal::PointerTraits<ResolvedRaster>::non_null_ptr_type resolved_raster_non_null_ptr_type;
 	typedef GPlatesGlobal::PointerTraits<const ResolvedRaster>::non_null_ptr_type resolved_raster_non_null_ptr_to_const_type;
 
+	class ResolvedScalarField3D;
+	typedef GPlatesGlobal::PointerTraits<ResolvedScalarField3D>::non_null_ptr_type resolved_scalar_field_3d_non_null_ptr_type;
+	typedef GPlatesGlobal::PointerTraits<const ResolvedScalarField3D>::non_null_ptr_type resolved_scalar_field_3d_non_null_ptr_to_const_type;
+
 	class ResolvedTopologicalBoundary;
 	typedef GPlatesGlobal::PointerTraits<ResolvedTopologicalBoundary>::non_null_ptr_type resolved_topological_boundary_non_null_ptr_type;
 	typedef GPlatesGlobal::PointerTraits<const ResolvedTopologicalBoundary>::non_null_ptr_type resolved_topological_boundary_non_null_ptr_to_const_type;
@@ -101,6 +105,10 @@ namespace GPlatesAppLogic
 	class ResolvedTopologicalNetwork;
 	typedef GPlatesGlobal::PointerTraits<ResolvedTopologicalNetwork>::non_null_ptr_type resolved_topological_network_non_null_ptr_type;
 	typedef GPlatesGlobal::PointerTraits<const ResolvedTopologicalNetwork>::non_null_ptr_type resolved_topological_network_non_null_ptr_to_const_type;
+
+	class ScalarField3DLayerProxy;
+	typedef GPlatesGlobal::PointerTraits<ScalarField3DLayerProxy>::non_null_ptr_type scalar_field_3d_layer_proxy_non_null_ptr_type;
+	typedef GPlatesGlobal::PointerTraits<const ScalarField3DLayerProxy>::non_null_ptr_type scalar_field_3d_layer_proxy_non_null_ptr_to_const_type;
 
 	class VelocityFieldCalculatorLayerProxy;
 	typedef GPlatesGlobal::PointerTraits<VelocityFieldCalculatorLayerProxy>::non_null_ptr_type velocity_field_calculator_layer_proxy_non_null_ptr_type;

@@ -229,6 +229,8 @@ set(srcs
     GPlatesDialog.h
     ImportRasterDialog.cc
     ImportRasterDialog.h
+    ImportScalarField3DDialog.cc
+    ImportScalarField3DDialog.h
     InformationDialog.cc
     InformationDialog.h
     InformationDialogUi.ui
@@ -355,6 +357,9 @@ set(srcs
     SaveFileDialog.h
     SaveFileDialogImpl.cc
     SaveFileDialogImpl.h
+    ScalarField3DLayerOptionsWidget.cc
+    ScalarField3DLayerOptionsWidget.h
+    ScalarField3DLayerOptionsWidgetUi.ui
     SceneView.h
     SearchResultsDockWidget.cc
     SearchResultsDockWidget.h

@@ -26,12 +26,20 @@
  */
 
 #include <boost/utility/in_place_factory.hpp>
+#include <opengl/OpenGL.h>
 
 #include "Globe.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
 #include "maths/MathsUtils.h"
 
+#include "opengl/GLCompiledDrawState.h"
+#include "opengl/GLContext.h"
+#include "opengl/GLLight.h"
 #include "opengl/GLRenderer.h"
+#include "opengl/GLViewport.h"
 
 #include "presentation/ViewState.h"
 
@@ -66,7 +74,6 @@ GPlatesGui::Globe::Globe(
 			d_render_settings,
 			text_renderer_ptr,
 			visibility_tester,
-			*d_globe_orientation_ptr,
 			colour_scheme)
 {  }
 
@@ -90,7 +97,6 @@ GPlatesGui::Globe::Globe(
 			d_render_settings,
 			text_renderer_ptr,
 			visibility_tester,
-			*d_globe_orientation_ptr,
 			colour_scheme)
 {  }
 
@@ -130,8 +136,10 @@ GPlatesGui::Globe::initialiseGL(
 	// Create these objects in place (some as non-copy-constructable).
 	d_stars = boost::in_place(boost::ref(renderer), boost::ref(d_view_state), STARS_COLOUR);
 	d_sphere = boost::in_place(boost::ref(renderer), boost::ref(d_view_state));
-	d_black_sphere = boost::in_place(boost::ref(renderer), Colour::get_black());
 	d_grid = boost::in_place(boost::ref(renderer), d_view_state.get_graticule_settings());
+
+	// Initialise the rendered geometry collection painter.
+	d_rendered_geom_collection_painter.initialise(renderer);
 }
 
 
@@ -140,7 +148,8 @@ GPlatesGui::Globe::paint(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const double &viewport_zoom_factor,
 		float scale,
-		const GPlatesOpenGL::GLMatrix &projection_transform_include_half_globe,
+		const GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
+		const GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
 		const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
 		const GPlatesOpenGL::GLMatrix &projection_transform_include_stars)
 {
@@ -150,131 +159,148 @@ GPlatesGui::Globe::paint(
 	// The cached view is a sequence of caches for the caller to keep alive until the next frame.
 	boost::shared_ptr<std::vector<cache_handle_type> > cache_handle(new std::vector<cache_handle_type>());
 
-	// Most rendering should be done with depth testing *on* and depth writes *off*.
-	// The exceptions will need to save/modify/restore state.
-	renderer.gl_enable(GL_DEPTH_TEST, GL_TRUE);
-	renderer.gl_depth_mask(GL_FALSE);
-
 	// Set up the globe orientation transform.
 	GPlatesOpenGL::GLMatrix globe_orientation_transform;
 	get_globe_orientation_transform(globe_orientation_transform);
 	renderer.gl_mult_matrix(GL_MODELVIEW, globe_orientation_transform);
 
+	// Set up the scene lighting if lighting is supported.
+	set_scene_lighting(renderer, globe_orientation_transform);
+
 	// Render stars.
-	//
 	// NOTE: We draw the stars first so they don't appear in front of the globe.
-	//
-	// NOTE: We also *disable* depth testing and depth writes because we are using a different
-	// projection transform and the depth buffer values depend on the projection transform
-	// so we don't want to mix them up with depth buffer values written with a different
-	// projection transform later below.
-	//
+	render_stars(renderer, projection_transform_include_stars);
+
+	// Determine whether the globe is transparent or not. This happens if either:
+	//  1) the background colour is transparent, or
+	//  2) there are sub-surface geometries to renderer.
+
+	// Is background colour transparent.
+	const Colour original_background_colour = d_view_state.get_background_colour();
+	bool has_transparent_background_colour =
+			!GPlatesMaths::are_almost_exactly_equal(original_background_colour.alpha(), 1.0);
+
+	// See if there's any sub-surface geometries (below globe's surface) to render.
+	const bool render_sub_surface_geometries = d_rendered_geom_collection_painter.has_sub_surface_geometries();
+	// When rendering sub-surface geometries the sphere needs to be transparent so that the
+	// rear of the globe is visible (to provide visual clues when rendering sub-surface geometries).
+	if (render_sub_surface_geometries)
 	{
-		// Make sure we leave the OpenGL state the way it was.
-		GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
+		// If the sphere background colour is currently opaque then make it semi-transparent,
+		// otherwise leave it as it is (the user has probably chosen an alpha value they like).
+		if (!has_transparent_background_colour)
+		{
+			// Temporarily change the background colour in the view state.
+			// This will get picked up by 'OpaqueSphere'.
+			Colour transparent_background_colour = d_view_state.get_background_colour();
+			transparent_background_colour.alpha() = 0.25f;
+			d_view_state.set_background_colour(transparent_background_colour);
 
-		// Turn depth testing off.
-		renderer.gl_enable(GL_DEPTH_TEST, GL_FALSE);
-		// Turn depth writes off.
-		renderer.gl_depth_mask(GL_FALSE);
-
-		// Set up the projection transform for the stars.
-		renderer.gl_load_matrix(GL_PROJECTION, projection_transform_include_stars);
-
-		d_stars->paint(renderer);
+			has_transparent_background_colour = true;
+		}
 	}
 
-	// Determine whether the globe is transparent or not.
-	rgba8_t background_colour = Colour::to_rgba8(d_view_state.get_background_colour());
-	bool transparent = (background_colour.alpha != 255);
-
-	// If the globe is transparent then use a projection transform that has a far clip plane that
-	// includes the full globe.
-	// Otherwise use one that includes only the visible front half of the globe since 
-	//
-	// NOTE: Using a far clip plane that does *not* include the rear of the globe is important
-	// because the raster rendering code then does not generate raster tiles for the rear of the
-	// globe (which are not visible - if globe is opaque) and hence is noticeably faster.
-	//
-	// NOTE: We also use the same projection transform for the remainder of the rendering
-	// so that depth buffering works - if we mixed different projection transform then the
-	// depth buffer values written would be affected and hence couldn't be compared to each other
-	// rendering the depth test undefined.
-	renderer.gl_load_matrix(
-			GL_PROJECTION,
-			transparent
-				? projection_transform_include_full_globe
-				: projection_transform_include_half_globe);
-
-	// Set up common state.
+	// Set up rendered geometry collection state.
 	d_rendered_geom_collection_painter.set_scale(scale);
 
-	if (transparent)
+	// If the background colour is transparent then render the rear half of the globe.
+	if (has_transparent_background_colour)
 	{
-		// Make sure we leave the OpenGL state the way it was.
-		GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
-
-		// To render the far side of the globe, we first render a black disk to draw
-		// onto the depth buffer, set the depth function to be the reverse of the usual
-		// and then render everything in reverse order.
-
-		// Turn depth testing on.
-		renderer.gl_enable(GL_DEPTH_TEST, GL_TRUE);
-		// Turn depth writes on.
-		renderer.gl_depth_mask(GL_TRUE);
-		d_black_sphere->paint(
+		// The globe is transparent so use the rear half globe projection transform to render
+		// the rear half of the globe.
+		render_globe_hemisphere_surface(
 				renderer,
-				d_globe_orientation_ptr->rotation_axis(),
-				GPlatesMaths::convert_rad_to_deg(d_globe_orientation_ptr->rotation_angle()).dval());
-
-		// Set the depth func to GL_GREATER.
-		renderer.gl_depth_func(GL_GREATER);
-		// Turn depth writes off.
-		renderer.gl_depth_mask(GL_FALSE);
-
-		// Render the grid lines on the far side of the sphere.
-		d_grid->paint(renderer);
-
-		// Draw the rendered geometries in reverse order.
-		d_rendered_geom_collection_painter.set_visual_layers_reversed(true);
-		const cache_handle_type rendered_geoms_cache_far_side_globe =
-				d_rendered_geom_collection_painter.paint(
-						renderer,
-						viewport_zoom_factor);
-		cache_handle->push_back(rendered_geoms_cache_far_side_globe);
+				*cache_handle,
+				viewport_zoom_factor,
+				projection_transform_include_rear_half_globe,
+				false/*is_front_half_globe*/);
 	}
 
-	// Render opaque sphere.
+	// Render opaque sphere - can actually be transparent depending on the alpha value in its colour.
+	render_sphere_background(renderer, projection_transform_include_full_globe);
+
+	// The rendering of sub-surface geometries and the front surface of the globe are intermingled
+	// because the latter can be used to occlude the former.
+	if (render_sub_surface_geometries)
 	{
-		GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
+		if (GPlatesOpenGL::GLScreenRenderTarget::is_supported(renderer))
+		{
+			// Make sure we leave the OpenGL state the way it was.
+			GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
 
-		// Only enable depth testing if not transparent because the depth function is now GL_LESS
-		// and opaque sphere (really a disk) will not get rendered due to being in the exact
-		// position of the already rendered black disk (would need GL_LEQUAL for that to work).
-		renderer.gl_enable(GL_DEPTH_TEST, transparent ? GL_FALSE : GL_TRUE);
+			GPlatesOpenGL::GLScreenRenderTarget &screen_render_target = get_screen_render_target(renderer);
 
-		// Only write to the depth buffer if not transparent (because the depth buffer
-		// is written to by the black disk if transparent).
-		renderer.gl_depth_mask(transparent ? GL_FALSE : GL_TRUE);
-
-		// Note that if the sphere is transparent it will cause objects rendered to the rear half
-		// of the globe to be dimmer than normal due to alpha blending (this is the intended effect).
-		d_sphere->paint(
-				renderer,
-				d_globe_orientation_ptr->rotation_axis(),
-				GPlatesMaths::convert_rad_to_deg(d_globe_orientation_ptr->rotation_angle()).dval());
-	}
-
-	// Draw the rendered geometries.
-	d_rendered_geom_collection_painter.set_visual_layers_reversed(false);
-	const cache_handle_type rendered_geoms_cache_near_side_globe =
-			d_rendered_geom_collection_painter.paint(
+			// Prepare for rendering the front half of the globe into a viewport-size render texture.
+			// This will be used as a surface occlusion texture when rendering the globe sub-surface
+			// in order to early terminate occluded volume-tracing rays for efficient sub-surface rendering.
+			const GPlatesOpenGL::GLViewport &viewport = renderer.gl_get_viewport();
+			screen_render_target.begin_render(
 					renderer,
-					viewport_zoom_factor);
-	cache_handle->push_back(rendered_geoms_cache_near_side_globe);
+					viewport.x() + viewport.width(),
+					viewport.y() + viewport.height());
 
-	// Render the grid lines on the sphere.
-	d_grid->paint(renderer);
+			// Clear only the colour buffer.
+			// The depth buffer is cleared in 'render_globe_hemisphere_surface()'.
+			renderer.gl_clear_color();
+			renderer.gl_clear(GL_COLOR_BUFFER_BIT);
+
+			// Render the front half of the globe surface to the viewport-size render texture.
+			render_globe_hemisphere_surface(
+					renderer,
+					*cache_handle,
+					viewport_zoom_factor,
+					projection_transform_include_front_half_globe,
+					true/*is_front_half_globe*/);
+
+			// Finished rendering surface occlusion texture.
+			GPlatesOpenGL::GLTexture::shared_ptr_to_const_type front_globe_surface_texture =
+					screen_render_target.end_render(renderer);
+
+			// Render the globe sub-surface (using the surface occlusion texture) to the main framebuffer.
+			render_globe_sub_surface(
+					renderer,
+					*cache_handle,
+					viewport_zoom_factor,
+					projection_transform_include_full_globe,
+					front_globe_surface_texture);
+
+			// Blend the front half of the globe surface (the surface occlusion texture) in the main framebuffer.
+			render_front_globe_hemisphere_surface_texture(renderer, front_globe_surface_texture);
+		}
+		else // surface occlusion not supported so render sub-surface followed by surface...
+		{
+			// Render the globe sub-surface first.
+			render_globe_sub_surface(
+					renderer,
+					*cache_handle,
+					viewport_zoom_factor,
+					projection_transform_include_full_globe);
+
+			// Render the front half of the globe surface next.
+			render_globe_hemisphere_surface(
+					renderer,
+					*cache_handle,
+					viewport_zoom_factor,
+					projection_transform_include_front_half_globe,
+					true/*is_front_half_globe*/);
+		}
+	}
+	else // there are no sub-surface geometries...
+	{
+		// Render the front half of the globe surface.
+		render_globe_hemisphere_surface(
+				renderer,
+				*cache_handle,
+				viewport_zoom_factor,
+				projection_transform_include_front_half_globe,
+				true/*is_front_half_globe*/);
+	}
+
+	// Restore the background colour if we temporarily changed it.
+	if (original_background_colour != d_view_state.get_background_colour())
+	{
+		d_view_state.set_background_colour(original_background_colour);
+	}
 
 	return cache_handle;
 }
@@ -313,14 +339,23 @@ GPlatesGui::Globe::paint_vector_output(
 		prev_rendered_layer_active_state =
 			d_rendered_geom_collection.capture_main_layer_active_state();
 
-	// Turn off rendering of digitisation layer.
-	d_rendered_geom_collection.set_main_layer_active(
-			GPlatesViewOperations::RenderedGeometryCollection::DIGITISATION_CANVAS_TOOL_WORKFLOW_LAYER,
-			false);
+	// Turn off rendering of all layers except the reconstruction layer.
+	for (unsigned int layer_index = 0;
+		layer_index < GPlatesViewOperations::RenderedGeometryCollection::NUM_LAYERS;
+		++layer_index)
+	{
+		const GPlatesViewOperations::RenderedGeometryCollection::MainLayerType layer =
+				static_cast<GPlatesViewOperations::RenderedGeometryCollection::MainLayerType>(layer_index);
 
-	// Draw the rendered geometries in the depth range [0, 0.7].
+		if (layer != GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)
+		{
+			d_rendered_geom_collection.set_main_layer_active(layer, false);
+		}
+	}
+
+	// Draw the rendered geometries.
 	d_rendered_geom_collection_painter.set_scale(scale);
-	d_rendered_geom_collection_painter.paint(
+	d_rendered_geom_collection_painter.paint_surface(
 			renderer,
 			viewport_zoom_factor);
 
@@ -339,4 +374,220 @@ GPlatesGui::Globe::get_globe_orientation_transform(
 			GPlatesMaths::convert_rad_to_deg(d_globe_orientation_ptr->rotation_angle());
 
 	transform.gl_rotate(angle_in_deg.dval(), axis.x().dval(), axis.y().dval(), axis.z().dval());
+}
+
+
+void
+GPlatesGui::Globe::set_scene_lighting(
+		GPlatesOpenGL::GLRenderer &renderer,
+		const GPlatesOpenGL::GLMatrix &view_orientation)
+{
+	// Get the OpenGL light if the runtime system supports it.
+	boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type> gl_light =
+			d_gl_visual_layers->get_light(renderer);
+
+	// Set the scene lighting parameters on the light (includes the current view orientation).
+	if (gl_light)
+	{
+		gl_light.get()->set_scene_lighting(
+				renderer,
+				d_view_state.get_scene_lighting_parameters(),
+				view_orientation);
+	}
+}
+
+
+void
+GPlatesGui::Globe::render_stars(
+		GPlatesOpenGL::GLRenderer &renderer,
+		const GPlatesOpenGL::GLMatrix &projection_transform_include_stars)
+{
+	// Make sure we leave the OpenGL state the way it was.
+	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
+
+	// Disable depth testing and depth writes.
+	//
+	// This is because we are using a different projection transform and the depth buffer values
+	// depend on the projection transform.
+	// This means we avoid a subsequent depth buffer clear.
+	renderer.gl_enable(GL_DEPTH_TEST, GL_FALSE);
+	renderer.gl_depth_mask(GL_FALSE);
+
+	// Set up the projection transform for the stars.
+	renderer.gl_load_matrix(GL_PROJECTION, projection_transform_include_stars);
+
+	d_stars->paint(renderer);
+}
+
+
+void
+GPlatesGui::Globe::render_sphere_background(
+		GPlatesOpenGL::GLRenderer &renderer,
+		const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe)
+{
+	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
+
+	// Disable depth testing and depth writes.
+	// The opaque sphere is only used to render the sphere colour (and, for a transparent sphere,
+	// blend the sphere colour with the rendered geometries on the rear of the globe).
+	//
+	// NOTE: Because we are using a different projection transform and the depth buffer values depend
+	// on the projection transform then normally each projection transform needs its own depth buffer clear.
+	// However since we're not reading or writing to depth buffer we don't need to clear depth buffer.
+	renderer.gl_enable(GL_DEPTH_TEST, GL_FALSE);
+	renderer.gl_depth_mask(GL_FALSE);
+
+	// Set up the projection transform for entire globe.
+	//
+	// NOTE: It's actually rendered as a disk facing the camera so it will be inside the rear half
+	// frustum (projection matrix) due to expansion by epsilon at globe centre distance.
+	// However we will use the full globe frustum in case this changes.
+	renderer.gl_load_matrix(GL_PROJECTION, projection_transform_include_full_globe);
+
+	// Note that if the sphere is transparent it will cause objects rendered to the rear half
+	// of the globe to be dimmer than normal due to alpha blending (this is the intended effect).
+	d_sphere->paint(
+			renderer,
+			d_globe_orientation_ptr->rotation_axis(),
+			GPlatesMaths::convert_rad_to_deg(d_globe_orientation_ptr->rotation_angle()).dval());
+}
+
+
+void
+GPlatesGui::Globe::render_globe_hemisphere_surface(
+		GPlatesOpenGL::GLRenderer &renderer,
+		std::vector<cache_handle_type> &cache_handle,
+		const double &viewport_zoom_factor,
+		const GPlatesOpenGL::GLMatrix &projection_transform_include_half_globe,
+		bool is_front_half_globe)
+{
+	// Make sure we leave the OpenGL state the way it was.
+	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
+
+	renderer.gl_load_matrix(GL_PROJECTION, projection_transform_include_half_globe);
+
+	// NOTE: Because we are using a different projection transform and the depth buffer values depend
+	// on the projection transform then each projection transform needs its own depth buffer clear.
+	renderer.gl_clear_depth(); // Clear depth to 1.0
+	// NOTE: Depth writes must be enabled for depth clears to work.
+	renderer.gl_depth_mask(GL_TRUE);
+	renderer.gl_clear(GL_DEPTH_BUFFER_BIT);
+
+	// Enable depth testing but disable depth writes (for the grid lines).
+	renderer.gl_enable(GL_DEPTH_TEST, GL_TRUE);
+	renderer.gl_depth_mask(GL_FALSE);
+
+	if (!is_front_half_globe)
+	{
+		// Render the grid lines on the rear side of the sphere first.
+		d_grid->paint(renderer);
+	}
+
+	// Draw the rendered geometries.
+	// Draw in reverse order if drawing to the rear half of the globe.
+	d_rendered_geom_collection_painter.set_visual_layers_reversed(!is_front_half_globe);
+	const cache_handle_type rendered_geoms_cache_half_globe =
+			d_rendered_geom_collection_painter.paint_surface(
+					renderer,
+					viewport_zoom_factor);
+	cache_handle.push_back(rendered_geoms_cache_half_globe);
+
+	if (is_front_half_globe)
+	{
+		// Render the grid lines on the front side of the sphere last.
+		d_grid->paint(renderer);
+	}
+}
+
+
+void
+GPlatesGui::Globe::render_front_globe_hemisphere_surface_texture(
+		GPlatesOpenGL::GLRenderer &renderer,
+		const GPlatesOpenGL::GLTexture::shared_ptr_to_const_type &front_globe_surface_texture)
+{
+	// Make sure we leave the OpenGL state the way it was.
+	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
+
+	// Used to draw a full-screen quad into render texture.
+	const GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type full_screen_quad_drawable =
+			renderer.get_context().get_shared_state()->get_full_screen_2D_textured_quad(renderer);
+
+	// Full-screen rendering requires no model-view-projection transform.
+	renderer.gl_load_matrix(GL_MODELVIEW, GPlatesOpenGL::GLMatrix::IDENTITY);
+	renderer.gl_load_matrix(GL_PROJECTION, GPlatesOpenGL::GLMatrix::IDENTITY);
+
+	// Set up alpha blending for pre-multiplied alpha.
+	// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
+	// This is where the RGB channels have already been multiplied by the alpha channel.
+	// This necessary in order to be able to blend a render texture into the main framebuffer and
+	// have it look the same as if we had blended directly into the main framebuffer in the first place.
+	// However everything rendered into the render target must use pre-multiplied alpha.
+	renderer.gl_enable(GL_BLEND);
+	renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Enable alpha testing as an optimisation for culling transparent raster pixels.
+	renderer.gl_enable(GL_ALPHA_TEST);
+	renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
+
+	// Disable depth testing and depth writes - we're just doing a full-screen copy and blend.
+	renderer.gl_enable(GL_DEPTH_TEST, GL_FALSE);
+	renderer.gl_depth_mask(GL_FALSE);
+
+	// Bind the texture and enable fixed-function texturing on texture unit 0.
+	const GLenum texture_unit_0 = GPlatesOpenGL::GLContext::get_parameters().texture.gl_TEXTURE0;
+	renderer.gl_bind_texture(front_globe_surface_texture, texture_unit_0, GL_TEXTURE_2D);
+	renderer.gl_enable_texture(texture_unit_0, GL_TEXTURE_2D);
+	renderer.gl_tex_env(texture_unit_0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+
+	// Render the full-screen quad.
+	renderer.apply_compiled_draw_state(*full_screen_quad_drawable);
+}
+
+
+void
+GPlatesGui::Globe::render_globe_sub_surface(
+		GPlatesOpenGL::GLRenderer &renderer,
+		std::vector<cache_handle_type> &cache_handle,
+		const double &viewport_zoom_factor,
+		const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
+		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture)
+{
+	// Make sure we leave the OpenGL state the way it was.
+	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
+
+	renderer.gl_load_matrix(GL_PROJECTION, projection_transform_include_full_globe);
+
+	// NOTE: Because we are using a different projection transform and the depth buffer values depend
+	// on the projection transform then each projection transform needs its own depth buffer clear.
+	renderer.gl_clear_depth(); // Clear depth to 1.0
+	// NOTE: Depth writes must be enabled for depth clears to work.
+	renderer.gl_depth_mask(GL_TRUE);
+	renderer.gl_clear(GL_DEPTH_BUFFER_BIT);
+
+	// Draw the sub-surface geometries.
+	// Draw in normal layer order.
+	d_rendered_geom_collection_painter.set_visual_layers_reversed(false);
+	const cache_handle_type rendered_geoms_cache_sub_surface_globe =
+			d_rendered_geom_collection_painter.paint_sub_surface(
+					renderer,
+					viewport_zoom_factor,
+					surface_occlusion_texture);
+	cache_handle.push_back(rendered_geoms_cache_sub_surface_globe);
+}
+
+
+GPlatesOpenGL::GLScreenRenderTarget &
+GPlatesGui::Globe::get_screen_render_target(
+		GPlatesOpenGL::GLRenderer &renderer)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			GPlatesOpenGL::GLScreenRenderTarget::is_supported(renderer),
+			GPLATES_ASSERTION_SOURCE);
+
+	if (!d_screen_render_target)
+	{
+		d_screen_render_target = boost::in_place(boost::ref(renderer));
+	}
+
+	return d_screen_render_target.get();
 }

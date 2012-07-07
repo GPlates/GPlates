@@ -74,7 +74,7 @@ namespace GPlatesFileIO
 		 * @throws @a ErrorOpeningFileForReadingException if @a filename could not be
 		 * opened for reading.
 		 *
-		 * @throws @a FileFormatNotException if the header information is wrong.
+		 * @throws @a FileFormatNotSupportedException if the header information is wrong.
 		 *
 		 * @throws @a RasterFileCacheFormat::UnsupportedVersion if the mipmap version is either
 		 * not recognised (mipmap file created by a newer version of GPlates) or no longer supported

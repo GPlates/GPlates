@@ -31,6 +31,7 @@
 
 #include "app-logic/AppLogicUtils.h"
 #include "app-logic/ExtractRasterFeatureProperties.h"
+#include "app-logic/ExtractScalarField3DFeatureProperties.h"
 #include "app-logic/ReconstructMethodRegistry.h"
 #include "app-logic/TopologyUtils.h"
 
@@ -99,6 +100,15 @@ namespace GPlatesFileIO
 					if (GPlatesAppLogic::is_raster_feature(feature))
 					{
 						classifications.set(RASTER);
+					}
+				}
+
+				// Check if the feature is a scalar field.
+				if (!classifications.test(SCALAR_FIELD_3D)) // Only test if not classified already...
+				{
+					if (GPlatesAppLogic::is_scalar_field_3d_feature(feature))
+					{
+						classifications.set(SCALAR_FIELD_3D);
 					}
 				}
 

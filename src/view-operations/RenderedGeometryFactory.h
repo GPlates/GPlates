@@ -39,6 +39,7 @@
 #include "app-logic/ReconstructionGeometry.h"
 
 #include "gui/Colour.h"
+#include "gui/ColourPalette.h"
 #include "gui/ColourProxy.h"
 #include "gui/Symbol.h"
 #include "gui/RasterColourPalette.h"
@@ -187,6 +188,16 @@ namespace GPlatesViewOperations
 				const GPlatesAppLogic::resolved_raster_non_null_ptr_to_const_type &resolved_raster,
 				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
 				const GPlatesGui::Colour &raster_modulate_colour = GPlatesGui::Colour::get_white());
+
+		/**
+		 * Creates a @a RenderedGeometry for a resolved 3D scalar field.
+		 */
+		RenderedGeometry
+		create_rendered_resolved_scalar_field_3d(
+				const GPlatesAppLogic::resolved_scalar_field_3d_non_null_ptr_to_const_type &resolved_scalar_field,
+				float scalar_field_iso_value,
+				const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &scalar_field_colour_palette,
+				const std::vector<float> &shader_test_variables);
 
 		/**
 		 * Creates a single direction arrow consisting of an arc line segment on the globe's surface

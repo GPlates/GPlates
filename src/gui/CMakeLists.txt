@@ -184,7 +184,7 @@ set(srcs
     RasterColourPalette.h
     ReconstructionGeometrySequence.h
     RenderSettings.h
-    SceneLightingParams.h
+    SceneLightingParameters.h
     SessionMenu.cc
     SessionMenu.h
     SimpleGlobeOrientation.cc

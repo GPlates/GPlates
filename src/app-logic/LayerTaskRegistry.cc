@@ -35,6 +35,7 @@
 #include "RasterLayerTask.h"
 #include "ReconstructionLayerTask.h"
 #include "ReconstructLayerTask.h"
+#include "ScalarField3DLayerTask.h"
 #include "TopologyBoundaryResolverLayerTask.h"
 #include "TopologyNetworkResolverLayerTask.h"
 #include "VelocityFieldCalculatorLayerTask.h"
@@ -188,6 +189,12 @@ GPlatesAppLogic::register_default_layer_task_types(
 			&RasterLayerTask::create_layer_task,
 			&RasterLayerTask::can_process_feature_collection,
 			GPlatesAppLogic::LayerTaskType::RASTER);
+
+	// Layer task that reconstructs rasters.
+	layer_task_registry.register_layer_task_type(
+			&ScalarField3DLayerTask::create_layer_task,
+			&ScalarField3DLayerTask::can_process_feature_collection,
+			GPlatesAppLogic::LayerTaskType::SCALAR_FIELD_3D);
 
 	// Layer task to resolve topological closed plate boundaries.
 	layer_task_registry.register_layer_task_type(

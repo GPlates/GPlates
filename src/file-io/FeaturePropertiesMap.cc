@@ -1031,6 +1031,19 @@ namespace
 		return map;
 	}
 
+
+	const PropertyCreationUtils::PropertyCreatorMap
+	get_scalar_field_3d_properties()
+	{
+		PropertyCreationUtils::PropertyCreatorMap map = get_abstract_feature_properties();
+
+		map[ PropertyName::create_gpml("file") ] =
+			GET_PROP_VAL_NAME(create_time_dependent_property_value);
+
+		return map;
+	}
+
+
 	const PropertyCreationUtils::PropertyCreatorMap
 	get_flowline_properties()
 	{
@@ -1333,6 +1346,10 @@ GPlatesFileIO::FeaturePropertiesMap::FeaturePropertiesMap()
 	// Rasters.
 	d_map[ FeatureType::create_gpml("Raster") ] =
 		get_raster_properties();
+
+	// 3D scalar fields.
+	d_map[ FeatureType::create_gpml("ScalarField3D") ] =
+		get_scalar_field_3d_properties();
 
 	// Time variant features.
 }

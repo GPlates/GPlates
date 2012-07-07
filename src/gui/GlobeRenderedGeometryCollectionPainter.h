@@ -31,13 +31,14 @@
 #include <boost/shared_ptr.hpp>
 
 #include "ColourScheme.h"
-#include "GlobeOrientation.h"
+#include "GlobeRenderedGeometryLayerPainter.h"
 #include "GlobeVisibilityTester.h"
 #include "LayerPainter.h"
 #include "RenderSettings.h"
 #include "TextRenderer.h"
 
 #include "opengl/GLContext.h"
+#include "opengl/GLTexture.h"
 #include "opengl/GLVisualLayers.h"
 
 #include "presentation/VisualLayers.h"
@@ -81,18 +82,49 @@ namespace GPlatesGui
 				RenderSettings &render_settings,
 				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
-				const GlobeOrientation &globe_orientation,
 				ColourScheme::non_null_ptr_type colour_scheme);
 
 		/**
-		 * Draw the rendered geometries.
+		 * Initialise objects requiring @a GLRenderer.
+		 */
+		void
+		initialise(
+				GPlatesOpenGL::GLRenderer &renderer);
+
+		/**
+		 * Returns true if any rendered layer has sub-surface geometries.
+		 *
+		 * These are painted using @a paint_sub_surface.
+		 */
+		bool
+		has_sub_surface_geometries() const;
+
+		/**
+		 * Draw the rendered geometries on the surface of the globe.
+		 *
+		 * This includes rendered direction arrows.
 		 *
 		 * @param viewport_zoom_factor is used for rendering view-dependent geometries.
 		 */
 		cache_handle_type
-		paint(
+		paint_surface(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const double &viewport_zoom_factor);
+
+		/**
+		 * Draw globe sub-surface rendered geometries that exist below the surface of the globe.
+		 *
+		 * Currently this is 3D scalar fields.
+		 *
+		 * @param viewport_zoom_factor is used for rendering view-dependent geometries.
+		 * @param surface_occlusion_texture is a viewport-size 2D texture containing the RGBA rendering
+		 * of the surface geometries/rasters on the *front* of the globe.
+		 */
+		cache_handle_type
+		paint_sub_surface(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const double &viewport_zoom_factor,
+				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture);
 
 		void
 		set_scale(
@@ -114,27 +146,28 @@ namespace GPlatesGui
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer);
 
 		/**
-		 * Parameters that are only available when @a paint is called.
+		 * Parameters that are only available when @a paint_surface is called.
 		 */
 		struct PaintParams
 		{
 			PaintParams(
 					GPlatesOpenGL::GLRenderer &renderer,
-					const double &viewport_zoom_factor) :
-				d_renderer(&renderer),
-				d_inverse_viewport_zoom_factor(1.0 / viewport_zoom_factor),
-				d_cache_handle(new std::vector<cache_handle_type>())
-			{  }
+					const double &viewport_zoom_factor,
+					GlobeRenderedGeometryLayerPainter::PaintRegionType paint_region,
+					boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type>
+							surface_occlusion_texture = boost::none);
 
 			GPlatesOpenGL::GLRenderer *d_renderer;
 			double d_inverse_viewport_zoom_factor;
+			GlobeRenderedGeometryLayerPainter::PaintRegionType d_paint_region;
+			boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> d_surface_occlusion_texture;
 
 			// Cache of rendered geometry layers.
 			boost::shared_ptr<std::vector<cache_handle_type> > d_cache_handle;
 		};
 
 
-		//! Parameters that are only available when @a paint is called.
+		//! Parameters that are only available when @a paint_surface is called.
 		boost::optional<PaintParams> d_paint_params;
 
 		const GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
@@ -157,9 +190,6 @@ namespace GPlatesGui
 
 		//! Used for determining whether a particular point on the globe is visible
 		GlobeVisibilityTester d_visibility_tester;
-
-		//! Used to determine the view-space to world-space transform.
-		const GlobeOrientation &d_globe_orientation;
 
 		//! For assigning colours to RenderedGeometry
 		ColourScheme::non_null_ptr_type d_colour_scheme;

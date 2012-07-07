@@ -34,7 +34,7 @@
 #include "GLUtils.h"
 
 #include "gui/MapProjection.h"
-#include "gui/SceneLightingParams.h"
+#include "gui/SceneLightingParameters.h"
 
 #include "maths/UnitVector3D.h"
 
@@ -95,7 +95,7 @@ namespace GPlatesOpenGL
 		non_null_ptr_type
 		create(
 				GLRenderer &renderer,
-				const GPlatesGui::SceneLightingParams &scene_lighting_params = GPlatesGui::SceneLightingParams(),
+				const GPlatesGui::SceneLightingParameters &scene_lighting_params = GPlatesGui::SceneLightingParameters(),
 				const GLMatrix &view_orientation = GLMatrix::IDENTITY,
 				boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection = boost::none);
 
@@ -115,20 +115,23 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Updates internal state due to changes in these parameters.
+		 *
+		 * @a view_orientation is the orientation of the view direction relative to the globe.
+		 * This only really makes sense in the 3D globe view (not 2D map views).
 		 */
 		void
 		set_scene_lighting(
 				GLRenderer &renderer,
-				const GPlatesGui::SceneLightingParams &scene_lighting_params,
-				const GLMatrix &view_orientation,
+				const GPlatesGui::SceneLightingParameters &scene_lighting_params,
+				const GLMatrix &view_orientation = GLMatrix::IDENTITY,
 				boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection = boost::none);
 
 
 		/**
 		 * Returns the scene lighting parameters used by this light.
 		 */
-		const GPlatesGui::SceneLightingParams &
-		get_scene_lighting_params() const
+		const GPlatesGui::SceneLightingParameters &
+		get_scene_lighting_parameters() const
 		{
 			return d_scene_lighting_params;
 		}
@@ -151,7 +154,7 @@ namespace GPlatesOpenGL
 		 * If this returns true then use the hardware cube map texture returned by
 		 * @a get_map_view_light_direction_cube_map_texture to get the light direction as a function
 		 * of position-on-globe.
-		 * Otherwise just use the constant light direction specified by @a get_scene_lighting_params.
+		 * Otherwise just use the constant light direction specified by @a get_scene_lighting_parameters.
 		 */
 		boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type>
 		get_map_projection() const
@@ -203,7 +206,7 @@ namespace GPlatesOpenGL
 		/**
 		 * The parameters used to surface light the reconstructed raster.
 		 */
-		GPlatesGui::SceneLightingParams d_scene_lighting_params;
+		GPlatesGui::SceneLightingParameters d_scene_lighting_params;
 
 		/**
 		 * This is the orientation of the view direction relative to the globe.
@@ -240,7 +243,7 @@ namespace GPlatesOpenGL
 
 		GLLight(
 				GLRenderer &renderer,
-				const GPlatesGui::SceneLightingParams &scene_lighting_params,
+				const GPlatesGui::SceneLightingParameters &scene_lighting_params,
 				const GLMatrix &view_orientation,
 				boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection);
 
@@ -259,9 +262,6 @@ namespace GPlatesOpenGL
 		void
 		update_globe_view(
 				GLRenderer &renderer);
-
-		GLMatrix
-		get_inverse_view_orientation();
 	};
 }
 

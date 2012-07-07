@@ -36,6 +36,7 @@
 #include "RenderedPolygonOnSphere.h"
 #include "RenderedPolylineOnSphere.h"
 #include "RenderedResolvedRaster.h"
+#include "RenderedResolvedScalarField3D.h"
 #include "RenderedReconstructionGeometry.h"
 #include "RenderedSmallCircle.h"
 #include "RenderedSmallCircleArc.h"
@@ -253,6 +254,24 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
 					resolved_raster,
 					raster_colour_palette,
 					raster_modulate_colour));
+
+	return RenderedGeometry(rendered_geom_impl);
+}
+
+
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_scalar_field_3d(
+		const GPlatesAppLogic::resolved_scalar_field_3d_non_null_ptr_to_const_type &resolved_scalar_field,
+		float scalar_field_iso_value,
+		const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &scalar_field_colour_palette,
+		const std::vector<float> &shader_test_variables)
+{
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(
+			new RenderedResolvedScalarField3D(
+					resolved_scalar_field,
+					scalar_field_iso_value,
+					scalar_field_colour_palette,
+					shader_test_variables));
 
 	return RenderedGeometry(rendered_geom_impl);
 }

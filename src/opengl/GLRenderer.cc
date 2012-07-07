@@ -1316,7 +1316,7 @@ GPlatesOpenGL::GLRenderer::gl_copy_tex_sub_image_3D(
 			// Apply all state - not just a subset.
 			state_to_apply.apply_state(last_applied_state);
 
-			glCopyTexSubImage3DEXT(texture_target, level, xoffset, yoffset, zoffset, x, y, width, height);
+			glCopyTexSubImage3D(texture_target, level, xoffset, yoffset, zoffset, x, y, width, height);
 		}
 
 		GLenum texture_target;
@@ -1330,9 +1330,12 @@ GPlatesOpenGL::GLRenderer::gl_copy_tex_sub_image_3D(
 		GLsizei height;
 	};
 
-	// The GL_EXT_copy_texture extension must be available.
+	// For some reason the GL_EXT_copy_texture extension is not well-supported even though pretty much
+	// all hardware support it (was introduced in OpenGL 1.2 core).
+	// We'll test for GL_EXT_texture3D instead and call the core function glCopyTexSubImage3D
+	// instead of the extension function glCopyTexSubImage3DEXT.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_copy_texture),
+			GPLATES_OPENGL_BOOL(GL_EXT_texture3D),
 			GPLATES_ASSERTION_SOURCE);
 
 	// Set the active texture unit - glCopyTexSubImage2D targets the texture bound to it.
@@ -1803,7 +1806,7 @@ GPlatesOpenGL::GLRenderer::begin_framebuffer_object_2D(
 		RenderTextureTarget &render_texture_target)
 {
 	// Attach the texture to the framebuffer object.
-	d_framebuffer_object.get()->gl_attach_2D(
+	d_framebuffer_object.get()->gl_attach_texture_2D(
 			*this,
 			GL_TEXTURE_2D,
 			render_texture_target.texture,
@@ -1861,7 +1864,7 @@ GPlatesOpenGL::GLRenderer::end_framebuffer_object_2D(
 
 	// The parent render target is now the active render target.
 	// Attach the texture, of the parent render target, to the framebuffer object.
-	d_framebuffer_object.get()->gl_attach_2D(
+	d_framebuffer_object.get()->gl_attach_texture_2D(
 			*this,
 			GL_TEXTURE_2D,
 			parent_render_texture_target->texture,
@@ -2298,7 +2301,59 @@ GPlatesOpenGL::GLRenderer::BindFrameBufferAndApply::~BindFrameBufferAndApply()
 }
 
 
+GPlatesOpenGL::GLRenderer::UnbindFrameBufferAndApply::~UnbindFrameBufferAndApply()
+{
+	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
+	// But we log the exception and the location it was emitted.
+	try
+	{
+		if (d_prev_frame_buffer_object)
+		{
+			d_renderer.gl_bind_frame_buffer(d_prev_frame_buffer_object.get());
+		}
+		else
+		{
+			d_renderer.gl_unbind_frame_buffer();
+		}
+	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "GLRenderer: exception thrown during BindFrameBufferAndApply: " << exc.what();
+	}
+	catch (...)
+	{
+		qWarning() << "GLRenderer: exception thrown during BindFrameBufferAndApply: Unknown error";
+	}
+}
+
+
 GPlatesOpenGL::GLRenderer::BindProgramObjectAndApply::~BindProgramObjectAndApply()
+{
+	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
+	// But we log the exception and the location it was emitted.
+	try
+	{
+		if (d_prev_program_object)
+		{
+			d_renderer.gl_bind_program_object(d_prev_program_object.get());
+		}
+		else
+		{
+			d_renderer.gl_unbind_program_object();
+		}
+	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "GLRenderer: exception thrown during BindProgramObjectAndApply: " << exc.what();
+	}
+	catch (...)
+	{
+		qWarning() << "GLRenderer: exception thrown during BindProgramObjectAndApply: Unknown error";
+	}
+}
+
+
+GPlatesOpenGL::GLRenderer::UnbindProgramObjectAndApply::~UnbindProgramObjectAndApply()
 {
 	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
 	// But we log the exception and the location it was emitted.
@@ -2346,6 +2401,32 @@ GPlatesOpenGL::GLRenderer::BindTextureAndApply::~BindTextureAndApply()
 	catch (...)
 	{
 		qWarning() << "GLRenderer: exception thrown during BindTextureAndApply: Unknown error";
+	}
+}
+
+
+GPlatesOpenGL::GLRenderer::UnbindTextureAndApply::~UnbindTextureAndApply()
+{
+	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
+	// But we log the exception and the location it was emitted.
+	try
+	{
+		if (d_prev_texture_object)
+		{
+			d_renderer.gl_bind_texture(d_prev_texture_object.get(), d_texture_unit, d_texture_target);
+		}
+		else
+		{
+			d_renderer.gl_unbind_texture(d_texture_unit, d_texture_target);
+		}
+	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "GLRenderer: exception thrown during UnbindTextureAndApply: " << exc.what();
+	}
+	catch (...)
+	{
+		qWarning() << "GLRenderer: exception thrown during UnbindTextureAndApply: Unknown error";
 	}
 }
 

@@ -45,7 +45,7 @@ GPlatesQtWidgets::SetProjectionDialog::SetProjectionDialog(
 	setupUi(this);
 
 	// FIXME: Synchronise these with the definitions in the the MapProjection class. 
-	combo_projection->addItem(tr("3D Globe"),GPlatesGui::MapProjection::ORTHOGRAPHIC);
+	combo_projection->addItem(tr("3D Orthographic"),GPlatesGui::MapProjection::ORTHOGRAPHIC);
 	combo_projection->addItem(tr("Rectangular"),GPlatesGui::MapProjection::RECTANGULAR);
 	combo_projection->addItem(tr("Mercator"),GPlatesGui::MapProjection::MERCATOR);
 	combo_projection->addItem(tr("Mollweide"),GPlatesGui::MapProjection::MOLLWEIDE);

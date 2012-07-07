@@ -708,6 +708,7 @@ internal_main(int argc, char* argv[])
 	GPlatesPresentation::Application application;
 
 	Q_INIT_RESOURCE(qt_widgets);
+	Q_INIT_RESOURCE(opengl);
 
 	// Initialise python if it's enabled.
 	if(GPlatesUtils::ComponentManager::instance().is_enabled(

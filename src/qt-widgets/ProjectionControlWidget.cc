@@ -46,7 +46,7 @@ GPlatesQtWidgets::ProjectionControlWidget::ProjectionControlWidget(
 	// to the text changing directly; instead, we can embed some data for
 	// each combobox choice (perhaps an enumeration) via this form of
 	// addItem() : http://doc.trolltech.com/4.3/qcombobox.html#addItem
-	combo_projections->addItem(tr("3D Globe"),GPlatesGui::MapProjection::ORTHOGRAPHIC);
+	combo_projections->addItem(tr("3D Orthographic"),GPlatesGui::MapProjection::ORTHOGRAPHIC);
 	combo_projections->addItem(tr("Rectangular"),GPlatesGui::MapProjection::RECTANGULAR);
 	combo_projections->addItem(tr("Mercator"),GPlatesGui::MapProjection::MERCATOR);
 	combo_projections->addItem(tr("Mollweide"),GPlatesGui::MapProjection::MOLLWEIDE);

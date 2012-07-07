@@ -30,10 +30,6 @@
 
 #include "VisualLayerParams.h"
 
-namespace GPlatesGui
-{
-	class StyleAdapter;
-}
 
 namespace GPlatesPresentation
 {

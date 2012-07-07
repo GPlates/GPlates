@@ -37,6 +37,7 @@
 #include "GLObject.h"
 #include "GLObjectResource.h"
 #include "GLObjectResourceManager.h"
+#include "GLRenderBufferObject.h"
 #include "GLTexture.h"
 
 
@@ -52,8 +53,8 @@ namespace GPlatesOpenGL
 	 *
 	 * Check "GLContext::get_parameters().framebuffer.gl_EXT_framebuffer_object" to see if supported.
 	 *
-	 * NOTE: There's also the more recent "GL_ARB_framebuffer_object" extension however it
-	 * has extra features and does not have the wide support that "GL_EXT_framebuffer_object" does.
+	 * NOTE: There's also the more recent "GL_ARB_framebuffer_object" extension however it has extra features
+	 * (or less restrictions) but does not have the wide support that "GL_EXT_framebuffer_object" does.
 	 */
 	class GLFrameBufferObject :
 			public GLObject,
@@ -98,6 +99,33 @@ namespace GPlatesOpenGL
 		typedef GLObjectResourceManager<resource_handle_type, Allocator> resource_manager_type;
 
 
+		/**
+		 * The default buffer (GL_COLOR_ATTACHMENT0_EXT) for the glDrawBuffer(s)/glReadBuffer state
+		 * contained in a framebuffer object.
+		 */
+		static const GLenum DEFAULT_DRAW_READ_BUFFER;
+
+
+		/**
+		 * Performs same function as the glGenerateMipmap OpenGL function.
+		 *
+		 * In addition it temporarily binds the specified texture to the specified target
+		 * (on, arbitrarily, texture unit zero) such that mipmap generation targets the specified texture.
+		 * The texture binding is reverted, before returning, to its original state.
+		 * It also temporarily unbinds any active framebuffer object just to be sure there's no conflict
+		 * if the texture is currently attached to the active framebuffer object.
+		 *
+		 * NOTE: This function is defined here instead of in class @a GLTexture since it's part
+		 * of the GL_EXT_framebuffer_object extension and ideally (due to potential driver issues)
+		 * should only really be used for a texture that has been rendered to using a framebuffer object.
+		 */
+		static
+		void
+		gl_generate_mipmap(
+				GLRenderer &renderer,
+				GLenum texture_target,
+				const GLTexture::shared_ptr_to_const_type &texture);
+
 
 		/**
 		 * Creates a shared pointer to a @a GLFrameBufferObject object.
@@ -107,11 +135,9 @@ namespace GPlatesOpenGL
 		static
 		shared_ptr_type
 		create(
-				const resource_manager_type::shared_ptr_type &framebuffer_resource_manager)
+				GLRenderer &renderer)
 		{
-			return shared_ptr_type(
-					new GLFrameBufferObject(
-							resource_type::create(framebuffer_resource_manager)));
+			return shared_ptr_type(new GLFrameBufferObject(renderer));
 		}
 
 		/**
@@ -120,74 +146,113 @@ namespace GPlatesOpenGL
 		static
 		std::auto_ptr<GLFrameBufferObject>
 		create_as_auto_ptr(
-				const resource_manager_type::shared_ptr_type &framebuffer_resource_manager)
+				GLRenderer &renderer)
 		{
-			return std::auto_ptr<GLFrameBufferObject>(
-					new GLFrameBufferObject(
-							resource_type::create(framebuffer_resource_manager)));
+			return std::auto_ptr<GLFrameBufferObject>(new GLFrameBufferObject(renderer));
 		}
 
 
 		/**
 		 * Performs same function as the glFramebufferTexture1D OpenGL function.
 		 *
-		 * @throws PreconditionViolationError if @a colour_attachment is not in the half-open range:
+		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments_EXT).
+		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
-		gl_attach_1D(
+		gl_attach_texture_1D(
 				GLRenderer &renderer,
 				GLenum texture_target,
 				const GLTexture::shared_ptr_to_const_type &texture,
 				GLint level,
-				GLenum colour_attachment);
+				GLenum attachment);
 
 
 		/**
 		 * Performs same function as the glFramebufferTexture2D OpenGL function.
 		 *
-		 * @throws PreconditionViolationError if @a colour_attachment is not in the half-open range:
+		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments_EXT).
+		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
-		gl_attach_2D(
+		gl_attach_texture_2D(
 				GLRenderer &renderer,
 				GLenum texture_target,
 				const GLTexture::shared_ptr_to_const_type &texture,
 				GLint level,
-				GLenum colour_attachment);
+				GLenum attachment);
 
 
 		/**
 		 * Performs same function as the glFramebufferTexture3D OpenGL function.
 		 *
-		 * @throws PreconditionViolationError if @a colour_attachment is not in the half-open range:
+		 * NOTE: Use @a gl_attach_texture_array for 2D array textures.
+		 *
+		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments_EXT).
+		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
-		gl_attach_3D(
+		gl_attach_texture_3D(
 				GLRenderer &renderer,
 				GLenum texture_target,
 				const GLTexture::shared_ptr_to_const_type &texture,
 				GLint level,
 				GLint zoffset,
-				GLenum colour_attachment);
+				GLenum attachment);
 
 
 		/**
-		 * Detaches specified colour attachment point.
+		 * Performs same function as the FramebufferTextureLayer OpenGL function - can be used for
+		 * 1D and 2D array textures (and regular 3D textures - where it does same as @a gl_attach_texture_3D).
 		 *
-		 * @throws PreconditionViolationError if @a colour_attachment is not in the half-open range:
+		 * NOTE: This also requires the GL_EXT_texture_array extension to be supported.
+		 *
+		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments_EXT).
+		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
+		 */
+		void
+		gl_attach_texture_array(
+				GLRenderer &renderer,
+				const GLTexture::shared_ptr_to_const_type &texture,
+				GLint level,
+				GLint layer,
+				GLenum attachment);
+
+
+		/**
+		 * Performs same function as the glFramebufferRenderbuffer OpenGL function.
+		 *
+		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
+		 *   [GL_COLOR_ATTACHMENT0_EXT,
+		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
+		 */
+		void
+		gl_attach_render_buffer(
+				GLRenderer &renderer,
+				const GLRenderBufferObject::shared_ptr_to_const_type &render_buffer,
+				GLenum attachment);
+
+
+		/**
+		 * Detaches specified attachment point.
+		 *
+		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
+		 *   [GL_COLOR_ATTACHMENT0_EXT,
+		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
 		gl_detach(
 				GLRenderer &renderer,
-				GLenum colour_attachment);
+				GLenum attachment);
 
 
 		/**
@@ -196,6 +261,60 @@ namespace GPlatesOpenGL
 		void
 		gl_detach_all(
 				GLRenderer &renderer);
+
+
+		/**
+		 * Performs same function as the glDrawBuffer/glDrawBuffers OpenGL function.
+		 *
+		 * Note that since the glDrawBuffer(s) state is stored inside the framebuffer object the
+		 * framebuffer object is temporarily bound inside this method (and reverted on return).
+		 *
+		 * The default state is buffer 0 is GL_COLOR_ATTACHMENT0_EXT with buffers
+		 * [1, GLContext::get_parameters().framebuffer.gl_max_draw_buffers) being GL_NONE.
+		 *
+		 * There is also a glDrawBuffer(s) state that applies to the default window-system framebuffer
+		 * but that is not dealt with here - that would go in the GLRenderer interface - currently
+		 * it's not there since the default of GL_BACK (or GL_FRONT if has no back buffer) is fine
+		 * for now and, anyway, rendering to multiple render targets should use non-default
+		 * application-created framebuffer objects (ie, this interface).
+		 *
+		 * @throws PreconditionViolationError if 'bufs.size()' is not in the range:
+		 *   [1, GLContext::get_parameters().framebuffer.gl_max_draw_buffers]
+		 *
+		 * Note that if any values in @a bufs are not either GL_NONE or in the half-open range:
+		 *   [GL_COLOR_ATTACHMENT0_EXT,
+		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 * ...then OpenGL will generate a GL_INVALID_OPERATION error (see 'GLUtils::assert_no_gl_errors').
+		 *
+		 * If 'bufs.size()' is greater than one then the GL_ARB_draw_buffers extension must be supported
+		 * (an exception is thrown if it is not supported in this case).
+		 */
+		void
+		gl_draw_buffers(
+				GLRenderer &renderer,
+				const std::vector<GLenum> &bufs = std::vector<GLenum>(1, DEFAULT_DRAW_READ_BUFFER));
+
+
+		/**
+		 * Performs same function as the glReadBuffer OpenGL function.
+		 *
+		 * Note that since the glReadBuffer state is stored inside the framebuffer object the
+		 * framebuffer object is temporarily bound inside this method (and reverted on return).
+		 *
+		 * The default state is GL_COLOR_ATTACHMENT0_EXT.
+		 *
+		 * Note that if @a mode is not either GL_NONE or in the half-open range:
+		 *   [GL_COLOR_ATTACHMENT0_EXT,
+		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 * ...then OpenGL will generate a GL_INVALID_OPERATION error (see 'GLUtils::assert_no_gl_errors').
+		 *
+		 * There is also a glReadBuffer state that applies to the default window-system framebuffer
+		 * but that is not dealt with here - see @a gl_draw_buffers for more details.
+		 */
+		void
+		gl_read_buffer(
+				GLRenderer &renderer,
+				GLenum mode = DEFAULT_DRAW_READ_BUFFER);
 
 
 		/**
@@ -232,38 +351,80 @@ namespace GPlatesOpenGL
 		}
 
 	private:
-		/**
-		 * Information for a framebuffer object colour attachment point.
-		 *
-		 * Note that we obtain a write lock on the texture attached.
-		 */
-		struct ColourAttachment
+
+		enum AttachmentType
 		{
-			GLenum attachment;
-			GLenum framebuffer_texture_type; // GL_TEXTURE_1D, GL_TEXTURE_2D or GL_TEXTURE_3D_EXT
-			GLenum texture_target;
-			GLTexture::shared_ptr_to_const_type texture;
-			GLint level;
-			boost::optional<GLint> zoffset; // Only used for glFramebufferTexture3DEXT.
+			ATTACHMENT_TEXTURE_1D,
+			ATTACHMENT_TEXTURE_2D,
+			ATTACHMENT_TEXTURE_3D,
+			ATTACHMENT_TEXTURE_LAYER,
+			ATTACHMENT_RENDER_BUFFER
 		};
 
-		//! Typedef for a sequence of colour attachments.
-		typedef std::vector<boost::optional<ColourAttachment> > colour_attachment_seq_type;
+		/**
+		 * Information for a framebuffer object attachment point.
+		 */
+		struct AttachmentPoint
+		{
+			//! Constructor for texture 1D, 2D and 3D attachments.
+			AttachmentPoint(
+					GLenum attachment_,
+					AttachmentType attachment_type_,
+					GLenum attachment_target_,
+					const GLTexture::shared_ptr_to_const_type &texture_,
+					GLint texture_level_,
+					boost::optional<GLint> texture_zoffset_ = boost::none);
+
+			//! Constructor for texture layer attachments.
+			AttachmentPoint(
+					GLenum attachment_,
+					const GLTexture::shared_ptr_to_const_type &texture_,
+					GLint texture_level_,
+					GLint texture_layer_);
+
+			//! Constructor for render buffer attachments.
+			AttachmentPoint(
+					GLenum attachment_,
+					const GLRenderBufferObject::shared_ptr_to_const_type &render_buffer_);
+
+			GLenum attachment;
+			AttachmentType attachment_type;
+
+			// Only used for ATTACHMENT_TEXTURE_1D, ATTACHMENT_TEXTURE_2D or ATTACHMENT_TEXTURE_3D...
+			boost::optional<GLenum> attachment_target;
+
+			// Only used for ATTACHMENT_TEXTURE_1D, ATTACHMENT_TEXTURE_2D or ATTACHMENT_TEXTURE_3D...
+			boost::optional<GLTexture::shared_ptr_to_const_type> texture; // Keep texture alive while attached.
+
+			// Only used for ATTACHMENT_TEXTURE_1D, ATTACHMENT_TEXTURE_2D or ATTACHMENT_TEXTURE_3D...
+			boost::optional<GLint> texture_level;
+
+			// Only used for ATTACHMENT_TEXTURE_3D and ATTACHMENT_TEXTURE_LAYER...
+			boost::optional<GLint> texture_zoffset;
+
+			// Only used for ATTACHMENT_RENDER_BUFFER...
+			boost::optional<GLRenderBufferObject::shared_ptr_to_const_type> render_buffer;
+		};
+
+		//! Typedef for a sequence of attachments.
+		typedef std::vector<boost::optional<AttachmentPoint> > attachment_point_seq_type;
 
 
 		resource_type::non_null_ptr_to_const_type d_resource;
 
 		/**
-		 * Up to "GLContext::get_parameters().framebuffer.gl_max_color_attachments_EXT"
-		 * colour attachment points.
+		 * All attachment points.
+		 *
+		 * Unused slots will be boost::none.
 		 */
-		colour_attachment_seq_type d_colour_attachments;
+		attachment_point_seq_type d_attachment_points;
 
 
 		//! Constructor.
 		explicit
 		GLFrameBufferObject(
-				const resource_type::non_null_ptr_to_const_type &resource);
+				GLRenderer &renderer);
 	};
 }
+
 #endif // GPLATES_OPENGL_GLFRAMEBUFFEROBJECT_H

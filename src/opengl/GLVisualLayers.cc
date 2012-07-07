@@ -36,10 +36,13 @@
 
 #include "gui/RasterColourPalette.h"
 
+#include "maths/MathsUtils.h"
+
 #include "property-values/RawRaster.h"
 #include "property-values/RawRasterUtils.h"
 
 #include "utils/Profile.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 GPlatesOpenGL::GLVisualLayers::GLVisualLayers(
@@ -98,25 +101,23 @@ GPlatesOpenGL::GLVisualLayers::make_signal_slot_connections(
 }
 
 
+boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type>
+GPlatesOpenGL::GLVisualLayers::get_light(
+		GLRenderer &renderer) const
+{
+	return d_list_objects->get_light(renderer);
+}
+
+
 GPlatesOpenGL::GLVisualLayers::cache_handle_type
 GPlatesOpenGL::GLVisualLayers::render_raster(
 		GLRenderer &renderer,
 		const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type &resolved_raster,
 		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &source_raster_colour_palette,
 		const GPlatesGui::Colour &source_raster_modulate_colour,
-		const GPlatesGui::SceneLightingParams &scene_lighting_params,
-		const GLMatrix &view_orientation,
 		boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection)
 {
 	PROFILE_FUNC();
-
-	// Set/update the scene lighting.
-	// Temporary: disable lighting for now until implement canvas tool to control/specify lighting.
-	boost::optional<GLLight::non_null_ptr_type> light /*= d_list_objects->get_light(renderer)*/;
-	if (light)
-	{
-		light.get()->set_scene_lighting(renderer, scene_lighting_params, view_orientation, map_projection);
-	}
 
 	// Get the GL layer corresponding to the layer the raster came from.
 	GLLayer &gl_raster_layer = d_list_objects->gl_layers.get_layer(
@@ -176,7 +177,7 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 			reconstructed_polygon_meshes_layer_usage,
 			age_grid_layer_usage,
 			normal_map_layer_usage,
-			light);
+			d_list_objects->get_light(renderer));
 
 	// Get the map raster layer usage.
 	const GPlatesUtils::non_null_intrusive_ptr<MapRasterLayerUsage> map_raster_layer_usage =
@@ -248,6 +249,53 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 }
 
 
+GPlatesOpenGL::GLVisualLayers::cache_handle_type
+GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
+		GLRenderer &renderer,
+		const GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_to_const_type &resolved_scalar_field,
+		float scalar_field_iso_value,
+		const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &scalar_field_colour_palette,
+		const std::vector<float> &shader_test_variables,
+		boost::optional<GLTexture::shared_ptr_to_const_type> surface_occlusion_texture)
+{
+	PROFILE_FUNC();
+
+	// Get the GL layer corresponding to the layer the scalar field came from.
+	GLLayer &gl_scalar_field_layer = d_list_objects->gl_layers.get_layer(
+			resolved_scalar_field->get_scalar_field_3d_layer_proxy());
+
+	// Get the scalar field layer usage.
+	const GPlatesUtils::non_null_intrusive_ptr<ScalarField3DLayerUsage> scalar_field_layer_usage =
+			gl_scalar_field_layer.get_scalar_field_3d_layer_usage();
+
+	// Set the scalar field iso-value.
+	scalar_field_layer_usage->set_scalar_field_iso_value(scalar_field_iso_value);
+
+	// Set the scalar field colour palette.
+	scalar_field_layer_usage->set_scalar_field_colour_palette(scalar_field_colour_palette);
+
+	// Set the shader test variables.
+	scalar_field_layer_usage->set_shader_test_variables(shader_test_variables);
+
+	// Set/update the layer usage inputs.
+	scalar_field_layer_usage->set_layer_inputs(d_list_objects->get_light(renderer));
+
+	// We have a regular, unreconstructed scalar field - although it can still be a time-dependent raster.
+	boost::optional<GLScalarField3D::non_null_ptr_type> scalar_field =
+			scalar_field_layer_usage->get_scalar_field_3d(renderer);
+
+	cache_handle_type cache_handle;
+
+	// Render the scalar field if the runtime systems supports scalar field rendering.
+	if (scalar_field)
+	{
+		scalar_field.get()->render(renderer, cache_handle, surface_occlusion_texture);
+	}
+
+	return cache_handle;
+}
+
+
 void
 GPlatesOpenGL::GLVisualLayers::render_filled_polygons(
 		GLRenderer &renderer,
@@ -265,6 +313,187 @@ GPlatesOpenGL::GLVisualLayers::handle_layer_about_to_be_removed(
 	GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type layer_proxy_handle = layer.get_layer_proxy_handle();
 
 	d_list_objects->gl_layers.remove_layer(layer_proxy_handle);
+}
+
+
+GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::ScalarField3DLayerUsage(
+		const GPlatesAppLogic::ScalarField3DLayerProxy::non_null_ptr_type &scalar_field_layer_proxy) :
+	d_scalar_field_layer_proxy(scalar_field_layer_proxy),
+	d_iso_value(0),
+	d_iso_value_dirty(true),
+	d_colour_palette(GPlatesGui::DefaultNormalisedRasterColourPalette::create()),
+	d_colour_palette_dirty(true),
+	d_shader_test_variables_dirty(true)
+{
+}
+
+
+void
+GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::set_scalar_field_iso_value(
+		float iso_value)
+{
+	if (GPlatesMaths::are_slightly_more_strictly_equal(iso_value, d_iso_value))
+	{
+		// Nothing has changed so just return.
+		return;
+	}
+
+	d_iso_value = iso_value;
+
+	// The scalar field will need to update itself with the iso-value.
+	d_iso_value_dirty = true;
+}
+
+
+void
+GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::set_scalar_field_colour_palette(
+		const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &colour_palette)
+{
+	if (colour_palette == d_colour_palette)
+	{
+		// Nothing has changed so just return.
+		return;
+	}
+
+	d_colour_palette = colour_palette;
+
+	// The scalar field will need to update itself with the colour palette.
+	d_colour_palette_dirty = true;
+}
+
+
+void
+GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::set_shader_test_variables(
+		const std::vector<float> &shader_test_variables)
+{
+	if (shader_test_variables == d_shader_test_variables)
+	{
+		// Nothing has changed so just return.
+		return;
+	}
+
+	d_shader_test_variables = shader_test_variables;
+
+	// The scalar field will need to update itself with the shader test variables.
+	d_shader_test_variables_dirty = true;
+}
+
+
+void
+GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::set_layer_inputs(
+		boost::optional<GLLight::non_null_ptr_type> light)
+{
+	d_light = light;
+}
+
+
+boost::optional<GPlatesOpenGL::GLScalarField3D::non_null_ptr_type>
+GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::get_scalar_field_3d(
+		GLRenderer &renderer)
+{
+	PROFILE_FUNC();
+
+	// If scalar field rendering is not supported then return invalid.
+	if (!GLScalarField3D::is_supported(renderer))
+	{
+		return boost::none;
+	}
+
+	if (!d_scalar_field_layer_proxy->get_scalar_field_filename() ||
+		!d_light)
+	{
+		d_scalar_field = boost::none;
+
+		// There's no scalar field or light source so nothing we can do.
+		return boost::none;
+	}
+
+	// If we're not up-to-date with respect to the scalar field in the layer proxy...
+	// This can happen for time-dependent scalar fields when the time changes.
+	if (!d_scalar_field_layer_proxy->get_scalar_field_subject_token().is_observer_up_to_date(
+				d_scalar_field_observer_token))
+	{
+		// Attempt to change the scalar field first.
+		// This should succeed if has same field dimensions which is likely the case for a time-dependent field.
+		// It's cheaper than rebuilding the scalar field.
+		if (d_scalar_field)
+		{
+			if (!d_scalar_field.get()->change_scalar_field(
+					renderer,
+					GPlatesUtils::make_qstring(*d_scalar_field_layer_proxy->get_scalar_field_filename())))
+			{
+				// Change scalar field was unsuccessful, so rebuild.
+				d_scalar_field = boost::none;
+			}
+		}
+
+		// We have taken measures to be up-to-date with respect to the scalar field in the layer proxy.
+		d_scalar_field_layer_proxy->get_scalar_field_subject_token().update_observer(
+				d_scalar_field_observer_token);
+	}
+
+	// If we're not up-to-date with respect to the scalar field feature in the layer proxy then rebuild.
+	if (!d_scalar_field_layer_proxy->get_scalar_field_feature_subject_token().is_observer_up_to_date(
+			d_scalar_field_feature_observer_token))
+	{
+		d_scalar_field = boost::none;
+
+		// We have taken measures to be up-to-date with respect to the scalar field feature in the layer proxy.
+		d_scalar_field_layer_proxy->get_scalar_field_feature_subject_token().update_observer(
+				d_scalar_field_feature_observer_token);
+	}
+
+	// Rebuild the scalar field if necessary.
+	if (!d_scalar_field)
+	{
+		//qDebug() << "Rebuilding GLScalarField3D.";
+
+		const GLScalarField3D::non_null_ptr_type scalar_field =
+				GLScalarField3D::create(
+						renderer,
+						GPlatesUtils::make_qstring(*d_scalar_field_layer_proxy->get_scalar_field_filename()),
+						d_light.get());
+
+		d_scalar_field = scalar_field;
+
+		// Always set the iso-value after creating a new scalar field.
+		d_iso_value_dirty = true;
+		// Always set the colour palette after creating a new scalar field.
+		d_iso_value_dirty = true;
+		// Always set the shader test variables after creating a new scalar field.
+		d_shader_test_variables_dirty = true;
+	}
+
+	// Update the iso-value if necessary.
+	if (d_iso_value_dirty)
+	{
+		d_scalar_field.get()->set_iso_value(renderer, d_iso_value);
+		d_iso_value_dirty = false;
+	}
+
+	// Update the colour palette if necessary.
+	if (d_colour_palette_dirty)
+	{
+		d_scalar_field.get()->set_colour_palette(renderer, d_colour_palette);
+		d_colour_palette_dirty = false;
+	}
+
+	// Update the shader test variables if necessary.
+	if (d_shader_test_variables_dirty)
+	{
+		d_scalar_field.get()->set_shader_test_variables(renderer, d_shader_test_variables);
+		d_shader_test_variables_dirty = false;
+	}
+
+	return d_scalar_field.get();
+}
+
+
+bool
+GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::is_required_direct_or_indirect_dependency(
+		const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy_handle) const
+{
+	return layer_proxy_handle == d_scalar_field_layer_proxy;
 }
 
 
@@ -1014,6 +1243,28 @@ GPlatesOpenGL::GLVisualLayers::GLLayer::GLLayer(
 }
 
 
+GPlatesUtils::non_null_intrusive_ptr<GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage>
+GPlatesOpenGL::GLVisualLayers::GLLayer::get_scalar_field_3d_layer_usage()
+{
+	const LayerUsage::Type layer_usage_type = LayerUsage::SCALAR_FIELD_3D;
+
+	if (!d_layer_usages[layer_usage_type])
+	{
+		// This will throw an exception (or abort in debug mode) if the dynamic cast fails
+		// but that's because it's a program error if it fails.
+		const GPlatesAppLogic::ScalarField3DLayerProxy::non_null_ptr_type scalar_field_layer_proxy =
+				GPlatesUtils::dynamic_pointer_cast<GPlatesAppLogic::ScalarField3DLayerProxy>(d_layer_proxy);
+
+		// Create a new ScalarField3DLayerUsage object.
+		d_layer_usages[layer_usage_type] = 
+				GPlatesUtils::non_null_intrusive_ptr<ScalarField3DLayerUsage>(
+						new ScalarField3DLayerUsage(scalar_field_layer_proxy));
+	}
+
+	return GPlatesUtils::dynamic_pointer_cast<ScalarField3DLayerUsage>(d_layer_usages[layer_usage_type].get());
+}
+
+
 GPlatesUtils::non_null_intrusive_ptr<GPlatesOpenGL::GLVisualLayers::RasterLayerUsage>
 GPlatesOpenGL::GLVisualLayers::GLLayer::get_raster_layer_usage()
 {
@@ -1315,7 +1566,8 @@ GPlatesOpenGL::GLVisualLayers::ListObjects::get_multi_resolution_filled_polygons
 		d_multi_resolution_filled_polygons =
 				GLMultiResolutionFilledPolygons::create(
 						renderer,
-						get_multi_resolution_cube_mesh(renderer));
+						get_multi_resolution_cube_mesh(renderer),
+						get_light(renderer));
 	}
 
 	return d_multi_resolution_filled_polygons.get();
@@ -1324,7 +1576,7 @@ GPlatesOpenGL::GLVisualLayers::ListObjects::get_multi_resolution_filled_polygons
 
 boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type>
 GPlatesOpenGL::GLVisualLayers::ListObjects::get_light(
-		GPlatesOpenGL::GLRenderer &renderer) const
+		GLRenderer &renderer) const
 {
 	if (!GLLight::is_supported(renderer))
 	{

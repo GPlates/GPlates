@@ -34,9 +34,13 @@
 
 #include "RasterVisualLayerParams.h"
 #include "ReconstructVisualLayerParams.h"
+#include "ScalarField3DVisualLayerParams.h"
 #include "TopologyBoundaryVisualLayerParams.h"
+#include "TopologyNetworkVisualLayerParams.h"
+#include "VelocityFieldCalculatorVisualLayerParams.h"
 #include "ViewState.h"
 #include "VisualLayerParamsVisitor.h"
+
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/CoRegistrationData.h"
@@ -48,6 +52,7 @@
 #include "app-logic/ReconstructedSmallCircle.h"
 #include "app-logic/ReconstructedVirtualGeomagneticPole.h"
 #include "app-logic/ResolvedRaster.h"
+#include "app-logic/ResolvedScalarField3D.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/PlateVelocityUtils.h"
@@ -60,9 +65,6 @@
 
 #include "maths/CalculateVelocity.h"
 #include "maths/MathsUtils.h"
-
-#include "presentation/TopologyNetworkVisualLayerParams.h"
-#include "presentation/VelocityFieldCalculatorVisualLayerParams.h"
 
 #include "utils/Profile.h"
 #include "utils/ComponentManager.h"
@@ -176,6 +178,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 	fill_polygons(fill_polygons_),
 	velocity_ratio_unit_vector_direction_to_globe_radius(
 			velocity_ratio_unit_vector_direction_to_globe_radius_),
+	scalar_field_iso_value(0),
+	scalar_field_colour_palette(GPlatesGui::DefaultNormalisedRasterColourPalette::create()),
 	raster_colour_palette(GPlatesGui::RasterColourPalette::create()),
 	vgp_draw_circular_error(true),
 	show_topological_network_mesh_triangulation( show_topological_network_mesh_triangulation_),
@@ -203,6 +207,16 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 {
 	d_render_params.vgp_draw_circular_error = params.get_vgp_draw_circular_error();
 	d_render_params.fill_polygons = params.get_fill_polygons();
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_scalar_field_3d_visual_layer_params(
+		const ScalarField3DVisualLayerParams &params)
+{
+	d_render_params.scalar_field_colour_palette = params.get_colour_palette();
+	d_render_params.scalar_field_iso_value = (params.get_iso_value() ? params.get_iso_value().get() : 0);
+	d_render_params.scalar_field_shader_test_variables = params.get_shader_test_variables();
 }
 
 
@@ -413,6 +427,36 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
 					rr,
 					rendered_resolved_raster);
+
+	// Render the rendered geometry.
+	render(rendered_geometry);
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_scalar_field_3d_type> &rsf)
+{
+	// Must be between 'begin_render' and 'end_render'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_rendered_geometries_spatial_partition,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Create a RenderedGeometry for drawing the scalar field raster.
+	GPlatesViewOperations::RenderedGeometry rendered_resolved_scalar_field =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_scalar_field_3d(
+					rsf,
+					d_render_params.scalar_field_iso_value,
+					d_render_params.scalar_field_colour_palette,
+					d_render_params.scalar_field_shader_test_variables);
+
+
+	// Create a RenderedGeometry for storing the ReconstructionGeometry and
+	// a RenderedGeometry associated with it.
+	GPlatesViewOperations::RenderedGeometry rendered_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+					rsf,
+					rendered_resolved_scalar_field);
 
 	// Render the rendered geometry.
 	render(rendered_geometry);

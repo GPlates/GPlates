@@ -55,6 +55,7 @@ namespace GPlatesAppLogic
 	class RasterLayerProxy;
 	class ReconstructLayerProxy;
 	class ReconstructionLayerProxy;
+	class ScalarField3DLayerProxy;
 	class TopologyBoundaryResolverLayerProxy;
 	class TopologyNetworkResolverLayerProxy;
 	class VelocityFieldCalculatorLayerProxy;
@@ -95,6 +96,11 @@ namespace GPlatesAppLogic
 		typedef typename GPlatesUtils::CopyConst<
 				LayerProxyType, ReconstructionLayerProxy>::type
 						reconstruction_layer_proxy_type;
+
+		//! Typedef for @a ScalarField3DLayerProxy of appropriate const-ness.
+		typedef typename GPlatesUtils::CopyConst<
+				LayerProxyType, ScalarField3DLayerProxy>::type
+						scalar_field_3d_layer_proxy_type;
 
 		//! Typedef for @a TopologyBoundaryResolverLayerProxy of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
@@ -154,6 +160,16 @@ namespace GPlatesAppLogic
 		void
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<reconstruction_layer_proxy_type> &layer_proxy)
+		{  }
+
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<scalar_field_3d_layer_proxy_type> &layer_proxy)
 		{  }
 
 

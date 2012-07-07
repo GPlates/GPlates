@@ -134,10 +134,10 @@ namespace GPlatesPresentation
 
 		explicit
 		VisualLayerParams(
-				GPlatesAppLogic::LayerTaskParams &layer_task_params) :
-			d_style(NULL),
-			d_layer_task_params(layer_task_params)
-			
+				GPlatesAppLogic::LayerTaskParams &layer_task_params,
+				const GPlatesGui::StyleAdapter* style = NULL) :
+			d_layer_task_params(layer_task_params),
+			d_style(style)
 		{  }
 
 		GPlatesAppLogic::LayerTaskParams &
@@ -155,11 +155,11 @@ namespace GPlatesPresentation
 		{
 			emit modified();
 		}
-	protected:
-		const GPlatesGui::StyleAdapter* d_style;
+
 	private:
+
 		GPlatesAppLogic::LayerTaskParams &d_layer_task_params;
-		
+		const GPlatesGui::StyleAdapter* d_style;
 	};
 }
 

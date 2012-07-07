@@ -71,49 +71,9 @@ namespace GPlatesOpenGL
 		/**
 		 * Fragment shader source code to render a source raster as either a floating-point raster or
 		 * a normal-map raster.
-		 *
-		 * For a normal-map raster this converts the surface normals from tangent-space to world-space so
-		 * that they can be captured in a cube raster (which is decoupled from the raster geo-referencing,
-		 * or local tangent-space of raster).
 		 */
-		const char *RENDER_RASTER_FRAGMENT_SHADER_SOURCE =
-				"uniform sampler2D raster_texture_sampler;\n"
-
-				"void main (void)\n"
-				"{\n"
-
-				"#ifdef SURFACE_NORMALS\n"
-
-				"	// Sample the tangent-space normal in the source raster.\n"
-				"   vec3 tangent_space_normal = texture2D(raster_texture_sampler, gl_TexCoord[0].st).xyz;\n"
-				"	// Need to convert the x and y components from unsigned to signed ([0,1] -> [-1,1]).\n"
-				"	// The z component is always positive (in range [0,1]) so does not need conversion.\n"
-				"	tangent_space_normal.xy = 2 * tangent_space_normal.xy - 1;\n"
-
-				"	// Normalize each interpolated 3D texture coordinate.\n"
-				"	// They are unit length at vertices but not necessarily between vertices.\n"
-				"	// TODO: Might need to be careful if any interpolated vectors are zero length.\n"
-				"	vec3 tangent = normalize(gl_TexCoord[1].xyz);\n"
-				"	vec3 binormal = normalize(gl_TexCoord[2].xyz);\n"
-				"	vec3 normal = normalize(gl_TexCoord[3].xyz);\n"
-
-				"	// Convert tangent-space normal to world-space normal.\n"
-				"	vec3 world_space_normal = normalize(\n"
-				"		mat3(tangent, binormal, normal) * tangent_space_normal);\n"
-
-				"	// All components of world-space normal are signed and need to be converted to\n"
-				"	// unsigned ([-1,1] -> [0,1]) before storing in fixed-point 8-bit RGBA render target.\n"
-				"	gl_FragColor.xyz = 0.5 * world_space_normal + 0.5;\n"
-				"	gl_FragColor.w = 1;\n"
-
-				"#else\n"
-
-				"	// Just return the source raster.\n"
-				"   gl_FragColor = texture2D(raster_texture_sampler, gl_TexCoord[0].st);\n"
-
-				"#endif\n"
-
-				"}\n";
+		const QString RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME =
+				":/opengl/multi_resolution_raster/render_raster_fragment_shader.glsl";
 	}
 }
 
@@ -155,7 +115,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::supports_normal_map_source(
 
 		GLShaderProgramUtils::ShaderSource fragment_shader_source;
 		fragment_shader_source.add_shader_source("#define SURFACE_NORMALS\n");
-		fragment_shader_source.add_shader_source(RENDER_RASTER_FRAGMENT_SHADER_SOURCE);
+		fragment_shader_source.add_shader_source_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 		// Attempt to create the test shader program.
 		if (!GLShaderProgramUtils::compile_and_link_fragment_program(
@@ -1175,7 +1135,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 		fragment_shader_source.add_shader_source("#define SURFACE_NORMALS\n");
 
 		// Finally add the GLSL 'main()' function.
-		fragment_shader_source.add_shader_source(RENDER_RASTER_FRAGMENT_SHADER_SOURCE);
+		fragment_shader_source.add_shader_source_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 		d_render_raster_program_object =
 				GLShaderProgramUtils::compile_and_link_fragment_program(
@@ -1210,7 +1170,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 		d_render_raster_program_object =
 				GLShaderProgramUtils::compile_and_link_fragment_program(
 						renderer,
-						RENDER_RASTER_FRAGMENT_SHADER_SOURCE);
+						GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+								RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME));
 
 		// The shader cannot get any simpler so if it fails to compile/link then something is wrong.
 		// Also the client will have called 'GLDataRasterSource::is_supported()' which verifies

@@ -71,8 +71,7 @@ namespace GPlatesMaths
 		 * Identifies each axis in the *local* coordinate frame of a cube face.
 		 *
 		 * The 'x' and 'y' axes are parallel to the plane of a cube face (but not in the plane
-		 * of the cube face) and the 'z' axis is the cube face normal vector
-		 * (pointing outwards from the cube).
+		 * of the cube face) and the 'z' axis is the negative of the cube face normal vector.
 		 *
 		 * Note, however, that the coordinate frame is still centred at the origin.
 		 *
@@ -82,7 +81,7 @@ namespace GPlatesMaths
 		{
 			X_AXIS = 0,
 			Y_AXIS,
-			Z_AXIS,
+			Z_AXIS,  // NOTE: The local frame z-axis is *negative* of the cube face normal.
 
 			NUM_AXES
 		};
@@ -119,11 +118,38 @@ namespace GPlatesMaths
 		 *
 		 * These directions are the standard directions used by 3D graphics APIs for cube map
 		 * textures so we'll adopt the same convention.
+		 *
+		 * NOTE: When @a axis is @a Z_AXIS the returned vector is *not* the cube face centre position
+		 * (or face normal) - instead if points from the face centre towards the origin.
+		 * This is necessary to keep the coordinate frame right-handed and also work with OpenGL
+		 * view transforms that have the view direction along the negative z-axis (see gluLookAt).
 		 */
 		const UnitVector3D &
 		get_cube_face_coordinate_frame_axis(
 				CubeFaceType cube_face,
 				CubeFaceCoordinateFrameAxis axis);
+
+		/**
+		 * Returns the face normal of the specific cube face.
+		 */
+		inline
+		const UnitVector3D &
+		get_cube_face_normal(
+				CubeFaceType cube_face)
+		{
+			return get_cube_face_coordinate_frame_axis(get_cube_face_opposite(cube_face), Z_AXIS);
+		}
+
+		/**
+		 * Returns the face centre position of the specific cube face (same as cube face normal).
+		 */
+		inline
+		const UnitVector3D &
+		get_cube_face_centre(
+				CubeFaceType cube_face)
+		{
+			return get_cube_face_normal(cube_face);
+		}
 
 
 		/**
@@ -235,7 +261,7 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Transforms the x and y cube quad tree node offsets from one cube face another.
+		 * Transforms the x and y cube quad tree node offsets from one cube face to another.
 		 *
 		 * This can be visualised by unwrapping the cube faces onto a plane.
 		 * Then the node position is determined relative to the coordinate frame of the

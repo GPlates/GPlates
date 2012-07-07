@@ -126,6 +126,11 @@ namespace GPlatesGui
 
 		GPlatesPresentation::ViewState &d_view_state;
 
+		/**
+		 * Keeps track of OpenGL-related objects that persist from one render to the next.
+		 */
+		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
+
 		//! A pointer to the state's RenderedGeometryCollection
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
 

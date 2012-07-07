@@ -35,6 +35,45 @@
 #include "GLProgramObject.h"
 #include "GLRenderer.h"
 
+#include "file-io/ErrorOpeningFileForReadingException.h"
+
+
+GPlatesOpenGL::GLShaderProgramUtils::ShaderSource::ShaderSource(
+		const char *shader_source,
+		GLShaderObject::ShaderVersion shader_version) :
+	d_shader_version(shader_version),
+	d_shader_source(1, QByteArray::fromRawData(shader_source, qstrlen(shader_source)))
+{
+}
+
+
+GPlatesOpenGL::GLShaderProgramUtils::ShaderSource::ShaderSource(
+		const QByteArray &shader_source,
+		GLShaderObject::ShaderVersion shader_version) :
+	d_shader_version(shader_version),
+	d_shader_source(1, shader_source)
+{
+}
+
+
+QByteArray
+GPlatesOpenGL::GLShaderProgramUtils::ShaderSource::get_shader_source_from_file(
+		const QString& shader_source_file_name)
+{
+	QFile shader_source_file(shader_source_file_name);
+	if (!shader_source_file.open(QIODevice::ReadOnly | QIODevice::Text))
+	{
+		throw GPlatesFileIO::ErrorOpeningFileForReadingException(
+				GPLATES_EXCEPTION_SOURCE,
+				shader_source_file.fileName());
+	}
+
+	// Read the entire file.
+	const QByteArray shader_source = shader_source_file.readAll();
+
+	return shader_source;
+}
+
 
 boost::optional<GPlatesOpenGL::GLShaderObject::shared_ptr_type>
 GPlatesOpenGL::GLShaderProgramUtils::compile_fragment_shader(

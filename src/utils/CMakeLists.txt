@@ -29,6 +29,7 @@ set(srcs
     Counter64.h
     DeferredCallEvent.cc
     DeferredCallEvent.h
+    Endian.h
     Environment.cc
     Environment.h
     FeatureUtils.cc

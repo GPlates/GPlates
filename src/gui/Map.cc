@@ -56,6 +56,7 @@ GPlatesGui::Map::Map(
 		const TextRenderer::non_null_ptr_to_const_type &text_renderer) :
 	d_map_projection(MapProjection::create()),
 	d_view_state(view_state),
+	d_gl_visual_layers(gl_visual_layers),
 	d_rendered_geometry_collection(&rendered_geometry_collection),
 	d_visual_layers(visual_layers),
 	d_render_settings(render_settings),
@@ -84,6 +85,9 @@ GPlatesGui::Map::initialiseGL(
 
 	// Create these objects in place (some as non-copy-constructable).
 	d_grid = boost::in_place(boost::ref(renderer), *d_map_projection, d_view_state.get_graticule_settings());
+
+	// Initialise the rendered geometry collection painter.
+	d_rendered_geom_collection_painter.initialise(renderer);
 }
 
 
@@ -142,6 +146,15 @@ GPlatesGui::Map::paint(
 
 	try
 	{
+		// Get the OpenGL light if the runtime system supports it.
+		boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type> gl_light =
+				d_gl_visual_layers->get_light(renderer);
+		// Set the scene lighting parameters on the light.
+		if (gl_light)
+		{
+			gl_light.get()->set_scene_lighting(renderer, d_view_state.get_scene_lighting_parameters());
+		}
+
 		// Draw the background colour and clear the depth buffer of the main framebuffer.
 		// TODO: Only draw the map area in the background colour (not the entire viewport).
 		//

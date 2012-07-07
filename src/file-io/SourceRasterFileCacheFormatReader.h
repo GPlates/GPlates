@@ -148,7 +148,7 @@ namespace GPlatesFileIO
 		 *
 		 * @throws @a ErrorOpeningFileForReadingException if @a filename could not be opened for reading.
 		 *
-		 * @throws @a FileFormatNotException if the header information is wrong.
+		 * @throws @a FileFormatNotSupportedException if the header information is wrong.
 		 *
 		 * @throws @a RasterFileCacheFormat::UnsupportedVersion if the version is either not recognised
 		 * (file cache created by a newer version of GPlates) or no longer supported (eg, if format

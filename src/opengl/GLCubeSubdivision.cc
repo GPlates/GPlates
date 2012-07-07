@@ -67,13 +67,15 @@ GPlatesOpenGL::GLCubeSubdivision::get_view_transform(
 	// and this is a result of looking outwards from the centre of the cube (which is how
 	// rendering is done).
 	const GPlatesMaths::UnitVector3D &centre =
-			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
-					cube_face,
-					GPlatesMaths::CubeCoordinateFrame::Z_AXIS);
+			GPlatesMaths::CubeCoordinateFrame::get_cube_face_centre(cube_face);
 	const GPlatesMaths::UnitVector3D &up =
 			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
 					cube_face,
 					GPlatesMaths::CubeCoordinateFrame::Y_AXIS/*v*/);
+
+	// 'glu_look_at()' has the view direction along the *negative* z-axis and this works with
+	// GPlatesMaths::CubeCoordinateFrame because the GPlatesMaths::CubeCoordinateFrame::Z_AXIS
+	// is in the opposite direction to the view direction (cube face normal).
 	view_matrix.glu_look_at(
 			0, 0, 0, /* eye */
 			centre.x().dval(), centre.y().dval(), centre.z().dval(),
@@ -238,9 +240,7 @@ GPlatesOpenGL::GLCubeSubdivision::FrustumCornerPoints::FrustumCornerPoints(
 	inv_num_subdivisions(1.0 / num_subdivisions),
 	// The view looks out from the centre of the globe along the face normal...
 	face_centre(
-			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
-					cube_face,
-					GPlatesMaths::CubeCoordinateFrame::Z_AXIS)),
+			GPlatesMaths::CubeCoordinateFrame::get_cube_face_centre(cube_face)),
 	u_direction(
 			GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
 					cube_face,

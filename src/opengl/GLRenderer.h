@@ -1112,6 +1112,21 @@ namespace GPlatesOpenGL
 		}
 
 		/**
+		 * Sets the alpha-blend function separately for RGB and Alpha (NOTE: you'll also want to enable blending).
+		 *
+		 * NOTE: This requires the GL_EXT_blend_func_separate extension.
+		 */
+		void
+		gl_blend_func_separate(
+				GLenum sfactorRGB = GL_ONE,
+				GLenum dfactorRGB = GL_ZERO,
+				GLenum sfactorAlpha = GL_ONE,
+				GLenum dfactorAlpha = GL_ZERO)
+		{
+			get_current_state()->set_blend_func_separate(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
+		}
+
+		/**
 		 * Sets the specified texture environment state to the specified parameter on the specified texture unit.
 		 *
 		 * NOTE: 'ParamType' should be one of GLint, GLfloat, std::vector<GLint> or std::vector<GLfloat>.
@@ -1683,6 +1698,45 @@ namespace GPlatesOpenGL
 		};
 
 		/**
+		 * Unbinds any currently bound framebuffer object and applies directly to OpenGL -
+		 * requires the GL_EXT_framebuffer_object extension.
+		 *
+		 * NOTE: Should only be used by the implementation of @a GLFrameBufferObject - since it makes *direct*
+		 * calls to OpenGL. Ensures an object is unbound immediately in OpenGL instead of the next draw call.
+		 */
+		void
+		gl_unbind_frame_buffer_and_apply()
+		{
+			get_current_state()->set_unbind_frame_buffer_and_apply(*d_last_applied_state);
+		}
+
+		/**
+		 * RAII class to unbind, and apply, to OpenGL over a scope (reverts bind, but not apply, at scope exit).
+		 *
+		 * The apply is only needed for the scope duration since client needs to know object is bound directly to OpenGL.
+		 * This class is a lot more efficient than using @a StateBlockScope to save/restore all state.
+		 */
+		class UnbindFrameBufferAndApply :
+				private boost::noncopyable
+		{
+		public:
+			explicit
+			UnbindFrameBufferAndApply(
+					GLRenderer &renderer) :
+				d_renderer(renderer),
+				d_prev_frame_buffer_object(renderer.get_current_state()->get_bind_frame_buffer())
+			{
+				renderer.gl_unbind_frame_buffer_and_apply();
+			}
+
+			~UnbindFrameBufferAndApply();
+
+		private:
+			GLRenderer &d_renderer;
+			boost::optional<GLFrameBufferObject::shared_ptr_to_const_type> d_prev_frame_buffer_object;
+		};
+
+		/**
 		 * Binds the specified shader program object and applies directly to OpenGL - requires the GL_ARB_shader_objects extension.
 		 *
 		 * NOTE: Should only be used by the implementation of @a GLProgramObject - since it makes *direct*
@@ -1715,6 +1769,41 @@ namespace GPlatesOpenGL
 			}
 
 			~BindProgramObjectAndApply();
+
+		private:
+			GLRenderer &d_renderer;
+			boost::optional<GLProgramObject::shared_ptr_to_const_type> d_prev_program_object;
+		};
+
+		/**
+		 * Same as @a gl_unbind_program_object but also applies binding directly to OpenGL.
+		 */
+		void
+		gl_unbind_program_object_and_apply()
+		{
+			get_current_state()->set_unbind_program_object_and_apply(*d_last_applied_state);
+		}
+
+		/**
+		 * RAII class to unbind, and apply, to OpenGL over a scope (reverts unbind, but not apply, at scope exit).
+		 *
+		 * The apply is only needed for the scope duration since client needs to know that no object is bound directly to OpenGL.
+		 * This class is a lot more efficient than using @a StateBlockScope to save/restore all state.
+		 */
+		class UnbindProgramObjectAndApply :
+				private boost::noncopyable
+		{
+		public:
+			explicit
+			UnbindProgramObjectAndApply(
+					GLRenderer &renderer) :
+				d_renderer(renderer),
+				d_prev_program_object(renderer.get_current_state()->get_bind_program_object())
+			{
+				renderer.gl_unbind_program_object_and_apply();
+			}
+
+			~UnbindProgramObjectAndApply();
 
 		private:
 			GLRenderer &d_renderer;
@@ -1762,6 +1851,48 @@ namespace GPlatesOpenGL
 			}
 
 			~BindTextureAndApply();
+
+		private:
+			GLRenderer &d_renderer;
+			boost::optional<GLTexture::shared_ptr_to_const_type> d_prev_texture_object;
+			GLenum d_texture_unit;
+			GLenum d_texture_target;
+		};
+
+		/**
+		 * Same as @a gl_unbind_texture but also applies binding directly to OpenGL.
+		 */
+		void
+		gl_unbind_texture_and_apply(
+				GLenum texture_unit,
+				GLenum texture_target)
+		{
+			get_current_state()->set_unbind_texture_and_apply(texture_unit, texture_target, *d_last_applied_state);
+		}
+
+		/**
+		 * RAII class to unbind, and apply, to OpenGL over a scope (reverts unbind, but not apply, at scope exit).
+		 *
+		 * The apply is only needed for the scope duration since client needs to know that no object is bound directly to OpenGL.
+		 * This class is a lot more efficient than using @a StateBlockScope to save/restore all state.
+		 */
+		class UnbindTextureAndApply :
+				private boost::noncopyable
+		{
+		public:
+			UnbindTextureAndApply(
+					GLRenderer &renderer,
+					GLenum texture_unit,
+					GLenum texture_target) :
+				d_renderer(renderer),
+				d_prev_texture_object(renderer.get_current_state()->get_bind_texture(texture_unit, texture_target)),
+				d_texture_unit(texture_unit),
+				d_texture_target(texture_target)
+			{
+				renderer.gl_unbind_texture_and_apply(texture_unit, texture_target);
+			}
+
+			~UnbindTextureAndApply();
 
 		private:
 			GLRenderer &d_renderer;
@@ -1978,7 +2109,7 @@ namespace GPlatesOpenGL
 		}
 
 		/**
-		 * RAII class to unbind, and apply, to OpenGL over a scope (reverts bind, but not apply, at scope exit).
+		 * RAII class to unbind, and apply, to OpenGL over a scope (reverts unbind, but not apply, at scope exit).
 		 *
 		 * The apply is only needed for the scope duration since client needs to know that no object is bound directly to OpenGL.
 		 * This class is a lot more efficient than using @a StateBlockScope to save/restore all state.

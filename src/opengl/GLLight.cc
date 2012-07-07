@@ -53,37 +53,14 @@ namespace GPlatesOpenGL
 		/**
 		 * Vertex shader source code to render light direction into cube texture for a 2D map view.
 		 */
-		const char *RENDER_MAP_VIEW_LIGHT_DIRECTION_VERTEX_SHADER_SOURCE =
-				"uniform vec3 view_space_light_direction;\n"
-
-				"varying vec3 world_space_light_direction;\n"
-
-				"void main (void)\n"
-				"{\n"
-
-				"	gl_Position = gl_Vertex;\n"
-
-				"	// If the light direction is attached to view space then reverse rotate to world space.\n"
-				"	// We're hijacking the GL_MODELVIEW matrix to store the view transform so we can get\n"
-				"	// OpenGL to calculate the matrix inverse for us.\n"
-				"	world_space_light_direction = mat3(gl_ModelViewMatrixInverse) * view_space_light_direction;\n"
-
-				"}\n";
+		const QString RENDER_MAP_VIEW_LIGHT_DIRECTION_VERTEX_SHADER_SOURCE_FILE_NAME =
+				":/opengl/light/render_map_view_light_direction_vertex_shader.glsl";
 
 		/**
 		 * Fragment shader source code to render light direction into cube texture for a 2D map view.
 		 */
-		const char *RENDER_MAP_VIEW_LIGHT_DIRECTION_FRAGMENT_SHADER_SOURCE =
-				"varying vec3 world_space_light_direction;\n"
-
-				"void main (void)\n"
-				"{\n"
-
-				"	// Just return the light direction - it doesn't vary across the cube texture face_target.\n"
-				"	// But first convert from range [-1,1] to range [0,1] to store in unsigned 8-bit render face_target.\n"
-				"   gl_FragColor = vec4(0.5 * world_space_light_direction + 0.5, 1);\n"
-
-				"}\n";
+		const QString RENDER_MAP_VIEW_LIGHT_DIRECTION_FRAGMENT_SHADER_SOURCE_FILE_NAME =
+				":/opengl/light/render_map_view_light_direction_fragment_shader.glsl";
 	}
 }
 
@@ -100,10 +77,11 @@ GPlatesOpenGL::GLLight::is_supported(
 	{
 		tested_for_support = true;
 
-		// Need cube map texture and vertex/fragment shader support.
+		// Need cube map texture and vertex/fragment shader and framebuffer object support.
 		if (!GLContext::get_parameters().texture.gl_ARB_texture_cube_map ||
 			!GLContext::get_parameters().shader.gl_ARB_vertex_shader ||
-			!GLContext::get_parameters().shader.gl_ARB_fragment_shader)
+			!GLContext::get_parameters().shader.gl_ARB_fragment_shader ||
+			!GLContext::get_parameters().framebuffer.gl_EXT_framebuffer_object)
 		{
 			return false;
 		}
@@ -115,10 +93,12 @@ GPlatesOpenGL::GLLight::is_supported(
 		//
 
 		GLShaderProgramUtils::ShaderSource fragment_shader_source;
-		fragment_shader_source.add_shader_source(RENDER_MAP_VIEW_LIGHT_DIRECTION_FRAGMENT_SHADER_SOURCE);
+		fragment_shader_source.add_shader_source_from_file(
+				RENDER_MAP_VIEW_LIGHT_DIRECTION_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 		
 		GLShaderProgramUtils::ShaderSource vertex_shader_source;
-		vertex_shader_source.add_shader_source(RENDER_MAP_VIEW_LIGHT_DIRECTION_VERTEX_SHADER_SOURCE);
+		vertex_shader_source.add_shader_source_from_file(
+				RENDER_MAP_VIEW_LIGHT_DIRECTION_VERTEX_SHADER_SOURCE_FILE_NAME);
 
 		// Attempt to create the test shader program.
 		if (!GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
@@ -138,7 +118,7 @@ GPlatesOpenGL::GLLight::is_supported(
 GPlatesOpenGL::GLLight::non_null_ptr_type
 GPlatesOpenGL::GLLight::create(
 		GLRenderer &renderer,
-		const GPlatesGui::SceneLightingParams &scene_lighting_params,
+		const GPlatesGui::SceneLightingParameters &scene_lighting_params,
 		const GLMatrix &view_orientation,
 		boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection)
 {
@@ -157,7 +137,7 @@ GPlatesOpenGL::GLLight::create(
 
 GPlatesOpenGL::GLLight::GLLight(
 		GLRenderer &renderer,
-		const GPlatesGui::SceneLightingParams &scene_lighting_params,
+		const GPlatesGui::SceneLightingParameters &scene_lighting_params,
 		const GLMatrix &view_orientation,
 		boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection) :
 	d_scene_lighting_params(scene_lighting_params),
@@ -186,7 +166,7 @@ GPlatesOpenGL::GLLight::GLLight(
 void
 GPlatesOpenGL::GLLight::set_scene_lighting(
 		GLRenderer &renderer,
-		const GPlatesGui::SceneLightingParams &scene_lighting_params,
+		const GPlatesGui::SceneLightingParameters &scene_lighting_params,
 		const GLMatrix &view_orientation,
 		boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection)
 {
@@ -256,7 +236,7 @@ GPlatesOpenGL::GLLight::update_map_view(
 	// Make sure we leave the OpenGL state the way it was.
 	GLRenderer::StateBlockScope save_restore_state(
 			renderer,
-			// We're rendering to a render face_target so reset to the default OpenGL state...
+			// We're rendering to a render target so reset to the default OpenGL state...
 			true/*reset_to_default_state*/);
 
 	// Used to draw a full-screen quad into render texture.
@@ -294,7 +274,7 @@ GPlatesOpenGL::GLLight::update_map_view(
 		const GLenum face_target = static_cast<GLenum>(GL_TEXTURE_CUBE_MAP_POSITIVE_X_ARB + face);
 
 		// Begin rendering to the 2D texture of the current cube face.
-		framebuffer_object->gl_attach_2D(
+		framebuffer_object->gl_attach_texture_2D(
 				renderer, face_target, d_map_view_light_direction_cube_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
 
 		renderer.gl_clear_color(); // Clear colour to all zeros.
@@ -343,16 +323,6 @@ GPlatesOpenGL::GLLight::update_globe_view(
 }
 
 
-GPlatesOpenGL::GLMatrix
-GPlatesOpenGL::GLLight::get_inverse_view_orientation()
-{
-	// We'll assume the view orientation matrix stores only a 3x3 rotation.
-	// In which case the inverse matrix is the transpose.
-	return GLMatrix(
-			);
-}
-
-
 void
 GPlatesOpenGL::GLLight::create_shader_programs(
 		GLRenderer &renderer)
@@ -360,8 +330,10 @@ GPlatesOpenGL::GLLight::create_shader_programs(
 	d_render_map_view_light_direction_program_object =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
-					RENDER_MAP_VIEW_LIGHT_DIRECTION_VERTEX_SHADER_SOURCE,
-					RENDER_MAP_VIEW_LIGHT_DIRECTION_FRAGMENT_SHADER_SOURCE);
+					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+							RENDER_MAP_VIEW_LIGHT_DIRECTION_VERTEX_SHADER_SOURCE_FILE_NAME),
+					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+							RENDER_MAP_VIEW_LIGHT_DIRECTION_FRAGMENT_SHADER_SOURCE_FILE_NAME));
 
 	// The client should have called 'is_supported()' which verifies vertex/fragment shader support
 	// and that the most complex shader compiles - so that should not be the reason for failure.
@@ -376,7 +348,7 @@ GPlatesOpenGL::GLLight::create_map_view_light_direction_cube_texture(
 		GLRenderer &renderer)
 {
 	// Using nearest-neighbour filtering since the 'pixelation' of the light direction is not
-	// noticeable once it goes throw the dot product with the surface normals.
+	// noticeable once it goes through the dot product with the surface normals.
 	// Also it enables us to have distinctly different light directions on either side of the
 	// central meridian which we'll make go through the centre of some of the faces of the cube
 	// (which is along a boundary between two columns of pixels - provided texture dimension is even).

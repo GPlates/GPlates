@@ -2493,6 +2493,28 @@ GPlatesFileIO::PropertyCreationUtils::create_raster_band_names(
 	return GpmlRasterBandNames::create(band_names.begin(), band_names.end());
 }
 
+
+GPlatesPropertyValues::GpmlScalarField3DFile::non_null_ptr_type
+GPlatesFileIO::PropertyCreationUtils::create_scalar_field_3d_file(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		ReadErrorAccumulation &read_errors)
+{
+	using namespace GPlatesPropertyValues;
+
+	static const GPlatesModel::PropertyName
+		STRUCTURAL_TYPE = GPlatesModel::PropertyName::create_gpml("ScalarField3DFile"),
+		FILE_NAME = GPlatesModel::PropertyName::create_gpml("fileName");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type elem =
+		get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	const XsString::non_null_ptr_type filename =
+        find_and_create_one(elem, &create_xs_string, FILE_NAME, read_errors);
+
+	return GpmlScalarField3DFile::create(filename);
+}
+
+
 #if 0
 GPlatesPropertyValues::GpmlArrayMember
 GPlatesFileIO::PropertyCreationUtils::create_array_member(

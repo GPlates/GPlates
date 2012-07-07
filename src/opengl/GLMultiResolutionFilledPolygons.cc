@@ -67,139 +67,36 @@ namespace GPlatesOpenGL
 		const float INVERSE_LOG2 = 1.0 / std::log(2.0);
 
 		//! Vertex shader source code to render a tile to the scene.
-		const char *RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE =
-				"void main (void)\n"
-				"{\n"
+		const QString RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME =
+				":/opengl/multi_resolution_filled_polygons/render_tile_to_scene_vertex_shader.glsl";
 
-				"	// Ensure position is transformed exactly same as fixed-function pipeline.\n"
-				"	gl_Position = ftransform(); //gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
-
-				"	// Transform present-day position by cube map projection and\n"
-				"	// any texture coordinate adjustments before accessing textures.\n"
-				"	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_Vertex;\n"
-				"	gl_TexCoord[1] = gl_TextureMatrix[1] * gl_Vertex;\n"
-
-				"}\n";
-
-		/**
-		 * Fragment shader source code to render a tile to the scene.
-		 *
-		 * If we're near the edge of a polygon (and there's no adjacent polygon)
-		 * then the fragment alpha will not be 1.0 (also happens if clipped).
-		 * This reduces the anti-aliasing affect of the bilinear filtering since the bilinearly
-		 * filtered alpha will soften the edge (during the alpha-blend stage) but also the RGB colour
-		 * has been bilinearly filtered with black (RGB of zero) which is a double-reduction that
-		 * reduces the softness of the anti-aliasing.
-		 * To get around this we revert the effect of blending with black leaving only the alpha-blending.
-		 */
-		const char *RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE =
-				"uniform sampler2D tile_texture_sampler;\n"
-
-				"#ifdef ENABLE_CLIPPING\n"
-				"uniform sampler2D clip_texture_sampler;\n"
-				"#endif // ENABLE_CLIPPING\n"
-
-				"void main (void)\n"
-				"{\n"
-
-				"	// Projective texturing to handle cube map projection.\n"
-				"	gl_FragColor = texture2DProj(tile_texture_sampler, gl_TexCoord[0]);\n"
-
-				"#ifdef ENABLE_CLIPPING\n"
-				"	gl_FragColor *= texture2DProj(clip_texture_sampler, gl_TexCoord[1]);\n"
-				"#endif // ENABLE_CLIPPING\n"
-
-				"	// As a small optimisation discard the pixel if the alpha is zero.\n"
-				"	if (gl_FragColor.a == 0)\n"
-				"		discard;\n"
-
-				"	// Revert effect of blending with black texels near polygon edge.\n"
-				"	gl_FragColor.rgb /= gl_FragColor.a;\n"
-
-				"}\n";
+		//! Fragment shader source code to render a tile to the scene.
+		const QString RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME =
+				":/opengl/multi_resolution_filled_polygons/render_tile_to_scene_fragment_shader.glsl";
 
 		//! Vertex shader source code to render polygons to the polygon stencil texture.
-		const char *RENDER_TO_POLYGON_STENCIL_TEXTURE_VERTEX_SHADER_SOURCE =
-				"attribute vec3 present_day_position;\n"
-				"attribute vec4 fill_colour;\n"
-				"attribute vec4 world_space_quaternion;\n"
-				"// The 'xyzw' values are (translate_x, translate_y, scale_x, scale_y)\n"
-				"attribute vec4 polygon_frustum_to_render_target_clip_space_transform;\n"
-
-				"varying vec4 clip_position_params;\n"
-				"varying vec4 fragment_fill_colour;\n"
-
-				"void main (void)\n"
-				"{\n"
-
-				"	// The polygon fill colour.\n"
-				"	fragment_fill_colour = fill_colour;\n"
-
-				"   // Transform present-day position using finite rotation quaternion.\n"
-				"	vec3 rotated_position = rotate_vector_by_quaternion(world_space_quaternion, present_day_position);\n"
-
-				"	// Transform rotated position by the view/projection matrix.\n"
-				"	// The view/projection matches the polygon frustum.\n"
-				"	vec4 polygon_frustum_position = gl_ModelViewProjectionMatrix * vec4(rotated_position, 1);\n"
-
-				"	// This is also the clip-space the fragment shader uses to cull pixels outside\n"
-				"	// the polygon frustum.\n"
-				"	// Convert to a more convenient form for the fragment shader:\n"
-				"	//   1) Only interested in clip position x, y, w and -w.\n"
-				"	//   2) The z component is depth and we only need to clip to side planes not near/far plane.\n"
-				"	clip_position_params = vec4(\n"
-				"		polygon_frustum_position.xy,\n"
-				"		polygon_frustum_position.w,\n"
-				"		-polygon_frustum_position.w);\n"
-
-				"	// Post-projection translate/scale to position NDC space around render target frustum...\n"
-				"	vec4 render_target_frustum_position = vec4(\n"
-				"		// Scale and translate x component...\n"
-				"		dot(polygon_frustum_to_render_target_clip_space_transform.zx,\n"
-				"				polygon_frustum_position.xw),\n"
-				"		// Scale and translate y component...\n"
-				"		dot(polygon_frustum_to_render_target_clip_space_transform.wy,\n"
-				"				polygon_frustum_position.yw),\n"
-				"		// z and w components unaffected...\n"
-				"		polygon_frustum_position.zw);\n"
-
-				"	gl_Position = render_target_frustum_position;\n"
-
-				"}\n";
+		const QString RENDER_TO_POLYGON_STENCIL_TEXTURE_VERTEX_SHADER_SOURCE_FILE_NAME =
+				":/opengl/multi_resolution_filled_polygons/render_to_polygon_stencil_texture_vertex_shader.glsl";
 
 		/**
 		 * Fragment shader source to render polygons to the polygon stencil texture.
 		 */
-		const char *RENDER_TO_POLYGON_STENCIL_TEXTURE_FRAGMENT_SHADER_SOURCE =
-				"varying vec4 clip_position_params;\n"
-				"varying vec4 fragment_fill_colour;\n"
-
-				"void main (void)\n"
-				"{\n"
-
-				"	// Discard current pixel if outside the frustum side planes.\n"
-				"	// Inside clip frustum means -1 < x/w < 1 and -1 < y/w < 1 which is same as\n"
-				"	// -w < x < w and -w < y < w.\n"
-				"	// 'clip_position_params' is (x, y, w, -w).\n"
-				"	if (!all(lessThan(clip_position_params.wxwy, clip_position_params.xzyz)))\n"
-				"		discard;\n"
-
-				"	// Output the polygon fill colour.\n"
-				"	gl_FragColor = fragment_fill_colour;\n"
-
-				"}\n";
+		const QString RENDER_TO_POLYGON_STENCIL_TEXTURE_FRAGMENT_SHADER_SOURCE_FILE_NAME =
+				":/opengl/multi_resolution_filled_polygons/render_to_polygon_stencil_texture_fragment_shader.glsl";
 	}
 }
 
 
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::GLMultiResolutionFilledPolygons(
 		GLRenderer &renderer,
-		const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh) :
+		const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh,
+		boost::optional<GLLight::non_null_ptr_type> light) :
 	d_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create()),
 	d_tile_texel_dimension(DEFAULT_TILE_TEXEL_DIMENSION),
 	d_polygon_stencil_texel_width(0),
 	d_polygon_stencil_texel_height(0),
 	d_multi_resolution_cube_mesh(multi_resolution_cube_mesh),
+	d_light(light),
 	d_stream_multiple_polygons(false),
 	d_identity_quaternion(GPlatesMaths::UnitQuaternion3D::create_identity_rotation())
 {
@@ -813,34 +710,59 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::set_tile_state(
 	}
 
 	// Use shader program (if supported), otherwise the fixed-function pipeline.
-	if (d_render_tile_to_scene_program_object && d_render_tile_to_scene_with_clipping_program_object)
+	if (d_render_tile_to_scene_program_object &&
+		d_render_tile_to_scene_with_clipping_program_object &&
+		d_render_tile_to_scene_with_lighting_program_object &&
+		d_render_tile_to_scene_with_clipping_and_lighting_program_object)
 	{
+		boost::optional<GLProgramObject::shared_ptr_type> program_object;
+
+		const bool lighting_enabled = d_light && d_light.get()->get_scene_lighting_parameters().is_lighting_enabled();
+
+		// Determine which shader program to use.
 		if (clip_to_tile_frustum)
 		{
-			// Bind the shader program with clipping.
-			renderer.gl_bind_program_object(d_render_tile_to_scene_with_clipping_program_object.get());
-
-			// Set the tile texture sampler to texture unit 0.
-			d_render_tile_to_scene_with_clipping_program_object.get()->gl_uniform1i(
-					renderer, "tile_texture_sampler", 0/*texture unit*/);
-
-			// Set the clip texture sampler to texture unit 1.
-			d_render_tile_to_scene_with_clipping_program_object.get()->gl_uniform1i(
-					renderer, "clip_texture_sampler", 1/*texture unit*/);
+			program_object = lighting_enabled
+					? d_render_tile_to_scene_with_clipping_and_lighting_program_object
+					: d_render_tile_to_scene_with_clipping_program_object;
 		}
 		else
 		{
-			// Bind the shader program.
-			renderer.gl_bind_program_object(d_render_tile_to_scene_program_object.get());
+			program_object = lighting_enabled
+					? d_render_tile_to_scene_with_lighting_program_object
+					: d_render_tile_to_scene_program_object;
+		}
 
-			// Set the tile texture sampler to texture unit 0.
-			d_render_tile_to_scene_program_object.get()->gl_uniform1i(
-					renderer, "tile_texture_sampler", 0/*texture unit*/);
+		// Bind the shader program.
+		renderer.gl_bind_program_object(program_object.get());
+
+		// Set the tile texture sampler to texture unit 0.
+		program_object.get()->gl_uniform1i(renderer, "tile_texture_sampler", 0/*texture unit*/);
+
+		if (clip_to_tile_frustum)
+		{
+			// Set the clip texture sampler to texture unit 1.
+			program_object.get()->gl_uniform1i(renderer, "clip_texture_sampler", 1/*texture unit*/);
+		}
+
+		if (lighting_enabled)
+		{
+			// Set the world-space light direction.
+			program_object.get()->gl_uniform3f(
+					renderer,
+					"world_space_light_direction",
+					d_light.get()->get_globe_view_light_direction(renderer));
+
+			// Set the light ambient contribution.
+			program_object.get()->gl_uniform1f(
+					renderer,
+					"light_ambient_contribution",
+					d_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution());
 		}
 
 		// Instead of alpha-testing, the fragment shader uses 'discard'.
 	}
-	else // Fixed function...
+	else // Fixed function (no lighting supported)...
 	{
 		// Enable texturing and set the texture function on texture unit 0.
 		renderer.gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
@@ -1831,25 +1753,75 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_shader_programs(
 	// To enhance (or remove effect of) anti-aliasing of polygons edges.
 	//
 
-	// A version without clipping.
+	// A version without clipping or lighting.
 	d_render_tile_to_scene_program_object =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
-					RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE,
-					RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE);
+					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+							RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME),
+					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+							RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME));
 
-	// A version with clipping.
-	GLShaderProgramUtils::ShaderSource render_tile_to_scene_with_clipping_shader_source;
-	// Add the '#define' first.
-	render_tile_to_scene_with_clipping_shader_source.add_shader_source("#define ENABLE_CLIPPING\n");
-	// Then add the GLSL 'main()' function.
-	render_tile_to_scene_with_clipping_shader_source.add_shader_source(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE);
-	// Create the program object.
+	// A version with clipping but without lighting.
+	GLShaderProgramUtils::ShaderSource render_tile_to_scene_with_clipping_vertex_shader_source;
+	render_tile_to_scene_with_clipping_vertex_shader_source.add_shader_source("#define ENABLE_CLIPPING\n");
+	render_tile_to_scene_with_clipping_vertex_shader_source.add_shader_source_from_file(
+			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	render_tile_to_scene_with_clipping_vertex_shader_source.add_shader_source_from_file(
+			RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
+	GLShaderProgramUtils::ShaderSource render_tile_to_scene_with_clipping_fragment_shader_source;
+	render_tile_to_scene_with_clipping_fragment_shader_source.add_shader_source("#define ENABLE_CLIPPING\n");
+	render_tile_to_scene_with_clipping_fragment_shader_source.add_shader_source_from_file(
+			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	render_tile_to_scene_with_clipping_fragment_shader_source.add_shader_source_from_file(
+			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	d_render_tile_to_scene_with_clipping_program_object =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
-					RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE,
-					render_tile_to_scene_with_clipping_shader_source);
+					render_tile_to_scene_with_clipping_vertex_shader_source,
+					render_tile_to_scene_with_clipping_fragment_shader_source);
+
+	// A version with lighting but without clipping.
+	GLShaderProgramUtils::ShaderSource render_tile_to_scene_with_lighting_vertex_shader_source;
+	render_tile_to_scene_with_lighting_vertex_shader_source.add_shader_source("#define SURFACE_LIGHTING\n");
+	render_tile_to_scene_with_lighting_vertex_shader_source.add_shader_source_from_file(
+			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	render_tile_to_scene_with_lighting_vertex_shader_source.add_shader_source_from_file(
+			RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
+	GLShaderProgramUtils::ShaderSource render_tile_to_scene_with_lighting_fragment_shader_source;
+	render_tile_to_scene_with_lighting_fragment_shader_source.add_shader_source("#define SURFACE_LIGHTING\n");
+	render_tile_to_scene_with_lighting_fragment_shader_source.add_shader_source_from_file(
+			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	render_tile_to_scene_with_lighting_fragment_shader_source.add_shader_source_from_file(
+			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+	d_render_tile_to_scene_with_lighting_program_object =
+			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
+					renderer,
+					render_tile_to_scene_with_lighting_vertex_shader_source,
+					render_tile_to_scene_with_lighting_fragment_shader_source);
+
+	// A version with clipping and lighting.
+	GLShaderProgramUtils::ShaderSource render_tile_to_scene_with_clipping_and_lighting_vertex_shader_source;
+	render_tile_to_scene_with_clipping_and_lighting_vertex_shader_source.add_shader_source(
+			"#define ENABLE_CLIPPING\n"
+			"#define SURFACE_LIGHTING\n");
+	render_tile_to_scene_with_clipping_and_lighting_vertex_shader_source.add_shader_source_from_file(
+			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	render_tile_to_scene_with_clipping_and_lighting_vertex_shader_source.add_shader_source_from_file(
+			RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
+	GLShaderProgramUtils::ShaderSource render_tile_to_scene_with_clipping_and_lighting_fragment_shader_source;
+	render_tile_to_scene_with_clipping_and_lighting_fragment_shader_source.add_shader_source(
+			"#define ENABLE_CLIPPING\n"
+			"#define SURFACE_LIGHTING\n");
+	render_tile_to_scene_with_clipping_and_lighting_fragment_shader_source.add_shader_source_from_file(
+			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	render_tile_to_scene_with_clipping_and_lighting_fragment_shader_source.add_shader_source_from_file(
+			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+	d_render_tile_to_scene_with_clipping_and_lighting_program_object =
+			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
+					renderer,
+					render_tile_to_scene_with_clipping_and_lighting_vertex_shader_source,
+					render_tile_to_scene_with_clipping_and_lighting_fragment_shader_source);
 
 	//
 	// Shader program to render *multiple* polygons to the polygon stencil texture.
@@ -1858,17 +1830,18 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_shader_programs(
 
 	GLShaderProgramUtils::ShaderSource render_to_polygon_stencil_texture_vertex_shader_source;
 	// Add the GLSL function to rotate by quaternion first.
-	render_to_polygon_stencil_texture_vertex_shader_source.add_shader_source(
-			GLShaderProgramUtils::ROTATE_VECTOR_BY_QUATERNION_SHADER_SOURCE);
+	render_to_polygon_stencil_texture_vertex_shader_source.add_shader_source_from_file(
+			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
 	// Then add the GLSL 'main()' function.
-	render_to_polygon_stencil_texture_vertex_shader_source.add_shader_source(
-			RENDER_TO_POLYGON_STENCIL_TEXTURE_VERTEX_SHADER_SOURCE);
+	render_to_polygon_stencil_texture_vertex_shader_source.add_shader_source_from_file(
+			RENDER_TO_POLYGON_STENCIL_TEXTURE_VERTEX_SHADER_SOURCE_FILE_NAME);
 	// Create the program object.
 	d_render_to_polygon_stencil_texture_program_object =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
 					render_to_polygon_stencil_texture_vertex_shader_source,
-					RENDER_TO_POLYGON_STENCIL_TEXTURE_FRAGMENT_SHADER_SOURCE);
+					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+							RENDER_TO_POLYGON_STENCIL_TEXTURE_FRAGMENT_SHADER_SOURCE_FILE_NAME));
 
 }
 

@@ -1062,6 +1062,23 @@ GPlatesOpenGL::GLBindVertexArrayObjectStateSet::apply_to_default_state(
 }
 
 
+GPlatesOpenGL::GLBlendFuncStateSet::GLBlendFuncStateSet(
+		GLenum sfactorRGB,
+		GLenum dfactorRGB,
+		GLenum sfactorAlpha,
+		GLenum dfactorAlpha) :
+	d_src_factor_RGB(sfactorRGB),
+	d_dst_factor_RGB(dfactorRGB),
+	d_src_factor_A(sfactorAlpha),
+	d_dst_factor_A(dfactorAlpha),
+	d_separate_factors(true)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_EXT_blend_func_separate),
+			GPLATES_ASSERTION_SOURCE);
+}
+
+
 void
 GPlatesOpenGL::GLBlendFuncStateSet::apply_state(
 		const GLStateSet &last_applied_state_set,
@@ -1071,12 +1088,23 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_state(
 	const GLBlendFuncStateSet &last_applied = dynamic_cast<const GLBlendFuncStateSet &>(last_applied_state_set);
 
 	// Return early if no state change...
-	if (d_s_factor == last_applied.d_s_factor && d_d_factor == last_applied.d_d_factor)
+	if (d_src_factor_RGB == last_applied.d_src_factor_RGB &&
+		d_dst_factor_RGB == last_applied.d_dst_factor_RGB &&
+		d_src_factor_A == last_applied.d_src_factor_A &&
+		d_dst_factor_A == last_applied.d_dst_factor_A)
 	{
 		return;
 	}
 
-	glBlendFunc(d_s_factor, d_d_factor);
+	if (d_separate_factors)
+	{
+		glBlendFuncSeparateEXT(d_src_factor_RGB, d_dst_factor_RGB, d_src_factor_A, d_dst_factor_A);
+	}
+	else
+	{
+		// The RGB and A factors are the same so can use either to specify for RGBA.
+		glBlendFunc(d_src_factor_RGB, d_dst_factor_RGB);
+	}
 }
 
 void
@@ -1084,12 +1112,23 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_from_default_state(
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
-	if (d_s_factor == GL_ONE && d_d_factor == GL_ZERO)
+	if (d_src_factor_RGB == GL_ONE &&
+		d_dst_factor_RGB == GL_ZERO &&
+		d_src_factor_A == GL_ONE &&
+		d_dst_factor_A == GL_ZERO)
 	{
 		return;
 	}
 
-	glBlendFunc(d_s_factor, d_d_factor);
+	if (d_separate_factors)
+	{
+		glBlendFuncSeparateEXT(d_src_factor_RGB, d_dst_factor_RGB, d_src_factor_A, d_dst_factor_A);
+	}
+	else
+	{
+		// The RGB and A factors are the same so can use either to specify for RGBA.
+		glBlendFunc(d_src_factor_RGB, d_dst_factor_RGB);
+	}
 }
 
 void
@@ -1097,11 +1136,15 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_to_default_state(
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
-	if (d_s_factor == GL_ONE && d_d_factor == GL_ZERO)
+	if (d_src_factor_RGB == GL_ONE &&
+		d_dst_factor_RGB == GL_ZERO &&
+		d_src_factor_A == GL_ONE &&
+		d_dst_factor_A == GL_ZERO)
 	{
 		return;
 	}
 
+	// Applies to both RGB and A.
 	glBlendFunc(GL_ONE, GL_ZERO);
 }
 

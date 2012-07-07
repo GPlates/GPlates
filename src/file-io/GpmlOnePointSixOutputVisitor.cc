@@ -74,6 +74,7 @@
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlRasterBandNames.h"
 #include "property-values/GpmlRevisionId.h"
+#include "property-values/GpmlScalarField3DFile.h"
 #include "property-values/GpmlStringList.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTopologicalInterior.h"
@@ -1486,6 +1487,20 @@ GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_revision_id(
 		const GPlatesPropertyValues::GpmlRevisionId &gpml_revision_id)
 {
 	d_output.writeText(gpml_revision_id.value().get());
+}
+
+
+void
+GPlatesFileIO::GpmlOnePointSixOutputVisitor::visit_gpml_scalar_field_3d_file(
+		const GPlatesPropertyValues::GpmlScalarField3DFile &gpml_scalar_field_3d_file)
+{
+	d_output.writeStartGpmlElement("ScalarField3DFile");
+
+		d_output.writeStartGpmlElement("fileName");
+			d_output.writeRelativeFilePath(gpml_scalar_field_3d_file.file_name()->value().get());
+		d_output.writeEndElement(); // <gpml:fileName>
+
+	d_output.writeEndElement(); // </gpml:ScalarField3DFile>
 }
 
 

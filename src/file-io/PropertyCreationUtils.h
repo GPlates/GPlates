@@ -76,6 +76,7 @@
 #include "property-values/GpmlPropertyDelegate.h"
 #include "property-values/GpmlRasterBandNames.h"
 #include "property-values/GpmlRevisionId.h"
+#include "property-values/GpmlScalarField3DFile.h"
 #include "property-values/GpmlStringList.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTimeWindow.h"
@@ -601,6 +602,13 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation &read_errors);
 
 		AS_PROP_VAL(create_raster_band_names)
+
+		GPlatesPropertyValues::GpmlScalarField3DFile::non_null_ptr_type
+		create_scalar_field_3d_file(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+				ReadErrorAccumulation &read_errors);
+
+		AS_PROP_VAL(create_scalar_field_3d_file)
 
 		GPlatesPropertyValues::GpmlArray::non_null_ptr_type
 		create_array(

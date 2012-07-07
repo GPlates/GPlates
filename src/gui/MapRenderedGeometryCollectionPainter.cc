@@ -54,10 +54,18 @@ GPlatesGui::MapRenderedGeometryCollectionPainter::MapRenderedGeometryCollectionP
 	d_visual_layers(visual_layers),
 	d_render_settings(render_settings),
 	d_text_renderer_ptr(text_renderer_ptr),
-	d_layer_painter(false/*use_depth_buffer*/),
+	d_layer_painter(gl_visual_layers, map_projection),
 	d_colour_scheme(colour_scheme),
 	d_scale(1.0f)
 {  }
+
+
+void
+GPlatesGui::MapRenderedGeometryCollectionPainter::initialise(
+		GPlatesOpenGL::GLRenderer &renderer)
+{
+	d_layer_painter.initialise(renderer);
+}
 
 
 GPlatesGui::MapRenderedGeometryCollectionPainter::cache_handle_type

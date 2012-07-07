@@ -160,6 +160,10 @@ set(srcs
     ResolvedTopologicalBoundaryExportImpl.h
     RgbaRasterReader.cc
     RgbaRasterReader.h
+    ScalarField3DFileFormat.cc
+    ScalarField3DFileFormat.h
+    ScalarField3DFileFormatReader.cc
+    ScalarField3DFileFormatReader.h
     ShapefileReader.cc
     ShapefileReader.h
     ShapefileUtils.cc

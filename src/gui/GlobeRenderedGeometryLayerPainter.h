@@ -36,18 +36,18 @@
 
 #include "Colour.h"
 #include "ColourScheme.h"
-#include "GlobeOrientation.h"
 #include "GlobeVisibilityTester.h"
 #include "LayerPainter.h"
 #include "TextRenderer.h"
 #include "RenderSettings.h"
 
+#include "maths/CubeQuadTreeLocation.h"
 #include "maths/CubeQuadTreePartition.h"
 #include "maths/types.h"
 #include "maths/Vector3D.h"
 
 #include "opengl/GLCubeSubdivisionCache.h"
-#include "opengl/GLVisualLayers.h"
+#include "opengl/GLTexture.h"
 
 #include "presentation/VisualLayers.h"
 
@@ -68,8 +68,7 @@ namespace GPlatesViewOperations
 namespace GPlatesGui
 {
 	/**
-	 * Handles drawing rendered geometries in a single layer by drawing the
-	 * opaque primitives first followed by the transparent primitives.
+	 * Handles drawing rendered geometries in a single rendered layer.
 	 */
 	class GlobeRenderedGeometryLayerPainter :
 			public GPlatesViewOperations::ConstRenderedGeometryVisitor,
@@ -82,19 +81,36 @@ namespace GPlatesGui
 		typedef boost::shared_ptr<void> cache_handle_type;
 
 
+		//! Determines whether to paint the globe surface or sub-surface.
+		enum PaintRegionType
+		{
+			PAINT_SURFACE,
+			PAINT_SUB_SURFACE
+		};
+
+
+		/**
+		 * @a paint_region specifies whether to draw surface or sub-surface rendered geometries in @a paint.
+		 *
+		 * @a surface_occlusion_texture is a viewport-size 2D texture containing the RGBA rendering
+		 * of the surface geometries/rasters on the *front* of the globe.
+		 * It is only used when rendering sub-surface geometries.
+		 */
 		GlobeRenderedGeometryLayerPainter(
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
-				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const double &inverse_viewport_zoom_factor,
 				RenderSettings &render_settings,
 				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
-				const GlobeOrientation &globe_orientation,
-				ColourScheme::non_null_ptr_type colour_scheme);
+				ColourScheme::non_null_ptr_type colour_scheme,
+				PaintRegionType paint_region,
+				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type>
+						surface_occlusion_texture = boost::none);
 
 
 		/**
-		 * Draws the sequence of rendered geometries passed into constructor.
+		 * Draws rendered geometries on the globe surface or sub-surface depending on the
+		 * PaintRegionType passed into constructor.
 		 */
 		cache_handle_type
 		paint(
@@ -109,6 +125,7 @@ namespace GPlatesGui
 		}
 
 	private:
+
 		virtual
 		void
 		visit_rendered_arrowed_polyline(
@@ -149,6 +166,11 @@ namespace GPlatesGui
 		void
 		visit_resolved_raster(
 				const GPlatesViewOperations::RenderedResolvedRaster &rendered_resolved_raster);
+
+		virtual
+		void
+		visit_resolved_scalar_field_3d(
+				const GPlatesViewOperations::RenderedResolvedScalarField3D &rendered_resolved_scalar_field);
 
 		virtual
 		void
@@ -217,13 +239,7 @@ namespace GPlatesGui
 						cube_subdivision_cache_type;
 
 
-
 		const GPlatesViewOperations::RenderedGeometryLayer &d_rendered_geometry_layer;
-
-		/**
-		 * Keeps track of OpenGL-related objects that persist from one render to the next.
-		 */
-		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
 
 		const double d_inverse_zoom_factor;
 
@@ -236,14 +252,14 @@ namespace GPlatesGui
 		//! For determining whether a particular point on the globe is visible or not
 		GlobeVisibilityTester d_visibility_tester;
 
-		//! Used to determine the view-space to world-space transform.
-		const GlobeOrientation &d_globe_orientation;
-
 		//! For assigning colours to RenderedGeometry
 		ColourScheme::non_null_ptr_type d_colour_scheme;
 
 		//! When rendering scaled globes that are meant to be a scaled version of another
 		float d_scale;
+
+		//! Whether to render the globe surface or sub-surface.
+		PaintRegionType d_paint_region;
 
 		/**
 		 * Used to paint when the @a paint method is called.
@@ -251,6 +267,22 @@ namespace GPlatesGui
 		 * Is only valid during @a paint.
 		 */
 		boost::optional<LayerPainter &> d_layer_painter;
+
+		/**
+		 * A viewport-size 2D texture containing the RGBA rendering
+		 * of the surface geometries/rasters on the *front* of the globe.
+		 * It is only used when rendering sub-surface geometries.
+		 */
+		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> d_surface_occlusion_texture;
+
+		/**
+		 * Optional location in cube quad tree (spatial partition) when/if traversing a
+		 * rendered geometries spatial partition.
+		 *
+		 * If it's boost::none then the location is the root of the spatial partition.
+		 * This is the default if the rendered geometries being visited are not in a spatial partition.
+		 */
+		boost::optional<GPlatesMaths::CubeQuadTreeLocation> d_current_cube_quad_tree_location;
 
 
 		//! Multiplying factor to get point size of 1.0f to look like one screen-space pixel.

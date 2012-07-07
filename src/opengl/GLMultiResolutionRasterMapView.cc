@@ -69,42 +69,14 @@ namespace GPlatesOpenGL
 	namespace
 	{
 		//! Vertex shader source code to render a tile to the scene.
-		const char *RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE =
-				"void main (void)\n"
-				"{\n"
-
-				"	// Position gets transformed exactly same as fixed-function pipeline.\n"
-				"	gl_Position = ftransform(); //gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
-
-				"	// Transform 3D texture coords (present day position) by cube map projection and\n"
-				"	// any texture coordinate adjustments before accessing textures.\n"
-				"	// We have two texture transforms but only one texture coordinate.\n"
-				"	gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;\n"
-				"	gl_TexCoord[1] = gl_TextureMatrix[1] * gl_MultiTexCoord0;\n"
-
-				"}\n";
+		const QString RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME =
+				":/opengl/multi_resolution_raster_map_view/render_tile_to_scene_vertex_shader.glsl";
 
 		/**
 		 * Fragment shader source code to render a tile to the scene.
 		 */
-		const char *RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE =
-				"uniform sampler2D tile_texture_sampler;\n"
-
-				"#ifdef ENABLE_CLIPPING\n"
-				"uniform sampler2D clip_texture_sampler;\n"
-				"#endif // ENABLE_CLIPPING\n"
-
-				"void main (void)\n"
-				"{\n"
-
-				"	// Projective texturing to handle cube map projection.\n"
-				"	gl_FragColor = texture2DProj(tile_texture_sampler, gl_TexCoord[0]);\n"
-
-				"#ifdef ENABLE_CLIPPING\n"
-				"	gl_FragColor *= texture2DProj(clip_texture_sampler, gl_TexCoord[1]);\n"
-				"#endif // ENABLE_CLIPPING\n"
-
-				"}\n";
+		const QString RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME =
+				":/opengl/multi_resolution_raster_map_view/render_tile_to_scene_fragment_shader.glsl";
 
 
 		/**
@@ -741,19 +713,23 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::create_shader_programs(
 	d_render_tile_to_scene_program_object =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
-					RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE,
-					RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE);
+					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+							RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME),
+					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+							RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME));
 
 	// A version with clipping.
 	GLShaderProgramUtils::ShaderSource render_tile_to_scene_with_clipping_shader_source;
 	// Add the '#define' first.
 	render_tile_to_scene_with_clipping_shader_source.add_shader_source("#define ENABLE_CLIPPING\n");
 	// Then add the GLSL 'main()' function.
-	render_tile_to_scene_with_clipping_shader_source.add_shader_source(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE);
+	render_tile_to_scene_with_clipping_shader_source.add_shader_source_from_file(
+			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Create the program object.
 	d_render_tile_to_scene_with_clipping_program_object =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
-					RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE,
+					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+							RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME),
 					render_tile_to_scene_with_clipping_shader_source);
 }

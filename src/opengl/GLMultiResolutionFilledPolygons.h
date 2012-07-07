@@ -36,6 +36,7 @@
 #include "GLBuffer.h"
 #include "GLCompiledDrawState.h"
 #include "GLCubeSubdivisionCache.h"
+#include "GLLight.h"
 #include "GLMatrix.h"
 #include "GLMultiResolutionCubeMesh.h"
 #include "GLProgramObject.h"
@@ -384,14 +385,21 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Creates a @a GLMultiResolutionFilledPolygons object.
+		 *
+		 * NOTE: If @a light is specified but lighting is not supported on the run-time system
+		 * (eg, due to exceeding shader instructions limit) then filled polygons will not be rendered
+		 * with surface lighting.
 		 */
 		static
 		non_null_ptr_type
 		create(
 				GLRenderer &renderer,
-				const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh)
+				const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh,
+				boost::optional<GLLight::non_null_ptr_type> light = boost::none)
 		{
-			return non_null_ptr_type(new GLMultiResolutionFilledPolygons(renderer, multi_resolution_cube_mesh));
+			return non_null_ptr_type(
+					new GLMultiResolutionFilledPolygons(
+							renderer, multi_resolution_cube_mesh, light));
 		}
 
 
@@ -537,6 +545,12 @@ namespace GPlatesOpenGL
 		 */
 		GLMultiResolutionCubeMesh::non_null_ptr_to_const_type d_multi_resolution_cube_mesh;
 
+
+		/**
+		 * The light (direction) used during surface lighting.
+		 */
+		boost::optional<GLLight::non_null_ptr_type> d_light;
+
 		/**
 		 * Shader program to render tiles to the scene (the final stage).
 		 *
@@ -550,6 +564,20 @@ namespace GPlatesOpenGL
 		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used).
 		 */
 		boost::optional<GLProgramObject::shared_ptr_type> d_render_tile_to_scene_with_clipping_program_object;
+
+		/**
+		 * Shader program to render tiles to the scene (the final stage) with lighting.
+		 *
+		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used).
+		 */
+		boost::optional<GLProgramObject::shared_ptr_type> d_render_tile_to_scene_with_lighting_program_object;
+
+		/**
+		 * Shader program to render tiles to the scene (the final stage) with clipping and lighting.
+		 *
+		 * Is boost::none if shader programs not supported (in which case fixed-function pipeline is used).
+		 */
+		boost::optional<GLProgramObject::shared_ptr_type> d_render_tile_to_scene_with_clipping_and_lighting_program_object;
 
 		/**
 		 * Shader program to render *multiple* polygons to the polygon stencil texture.
@@ -574,7 +602,8 @@ namespace GPlatesOpenGL
 		//! Constructor.
 		GLMultiResolutionFilledPolygons(
 				GLRenderer &renderer,
-				const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh);
+				const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh,
+				boost::optional<GLLight::non_null_ptr_type> light);
 
 		void
 		initialise_polygon_stencil_texture_dimensions(

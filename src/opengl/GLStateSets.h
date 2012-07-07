@@ -512,9 +512,18 @@ namespace GPlatesOpenGL
 		GLBlendFuncStateSet(
 				GLenum sfactor,
 				GLenum dfactor) :
-			d_s_factor(sfactor),
-			d_d_factor(dfactor)
+			d_src_factor_RGB(sfactor),
+			d_dst_factor_RGB(dfactor),
+			d_src_factor_A(sfactor),
+			d_dst_factor_A(dfactor),
+			d_separate_factors(false)
 		{  }
+
+		GLBlendFuncStateSet(
+				GLenum sfactorRGB,
+				GLenum dfactorRGB,
+				GLenum sfactorAlpha,
+				GLenum dfactorAlpha);
 
 		virtual
 		void
@@ -533,8 +542,14 @@ namespace GPlatesOpenGL
 				GLState &last_applied_state) const;
 
 
-		GLenum d_s_factor;
-		GLenum d_d_factor;
+		GLenum d_src_factor_RGB;
+		GLenum d_dst_factor_RGB;
+
+		GLenum d_src_factor_A;
+		GLenum d_dst_factor_A;
+
+		//! If the RGB and A components have separate factors.
+		bool d_separate_factors;
 	};
 
 	/**

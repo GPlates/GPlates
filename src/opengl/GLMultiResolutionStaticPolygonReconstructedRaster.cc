@@ -45,6 +45,7 @@
 #include "GLContext.h"
 #include "GLDataRasterSource.h"
 #include "GLIntersect.h"
+#include "GLLight.h"
 #include "GLMatrix.h"
 #include "GLMultiResolutionRaster.h"
 #include "GLRenderer.h"
@@ -69,277 +70,12 @@ namespace
 	const float INVERSE_LOG2 = 1.0 / std::log(2.0);
 
 	//! Vertex shader source code to render raster tiles to the scene.
-	const char *RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE =
-			"uniform mat4 source_raster_texture_transform;\n"
-			"uniform mat4 clip_texture_transform;\n"
-			"varying vec4 source_raster_texture_coordinate;\n"
-			"varying vec4 clip_texture_coordinate;\n"
+	const QString RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME =
+			":/opengl/multi_resolution_static_polygon_reconstructed_raster/render_tile_to_scene_vertex_shader.glsl";
 
-			"#ifdef USING_AGE_GRID\n"
-			"	uniform mat4 age_grid_texture_transform;\n"
-			"	varying vec4 age_grid_texture_coordinate;\n"
-			"#endif\n"
-
-			"#ifdef SURFACE_LIGHTING\n"
-			"	uniform vec4 plate_rotation_quaternion;\n"
-			"	varying vec3 world_space_sphere_normal;\n"
-			"	#ifdef USING_NORMAL_MAP\n"
-			"		uniform mat4 normal_map_texture_transform;\n"
-			"		varying vec4 normal_map_texture_coordinate;\n"
-			"	#endif\n"
-			"	#ifndef MAP_VIEW\n"
-			"		uniform vec3 world_space_light_direction;\n"
-			"		varying vec3 model_space_light_direction;\n"
-			"	#endif\n"
-			"#endif\n"
-
-			"void main (void)\n"
-			"{\n"
-
-			"	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n"
-
-			"	// Clip texture cube map projection.\n"
-			"	clip_texture_coordinate = clip_texture_transform * gl_Vertex;\n"
-
-			"	// Source raster cube map projection.\n"
-			"	source_raster_texture_coordinate = source_raster_texture_transform * gl_Vertex;\n"
-
-			"#ifdef USING_AGE_GRID\n"
-			"	// Age grid cube map projection.\n"
-			"	age_grid_texture_coordinate = age_grid_texture_transform * gl_Vertex;\n"
-			"#endif\n"
-
-			"#ifdef SURFACE_LIGHTING\n"
-			"	// Rotate vertex position to world-space - it's also the sphere normal.\n"
-			"	// This will also be the texture coordinate for the map view's light direction cube texture.\n"
-			"	world_space_sphere_normal = rotate_vector_by_quaternion(plate_rotation_quaternion, gl_Vertex.xyz);\n"
-			"	#ifdef USING_NORMAL_MAP\n"
-			"		// Normal map raster cube map projection.\n"
-			"		normal_map_texture_coordinate = normal_map_texture_transform * gl_Vertex;\n"
-			"	#endif\n"
-			"	#ifndef MAP_VIEW\n"
-			"		// It's more efficient for fragment shader to do lambert dot product in model-space\n"
-			"		// instead of world-space so reverse rotate light direction into model space.\n"
-			"		vec4 plate_reverse_rotation_quaternion =\n"
-			"			vec4(-plate_rotation_quaternion.xyz, plate_rotation_quaternion.w);\n"
-			"		model_space_light_direction = rotate_vector_by_quaternion(\n"
-			"			plate_reverse_rotation_quaternion, world_space_light_direction);\n"
-			"	#endif\n"
-			"#endif\n"
-
-			"}\n";
-
-	/**
-	 * Fragment shader source code to render raster tiles to the scene.
-	 *
-	 * NOTE: If the source raster is floating-point it will have its filter set to 'nearest' filtering
-	 * (due to earlier hardware lack of support) so we need to emulate bilinear filtering in the fragment shader.
-	 */
-	const char *RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE =
-			"uniform sampler2D source_texture_sampler;\n"
-			"uniform sampler2D clip_texture_sampler;\n"
-			"varying vec4 source_raster_texture_coordinate;\n"
-			"varying vec4 clip_texture_coordinate;\n"
-
-			"#ifdef USING_AGE_GRID\n"
-			"	uniform sampler2D age_grid_texture_sampler;\n"
-			"	uniform vec4 age_grid_texture_dimensions;\n"
-			"	uniform float reconstruction_time;\n"
-			"	varying vec4 age_grid_texture_coordinate;\n"
-			"#endif\n"
-
-			"#ifdef SOURCE_RASTER_IS_FLOATING_POINT\n"
-			"	uniform vec4 source_texture_dimensions;\n"
-			"#endif\n"
-
-			"#ifdef SURFACE_LIGHTING\n"
-			"	uniform float light_ambient_contribution;\n"
-			"	varying vec3 world_space_sphere_normal;\n"
-			"	#ifdef USING_NORMAL_MAP\n"
-			"		uniform sampler2D normal_map_texture_sampler;\n"
-			"		varying vec4 normal_map_texture_coordinate;\n"
-			"	#endif\n"
-			"	#ifdef MAP_VIEW\n"
-			"		uniform vec4 plate_rotation_quaternion;\n"
-			"		uniform samplerCube light_direction_cube_texture_sampler;\n"
-			"	#else\n"
-			"		uniform vec3 world_space_light_direction;\n"
-			"		varying vec3 model_space_light_direction;\n"
-			"	#endif\n"
-			"#endif\n"
-
-			"void main (void)\n"
-			"{\n"
-
-			"	// Discard the pixel if it has been clipped by the clip texture as an\n"
-			"	// early rejection test since a lot of pixels will be outside the tile region.\n"
-			"	float clip_mask = texture2DProj(clip_texture_sampler, clip_texture_coordinate).a;\n"
-			"	if (clip_mask == 0)\n"
-			"		discard;\n"
-
-			"#ifdef USING_AGE_GRID\n"
-			"	#ifdef GENERATE_AGE_MASK\n"
-			"		// Do the texture transform projective divide.\n"
-			"		vec2 age_grid_texture_coords = age_grid_texture_coordinate.st / age_grid_texture_coordinate.q;\n"
-			"		vec4 age11, age21, age12, age22;\n"
-			"		vec2 age_interp;\n"
-			"		// Retrieve the 2x2 samples in the age grid texture and the bilinear interpolation coefficient.\n"
-			"		// The texture access in 'bilinearly_interpolate' starts a new indirection phase.\n"
-			"		bilinearly_interpolate(\n"
-			"			age_grid_texture_sampler,\n"
-			"			age_grid_texture_coords,\n"
-			"			age_grid_texture_dimensions,\n"
-			"			age11, age21, age12, age22, age_interp);\n"
-			"		// The red channel contains the age value and the green channel contains the coverage.\n"
-			"		vec4 age_vec = vec4(age11.r, age21.r, age12.r, age22.r);\n"
-			"		vec4 age_coverage_vec = vec4(age11.g, age21.g, age12.g, age22.g);\n"
-			"		// Do the age comparison test with the current reconstruction time.\n"
-			"		vec4 age_test = step(reconstruction_time, age_vec);\n"
-			"		// Multiply the coverage values into the age tests.\n"
-			"		vec4 cov_age_test = age_test * age_coverage_vec;\n"
-			"		// Bilinearly interpolate the four age test results and coverage.\n"
-			"		float age_coverage_mask = mix(\n"
-			"			mix(cov_age_test.x, cov_age_test.y, age_interp.x),\n"
-			"			mix(cov_age_test.z, cov_age_test.w, age_interp.x), age_interp.y);\n"
-			"		float age_coverage = mix(\n"
-			"			mix(age_coverage_vec.x, age_coverage_vec.y, age_interp.x),\n"
-			"			mix(age_coverage_vec.z, age_coverage_vec.w, age_interp.x), age_interp.y);\n"
-			"	#else\n"
-			"		// Get the pre-generated age mask from the age grid texture.\n"
-			"		vec4 age_mask_and_coverage = \n"
-			"			texture2DProj(age_grid_texture_sampler, age_grid_texture_coordinate);\n"
-			"		float age_coverage = age_mask_and_coverage.a;\n"
-			"		float age_coverage_mask = age_mask_and_coverage.r * age_coverage;\n"
-			"	#endif\n"
-
-			"	#ifdef ACTIVE_POLYGONS\n"
-			"		// Choose between active polygon and age mask based on age coverage.\n"
-			"		float age_factor = (1 - age_coverage) + age_coverage_mask;\n"
-			"	#else\n"
-			"		// Age factor is zero outside valid (oceanic) regions of the age grid.\n"
-			"		float age_factor = age_coverage_mask;\n"
-			"	#endif\n"
-
-			"	// Early reject if the age factor is zero.\n"
-			"	if (age_factor == 0)\n"
-			"		discard;\n"
-			"#endif\n"
-
-			"#ifdef SOURCE_RASTER_IS_FLOATING_POINT\n"
-			"	// Do the texture transform projective divide.\n"
-			"	vec2 source_texture_coords = source_raster_texture_coordinate.st / source_raster_texture_coordinate.q;\n"
-			"	// Bilinearly filter the tile texture.\n"
-			"	// The texture access in 'bilinearly_interpolate' starts a new indirection phase.\n"
-			"	vec4 tile_colour = bilinearly_interpolate(\n"
-			"	     source_texture_sampler, source_texture_coords, source_texture_dimensions);\n"
-			"#else\n"
-			"	// Use hardware bilinear interpolation of fixed-point texture.\n"
-			"	vec4 tile_colour = texture2DProj(source_texture_sampler, source_raster_texture_coordinate);\n"
-			"#endif\n"
-
-			"#ifdef USING_AGE_GRID\n"
-			"	// Modulate the source texture's coverage with the age test result.\n"
-			"	#ifdef SOURCE_RASTER_IS_FLOATING_POINT\n"
-			"		// NOTE: For floating-point textures we've placed the coverage/alpha in the green channel.\n"
-			"		// And they don't have pre-multiplied alpha like RGBA fixed-point textures because\n"
-			"		// alpha-blending not supported for floating-point render targets.\n"
-			"		tile_colour.g *= age_factor;\n"
-			"	#else\n"
-			"		// NOTE: All RGBA raster data has pre-multiplied alpha (for alpha-blending to render targets)\n"
-			"		// The source raster already has pre-multiplied alpha (see GLVisualRasterSource).\n"
-			"		// However we still need to pre-multiply the age factor (alpha).\n"
-			"		// (RGB * A, A) -> (RGB * A * age_factor, A * age_factor).\n"
-			"		tile_colour *= age_factor;\n"
-			"	#endif\n"
-			"#endif\n"
-
-			"	// Reject the pixel if its coverage/alpha is zero - this is because\n"
-			"	// it might be an age masked tile - zero coverage, in this case, means don't draw\n"
-			"	// because the age test failed - if we draw then we'd overwrite valid data.\n"
-			"#ifdef SOURCE_RASTER_IS_FLOATING_POINT\n"
-			"	// NOTE: For floating-point textures we've placed the coverage/alpha in the green channel.\n"
-			"	if (tile_colour.g == 0)\n"
-			"		discard;\n"
-			"#else\n"
-			"	if (tile_colour.a == 0)\n"
-			"		discard;\n"
-			"#endif\n"
-
-			"	// Surface lighting only needs to be applied to visualised raster sources.\n"
-			"	// This excludes floating-point sources (GLDataRasterSource) which are used for analysis\n"
-			"	// only and hence do not need lighting (and should not have lighting applied).\n"
-			"#ifdef SURFACE_LIGHTING\n"
-			"	#ifdef MAP_VIEW\n"
-			"		// Get the world-space light direction from the light direction cube texture.\n"
-			"		vec3 world_space_light_direction =\n"
-			"			textureCube(light_direction_cube_texture_sampler, world_space_sphere_normal).xyz;\n"
-			"		// Need to convert the x/y/z components from unsigned to signed ([0,1] -> [-1,1]).\n"
-			"		world_space_light_direction = 2 * world_space_light_direction - 1;\n"
-			"	#endif\n"
-
-			"	#ifdef USING_NORMAL_MAP\n"
-			"		// Sample the model-space normal in the normal map cube raster.\n"
-			"		vec3 model_space_normal =\n"
-			"			texture2DProj(normal_map_texture_sampler, normal_map_texture_coordinate).xyz;\n"
-			"		// Need to convert the x/y/z components from unsigned to signed ([0,1] -> [-1,1]).\n"
-			"		model_space_normal = 2 * model_space_normal - 1;\n"
-			"		#ifdef MAP_VIEW\n"
-			"			// Do the lambert dot product in world-space.\n"
-			"			// Convert to world-space normal where light direction is.\n"
-			"			vec3 world_space_normal = rotate_vector_by_quaternion(plate_rotation_quaternion, model_space_normal);\n"
-			"			vec3 normal = world_space_normal;\n"
-			"			vec3 light_direction = world_space_light_direction;\n"
-			"		#else\n"
-			"			// Do the lambert dot product in *model-space* (not world-space) since more efficient.\n"
-			"			vec3 normal = model_space_normal;\n"
-			"			vec3 light_direction = model_space_light_direction;\n"
-			"		#endif\n"
-			"	#else\n"
-			"		// Do the lambert dot product in world-space.\n"
-			"		vec3 normal = world_space_sphere_normal;\n"
-			"		// The light direction is already in world-space.\n"
-			"		vec3 light_direction = world_space_light_direction;\n"
-			"	#endif\n"
-
-			"	// Apply the Lambert diffuse lighting to the tile colour.\n"
-			"	// The light direction needs to be normalised because it's interpolated between vertices.\n"
-			"	// The surface normal also needs to be normalised because it's either interpolated between\n"
-			"	// vertices (no normal map) or bilinearly interpolated texture lookup (with normal map).\n"
-			"	// We can save one expensive 'normalize' by rearranging...\n"
-			"	// Lambert = dot(normalize(N),normalize(L)) \n"
-			"	//         = dot(N/|N|,L/|L|) \n"
-			"	//         = dot(N,L) / (|N| * |L|) \n"
-			"	//         = dot(N,L) / sqrt(dot(N,N) * dot(L,L)) \n"
-			"	// NOTE: Using float instead of integer parameters to 'max' otherwise driver compiler\n"
-			"	// crashes on some systems complaining cannot find (integer overload of) function in 'stdlib'.\n"
-			"	float lambert = max(0.0,\n"
-			"		dot(normal, light_direction) * \n"
-			"			inversesqrt(dot(normal, normal) * dot(light_direction, light_direction)));\n"
-
-			"	#if defined(USING_NORMAL_MAP) && !defined(MAP_VIEW)\n"
-			"		// Need to clamp the lambert term to zero when the (unperturbed) sphere normal\n"
-			"		// faces away from the light direction otherwise the perturbed surface will appear\n"
-			"		// to be lit *through* the globe (ie, not shadowed by the globe).\n"
-			"		// NOTE: This is not necessary for the 2D map views.\n"
-			"		// The factor of 8 gives a linear falloff from 1.0 to 0.0 when dot product is below 1/8.\n"
-			"		// NOTE: The normal and light direction are not normalized since accuracy is less important here.\n"
-			"		// NOTE: Using float instead of integer parameters to 'clamp' otherwise driver compiler\n"
-			"		// crashes on some systems complaining cannot find (integer overload of) function in 'stdlib'.\n"
-			"		lambert *= clamp(8 * dot(world_space_sphere_normal, world_space_light_direction), 0.0, 1.0);\n"
-			"	#endif\n"
-
-			"	// Blend between ambient and diffuse lighting - when ambient is 1.0 there is no diffuse.\n"
-			"	// NOTE: Using float instead of integer parameters to 'mix' otherwise driver compiler\n"
-			"	// crashes on some systems complaining cannot find (integer overload of) function in 'stdlib'.\n"
-			"	float diffuse = mix(lambert, 1.0, light_ambient_contribution);\n"
-			"	tile_colour.rgb *= diffuse;\n"
-			"#endif\n"
-
-			"	// The final fragment colour.\n"
-			"	gl_FragColor = tile_colour;\n"
-
-			"}\n";
-
+	//! Fragment shader source code to render raster tiles to the scene.
+	const QString RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME =
+			":/opengl/multi_resolution_static_polygon_reconstructed_raster/render_tile_to_scene_fragment_shader.glsl";
 
 	/**
 	 * A 4-component texture environment colour used to extract red channel when used with GL_ARB_texture_env_dot3.
@@ -441,15 +177,14 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_age_m
 			"#define MAP_VIEW\n";
 
 		GLShaderProgramUtils::ShaderSource fragment_shader_source;
-		fragment_shader_source.add_shader_source(GLShaderProgramUtils::BILINEAR_FILTER_SHADER_SOURCE);
-		fragment_shader_source.add_shader_source(GLShaderProgramUtils::ROTATE_VECTOR_BY_QUATERNION_SHADER_SOURCE);
+		fragment_shader_source.add_shader_source_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
 		fragment_shader_source.add_shader_source(shader_defines);
-		fragment_shader_source.add_shader_source(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE);
+		fragment_shader_source.add_shader_source_from_file(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 		
 		GLShaderProgramUtils::ShaderSource vertex_shader_source;
-		vertex_shader_source.add_shader_source(GLShaderProgramUtils::ROTATE_VECTOR_BY_QUATERNION_SHADER_SOURCE);
+		vertex_shader_source.add_shader_source_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
 		vertex_shader_source.add_shader_source(shader_defines);
-		vertex_shader_source.add_shader_source(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE);
+		vertex_shader_source.add_shader_source_from_file(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
 
 		// Attempt to create the test shader program.
 		if (!GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
@@ -510,15 +245,14 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_norma
 			"#define ACTIVE_POLYGONS\n";
 
 		GLShaderProgramUtils::ShaderSource fragment_shader_source;
-		fragment_shader_source.add_shader_source(GLShaderProgramUtils::BILINEAR_FILTER_SHADER_SOURCE);
-		fragment_shader_source.add_shader_source(GLShaderProgramUtils::ROTATE_VECTOR_BY_QUATERNION_SHADER_SOURCE);
+		fragment_shader_source.add_shader_source_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
 		fragment_shader_source.add_shader_source(shader_defines);
-		fragment_shader_source.add_shader_source(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE);
+		fragment_shader_source.add_shader_source_from_file(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 		
 		GLShaderProgramUtils::ShaderSource vertex_shader_source;
-		vertex_shader_source.add_shader_source(GLShaderProgramUtils::ROTATE_VECTOR_BY_QUATERNION_SHADER_SOURCE);
+		vertex_shader_source.add_shader_source_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
 		vertex_shader_source.add_shader_source(shader_defines);
-		vertex_shader_source.add_shader_source(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE);
+		vertex_shader_source.add_shader_source_from_file(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
 
 		// Attempt to create the test shader program.
 		if (!GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
@@ -786,7 +520,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 	// If scene lighting is enabled and we're using a normal map then determine its render depth.
 	// It can be different to the source raster if its tile dimension is different.
 	unsigned int normal_map_render_cube_quad_tree_depth = 0;
-	if (d_light && d_light.get()->get_scene_lighting_params().is_lighting_enabled() &&
+	if (d_light && d_light.get()->get_scene_lighting_parameters().is_lighting_enabled() &&
 		d_normal_map_cube_raster)
 	{
 		// Adjust the source raster render depth based on the ratio of tile dimensions.
@@ -863,7 +597,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 	// If using a normal map then it needs a different subdivision cache because it, most likely, has a
 	// different tile dimension than the source raster (giving it a different half-texel frustum offset).
 	boost::optional<normal_map_cube_subdivision_cache_type::non_null_ptr_type> normal_map_cube_subdivision_cache;
-	if (d_light && d_light.get()->get_scene_lighting_params().is_lighting_enabled() &&
+	if (d_light && d_light.get()->get_scene_lighting_parameters().is_lighting_enabled() &&
 		d_normal_map_cube_raster)
 	{
 		normal_map_cube_subdivision_cache =
@@ -969,7 +703,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 			boost::optional<normal_map_quad_tree_node_type> normal_map_quad_tree_root;
 			boost::optional<const GLUtils::QuadTreeUVTransform &> normal_map_root_uv_transform;
 			boost::optional<normal_map_cube_subdivision_cache_type::node_reference_type> normal_map_cube_subdivision_cache_root_node;
-			if (d_light && d_light.get()->get_scene_lighting_params().is_lighting_enabled() &&
+			if (d_light && d_light.get()->get_scene_lighting_parameters().is_lighting_enabled() &&
 				d_normal_map_cube_raster)
 			{
 				// Get the quad tree root node of the current cube face of the normal map raster.
@@ -1763,7 +1497,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_shader_pro
 	// Note that we'll only get a normal map texture if surface lighting is enabled but we'll
 	// check for both surface lighting and a normal map texture just to be certain.
 
-	if (d_light && d_light.get()->get_scene_lighting_params().is_lighting_enabled())
+	if (d_light && d_light.get()->get_scene_lighting_parameters().is_lighting_enabled())
 	{
 		// TODO: Get the map view working.
 		if (false/*d_light.get()->get_map_projection()*/)
@@ -2042,7 +1776,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 	//
 
 	// If lighting is enabled...
-	if (d_light && d_light.get()->get_scene_lighting_params().is_lighting_enabled())
+	if (d_light && d_light.get()->get_scene_lighting_parameters().is_lighting_enabled())
 	{
 		// There's no fixed-function pipeline fallback for surface lighting.
 		// If the shader program is not available on runtime system then fixed-function pipeline
@@ -2051,7 +1785,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_scene_t
 		{
 			// Set the ambient light contribution.
 			tile_draw_state.light_ambient_contribution =
-					d_light.get()->get_scene_lighting_params().get_ambient_light_contribution();
+					d_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution();
 
 			// Set parameters depending on whether viewing 3D globe or 2D map.
 			// TODO: Get the map view working.
@@ -2242,7 +1976,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_po
 	// If scene lighting is enabled then we need to apply some non-cached draw state.
 	// This state was not cached with the tile because it varies with rotation group and hence
 	// changes as each rotation group visits the same tile.
-	if (d_light && d_light.get()->get_scene_lighting_params().is_lighting_enabled())
+	if (d_light && d_light.get()->get_scene_lighting_parameters().is_lighting_enabled())
 	{
 		// Get the program object (if any) that will be used to render the current tile.
 		// We have no surface lighting in the fixed-function pipeline (only shader programs).
@@ -2726,24 +2460,17 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 	// Add the '#define' statements first.
 	vertex_shader_source.add_shader_source(vertex_and_fragment_shader_defines);
 	// Then add the GLSL function to rotate by quaternion.
-	vertex_shader_source.add_shader_source(
-			GLShaderProgramUtils::ROTATE_VECTOR_BY_QUATERNION_SHADER_SOURCE);
+	vertex_shader_source.add_shader_source_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
 	// Then add the GLSL 'main()' function.
-	vertex_shader_source.add_shader_source(
-			RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE);
+	vertex_shader_source.add_shader_source_from_file(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
 
 	GLShaderProgramUtils::ShaderSource fragment_shader_source;
 	// Add the '#define' statements first.
 	fragment_shader_source.add_shader_source(vertex_and_fragment_shader_defines);
-	// Add the bilinear GLSL function for bilinear texture filtering.
-	fragment_shader_source.add_shader_source(
-			GLShaderProgramUtils::BILINEAR_FILTER_SHADER_SOURCE);
-	// Then add the GLSL function to rotate by quaternion.
-	fragment_shader_source.add_shader_source(
-			GLShaderProgramUtils::ROTATE_VECTOR_BY_QUATERNION_SHADER_SOURCE);
+	// Add the bilinear GLSL function for bilinear texture filtering and rotation by quaternion.
+	fragment_shader_source.add_shader_source_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
 	// Then add the GLSL 'main()' function.
-	fragment_shader_source.add_shader_source(
-			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE);
+	fragment_shader_source.add_shader_source_from_file(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 	// Link the shader program.
 	boost::optional<GLProgramObject::shared_ptr_type> program_object =

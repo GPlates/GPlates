@@ -59,7 +59,7 @@ namespace GPlatesMaths
 	 */
 	class PointOnSphere:
 			public GeometryOnSphere
-			// NOTE: We are *not* inheriting from 'GPlatesUtils::QtStreamable<Real>' in order to
+			// NOTE: We are *not* inheriting from 'GPlatesUtils::QtStreamable<PointOnSphere>' in order to
 			// avoid bloating sizeof(PointOnSphere) due to multiple inheritance (even from empty
 			// base class) - this reduces sizeof(PointOnSphere) from 40 to 32.
 			// Instead we explicitly provide 'operator <<' overloads as non-member functions.

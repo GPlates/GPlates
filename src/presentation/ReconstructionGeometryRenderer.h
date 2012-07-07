@@ -27,6 +27,7 @@
 #ifndef GPLATES_PRESENTATION_RECONSTRUCTION_GEOMETRY_RENDERER_H
 #define GPLATES_PRESENTATION_RECONSTRUCTION_GEOMETRY_RENDERER_H
 
+#include <vector>
 #include <boost/bind.hpp>
 #include <boost/optional.hpp>
 
@@ -40,6 +41,7 @@
 #include "global/PreconditionViolationError.h"
 
 #include "gui/Colour.h"
+#include "gui/ColourPalette.h"
 #include "gui/DrawStyleManager.h"
 #include "gui/Symbol.h"
 #include "gui/RasterColourPalette.h"
@@ -95,12 +97,17 @@ namespace GPlatesPresentation
 			bool fill_polygons;
 			float velocity_ratio_unit_vector_direction_to_globe_radius;
 
+			// Scalar-field-specific parameters.
+			std::vector<float> scalar_field_shader_test_variables;
+			float scalar_field_iso_value;
+			// Scalar field colour palette.
+			GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type scalar_field_colour_palette;
+
 			//
 			// Raster-specific parameters.
 			//
 			//! Raster colour palette.
 			GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette;
-
 			/**
 			 * Raster modulate colour (eg, to control raster opacity/intensity).
 			 *
@@ -146,6 +153,11 @@ namespace GPlatesPresentation
 			void
 			visit_reconstruct_visual_layer_params(
 					const ReconstructVisualLayerParams &params);
+
+			virtual
+			void
+			visit_scalar_field_3d_visual_layer_params(
+					const ScalarField3DVisualLayerParams &params);
 
 			void
 			visit_topology_boundary_visual_layer_params(
@@ -282,10 +294,10 @@ namespace GPlatesPresentation
 				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp);
 
 
-                virtual
-                void
-                visit(
-                                const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc);
+        virtual
+        void
+        visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc);
 
 		virtual
 		void
@@ -296,6 +308,11 @@ namespace GPlatesPresentation
 		void
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_raster_type> &rr);
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<resolved_scalar_field_3d_type> &rsf);
 
 		virtual
 		void

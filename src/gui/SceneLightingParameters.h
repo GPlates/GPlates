@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_SCENELIGHTINGPARAMS_H
-#define GPLATES_GUI_SCENELIGHTINGPARAMS_H
+#ifndef GPLATES_GUI_SCENELIGHTINGPARAMETERS_H
+#define GPLATES_GUI_SCENELIGHTINGPARAMETERS_H
 
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
@@ -35,13 +35,14 @@
 #include "maths/types.h"
 #include "maths/MathsUtils.h"
 
+
 namespace GPlatesGui
 {
 	/**
 	 * Parameters to control scene lighting such as light direction, ambient light level, etc.
 	 */
-	class SceneLightingParams :
-			public boost::equality_comparable<SceneLightingParams>
+	class SceneLightingParameters :
+			public boost::equality_comparable<SceneLightingParameters>
 	{
 	public:
 
@@ -49,13 +50,13 @@ namespace GPlatesGui
 		 * Initial light direction is along x-axis which is latitude/longitude (0,0) which is initially
 		 * facing the user when GPlates starts.
 		 *
-		 * Default to half ambient (non-lit) and half diffuse lighting since
-		 * it gives good visual results for the user to start off with.
+		 * Default to 40% ambient (non-lit) and 60% diffuse lighting since
+		 * it gives good visual contrast/results for the user to start off with.
 		 */
-		SceneLightingParams() :
-			d_lighting_enabled(false),
+		SceneLightingParameters() :
+			d_lighting_enabled(true),
 			d_light_direction_attached_to_view_frame(true),
-			d_ambient_light_contribution(0.5),
+			d_ambient_light_contribution(0.4),
 			d_light_direction(1, 0, 0)
 		{  }
 
@@ -137,7 +138,7 @@ namespace GPlatesGui
 		//! Equality comparison operator.
 		bool
 		operator==(
-				const SceneLightingParams &rhs) const
+				const SceneLightingParameters &rhs) const
 		{
 			return
 				d_lighting_enabled == rhs.d_lighting_enabled &&
@@ -156,4 +157,4 @@ namespace GPlatesGui
 	};
 }
 
-#endif // GPLATES_GUI_SCENELIGHTINGPARAMS_H
+#endif // GPLATES_GUI_SCENELIGHTINGPARAMETERS_H

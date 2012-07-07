@@ -68,6 +68,7 @@
 #include "GlobeCanvas.h"
 #include "GlobeAndMapWidget.h"
 #include "ImportRasterDialog.h"
+#include "ImportScalarField3DDialog.h"
 #include "MapView.h"
 #include "PythonConsoleDialog.h"
 #include "QtWidgetUtils.h"
@@ -505,11 +506,8 @@ GPlatesQtWidgets::ViewportWindow::connect_file_menu_actions()
 {
 	QObject::connect(action_Open_Feature_Collection, SIGNAL(triggered()),
 			d_file_io_feedback_ptr, SLOT(open_files()));
+
 	// ----
-	QObject::connect(action_Import_Raster, SIGNAL(triggered()),
-			this, SLOT(pop_up_import_raster_dialog()));
-	QObject::connect(action_Import_Time_Dependent_Raster, SIGNAL(triggered()),
-			this, SLOT(pop_up_import_time_dependent_raster_dialog()));
 	// Import submenu logic is handled by the ImportMenu class.
 	// Note: items to the Import submenu should be added programmatically, through
 	// @a d_import_menu_ptr, instead of via the designer.
@@ -517,11 +515,30 @@ GPlatesQtWidgets::ViewportWindow::connect_file_menu_actions()
 			menu_Import,
 			menu_File,
 			this);
+	// Import raster...
+	d_import_menu_ptr->add_import(
+			GPlatesGui::ImportMenu::RASTER,
+			"Import &Raster...",
+			boost::bind(&ViewportWindow::pop_up_import_raster_dialog, boost::ref(*this)));
+	// Import time-dependent raster...
+	d_import_menu_ptr->add_import(
+			GPlatesGui::ImportMenu::RASTER,
+			"Import &Time-Dependent Raster...",
+			boost::bind(&ViewportWindow::pop_up_import_time_dependent_raster_dialog, boost::ref(*this)));
+#if 0 // Temporarily disable until it's ready...
+	// Import 3D scalar field...
+	d_import_menu_ptr->add_import(
+			GPlatesGui::ImportMenu::SCALAR_FIELD_3D,
+			"Import 3D &Scalar Field...",
+			boost::bind(&ViewportWindow::pop_up_import_scalar_field_3d_dialog, boost::ref(*this)));
+#endif
+
 	// ----
 	QObject::connect(action_Manage_Feature_Collections, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_manage_feature_collections_dialog()));
 	QObject::connect(action_File_Errors, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_read_error_accumulation_dialog()));
+
 	// ----
 	QObject::connect(action_Quit, SIGNAL(triggered()),
 			this, SLOT(close()));
@@ -1498,6 +1515,34 @@ void
 GPlatesQtWidgets::ViewportWindow::pop_up_import_time_dependent_raster_dialog()
 {
 	pop_up_import_raster_dialog(true);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::pop_up_import_scalar_field_3d_dialog()
+{
+	// Note: the ImportScalarField3DDialog needs to be reconstructed each time we want to
+	// use it, unlike the other dialogs, otherwise the pages are incorrectly initialised.
+	ImportScalarField3DDialog import_scalar_field_dialog(
+			get_application_state(),
+			get_view_state(),
+			d_unsaved_changes_tracker_ptr.data(),
+			d_file_io_feedback_ptr.data(),
+			this);
+
+	ReadErrorAccumulationDialog &read_errors_dialog = dialogs().read_error_accumulation_dialog();
+
+	GPlatesFileIO::ReadErrorAccumulation &read_errors = read_errors_dialog.read_errors();
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
+
+	import_scalar_field_dialog.display(&read_errors);
+
+	read_errors_dialog.update();
+	GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
+	if (num_initial_errors != num_final_errors)
+	{
+		read_errors_dialog.show();
+	}
 }
 
 

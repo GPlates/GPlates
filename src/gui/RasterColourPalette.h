@@ -241,6 +241,66 @@ namespace GPlatesGui
 
 		static const int NUM_STD_DEV_AWAY_FROM_MEAN = 2;
 	};
+
+
+	/**
+	 * The default normalised colour palette (despite 'raster' in the name it's currently used for 3D scalar fields).
+	 *
+	 * The colour palette covers the range of values [0, 1].
+	 * This palette is useful when the mapping to a specific raster or scalar field range is done
+	 * elsewhere (such as via the GPU hardware).
+	 */
+	class DefaultNormalisedRasterColourPalette :
+			public ColourPalette<double>
+	{
+	public:
+
+		/**
+		 * Constructs a DefaultNormalisedRasterColourPalette.
+		 */
+		static
+		non_null_ptr_type
+		create();
+
+		virtual
+		boost::optional<Colour>
+		get_colour(
+				double value) const;
+
+		virtual
+		void
+		accept_visitor(
+				ConstColourPaletteVisitor &visitor) const
+		{
+			visitor.visit_default_normalised_raster_colour_palette(*this);
+		}
+
+		virtual
+		void
+		accept_visitor(
+				ColourPaletteVisitor &visitor)
+		{
+			visitor.visit_default_normalised_raster_colour_palette(*this);
+		}
+
+		double
+		get_lower_bound() const
+		{
+			return 0;
+		}
+
+		double
+		get_upper_bound() const
+		{
+			return 1;
+		}
+
+	private:
+
+		DefaultNormalisedRasterColourPalette();
+
+		RegularCptColourPalette::non_null_ptr_type d_inner_palette;
+	};
 }
 
 #endif  /* GPLATES_GUI_RASTERCOLOURPALETTE_H */

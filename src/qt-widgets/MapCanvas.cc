@@ -149,7 +149,6 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 		QPainter *painter,
 		const QRectF &/*rect*/)
 {
-	try
 	{
 		PROFILE_BLOCK("MapCanvas::drawBackground: render map");
 
@@ -196,10 +195,6 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 		text_render_scope.end_render();
 
 		// At scope exit OpenGL should now be back in the default OpenGL state...
-	}
-	catch (const GPlatesGlobal::Exception &e)
-	{
-		qWarning() << e;
 	}
 
 	emit repainted();

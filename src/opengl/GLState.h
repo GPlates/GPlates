@@ -466,6 +466,20 @@ namespace GPlatesOpenGL
 					boost::in_place(boost::optional<GLFrameBufferObject::shared_ptr_to_const_type>()));
 		}
 
+		//! Same as @a set_unbind_frame_buffer but also applies directly to OpenGL.
+		void
+		set_unbind_frame_buffer_and_apply(
+				GLState &last_applied_state)
+		{
+			set_state_set(
+					d_state_set_store->bind_frame_buffer_object_state_sets,
+					GLStateSetKeys::KEY_BIND_FRAME_BUFFER,
+					// Boost 1.34 does not support zero arguments (1.35 does)...
+					// Also seems it doesn't like 'boost::none'...
+					boost::in_place(boost::optional<GLFrameBufferObject::shared_ptr_to_const_type>()));
+			apply_state(last_applied_state, GLStateSetKeys::KEY_BIND_FRAME_BUFFER);
+		}
+
 		//! Returns the framebuffer object to bind to the active OpenGL context - boost::none implies default main framebuffer.
 		boost::optional<GLFrameBufferObject::shared_ptr_to_const_type>
 		get_bind_frame_buffer() const
@@ -509,6 +523,20 @@ namespace GPlatesOpenGL
 					// Boost 1.34 does not support zero arguments (1.35 does)...
 					// Also seems it doesn't like 'boost::none'...
 					boost::in_place(boost::optional<GLProgramObject::shared_ptr_to_const_type>()));
+		}
+
+		//! Same as @a set_unbind_program_object but also applies directly to OpenGL.
+		void
+		set_unbind_program_object_and_apply(
+				GLState &last_applied_state)
+		{
+			set_state_set(
+					d_state_set_store->bind_program_object_state_sets,
+					GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT,
+					// Boost 1.34 does not support zero arguments (1.35 does)...
+					// Also seems it doesn't like 'boost::none'...
+					boost::in_place(boost::optional<GLProgramObject::shared_ptr_to_const_type>()));
+			apply_state(last_applied_state, GLStateSetKeys::KEY_BIND_PROGRAM_OBJECT);
 		}
 
 		/**
@@ -563,6 +591,21 @@ namespace GPlatesOpenGL
 					d_state_set_store->bind_texture_state_sets,
 					d_state_set_keys->get_bind_texture_key(texture_unit, texture_target),
 					boost::in_place(texture_unit, texture_target));
+		}
+
+		//! Same as @a set_unbind_texture but also applies directly to OpenGL.
+		void
+		set_unbind_texture_and_apply(
+				GLenum texture_unit,
+				GLenum texture_target,
+				GLState &last_applied_state)
+		{
+			const state_set_key_type state_set_key = d_state_set_keys->get_bind_texture_key(texture_unit, texture_target);
+			set_state_set(
+					d_state_set_store->bind_texture_state_sets,
+					state_set_key,
+					boost::in_place(texture_unit, texture_target));
+			apply_state(last_applied_state, state_set_key);
 		}
 
 		//! Returns the texture bound on the specified target and texture unit - boost::none implies the default no binding.
@@ -940,7 +983,7 @@ namespace GPlatesOpenGL
 					boost::in_place(func, ref));
 		}
 
-		//! Sets the alpha-blend function.
+		//! Sets the alpha-blend function (glBlendFunc).
 		void
 		set_blend_func(
 				GLenum sfactor,
@@ -950,6 +993,20 @@ namespace GPlatesOpenGL
 					d_state_set_store->blend_func_state_sets,
 					GLStateSetKeys::KEY_BLEND_FUNC,
 					boost::in_place(sfactor, dfactor));
+		}
+
+		//! Sets the alpha-blend function (glBlendFuncSeparate).
+		void
+		set_blend_func_separate(
+				GLenum sfactorRGB,
+				GLenum dfactorRGB,
+				GLenum sfactorAlpha,
+				GLenum dfactorAlpha)
+		{
+			set_state_set(
+					d_state_set_store->blend_func_state_sets,
+					GLStateSetKeys::KEY_BLEND_FUNC,
+					boost::in_place(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha));
 		}
 
 		//! Set the depth function.
@@ -984,7 +1041,7 @@ namespace GPlatesOpenGL
 							GLStateSetKeys::KEY_ACTIVE_TEXTURE,
 							&GLActiveTextureStateSet::d_active_texture);
 			// The default of no active texture unit means the default unit GL_TEXTURE0 is active.
-			return active_texture ? active_texture.get() : GLContext::Parameters::Texture::gl_texture0;
+			return active_texture ? active_texture.get() : GLContext::Parameters::Texture::gl_TEXTURE0;
 		}
 
 
@@ -1008,7 +1065,7 @@ namespace GPlatesOpenGL
 							GLStateSetKeys::KEY_CLIENT_ACTIVE_TEXTURE,
 							&GLClientActiveTextureStateSet::d_client_active_texture);
 			// The default of no client_active texture unit means the default unit GL_TEXTURE0 is active.
-			return client_active_texture ? client_active_texture.get() : GLContext::Parameters::Texture::gl_texture0;
+			return client_active_texture ? client_active_texture.get() : GLContext::Parameters::Texture::gl_TEXTURE0;
 		}
 
 

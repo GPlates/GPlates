@@ -149,6 +149,9 @@ GPlatesFileIO::StructurePropertyCreatorMap::StructurePropertyCreatorMap()
 	d_map[TemplateTypeParameterType::create_gml("File")] =
 		GET_PROP_VAL_NAME(create_file);
 
+	d_map[TemplateTypeParameterType::create_gpml("ScalarField3DFile")] =
+		GET_PROP_VAL_NAME(create_scalar_field_3d_file);
+
 	d_map[TemplateTypeParameterType::create_gpml("Array")] =
 		GET_PROP_VAL_NAME(create_array);
 }

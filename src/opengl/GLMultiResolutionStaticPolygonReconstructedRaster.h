@@ -47,7 +47,7 @@
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
 
-#include "gui/SceneLightingParams.h"
+#include "gui/SceneLightingParameters.h"
 
 #include "maths/MathsFwd.h"
 #include "maths/CubeQuadTree.h"

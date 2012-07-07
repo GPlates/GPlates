@@ -555,20 +555,27 @@ namespace GPlatesQtWidgets
 		GPlatesOpenGL::GLMatrix d_gl_model_view_transform;
 
 		/**
-		 * The current projection transform for OpenGL rendering of the front visible half of the globe.
+		 * The current projection transform for OpenGL rendering of the *front* visible half of the globe.
 		 *
 		 * This is used for rendering an opaque globe (only the front half is visible) and for
 		 * rendering SVG output since it uses the OpenGL feedback mechanism which bypasses
 		 * rasterisation and hence the transformation pipeline is required for clipping
 		 * (ie, the far clip plane).
 		 */
-		GPlatesOpenGL::GLMatrix d_gl_projection_transform_include_half_globe;
+		GPlatesOpenGL::GLMatrix d_gl_projection_transform_include_front_half_globe;
+
+		/**
+		 * The current projection transform for OpenGL rendering of the *rear* half of the globe.
+		 *
+		 * This is used when rendering a transparent globe since the rear half of the globe then
+		 * becomes visible.
+		 */
+		GPlatesOpenGL::GLMatrix d_gl_projection_transform_include_rear_half_globe;
 
 		/**
 		 * The current projection transform for OpenGL rendering of the full globe.
 		 *
-		 * This is used when rendering a transparent globe since the rear half of the globe then
-		 * becomes visible.
+		 * This is used when rendering sub-surface data (such as 3D scalar fields).
 		 */
 		GPlatesOpenGL::GLMatrix d_gl_projection_transform_include_full_globe;
 

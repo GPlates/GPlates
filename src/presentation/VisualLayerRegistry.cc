@@ -31,6 +31,7 @@
 
 #include "RasterVisualLayerParams.h"
 #include "ReconstructVisualLayerParams.h"
+#include "ScalarField3DVisualLayerParams.h"
 #include "TopologyBoundaryVisualLayerParams.h"
 
 #include "TopologyNetworkVisualLayerParams.h"
@@ -47,6 +48,7 @@
 #include "qt-widgets/RasterLayerOptionsWidget.h"
 #include "qt-widgets/ReconstructLayerOptionsWidget.h"
 #include "qt-widgets/ReconstructionLayerOptionsWidget.h"
+#include "qt-widgets/ScalarField3DLayerOptionsWidget.h"
 #include "qt-widgets/TopologyBoundaryResolverLayerOptionsWidget.h"
 
 #include "qt-widgets/TopologyNetworkResolverLayerOptionsWidget.h"
@@ -456,6 +458,20 @@ GPlatesPresentation::register_default_visual_layers(
 				RASTER),
 			&GPlatesQtWidgets::RasterLayerOptionsWidget::create,
 			&RasterVisualLayerParams::create,
+			true);
+
+	registry.register_visual_layer_type(
+			VisualLayerType::Type(SCALAR_FIELD_3D),
+			VisualLayerGroup::SCALAR_FIELDS,
+			"3D Scalar Field",
+			"A sub-surface scalar field visualised using volume rendering.",
+			*html_colours.get_colour("teal"),
+			CreateAppLogicLayer(
+				reconstruct_graph,
+				layer_task_registry,
+				SCALAR_FIELD_3D),
+			&GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::create,
+			&ScalarField3DVisualLayerParams::create,
 			true);
 
 	// DERIVED_DATA group.

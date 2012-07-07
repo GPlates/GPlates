@@ -29,6 +29,7 @@
 
 #include <map>
 #include <utility>
+#include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -45,19 +46,24 @@
 #include "GLMultiResolutionRasterMapView.h"
 #include "GLMultiResolutionStaticPolygonReconstructedRaster.h"
 #include "GLNormalMapSource.h"
-#include "GLVisualRasterSource.h"
+#include "GLScalarField3D.h"
 #include "GLReconstructedStaticPolygonMeshes.h"
+#include "GLTexture.h"
+#include "GLVisualRasterSource.h"
 #include "OpenGLFwd.h"
 
 #include "app-logic/Layer.h"
 #include "app-logic/RasterLayerProxy.h"
 #include "app-logic/ReconstructGraph.h"
 #include "app-logic/ResolvedRaster.h"
+#include "app-logic/ResolvedScalarField3D.h"
+#include "app-logic/ScalarField3DLayerProxy.h"
 
 #include "gui/Colour.h"
+#include "gui/ColourPalette.h"
 #include "gui/MapProjection.h"
 #include "gui/RasterColourPalette.h"
-#include "gui/SceneLightingParams.h"
+#include "gui/SceneLightingParameters.h"
 
 #include "maths/CubeQuadTreePartition.h"
 #include "maths/types.h"
@@ -105,7 +111,7 @@ namespace GPlatesOpenGL
 
 		
 		//! Typedef for a collection of filled polygons.
-		typedef GPlatesOpenGL::GLMultiResolutionFilledPolygons::filled_polygons_type filled_polygons_type;
+		typedef GLMultiResolutionFilledPolygons::filled_polygons_type filled_polygons_type;
 
 		/**
 		 * Typedef for an opaque object that caches a particular render (eg, raster or filled polygons).
@@ -121,7 +127,7 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				const GPlatesOpenGL::GLContext::non_null_ptr_type &opengl_context,
+				const GLContext::non_null_ptr_type &opengl_context,
 				GPlatesAppLogic::ApplicationState &application_state)
 		{
 			return non_null_ptr_type(new GLVisualLayers(opengl_context, application_state));
@@ -139,13 +145,23 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				const GPlatesOpenGL::GLContext::non_null_ptr_type &opengl_context,
+				const GLContext::non_null_ptr_type &opengl_context,
 				const GLVisualLayers::non_null_ptr_type &objects_from_another_context,
 				GPlatesAppLogic::ApplicationState &application_state)
 		{
 			return non_null_ptr_type(
 					new GLVisualLayers(opengl_context, objects_from_another_context, application_state));
 		}
+
+
+		/**
+		 * Returns the light used for surface lighting or false if not supported on run-time system.
+		 *
+		 * NOTE: This must be called when an OpenGL context is currently active.
+		 */
+		boost::optional<GLLight::non_null_ptr_type>
+		get_light(
+				GLRenderer &renderer) const;
 
 
 		/**
@@ -157,23 +173,44 @@ namespace GPlatesOpenGL
 		 * @a source_raster_modulate_colour can be used to modulate the raster by the specified
 		 * colour (eg, to enable semi-transparent rasters).
 		 *
-		 * @a scene_lighting_params contains the scene lighting parameters used to render raster with.
-		 *
-		 * @a view_orientation is the orientation of the view direction relative to the globe.
-		 * This only really makes sense in the 3D globe view (not 2D map views).
+		 * The raster is rendered with lighting (if supported and currently enabled) using @a get_light
+		 * (and it's current lighting parameters).
 		 *
 		 * If @a map_projection is specified then the raster is rendered using the specified
 		 * 2D map projection, otherwise it's rendered to the 3D globe.
 		 */
 		cache_handle_type
 		render_raster(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GLRenderer &renderer,
 				const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type &source_resolved_raster,
 				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &source_raster_colour_palette,
 				const GPlatesGui::Colour &source_raster_modulate_colour = GPlatesGui::Colour::get_white(),
-				const GPlatesGui::SceneLightingParams &scene_lighting_params = GPlatesGui::SceneLightingParams(),
-				const GLMatrix &view_orientation = GLMatrix::IDENTITY,
 				boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection = boost::none);
+
+
+		/**
+		 * Renders the 3D scalar field as an iso-surface at iso-value @a scalar_field_iso_value.
+		 *
+		 * @a scalar_field_colour_palette is the [0,1] range colour palette used to colour by
+		 * scalar value or gradient magnitude.
+		 *
+		 * @a shader_test_variables are a temporary solution used during development of scalar field rendering.
+		 *
+		 * @a surface_occlusion_texture is a viewport-size 2D texture containing the RGBA rendering
+		 * of the surface geometries/rasters on the *front* of the globe.
+		 * It is used to early-cull rays into the scalar field.
+		 *
+		 * The scalar field is rendered with lighting (if supported and currently enabled) using @a get_light
+		 * (and it's current lighting parameters).
+		 */
+		cache_handle_type
+		render_scalar_field_3d(
+				GLRenderer &renderer,
+				const GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_to_const_type &source_resolved_scalar_field,
+				float scalar_field_iso_value,
+				const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &scalar_field_colour_palette,
+				const std::vector<float> &shader_test_variables,
+				boost::optional<GLTexture::shared_ptr_to_const_type> surface_occlusion_texture);
 
 
 		/**
@@ -186,10 +223,13 @@ namespace GPlatesOpenGL
 		 * A self-intersecting polygon is filled in those parts of the polygon that intersect the
 		 * polygon an odd numbers of times when a line is formed from the point (part) in question
 		 * to a point outside the exterior of the polygon. Same applies to polylines.
+		 *
+		 * Filled polygons are rendered with lighting (if supported and currently enabled)
+		 * using @a get_light (and it's current lighting parameters).
 		 */
 		void
 		render_filled_polygons(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GLRenderer &renderer,
 				const filled_polygons_type &filled_polygons);
 
 	public slots:
@@ -223,6 +263,7 @@ namespace GPlatesOpenGL
 			//! The types of layer usage.
 			enum Type
 			{
+				SCALAR_FIELD_3D,
 				RASTER,
 				CUBE_RASTER,
 				AGE_GRID,
@@ -265,6 +306,81 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * A 3D scalar field (can be time-dependent).
+		 */
+		class ScalarField3DLayerUsage :
+				public LayerUsage
+		{
+		public:
+			explicit
+			ScalarField3DLayerUsage(
+					const GPlatesAppLogic::ScalarField3DLayerProxy::non_null_ptr_type &scalar_field_layer_proxy);
+
+			/**
+			 * Set the iso-value of iso-surface to render.
+			 */
+			void
+			set_scalar_field_iso_value(
+					float iso_value);
+
+			/**
+			 * Set the colour palette looked up by the scalar values or the gradient magnitudes.
+			 */
+			void
+			set_scalar_field_colour_palette(
+					const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &scalar_field_colour_palette);
+
+			/**
+			 * Set the variables used during scalar field shader program testing.
+			 */
+			void
+			set_shader_test_variables(
+					const std::vector<float> &shader_test_variables);
+
+			/**
+			 * Set/update the layer usages that come from other layers (and the global light input).
+			 *
+			 * This is done in case the user connects to new layers or disconnects.
+			 */
+			void
+			set_layer_inputs(
+					boost::optional<GLLight::non_null_ptr_type> light);
+
+			/**
+			 * Returns scalar field - rebuilds if out-of-date with respect to its dependencies.
+			 *
+			 * Returns false if the scalar field could not be uninitialised.
+			 */
+			boost::optional<GLScalarField3D::non_null_ptr_type>
+			get_scalar_field_3d(
+					GLRenderer &renderer);
+
+			virtual
+			bool
+			is_required_direct_or_indirect_dependency(
+					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const;
+
+		private:
+			GPlatesAppLogic::ScalarField3DLayerProxy::non_null_ptr_type d_scalar_field_layer_proxy;
+			GPlatesUtils::ObserverToken d_scalar_field_observer_token;
+			GPlatesUtils::ObserverToken d_scalar_field_feature_observer_token;
+
+			float d_iso_value;
+			bool d_iso_value_dirty;
+
+			GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type d_colour_palette;
+			bool d_colour_palette_dirty;
+
+			std::vector<float> d_shader_test_variables;
+			bool d_shader_test_variables_dirty;
+
+			boost::optional<GLLight::non_null_ptr_type> d_light;
+
+			boost::optional<GLScalarField3D::non_null_ptr_type> d_scalar_field;
+		};
+
+
+		/**
 		 * A regular, unreconstructed coloured raster (can be time-dependent).
 		 */
 		class RasterLayerUsage :
@@ -278,13 +394,13 @@ namespace GPlatesOpenGL
 			//! Sets the raster colour palette.
 			void
 			set_raster_colour_palette(
-					GPlatesOpenGL::GLRenderer &renderer,
+					GLRenderer &renderer,
 					const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette);
 
 			//! Sets the raster modulation colour.
 			void
 			set_raster_modulate_colour(
-					GPlatesOpenGL::GLRenderer &renderer,
+					GLRenderer &renderer,
 					const GPlatesGui::Colour &raster_modulate_colour);
 
 			/**
@@ -292,9 +408,9 @@ namespace GPlatesOpenGL
 			 *
 			 * Returns false if the raster is not a proxy raster or if it's uninitialised.
 			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type>
+			boost::optional<GLMultiResolutionRaster::non_null_ptr_type>
 			get_multi_resolution_raster(
-					GPlatesOpenGL::GLRenderer &renderer);
+					GLRenderer &renderer);
 
 			virtual
 			bool
@@ -312,8 +428,8 @@ namespace GPlatesOpenGL
 			GPlatesGui::Colour d_raster_modulate_colour;
 			bool d_raster_modulate_colour_dirty;
 
-			boost::optional<GPlatesOpenGL::GLVisualRasterSource::non_null_ptr_type> d_visual_raster_source;
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_multi_resolution_raster;
+			boost::optional<GLVisualRasterSource::non_null_ptr_type> d_visual_raster_source;
+			boost::optional<GLMultiResolutionRaster::non_null_ptr_type> d_multi_resolution_raster;
 		};
 
 
@@ -333,9 +449,9 @@ namespace GPlatesOpenGL
 			/**
 			 * Returns multi-resolution cube raster - rebuilds if out-of-date with respect to its dependencies.
 			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
+			boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type>
 			get_multi_resolution_cube_raster(
-					GPlatesOpenGL::GLRenderer &renderer);
+					GLRenderer &renderer);
 
 			virtual
 			bool
@@ -345,8 +461,8 @@ namespace GPlatesOpenGL
 		private:
 			GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> d_raster_layer_usage;
 
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_multi_resolution_raster;
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> d_multi_resolution_cube_raster;
+			boost::optional<GLMultiResolutionRaster::non_null_ptr_type> d_multi_resolution_raster;
+			boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> d_multi_resolution_cube_raster;
 		};
 
 
@@ -367,9 +483,9 @@ namespace GPlatesOpenGL
 			 *
 			 * Rebuilds if out-of-date with respect to its dependencies.
 			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
+			boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type>
 			get_multi_resolution_age_grid_mask(
-					GPlatesOpenGL::GLRenderer &renderer,
+					GLRenderer &renderer,
 					const double &reconstruction_time);
 
 			virtual
@@ -398,9 +514,9 @@ namespace GPlatesOpenGL
 			 *
 			 * Rebuilds if out-of-date with respect to its dependencies.
 			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
+			boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type>
 			get_normal_map(
-					GPlatesOpenGL::GLRenderer &renderer);
+					GLRenderer &renderer);
 
 			virtual
 			bool
@@ -412,9 +528,9 @@ namespace GPlatesOpenGL
 			GPlatesUtils::ObserverToken d_proxied_raster_observer_token;
 			GPlatesUtils::ObserverToken d_raster_feature_observer_token;
 
-			boost::optional<GPlatesOpenGL::GLNormalMapSource::non_null_ptr_type> d_normal_map_raster_source;
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_multi_resolution_raster;
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> d_multi_resolution_cube_raster;
+			boost::optional<GLNormalMapSource::non_null_ptr_type> d_normal_map_raster_source;
+			boost::optional<GLMultiResolutionRaster::non_null_ptr_type> d_multi_resolution_raster;
+			boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> d_multi_resolution_cube_raster;
 		};
 
 
@@ -434,9 +550,9 @@ namespace GPlatesOpenGL
 			 *
 			 * Rebuilds if out-of-date with respect to its dependencies.
 			 */
-			GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type
+			GLReconstructedStaticPolygonMeshes::non_null_ptr_type
 			get_reconstructed_static_polygon_meshes(
-					GPlatesOpenGL::GLRenderer &renderer,
+					GLRenderer &renderer,
 					bool reconstructing_with_age_grid,
 					const double &reconstruction_time);
 
@@ -482,9 +598,9 @@ namespace GPlatesOpenGL
 			 * Rebuilds if out-of-date with respect to its dependencies.
 			 * Including if the specified layer usages are different objects since last time.
 			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
+			boost::optional<GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
 			get_static_polygon_reconstructed_raster(
-					GPlatesOpenGL::GLRenderer &renderer,
+					GLRenderer &renderer,
 					const double &reconstruction_time);
 
 			virtual
@@ -498,23 +614,23 @@ namespace GPlatesOpenGL
 					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy);
 
 		private:
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> d_multi_resolution_cube_raster;
+			boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> d_multi_resolution_cube_raster;
 			GPlatesUtils::non_null_intrusive_ptr<CubeRasterLayerUsage> d_cube_raster_layer_usage;
 
-			boost::optional<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
+			boost::optional<GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
 					d_reconstructed_polygon_meshes;
 			boost::optional<GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> >
 					d_reconstructed_polygon_meshes_layer_usage;
 
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> d_age_grid_mask_cube_raster;
+			boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> d_age_grid_mask_cube_raster;
 			boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > d_age_grid_layer_usage;
 
-			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> d_normal_map_cube_raster;
+			boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> d_normal_map_cube_raster;
 			boost::optional<GPlatesUtils::non_null_intrusive_ptr<NormalMapLayerUsage> > d_normal_map_layer_usage;
 
-			boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type> d_light;
+			boost::optional<GLLight::non_null_ptr_type> d_light;
 
-			boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
+			boost::optional<GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
 					d_reconstructed_raster;
 		};
 
@@ -537,10 +653,10 @@ namespace GPlatesOpenGL
 			 *
 			 * @a multi_resolution_map_cube_mesh is shared by all layers (because contains no layer-specific state).
 			 */
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRasterMapView::non_null_ptr_type>
+			boost::optional<GLMultiResolutionRasterMapView::non_null_ptr_type>
 			get_multi_resolution_raster_map_view(
-					GPlatesOpenGL::GLRenderer &renderer,
-					const GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type &multi_resolution_map_cube_mesh,
+					GLRenderer &renderer,
+					const GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type &multi_resolution_map_cube_mesh,
 					const double &reconstruction_time);
 
 			virtual
@@ -549,13 +665,13 @@ namespace GPlatesOpenGL
 					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const;
 
 		private:
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type> d_raster;
+			boost::optional<GLMultiResolutionRaster::non_null_ptr_type> d_raster;
 			GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage> d_raster_layer_usage;
 
-			boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type> d_reconstructed_raster;
+			boost::optional<GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type> d_reconstructed_raster;
 			GPlatesUtils::non_null_intrusive_ptr<StaticPolygonReconstructedRasterLayerUsage> d_reconstructed_raster_layer_usage;
 
-			boost::optional<GPlatesOpenGL::GLMultiResolutionRasterMapView::non_null_ptr_type> d_multi_resolution_raster_map_view;
+			boost::optional<GLMultiResolutionRasterMapView::non_null_ptr_type> d_multi_resolution_raster_map_view;
 		};
 
 
@@ -580,6 +696,10 @@ namespace GPlatesOpenGL
 			{
 				return non_null_ptr_type(new GLLayer(layer_proxy));
 			}
+
+			//! Returns the scalar field layer usage (creates one if does not yet exist).
+			GPlatesUtils::non_null_intrusive_ptr<ScalarField3DLayerUsage>
+			get_scalar_field_3d_layer_usage();
 
 			//! Returns the raster layer usage (creates one if does not yet exist).
 			GPlatesUtils::non_null_intrusive_ptr<RasterLayerUsage>
@@ -676,14 +796,14 @@ namespace GPlatesOpenGL
 		struct ListObjects
 		{
 			ListObjects(
-					const boost::shared_ptr<GPlatesOpenGL::GLContext::SharedState> &opengl_shared_state,
+					const boost::shared_ptr<GLContext::SharedState> &opengl_shared_state,
 					const NonListObjects &non_list_objects);
 
 
 			/**
 			 * Shared textures, etc.
 			 */
-			boost::shared_ptr<GPlatesOpenGL::GLContext::SharedState> opengl_shared_state;
+			boost::shared_ptr<GLContext::SharedState> opengl_shared_state;
 
 			/**
 			 * Keeps track of each GL layer associated with each layer proxy (one-to-one).
@@ -702,9 +822,9 @@ namespace GPlatesOpenGL
 			 *
 			 * NOTE: This must be called when an OpenGL context is currently active.
 			 */
-			GPlatesOpenGL::GLMultiResolutionCubeMesh::non_null_ptr_to_const_type
+			GLMultiResolutionCubeMesh::non_null_ptr_to_const_type
 			get_multi_resolution_cube_mesh(
-					GPlatesOpenGL::GLRenderer &renderer) const;
+					GLRenderer &renderer) const;
 
 			/**
 			 * Returns the multi-resolution *map* cube mesh.
@@ -713,9 +833,9 @@ namespace GPlatesOpenGL
 			 *
 			 * NOTE: This must be called when an OpenGL context is currently active.
 			 */
-			GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type
+			GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type
 			get_multi_resolution_map_cube_mesh(
-					GPlatesOpenGL::GLRenderer &renderer,
+					GLRenderer &renderer,
 					const GPlatesGui::MapProjection &map_projection) const;
 
 			/**
@@ -723,18 +843,18 @@ namespace GPlatesOpenGL
 			 *
 			 * NOTE: This must be called when an OpenGL context is currently active.
 			 */
-			GPlatesOpenGL::GLMultiResolutionFilledPolygons::non_null_ptr_type
+			GLMultiResolutionFilledPolygons::non_null_ptr_type
 			get_multi_resolution_filled_polygons(
-					GPlatesOpenGL::GLRenderer &renderer) const;
+					GLRenderer &renderer) const;
 
 			/**
 			 * Returns the light used for surface lighting or false if not supported on run-time system.
 			 *
 			 * NOTE: This must be called when an OpenGL context is currently active.
 			 */
-			boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type>
+			boost::optional<GLLight::non_null_ptr_type>
 			get_light(
-					GPlatesOpenGL::GLRenderer &renderer) const;
+					GLRenderer &renderer) const;
 
 		private:
 			const NonListObjects &d_non_list_objects;
@@ -745,7 +865,7 @@ namespace GPlatesOpenGL
 			 * NOTE: This can be shared by all layers since it contains no state specific
 			 * to anything a layer will draw with it.
 			 */
-			mutable boost::optional<GPlatesOpenGL::GLMultiResolutionCubeMesh::non_null_ptr_to_const_type>
+			mutable boost::optional<GLMultiResolutionCubeMesh::non_null_ptr_to_const_type>
 					d_multi_resolution_cube_mesh;
 
 			/**
@@ -754,7 +874,7 @@ namespace GPlatesOpenGL
 			 * NOTE: This can be shared by all layers since it contains no state specific
 			 * to anything a layer will draw with it (contains only global map projection).
 			 */
-			mutable boost::optional<GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_type>
+			mutable boost::optional<GLMultiResolutionMapCubeMesh::non_null_ptr_type>
 					d_multi_resolution_map_cube_mesh;
 
 			/**
@@ -766,13 +886,13 @@ namespace GPlatesOpenGL
 			 *
 			 * NOTE: Must be defined after @a d_multi_resolution_cube_mesh since it's a dependency.
 			 */
-			mutable boost::optional<GPlatesOpenGL::GLMultiResolutionFilledPolygons::non_null_ptr_type>
+			mutable boost::optional<GLMultiResolutionFilledPolygons::non_null_ptr_type>
 					d_multi_resolution_filled_polygons;
 
 			/**
 			 * Used for surface lighting in 3D globe and 2D map views.
 			 */
-			mutable boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type> d_light;
+			mutable boost::optional<GLLight::non_null_ptr_type> d_light;
 		};
 
 
@@ -784,12 +904,12 @@ namespace GPlatesOpenGL
 		//! Constructor.
 		explicit
 		GLVisualLayers(
-				const GPlatesOpenGL::GLContext::non_null_ptr_type &opengl_context,
+				const GLContext::non_null_ptr_type &opengl_context,
 				GPlatesAppLogic::ApplicationState &application_state);
 
 		//! Constructor.
 		GLVisualLayers(
-				const GPlatesOpenGL::GLContext::non_null_ptr_type &opengl_context,
+				const GLContext::non_null_ptr_type &opengl_context,
 				const GLVisualLayers::non_null_ptr_type &objects_from_another_context,
 				GPlatesAppLogic::ApplicationState &application_state);
 

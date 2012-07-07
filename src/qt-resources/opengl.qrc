@@ -1,0 +1,31 @@
+<RCC>
+  <qresource prefix="/">
+    <file>opengl/layer_painter/render_point_line_polygon_lighting_fragment_shader.glsl</file>
+    <file>opengl/layer_painter/render_point_line_polygon_lighting_vertex_shader.glsl</file>
+    <file>opengl/light/render_map_view_light_direction_fragment_shader.glsl</file>
+    <file>opengl/light/render_map_view_light_direction_vertex_shader.glsl</file>
+    <file>opengl/multi_resolution_filled_polygons/render_tile_to_scene_fragment_shader.glsl</file>
+    <file>opengl/multi_resolution_filled_polygons/render_tile_to_scene_vertex_shader.glsl</file>
+    <file>opengl/multi_resolution_filled_polygons/render_to_polygon_stencil_texture_fragment_shader.glsl</file>
+    <file>opengl/multi_resolution_filled_polygons/render_to_polygon_stencil_texture_vertex_shader.glsl</file>
+    <file>opengl/multi_resolution_raster/render_raster_fragment_shader.glsl</file>
+    <file>opengl/multi_resolution_raster_map_view/render_tile_to_scene_fragment_shader.glsl</file>
+    <file>opengl/multi_resolution_raster_map_view/render_tile_to_scene_vertex_shader.glsl</file>
+    <file>opengl/multi_resolution_static_polygon_reconstructed_raster/render_tile_to_scene_fragment_shader.glsl</file>
+    <file>opengl/multi_resolution_static_polygon_reconstructed_raster/render_tile_to_scene_vertex_shader.glsl</file>
+    <file>opengl/normal_map_source/generate_normal_map_fragment_shader.glsl</file>
+    <file>opengl/normal_map_source/generate_normal_map_vertex_shader.glsl</file>
+    <file>opengl/raster_co_registration/mask_region_of_interest_fragment_shader.glsl</file>
+    <file>opengl/raster_co_registration/mask_region_of_interest_vertex_shader.glsl</file>
+    <file>opengl/raster_co_registration/reduction_of_region_of_interest_fragment_shader.glsl</file>
+    <file>opengl/raster_co_registration/reduction_of_region_of_interest_vertex_shader.glsl</file>
+    <file>opengl/raster_co_registration/render_region_of_interest_geometries_fragment_shader.glsl</file>
+    <file>opengl/raster_co_registration/render_region_of_interest_geometries_vertex_shader.glsl</file>
+    <file>opengl/scalar_field_3d/cross_section_fragment_shader.glsl</file>
+    <file>opengl/scalar_field_3d/cross_section_vertex_shader.glsl</file>
+    <file>opengl/scalar_field_3d/iso_surface_fragment_shader.glsl</file>
+    <file>opengl/scalar_field_3d/iso_surface_vertex_shader.glsl</file>
+    <file>opengl/scalar_field_3d/utils.glsl</file>
+    <file>opengl/utils.glsl</file>
+  </qresource>
+</RCC>

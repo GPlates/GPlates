@@ -389,6 +389,9 @@ namespace GPlatesQtWidgets
 		pop_up_import_time_dependent_raster_dialog();
 
 		void
+		pop_up_import_scalar_field_3d_dialog();
+
+		void
 		handle_colour_scheme_delegator_changed();
 
 		void

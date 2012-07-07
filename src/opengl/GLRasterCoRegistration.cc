@@ -64,532 +64,39 @@ namespace GPlatesOpenGL
 {
 	namespace
 	{
-		/**
-		 * Fragment shader source to render region-of-interest geometries.
-		 *
-		 * 'ENABLE_SEED_FRUSTUM_CLIPPING' is used for clipping to seed frustums.
-		 * It is used when the seed frustum is smaller than the view frustum otherwise
-		 * the regular primitive clipping of the GPU (in NDC space) is all that's needed.
-		 */
-		const char *RENDER_REGION_OF_INTEREST_GEOMETRIES_FRAGMENT_SHADER_SOURCE =
-				"#ifdef POINT_REGION_OF_INTEREST\n"
-				"#ifdef SMALL_ROI_ANGLE\n"
-				"	uniform float tan_squared_region_of_interest_angle;\n"
-				"#endif\n"
-				"#ifdef LARGE_ROI_ANGLE\n"
-				"	uniform float cos_region_of_interest_angle;\n"
-				"#endif\n"
-				"#endif\n"
-
-				"#ifdef LINE_REGION_OF_INTEREST\n"
-				"#ifdef SMALL_ROI_ANGLE\n"
-				"	uniform float sin_region_of_interest_angle;\n"
-				"#endif\n"
-				"#ifdef LARGE_ROI_ANGLE\n"
-				"	uniform float tan_squared_region_of_interest_complementary_angle;\n"
-				"#endif\n"
-				"#endif\n"
-
-				"#if defined(POINT_REGION_OF_INTEREST) || defined(LINE_REGION_OF_INTEREST)\n"
-				"varying vec3 present_day_position;\n"
-				"#endif\n"
-
-				"#ifdef POINT_REGION_OF_INTEREST\n"
-				"	varying vec3 present_day_point_centre;\n"
-				"#endif\n"
-
-				"#ifdef LINE_REGION_OF_INTEREST\n"
-				"	varying vec3 present_day_line_arc_normal;\n"
-				"#endif\n"
-
-				"#ifdef ENABLE_SEED_FRUSTUM_CLIPPING\n"
-				"	varying vec4 clip_position_params;\n"
-				"#endif\n"
-
-				"void main (void)\n"
-				"{\n"
-
-				"#ifdef POINT_REGION_OF_INTEREST\n"
-				"	// Discard current pixel if outside region-of-interest radius about point centre.\n"
-				"#ifdef SMALL_ROI_ANGLE\n"
-				"	// Since acos (region-of-interest angle) is very inaccurate for very small angles we instead use:\n"
-				"	//   tan(angle) = sin(angle) / cos(angle) = |cross(x1,x2)| / dot(x1,x2)\n"
-				"	// 'present_day_point_centre' is constant (and unit length) across the primitive but\n"
-				"	// 'present_day_position' varies and is not unit length (so must be normalised).\n"
-				"	vec3 present_day_position_normalised = normalize(present_day_position);\n"
-				"	vec3 cross_position_and_point_centre = cross(present_day_position_normalised, present_day_point_centre);\n"
-				"	float sin_squared_angle = dot(cross_position_and_point_centre, cross_position_and_point_centre);\n"
-				"	float cos_angle = dot(present_day_position_normalised, present_day_point_centre);\n"
-				"	float cos_squared_angle = cos_angle * cos_angle;\n"
-				"	if (sin_squared_angle > cos_squared_angle * tan_squared_region_of_interest_angle)\n"
-				"		discard;\n"
-				"#endif\n"
-				"#ifdef LARGE_ROI_ANGLE\n"
-				"	// However acos (region-of-interest angle) is fine for larger angles.\n"
-				"	// Also the 'tan' (used for small angles) is not valid at 90 degrees.\n"
-				"	// 'present_day_point_centre' is constant (and unit length) across the primitive but\n"
-				"	// 'present_day_position' varies and is not unit length (so must be normalised).\n"
-				"	if (dot(normalize(present_day_position), present_day_point_centre) < cos_region_of_interest_angle)\n"
-				"		discard;\n"
-				"#endif\n"
-				"#endif\n"
-
-				"#ifdef LINE_REGION_OF_INTEREST\n"
-				"	// Discard current pixel if outside region-of-interest of line (great circle arc).\n"
-				"#ifdef SMALL_ROI_ANGLE\n"
-				"	// For very small region-of-interest angles sin(angle) is fine.\n"
-				"	// 'present_day_line_arc_normal' is constant (and unit length) across the primitive but\n"
-				"	// 'present_day_position' varies and is not unit length (so must be normalised).\n"
-				"	if (abs(dot(normalize(present_day_position), present_day_line_arc_normal)) > sin_region_of_interest_angle)\n"
-				"		discard;\n"
-				"#endif\n"
-				"#ifdef LARGE_ROI_ANGLE\n"
-				"	// Since asin (region-of-interest angle) is very inaccurate for angles near 90 degrees we instead use:\n"
-				"	//   tan(90-angle) = sin(90-angle) / cos(90-angle) = |cross(x,N)| / dot(x,N)\n"
-				"	// where 'N' is the arc normal and 'x' is the position vector.\n"
-				"	// 'present_day_point_centre' is constant (and unit length) across the primitive but\n"
-				"	// 'present_day_position' varies and is not unit length (so must be normalised).\n"
-				"	vec3 present_day_position_normalised = normalize(present_day_position);\n"
-				"	vec3 cross_position_and_arc_normal = cross(present_day_position_normalised, present_day_line_arc_normal);\n"
-				"	float sin_squared_complementary_angle = dot(cross_position_and_arc_normal, cross_position_and_arc_normal);\n"
-				"	float cos_complementary_angle = dot(present_day_position_normalised, present_day_line_arc_normal);\n"
-				"	float cos_squared_complementary_angle = cos_complementary_angle * cos_complementary_angle;\n"
-				"	if (sin_squared_complementary_angle < \n"
-				"			cos_squared_complementary_angle * tan_squared_region_of_interest_complementary_angle)\n"
-				"		discard;\n"
-				"#endif\n"
-				"#endif\n"
-
-				"#ifdef FILL_REGION_OF_INTEREST\n"
-				"	// Nothing required for *fill* regions-of-interest - they are just normal geometry.\n"
-				"#endif\n"
-
-				"#ifdef ENABLE_SEED_FRUSTUM_CLIPPING\n"
-				"	// Discard current pixel if outside the seed frustum side planes.\n"
-				"	// Inside clip frustum means -1 < x/w < 1 and -1 < y/w < 1 which is same as\n"
-				"	// -w < x < w and -w < y < w.\n"
-				"	// 'clip_position_params' is (x, y, w, -w).\n"
-				"	if (!all(lessThan(clip_position_params.wxwy, clip_position_params.xzyz)))\n"
-				"		discard;\n"
-				"#endif\n"
-
-				"	// Output all channels as 1.0 to indicate inside region-of-interest.\n"
-				"	// TODO: Output grayscale to account for partial pixel coverage or\n"
-				"	// smoothing near boundary of region-of-interest (will require max blending).\n"
-				"	gl_FragColor = vec4(1.0);\n"
-
-				"}\n";
+		//! Fragment shader source to render region-of-interest geometries.
+		const QString RENDER_REGION_OF_INTEREST_GEOMETRIES_FRAGMENT_SHADER_SOURCE_FILE_NAME =
+				":/opengl/raster_co_registration/render_region_of_interest_geometries_fragment_shader.glsl";
 
 		//! Vertex shader source to render region-of-interest geometries.
-		const char *RENDER_REGION_OF_INTEREST_GEOMETRIES_VERTEX_SHADER_SOURCE =
-				"#ifdef POINT_REGION_OF_INTEREST\n"
-				"	const vec3 north_pole = vec3(0, 0, 1);\n"
-				"#endif\n"
-
-				"attribute vec4 world_space_quaternion;\n"
-
-				"#ifdef POINT_REGION_OF_INTEREST\n"
-				"	attribute vec3 point_centre;\n"
-				"	// The 'xyz' values are (weight_tangent_x, weight_tangent_y, weight_point_centre)\n"
-				"	attribute vec3 tangent_frame_weights;\n"
-				"#endif\n"
-
-				"#ifdef LINE_REGION_OF_INTEREST\n"
-				"	attribute vec3 line_arc_start_point;\n"
-				"	attribute vec3 line_arc_normal;\n"
-				"	// The 'xy' values are (weight_arc_normal, weight_start_point)\n"
-				"	attribute vec2 tangent_frame_weights;\n"
-				"#endif\n"
-
-				"#ifdef FILL_REGION_OF_INTEREST\n"
-				"	attribute vec3 fill_position;\n"
-				"#endif\n"
-
-				"#ifdef ENABLE_SEED_FRUSTUM_CLIPPING\n"
-				"	// The 'xyz' values are (translate_x, translate_y, scale)\n"
-				"	attribute vec3 raster_frustum_to_seed_frustum_clip_space_transform;\n"
-				"	// The 'xyz' values are (translate_x, translate_y, scale)\n"
-				"	attribute vec3 seed_frustum_to_render_target_clip_space_transform;\n"
-				"#endif\n"
-
-				"#if defined(POINT_REGION_OF_INTEREST) || defined(LINE_REGION_OF_INTEREST)\n"
-				"varying vec3 present_day_position;\n"
-				"#endif\n"
-
-				"#ifdef POINT_REGION_OF_INTEREST\n"
-				"	varying vec3 present_day_point_centre;\n"
-				"#endif\n"
-
-				"#ifdef LINE_REGION_OF_INTEREST\n"
-				"	varying vec3 present_day_line_arc_normal;\n"
-				"#endif\n"
-
-				"#ifdef ENABLE_SEED_FRUSTUM_CLIPPING\n"
-				"	varying vec4 clip_position_params;\n"
-				"#endif\n"
-
-				"void main (void)\n"
-				"{\n"
-
-				"#ifdef POINT_REGION_OF_INTEREST\n"
-				"	// Pass present day point centre to the fragment shader.\n"
-				"	present_day_point_centre = point_centre;\n"
-
-				"	// Generate the tangent space frame around the point centre.\n"
-				"	// Since the point is symmetric it doesn't matter which tangent frame we choose\n"
-				"	// as long as it's orthonormal.\n"
-				"	vec3 present_day_tangent_x = normalize(cross(north_pole, point_centre));\n"
-				"	vec3 present_day_tangent_y = cross(point_centre, present_day_tangent_x);\n"
-
-				"	// The weights are what actually determine which vertex of the quad primitive this vertex is.\n"
-				"	// Eg, centre point has weights (0,0,1).\n"
-				"	present_day_position =\n"
-				"		tangent_frame_weights.x * present_day_tangent_x +\n"
-				"		tangent_frame_weights.y * present_day_tangent_y +\n"
-				"		tangent_frame_weights.z * present_day_point_centre;\n"
-
-				"   // Transform present-day vertex position using finite rotation quaternion.\n"
-				"	// It's ok that the position is not on the unit sphere (it'll still get rotated properly).\n"
-				"	vec3 rotated_position = rotate_vector_by_quaternion(world_space_quaternion, present_day_position);\n"
-				"#endif\n"
-
-				"#ifdef LINE_REGION_OF_INTEREST\n"
-				"	// Pass the present-day line arc normal to the fragment shader.\n"
-				"	present_day_line_arc_normal = line_arc_normal;\n"
-
-				"	// The weights (and order of start/end points) are what actually determine which \n"
-				"	// vertex of the quad primitive this vertex is. Eg, centre point has weights (0,0,1).\n"
-				"	present_day_position =\n"
-				"		tangent_frame_weights.x * line_arc_normal +\n"
-				"		tangent_frame_weights.y * line_arc_start_point;\n"
-
-				"   // Transform present-day start point using finite rotation quaternion.\n"
-				"	vec3 rotated_position = rotate_vector_by_quaternion(world_space_quaternion, present_day_position);\n"
-				"#endif\n"
-
-				"#ifdef FILL_REGION_OF_INTEREST\n"
-				"   // Transform present-day position using finite rotation quaternion.\n"
-				"	vec3 rotated_position = rotate_vector_by_quaternion(world_space_quaternion, fill_position);\n"
-				"#endif\n"
-
-				"	// Transform rotated position by the view/projection matrix.\n"
-				"	// The view/projection matches the target raster tile.\n"
-				"	vec4 raster_frustum_position = gl_ModelViewProjectionMatrix * vec4(rotated_position, 1);\n"
-
-				"#ifdef ENABLE_SEED_FRUSTUM_CLIPPING\n"
-				"	// Post-projection translate/scale to position NDC space around seed frustum...\n"
-				"	vec4 loose_seed_frustum_position = vec4(\n"
-				"		// Scale and translate x component...\n"
-				"		dot(raster_frustum_to_seed_frustum_clip_space_transform.zx,\n"
-				"				raster_frustum_position.xw),\n"
-				"		// Scale and translate y component...\n"
-				"		dot(raster_frustum_to_seed_frustum_clip_space_transform.zy,\n"
-				"				raster_frustum_position.yw),\n"
-				"		// z and w components unaffected...\n"
-				"		raster_frustum_position.zw);\n"
-
-				"	// This is also the clip-space the fragment shader uses to cull pixels outside\n"
-				"	// the seed frustum - seed geometry should be bounded by frustum but just in case.\n"
-				"	// Convert to a more convenient form for the fragment shader:\n"
-				"	//   1) Only interested in clip position x, y, w and -w.\n"
-				"	//   2) The z component is depth and we only need to clip to side planes not near/far plane.\n"
-				"	clip_position_params = vec4(\n"
-				"		loose_seed_frustum_position.xy,\n"
-				"		loose_seed_frustum_position.w,\n"
-				"		-loose_seed_frustum_position.w);\n"
-
-				"	// Post-projection translate/scale to position NDC space around render target frustum...\n"
-				"	vec4 render_target_frustum_position = vec4(\n"
-				"		// Scale and translate x component...\n"
-				"		dot(seed_frustum_to_render_target_clip_space_transform.zx,\n"
-				"				loose_seed_frustum_position.xw),\n"
-				"		// Scale and translate y component...\n"
-				"		dot(seed_frustum_to_render_target_clip_space_transform.zy,\n"
-				"				loose_seed_frustum_position.yw),\n"
-				"		// z and w components unaffected...\n"
-				"		loose_seed_frustum_position.zw);\n"
-
-				"	gl_Position = render_target_frustum_position;\n"
-				"#else\n"
-
-				"	// When the seed frustum matches the target raster tile there is no need\n"
-				"	// for seed frustum clipping (happens automatically due to view frustum).\n"
-				"	// In this case both the raster frustum to seed frustum and seed frustum to\n"
-				"	// render target frustum are identity transforms and are not needed.\n"
-				"	// .\n"
-				"	gl_Position = raster_frustum_position;\n"
-				"#endif\n"
-
-				"}\n";
+		const QString RENDER_REGION_OF_INTEREST_GEOMETRIES_VERTEX_SHADER_SOURCE_FILE_NAME =
+				":/opengl/raster_co_registration/render_region_of_interest_geometries_vertex_shader.glsl";
 
 		/**
 		 * Fragment shader source to extract target raster in region-of-interest in preparation
 		 * for reduction operations.
 		 */
-		const char *MASK_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE =
-				"uniform sampler2D target_raster_texture_sampler;\n"
-				"uniform sampler2D region_of_interest_mask_texture_sampler;\n"
-
-				"#ifdef FILTER_MOMENTS\n"
-				"	uniform vec3 cube_face_centre;\n"
-				"	varying vec4 view_position;\n"
-				"#endif\n"
-
-				"void main (void)\n"
-				"{\n"
-
-				"	float region_of_interest_mask =\n"
-				"			texture2D(region_of_interest_mask_texture_sampler, gl_TexCoord[1].st).a;\n"
-				"	if (region_of_interest_mask == 0)\n"
-				"		discard;\n"
-
-				"	// NOTE: There's no need to bilinear filter since the projection frustums should be\n"
-				"	// such that we're sampling at texel centres.\n"
-				"	vec4 target_raster = texture2D(target_raster_texture_sampler, gl_TexCoord[0].st);\n"
-				"	// The red channel contains the raster data value and the green channel contains the coverage.\n"
-				"	float data = target_raster.r;\n"
-				"	float coverage = target_raster.g;\n"
-
-				"	// Due to bilinear filtering of the source raster (data and coverage) the data\n"
-				"	// value can be reduced depending on the bi-linearly filtered coverage value.\n"
-				"	// For example half of the four bilinearly filtered pixels might have zero coverage\n"
-				"	// and hence zero data values so we'd get '0.25 * (P00 + P01) + 0 * (P10 + P11)'\n"
-				"	// which gives us '0.25 * (D00 + D01)' for data and 0.25 * (1 + 1) for coverage\n"
-				"	// but we want '0.5 * (D00 + D01)' for data which is obtained by dividing by coverage.\n"
-				"	// So we need to undo that effect as best we can - this is important for MIN/MAX\n"
-				"	// operations and also ensures MEAN correlates with MIN/MAX - ie, a single pixel\n"
-				"	// ROI should give same value for MIN/MAX and MEAN.\n"
-				"	// This typically occurs near a boundary between opaque and transparent regions.\n"
-				"	if (coverage > 0)\n"
-				"		data /= coverage;\n"
-
-				"	// The coverage is modulated by the region-of-interest mask.\n"
-				"	// Currently the ROI mask is either zero or one so this doesn't do anything\n"
-				"	// (because of the above discard) but will if smoothing near ROI boundary is added.\n"
-				"	coverage *= region_of_interest_mask;\n"
-
-				"#ifdef FILTER_MOMENTS\n"
-				"	// Adjust the coverage based on the area of the current pixel.\n"
-				"	// The adjustment will be 1.0 at the cube face centre less than 1.0 elsewhere.\n"
-				"	// NOTE: 'view_position' only needs to be a vec3 and not a vec4 because we do not\n"
-				"	// need to do the projective divide by w because we are normalising anyway.\n"
-				"	// We normalize to project the view position onto the surface of the globe.\n"
-				"	// NOTE: We only need to do this adjustment for area-weighted operations.\n"
-				"	coverage *= dot(cube_face_centre, normalize(view_position.xyz));\n"
-
-				"	// Output (r, g, a) channels as (C*D, C*D*D, C).\n"
-				"	// Where C is coverage and D is data value.\n"
-				"	// This is enough to cover both mean and standard deviation.\n"
-				"	gl_FragColor = vec4(coverage * data, coverage * data * data, 0, coverage);\n"
-				"#endif\n"
-
-				"#ifdef FILTER_MIN_MAX\n"
-				"	// Output (r, a) channels as (D, C).\n"
-				"	// Where C is coverage and D is data value.\n"
-				"	// This is enough to cover both minimum and maximum.\n"
-				"	gl_FragColor = vec4(data, 0, 0, coverage);\n"
-				"#endif\n"
-
-				"}\n";
+		const QString MASK_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME =
+				":/opengl/raster_co_registration/mask_region_of_interest_fragment_shader.glsl";
 
 		/**
 		 * Vertex shader source to extract target raster in region-of-interest in preparation
 		 * for reduction operations.
 		 */
-		const char *MASK_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE =
-				"// The 'xy' values are (translate, scale)\n"
-				"const vec2 clip_space_to_texture_space_transform = vec2(0.5, 0.5);\n"
-
-				"attribute vec4 screen_space_position;\n"
-				"// The 'xyz' values are (translate_x, translate_y, scale)\n"
-				"attribute vec3 raster_frustum_to_seed_frustum_clip_space_transform;\n"
-				"// The 'xyz' values are (translate_x, translate_y, scale)\n"
-				"attribute vec3 seed_frustum_to_render_target_clip_space_transform;\n"
-
-				"#ifdef FILTER_MOMENTS\n"
-				"	varying vec4 view_position;\n"
-				"#endif\n"
-
-				"void main (void)\n"
-				"{\n"
-
-				"	// Post-projection translate/scale to position NDC space around raster frustum.\n"
-				"	// NOTE: We actually need to take the 'inverse' transform since we want to go from\n"
-				"	// seed frustum to raster frustum rather than the opposite direction.\n"
-				"	// See 'GPlatesUtils::QuadTreeClipSpaceTransform::get_inverse_translate_x()'\n"
-				"	// for details of the inverse transform.\n"
-				"	vec3 loose_seed_frustum_to_raster_frustum_clip_space_transform = vec3(\n"
-				"			-raster_frustum_to_seed_frustum_clip_space_transform.x / \n"
-				"				raster_frustum_to_seed_frustum_clip_space_transform.z,\n"
-				"			-raster_frustum_to_seed_frustum_clip_space_transform.y / \n"
-				"				raster_frustum_to_seed_frustum_clip_space_transform.z,\n"
-				"			1.0 / raster_frustum_to_seed_frustum_clip_space_transform.z);\n"
-				"	// This takes the 'screen_space_position' range [-1,1] and makes it cover the \n"
-				"	// raster frustum (so [-1,1] covers the raster frustum).\n"
-				"	vec4 raster_frustum_position = vec4(\n"
-				"		// Scale and translate x component...\n"
-				"		dot(loose_seed_frustum_to_raster_frustum_clip_space_transform.zx,\n"
-				"				screen_space_position.xw),\n"
-				"		// Scale and translate y component...\n"
-				"		dot(loose_seed_frustum_to_raster_frustum_clip_space_transform.zy,\n"
-				"				screen_space_position.yw),\n"
-				"		// z and w components unaffected...\n"
-				"		screen_space_position.zw);\n"
-
-				"#ifdef FILTER_MOMENTS\n"
-				"	// Convert from the screen-space of the raster frustum to view-space using\n"
-				"	// the inverse view-projection *inverse* matrix.\n"
-				"	// The view position is used in the fragment shader to adjust for cube map distortion.\n"
-				"	view_position = gl_ModelViewProjectionMatrixInverse * raster_frustum_position;\n"
-				"#endif\n"
-
-				"	// Post-projection translate/scale to position NDC space around render target frustum.\n"
-				"	// This takes the 'screen_space_position' range [-1,1] and makes it cover the \n"
-				"	// render target frustum (so [-1,1] covers the render target frustum).\n"
-				"	vec4 render_target_frustum_position = vec4(\n"
-				"		// Scale and translate x component...\n"
-				"		dot(seed_frustum_to_render_target_clip_space_transform.zx,\n"
-				"				screen_space_position.xw),\n"
-				"		// Scale and translate y component...\n"
-				"		dot(seed_frustum_to_render_target_clip_space_transform.zy,\n"
-				"				screen_space_position.yw),\n"
-				"		// z and w components unaffected...\n"
-				"		screen_space_position.zw);\n"
-
-				"	// The target raster texture coordinates.\n"
-				"	// Convert clip-space range [-1,1] to texture coordinate range [0,1].\n"
-				"	gl_TexCoord[0] = vec4(\n"
-				"		// Scale and translate s component...\n"
-				"		dot(clip_space_to_texture_space_transform.yx,\n"
-				"				raster_frustum_position.xw),\n"
-				"		// Scale and translate t component...\n"
-				"		dot(clip_space_to_texture_space_transform.yx,\n"
-				"				raster_frustum_position.yw),\n"
-				"		// p and q components unaffected...\n"
-				"		raster_frustum_position.zw);\n"
-
-				"	// The region-of-interest mask texture coordinates.\n"
-				"	// Convert clip-space range [-1,1] to texture coordinate range [0,1].\n"
-				"	gl_TexCoord[1] = vec4(\n"
-				"		// Scale and translate s component...\n"
-				"		dot(clip_space_to_texture_space_transform.yx,\n"
-				"				render_target_frustum_position.xw),\n"
-				"		// Scale and translate t component...\n"
-				"		dot(clip_space_to_texture_space_transform.yx,\n"
-				"				render_target_frustum_position.yw),\n"
-				"		// p and q components unaffected...\n"
-				"		render_target_frustum_position.zw);\n"
-
-				"	gl_Position = render_target_frustum_position;\n"
-
-				"}\n";
+		const QString MASK_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE_FILE_NAME =
+				":/opengl/raster_co_registration/mask_region_of_interest_vertex_shader.glsl";
 
 		/**
 		 * Fragment shader source to reduce region-of-interest filter results.
 		 */
-		const char *REDUCTION_OF_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE =
-				"uniform sampler2D reduce_source_texture_sampler;\n"
-				"// 'x' component is half texel offset and 'y' component is negative of that.\n"
-				"uniform vec2 reduce_source_texture_half_texel_offset;\n"
-
-				"void main (void)\n"
-				"{\n"
-
-				"	// Get the texture coordinates of the four source texels.\n"
-				"	// Since it's a 2x2 -> 1x1 reduction the texture coordinate of the current pixel\n"
-				"	// will be equidistant from four source texels (in each texel's corner).\n"
-				"	vec2 st = gl_TexCoord[0].st;\n"
-				"	vec2 st00 = st + reduce_source_texture_half_texel_offset.yy;\n"
-				"	vec2 st01 = st + reduce_source_texture_half_texel_offset.yx;\n"
-				"	vec2 st10 = st + reduce_source_texture_half_texel_offset.xy;\n"
-				"	vec2 st11 = st + reduce_source_texture_half_texel_offset.xx;\n"
-
-				"	vec4 src[4];\n"
-				"	// Sample the four source texels.\n"
-				"	src[0] = texture2D(reduce_source_texture_sampler, st00);\n"
-				"	src[1] = texture2D(reduce_source_texture_sampler, st01);\n"
-				"	src[2] = texture2D(reduce_source_texture_sampler, st10);\n"
-				"	src[3] = texture2D(reduce_source_texture_sampler, st11);\n"
-
-				"#ifdef REDUCTION_SUM\n"
-				"	vec4 sum = vec4(0);\n"
-
-				"	// Apply the reduction operation on the four source texels.\n"
-				"	for (int n = 0; n < 4; ++n)\n"
-				"	{\n"
-				"		sum += src[n];\n"
-				"	}\n"
-
-				"	gl_FragColor = sum;\n"
-				"#endif\n"
-
-				"#ifdef REDUCTION_MIN\n"
-				"	// First find the maximum value and coverage.\n"
-				"	vec4 max_value = max(max(src[0], src[1]), max(src[2], src[3]));\n"
-
-				"	// If the coverage values are all zero then discard this fragment.\n"
-				"	// The framebuffer already has zero values meaning zero coverage.\n"
-				"	float max_coverage = max_value.a;\n"
-				"	if (max_coverage == 0)\n"
-				"		discard;\n"
-
-				"	// Apply the reduction operation on the four source texels.\n"
-				"	vec3 min_covered_value = max_value.rgb;\n"
-				"	for (int n = 0; n < 4; ++n)\n"
-				"	{\n"
-				"		// If the coverage is non-zero then find new minimum value, otherwise ignore.\n"
-				"		if (src[n].a > 0)\n"
-				"			min_covered_value = min(min_covered_value, src[n].rgb);\n"
-				"	}\n"
-
-				"	gl_FragColor = vec4(min_covered_value, max_coverage);\n"
-				"#endif\n"
-
-				"#ifdef REDUCTION_MAX\n"
-				"	// First find the maximum coverage.\n"
-				"	float max_coverage = max(max(src[0].a, src[1].a), max(src[2].a, src[3].a));\n"
-
-				"	// If the coverage values are all zero then discard this fragment.\n"
-				"	// The framebuffer already has zero values meaning zero coverage.\n"
-				"	if (max_coverage == 0)\n"
-				"		discard;\n"
-
-				"	// First find the minimum value.\n"
-				"	vec3 min_value = min(min(src[0].rgb, src[1].rgb), min(src[2].rgb, src[3].rgb));\n"
-
-				"	// Apply the reduction operation on the four source texels.\n"
-				"	vec3 max_covered_value = min_value;\n"
-				"	for (int n = 0; n < 4; ++n)\n"
-				"	{\n"
-				"		// If the coverage is non-zero then find new maximum value, otherwise ignore.\n"
-				"		if (src[n].a > 0)\n"
-				"			max_covered_value = max(max_covered_value, src[n].rgb);\n"
-				"	}\n"
-
-				"	gl_FragColor = vec4(max_covered_value, max_coverage);\n"
-				"#endif\n"
-
-				"}\n";
+		const QString REDUCTION_OF_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME =
+				":/opengl/raster_co_registration/reduction_of_region_of_interest_fragment_shader.glsl";
 
 		/**
 		 * Vertex shader source to reduce region-of-interest filter results.
 		 */
-		const char *REDUCTION_OF_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE =
-				"// (x,y,z) is (translate_x, translate_y, scale).\n"
-				"uniform vec3 target_quadrant_translate_scale;\n"
-
-				"void main (void)\n"
-				"{\n"
-
-				"	gl_TexCoord[0] = gl_MultiTexCoord0;\n"
-
-				"	// Scale and translate the pixel coordinates to the appropriate quadrant\n"
-				"	// of the destination render target.\n"
-				"	gl_Position.x = dot(target_quadrant_translate_scale.zx, gl_Vertex.xw);\n"
-				"	gl_Position.y = dot(target_quadrant_translate_scale.zy, gl_Vertex.yw);\n"
-				"	gl_Position.zw = gl_Vertex.zw;\n"
-
-				"}\n";
+		const QString REDUCTION_OF_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE_FILE_NAME =
+				":/opengl/raster_co_registration/reduction_of_region_of_interest_vertex_shader.glsl";
 	}
 }
 
@@ -1227,8 +734,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	// Add the '#define' first.
 	mask_region_of_interest_moments_vertex_shader_source.add_shader_source("#define FILTER_MOMENTS\n");
 	// Then add the GLSL 'main()' function.
-	mask_region_of_interest_moments_vertex_shader_source.add_shader_source(
-			MASK_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE);
+	mask_region_of_interest_moments_vertex_shader_source.add_shader_source_from_file(
+			MASK_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE_FILE_NAME);
 	// Compile the vertex shader.
 	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_moments_vertex_shader =
 			GLShaderProgramUtils::compile_vertex_shader(
@@ -1243,8 +750,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	// Add the '#define' first.
 	mask_region_of_interest_moments_fragment_shader_source.add_shader_source("#define FILTER_MOMENTS\n");
 	// Then add the GLSL 'main()' function.
-	mask_region_of_interest_moments_fragment_shader_source.add_shader_source(
-			MASK_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE);
+	mask_region_of_interest_moments_fragment_shader_source.add_shader_source_from_file(
+			MASK_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader.
 	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_moments_fragment_shader =
 			GLShaderProgramUtils::compile_fragment_shader(
@@ -1269,8 +776,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	// Add the '#define' first.
 	mask_region_of_interest_minmax_vertex_shader_source.add_shader_source("#define FILTER_MIN_MAX\n");
 	// Then add the GLSL 'main()' function.
-	mask_region_of_interest_minmax_vertex_shader_source.add_shader_source(
-			MASK_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE);
+	mask_region_of_interest_minmax_vertex_shader_source.add_shader_source_from_file(
+			MASK_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE_FILE_NAME);
 	// Compile the vertex shader.
 	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_minmax_vertex_shader =
 			GLShaderProgramUtils::compile_vertex_shader(
@@ -1285,8 +792,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	// Add the '#define' first.
 	mask_region_of_interest_minmax_fragment_shader_source.add_shader_source("#define FILTER_MIN_MAX\n");
 	// Then add the GLSL 'main()' function.
-	mask_region_of_interest_minmax_fragment_shader_source.add_shader_source(
-			MASK_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE);
+	mask_region_of_interest_minmax_fragment_shader_source.add_shader_source_from_file(
+			MASK_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader.
 	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_minmax_fragment_shader =
 			GLShaderProgramUtils::compile_fragment_shader(
@@ -1420,18 +927,18 @@ GPlatesOpenGL::GLRasterCoRegistration::create_region_of_interest_shader_program(
 	// Add the '#define'.
 	vertex_shader_source.add_shader_source(vertex_shader_defines);
 	// Then add the GLSL function to rotate by quaternion.
-	vertex_shader_source.add_shader_source(
-			GLShaderProgramUtils::ROTATE_VECTOR_BY_QUATERNION_SHADER_SOURCE);
+	vertex_shader_source.add_shader_source_from_file(
+			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
 	// Then add the GLSL 'main()' function.
-	vertex_shader_source.add_shader_source(
-			RENDER_REGION_OF_INTEREST_GEOMETRIES_VERTEX_SHADER_SOURCE);
+	vertex_shader_source.add_shader_source_from_file(
+			RENDER_REGION_OF_INTEREST_GEOMETRIES_VERTEX_SHADER_SOURCE_FILE_NAME);
 
 	GLShaderProgramUtils::ShaderSource fragment_shader_source;
 	// Add the '#define' first.
 	fragment_shader_source.add_shader_source(fragment_shader_defines);
 	// Then add the GLSL 'main()' function.
-	fragment_shader_source.add_shader_source(
-			RENDER_REGION_OF_INTEREST_GEOMETRIES_FRAGMENT_SHADER_SOURCE);
+	fragment_shader_source.add_shader_source_from_file(
+			RENDER_REGION_OF_INTEREST_GEOMETRIES_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 	// Link the shader program.
 	boost::optional<GLProgramObject::shared_ptr_type> program_object =
@@ -1456,7 +963,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 	boost::optional<GLShaderObject::shared_ptr_type> reduction_vertex_shader =
 			GLShaderProgramUtils::compile_vertex_shader(
 					renderer,
-					REDUCTION_OF_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE);
+					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+							REDUCTION_OF_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE_FILE_NAME));
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			reduction_vertex_shader ,
 			GPLATES_ASSERTION_SOURCE);
@@ -1466,8 +974,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 	// Add the '#define' first.
 	reduction_sum_fragment_shader_source.add_shader_source("#define REDUCTION_SUM\n");
 	// Then add the GLSL 'main()' function.
-	reduction_sum_fragment_shader_source.add_shader_source(
-			REDUCTION_OF_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE);
+	reduction_sum_fragment_shader_source.add_shader_source_from_file(
+			REDUCTION_OF_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader to calculate the sum of region-of-interest filter results.
 	boost::optional<GLShaderObject::shared_ptr_type> reduction_sum_fragment_shader =
 			GLShaderProgramUtils::compile_fragment_shader(
@@ -1492,8 +1000,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 	// Add the '#define' first.
 	reduction_min_fragment_shader_source.add_shader_source("#define REDUCTION_MIN\n");
 	// Then add the GLSL 'main()' function.
-	reduction_min_fragment_shader_source.add_shader_source(
-			REDUCTION_OF_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE);
+	reduction_min_fragment_shader_source.add_shader_source_from_file(
+			REDUCTION_OF_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader to calculate the minimum of region-of-interest filter results.
 	boost::optional<GLShaderObject::shared_ptr_type> reduction_min_fragment_shader =
 			GLShaderProgramUtils::compile_fragment_shader(
@@ -1518,8 +1026,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 	// Add the '#define' first.
 	reduction_max_fragment_shader_source.add_shader_source("#define REDUCTION_MAX\n");
 	// Then add the GLSL 'main()' function.
-	reduction_max_fragment_shader_source.add_shader_source(
-			REDUCTION_OF_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE);
+	reduction_max_fragment_shader_source.add_shader_source_from_file(
+			REDUCTION_OF_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader to calculate the maximum of region-of-interest filter results.
 	boost::optional<GLShaderObject::shared_ptr_type> reduction_max_fragment_shader =
 			GLShaderProgramUtils::compile_fragment_shader(
@@ -2257,12 +1765,11 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register_seed_geometries_with_target_r
 	const GLTransform::non_null_ptr_to_const_type projection_transform =
 			cube_subdivision_cache.get_projection_transform(cube_subdivision_cache_node);
 
-	// The centre of the cube fact currently being visited.
+	// The centre of the cube face currently being visited.
 	// This is used to adjust for the area-sampling distortion of pixels introduced by the cube map.
 	const GPlatesMaths::UnitVector3D &cube_face_centre =
-		GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
-					cube_subdivision_cache_node.get_cube_face(),
-					GPlatesMaths::CubeCoordinateFrame::Z_AXIS);
+		GPlatesMaths::CubeCoordinateFrame::get_cube_face_centre(
+					cube_subdivision_cache_node.get_cube_face());
 
 	// Now that we have a list of seed geometries we can co-register them with the current target raster tile.
 	co_register_seed_geometries_with_target_raster(
@@ -2438,12 +1945,11 @@ GPlatesOpenGL::GLRasterCoRegistration::co_register_seed_geometries_with_loose_ta
 			// TEXTURE_DIMENSION tile which means it's the highest resolution reduce stage...
 			0/*reduce_stage_index*/);
 
-	// The centre of the cube fact currently being visited.
+	// The centre of the cube face currently being visited.
 	// This is used to adjust for the area-sampling distortion of pixels introduced by the cube map.
 	const GPlatesMaths::UnitVector3D &cube_face_centre =
-		GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
-					cube_subdivision_cache_node.get_cube_face(),
-					GPlatesMaths::CubeCoordinateFrame::Z_AXIS);
+		GPlatesMaths::CubeCoordinateFrame::get_cube_face_centre(
+					cube_subdivision_cache_node.get_cube_face());
 
 	// Iterate over the operations and co-register the seed geometries associated with each operation.
 	for (unsigned int operation_index = 0;
@@ -2969,7 +2475,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	GLTexture::shared_ptr_type region_of_interest_mask_texture = acquire_rgba_fixed_texture(renderer);
 
 	// Render to the fixed-point region-of-interest mask texture.
-	d_framebuffer_object->gl_attach_2D(
+	d_framebuffer_object->gl_attach_texture_2D(
 			renderer, GL_TEXTURE_2D, region_of_interest_mask_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
 	renderer.gl_bind_frame_buffer(d_framebuffer_object);
 
@@ -3104,7 +2610,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	//
 
 	// Render to the floating-point reduce stage texture.
-	d_framebuffer_object->gl_attach_2D(
+	d_framebuffer_object->gl_attach_texture_2D(
 			renderer, GL_TEXTURE_2D, reduce_stage_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
 	renderer.gl_bind_frame_buffer(d_framebuffer_object);
 
@@ -5220,7 +4726,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_reduction_of_reduce_stage(
 			true/*reset_to_default_state*/);
 
 	// Begin rendering to the destination reduce stage texture.
-	d_framebuffer_object->gl_attach_2D(
+	d_framebuffer_object->gl_attach_texture_2D(
 			renderer, GL_TEXTURE_2D, dst_reduce_stage_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
 	renderer.gl_bind_frame_buffer(d_framebuffer_object);
 
@@ -5408,7 +4914,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_target_raster(
 			true/*reset_to_default_state*/);
 
 	// Begin rendering to the 2D texture.
-	d_framebuffer_object->gl_attach_2D(renderer, GL_TEXTURE_2D, target_raster_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
+	d_framebuffer_object->gl_attach_texture_2D(renderer, GL_TEXTURE_2D, target_raster_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
 	renderer.gl_bind_frame_buffer(d_framebuffer_object);
 
 	// Render to the entire texture.
@@ -6067,8 +5573,8 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::queue_reduce_pyramid_output
 	// Bind our framebuffer object to the results texture so that 'glReadPixels' will read from it.
 	//
 	// Note that since we're using 'GL_COLOR_ATTACHMENT0_EXT' we don't need to call 'glReadBuffer'
-	// because binding to a framebuffer object automatically does that for us.
-	framebuffer_object->gl_attach_2D(renderer, GL_TEXTURE_2D, results_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
+	// because 'GL_COLOR_ATTACHMENT0_EXT' is the default GL_READ_BUFFER state for a framebuffer object.
+	framebuffer_object->gl_attach_texture_2D(renderer, GL_TEXTURE_2D, results_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
 	renderer.gl_bind_frame_buffer(framebuffer_object);
 
 	// Start an asynchronous read back of the results texture to CPU memory (the pixel buffer).

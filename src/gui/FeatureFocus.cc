@@ -362,6 +362,10 @@ protected:
 		{ }
 
 		void
+		visit(const GPlatesUtils::non_null_intrusive_ptr<resolved_scalar_field_3d_type> &rsf)
+		{ }
+
+		void
 		visit(const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
 		{
 			d_location = GPlatesMaths::make_lat_lon_point(rtb->resolved_topology_geometry()->first_vertex());
@@ -380,9 +384,10 @@ protected:
 		visit(const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crr)
 		{ }
 
-                void
-                visit(const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
-                { }
+        void
+        visit(const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
+        { }
+
 private:
 	boost::optional<GPlatesMaths::LatLonPoint> d_location;
 };

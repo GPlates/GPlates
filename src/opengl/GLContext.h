@@ -33,12 +33,14 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 #include <opengl/OpenGL.h>
+#include <QGLFormat>
 #include <QGLWidget>
 
 #include "GLBufferObject.h"
 #include "GLCompiledDrawState.h"
 #include "GLFrameBufferObject.h"
 #include "GLProgramObject.h"
+#include "GLRenderBufferObject.h"
 #include "GLShaderObject.h"
 #include "GLStateSetKeys.h"
 #include "GLStateSetStore.h"
@@ -397,6 +399,19 @@ namespace GPlatesOpenGL
 			acquire_frame_buffer_object(
 					GLRenderer &renderer);
 
+
+			/**
+			 * Returns the render buffer object resource manager.
+			 *
+			 * NOTE: Only use if the GL_EXT_framebuffer_object extension is supported.
+			 */
+			const boost::shared_ptr<GLRenderBufferObject::resource_manager_type> &
+			get_render_buffer_object_resource_manager() const
+			{
+				return d_render_buffer_object_resource_manager;
+			}
+
+
 			/**
 			 * Returns the vertex array object resource manager.
 			 *
@@ -419,8 +434,21 @@ namespace GPlatesOpenGL
 			boost::shared_ptr<GLFrameBufferObject::resource_manager_type> d_frame_buffer_object_resource_manager;
 			GPlatesUtils::ObjectCache<GLFrameBufferObject>::shared_ptr_type d_frame_buffer_object_cache;
 
+			boost::shared_ptr<GLRenderBufferObject::resource_manager_type> d_render_buffer_object_resource_manager;
+
 			boost::shared_ptr<GLVertexArrayObject::resource_manager_type> d_vertex_array_object_resource_manager;
 		};
+
+
+		/**
+		 * Returns the QGLFormat to use when creating a QGLWidget.
+		 *
+		 * This sets various parameters required for OpenGL rendering in GPlates.
+		 * Such as specifying an alpha-channel.
+		 */
+		static
+		QGLFormat
+		get_qgl_format();
 
 
 		/**
@@ -547,11 +575,53 @@ namespace GPlatesOpenGL
 			{
 				Framebuffer();
 
+				/**
+				 * Simply GL_COLOR_ATTACHMENT0_EXT.
+				 *
+				 * This is here solely so we can include <GL/glew.h>, which defines
+				 * GL_COLOR_ATTACHMENT0_EXT, in "GLContext.cc" and hence avoid problems caused by
+				 * including <GL/glew.h> in header files (because <GL/glew.h> must be included
+				 * before OpenGL headers which means before Qt headers which is difficult).
+				 */
+				static const GLenum gl_COLOR_ATTACHMENT0; // GL_COLOR_ATTACHMENT0
+
 				//! Is GL_EXT_framebuffer_object supported?
 				bool gl_EXT_framebuffer_object;
 
-				//! GL_MAX_COLOR_ATTACHMENTS query result - zero if GL_EXT_framebuffer_object not supported.
+				/**
+				 * GL_MAX_COLOR_ATTACHMENTS query result - zero if GL_EXT_framebuffer_object not supported.
+				 *
+				 * NOTE: The GL_EXT_framebuffer_object extension says it's possible for this value
+				 * to change when binding a framebuffer object or changing its attachment state
+				 * in which case it probably belongs to class @a GLFrameBufferObject but we're keeping
+				 * it here because it's unlikely to change and it's awkward from a programming perspective
+				 * to first have to set up framebuffer object attachments and then determine the
+				 * maximum allowed attachments (given the framebuffer object state).
+				 */
 				GLuint gl_max_color_attachments;
+
+				/**
+				 * GL_MAX_RENDERBUFFER_SIZE query result - zero if GL_EXT_framebuffer_object not supported.
+				 */
+				GLuint gl_max_renderbuffer_size;
+
+				//! Is GL_ARB_draw_buffers supported?
+				bool gl_ARB_draw_buffers;
+
+				/**
+				 * GL_MAX_DRAW_BUFFERS query result - one if GL_ARB_draw_buffers not supported.
+				 *
+				 * NOTE: The GL_EXT_framebuffer_object extension says it's possible for this value
+				 * to change when binding a framebuffer object or changing its attachment state
+				 * in which case it probably belongs to class @a GLFrameBufferObject but we're keeping
+				 * it here because it's unlikely to change and it's awkward from a programming perspective
+				 * to first have to set up framebuffer object attachments and then determine the
+				 * maximum allowed draw buffers (given the framebuffer object state).
+				 */
+				GLuint gl_max_draw_buffers;
+
+				//! Is GL_EXT_blend_func_separate supported?
+				bool gl_EXT_blend_func_separate;
 			};
 
 			struct Shader
@@ -599,13 +669,13 @@ namespace GPlatesOpenGL
 				 * including <GL/glew.h> in header files (because <GL/glew.h> must be included
 				 * before OpenGL headers which means before Qt headers which is difficult).
 				 */
-				static const GLenum gl_texture0; // GL_TEXTURE0
+				static const GLenum gl_TEXTURE0; // GL_TEXTURE0
 
 				/**
 				 * The minimum texture size (dimension) that all OpenGL implementations
 				 * are required to support - this is without texture borders.
 				 */
-				static const GLuint gl_min_texture_size = 64;
+				static const GLuint gl_MIN_TEXTURE_SIZE = 64;
 
 				/**
 				 * The maximum texture size (dimension) this OpenGL implementation/driver will support.
@@ -718,6 +788,22 @@ namespace GPlatesOpenGL
 				 * It is supported in Snow Leopard (10.6), and above, however.
 				 */
 				bool gl_ARB_color_buffer_float;
+
+				/**
+				 * Is true if filtering of floating-point textures is supported and alpha-blending
+				 * to floating-point render targets is supported.
+				 *
+				 * NOTE: There is no OpenGL extension to query for this and no easy way to detect it.
+				 * The presence of the GL_ARB_texture_float extension does not guarantee it
+				 * (notably on OpenGL 2.0 hardware). According to...
+				 *    http://www.opengl.org/wiki/Floating_point_and_mipmapping_and_filtering
+				 * ...all OpenGL 3.0 hardware supports this. Instead of testing for GLEW_VERSION_3_0
+				 * we test for GL_EXT_texture_array (which was introduced in OpenGL 3.0) - this is
+				 * done because OpenGL 3.0 is not officially supported on MacOS Snow Leopard in that
+				 * it supports OpenGL 3.0 extensions but not the specific OpenGL 3.0 functions (according to
+				 * http://www.cultofmac.com/26065/snow-leopard-10-6-3-update-significantly-improves-opengl-3-0-support/).
+				 */
+				bool gl_supports_floating_point_filtering_and_blending;
 			};
 
 			//! Parameters related to buffer objects.

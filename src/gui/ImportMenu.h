@@ -55,7 +55,8 @@ namespace GPlatesGui
 		enum Section
 		{
 			BUILT_IN,
-			PYTHON,
+			RASTER,
+			SCALAR_FIELD_3D,
 
 			NUM_SECTIONS // Must be the last entry.
 		};

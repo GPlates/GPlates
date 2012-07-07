@@ -28,6 +28,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <QDebug>
 #include <QGraphicsView>
 #include <QtOpenGL/qgl.h>
 #include <QPaintEngine>
@@ -69,9 +70,7 @@ GPlatesQtWidgets::MapView::MapView(
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &share_gl_visual_layers) :
 	d_gl_widget_ptr(
 			new QGLWidget(
-				// We turn *off* multisampling because lines actually look better without it...
-				// We need an alpha channel in case falling back to main frame buffer for render textures...
-				QGLFormat(/*QGL::SampleBuffers |*/ QGL::AlphaChannel),
+				GPlatesOpenGL::GLContext::get_qgl_format(),
 				this,
 				// Share texture objects, vertex buffer objects, etc...
 				share_gl_widget)),
@@ -507,8 +506,8 @@ GPlatesQtWidgets::MapView::set_camera_viewpoint(
 	}
 	catch(GPlatesGui::ProjectionException &e)
 	{
-		std::cerr << "Caught exception converting lat-long to scene coordinates." << std::endl;
-		e.write(std::cerr);
+		qWarning() << "Caught exception converting lat-long to scene coordinates.";
+		qWarning() << e;
 	}
 
 	// Centre the view on this point.
@@ -822,8 +821,8 @@ GPlatesQtWidgets::MapView::set_orientation(
 	}
 	catch(GPlatesGui::ProjectionException &e)
 	{
-		std::cerr << "Caught exception converting lat-long to scene coordinates." << std::endl;
-		e.write(std::cerr);
+		qWarning() << "Caught exception converting lat-long to scene coordinates.";
+		qWarning() << e;
 	}
 
 	// Centre the view on this point.

@@ -40,6 +40,7 @@ namespace GPlatesViewOperations
 	class RenderedDirectionArrow;
 	class RenderedReconstructionGeometry;
 	class RenderedResolvedRaster;
+	class RenderedResolvedScalarField3D;
 	class RenderedSmallCircle;
 	class RenderedSmallCircleArc;	
 	class RenderedSquareSymbol;
@@ -118,6 +119,12 @@ namespace GPlatesViewOperations
 		void
 		visit_resolved_raster(
 				const RenderedResolvedRaster &)
+		{  }
+		
+		virtual
+		void
+		visit_resolved_scalar_field_3d(
+				const RenderedResolvedScalarField3D &)
 		{  }
 
 		/**

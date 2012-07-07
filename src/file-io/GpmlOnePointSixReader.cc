@@ -553,6 +553,28 @@ namespace
 
 		virtual
 		void
+		visit_gpml_scalar_field_3d_file(
+				GPlatesPropertyValues::GpmlScalarField3DFile &gpml_scalar_field_3d_file)
+		{
+			const GPlatesUtils::UnicodeString &filename = gpml_scalar_field_3d_file.file_name()->value().get();
+			QString filename_qstring = GPlatesUtils::make_qstring_from_icu_string(filename);
+			
+			// Only fix if the filename in the GPML is relative.
+			// Even if GPlates only ever writes relative filenames, there's
+			// nothing to stop an absolute filename appearing
+			if (QFileInfo(filename_qstring).isRelative())
+			{
+				QString result_qstring = QDir::cleanPath(d_absolute_path + filename_qstring);
+
+				// qDebug() << result_qstring;
+
+				GPlatesUtils::UnicodeString result = GPlatesUtils::make_icu_string_from_qstring(result_qstring);
+				gpml_scalar_field_3d_file.set_file_name(GPlatesPropertyValues::XsString::create(result));
+			}
+		}
+
+		virtual
+		void
 		visit_gpml_constant_value(
 				GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 		{

@@ -209,7 +209,7 @@ GPlatesOpenGL::GLProgramObject::gl_validate_program(
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform1f(
 		GLRenderer &renderer,
 		const char *name,
@@ -220,11 +220,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1f(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform1fARB(get_uniform_location(name), v0);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform1fARB(uniform_location, v0);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform1f(
 		GLRenderer &renderer,
 		const char *name,
@@ -236,11 +244,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1f(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform1fvARB(get_uniform_location(name), count, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform1fvARB(uniform_location, count, value);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform1i(
 		GLRenderer &renderer,
 		const char *name,
@@ -251,11 +267,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1i(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform1iARB(get_uniform_location(name), v0);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform1iARB(uniform_location, v0);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform1i(
 		GLRenderer &renderer,
 		const char *name,
@@ -267,11 +291,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1i(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform1ivARB(get_uniform_location(name), count, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform1ivARB(uniform_location, count, value);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform1d(
 		GLRenderer &renderer,
 		const char *name,
@@ -290,14 +322,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform1d(get_uniform_location(name), v0);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform1d(uniform_location, v0);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform1d(
 		GLRenderer &renderer,
 		const char *name,
@@ -317,14 +357,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform1dv(get_uniform_location(name), count, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform1dv(uniform_location, count, value);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform1ui(
 		GLRenderer &renderer,
 		const char *name,
@@ -341,14 +389,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1ui(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform1uiEXT(get_uniform_location(name), v0);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform1uiEXT(uniform_location, v0);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform1ui(
 		GLRenderer &renderer,
 		const char *name,
@@ -366,14 +422,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1ui(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform1uivEXT(get_uniform_location(name), count, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform1uivEXT(uniform_location, count, value);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform2f(
 		GLRenderer &renderer,
 		const char *name,
@@ -385,11 +449,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2f(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform2fARB(get_uniform_location(name), v0, v1);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform2fARB(uniform_location, v0, v1);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform2f(
 		GLRenderer &renderer,
 		const char *name,
@@ -401,11 +473,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2f(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform2fvARB(get_uniform_location(name), count, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform2fvARB(uniform_location, count, value);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform2i(
 		GLRenderer &renderer,
 		const char *name,
@@ -417,11 +497,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2i(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform2iARB(get_uniform_location(name), v0, v1);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform2iARB(uniform_location, v0, v1);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform2i(
 		GLRenderer &renderer,
 		const char *name,
@@ -433,11 +521,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2i(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform2ivARB(get_uniform_location(name), count, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform2ivARB(uniform_location, count, value);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform2d(
 		GLRenderer &renderer,
 		const char *name,
@@ -457,14 +553,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform2d(get_uniform_location(name), v0, v1);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform2d(uniform_location, v0, v1);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform2d(
 		GLRenderer &renderer,
 		const char *name,
@@ -484,14 +588,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform2dv(get_uniform_location(name), count, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform2dv(uniform_location, count, value);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform2ui(
 		GLRenderer &renderer,
 		const char *name,
@@ -509,14 +621,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2ui(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform2uiEXT(get_uniform_location(name), v0, v1);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform2uiEXT(uniform_location, v0, v1);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform2ui(
 		GLRenderer &renderer,
 		const char *name,
@@ -534,14 +654,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2ui(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform2uivEXT(get_uniform_location(name), count, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform2uivEXT(uniform_location, count, value);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform3f(
 		GLRenderer &renderer,
 		const char *name,
@@ -554,11 +682,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3f(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform3fARB(get_uniform_location(name), v0, v1, v2);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform3fARB(uniform_location, v0, v1, v2);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform3f(
 		GLRenderer &renderer,
 		const char *name,
@@ -570,11 +706,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3f(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform3fvARB(get_uniform_location(name), count, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform3fvARB(uniform_location, count, value);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform3i(
 		GLRenderer &renderer,
 		const char *name,
@@ -587,11 +731,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3i(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform3iARB(get_uniform_location(name), v0, v1, v2);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform3iARB(uniform_location, v0, v1, v2);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform3i(
 		GLRenderer &renderer,
 		const char *name,
@@ -603,11 +755,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3i(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform3ivARB(get_uniform_location(name), count, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform3ivARB(uniform_location, count, value);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform3d(
 		GLRenderer &renderer,
 		const char *name,
@@ -628,14 +788,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform3d(get_uniform_location(name), v0, v1, v2);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform3d(uniform_location, v0, v1, v2);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform3d(
 		GLRenderer &renderer,
 		const char *name,
@@ -655,14 +823,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform3dv(get_uniform_location(name), count, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform3dv(uniform_location, count, value);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform3ui(
 		GLRenderer &renderer,
 		const char *name,
@@ -681,14 +857,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3ui(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform3uiEXT(get_uniform_location(name), v0, v1, v2);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform3uiEXT(uniform_location, v0, v1, v2);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform3ui(
 		GLRenderer &renderer,
 		const char *name,
@@ -706,14 +890,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3ui(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform3uivEXT(get_uniform_location(name), count, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform3uivEXT(uniform_location, count, value);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform4f(
 		GLRenderer &renderer,
 		const char *name,
@@ -727,11 +919,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4f(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform4fARB(get_uniform_location(name), v0, v1, v2, v3);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform4fARB(uniform_location, v0, v1, v2, v3);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform4f(
 		GLRenderer &renderer,
 		const char *name,
@@ -743,11 +943,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4f(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform4fvARB(get_uniform_location(name), count, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform4fvARB(uniform_location, count, value);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform4i(
 		GLRenderer &renderer,
 		const char *name,
@@ -761,11 +969,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4i(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform4iARB(get_uniform_location(name), v0, v1, v2, v3);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform4iARB(uniform_location, v0, v1, v2, v3);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform4i(
 		GLRenderer &renderer,
 		const char *name,
@@ -777,11 +993,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4i(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform4ivARB(get_uniform_location(name), count, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform4ivARB(uniform_location, count, value);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform4d(
 		GLRenderer &renderer,
 		const char *name,
@@ -803,14 +1027,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform4d(get_uniform_location(name), v0, v1, v2, v3);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform4d(uniform_location, v0, v1, v2, v3);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform4d(
 		GLRenderer &renderer,
 		const char *name,
@@ -830,14 +1062,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform4dv(get_uniform_location(name), count, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform4dv(uniform_location, count, value);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform4ui(
 		GLRenderer &renderer,
 		const char *name,
@@ -857,14 +1097,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4ui(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform4uiEXT(get_uniform_location(name), v0, v1, v2, v3);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform4uiEXT(uniform_location, v0, v1, v2, v3);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform4ui(
 		GLRenderer &renderer,
 		const char *name,
@@ -882,14 +1130,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4ui(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniform4uivEXT(get_uniform_location(name), count, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniform4uivEXT(uniform_location, count, value);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform_matrix2x2f(
 		GLRenderer &renderer,
 		const char *name,
@@ -902,11 +1158,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix2x2f(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniformMatrix2fvARB(get_uniform_location(name), count, transpose, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniformMatrix2fvARB(uniform_location, count, transpose, value);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform_matrix2x2d(
 		GLRenderer &renderer,
 		const char *name,
@@ -927,14 +1191,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix2x2d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniformMatrix2dv(get_uniform_location(name), count, transpose, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniformMatrix2dv(uniform_location, count, transpose, value);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform_matrix3x3f(
 		GLRenderer &renderer,
 		const char *name,
@@ -947,11 +1219,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix3x3f(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniformMatrix3fvARB(get_uniform_location(name), count, transpose, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniformMatrix3fvARB(uniform_location, count, transpose, value);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform_matrix3x3d(
 		GLRenderer &renderer,
 		const char *name,
@@ -972,14 +1252,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix3x3d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniformMatrix3dv(get_uniform_location(name), count, transpose, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniformMatrix3dv(uniform_location, count, transpose, value);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4f(
 		GLRenderer &renderer,
 		const char *name,
@@ -992,11 +1280,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4f(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniformMatrix4fvARB(get_uniform_location(name), count, transpose, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniformMatrix4fvARB(uniform_location, count, transpose, value);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 		GLRenderer &renderer,
 		const char *name,
@@ -1017,14 +1313,22 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
-	glUniformMatrix4dv(get_uniform_location(name), count, transpose, value);
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniformMatrix4dv(uniform_location, count, transpose, value);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4f(
 		GLRenderer &renderer,
 		const char *name,
@@ -1044,12 +1348,20 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4f(
 		float_matrix[n] = double_matrix[n];
 	}
 
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
 	// Note that the matrix is in column-major format.
-	glUniformMatrix4fvARB(get_uniform_location(name), 1, GL_FALSE/*transpose*/, float_matrix);
+	glUniformMatrix4fvARB(uniform_location, 1, GL_FALSE/*transpose*/, float_matrix);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 		GLRenderer &renderer,
 		const char *name,
@@ -1070,15 +1382,23 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 
 	const GLdouble *const double_matrix = matrix.get_matrix();
 
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
 	// Note that the matrix is in column-major format.
-	glUniformMatrix4dv(get_uniform_location(name), 1, GL_FALSE/*transpose*/, double_matrix);
+	glUniformMatrix4dv(uniform_location, 1, GL_FALSE/*transpose*/, double_matrix);
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4f(
 		GLRenderer &renderer,
 		const char *name,
@@ -1104,11 +1424,19 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4f(
 		}
 	}
 
-	glUniformMatrix4fvARB(get_uniform_location(name), matrices.size(), GL_FALSE/*transpose*/, float_matrices.get());
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniformMatrix4fvARB(uniform_location, matrices.size(), GL_FALSE/*transpose*/, float_matrices.get());
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 		GLRenderer &renderer,
 		const char *name,
@@ -1135,10 +1463,18 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 		std::memcpy(double_matrices.get() + 16 * m, matrices[m].get_matrix(), 16 * sizeof(GLdouble));
 	}
 
-	glUniformMatrix4dv(get_uniform_location(name), matrices.size(), GL_FALSE/*transpose*/, double_matrices.get());
+	const GLint uniform_location = get_uniform_location(name);
+	if (uniform_location < 0)
+	{
+		return false;
+	}
+
+	glUniformMatrix4dv(uniform_location, matrices.size(), GL_FALSE/*transpose*/, double_matrices.get());
 #else
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 #endif
+
+	return true;
 }
 
 
@@ -1158,21 +1494,15 @@ GPlatesOpenGL::GLProgramObject::get_uniform_location(
 
 		if (uniform_location < 0)
 		{
-			std::ostringstream error_string_stream;
-
-			error_string_stream
-					<< "Attempted to set uniform variable '"
+			qWarning()
+					<< "Attempted to set shader program uniform variable '"
 					<< uniform_name
-					<< "', on a shader program, that (1) does not exist, "
-					<< "(2) is not actively used in the linked shader program or (3) is a reserved name.";
-
-			GPlatesGlobal::Assert<OpenGLException>(
-					false,
-					GPLATES_ASSERTION_SOURCE,
-					error_string_stream.str().c_str());
+					<< "' that (1) does not exist, "
+					<< "(2) is not actively used in the linked shader program or "
+					<< "(3) is a reserved name.";
 		}
 
-		// Override the dummy index (location) with the correct one.
+		// Override the dummy index (location) with the correct one (or -1 for not-found).
 		uniform_insert_result.first->second = uniform_location;
 	}
 

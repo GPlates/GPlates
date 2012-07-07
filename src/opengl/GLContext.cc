@@ -52,8 +52,38 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 bool GPlatesOpenGL::GLContext::s_initialised_GLEW = false;
 boost::optional<GPlatesOpenGL::GLContext::Parameters> GPlatesOpenGL::GLContext::s_parameters;
 
+// Set the GL_COLOR_ATTACHMENT0_EXT constant.
+const GLenum GPlatesOpenGL::GLContext::Parameters::Framebuffer::gl_COLOR_ATTACHMENT0 = GL_COLOR_ATTACHMENT0_EXT;
+
 // Set the GL_TEXTURE0 constant.
-const GLenum GPlatesOpenGL::GLContext::Parameters::Texture::gl_texture0 = GL_TEXTURE0;
+const GLenum GPlatesOpenGL::GLContext::Parameters::Texture::gl_TEXTURE0 = GL_TEXTURE0;
+
+
+QGLFormat
+GPlatesOpenGL::GLContext::get_qgl_format()
+{
+	// We turn *off* multisampling because lines actually look better without it...
+	// We need an alpha channel in case falling back to main frame buffer for render textures...
+	QGLFormat format(/*QGL::SampleBuffers |*/ QGL::AlphaChannel);
+
+	// We use features deprecated in OpenGL 3 so use compatibility profile.
+#if QT_VERSION >= 0x040700 // Functions introduced in Qt 4.7...
+	format.setProfile(QGLFormat::CompatibilityProfile);
+
+	const QGLFormat::OpenGLVersionFlags opengl_version_flags = QGLFormat::openGLVersionFlags();
+
+	// We use OpenGL extensions in GPlates and hence don't rely on a particular OpenGL core version.
+	// So we just set the version to OpenGL 1.1 which is supported by everything and is the
+	// only version supported by the Microsoft software renderer (fallback from hardware).
+	if (opengl_version_flags.testFlag(QGLFormat::OpenGL_Version_1_1))
+	{
+		format.setVersion(1, 1);
+	}
+#endif
+
+	return format;
+}
+
 
 void
 GPlatesOpenGL::GLContext::initialise()
@@ -175,7 +205,33 @@ GPlatesOpenGL::GLContext::initialise_framebuffer_parameters(
 		// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
 		framebuffer_parameters.gl_max_color_attachments = max_color_attachments;
 
+		// Get the maximum render buffer size.
+		GLint max_renderbuffer_size;
+		glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE_EXT, &max_renderbuffer_size);
+		// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
+		framebuffer_parameters.gl_max_renderbuffer_size = max_renderbuffer_size;
+
 		qDebug() << "  GL_EXT_framebuffer_object";
+	}
+
+	if (GLEW_ARB_draw_buffers)
+	{
+		framebuffer_parameters.gl_ARB_draw_buffers = true;
+
+		// Get the maximum number of draw buffers (multiple render targets).
+		GLint max_draw_buffers;
+		glGetIntegerv(GL_MAX_DRAW_BUFFERS_ARB, &max_draw_buffers);
+		// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
+		framebuffer_parameters.gl_max_draw_buffers = max_draw_buffers;
+
+		qDebug() << "  GL_ARB_draw_buffers";
+	}
+
+	if (GLEW_EXT_blend_func_separate)
+	{
+		framebuffer_parameters.gl_EXT_blend_func_separate = true;
+
+		qDebug() << "  GL_EXT_blend_func_separate";
 	}
 }
 
@@ -476,6 +532,13 @@ GPlatesOpenGL::GLContext::initialise_texture_parameters(
 		texture_parameters.gl_ARB_color_buffer_float = true;
 
 		qDebug() << "  GL_ARB_color_buffer_float";
+	}
+
+	// See if floating-point filtering/blending is supported.
+	// See comment in Parameters::Texture for how this is detected.
+	if (GLEW_VERSION_3_0 || GLEW_EXT_texture_array)
+	{
+		texture_parameters.gl_supports_floating_point_filtering_and_blending = true;
 	}
 }
 
@@ -905,6 +968,7 @@ GPlatesOpenGL::GLContext::NonSharedState::NonSharedState() :
 	d_frame_buffer_object_resource_manager(GLFrameBufferObject::resource_manager_type::create()),
 	// Start off with an initial cache size of 1 - it'll grow as needed...
 	d_frame_buffer_object_cache(GPlatesUtils::ObjectCache<GLFrameBufferObject>::create()),
+	d_render_buffer_object_resource_manager(GLRenderBufferObject::resource_manager_type::create()),
 	d_vertex_array_object_resource_manager(GLVertexArrayObject::resource_manager_type::create())
 {
 }
@@ -921,12 +985,17 @@ GPlatesOpenGL::GLContext::NonSharedState::acquire_frame_buffer_object(
 	{
 		// Create a new object and add it to the cache.
 		frame_buffer_object_opt = d_frame_buffer_object_cache->allocate_object(
-				GLFrameBufferObject::create_as_auto_ptr(d_frame_buffer_object_resource_manager));
+				GLFrameBufferObject::create_as_auto_ptr(renderer));
 	}
 	const GLFrameBufferObject::shared_ptr_type &frame_buffer_object = frame_buffer_object_opt.get();
 
 	// First clear the framebuffer attachments before returning to the client.
 	frame_buffer_object->gl_detach_all(renderer);
+
+	// Also reset the glDrawBuffer(s)/glReadBuffer state to the default state for
+	// a non-default, application-created framebuffer object.
+	frame_buffer_object->gl_draw_buffers(renderer);
+	frame_buffer_object->gl_read_buffer(renderer);
 
 	return frame_buffer_object;
 }
@@ -942,7 +1011,11 @@ GPlatesOpenGL::GLContext::Parameters::Viewport::Viewport() :
 
 GPlatesOpenGL::GLContext::Parameters::Framebuffer::Framebuffer() :
 	gl_EXT_framebuffer_object(false),
-	gl_max_color_attachments(0)
+	gl_max_color_attachments(0),
+	gl_max_renderbuffer_size(0),
+	gl_ARB_draw_buffers(false),
+	gl_max_draw_buffers(1),
+	gl_EXT_blend_func_separate(false)
 {
 }
 
@@ -961,7 +1034,7 @@ GPlatesOpenGL::GLContext::Parameters::Shader::Shader() :
 
 
 GPlatesOpenGL::GLContext::Parameters::Texture::Texture() :
-	gl_max_texture_size(gl_min_texture_size),
+	gl_max_texture_size(gl_MIN_TEXTURE_SIZE),
 	gl_max_cube_map_texture_size(16/*OpenGL minimum value*/),
 	gl_ARB_texture_cube_map(false),
 	gl_ARB_texture_non_power_of_two(false),
@@ -979,7 +1052,8 @@ GPlatesOpenGL::GLContext::Parameters::Texture::Texture() :
 	gl_EXT_texture_buffer_object(false),
 	gl_ARB_texture_float(false),
 	gl_ARB_texture_rg(false),
-	gl_ARB_color_buffer_float(false)
+	gl_ARB_color_buffer_float(false),
+	gl_supports_floating_point_filtering_and_blending(false)
 {
 }
 

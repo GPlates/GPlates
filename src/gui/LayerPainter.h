@@ -31,17 +31,22 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "ColourPalette.h"
 #include "MapProjection.h"
 #include "RasterColourPalette.h"
-#include "SceneLightingParams.h"
+#include "SceneLightingParameters.h"
 #include "TextRenderer.h"
 
 #include "app-logic/ResolvedRaster.h"
+#include "app-logic/ResolvedScalarField3D.h"
 
 #include "maths/UnitQuaternion3D.h"
 
+#include "opengl/GLLight.h"
 #include "opengl/GLMultiResolutionFilledPolygons.h"
+#include "opengl/GLProgramObject.h"
 #include "opengl/GLStreamPrimitives.h"
+#include "opengl/GLTexture.h"
 #include "opengl/GLVertexArray.h"
 #include "opengl/GLVertexBuffer.h"
 #include "opengl/GLVertexElementBuffer.h"
@@ -109,7 +114,10 @@ namespace GPlatesGui
 					GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
 					GPlatesOpenGL::GLBuffer &vertex_buffer_data,
 					GPlatesOpenGL::GLVertexArray &vertex_array,
-					GPlatesOpenGL::GLVisualLayers &gl_visual_layers);
+					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
+					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection,
+					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
+							render_point_line_polygon_lighting_program_object);
 
 			/**
 			 * Returns the stream for points of size @a point_size.
@@ -303,37 +311,58 @@ namespace GPlatesGui
 			RasterDrawable(
 					const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type source_resolved_raster_,
 					const RasterColourPalette::non_null_ptr_to_const_type source_raster_colour_palette_,
-					const Colour &source_raster_modulate_colour_,
-					const SceneLightingParams &scene_lighting_params_,
-					const GPlatesOpenGL::GLMatrix &view_orientation_ = GPlatesOpenGL::GLMatrix::IDENTITY,
-					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection_ = boost::none) :
+					const Colour &source_raster_modulate_colour_) :
 				source_resolved_raster(source_resolved_raster_),
 				source_raster_colour_palette(source_raster_colour_palette_),
-				source_raster_modulate_colour(source_raster_modulate_colour_),
-				scene_lighting_params(scene_lighting_params_),
-				view_orientation(view_orientation_),
-				map_projection(map_projection_)
+				source_raster_modulate_colour(source_raster_modulate_colour_)
 			{  }
 
 			GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type source_resolved_raster;
 			RasterColourPalette::non_null_ptr_to_const_type source_raster_colour_palette;
 			Colour source_raster_modulate_colour;
-			SceneLightingParams scene_lighting_params;
-			GPlatesOpenGL::GLMatrix view_orientation;
-			boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection;
+		};
+
+
+		/**
+		 * Information to render a scalar field.
+		 */
+		struct ScalarField3DDrawable
+		{
+			ScalarField3DDrawable(
+					const GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_to_const_type source_resolved_scalar_field_,
+					float iso_value_,
+					const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &scalar_field_colour_palette_,
+					const std::vector<float> &shader_test_variables_) :
+				source_resolved_scalar_field(source_resolved_scalar_field_),
+				iso_value(iso_value_),
+				scalar_field_colour_palette(scalar_field_colour_palette_),
+				shader_test_variables(shader_test_variables_)
+			{  }
+
+			GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_to_const_type source_resolved_scalar_field;
+			float iso_value;
+			GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type scalar_field_colour_palette;
+			std::vector<float> shader_test_variables;
 		};
 
 
 		/**
 		 * Constructor.
 		 *
-		 * Set @a use_depth_buffer to true if you have a depth buffer (eg, main framebuffer) and
-		 * you want to use it.
-		 * Currently the 3D globe view uses the depth buffer but the 2D map views don't.
+		 * @a map_projection is used for painting in a map view (and is none for the 3D globe view).
+		 * And currently the 3D globe view uses the depth buffer but the 2D map views don't.
 		 */
 		explicit
 		LayerPainter(
-				bool use_depth_buffer = true);
+				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
+				boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection = boost::none);
+
+		/**
+		 * Initialise objects requiring @a GLRenderer.
+		 */
+		void
+		initialise(
+				GPlatesOpenGL::GLRenderer &renderer);
 
 		/**
 		 * Must be called before streaming or queuing any primitives.
@@ -344,13 +373,17 @@ namespace GPlatesGui
 
 		/**
 		 * Renders any streamed or queued primitives.
+		 *
+		 * @param surface_occlusion_texture is a viewport-size 2D texture containing the RGBA rendering
+		 * of the surface geometries/rasters on the *front* of the globe.
+		 * It is only used when rendering sub-surface geometries.
 		 */
 		cache_handle_type
 		end_painting(
 				GPlatesOpenGL::GLRenderer &renderer,
-				GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 				const TextRenderer &text_renderer,
-				float scale);
+				float scale,
+				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture = boost::none);
 
 		/**
 		 * Returns the render.
@@ -369,23 +402,20 @@ namespace GPlatesGui
 		PointLinePolygonDrawables translucent_drawables_on_the_sphere;
 
 		std::vector<RasterDrawable> rasters;
+		std::vector<ScalarField3DDrawable> scalar_fields;
 		std::vector<TextDrawable3D> text_drawables_3D;
 		std::vector<TextDrawable2D> text_drawables_2D;
 
-		/**
-		 * Optional location in cube quad tree (spatial partition) when/if traversing a
-		 * rendered geometries spatial partition.
-		 *
-		 * If it's boost::none then the location is the root of the spatial partition.
-		 * This is the default if the rendered geometries being visited are not in a spatial partition.
-		 */
-		boost::optional<GPlatesMaths::CubeQuadTreeLocation> current_cube_quad_tree_location;
-
 	private:
+
+		cache_handle_type
+		paint_scalar_fields(
+				GPlatesOpenGL::GLRenderer &renderer,
+				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture);
+
 		cache_handle_type
 		paint_rasters(
-				GPlatesOpenGL::GLRenderer &renderer,
-				GPlatesOpenGL::GLVisualLayers &gl_visual_layers);
+				GPlatesOpenGL::GLRenderer &renderer);
 
 		void
 		paint_text_drawables_2D(
@@ -403,6 +433,9 @@ namespace GPlatesGui
 		//! References the renderer (is only valid between @a begin_painting and @a end_painting).
 		boost::optional<GPlatesOpenGL::GLRenderer &> d_renderer;
 
+		//! For obtaining the OpenGL light and rendering rasters and scalar fields.
+		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
+
 		//! Used to stream vertex elements (indices) to.
 		GPlatesOpenGL::GLVertexElementBuffer::shared_ptr_type d_vertex_element_buffer;
 
@@ -412,8 +445,19 @@ namespace GPlatesGui
 		//! Used to bind vertices and vertex elements of @a d_vertex_element_buffer and @a d_vertex_buffer.
 		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_vertex_array;
 
-		//! Whether to enable depth testing and writes at any stage of the rendering.
-		bool d_use_depth_buffer;
+		/**
+		 * Used for rendering to a 2D map view (is none for 3D globe view).
+		 */
+		boost::optional<MapProjection::non_null_ptr_to_const_type> d_map_projection;
+
+		/**
+		 * Shader program to render points/lines/polygons with lighting.
+		 *
+		 * Is boost::none if not supported by the runtime system -
+		 * the fixed-function pipeline is then used (with no lighting).
+		 */
+		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
+				d_render_point_line_polygon_lighting_program_object;
 	};
 }
 

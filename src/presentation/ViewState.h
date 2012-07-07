@@ -75,6 +75,7 @@ namespace GPlatesGui
 	class MapTransform;
 	class PythonManager;
 	class RenderSettings;
+	class SceneLightingParameters;
 	class TextOverlaySettings;
 	class TopologySectionsContainer;
 	class ViewportProjection;
@@ -216,6 +217,10 @@ namespace GPlatesPresentation
 
 		GPlatesGui::RenderSettings &
 		get_render_settings();
+
+
+		GPlatesGui::SceneLightingParameters &
+		get_scene_lighting_parameters();
 
 
 		GPlatesGui::MapTransform &
@@ -401,6 +406,9 @@ namespace GPlatesPresentation
 
 		//! What gets rendered and what doesn't
 		boost::scoped_ptr<GPlatesGui::RenderSettings> d_render_settings;
+
+		//! Parameters used when lighting the scene during OpenGL rendering.
+		boost::scoped_ptr<GPlatesGui::SceneLightingParameters> d_scene_lighting_parameters;
 
 		//! Sends signals to transform maps
 		boost::scoped_ptr<GPlatesGui::MapTransform> d_map_transform;

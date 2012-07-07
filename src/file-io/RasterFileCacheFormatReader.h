@@ -54,6 +54,7 @@
 #include "property-values/RawRaster.h"
 #include "property-values/RawRasterUtils.h"
 
+#include "utils/Endian.h"
 #include "utils/Profile.h"
 
 
@@ -379,10 +380,10 @@ namespace GPlatesFileIO
 			{
 				const RasterFileCacheFormat::BlockInfo &block_info = blocks_in_region.top();
 
-				PROFILE_BEGIN(profile_seek, "RasterFileCacheFormatReader seek");
+				//PROFILE_BEGIN(profile_seek, "RasterFileCacheFormatReader seek");
 				// Seek to the beginning of the block's encoded data.
 				d_file.seek(block_info.*encoded_block_data_offset);
-				PROFILE_END(profile_seek);
+				//PROFILE_END(profile_seek);
 
 				// Read the encoded block data into our block data buffer.
 				read_block_data(block_data.get(), block_info.width * block_info.height);
@@ -495,89 +496,9 @@ namespace GPlatesFileIO
 						"Error reading block data from raster file cache mipmap.");
 			}
 
-			convert_from_big_endian(data, num_elements, sizeof(T));
-		}
-
-
-		void
-		convert_from_big_endian(
-				GPlatesGui::rgba8_t *data,
-				unsigned int num_elements,
-				unsigned int element_size) const
-		{
-			// Note that GPlatesGui::rgba8_t stores 4 bytes in memory as (R,G,B,A) and the
-			// data is read from the stream as bytes (not 32-bit integers) so there's
-			// no need to re-order the bytes according to the endianess of the current system.
-		}
-
-
-		void
-		convert_from_big_endian(
-				void *data,
-				unsigned int num_elements,
-				unsigned int element_size) const
-		{
-			PROFILE_FUNC();
-
-			// If runtime system is big-endian then no need to convert.
-			if (QSysInfo::ByteOrder == QSysInfo::BigEndian)
-			{
-				return;
-			}
-
-			if (element_size == 1)
-			{
-				return;
-			}
-
-			if (element_size == 2)
-			{
-				quint16 *data_ptr = static_cast<quint16 *>(data);
-				for (unsigned int n = 0; n < num_elements; ++n)
-				{
-					const quint16 element = data_ptr[n];
-					data_ptr[n] = ((element & 0xff00) >> 8) | ((element & 0x00ff) << 8);
-				}
-			}
-			else if (element_size == 4)
-			{
-				quint32 *data_ptr = static_cast<quint32 *>(data);
-				for (unsigned int n = 0; n < num_elements; ++n)
-				{
-					const quint32 element = data_ptr[n];
-					data_ptr[n] =
-							((element & 0xff000000) >> 24) |
-							((element & 0x00ff0000) >> 8) |
-							((element & 0x0000ff00) << 8) |
-							((element & 0x000000ff) << 24);
-				}
-			}
-			else // element_size == 8 ...
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-						element_size == 8,
-						GPLATES_ASSERTION_SOURCE);
-
-				// Simulate 64-bit with 32-bit just in case 64-bit arithmetic is not available.
-				quint32 *data_ptr = static_cast<quint32 *>(data);
-				for (unsigned int n = 0; n < num_elements; ++n)
-				{
-					// The high and low 32-bit words of the 64-bit word.
-					const quint32 element_hi = data_ptr[(n << 1)];
-					const quint32 element_lo = data_ptr[(n << 1) + 1];
-
-					data_ptr[(n << 1)] =
-							((element_lo & 0xff000000) >> 24) |
-							((element_lo & 0x00ff0000) >> 8) |
-							((element_lo & 0x0000ff00) << 8) |
-							((element_lo & 0x000000ff) << 24);
-					data_ptr[(n << 1) + 1] =
-							((element_hi & 0xff000000) >> 24) |
-							((element_hi & 0x00ff0000) >> 8) |
-							((element_hi & 0x0000ff00) << 8) |
-							((element_hi & 0x000000ff) << 24);
-				}
-			}
+			//PROFILE_BEGIN(profile_convert, "RasterFileCacheFormatReader: convert endian");
+			GPlatesUtils::Endian::convert(data, data + num_elements, QSysInfo::BigEndian);
+			//PROFILE_END(profile_convert);
 		}
 
 

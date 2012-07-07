@@ -54,6 +54,7 @@
 #include "gui/PythonManager.h"
 #include "gui/RasterColourPalette.h"
 #include "gui/RenderSettings.h"
+#include "gui/SceneLightingParameters.h"
 #include "gui/Symbol.h"
 #include "gui/TextOverlaySettings.h"
 #include "gui/TopologySectionsContainer.h"
@@ -132,6 +133,8 @@ GPlatesPresentation::ViewState::ViewState(
 			new VisualLayerRegistry()),
 	d_render_settings(
 			new GPlatesGui::RenderSettings()),
+	d_scene_lighting_parameters(
+			new GPlatesGui::SceneLightingParameters()),
 	d_map_transform(
 			new GPlatesGui::MapTransform(
 				*d_viewport_zoom)),
@@ -328,6 +331,13 @@ GPlatesGui::RenderSettings &
 GPlatesPresentation::ViewState::get_render_settings()
 {
 	return *d_render_settings;
+}
+
+
+GPlatesGui::SceneLightingParameters &
+GPlatesPresentation::ViewState::get_scene_lighting_parameters()
+{
+	return *d_scene_lighting_parameters;
 }
 
 

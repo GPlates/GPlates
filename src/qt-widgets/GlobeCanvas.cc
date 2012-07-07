@@ -81,7 +81,13 @@ namespace
 	 */
 	static const GLfloat FRAMING_RATIO = static_cast<GLfloat>(1.07);
 
-	static const GLfloat EYE_X = 0.0, EYE_Y = 0.0, EYE_Z = -5.0;
+	/**
+	 * The view is initially oriented such that the global x-axis points out of the screen.
+	 * So set our viewpoint to be along the positive x-axis (looking at the origin).
+	 *
+	 * This should be outside the globe (centred at origin) - should have magnitude greater than 1.0.
+	 */
+	static const GPlatesMaths::Vector3D EYE_POSITION(5.0, 0, 0);
 
 	/**
 	 * Calculate the globe-position discriminant for the universe coordinates @a y and @a z.
@@ -179,7 +185,6 @@ namespace
 		// closest point which *is* on the globe.
 		return calc_pos_at_intersection_with_globe(y, z, discrim);
 	}
-	
 }
 
 
@@ -197,9 +202,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_):
 	QGLWidget(
-			// We turn *off* multisampling because lines actually look better without it...
-			// We need an alpha channel in case falling back to main frame buffer for render textures...
-			QGLFormat(/*QGL::SampleBuffers |*/ QGL::AlphaChannel),
+			GPlatesOpenGL::GLContext::get_qgl_format(),
 			parent_),
 	d_view_state(view_state),
 	d_gl_context(
@@ -244,9 +247,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
 		QWidget *parent_) :
 	QGLWidget(
-			// We turn *off* multisampling because lines actually look better without it...
-			// We need an alpha channel in case falling back to main frame buffer for render textures...
-			QGLFormat(/*QGL::SampleBuffers |*/ QGL::AlphaChannel),
+			GPlatesOpenGL::GLContext::get_qgl_format(),
 			parent_,
 			// Share texture objects, vertex buffer objects, etc...
 			existing_globe_canvas),
@@ -499,40 +500,33 @@ GPlatesQtWidgets::GlobeCanvas::update_canvas()
 void
 GPlatesQtWidgets::GlobeCanvas::draw_svg_output()
 {
-	try
-	{
-		GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
+	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
 
-		// Start a begin_render/end_render scope.
-		//
-		// By default the current render target of 'renderer' is the main frame buffer (of the window).
-		//
-		// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-		//
-		// Pass in the viewport of the window currently attached to the OpenGL context.
-		GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, d_gl_viewport);
+	// Start a begin_render/end_render scope.
+	//
+	// By default the current render target of 'renderer' is the main frame buffer (of the window).
+	//
+	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+	//
+	// Pass in the viewport of the window currently attached to the OpenGL context.
+	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, d_gl_viewport);
 
-		// Clear the colour and depth buffers of the main framebuffer.
-		renderer->gl_clear_depth(); // Clear depth to 1.0
-		renderer->gl_clear_color(); // Clear colour to (0,0,0,0).
-		renderer->gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// Clear the colour and depth buffers of the main framebuffer.
+	renderer->gl_clear_depth(); // Clear depth to 1.0
+	renderer->gl_clear_color(); // Clear colour to (0,0,0,0).
+	renderer->gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// NOTE: We're setting 'd_gl_projection_transform_include_half_globe'
-		// not 'd_gl_projection_transform_include_full_globe'.
-		renderer->gl_load_matrix(GL_PROJECTION, d_gl_projection_transform_include_half_globe);
-		renderer->gl_load_matrix(GL_MODELVIEW, d_gl_model_view_transform);
+	// NOTE: We're setting 'd_gl_projection_transform_include_front_half_globe'
+	// not 'd_gl_projection_transform_include_full_globe'.
+	renderer->gl_load_matrix(GL_PROJECTION, d_gl_projection_transform_include_front_half_globe);
+	renderer->gl_load_matrix(GL_MODELVIEW, d_gl_model_view_transform);
 
-		const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
-		// Paint the globe and its contents.
-		d_globe.paint_vector_output(
-				*renderer,
-				viewport_zoom_factor,
-				calculate_scale());
-	}
-	catch (const GPlatesGlobal::Exception &e)
-	{
-			qWarning() << e;
-	}
+	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
+	// Paint the globe and its contents.
+	d_globe.paint_vector_output(
+			*renderer,
+			viewport_zoom_factor,
+			calculate_scale());
 }
 
 void
@@ -589,14 +583,16 @@ GPlatesQtWidgets::GlobeCanvas::initializeGL()
 	//
 	// Set up the initial model-view transform.
 	//
-	d_gl_model_view_transform.gl_load_identity();
-	d_gl_model_view_transform.gl_translate(EYE_X, EYE_Y, EYE_Z);
+
 	// Set up our universe coordinate system (the standard geometric one):
 	//   Z points up
 	//   Y points right
 	//   X points out of the screen
-	d_gl_model_view_transform.gl_rotate(-90.0, 1.0, 0.0, 0.0);
-	d_gl_model_view_transform.gl_rotate(-90.0, 0.0, 0.0, 1.0);
+	d_gl_model_view_transform.gl_load_identity();
+	d_gl_model_view_transform.glu_look_at(
+			EYE_POSITION.x().dval(), EYE_POSITION.y().dval(), EYE_POSITION.z().dval(), // eye
+			0, 0, 0,  // centre
+			0, 0, 1); // up
 
 	// Beginning rendering so we can clear the framebuffer.
 	// By default the current render target of 'renderer' is the main frame buffer (of the window).
@@ -625,14 +621,7 @@ GPlatesQtWidgets::GlobeCanvas::resizeGL(
 		int new_width,
 		int new_height) 
 {
-	try
-	{
-		set_view();
-	}
-	catch (const GPlatesGlobal::Exception &e)
-	{
-		qWarning() << e;
-	}
+	set_view();
 }
 
 
@@ -643,7 +632,6 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 //	(  http://doc.trolltech.com/4.3/opengl-overpainting.html )
 //
 
-	try
 	{
 		//PROFILE_BLOCK("GlobeCanvas::paintGL");
 
@@ -658,10 +646,11 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 		// Pass in the viewport of the window currently attached to the OpenGL context.
 		GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, d_gl_viewport);
 
-		// Clear the colour and depth buffers of the main framebuffer.
-		renderer->gl_clear_depth(); // Clear depth to 1.0
+		// Clear the colour buffer of the main framebuffer.
+		// NOTE: We leave the depth clears to class Globe since it can do multiple
+		// depth buffer clears per render depending on the projection matrices it uses.
 		renderer->gl_clear_color(); // Clear colour to (0,0,0,0).
-		renderer->gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		renderer->gl_clear(GL_COLOR_BUFFER_BIT);
 
 		// NOTE: We only set the model-view transform here.
 		// The projection transform is set inside the globe renderer.
@@ -688,7 +677,8 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 				*renderer,
 				viewport_zoom_factor,
 				scale,
-				d_gl_projection_transform_include_half_globe,
+				d_gl_projection_transform_include_front_half_globe,
+				d_gl_projection_transform_include_rear_half_globe,
 				d_gl_projection_transform_include_full_globe,
 				d_gl_projection_transform_include_stars);
 
@@ -705,10 +695,6 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 		text_render_scope.end_render();
 
 		// At scope exit OpenGL should now be back in the default OpenGL state...
-	}
-	catch (const GPlatesGlobal::Exception &e)
-	{
-		qWarning() << e;
 	}
 
 	// If d_mouse_press_info is not boost::none, then mouse is down.
@@ -921,15 +907,19 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	// rendering. By limiting the far clip plane to only what is visible we avoid generating
 	// raster tiles for the rear of the globe when they are not visible.
 	//
-	// So the regular far clip plane is used for everything except the stars and when
-	// the globe is transparent (and both of these off turned off by default).
-	// And both of these are also not used for SVG rendering.
-	static const GLdouble depth_near_clipping = 3.5;
-	static const GLdouble depth_far_clipping_include_stars = 15;
-	// The 0.0001 is there just so that the circumference of the globe doesn't get clipped.
-	static const GLdouble depth_far_clipping_include_half_globe = fabsf(EYE_Z - 0.0001);
-	// The 0.0001 is there just so that the tip of the rear of the globe doesn't get clipped.
-	static const GLdouble depth_far_clipping_include_full_globe = fabsf(2 * EYE_Z - 0.0001);
+	static const GLdouble eye_to_globe_centre_distance = EYE_POSITION.magnitude().dval();
+	// The 1.0 is the globe radius.
+	// The 0.5 is arbitrary and because we don't want to put the near clipping plane too close
+	// to the globe because some objects are outside the globe such as rendered arrows.
+	static const GLdouble depth_in_front_of_globe = eye_to_globe_centre_distance - 1.0 - 0.5;
+	static const GLdouble depth_behind_globe = eye_to_globe_centre_distance + 1.0 + 0.5;
+	// The stars need a far clip plane further away.
+	static const GLdouble depth_behind_globe_and_including_stars = depth_behind_globe + 10;
+	static const GLdouble depth_globe_centre = eye_to_globe_centre_distance;
+	// The 'depth_globe_centre' will need adjustment so that the circumference of the globe doesn't get clipped.
+	// Also the opaque sphere is now rendered as a flat disk facing the camera and
+	// positioned through the globe centre - so we don't want that to get clipped away either.
+	static const GLdouble depth_epsilon_to_avoid_clipping_globe_circumference = 0.0001;
 
 	// Always fill up all of the available space.
 	update_dimensions();
@@ -948,58 +938,50 @@ GPlatesQtWidgets::GlobeCanvas::set_view()
 	GLdouble dim_ratio = d_larger_dim / d_smaller_dim;
 	GLdouble larger_dim_clipping = smaller_dim_clipping * dim_ratio;
 
-	d_gl_projection_transform_include_half_globe.gl_load_identity();
+	d_gl_projection_transform_include_front_half_globe.gl_load_identity();
+	d_gl_projection_transform_include_rear_half_globe.gl_load_identity();
 	d_gl_projection_transform_include_full_globe.gl_load_identity();
 	d_gl_projection_transform_include_stars.gl_load_identity();
 
-	//
-	// Note that the coordinate system, as set up in initialise_render_graph() is:
-	//   Z points up
-	//   Y points right
-	//   X points out of the screen
-	//
-	// The "camera" is effectively at (5, 0, 0), looking straight towards the origin.
-	// Previously, the far clipping plane was set as the x = 0 plane; this was used
-	// to ensure that the far side of the earth (which lies on the -X halfspace)
-	// does not get drawn (no depth testing was used).
-	// Now, so that we can draw pretty stars on the background, the far clipping
-	// plane has been pushed much further back. Depth testing is now used to ensure
-	// the far side of the earth does not get drawn.
-
+	GLdouble ortho_left, ortho_right, ortho_bottom, ortho_top;
 	if (d_canvas_screen_width <= d_canvas_screen_height)
 	{
-		d_gl_projection_transform_include_half_globe.gl_ortho(
-			-smaller_dim_clipping, smaller_dim_clipping,
-			-larger_dim_clipping, larger_dim_clipping, depth_near_clipping, 
-			depth_far_clipping_include_half_globe);
-
-		d_gl_projection_transform_include_full_globe.gl_ortho(
-			-smaller_dim_clipping, smaller_dim_clipping,
-			-larger_dim_clipping, larger_dim_clipping, depth_near_clipping, 
-			depth_far_clipping_include_full_globe);
-
-		d_gl_projection_transform_include_stars.gl_ortho(
-			-smaller_dim_clipping, smaller_dim_clipping,
-			-larger_dim_clipping, larger_dim_clipping, depth_near_clipping, 
-			depth_far_clipping_include_stars);
+		ortho_left = -smaller_dim_clipping;
+		ortho_right = smaller_dim_clipping;
+		ortho_bottom = -larger_dim_clipping;
+		ortho_top = larger_dim_clipping;
 	}
 	else
 	{
-		d_gl_projection_transform_include_half_globe.gl_ortho(
-			-larger_dim_clipping, larger_dim_clipping,
-			-smaller_dim_clipping, smaller_dim_clipping, depth_near_clipping, 
-			depth_far_clipping_include_half_globe);
-
-		d_gl_projection_transform_include_full_globe.gl_ortho(
-			-larger_dim_clipping, larger_dim_clipping,
-			-smaller_dim_clipping, smaller_dim_clipping, depth_near_clipping, 
-			depth_far_clipping_include_full_globe);
-
-		d_gl_projection_transform_include_stars.gl_ortho(
-			-larger_dim_clipping, larger_dim_clipping,
-			-smaller_dim_clipping, smaller_dim_clipping, depth_near_clipping, 
-			depth_far_clipping_include_stars);
+		ortho_left = -larger_dim_clipping;
+		ortho_right = larger_dim_clipping;
+		ortho_bottom = -smaller_dim_clipping;
+		ortho_top = smaller_dim_clipping;
 	}
+
+	d_gl_projection_transform_include_front_half_globe.gl_ortho(
+		ortho_left, ortho_right,
+		ortho_bottom, ortho_top,
+		depth_in_front_of_globe,
+		depth_globe_centre + depth_epsilon_to_avoid_clipping_globe_circumference);
+
+	d_gl_projection_transform_include_rear_half_globe.gl_ortho(
+		ortho_left, ortho_right,
+		ortho_bottom, ortho_top,
+		depth_globe_centre - depth_epsilon_to_avoid_clipping_globe_circumference,
+		depth_behind_globe);
+
+	d_gl_projection_transform_include_full_globe.gl_ortho(
+		ortho_left, ortho_right,
+		ortho_bottom, ortho_top,
+		depth_in_front_of_globe,
+		depth_behind_globe);
+
+	d_gl_projection_transform_include_stars.gl_ortho(
+		ortho_left, ortho_right,
+		ortho_bottom, ortho_top,
+		depth_in_front_of_globe,
+		depth_behind_globe_and_including_stars);
 }
 
 
@@ -1059,20 +1041,14 @@ GPlatesQtWidgets::GlobeCanvas::paintEvent(QPaintEvent *paint_event)
 // This paintEvent() method should be enabled, and the paintGL method disabled, when we wish to use Qt overpainting
 //  ( http://doc.trolltech.com/4.3/opengl-overpainting.html )
 
-	try {
+	qglClearColor(Qt::black);
 
-		qglClearColor(Qt::black);
+	QPainter painter;
+	painter.begin(this);
 
-		QPainter painter;
-		painter.begin(this);
+	painter.setRenderHint(QPainter::Antialiasing);
 
-		painter.setRenderHint(QPainter::Antialiasing);
-
-		painter.end();
-
-	} catch (const GPlatesGlobal::Exception &e){
-			qWarning() << e;
-	}
+	painter.end();
 
 }
 #endif

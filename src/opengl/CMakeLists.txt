@@ -84,9 +84,15 @@ set(srcs
     GLRasterCoRegistration.h
     GLReconstructedStaticPolygonMeshes.cc
     GLReconstructedStaticPolygonMeshes.h
+    GLRenderBufferObject.cc
+    GLRenderBufferObject.h
     GLRenderer.cc
     GLRenderer.h
     GLRendererImpl.h
+    GLScalarField3D.cc
+    GLScalarField3D.h
+    GLScreenRenderTarget.cc
+    GLScreenRenderTarget.h
     GLShaderObject.cc
     GLShaderObject.h
     GLShaderProgramUtils.cc

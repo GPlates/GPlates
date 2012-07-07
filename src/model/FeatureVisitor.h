@@ -75,6 +75,7 @@ namespace GPlatesPropertyValues
 	class GpmlPropertyDelegate;
 	class GpmlRasterBandNames;
 	class GpmlRevisionId;
+	class GpmlScalarField3DFile;
 	class GpmlStringList;
 	class GpmlTopologicalInterior;
 	class GpmlTopologicalPolygon;
@@ -210,6 +211,7 @@ namespace GPlatesModel
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlPropertyDelegate>::type gpml_property_delegate_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlRasterBandNames>::type gpml_raster_band_names_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlRevisionId>::type gpml_revision_id_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlScalarField3DFile>::type gpml_scalar_field_3d_file_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlStringList>::type gpml_string_list_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalInterior>::type gpml_topological_interior_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalPolygon>::type gpml_topological_polygon_type;
@@ -562,6 +564,12 @@ namespace GPlatesModel
 		void
 		visit_gpml_revision_id(
 				gpml_revision_id_type &gpml_revision_id) 
+		{  }
+
+		virtual
+		void
+		visit_gpml_scalar_field_3d_file(
+				gpml_scalar_field_3d_file_type &gpml_scalar_field_3d_file)
 		{  }
 
 		virtual

@@ -343,6 +343,14 @@ namespace
 
 			virtual
 			void
+			visit_default_normalised_raster_colour_palette(
+					GPlatesGui::DefaultNormalisedRasterColourPalette &colour_palette)
+			{
+				do_visit(colour_palette);
+			}
+
+			virtual
+			void
 			visit_regular_cpt_colour_palette(
 					GPlatesGui::RegularCptColourPalette &colour_palette)
 			{

@@ -35,6 +35,7 @@
 
 #include "GLRenderer.h"
 #include "GLTexture.h"
+#include "GLUtils.h"
 
 
 GLenum
@@ -273,11 +274,14 @@ GPlatesOpenGL::GLPixelBufferObject::gl_tex_sub_image_3D(
 	// Bind this pixel buffer to the *unpack* target.
 	GLRenderer::BindBufferObjectAndApply save_restore_bind_pixel_buffer(renderer, d_buffer, get_unpack_target_type());
 
-	// The GL_EXT_subtexture extension must be available.
+	// For some reason the GL_EXT_subtexture extension is not well-supported even though pretty much
+	// all hardware support it (was introduced in OpenGL 1.2 core).
+	// We'll test for GL_EXT_texture3D instead and call the core function glTexSubImage3D
+	// instead of the extension function glTexSubImage3DEXT.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_subtexture),
+			GPLATES_OPENGL_BOOL(GLEW_EXT_texture3D),
 			GPLATES_ASSERTION_SOURCE);
 
-	glTexSubImage3DEXT(
+	glTexSubImage3D(
 			target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
 }

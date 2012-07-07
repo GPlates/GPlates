@@ -175,7 +175,7 @@ GPlatesOpenGL::GLShaderObject::gl_shader_source(
 void
 GPlatesOpenGL::GLShaderObject::gl_shader_source(
 		GLRenderer &renderer,
-		const std::vector<std::string> &source_strings,
+		const std::vector<QByteArray> &source_strings,
 		ShaderVersion shader_version)
 {
 	const GLsizei count = source_strings.size();
@@ -193,7 +193,7 @@ GPlatesOpenGL::GLShaderObject::gl_shader_source(
 	// Add the caller's shader source segments.
 	for (GLsizei n = 0; n < count; ++n)
 	{
-		strings[n + 1] = source_strings[n].c_str();
+		strings[n + 1] = source_strings[n].constData();
 	}
 
 	// 'length' is NULL indicating the source strings are null-terminated.
@@ -217,10 +217,10 @@ GPlatesOpenGL::GLShaderObject::gl_shader_source(
 void
 GPlatesOpenGL::GLShaderObject::gl_shader_source(
 		GLRenderer &renderer,
-		const std::string &source_string,
+		const QByteArray &source_string,
 		ShaderVersion shader_version)
 {
-	gl_shader_source(renderer, source_string.c_str(), shader_version);
+	gl_shader_source(renderer, source_string.constData(), shader_version);
 }
 
 

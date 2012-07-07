@@ -62,6 +62,7 @@ namespace GPlatesAppLogic
 	class ReconstructedSmallCircle;
 	class ReconstructedVirtualGeomagneticPole;
 	class ResolvedRaster;
+	class ResolvedScalarField3D;
 	class ResolvedTopologicalBoundary;
 	class ResolvedTopologicalNetwork;
 	class CoRegistrationData;
@@ -113,6 +114,11 @@ namespace GPlatesAppLogic
 		typedef typename GPlatesUtils::CopyConst<
 				ReconstructionGeometryType, ResolvedRaster>::type
 						resolved_raster_type;
+
+		//! Typedef for @a ResolvedScalarField3D of appropriate const-ness.
+		typedef typename GPlatesUtils::CopyConst<
+				ReconstructionGeometryType, ResolvedScalarField3D>::type
+						resolved_scalar_field_3d_type;
 
 		//! Typedef for @a ResolvedTopologicalBoundary of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
@@ -197,6 +203,16 @@ namespace GPlatesAppLogic
 		void
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_raster_type> &rr)
+		{  }
+
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<resolved_scalar_field_3d_type> &rsf)
 		{  }
 
 

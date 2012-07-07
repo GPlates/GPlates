@@ -84,6 +84,13 @@ namespace GPlatesGui
 				ColourScheme::non_null_ptr_type colour_scheme);
 
 		/**
+		 * Initialise objects requiring @a GLRenderer.
+		 */
+		void
+		initialise(
+				GPlatesOpenGL::GLRenderer &renderer);
+
+		/**
 		 * Draw the rendered geometries.
 		 *
 		 * @param viewport_zoom_factor is used for rendering view-dependent geometries.

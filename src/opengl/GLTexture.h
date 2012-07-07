@@ -488,7 +488,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns the height of the texture (level 0).
 		 *
-		 * Note that this is also the number of array layers for a texture array (eg, GL_TEXTURE_2D_ARRAY target).
+		 * Note that this is also the number of array layers for a 1D texture array (GL_TEXTURE_1D_ARRAY target).
 		 *
 		 * Returns boost::none unless @a gl_tex_image_2D, @a gl_tex_image_3D or @a gl_copy_tex_image_2D have been called.
 		 */
@@ -500,6 +500,8 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Returns the depth of the texture (level 0).
+		 *
+		 * Note that this is also the number of array layers for a 2D texture array (GL_TEXTURE_2D_ARRAY target).
 		 *
 		 * Returns boost::none unless @a gl_tex_image_3D has been called.
 		 */

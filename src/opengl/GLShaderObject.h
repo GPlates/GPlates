@@ -27,13 +27,13 @@
 #define GPLATES_OPENGL_GLSHADEROBJECT_H
 
 #include <memory> // For std::auto_ptr
-#include <string>
 #include <vector>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <opengl/OpenGL.h>
+#include <QByteArray>
 
 #include "GLObject.h"
 #include "GLObjectResource.h"
@@ -209,7 +209,7 @@ namespace GPlatesOpenGL
 		void
 		gl_shader_source(
 				GLRenderer &renderer,
-				const std::vector<std::string> &source_strings,
+				const std::vector<QByteArray> &source_strings,
 				ShaderVersion shader_version = DEFAULT_SHADER_VERSION);
 
 		/**
@@ -231,7 +231,7 @@ namespace GPlatesOpenGL
 		void
 		gl_shader_source(
 				GLRenderer &renderer,
-				const std::string &source_string,
+				const QByteArray &source_string,
 				ShaderVersion shader_version = DEFAULT_SHADER_VERSION);
 
 

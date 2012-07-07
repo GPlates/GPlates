@@ -44,6 +44,7 @@ namespace GPlatesPresentation
 	{
 		enum Type
 		{
+			SCALAR_FIELDS,
 			RASTERS,
 			DERIVED_DATA,
 			BASIC_DATA,

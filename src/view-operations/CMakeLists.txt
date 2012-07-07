@@ -65,6 +65,7 @@ set(srcs
     RenderedPolylineOnSphere.h
     RenderedReconstructionGeometry.h
     RenderedResolvedRaster.h
+    RenderedResolvedScalarField3D.h
     RenderedSmallCircle.h
     RenderedSmallCircleArc.h
     RenderedSquareSymbol.h

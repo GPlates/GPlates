@@ -31,7 +31,6 @@
 
 #include "ExtractRasterFeatureProperties.h"
 #include "RasterLayerProxy.h"
-#include "ResolvedRaster.h"
 
 #include "model/FeatureVisitor.h"
 
@@ -96,15 +95,12 @@ GPlatesAppLogic::RasterLayerTask::get_input_channel_types() const
 					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
 					LayerTaskType::RASTER));
 	
-	// Temporary: disable lighting for now until implement canvas tool to control/specify lighting.
-#if 0
 	// Channel definition for the normal map raster.
 	input_channel_types.push_back(
 			LayerInputChannelType(
 					NORMAL_MAP_RASTER_CHANNEL_NAME,
 					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
 					LayerTaskType::RASTER));
-#endif
 
 	return input_channel_types;
 }

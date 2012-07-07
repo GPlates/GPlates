@@ -155,3 +155,46 @@ GPlatesGui::DefaultRasterColourPalette::get_upper_bound() const
 	return d_mean + NUM_STD_DEV_AWAY_FROM_MEAN * d_std_dev;
 }
 
+
+GPlatesGui::DefaultNormalisedRasterColourPalette::DefaultNormalisedRasterColourPalette() :
+	d_inner_palette(RegularCptColourPalette::create())
+{
+	// [min, max] is the range [0, 1].
+	double min = get_lower_bound();
+	double max = get_upper_bound();
+	double range = max - min;
+
+	// Background colour, for values before min value.
+	d_inner_palette->set_background_colour(
+			DEFAULT_RASTER_COLOURS[0]);
+
+	// Foreground colour, for values after max value.
+	d_inner_palette->set_foreground_colour(
+			DEFAULT_RASTER_COLOURS[NUM_DEFAULT_RASTER_COLOURS - 1]);
+
+	// Add the colour slices for everything in between.
+	for (unsigned int i = 0; i != NUM_DEFAULT_RASTER_COLOURS - 1; ++i)
+	{
+		ColourSlice colour_slice(
+				min + i * range / NUM_DEFAULT_RASTER_COLOURS,
+				DEFAULT_RASTER_COLOURS[i],
+				min + (i + 1) * range / NUM_DEFAULT_RASTER_COLOURS,
+				DEFAULT_RASTER_COLOURS[i + 1]);
+		d_inner_palette->add_entry(colour_slice);
+	}
+}
+
+
+GPlatesGui::DefaultNormalisedRasterColourPalette::non_null_ptr_type
+GPlatesGui::DefaultNormalisedRasterColourPalette::create()
+{
+	return new DefaultNormalisedRasterColourPalette();
+}
+
+
+boost::optional<GPlatesGui::Colour>
+GPlatesGui::DefaultNormalisedRasterColourPalette::get_colour(
+		double value) const
+{
+	return d_inner_palette->get_colour(value);
+}

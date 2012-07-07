@@ -51,22 +51,16 @@ namespace GPlatesMaths
 			 * These directions are the standard directions used by 3D graphics APIs for cube map
 			 * textures so we'll adopt the same convention.
 			 *
-			 * NOTE: I must've gotten these from Direct3D which uses a left-handed coordinate
-			 * system so that means we're currently using a left-handed coordinate system.
-			 *
-			 * FIXME: This will probably cause confusion in some areas so should change this to a
-			 * right-handed coordinate system.
-			 *
 			 * NOTE: This should be kept in sync with @a CUBE_FACE_COORDINATE_TRANSFORMS.
 			 */
 			const UnitVector3D CUBE_FACE_COORDINATES_FRAMES[NUM_FACES][NUM_AXES] =
 			{
-				{ UnitVector3D(0,0,-1), UnitVector3D(0,-1,0), UnitVector3D(1,0,0) },
-				{ UnitVector3D(0,0,1), UnitVector3D(0,-1,0), UnitVector3D(-1,0,0) },
-				{ UnitVector3D(1,0,0), UnitVector3D(0,0,1), UnitVector3D(0,1,0) },
-				{ UnitVector3D(1,0,0), UnitVector3D(0,0,-1), UnitVector3D(0,-1,0) },
-				{ UnitVector3D(1,0,0), UnitVector3D(0,-1,0), UnitVector3D(0,0,1) },
-				{ UnitVector3D(-1,0,0), UnitVector3D(0,-1,0), UnitVector3D(0,0,-1) }
+				{ UnitVector3D(0,0,-1), UnitVector3D(0,-1,0), UnitVector3D(-1,0,0) },
+				{ UnitVector3D(0,0,1), UnitVector3D(0,-1,0), UnitVector3D(1,0,0) },
+				{ UnitVector3D(1,0,0), UnitVector3D(0,0,1), UnitVector3D(0,-1,0) },
+				{ UnitVector3D(1,0,0), UnitVector3D(0,0,-1), UnitVector3D(0,1,0) },
+				{ UnitVector3D(1,0,0), UnitVector3D(0,-1,0), UnitVector3D(0,0,-1) },
+				{ UnitVector3D(-1,0,0), UnitVector3D(0,-1,0), UnitVector3D(0,0,1) }
 			};
 
 
@@ -89,12 +83,12 @@ namespace GPlatesMaths
 			 */
 			const CoordinateTransform CUBE_FACE_COORDINATE_TRANSFORMS[NUM_FACES][NUM_AXES] =
 			{
-				{ { Z_AXIS, -1 }, { Y_AXIS, -1 }, { X_AXIS,  1 } }, // POSITIVE_X
-				{ { Z_AXIS,  1 }, { Y_AXIS, -1 }, { X_AXIS, -1 } }, // NEGATIVE_X
-				{ { X_AXIS,  1 }, { Z_AXIS,  1 }, { Y_AXIS,  1 } }, // POSITIVE_Y
-				{ { X_AXIS,  1 }, { Z_AXIS, -1 }, { Y_AXIS, -1 } }, // NEGATIVE_Y
-				{ { X_AXIS,  1 }, { Y_AXIS, -1 }, { Z_AXIS,  1 } }, // POSITIVE_Z
-				{ { X_AXIS, -1 }, { Y_AXIS, -1 }, { Z_AXIS, -1 } }  // NEGATIVE_Z
+				{ { Z_AXIS, -1 }, { Y_AXIS, -1 }, { X_AXIS, -1 } }, // POSITIVE_X
+				{ { Z_AXIS,  1 }, { Y_AXIS, -1 }, { X_AXIS,  1 } }, // NEGATIVE_X
+				{ { X_AXIS,  1 }, { Z_AXIS,  1 }, { Y_AXIS, -1 } }, // POSITIVE_Y
+				{ { X_AXIS,  1 }, { Z_AXIS, -1 }, { Y_AXIS,  1 } }, // NEGATIVE_Y
+				{ { X_AXIS,  1 }, { Y_AXIS, -1 }, { Z_AXIS, -1 } }, // POSITIVE_Z
+				{ { X_AXIS, -1 }, { Y_AXIS, -1 }, { Z_AXIS,  1 } }  // NEGATIVE_Z
 			};
 
 
@@ -415,7 +409,7 @@ GPlatesMaths::CubeCoordinateFrame::get_cube_face_and_transformed_position(
 			{
 				cube_face = POSITIVE_X;
 				// This is quicker than using 'transform_into_cube_face_coordinate_frame'.
-				position_z_in_cube_face_coordinate_frame = position_x;
+				position_z_in_cube_face_coordinate_frame = -position_x;
 				position_x_in_cube_face_coordinate_frame = -position_z;
 				position_y_in_cube_face_coordinate_frame = -position_y;
 			}
@@ -423,7 +417,7 @@ GPlatesMaths::CubeCoordinateFrame::get_cube_face_and_transformed_position(
 			{
 				cube_face = NEGATIVE_X;
 				// This is quicker than using 'transform_into_cube_face_coordinate_frame'.
-				position_z_in_cube_face_coordinate_frame = -position_x;
+				position_z_in_cube_face_coordinate_frame = position_x;
 				position_x_in_cube_face_coordinate_frame = position_z;
 				position_y_in_cube_face_coordinate_frame = -position_y;
 			}
@@ -434,7 +428,7 @@ GPlatesMaths::CubeCoordinateFrame::get_cube_face_and_transformed_position(
 			{
 				cube_face = POSITIVE_Z;
 				// This is quicker than using 'transform_into_cube_face_coordinate_frame'.
-				position_z_in_cube_face_coordinate_frame = position_z;
+				position_z_in_cube_face_coordinate_frame = -position_z;
 				position_x_in_cube_face_coordinate_frame = position_x;
 				position_y_in_cube_face_coordinate_frame = -position_y;
 			}
@@ -442,7 +436,7 @@ GPlatesMaths::CubeCoordinateFrame::get_cube_face_and_transformed_position(
 			{
 				cube_face = NEGATIVE_Z;
 				// This is quicker than using 'transform_into_cube_face_coordinate_frame'.
-				position_z_in_cube_face_coordinate_frame = -position_z;
+				position_z_in_cube_face_coordinate_frame = position_z;
 				position_x_in_cube_face_coordinate_frame = -position_x;
 				position_y_in_cube_face_coordinate_frame = -position_y;
 			}
@@ -454,7 +448,7 @@ GPlatesMaths::CubeCoordinateFrame::get_cube_face_and_transformed_position(
 		{
 			cube_face = POSITIVE_Y;
 			// This is quicker than using 'transform_into_cube_face_coordinate_frame'.
-			position_z_in_cube_face_coordinate_frame = position_y;
+			position_z_in_cube_face_coordinate_frame = -position_y;
 			position_x_in_cube_face_coordinate_frame = position_x;
 			position_y_in_cube_face_coordinate_frame = position_z;
 		}
@@ -462,7 +456,7 @@ GPlatesMaths::CubeCoordinateFrame::get_cube_face_and_transformed_position(
 		{
 			cube_face = NEGATIVE_Y;
 			// This is quicker than using 'transform_into_cube_face_coordinate_frame'.
-			position_z_in_cube_face_coordinate_frame = -position_y;
+			position_z_in_cube_face_coordinate_frame = position_y;
 			position_x_in_cube_face_coordinate_frame = position_x;
 			position_y_in_cube_face_coordinate_frame = -position_z;
 		}
@@ -473,7 +467,7 @@ GPlatesMaths::CubeCoordinateFrame::get_cube_face_and_transformed_position(
 		{
 			cube_face = POSITIVE_Z;
 			// This is quicker than using 'transform_into_cube_face_coordinate_frame'.
-			position_z_in_cube_face_coordinate_frame = position_z;
+			position_z_in_cube_face_coordinate_frame = -position_z;
 			position_x_in_cube_face_coordinate_frame = position_x;
 			position_y_in_cube_face_coordinate_frame = -position_y;
 		}
@@ -481,7 +475,7 @@ GPlatesMaths::CubeCoordinateFrame::get_cube_face_and_transformed_position(
 		{
 			cube_face = NEGATIVE_Z;
 			// This is quicker than using 'transform_into_cube_face_coordinate_frame'.
-			position_z_in_cube_face_coordinate_frame = -position_z;
+			position_z_in_cube_face_coordinate_frame = position_z;
 			position_x_in_cube_face_coordinate_frame = -position_x;
 			position_y_in_cube_face_coordinate_frame = -position_y;
 		}

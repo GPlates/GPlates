@@ -137,7 +137,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Returns the proxied raw raster, current raster band name and the specified time.
+		 * Returns the proxied raw raster, current raster band name at the specified time.
 		 */
 		const boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &
 		get_proxied_raster(
@@ -256,7 +256,7 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Returns the possibly reconstructed (multi-resolution) *data* raster, current raster
-		 * band name and the specified time.
+		 * band name at the specified time.
 		 */
 		boost::optional<GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type>
 		get_multi_resolution_data_raster(

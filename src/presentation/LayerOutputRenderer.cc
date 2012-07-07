@@ -31,6 +31,7 @@
 #include "app-logic/RasterLayerProxy.h"
 #include "app-logic/ReconstructionLayerProxy.h"
 #include "app-logic/ReconstructLayerProxy.h"
+#include "app-logic/ScalarField3DLayerProxy.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/TopologyBoundaryResolverLayerProxy.h"
@@ -99,6 +100,26 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<reconstruction_layer_proxy_type> &reconstruction_layer_proxy)
 {
 	// Nothing to visualise for this layer type.
+}
+
+
+void
+GPlatesPresentation::LayerOutputRenderer::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<scalar_field_3d_layer_proxy_type> &scalar_field_layer_proxy)
+{
+	// Get the resolved scalar field for the current reconstruction time.
+	boost::optional<GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_type> resolved_scalar_field =
+			scalar_field_layer_proxy->get_resolved_scalar_field_3d();
+
+	if (resolved_scalar_field)
+	{
+		d_reconstruction_geometry_renderer.begin_render();
+
+		// Render the resolved scalar field.
+		resolved_scalar_field.get()->accept_visitor(d_reconstruction_geometry_renderer);
+
+		d_reconstruction_geometry_renderer.end_render(d_rendered_geometry_layer);
+	}
 }
 
 

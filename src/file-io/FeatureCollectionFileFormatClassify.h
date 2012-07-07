@@ -73,6 +73,11 @@ namespace GPlatesFileIO
 			RASTER = static_cast<unsigned int>(GPlatesAppLogic::ReconstructMethod::NUM_TYPES), // See note above.
 
 			/**
+			 * Scalar field features contain scalar volume data.
+			 */
+			SCALAR_FIELD_3D,
+
+			/**
 			 * Topological features contain topological geometry that references other feature geometries.
 			 *
 			 * These are thought as as resolvable instead of reconstructable because they are not

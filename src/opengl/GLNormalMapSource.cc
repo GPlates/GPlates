@@ -61,110 +61,14 @@ namespace GPlatesOpenGL
 		/**
 		 * Vertex shader source to generate normals from a height field.
 		 */
-		const char *GENERATE_NORMAL_MAP_VERTEX_SHADER_SOURCE =
-				"// (x,y,z.w) is (texture u scale, texture v scale, texture translate, height field scale).\n"
-				"uniform vec4 height_field_parameters;\n"
-
-				"void main (void)\n"
-				"{\n"
-
-				"	// Scale and translate the texture coordinates from normal map to height map\n"
-				"	// which has extra texels around the border. This also takes into account partial\n"
-				"	// normal map tiles (such as near bottom or right edges of source raster).\n"
-				"	gl_TexCoord[0].x = dot(height_field_parameters.xz, gl_MultiTexCoord0.xw);\n"
-				"	gl_TexCoord[0].y = dot(height_field_parameters.yz, gl_MultiTexCoord0.yw);\n"
-				"	gl_TexCoord[0].zw = gl_MultiTexCoord0.zw;\n"
-
-				"	gl_Position = gl_Vertex;\n"
-
-				"}\n";
+		const QString GENERATE_NORMAL_MAP_VERTEX_SHADER_SOURCE_FILE_NAME =
+				":/opengl/normal_map_source/generate_normal_map_vertex_shader.glsl";
 
 		/**
 		 * Fragment shader source to generate normals from a height field.
 		 */
-		const char *GENERATE_NORMAL_MAP_FRAGMENT_SHADER_SOURCE =
-				"uniform sampler2D height_field_texture_sampler;\n"
-				"// (x,y,z.w) is (texture u scale, texture v scale, texture translate, height field scale).\n"
-				"uniform vec4 height_field_parameters;\n"
-
-				"void main (void)\n"
-				"{\n"
-
-				"	// The height field coverage is in the green channel.\n"
-				"	float height_coverage = texture2D(height_field_texture_sampler, gl_TexCoord[0].st).g;\n"
-				"	// If there's no height sample at the current texel then discard fragment and\n"
-				"	// rely on the default normal in the framebuffer.\n"
-				"	if (height_coverage == 0)\n"
-				"		discard;\n"
-
-				"	// Texel offsets in the height map (-1, 0, 1).\n"
-				"	vec3 height_field_texel_offsets = vec3(\n"
-				"		-height_field_parameters.z,\n"
-				"		0,\n"
-				"		height_field_parameters.z);\n"
-
-				"	// Get the texture coordinates of the eight height map texels\n"
-				"	// surrounding the current normal map texel.\n"
-				"	vec2 st = gl_TexCoord[0].st;\n"
-				"	vec2 st00 = st + height_field_texel_offsets.xx;\n"
-				"	vec2 st10 = st + height_field_texel_offsets.yx;\n"
-				"	vec2 st20 = st + height_field_texel_offsets.zx;\n"
-				"	vec2 st01 = st + height_field_texel_offsets.xy;\n"
-				"	vec2 st21 = st + height_field_texel_offsets.zy;\n"
-				"	vec2 st02 = st + height_field_texel_offsets.xz;\n"
-				"	vec2 st12 = st + height_field_texel_offsets.yz;\n"
-				"	vec2 st22 = st + height_field_texel_offsets.zz;\n"
-
-				"	vec2 height00 = texture2D(height_field_texture_sampler, st00).rg;\n"
-				"	vec2 height10 = texture2D(height_field_texture_sampler, st10).rg;\n"
-				"	vec2 height20 = texture2D(height_field_texture_sampler, st20).rg;\n"
-				"	vec2 height01 = texture2D(height_field_texture_sampler, st01).rg;\n"
-				"	vec2 height21 = texture2D(height_field_texture_sampler, st21).rg;\n"
-				"	vec2 height02 = texture2D(height_field_texture_sampler, st02).rg;\n"
-				"	vec2 height12 = texture2D(height_field_texture_sampler, st12).rg;\n"
-				"	vec2 height22 = texture2D(height_field_texture_sampler, st22).rg;\n"
-
-				"	// Coverage is in the green channel.\n"
-				"	bool have_coverage00 = (height00.y != 0);\n"
-				"	bool have_coverage10 = (height10.y != 0);\n"
-				"	bool have_coverage20 = (height20.y != 0);\n"
-				"	bool have_coverage01 = (height01.y != 0);\n"
-				"	bool have_coverage21 = (height21.y != 0);\n"
-				"	bool have_coverage02 = (height02.y != 0);\n"
-				"	bool have_coverage12 = (height12.y != 0);\n"
-				"	bool have_coverage22 = (height22.y != 0);\n"
-
-				"	float du = 0;\n"
-				"	if (have_coverage00 && have_coverage20)\n"
-				"		du += height20.x - height00.x;\n"
-				"	if (have_coverage01 && have_coverage21)\n"
-				"		du += height21.x - height01.x;\n"
-				"	if (have_coverage02 && have_coverage22)\n"
-				"		du += height22.x - height02.x;\n"
-
-				"	float dv = 0;\n"
-				"	if (have_coverage00 && have_coverage02)\n"
-				"		dv += height02.x - height00.x;\n"
-				"	if (have_coverage10 && have_coverage12)\n"
-				"		dv += height12.x - height10.x;\n"
-				"	if (have_coverage20 && have_coverage22)\n"
-				"		dv += height22.x - height20.x;\n"
-
-				"	float height_field_scale = height_field_parameters.w;\n"
-				"	du *= height_field_scale;\n"
-				"	dv *= height_field_scale;\n"
-
-				"	vec3 normal = normalize(vec3(-du, -dv, 1));\n"
-
-				"	// The normal will get stored as fixed-point unsigned 8-bit RGB.\n"
-				"	// The final normal gets stored in RGB channels of fragment colour.\n"
-				"	// Convert the x and y components from the range [-1,1] to [0,1].\n"
-				"	gl_FragColor.xy = 0.5 * normal.xy + 0.5;\n"
-				"	// Leave the z component as is since it's always positive.\n"
-				"	gl_FragColor.z = normal.z;\n"
-				"	gl_FragColor.w = 1;\n"
-
-				"}\n";
+		const QString GENERATE_NORMAL_MAP_FRAGMENT_SHADER_SOURCE_FILE_NAME =
+				":/opengl/normal_map_source/generate_normal_map_fragment_shader.glsl";
 	}
 }
 
@@ -1195,12 +1099,12 @@ GPlatesOpenGL::GLNormalMapSource::create_normal_map_generation_shader_program(
 	GLShaderProgramUtils::ShaderSource generate_normal_map_fragment_shader_source;
 
 	// Finally add the GLSL 'main()' function.
-	generate_normal_map_vertex_shader_source.add_shader_source(
-			GENERATE_NORMAL_MAP_VERTEX_SHADER_SOURCE);
+	generate_normal_map_vertex_shader_source.add_shader_source_from_file(
+			GENERATE_NORMAL_MAP_VERTEX_SHADER_SOURCE_FILE_NAME);
 
 	// Finally add the GLSL 'main()' function.
-	generate_normal_map_fragment_shader_source.add_shader_source(
-			GENERATE_NORMAL_MAP_FRAGMENT_SHADER_SOURCE);
+	generate_normal_map_fragment_shader_source.add_shader_source_from_file(
+			GENERATE_NORMAL_MAP_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 	// Create the shader program for *inactive* polygons.
 	d_generate_normals_program_object =

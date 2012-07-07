@@ -256,6 +256,11 @@ namespace GPlatesFileIO
 
 		virtual
 		void
+		visit_gpml_scalar_field_3d_file(
+				const GPlatesPropertyValues::GpmlScalarField3DFile &gpml_scalar_field_3d_file);
+
+		virtual
+		void
 		visit_gpml_string_list(
 				const GPlatesPropertyValues::GpmlStringList &gpml_string_list);
 

@@ -540,7 +540,7 @@ GPlatesOpenGL::GLStateSetKeys::get_texture_image_unit_key_from_key_offset(
 			GPLATES_ASSERTION_SOURCE);
 
 	return d_texture_image_unit_zero_base_key +
-		(texture_unit - GLContext::Parameters::Texture::gl_texture0) * NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS +
+		(texture_unit - GLContext::Parameters::Texture::gl_TEXTURE0) * NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS +
 		key_offset;
 }
 
@@ -556,6 +556,6 @@ GPlatesOpenGL::GLStateSetKeys::get_texture_coord_key_from_key_offset(
 			GPLATES_ASSERTION_SOURCE);
 
 	return d_texture_coord_zero_base_key +
-		(texture_unit - GLContext::Parameters::Texture::gl_texture0) * NUM_TEXTURE_COORD_KEY_OFFSETS +
+		(texture_unit - GLContext::Parameters::Texture::gl_TEXTURE0) * NUM_TEXTURE_COORD_KEY_OFFSETS +
 		key_offset;
 }
