@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QDir>
+
 #include "CliFeatureCollectionFileIO.h"
 #include "CliInvalidOptionValue.h"
 
@@ -70,7 +72,9 @@ namespace
 			QString &filename,
 			const QString &filename_prefix)
 	{
-		filename.prepend(filename_prefix);
+		QFileInfo file_info(filename);
+
+		filename = file_info.path() + QDir::separator() + filename_prefix + file_info.fileName();
 	}
 
 

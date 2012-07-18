@@ -405,6 +405,11 @@ namespace
 			int argc,
 			char* argv[])
 	{
+		// GPlatesQApplication is a QApplication that also handles uncaught exceptions in the Qt event thread.
+		// NOTE: This enables the console (command-line) version of GPlates to pop up error message
+		// dialogs such as QMessageBox (which happens in some file I/O code, but really shouldn't).
+		GPlatesGui::GPlatesQApplication qapplication(argc, argv);
+
 		// Add some simple options.
 		GPlatesUtils::CommandLineParser::InputOptions input_options;
 		input_options.add_simple_options();
