@@ -24,6 +24,7 @@
  */
 
 #include <list>
+#include <map>
 #include <boost/foreach.hpp>
 #include "global/CompilerWarnings.h"
 PUSH_MSVC_WARNINGS
@@ -1189,25 +1190,47 @@ namespace GPlatesFileIO
 				// If we're also exporting each plate polygon to its own file.
 				if (output_options.export_individual_plate_polygon_files)
 				{
-					// Iterate over the plate polygons and export each separately.
+					// Iterate over the plate geometries and group them by plate id.
+					// Export each plate id separately.
+					// We're really supposed to export each plate geometry separately but
+					// it's possible to have multiple plate geometries with the same plate id
+					// and previously this was causing the same export file to be overwritten
+					// as each subsequent plate geometry with the same plate id was exported.
+
+					// Track all reconstruction geometries associated with each plate id.
+					typedef std::map<
+							GPlatesModel::integer_plate_id_type,
+							std::vector<const GPlatesAppLogic::ReconstructionGeometry *>
+					> plate_id_resolved_geoms_map_type;
+					plate_id_resolved_geoms_map_type plate_id_resolved_geoms;
+
+					// Group resolved geometries by plate id.
 					BOOST_FOREACH(
 							const GPlatesAppLogic::ReconstructionGeometry *resolved_geom,
 							output.platepolygons)
 					{
-						// We're expecting a plate id as that forms part of the filename.
+						// We're expecting a plate id as that will form part of the filename.
 						boost::optional<GPlatesModel::integer_plate_id_type> resolved_geom_plate_id =
 								GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id( resolved_geom);
-						if (!resolved_geom_plate_id)
+						if (resolved_geom_plate_id)
 						{
-							continue;
+							plate_id_resolved_geoms[resolved_geom_plate_id.get()].push_back(resolved_geom);
 						}
+					}
+
+					// Export each plate id file.
+					BOOST_FOREACH(
+							const plate_id_resolved_geoms_map_type::value_type &plate_id_resolved_geoms_map_entry,
+							plate_id_resolved_geoms)
+					{
+						const GPlatesModel::integer_plate_id_type resolved_geom_plate_id =
+								plate_id_resolved_geoms_map_entry.first;
+						const std::vector<const GPlatesAppLogic::ReconstructionGeometry *> &resolved_geoms =
+								plate_id_resolved_geoms_map_entry.second;
 
 						QString place_holder_replacement = "plate_";
-						const QString plate_id_string = QString::number(resolved_geom_plate_id.get());
+						const QString plate_id_string = QString::number(resolved_geom_plate_id);
 						place_holder_replacement.append(plate_id_string);
-
-						// We're exporting a sequence of one resolved geometry to its own file.
-						resolved_geom_seq_type resolved_geoms(1, resolved_geom);
 
 						export_resolved_topological_boundaries(
 								target_dir,
@@ -1315,25 +1338,47 @@ namespace GPlatesFileIO
 				// If we're also exporting each slab polygon to its own file.
 				if (output_options.export_individual_slab_polygon_files)
 				{
-					// Iterate over the slab polygons and export each separately.
+					// Iterate over the slab geometries and group them by plate id.
+					// Export each plate id separately.
+					// We're really supposed to export each slab geometry separately but
+					// it's possible to have multiple slab geometries with the same plate id
+					// and previously this was causing the same export file to be overwritten
+					// as each subsequent slab geometry with the same plate id was exported.
+
+					// Track all reconstruction geometries associated with each plate id.
+					typedef std::map<
+							GPlatesModel::integer_plate_id_type,
+							std::vector<const GPlatesAppLogic::ReconstructionGeometry *>
+					> plate_id_resolved_geoms_map_type;
+					plate_id_resolved_geoms_map_type plate_id_resolved_geoms;
+
+					// Group resolved geometries by plate id.
 					BOOST_FOREACH(
 							const GPlatesAppLogic::ReconstructionGeometry *resolved_geom,
 							output.slab_polygons)
 					{
-						// We're expecting a plate id as that forms part of the filename.
+						// We're expecting a plate id as that will form part of the filename.
 						boost::optional<GPlatesModel::integer_plate_id_type> resolved_geom_plate_id =
 								GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id( resolved_geom);
-						if (!resolved_geom_plate_id)
+						if (resolved_geom_plate_id)
 						{
-							continue;
+							plate_id_resolved_geoms[resolved_geom_plate_id.get()].push_back(resolved_geom);
 						}
+					}
+
+					// Export each plate id file.
+					BOOST_FOREACH(
+							const plate_id_resolved_geoms_map_type::value_type &plate_id_resolved_geoms_map_entry,
+							plate_id_resolved_geoms)
+					{
+						const GPlatesModel::integer_plate_id_type resolved_geom_plate_id =
+								plate_id_resolved_geoms_map_entry.first;
+						const std::vector<const GPlatesAppLogic::ReconstructionGeometry *> &resolved_geoms =
+								plate_id_resolved_geoms_map_entry.second;
 
 						QString place_holder_replacement = "slab_";
-						const QString plate_id_string = QString::number(resolved_geom_plate_id.get());
+						const QString plate_id_string = QString::number(resolved_geom_plate_id);
 						place_holder_replacement.append(plate_id_string);
-
-						// We're exporting a sequence of one resolved geometry to its own file.
-						resolved_geom_seq_type resolved_geoms(1, resolved_geom);
 
 						export_resolved_topological_boundaries(
 								target_dir,
@@ -1462,25 +1507,47 @@ namespace GPlatesFileIO
 				// If we're also exporting each plate polygon to its own file.
 				if (output_options.export_individual_network_polygon_files)
 				{
-					// Iterate over the plate polygons and export each separately.
+					// Iterate over the topological networks and group by plate id.
+					// Export each plate id separately.
+					// We're really supposed to export each network geometry separately but
+					// it's possible to have multiple network geometries with the same plate id
+					// and previously this was causing the same export file to be overwritten
+					// as each subsequent network geometry with the same plate id was exported.
+
+					// Track all reconstruction geometries associated with each plate id.
+					typedef std::map<
+							GPlatesModel::integer_plate_id_type,
+							std::vector<const GPlatesAppLogic::ReconstructionGeometry *>
+					> plate_id_resolved_geoms_map_type;
+					plate_id_resolved_geoms_map_type plate_id_resolved_geoms;
+
+					// Group resolved geometries by plate id.
 					BOOST_FOREACH(
 							const GPlatesAppLogic::ReconstructionGeometry *resolved_geom,
 							output.network_polygons)
 					{
-						// We're expecting a plate id as that forms part of the filename.
+						// We're expecting a plate id as that will form part of the filename.
 						boost::optional<GPlatesModel::integer_plate_id_type> resolved_geom_plate_id =
 								GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id( resolved_geom);
-						if (!resolved_geom_plate_id)
+						if (resolved_geom_plate_id)
 						{
-							continue;
+							plate_id_resolved_geoms[resolved_geom_plate_id.get()].push_back(resolved_geom);
 						}
+					}
+
+					// Export each plate id file.
+					BOOST_FOREACH(
+							const plate_id_resolved_geoms_map_type::value_type &plate_id_resolved_geoms_map_entry,
+							plate_id_resolved_geoms)
+					{
+						const GPlatesModel::integer_plate_id_type resolved_geom_plate_id =
+								plate_id_resolved_geoms_map_entry.first;
+						const std::vector<const GPlatesAppLogic::ReconstructionGeometry *> &resolved_geoms =
+								plate_id_resolved_geoms_map_entry.second;
 
 						QString place_holder_replacement = "network_";
-						const QString plate_id_string = QString::number(resolved_geom_plate_id.get());
+						const QString plate_id_string = QString::number(resolved_geom_plate_id);
 						place_holder_replacement.append(plate_id_string);
-
-						// We're exporting a sequence of one resolved geometry to its own file.
-						resolved_geom_seq_type resolved_geoms(1, resolved_geom);
 
 						export_resolved_topological_boundaries(
 								target_dir,
