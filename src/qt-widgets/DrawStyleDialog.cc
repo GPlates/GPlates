@@ -67,9 +67,12 @@ GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 	d_view_state(view_state),
 	d_combo_box(NULL),
 	d_style_of_all(NULL),
-	d_refresh_preview(false)
+	d_dirty(false)
 {
 	init_dlg();
+	QTimer *timer = new QTimer(this);
+	connect(timer, SIGNAL(timeout()), this, SLOT(refresh_preview_icons()));
+	timer->start(1000);
 }
 
 
@@ -128,15 +131,6 @@ namespace
 
 }
 
-#if 0
-void
-GPlatesQtWidgets::DrawStyleDialog::showEvent ( QShowEvent *  )
-{
-	init_category_table();
-	d_visual_layer = d_combo_box->get_selected_visual_layer();
-	handle_layer_changed(d_visual_layer);
-}
-#endif
 
 void
 GPlatesQtWidgets::DrawStyleDialog::handle_layer_changed(
@@ -298,13 +292,11 @@ GPlatesQtWidgets::DrawStyleDialog::make_signal_slot_connections()
 			this,
 			SLOT(handle_style_selection_changed(QListWidgetItem*,QListWidgetItem*)));
 
-#if defined(Q_OS_MAC)
 	QObject::connect(
 			&GPlatesPresentation::Application::instance().get_main_window().reconstruction_view_widget().globe_and_map_widget(),
 			SIGNAL(repainted(bool)),
 			this,
 			SLOT(handle_main_repaint(bool)));
-#endif
 
 	QObject::connect(
 			d_globe_and_map_widget_ptr,
@@ -349,6 +341,18 @@ GPlatesQtWidgets::DrawStyleDialog::make_signal_slot_connections()
 			SIGNAL(projection_type_changed(const GPlatesGui::ViewportProjection &)),
 			this,
 			SLOT(handle_change_projection()));
+
+	QObject::connect(
+			&GPlatesPresentation::Application::instance().get_application_state(),
+			SIGNAL(reconstruction_time_changed(GPlatesAppLogic::ApplicationState &, const double &)),
+			this,
+			SLOT(handle_view_time_changed(GPlatesAppLogic::ApplicationState &)));
+
+	QObject::connect(
+			&d_view_state.get_viewport_zoom(),
+			SIGNAL(zoom_changed()),
+			this,
+			SLOT(handle_zoom_change()));
 }
 
 void
@@ -371,19 +375,12 @@ void
 GPlatesQtWidgets::DrawStyleDialog::handle_main_repaint(
 		bool mouse_down)
 {
-	if(!mouse_down && d_refresh_preview)
+	if(!d_dirty && !mouse_down)
 	{
-		d_refresh_preview = false;
-		if(d_preview_lock.tryLock())
-		{
-			try{
-				refresh_preview_icons();
-			}catch(...)
-			{ }
-			d_preview_lock.unlock();
-		}
+		d_dirty = is_dirty();
 	}
 }
+
 
 void
 GPlatesQtWidgets::DrawStyleDialog::handle_remove_button_clicked()
@@ -636,6 +633,7 @@ GPlatesQtWidgets::DrawStyleDialog::handle_style_selection_changed(
 void
 GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 {
+	qDebug() << "show_preview_icon()";
 	{
 		//sync the camera point
 		GPlatesQtWidgets::ReconstructionViewWidget & view_widget = 
@@ -644,6 +642,7 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 	
 		if(camera_point)
 		{
+			d_previous_camera_point = camera_point;
 			d_globe_and_map_widget_ptr->get_active_view().set_camera_viewpoint(*camera_point);
 		}
 
@@ -670,7 +669,6 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 			QVariant qv = current_item->data(Qt::UserRole);
 			GPlatesGui::StyleAdapter* sa = static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
 			set_style(sa);
-
 		#if defined(Q_OS_MAC)
 			d_globe_and_map_widget_ptr->update_canvas();
 			while(!d_repaint_flag)
@@ -680,16 +678,12 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 		#else
 			d_globe_and_map_widget_ptr->repaint_canvas();
 		#endif
-			
 			current_item->setIcon(QIcon(to_QPixmap(d_image)));
 		}
-	
+
 		d_globe_and_map_widget_ptr->hide();
+		d_dirty = false;
 	}
-		
-	//style_list->setCurrentRow(0);
-	//QVariant q_data = style_list->currentItem()->data(Qt::UserRole);
-	//set_style(static_cast<GPlatesGui::StyleAdapter*>(q_data.value<void*>()));
 }
 
 
@@ -926,6 +920,61 @@ GPlatesQtWidgets::PreviewGuard::~PreviewGuard()
 	 d_dlg.set_style();
 }
 
+
+bool
+operator==(
+		const GPlatesMaths::LatLonPoint& p1,
+		const GPlatesMaths::LatLonPoint& p2)
+{
+	return GPlatesMaths::are_almost_exactly_equal(p1.latitude(), p2.latitude()) && 
+		GPlatesMaths::are_almost_exactly_equal(p1.longitude(), p2.longitude());
+}
+
+
+bool
+GPlatesQtWidgets::DrawStyleDialog::is_dirty()
+{
+	boost::optional<GPlatesMaths::LatLonPoint> 
+		main_camera_point = get_main_window_camera_point();
+
+	if(main_camera_point && d_previous_camera_point && (operator==(*main_camera_point,*d_previous_camera_point)))
+	{
+		if(GPlatesPresentation::Application::instance().get_main_window().reconstruction_view_widget().globe_is_active())
+		{
+			if((*d_globe_and_map_widget_ptr->get_globe_canvas().orientation()).quat() !=
+				(*get_main_orientation()).quat())
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+boost::optional<GPlatesMaths::LatLonPoint>
+GPlatesQtWidgets::DrawStyleDialog::get_main_window_camera_point()
+{
+	GPlatesQtWidgets::ReconstructionViewWidget & view_widget = 
+		GPlatesPresentation::Application::instance().get_main_window().reconstruction_view_widget();
+	return view_widget.camera_llp();
+}
+
+
+boost::optional<GPlatesMaths::Rotation>
+GPlatesQtWidgets::DrawStyleDialog::get_main_orientation()
+{
+	GPlatesQtWidgets::ReconstructionViewWidget & view_widget = 
+		GPlatesPresentation::Application::instance().get_main_window().reconstruction_view_widget();
+	return view_widget.globe_canvas().orientation();
+}
 
 
 

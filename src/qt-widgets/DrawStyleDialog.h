@@ -214,13 +214,6 @@ namespace GPlatesQtWidgets
 		void
 		apply_style_to_all_layers();
 
-		void	
-		showEvent ( 
-				QShowEvent * e )
-		{
-			QDialog::showEvent(e);
-			focus_style();
-		}
 
 	private slots:
 		void
@@ -249,32 +242,29 @@ namespace GPlatesQtWidgets
 		handle_main_repaint(
 				bool);
 
+		
 		void
 		refresh_preview_icons()
 		{
-			if(isVisible())
+			if(isVisible() && d_dirty)
 			{
 				show_preview_icon();
 			}
 		}
 
+		bool
+		is_dirty();
+
 		void
 		handle_release_after_drag()
 		{
-		#if defined(Q_OS_MAC)
-			d_refresh_preview = true;
-		#else
-			refresh_preview_icons();
-		#endif
+			d_dirty = true;
 		}
 
 		void
 		handle_change_projection()
 		{
-		#if defined(Q_OS_MAC)
-			QApplication::processEvents();
-		#endif
-			refresh_preview_icons();
+			d_dirty = true;
 		}
 
 		void
@@ -308,9 +298,31 @@ namespace GPlatesQtWidgets
 		void
 		handle_configuration_changed();
 
+		
 		void
 		handle_layer_changed(
 				boost::weak_ptr<GPlatesPresentation::VisualLayer>);
+
+		void
+		handle_view_time_changed(
+				GPlatesAppLogic::ApplicationState &application_state)
+		{
+			d_dirty = true;
+		}
+
+		void
+		handle_zoom_change()
+		{
+			d_dirty = true;
+		}
+	
+	protected:
+		boost::optional<GPlatesMaths::LatLonPoint>
+		get_main_window_camera_point();
+
+
+		boost::optional<GPlatesMaths::Rotation>
+		get_main_orientation();
 
 	private:
 		static const int ICON_SIZE = 145;
@@ -326,8 +338,8 @@ namespace GPlatesQtWidgets
 		GPlatesPresentation::ViewState& d_view_state;
 		LayerGroupComboBox* d_combo_box;
 		GPlatesGui::StyleAdapter* d_style_of_all;
-		bool d_refresh_preview;
-		QMutex d_preview_lock;
+		bool d_dirty;
+		boost::optional<GPlatesMaths::LatLonPoint> d_previous_camera_point;
 	};
 
 
@@ -349,3 +361,4 @@ namespace GPlatesQtWidgets
 
 
 #endif  // GPLATES_QTWIDGETS_RENDERSETTINGDIALOG_H
+
