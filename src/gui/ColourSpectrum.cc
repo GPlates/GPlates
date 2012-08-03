@@ -62,7 +62,7 @@ GPlatesGui::ColourSpectrum::get_colour_at(double position) const
 	if(position > d_upper_bound || position < d_lower_bound)
 		return boost::none;
 	
-	double position_in_range = (position - d_lower_bound) / (d_upper_bound - d_lower_bound);
+	double position_in_range = (d_upper_bound - position) / (d_upper_bound - d_lower_bound);
 
 	return Colour::linearly_interpolate(
 			d_upper_colour,
