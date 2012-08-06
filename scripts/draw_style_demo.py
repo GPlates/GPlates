@@ -89,8 +89,11 @@ class FeatureAge:
 		pass
 				
 	def get_style(self, feature, style):
-		age = feature.begin_time()
-		style.colour = self.cfg['Palette'].get_color(pygplates.PaletteKey(float(age)))
+		bt = feature.begin_time()
+		ct = pygplates.Application().current_time()
+		if(bt >= ct):
+			age = bt - ct
+			style.colour = self.cfg['Palette'].get_color(pygplates.PaletteKey(float(age)))
 		
 	def get_config(self):
 		self.cfg_dict = {}
