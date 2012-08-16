@@ -133,6 +133,9 @@ namespace GPlatesFileIO
 			NoRasterSetsFound,
 			MultipleRasterSetsFound,
 
+			// The following relate to importing 3D scalar field files.
+			DepthLayerRasterIsNotNumerical,
+
 			// The following apply to GPML import
 			DuplicateProperty,
 			NecessaryPropertyNotFound,
@@ -246,6 +249,7 @@ namespace GPlatesFileIO
 
 			// The following are generic to all local files
 			FileNotLoaded,
+			FileNotImported,
 			NoAction
 		}; // enum Result
 

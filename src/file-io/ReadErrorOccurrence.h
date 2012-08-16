@@ -48,6 +48,7 @@ namespace GPlatesFileIO
 			Shapefile,
 			Gmap,
 			RasterImage,
+			ScalarField3D,
 			Cpt,
 			Unspecified
 		};

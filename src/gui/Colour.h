@@ -95,6 +95,9 @@ namespace GPlatesGui
 	struct rgba8_t :
 			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
 			public GPlatesUtils::QtStreamable<rgba8_t>
+			// NOTE: Be careful *not* to multiply inherit in order to avoid bloating sizeof(rgba8_t)
+			// due to multiple inheritance (even from empty base class).
+			// sizeof(rgba_t) should remain at 4 bytes.
 	{
 		static const int NUM_COMPONENTS = 4;
 

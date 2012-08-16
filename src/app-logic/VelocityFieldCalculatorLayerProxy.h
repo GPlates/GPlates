@@ -231,7 +231,8 @@ namespace GPlatesAppLogic
 		/**
 		 * Used to get reconstructed static polygon surfaces to calculate velocities on.
 		 */
-		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy> d_current_reconstructed_polygon_layer_proxies;
+		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy>
+				d_current_reconstructed_polygon_layer_proxies;
 
 		/**
 		 * Used to get resolved topology boundary surfaces to calculate velocities on.

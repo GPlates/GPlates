@@ -28,6 +28,7 @@
 #include <utility>
 #include <vector>
 #include <boost/foreach.hpp>
+#include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
 #include <opengl/OpenGL.h>
 

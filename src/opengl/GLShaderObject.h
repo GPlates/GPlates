@@ -54,7 +54,7 @@ namespace GPlatesOpenGL
 	 * three currently supported shader types, the following extensions must also be supported:
 	 *  - GL_ARB_vertex_shader (for GL_VERTEX_SHADER_ARB)... this is also core in OpenGL 2.0,
 	 *  - GL_ARB_fragment_shader (for GL_FRAGMENT_SHADER_ARB)... this is also core in OpenGL 2.0,
-	 *  - GL_ARB_geometry_shader4 (for GL_GEOMETRY_SHADER_ARB)... this is also core in OpenGL 3.2.
+	 *  - GL_EXT_geometry_shader4 (for GL_GEOMETRY_SHADER_EXT)... this is also core in OpenGL 3.2.
 	 */
 	class GLShaderObject :
 			public GLObject,
@@ -150,7 +150,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns true if @a shader_type is supported on the runtime system.
 		 *
-		 * Currently @a shader_type can be GL_VERTEX_SHADER_ARB, GL_FRAGMENT_SHADER_ARB or GL_GEOMETRY_SHADER_ARB.
+		 * Currently @a shader_type can be GL_VERTEX_SHADER_ARB, GL_FRAGMENT_SHADER_ARB or GL_GEOMETRY_SHADER_EXT.
 		 */
 		static
 		bool
@@ -162,7 +162,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Creates a shared pointer to a @a GLShaderObject object.
 		 *
-		 * @a shader_type can be GL_VERTEX_SHADER_ARB, GL_FRAGMENT_SHADER_ARB or GL_GEOMETRY_SHADER_ARB.
+		 * @a shader_type can be GL_VERTEX_SHADER_ARB, GL_FRAGMENT_SHADER_ARB or GL_GEOMETRY_SHADER_EXT.
 		 *
 		 * Note that @a is_supported must returned true for @a shader_type.
 		 */

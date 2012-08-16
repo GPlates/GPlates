@@ -113,9 +113,9 @@ GPlatesOpenGL::GLShaderObject::is_supported(
 	case GL_FRAGMENT_SHADER_ARB:
 		return GPLATES_OPENGL_BOOL(GLEW_ARB_fragment_shader);
 
-#ifdef GL_ARB_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
-	case GL_GEOMETRY_SHADER_ARB:
-		return GPLATES_OPENGL_BOOL(GLEW_ARB_geometry_shader4);
+#ifdef GL_EXT_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
+	case GL_GEOMETRY_SHADER_EXT:
+		return GPLATES_OPENGL_BOOL(GLEW_EXT_geometry_shader4);
 #endif
 
 	default:

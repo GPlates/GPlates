@@ -35,6 +35,8 @@
 GPlatesPresentation::ScalarField3DVisualLayerParams::ScalarField3DVisualLayerParams(
 		GPlatesAppLogic::LayerTaskParams &layer_task_params) :
 	VisualLayerParams(layer_task_params),
+	d_render_mode(GPlatesViewOperations::ScalarField3DRenderParameters::RENDER_MODE_ISOSURFACE),
+	d_colour_mode(GPlatesViewOperations::ScalarField3DRenderParameters::COLOUR_MODE_DEPTH),
 	d_colour_palette_filename(QString()),
 	d_colour_palette(GPlatesGui::DefaultNormalisedRasterColourPalette::create())
 {
@@ -71,17 +73,41 @@ GPlatesPresentation::ScalarField3DVisualLayerParams::update(
 {
 	bool emit_modified_signal = always_emit_modified_signal;
 
-	// If the iso-value has not yet been set then initialise it with the scalar field mean value.
-	if (!d_iso_value)
+	// If the isovalue parameters have not yet been set then initialise them with the scalar field mean value.
+	if (!d_isovalue_parameters)
 	{
 		GPlatesAppLogic::ScalarField3DLayerTask::Params *layer_task_params =
 			dynamic_cast<GPlatesAppLogic::ScalarField3DLayerTask::Params *>(
 					&get_layer_task_params());
 
-		// If we have a scalar field then set the iso-value.
+		// If we have a scalar field then set the isovalue.
 		if (layer_task_params && layer_task_params->get_scalar_mean())
 		{
-			d_iso_value = layer_task_params->get_scalar_mean().get();
+			d_isovalue_parameters = GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters(
+					layer_task_params->get_scalar_mean().get());
+
+			emit_modified_signal = true;
+		}
+	}
+
+	// If the depth restriction range has not yet been set then initialise it with the
+	// scalar field depth range.
+	if (!d_depth_restriction)
+	{
+		GPlatesAppLogic::ScalarField3DLayerTask::Params *layer_task_params =
+			dynamic_cast<GPlatesAppLogic::ScalarField3DLayerTask::Params *>(
+					&get_layer_task_params());
+
+		// If we have a scalar field then set the depth restriction range.
+		if (layer_task_params &&
+			layer_task_params->get_minimum_depth_layer_radius() &&
+			layer_task_params->get_maximum_depth_layer_radius())
+		{
+			d_depth_restriction =
+					GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction(
+							layer_task_params->get_minimum_depth_layer_radius().get(),
+							layer_task_params->get_maximum_depth_layer_radius().get());
+
 			emit_modified_signal = true;
 		}
 	}

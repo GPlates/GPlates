@@ -37,7 +37,8 @@
 
 GPlatesQtWidgets::GeoreferencingPage::GeoreferencingPage(
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_type &georeferencing,
-		TimeDependentRasterSequence &raster_sequence,
+		unsigned int &raster_width,
+		unsigned int &raster_height,
 		QWidget *parent_) :
 	QWizardPage(parent_),
 	d_georeferencing(georeferencing),
@@ -45,7 +46,8 @@ GPlatesQtWidgets::GeoreferencingPage::GeoreferencingPage(
 			new EditAffineTransformGeoreferencingWidget(
 				georeferencing,
 				this)),
-	d_raster_sequence(raster_sequence),
+	d_raster_width(raster_width),
+	d_raster_height(raster_height),
 	d_last_seen_raster_width(0),
 	d_last_seen_raster_height(0)
 {
@@ -61,17 +63,11 @@ GPlatesQtWidgets::GeoreferencingPage::GeoreferencingPage(
 void
 GPlatesQtWidgets::GeoreferencingPage::initializePage()
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			!d_raster_sequence.empty(), GPLATES_ASSERTION_SOURCE);
-
-	// By the time we get to the georeferencing page, all of the rasters in the
-	// sequence should have the same size, so let's just look at the first one.
-	const TimeDependentRasterSequence::sequence_type &sequence = d_raster_sequence.get_sequence();
-	if (sequence[0].width != d_last_seen_raster_width ||
-			sequence[0].height != d_last_seen_raster_height)
+	if (d_raster_width != d_last_seen_raster_width ||
+			d_raster_height != d_last_seen_raster_height)
 	{
-		d_last_seen_raster_width = sequence[0].width;
-		d_last_seen_raster_height = sequence[0].height;
+		d_last_seen_raster_width = d_raster_width;
+		d_last_seen_raster_height = d_raster_height;
 
 		d_georeferencing->reset_to_global_extents(
 				d_last_seen_raster_width,

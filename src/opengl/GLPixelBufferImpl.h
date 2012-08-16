@@ -228,7 +228,7 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: The image data is read beginning at offset @a offset in the pixel buffer.
 		 *
-		 * NOTE: The GL_EXT_texture3D extension must be available.
+		 * NOTE: OpenGL 1.2 must be supported.
 		 */
 		virtual
 		void
@@ -372,7 +372,7 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: The image data is read beginning at offset @a offset in the pixel buffer.
 		 *
-		 * NOTE: The GL_EXT_subtexture extension must be available.
+		 * NOTE: OpenGL 1.2 must be supported.
 		 */
 		virtual
 		void
@@ -404,7 +404,7 @@ namespace GPlatesOpenGL
 		 * a pixel buffer emulator). This is useful for texture image data that was not loaded into
 		 * a pixel buffer (because it was difficult to layer the source code as such).
 		 *
-		 * NOTE: The GL_EXT_subtexture extension must be available.
+		 * NOTE: OpenGL 1.2 must be supported.
 		 */
 		static
 		void

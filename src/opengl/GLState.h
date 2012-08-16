@@ -983,6 +983,29 @@ namespace GPlatesOpenGL
 					boost::in_place(func, ref));
 		}
 
+		//! Sets the alpha-blend equation (glBlendEquation).
+		void
+		set_blend_equation(
+				GLenum mode)
+		{
+			set_state_set(
+					d_state_set_store->blend_equation_state_sets,
+					GLStateSetKeys::KEY_BLEND_EQUATION,
+					boost::in_place(mode));
+		}
+
+		//! Sets the alpha-blend equation (glBlendEquationSeparate).
+		void
+		set_blend_equation_separate(
+				GLenum modeRGB,
+				GLenum modeAlpha)
+		{
+			set_state_set(
+					d_state_set_store->blend_equation_state_sets,
+					GLStateSetKeys::KEY_BLEND_EQUATION,
+					boost::in_place(modeRGB, modeAlpha));
+		}
+
 		//! Sets the alpha-blend function (glBlendFunc).
 		void
 		set_blend_func(

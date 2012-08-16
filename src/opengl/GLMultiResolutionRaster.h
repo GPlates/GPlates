@@ -48,6 +48,7 @@
 #include "GLViewport.h"
 
 #include "maths/PointOnSphere.h"
+#include "maths/Vector3D.h"
 
 #include "property-values/Georeferencing.h"
 
@@ -176,6 +177,24 @@ namespace GPlatesOpenGL
 		static
 		bool
 		supports_normal_map_source(
+				GLRenderer &renderer);
+
+
+		/**
+		 * Returns true if scalar field depth layers (@a GLScalarFieldDepthLayersSource) can be used
+		 * as raster source on the runtime system.
+		 *
+		 * This is useful for generating scalar field gradients at various depth layers into a
+		 * cube raster to be used to render a 3D scalar field.
+		 *
+		 * Gradient computation involves finite difference calculations along the tangent frame
+		 * directions which are determined by the raster georeferencing.
+		 *
+		 * NOTE: This calls 'GLScalarFieldDepthLayersSource::is_supported()' internally.
+		 */
+		static
+		bool
+		supports_scalar_field_depth_layers_source(
 				GLRenderer &renderer);
 
 
@@ -809,6 +828,9 @@ namespace GPlatesOpenGL
 		//! Typedef for normal-map vertices.
 		typedef GLTextureTangentSpaceVertex normal_map_vertex_type;
 
+		//! Typedef for scalar-gradient-map vertices.
+		typedef GLTextureTangentSpaceVertex scalar_field_depth_layer_vertex_type;
+
 		//! Typedef for vertex indices.
 		typedef GLushort vertex_element_type;
 
@@ -913,11 +935,6 @@ namespace GPlatesOpenGL
 		 * Otherwise is boost::none (only the fixed-function pipeline is needed).
 		 */
 		boost::optional<GLProgramObject::shared_ptr_type> d_render_raster_program_object;
-
-		/**
-		 * Is true if the source raster is a normal map.
-		 */
-		bool d_source_raster_is_normal_map;
 
 
 		/**
@@ -1135,6 +1152,23 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const LevelOfDetailTile &lod_tile,
 				TileVertices &tile_vertices);
+
+		void
+		get_adjacent_vertex_positions(
+				GPlatesMaths::UnitVector3D &vertex_position01,
+				bool &has_vertex_position01,
+				GPlatesMaths::UnitVector3D &vertex_position21,
+				bool &has_vertex_position21,
+				GPlatesMaths::UnitVector3D &vertex_position10,
+				bool &has_vertex_position10,
+				GPlatesMaths::UnitVector3D &vertex_position12,
+				bool &has_vertex_position12,
+				const LevelOfDetailTile &lod_tile,
+				const std::vector<GPlatesMaths::UnitVector3D> &vertex_positions,
+				const unsigned int i,
+				const unsigned int j,
+				const double &x_pixels_per_quad,
+				const double &y_pixels_per_quad);
 
 		TangentSpaceFrame
 		calculate_tangent_space_frame(

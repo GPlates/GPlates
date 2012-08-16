@@ -561,9 +561,9 @@ namespace GPlatesFileIO
 				double d_gradient_magnitude_mean;
 				double d_gradient_magnitude_standard_deviation;
 
-				qint64 d_tile_meta_data_file_offset;
 				qint64 d_field_data_file_offset;
 				qint64 d_mask_data_file_offset;
+				qint64 d_tile_meta_data_file_offset;
 			};
 
 

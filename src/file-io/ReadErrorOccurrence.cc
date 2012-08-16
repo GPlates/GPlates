@@ -52,6 +52,9 @@ GPlatesFileIO::DataFormats::data_format_to_str(
 	case RasterImage:
 		str = "Raster image";
 		break;
+	case ScalarField3D:
+		str = "3D scalar field";
+		break;
 	case Cpt:
 		str = "GMT CPT";
 		break;

@@ -37,22 +37,29 @@
 #include "GLRenderer.h"
 #include "GLUtils.h"
 #include "GLViewport.h"
+#include "OpenGLException.h"
 
 
 bool
 GPlatesOpenGL::GLScreenRenderTarget::is_supported(
-		GLRenderer &renderer)
+		GLRenderer &renderer,
+		GLint texture_internalformat,
+		bool include_depth_buffer)
 {
-	static bool supported = false;
+	static supported_map_type supported;
 
-	// Only test for support the first time we're called.
-	static bool tested_for_support = false;
-	if (!tested_for_support)
+	// Parameters to lookup supported map.
+	const supported_key_type supported_key(texture_internalformat, include_depth_buffer);
+
+	// Only test for support the first time we're called with these parameters.
+	if (supported.find(supported_key) == supported.end())
 	{
-		tested_for_support = true;
+		// By default unsupported unless we make it through the following tests.
+		supported[supported_key] = false;
 
 		const GLContext::Parameters &context_params = GLContext::get_parameters();
 
+		// Require support for framebuffer objects.
 		if (!context_params.framebuffer.gl_EXT_framebuffer_object)
 		{
 			return false;
@@ -65,31 +72,40 @@ GPlatesOpenGL::GLScreenRenderTarget::is_supported(
 		// the internal formats of texture and depth buffer are compatible.
 		// GL_EXT_framebuffer_object is fairly strict there (GL_ARB_framebuffer_object is better)
 		// but not supported on as much hardware).
-		GLScreenRenderTarget render_target(renderer);
+		GLScreenRenderTarget render_target(renderer, texture_internalformat, include_depth_buffer);
 
 		// Make sure we allocate storage first.
 		render_target.begin_render(renderer, 64, 64);
 		render_target.end_render(renderer);
-		if (!render_target.d_framebuffer->gl_check_frame_buffer_status(renderer))
+
+		// Get access to the internal framebuffer object associated with the current OpenGL context.
+		if (!render_target.get_frame_buffer_object(renderer)->gl_check_frame_buffer_status(renderer))
 		{
 			return false;
 		}
 
 		// If we get this far then we have support.
-		supported = true;
+		supported[supported_key] = true;
 	}
 
-	return supported;
+	return supported[supported_key];
 }
 
 
 GPlatesOpenGL::GLScreenRenderTarget::GLScreenRenderTarget(
-		GLRenderer &renderer) :
-	d_framebuffer(GLFrameBufferObject::create(renderer)),
+		GLRenderer &renderer,
+		GLint texture_internalformat,
+		bool include_depth_buffer) :
 	d_texture(GLTexture::create(renderer)),
-	d_depth_buffer(GLRenderBufferObject::create(renderer)),
-	d_allocated_storage(false)
+	d_texture_internalformat(texture_internalformat),
+	d_allocated_storage(false),
+	d_currently_rendering(false)
 {
+	if (include_depth_buffer)
+	{
+		d_depth_buffer = GLRenderBufferObject::create(renderer);
+	}
+
 	//
 	// Set up the texture.
 	//
@@ -124,6 +140,9 @@ GPlatesOpenGL::GLScreenRenderTarget::begin_render(
 		unsigned int render_target_width,
 		unsigned int render_target_height)
 {
+	// Get the OpenGL context-specific state (framebuffer object) for the current OpenGL context.
+	ContextObjectState &context_object_state = get_object_state_for_current_context(renderer);
+
 	// Ensure the texture and render buffer have been allocated and
 	// their dimensions match the client's dimensions.
 	if (!d_allocated_storage ||
@@ -131,39 +150,101 @@ GPlatesOpenGL::GLScreenRenderTarget::begin_render(
 		render_target_height != d_texture->get_height().get())
 	{
 		// Allocate the texture storage of the requested dimensions.
+		//
+		// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
+		// just use values that are compatible with all internal formats to avoid a possible error.
 		d_texture->gl_tex_image_2D(
-				renderer, GL_TEXTURE_2D, 0, GL_RGBA8,
+				renderer, GL_TEXTURE_2D, 0, d_texture_internalformat,
 				render_target_width, render_target_height,
 				0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
 		// Allocate the depth buffer storage of the requested dimensions.
-		d_depth_buffer->gl_render_buffer_storage(
-				renderer, GL_DEPTH_COMPONENT, render_target_width, render_target_height);
-
-		// If first time allocating storage then also need to attach to framebuffer object.
-		if (!d_allocated_storage)
+		if (d_depth_buffer)
 		{
-			// Attach the texture and depth buffer to the framebuffer object.
-			d_framebuffer->gl_attach_texture_2D(
-					renderer, GL_TEXTURE_2D, d_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
-			d_framebuffer->gl_attach_render_buffer(
-					renderer, d_depth_buffer, GL_DEPTH_ATTACHMENT_EXT);
+			d_depth_buffer.get()->gl_render_buffer_storage(
+					renderer, GL_DEPTH_COMPONENT, render_target_width, render_target_height);
+		}
+	}
+
+	d_allocated_storage = true;
+
+	// If first time using current OpenGL context then attach to associated framebuffer object.
+	if (!context_object_state.attached_to_framebuffer)
+	{
+		// Attach the texture to the framebuffer object.
+		context_object_state.framebuffer->gl_attach_texture_2D(
+				renderer, GL_TEXTURE_2D, d_texture, 0/*level*/, GL_COLOR_ATTACHMENT0_EXT);
+
+		// Attach the depth buffer to the framebuffer object.
+		if (d_depth_buffer)
+		{
+			context_object_state.framebuffer->gl_attach_render_buffer(
+					renderer, d_depth_buffer.get(), GL_DEPTH_ATTACHMENT_EXT);
 		}
 
-		d_allocated_storage = true;
+		context_object_state.attached_to_framebuffer = true;
 	}
 
 	// Bind the framebuffer.
-	renderer.gl_bind_frame_buffer(d_framebuffer);
+	renderer.gl_bind_frame_buffer(context_object_state.framebuffer);
+
+	d_currently_rendering = true;
+}
+
+
+void
+GPlatesOpenGL::GLScreenRenderTarget::end_render(
+		GLRenderer &renderer)
+{
+	d_currently_rendering = false;
+
+	// Return to targeting the main framebuffer.
+	renderer.gl_unbind_frame_buffer();
 }
 
 
 GPlatesOpenGL::GLTexture::shared_ptr_to_const_type
-GPlatesOpenGL::GLScreenRenderTarget::end_render(
-		GLRenderer &renderer)
+GPlatesOpenGL::GLScreenRenderTarget::get_texture() const
 {
-	// Return to targeting the main framebuffer.
-	renderer.gl_unbind_frame_buffer();
+	// Must not currently be rendering because that means the client could be trying to use
+	// the same texture they're currently rendering to.
+	GPlatesGlobal::Assert<OpenGLException>(
+			!d_currently_rendering,
+			GPLATES_ASSERTION_SOURCE,
+			"GLScreenRenderTarget::get_texture: cannot use texture while rendering to it.");
 
 	return d_texture;
+}
+
+
+GPlatesOpenGL::GLScreenRenderTarget::ContextObjectState &
+GPlatesOpenGL::GLScreenRenderTarget::get_object_state_for_current_context(
+		GLRenderer &renderer)
+{
+	const GLContext &current_context = renderer.get_context();
+
+	context_object_state_seq_type::iterator context_object_state_iter = d_context_object_states.begin();
+	context_object_state_seq_type::iterator context_object_state_end = d_context_object_states.end();
+	for ( ; context_object_state_iter != context_object_state_end; ++context_object_state_iter)
+	{
+		if (context_object_state_iter->context == &current_context)
+		{
+			return *context_object_state_iter;
+		}
+	}
+
+	// Context not yet encountered so create a new context object state.
+	d_context_object_states.push_back(ContextObjectState(current_context, renderer));
+	return d_context_object_states.back();
+}
+
+
+GPlatesOpenGL::GLScreenRenderTarget::ContextObjectState::ContextObjectState(
+		const GLContext &context_,
+		GLRenderer &renderer_) :
+	context(&context_),
+	// Create a framebuffer object associated with the context...
+	framebuffer(GLFrameBufferObject::create(renderer_)),
+	attached_to_framebuffer(false)
+{
 }

@@ -416,7 +416,11 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_stream(
 		// Only used for write access - otherwise caller should be using 'gl_map_buffer_static'.
 		// 'GL_MAP_FLUSH_EXPLICIT_BIT' means the buffer will need to be explicitly flushed
 		// (using 'gl_flush_buffer_stream').
-		GLbitfield range_access = (GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+		// 'GL_MAP_UNSYNCHRONIZED_BIT' stops OpenGL from blocking (otherwise the GPU might block
+		// until it is finished using any data currently in the buffer) - note that this shouldn't
+		// be necessary when using GL_MAP_INVALIDATE_BUFFER_BIT but apparently some ATI hardware
+		// will block otherwise (see http://hacksoflife.blogspot.com.au/2012/04/beyond-glmapbuffer.html).
+		GLbitfield range_access = (GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
 
 		// We're either:
 		//  1) discarding/orphaning the buffer to get a new buffer allocation of same size, or
@@ -437,9 +441,7 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_stream(
 		}
 		else // client is going to write to un-initialised memory in current buffer...
 		{
-			// This stops OpenGL from blocking (otherwise the GPU might block until it is finished
-			// using any data currently in the buffer).
-			range_access |= GL_MAP_UNSYNCHRONIZED_BIT;
+			range_access |= GL_MAP_INVALIDATE_RANGE_BIT;
 		}
 
 		// We only need to map the un-initialised region at the end of the buffer.

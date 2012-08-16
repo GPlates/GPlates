@@ -91,6 +91,10 @@ set(srcs
     GLRendererImpl.h
     GLScalarField3D.cc
     GLScalarField3D.h
+    GLScalarField3DGenerator.cc
+    GLScalarField3DGenerator.h
+    GLScalarFieldDepthLayersSource.cc
+    GLScalarFieldDepthLayersSource.h
     GLScreenRenderTarget.cc
     GLScreenRenderTarget.h
     GLShaderObject.cc

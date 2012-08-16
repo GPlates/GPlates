@@ -24,6 +24,7 @@
  */
 
 #include <boost/foreach.hpp>
+#include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
 
 #include "GLVisualLayers.h"
@@ -33,6 +34,10 @@
 #include "GLRenderer.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/ResolvedScalarField3D.h"
+#include "app-logic/ScalarField3DLayerProxy.h"
+
+#include "global/GPlatesAssert.h"
 
 #include "gui/RasterColourPalette.h"
 
@@ -253,9 +258,7 @@ GPlatesOpenGL::GLVisualLayers::cache_handle_type
 GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
 		GLRenderer &renderer,
 		const GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_to_const_type &resolved_scalar_field,
-		float scalar_field_iso_value,
-		const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &scalar_field_colour_palette,
-		const std::vector<float> &shader_test_variables,
+		const GPlatesViewOperations::ScalarField3DRenderParameters &render_parameters,
 		boost::optional<GLTexture::shared_ptr_to_const_type> surface_occlusion_texture)
 {
 	PROFILE_FUNC();
@@ -268,28 +271,82 @@ GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
 	const GPlatesUtils::non_null_intrusive_ptr<ScalarField3DLayerUsage> scalar_field_layer_usage =
 			gl_scalar_field_layer.get_scalar_field_3d_layer_usage();
 
-	// Set the scalar field iso-value.
-	scalar_field_layer_usage->set_scalar_field_iso_value(scalar_field_iso_value);
-
 	// Set the scalar field colour palette.
-	scalar_field_layer_usage->set_scalar_field_colour_palette(scalar_field_colour_palette);
+	scalar_field_layer_usage->set_scalar_field_colour_palette(render_parameters.get_colour_palette());
 
-	// Set the shader test variables.
-	scalar_field_layer_usage->set_shader_test_variables(shader_test_variables);
-
-	// Set/update the layer usage inputs.
-	scalar_field_layer_usage->set_layer_inputs(d_list_objects->get_light(renderer));
-
-	// We have a regular, unreconstructed scalar field - although it can still be a time-dependent raster.
+	// We have a regular, unreconstructed scalar field - although it can still be time-dependent.
 	boost::optional<GLScalarField3D::non_null_ptr_type> scalar_field =
-			scalar_field_layer_usage->get_scalar_field_3d(renderer);
+			scalar_field_layer_usage->get_scalar_field_3d(renderer, d_list_objects->get_light(renderer));
+
+	// Render the scalar field if the runtime systems supports scalar field rendering.
+
+	if (!scalar_field)
+	{
+		return cache_handle_type();
+	}
 
 	cache_handle_type cache_handle;
 
-	// Render the scalar field if the runtime systems supports scalar field rendering.
-	if (scalar_field)
+	// Get the surface geometries.
+	GPlatesOpenGL::GLScalarField3D::surface_geometry_seq_type surface_geometries;
+	resolved_scalar_field->get_scalar_field_3d_layer_proxy()->get_surface_geometries(
+			surface_geometries,
+			resolved_scalar_field->get_reconstruction_time());
+
+	// Render scalar field...
+	switch (render_parameters.get_render_mode())
 	{
-		scalar_field.get()->render(renderer, cache_handle, surface_occlusion_texture);
+	case GPlatesViewOperations::ScalarField3DRenderParameters::RENDER_MODE_ISOSURFACE:
+	case GPlatesViewOperations::ScalarField3DRenderParameters::RENDER_MODE_SINGLE_DEVIATION_WINDOW:
+	case GPlatesViewOperations::ScalarField3DRenderParameters::RENDER_MODE_DOUBLE_DEVIATION_WINDOW:
+		{
+			boost::optional<GPlatesOpenGL::GLScalarField3D::SurfaceFillMask> surface_fill_mask;
+			if (!surface_geometries.empty())
+			{
+				const GPlatesViewOperations::ScalarField3DRenderParameters::SurfacePolygonsMask &
+						surface_polygons_mask = render_parameters.get_surface_polygons_mask();
+
+				surface_fill_mask = boost::in_place(
+						boost::cref(surface_geometries),
+						surface_polygons_mask.treat_polylines_as_polygons,
+						surface_polygons_mask.show_polygon_walls,
+						surface_polygons_mask.only_show_boundary_walls);
+			}
+
+			scalar_field.get()->render_iso_surface(
+					renderer,
+					cache_handle,
+					render_parameters.get_render_mode(),
+					render_parameters.get_colour_mode(),
+					render_parameters.get_isovalue_parameters(),
+					render_parameters.get_render_options(),
+					render_parameters.get_depth_restriction(),
+					render_parameters.get_quality_performance(),
+					render_parameters.get_shader_test_variables(),
+					surface_fill_mask,
+					surface_occlusion_texture);
+		}
+		break;
+
+	case GPlatesViewOperations::ScalarField3DRenderParameters::RENDER_MODE_CROSS_SECTIONS:
+		// We can only render cross-sections if we have surface geometries.
+		if (!surface_geometries.empty())
+		{
+			scalar_field.get()->render_cross_sections(
+					renderer,
+					cache_handle,
+					surface_geometries,
+					render_parameters.get_colour_mode(),
+					render_parameters.get_depth_restriction(),
+					render_parameters.get_shader_test_variables(),
+					surface_occlusion_texture);
+		}
+		break;
+
+	default:
+		// Shouldn't get here.
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		break;
 	}
 
 	return cache_handle;
@@ -319,29 +376,9 @@ GPlatesOpenGL::GLVisualLayers::handle_layer_about_to_be_removed(
 GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::ScalarField3DLayerUsage(
 		const GPlatesAppLogic::ScalarField3DLayerProxy::non_null_ptr_type &scalar_field_layer_proxy) :
 	d_scalar_field_layer_proxy(scalar_field_layer_proxy),
-	d_iso_value(0),
-	d_iso_value_dirty(true),
 	d_colour_palette(GPlatesGui::DefaultNormalisedRasterColourPalette::create()),
-	d_colour_palette_dirty(true),
-	d_shader_test_variables_dirty(true)
+	d_colour_palette_dirty(true)
 {
-}
-
-
-void
-GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::set_scalar_field_iso_value(
-		float iso_value)
-{
-	if (GPlatesMaths::are_slightly_more_strictly_equal(iso_value, d_iso_value))
-	{
-		// Nothing has changed so just return.
-		return;
-	}
-
-	d_iso_value = iso_value;
-
-	// The scalar field will need to update itself with the iso-value.
-	d_iso_value_dirty = true;
 }
 
 
@@ -362,34 +399,10 @@ GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::set_scalar_field_colour_
 }
 
 
-void
-GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::set_shader_test_variables(
-		const std::vector<float> &shader_test_variables)
-{
-	if (shader_test_variables == d_shader_test_variables)
-	{
-		// Nothing has changed so just return.
-		return;
-	}
-
-	d_shader_test_variables = shader_test_variables;
-
-	// The scalar field will need to update itself with the shader test variables.
-	d_shader_test_variables_dirty = true;
-}
-
-
-void
-GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::set_layer_inputs(
-		boost::optional<GLLight::non_null_ptr_type> light)
-{
-	d_light = light;
-}
-
-
 boost::optional<GPlatesOpenGL::GLScalarField3D::non_null_ptr_type>
 GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::get_scalar_field_3d(
-		GLRenderer &renderer)
+		GLRenderer &renderer,
+		boost::optional<GLLight::non_null_ptr_type> light)
 {
 	PROFILE_FUNC();
 
@@ -400,7 +413,7 @@ GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::get_scalar_field_3d(
 	}
 
 	if (!d_scalar_field_layer_proxy->get_scalar_field_filename() ||
-		!d_light)
+		!light)
 	{
 		d_scalar_field = boost::none;
 
@@ -452,23 +465,12 @@ GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::get_scalar_field_3d(
 				GLScalarField3D::create(
 						renderer,
 						GPlatesUtils::make_qstring(*d_scalar_field_layer_proxy->get_scalar_field_filename()),
-						d_light.get());
+						light.get());
 
 		d_scalar_field = scalar_field;
 
-		// Always set the iso-value after creating a new scalar field.
-		d_iso_value_dirty = true;
 		// Always set the colour palette after creating a new scalar field.
-		d_iso_value_dirty = true;
-		// Always set the shader test variables after creating a new scalar field.
-		d_shader_test_variables_dirty = true;
-	}
-
-	// Update the iso-value if necessary.
-	if (d_iso_value_dirty)
-	{
-		d_scalar_field.get()->set_iso_value(renderer, d_iso_value);
-		d_iso_value_dirty = false;
+		d_colour_palette_dirty = true;
 	}
 
 	// Update the colour palette if necessary.
@@ -476,13 +478,6 @@ GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::get_scalar_field_3d(
 	{
 		d_scalar_field.get()->set_colour_palette(renderer, d_colour_palette);
 		d_colour_palette_dirty = false;
-	}
-
-	// Update the shader test variables if necessary.
-	if (d_shader_test_variables_dirty)
-	{
-		d_scalar_field.get()->set_shader_test_variables(renderer, d_shader_test_variables);
-		d_shader_test_variables_dirty = false;
 	}
 
 	return d_scalar_field.get();

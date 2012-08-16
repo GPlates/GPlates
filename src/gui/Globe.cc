@@ -27,6 +27,7 @@
 
 #include <boost/utility/in_place_factory.hpp>
 #include <opengl/OpenGL.h>
+#include <QDebug>
 
 #include "Globe.h"
 
@@ -39,6 +40,7 @@
 #include "opengl/GLContext.h"
 #include "opengl/GLLight.h"
 #include "opengl/GLRenderer.h"
+#include "opengl/GLScreenRenderTarget.h"
 #include "opengl/GLViewport.h"
 
 #include "presentation/ViewState.h"
@@ -193,7 +195,7 @@ GPlatesGui::Globe::paint(
 			// Temporarily change the background colour in the view state.
 			// This will get picked up by 'OpaqueSphere'.
 			Colour transparent_background_colour = d_view_state.get_background_colour();
-			transparent_background_colour.alpha() = 0.25f;
+			transparent_background_colour.alpha() = 0.3f;
 			d_view_state.set_background_colour(transparent_background_colour);
 
 			has_transparent_background_colour = true;
@@ -206,6 +208,7 @@ GPlatesGui::Globe::paint(
 	// If the background colour is transparent then render the rear half of the globe.
 	if (has_transparent_background_colour)
 	{
+		qDebug() << "Globe::paint: Rendering rear hemisphere...";
 		// The globe is transparent so use the rear half globe projection transform to render
 		// the rear half of the globe.
 		render_globe_hemisphere_surface(
@@ -223,18 +226,27 @@ GPlatesGui::Globe::paint(
 	// because the latter can be used to occlude the former.
 	if (render_sub_surface_geometries)
 	{
-		if (GPlatesOpenGL::GLScreenRenderTarget::is_supported(renderer))
+		//
+		// See if we can render the front half of the globe as a surface occlusion texture for sub-surface geometries.
+		// This reduces the workload of rendering sub-surface data that is occluded by surface data.
+		//
+		qDebug() << "Globe::paint: Acquiring screen render target...";
+		boost::optional<GPlatesOpenGL::GLScreenRenderTarget::shared_ptr_type> screen_render_target =
+				renderer.get_context().get_shared_state()->acquire_screen_render_target(
+						renderer,
+						GL_RGBA8/*texture_internalformat*/,
+						true/*include_depth_buffer*/);
+		if (screen_render_target)
 		{
 			// Make sure we leave the OpenGL state the way it was.
 			GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
-
-			GPlatesOpenGL::GLScreenRenderTarget &screen_render_target = get_screen_render_target(renderer);
 
 			// Prepare for rendering the front half of the globe into a viewport-size render texture.
 			// This will be used as a surface occlusion texture when rendering the globe sub-surface
 			// in order to early terminate occluded volume-tracing rays for efficient sub-surface rendering.
 			const GPlatesOpenGL::GLViewport &viewport = renderer.gl_get_viewport();
-			screen_render_target.begin_render(
+			qDebug() << "Globe::paint: Begin screen render target...";
+			screen_render_target.get()->begin_render(
 					renderer,
 					viewport.x() + viewport.width(),
 					viewport.y() + viewport.height());
@@ -245,6 +257,7 @@ GPlatesGui::Globe::paint(
 			renderer.gl_clear(GL_COLOR_BUFFER_BIT);
 
 			// Render the front half of the globe surface to the viewport-size render texture.
+			qDebug() << "Globe::paint: Render front hemisphere to texture...";
 			render_globe_hemisphere_surface(
 					renderer,
 					*cache_handle,
@@ -253,10 +266,14 @@ GPlatesGui::Globe::paint(
 					true/*is_front_half_globe*/);
 
 			// Finished rendering surface occlusion texture.
+			qDebug() << "Globe::paint: End screen render target...";
+			screen_render_target.get()->end_render(renderer);
+			// Get the texture just rendered to.
 			GPlatesOpenGL::GLTexture::shared_ptr_to_const_type front_globe_surface_texture =
-					screen_render_target.end_render(renderer);
+					screen_render_target.get()->get_texture();
 
 			// Render the globe sub-surface (using the surface occlusion texture) to the main framebuffer.
+			qDebug() << "Globe::paint: Render sub-surface...";
 			render_globe_sub_surface(
 					renderer,
 					*cache_handle,
@@ -265,11 +282,14 @@ GPlatesGui::Globe::paint(
 					front_globe_surface_texture);
 
 			// Blend the front half of the globe surface (the surface occlusion texture) in the main framebuffer.
+			qDebug() << "Globe::paint: Render front hemisphere from texture...";
 			render_front_globe_hemisphere_surface_texture(renderer, front_globe_surface_texture);
 		}
 		else // surface occlusion not supported so render sub-surface followed by surface...
 		{
+			qDebug() << "Globe::paint: Failed to acquire screen render target...";
 			// Render the globe sub-surface first.
+			qDebug() << "Globe::paint: Render sub-surface...";
 			render_globe_sub_surface(
 					renderer,
 					*cache_handle,
@@ -277,6 +297,7 @@ GPlatesGui::Globe::paint(
 					projection_transform_include_full_globe);
 
 			// Render the front half of the globe surface next.
+			qDebug() << "Globe::paint: Render front hemisphere...";
 			render_globe_hemisphere_surface(
 					renderer,
 					*cache_handle,
@@ -573,21 +594,4 @@ GPlatesGui::Globe::render_globe_sub_surface(
 					viewport_zoom_factor,
 					surface_occlusion_texture);
 	cache_handle.push_back(rendered_geoms_cache_sub_surface_globe);
-}
-
-
-GPlatesOpenGL::GLScreenRenderTarget &
-GPlatesGui::Globe::get_screen_render_target(
-		GPlatesOpenGL::GLRenderer &renderer)
-{
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPlatesOpenGL::GLScreenRenderTarget::is_supported(renderer),
-			GPLATES_ASSERTION_SOURCE);
-
-	if (!d_screen_render_target)
-	{
-		d_screen_render_target = boost::in_place(boost::ref(renderer));
-	}
-
-	return d_screen_render_target.get();
 }

@@ -230,6 +230,21 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Performs same function as the glProgramParameteri OpenGL function.
+		 *
+		 * NOTE: The 'GL_EXT_geometry_shader4' extension must be supported.
+		 *
+		 * NOTE: As dictated by OpenGL, program parameters won't affect this program object
+		 * until the next call to @a gl_link_program. So when you use a program it uses the
+		 * program parameters that were in effect at the last @a gl_link_program call.
+		 */
+		void
+		gl_program_parameteri(
+				GLenum pname,
+				GLint value);
+
+
+		/**
 		 * Performs same function as the glLinkProgram OpenGL function (and also retrieves
 		 * the GL_LINK_STATUS result).
 		 *
@@ -261,6 +276,22 @@ namespace GPlatesOpenGL
 		//////////////////////////////
 		// SETING UNIFORM VARIABLES //
 		//////////////////////////////
+
+
+		/**
+		 * Returns true if the specified uniform name corresponds to an active uniform variable in
+		 * the most recent linking of this program (see @a gl_link_program).
+		 *
+		 * Returns false for any of the following:
+		 *  (1) variable does not exist,
+		 *  (2) variable is not actively used in the linked shader program or
+		 *  (3) variable is a reserved name.
+		 */
+		bool
+		is_active_uniform(
+				const char *uniform_name) const;
+
+
 		//
 		// NOTE: Only *active* uniform variables should be set with the following 'gl_uniform*()' functions.
 		// Active variables are those declared in the shader source code that are actually used by the
@@ -277,6 +308,7 @@ namespace GPlatesOpenGL
 		// NOTE: The methods that set *unsigned* integer and *double* uniforms require extra extensions:
 		//  - 'GL_EXT_gpu_shader4' for setting *unsigned* integer uniform variables, and
 		//  - 'GL_ARB_gpu_shader_fp64' for setting *double* uniform variables.
+		//
 
 
 		//! Performs same function as the glUniform1f OpenGL function - returns false if not active.

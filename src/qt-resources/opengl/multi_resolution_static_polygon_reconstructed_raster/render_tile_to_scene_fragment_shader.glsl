@@ -146,7 +146,7 @@ void main (void)
 	#endif
 
 	#ifdef USING_NORMAL_MAP
-		// Sample the model-space normal in the normal map cube raster.
+		// Sample the model-space normal in the normal map raster.
 		vec3 model_space_normal =
 			texture2DProj(normal_map_texture_sampler, normal_map_texture_coordinate).xyz;
 		// Need to convert the x/y/z components from unsigned to signed ([0,1] -> [-1,1]).

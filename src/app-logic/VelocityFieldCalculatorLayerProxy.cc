@@ -65,6 +65,9 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 		return;
 	}
 
+	// See if any input layer proxies have changed.
+	check_input_layer_proxies();
+
 	// See if the reconstruction time has changed.
 	if (d_cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time))
 	{
@@ -76,9 +79,6 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 		// to be updated just because some other client requested a different time.
 		d_cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
 	}
-
-	// See if any input layer proxies have changed.
-	check_input_layer_proxies();
 
 	if (!d_cached_multi_point_velocity_fields)
 	{

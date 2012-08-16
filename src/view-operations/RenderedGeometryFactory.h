@@ -57,6 +57,8 @@
 #include "property-values/RawRaster.h"
 #include "property-values/TextContent.h"
 
+#include "view-operations/ScalarField3DRenderParameters.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -195,9 +197,7 @@ namespace GPlatesViewOperations
 		RenderedGeometry
 		create_rendered_resolved_scalar_field_3d(
 				const GPlatesAppLogic::resolved_scalar_field_3d_non_null_ptr_to_const_type &resolved_scalar_field,
-				float scalar_field_iso_value,
-				const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &scalar_field_colour_palette,
-				const std::vector<float> &shader_test_variables);
+				const ScalarField3DRenderParameters &scalar_field_render_parameters);
 
 		/**
 		 * Creates a single direction arrow consisting of an arc line segment on the globe's surface

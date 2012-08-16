@@ -52,6 +52,8 @@
 #include "opengl/GLVertexElementBuffer.h"
 #include "opengl/GLVisualLayers.h"
 
+#include "view-operations/ScalarField3DRenderParameters.h"
+
 
 namespace GPlatesOpenGL
 {
@@ -330,19 +332,13 @@ namespace GPlatesGui
 		{
 			ScalarField3DDrawable(
 					const GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_to_const_type source_resolved_scalar_field_,
-					float iso_value_,
-					const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &scalar_field_colour_palette_,
-					const std::vector<float> &shader_test_variables_) :
+					const GPlatesViewOperations::ScalarField3DRenderParameters &render_parameters_) :
 				source_resolved_scalar_field(source_resolved_scalar_field_),
-				iso_value(iso_value_),
-				scalar_field_colour_palette(scalar_field_colour_palette_),
-				shader_test_variables(shader_test_variables_)
+				render_parameters(render_parameters_)
 			{  }
 
 			GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_to_const_type source_resolved_scalar_field;
-			float iso_value;
-			GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type scalar_field_colour_palette;
-			std::vector<float> shader_test_variables;
+			GPlatesViewOperations::ScalarField3DRenderParameters render_parameters;
 		};
 
 

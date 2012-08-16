@@ -27,6 +27,7 @@
 #include "IsCloseEnoughChecker.h" 
 #include "DualGeometryVisitor.h"
 
+#include "maths/MathsUtils.h"
 #include "maths/SphereSettings.h"
 
 bool
@@ -209,7 +210,7 @@ GPlatesDataMining::IsCloseEnoughChecker::test_proximity(
 	real_t closeness;
 	double thresh_hold = 0;
 	
-	if(range > (DEFAULT_RADIUS_OF_EARTH_KMS * PI) )
+	if(range > (DEFAULT_RADIUS_OF_EARTH_KMS * GPlatesMaths::PI) )
 	{
 		thresh_hold = -1;
 	}

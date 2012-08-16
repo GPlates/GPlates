@@ -262,16 +262,12 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_scalar_field_3d(
 		const GPlatesAppLogic::resolved_scalar_field_3d_non_null_ptr_to_const_type &resolved_scalar_field,
-		float scalar_field_iso_value,
-		const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &scalar_field_colour_palette,
-		const std::vector<float> &shader_test_variables)
+		const ScalarField3DRenderParameters &scalar_field_render_parameters)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(
 			new RenderedResolvedScalarField3D(
 					resolved_scalar_field,
-					scalar_field_iso_value,
-					scalar_field_colour_palette,
-					shader_test_variables));
+					scalar_field_render_parameters));
 
 	return RenderedGeometry(rendered_geom_impl);
 }

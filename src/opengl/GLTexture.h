@@ -246,7 +246,7 @@ namespace GPlatesOpenGL
 		 * NOTE: There's no need to unbind pixel buffer objects (to ensure sourcing from client memory)
 		 * because that is taken care of internally.
 		 *
-		 * NOTE: The GL_EXT_texture3D extension must be available.
+		 * NOTE: OpenGL 1.2 must be supported.
 		 */
 		void
 		gl_tex_image_3D(
@@ -267,7 +267,7 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: The image data is read beginning at offset @a offset in the specified pixel buffer.
 		 *
-		 * NOTE: The GL_EXT_texture3D extension must be available.
+		 * NOTE: OpenGL 1.2 must be supported.
 		 */
 		void
 		gl_tex_image_3D(
@@ -423,7 +423,7 @@ namespace GPlatesOpenGL
 		 * NOTE: There's no need to unbind pixel buffer objects (to ensure sourcing from client memory)
 		 * because that is taken care of internally.
 		 *
-		 * NOTE: The GL_EXT_subtexture extension must be available.
+		 * NOTE: OpenGL 1.2 must be supported.
 		 *
 		 * @throws PreconditionViolationError if @a texture is not initialised.
 		 */
@@ -447,7 +447,7 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: The image data is read beginning at offset @a offset in the specified pixel buffer.
 		 *
-		 * NOTE: The GL_EXT_subtexture extension must be available.
+		 * NOTE: OpenGL 1.2 must be supported.
 		 *
 		 * @throws PreconditionViolationError if @a texture is not initialised.
 		 */

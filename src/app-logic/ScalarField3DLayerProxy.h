@@ -27,13 +27,18 @@
 #define GPLATES_APP_LOGIC_SCALARFIELD3DLAYERPROXY_H
 
 #include <utility>
+#include <vector>
 #include <boost/optional.hpp>
 
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
-#include "ScalarField3DLayerTask.h"
+#include "ReconstructLayerProxy.h"
 #include "ResolvedScalarField3D.h"
+#include "ScalarField3DLayerTask.h"
+#include "TopologyBoundaryResolverLayerProxy.h"
+#include "TopologyNetworkResolverLayerProxy.h"
 
+#include "maths/GeometryOnSphere.h"
 #include "maths/types.h"
 
 #include "model/FeatureHandle.h"
@@ -62,6 +67,11 @@ namespace GPlatesAppLogic
 
 		//! A convenience typedef for a shared pointer to a const @a ScalarField3DLayerProxy.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const ScalarField3DLayerProxy> non_null_ptr_to_const_type;
+
+		/**
+		 * Typedef for a sequence of surface geometries (points, multi-points, polylines, polygons).
+		 */
+		typedef std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> surface_geometry_seq_type;
 
 
 		/**
@@ -114,6 +124,37 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<ResolvedScalarField3D::non_null_ptr_type>
 		get_resolved_scalar_field_3d(
+				const double &reconstruction_time);
+
+
+		/**
+		 * Returns the surface geometries for the current reconstruction time.
+		 *
+		 * The surface geometries are typically used either for cross-sections of the 3D scalar field
+		 * or for surface fill masks (to limit region in which scalar field is rendered).
+		 *
+		 * The surface geometries can be reconstructed feature geometries, resolved topological
+		 * boundaries and resolved networks.
+		 *
+		 * Returns false if there are no surface geometry layers connected
+		 * (or no surface geometries in connected layers).
+		 */
+		bool
+		get_surface_geometries(
+				surface_geometry_seq_type &surface_geometries)
+		{
+			return get_surface_geometries(surface_geometries, d_current_reconstruction_time);
+		}
+
+		/**
+		 * Returns the surface geometries for the specified time.
+		 *
+		 * Returns false if there are no surface geometry layers connected
+		 * (or no surface geometries in connected layers).
+		 */
+		bool
+		get_surface_geometries(
+				surface_geometry_seq_type &surface_geometries,
 				const double &reconstruction_time);
 
 
@@ -207,6 +248,48 @@ namespace GPlatesAppLogic
 		modified_scalar_field_feature(
 				const ScalarField3DLayerTask::Params &scalar_field_params);
 
+		/**
+		 * Add a reconstructed static geometries layer proxy.
+		 */
+		void
+		add_reconstructed_geometries_layer_proxy(
+				const ReconstructLayerProxy::non_null_ptr_type &reconstructed_geometries_layer_proxy);
+
+		/**
+		 * Remove a reconstructed static geometries layer proxy.
+		 */
+		void
+		remove_reconstructed_geometries_layer_proxy(
+				const ReconstructLayerProxy::non_null_ptr_type &reconstructed_geometries_layer_proxy);
+
+		/**
+		 * Add a topological boundary resolver layer proxy.
+		 */
+		void
+		add_topological_boundary_resolver_layer_proxy(
+				const TopologyBoundaryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
+
+		/**
+		 * Remove a topological boundary resolver layer proxy.
+		 */
+		void
+		remove_topological_boundary_resolver_layer_proxy(
+				const TopologyBoundaryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
+
+		/**
+		 * Add a topological network resolver layer proxy.
+		 */
+		void
+		add_topological_network_resolver_layer_proxy(
+				const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy);
+
+		/**
+		 * Remove a topological network resolver layer proxy.
+		 */
+		void
+		remove_topological_network_resolver_layer_proxy(
+				const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy);
+
 	private:
 		/**
 		 * Potentially time-varying feature properties for the currently resolved scalar field
@@ -229,9 +312,51 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * The cached surface geometries (from other layers).
+		 */
+		struct SurfaceGeometries
+		{
+			void
+			invalidate()
+			{
+				cached_surface_geometries = boost::none;
+				cached_reconstruction_time = boost::none;
+			}
+
+			/**
+			 * The cached surface geometries.
+			 */
+			boost::optional<surface_geometry_seq_type> cached_surface_geometries;
+
+			/**
+			 * The reconstruction time of the cached surface geometries.
+			 */
+			boost::optional<GPlatesMaths::real_t> cached_reconstruction_time;
+		};
+
+
+		/**
 		 * The scalar field input feature.
 		 */
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_current_scalar_field_feature;
+
+		/**
+		 * Used to get surface geometries from reconstructed feature geometries.
+		 */
+		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy>
+				d_current_reconstructed_geometry_layer_proxies;
+
+		/**
+		 * Used to get surface geometries from resolved topological boundaries.
+		 */
+		LayerProxyUtils::InputLayerProxySequence<TopologyBoundaryResolverLayerProxy>
+				d_current_topological_boundary_resolver_layer_proxies;
+
+		/**
+		 * Used to get surface geometries from resolved topological networks.
+		 */
+		LayerProxyUtils::InputLayerProxySequence<TopologyNetworkResolverLayerProxy>
+				d_current_topological_network_resolver_layer_proxies;
 
 		/**
 		 * The current reconstruction time as set by the layer system.
@@ -240,6 +365,11 @@ namespace GPlatesAppLogic
 
 		//! Time-varying (potentially) scalar field feature properties.
 		ResolvedScalarFieldFeatureProperties d_cached_resolved_scalar_field_feature_properties;
+
+		/**
+		 * The cached surface geometries (from other layers).
+		 */
+		SurfaceGeometries d_cached_surface_geometries;
 
 		/**
 		 * Used to notify polling observers that we've been updated.
@@ -288,6 +418,26 @@ namespace GPlatesAppLogic
 		void
 		set_scalar_field_params(
 				const ScalarField3DLayerTask::Params &raster_params);
+
+
+		/**
+		 * Checks if the specified input layer proxy has changed.
+		 *
+		 * If so then reset caches and invalidates subject token.
+		 */
+		template <class InputLayerProxyWrapperType>
+		void
+		check_input_layer_proxy(
+				InputLayerProxyWrapperType &input_layer_proxy_wrapper);
+
+
+		/**
+		 * Checks if any input layer proxies have changed.
+		 *
+		 * If so then reset caches and invalidates subject token.
+		 */
+		void
+		check_input_layer_proxies();
 	};
 }
 

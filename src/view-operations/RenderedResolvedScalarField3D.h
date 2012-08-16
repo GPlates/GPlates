@@ -31,6 +31,7 @@
 
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
+#include "ScalarField3DRenderParameters.h"
 
 #include "app-logic/ResolvedScalarField3D.h"
 
@@ -43,16 +44,13 @@ namespace GPlatesViewOperations
 			public RenderedGeometryImpl
 	{
 	public:
+
 		explicit
 		RenderedResolvedScalarField3D(
 				const GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_to_const_type &resolved_scalar_field,
-				float scalar_field_iso_value,
-				const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &scalar_field_colour_palette,
-				const std::vector<float> &shader_test_variables) :
+				const ScalarField3DRenderParameters &render_parameters) :
 			d_resolved_scalar_field(resolved_scalar_field),
-			d_scalar_field_iso_value(scalar_field_iso_value),
-			d_scalar_field_colour_palette(scalar_field_colour_palette),
-			d_shader_test_variables(shader_test_variables)
+			d_render_parameters(render_parameters)
 		{  }
 
 		virtual
@@ -78,25 +76,10 @@ namespace GPlatesViewOperations
 			return d_resolved_scalar_field;
 		}
 
-		/**
-		 * The iso-value to render the iso-surface at.
-		 */
-		float
-		get_scalar_field_iso_value() const
+		const ScalarField3DRenderParameters &
+		get_render_parameters() const
 		{
-			return d_scalar_field_iso_value;
-		}
-
-		GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type
-		get_scalar_field_colour_palette() const
-		{
-			return d_scalar_field_colour_palette;
-		}
-
-		const std::vector<float> &
-		get_shader_test_variables() const
-		{
-			return d_shader_test_variables;
+			return d_render_parameters;
 		}
 
 		/**
@@ -115,19 +98,9 @@ namespace GPlatesViewOperations
 		GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_to_const_type d_resolved_scalar_field;
 
 		/**
-		 * The iso-value to render the iso-surface at.
+		 * Parameters that determine how to render the scalar field.
 		 */
-		float d_scalar_field_iso_value;
-
-		/**
-		 * The colour palette used to colour the scalar field.
-		 */
-		GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type d_scalar_field_colour_palette;
-
-		/**
-		 * Used during test/development of the scalar field shader program.
-		 */
-		std::vector<float> d_shader_test_variables;
+		ScalarField3DRenderParameters d_render_parameters;
 	};
 }
 

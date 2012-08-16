@@ -301,7 +301,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_3D(
 
 
 void
-GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array(
+GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array_layer(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_to_const_type &texture,
 		GLint level,
@@ -331,7 +331,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array(
 
 	// The GL_EXT_texture_array extension is required for this call.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
+			GPLATES_OPENGL_BOOL(GLEW_EXT_texture_array),
 			GPLATES_ASSERTION_SOURCE);
 
 	// Attach to the texture.
@@ -348,6 +348,55 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array(
 			texture,
 			level,
 			layer);
+	d_attachment_points[get_attachment_index(attachment)] = attachment_point;
+}
+
+
+void
+GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array(
+		GLRenderer &renderer,
+		const GLTexture::shared_ptr_to_const_type &texture,
+		GLint level,
+		GLenum attachment)
+{
+	//PROFILE_FUNC();
+
+	// The texture must be initialised with a width and a height minimum.
+	// This is for 1D array textures. 2D array textures also require depth but we don't check
+	// because we don't know the texture target (not needed for glFramebufferTextureEXT).
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			texture->get_width() && texture->get_height(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
+	GLRenderer::BindFrameBufferAndApply save_restore_bind(renderer, shared_from_this());
+
+	// Attachment must be a valid value.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
+				attachment < GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments) ||
+			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
+			(attachment == GL_STENCIL_ATTACHMENT_EXT),
+			GPLATES_ASSERTION_SOURCE);
+
+	// The GL_EXT_geometry_shader4 extension is required for this call.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			GPLATES_OPENGL_BOOL(GLEW_EXT_geometry_shader4),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Attach to the texture.
+	glFramebufferTextureEXT(
+			GL_FRAMEBUFFER_EXT,
+			attachment,
+			texture->get_texture_resource_handle(),
+			level);
+
+	// Keep track of the attachment.
+	const AttachmentPoint attachment_point(
+			attachment,
+			texture,
+			level);
 	d_attachment_points[get_attachment_index(attachment)] = attachment_point;
 }
 
@@ -466,7 +515,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_detach(
 				attachment_point->texture_zoffset.get());
 		break;
 
-	case ATTACHMENT_TEXTURE_LAYER:
+	case ATTACHMENT_TEXTURE_ARRAY_LAYER:
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 				attachment_point->texture &&
 					attachment_point->texture_level &&
@@ -478,6 +527,17 @@ GPlatesOpenGL::GLFrameBufferObject::gl_detach(
 				0/*texture*/,
 				attachment_point->texture_level.get(),
 				attachment_point->texture_zoffset.get());
+		break;
+
+	case ATTACHMENT_TEXTURE_ARRAY:
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				attachment_point->texture && attachment_point->texture_level,
+				GPLATES_ASSERTION_SOURCE);
+		glFramebufferTextureEXT(
+				GL_FRAMEBUFFER_EXT,
+				attachment_point->attachment,
+				0/*texture*/,
+				attachment_point->texture_level.get());
 		break;
 
 	case ATTACHMENT_RENDER_BUFFER:
@@ -615,10 +675,22 @@ GPlatesOpenGL::GLFrameBufferObject::AttachmentPoint::AttachmentPoint(
 		GLint texture_level_,
 		GLint texture_layer_) :
 	attachment(attachment_),
-	attachment_type(ATTACHMENT_TEXTURE_LAYER),
+	attachment_type(ATTACHMENT_TEXTURE_ARRAY_LAYER),
 	texture(texture_),
 	texture_level(texture_level_),
 	texture_zoffset(texture_layer_)
+{
+}
+
+
+GPlatesOpenGL::GLFrameBufferObject::AttachmentPoint::AttachmentPoint(
+		GLenum attachment_,
+		const GLTexture::shared_ptr_to_const_type &texture_,
+		GLint texture_level_) :
+	attachment(attachment_),
+	attachment_type(ATTACHMENT_TEXTURE_ARRAY),
+	texture(texture_),
+	texture_level(texture_level_)
 {
 }
 

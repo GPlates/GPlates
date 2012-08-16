@@ -192,10 +192,7 @@ namespace GPlatesOpenGL
 			bool
 			operator()(
 					const filled_polygon_type &lhs,
-					const filled_polygon_type &rhs) const
-			{
-				return lhs.d_transform < rhs.d_transform;
-			}
+					const filled_polygon_type &rhs) const;
 		};
 
 	public:

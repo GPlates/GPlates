@@ -59,6 +59,8 @@
 
 #include "data-mining/DataTable.h"
 
+#include "global/GPlatesAssert.h"
+
 #include "gui/Colour.h"
 #include "gui/DrawStyleManager.h"
 #include "gui/PlateIdColourPalettes.h"
@@ -178,8 +180,6 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 	fill_polygons(fill_polygons_),
 	velocity_ratio_unit_vector_direction_to_globe_radius(
 			velocity_ratio_unit_vector_direction_to_globe_radius_),
-	scalar_field_iso_value(0),
-	scalar_field_colour_palette(GPlatesGui::DefaultNormalisedRasterColourPalette::create()),
 	raster_colour_palette(GPlatesGui::RasterColourPalette::create()),
 	vgp_draw_circular_error(true),
 	show_topological_network_mesh_triangulation( show_topological_network_mesh_triangulation_),
@@ -214,9 +214,27 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_scalar_field_3d_visual_layer_params(
 		const ScalarField3DVisualLayerParams &params)
 {
-	d_render_params.scalar_field_colour_palette = params.get_colour_palette();
-	d_render_params.scalar_field_iso_value = (params.get_iso_value() ? params.get_iso_value().get() : 0);
-	d_render_params.scalar_field_shader_test_variables = params.get_shader_test_variables();
+	const GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters &isovalue_parameters =
+			params.get_isovalue_parameters()
+			? params.get_isovalue_parameters().get()
+			: GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters();
+
+	const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction =
+			params.get_depth_restriction()
+			? params.get_depth_restriction().get()
+			: GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction();
+
+	d_render_params.scalar_field_render_parameters =
+			GPlatesViewOperations::ScalarField3DRenderParameters(
+					params.get_render_mode(),
+					params.get_colour_mode(),
+					params.get_colour_palette(),
+					isovalue_parameters,
+					params.get_render_options(),
+					params.get_surface_polygons_mask(),
+					depth_restriction,
+					params.get_quality_performance(),
+					params.get_shader_test_variables());
 }
 
 
@@ -442,14 +460,11 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			d_rendered_geometries_spatial_partition,
 			GPLATES_ASSERTION_SOURCE);
 
-	// Create a RenderedGeometry for drawing the scalar field raster.
+	// Create a RenderedGeometry for drawing the scalar field.
 	GPlatesViewOperations::RenderedGeometry rendered_resolved_scalar_field =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_scalar_field_3d(
 					rsf,
-					d_render_params.scalar_field_iso_value,
-					d_render_params.scalar_field_colour_palette,
-					d_render_params.scalar_field_shader_test_variables);
-
+					d_render_params.scalar_field_render_parameters);
 
 	// Create a RenderedGeometry for storing the ReconstructionGeometry and
 	// a RenderedGeometry associated with it.

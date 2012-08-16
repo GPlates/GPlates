@@ -83,6 +83,37 @@ namespace GPlatesOpenGL
 		 */
 		const QString RENDER_TO_POLYGON_STENCIL_TEXTURE_FRAGMENT_SHADER_SOURCE_FILE_NAME =
 				":/opengl/multi_resolution_filled_polygons/render_to_polygon_stencil_texture_fragment_shader.glsl";
+
+
+		/**
+		 * Compare two optional transforms for less-than.
+		 */
+		bool
+		compare_less_than(
+				const boost::optional<GPlatesAppLogic::ReconstructMethodFiniteRotation::non_null_ptr_to_const_type> &transform1,
+				const boost::optional<GPlatesAppLogic::ReconstructMethodFiniteRotation::non_null_ptr_to_const_type> &transform2)
+		{
+			// Same logic as in boost::optional.
+			return !transform2
+					? false
+					// But we need to de-reference both the boost optional *and* the non-null pointer.
+					: ( !transform1 ? true : (*transform1.get()) < (*transform2.get()) ) ;
+		}
+
+		/**
+		 * Compare two optional transforms for equality.
+		 */
+		bool
+		compare_equality(
+				const boost::optional<GPlatesAppLogic::ReconstructMethodFiniteRotation::non_null_ptr_to_const_type> &transform1,
+				const boost::optional<GPlatesAppLogic::ReconstructMethodFiniteRotation::non_null_ptr_to_const_type> &transform2)
+		{
+			// Same logic as in boost::optional.
+			return (!transform1) != (!transform2)
+					? false
+					// But we need to de-reference both the boost optional *and* the non-null pointer.
+					: ( !transform1 ? true : (*transform1.get()) == (*transform2.get()) ) ;
+		}
 	}
 }
 
@@ -1270,7 +1301,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_individua
 				d_tile_texel_dimension);
 
 		// If the finite rotation has changed then update it in the renderer...
-		if (filled_drawable.d_transform != current_finite_rotation)
+		if (!compare_equality(filled_drawable.d_transform, current_finite_rotation))
 		{
 			renderer.gl_load_matrix(GL_MODELVIEW, view_matrix);
 
@@ -2113,4 +2144,13 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_polygons_vertex_array_str
 
 //  	qDebug() << "Rendered tris: " << polygon_stream.num_streamed_vertex_elements / 3
 //  		<< " offset: " << polygon_stream.start_streaming_vertex_element_count / 3;
+}
+
+
+bool
+GPlatesOpenGL::GLMultiResolutionFilledPolygons::SortFilledDrawables::operator()(
+			const filled_polygon_type &lhs,
+			const filled_polygon_type &rhs) const
+{
+	return compare_less_than(lhs.d_transform, rhs.d_transform);
 }

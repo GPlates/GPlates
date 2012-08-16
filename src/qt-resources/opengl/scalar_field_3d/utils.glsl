@@ -6,6 +6,21 @@
 // documented in the GLSL spec but is mentioned at http://www.opengl.org/wiki/GLSL_Core_Language).
 #extension GL_EXT_texture_array : enable
 
+// A local orthonormal coordinate frame for a particular cube face.
+struct CubeFaceCoordinateFrame
+{
+    vec3 x_axis;
+    vec3 y_axis;
+    vec3 z_axis;
+};
+
+// The local coordinate frames for each cube face.
+//
+// NOTE: This used to be a constant array (not using uniform variables)
+// but MacOS (Snow Leopard) has not fully implemented the GLSL 1.2 specification
+// so we use a uniform array instead (and set the values using C++ code).
+uniform CubeFaceCoordinateFrame cube_face_coordinate_frames[6];
+
 
 struct Ray
 {
@@ -101,19 +116,15 @@ get_ray(
         normalize(screen_to_world(vec3(screen_coord, 0.0), model_view_proj_inverse) - eye_position));
 }
 
-// Computation of the maximum ray length dependent on the depth texture
-// containing depth values for earth surface objects
+// Convert screen-space depth (in range [-1,1]) to ray distance/lambda.
 float
-get_max_lambda(
+convert_screen_space_depth_to_ray_lambda(
+        const float screen_space_depth,
         const vec2 screen_coord,
-        const sampler2D depth_map_sampler,
         const mat4 model_view_proj_inverse,
         const vec3 eye_position)
 {
-    // Depth texture is a single-channel texture (GL_R32F).
-    // Convert [-1,1] range to [0,1] for texture coordinates.
-    float depth = texture2D(depth_map_sampler, 0.5 * screen_coord + 0.5).r;
-    vec3 world_position = screen_to_world(vec3(screen_coord, depth), model_view_proj_inverse);
+    vec3 world_position = screen_to_world(vec3(screen_coord, screen_space_depth), model_view_proj_inverse);
     return length(world_position - eye_position);
 }
 
@@ -145,83 +156,41 @@ project_world_position_onto_cube_face(
 {
     // Determine the cube face that the current world position projects onto.
     float cube_face_projection_scale;
-    vec3 abs_world_position = abs(world_position);
+
+	vec3 abs_world_position = abs(world_position);
+
     if (abs_world_position.x > abs_world_position.y)
     {
         if (abs_world_position.x > abs_world_position.z)
         {
             cube_face_projection_scale = abs_world_position.x;
-            if (world_position.x > 0)
-            {
-                cube_face_index = 0; // POSITIVE_X
-            }
-            else
-            {
-                cube_face_index = 1; // NEGATIVE_X
-            }
+            cube_face_index = 0 + int(world_position.x <= 0);
         }
         else
         {
             cube_face_projection_scale = abs_world_position.z;
-            if (world_position.z > 0)
-            {
-                cube_face_index = 4; // POSITIVE_Z
-            }
-            else
-            {
-                cube_face_index = 5; // NEGATIVE_Z
-            }
+            cube_face_index = 4 + int(world_position.z <= 0);
         }
     }
-    else if (abs_world_position.y > abs_world_position.z)
-    {
-        cube_face_projection_scale = abs_world_position.y;
-        if (world_position.y > 0)
-        {
-            cube_face_index = 2; // POSITIVE_Y
-        }
-        else
-        {
-            cube_face_index = 3; // NEGATIVE_Y
-        }
-    }
-    else
-    {
-        cube_face_projection_scale = abs_world_position.z;
-        if (world_position.z > 0)
-        {
-            cube_face_index = 4; // POSITIVE_Z
-        }
-        else
-        {
-            cube_face_index = 5; // NEGATIVE_Z
-        }
-    }
+    else 
+	{
+		if (abs_world_position.y > abs_world_position.z)
+		{
+			cube_face_projection_scale = abs_world_position.y;
+			cube_face_index = 2 + int(world_position.y <= 0); 
+		}
+		else
+		{
+			cube_face_projection_scale = abs_world_position.z;
+			cube_face_index = 4 + int(world_position.z <= 0);
+		}
+	}
 
     // Project the world position onto the cube face.
     vec3 projected_world_position = world_position / cube_face_projection_scale;
 
     return projected_world_position;
 }
-
-// A local orthonormal coordinate frame for a particular cube face.
-struct CubeFaceCoordinateFrame
-{
-    vec3 x_axis, y_axis, z_axis;
-};
-
-// The local coordinate frames for each cube face.
-// These are obtained from 'src/maths/CubeCoordinateFrame.cc' in the GPlates source code.
-// The order of faces is the same as the GPlatesMaths::CubeCoordinateFrame::CubeFaceType enumeration.
-const CubeFaceCoordinateFrame cube_face_coordinate_frames[6] = CubeFaceCoordinateFrame[]
-(
-    CubeFaceCoordinateFrame(vec3(0,0,-1), vec3(0,-1,0), vec3(-1,0,0)), // POSITIVE_X
-    CubeFaceCoordinateFrame(vec3(0,0,1), vec3(0,-1,0), vec3(1,0,0)), // NEGATIVE_X
-    CubeFaceCoordinateFrame(vec3(1,0,0), vec3(0,0,1), vec3(0,-1,0)),   // POSITIVE_Y
-    CubeFaceCoordinateFrame(vec3(1,0,0), vec3(0,0,-1), vec3(0,1,0)), // NEGATIVE_Y
-    CubeFaceCoordinateFrame(vec3(1,0,0), vec3(0,-1,0), vec3(0,0,-1)),  // POSITIVE_Z
-    CubeFaceCoordinateFrame(vec3(-1,0,0), vec3(0,-1,0), vec3(0,0,1)) // NEGATIVE_Z
-);
 
 // Transforms a world position (projected onto a cube face) into that cube face's local coordinate frame.
 // Only generates local (x,y) components since z component is assumed to be *on* the cube face (ie, local z = 1).
@@ -298,9 +267,9 @@ sample_field_data_texture_array(
     return field_data;
 }
 
-// Returns true if the specified cube face location projects into a surface fill mask region, otherwise returns false.
-bool
-projects_into_surface_fill_mask(
+// Samples the surface fill mask texture array to return a value in the range [0,1].
+float
+sample_surface_fill_mask_texture_array(
         sampler2DArray surface_fill_mask_sampler,
         int surface_fill_mask_resolution,
         int cube_face_index,
@@ -312,10 +281,29 @@ projects_into_surface_fill_mask(
     vec2 surface_fill_mask_coordinate_uv =
         ((surface_fill_mask_resolution - 1) * cube_face_coordinate_uv + 0.5) / surface_fill_mask_resolution;
 
-    // Sample the surface fill mask texture array (a single-channel texture GL_R32F).
+    // Sample the surface fill mask texture array (an 8-bit RGBA with the mask value in RGB).
     float surface_fill_mask = texture2DArray(
             surface_fill_mask_sampler,
             vec3(surface_fill_mask_coordinate_uv, cube_face_index)).r;
+
+    // Zero means no fill, one means fill and inbetween is bilinear filtering.
+    return surface_fill_mask;
+}
+
+// Returns true if the specified cube face location projects into a surface fill mask region, otherwise returns false.
+bool
+projects_into_surface_fill_mask(
+        sampler2DArray surface_fill_mask_sampler,
+        int surface_fill_mask_resolution,
+        int cube_face_index,
+        vec2 cube_face_coordinate_uv)
+{
+    // Sample the surface fill mask texture array.
+    float surface_fill_mask = sample_surface_fill_mask_texture_array(
+            surface_fill_mask_sampler,
+            surface_fill_mask_resolution,
+            cube_face_index,
+            cube_face_coordinate_uv);
 
     // Zero means no fill, one means fill and inbetween is bilinear filtering - so choose 0.5 as the cutoff.
     return surface_fill_mask > 0.5;

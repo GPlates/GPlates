@@ -27,6 +27,7 @@
 #ifndef GPLATES_OPENGL_GLCONTEXT_H
 #define GPLATES_OPENGL_GLCONTEXT_H
 
+#include <map>
 #include <utility>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -41,6 +42,7 @@
 #include "GLFrameBufferObject.h"
 #include "GLProgramObject.h"
 #include "GLRenderBufferObject.h"
+#include "GLScreenRenderTarget.h"
 #include "GLShaderObject.h"
 #include "GLStateSetKeys.h"
 #include "GLStateSetStore.h"
@@ -183,13 +185,13 @@ namespace GPlatesOpenGL
 			/**
 			 * Returns the shader object resource manager for the specified shader type.
 			 *
-			 * @a shader_type can be GL_VERTEX_SHADER_ARB, GL_FRAGMENT_SHADER_ARB or GL_GEOMETRY_SHADER_ARB.
+			 * @a shader_type can be GL_VERTEX_SHADER_ARB, GL_FRAGMENT_SHADER_ARB or GL_GEOMETRY_SHADER_EXT.
 			 *
 			 * Note that the 'GL_ARB_shader_objects' extension must be supported and also, for the
 			 * three shader types above, the following extensions must also be supported:
 			 *  - GL_ARB_vertex_shader (for GL_VERTEX_SHADER_ARB)... this is also core in OpenGL 2.0,
 			 *  - GL_ARB_fragment_shader (for GL_FRAGMENT_SHADER_ARB)... this is also core in OpenGL 2.0,
-			 *  - GL_ARB_geometry_shader4 (for GL_GEOMETRY_SHADER_ARB)... this is also core in OpenGL 3.2.
+			 *  - GL_EXT_geometry_shader4 (for GL_GEOMETRY_SHADER_EXT)... this is also core in OpenGL 3.2.
 			 */
 			const boost::shared_ptr<GLShaderObject::resource_manager_type> &
 			get_shader_object_resource_manager(
@@ -214,7 +216,6 @@ namespace GPlatesOpenGL
 			 * Use this when you need a texture object temporarily and want to promote
 			 * resource sharing by returning it for others to use.
 			 *
-			 * The dimensions must be a power-of-two.
 			 * @a height and @a depth are not used for 1D textures (and @a depth not used for 2D textures).
 			 *
 			 * NOTE: The returned texture will have its level zero initialised (memory allocated for image)
@@ -257,6 +258,32 @@ namespace GPlatesOpenGL
 					GLRenderer &renderer);
 
 			/**
+			 * Returns a convenience object for render to a screen-size render texture with and
+			 * optional depth buffer, from an internal cache, that matches the specified parameters.
+			 *
+			 * Use this when you need to render to screen-size texture temporarily and want to promote
+			 * resource sharing by returning it for others to use. This is useful when multiple clients
+			 * need to independently render to the same window (with same viewport dimensions).
+			 *
+			 * NOTE: GLScreenRenderTarget resizes its internal texture (and depth buffer) when clients
+			 * specify the viewport dimensions they are rendering to.
+			 * So re-use is only useful when all clients render to the same viewport.
+			 * This is not currently always the case (colouring preview window uses a different size
+			 * viewport than the main window).
+			 *
+			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
+			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
+			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
+			 *
+			 * Returns boost::none if 'GLScreenRenderTarget::is_supported()' returns false.
+			 */
+			boost::optional<GLScreenRenderTarget::shared_ptr_type>
+			acquire_screen_render_target(
+					GLRenderer &renderer,
+					GLint texture_internalformat,
+					bool include_depth_buffer);
+
+			/**
 			 * Creates a compiled draw state that can render a full-screen textured quad.
 			 *
 			 * The vertex colours are white - RGBA(1.0, 1.0, 1.0, 1.0).
@@ -289,6 +316,7 @@ namespace GPlatesOpenGL
 					GLRenderer &renderer);
 
 		private:
+
 			//! Typedef for a key made up of the parameters of @a acquire_texture.
 			typedef boost::tuple<GLenum, GLint, GLsizei, boost::optional<GLsizei>, boost::optional<GLsizei>, GLint, bool> texture_key_type;
 
@@ -297,6 +325,17 @@ namespace GPlatesOpenGL
 
 			//! Typedef for a mapping of texture parameters (key) to texture caches.
 			typedef std::map<texture_key_type, texture_cache_type::shared_ptr_type> texture_cache_map_type;
+
+
+			//! Typedef for a key made up of the parameters of @a acquire_screen_render_target.
+			typedef boost::tuple<GLint, bool> screen_render_target_key_type;
+
+			//! Typedef for a screen render target cache.
+			typedef GPlatesUtils::ObjectCache<GLScreenRenderTarget> screen_render_target_cache_type;
+
+			//! Typedef for a mapping of screen render target parameters (key) to screen render target caches.
+			typedef std::map<screen_render_target_key_type, screen_render_target_cache_type::shared_ptr_type>
+					screen_render_target_cache_map_type;
 
 
 			boost::shared_ptr<GLTexture::resource_manager_type> d_texture_object_resource_manager;
@@ -311,6 +350,8 @@ namespace GPlatesOpenGL
 			boost::shared_ptr<GLProgramObject::resource_manager_type> d_program_object_resource_manager;
 
 			texture_cache_map_type d_texture_cache_map;
+
+			screen_render_target_cache_map_type d_screen_render_target_cache_map;
 
 			/**
 			 * Even though vertex arrays cannot be shared across OpenGL contexts, the @a GLVertexArray
@@ -349,6 +390,10 @@ namespace GPlatesOpenGL
 			texture_cache_type::shared_ptr_type
 			get_texture_cache(
 					const texture_key_type &texture_key);
+
+			screen_render_target_cache_type::shared_ptr_type
+			get_screen_render_target_cache(
+					const screen_render_target_key_type &screen_render_target_key);
 
 			//! Create state store if not yet done - an OpenGL context must be valid.
 			boost::shared_ptr<GLStateStore>
@@ -620,8 +665,14 @@ namespace GPlatesOpenGL
 				 */
 				GLuint gl_max_draw_buffers;
 
+				//! Is GL_EXT_blend_equation_separate supported?
+				bool gl_EXT_blend_equation_separate;
+
 				//! Is GL_EXT_blend_func_separate supported?
 				bool gl_EXT_blend_func_separate;
+
+				//! Is GL_EXT_blend_minmax supported?
+				bool gl_EXT_blend_minmax;
 			};
 
 			struct Shader
@@ -637,8 +688,18 @@ namespace GPlatesOpenGL
 				//! Is GL_ARB_fragment_shader supported?
 				bool gl_ARB_fragment_shader;
 
-				//! Is GL_ARB_geometry_shader4 supported?
-				bool gl_ARB_geometry_shader4;
+				//! Is GL_EXT_geometry_shader4 supported?
+				bool gl_EXT_geometry_shader4;
+
+				// Limits related to the GL_EXT_geometry_shader4 extension...
+				// All are zero if GL_EXT_geometry_shader4 is not supported.
+				GLuint gl_max_geometry_texture_image_units; // GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS_EXT
+				GLuint gl_max_geometry_varying_components; // GL_MAX_GEOMETRY_VARYING_COMPONENTS_EXT
+				GLuint gl_max_vertex_varying_components; // GL_MAX_VERTEX_VARYING_COMPONENTS_EXT
+				GLuint gl_max_varying_components; // GL_MAX_VARYING_COMPONENTS_EXT
+				GLuint gl_max_geometry_uniform_components; // GL_MAX_GEOMETRY_UNIFORM_COMPONENTS_EXT
+				GLuint gl_max_geometry_output_vertices; // GL_MAX_GEOMETRY_OUTPUT_VERTICES_EXT
+				GLuint gl_max_geometry_total_output_components; // GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS_EXT
 
 				//! Is GL_EXT_gpu_shader4 supported?
 				bool gl_EXT_gpu_shader4;
@@ -759,8 +820,13 @@ namespace GPlatesOpenGL
 				//! Is GL_ARB_texture_env_dot3 supported?
 				bool gl_ARB_texture_env_dot3;
 
-				//! Is GL_EXT_texture3D supported?
-				bool gl_EXT_texture3D;
+				/**
+				 * Are 3D textures supported?
+				 *
+				 * This used to test for GL_EXT_texture3D and GL_EXT_subtexture but they are not
+				 * exposed on some systems (notably MacOS) so instead this tests for core OpenGL 1.2.
+				 */
+				bool gl_is_texture3D_supported;
 
 				//! Is GL_EXT_texture_array supported?
 				bool gl_EXT_texture_array;

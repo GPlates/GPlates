@@ -35,6 +35,8 @@
 
 #include "gui/ColourPalette.h"
 
+#include "view-operations/ScalarField3DRenderParameters.h"
+
 
 namespace GPlatesPresentation
 {
@@ -45,6 +47,7 @@ namespace GPlatesPresentation
 
 		typedef GPlatesUtils::non_null_intrusive_ptr<ScalarField3DVisualLayerParams> non_null_ptr_type;
 		typedef GPlatesUtils::non_null_intrusive_ptr<const ScalarField3DVisualLayerParams> non_null_ptr_to_const_type;
+
 
 		static
 		non_null_ptr_type
@@ -85,6 +88,46 @@ namespace GPlatesPresentation
 				const GPlatesAppLogic::Layer &layer);
 
 		/**
+		 * Returns the current render mode.
+		 */
+		GPlatesViewOperations::ScalarField3DRenderParameters::RenderMode
+		get_render_mode() const
+		{
+			return d_render_mode;
+		}
+
+		/**
+		 * Sets the current render mode.
+		 */
+		void
+		set_render_mode(
+				GPlatesViewOperations::ScalarField3DRenderParameters::RenderMode render_mode)
+		{
+			d_render_mode = render_mode;
+			emit_modified();
+		}
+
+		/**
+		 * Returns the current colour mode.
+		 */
+		GPlatesViewOperations::ScalarField3DRenderParameters::ColourMode
+		get_colour_mode() const
+		{
+			return d_colour_mode;
+		}
+
+		/**
+		 * Sets the current colour mode.
+		 */
+		void
+		set_colour_mode(
+				GPlatesViewOperations::ScalarField3DRenderParameters::ColourMode colour_mode)
+		{
+			d_colour_mode = colour_mode;
+			emit_modified();
+		}
+
+		/**
 		 * Returns the filename of the file from which the current colour
 		 * palette was loaded, if it was loaded from a file.
 		 * If the current colour palette is auto-generated, returns the empty string.
@@ -116,24 +159,80 @@ namespace GPlatesPresentation
 		get_colour_palette() const;
 
 		/**
-		 * Returns the current iso-value of the iso-surface.
+		 * Returns the current isovalue parameters.
 		 *
-		 * Returns boost::none if value has not yet been set.
+		 * Returns boost::none if they have not been set yet.
 		 */
-		boost::optional<float>
-		get_iso_value() const
+		boost::optional<GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters>
+		get_isovalue_parameters() const
 		{
-			return d_iso_value;
+			return d_isovalue_parameters;
 		}
 
 		/**
-		 * Sets the current iso-value of the iso-surface.
+		 * Sets the current isovalue parameters.
 		 */
 		void
-		set_iso_value(
-				float iso_value)
+		set_isovalue_parameters(
+				const GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters &isovalue_parameters)
 		{
-			d_iso_value = iso_value;
+			d_isovalue_parameters = isovalue_parameters;
+			emit_modified();
+		}
+
+		const GPlatesViewOperations::ScalarField3DRenderParameters::RenderOptions &
+		get_render_options() const
+		{
+			return d_render_options;
+		}
+
+		void
+		set_render_options(
+				const GPlatesViewOperations::ScalarField3DRenderParameters::RenderOptions &render_options)
+		{
+			d_render_options = render_options;
+			emit_modified();
+		}
+
+		const GPlatesViewOperations::ScalarField3DRenderParameters::SurfacePolygonsMask &
+		get_surface_polygons_mask() const
+		{
+			return d_surface_polygons_mask;
+		}
+
+		void
+		set_surface_polygons_mask(
+				const GPlatesViewOperations::ScalarField3DRenderParameters::SurfacePolygonsMask &surface_polygons_mask)
+		{
+			d_surface_polygons_mask = surface_polygons_mask;
+			emit_modified();
+		}
+
+		boost::optional<GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction>
+		get_depth_restriction() const
+		{
+			return d_depth_restriction;
+		}
+
+		void
+		set_depth_restriction(
+				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction)
+		{
+			d_depth_restriction = depth_restriction;
+			emit_modified();
+		}
+
+		const GPlatesViewOperations::ScalarField3DRenderParameters::QualityPerformance &
+		get_quality_performance() const
+		{
+			return d_quality_performance;
+		}
+
+		void
+		set_quality_performance(
+				const GPlatesViewOperations::ScalarField3DRenderParameters::QualityPerformance &quality_performance)
+		{
+			d_quality_performance = quality_performance;
 			emit_modified();
 		}
 
@@ -172,6 +271,10 @@ namespace GPlatesPresentation
 		update(
 				bool always_emit_modified_signal = false);
 
+
+		GPlatesViewOperations::ScalarField3DRenderParameters::RenderMode d_render_mode;
+		GPlatesViewOperations::ScalarField3DRenderParameters::ColourMode d_colour_mode;
+
 		/**
 		 * If the current colour palette was loaded from a file (typically a
 		 * CPT file), then this variable holds that filename.
@@ -186,7 +289,23 @@ namespace GPlatesPresentation
 		 */
 		GPlatesGui::ColourPalette<double>::non_null_ptr_type d_colour_palette;
 
-		boost::optional<float> d_iso_value;
+		// This is optional because the default isovalue cannot be set until a scalar field feature
+		// is available - the default isovalue is the mean scalar value in the scalar field.
+		// The scalar field is not immediately available due to various signal/slot dependencies.
+		boost::optional<GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters> d_isovalue_parameters;
+
+		GPlatesViewOperations::ScalarField3DRenderParameters::RenderOptions d_render_options;
+
+		GPlatesViewOperations::ScalarField3DRenderParameters::SurfacePolygonsMask d_surface_polygons_mask;
+
+		// This is optional because the default depth restriction range cannot be set until a
+		// scalar field feature is available - the default depth restriction range is the
+		// depth range in the scalar field.
+		// The scalar field is not immediately available due to various signal/slot dependencies.
+		boost::optional<GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction> d_depth_restriction;
+
+		GPlatesViewOperations::ScalarField3DRenderParameters::QualityPerformance d_quality_performance;
+
 		std::vector<float> d_shader_test_variables;
 
 	};

@@ -49,6 +49,7 @@
 #include "GLNormalMapSource.h"
 #include "GLProjectionUtils.h"
 #include "GLRenderer.h"
+#include "GLScalarFieldDepthLayersSource.h"
 #include "GLShaderProgramUtils.h"
 #include "GLUtils.h"
 #include "GLVertex.h"
@@ -134,6 +135,58 @@ GPlatesOpenGL::GLMultiResolutionRaster::supports_normal_map_source(
 }
 
 
+bool
+GPlatesOpenGL::GLMultiResolutionRaster::supports_scalar_field_depth_layers_source(
+		GLRenderer &renderer)
+{
+	static bool supported = false;
+
+	// Only test for support the first time we're called.
+	static bool tested_for_support = false;
+	if (!tested_for_support)
+	{
+		tested_for_support = true;
+
+		// Need support for GLScalarFieldDepthLayersSource.
+		if (!GLScalarFieldDepthLayersSource::is_supported(renderer))
+		{
+			return false;
+		}
+
+		// Need vertex/fragment shader support.
+		if (!GLContext::get_parameters().shader.gl_ARB_vertex_shader ||
+			!GLContext::get_parameters().shader.gl_ARB_fragment_shader)
+		{
+			return false;
+		}
+
+		//
+		// Try to compile our scalar/gradient fragment shader program.
+		// If that fails then it could be exceeding some resource limit on the runtime system
+		// such as number of shader instructions allowed.
+		// We do this test because we are promising support in a shader program regardless of the
+		// complexity of the shader.
+		//
+
+		GLShaderProgramUtils::ShaderSource fragment_shader_source;
+		fragment_shader_source.add_shader_source("#define SCALAR_GRADIENT\n");
+		fragment_shader_source.add_shader_source_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+
+		// Attempt to create the test shader program.
+		if (!GLShaderProgramUtils::compile_and_link_fragment_program(
+				renderer, fragment_shader_source))
+		{
+			return false;
+		}
+
+		// If we get this far then we have support.
+		supported = true;
+	}
+
+	return supported;
+}
+
+
 GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type
 GPlatesOpenGL::GLMultiResolutionRaster::create(
 		GLRenderer &renderer,
@@ -177,9 +230,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 	d_tile_texture_cache(tile_texture_cache_type::create(2/* GPU pipeline breathing room in case caching disabled*/)),
 	d_cache_tile_textures(cache_tile_textures),
 	// Start with smallest size cache and just let the cache grow in size as needed...
-	d_tile_vertices_cache(tile_vertices_cache_type::create()),
-	// Is the source raster is a normal map...
-	d_source_raster_is_normal_map(dynamic_cast<GLNormalMapSource *>(raster_source.get()) != NULL)
+	d_tile_vertices_cache(tile_vertices_cache_type::create())
 {
 	// Determine number of texels between two adjacent vertices along a horizontal/vertical tile edge.
 	// For most rasters this is the maximum texel density.
@@ -193,7 +244,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 	initialise_level_of_detail_pyramid();
 
 	// If the source raster is a normal map then adjust its height field scale depending its resolution.
-	if (d_source_raster_is_normal_map)
+	if (dynamic_cast<GLNormalMapSource *>(raster_source.get()))
 	{
 		GPlatesUtils::dynamic_pointer_cast<GLNormalMapSource>(raster_source)
 				->set_max_highest_resolution_texel_size_on_unit_sphere(
@@ -423,9 +474,14 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 		d_render_raster_program_object.get()->gl_uniform1i(renderer, "raster_texture_sampler", 0/*texture unit*/);
 
 		// When rendering a normal map the vertex size is larger due to the per-vertex tangent-space frame.
-		if (d_source_raster_is_normal_map)
+		if (dynamic_cast<GLNormalMapSource *>(d_raster_source.get()))
 		{
 			vertex_size = sizeof(normal_map_vertex_type);
+		}
+		// ...or when rendering a scalar gradient map the vertex size is larger due to the per-vertex tangent-space frame.
+		else if (dynamic_cast<GLScalarFieldDepthLayersSource *>(d_raster_source.get()))
+		{
+			vertex_size = sizeof(scalar_field_depth_layer_vertex_type);
 		}
 	}
 	else // Fixed function...
@@ -688,10 +744,16 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile_vertices(
 			// Bind the new vertex buffer to the new vertex array.
 			// This only needs to be done once since the vertex buffer and vertex array
 			// are always created together.
-			if (d_source_raster_is_normal_map)
+			if (dynamic_cast<GLNormalMapSource *>(d_raster_source.get()))
 			{
 				// Normal-map vertices are larger due to per-vertex tangent-space frame.
 				bind_vertex_buffer_to_vertex_array<normal_map_vertex_type>(
+						renderer, *tile_vertices->vertex_array, tile_vertices->vertex_buffer);
+			}
+			else if (dynamic_cast<GLScalarFieldDepthLayersSource *>(d_raster_source.get()))
+			{
+				// Scalar-gradient-map vertices are larger due to per-vertex tangent-space frame.
+				bind_vertex_buffer_to_vertex_array<scalar_field_depth_layer_vertex_type>(
 						renderer, *tile_vertices->vertex_array, tile_vertices->vertex_buffer);
 			}
 			else
@@ -779,9 +841,21 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 		}
 	}
 
+	// Vertex size.
+	unsigned int vertex_size = sizeof(vertex_type);
+	// When rendering a normal map the vertex size is larger due to the per-vertex tangent-space frame.
+	if (dynamic_cast<GLNormalMapSource *>(d_raster_source.get()))
+	{
+		vertex_size = sizeof(normal_map_vertex_type);
+	}
+	// ...or when rendering a scalar gradient map the vertex size is larger due to the per-vertex tangent-space frame.
+	else if (dynamic_cast<GLScalarFieldDepthLayersSource *>(d_raster_source.get()))
+	{
+		vertex_size = sizeof(scalar_field_depth_layer_vertex_type);
+	}
+
 	// Allocate memory for the vertex array.
-	const unsigned int vertex_buffer_size_in_bytes = num_vertices_in_tile *
-			(d_source_raster_is_normal_map ? sizeof(normal_map_vertex_type) : sizeof(vertex_type));
+	const unsigned int vertex_buffer_size_in_bytes = num_vertices_in_tile * vertex_size;
 
 	// The memory is allocated directly in the vertex buffer.
 	//
@@ -813,6 +887,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 	const double u_increment_per_quad = inverse_x_num_quads * (lod_tile.u_end - lod_tile.u_start);
 	const double v_increment_per_quad = inverse_y_num_quads * (lod_tile.v_end - lod_tile.v_start);
 
+	// Only needed if gradients are calculated.
+	const double inv_num_texels_per_vertex = double(1 << 16) / d_num_texels_per_vertex;
+
 	// Calculate the vertices.
 	for (j = 0; j < lod_tile.y_num_vertices; ++j)
 	{
@@ -828,57 +905,108 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 			// The 'u' texture coordinate.
 			const double u = lod_tile.u_start + i * u_increment_per_quad;
 
-			if (d_source_raster_is_normal_map)
+			if (dynamic_cast<GLNormalMapSource *>(d_raster_source.get()))
 			{
-				// Calculate the vertex positions above/below/left/right of the current vertex.
-				// This is so we can calculate the tangent-space frame.
-				const GPlatesMaths::UnitVector3D vertex_position01 =
-						(i != 0)
-						? vertex_positions[i - 1 + j * lod_tile.x_num_vertices] // vertex in tile
-						: ((lod_tile.x_geo_start != 0)
-								? convert_pixel_coord_to_geographic_coord( // vertex outside tile but in raster
-										lod_tile.x_geo_start - x_pixels_per_quad,
-										lod_tile.y_geo_start + j * y_pixels_per_quad).position_vector()
-								: vertex_position); // vertex outside raster - just use raster edge
-				const GPlatesMaths::UnitVector3D vertex_position21 =
-						(i != lod_tile.x_num_vertices - 1)
-						? vertex_positions[i + 1 + j * lod_tile.x_num_vertices] // vertex in tile
-						: ((lod_tile.x_geo_end != d_raster_width)
-								? convert_pixel_coord_to_geographic_coord( // vertex outside tile but in raster
-										lod_tile.x_geo_end + x_pixels_per_quad,
-										lod_tile.y_geo_start + j * y_pixels_per_quad).position_vector()
-								: vertex_position); // vertex outside raster - just use raster edge
-				const GPlatesMaths::UnitVector3D &vertex_position10 =
-						(j != 0)
-						? vertex_positions[i + (j - 1) * lod_tile.x_num_vertices] // vertex in tile
-						: ((lod_tile.y_geo_start != 0)
-								? convert_pixel_coord_to_geographic_coord( // vertex outside tile but in raster
-										lod_tile.x_geo_start + i * x_pixels_per_quad,
-										lod_tile.y_geo_start - y_pixels_per_quad).position_vector()
-								: vertex_position); // vertex outside raster - just use raster edge
-				const GPlatesMaths::UnitVector3D &vertex_position12 =
-						(j != lod_tile.y_num_vertices - 1)
-						? vertex_positions[i + (j + 1) * lod_tile.x_num_vertices] // vertex in tile
-						: ((lod_tile.y_geo_end != d_raster_height)
-								? convert_pixel_coord_to_geographic_coord( // vertex outside tile but in raster
-										lod_tile.x_geo_start + i * x_pixels_per_quad,
-										lod_tile.y_geo_end + y_pixels_per_quad).position_vector()
-								: vertex_position); // vertex outside raster - just use raster edge
+				// Get the adjacent vertex positions.
+				GPlatesMaths::UnitVector3D vertex_position01 = vertex_position;
+				GPlatesMaths::UnitVector3D vertex_position21 = vertex_position;
+				GPlatesMaths::UnitVector3D vertex_position10 = vertex_position;
+				GPlatesMaths::UnitVector3D vertex_position12 = vertex_position;
+				bool has_vertex_position01, has_vertex_position21, has_vertex_position10, has_vertex_position12;
+				get_adjacent_vertex_positions(
+						vertex_position01, has_vertex_position01,
+						vertex_position21, has_vertex_position21,
+						vertex_position10, has_vertex_position10,
+						vertex_position12, has_vertex_position12,
+						lod_tile, vertex_positions, i, j, x_pixels_per_quad, y_pixels_per_quad);
 
 				// Calculate the tangent-space frame of the current vertex.
 				const TangentSpaceFrame tangent_space_frame = calculate_tangent_space_frame(
 						vertex_position,
 						vertex_position01, vertex_position21, vertex_position10, vertex_position12);
 
-				// Write the vertex to vertex buffer memory.
-				normal_map_vertex_type *vertex = static_cast<normal_map_vertex_type *>(vertex_data_write_ptr);
+				// Normal map vertex pointer into vertex buffer memory.
+				normal_map_vertex_type *vertex =
+						static_cast<normal_map_vertex_type *>(vertex_data_write_ptr);
 
 				// Write directly into (un-initialised) memory in the vertex buffer.
 				// NOTE: We cannot read this memory.
 				new (vertex) normal_map_vertex_type(
 						vertex_position,
 						u, v,
-						tangent_space_frame.tangent, tangent_space_frame.binormal, tangent_space_frame.normal);
+						tangent_space_frame.tangent,
+						tangent_space_frame.binormal,
+						tangent_space_frame.normal);
+
+				// Advance the vertex buffer write pointer.
+				vertex_data_write_ptr = vertex + 1;
+			}
+			else if (dynamic_cast<GLScalarFieldDepthLayersSource *>(d_raster_source.get()))
+			{
+				// Get the adjacent vertex positions.
+				GPlatesMaths::UnitVector3D vertex_position01 = vertex_position;
+				GPlatesMaths::UnitVector3D vertex_position21 = vertex_position;
+				GPlatesMaths::UnitVector3D vertex_position10 = vertex_position;
+				GPlatesMaths::UnitVector3D vertex_position12 = vertex_position;
+				bool has_vertex_position01, has_vertex_position21, has_vertex_position10, has_vertex_position12;
+				get_adjacent_vertex_positions(
+						vertex_position01, has_vertex_position01,
+						vertex_position21, has_vertex_position21,
+						vertex_position10, has_vertex_position10,
+						vertex_position12, has_vertex_position12,
+						lod_tile, vertex_positions, i, j, x_pixels_per_quad, y_pixels_per_quad);
+
+				// Per-texel distance vector of constant 'u' and 'v'.
+				GPlatesMaths::Vector3D delta_u =
+						GPlatesMaths::Vector3D(vertex_position21) - GPlatesMaths::Vector3D(vertex_position01);
+				GPlatesMaths::Vector3D delta_v =
+						GPlatesMaths::Vector3D(vertex_position12) - GPlatesMaths::Vector3D(vertex_position10);
+
+				// The inverse num texels makes the inverse distance a per-texel measure.
+				if (has_vertex_position21 && has_vertex_position01)
+				{
+					delta_u = 0.5 * inv_num_texels_per_vertex * delta_u;
+				}
+				else // distance vector covers one vertex edge instead of two...
+				{
+					delta_u = inv_num_texels_per_vertex * delta_u;
+				}
+				if (has_vertex_position12 && has_vertex_position10)
+				{
+					delta_v = 0.5 * inv_num_texels_per_vertex * delta_v;
+				}
+				else // distance vector covers one vertex edge instead of two...
+				{
+					delta_v = inv_num_texels_per_vertex * delta_v;
+				}
+
+				// Per-texel inverse distance vector of constant 'u' and 'v'.
+				// Using inverse magnitude squared since need one inverse magnitude is to normalise and
+				// the other inverse magnitude is to generate the inverse distance part of gradient calculation.
+				GPlatesMaths::Vector3D inv_delta_u_tangent(0,0,0);
+				GPlatesMaths::Vector3D inv_delta_v_binormal(0,0,0);
+				if (!are_almost_exactly_equal(delta_u.magSqrd(), 0))
+				{
+					inv_delta_u_tangent = (1.0 / delta_u.magSqrd()) * delta_u;
+				}
+				if (!are_almost_exactly_equal(delta_v.magSqrd(), 0))
+				{
+					inv_delta_v_binormal = (1.0 / delta_v.magSqrd()) * delta_v;
+				}
+
+				// The surface normal points outwards from the sphere regardless of tangent and binormal directions.
+				const GPlatesMaths::Vector3D normal(vertex_position);
+
+				// Scalar/gradient map vertex pointer into vertex buffer memory.
+				scalar_field_depth_layer_vertex_type *vertex =
+						static_cast<scalar_field_depth_layer_vertex_type *>(vertex_data_write_ptr);
+
+				// Write directly into (un-initialised) memory in the vertex buffer.
+				// NOTE: We cannot read this memory.
+				new (vertex) scalar_field_depth_layer_vertex_type(
+						vertex_position,
+						u, v,
+						inv_delta_u_tangent, inv_delta_v_binormal, normal);
 
 				// Advance the vertex buffer write pointer.
 				vertex_data_write_ptr = vertex + 1;
@@ -896,6 +1024,97 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 				vertex_data_write_ptr = vertex + 1;
 			}
 		}
+	}
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionRaster::get_adjacent_vertex_positions(
+		GPlatesMaths::UnitVector3D &vertex_position01,
+		bool &has_vertex_position01,
+		GPlatesMaths::UnitVector3D &vertex_position21,
+		bool &has_vertex_position21,
+		GPlatesMaths::UnitVector3D &vertex_position10,
+		bool &has_vertex_position10,
+		GPlatesMaths::UnitVector3D &vertex_position12,
+		bool &has_vertex_position12,
+		const LevelOfDetailTile &lod_tile,
+		const std::vector<GPlatesMaths::UnitVector3D> &vertex_positions,
+		const unsigned int i,
+		const unsigned int j,
+		const double &x_pixels_per_quad,
+		const double &y_pixels_per_quad)
+{
+	//
+	// Calculate the vertex positions above/below/left/right of the current vertex.
+	//
+
+	if (i != 0) // vertex in tile
+	{
+		vertex_position01 = vertex_positions[i - 1 + j * lod_tile.x_num_vertices];
+		has_vertex_position01 = true;
+	}
+	else if (lod_tile.x_geo_start != 0) // vertex outside tile but in raster
+	{
+		vertex_position01 = convert_pixel_coord_to_geographic_coord(
+				lod_tile.x_geo_start - x_pixels_per_quad,
+				lod_tile.y_geo_start + j * y_pixels_per_quad).position_vector();
+		has_vertex_position01 = true;
+	}
+	else // vertex outside raster - just use raster edge
+	{
+		has_vertex_position01 = false;
+	}
+
+	if (i != lod_tile.x_num_vertices - 1) // vertex in tile
+	{
+		vertex_position21 = vertex_positions[i + 1 + j * lod_tile.x_num_vertices];
+		has_vertex_position21 = true;
+	}
+	else if (lod_tile.x_geo_end != d_raster_width) // vertex outside tile but in raster
+	{
+		vertex_position21 = convert_pixel_coord_to_geographic_coord(
+				lod_tile.x_geo_end + x_pixels_per_quad,
+				lod_tile.y_geo_start + j * y_pixels_per_quad).position_vector();
+		has_vertex_position21 = true;
+	}
+	else // vertex outside raster - just use raster edge
+	{
+		has_vertex_position21 = false;
+	}
+
+	if (j != 0) // vertex in tile
+	{
+		vertex_position10 = vertex_positions[i + (j - 1) * lod_tile.x_num_vertices];
+		has_vertex_position10 = true;
+	}
+	else if (lod_tile.y_geo_start != 0) // vertex outside tile but in raster
+	{
+		vertex_position10 = convert_pixel_coord_to_geographic_coord(
+							lod_tile.x_geo_start + i * x_pixels_per_quad,
+							lod_tile.y_geo_start - y_pixels_per_quad).position_vector();
+		has_vertex_position10 = true;
+	}
+	else // vertex outside raster - just use raster edge
+	{
+		has_vertex_position10 = false;
+	}
+
+	if (j != lod_tile.y_num_vertices - 1) // vertex in tile
+	{
+		vertex_position12 = vertex_positions[i + (j + 1) * lod_tile.x_num_vertices];
+		has_vertex_position12 = true;
+	}
+	else if (lod_tile.y_geo_end != d_raster_height) // vertex outside tile but in raster
+	{
+		vertex_position12 = convert_pixel_coord_to_geographic_coord(
+							lod_tile.x_geo_start + i * x_pixels_per_quad,
+							lod_tile.y_geo_end + y_pixels_per_quad).position_vector();
+		has_vertex_position12 = true;
+	}
+	else // vertex outside raster - just use raster edge
+	{
+		has_vertex_position12 = false;
 	}
 }
 
@@ -1127,12 +1346,33 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 	// If the source raster is a normal map then use a shader program instead of the fixed-function pipeline.
 	// This converts the surface normals from tangent-space to world-space so they can be captured
 	// in a cube raster (which is decoupled from the raster geo-referencing or tangent-space).
-	if (d_source_raster_is_normal_map)
+	if (dynamic_cast<GLNormalMapSource *>(d_raster_source.get()))
 	{
 		GLShaderProgramUtils::ShaderSource fragment_shader_source;
 
 		// Configure shader for converting tangent-space surface normals to world-space.
 		fragment_shader_source.add_shader_source("#define SURFACE_NORMALS\n");
+
+		// Finally add the GLSL 'main()' function.
+		fragment_shader_source.add_shader_source_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+
+		d_render_raster_program_object =
+				GLShaderProgramUtils::compile_and_link_fragment_program(
+						renderer,
+						fragment_shader_source);
+
+		// We should be able to compile/link the shader program since the client should have
+		// called 'supports_normal_map_source()' which does a test compile/link.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				d_render_raster_program_object,
+				GPLATES_ASSERTION_SOURCE);
+	}
+	else if (dynamic_cast<GLScalarFieldDepthLayersSource *>(d_raster_source.get()))
+	{
+		GLShaderProgramUtils::ShaderSource fragment_shader_source;
+
+		// Configure shader for completing the gradient calculation for a scalar field.
+		fragment_shader_source.add_shader_source("#define SCALAR_GRADIENT\n");
 
 		// Finally add the GLSL 'main()' function.
 		fragment_shader_source.add_shader_source_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
@@ -1167,11 +1407,19 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 		// always) but that extension is not available on Mac OSX 10.5 (Leopard) on any hardware
 		// (rectified in 10.6) so instead we'll just use the programmable pipeline whenever it's
 		// available (and all platforms that support GL_ARB_texture_float should also support shaders).
+
+		GLShaderProgramUtils::ShaderSource fragment_shader_source;
+
+		// Configure shader for floating-point rasters.
+		fragment_shader_source.add_shader_source("#define SOURCE_RASTER_IS_FLOATING_POINT\n");
+
+		// Finally add the GLSL 'main()' function.
+		fragment_shader_source.add_shader_source_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+
 		d_render_raster_program_object =
 				GLShaderProgramUtils::compile_and_link_fragment_program(
 						renderer,
-						GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
-								RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME));
+						fragment_shader_source);
 
 		// The shader cannot get any simpler so if it fails to compile/link then something is wrong.
 		// Also the client will have called 'GLDataRasterSource::is_supported()' which verifies

@@ -504,6 +504,44 @@ namespace GPlatesOpenGL
 	};
 
 	/**
+	 * Used to set the alpha blend equation.
+	 */
+	struct GLBlendEquationStateSet :
+			public GLStateSet
+	{
+		explicit
+		GLBlendEquationStateSet(
+				GLenum mode);
+
+		GLBlendEquationStateSet(
+				GLenum modeRGB,
+				GLenum modeAlpha);
+
+		virtual
+		void
+		apply_state(
+				const GLStateSet &last_applied_state_set,
+				GLState &last_applied_state) const;
+
+		virtual
+		void
+		apply_from_default_state(
+				GLState &last_applied_state) const;
+
+		virtual
+		void
+		apply_to_default_state(
+				GLState &last_applied_state) const;
+
+
+		GLenum d_mode_RGB;
+		GLenum d_mode_A;
+
+		//! If the RGB and A components have separate equations.
+		bool d_separate_equations;
+	};
+
+	/**
 	 * Used to set the alpha blend function.
 	 */
 	struct GLBlendFuncStateSet :

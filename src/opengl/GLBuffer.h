@@ -465,11 +465,11 @@ namespace GPlatesOpenGL
 			gl_map_buffer_static(
 					access_type access);
 
-			//! Maps buffer for dynamic *write* access - check if supported using @a asynchronous_map_buffer_dynamic_supported.
+			//! Maps buffer for dynamic *write* access.
 			GLvoid *
 			gl_map_buffer_dynamic();
 
-			//! Maps buffer for streaming *write* access - check if supported using @a asynchronous_map_buffer_stream_supported.
+			//! Maps buffer for streaming *write* access.
 			GLvoid *
 			gl_map_buffer_stream(
 					unsigned int minimum_bytes_to_stream,

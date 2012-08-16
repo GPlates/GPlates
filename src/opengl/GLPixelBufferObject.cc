@@ -185,12 +185,13 @@ GPlatesOpenGL::GLPixelBufferObject::gl_tex_image_3D(
 	// Bind this pixel buffer to the *unpack* target.
 	GLRenderer::BindBufferObjectAndApply save_restore_bind_pixel_buffer(renderer, d_buffer, get_unpack_target_type());
 
-	// The GL_EXT_texture3D extension must be available.
+	// Previously we checked for the GL_EXT_texture3D extension but on MacOS this is not exposed
+	// so we use the core OpenGL 1.2 function instead.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_texture3D),
+			GPLATES_OPENGL_BOOL(GLEW_VERSION_1_2),
 			GPLATES_ASSERTION_SOURCE);
 
-	glTexImage3DEXT(target, level, internalformat, width, height, depth, border, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
+	glTexImage3D(target, level, internalformat, width, height, depth, border, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
 }
 
 
@@ -274,12 +275,10 @@ GPlatesOpenGL::GLPixelBufferObject::gl_tex_sub_image_3D(
 	// Bind this pixel buffer to the *unpack* target.
 	GLRenderer::BindBufferObjectAndApply save_restore_bind_pixel_buffer(renderer, d_buffer, get_unpack_target_type());
 
-	// For some reason the GL_EXT_subtexture extension is not well-supported even though pretty much
-	// all hardware support it (was introduced in OpenGL 1.2 core).
-	// We'll test for GL_EXT_texture3D instead and call the core function glTexSubImage3D
-	// instead of the extension function glTexSubImage3DEXT.
+	// Previously we checked for the GL_EXT_subtexture extension but on MacOS in particular this is
+	// not exposed so we use the core OpenGL 1.2 function instead.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_texture3D),
+			GPLATES_OPENGL_BOOL(GLEW_VERSION_1_2),
 			GPLATES_ASSERTION_SOURCE);
 
 	glTexSubImage3D(

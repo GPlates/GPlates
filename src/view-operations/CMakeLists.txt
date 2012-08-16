@@ -71,6 +71,8 @@ set(srcs
     RenderedSquareSymbol.h
     RenderedString.h
     RenderedTriangleSymbol.h
+    ScalarField3DRenderParameters.cc
+    ScalarField3DRenderParameters.h
     SplitFeatureGeometryOperation.cc
     SplitFeatureGeometryOperation.h
     SplitFeatureUndoCommand.cc

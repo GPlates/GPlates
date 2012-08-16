@@ -31,6 +31,7 @@
 #include "GLVertexBuffer.h"
 
 #include "maths/UnitVector3D.h"
+#include "maths/Vector3D.h"
 
 #include "gui/Colour.h"
 
@@ -373,6 +374,29 @@ namespace GPlatesOpenGL
 				const GPlatesMaths::UnitVector3D &tangent_,
 				const GPlatesMaths::UnitVector3D &binormal_,
 				const GPlatesMaths::UnitVector3D &normal_) :
+			x(vertex_.x().dval()),
+			y(vertex_.y().dval()),
+			z(vertex_.z().dval()),
+			u(u_),
+			v(v_),
+			tangent_x(tangent_.x().dval()),
+			tangent_y(tangent_.y().dval()),
+			tangent_z(tangent_.z().dval()),
+			binormal_x(binormal_.x().dval()),
+			binormal_y(binormal_.y().dval()),
+			binormal_z(binormal_.z().dval()),
+			normal_x(normal_.x().dval()),
+			normal_y(normal_.y().dval()),
+			normal_z(normal_.z().dval())
+		{  }
+
+		GLTextureTangentSpaceVertex(
+				const GPlatesMaths::UnitVector3D &vertex_,
+				GLfloat u_,
+				GLfloat v_,
+				const GPlatesMaths::Vector3D &tangent_,
+				const GPlatesMaths::Vector3D &binormal_,
+				const GPlatesMaths::Vector3D &normal_) :
 			x(vertex_.x().dval()),
 			y(vertex_.y().dval()),
 			z(vertex_.z().dval()),

@@ -25,7 +25,17 @@
     <file>opengl/scalar_field_3d/cross_section_vertex_shader.glsl</file>
     <file>opengl/scalar_field_3d/iso_surface_fragment_shader.glsl</file>
     <file>opengl/scalar_field_3d/iso_surface_vertex_shader.glsl</file>
+    <file>opengl/scalar_field_3d/sphere_fragment_shader.glsl</file>
+    <file>opengl/scalar_field_3d/sphere_vertex_shader.glsl</file>
+    <file>opengl/scalar_field_3d/surface_fill_mask_fragment_shader.glsl</file>
+    <file>opengl/scalar_field_3d/surface_fill_mask_geometry_shader.glsl</file>
+    <file>opengl/scalar_field_3d/surface_fill_mask_vertex_shader.glsl</file>
     <file>opengl/scalar_field_3d/utils.glsl</file>
+    <file>opengl/scalar_field_3d/volume_fill_spherical_cap_fragment_shader.glsl</file>
+    <file>opengl/scalar_field_3d/volume_fill_spherical_cap_geometry_shader.glsl</file>
+    <file>opengl/scalar_field_3d/volume_fill_vertex_shader.glsl</file>
+    <file>opengl/scalar_field_3d/volume_fill_wall_fragment_shader.glsl</file>
+    <file>opengl/scalar_field_3d/volume_fill_wall_geometry_shader.glsl</file>
     <file>opengl/utils.glsl</file>
   </qresource>
 </RCC>

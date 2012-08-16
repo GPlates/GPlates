@@ -24,6 +24,7 @@
  */
 
 #include <boost/foreach.hpp>
+#include <boost/utility/in_place_factory.hpp>
 
 #include "LayerPainter.h"
 
@@ -347,15 +348,6 @@ GPlatesGui::LayerPainter::paint_scalar_fields(
 	// Turn on depth writes for correct depth sorting of sub-surface geometries/fields.
 	renderer.gl_depth_mask(GL_TRUE);
 
-	// Disable alpha-blending until we handle correct depth sorting of semi-transparent
-	// iso-surfaces (and cross-sections) which is a hard problem to solve efficiently (depth peeling).
-	//
-	// Initially we won't support semi-transparent scalar fields since it's too difficult
-	// and involves depth peeling to produce a correct front-to-back depth sort order so
-	// that alpha blending produces the correct results.
-#if 1
-	renderer.gl_enable(GL_BLEND, GL_FALSE);
-#else
 	// Set up scalar field alpha blending for pre-multiplied alpha.
 	// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
 	// This is where the RGB channels have already been multiplied by the alpha channel.
@@ -365,7 +357,6 @@ GPlatesGui::LayerPainter::paint_scalar_fields(
 	// don't need to worry about alpha-blending not being available for floating-point render targets.
 	renderer.gl_enable(GL_BLEND, GL_TRUE);
 	renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-#endif
 
 	// No need for alpha-testing - transparent rays are culled in shader program by discarding pixel.
 
@@ -374,9 +365,7 @@ GPlatesGui::LayerPainter::paint_scalar_fields(
 		d_gl_visual_layers->render_scalar_field_3d(
 				renderer,
 				scalar_field_drawable.source_resolved_scalar_field,
-				scalar_field_drawable.iso_value,
-				scalar_field_drawable.scalar_field_colour_palette,
-				scalar_field_drawable.shader_test_variables,
+				scalar_field_drawable.render_parameters,
 				surface_occlusion_texture);
 	}
 

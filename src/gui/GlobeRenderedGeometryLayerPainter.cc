@@ -389,9 +389,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_resolved_scalar_field_3d(
 	d_layer_painter->scalar_fields.push_back(
 			LayerPainter::ScalarField3DDrawable(
 					rendered_resolved_scalar_field.get_resolved_scalar_field_3d(),
-					rendered_resolved_scalar_field.get_scalar_field_iso_value(),
-					rendered_resolved_scalar_field.get_scalar_field_colour_palette(),
-					rendered_resolved_scalar_field.get_shader_test_variables()));
+					rendered_resolved_scalar_field.get_render_parameters()));
 }
 
 

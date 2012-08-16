@@ -339,7 +339,10 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 		const float *region_last_column = d_tile_pack_working_space.get() + texel_size_in_floats * (texel_width - 1);
 		for (unsigned int y = 0; y < texel_height; ++y)
 		{
-			*working_space = *region_last_column;
+			for (unsigned int component = 0; component < texel_size_in_floats; ++component)
+			{
+				working_space[component] = region_last_column[component];
+			}
 			working_space += texel_size_in_floats;
 			region_last_column += texel_size_in_floats * texel_width;
 		}
@@ -368,7 +371,10 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 				d_tile_pack_working_space.get() + texel_size_in_floats * (texel_height - 1) * texel_width;
 		for (unsigned int x = 0; x < texel_width; ++x)
 		{
-			*working_space = *region_last_row;
+			for (unsigned int component = 0; component < texel_size_in_floats; ++component)
+			{
+				working_space[component] = region_last_row[component];
+			}
 			working_space += texel_size_in_floats;
 			region_last_row += texel_size_in_floats;
 		}

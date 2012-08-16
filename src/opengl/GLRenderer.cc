@@ -52,6 +52,9 @@
 using namespace GPlatesOpenGL::GLRendererImpl;
 
 
+const GLenum GPlatesOpenGL::GLRenderer::DEFAULT_BLEND_EQUATION = GL_FUNC_ADD_EXT;
+
+
 GPlatesOpenGL::GLRenderer::GLRenderer(
 		const GLContext::non_null_ptr_type &context,
 		const GLStateStore::shared_ptr_type &state_store) :
@@ -81,6 +84,7 @@ GPlatesOpenGL::GLRenderer::begin_render(
 	// The viewport of the window currently attached to the OpenGL context.
 	d_default_viewport = default_viewport;
 	d_default_state->set_viewport(default_viewport, default_viewport);
+	d_default_state->set_scissor(default_viewport, default_viewport);
 
 	// Start a new render target block with its first state block set to the default state.
 	// This render target block represents the main framebuffer.
@@ -1330,12 +1334,10 @@ GPlatesOpenGL::GLRenderer::gl_copy_tex_sub_image_3D(
 		GLsizei height;
 	};
 
-	// For some reason the GL_EXT_copy_texture extension is not well-supported even though pretty much
-	// all hardware support it (was introduced in OpenGL 1.2 core).
-	// We'll test for GL_EXT_texture3D instead and call the core function glCopyTexSubImage3D
-	// instead of the extension function glCopyTexSubImage3DEXT.
+	// Previously we checked for the GL_EXT_copy_texture extension but on MacOS this is not exposed
+	// so we use the core OpenGL 1.2 function instead.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GL_EXT_texture3D),
+			GPLATES_OPENGL_BOOL(GLEW_VERSION_1_2),
 			GPLATES_ASSERTION_SOURCE);
 
 	// Set the active texture unit - glCopyTexSubImage2D targets the texture bound to it.

@@ -350,7 +350,7 @@ GPlatesFileIO::CptParser::CptParser(const QString& file_path) :
 void
 GPlatesFileIO::CptParser::process_line(const QString& line)
 {
-	qDebug() << "Processing: " << line;
+	//qDebug() << "Processing: " << line;
 	//we can use finite state machine here,
 	//however, since cpt file is so simple that FSM is a little bit overkilled...
 
@@ -380,8 +380,8 @@ GPlatesFileIO::CptParser::process_line(const QString& line)
 		tmp.remove(quote);
 		tmp.simplified();
 		tokens.push_front(tmp);
-		qDebug() << "tmp: " << tmp;
-		qDebug() << "len: " << tokens.size();
+		//qDebug() << "tmp: " << tmp;
+		//qDebug() << "len: " << tokens.size();
 	}
 
 	if(tokens.size() < 2) // no enough tokens

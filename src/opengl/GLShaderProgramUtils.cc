@@ -75,6 +75,17 @@ GPlatesOpenGL::GLShaderProgramUtils::ShaderSource::get_shader_source_from_file(
 }
 
 
+GPlatesOpenGL::GLShaderProgramUtils::GeometryShaderProgramParameters::GeometryShaderProgramParameters(
+		GLint gl_max_vertices_out_,
+		GLint gl_geometry_input_type_,
+		GLint gl_geometry_output_type_) :
+	gl_max_vertices_out(gl_max_vertices_out_),
+	gl_geometry_input_type(gl_geometry_input_type_),
+	gl_geometry_output_type(gl_geometry_output_type_)
+{
+}
+
+
 boost::optional<GPlatesOpenGL::GLShaderObject::shared_ptr_type>
 GPlatesOpenGL::GLShaderProgramUtils::compile_fragment_shader(
 		GLRenderer &renderer,
@@ -132,16 +143,16 @@ GPlatesOpenGL::GLShaderProgramUtils::compile_geometry_shader(
 		GLRenderer &renderer,
 		const ShaderSource &geometry_shader_source)
 {
-#ifdef GL_ARB_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
+#ifdef GL_EXT_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
 
 	// Check for support first.
-	if (!GLShaderObject::is_supported(renderer, GL_GEOMETRY_SHADER_ARB))
+	if (!GLShaderObject::is_supported(renderer, GL_GEOMETRY_SHADER_EXT))
 	{
 		return boost::none;
 	}
 
 	// Create and compile the geometry shader source.
-	GLShaderObject::shared_ptr_type geometry_shader = GLShaderObject::create(renderer, GL_GEOMETRY_SHADER_ARB);
+	GLShaderObject::shared_ptr_type geometry_shader = GLShaderObject::create(renderer, GL_GEOMETRY_SHADER_EXT);
 	geometry_shader->gl_shader_source(
 			renderer,
 			geometry_shader_source.get_shader_source(),
@@ -215,7 +226,8 @@ GPlatesOpenGL::GLShaderProgramUtils::link_vertex_geometry_fragment_program(
 		GLRenderer &renderer,
 		const GLShaderObject &vertex_shader,
 		const GLShaderObject &geometry_shader,
-		const GLShaderObject &fragment_shader)
+		const GLShaderObject &fragment_shader,
+		const GeometryShaderProgramParameters &geometry_shader_program_parameters)
 {
 	// Check for support first.
 	if (!GLProgramObject::is_supported(renderer))
@@ -223,11 +235,32 @@ GPlatesOpenGL::GLShaderProgramUtils::link_vertex_geometry_fragment_program(
 		return boost::none;
 	}
 
-	// Create the shader program, attach the vertex/geometry/fragment shaders and link the program.
+	// Create the shader program, attach the vertex/geometry/fragment shaders.
 	GLProgramObject::shared_ptr_type shader_program = GLProgramObject::create(renderer);
 	shader_program->gl_attach_shader(renderer, vertex_shader);
 	shader_program->gl_attach_shader(renderer, geometry_shader);
 	shader_program->gl_attach_shader(renderer, fragment_shader);
+
+	//
+	// Set the geometry shader program parameters.
+	//
+
+	// Specify the input primitive types to the geometry shader.
+	shader_program->gl_program_parameteri(
+			GL_GEOMETRY_INPUT_TYPE_EXT,
+			geometry_shader_program_parameters.gl_geometry_input_type);
+
+	// Specify the output primitive types of the geometry shader.
+	shader_program->gl_program_parameteri(
+			GL_GEOMETRY_OUTPUT_TYPE_EXT,
+			geometry_shader_program_parameters.gl_geometry_output_type);
+
+	// Specify the maximum number of vertices output by the geometry shader.
+	shader_program->gl_program_parameteri(
+			GL_GEOMETRY_VERTICES_OUT_EXT,
+			geometry_shader_program_parameters.gl_max_vertices_out);
+
+	// Link the program.
 	if (!shader_program->gl_link_program(renderer))
 	{
 		return boost::none;
@@ -285,7 +318,8 @@ GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_vertex_geometry_fragment_p
 		GLRenderer &renderer,
 		const ShaderSource &vertex_shader_source,
 		const ShaderSource &geometry_shader_source,
-		const ShaderSource &fragment_shader_source)
+		const ShaderSource &fragment_shader_source,
+		const GeometryShaderProgramParameters &geometry_shader_program_parameters)
 {
 	// Create and compile the vertex shader source.
 	boost::optional<GLShaderObject::shared_ptr_type> vertex_shader =
@@ -312,5 +346,9 @@ GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_vertex_geometry_fragment_p
 	}
 
 	return link_vertex_geometry_fragment_program(
-			renderer, *vertex_shader.get(), *geometry_shader.get(), *fragment_shader.get());
+			renderer,
+			*vertex_shader.get(),
+			*geometry_shader.get(),
+			*fragment_shader.get(),
+			geometry_shader_program_parameters);
 }

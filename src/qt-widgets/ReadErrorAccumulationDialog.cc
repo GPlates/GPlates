@@ -405,6 +405,11 @@ namespace
 				QT_TR_NOOP("Multiple raster sets found."),
 				QT_TR_NOOP("More than one suitable raster file set was found in the selected folder.") },
 
+		// Errors relating to importing 3D scalar field files
+		{ GPlatesFileIO::ReadErrors::DepthLayerRasterIsNotNumerical,
+				QT_TR_NOOP("Non-numerical depth layer found."),
+				QT_TR_NOOP("Depth layer raster should contain numerical (non-RGB) values.") },
+
 		// Errors relating to GMAP VGP files
 		{ GPlatesFileIO::ReadErrors::GmapError,
 				QT_TR_NOOP("Error reading GMAP file."),
@@ -524,6 +529,8 @@ namespace
 		// Generic file-related errors:
 		{ GPlatesFileIO::ReadErrors::FileNotLoaded,
 				QT_TR_NOOP("The file was not loaded.") },
+		{ GPlatesFileIO::ReadErrors::FileNotImported,
+				QT_TR_NOOP("The file was not imported.") },
 		{ GPlatesFileIO::ReadErrors::NoAction,
 				QT_TR_NOOP("No action was taken.") },
 	};

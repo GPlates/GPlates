@@ -28,6 +28,7 @@
 #include <cmath>
 #include <vector>
 #include <utility>
+#include <boost/utility/in_place_factory.hpp>
 
 #include "OpaqueSphere.h"
 

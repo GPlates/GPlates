@@ -53,6 +53,7 @@
 #include "presentation/VisualLayer.h"
 
 #include "view-operations/RenderedGeometryParameters.h"
+#include "view-operations/ScalarField3DRenderParameters.h"
 
 
 namespace GPlatesViewOperations
@@ -97,11 +98,8 @@ namespace GPlatesPresentation
 			bool fill_polygons;
 			float velocity_ratio_unit_vector_direction_to_globe_radius;
 
-			// Scalar-field-specific parameters.
-			std::vector<float> scalar_field_shader_test_variables;
-			float scalar_field_iso_value;
-			// Scalar field colour palette.
-			GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type scalar_field_colour_palette;
+			// Scalar field render parameters.
+			GPlatesViewOperations::ScalarField3DRenderParameters scalar_field_render_parameters;
 
 			//
 			// Raster-specific parameters.

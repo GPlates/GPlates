@@ -76,6 +76,7 @@
 #include "utils/ReferenceCount.h"
 
 #include "view-operations/RenderedGeometry.h"
+#include "view-operations/ScalarField3DRenderParameters.h"
 
 
 namespace GPlatesAppLogic
@@ -189,12 +190,9 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Renders the 3D scalar field as an iso-surface at iso-value @a scalar_field_iso_value.
+		 * Renders the 3D scalar field according as an isosurface or cross-sections.
 		 *
-		 * @a scalar_field_colour_palette is the [0,1] range colour palette used to colour by
-		 * scalar value or gradient magnitude.
-		 *
-		 * @a shader_test_variables are a temporary solution used during development of scalar field rendering.
+		 * @a render_parameters determines how to render the scalar field.
 		 *
 		 * @a surface_occlusion_texture is a viewport-size 2D texture containing the RGBA rendering
 		 * of the surface geometries/rasters on the *front* of the globe.
@@ -207,9 +205,7 @@ namespace GPlatesOpenGL
 		render_scalar_field_3d(
 				GLRenderer &renderer,
 				const GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_to_const_type &source_resolved_scalar_field,
-				float scalar_field_iso_value,
-				const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &scalar_field_colour_palette,
-				const std::vector<float> &shader_test_variables,
+				const GPlatesViewOperations::ScalarField3DRenderParameters &render_parameters,
 				boost::optional<GLTexture::shared_ptr_to_const_type> surface_occlusion_texture);
 
 
@@ -317,34 +313,11 @@ namespace GPlatesOpenGL
 					const GPlatesAppLogic::ScalarField3DLayerProxy::non_null_ptr_type &scalar_field_layer_proxy);
 
 			/**
-			 * Set the iso-value of iso-surface to render.
-			 */
-			void
-			set_scalar_field_iso_value(
-					float iso_value);
-
-			/**
 			 * Set the colour palette looked up by the scalar values or the gradient magnitudes.
 			 */
 			void
 			set_scalar_field_colour_palette(
 					const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &scalar_field_colour_palette);
-
-			/**
-			 * Set the variables used during scalar field shader program testing.
-			 */
-			void
-			set_shader_test_variables(
-					const std::vector<float> &shader_test_variables);
-
-			/**
-			 * Set/update the layer usages that come from other layers (and the global light input).
-			 *
-			 * This is done in case the user connects to new layers or disconnects.
-			 */
-			void
-			set_layer_inputs(
-					boost::optional<GLLight::non_null_ptr_type> light);
 
 			/**
 			 * Returns scalar field - rebuilds if out-of-date with respect to its dependencies.
@@ -353,7 +326,8 @@ namespace GPlatesOpenGL
 			 */
 			boost::optional<GLScalarField3D::non_null_ptr_type>
 			get_scalar_field_3d(
-					GLRenderer &renderer);
+					GLRenderer &renderer,
+					boost::optional<GLLight::non_null_ptr_type> light);
 
 			virtual
 			bool
@@ -365,16 +339,8 @@ namespace GPlatesOpenGL
 			GPlatesUtils::ObserverToken d_scalar_field_observer_token;
 			GPlatesUtils::ObserverToken d_scalar_field_feature_observer_token;
 
-			float d_iso_value;
-			bool d_iso_value_dirty;
-
 			GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type d_colour_palette;
 			bool d_colour_palette_dirty;
-
-			std::vector<float> d_shader_test_variables;
-			bool d_shader_test_variables_dirty;
-
-			boost::optional<GLLight::non_null_ptr_type> d_light;
 
 			boost::optional<GLScalarField3D::non_null_ptr_type> d_scalar_field;
 		};

@@ -62,6 +62,20 @@ namespace GPlatesAppLogic
 			const boost::optional<GPlatesModel::FeatureHandle::weak_ref> &
 			get_scalar_field_feature() const;
 
+			//! Returns the minimum depth layer radius of scalar field or none if no field.
+			boost::optional<double>
+			get_minimum_depth_layer_radius() const
+			{
+				return d_minimum_depth_layer_radius;
+			}
+
+			//! Returns the maximum depth layer radius of scalar field or none if no field.
+			boost::optional<double>
+			get_maximum_depth_layer_radius() const
+			{
+				return d_maximum_depth_layer_radius;
+			}
+
 			//! Returns the minimum scalar value across the entire scalar field or none if no field.
 			boost::optional<double>
 			get_scalar_min() const
@@ -94,6 +108,9 @@ namespace GPlatesAppLogic
 
 			//! The scalar field feature.
 			boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_scalar_field_feature;
+
+			boost::optional<double> d_minimum_depth_layer_radius;
+			boost::optional<double> d_maximum_depth_layer_radius;
 
 			boost::optional<double> d_scalar_min;
 			boost::optional<double> d_scalar_max;
@@ -208,7 +225,9 @@ namespace GPlatesAppLogic
 		}
 
 	private:
+
 		static const QString SCALAR_FIELD_FEATURE_CHANNEL_NAME;
+		static const QString SURFACE_GEOMETRIES_CHANNEL_NAME;
 
 
 		/**

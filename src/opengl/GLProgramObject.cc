@@ -133,6 +133,25 @@ GPlatesOpenGL::GLProgramObject::gl_bind_attrib_location(
 }
 
 
+void
+GPlatesOpenGL::GLProgramObject::gl_program_parameteri(
+		GLenum pname,
+		GLint value)
+{
+// In case old 'glew.h' (since extension added relatively recently).
+#if defined(GL_EXT_geometry_shader4)
+	// We should only get here if the 'GL_EXT_geometry_shader4' extension is supported.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_EXT_geometry_shader4),
+			GPLATES_ASSERTION_SOURCE);
+
+	glProgramParameteriEXT(get_program_resource_handle(), pname, value);
+#else
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+#endif
+}
+
+
 bool
 GPlatesOpenGL::GLProgramObject::gl_link_program(
 		GLRenderer &renderer)
@@ -210,13 +229,21 @@ GPlatesOpenGL::GLProgramObject::gl_validate_program(
 
 
 bool
+GPlatesOpenGL::GLProgramObject::is_active_uniform(
+		const char *uniform_name) const
+{
+	return glGetUniformLocationARB(get_program_resource_handle(), uniform_name) >= 0;
+}
+
+
+bool
 GPlatesOpenGL::GLProgramObject::gl_uniform1f(
 		GLRenderer &renderer,
 		const char *name,
 		GLfloat v0)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -240,7 +267,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1f(
 		unsigned int count)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -263,7 +290,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1i(
 		GLint v0)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -287,7 +314,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1i(
 		unsigned int count)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -318,7 +345,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1d(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -353,7 +380,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1d(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -385,7 +412,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1ui(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -418,7 +445,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1ui(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -445,7 +472,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2f(
 		GLfloat v1)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -469,7 +496,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2f(
 		unsigned count)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -493,7 +520,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2i(
 		GLint v1)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -517,7 +544,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2i(
 		unsigned int count)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -549,7 +576,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2d(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -584,7 +611,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2d(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -617,7 +644,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2ui(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -650,7 +677,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2ui(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -678,7 +705,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3f(
 		GLfloat v2)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -702,7 +729,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3f(
 		unsigned count)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -727,7 +754,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3i(
 		GLint v2)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -751,7 +778,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3i(
 		unsigned int count)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -784,7 +811,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3d(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -819,7 +846,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3d(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -853,7 +880,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3ui(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -886,7 +913,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3ui(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -915,7 +942,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4f(
 		GLfloat v3)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -939,7 +966,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4f(
 		unsigned count)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -965,7 +992,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4i(
 		GLint v3)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -989,7 +1016,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4i(
 		unsigned int count)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -1023,7 +1050,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4d(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -1058,7 +1085,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4d(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -1093,7 +1120,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4ui(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -1126,7 +1153,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4ui(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -1154,7 +1181,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix2x2f(
 		GLboolean transpose)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -1187,7 +1214,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix2x2d(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -1215,7 +1242,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix3x3f(
 		GLboolean transpose)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -1248,7 +1275,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix3x3d(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -1276,7 +1303,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4f(
 		GLboolean transpose)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -1309,7 +1336,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -1335,7 +1362,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4f(
 		const GLMatrix &matrix)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -1376,7 +1403,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -1405,7 +1432,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4f(
 		const std::vector<GLMatrix> &matrices)
 {
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 
@@ -1451,7 +1478,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
-	// Revert our framebuffer binding on return so we don't affect changes made by clients.
+	// Revert our program binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
 	GLRenderer::BindProgramObjectAndApply save_restore_bind(renderer, shared_from_this());
 

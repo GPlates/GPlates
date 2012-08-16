@@ -322,10 +322,14 @@ namespace
 
 GPlatesQtWidgets::TimeDependentRasterPage::TimeDependentRasterPage(
 		GPlatesPresentation::ViewState &view_state,
+		unsigned int &raster_width,
+		unsigned int &raster_height,
 		TimeDependentRasterSequence &raster_sequence,
 		const boost::function<void (unsigned int)> &set_number_of_bands_function,
 		QWidget *parent_) :
 	QWizardPage(parent_),
+	d_raster_width(raster_width),
+	d_raster_height(raster_height),
 	d_raster_sequence(raster_sequence),
 	d_set_number_of_bands_function(set_number_of_bands_function),
 	d_validator(new TimeValidator(this)),
@@ -626,7 +630,7 @@ GPlatesQtWidgets::TimeDependentRasterPage::check_if_complete()
 		std::vector<double> times;
 		times.reserve(sequence.size());
 
-		// Note if ww got to here, the sequence contains at least one element.
+		// Note if we got to here, the sequence contains at least one element.
 		const std::vector<GPlatesPropertyValues::RasterType::Type> &first_band_types = sequence[0].band_types;
 		unsigned int first_width = sequence[0].width;
 		unsigned int first_height = sequence[0].height;
@@ -695,6 +699,13 @@ GPlatesQtWidgets::TimeDependentRasterPage::check_if_complete()
 
 	if (is_complete)
 	{
+		// Set the common raster width and height for the next stage (wizard page).
+		d_raster_width = sequence[0].width;
+		d_raster_height = sequence[0].height;
+	}
+
+	if (is_complete)
+	{
 		warning_container_widget->hide();
 	}
 	else
@@ -725,6 +736,13 @@ GPlatesQtWidgets::TimeDependentRasterPage::populate_table()
 	sequence_type::const_iterator iter = sequence.begin();
 	for (unsigned int i = 0; i != sequence.size(); ++i)
 	{
+		// Seems we need to close the editor before opening a new one otherwise
+		// changing the sort order will only affect the filenames and not times.
+		if (files_table->item(i, 0))
+		{
+			files_table->closePersistentEditor(files_table->item(i, 0));
+		}
+
 		// First column is the time.
 		boost::optional<double> time = iter->time;
 		QTableWidgetItem *time_item = new QTableWidgetItem(

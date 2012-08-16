@@ -743,7 +743,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Performs same function as the glCopyTexSubImage3D OpenGL function.
 		 *
-		 * NOTE: The GL_EXT_copy_texture extension must be available.
+		 * NOTE: OpenGL 1.2 must be available.
 		 *
 		 * NOTE: The target of the copy is the texture bound to texture unit @a texture_unit.
 		 * So you first need to bind a texture on that unit using @a gl_bind_texture.
@@ -1102,6 +1102,31 @@ namespace GPlatesOpenGL
 			get_current_state()->set_depth_func(func);
 		}
 
+		/**
+		 * Sets the alpha-blend equation (NOTE: you'll also want to enable blending).
+		 *
+		 * NOTE: This requires the GL_EXT_blend_minmax extension.
+		 */
+		void
+		gl_blend_equation(
+				GLenum mode = DEFAULT_BLEND_EQUATION)
+		{
+			get_current_state()->set_blend_equation(mode);
+		}
+
+		/**
+		 * Sets the alpha-blend equation separately for RGB and Alpha (NOTE: you'll also want to enable blending).
+		 *
+		 * NOTE: This requires the GL_EXT_blend_equation_separate extension.
+		 */
+		void
+		gl_blend_equation_separate(
+				GLenum modeRGB = DEFAULT_BLEND_EQUATION,
+				GLenum modeAlpha = DEFAULT_BLEND_EQUATION)
+		{
+			get_current_state()->set_blend_equation_separate(modeRGB, modeAlpha);
+		}
+
 		//! Sets the alpha-blend function (NOTE: you'll also want to enable blending).
 		void
 		gl_blend_func(
@@ -1252,6 +1277,16 @@ namespace GPlatesOpenGL
 				GLenum texture_unit) const;
 
 	private:
+
+		/**
+		 * The default blend equation for 'glBlendEquation()'.
+		 *
+		 * This is here because 'GL_FUNC_ADD' is only in GLEW.h and that cannot be included in
+		 * header files because GLEW.h must be included before GL.h and that's too difficult unless
+		 * GLEW.h is only included at top of '.cc' files.
+		 */
+		static const GLenum DEFAULT_BLEND_EQUATION;
+
 		/**
 		 * Is valid if a QPainter is active during rendering (when @a begin_render is called).
 		 */

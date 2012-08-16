@@ -189,7 +189,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Performs same function as the glFramebufferTexture3D OpenGL function.
 		 *
-		 * NOTE: Use @a gl_attach_texture_array for 2D array textures.
+		 * NOTE: Use @a gl_attach_texture_array_layer for 2D array textures.
 		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
@@ -207,10 +207,29 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Performs same function as the FramebufferTextureLayer OpenGL function - can be used for
+		 * Performs same function as the glFramebufferTextureLayer OpenGL function - can be used for
 		 * 1D and 2D array textures (and regular 3D textures - where it does same as @a gl_attach_texture_3D).
 		 *
 		 * NOTE: This also requires the GL_EXT_texture_array extension to be supported.
+		 *
+		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
+		 *   [GL_COLOR_ATTACHMENT0_EXT,
+		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
+		 */
+		void
+		gl_attach_texture_array_layer(
+				GLRenderer &renderer,
+				const GLTexture::shared_ptr_to_const_type &texture,
+				GLint level,
+				GLint layer,
+				GLenum attachment);
+
+
+		/**
+		 * Performs same function as the glFramebufferTexture OpenGL function - can be used for 1D and 2D array textures.
+		 *
+		 * NOTE: This also requires the GL_EXT_geometry_shader4 extension to be supported.
 		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
@@ -222,7 +241,6 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const GLTexture::shared_ptr_to_const_type &texture,
 				GLint level,
-				GLint layer,
 				GLenum attachment);
 
 
@@ -357,7 +375,8 @@ namespace GPlatesOpenGL
 			ATTACHMENT_TEXTURE_1D,
 			ATTACHMENT_TEXTURE_2D,
 			ATTACHMENT_TEXTURE_3D,
-			ATTACHMENT_TEXTURE_LAYER,
+			ATTACHMENT_TEXTURE_ARRAY_LAYER,
+			ATTACHMENT_TEXTURE_ARRAY,
 			ATTACHMENT_RENDER_BUFFER
 		};
 
@@ -375,12 +394,18 @@ namespace GPlatesOpenGL
 					GLint texture_level_,
 					boost::optional<GLint> texture_zoffset_ = boost::none);
 
-			//! Constructor for texture layer attachments.
+			//! Constructor for texture array layer attachments.
 			AttachmentPoint(
 					GLenum attachment_,
 					const GLTexture::shared_ptr_to_const_type &texture_,
 					GLint texture_level_,
 					GLint texture_layer_);
+
+			//! Constructor for texture array attachments.
+			AttachmentPoint(
+					GLenum attachment_,
+					const GLTexture::shared_ptr_to_const_type &texture_,
+					GLint texture_level_);
 
 			//! Constructor for render buffer attachments.
 			AttachmentPoint(
@@ -393,13 +418,13 @@ namespace GPlatesOpenGL
 			// Only used for ATTACHMENT_TEXTURE_1D, ATTACHMENT_TEXTURE_2D or ATTACHMENT_TEXTURE_3D...
 			boost::optional<GLenum> attachment_target;
 
-			// Only used for ATTACHMENT_TEXTURE_1D, ATTACHMENT_TEXTURE_2D or ATTACHMENT_TEXTURE_3D...
+			// Not used for ATTACHMENT_RENDER_BUFFER...
 			boost::optional<GLTexture::shared_ptr_to_const_type> texture; // Keep texture alive while attached.
 
-			// Only used for ATTACHMENT_TEXTURE_1D, ATTACHMENT_TEXTURE_2D or ATTACHMENT_TEXTURE_3D...
+			// Not used for ATTACHMENT_RENDER_BUFFER...
 			boost::optional<GLint> texture_level;
 
-			// Only used for ATTACHMENT_TEXTURE_3D and ATTACHMENT_TEXTURE_LAYER...
+			// Only used for ATTACHMENT_TEXTURE_3D and ATTACHMENT_TEXTURE_ARRAY_LAYER...
 			boost::optional<GLint> texture_zoffset;
 
 			// Only used for ATTACHMENT_RENDER_BUFFER...

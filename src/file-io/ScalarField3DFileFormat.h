@@ -85,11 +85,8 @@ namespace GPlatesFileIO
 		 * NOTE: This must be updated if there are any breaking changes to the file
 		 * format between public GPlates releases.
 		 * For example adding a new parameter to the file.
-		 *
-		 * NOTE: We're starting with version 0 during the development/debug/testing phase and
-		 * will change to version 1 when finished.
 		 */
-		const boost::uint32_t VERSION_NUMBER = 0;
+		const boost::uint32_t VERSION_NUMBER = 1;
 
 		/**
 		 * The QDataStream serialisation version.
@@ -150,7 +147,7 @@ namespace GPlatesFileIO
 		/**
 		 * The mask data at a particular field sample location (x,y) location.
 		 *
-		 * The mask value is boolean is 0.0 if the (x,y) sample location for all depth layers
+		 * The mask value is boolean and is 0.0 if the (x,y) sample location for all depth layers
 		 * contains no scalar field data (eg, for a non-global scalar field), otherwise it's 1.0.
 		 */
 		struct MaskDataSample

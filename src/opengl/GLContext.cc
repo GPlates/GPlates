@@ -227,11 +227,25 @@ GPlatesOpenGL::GLContext::initialise_framebuffer_parameters(
 		qDebug() << "  GL_ARB_draw_buffers";
 	}
 
+	if (GLEW_EXT_blend_equation_separate)
+	{
+		framebuffer_parameters.gl_EXT_blend_equation_separate = true;
+
+		qDebug() << "  GL_EXT_blend_equation_separate";
+	}
+
 	if (GLEW_EXT_blend_func_separate)
 	{
 		framebuffer_parameters.gl_EXT_blend_func_separate = true;
 
 		qDebug() << "  GL_EXT_blend_func_separate";
+	}
+
+	if (GLEW_EXT_blend_minmax)
+	{
+		framebuffer_parameters.gl_EXT_blend_minmax = true;
+
+		qDebug() << "  GL_EXT_blend_minmax";
 	}
 }
 
@@ -267,12 +281,29 @@ GPlatesOpenGL::GLContext::initialise_shader_parameters(
 		qDebug() << "  GL_ARB_fragment_shader";
 	}
 
-#ifdef GL_ARB_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
-	if (GLEW_ARB_geometry_shader4)
+#ifdef GL_EXT_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
+	if (GLEW_EXT_geometry_shader4)
 	{
-		shader_parameters.gl_ARB_geometry_shader4 = true;
+		shader_parameters.gl_EXT_geometry_shader4 = true;
 
-		qDebug() << "  GL_ARB_geometry_shader4";
+		// Query as signed but store as unsigned since it avoids unsigned/signed comparison compiler warnings.
+		GLint max_value;
+		glGetIntegerv(GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS_EXT, &max_value);
+		shader_parameters.gl_max_geometry_texture_image_units = max_value;
+		glGetIntegerv(GL_MAX_GEOMETRY_VARYING_COMPONENTS_EXT, &max_value);
+		shader_parameters.gl_max_geometry_varying_components = max_value;
+		glGetIntegerv(GL_MAX_VERTEX_VARYING_COMPONENTS_EXT, &max_value);
+		shader_parameters.gl_max_vertex_varying_components = max_value;
+		glGetIntegerv(GL_MAX_VARYING_COMPONENTS_EXT, &max_value);
+		shader_parameters.gl_max_varying_components = max_value;
+		glGetIntegerv(GL_MAX_GEOMETRY_UNIFORM_COMPONENTS_EXT, &max_value);
+		shader_parameters.gl_max_geometry_uniform_components = max_value;
+		glGetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES_EXT, &max_value);
+		shader_parameters.gl_max_geometry_output_vertices = max_value;
+		glGetIntegerv(GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS_EXT, &max_value);
+		shader_parameters.gl_max_geometry_total_output_components = max_value;
+
+		qDebug() << "  GL_EXT_geometry_shader4";
 	}
 #endif
 
@@ -473,11 +504,20 @@ GPlatesOpenGL::GLContext::initialise_texture_parameters(
 	}
 
 	// Are 3D textures supported?
-	if (GLEW_EXT_texture3D)
+	// This used to test for GL_EXT_texture3D and GL_EXT_subtexture but they are not
+	// exposed on some systems (notably MacOS) so instead this tests for core OpenGL 1.2.
+	if (GLEW_VERSION_1_2)
 	{
-		texture_parameters.gl_EXT_texture3D = true;
+		texture_parameters.gl_is_texture3D_supported = true;
 
-		qDebug() << "  GL_EXT_texture3D";
+		if (GLEW_EXT_texture3D)
+		{
+			qDebug() << "  GL_EXT_texture3D";
+		}
+		else
+		{
+			qDebug() << "  GL_EXT_texture3D (in core 1.2)";
+		}
 	}
 
 #ifdef GL_EXT_texture_array // In case old 'glew.h' header
@@ -658,10 +698,10 @@ GPlatesOpenGL::GLContext::SharedState::SharedState() :
 					GLShaderObject::allocator_type(GL_FRAGMENT_SHADER_ARB))),
 	d_program_object_resource_manager(GLProgramObject::resource_manager_type::create())
 {
-#ifdef GL_ARB_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
+#ifdef GL_EXT_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
 	d_geometry_shader_object_resource_manager =
 			GLShaderObject::resource_manager_type::create(
-					GLShaderObject::allocator_type(GL_GEOMETRY_SHADER_ARB));
+					GLShaderObject::allocator_type(GL_GEOMETRY_SHADER_EXT));
 #endif
 }
 
@@ -684,10 +724,10 @@ GPlatesOpenGL::GLContext::SharedState::get_shader_object_resource_manager(
 				GPLATES_ASSERTION_SOURCE);
 		return d_fragment_shader_object_resource_manager;
 
-#ifdef GL_ARB_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
-	case GL_GEOMETRY_SHADER_ARB:
+#ifdef GL_EXT_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
+	case GL_GEOMETRY_SHADER_EXT:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GPLATES_OPENGL_BOOL(GLEW_ARB_geometry_shader4),
+				GPLATES_OPENGL_BOOL(GLEW_EXT_geometry_shader4),
 				GPLATES_ASSERTION_SOURCE);
 		return d_geometry_shader_object_resource_manager.get();
 #endif
@@ -792,6 +832,44 @@ GPlatesOpenGL::GLContext::SharedState::acquire_vertex_array(
 	vertex_array->clear(renderer);
 
 	return vertex_array;
+}
+
+
+boost::optional<GPlatesOpenGL::GLScreenRenderTarget::shared_ptr_type>
+GPlatesOpenGL::GLContext::SharedState::acquire_screen_render_target(
+		GLRenderer &renderer,
+		GLint texture_internalformat,
+		bool include_depth_buffer)
+{
+	// Screen render targets must be supported.
+	if (!GLScreenRenderTarget::is_supported(renderer, texture_internalformat, include_depth_buffer))
+	{
+		return boost::none;
+	}
+
+	// Lookup the correct screen render target cache (matching the specified client parameters).
+	const screen_render_target_key_type screen_render_target_key(texture_internalformat, include_depth_buffer);
+
+	const screen_render_target_cache_type::shared_ptr_type screen_render_target_cache =
+			get_screen_render_target_cache(screen_render_target_key);
+
+	// Attempt to acquire a recycled object.
+	boost::optional<GLScreenRenderTarget::shared_ptr_type> screen_render_target_opt =
+			screen_render_target_cache->allocate_object();
+	if (screen_render_target_opt)
+	{
+		return screen_render_target_opt.get();
+	}
+
+	// Create a new object and add it to the cache.
+	const GLScreenRenderTarget::shared_ptr_type screen_render_target =
+			screen_render_target_cache->allocate_object(
+					GLScreenRenderTarget::create_as_auto_ptr(
+							renderer,
+							texture_internalformat,
+							include_depth_buffer));
+
+	return screen_render_target;
 }
 
 
@@ -952,6 +1030,32 @@ GPlatesOpenGL::GLContext::SharedState::get_texture_cache(
 }
 
 
+GPlatesOpenGL::GLContext::SharedState::screen_render_target_cache_type::shared_ptr_type
+GPlatesOpenGL::GLContext::SharedState::get_screen_render_target_cache(
+		const screen_render_target_key_type &screen_render_target_key)
+{
+	// Attempt to insert the screen render target key into the screen render target cache map.
+	const std::pair<screen_render_target_cache_map_type::iterator, bool> insert_result =
+			d_screen_render_target_cache_map.insert(
+					screen_render_target_cache_map_type::value_type(
+							screen_render_target_key,
+							// Dummy (NULL) screen render target cache...
+							screen_render_target_cache_type::shared_ptr_type()));
+
+	screen_render_target_cache_map_type::iterator screen_render_target_cache_map_iter = insert_result.first;
+
+	// If the screen render target key was inserted into the map then
+	// create the corresponding screen render target cache.
+	if (insert_result.second)
+	{
+		// Start off with an initial cache size of 1 - it'll grow as needed...
+		screen_render_target_cache_map_iter->second = screen_render_target_cache_type::create();
+	}
+
+	return screen_render_target_cache_map_iter->second;
+}
+
+
 GPlatesOpenGL::GLStateStore::shared_ptr_type
 GPlatesOpenGL::GLContext::SharedState::get_state_store()
 {
@@ -1015,7 +1119,9 @@ GPlatesOpenGL::GLContext::Parameters::Framebuffer::Framebuffer() :
 	gl_max_renderbuffer_size(0),
 	gl_ARB_draw_buffers(false),
 	gl_max_draw_buffers(1),
-	gl_EXT_blend_func_separate(false)
+	gl_EXT_blend_equation_separate(false),
+	gl_EXT_blend_func_separate(false),
+	gl_EXT_blend_minmax(false)
 {
 }
 
@@ -1024,7 +1130,14 @@ GPlatesOpenGL::GLContext::Parameters::Shader::Shader() :
 	gl_ARB_shader_objects(false),
 	gl_ARB_vertex_shader(false),
 	gl_ARB_fragment_shader(false),
-	gl_ARB_geometry_shader4(false),
+	gl_EXT_geometry_shader4(false),
+	gl_max_geometry_texture_image_units(0),
+	gl_max_geometry_varying_components(0),
+	gl_max_vertex_varying_components(0),
+	gl_max_varying_components(0),
+	gl_max_geometry_uniform_components(0),
+	gl_max_geometry_output_vertices(0),
+	gl_max_geometry_total_output_components(0),
 	gl_EXT_gpu_shader4(false),
 	gl_ARB_gpu_shader_fp64(false),
 	gl_ARB_vertex_attrib_64bit(false),
@@ -1046,7 +1159,7 @@ GPlatesOpenGL::GLContext::Parameters::Texture::Texture() :
 	gl_SGIS_texture_edge_clamp(false),
 	gl_ARB_texture_env_combine(false),
 	gl_ARB_texture_env_dot3(false),
-	gl_EXT_texture3D(false),
+	gl_is_texture3D_supported(false),
 	gl_EXT_texture_array(false),
 	gl_max_texture_array_layers(1),
 	gl_EXT_texture_buffer_object(false),

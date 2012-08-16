@@ -93,12 +93,7 @@ GPlatesFileIO::ScalarField3DFileFormat::Reader::Reader(
 	d_in >> version_number;
 
 	// Determine which reader to use depending on the version.
-	//
-	// TODO: Change version 0 to version 1 once initial development/debug/testing complete.
-	// Then all version 0 files used during development can no longer be used.
-	// This is so we don't continually increment the version number as we make changes to the file
-	// format during initial development.
-	if (version_number == 0)
+	if (version_number == 1)
 	{
 		d_impl.reset(new VersionOneReader(version_number, d_file, d_in));
 	}
@@ -130,9 +125,9 @@ GPlatesFileIO::ScalarField3DFileFormat::Reader::VersionOneReader::VersionOneRead
 	d_tile_resolution(0),
 	d_num_active_tiles(0),
 	d_num_depth_layers(0),
-	d_tile_meta_data_file_offset(0),
 	d_field_data_file_offset(0),
-	d_mask_data_file_offset(0)
+	d_mask_data_file_offset(0),
+	d_tile_meta_data_file_offset(0)
 {
 	// NOTE: The total file size has been verified before we get here so there's no
 	// need to check that the file is large enough to read data as we read.
@@ -248,27 +243,27 @@ GPlatesFileIO::ScalarField3DFileFormat::Reader::VersionOneReader::VersionOneRead
 	// Check that the file size is what we expect.
 	const qint64 actual_data_size = d_file.size() - d_file.pos();
 	const qint64 expected_data_size =
-			6 * d_tile_meta_data_resolution * d_tile_meta_data_resolution * TileMetaData::STREAM_SIZE +
 			d_num_active_tiles * d_num_depth_layers * d_tile_resolution * d_tile_resolution * FieldDataSample::STREAM_SIZE +
-			d_num_active_tiles * d_tile_resolution * d_tile_resolution * MaskDataSample::STREAM_SIZE;
+			d_num_active_tiles * d_tile_resolution * d_tile_resolution * MaskDataSample::STREAM_SIZE +
+			6 * d_tile_meta_data_resolution * d_tile_meta_data_resolution * TileMetaData::STREAM_SIZE;
 	if (actual_data_size != expected_data_size)
 	{
 		throw FileFormatNotSupportedException(
 				GPLATES_EXCEPTION_SOURCE, "bad data size in scalar field file");
 	}
 
-	// The file offset to the tile metadata.
-	d_tile_meta_data_file_offset = d_file.pos();
-
 	// The file offset to the tile scalar value data (and gradient data).
-	// Skip past the tile metadata.
-	d_field_data_file_offset = d_tile_meta_data_file_offset +
-			6 * d_tile_meta_data_resolution * d_tile_meta_data_resolution * TileMetaData::STREAM_SIZE;
+	d_field_data_file_offset = d_file.pos();
 
 	// The file offset to the tile scalar mask (validity) data.
 	// Skip past the tile scalar value data.
 	d_mask_data_file_offset = d_field_data_file_offset +
 			d_num_active_tiles * d_num_depth_layers * d_tile_resolution * d_tile_resolution * FieldDataSample::STREAM_SIZE;
+
+	// The file offset to the tile metadata.
+	// Skip past the tile scalar mask data.
+	d_tile_meta_data_file_offset = d_mask_data_file_offset +
+			d_num_active_tiles * d_tile_resolution * d_tile_resolution * MaskDataSample::STREAM_SIZE;
 }
 
 

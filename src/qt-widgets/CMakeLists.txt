@@ -357,6 +357,9 @@ set(srcs
     SaveFileDialog.h
     SaveFileDialogImpl.cc
     SaveFileDialogImpl.h
+    ScalarField3DDepthLayersPage.cc
+    ScalarField3DDepthLayersPage.h
+    ScalarField3DDepthLayersPageUi.ui
     ScalarField3DLayerOptionsWidget.cc
     ScalarField3DLayerOptionsWidget.h
     ScalarField3DLayerOptionsWidgetUi.ui

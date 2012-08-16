@@ -34,7 +34,9 @@
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <opengl/OpenGL.h>
+#include <QDebug>
 
+#include "GLBuffer.h"
 #include "GLContext.h"
 #include "GLStreamPrimitiveWriters.h"
 
@@ -45,6 +47,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GLRenderer;
+
 	/**
 	 * Use this when you want to stream points, lines, line strips, triangles, triangle strips or
 	 * triangle fans into the write-only memory of a vertex buffer and a vertex element buffer.
@@ -617,8 +621,9 @@ namespace GPlatesOpenGL
 			 *
 			 * You should limit calls to @a add_vertex and @a add_vertex_element to the specified maximum values.
 			 *
-			 * If false is returned then you'll need to stop streaming, render what has been streamed
-			 * so far and then start streaming again with new buffers.
+			 * If false is returned then you'll either need to:
+			 *  (1) stop streaming, render what has been streamed so far and then start streaming again with new buffers, or
+			 *  (2) choose a smaller number of vertices and vertex elements.
 			 */
 			bool
 			begin_primitive(
@@ -1028,6 +1033,74 @@ namespace GPlatesOpenGL
 	class GLDynamicStreamPrimitives :
 			public GLStreamPrimitives<VertexType, VertexElementType, GLDynamicBufferStreamWriter>
 	{  };
+
+
+	/**
+	 * Convenience function to begin streaming to static (fixed size) vertex/index buffers.
+	 *
+	 * The buffers are mapped and streaming begun using @a stream_target.
+	 *
+	 * @a min_bytes_to_stream_in_vertex_element_buffer is the smallest amount of bytes (for indices) that
+	 * you will want to stream (ideally the vertex element buffer size should ideally be multiple times larger than this).
+	 * @a min_bytes_to_stream_in_vertex_buffer is the smallest amount of bytes (for vertices) that
+	 * you will want to stream (ideally the vertex buffer size should ideally be multiple times larger than this).
+	 */
+	template <typename VertexType, typename VertexElementType>
+	void
+	begin_vertex_array_streaming(
+			GLRenderer &renderer,
+			typename GLStaticStreamPrimitives<VertexType, VertexElementType>::StreamTarget &stream_target,
+			GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
+			unsigned int min_bytes_to_stream_in_vertex_element_buffer,
+			GLBuffer::MapBufferScope &map_vertex_buffer_scope,
+			unsigned int min_bytes_to_stream_in_vertex_buffer);
+
+
+	/**
+	 * Convenience function to end streaming to static (fixed size) vertex/index buffers.
+	 *
+	 * Streaming is ended on @a stream_target and the buffers are flushed and unmapped.
+	 */
+	template <typename VertexType, typename VertexElementType>
+	void
+	end_vertex_array_streaming(
+			GLRenderer &renderer,
+			typename GLStaticStreamPrimitives<VertexType, VertexElementType>::StreamTarget &stream_target,
+			GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
+			GLBuffer::MapBufferScope &map_vertex_buffer_scope);
+
+
+	/**
+	 * Convenience function to render the most recently streamed vertices/indices in @a stream_target (if any).
+	 *
+	 * @a primitive_mode determines what type of primitive to render.
+	 */
+	template <typename VertexType, typename VertexElementType>
+	void
+	render_vertex_array_stream(
+			GLRenderer &renderer,
+			typename GLStaticStreamPrimitives<VertexType, VertexElementType>::StreamTarget &stream_target,
+			const GLVertexArray::shared_ptr_type &vertex_array,
+			GLenum primitive_mode);
+
+
+	/**
+	 * Convenience function that ends streaming into @a stream_target, renders the streamed vertices/indices
+	 * and then begins streaming again to @a stream_target.
+	 *
+	 * @a primitive_mode determines what type of primitive to render.
+	 */
+	template <typename VertexType, typename VertexElementType>
+	void
+	suspend_render_resume_vertex_array_streaming(
+			GLRenderer &renderer,
+			typename GLStaticStreamPrimitives<VertexType, VertexElementType>::StreamTarget &stream_target,
+			GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
+			unsigned int min_bytes_to_stream_in_vertex_element_buffer,
+			GLBuffer::MapBufferScope &map_vertex_buffer_scope,
+			unsigned int min_bytes_to_stream_in_vertex_buffer,
+			const GLVertexArray::shared_ptr_type &vertex_array,
+			GLenum primitive_mode);
 }
 
 ////////////////////
@@ -2083,6 +2156,152 @@ namespace GPlatesOpenGL
 	GLStreamPrimitives<VertexType, VertexElementType, StreamWriterType>::StreamTarget::get_num_streamed_vertex_elements() const
 	{
 		return d_targeting_stream ? d_stream_primitives.get_num_streamed_vertex_elements() : d_num_streamed_vertex_elements;
+	}
+
+
+	template <typename VertexType, typename VertexElementType>
+	void
+	begin_vertex_array_streaming(
+			GLRenderer &renderer,
+			typename GLStaticStreamPrimitives<VertexType, VertexElementType>::StreamTarget &stream_target,
+			GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
+			unsigned int min_bytes_to_stream_in_vertex_element_buffer,
+			GLBuffer::MapBufferScope &map_vertex_buffer_scope,
+			unsigned int min_bytes_to_stream_in_vertex_buffer)
+	{
+		//PROFILE_FUNC();
+
+		// Start the vertex element stream mapping.
+		unsigned int vertex_element_stream_offset;
+		unsigned int vertex_element_stream_bytes_available;
+		void *vertex_element_data = map_vertex_element_buffer_scope.gl_map_buffer_stream(
+				min_bytes_to_stream_in_vertex_element_buffer,
+				sizeof(VertexElementType)/*stream_alignment*/,
+				vertex_element_stream_offset,
+				vertex_element_stream_bytes_available);
+
+		// Start the vertex stream mapping.
+		unsigned int vertex_stream_offset;
+		unsigned int vertex_stream_bytes_available;
+		void *vertex_data = map_vertex_buffer_scope.gl_map_buffer_stream(
+				min_bytes_to_stream_in_vertex_buffer,
+				sizeof(VertexType)/*stream_alignment*/,
+				vertex_stream_offset,
+				vertex_stream_bytes_available);
+
+		// Convert bytes to vertex/index counts.
+		unsigned int base_vertex_element_offset =
+				vertex_element_stream_offset / sizeof(VertexElementType);
+		unsigned int num_vertex_elements_available =
+				vertex_element_stream_bytes_available / sizeof(VertexElementType);
+		unsigned int base_vertex_offset =
+				vertex_stream_offset / sizeof(VertexType);
+		unsigned int num_vertices_available =
+				vertex_stream_bytes_available / sizeof(VertexType);
+
+		// Start streaming into the newly mapped vertex/index buffers.
+		stream_target.start_streaming(
+				// Setting 'initial_count' for vertices ensures the vertex indices are correct...
+				boost::in_place(
+						static_cast<VertexType *>(vertex_data),
+						num_vertices_available,
+						base_vertex_offset/*initial_count*/),
+				boost::in_place(
+						static_cast<VertexElementType *>(vertex_element_data),
+						num_vertex_elements_available,
+						base_vertex_element_offset/*initial_count*/));
+	}
+
+
+	template <typename VertexType, typename VertexElementType>
+	void
+	end_vertex_array_streaming(
+			GLRenderer &renderer,
+			typename GLStaticStreamPrimitives<VertexType, VertexElementType>::StreamTarget &stream_target,
+			GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
+			GLBuffer::MapBufferScope &map_vertex_buffer_scope)
+	{
+		//PROFILE_FUNC();
+
+		stream_target.stop_streaming();
+
+		// Flush the data streamed so far (which could be no data).
+		map_vertex_element_buffer_scope.gl_flush_buffer_stream(
+				stream_target.get_num_streamed_vertex_elements() * sizeof(VertexElementType));
+		map_vertex_buffer_scope.gl_flush_buffer_stream(
+				stream_target.get_num_streamed_vertices() * sizeof(VertexType));
+
+		// Check return code in case mapped data got corrupted.
+		// This shouldn't happen but we'll emit a warning message if it does.
+		const bool vertex_element_buffer_unmap_result = map_vertex_element_buffer_scope.gl_unmap_buffer();
+		const bool vertex_buffer_unmap_result = map_vertex_buffer_scope.gl_unmap_buffer();
+		if (!vertex_element_buffer_unmap_result ||
+			!vertex_buffer_unmap_result)
+		{
+			qWarning() << "GLStreamPrimitives: Failed to unmap vertex stream.";
+		}
+	}
+
+
+	template <typename VertexType, typename VertexElementType>
+	void
+	render_vertex_array_stream(
+			GLRenderer &renderer,
+			typename GLStaticStreamPrimitives<VertexType, VertexElementType>::StreamTarget &stream_target,
+			const GLVertexArray::shared_ptr_type &vertex_array,
+			GLenum primitive_mode)
+	{
+		//PROFILE_FUNC();
+
+		// Only render if we've got some data to render.
+		if (stream_target.get_num_streamed_vertex_elements() == 0)
+		{
+			return;
+		}
+
+		// Draw the primitives.
+		// NOTE: The caller should have already bound this vertex array.
+		vertex_array->gl_draw_range_elements(
+				renderer,
+				primitive_mode,
+				stream_target.get_start_streaming_vertex_count()/*start*/,
+				stream_target.get_start_streaming_vertex_count() +
+						stream_target.get_num_streamed_vertices() - 1/*end*/,
+				stream_target.get_num_streamed_vertex_elements()/*count*/,
+				GLVertexElementTraits<VertexElementType>::type,
+				stream_target.get_start_streaming_vertex_element_count() *
+						sizeof(VertexElementType)/*indices_offset*/);
+	}
+
+
+	template <typename VertexType, typename VertexElementType>
+	void
+	suspend_render_resume_vertex_array_streaming(
+			GLRenderer &renderer,
+			typename GLStaticStreamPrimitives<VertexType, VertexElementType>::StreamTarget &stream_target,
+			GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
+			unsigned int min_bytes_to_stream_in_vertex_element_buffer,
+			GLBuffer::MapBufferScope &map_vertex_buffer_scope,
+			unsigned int min_bytes_to_stream_in_vertex_buffer,
+			const GLVertexArray::shared_ptr_type &vertex_array,
+			GLenum primitive_mode)
+	{
+		// Temporarily suspend streaming.
+		end_vertex_array_streaming<VertexType, VertexElementType>(
+				renderer, stream_target, map_vertex_element_buffer_scope, map_vertex_buffer_scope);
+
+		// Render the primitives streamed so far.
+		render_vertex_array_stream<VertexType, VertexElementType>(
+				renderer, stream_target, vertex_array, primitive_mode);
+
+		// Resume streaming.
+		begin_vertex_array_streaming<VertexType, VertexElementType>(
+				renderer,
+				stream_target,
+				map_vertex_element_buffer_scope,
+				min_bytes_to_stream_in_vertex_element_buffer,
+				map_vertex_buffer_scope,
+				min_bytes_to_stream_in_vertex_buffer);
 	}
 }
 

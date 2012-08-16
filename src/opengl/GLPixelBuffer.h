@@ -226,7 +226,7 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: There is no need to bind 'this' pixel buffer or the specified texture - it's handled internally.
 		 *
-		 * NOTE: The GL_EXT_texture3D extension must be available.
+		 * NOTE: OpenGL 1.2 must be supported.
 		 */
 		virtual
 		void
@@ -296,7 +296,7 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: There is no need to bind 'this' pixel buffer or the specified texture - it's handled internally.
 		 *
-		 * NOTE: The GL_EXT_subtexture extension must be available.
+		 * NOTE: OpenGL 1.2 must be supported.
 		 */
 		virtual
 		void

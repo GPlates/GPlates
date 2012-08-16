@@ -1643,40 +1643,6 @@ namespace GPlatesOpenGL
 				mask_region_of_interest_stream_primitives_type::Primitives &mask_stream_quads,
 				const SeedCoRegistration &seed_co_registration);
 
-		template <typename StreamingVertexType>
-		void
-		begin_vertex_array_streaming(
-				GLRenderer &renderer,
-				typename GLStaticStreamPrimitives<StreamingVertexType, streaming_vertex_element_type>::StreamTarget &stream_target,
-				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-				GLBuffer::MapBufferScope &map_vertex_buffer_scope);
-
-		template <typename StreamingVertexType>
-		void
-		end_vertex_array_streaming(
-				GLRenderer &renderer,
-				typename GLStaticStreamPrimitives<StreamingVertexType, streaming_vertex_element_type>::StreamTarget &stream_target,
-				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-				GLBuffer::MapBufferScope &map_vertex_buffer_scope);
-
-		template <typename StreamingVertexType>
-		void
-		render_vertex_array_stream(
-				GLRenderer &renderer,
-				typename GLStaticStreamPrimitives<StreamingVertexType, streaming_vertex_element_type>::StreamTarget &stream_target,
-				const GLVertexArray::shared_ptr_type &vertex_array,
-				GLenum primitive_mode);
-
-		template <typename StreamingVertexType>
-		void
-		suspend_render_resume_vertex_array_streaming(
-				GLRenderer &renderer,
-				typename GLStaticStreamPrimitives<StreamingVertexType, streaming_vertex_element_type>::StreamTarget &stream_target,
-				GLBuffer::MapBufferScope &map_vertex_element_buffer_scope,
-				GLBuffer::MapBufferScope &map_vertex_buffer_scope,
-				const GLVertexArray::shared_ptr_type &vertex_array,
-				GLenum primitive_mode);
-
 		void
 		render_reduction_of_reduce_stage(
 				GLRenderer &renderer,

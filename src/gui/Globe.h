@@ -48,7 +48,6 @@
 #include "opengl/GLContext.h"
 #include "opengl/GLMatrix.h"
 #include "opengl/GLTexture.h"
-#include "opengl/GLScreenRenderTarget.h"
 #include "opengl/GLVisualLayers.h"
 
 #include "presentation/VisualLayers.h"
@@ -216,13 +215,6 @@ namespace GPlatesGui
 		 */
 		GlobeRenderedGeometryCollectionPainter d_rendered_geom_collection_painter;
 
-		/**
-		 * Used when rendering the front half of the globe as a surface occlusion texture for sub-surface geometries.
-		 *
-		 * This is only needed if there are sub-surface geometries to render.
-		 */
-		boost::optional<GPlatesOpenGL::GLScreenRenderTarget> d_screen_render_target;
-
 
 		/**
 		 * Calculate tranform to ransform the view according to the current globe orientation.
@@ -266,10 +258,6 @@ namespace GPlatesGui
 				const double &viewport_zoom_factor,
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
 				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture = boost::none);
-
-		GPlatesOpenGL::GLScreenRenderTarget &
-		get_screen_render_target(
-				GPlatesOpenGL::GLRenderer &renderer);
 	};
 }
 

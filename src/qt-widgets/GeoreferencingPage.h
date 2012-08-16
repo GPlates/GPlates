@@ -35,7 +35,6 @@ namespace GPlatesQtWidgets
 {
 	// Forward declaration.
 	class EditAffineTransformGeoreferencingWidget;
-	class TimeDependentRasterSequence;
 
 	class GeoreferencingPage: 
 			public QWizardPage,
@@ -46,7 +45,8 @@ namespace GPlatesQtWidgets
 		explicit
 		GeoreferencingPage(
 				GPlatesPropertyValues::Georeferencing::non_null_ptr_type &georeferencing,
-				TimeDependentRasterSequence &raster_sequence,
+				unsigned int &raster_width,
+				unsigned int &raster_height,
 				QWidget *parent_ = NULL);
 
 		virtual
@@ -57,7 +57,8 @@ namespace GPlatesQtWidgets
 
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_type &d_georeferencing;
 		EditAffineTransformGeoreferencingWidget *d_georeferencing_widget;
-		TimeDependentRasterSequence &d_raster_sequence;
+		unsigned int &d_raster_width;
+		unsigned int &d_raster_height;
 		unsigned int d_last_seen_raster_width;
 		unsigned int d_last_seen_raster_height;
 	};

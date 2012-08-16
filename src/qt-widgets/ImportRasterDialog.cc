@@ -184,12 +184,16 @@ GPlatesQtWidgets::ImportRasterDialog::ImportRasterDialog(
 			tr("Import Raster"),
 			GPlatesFileIO::RasterReader::get_file_dialog_filters(),
 			view_state),
+	d_raster_width(0),
+	d_raster_height(0),
 	d_georeferencing(
 			GPlatesPropertyValues::Georeferencing::create()),
 	d_save_after_finish(true),
 	d_time_dependent_raster_page_id(addPage(
 				new TimeDependentRasterPage(
 					view_state,
+					d_raster_width,
+					d_raster_height,
 					d_raster_sequence,
 					boost::bind(
 						&ImportRasterDialog::set_number_of_bands,
@@ -203,7 +207,8 @@ GPlatesQtWidgets::ImportRasterDialog::ImportRasterDialog(
 	d_georeferencing_page_id(addPage(
 				new GeoreferencingPage(
 					d_georeferencing,
-					d_raster_sequence,
+					d_raster_width,
+					d_raster_height,
 					this))),
 	d_raster_feature_collection_page_id(addPage(
 				new RasterFeatureCollectionPage(

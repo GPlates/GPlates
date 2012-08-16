@@ -1062,6 +1062,96 @@ GPlatesOpenGL::GLBindVertexArrayObjectStateSet::apply_to_default_state(
 }
 
 
+GPlatesOpenGL::GLBlendEquationStateSet::GLBlendEquationStateSet(
+		GLenum mode) :
+	d_mode_RGB(mode),
+	d_mode_A(mode),
+	d_separate_equations(false)
+{
+	//! The GL_EXT_blend_minmax extension exposes 'glBlendEquationEXT()'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_EXT_blend_minmax),
+			GPLATES_ASSERTION_SOURCE);
+}
+
+
+GPlatesOpenGL::GLBlendEquationStateSet::GLBlendEquationStateSet(
+		GLenum modeRGB,
+		GLenum modeAlpha) :
+	d_mode_RGB(modeRGB),
+	d_mode_A(modeAlpha),
+	d_separate_equations(true)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_EXT_blend_equation_separate),
+			GPLATES_ASSERTION_SOURCE);
+}
+
+
+void
+GPlatesOpenGL::GLBlendEquationStateSet::apply_state(
+		const GLStateSet &last_applied_state_set,
+		GLState &last_applied_state) const
+{
+	// Throws exception if downcast fails...
+	const GLBlendEquationStateSet &last_applied = dynamic_cast<const GLBlendEquationStateSet &>(last_applied_state_set);
+
+	// Return early if no state change...
+	if (d_mode_RGB == last_applied.d_mode_RGB &&
+		d_mode_A == last_applied.d_mode_A)
+	{
+		return;
+	}
+
+	if (d_separate_equations)
+	{
+		glBlendEquationSeparateEXT(d_mode_RGB, d_mode_A);
+	}
+	else
+	{
+		// The RGB and A equations are the same so can use either to specify for RGBA.
+		glBlendEquationEXT(d_mode_RGB);
+	}
+}
+
+void
+GPlatesOpenGL::GLBlendEquationStateSet::apply_from_default_state(
+		GLState &last_applied_state) const
+{
+	// Return early if no state change...
+	if (d_mode_RGB == GL_FUNC_ADD_EXT &&
+		d_mode_A == GL_FUNC_ADD_EXT)
+	{
+		return;
+	}
+
+	if (d_separate_equations)
+	{
+		glBlendEquationSeparateEXT(d_mode_RGB, d_mode_A);
+	}
+	else
+	{
+		// The RGB and A equations are the same so can use either to specify for RGBA.
+		glBlendEquationEXT(d_mode_RGB);
+	}
+}
+
+void
+GPlatesOpenGL::GLBlendEquationStateSet::apply_to_default_state(
+		GLState &last_applied_state) const
+{
+	// Return early if no state change...
+	if (d_mode_RGB == GL_FUNC_ADD_EXT &&
+		d_mode_A == GL_FUNC_ADD_EXT)
+	{
+		return;
+	}
+
+	// Applies to both RGB and A.
+	glBlendEquationEXT(GL_FUNC_ADD_EXT);
+}
+
+
 GPlatesOpenGL::GLBlendFuncStateSet::GLBlendFuncStateSet(
 		GLenum sfactorRGB,
 		GLenum dfactorRGB,
