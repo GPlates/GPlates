@@ -95,12 +95,15 @@ GPlatesAppLogic::RasterLayerTask::get_input_channel_types() const
 					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
 					LayerTaskType::RASTER));
 	
+	// Temporarily disable normal maps until lighting tool is in place...
+#if 0
 	// Channel definition for the normal map raster.
 	input_channel_types.push_back(
 			LayerInputChannelType(
 					NORMAL_MAP_RASTER_CHANNEL_NAME,
 					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
 					LayerTaskType::RASTER));
+#endif
 
 	return input_channel_types;
 }

@@ -139,6 +139,11 @@ bool
 GPlatesAppLogic::contains_scalar_field_3d_feature(
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
 {
+	// Temporarily disable scalar fields on trunk until fully implemented...
+#if 1
+	return false;
+#endif
+
 	CanResolveScalarField3DFeature visitor;
 	for (GPlatesModel::FeatureCollectionHandle::const_iterator iter = feature_collection->begin();
 			iter != feature_collection->end(); ++iter)
