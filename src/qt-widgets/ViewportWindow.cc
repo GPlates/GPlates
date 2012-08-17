@@ -476,10 +476,7 @@ GPlatesQtWidgets::ViewportWindow::connect_menu_actions()
 	// 0. Open ViewportWindowUi.ui in the Designer.
 	// 1. Create a QAction in the Designer's Action Editor, called action_Something.
 	// 2. Assign icons, tooltips, and shortcuts as necessary.
-	//    2a. Canvas Tools must have the 'checkable' property set.
 	// 3. Drag this action to a menu.
-	//    3a. If it's a canvas tool, drag it to the toolbar instead. It will appear on the
-	//        Tools menu automatically.
 	// 4. If your shortcut key uses 'Ctrl', it is most likely an Application shortcut
 	//    that should be usable from within any window or non-modal dialog of GPlates.
 	//    It's not immediately obvious how to set this via Designer.

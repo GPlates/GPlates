@@ -101,10 +101,13 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::CanvasToolBarDockWidget(
 	// Create a tool bar for each canvas tools workflow and populate the tool actions.
 	set_up_workflows();
 
-	// Handle canvas tool shortcuts separately from their equivalent QActions.
+	// Setup canvas tool shortcuts separately from their equivalent QActions.
 	// This is because we can't have the same shortcut for two or more QActions -
 	// which can occur when the same tool type is used by multiple workflows.
 	set_up_canvas_tool_shortcuts();
+
+	// Setup canvas workflow shortcuts (for the workflow tabs).
+	set_up_canvas_workflow_shortcuts();
 
 	// Handle enable/disable of canvas tools.
 	QObject::connect(
@@ -398,8 +401,11 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::add_tool_action_to_workflow(
 			original_tool_action->parent());
 	tool_action->setCheckable(original_tool_action->isCheckable());
 	tool_action->setFont(original_tool_action->font());
-	tool_action->setShortcutContext(original_tool_action->shortcutContext());
 	tool_action->setToolTip(original_tool_action->toolTip());
+
+	// Set the shortcut to be active when any applications windows are active. This is necessary
+	// because canvas tools are in a dock widget which can be separated from the main window.
+	tool_action->setShortcutContext(Qt::ApplicationShortcut);
 
 	// NOTE: We can't have the same shortcut for two or more QActions which can occur when
 	// the same tool type is used by multiple workflows.
@@ -478,6 +484,72 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::add_canvas_tool_shortcut(
 	QObject::connect(
 			shortcut_tool_action, SIGNAL(triggered()),
 			this, SLOT(handle_tool_shortcut_triggered()));
+}
+
+
+void
+GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_canvas_workflow_shortcuts()
+{
+	// Use keys 0-9 for the workflows.
+	unsigned int key_offset = 0;
+
+	add_canvas_workflow_shortcut(
+			GPlatesGui::CanvasToolWorkflows::WORKFLOW_FEATURE_INSPECTION,
+			QKeySequence(static_cast<Qt::Key>(Qt::Key_1 + key_offset)));
+	++key_offset;
+
+	add_canvas_workflow_shortcut(
+			GPlatesGui::CanvasToolWorkflows::WORKFLOW_DIGITISATION,
+			QKeySequence(static_cast<Qt::Key>(Qt::Key_1 + key_offset)));
+	++key_offset;
+
+	add_canvas_workflow_shortcut(
+			GPlatesGui::CanvasToolWorkflows::WORKFLOW_TOPOLOGY,
+			QKeySequence(static_cast<Qt::Key>(Qt::Key_1 + key_offset)));
+	++key_offset;
+
+	add_canvas_workflow_shortcut(
+			GPlatesGui::CanvasToolWorkflows::WORKFLOW_POLE_MANIPULATION,
+			QKeySequence(static_cast<Qt::Key>(Qt::Key_1 + key_offset)));
+	++key_offset;
+
+	add_canvas_workflow_shortcut(
+			GPlatesGui::CanvasToolWorkflows::WORKFLOW_SMALL_CIRCLE,
+			QKeySequence(static_cast<Qt::Key>(Qt::Key_1 + key_offset)));
+	++key_offset;
+
+	// We're expecting keys 0-9 to be enough for all workflows.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			key_offset < 10,
+			GPLATES_ASSERTION_SOURCE);
+}
+
+
+void
+GPlatesQtWidgets::CanvasToolBarDockWidget::add_canvas_workflow_shortcut(
+		GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
+		const QKeySequence &shortcut_key_sequence)
+{
+	// Create a QAction around the specified shortcut key sequence.
+	QAction *shortcut_workflow_action = new QAction(this);
+	shortcut_workflow_action->setShortcut(shortcut_key_sequence);
+	// Set the shortcut to be active when any applications windows are active. This is necessary
+	// because canvas tools are in a dock widget which can be separated from the main window.
+	shortcut_workflow_action->setShortcutContext(Qt::ApplicationShortcut);
+
+	// Add the shortcut QAction to the tab widget just so it becomes active
+	// (since the tab widget is always visible).
+	// NOTE: There's no way for the user to select these actions other than through shortcuts.
+	// The user can, however, also still click on the tabs in the tab widget to select different workflows.
+	tab_widget_canvas_tools->addAction(shortcut_workflow_action);
+
+	// Set some data on the QAction so we know which workflow it corresponds to when triggered.
+	shortcut_workflow_action->setData(static_cast<uint>(workflow));
+
+	// Call handler when action is triggered.
+	QObject::connect(
+			shortcut_workflow_action, SIGNAL(triggered()),
+			this, SLOT(handle_workflow_shortcut_triggered()));
 }
 
 
@@ -609,6 +681,36 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::handle_tool_shortcut_triggered()
 			choose_canvas_tool_selected_by_user(active_workflow, tool);
 		}
 	}
+}
+
+
+void
+GPlatesQtWidgets::CanvasToolBarDockWidget::handle_workflow_shortcut_triggered()
+{
+	// Get the QObject that triggered this slot.
+	QObject *signal_sender = sender();
+	// Return early in case this slot not activated by a signal - shouldn't happen.
+	if (!signal_sender)
+	{
+		return;
+	}
+
+	// Cast to a QAction since only QAction objects trigger this slot.
+	QAction *shortcut_workflow_action = qobject_cast<QAction *>(signal_sender);
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			shortcut_workflow_action,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Determine the workflow to activate.
+	// Note that the *shortcut* workflow action stores only the workflow type (and not the tool) in the QAction.
+	const GPlatesGui::CanvasToolWorkflows::WorkflowType workflow =
+			static_cast<GPlatesGui::CanvasToolWorkflows::WorkflowType>(
+					shortcut_workflow_action->data().toUInt());
+
+	// Select the tab of the QTabWidget corresponding to the workflow.
+	// If this is the same as the currently active workflow then nothing will happen, otherwise
+	// the 'handle_workflow_tab_changed()' slot will get called.
+	tab_widget_canvas_tools->setCurrentIndex(d_workflows[workflow].tab_index);
 }
 
 

@@ -30,6 +30,7 @@
 #include <boost/optional.hpp>
 #include <QAction>
 #include <QActionGroup>
+#include <QKeySequence>
 #include <QPointer>
 #include <QSize>
 #include <QToolBar>
@@ -133,6 +134,9 @@ namespace GPlatesQtWidgets
 		handle_tool_shortcut_triggered();
 
 		void
+		handle_workflow_shortcut_triggered();
+
+		void
 		handle_workflow_tab_changed(
 				int workflow_tab_index);
 
@@ -231,6 +235,14 @@ namespace GPlatesQtWidgets
 		add_canvas_tool_shortcut(
 				GPlatesGui::CanvasToolWorkflows::ToolType tool,
 				QAction *shortcut_tool_action);
+
+		void
+		set_up_canvas_workflow_shortcuts();
+
+		void
+		add_canvas_workflow_shortcut(
+				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
+				const QKeySequence &shortcut_key_sequence);
 
 		QAction *
 		get_tool_action(

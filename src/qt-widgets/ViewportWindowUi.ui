@@ -413,7 +413,7 @@
     <string>&amp;Reset Zoom</string>
    </property>
    <property name="shortcut">
-    <string>1</string>
+    <string>0</string>
    </property>
   </action>
   <action name="action_Export_Geometry_Snapshot">

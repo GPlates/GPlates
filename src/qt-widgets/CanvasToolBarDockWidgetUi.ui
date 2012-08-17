@@ -71,7 +71,7 @@
         <string/>
        </attribute>
        <attribute name="toolTip">
-        <string>Feature Inspection</string>
+        <string>Feature Inspection 1</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <property name="spacing">
@@ -122,6 +122,9 @@
        <attribute name="title">
         <string/>
        </attribute>
+       <attribute name="toolTip">
+        <string>Digitisation 2</string>
+       </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <property name="spacing">
          <number>0</number>
@@ -162,6 +165,9 @@
        <attribute name="title">
         <string/>
        </attribute>
+       <attribute name="toolTip">
+        <string>Topology 3</string>
+       </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <property name="spacing">
          <number>0</number>
@@ -201,6 +207,9 @@
        </attribute>
        <attribute name="title">
         <string/>
+       </attribute>
+       <attribute name="toolTip">
+        <string>Pole Manipulation 4</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <property name="spacing">
@@ -247,6 +256,9 @@
        </attribute>
        <attribute name="title">
         <string/>
+       </attribute>
+       <attribute name="toolTip">
+        <string>Create Small Circles 5</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_6">
         <property name="spacing">
@@ -304,6 +316,9 @@
    <property name="shortcut">
     <string>D</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Zoom_Globe">
    <property name="checkable">
@@ -322,6 +337,9 @@
    <property name="shortcut">
     <string>Z</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Measure_Distance">
    <property name="checkable">
@@ -339,6 +357,9 @@
    </property>
    <property name="shortcut">
     <string>S</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_Click_Geometry">
@@ -364,6 +385,9 @@
    <property name="shortcut">
     <string>F</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Digitise_New_Polyline">
    <property name="checkable">
@@ -387,6 +411,9 @@
    </property>
    <property name="shortcut">
     <string>L</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_Digitise_New_MultiPoint">
@@ -412,6 +439,9 @@
    <property name="shortcut">
     <string>M</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Digitise_New_Polygon">
    <property name="checkable">
@@ -435,6 +465,9 @@
    </property>
    <property name="shortcut">
     <string>G</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_Move_Geometry">
@@ -460,6 +493,9 @@
    <property name="shortcut">
     <string>Y</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Move_Vertex">
    <property name="checkable">
@@ -483,6 +519,9 @@
    </property>
    <property name="shortcut">
     <string>V</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_Delete_Vertex">
@@ -508,6 +547,9 @@
    <property name="shortcut">
     <string>X</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Insert_Vertex">
    <property name="checkable">
@@ -532,6 +574,9 @@
    <property name="shortcut">
     <string>I</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Split_Feature">
    <property name="checkable">
@@ -549,6 +594,9 @@
    </property>
    <property name="shortcut">
     <string>T</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_Manipulate_Pole">
@@ -570,6 +618,9 @@
    </property>
    <property name="shortcut">
     <string>P</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_Build_Topology">
@@ -595,6 +646,9 @@
    <property name="shortcut">
     <string>B</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Edit_Topology">
    <property name="checkable">
@@ -619,6 +673,9 @@
    <property name="shortcut">
     <string>E</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Create_Small_Circle">
    <property name="checkable">
@@ -636,6 +693,9 @@
    </property>
    <property name="shortcut">
     <string>C</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
  </widget>
