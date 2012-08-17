@@ -137,6 +137,18 @@ namespace GPlatesGui
 		std::pair<WorkflowType, ToolType>
 		get_active_canvas_tool() const;
 
+
+		/**
+		 * Returns true if the specified workflow contains the specified tool.
+		 *
+		 * Not all workflows support all tools (in fact no workflow supports all tools).
+		 * Invalid combinations will return false.
+		 */
+		bool
+		does_workflow_contain_tool(
+				WorkflowType workflow,
+				ToolType tool) const;
+
 	signals:
 
 		/**

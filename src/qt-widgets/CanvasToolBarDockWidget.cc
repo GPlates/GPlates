@@ -101,6 +101,11 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::CanvasToolBarDockWidget(
 	// Create a tool bar for each canvas tools workflow and populate the tool actions.
 	set_up_workflows();
 
+	// Handle canvas tool shortcuts separately from their equivalent QActions.
+	// This is because we can't have the same shortcut for two or more QActions -
+	// which can occur when the same tool type is used by multiple workflows.
+	set_up_canvas_tool_shortcuts();
+
 	// Handle enable/disable of canvas tools.
 	QObject::connect(
 			&canvas_tool_workflows,
@@ -396,10 +401,16 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::add_tool_action_to_workflow(
 	tool_action->setShortcutContext(original_tool_action->shortcutContext());
 	tool_action->setToolTip(original_tool_action->toolTip());
 
-	// FIXME: We can't have the same shortcut for two or more QAction's.
-	// Either need to use different shortcuts for same tool (but in different workflow) or
-	// somehow write an event handler to explicitly manage the shortcuts ourselves.
+	// NOTE: We can't have the same shortcut for two or more QActions which can occur when
+	// the same tool type is used by multiple workflows.
+	// To get around this we will use the shortcuts on the original (unique) QActions but they
+	// won't be visible - instead, when they are triggered by a keyboard shortcut, we will determine
+	// which workflow is currently active to determine which of the  multiple canvas tools
+	// (using that same shortcut) we should target.
+	// This will be done in "set_up_canvas_tool_shortcuts()".
+#if 0
 	tool_action->setShortcut(original_tool_action->shortcut());
+#endif
 
 	// Add to the workflow tool bar.
 	workflow.tool_bar->addAction(tool_action);
@@ -417,6 +428,56 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::add_tool_action_to_workflow(
 	QObject::connect(
 			tool_action, SIGNAL(triggered()),
 			this, SLOT(handle_tool_action_triggered()));
+}
+
+
+void
+GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_canvas_tool_shortcuts()
+{
+	// Handle canvas tool shortcuts separately from their equivalent QActions.
+	// This is because we can't have the same shortcut for two or more QActions -
+	// which can occur when the same tool type is used by multiple workflows.
+	// To get around this we will use the shortcuts on the original (unique) QActions but they
+	// won't be visible - instead, when they are triggered by a keyboard shortcut, we will determine
+	// which workflow is currently active to determine which of the  multiple canvas tools
+	// (using that same shortcut) we should target.
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_DRAG_GLOBE, action_Drag_Globe);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM_GLOBE, action_Zoom_Globe);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_MEASURE_DISTANCE, action_Measure_Distance);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_CLICK_GEOMETRY, action_Click_Geometry);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYLINE, action_Digitise_New_Polyline);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_DIGITISE_NEW_MULTIPOINT, action_Digitise_New_MultiPoint);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYGON, action_Digitise_New_Polygon);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_MOVE_VERTEX, action_Move_Vertex);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_DELETE_VERTEX, action_Delete_Vertex);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_INSERT_VERTEX, action_Insert_Vertex);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_SPLIT_FEATURE, action_Split_Feature);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_MANIPULATE_POLE, action_Manipulate_Pole);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_TOPOLOGY, action_Build_Topology);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_EDIT_TOPOLOGY, action_Edit_Topology);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE, action_Create_Small_Circle);
+}
+
+
+void
+GPlatesQtWidgets::CanvasToolBarDockWidget::add_canvas_tool_shortcut(
+		GPlatesGui::CanvasToolWorkflows::ToolType tool,
+		QAction *shortcut_tool_action)
+{
+	// Add the original QAction to the tab widget just so it becomes active
+	// (since the tab widget is always visible).
+	// NOTE: There's no way for the user to select these actions other than through shortcuts.
+	// Each workflow has its own *copy* of these actions that the user can click on in the
+	// tabbed toolbar or select via the main menu.
+	tab_widget_canvas_tools->addAction(shortcut_tool_action);
+
+	// Set some data on the QAction so we know which tool it corresponds to when triggered.
+	shortcut_tool_action->setData(static_cast<uint>(tool));
+
+	// Call handler when action is triggered.
+	QObject::connect(
+			shortcut_tool_action, SIGNAL(triggered()),
+			this, SLOT(handle_tool_shortcut_triggered()));
 }
 
 
@@ -502,6 +563,52 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::handle_tool_action_triggered()
 	// This was caused by clicking a tool action by the user (versus an automatic tool conversion
 	// by some code in GPlates that wishes to change the canvas tool).
 	choose_canvas_tool_selected_by_user(canvas_workflow_and_tool.first, canvas_workflow_and_tool.second);
+}
+
+
+void
+GPlatesQtWidgets::CanvasToolBarDockWidget::handle_tool_shortcut_triggered()
+{
+	// Get the QObject that triggered this slot.
+	QObject *signal_sender = sender();
+	// Return early in case this slot not activated by a signal - shouldn't happen.
+	if (!signal_sender)
+	{
+		return;
+	}
+
+	// Cast to a QAction since only QAction objects trigger this slot.
+	QAction *shortcut_tool_action = qobject_cast<QAction *>(signal_sender);
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			shortcut_tool_action,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Determine the tool type to activate.
+	// Note that the *shortcut* tool action stores only the tool type in the QAction and not the
+	// workflow (because the shortcut could apply to any workflow containing that tool type).
+	const GPlatesGui::CanvasToolWorkflows::ToolType tool =
+			static_cast<GPlatesGui::CanvasToolWorkflows::ToolType>(
+					shortcut_tool_action->data().toUInt());
+
+	// The shortcut applies to the tool in the currently active workflow (if it exists in the workflow).
+	const GPlatesGui::CanvasToolWorkflows::WorkflowType active_workflow =
+			d_canvas_tool_workflows.get_active_canvas_tool().first;
+
+	// See if the current workflow even has the tool (corresponding to the shortcut).
+	// For example there is not a "Choose Feature F" tool in the digitisation workflow so if the
+	// user presses "F" then nothing will happen (if the digitisation workflow is currently active).
+	if (d_canvas_tool_workflows.does_workflow_contain_tool(active_workflow, tool))
+	{
+		// See if the canvas tool is enabled.
+		// Only select the tool if it is currently enabled.
+		if (get_tool_action(active_workflow, tool)->isEnabled())
+		{
+			// Select the new canvas tool.
+			// This was caused by the user selecting a tool shortcut (versus an automatic tool conversion
+			// by some code in GPlates that wishes to change the canvas tool).
+			choose_canvas_tool_selected_by_user(active_workflow, tool);
+		}
+	}
 }
 
 

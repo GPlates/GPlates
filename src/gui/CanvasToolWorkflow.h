@@ -99,6 +99,16 @@ namespace GPlatesGui
 		CanvasToolWorkflows::ToolType
 		get_selected_tool() const;
 
+
+		/**
+		 * Returns true if this workflow contains the specified tool.
+		 *
+		 * Not all workflows support all tools (in fact no workflow supports all tools).
+		 */
+		bool
+		contains_tool(
+				CanvasToolWorkflows::ToolType tool) const;
+
 	signals:
 
 		/**
@@ -147,7 +157,8 @@ namespace GPlatesGui
 		{ }
 
 		/**
-		 * Implemented by derived class to return the specified globe and map canvas tool, or none on error.
+		 * Implemented by derived class to return the specified globe and map canvas tool, or none
+		 * if the selected tool does not exist in this workflow (ie, if @a contains_tool returns false).
 		 */
 		virtual
 		boost::optional< std::pair<GPlatesGui::GlobeCanvasTool *, GPlatesGui::MapCanvasTool *> >

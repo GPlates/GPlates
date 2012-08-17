@@ -145,3 +145,11 @@ GPlatesGui::CanvasToolWorkflow::get_selected_tool() const
 {
 	return d_selected_tool;
 }
+
+
+bool
+GPlatesGui::CanvasToolWorkflow::contains_tool(
+		CanvasToolWorkflows::ToolType tool) const
+{
+	return static_cast<bool>(get_selected_globe_and_map_canvas_tools(tool));
+}

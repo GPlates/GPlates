@@ -130,6 +130,9 @@ namespace GPlatesQtWidgets
 		handle_tool_action_triggered();
 
 		void
+		handle_tool_shortcut_triggered();
+
+		void
 		handle_workflow_tab_changed(
 				int workflow_tab_index);
 
@@ -220,6 +223,14 @@ namespace GPlatesQtWidgets
 				Workflow &workflow,
 				GPlatesGui::CanvasToolWorkflows::ToolType tool,
 				const QAction *tool_action);
+
+		void
+		set_up_canvas_tool_shortcuts();
+
+		void
+		add_canvas_tool_shortcut(
+				GPlatesGui::CanvasToolWorkflows::ToolType tool,
+				QAction *shortcut_tool_action);
 
 		QAction *
 		get_tool_action(

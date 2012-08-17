@@ -121,6 +121,20 @@ GPlatesGui::CanvasToolWorkflows::get_active_canvas_tool() const
 }
 
 
+bool
+GPlatesGui::CanvasToolWorkflows::does_workflow_contain_tool(
+		WorkflowType workflow,
+		ToolType tool) const
+{
+	// Make sure 'initialise()' has been called.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			!d_canvas_tool_workflows.empty(),
+			GPLATES_ASSERTION_SOURCE);
+
+	return d_canvas_tool_workflows[d_active_workflow]->contains_tool(tool);
+}
+
+
 void
 GPlatesGui::CanvasToolWorkflows::choose_canvas_tool(
 		GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
