@@ -31,6 +31,7 @@
 #include "DigitisationCanvasToolWorkflow.h"
 #include "FeatureInspectionCanvasToolWorkflow.h"
 #include "PoleManipulationCanvasToolWorkflow.h"
+#include "SmallCircleCanvasToolWorkflow.h"
 #include "TopologyCanvasToolWorkflow.h"
 
 #include "global/AssertionFailureException.h"
@@ -234,6 +235,15 @@ GPlatesGui::CanvasToolWorkflows::create_canvas_tool_workflows(
 
 	d_canvas_tool_workflows[WORKFLOW_POLE_MANIPULATION].reset(
 			new PoleManipulationCanvasToolWorkflow(
+					*this,
+					geometry_operation_state,
+					measure_distance_state,
+					status_bar_callback,
+					view_state,
+					viewport_window));
+
+	d_canvas_tool_workflows[WORKFLOW_SMALL_CIRCLE].reset(
+			new SmallCircleCanvasToolWorkflow(
 					*this,
 					geometry_operation_state,
 					measure_distance_state,

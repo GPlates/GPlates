@@ -191,6 +191,8 @@ set(srcs
     SimpleGlobeOrientation.h
     SingleColourScheme.cc
     SingleColourScheme.h
+    SmallCircleCanvasToolWorkflow.cc
+    SmallCircleCanvasToolWorkflow.h
     SphericalGrid.cc
     SphericalGrid.h
     Stars.cc

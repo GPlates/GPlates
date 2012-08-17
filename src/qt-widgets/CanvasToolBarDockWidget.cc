@@ -144,6 +144,7 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_workflows()
 	set_up_digitisation_workflow();
 	set_up_topology_workflow();
 	set_up_pole_manipulation_workflow();
+	set_up_small_circle_workflow();
 }
 
 
@@ -244,10 +245,6 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_digitisation_workflow()
 			digitisation_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_DELETE_VERTEX,
 			action_Delete_Vertex);
-	add_tool_action_to_workflow(
-			digitisation_workflow,
-			GPlatesGui::CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE,
-			action_Create_Small_Circle);
 }
 
 
@@ -320,6 +317,34 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_pole_manipulation_workflow()
 			pole_manipulation_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_MANIPULATE_POLE,
 			action_Manipulate_Pole);
+}
+
+
+void
+GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_small_circle_workflow()
+{
+	//
+	// Set up the 'small circle' canvas tools workflow.
+	//
+
+	Workflow small_circle_workflow = create_workflow(
+			GPlatesGui::CanvasToolWorkflows::WORKFLOW_SMALL_CIRCLE,
+			tr("Small &Circle"),
+			tab_small_circle,
+			small_circle_toolbar_placeholder);
+
+	add_tool_action_to_workflow(
+			small_circle_workflow,
+			GPlatesGui::CanvasToolWorkflows::TOOL_DRAG_GLOBE,
+			action_Drag_Globe);
+	add_tool_action_to_workflow(
+			small_circle_workflow,
+			GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM_GLOBE,
+			action_Zoom_Globe);
+	add_tool_action_to_workflow(
+			small_circle_workflow,
+			GPlatesGui::CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE,
+			action_Create_Small_Circle);
 }
 
 

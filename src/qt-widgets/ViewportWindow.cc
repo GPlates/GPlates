@@ -1292,6 +1292,10 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 			d_task_panel_ptr->choose_modify_pole_tab();
 			break;
 
+		case GPlatesGui::CanvasToolWorkflows::WORKFLOW_SMALL_CIRCLE:
+			d_task_panel_ptr->choose_small_circle_tab();
+			break;
+
 		default:
 			// Shouldn't get here - if we do then do nothing - just let that previous tab remain.
 			break;

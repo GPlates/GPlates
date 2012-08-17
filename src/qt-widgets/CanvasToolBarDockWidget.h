@@ -208,6 +208,9 @@ namespace GPlatesQtWidgets
 		void
 		set_up_pole_manipulation_workflow();
 
+		void
+		set_up_small_circle_workflow();
+
 		Workflow
 		create_workflow(
 				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow_type,

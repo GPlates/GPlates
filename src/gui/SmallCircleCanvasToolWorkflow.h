@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_CANVASTOOLS_DIGITISATIONCANVASTOOLWORKFLOW_H
-#define GPLATES_CANVASTOOLS_DIGITISATIONCANVASTOOLWORKFLOW_H
+#ifndef GPLATES_GUI_SMALLCIRCLECANVASTOOLWORKFLOW_H
+#define GPLATES_GUI_SMALLCIRCLECANVASTOOLWORKFLOW_H
 
 #include <boost/scoped_ptr.hpp>
 #include <utility>
@@ -44,37 +44,33 @@ namespace GPlatesCanvasTools
 {
 	class GeometryOperationState;
 	class MeasureDistanceState;
-	class ModifyGeometryState;
 }
 
 namespace GPlatesQtWidgets
 {
-	class GlobeCanvas;
 	class ViewportWindow;
 }
 
 namespace GPlatesViewOperations
 {
-	class GeometryBuilder;
 	class RenderedGeometryCollection;
 }
 
 namespace GPlatesGui
 {
 	/**
-	 * The canvas tool workflow for digitising new features as point/multipoint/polyline/polygon.
+	 * The canvas tool workflow for creating small circles.
 	 */
-	class DigitisationCanvasToolWorkflow :
+	class SmallCircleCanvasToolWorkflow :
 			public CanvasToolWorkflow
 	{
 		Q_OBJECT
 
 	public:
 
-		DigitisationCanvasToolWorkflow(
+		SmallCircleCanvasToolWorkflow(
 				CanvasToolWorkflows &canvas_tool_workflows,
 				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
-				GPlatesCanvasTools::ModifyGeometryState &modify_geometry_state,
 				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
 				const GPlatesCanvasTools::CanvasTool::status_bar_callback_type &status_bar_callback,
 				GPlatesPresentation::ViewState &view_state,
@@ -99,19 +95,7 @@ namespace GPlatesGui
 		get_selected_globe_and_map_canvas_tools(
 					CanvasToolWorkflows::ToolType selected_tool) const;
 
-	private slots:
-
-		/**
-		 * Focused feature geometry changes.
-		 */
-		void
-		geometry_builder_stopped_updating_geometry_excluding_intermediate_moves();
-
 	private:
-
-		GPlatesViewOperations::GeometryBuilder &d_digitise_geometry_builder;
-
-		GPlatesCanvasTools::GeometryOperationState &d_geometry_operation_state;
 
 		//! For rendering purposes
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
@@ -126,58 +110,21 @@ namespace GPlatesGui
 		//! For zooming the globe in the 2D map view.
 		boost::scoped_ptr<MapCanvasTool> d_map_zoom_globe_tool;
 
-		//! For measuring distance in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_measure_distance_tool;
-		//! For measuring distance in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_measure_distance_tool;
-
-		//! For digitising multipoints in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_digitise_multipoint_tool;
-		//! For digitising multipoints in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_digitise_multipoint_tool;
-
-		//! For digitising polylines in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_digitise_polyline_tool;
-		//! For digitising polylines in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_digitise_polyline_tool;
-
-		//! For digitising polygons in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_digitise_polygon_tool;
-		//! For digitising polygons in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_digitise_polygon_tool;
-
-		//! For moving geometry vertices in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_move_vertex_tool;
-		//! For moving geometry vertices in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_move_vertex_tool;
-
-		//! For deleting geometry vertices in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_delete_vertex_tool;
-		//! For deleting geometry vertices in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_delete_vertex_tool;
-
-		//! For inserting geometry vertices in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_insert_vertex_tool;
-		//! For inserting geometry vertices in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_insert_vertex_tool;
+		//! For creating small circles in the 3D globe view.
+		boost::scoped_ptr<GlobeCanvasTool> d_globe_create_small_circle_tool;
+		//! For creating small circles in the 2D map view.
+		boost::scoped_ptr<MapCanvasTool> d_map_create_small_circle_tool;
 
 
 		void
 		create_canvas_tools(
 				CanvasToolWorkflows &canvas_tool_workflows,
 				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
-				GPlatesCanvasTools::ModifyGeometryState &modify_geometry_state,
 				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
 				const GPlatesCanvasTools::CanvasTool::status_bar_callback_type &status_bar_callback,
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesQtWidgets::ViewportWindow &viewport_window);
-
-		void
-		update_enable_state();
-
-		std::pair<unsigned int, GPlatesViewOperations::GeometryType::Value>
-		get_geometry_builder_parameters() const;
 	};
 }
 
-#endif // GPLATES_CANVASTOOLS_DIGITISATIONCANVASTOOLWORKFLOW_H
+#endif // GPLATES_GUI_SMALLCIRCLECANVASTOOLWORKFLOW_H
