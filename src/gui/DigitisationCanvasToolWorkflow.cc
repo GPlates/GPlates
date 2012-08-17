@@ -32,6 +32,7 @@
 
 #include "canvas-tools/CanvasToolAdapterForGlobe.h"
 #include "canvas-tools/CanvasToolAdapterForMap.h"
+#include "canvas-tools/CreateSmallCircle.h"
 #include "canvas-tools/DeleteVertex.h"
 #include "canvas-tools/DigitiseGeometry.h"
 #include "canvas-tools/GeometryOperationState.h"
@@ -51,6 +52,7 @@
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/MapView.h"
 #include "qt-widgets/ReconstructionViewWidget.h"
+#include "qt-widgets/TaskPanel.h"
 #include "qt-widgets/ViewportWindow.h"
 
 #include "view-operations/GeometryBuilder.h"
@@ -346,6 +348,29 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 					viewport_window.map_view().map_canvas(),
 					viewport_window.map_view(),
 					view_state.get_map_transform()));
+
+	//
+	// Create small circle canvas tool.
+	//
+
+	GPlatesCanvasTools::CreateSmallCircle::non_null_ptr_type create_small_circle_tool =
+		GPlatesCanvasTools::CreateSmallCircle::create(
+				status_bar_callback,
+				view_state.get_rendered_geometry_collection(),
+				viewport_window.task_panel_ptr()->small_circle_widget());
+	// For the globe view.
+	d_globe_create_small_circle_tool.reset(
+			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
+					create_small_circle_tool,
+					viewport_window.globe_canvas().globe(),
+					viewport_window.globe_canvas()));
+	// For the map view.
+	d_map_create_small_circle_tool.reset(
+			new GPlatesCanvasTools::CanvasToolAdapterForMap(
+					create_small_circle_tool,
+					viewport_window.map_view().map_canvas(),
+					viewport_window.map_view(),
+					view_state.get_map_transform()));
 }
 
 
@@ -383,6 +408,10 @@ GPlatesGui::DigitisationCanvasToolWorkflow::initialise()
 	emit canvas_tool_enabled(
 			WORKFLOW_TYPE,
 			CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYGON,
+			true);
+	emit canvas_tool_enabled(
+			WORKFLOW_TYPE,
+			CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE,
 			true);
 
 	update_enable_state();
@@ -443,6 +472,9 @@ GPlatesGui::DigitisationCanvasToolWorkflow::get_selected_globe_and_map_canvas_to
 
 	case CanvasToolWorkflows::TOOL_INSERT_VERTEX:
 		return std::make_pair(d_globe_insert_vertex_tool.get(), d_map_insert_vertex_tool.get());
+
+	case CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE:
+		return std::make_pair(d_globe_create_small_circle_tool.get(), d_map_create_small_circle_tool.get());
 
 	default:
 		break;
