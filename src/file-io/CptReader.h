@@ -1181,11 +1181,11 @@ namespace GPlatesFileIO
 			// We can't make heads or tails of this file.
 			errors.d_failures_to_begin.push_back(
 					make_read_error_occurrence(
-						filename,
-						DataFormats::Cpt,
-						0,
-						ReadErrors::CptFileTypeNotDeduced,
-						ReadErrors::FileNotLoaded));
+							filename,
+							DataFormats::Cpt,
+							0,
+							ReadErrors::CptFileTypeNotDeduced,
+							ReadErrors::FileNotLoaded));
 
 			return typename GPlatesGui::ColourPalette<IntType>::maybe_null_ptr_type();
 		}
@@ -1208,7 +1208,7 @@ namespace GPlatesFileIO
 		struct ColourData
 		{
 			ColourData():
-					model(GMT_NAME), str_data("black"){}
+				model(GMT_NAME), str_data("black"){}
 
 			Model model;
 			std::vector<float> float_array;
@@ -1257,7 +1257,8 @@ namespace GPlatesFileIO
 
 	protected:
 		void
-		process_line(const QString& line);
+		process_line(
+				const QString& line);
 
 		/*
 		* Process background color, foreground color and NaN color definition.
@@ -1271,22 +1272,38 @@ namespace GPlatesFileIO
 		* Process regular cpt data.
 		*/
 		void
-		process_regular_line(QStringList& tokens);
+		process_regular_line(
+				QStringList& tokens);
 		
+
 		ColourData
-		read_first_colour_data(QStringList& tokens);
+		read_first_colour_data(
+				QStringList& tokens);
 		
+
 		ColourData
-		read_second_colour_data(QStringList& tokens);
+		read_second_colour_data(
+				QStringList& tokens);
 
 		/*
 		* Process categorical cpt data.
 		*/
 		void
-		process_categorical_line(QStringList& tokens);
+		process_categorical_line(		
+				QStringList& tokens);
 
 		void
-		process_comment(const QString& line);
+		process_comment(
+				const QString& line);
+
+		/*
+		* This function will concatenate strings between quotation marks.
+		* for example, 'CrysI' 255/000/000 'Crystallisation (plutonic)' should be three tokens instead of four.
+		* 'Crystallisation (plutonic)' should be treated as one string.
+		*/
+		void
+		concat_quoted_strings(
+				QStringList& tokens);
 
 		/*
 		Fill examples: 
@@ -1307,25 +1324,37 @@ namespace GPlatesFileIO
 			Technical Reference and Cookbook by Pål (Paul)Wessel
 		*/
 		ColourData 
-		parse_gmt_fill(const QString& token);
+		parse_gmt_fill(
+				const QString& token);
 
 		bool
-		is_gmt_color_name(const QString& name);
+		is_gmt_color_name(
+				const QString& name);
 
 		bool
-		is_valid_rgb(float r, float g, float b)
+		is_valid_rgb(
+				float r, 
+				float g, 
+				float b)
 		{
 			return !(r<0.0 || r>255.0) && !(g<0.0 || g>255.0) && !(b<0.0 || b>255.0);
 		}
 
 		bool
-		is_valid_hsv(float h, float s, float v)
+		is_valid_hsv(
+				float h, 
+				float s, 
+				float v)
 		{
 			return !(h<0.0 || h>360.0) && !(s<0.0 || s>1.0) && !(v<0.0 || v>1.0);
 		}
 
 		bool
-		is_valid_cmyk(float c, float m, float y, float k)
+		is_valid_cmyk(
+				float c, 
+				float m, 
+				float y, 
+				float k)
 		{
 			return !(c<0.0 || c>100.0) && !(m<0.0 || m>100.0) && !(y<0.0 || y>100.0) && !(k<0.0 || k>100.0);
 		}

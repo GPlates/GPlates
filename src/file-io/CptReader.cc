@@ -85,7 +85,9 @@ GPlatesFileIO::CptReaderInternals::in_rgb_range(
 
 GPlatesGui::Colour
 GPlatesFileIO::CptReaderInternals::make_rgb_colour(
-		int r, int g, int b)
+		int r, 
+		int g, 
+		int b)
 {
 	if (in_rgb_range(r) && in_rgb_range(g) && in_rgb_range(b))
 	{
@@ -119,7 +121,9 @@ GPlatesFileIO::CptReaderInternals::in_sv_range(
 
 GPlatesGui::Colour
 GPlatesFileIO::CptReaderInternals::make_hsv_colour(
-		double h, double s, double v)
+		double h, 
+		double s, 
+		double v)
 {
 	if (in_h_range(h) && in_sv_range(s) && in_sv_range(v))
 	{
@@ -143,7 +147,10 @@ GPlatesFileIO::CptReaderInternals::in_cmyk_range(
 
 GPlatesGui::Colour
 GPlatesFileIO::CptReaderInternals::make_cmyk_colour(
-		int c, int m, int y, int k)
+		int c, 
+		int m, 
+		int y, 
+		int k)
 {
 	if (in_cmyk_range(c) && in_cmyk_range(m) && in_cmyk_range(y) && in_cmyk_range(k))
 	{
@@ -348,7 +355,52 @@ GPlatesFileIO::CptParser::CptParser(const QString& file_path) :
 
 
 void
-GPlatesFileIO::CptParser::process_line(const QString& line)
+GPlatesFileIO::CptParser::concat_quoted_strings(
+		QStringList& tokens)
+{
+	QString buf;
+	QStringList::iterator it = tokens.begin(), it_tmp;
+	bool looking_string_end = false;
+	QChar quote;
+	for(; it != tokens.end(); it++)
+	{
+		if(looking_string_end)
+		{
+			buf += *it;
+			if(it->endsWith(quote) )
+			{
+				buf.remove(quote);
+				(*it_tmp) = buf;
+				looking_string_end = false;
+			}
+			*it="";
+		}
+		else
+		{
+			if(it->startsWith(QLatin1Char('\"')) || it->startsWith(QLatin1Char('\'')) )
+			{
+				quote = it->at(0); 
+				if(!it->endsWith(quote))
+				{
+					looking_string_end = true;
+					buf = *it;
+					it_tmp = it;
+				}
+				else
+				{
+					it->remove(quote);
+				}
+				
+			}
+		}
+	}
+	tokens.removeAll("");//remove all empty string left in the tokens.
+}
+
+
+void
+GPlatesFileIO::CptParser::process_line(
+		const QString& line)
 {
 	//qDebug() << "Processing: " << line;
 	//we can use finite state machine here,
@@ -362,27 +414,7 @@ GPlatesFileIO::CptParser::process_line(const QString& line)
 
 	QStringList tokens = line.split(' ');
 	
-	
-	if(line.startsWith(QLatin1Char('\"')) || line.startsWith(QLatin1Char('\'')) )
-	{
-		QChar quote = line[0]; 
-		QString tmp;
-		for(;;)
-		{
-			if(tokens.size() == 0)
-				break;
-
-			tmp.append(" " + tokens.takeFirst());
-	
-			if(tmp.endsWith(quote))
-				break;
-		}
-		tmp.remove(quote);
-		tmp.simplified();
-		tokens.push_front(tmp);
-		//qDebug() << "tmp: " << tmp;
-		//qDebug() << "len: " << tokens.size();
-	}
+	concat_quoted_strings(tokens);
 
 	if(tokens.size() < 2) // no enough tokens
 	{
@@ -411,7 +443,8 @@ GPlatesFileIO::CptParser::process_line(const QString& line)
 
 
 void
-GPlatesFileIO::CptParser::process_regular_line(QStringList& tokens)
+GPlatesFileIO::CptParser::process_regular_line(
+		QStringList& tokens)
 {
 	RegularEntry entry;
 
@@ -452,7 +485,8 @@ GPlatesFileIO::CptParser::process_regular_line(QStringList& tokens)
 
 
 GPlatesFileIO::CptParser::ColourData
-GPlatesFileIO::CptParser::read_first_colour_data(QStringList& tokens)
+GPlatesFileIO::CptParser::read_first_colour_data(
+		QStringList& tokens)
 {
 	ColourData data;
 	QString token = tokens.at(0);
@@ -505,7 +539,8 @@ GPlatesFileIO::CptParser::read_first_colour_data(QStringList& tokens)
 
 
 GPlatesFileIO::CptParser::ColourData
-GPlatesFileIO::CptParser::read_second_colour_data(QStringList& tokens)
+GPlatesFileIO::CptParser::read_second_colour_data(
+		QStringList& tokens)
 {
 	ColourData data;
 	int len = tokens.size();
@@ -554,7 +589,8 @@ GPlatesFileIO::CptParser::read_second_colour_data(QStringList& tokens)
 
 
 void
-GPlatesFileIO::CptParser::process_categorical_line(QStringList& tokens)
+GPlatesFileIO::CptParser::process_categorical_line(
+		QStringList& tokens)
 {
 	if(tokens.size() < 2)
 		return;
@@ -570,7 +606,8 @@ GPlatesFileIO::CptParser::process_categorical_line(QStringList& tokens)
 }
 
 void
-GPlatesFileIO::CptParser::process_comment(const QString& line)
+GPlatesFileIO::CptParser::process_comment(
+		const QString& line)
 {
 	//remove all spaces
 	QString str = line.toUpper();
@@ -582,13 +619,17 @@ GPlatesFileIO::CptParser::process_comment(const QString& line)
 		else
 			i++;
 	}
-				
-	if(line.endsWith("COLOR_MODEL=HSV"))
+
+	static const QRegExp hsv_regex("COLOR_MODEL\\s*=\\s*\\+?HSV");			
+	if(-1 != hsv_regex.indexIn(line))
+	{
 			d_default_model = HSV;
+	}
 }
 
 GPlatesFileIO::CptParser::ColourData 
-GPlatesFileIO::CptParser::parse_gmt_fill(const QString& token)
+GPlatesFileIO::CptParser::parse_gmt_fill(
+		const QString& token)
 {
 	if(token.startsWith('p'))
 	{
@@ -668,7 +709,8 @@ GPlatesFileIO::CptParser::parse_gmt_fill(const QString& token)
 }
 
 bool
-GPlatesFileIO::CptParser::is_gmt_color_name(const QString& name)
+GPlatesFileIO::CptParser::is_gmt_color_name(
+		const QString& name)
 {
 	//TODO::
 	//move GMTColourNames to somewhere else
@@ -720,7 +762,7 @@ GPlatesFileIO::CptParser::parse_hsv_data(
 			GPLATES_EXCEPTION_SOURCE,
 			("invalid HSV data."));
 	}
-	f_3 /= 360.0; 
+	f_1 /= 360.0; 
 
 	data.float_array.push_back(f_1);
 	data.float_array.push_back(f_2);
