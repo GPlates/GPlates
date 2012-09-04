@@ -613,8 +613,14 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		GPlatesUtils::UnicodeString geog_description = header->geographic_description();
 
 		// Search for the identity start tag.
-		const boost::int32_t identity_start_index = geog_description.indexOf(identity_start_tag);
-		if (identity_start_index < 0)
+		// For some reason some files have two "<identity>" tags followed by one "</identity>" tag.
+		// So we find the last occurrence of the "<identity>" tag.
+		const boost::int32_t first_identity_start_index =
+				geog_description.qstring().indexOf(identity_start_tag.qstring());
+		const boost::int32_t last_identity_start_index =
+				geog_description.qstring().lastIndexOf(identity_start_tag.qstring());
+		if (first_identity_start_index < 0 ||
+			last_identity_start_index < 0)
 		{
 			return false;
 		}
@@ -622,23 +628,24 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		// Search for the identity end tag (starting at end of the identity start tag).
 		const boost::int32_t identity_end_index = geog_description.indexOf(
 				identity_end_tag,
-				identity_start_index + identity_start_tag_length);
+				last_identity_start_index + identity_start_tag_length);
 		if (identity_end_index < 0)
 		{
 			return false;
 		}
 
-		// The feature id is between end of start tag and start of end tag.
+		// The feature id is between end of (last) start tag and start of end tag.
 		geog_description.extractBetween(
-				identity_start_index + identity_start_tag_length,
+				last_identity_start_index + identity_start_tag_length,
 				identity_end_index,
 				feature_id);
 
-		// Remove feature id and start/end id tage from the geographic description in
-		// PLATES header so we don't get two feature ids written out if save to PLATES header later.
+		// Remove feature id and start/end id tag (and any extra erroneous start tag) from the
+		// geographic description in PLATES header so we don't get two feature ids written out
+		// if save to PLATES header later.
 		// The PLATES writer will automatically append the feature id to each feature.
 		geog_description.removeBetween(
-				identity_start_index,
+				first_identity_start_index,
 				identity_end_index + identity_end_tag_length);
 
 		// Store back to original header.
