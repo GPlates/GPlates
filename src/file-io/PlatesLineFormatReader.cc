@@ -1798,7 +1798,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		map["IM"] = create_isochron;
 		map["IP"] = create_isopach;
 		map["IR"] = create_island_arc_inactive;
-		map["IS"] = create_unclassified_feature; // -might- be Ice Shelf, might be Isochron. We don't know.
+
+		// -might- be Ice Shelf, might be Isochron. We don't know.
+		// It appears IS covers IC and IM.
+		//
+		// Update 2012/9/4: Maria Seton requested "IS" result in an isochron instead of unclassified feature.
+		map["IS"] = create_isochron;
+
 		map["LI"] = create_geological_lineation;
 		map["MA"] = create_magnetics;
 		map["NF"] = create_normal_fault;
@@ -1875,7 +1881,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				new GPlatesFileIO::LineNumber(in.line_number()));
 		errors.d_warnings.push_back(GPlatesFileIO::ReadErrorOccurrence(source, location, 
 				GPlatesFileIO::ReadErrors::AmbiguousPlatesIceShelfCode,
-				GPlatesFileIO::ReadErrors::UnclassifiedFeatureCreated));
+				GPlatesFileIO::ReadErrors::NoAction));
 	}
 
 

@@ -74,7 +74,13 @@ namespace GPlatesFileIO
 			map["IM"] = std::make_pair("Isochron","centerLineOf");
 			map["IP"] = std::make_pair("SedimentThickness","outlineOf");
 			map["IR"] = std::make_pair("IslandArc","centerLineOf");
-			map["IS"] = std::make_pair("UnclassifiedFeature","centerLineOf");
+
+			// -might- be Ice Shelf, might be Isochron. We don't know.
+			// It appears IS covers IC and IM.
+			//
+			// Update 2012/9/4: Maria Seton requested "IS" result in an isochron instead of unclassified feature.
+			map["IS"] = std::make_pair("Isochron","centerLineOf");
+
 			map["LI"] = std::make_pair("GeologicalLineation","centerLineOf");
 			map["MA"] = std::make_pair("Magnetics","outlineOf");
 			map["NF"] = std::make_pair("gpmlFault","centerLineOf");

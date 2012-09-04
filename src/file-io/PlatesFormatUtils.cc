@@ -266,7 +266,6 @@ namespace
 	get_data_type_code_for_unclassified_feature(
 			const GPlatesModel::FeatureHandle::const_weak_ref &)
 	{
-		// Could also be "IS" according to "PlatesLineFormatHeaderVisitor.h".
 		return "UN";
 	}
 

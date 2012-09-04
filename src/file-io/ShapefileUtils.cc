@@ -89,7 +89,13 @@ GPlatesFileIO::ShapefileUtils::build_feature_map()
 	map["IM"] = "Isochron";
 	map["IP"] = "SedimentThickness";
 	map["IR"] = "IslandArc";
-	map["IS"] = "UnclassifiedFeature";
+
+	// -might- be Ice Shelf, might be Isochron. We don't know.
+	// It appears IS covers IC and IM.
+	//
+	// Update 2012/9/4: Maria Seton requested "IS" result in an isochron instead of unclassified feature.
+	map["IS"] = "Isochron";
+
 	map["LI"] = "GeologicalLineation";
 	map["MA"] = "Magnetics";
 	map["NF"] = "gpmlFault";
