@@ -160,7 +160,8 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::get_old_plates_header(
 	visit_feature(feature);
 
 	// Build an old plates header from the information we've gathered.
-	if (d_accum.old_plates_header) {
+	if (d_accum.old_plates_header)
+	{
 		old_plates_header = *d_accum.old_plates_header;
 	}
 	else

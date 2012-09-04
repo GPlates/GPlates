@@ -41,7 +41,7 @@
             <item>
              <widget class="QLabel" name="partitioning_layers_label">
               <property name="text">
-               <string>Specify the partitioning layer:</string>
+               <string>Specify one or more partitioning layers:</string>
               </property>
              </widget>
             </item>

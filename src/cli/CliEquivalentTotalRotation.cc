@@ -94,7 +94,7 @@ GPlatesCli::EquivalentTotalRotationCommand::add_options(
 			// std::vector allows multiple load files and
 			// 'composing()' allows merging of command-line and config files.
 			boost::program_options::value< std::vector<std::string> >()->composing(),
-			"load reconstruction feature collection file (multiple options allowed)"
+			"load reconstruction feature collection (rotation) file (multiple options allowed)"
 		)
 		(
 			RECONSTRUCTION_TIME_OPTION_NAME_WITH_SHORT_OPTION,

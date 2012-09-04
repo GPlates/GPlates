@@ -58,14 +58,14 @@
 
 namespace
 {
-	const QString HELP_PARTITIONING_LAYER_DIALOG_TITLE = QObject::tr("Selecting the partitioning layer");
+	const QString HELP_PARTITIONING_LAYER_DIALOG_TITLE = QObject::tr("Selecting one or more partitioning layers");
 	const QString HELP_PARTITIONING_LAYER_DIALOG_TEXT = QObject::tr(
 			"<html><body>\n"
-			"<h3>Select the layer containing the polygons used to partition features</h3>"
-			"<p>Select a 'Resolved Topological Closed Plate Boundaries' layer to partition using "
-			"topological plate polygons, otherwise select a 'Reconstructed Geometries' layer "
-			"to partition using static polygon geometry (<em>note that the layer should contain "
-			"polygon geometries</em>).</p>"
+			"<h3>Select one or more layers containing the polygons used to partition features</h3>"
+			"<p>Select 'Resolved Topological Closed Plate Boundaries' or 'Resolved Topological Network' "
+			"layers to partition using topological plate polygons, otherwise select "
+			"'Reconstructed Geometries' layers to partition using static polygon geometry "
+			"(<em>note that the layers should contain polygon geometries</em>).</p>"
 			"<p>These polygons will be intersected with features and a subset of the polygon's "
 			"feature properties (such a reconstruction plate ID) will be copied over.</p>"
 			"</body></html>\n");

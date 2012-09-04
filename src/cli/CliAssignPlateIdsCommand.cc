@@ -195,7 +195,7 @@ GPlatesCli::AssignPlateIdsCommand::add_options(
 			// std::vector allows multiple load files and
 			// 'composing()' allows merging of command-line and config files.
 			boost::program_options::value< std::vector<std::string> >()->composing(),
-			(std::string("load reconstruction feature collection file (multiple options allowed) - "
+			(std::string("load reconstruction feature collection (rotation) file (multiple options allowed) - "
 					"this is optional if '") + RECONSTRUCTION_TIME_OPTION_NAME_WITH_SHORT_OPTION +
 					"' is zero.").c_str()
 		)
