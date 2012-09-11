@@ -7,13 +7,13 @@ varying vec3 world_space_position;
 
 void main (void)
 {
-    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
 
-    // Output the vertex colour.
-    // We render both sides (front and back) of triangles (ie, there's no back-face culling).
-    gl_FrontColor = gl_Color;
-    gl_BackColor = gl_Color;
+	// Output the vertex colour.
+	// We render both sides (front and back) of triangles (ie, there's no back-face culling).
+	gl_FrontColor = gl_Color;
+	gl_BackColor = gl_Color;
 
-    // This assumes the geometry does not need a model transform (eg, reconstruction rotation).
-    world_space_position = gl_Vertex.xyz / gl_Vertex.w;
+	// This assumes the geometry does not need a model transform (eg, reconstruction rotation).
+	world_space_position = gl_Vertex.xyz / gl_Vertex.w;
 }

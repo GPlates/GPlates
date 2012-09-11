@@ -7,7 +7,7 @@ varying vec2 screen_coord;
 
 void main()
 {
-  gl_Position = gl_Vertex;
-  
-  screen_coord = gl_Vertex.xy;
+	gl_Position = gl_Vertex;
+
+	screen_coord = gl_Vertex.xy;
 }

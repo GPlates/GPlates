@@ -578,7 +578,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 		GPlatesViewOperations::ScalarField3DRenderParameters::RenderMode render_mode,
 		GPlatesViewOperations::ScalarField3DRenderParameters::ColourMode colour_mode,
 		const GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters &isovalue_parameters,
-		const GPlatesViewOperations::ScalarField3DRenderParameters::RenderOptions &render_options,
+		const GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions &deviation_window_render_options,
 		const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction,
 		const GPlatesViewOperations::ScalarField3DRenderParameters::QualityPerformance &quality_performance,
 		const std::vector<float> &test_variables,
@@ -609,9 +609,6 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 			depth_restriction,
 			test_variables,
 			surface_occlusion_texture);
-
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 
 	// Currently always using orthographic projection.
 	// TODO: Add support for perspective projection.
@@ -662,9 +659,6 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 				"read_from_depth_texture",
 				false);
 	}
-
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 
 	//
 	// Set the surface fill mask options.
@@ -726,7 +720,6 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 					true);
 		}
 		else
-#endif
 		{
 			// Unbind the volume fill depth range sampler from current texture unit.
 			renderer.gl_unbind_texture(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
@@ -747,6 +740,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 					"using_volume_fill_depth_range",
 					false);
 		}
+#endif
 
 		// If we've been requested to render the walls of the volume fill region then
 		// render the screen-size normal/depth texture.
@@ -847,6 +841,8 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 				"using_surface_fill_mask",
 				false);
 
+		// Temporarily disabling for now - makes isosurface rendering slower rather than faster.
+#if 0
 		// Unbind the volume fill depth range sampler from current texture unit.
 		renderer.gl_unbind_texture(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
 		// NOTE: Set the shader sampler to the current texture unit instead of a used texture unit
@@ -865,6 +861,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 				renderer,
 				"using_volume_fill_depth_range",
 				false);
+#endif
 
 		// Unbind the volume fill walls sampler from current texture unit.
 		renderer.gl_unbind_texture(GL_TEXTURE0 + current_texture_unit, GL_TEXTURE_2D);
@@ -950,10 +947,10 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 			emulated_isovalue_parameters.isovalue1,
 			emulated_isovalue_parameters.lower_deviation1,
 			emulated_isovalue_parameters.upper_deviation1);
-	qDebug() << "isovalue1: "
-		<< emulated_isovalue_parameters.isovalue1 << ", "
-		<< emulated_isovalue_parameters.lower_deviation1 << ", "
-		<< emulated_isovalue_parameters.upper_deviation1;
+// 	qDebug() << "isovalue1: "
+// 		<< emulated_isovalue_parameters.isovalue1 << ", "
+// 		<< emulated_isovalue_parameters.lower_deviation1 << ", "
+// 		<< emulated_isovalue_parameters.upper_deviation1;
 
 	// Set the parameters associated with isovalue 2.
 	d_render_iso_surface_program_object.get()->gl_uniform3f(
@@ -962,10 +959,10 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 			emulated_isovalue_parameters.isovalue2,
 			emulated_isovalue_parameters.lower_deviation2,
 			emulated_isovalue_parameters.upper_deviation2);
-	qDebug() << "isovalue2: "
-		<< emulated_isovalue_parameters.isovalue2 << ", "
-		<< emulated_isovalue_parameters.lower_deviation2 << ", "
-		<< emulated_isovalue_parameters.upper_deviation2;
+// 	qDebug() << "isovalue2: "
+// 		<< emulated_isovalue_parameters.isovalue2 << ", "
+// 		<< emulated_isovalue_parameters.lower_deviation2 << ", "
+// 		<< emulated_isovalue_parameters.upper_deviation2;
 
 	//
 	// Set the render options.
@@ -981,42 +978,43 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 	//
 	// ...this enables the shader program, as with the isovalue parameters, to render/emulate all
 	// isosurface modes as a double deviation window with differences expressed as the parameters.
-	GPlatesViewOperations::ScalarField3DRenderParameters::RenderOptions emulated_render_options(render_options);
+	GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions
+			emulated_deviation_window_render_options(deviation_window_render_options);
 	if (render_mode == GPlatesViewOperations::ScalarField3DRenderParameters::RENDER_MODE_ISOSURFACE)
 	{
-		emulated_render_options.opacity_deviation_surfaces = 1;
-		emulated_render_options.deviation_window_volume_rendering = false;
-		emulated_render_options.opacity_deviation_window_volume_rendering = 1;
-		emulated_render_options.surface_deviation_window = false;
-		emulated_render_options.surface_deviation_window_isoline_frequency = 0;
+		emulated_deviation_window_render_options.opacity_deviation_surfaces = 1;
+		emulated_deviation_window_render_options.deviation_window_volume_rendering = false;
+		emulated_deviation_window_render_options.opacity_deviation_window_volume_rendering = 1;
+		emulated_deviation_window_render_options.surface_deviation_window = false;
+		emulated_deviation_window_render_options.surface_deviation_window_isoline_frequency = 0;
 	}
 	// ...else single or double deviation window.
 
 	d_render_iso_surface_program_object.get()->gl_uniform1f(
 			renderer,
 			"opacity_deviation_surfaces",
-			emulated_render_options.opacity_deviation_surfaces);
-	qDebug() << "opacity_deviation_surfaces: " << emulated_render_options.opacity_deviation_surfaces;
+			emulated_deviation_window_render_options.opacity_deviation_surfaces);
+// 	qDebug() << "opacity_deviation_surfaces: " << emulated_deviation_window_render_options.opacity_deviation_surfaces;
 	d_render_iso_surface_program_object.get()->gl_uniform1i(
 			renderer,
 			"deviation_window_volume_rendering",
-			emulated_render_options.deviation_window_volume_rendering);
-	qDebug() << "deviation_window_volume_rendering: " << emulated_render_options.deviation_window_volume_rendering;
+			emulated_deviation_window_render_options.deviation_window_volume_rendering);
+// 	qDebug() << "deviation_window_volume_rendering: " << emulated_deviation_window_render_options.deviation_window_volume_rendering;
 	d_render_iso_surface_program_object.get()->gl_uniform1f(
 			renderer,
 			"opacity_deviation_window_volume_rendering",
-			emulated_render_options.opacity_deviation_window_volume_rendering);
-	qDebug() << "opacity_deviation_window_volume_rendering: " << emulated_render_options.opacity_deviation_window_volume_rendering;
+			emulated_deviation_window_render_options.opacity_deviation_window_volume_rendering);
+// 	qDebug() << "opacity_deviation_window_volume_rendering: " << emulated_deviation_window_render_options.opacity_deviation_window_volume_rendering;
 	d_render_iso_surface_program_object.get()->gl_uniform1i(
 			renderer,
 			"surface_deviation_window",
-			emulated_render_options.surface_deviation_window);
-	qDebug() << "surface_deviation_window: " << emulated_render_options.surface_deviation_window;
+			emulated_deviation_window_render_options.surface_deviation_window);
+// 	qDebug() << "surface_deviation_window: " << emulated_deviation_window_render_options.surface_deviation_window;
 	d_render_iso_surface_program_object.get()->gl_uniform1f(
 			renderer,
 			"surface_deviation_isoline_frequency",
-			emulated_render_options.surface_deviation_window_isoline_frequency);
-	qDebug() << "surface_deviation_isoline_frequency: " << emulated_render_options.surface_deviation_window_isoline_frequency;
+			emulated_deviation_window_render_options.surface_deviation_window_isoline_frequency);
+// 	qDebug() << "surface_deviation_isoline_frequency: " << emulated_deviation_window_render_options.surface_deviation_window_isoline_frequency;
 
 	// Note that 'render_min_max_depth_radius_restriction' is set in
 	// 'set_iso_surface_and_cross_sections_shader_common_variables()'.
@@ -1031,31 +1029,21 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 			// Distance between samples - and 2.0 is diameter of the globe...
 			2.0f / quality_performance.sampling_rate,
 			quality_performance.sampling_rate / 2.0f);
-	qDebug() << "sampling_rate: "
-		<< 2.0f / quality_performance.sampling_rate << ", "
-		<< quality_performance.sampling_rate / 2.0f;
+// 	qDebug() << "sampling_rate: "
+// 		<< 2.0f / quality_performance.sampling_rate << ", "
+// 		<< quality_performance.sampling_rate / 2.0f;
 	d_render_iso_surface_program_object.get()->gl_uniform1i(
 			renderer,
 			"bisection_iterations",
 			quality_performance.bisection_iterations);
-	qDebug() << "bisection_iterations: " << quality_performance.bisection_iterations;
-
-
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+// 	qDebug() << "bisection_iterations: " << quality_performance.bisection_iterations;
 
 	// Used to draw a full-screen quad.
 	const GLCompiledDrawState::non_null_ptr_to_const_type full_screen_quad_drawable =
 			renderer.get_context().get_shared_state()->get_full_screen_2D_textured_quad(renderer);
 
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
-
 	// Render the full-screen quad.
 	renderer.apply_compiled_draw_state(*full_screen_quad_drawable);
-
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -1694,9 +1682,6 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 		const std::vector<float> &test_variables,
 		boost::optional<GLTexture::shared_ptr_to_const_type> surface_occlusion_texture)
 {
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
-
 	// Set the test variables.
 	set_shader_test_variables(renderer, program_object, test_variables);
 
@@ -1833,7 +1818,7 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 			renderer,
 			"colour_mode_gradient",
 			colour_mode == GPlatesViewOperations::ScalarField3DRenderParameters::COLOUR_MODE_GRADIENT);
-	qDebug() << "colour_mode: " << colour_mode;
+// 	qDebug() << "colour_mode: " << colour_mode;
 
 	// Set the depth restricted min/max depth radius.
 	program_object->gl_uniform2f(
@@ -1841,9 +1826,9 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 			"render_min_max_depth_radius_restriction",
 			depth_restriction.min_depth_radius_restriction,
 			depth_restriction.max_depth_radius_restriction);
-	qDebug() << "render_min_max_depth_radius_restriction: "
-		<< depth_restriction.min_depth_radius_restriction << ", "
-		<< depth_restriction.max_depth_radius_restriction;
+// 	qDebug() << "render_min_max_depth_radius_restriction: "
+// 		<< depth_restriction.min_depth_radius_restriction << ", "
+// 		<< depth_restriction.max_depth_radius_restriction;
 
 	// Set the number of depth layers.
 	program_object->gl_uniform1i(
@@ -1882,9 +1867,6 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 			renderer,
 			"light_ambient_contribution",
 			d_light->get_scene_lighting_parameters().get_ambient_light_contribution());
-
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -2731,9 +2713,6 @@ GPlatesOpenGL::GLScalarField3D::load_scalar_field(
 		GLRenderer &renderer,
 		const GPlatesFileIO::ScalarField3DFileFormat::Reader &scalar_field_reader)
 {
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
-
 	// Load the depth-radius-to-layer 1D texture mapping.
 	load_depth_radius_to_layer_texture(renderer);
 
@@ -2745,12 +2724,6 @@ GPlatesOpenGL::GLScalarField3D::load_scalar_field(
 	boost::shared_array<GPlatesFileIO::ScalarField3DFileFormat::TileMetaData>
 			tile_meta_data = scalar_field_reader.read_tile_meta_data();
 
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
-
-	qDebug() << "GLScalarField3D::load_scalar_field: metadata: "
-		<< scalar_field_reader.get_tile_meta_data_resolution();
-
 	// Upload the tile metadata into the texture array.
 	d_tile_meta_data_texture_array->gl_tex_sub_image_3D(
 			renderer, GL_TEXTURE_2D_ARRAY_EXT, 0,
@@ -2759,9 +2732,6 @@ GPlatesOpenGL::GLScalarField3D::load_scalar_field(
 			scalar_field_reader.get_tile_meta_data_resolution(),
 			6, // One layer per cube face.
 			GL_RGB, GL_FLOAT, tile_meta_data.get());
-
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 
 
 	//
@@ -2783,14 +2753,6 @@ GPlatesOpenGL::GLScalarField3D::load_scalar_field(
 		boost::shared_array<GPlatesFileIO::ScalarField3DFileFormat::FieldDataSample>
 				field_data = scalar_field_reader.read_field_data(layer_index, num_layers_to_read);
 
-		// Check there are no OpenGL errors.
-		GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
-
-		qDebug() << "GLScalarField3D::load_scalar_field: tile: "
-			<< layer_index << ", "
-			<< scalar_field_reader.get_tile_resolution() << ", "
-			<< num_layers_to_read;
-
 		// Upload the current range of field data layers into the texture array.
 		d_field_data_texture_array->gl_tex_sub_image_3D(
 				renderer, GL_TEXTURE_2D_ARRAY_EXT, 0,
@@ -2800,9 +2762,6 @@ GPlatesOpenGL::GLScalarField3D::load_scalar_field(
 				scalar_field_reader.get_tile_resolution(),
 				num_layers_to_read,
 				GL_RGBA, GL_FLOAT, field_data.get());
-
-		// Check there are no OpenGL errors.
-		GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 
 		layer_index += num_layers_to_read;
 	}
@@ -2826,14 +2785,6 @@ GPlatesOpenGL::GLScalarField3D::load_scalar_field(
 		boost::shared_array<GPlatesFileIO::ScalarField3DFileFormat::MaskDataSample>
 				mask_data = scalar_field_reader.read_mask_data(mask_tile_index, num_tiles_to_read);
 
-		// Check there are no OpenGL errors.
-		GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
-
-		qDebug() << "GLScalarField3D::load_scalar_field: tile: "
-			<< mask_tile_index << ", "
-			<< scalar_field_reader.get_tile_resolution() << ", "
-			<< num_tiles_to_read;
-
 		// Upload the current range of mask data into the texture array.
 		d_mask_data_texture_array->gl_tex_sub_image_3D(
 				renderer, GL_TEXTURE_2D_ARRAY_EXT, 0,
@@ -2843,9 +2794,6 @@ GPlatesOpenGL::GLScalarField3D::load_scalar_field(
 				scalar_field_reader.get_tile_resolution(),
 				num_tiles_to_read,
 				GL_RED, GL_FLOAT, mask_data.get());
-
-		// Check there are no OpenGL errors.
-		GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 
 		mask_tile_index += num_tiles_to_read;
 	}
@@ -2901,22 +2849,12 @@ GPlatesOpenGL::GLScalarField3D::load_depth_radius_to_layer_texture(
 	// Last texel is layer 'd_num_depth_layers - 1'.
 	depth_layer_mapping.push_back(d_num_depth_layers - 1/*layer*/);
 
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
-
-	qDebug() << "GLScalarField3D::load_depth_radius_to_layer_texture: "
-		<< depth_radius_to_layer_resolution << ", "
-		<< depth_layer_mapping.size();
-
 	// Upload the depth-radius-to-layer mapping data into the texture.
 	d_depth_radius_to_layer_texture->gl_tex_sub_image_1D(
 			renderer, GL_TEXTURE_1D, 0,
 			0, // x offset
 			depth_radius_to_layer_resolution, // width
 			GL_RED, GL_FLOAT, &depth_layer_mapping[0]);
-
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -2967,22 +2905,12 @@ GPlatesOpenGL::GLScalarField3D::load_colour_palette_texture(
 		colour_palette_texels.push_back(colour->alpha());
 	}
 
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
-
-	qDebug() << "GLScalarField3D::load_colour_palette_texture: "
-		<< colour_palette_resolution << ", "
-		<< colour_palette_texels.size();
-
 	// Upload the colour palette data into the texture.
 	d_colour_palette_texture->gl_tex_sub_image_1D(
 			renderer, GL_TEXTURE_1D, 0,
 			0, // x offset
 			colour_palette_resolution, // width
 			GL_RGBA, GL_FLOAT, &colour_palette_texels[0]);
-
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 

@@ -856,6 +856,7 @@ GPlatesOpenGL::GLState::SharedData::initialise_dependent_state_set_slots(
 	std::vector<bool> dependent_slots(state_set_keys.get_num_state_set_keys());
 	dependent_slots[GLStateSetKeys::KEY_MATRIX_MODE] = true;
 	dependent_slots[GLStateSetKeys::KEY_ACTIVE_TEXTURE] = true;
+	dependent_slots[GLStateSetKeys::KEY_CLIENT_ACTIVE_TEXTURE] = true;
 	dependent_slots[GLStateSetKeys::KEY_BIND_ARRAY_BUFFER_OBJECT] = true;
 
 	// Iterate over all the slots and add to the dependent or inverse-dependent sequence.

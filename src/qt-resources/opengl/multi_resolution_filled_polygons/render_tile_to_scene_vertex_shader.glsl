@@ -17,7 +17,7 @@ void main (void)
 	gl_TexCoord[1] = gl_TextureMatrix[1] * gl_Vertex;
 
 #ifdef SURFACE_LIGHTING
-    // This assumes the geometry does not need a model transform (eg, reconstruction rotation).
-    world_space_position = gl_Vertex.xyz / gl_Vertex.w;
+	// This assumes the geometry does not need a model transform (eg, reconstruction rotation).
+	world_space_position = gl_Vertex.xyz / gl_Vertex.w;
 #endif
 }

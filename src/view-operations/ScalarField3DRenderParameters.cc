@@ -41,7 +41,7 @@ GPlatesViewOperations::ScalarField3DRenderParameters::ScalarField3DRenderParamet
 		ColourMode colour_mode,
 		const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &colour_palette,
 		const IsovalueParameters &isovalue_parameters,
-		const RenderOptions &render_options,
+		const DeviationWindowRenderOptions &deviation_window_render_options,
 		const SurfacePolygonsMask &surface_polygons_mask,
 		const DepthRestriction &depth_restriction,
 		const QualityPerformance &quality_performance,
@@ -50,7 +50,7 @@ GPlatesViewOperations::ScalarField3DRenderParameters::ScalarField3DRenderParamet
 	d_colour_mode(colour_mode),
 	d_colour_palette(colour_palette),
 	d_isovalue_parameters(isovalue_parameters),
-	d_render_options(render_options),
+	d_deviation_window_render_options(deviation_window_render_options),
 	d_surface_polygons_mask(surface_polygons_mask),
 	d_depth_restriction(depth_restriction),
 	d_quality_performance(quality_performance),
@@ -72,7 +72,7 @@ GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters::Isoval
 }
 
 
-GPlatesViewOperations::ScalarField3DRenderParameters::RenderOptions::RenderOptions(
+GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions::DeviationWindowRenderOptions(
 		float opacity_deviation_surfaces_,
 		bool deviation_window_volume_rendering_,
 		float opacity_deviation_window_volume_rendering_,

@@ -242,7 +242,7 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::ScalarField3DLayerOptionsWidg
 	surface_deviation_window_button->setCursor(QCursor(Qt::ArrowCursor));
 	QObject::connect(
 			surface_deviation_window_button, SIGNAL(stateChanged(int)),
-			this, SLOT(handle_isoline_frequency_check_box_changed()));
+			this, SLOT(handle_surface_deviation_window_check_box_changed()));
 	isoline_frequency_spin_box->setCursor(QCursor(Qt::ArrowCursor));
 	QObject::connect(
 			isoline_frequency_spin_box, SIGNAL(valueChanged(int)),
@@ -603,31 +603,36 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::set_data(
 					this, SLOT(handle_symmetric_deviation_check_box_changed()));
 
 			//
-			// Set the render options.
+			// Set the deviation window render options.
 			//
 
-			const GPlatesViewOperations::ScalarField3DRenderParameters::RenderOptions render_options =
-					visual_layer_params->get_render_options();
+			const GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions
+					deviation_window_render_options = visual_layer_params->get_deviation_window_render_options();
 			QObject::disconnect(
 					opacity_deviation_surfaces_spin_box, SIGNAL(valueChanged(double)),
 					this, SLOT(handle_opacity_deviation_surfaces_spinbox_changed(double)));
-			opacity_deviation_surfaces_spin_box->setValue(render_options.opacity_deviation_surfaces);
+			opacity_deviation_surfaces_spin_box->setValue(
+					deviation_window_render_options.opacity_deviation_surfaces);
 			QObject::connect(
 					opacity_deviation_surfaces_spin_box, SIGNAL(valueChanged(double)),
 					this, SLOT(handle_opacity_deviation_surfaces_spinbox_changed(double)));
-			volume_render_deviation_window_button->setChecked(render_options.deviation_window_volume_rendering);
+			volume_render_deviation_window_button->setChecked(
+					deviation_window_render_options.deviation_window_volume_rendering);
 			QObject::disconnect(
 					opacity_deviation_volume_rendering_spin_box, SIGNAL(valueChanged(double)),
 					this, SLOT(handle_opacity_deviation_volume_rendering_spinbox_changed(double)));
-			opacity_deviation_volume_rendering_spin_box->setValue(render_options.opacity_deviation_window_volume_rendering);
+			opacity_deviation_volume_rendering_spin_box->setValue(
+					deviation_window_render_options.opacity_deviation_window_volume_rendering);
 			QObject::connect(
 					opacity_deviation_volume_rendering_spin_box, SIGNAL(valueChanged(double)),
 					this, SLOT(handle_opacity_deviation_volume_rendering_spinbox_changed(double)));
-			surface_deviation_window_button->setChecked(render_options.surface_deviation_window);
+			surface_deviation_window_button->setChecked(
+					deviation_window_render_options.surface_deviation_window);
 			QObject::disconnect(
 					isoline_frequency_spin_box, SIGNAL(valueChanged(int)),
 					this, SLOT(handle_isoline_frequency_spinbox_changed(int)));
-			isoline_frequency_spin_box->setValue(render_options.surface_deviation_window_isoline_frequency);
+			isoline_frequency_spin_box->setValue(
+					deviation_window_render_options.surface_deviation_window_isoline_frequency);
 			QObject::connect(
 					isoline_frequency_spin_box, SIGNAL(valueChanged(int)),
 					this, SLOT(handle_isoline_frequency_spinbox_changed(int)));
@@ -918,7 +923,7 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::disable_options_for_default_v
 	{
 	case GPlatesViewOperations::ScalarField3DRenderParameters::RENDER_MODE_ISOSURFACE:
 	case GPlatesViewOperations::ScalarField3DRenderParameters::RENDER_MODE_CROSS_SECTIONS:
-		render_options_group_box->setEnabled(false);
+		deviation_window_render_options_group_box->setEnabled(false);
 		break;
 
 	case GPlatesViewOperations::ScalarField3DRenderParameters::RENDER_MODE_SINGLE_DEVIATION_WINDOW:
@@ -927,11 +932,12 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::disable_options_for_default_v
 		break;
 	}
 
-	if (!default_scalar_field_render_parameters.get_render_options().deviation_window_volume_rendering)
+	if (!default_scalar_field_render_parameters.get_deviation_window_render_options().deviation_window_volume_rendering)
 	{
 		opacity_deviation_volume_rendering_widget->setEnabled(false);
 	}
-	if (!default_scalar_field_render_parameters.get_render_options().surface_deviation_window)
+	if (!default_scalar_field_render_parameters.get_deviation_window_render_options().surface_deviation_window &&
+		!default_scalar_field_render_parameters.get_surface_polygons_mask().show_polygon_walls)
 	{
 		isoline_frequency_widget->setEnabled(false);
 	}
@@ -1029,8 +1035,8 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_render_mode_button(
 					single_deviation_window_render_mode_button->isChecked() ||
 						double_deviation_window_render_mode_button->isChecked());
 
-			// The render options only apply to single/double deviation window rendering.
-			render_options_group_box->setEnabled(
+			// The deviation window render options only apply to single/double deviation window rendering.
+			deviation_window_render_options_group_box->setEnabled(
 					single_deviation_window_render_mode_button->isChecked() ||
 						double_deviation_window_render_mode_button->isChecked());
 
@@ -1879,12 +1885,12 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_opacity_deviation_surf
 					locked_visual_layer->get_visual_layer_params().get());
 		if (visual_layer_params)
 		{
-			GPlatesViewOperations::ScalarField3DRenderParameters::RenderOptions render_options =
-					visual_layer_params->get_render_options();
+			GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions
+					deviation_window_render_options = visual_layer_params->get_deviation_window_render_options();
 
-			render_options.opacity_deviation_surfaces = opacity;
+			deviation_window_render_options.opacity_deviation_surfaces = opacity;
 
-			visual_layer_params->set_render_options(render_options);
+			visual_layer_params->set_deviation_window_render_options(deviation_window_render_options);
 		}
 	}
 }
@@ -1901,12 +1907,13 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_volume_render_deviatio
 					locked_visual_layer->get_visual_layer_params().get());
 		if (visual_layer_params)
 		{
-			GPlatesViewOperations::ScalarField3DRenderParameters::RenderOptions render_options =
-					visual_layer_params->get_render_options();
+			GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions
+					deviation_window_render_options = visual_layer_params->get_deviation_window_render_options();
 
-			render_options.deviation_window_volume_rendering = volume_render_deviation_window_button->isChecked();
+			deviation_window_render_options.deviation_window_volume_rendering =
+					volume_render_deviation_window_button->isChecked();
 
-			visual_layer_params->set_render_options(render_options);
+			visual_layer_params->set_deviation_window_render_options(deviation_window_render_options);
 
 			// The volume rendering opacity spinbox only applies if volume rendering is enabled.
 			opacity_deviation_volume_rendering_widget->setEnabled(
@@ -1928,19 +1935,19 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_opacity_deviation_volu
 					locked_visual_layer->get_visual_layer_params().get());
 		if (visual_layer_params)
 		{
-			GPlatesViewOperations::ScalarField3DRenderParameters::RenderOptions render_options =
-					visual_layer_params->get_render_options();
+			GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions
+					deviation_window_render_options = visual_layer_params->get_deviation_window_render_options();
 
-			render_options.opacity_deviation_window_volume_rendering = opacity;
+			deviation_window_render_options.opacity_deviation_window_volume_rendering = opacity;
 
-			visual_layer_params->set_render_options(render_options);
+			visual_layer_params->set_deviation_window_render_options(deviation_window_render_options);
 		}
 	}
 }
 
 
 void
-GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_isoline_frequency_check_box_changed()
+GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_surface_deviation_window_check_box_changed()
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			d_current_visual_layer.lock())
@@ -1950,16 +1957,23 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_isoline_frequency_chec
 					locked_visual_layer->get_visual_layer_params().get());
 		if (visual_layer_params)
 		{
-			GPlatesViewOperations::ScalarField3DRenderParameters::RenderOptions render_options =
-					visual_layer_params->get_render_options();
+			GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions
+					deviation_window_render_options = visual_layer_params->get_deviation_window_render_options();
 
-			render_options.surface_deviation_window = surface_deviation_window_button->isChecked();
+			deviation_window_render_options.surface_deviation_window =
+					surface_deviation_window_button->isChecked();
 
-			visual_layer_params->set_render_options(render_options);
+			visual_layer_params->set_deviation_window_render_options(deviation_window_render_options);
 
-			// The isoline frequency spinbox only applies if surface deviation is enabled.
+			// The isoline frequency spinbox only applies if surface deviation is enabled and
+			// either the outer spherical surface or the polygon walls are shown.
+			// It's possible that show-polygon-walls is on and surface deviation is disabled but
+			// we don't check for that because the isoline-frequency spinbox will be disabled anyway
+			// because it's render options group box is disabled and it will be re-enabled once
+			// the render options group box is re-enabled ().
 			isoline_frequency_widget->setEnabled(
-					surface_deviation_window_button->isChecked());
+					surface_deviation_window_button->isChecked() ||
+						show_polygon_walls_button->isChecked());
 		}
 	}
 }
@@ -1977,12 +1991,12 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_isoline_frequency_spin
 					locked_visual_layer->get_visual_layer_params().get());
 		if (visual_layer_params)
 		{
-			GPlatesViewOperations::ScalarField3DRenderParameters::RenderOptions render_options =
-					visual_layer_params->get_render_options();
+			GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions
+					deviation_window_render_options = visual_layer_params->get_deviation_window_render_options();
 
-			render_options.surface_deviation_window_isoline_frequency = frequency;
+			deviation_window_render_options.surface_deviation_window_isoline_frequency = frequency;
 
-			visual_layer_params->set_render_options(render_options);
+			visual_layer_params->set_deviation_window_render_options(deviation_window_render_options);
 		}
 	}
 }
@@ -2011,6 +2025,12 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_surface_polygons_mask_
 			// The 'show only boundary walls' checkbox only applies if 'show polygon walls' is checked.
 			only_show_boundary_walls_button->setEnabled(
 					show_polygon_walls_button->isChecked());
+
+			// The isoline frequency spinbox only applies if surface deviation is enabled and
+			// either the outer spherical surface or the polygon walls are shown.
+			isoline_frequency_widget->setEnabled(
+					surface_deviation_window_button->isChecked() ||
+						show_polygon_walls_button->isChecked());
 		}
 	}
 }

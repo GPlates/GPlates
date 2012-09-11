@@ -143,10 +143,6 @@ uniform bool using_surface_fill_mask;
 uniform sampler2DArray surface_fill_mask_sampler;
 uniform int surface_fill_mask_resolution;
 
-// If we have the depth range of the volume fill region (if using surface fill mask).
-uniform bool using_volume_fill_depth_range;
-uniform sampler2D volume_fill_depth_range_sampler;
-
 // If rendering the walls of the extruded fill volume.
 uniform bool show_volume_fill_walls;
 uniform sampler2D volume_fill_walls_sampler;
@@ -161,8 +157,8 @@ uniform vec2 min_max_depth_radius;
 // The depth range rendering is restricted to.
 // If depth range is not restricted then this is the same as 'min_max_depth_radius'.
 // Also the following conditions hold:
-//    render_min_max_depth_radius_restriction.x >= min_max_depth_radius.x
-//    render_min_max_depth_radius_restriction.y <= min_max_depth_radius.y
+//	render_min_max_depth_radius_restriction.x >= min_max_depth_radius.x
+//	render_min_max_depth_radius_restriction.y <= min_max_depth_radius.y
 // ...in other words the depth range for rendering is always within the actual depth range.
 uniform vec2 render_min_max_depth_radius_restriction;
 
@@ -181,7 +177,8 @@ varying vec2 screen_coord;
 
 
 // Function for isosurface/deviation window bisection position correction
-void bisection_correction(
+void
+bisection_correction(
 		inout vec3 ray_sample_position,
 		inout float lambda,
 		float lambda_increment,
@@ -201,8 +198,8 @@ void bisection_correction(
 	float ray_sample_depth_radius;
 	float ray_depth_layer;
 	vec2 tile_offset_uv;
-    vec2 tile_meta_data_coordinate_uv;
-    vec2 tile_coordinate_uv;
+	vec2 tile_meta_data_coordinate_uv;
+	vec2 tile_coordinate_uv;
 	vec3 tile_meta_data;
 	float tile_ID;
 	int crossing_level_center;
@@ -226,7 +223,6 @@ void bisection_correction(
 
 		if (using_surface_fill_mask)
 		{
-       
 			active_center = projects_into_surface_fill_mask(surface_fill_mask_sampler, surface_fill_mask_resolution, cube_face_index, cube_face_coordinate_uv);
 		}
 
@@ -284,7 +280,16 @@ void bisection_correction(
 }
 
 // Function for returning the colour when sampling intervals contain transparent window enclosing surface, isosurface or several surfaces combined in one interval
-vec4 get_blended_crossing_colour(vec3 ray_sample_position, Ray ray, vec3 normal, int crossing_level_back, int crossing_level_front, bool positive_crossing, mat4 colour_matrix_init, vec3 field_gradient)
+vec4
+get_blended_crossing_colour(
+		vec3 ray_sample_position,
+		Ray ray,
+		vec3 normal,
+		int crossing_level_back,
+		int crossing_level_front,
+		bool positive_crossing,
+		mat4 colour_matrix_init,
+		vec3 field_gradient)
 {
 	vec4 colour_crossing = vec4(0,0,0,0);
 	
@@ -312,7 +317,9 @@ vec4 get_blended_crossing_colour(vec3 ray_sample_position, Ray ray, vec3 normal,
 	// Gradient strength to isosurface colour-mapping
 	if (colour_mode_gradient)
 	{
-		mat3x4 colour_matrix;
+		// MacOS (Snow Leopard) GLSL compiler crashes if this is mat3x4 so
+		// just adding an unused column to keep compiler happy.
+		mat4 colour_matrix;
 
 		if (!positive_crossing)
 		{
@@ -320,27 +327,25 @@ vec4 get_blended_crossing_colour(vec3 ray_sample_position, Ray ray, vec3 normal,
 			
 			// Colour of first window surface crossed by ray, whose gradient is pointing "away" from isosurface
 			// Mapping of -||gradient||: [-max||gradient||,0] -> [col_map(0),col_map(0.5)]
-			// Scaling factor 0.8 as red maps to 0.8 and not 1
-			// TODO: change of colormap [0,1] -> [blue,red]
-		    vec4 colour_tmp1 = look_up_table_1D(
+			vec4 colour_tmp1 = look_up_table_1D(
 					colour_palette_sampler,
 					colour_palette_resolution,
-					0,
-					1,
-					0.8*(-length(field_gradient)+min_max_gradient_magnitude.y)/(2*min_max_gradient_magnitude.y));
+					-min_max_gradient_magnitude.y,
+					min_max_gradient_magnitude.y,
+					-length(field_gradient));
 
 			// Colour of second window surface crossed by ray, whose gradient is pointing "to" the isosurface
 			// Mapping of ||gradient||: [0,max||gradient||] -> [col_map(0.5),col_map(1)]
-			// Scaling factor 0.8 as red maps to 0.8 and not 1
-			// TODO: change of colormap [0,1] -> [blue,red]
 			vec4 colour_tmp2 = look_up_table_1D(
 					colour_palette_sampler,
 					colour_palette_resolution,
-					0,
-					1,
-					0.8*(length(field_gradient)+min_max_gradient_magnitude.y)/(2*min_max_gradient_magnitude.y));
+					-min_max_gradient_magnitude.y,
+					min_max_gradient_magnitude.y,
+					length(field_gradient));
 
-			colour_matrix = mat3x4(vec4(colour_tmp1.rgb,alpha),vec4(1,1,1,1),vec4(colour_tmp2.rgb,alpha)); 
+			// MacOS (Snow Leopard) GLSL compiler crashes if this is mat3x4 so
+			// just adding an unused column to keep compiler happy.
+			colour_matrix = mat4(vec4(colour_tmp1.rgb,alpha),vec4(1,1,1,1),vec4(colour_tmp2.rgb,alpha),vec4(1)); 
 			
 			crossing_level_back = 6-crossing_level_back;
 			crossing_level_front = 6-crossing_level_front;
@@ -351,27 +356,25 @@ vec4 get_blended_crossing_colour(vec3 ray_sample_position, Ray ray, vec3 normal,
 
 			// Colour of first window surface crossed by ray, whose gradient is pointing "to" the isosurface
 			// Mapping of ||gradient||: [0,max||gradient||] -> [col_map(0.5),col_map(1)]
-			// Scaling factor 0.8 as red maps to 0.8 and not 1
-			// TODO: change of colormap [0,1] -> [blue,red]
 			vec4 colour_tmp1 = look_up_table_1D(
 					colour_palette_sampler,
 					colour_palette_resolution,
-					0,
-					1,
-					0.8*(length(field_gradient)+min_max_gradient_magnitude.y)/(2*min_max_gradient_magnitude.y));
+					-min_max_gradient_magnitude.y,
+					min_max_gradient_magnitude.y,
+					length(field_gradient));
 
 			// Colour of first window surface crossed by ray, whose gradient is pointing "away" from isosurface
 			// Mapping of -||gradient||: [-max||gradient||,0] -> [col_map(0),col_map(0.5)]
-			// Scaling factor 0.8 as red maps to 0.8 and not 1
-			// TODO: change of colormap [0,1] -> [blue,red]
 			vec4 colour_tmp2 = look_up_table_1D(
 					colour_palette_sampler,
 					colour_palette_resolution,
-					0,
-					1,
-					0.8*(-length(field_gradient)+min_max_gradient_magnitude.y)/(2*min_max_gradient_magnitude.y));
+					-min_max_gradient_magnitude.y,
+					min_max_gradient_magnitude.y,
+					-length(field_gradient));
 
-			colour_matrix = mat3x4(vec4(colour_tmp1.rgb,alpha),vec4(1,1,1,1),vec4(colour_tmp2.rgb,alpha)); 
+			// MacOS (Snow Leopard) GLSL compiler crashes if this is mat3x4 so
+			// just adding an unused column to keep compiler happy.
+			colour_matrix = mat4(vec4(colour_tmp1.rgb,alpha),vec4(1,1,1,1),vec4(colour_tmp2.rgb,alpha),vec4(1));
 		}
 
 		// Blending of colours of surfaces in the deviation window zones for isovalue1 and isovalue2
@@ -391,14 +394,18 @@ vec4 get_blended_crossing_colour(vec3 ray_sample_position, Ray ray, vec3 normal,
 	//			Isosurface is white.
 	if (colour_mode_depth)
 	{
-		mat3x4 colour_matrix;
+		// MacOS (Snow Leopard) GLSL compiler crashes if this is mat3x4 so
+		// just adding an unused column to keep compiler happy.
+		mat4 colour_matrix;
 
 		if (!positive_crossing)
 		{
 			// Ray crosses surfaces in opposite gradient direction: dot(ray.direction,gradient) < 0
 
 			// Colour order of surfaces in one deviation window zone in ray direction
-			colour_matrix = mat3x4(vec4(1,depth_relative,0,alpha),vec4(1,1,1,1),vec4(0,depth_relative,1,alpha)); 
+			// MacOS (Snow Leopard) GLSL compiler crashes if this is mat3x4 so
+			// just adding an unused column to keep compiler happy.
+			colour_matrix = mat4(vec4(1,depth_relative,0,alpha),vec4(1,1,1,1),vec4(0,depth_relative,1,alpha),vec4(1)); 
 			
 			// Flip order of crossing level IDs
 			crossing_level_back = 6-crossing_level_back;
@@ -409,7 +416,9 @@ vec4 get_blended_crossing_colour(vec3 ray_sample_position, Ray ray, vec3 normal,
 			// Ray crosses surfaces in gradient direction: dot(ray.direction,gradient) > 0
 
 			// Colour order of surfaces in one deviation window zone in ray direction
-			colour_matrix = mat3x4(vec4(0,depth_relative,1,alpha),vec4(1,1,1,1),vec4(1,depth_relative,0,alpha)); 
+			// MacOS (Snow Leopard) GLSL compiler crashes if this is mat3x4 so
+			// just adding an unused column to keep compiler happy.
+			colour_matrix = mat4(vec4(0,depth_relative,1,alpha),vec4(1,1,1,1),vec4(1,depth_relative,0,alpha),vec4(1)); 
 		}
 
 		// Blending of colours of surfaces in the deviation window zones for isovalue1 and isovalue2
@@ -427,17 +436,23 @@ vec4 get_blended_crossing_colour(vec3 ray_sample_position, Ray ray, vec3 normal,
 	// Mapping according to colourmap. Colour for window surfaces is stored in colour_matrix_init.
 	if (colour_mode_isovalue)
 	{
-		mat3x4 colour_matrix_back, colour_matrix_front;
+		// MacOS (Snow Leopard) GLSL compiler crashes if this is mat3x4 so
+		// just adding an unused column to keep compiler happy.
+		mat4 colour_matrix_back, colour_matrix_front;
 
 		if (!positive_crossing)
 		{
 			// Ray crosses surfaces in opposite gradient direction: dot(ray.direction,gradient) < 0
 
 			// Colour order of surfaces in deviation window zone for isovalue2
-			colour_matrix_back = mat3x4(vec4(colour_matrix_init[3].rgb,alpha),vec4(1,1,1,1),vec4(colour_matrix_init[2].rgb,alpha));
+			// MacOS (Snow Leopard) GLSL compiler crashes if this is mat3x4 so
+			// just adding an unused column to keep compiler happy.
+			colour_matrix_back = mat4(vec4(colour_matrix_init[3].rgb,alpha),vec4(1,1,1,1),vec4(colour_matrix_init[2].rgb,alpha),vec4(1));
 
 			// Colour order of surfaces in deviation window zone for isovalue1
-			colour_matrix_front = mat3x4(vec4(colour_matrix_init[1].rgb,alpha),vec4(1,1,1,1),vec4(colour_matrix_init[0].rgb,alpha));
+			// MacOS (Snow Leopard) GLSL compiler crashes if this is mat3x4 so
+			// just adding an unused column to keep compiler happy.
+			colour_matrix_front = mat4(vec4(colour_matrix_init[1].rgb,alpha),vec4(1,1,1,1),vec4(colour_matrix_init[0].rgb,alpha),vec4(1));
 
 			// Flip order of crossing level IDs
 			crossing_level_back = 6-crossing_level_back;
@@ -449,10 +464,14 @@ vec4 get_blended_crossing_colour(vec3 ray_sample_position, Ray ray, vec3 normal,
 			// Ray crosses surfaces in gradient direction: dot(ray.direction,gradient) > 0
 
 			// Colour order of surfaces in deviation window zone for isovalue1
-			colour_matrix_back = mat3x4(vec4(colour_matrix_init[0].rgb,alpha),vec4(1,1,1,1),vec4(colour_matrix_init[1].rgb,alpha));
+			// MacOS (Snow Leopard) GLSL compiler crashes if this is mat3x4 so
+			// just adding an unused column to keep compiler happy.
+			colour_matrix_back = mat4(vec4(colour_matrix_init[0].rgb,alpha),vec4(1,1,1,1),vec4(colour_matrix_init[1].rgb,alpha),vec4(1));
 
 			// Colour order of surfaces in deviation window zone for isovalue2
-			colour_matrix_front = mat3x4(vec4(colour_matrix_init[2].rgb,alpha),vec4(1,1,1,1),vec4(colour_matrix_init[3].rgb,alpha));
+			// MacOS (Snow Leopard) GLSL compiler crashes if this is mat3x4 so
+			// just adding an unused column to keep compiler happy.
+			colour_matrix_front = mat4(vec4(colour_matrix_init[2].rgb,alpha),vec4(1,1,1,1),vec4(colour_matrix_init[3].rgb,alpha),vec4(1));
 		}
 
 		// Blending of colours of surfaces in the first deviation window (in ray direction)
@@ -475,7 +494,12 @@ vec4 get_blended_crossing_colour(vec3 ray_sample_position, Ray ray, vec3 normal,
 
 
 // Function for returning the colour of transparant volume between window enclosing surfaces and isosurface if volume rendering is turned on
-vec4 get_volume_colour(float ray_sample_depth_radius, int crossing_level_front_mod, float field_scalar, vec3 field_gradient)
+vec4
+get_volume_colour(
+		float ray_sample_depth_radius,
+		int crossing_level_front_mod,
+		float field_scalar,
+		vec3 field_gradient)
 {
 	vec4 colour_volume;
 
@@ -488,27 +512,23 @@ vec4 get_volume_colour(float ray_sample_depth_radius, int crossing_level_front_m
 		{
 			// Sampling point with gradient pointing towards isosurface
 			// Mapping of ||gradient||: [0,max||gradient||] -> [col_map(0.5),col_map(1)]
-			// Scaling factor 0.8 as red maps to 0.8 and not 1
-			// TODO: change of colormap [0,1] -> [blue,red]
 			colour_volume = look_up_table_1D(
 								colour_palette_sampler,
 								colour_palette_resolution,
-								0,
-								1,
-								0.8*(length(field_gradient)+min_max_gradient_magnitude.y)/(2*min_max_gradient_magnitude.y));
+                        -min_max_gradient_magnitude.y,
+                        min_max_gradient_magnitude.y,
+                        length(field_gradient));
 		}
 		else
 		{
 			// Sampling point with gradient pointing away from isosurface
 			// Mapping of -||gradient||: [-max||gradient||,0] -> [col_map(0),col_map(0.5)]
-			// Scaling factor 0.8 as red maps to 0.8 and not 1
-			// TODO: change of colormap [0,1] -> [blue,red]
 			colour_volume = look_up_table_1D(
 								colour_palette_sampler,
 								colour_palette_resolution,
-								0,
-								1,
-								0.8*(-length(field_gradient)+min_max_gradient_magnitude.y)/(2*min_max_gradient_magnitude.y));
+                        -min_max_gradient_magnitude.y,
+                        min_max_gradient_magnitude.y,
+                        -length(field_gradient));
 		}
 
 		return colour_volume;
@@ -539,7 +559,12 @@ vec4 get_volume_colour(float ray_sample_depth_radius, int crossing_level_front_m
 }
 
 // Function for returning the colour within window zones at surface of outer sphere
-vec4 get_surface_entry_colour(float field_scalar, vec3 field_gradient, float iso_value, float deviation)
+vec4
+get_surface_entry_colour(
+		float field_scalar,
+		vec3 field_gradient,
+		float iso_value,
+		float deviation)
 {
 	vec4 colour_surface;
 			
@@ -550,27 +575,23 @@ vec4 get_surface_entry_colour(float field_scalar, vec3 field_gradient, float iso
 		{
 			// Sampling point with gradient pointing towards isosurface
 			// Mapping of ||gradient||: [0,max||gradient||] -> [col_map(0.5),col_map(1)]
-			// Scaling factor 0.8 as red maps to 0.8 and not 1
-			// TODO: change of colormap [0,1] -> [blue,red]
 			colour_surface = look_up_table_1D(
 								colour_palette_sampler,
 								colour_palette_resolution,
-								0,
-								1,
-								0.8*(length(field_gradient)+min_max_gradient_magnitude.y)/(2*min_max_gradient_magnitude.y));
+                        -min_max_gradient_magnitude.y,
+                        min_max_gradient_magnitude.y,
+                        length(field_gradient));
 		}
 		else
 		{
 			// Sampling point with gradient pointing away from isosurface
 			// Mapping of -||gradient||: [-max||gradient||,0] -> [col_map(0),col_map(0.5)]
-			// Scaling factor 0.8 as red maps to 0.8 and not 1
-			// TODO: change of colormap [0,1] -> [blue,red]
 			colour_surface = look_up_table_1D(
 								colour_palette_sampler,
 								colour_palette_resolution,
-								0,
-								1,
-								0.8*(-length(field_gradient)+min_max_gradient_magnitude.y)/(2*min_max_gradient_magnitude.y));
+                        -min_max_gradient_magnitude.y,
+                        min_max_gradient_magnitude.y,
+                        -length(field_gradient));
 		}
 
 		return colour_surface;
@@ -609,7 +630,13 @@ vec4 get_surface_entry_colour(float field_scalar, vec3 field_gradient, float iso
 }
 
 // Function for returning the colour within window zones at extruded polygon walls
-vec4 get_wall_entry_colour(float field_scalar, vec3 field_gradient, float iso_value, float deviation, float depth_relative)
+vec4
+get_wall_entry_colour(
+		float field_scalar,
+		vec3 field_gradient,
+		float iso_value,
+		float deviation,
+		float depth_relative)
 {
 	vec4 colour_wall;
 			
@@ -620,27 +647,23 @@ vec4 get_wall_entry_colour(float field_scalar, vec3 field_gradient, float iso_va
 		{
 			// Sampling point with gradient pointing towards isosurface
 			// Mapping of ||gradient||: [0,max||gradient||] -> [col_map(0.5),col_map(1)]
-			// Scaling factor 0.8 as red maps to 0.8 and not 1
-			// TODO: change of colormap [0,1] -> [blue,red]
 			colour_wall = look_up_table_1D(
 								colour_palette_sampler,
 								colour_palette_resolution,
-								0,
-								1,
-								0.8*(length(field_gradient)+min_max_gradient_magnitude.y)/(2*min_max_gradient_magnitude.y));
+                        -min_max_gradient_magnitude.y,
+                        min_max_gradient_magnitude.y,
+                        length(field_gradient));
 		}
 		else
 		{
 			// Sampling point with gradient pointing away from isosurface
 			// Mapping of -||gradient||: [-max||gradient||,0] -> [col_map(0),col_map(0.5)]
-			// Scaling factor 0.8 as red maps to 0.8 and not 1
-			// TODO: change of colormap [0,1] -> [blue,red]
 			colour_wall = look_up_table_1D(
 								colour_palette_sampler,
 								colour_palette_resolution,
-								0,
-								1,
-								0.8*(-length(field_gradient)+min_max_gradient_magnitude.y)/(2*min_max_gradient_magnitude.y));
+                        -min_max_gradient_magnitude.y,
+                        min_max_gradient_magnitude.y,
+                        -length(field_gradient));
 		}
 
 		return colour_wall;
@@ -696,7 +719,10 @@ vec4 get_wall_entry_colour(float field_scalar, vec3 field_gradient, float iso_va
 }
 		
 // Raycasting process
-bool raycasting(out vec4 colour, out vec3 iso_surface_position)
+bool
+raycasting(
+		out vec4 colour,
+		out vec3 iso_surface_position)
 {
 	// Return values after ray casting stopped
 	colour = vec4(0,0,0,0);
@@ -736,86 +762,86 @@ bool raycasting(out vec4 colour, out vec3 iso_surface_position)
 								isovalue2.x+isovalue2.z);
 
 
-    // This branches on a uniform variable and hence is efficient since all pixels follow same path.
-    if (read_from_surface_occlusion_texture)
-    {
-        // If a surface object on the front of the globe has an alpha value of 1.0 (and hence occludes
-        // the current ray) then discard the current pixel.
-        // Convert [-1,1] range to [0,1] for texture coordinates.
-        float surface_occlusion = texture2D(surface_occlusion_texture_sampler, 0.5 * screen_coord + 0.5).a;
-        
+	// This branches on a uniform variable and hence is efficient since all pixels follow same path.
+	if (read_from_surface_occlusion_texture)
+	{
+		// If a surface object on the front of the globe has an alpha value of 1.0 (and hence occludes
+		// the current ray) then discard the current pixel.
+		// Convert [-1,1] range to [0,1] for texture coordinates.
+		float surface_occlusion = texture2D(surface_occlusion_texture_sampler, 0.5 * screen_coord + 0.5).a;
+		
 		if (surface_occlusion == 1.0)
-        {
-            return false;
-        }
-    }
+		{
+			return false;
+		}
+	}
 
-    vec3 eye_position;
-    // This branches on a uniform variable and hence is efficient since all pixels follow same path.
-    if (using_ortho_projection)
-    {
-        // Calculate a pseudo eye position when using an orthographic view projection.
-        // The real eye position is at infinity and generates parallel rays for all pixels.
-        // This is such that the ray will always be parallel to the view direction.
-        // Use an arbitrary post-projection screen-space depth of -2.
-        // Any value will do as long as it's outside the view frustum [-1,1] and not *on* the near plane (z = -1).
-        eye_position = screen_to_world(vec3(screen_coord, -2.0), gl_ModelViewProjectionMatrixInverse);
-    }
-    else
-    {
-        eye_position = perspective_projection_eye_position;
-    }
+	vec3 eye_position;
+	// This branches on a uniform variable and hence is efficient since all pixels follow same path.
+	if (using_ortho_projection)
+	{
+		// Calculate a pseudo eye position when using an orthographic view projection.
+		// The real eye position is at infinity and generates parallel rays for all pixels.
+		// This is such that the ray will always be parallel to the view direction.
+		// Use an arbitrary post-projection screen-space depth of -2.
+		// Any value will do as long as it's outside the view frustum [-1,1] and not *on* the near plane (z = -1).
+		eye_position = screen_to_world(vec3(screen_coord, -2.0), gl_ModelViewProjectionMatrixInverse);
+	}
+	else
+	{
+		eye_position = perspective_projection_eye_position;
+	}
 
-    // Squared outer depth sphere radius is set.
-    Sphere outer_depth_sphere = Sphere(render_min_max_depth_radius_restriction.y * render_min_max_depth_radius_restriction.y);
+	// Squared outer depth sphere radius is set.
+	Sphere outer_depth_sphere = Sphere(render_min_max_depth_radius_restriction.y * render_min_max_depth_radius_restriction.y);
 
-    // Ray is initialized.
-    Ray ray = get_ray(screen_coord, gl_ModelViewProjectionMatrixInverse, eye_position);
+	// Ray is initialized.
+	Ray ray = get_ray(screen_coord, gl_ModelViewProjectionMatrixInverse, eye_position);
 
-    // Test if ray intersects with outer depth sphere.
-    Interval outer_depth_sphere_interval;
-    if (!intersect(outer_depth_sphere, ray, outer_depth_sphere_interval))
-    {
-        // Discard the current pixel.
-        return false;
-    }
+	// Test if ray intersects with outer depth sphere.
+	Interval outer_depth_sphere_interval;
+	if (!intersect(outer_depth_sphere, ray, outer_depth_sphere_interval))
+	{
+		// Discard the current pixel.
+		return false;
+	}
 
-    // Maximum ray length.
-    float max_lambda = outer_depth_sphere_interval.to;
+	// Maximum ray length.
+	float max_lambda = outer_depth_sphere_interval.to;
 
 	 // Start distance between sampling point and ray origin.
-    float min_lambda = outer_depth_sphere_interval.from;
+	float min_lambda = outer_depth_sphere_interval.from;
 
    
 	// This branches on a uniform variable and hence is efficient since all pixels follow same path.
-    if (read_from_depth_texture)
-    {
-        // The depth texture might reduce the maximum ray length enabling early ray termination.
-        // Convert [-1,1] range to [0,1] for texture coordinates.
-        // Depth texture is a single-channel floating-point texture (GL_R32F).
-        float depth_texture_screen_space_depth = texture2D(depth_texture_sampler, 0.5 * screen_coord + 0.5).r;
-        float depth_texture_lambda = convert_screen_space_depth_to_ray_lambda(
-                depth_texture_screen_space_depth, screen_coord, gl_ModelViewProjectionMatrixInverse, eye_position);
-        max_lambda = min(max_lambda, depth_texture_lambda);
-    }
+	if (read_from_depth_texture)
+	{
+		// The depth texture might reduce the maximum ray length enabling early ray termination.
+		// Convert [-1,1] range to [0,1] for texture coordinates.
+		// Depth texture is a single-channel floating-point texture (GL_R32F).
+		float depth_texture_screen_space_depth = texture2D(depth_texture_sampler, 0.5 * screen_coord + 0.5).r;
+		float depth_texture_lambda = convert_screen_space_depth_to_ray_lambda(
+				depth_texture_screen_space_depth, screen_coord, gl_ModelViewProjectionMatrixInverse, eye_position);
+		max_lambda = min(max_lambda, depth_texture_lambda);
+	}
 
 	
 
-    // Squared radius of the inner depth sphere is set.
-    Sphere inner_depth_sphere = Sphere(render_min_max_depth_radius_restriction.x * render_min_max_depth_radius_restriction.x);
-    Interval inner_depth_sphere_interval;
+	// Squared radius of the inner depth sphere is set.
+	Sphere inner_depth_sphere = Sphere(render_min_max_depth_radius_restriction.x * render_min_max_depth_radius_restriction.x);
+	Interval inner_depth_sphere_interval;
 
  
-    // Test if ray intersects with inner depth sphere
-    if (intersect(inner_depth_sphere, ray, inner_depth_sphere_interval))
-    {
-        max_lambda = min(inner_depth_sphere_interval.from, max_lambda);
+	// Test if ray intersects with inner depth sphere
+	if (intersect(inner_depth_sphere, ray, inner_depth_sphere_interval))
+	{
+		max_lambda = min(inner_depth_sphere_interval.from, max_lambda);
 
 		iso_surface_position = at(ray, max_lambda);
 
-        // Inner depth sphere is white.
-        colour_background = vec4(1,1,1,1);
-        
+		// Inner depth sphere is white.
+		colour_background = vec4(1,1,1,1);
+		
 		if (lighting_enabled)
 		{
 			normal = normalize(at(ray, max_lambda));
@@ -829,22 +855,22 @@ bool raycasting(out vec4 colour, out vec3 iso_surface_position)
 			colour_background.rgb *= diffuse;
 		}
 
-    }
+	}
 
-    float lambda_increment = sampling_rate.x;
+	float lambda_increment = sampling_rate.x;
 	lambda_increment = (max_lambda - min_lambda)/ceil((max_lambda - min_lambda) / lambda_increment);
-    //int num_ray_samples = 1 + int(ceil((max_lambda - min_lambda) / lambda_increment));
-    //// Adjust increment to match integer number of ray samples.
-    //lambda_increment = (max_lambda - min_lambda) / (num_ray_samples - 1);
+	//int num_ray_samples = 1 + int(ceil((max_lambda - min_lambda) / lambda_increment));
+	//// Adjust increment to match integer number of ray samples.
+	//lambda_increment = (max_lambda - min_lambda) / (num_ray_samples - 1);
 
-    // Current distance between sampling point and ray origin => lambda
-    float lambda = min_lambda;
+	// Current distance between sampling point and ray origin => lambda
+	float lambda = min_lambda;
 
 	vec3 ray_sample_position = at(ray, lambda);
 
 	vec3 pos_increment = lambda_increment * ray.direction;
-    
-    
+	
+	
 
 	// The crossing level ID determines in which interval between the isosurfaces and window surfaces for both isovalues the sampling point is located.
 	// The ID is computed as: ID = int(field_scalar >= isovalue1.x) + int(field_scalar >= (isovalue1.x-isovalue1.y)) + int(field_scalar >= (isovalue1.x+isovalue1.z)) +
@@ -857,44 +883,44 @@ bool raycasting(out vec4 colour, out vec3 iso_surface_position)
 	// Only if active_back and active_front are both true, the respective surface crossed by the interval is rendered.
 	bool active_back = true;
 	bool active_front = true;
-    
+	
 
-    // Project the ray sample position onto the cube face and determine the cube face that it projects onto.
-    int cube_face_index;
-    vec3 projected_ray_sample_position = project_world_position_onto_cube_face(ray_sample_position, cube_face_index);
+	// Project the ray sample position onto the cube face and determine the cube face that it projects onto.
+	int cube_face_index;
+	vec3 projected_ray_sample_position = project_world_position_onto_cube_face(ray_sample_position, cube_face_index);
 
-    // Transform the ray sample position (projected onto a cube face) into that cube face's local coordinate frame.
-    vec2 cube_face_coordinate_xy = convert_projected_world_position_to_local_cube_face_coordinate_frame(
-            projected_ray_sample_position, cube_face_index);
+	// Transform the ray sample position (projected onto a cube face) into that cube face's local coordinate frame.
+	vec2 cube_face_coordinate_xy = convert_projected_world_position_to_local_cube_face_coordinate_frame(
+			projected_ray_sample_position, cube_face_index);
 
-    // Convert range [-1,1] to [0,1].
-    vec2 cube_face_coordinate_uv = 0.5 * cube_face_coordinate_xy + 0.5;
-        
-    // If we're limiting rendering to regions extruded from filled polygons on the globe surface towards globe origin...
-    if (using_surface_fill_mask)
-    {
-        // If the current ray sample does not project into the surface mask then
-        // continue to the next ray sample (it may enter a fill region).
-       
-        active_front = projects_into_surface_fill_mask(surface_fill_mask_sampler, surface_fill_mask_resolution, cube_face_index, cube_face_coordinate_uv);
-    }
+	// Convert range [-1,1] to [0,1].
+	vec2 cube_face_coordinate_uv = 0.5 * cube_face_coordinate_xy + 0.5;
+		
+	// If we're limiting rendering to regions extruded from filled polygons on the globe surface towards globe origin...
+	if (using_surface_fill_mask)
+	{
+		// If the current ray sample does not project into the surface mask then
+		// continue to the next ray sample (it may enter a fill region).
+	
+		active_front = projects_into_surface_fill_mask(surface_fill_mask_sampler, surface_fill_mask_resolution, cube_face_index, cube_face_coordinate_uv);
+	}
 
 	// Extruded polygon walls
 	if (show_volume_fill_walls)
-    {
-        // Access the wall normal/depth (if present for the current screen pixel).
-        vec4 wall_sample = texture2D(volume_fill_walls_sampler, 0.5 * screen_coord + 0.5);
-        float screen_space_wall_depth = wall_sample.a;
+	{
+		// Access the wall normal/depth (if present for the current screen pixel).
+		vec4 wall_sample = texture2D(volume_fill_walls_sampler, 0.5 * screen_coord + 0.5);
+		float screen_space_wall_depth = wall_sample.a;
 
-        // The screen-space depth range is [-1, 1] and a value of 1 (far plane) indicates there's no wall.
-        if (screen_space_wall_depth < 1.0)
+		// The screen-space depth range is [-1, 1] and a value of 1 (far plane) indicates there's no wall.
+		if (screen_space_wall_depth < 1.0)
 		{
 			vec4 colour_wall = vec4(1,1,1,1);
 
 			// Extraction of wall colour at ray intersection point
 
 			float lambda_wall = convert_screen_space_depth_to_ray_lambda(
-                    wall_sample.a/*min depth*/, screen_coord, gl_ModelViewProjectionMatrixInverse, eye_position);
+					wall_sample.a/*min depth*/, screen_coord, gl_ModelViewProjectionMatrixInverse, eye_position);
 
 			vec3 ray_sample_position_wall = at(ray, lambda_wall);
 
@@ -1057,34 +1083,34 @@ bool raycasting(out vec4 colour, out vec3 iso_surface_position)
 	}
 
 	 // Make sure min_lambda did not somehow become larger than max_lambda.
-    min_lambda = min(min_lambda, max_lambda);
+	min_lambda = min(min_lambda, max_lambda);
 			
-    // Convert the local cube face (x,y) coordinates to (u,v) coordinates into metadata and field data textures.
-    vec2 tile_offset_uv;
-    vec2 tile_meta_data_coordinate_uv;
-    vec2 tile_coordinate_uv;
+	// Convert the local cube face (x,y) coordinates to (u,v) coordinates into metadata and field data textures.
+	vec2 tile_offset_uv;
+	vec2 tile_meta_data_coordinate_uv;
+	vec2 tile_coordinate_uv;
 	vec3 tile_meta_data;
 	float tile_ID;
 
 	get_tile_uv_coordinates(
-        cube_face_coordinate_uv,
-        tile_meta_data_resolution,
-        tile_resolution,
-        tile_offset_uv,
-        tile_meta_data_coordinate_uv,
-        tile_coordinate_uv);
+		cube_face_coordinate_uv,
+		tile_meta_data_resolution,
+		tile_resolution,
+		tile_offset_uv,
+		tile_meta_data_coordinate_uv,
+		tile_coordinate_uv);
 
-    // Sample the tile metadata texture array.
-    tile_meta_data = texture2DArray(tile_meta_data_sampler, vec3(tile_meta_data_coordinate_uv, cube_face_index)).rgb;
-    tile_ID = tile_meta_data.r;
+	// Sample the tile metadata texture array.
+	tile_meta_data = texture2DArray(tile_meta_data_sampler, vec3(tile_meta_data_coordinate_uv, cube_face_index)).rgb;
+	tile_ID = tile_meta_data.r;
 
 	// Not needed right now ... maybe useful for later acceleration approaches 
-    //float max_field_scalar = tile_meta_data.g;
-    //float min_field_scalar = tile_meta_data.b;
+	//float max_field_scalar = tile_meta_data.g;
+	//float min_field_scalar = tile_meta_data.b;
 
-    // If the current tile has no data then continue to the next ray sample (it may enter a new tile).
-    active_front = active_front && (tile_ID >= 0);
-    
+	// If the current tile has no data then continue to the next ray sample (it may enter a new tile).
+	active_front = active_front && (tile_ID >= 0);
+	
 	// Sample the mask data texture array.
 	float mask_data = texture2DArray(mask_data_sampler, vec3(tile_coordinate_uv, tile_ID)).r;
 
@@ -1098,27 +1124,27 @@ bool raycasting(out vec4 colour, out vec3 iso_surface_position)
 
 	active_front = active_front && (mask_data != 0);
 	
-    
-    // Determine texture layer index to lookup our field data texture array with.
-    // We look up a 1D texture to convert depth radius to layer index.
-    // This is in case the depth layers are not uniformly spaced.
-    float ray_sample_depth_radius = length(ray_sample_position);
-    // There will be small mapping errors within a texel distance to each depth radius (for non-equidistant depth mappings)
-    // but that can only be reduced by increasing the resolution of the 1D texture.
-    // Note that 'ray_depth_layer' is not an integer layer index.
-    float ray_depth_layer = look_up_table_1D(
-            depth_radius_to_layer_sampler,
-            depth_radius_to_layer_resolution,
-            min_max_depth_radius.x, // input_lower_bound
-            min_max_depth_radius.y, // input_upper_bound
-            ray_sample_depth_radius).r;
+	
+	// Determine texture layer index to lookup our field data texture array with.
+	// We look up a 1D texture to convert depth radius to layer index.
+	// This is in case the depth layers are not uniformly spaced.
+	float ray_sample_depth_radius = length(ray_sample_position);
+	// There will be small mapping errors within a texel distance to each depth radius (for non-equidistant depth mappings)
+	// but that can only be reduced by increasing the resolution of the 1D texture.
+	// Note that 'ray_depth_layer' is not an integer layer index.
+	float ray_depth_layer = look_up_table_1D(
+			depth_radius_to_layer_sampler,
+			depth_radius_to_layer_resolution,
+			min_max_depth_radius.x, // input_lower_bound
+			min_max_depth_radius.y, // input_upper_bound
+			ray_sample_depth_radius).r;
 
-    // Sample the field data texture array.
-    vec4 field_data = sample_field_data_texture_array(
-            field_data_sampler, tile_coordinate_uv, num_depth_layers, tile_ID, ray_depth_layer);
-    
+	// Sample the field data texture array.
+	vec4 field_data = sample_field_data_texture_array(
+			field_data_sampler, tile_coordinate_uv, num_depth_layers, tile_ID, ray_depth_layer);
+	
 	float field_scalar = field_data.r;
-    vec3 field_gradient = field_data.gba;
+	vec3 field_gradient = field_data.gba;
 
 	// Crossing level ID is obtained for front sampling point of sampling interval
 	crossing_level_front = int(field_scalar >= isovalue1.x) + int(field_scalar >= (isovalue1.x-isovalue1.y)) + int(field_scalar >= (isovalue1.x+isovalue1.z));
@@ -1293,7 +1319,7 @@ bool raycasting(out vec4 colour, out vec3 iso_surface_position)
 		{
 			// If the current ray sample does not project into the surface mask then
 			// continue to the next ray sample (it may enter a fill region).
-       
+	
 			active_front = projects_into_surface_fill_mask(surface_fill_mask_sampler, surface_fill_mask_resolution, cube_face_index, cube_face_coordinate_uv);
 		}
 
@@ -1409,224 +1435,225 @@ bool raycasting(out vec4 colour, out vec3 iso_surface_position)
 
 		ray_sample_position += pos_increment;
 		lambda += lambda_increment;
-}
-
-// Artefact correction. Due to numerical inaccuracies (single precision!), adding up the lambda_increments does not result in max_lambda as last interval boundary.
-// This would result in pixel noise artefacts. This correction re-computes the last interval with the exact max_lambda value to overcome this problem.
-
-bool last_crossing = true;
-
-ray_sample_position = at(ray,max_lambda);
-lambda_increment = max_lambda - (lambda - lambda_increment);
-
-// The last interval becomes consecutively smaller; ray casting terminates as soon as no crossing is detected anymore
-while ((last_crossing) && (colour.a <= 0.95))
-{
-	active_back = active_front;
-	crossing_level_back = crossing_level_front;
-
-	projected_ray_sample_position = project_world_position_onto_cube_face(ray_sample_position, cube_face_index); 
-
-	cube_face_coordinate_xy = convert_projected_world_position_to_local_cube_face_coordinate_frame(
-		projected_ray_sample_position, cube_face_index);
-
-	cube_face_coordinate_uv = 0.5 * cube_face_coordinate_xy + 0.5;
-
-	if (using_surface_fill_mask)
-	{
-		// If the current ray sample does not project into the surface mask then
-		// continue to the next ray sample (it may enter a fill region).
-       
-		active_front = projects_into_surface_fill_mask(surface_fill_mask_sampler, surface_fill_mask_resolution, cube_face_index, cube_face_coordinate_uv);
 	}
 
-	get_tile_uv_coordinates(
-		cube_face_coordinate_uv,
-		tile_meta_data_resolution,
-		tile_resolution,
-		tile_offset_uv,
-		tile_meta_data_coordinate_uv,
-		tile_coordinate_uv);
+	// Artefact correction. Due to numerical inaccuracies (single precision!), adding up the lambda_increments does not result in max_lambda as last interval boundary.
+	// This would result in pixel noise artefacts. This correction re-computes the last interval with the exact max_lambda value to overcome this problem.
 
-	tile_meta_data = texture2DArray(tile_meta_data_sampler, vec3(tile_meta_data_coordinate_uv, cube_face_index)).rgb;
-	tile_ID = tile_meta_data.r;
-
-	active_front = active_front && (tile_ID >= 0);
-
-
-	float mask_data = texture2DArray(mask_data_sampler, vec3(tile_coordinate_uv, tile_ID)).r;
-
-	active_front = active_front && (mask_data != 0);
-
-	ray_sample_depth_radius = length(ray_sample_position);
-
-	ray_depth_layer = look_up_table_1D(
-		depth_radius_to_layer_sampler,
-		depth_radius_to_layer_resolution,
-		min_max_depth_radius.x, // input_lower_bound
-		min_max_depth_radius.y, // input_upper_bound
-		ray_sample_depth_radius).r;
-
-	field_data = sample_field_data_texture_array(
-		field_data_sampler, tile_coordinate_uv, num_depth_layers, tile_ID, ray_depth_layer);
-
-	field_scalar = field_data.r;
-
-	field_gradient = field_data.gba;
-
-	// Determine crossing level ID for current sampling point
-	crossing_level_front = int(field_scalar >= isovalue1.x) + int(field_scalar >= (isovalue1.x-isovalue1.y)) + int(field_scalar >= (isovalue1.x+isovalue1.z));
-	crossing_level_front += int(field_scalar >= isovalue2.x) + int(field_scalar >= (isovalue2.x-isovalue2.y)) + int(field_scalar >= (isovalue2.x+isovalue2.z));
-
-	last_crossing = (crossing_level_front != crossing_level_back);
-
-	// Crossing of one or multiple surfaces is detected
-	if (last_crossing)
-	{
-		// Bisection correction to optain more accurate values for crossing location and field gradient
-		bisection_correction(
-					ray_sample_position,
-					lambda,
-					lambda_increment,
-					ray,
-					crossing_level_back,
-					crossing_level_front,
-					active_back,
-					active_front,
-					field_scalar,
-					field_gradient);	
-
-		// Crossing happens in an active masking zone
-		if ((active_back) && (active_front))
-		{
-			// Update position of detected isosurface (if multiple surfaces are detected only ONE position is returned!)
-			iso_surface_position = ray_sample_position;
-
-			bool positive_crossing = (crossing_level_front >= crossing_level_back);
-
-			normal = (1-2*int(dot(field_gradient,ray.direction)>=0))*normalize(field_gradient);
-
-			// Get final colour of one surface or final blended colour of multiple surfaces
-			vec4 colour_crossing = get_blended_crossing_colour(
-										ray_sample_position, 
-										ray, 
-										normal,
-										crossing_level_back,
-										crossing_level_front,
-										positive_crossing, 
-										colour_matrix_init,
-										field_gradient);
-
-			colour.rgb += (1-colour.a)*colour_crossing.rgb;
-			colour.a += (1-colour.a)*colour_crossing.a;
-		}
-	}
-
-	// Blending step during volume rendering for devaition window zone
-	if (deviation_window_volume_rendering)
-	{
-		int crossing_level_front_mod = int(mod(crossing_level_front,3));
-
-		// Sampling point is in window around isovalue1 (ID = 1 or ID = 2) or around isovalue2 (ID = 4 or ID = 5)
-		if ((crossing_level_front_mod>= 1) && (crossing_level_front_mod <= 2) && (active_front))
-		{
-			vec4 colour_volume = get_volume_colour(ray_sample_depth_radius, crossing_level_front_mod, field_scalar, field_gradient);
-
-			colour.rgb += (1-colour.a)*colour_volume.rgb*opacity_deviation_window_volume_rendering;
-			colour.a += (1-colour.a)*opacity_deviation_window_volume_rendering;
-		}
-	}
+	bool last_crossing = true;
 
 	ray_sample_position = at(ray,max_lambda);
-	lambda_increment = max_lambda - lambda;
+	lambda_increment = max_lambda - (lambda - lambda_increment);
 
-}
+	// The last interval becomes consecutively smaller; ray casting terminates as soon as no crossing is detected anymore
+	while ((last_crossing) && (colour.a <= 0.95))
+	{
+		active_back = active_front;
+		crossing_level_back = crossing_level_front;
 
-// Blending of earth core sphere or wall colour
-colour += (1-colour.a)*colour_background;
+		projected_ray_sample_position = project_world_position_onto_cube_face(ray_sample_position, cube_face_index); 
 
-return (colour.a > 0);
+		cube_face_coordinate_xy = convert_projected_world_position_to_local_cube_face_coordinate_frame(
+			projected_ray_sample_position, cube_face_index);
+
+		cube_face_coordinate_uv = 0.5 * cube_face_coordinate_xy + 0.5;
+
+		if (using_surface_fill_mask)
+		{
+			// If the current ray sample does not project into the surface mask then
+			// continue to the next ray sample (it may enter a fill region).
+		
+			active_front = projects_into_surface_fill_mask(surface_fill_mask_sampler, surface_fill_mask_resolution, cube_face_index, cube_face_coordinate_uv);
+		}
+
+		get_tile_uv_coordinates(
+			cube_face_coordinate_uv,
+			tile_meta_data_resolution,
+			tile_resolution,
+			tile_offset_uv,
+			tile_meta_data_coordinate_uv,
+			tile_coordinate_uv);
+
+		tile_meta_data = texture2DArray(tile_meta_data_sampler, vec3(tile_meta_data_coordinate_uv, cube_face_index)).rgb;
+		tile_ID = tile_meta_data.r;
+
+		active_front = active_front && (tile_ID >= 0);
+
+
+		float mask_data = texture2DArray(mask_data_sampler, vec3(tile_coordinate_uv, tile_ID)).r;
+
+		active_front = active_front && (mask_data != 0);
+
+		ray_sample_depth_radius = length(ray_sample_position);
+
+		ray_depth_layer = look_up_table_1D(
+			depth_radius_to_layer_sampler,
+			depth_radius_to_layer_resolution,
+			min_max_depth_radius.x, // input_lower_bound
+			min_max_depth_radius.y, // input_upper_bound
+			ray_sample_depth_radius).r;
+
+		field_data = sample_field_data_texture_array(
+			field_data_sampler, tile_coordinate_uv, num_depth_layers, tile_ID, ray_depth_layer);
+
+		field_scalar = field_data.r;
+
+		field_gradient = field_data.gba;
+
+		// Determine crossing level ID for current sampling point
+		crossing_level_front = int(field_scalar >= isovalue1.x) + int(field_scalar >= (isovalue1.x-isovalue1.y)) + int(field_scalar >= (isovalue1.x+isovalue1.z));
+		crossing_level_front += int(field_scalar >= isovalue2.x) + int(field_scalar >= (isovalue2.x-isovalue2.y)) + int(field_scalar >= (isovalue2.x+isovalue2.z));
+
+		last_crossing = (crossing_level_front != crossing_level_back);
+
+		// Crossing of one or multiple surfaces is detected
+		if (last_crossing)
+		{
+			// Bisection correction to optain more accurate values for crossing location and field gradient
+			bisection_correction(
+						ray_sample_position,
+						lambda,
+						lambda_increment,
+						ray,
+						crossing_level_back,
+						crossing_level_front,
+						active_back,
+						active_front,
+						field_scalar,
+						field_gradient);	
+
+			// Crossing happens in an active masking zone
+			if ((active_back) && (active_front))
+			{
+				// Update position of detected isosurface (if multiple surfaces are detected only ONE position is returned!)
+				iso_surface_position = ray_sample_position;
+
+				bool positive_crossing = (crossing_level_front >= crossing_level_back);
+
+				normal = (1-2*int(dot(field_gradient,ray.direction)>=0))*normalize(field_gradient);
+
+				// Get final colour of one surface or final blended colour of multiple surfaces
+				vec4 colour_crossing = get_blended_crossing_colour(
+											ray_sample_position, 
+											ray, 
+											normal,
+											crossing_level_back,
+											crossing_level_front,
+											positive_crossing, 
+											colour_matrix_init,
+											field_gradient);
+
+				colour.rgb += (1-colour.a)*colour_crossing.rgb;
+				colour.a += (1-colour.a)*colour_crossing.a;
+			}
+		}
+
+		// Blending step during volume rendering for devaition window zone
+		if (deviation_window_volume_rendering)
+		{
+			int crossing_level_front_mod = int(mod(crossing_level_front,3));
+
+			// Sampling point is in window around isovalue1 (ID = 1 or ID = 2) or around isovalue2 (ID = 4 or ID = 5)
+			if ((crossing_level_front_mod>= 1) && (crossing_level_front_mod <= 2) && (active_front))
+			{
+				vec4 colour_volume = get_volume_colour(ray_sample_depth_radius, crossing_level_front_mod, field_scalar, field_gradient);
+
+				colour.rgb += (1-colour.a)*colour_volume.rgb*opacity_deviation_window_volume_rendering;
+				colour.a += (1-colour.a)*opacity_deviation_window_volume_rendering;
+			}
+		}
+
+		ray_sample_position = at(ray,max_lambda);
+		lambda_increment = max_lambda - lambda;
+
+	}
+
+	// Blending of earth core sphere or wall colour
+	colour += (1-colour.a)*colour_background;
+
+	return (colour.a > 0);
 
 }
 	
 
-void main()
+void
+main()
 {
 	// Return values after ray casting stopped
 	vec4 colour;
 	vec3 iso_surface_position;
 
 	// Start raycasting process
-    //If raycasting does not return a colour or was not sucessful, discard pixel
-    if (!raycasting(colour, iso_surface_position))
-    {
-        discard;
-    }
+	//If raycasting does not return a colour or was not sucessful, discard pixel
+	if (!raycasting(colour, iso_surface_position))
+	{
+		discard;
+	}
 
-    // Output colour as pre-multiplied alpha.
-    // This enables alpha-blending to use (src,dst) blend factors of (1, 1-SrcAlpha) instead of
-    // (SrcAlpha, 1-SrcAlpha) which keeps alpha intact (avoids double-blending when rendering to
-    // a render-target and then, in turn, blending that into the main framebuffer).
-    // Not that we have transparent iso-surfaces (yet).
-    // colour.rgb *= colour.a;
+	// Output colour as pre-multiplied alpha.
+	// This enables alpha-blending to use (src,dst) blend factors of (1, 1-SrcAlpha) instead of
+	// (SrcAlpha, 1-SrcAlpha) which keeps alpha intact (avoids double-blending when rendering to
+	// a render-target and then, in turn, blending that into the main framebuffer).
+	// Not that we have transparent iso-surfaces (yet).
+	// colour.rgb *= colour.a;
 
-    // This branches on a uniform variable and hence is efficient since all pixels follow same path.
-    //if (lighting_enabled)
-    //{
-        //// The Lambert term in diffuse lighting.
-        //float lambert = lambert_diffuse_lighting(world_space_light_direction, normal);
+	// This branches on a uniform variable and hence is efficient since all pixels follow same path.
+	//if (lighting_enabled)
+	//{
+		//// The Lambert term in diffuse lighting.
+		//float lambert = lambert_diffuse_lighting(world_space_light_direction, normal);
 //
-        //// Blend between ambient and diffuse lighting - when ambient is 1.0 there is no diffuse.
-        //float diffuse = mix(lambert, 1.0, light_ambient_contribution);
+		//// Blend between ambient and diffuse lighting - when ambient is 1.0 there is no diffuse.
+		//float diffuse = mix(lambert, 1.0, light_ambient_contribution);
 //
-        //colour.rgb *= diffuse;
-    //}
+		//colour.rgb *= diffuse;
+	//}
 
-    // Note that we need to write to 'gl_FragDepth' because if we don't then the fixed-function
-    // depth will get written (if depth writes enabled) using the fixed-function depth which is that
-    // of our full-screen quad (not the actual ray-traced depth).
-    //
-    // NOTE: Currently depth writes are turned off for scalar fields but will be turned on soon.
-    vec4 screen_space_iso_surface_position = gl_ModelViewProjectionMatrix * vec4(iso_surface_position, 1.0);
-    float screen_space_iso_surface_depth = screen_space_iso_surface_position.z / screen_space_iso_surface_position.w;
+	// Note that we need to write to 'gl_FragDepth' because if we don't then the fixed-function
+	// depth will get written (if depth writes enabled) using the fixed-function depth which is that
+	// of our full-screen quad (not the actual ray-traced depth).
+	//
+	// NOTE: Currently depth writes are turned off for scalar fields but will be turned on soon.
+	vec4 screen_space_iso_surface_position = gl_ModelViewProjectionMatrix * vec4(iso_surface_position, 1.0);
+	float screen_space_iso_surface_depth = screen_space_iso_surface_position.z / screen_space_iso_surface_position.w;
 
-    // Convert normalised device coordinates (screen-space) to window coordinates which, for depth, is [-1,1] -> [0,1].
-    // Ideally this should also consider the effects of glDepthRange but we'll assume it's set to [0,1].
-    gl_FragDepth = 0.5 * screen_space_iso_surface_depth + 0.5;
+	// Convert normalised device coordinates (screen-space) to window coordinates which, for depth, is [-1,1] -> [0,1].
+	// Ideally this should also consider the effects of glDepthRange but we'll assume it's set to [0,1].
+	gl_FragDepth = 0.5 * screen_space_iso_surface_depth + 0.5;
 
-    //
-    // Using multiple render targets here.
-    //
-    // This is in case another scalar field is rendered as an iso-surface (or cross-section) in which case
-    // it cannot use the hardware depth buffer because we're not rendering traditional geometry
-    // (and so instead it must query a depth texture).
-    // This enables correct depth sorting of the cross-sections and iso-surfaces (although it doesn't
-    // work with semi-transparency but that's a much harder problem to solve - depth peeling).
-    //
+	//
+	// Using multiple render targets here.
+	//
+	// This is in case another scalar field is rendered as an iso-surface (or cross-section) in which case
+	// it cannot use the hardware depth buffer because we're not rendering traditional geometry
+	// (and so instead it must query a depth texture).
+	// This enables correct depth sorting of the cross-sections and iso-surfaces (although it doesn't
+	// work with semi-transparency but that's a much harder problem to solve - depth peeling).
+	//
 
-    // According to the GLSL spec...
-    //
-    // "If a shader statically assigns a value to gl_FragColor, it may not assign a value
-    // to any element of gl_FragData. If a shader statically writes a value to any element
-    // of gl_FragData, it may not assign a value to gl_FragColor. That is, a shader may
-    // assign values to either gl_FragColor or gl_FragData, but not both."
-    // "A shader contains a static assignment to a variable x if, after pre-processing,
-    // the shader contains a statement that would write to x, whether or not run-time flow
-    // of control will cause that statement to be executed."
-    //
-    // ...so we can't branch on a uniform (boolean) variable here.
-    // So we write to both gl_FragData[0] and gl_FragData[1] with the latter output being ignored
-    // if glDrawBuffers is NONE for draw buffer index 1 (the default).
+	// According to the GLSL spec...
+	//
+	// "If a shader statically assigns a value to gl_FragColor, it may not assign a value
+	// to any element of gl_FragData. If a shader statically writes a value to any element
+	// of gl_FragData, it may not assign a value to gl_FragColor. That is, a shader may
+	// assign values to either gl_FragColor or gl_FragData, but not both."
+	// "A shader contains a static assignment to a variable x if, after pre-processing,
+	// the shader contains a statement that would write to x, whether or not run-time flow
+	// of control will cause that statement to be executed."
+	//
+	// ...so we can't branch on a uniform (boolean) variable here.
+	// So we write to both gl_FragData[0] and gl_FragData[1] with the latter output being ignored
+	// if glDrawBuffers is NONE for draw buffer index 1 (the default).
 
-    // Write colour to render target 0.
-    gl_FragData[0] = colour;
+	// Write colour to render target 0.
+	gl_FragData[0] = colour;
 
-    // Write *screen-space* depth (ie, depth range [-1,1] and not [0,1]) to render target 1.
-    // This is what's used in the ray-tracing shader since it uses inverse model-view-proj matrix on the depth
-    // to get world space position and that requires normalised device coordinates not window coordinates).
-    // Note that this does not need to consider the effects of glDepthRange.
-    //
-    // NOTE: If this output is connected to a depth texture and 'read_from_depth_texture' is true then
-    // they cannot both be the same texture because a shader cannot write to the same texture it reads from.
-    gl_FragData[1] = vec4(screen_space_iso_surface_depth);
+	// Write *screen-space* depth (ie, depth range [-1,1] and not [0,1]) to render target 1.
+	// This is what's used in the ray-tracing shader since it uses inverse model-view-proj matrix on the depth
+	// to get world space position and that requires normalised device coordinates not window coordinates).
+	// Note that this does not need to consider the effects of glDepthRange.
+	//
+	// NOTE: If this output is connected to a depth texture and 'read_from_depth_texture' is true then
+	// they cannot both be the same texture because a shader cannot write to the same texture it reads from.
+	gl_FragData[1] = vec4(screen_space_iso_surface_depth);
 }

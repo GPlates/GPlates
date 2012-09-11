@@ -8,8 +8,8 @@
 // The depth range rendering is restricted to.
 // If depth range is not restricted then this is the same as 'min_max_depth_radius'.
 // Also the following conditions hold:
-//    render_min_max_depth_radius_restriction.x >= min_max_depth_radius.x
-//    render_min_max_depth_radius_restriction.y <= min_max_depth_radius.y
+//	render_min_max_depth_radius_restriction.x >= min_max_depth_radius.x
+//	render_min_max_depth_radius_restriction.y <= min_max_depth_radius.y
 // ...in other words the depth range for rendering is always within the actual depth range.
 uniform vec2 render_min_max_depth_radius_restriction;
 
@@ -37,70 +37,70 @@ varying vec2 front_and_back_face_lighting;
 
 void main()
 {
-    // Extract the surface location from the vertex attribute.
-    vec3 surface_point = surface_point_xyz_depth_weight_w.xyz;
-    // Extract the depth weight from the vertex attribute.
-    float depth_weight = surface_point_xyz_depth_weight_w.w;
+	// Extract the surface location from the vertex attribute.
+	vec3 surface_point = surface_point_xyz_depth_weight_w.xyz;
+	// Extract the depth weight from the vertex attribute.
+	float depth_weight = surface_point_xyz_depth_weight_w.w;
 
-    // Vertically extrude the surface point to either the minimum or maximum depth restricted radius of the scalar field.
-    vec3 depth_point = mix(
-            render_min_max_depth_radius_restriction.x/*min*/,
-            render_min_max_depth_radius_restriction.y/*max*/,
-            depth_weight) * surface_point;
+	// Vertically extrude the surface point to either the minimum or maximum depth restricted radius of the scalar field.
+	vec3 depth_point = mix(
+			render_min_max_depth_radius_restriction.x/*min*/,
+			render_min_max_depth_radius_restriction.y/*max*/,
+			depth_weight) * surface_point;
 
-    gl_Position = gl_ModelViewProjectionMatrix * vec4(depth_point, 1);
+	gl_Position = gl_ModelViewProjectionMatrix * vec4(depth_point, 1);
 
-    // The screen-space (x,y) coordinates.
-    screen_coord = gl_Position.xy / gl_Position.w;
+	// The screen-space (x,y) coordinates.
+	screen_coord = gl_Position.xy / gl_Position.w;
 
-    // This assumes the cross-section geometry does not need a model transform (eg, reconstruction rotation).
-    world_position = depth_point;
+	// This assumes the cross-section geometry does not need a model transform (eg, reconstruction rotation).
+	world_position = depth_point;
 
-    // This branches on a uniform variable and hence is efficient since all pixels follow same path.
-    if (lighting_enabled)
-    {
-        // Compute lighting for both the front and back face of the current cross-section quad (two coplanar triangles).
-        // The fragment shader will choose between them based on what side the fragment is on.
+	// This branches on a uniform variable and hence is efficient since all pixels follow same path.
+	if (lighting_enabled)
+	{
+		// Compute lighting for both the front and back face of the current cross-section quad (two coplanar triangles).
+		// The fragment shader will choose between them based on what side the fragment is on.
 
-        // Extract the neighbour surface location from the vertex attribute.
-        vec3 neighbour_surface_point = neighbour_surface_point_xyz_normal_weight_w.xyz;
-        // Extract the normal weight from the vertex attribute.
-        float normal_weight = neighbour_surface_point_xyz_normal_weight_w.w;
+		// Extract the neighbour surface location from the vertex attribute.
+		vec3 neighbour_surface_point = neighbour_surface_point_xyz_normal_weight_w.xyz;
+		// Extract the normal weight from the vertex attribute.
+		float normal_weight = neighbour_surface_point_xyz_normal_weight_w.w;
 
-        // If this vertex is part of a 1D cross-section (a vertical line)...
-        if (normal_weight == 0.0)
-        {
-            // We can't calculate a normal for a 1D cross-section.
-            // Instead we see if the vertical line (1D cross-section) is perpendicular to
-            // the light direction giving it a maximum amount of diffuse lighting.
-            // If the vertical line is in direction (or opposite) of light then it only gets ambient light.
-            // This is the same lighting you'd get if the vertical line was a very thin cylindrical pipe
-            // but you could always see the brightest side of it.
+		// If this vertex is part of a 1D cross-section (a vertical line)...
+		if (normal_weight == 0.0)
+		{
+			// We can't calculate a normal for a 1D cross-section.
+			// Instead we see if the vertical line (1D cross-section) is perpendicular to
+			// the light direction giving it a maximum amount of diffuse lighting.
+			// If the vertical line is in direction (or opposite) of light then it only gets ambient light.
+			// This is the same lighting you'd get if the vertical line was a very thin cylindrical pipe
+			// but you could always see the brightest side of it.
 
-            // The front and back face lighting are the same.
-            float front_and_back_face_lambert = length(cross(surface_point, world_space_light_direction));
+			// The front and back face lighting are the same.
+			float front_and_back_face_lambert = length(cross(surface_point, world_space_light_direction));
 
-            // Blend between ambient and diffuse lighting - when ambient is 1.0 there is no diffuse.
-            front_and_back_face_lighting = vec2(mix(front_and_back_face_lambert, 1.0, light_ambient_contribution));
-        }
-        else // 2D cross-section...
-        {
-            // Calculate the front face normal.
-            // Note that 'normal_weight' is -1 or 1 and ensures the surface normal faces forward.
-            //
-            // Note that it might be possible to get a zero normal vector - if this happens
-            // then the cross-section quad (two tris) will likely be close to degenerate and
-            // not generate any fragments anyway (so the incorrect lighting will not be visible).
-            vec3 front_face_normal = normal_weight * cross(surface_point, neighbour_surface_point);
+			// Blend between ambient and diffuse lighting - when ambient is 1.0 there is no diffuse.
+			front_and_back_face_lighting = vec2(mix(front_and_back_face_lambert, 1.0, light_ambient_contribution));
+		}
+		else // 2D cross-section...
+		{
+			// Calculate the front face normal.
+			// Note that 'normal_weight' is -1 or 1 and ensures the surface normal faces forward.
+			//
+			// Note that it might be possible to get a zero normal vector - if this happens
+			// then the cross-section quad (two tris) will likely be close to degenerate and
+			// not generate any fragments anyway (so the incorrect lighting will not be visible).
+			vec3 front_face_normal = normal_weight * cross(surface_point, neighbour_surface_point);
 
-            // The Lambert term in diffuse lighting.
-            // Note that the back face normal is negative of the front face normal.
-            vec2 front_and_back_face_lambert = vec2(
-                lambert_diffuse_lighting(world_space_light_direction, front_face_normal),
-                lambert_diffuse_lighting(world_space_light_direction, -front_face_normal));
+			// The Lambert term in diffuse lighting.
+			// Note that the back face normal is negative of the front face normal.
+			vec2 front_and_back_face_lambert = vec2(
+				lambert_diffuse_lighting(world_space_light_direction, front_face_normal),
+				lambert_diffuse_lighting(world_space_light_direction, -front_face_normal));
 
-            // Blend between ambient and diffuse lighting - when ambient is 1.0 there is no diffuse.
-            front_and_back_face_lighting = mix(front_and_back_face_lambert, vec2(1.0), vec2(light_ambient_contribution));
-        }
-    }
+			// Blend between ambient and diffuse lighting - when ambient is 1.0 there is no diffuse.
+			front_and_back_face_lighting = mix(front_and_back_face_lambert, vec2(1.0), vec2(light_ambient_contribution));
+		}
+	}
 }

@@ -230,7 +230,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 					params.get_colour_mode(),
 					params.get_colour_palette(),
 					isovalue_parameters,
-					params.get_render_options(),
+					params.get_deviation_window_render_options(),
 					params.get_surface_polygons_mask(),
 					depth_restriction,
 					params.get_quality_performance(),

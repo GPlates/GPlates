@@ -137,7 +137,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::adjust_tile_texel_dimension(
 	// a factor of two (or one level-of-detail difference). This means two pixels on the globe
 	// can fit into one pixel in the cube map at a face centre. This is fine for each level-of-detail
 	// because it ensures plenty enough detail is rendered into a cube map tile. However it does
-	// mean that we can get one more resolution level than expected. This means we can zoom further
+	// mean that we can get one resolution level than expected. This means we can zoom further
 	// into the globe before it reaches full resolution and starts to get blurry.
 	// The factor is sqrt(3) * (1 / cos(A)); where sin(A) = (1 / sqrt(3)).
 	// This is the same as 3 / sqrt(2).

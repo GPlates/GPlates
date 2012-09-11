@@ -11,20 +11,20 @@ varying vec3 world_space_position;
 
 void main (void)
 {
-    // The interpolated fragment colour.
-    vec4 colour = gl_Color;
+	// The interpolated fragment colour.
+	vec4 colour = gl_Color;
 
-    if (lighting_enabled)
-    {
-        // Apply the Lambert diffuse lighting using the world-space position as the globe surface normal.
-        // Note that neither the light direction nor the surface normal need be normalised.
-        float lambert = lambert_diffuse_lighting(world_space_light_direction, world_space_position);
+	if (lighting_enabled)
+	{
+		// Apply the Lambert diffuse lighting using the world-space position as the globe surface normal.
+		// Note that neither the light direction nor the surface normal need be normalised.
+		float lambert = lambert_diffuse_lighting(world_space_light_direction, world_space_position);
 
-        // Blend between ambient and diffuse lighting.
-        float lighting = mix_ambient_with_diffuse_lighting(lambert, light_ambient_contribution);
+		// Blend between ambient and diffuse lighting.
+		float lighting = mix_ambient_with_diffuse_lighting(lambert, light_ambient_contribution);
 
-        colour.rgb *= lighting;
-    }
+		colour.rgb *= lighting;
+	}
 
 	// The final fragment colour.
 	gl_FragColor = colour;

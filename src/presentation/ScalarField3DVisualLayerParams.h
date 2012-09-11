@@ -180,17 +180,17 @@ namespace GPlatesPresentation
 			emit_modified();
 		}
 
-		const GPlatesViewOperations::ScalarField3DRenderParameters::RenderOptions &
-		get_render_options() const
+		const GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions &
+		get_deviation_window_render_options() const
 		{
-			return d_render_options;
+			return d_deviation_window_render_options;
 		}
 
 		void
-		set_render_options(
-				const GPlatesViewOperations::ScalarField3DRenderParameters::RenderOptions &render_options)
+		set_deviation_window_render_options(
+				const GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions &render_options)
 		{
-			d_render_options = render_options;
+			d_deviation_window_render_options = render_options;
 			emit_modified();
 		}
 
@@ -294,7 +294,7 @@ namespace GPlatesPresentation
 		// The scalar field is not immediately available due to various signal/slot dependencies.
 		boost::optional<GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters> d_isovalue_parameters;
 
-		GPlatesViewOperations::ScalarField3DRenderParameters::RenderOptions d_render_options;
+		GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions d_deviation_window_render_options;
 
 		GPlatesViewOperations::ScalarField3DRenderParameters::SurfacePolygonsMask d_surface_polygons_mask;
 

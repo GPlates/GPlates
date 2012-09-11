@@ -219,7 +219,7 @@ namespace GPlatesOpenGL
 				GPlatesViewOperations::ScalarField3DRenderParameters::RenderMode render_mode,
 				GPlatesViewOperations::ScalarField3DRenderParameters::ColourMode colour_mode,
 				const GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters &isovalue_parameters,
-				const GPlatesViewOperations::ScalarField3DRenderParameters::RenderOptions &render_options,
+				const GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions &deviation_window_render_options,
 				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction,
 				const GPlatesViewOperations::ScalarField3DRenderParameters::QualityPerformance &quality_performance,
 				const std::vector<float> &test_variables,

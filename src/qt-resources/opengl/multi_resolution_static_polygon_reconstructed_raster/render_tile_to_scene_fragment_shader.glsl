@@ -99,7 +99,7 @@ void main (void)
 	// Bilinearly filter the tile texture.
 	// The texture access in 'bilinearly_interpolate' starts a new indirection phase.
 	vec4 tile_colour = bilinearly_interpolate(
-	     source_texture_sampler, source_texture_coords, source_texture_dimensions);
+		 source_texture_sampler, source_texture_coords, source_texture_dimensions);
 #else
 	// Use hardware bilinear interpolation of fixed-point texture.
 	vec4 tile_colour = texture2DProj(source_texture_sampler, source_raster_texture_coordinate);
@@ -170,7 +170,7 @@ void main (void)
 	#endif
 
 	// Apply the Lambert diffuse lighting to the tile colour.
-    // Note that neither the light direction nor the surface normal need be normalised.
+	// Note that neither the light direction nor the surface normal need be normalised.
 	float lambert = lambert_diffuse_lighting(light_direction, normal);
 
 	#if defined(USING_NORMAL_MAP) && !defined(MAP_VIEW)
@@ -186,7 +186,7 @@ void main (void)
 	#endif
 
 	// Blend between ambient and diffuse lighting.
-    float lighting = mix_ambient_with_diffuse_lighting(lambert, light_ambient_contribution);
+	float lighting = mix_ambient_with_diffuse_lighting(lambert, light_ambient_contribution);
 
 	tile_colour.rgb *= lighting;
 #endif

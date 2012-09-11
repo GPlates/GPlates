@@ -6,10 +6,10 @@
  * while the second overload returns the four sampled texels and the interpolation coefficients.
  *
  * 'tex_dimensions' should contain the following (xyzw) components:
- *    x: texture width,
- *    y: texture height,
- *    z: inverse texture width,
- *    w: inverse texture height.
+ *	x: texture width,
+ *	y: texture height,
+ *	z: inverse texture width,
+ *	w: inverse texture height.
  *
  * This is useful for floating-point textures because bilinear filtering is not supported
  * in earlier hardware.
@@ -107,17 +107,17 @@ rotate_vector_by_quaternion(
  */
 float
 lambert_diffuse_lighting(
-        vec3 light_direction,
-        vec3 normal)
+		vec3 light_direction,
+		vec3 normal)
 {
 	// The light direction typically needs to be normalised because it's interpolated between vertices.
 	// The surface normal might also need to be normalised because it's either interpolated between
 	// vertices (no normal map) or bilinearly interpolated texture lookup (with normal map).
 	// We can save one expensive 'normalize' by rearranging...
 	// Lambert = dot(normalize(N),normalize(L))
-	//         = dot(N/|N|,L/|L|) 
-	//         = dot(N,L) / (|N| * |L|) 
-	//         = dot(N,L) / sqrt(dot(N,N) * dot(L,L)) 
+	//		 = dot(N/|N|,L/|L|) 
+	//		 = dot(N,L) / (|N| * |L|) 
+	//		 = dot(N,L) / sqrt(dot(N,N) * dot(L,L)) 
 	// NOTE: Using float instead of integer parameters to 'max' otherwise driver compiler
 	// crashes on some systems complaining cannot find (integer overload of) function in 'stdlib'.
 	return max(0.0,
@@ -134,8 +134,8 @@ lambert_diffuse_lighting(
  */
 float
 mix_ambient_with_diffuse_lighting(
-        float diffuse_lighting,
-        float light_ambient_contribution)
+		float diffuse_lighting,
+		float light_ambient_contribution)
 {
 	// Blend between ambient and diffuse lighting - when ambient is 1.0 there is no diffuse.
 	// NOTE: Using float instead of integer parameters to 'mix' otherwise driver compiler

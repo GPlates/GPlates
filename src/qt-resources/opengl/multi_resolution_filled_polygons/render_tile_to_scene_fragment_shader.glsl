@@ -41,11 +41,11 @@ void main (void)
 
 #ifdef SURFACE_LIGHTING
 	// Apply the Lambert diffuse lighting using the world-space position as the globe surface normal.
-    // Note that neither the light direction nor the surface normal need be normalised.
+	// Note that neither the light direction nor the surface normal need be normalised.
 	float lambert = lambert_diffuse_lighting(world_space_light_direction, world_space_position);
 
 	// Blend between ambient and diffuse lighting.
-    float lighting = mix_ambient_with_diffuse_lighting(lambert, light_ambient_contribution);
+	float lighting = mix_ambient_with_diffuse_lighting(lambert, light_ambient_contribution);
 
 	gl_FragColor.rgb *= lighting;
 #endif

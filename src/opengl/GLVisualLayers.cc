@@ -319,7 +319,7 @@ GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
 					render_parameters.get_render_mode(),
 					render_parameters.get_colour_mode(),
 					render_parameters.get_isovalue_parameters(),
-					render_parameters.get_render_options(),
+					render_parameters.get_deviation_window_render_options(),
 					render_parameters.get_depth_restriction(),
 					render_parameters.get_quality_performance(),
 					render_parameters.get_shader_test_variables(),

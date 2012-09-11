@@ -87,15 +87,15 @@ namespace GPlatesViewOperations
 
 
 		/**
-		 * Rendering options.
+		 * Deviation window render options.
 		 */
-		struct RenderOptions
+		struct DeviationWindowRenderOptions
 		{
 			explicit
-			RenderOptions(
-					float opacity_deviation_surfaces_ = 1,
+			DeviationWindowRenderOptions(
+					float opacity_deviation_surfaces_ = 0.5f,
 					bool deviation_window_volume_rendering_ = false,
-					float opacity_deviation_window_volume_rendering_ = 1,
+					float opacity_deviation_window_volume_rendering_ = 0.5f,
 					bool surface_deviation_window_ = false,
 					unsigned int surface_deviation_window_isoline_frequency_ = 0);
 
@@ -143,8 +143,8 @@ namespace GPlatesViewOperations
 		struct QualityPerformance
 		{
 			QualityPerformance(
-					unsigned int sampling_rate_ = 20,
-					unsigned int bisection_iterations_ = 3);
+					unsigned int sampling_rate_ = 50,
+					unsigned int bisection_iterations_ = 5);
 
 			unsigned int sampling_rate;
 			unsigned int bisection_iterations;
@@ -158,7 +158,7 @@ namespace GPlatesViewOperations
 				ColourMode colour_mode,
 				const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &colour_palette,
 				const IsovalueParameters &isovalue_parameters,
-				const RenderOptions &render_options,
+				const DeviationWindowRenderOptions &deviation_window_render_options,
 				const SurfacePolygonsMask &surface_polygons_mask,
 				const DepthRestriction &depth_restriction,
 				const QualityPerformance &quality_performance,
@@ -192,10 +192,10 @@ namespace GPlatesViewOperations
 			return d_isovalue_parameters;
 		}
 
-		const RenderOptions &
-		get_render_options() const
+		const DeviationWindowRenderOptions &
+		get_deviation_window_render_options() const
 		{
-			return d_render_options;
+			return d_deviation_window_render_options;
 		}
 
 		const SurfacePolygonsMask &
@@ -239,7 +239,7 @@ namespace GPlatesViewOperations
 
 		IsovalueParameters d_isovalue_parameters;
 
-		RenderOptions d_render_options;
+		DeviationWindowRenderOptions d_deviation_window_render_options;
 
 		SurfacePolygonsMask d_surface_polygons_mask;
 

@@ -135,7 +135,7 @@ namespace GPlatesQtWidgets
 				double opacity);
 
 		void
-		handle_isoline_frequency_check_box_changed();
+		handle_surface_deviation_window_check_box_changed();
 
 		void
 		handle_isoline_frequency_spinbox_changed(

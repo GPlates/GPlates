@@ -41,25 +41,25 @@ void main (void)
 
 #ifdef SCALAR_GRADIENT
 	// Sample the scalar and gradient in the RGBA channels.
-    vec4 scalar_gradient = texture2D(raster_texture_sampler, gl_TexCoord[0].st);
+	vec4 scalar_gradient = texture2D(raster_texture_sampler, gl_TexCoord[0].st);
 
 	// NOTE: We don't normalize each interpolated 3D texture coordinate.
 	// At least the tangent and binormal vectors have magnitudes corresponding to the
-    // length of a texel in the u and v directions. The normal (radial) is unit length.
+	// length of a texel in the u and v directions. The normal (radial) is unit length.
 	vec3 tangent = gl_TexCoord[1].xyz;
 	vec3 binormal = gl_TexCoord[2].xyz;
 	vec3 normal = gl_TexCoord[3].xyz;
-    
-    // The scalar value is stored in the red channel.
-    gl_FragColor.r = scalar_gradient.r;
+	
+	// The scalar value is stored in the red channel.
+	gl_FragColor.r = scalar_gradient.r;
 
-    // The input texture gradient is a mixture of finite differences of the scalar field
-    // and inverse distances along the tangent frame directions.
-    // Complete the gradient generation by providing the tangent frame directions and the
-    // missing components of the inverse distances (the inverse distance across a texel
-    // along the tangent and binormal directions on the surface of the globe - the input texture
-    // has taken care of radial distances for all tangent frame components).
-    //
+	// The input texture gradient is a mixture of finite differences of the scalar field
+	// and inverse distances along the tangent frame directions.
+	// Complete the gradient generation by providing the tangent frame directions and the
+	// missing components of the inverse distances (the inverse distance across a texel
+	// along the tangent and binormal directions on the surface of the globe - the input texture
+	// has taken care of radial distances for all tangent frame components).
+	//
 	// The gradient is stored in the (green,blue,alpha) channels.
 	gl_FragColor.gba = mat3(tangent, binormal, normal) * scalar_gradient.gba;
 #endif
