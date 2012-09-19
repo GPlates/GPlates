@@ -336,6 +336,11 @@ GPlatesQtWidgets::ImportRasterDialog::display(
 				raster_size.first,
 				raster_size.second);
 
+		// Set the raster width and height for the next stage (wizard page) since we're
+		// skipping past the time-dependent raster sequence page which normally sets them.
+		d_raster_width = raster_size.first;
+		d_raster_height = raster_size.second;
+
 		// Jump past the time-dependent raster sequence page.
 		setStartId(d_raster_band_page_id);
 	}
