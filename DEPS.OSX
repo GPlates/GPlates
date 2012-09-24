@@ -110,8 +110,9 @@ instead if one exists (ie, for GDAL, Qt and CMake).
       You may have to do the same for any dependencies that failed to fetch.  Oh the joy !
   • Install CMake with 'sudo port install cmake' if you don't have CMake. Note that the installer
     at "http://www.cmake.org/files/v2.6/cmake-2.6.3-Darwin-universal.dmg" is easier than using Macports.
-  • Install Qt4 with 'sudo port install qt4-mac' if you don't have Qt4. Note that the installer
-    at "ftp://ftp.trolltech.com/qt/source/qt-mac-opensource-4.4.3.dmg" is easier than using
+  • Install Qt4 with 'sudo port install qt4-mac' +framework' if you don't have Qt4. You need to install qt as framework to 
+    make package successfully. Otherwise you might get a missing '.nib' file error while making package.
+    Note that the installer at "ftp://ftp.trolltech.com/qt/source/qt-mac-opensource-4.4.3.dmg" is easier than using
     Macports due to the large number of software dependencies required by Qt4.
   • Install GLEW with 'sudo port install glew' if you don't have GLEW.
   • Install Python with 'sudo port install python2[x]' where 'x' is the minor version (eg, 'sudo port install python27).
@@ -122,7 +123,8 @@ instead if one exists (ie, for GDAL, Qt and CMake).
     You may have to use 'sudo port upgrade --enforce-variants boost +python27', for example, if your Boost is already up to date.
 	NOTE: The following link http://lenni.info/blog/2009/01/how-to-deactivate-one-macport-variant-and-switch-to-another-one/
 	provides useful information on activating/deactivating existing ports if you have several variants.
-  • Install CGAL with 'sudo port install cgal' if you don't have CGAL.
+        Avoid boost 1.48 and above. They don't work well with qt.
+  • Install CGAL with 'sudo port install cgal' if you don't  have CGAL. Avoid cgal 4.0.1. A bug of it crashes GPlates.
   • Install GDAL with 'sudo port install gdal +netcdf' if you don't have GDAL - note the additional "+netcdf".
     You may have to use 'sudo port upgrade --enforce-variants gdal +netcdf' if your GDAL is already up to date. 
   • Make sure you don't have multiple installations of the same library.
