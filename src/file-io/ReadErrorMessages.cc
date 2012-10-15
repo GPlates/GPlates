@@ -24,6 +24,7 @@
  */
 
 #include <map>
+#include <QObject>
 #include <QtGlobal>
 
 #include "ReadErrorMessages.h"
