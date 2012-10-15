@@ -248,34 +248,6 @@ namespace GPlatesQtWidgets
 		QTreeWidgetItem *
 		create_occurrence_result_item(
 				const GPlatesFileIO::ReadErrorOccurrence &error);
-
-
-		const QString
-		build_summary_string();
-
-		/**
-		 * Converts a Description enum to a translated QString (short form).
-		 */
-		static
-		const QString &
-		get_short_description_as_string(
-				GPlatesFileIO::ReadErrors::Description code);
-
-		/**
-		 * Converts a Description enum to a translated QString (full text).
-		 */
-		static
-		const QString &
-		get_full_description_as_string(
-				GPlatesFileIO::ReadErrors::Description code);
-
-		/**
-		 * Converts a Result enum to a translated QString.
-		 */
-		static
-		const QString &
-		get_result_as_string(
-				GPlatesFileIO::ReadErrors::Result code);
 	};
 }
 

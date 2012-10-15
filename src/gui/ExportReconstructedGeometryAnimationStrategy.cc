@@ -86,7 +86,6 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::do_export_iteration(
 	try
 	{
 
-		// TODO: Get 'export_single_output_file' and 'export_per_input_file' from user (via GUI).
 		GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_reconstructed_feature_geometries(
 			full_filename,
 			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),

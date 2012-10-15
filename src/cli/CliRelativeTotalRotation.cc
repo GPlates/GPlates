@@ -135,10 +135,14 @@ GPlatesCli::RelativeTotalRotationCommand::run(
 			vm.count(INDETERMINATE_IS_ZERO_ANGLE_NORTH_POLE_OPTION_NAME) == 0;
 
 	FeatureCollectionFileIO file_io(d_model, vm);
+	GPlatesFileIO::ReadErrorAccumulation read_errors;
 
 	// Load the reconstruction feature collection files
 	FeatureCollectionFileIO::feature_collection_file_seq_type reconstruction_files =
-			file_io.load_files(LOAD_RECONSTRUCTION_OPTION_NAME);
+			file_io.load_files(LOAD_RECONSTRUCTION_OPTION_NAME, read_errors);
+
+	// Report all file load errors (if any).
+	FeatureCollectionFileIO::report_load_file_errors(read_errors);
 
 	// Extract the feature collections from the owning files.
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstruction_feature_collections;

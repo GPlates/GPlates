@@ -188,6 +188,7 @@ GPlatesCli::ReconstructCommand::run(
 		const boost::program_options::variables_map &vm)
 {
 	FeatureCollectionFileIO file_io(d_model, vm);
+	GPlatesFileIO::ReadErrorAccumulation read_errors;
 
 	//
 	// Load the feature collection files
@@ -196,9 +197,12 @@ GPlatesCli::ReconstructCommand::run(
 	//qDebug() << "Single: " << d_export_single_output_file;
 
 	FeatureCollectionFileIO::feature_collection_file_seq_type reconstructable_files =
-			file_io.load_files(LOAD_RECONSTRUCTABLE_OPTION_NAME);
+			file_io.load_files(LOAD_RECONSTRUCTABLE_OPTION_NAME, read_errors);
 	FeatureCollectionFileIO::feature_collection_file_seq_type reconstruction_files =
-			file_io.load_files(LOAD_RECONSTRUCTION_OPTION_NAME);
+			file_io.load_files(LOAD_RECONSTRUCTION_OPTION_NAME, read_errors);
+
+	// Report all file load errors (if any).
+	FeatureCollectionFileIO::report_load_file_errors(read_errors);
 
 	// Extract the feature collections from the owning files.
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>

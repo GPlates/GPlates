@@ -286,6 +286,7 @@ GPlatesCli::AssignPlateIdsCommand::run(
 		const boost::program_options::variables_map &vm)
 {
 	FeatureCollectionFileIO file_io(d_model, vm);
+	GPlatesFileIO::ReadErrorAccumulation read_errors;
 
 	//
 	// Load the feature collection files
@@ -295,10 +296,10 @@ GPlatesCli::AssignPlateIdsCommand::run(
 	//   * topological closed plate boundary features and the boundary features they reference, or
 	//   * static polygon features.
 	FeatureCollectionFileIO::feature_collection_file_seq_type partitioning_files =
-			file_io.load_files(PARTITIONING_FILES_OPTION_NAME);
+			file_io.load_files(PARTITIONING_FILES_OPTION_NAME, read_errors);
 	// The features that will have their plate ids (re)assigned.
 	FeatureCollectionFileIO::feature_collection_file_seq_type assign_plate_ids_files =
-			file_io.load_files(ASSIGN_PLATE_ID_FILES_OPTION_NAME);
+			file_io.load_files(ASSIGN_PLATE_ID_FILES_OPTION_NAME, read_errors);
 	// The rotation files used to rotate both the topological boundary features and
 	// the features having their plate ids (re)assigned.
 	FeatureCollectionFileIO::feature_collection_file_seq_type reconstruction_files;
@@ -316,8 +317,11 @@ GPlatesCli::AssignPlateIdsCommand::run(
 	}
 	else
 	{
-		reconstruction_files = file_io.load_files(RECONSTRUCTION_FILES_OPTION_NAME);
+		reconstruction_files = file_io.load_files(RECONSTRUCTION_FILES_OPTION_NAME, read_errors);
 	}
+
+	// Report all file load errors (if any).
+	FeatureCollectionFileIO::report_load_file_errors(read_errors);
 
 	// Extract the feature collections from the owning files.
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>

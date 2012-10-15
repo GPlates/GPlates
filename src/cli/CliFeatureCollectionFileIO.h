@@ -37,6 +37,7 @@
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/File.h"
+#include "file-io/ReadErrorAccumulation.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
@@ -78,7 +79,8 @@ namespace GPlatesCli
 		 */
 		feature_collection_file_seq_type
 		load_files(
-				const std::string &option_name);
+				const std::string &option_name,
+				GPlatesFileIO::ReadErrorAccumulation &read_errors);
 
 
 		/**
@@ -91,6 +93,15 @@ namespace GPlatesCli
 		extract_feature_collections(
 				std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &feature_collections,
 				FeatureCollectionFileIO::feature_collection_file_seq_type &files);
+
+
+		/**
+		 * Reports any file read errors accumulated into @a read_errors.
+		 */
+		static
+		void
+		report_load_file_errors(
+				const GPlatesFileIO::ReadErrorAccumulation &read_errors);
 
 
 		/**
@@ -204,7 +215,24 @@ namespace GPlatesCli
 		void
 		load_feature_collections(
 				const std::vector<std::string> &filenames,
-				feature_collection_file_seq_type &files);
+				feature_collection_file_seq_type &files,
+				GPlatesFileIO::ReadErrorAccumulation &read_errors);
+
+		static
+		void
+		report_load_file_error_by_collection_type(
+				const QString &error_header,
+				const GPlatesFileIO::ReadErrorAccumulation::read_error_collection_type &errors);
+
+		static
+		void
+		report_load_file_error_by_file(
+				const GPlatesFileIO::ReadErrorAccumulation::read_error_collection_type &errors);
+
+		static
+		void
+		report_load_file_error_by_error_type(
+				const GPlatesFileIO::ReadErrorAccumulation::read_error_collection_type &errors);
 	};
 }
 

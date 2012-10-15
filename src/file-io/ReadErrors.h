@@ -33,8 +33,7 @@ namespace GPlatesFileIO
 	 * Please keep these entries in the same order as they appear on the GPlates
 	 * Trac wiki page "ReadErrorMessages".
 	 *
-	 * A corresponding textual description will also need to be added to
-	 * qt-widgets/ReadErrorAccumulationDialog.cc.
+	 * A corresponding textual description will also need to be added to "ReadErrorMessages.cc".
 	 */
 	namespace ReadErrors
 	{

@@ -116,13 +116,17 @@ GPlatesCli::ConvertFileFormatCommand::run(
 		const boost::program_options::variables_map &vm)
 {
 	FeatureCollectionFileIO file_io(d_model, vm);
+	GPlatesFileIO::ReadErrorAccumulation read_errors;
 
 	//
 	// Load the feature collection files
 	//
 
 	FeatureCollectionFileIO::feature_collection_file_seq_type files =
-			file_io.load_files(LOAD_FEATURE_COLLECTION_OPTION_NAME);
+			file_io.load_files(LOAD_FEATURE_COLLECTION_OPTION_NAME, read_errors);
+
+	// Report all file load errors (if any).
+	FeatureCollectionFileIO::report_load_file_errors(read_errors);
 
 	// Extract the feature collections from the owning files.
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collections;

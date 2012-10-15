@@ -9,11 +9,11 @@
  *
  * This file is part of GPlates.
  *
- * GPlates is free software; you can redistribute it and/or modify it under
+ * GPlates is free software; you can redistribute errors_by_file_iter and/or modify errors_by_file_iter under
  * the terms of the GNU General Public License, version 2, as published by
  * the Free Software Foundation.
  *
- * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * GPlates is distributed in the hope that errors_by_file_iter will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
  * for more details.
@@ -23,12 +23,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <sstream>
+#include <string>
 #include <QDir>
+#include <QObject>
 
 #include "CliFeatureCollectionFileIO.h"
 #include "CliInvalidOptionValue.h"
 
-#include "file-io/ReadErrorAccumulation.h"
+#include "file-io/ReadErrorMessages.h"
+#include "file-io/ReadErrorUtils.h"
 
 
 namespace
@@ -118,7 +122,8 @@ GPlatesCli::FeatureCollectionFileIO::FeatureCollectionFileIO(
 
 GPlatesCli::FeatureCollectionFileIO::feature_collection_file_seq_type
 GPlatesCli::FeatureCollectionFileIO::load_files(
-		const std::string &option_name)
+		const std::string &option_name,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 {
 	if (!d_command_line_variables->count(option_name))
 	{
@@ -131,7 +136,7 @@ GPlatesCli::FeatureCollectionFileIO::load_files(
 			(*d_command_line_variables)[option_name].as< std::vector<std::string> >();
 
 	feature_collection_file_seq_type feature_collection_file_seq;
-	load_feature_collections(filenames, feature_collection_file_seq);
+	load_feature_collections(filenames, feature_collection_file_seq, read_errors);
 
 	return feature_collection_file_seq;
 }
@@ -140,7 +145,8 @@ GPlatesCli::FeatureCollectionFileIO::load_files(
 void
 GPlatesCli::FeatureCollectionFileIO::load_feature_collections(
 		const std::vector<std::string> &filenames,
-		feature_collection_file_seq_type &files)
+		feature_collection_file_seq_type &files,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 {
 	// Load each feature collection file.
 	std::vector<std::string>::const_iterator filename_iter = filenames.begin();
@@ -156,7 +162,6 @@ GPlatesCli::FeatureCollectionFileIO::load_feature_collections(
 
 		// Read new features from the file into the feature collection.
 		// Both the filename and target feature collection are in 'file_ref'.
-		GPlatesFileIO::ReadErrorAccumulation read_errors;
 		d_file_format_registry.read_feature_collection(file->get_reference(), read_errors);
 
 		// Add the feature collection to be managed by the model.
@@ -181,6 +186,118 @@ GPlatesCli::FeatureCollectionFileIO::extract_feature_collections(
 	for ( ; file_iter != file_end; ++file_iter)
 	{
 		feature_collections.push_back((*file_iter)->get_feature_collection());
+	}
+}
+
+
+void
+GPlatesCli::FeatureCollectionFileIO::report_load_file_errors(
+		const GPlatesFileIO::ReadErrorAccumulation &read_errors)
+{
+	// Return early if there are no read errors.
+	if (read_errors.is_empty())
+	{
+		return;
+	}
+
+	qWarning() << "File read errors:";
+
+	const QString read_errors_summary = GPlatesFileIO::ReadErrorUtils::build_summary_string(read_errors);
+	qWarning() << read_errors_summary;
+
+	report_load_file_error_by_collection_type(
+			QObject::tr("Failure to Begin (%1):"),
+			read_errors.d_failures_to_begin);
+
+	report_load_file_error_by_collection_type(
+			QObject::tr("Terminating Errors (%1):"),
+			read_errors.d_terminating_errors);
+
+	report_load_file_error_by_collection_type(
+			QObject::tr("Recoverable Errors (%1):"),
+			read_errors.d_recoverable_errors);
+
+	report_load_file_error_by_collection_type(
+			QObject::tr("Warnings (%1):"),
+			read_errors.d_warnings);
+}
+
+
+
+void
+GPlatesCli::FeatureCollectionFileIO::report_load_file_error_by_collection_type(
+		const QString &error_header,
+		const GPlatesFileIO::ReadErrorAccumulation::read_error_collection_type &errors)
+{
+	// Return early if there are no errors in the current collection type.
+	if (errors.empty())
+	{
+		return;
+	}
+
+	qWarning() << error_header.arg(errors.size());
+
+	// Build map of Filename -> Error collection.
+	GPlatesFileIO::ReadErrorUtils::errors_by_file_map_type errors_by_file;
+	GPlatesFileIO::ReadErrorUtils::group_read_errors_by_file(errors_by_file, errors);
+	
+	// Iterate over map to add file errors of this type grouped by file.
+	GPlatesFileIO::ReadErrorUtils::errors_by_file_map_const_iterator errors_by_file_iter = errors_by_file.begin();
+	GPlatesFileIO::ReadErrorUtils::errors_by_file_map_const_iterator errors_by_file_end = errors_by_file.end();
+	for ( ; errors_by_file_iter != errors_by_file_end; ++errors_by_file_iter)
+	{
+		qWarning() << "File: " << QString::fromStdString(errors_by_file_iter->first);
+
+		report_load_file_error_by_file(errors_by_file_iter->second);
+	}
+}
+
+
+void
+GPlatesCli::FeatureCollectionFileIO::report_load_file_error_by_file(
+		const GPlatesFileIO::ReadErrorAccumulation::read_error_collection_type &errors)
+{
+	// Build map of Description (enum) -> Error collection.
+	GPlatesFileIO::ReadErrorUtils::errors_by_type_map_type errors_by_type;
+	GPlatesFileIO::ReadErrorUtils::group_read_errors_by_type(errors_by_type, errors);
+	
+	// Iterate over map to add file errors of this type grouped by description.
+	GPlatesFileIO::ReadErrorUtils::errors_by_type_map_const_iterator errors_by_type_iter = errors_by_type.begin();
+	GPlatesFileIO::ReadErrorUtils::errors_by_type_map_const_iterator errors_by_type_end = errors_by_type.end();
+	for ( ; errors_by_type_iter != errors_by_type_end; ++errors_by_type_iter)
+	{
+		const QString &error_description_string =
+				GPlatesFileIO::ReadErrorMessages::get_full_description_as_string(
+						errors_by_type_iter->first);
+
+		qWarning() << "Description: " << error_description_string;
+
+		report_load_file_error_by_error_type(errors_by_type_iter->second);
+	}
+}
+
+
+void
+GPlatesCli::FeatureCollectionFileIO::report_load_file_error_by_error_type(
+		const GPlatesFileIO::ReadErrorAccumulation::read_error_collection_type &errors)
+{
+	// Add all error occurrences for this file, for this error type.
+	GPlatesFileIO::ReadErrorAccumulation::read_error_collection_const_iterator read_errors_iter = errors.begin();
+	GPlatesFileIO::ReadErrorAccumulation::read_error_collection_const_iterator read_errors_end = errors.end();
+	for ( ; read_errors_iter != read_errors_end; ++read_errors_iter)
+	{
+		const GPlatesFileIO::ReadErrorOccurrence &read_error_occurrence = *read_errors_iter;
+
+		std::ostringstream location_str;
+		read_error_occurrence.d_location->write(location_str);
+
+		qWarning() << "Line: " << QString::fromAscii(location_str.str().c_str());
+
+		const QString &error_result_string =
+				GPlatesFileIO::ReadErrorMessages::get_result_as_string(
+						read_error_occurrence.d_result);
+
+		qWarning() << "Result: " << error_result_string;
 	}
 }
 

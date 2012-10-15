@@ -757,7 +757,7 @@ main(int argc, char* argv[])
 {
 	// The first of two reasons to wrap 'main()' around 'internal_main()' is to
 	// handle any uncaught exceptions that occur in main() but outside the Qt event thread.
-	// Any uncaught exceptions occurring in the Qt event thread will caught by the
+	// Any uncaught exceptions occurring in the Qt event thread will get caught by the
 	// local variable of type "GPlatesGui::GPlatesQApplication" inside 'internal_main()'.
 	const int return_code = GPlatesGui::GPlatesQApplication::call_main(internal_main, argc, argv);
 

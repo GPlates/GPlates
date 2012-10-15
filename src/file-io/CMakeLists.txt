@@ -143,9 +143,13 @@ set(srcs
     RasterReader.cc
     RasterReader.h
     ReadErrorAccumulation.h
+    ReadErrorMessages.cc
+    ReadErrorMessages.h
     ReadErrorOccurrence.cc
     ReadErrorOccurrence.h
     ReadErrors.h
+    ReadErrorUtils.cc
+    ReadErrorUtils.h
     ReconstructedFeatureGeometryExport.cc
     ReconstructedFeatureGeometryExport.h
     ReconstructedFlowlineExport.cc
