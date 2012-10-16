@@ -39,7 +39,7 @@
 #include "FileInfo.h"
 #include "OgrException.h"
 #include "PropertyMapper.h"
-#include "ShapefileUtils.h"
+#include "OgrUtils.h"
 #include "feature-visitors/GeometryTypeFinder.h"
 #include "feature-visitors/KeyValueDictionaryFinder.h"
 #include "feature-visitors/PropertyValueFinder.h"
@@ -165,6 +165,8 @@ namespace
 	{
 		QString key_string = ShapefileAttributes::default_attributes[ShapefileAttributes::PLATEID];
 		GPlatesPropertyValues::XsInteger::non_null_ptr_type value = 
+            // FIXME: should we be using some sort of easily recognisable value to
+            // represent "no" plate-id, like -999?
 			GPlatesPropertyValues::XsInteger::create(0);
 						
 		add_field_to_kvd(key_string,
@@ -737,8 +739,8 @@ namespace
 		const QMap< QString,QString > &model_to_shapefile_map,
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 	{
-		static const GPlatesFileIO::ShapefileUtils::feature_map_type &feature_map = 
-			GPlatesFileIO::ShapefileUtils::build_feature_map();
+		static const GPlatesFileIO::OgrUtils::feature_map_type &feature_map = 
+			GPlatesFileIO::OgrUtils::build_feature_map();
 
 		if ( ! feature.is_valid()) {
 			return;
@@ -907,25 +909,25 @@ namespace
 				GPlatesModel::PropertyValue::non_null_ptr_type value =
 					description->clone();
 
-			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
-				ShapefileAttributes::model_properties[ShapefileAttributes::DESCRIPTION]);
+            QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
+                ShapefileAttributes::model_properties[ShapefileAttributes::DESCRIPTION]);
 
-			if (it != model_to_shapefile_map.end())
-			{
+            if (it != model_to_shapefile_map.end())
+            {
 
-				QString key_string = it.value();				
+                QString key_string = it.value();
 
-				GPlatesPropertyValues::XsString::non_null_ptr_type key = 
-					GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(key_string));
+                GPlatesPropertyValues::XsString::non_null_ptr_type key =
+                    GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(key_string));
 
-				GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
-					key,
-					value,
-					GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"));
+                GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
+                    key,
+                    value,
+                    GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"));
 
-				add_or_replace_kvd_element(new_element,key_string,dictionary);		
-			}
-		}
+                add_or_replace_kvd_element(new_element,key_string,dictionary);
+            }
+        }
 
 	}
 	
@@ -1289,7 +1291,7 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 	add_feature_id_to_map_if_necessary(d_model_to_shapefile_map,file_info);
 	
 	// Look for a key value dictionary, and store it as the default. 
-	ShapefileUtils::create_default_kvd_from_collection(feature_collection_ref,d_default_key_value_dictionary);
+	OgrUtils::create_default_kvd_from_collection(feature_collection_ref,d_default_key_value_dictionary);
 	
 
 	if (d_default_key_value_dictionary)
@@ -1313,14 +1315,14 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 	if (is_shapefile_format(file_info.get_qfileinfo()))
 	{
 		// Export the newly created map as an shp.gplates.xml file.
-		QString shapefile_xml_filename = ShapefileUtils::make_shapefile_xml_filename(file_info.get_qfileinfo());
+		QString shapefile_xml_filename = OgrUtils::make_shapefile_xml_filename(file_info.get_qfileinfo());
 
 		// FIXME: If we have multiple layers, then we will have multiple shapefiles, but only one xml mapping file.
 		// We should change this so that we have a separate (and appropriately named) xml mapping file for each shapefile. 
 		//
 		// Not exporting an individual mapping file for each layer isn't a disaster - it just means the user
 		// will have to go through the mapping dialog the next time they load any of the newly created files.
-		ShapefileUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,
+		OgrUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,
 			d_model_to_shapefile_map);
 	}
 

@@ -33,7 +33,7 @@
 #include "FileInfo.h"
 #include "OgrFormatResolvedTopologicalBoundaryExport.h"
 #include "OgrGeometryExporter.h"
-#include "ShapefileUtils.h"
+#include "OgrUtils.h"
 
 #include "app-logic/ReconstructionGeometry.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
@@ -175,113 +175,6 @@ namespace
 		}
 
 	}
-
-	void
-	add_plate_id_to_kvd(
-		const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
-	{
-		static const GPlatesModel::PropertyName plate_id_property_name =
-			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-
-		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
-
-		// If we found a plate id, add it. 
-		if (GPlatesFeatureVisitors::get_property_value(feature,plate_id_property_name,recon_plate_id))
-		{
-			// Shapefile attribute field names are limited to 10 characters in length 
-			// and should not contain spaces.
-			GPlatesPropertyValues::XsString::non_null_ptr_type key = 
-				GPlatesPropertyValues::XsString::create("PLATE_ID");
-			GPlatesPropertyValues::XsInteger::non_null_ptr_type plateid_value = 
-				GPlatesPropertyValues::XsInteger::create(recon_plate_id->value());	
-
-			GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-				key,
-				plateid_value,
-				GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"));
-			kvd->elements().push_back(element);
-		}
-	}
-		
-
-	void
-	add_reconstruction_fields_to_kvd(
-		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd,
-		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
-	{
-
-
-		// Anchor plate.
-
-		// (Shapefile attribute fields are limited to 10 characters in length)
-		GPlatesPropertyValues::XsString::non_null_ptr_type key = 
-			GPlatesPropertyValues::XsString::create("ANCHOR");
-		GPlatesPropertyValues::XsInteger::non_null_ptr_type anchor_value = 
-			GPlatesPropertyValues::XsInteger::create(reconstruction_anchor_plate_id);	
-
-		GPlatesPropertyValues::GpmlKeyValueDictionaryElement anchor_element(
-			key,
-			anchor_value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"));
-		kvd->elements().push_back(anchor_element);	
-
-		// Reconstruction time.
-		key = GPlatesPropertyValues::XsString::create("TIME");
-		GPlatesPropertyValues::XsDouble::non_null_ptr_type time_value = 
-			GPlatesPropertyValues::XsDouble::create(reconstruction_time);	
-
-		GPlatesPropertyValues::GpmlKeyValueDictionaryElement time_element(
-			key,
-			time_value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("double"));
-		kvd->elements().push_back(time_element);	
-	}
-
-	void
-	add_referenced_files_to_kvd(
-		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd,
-		const referenced_files_collection_type &referenced_files)
-	{
-		// Referenced files. 
-
-		// Attribute field names will have the form "FILE1", "FILE2" etc...
-		QString file_string("FILE");
-
-		int file_count = 1;
-		referenced_files_collection_type::const_iterator file_iter;
-		for (file_iter = referenced_files.begin();
-			file_iter != referenced_files.end();
-			++file_iter, ++file_count)
-		{
-			const GPlatesFileIO::File::Reference *file = *file_iter;
-
-			QString count_string = QString("%1").arg(file_count);
-			QString field_name = file_string + count_string;
-
-			// Some files might not actually exist yet if the user created a new
-			// feature collection internally and hasn't saved it to file yet.
-			if (!GPlatesFileIO::file_exists(file->get_file_info()))
-			{
-				continue;
-			}
-
-			QString filename = file->get_file_info().get_display_name(false/*use_absolute_path_name*/);
-
-			GPlatesPropertyValues::XsString::non_null_ptr_type key = 
-				GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(field_name));
-			GPlatesPropertyValues::XsString::non_null_ptr_type file_value = 
-				GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(filename));
-
-			GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-				key,
-				file_value,
-				GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"));
-			kvd->elements().push_back(element);	
-		}
-
-	}
 }
 
 
@@ -334,13 +227,15 @@ GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_resolved_topol
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd_for_export =
 			GPlatesPropertyValues::GpmlKeyValueDictionary::create();
 
-		add_plate_id_to_kvd(feature_ref.get(), kvd_for_export);
 
-		add_reconstruction_fields_to_kvd(kvd_for_export,
+
+		OgrUtils::add_reconstruction_fields_to_kvd(kvd_for_export,
 										reconstruction_anchor_plate_id,
 										reconstruction_time);
 
-		add_referenced_files_to_kvd(kvd_for_export, referenced_files);
+		OgrUtils::add_referenced_files_to_kvd(kvd_for_export, referenced_files);
+
+        OgrUtils::add_standard_properties_to_kvd(feature_ref.get(), kvd_for_export);
 
 #if 0		
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type kvd =
@@ -442,14 +337,15 @@ GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 			// Perhaps both.
 			//
 			// For now just write the plate id of the topological section feature.
-			//
-			add_plate_id_to_kvd(subsegment_feature_ref, kvd_for_export);
+            //
 
-			add_reconstruction_fields_to_kvd(kvd_for_export,
+			OgrUtils::add_reconstruction_fields_to_kvd(kvd_for_export,
 											reconstruction_anchor_plate_id,
 											reconstruction_time);
 
-			add_referenced_files_to_kvd(kvd_for_export, referenced_files);
+			OgrUtils::add_referenced_files_to_kvd(kvd_for_export, referenced_files);
+
+            OgrUtils::add_standard_properties_to_kvd(subsegment_feature_ref, kvd_for_export);
 
 #if 0		
 			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type kvd =

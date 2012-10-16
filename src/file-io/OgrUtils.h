@@ -7,7 +7,7 @@
 * Most recent change:
 *   $Date$
 * 
-* Copyright (C) 2009, 2010 Geological Survey of Norway
+* Copyright (C) 2009, 2010, 2012 Geological Survey of Norway
 *
 * This file is part of GPlates.
 *
@@ -33,11 +33,19 @@
 #include <QString>
 
 #include "property-values/GpmlKeyValueDictionary.h"
+#include "ReconstructionGeometryExportImpl.h"
 
 namespace GPlatesFileIO
 {
-	namespace ShapefileUtils
+	namespace OgrUtils
 	{
+		/**
+		 * Typedef for a sequence of referenced files.
+		 */
+		typedef ReconstructionGeometryExportImpl::referenced_files_collection_type
+				referenced_files_collection_type;
+
+
 #if 0
 		typedef std::map<QString, std::pair<QString,QString> > feature_map_type;
 		typedef feature_map_type::const_iterator feature_map_const_iterator;		
@@ -144,8 +152,60 @@ namespace GPlatesFileIO
 			boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type> 
 				&default_key_value_dictionary);
 
-	
-	}
+		void
+		add_plate_id_to_kvd(
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
+
+		void
+		add_reconstruction_fields_to_kvd(
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd,
+			const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+			const double &reconstruction_time);
+
+		void
+		add_referenced_files_to_kvd(
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd,
+			const referenced_files_collection_type &referenced_files);
+
+		void
+		add_standard_properties_to_kvd(
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);	
+
+		void
+		add_feature_type_to_kvd(
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);	
+
+		void
+		add_begin_and_end_time_to_kvd(
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);	
+
+		void
+		add_name_to_kvd(
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);	
+
+		void
+		add_description_to_kvd(
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);	
+
+		void
+		add_feature_id_to_kvd(
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);	
+
+		void
+		add_conjugate_plate_id_to_kvd(
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);	
+
+}
+
+
 
 }
 

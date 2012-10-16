@@ -40,7 +40,7 @@
 #include "FileLoadAbortedException.h"
 #include "PropertyMapper.h"
 #include "ShapefileReader.h"
-#include "ShapefileUtils.h"
+#include "OgrUtils.h"
 #include "ShapefileXmlReader.h"
 
 #include "feature-visitors/PropertyValueFinder.h" 
@@ -791,7 +791,7 @@ GPlatesFileIO::ShapefileReader::read_features(
 	boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
 		new GPlatesFileIO::LocalFileDataSource(d_filename, GPlatesFileIO::DataFormats::Shapefile));
 
-	static const ShapefileUtils::feature_map_type &feature_map = ShapefileUtils::build_feature_map();
+	static const OgrUtils::feature_map_type &feature_map = OgrUtils::build_feature_map();
 
 	d_feature_type = "UnclassifiedFeature";
 #if 0
@@ -832,7 +832,7 @@ GPlatesFileIO::ShapefileReader::read_features(
 
 				QString feature_string = d_attributes[index].toString();
 
-				ShapefileUtils::feature_map_const_iterator result = feature_map.find(feature_string);
+				OgrUtils::feature_map_const_iterator result = feature_map.find(feature_string);
 				if (result != feature_map.end()) {
 				//	d_feature_creation_pair = result->second;
 					d_feature_type = *result;
@@ -1306,7 +1306,7 @@ GPlatesFileIO::ShapefileReader::read_file(
 	}
 	reader.get_field_names(read_errors);
 
-	QString shapefile_xml_filename = ShapefileUtils::make_shapefile_xml_filename(fileinfo.get_qfileinfo());
+	QString shapefile_xml_filename = OgrUtils::make_shapefile_xml_filename(fileinfo.get_qfileinfo());
 
 	reader.d_model_to_attribute_map.clear();
 
@@ -1323,7 +1323,7 @@ GPlatesFileIO::ShapefileReader::read_file(
 			// The user has cancelled the mapper-dialog routine, so cancel the whole shapefile loading procedure.
 			throw FileLoadAbortedException(GPLATES_EXCEPTION_SOURCE, "File load aborted.");
 		}
-		ShapefileUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,reader.d_model_to_attribute_map);
+		OgrUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,reader.d_model_to_attribute_map);
 	}
 
 	// Store the model-to-attribute map in the file reference object so we can access it if the
@@ -1924,8 +1924,8 @@ GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(
 	load_model_to_attribute_map_from_file_reference(model_to_attribute_map, file);
 
 	// Save the model-to-attribute map to the mapping xml file.
-	ShapefileUtils::save_attribute_map_as_xml_file(
-			ShapefileUtils::make_shapefile_xml_filename(file_info.get_qfileinfo()),
+	OgrUtils::save_attribute_map_as_xml_file(
+			OgrUtils::make_shapefile_xml_filename(file_info.get_qfileinfo()),
 			model_to_attribute_map);
 
 	remap_feature_collection(file, model_to_attribute_map, read_errors);
