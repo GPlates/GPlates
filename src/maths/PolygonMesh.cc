@@ -196,7 +196,7 @@ GPlatesMaths::PolygonMesh::initialise(
 	// First try starting with the global x axis - if it's too close to the plane normal
 	// then choose the global y axis.
 	GPlatesMaths::UnitVector3D proj_plane_x_axis_test_point(0, 0, 1); // global x-axis
-	if (dot(proj_plane_x_axis_test_point, proj_plane_normal) > 1 - 1e-2)
+	if (abs(dot(proj_plane_x_axis_test_point, proj_plane_normal)) > 1 - 1e-2)
 	{
 		proj_plane_x_axis_test_point = GPlatesMaths::UnitVector3D(0, 1, 0); // global y-axis
 	}

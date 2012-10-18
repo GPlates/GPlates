@@ -147,7 +147,7 @@ namespace GPlatesGui
 		 * A function that returns a NULL @a ExportOptionsWidget.
 		 *
 		 * Used for those exporters that don't need an export options widget to configure
-		 * its export parameters.
+		 * their export parameters.
 		 */
 		GPlatesQtWidgets::ExportOptionsWidget *
 		create_null_export_options_widget(
