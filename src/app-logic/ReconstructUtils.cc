@@ -492,6 +492,15 @@ GPlatesAppLogic::ReconstructUtils::get_stage_pole(
 	const GPlatesModel::integer_plate_id_type &moving_plate_id,
 	const GPlatesModel::integer_plate_id_type &fixed_plate_id)
 {
+	//
+	// Stage rotation of moving plate relative to fixed plate and from time 1 to time 2:
+	//
+	// R(t1->t2,F->M) = R(0->t2,F->M) * R(t1->0,F->M)
+	//                = R(0->t2,F->M) * inverse[R(0->t1,F->M)]
+	//                = R(0->t2,M) * inverse[R(0->t2,F)] * inverse[R(0->t1,M) * inverse[R(0->t1,F)]]
+	//                = R(0->t2,M) * inverse[R(0->t2,F)] * R(0->t1,F) * inverse[R(0->t1,M)]
+	//
+
 	// For t1, get the rotation for plate M w.r.t. anchor	
 	GPlatesMaths::FiniteRotation rot_0_to_t1_M = 
 		reconstruction_tree_1.get_composed_absolute_rotation(moving_plate_id).first;
@@ -513,10 +522,10 @@ GPlatesAppLogic::ReconstructUtils::get_stage_pole(
 	// the stage pole from time t1 to time t2 for plate M w.r.t. plate F.
 
 	GPlatesMaths::FiniteRotation rot_t1 = 
-		GPlatesMaths::compose(GPlatesMaths::get_reverse(rot_0_to_t1_F),rot_0_to_t1_M);
+		GPlatesMaths::compose(rot_0_to_t1_M, GPlatesMaths::get_reverse(rot_0_to_t1_F));
 
 	GPlatesMaths::FiniteRotation rot_t2 = 
-		GPlatesMaths::compose(GPlatesMaths::get_reverse(rot_0_to_t2_F),rot_0_to_t2_M);	
+		GPlatesMaths::compose(rot_0_to_t2_M, GPlatesMaths::get_reverse(rot_0_to_t2_F));	
 
 	GPlatesMaths::FiniteRotation stage_pole = 
 		GPlatesMaths::compose(rot_t2,GPlatesMaths::get_reverse(rot_t1));	
