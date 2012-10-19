@@ -493,14 +493,42 @@ GPlatesAppLogic::ReconstructUtils::get_stage_pole(
 	const GPlatesModel::integer_plate_id_type &fixed_plate_id)
 {
 	//
-	// Stage rotation of moving plate relative to fixed plate and from time 't1' to time 't2':
+	// Rotation from present day (0Ma) to time 't2' (via time 't1'):
+	//
+	// R(0->t2)  = R(t1->t2) * R(0->t1)
+	// ...or by post-multiplying both sides by R(t1->0) this becomes...
+	// R(t1->t2) = R(0->t2) * R(t1->0)
+	//
+	// Rotation from anchor plate 'A' to moving plate 'M' (via fixed plate 'F'):
+	//
+	// R(A->M) = R(A->F) * R(F->M)
+	// ...or by pre-multiplying both sides by R(F->A) this becomes...
+	// R(F->M) = R(F->A) * R(A->M)
+	//
+	// NOTE: The rotations for relative times and for relative plates have the opposite order of each other !
+	// In other words:
+	//   * For times 0->t1->t2 you apply the '0->t1' rotation first followed by the 't1->t2' rotation:
+	//     R(0->t2)  = R(t1->t2) * R(0->t1)
+	//   * For plate circuit A->F->M you apply the 'F->M' rotation first followed by the 'A->F' rotation:
+	//     R(A->M) = R(A->F) * R(F->M)
+	//     Note that this is not 'A->F' followed by 'F->M' as you might expect (looking at the time example).
+	// This is probably best explained by the difference between thinking in terms of the grand fixed
+	// coordinate system and local coordinate system (see http://glprogramming.com/red/chapter03.html#name2).
+	// Essentially, in the plate circuit A->F->M, the 'F->M' rotation can be thought of as a rotation
+	// within the local coordinate system of 'A->F'. In other words 'F->M' is not a rotation that
+	// occurs relative to the global spin axis but a rotation relative to the local coordinate system
+	// of plate 'F' *after* it has been rotated relative to the anchor plate 'A'.
+	// For the times 0->t1->t2 this local/relative coordinate system concept does not apply.
+	//
+	//
+	// So the stage rotation of moving plate relative to fixed plate and from time 't1' to time 't2':
 	//
 	// R(t1->t2,F->M)
 	//    = R(0->t2,F->M) * R(t1->0,F->M)
 	//    = R(0->t2,F->M) * inverse[R(0->t1,F->M)]
-	//    = R(0->t2,A->M) * R(0->t2,F->A) * inverse[R(0->t1,A->M) * R(0->t1,F->A)]
-	//    = R(0->t2,A->M) * inverse[R(0->t2,A->F)] * inverse[R(0->t1,A->M) * inverse[R(0->t1,A->F)]]
-	//    = R(0->t2,A->M) * inverse[R(0->t2,A->F)] * R(0->t1,A->F) * inverse[R(0->t1,A->M)]
+	//    = R(0->t2,F->A) * R(0->t2,A->M) * inverse[R(0->t1,F->A) * R(0->t1,A->M)]
+	//    = inverse[R(0->t2,A->F)] * R(0->t2,A->M) * inverse[inverse[R(0->t1,A->F)] * R(0->t1,A->M)]
+	//    = inverse[R(0->t2,A->F)] * R(0->t2,A->M) * inverse[R(0->t1,A->M)] * R(0->t1,A->F)
 	//
 	// ...where 'A' is the anchor plate, 'F' is the fixed plate and 'M' is the moving plate.
 	//
@@ -526,10 +554,10 @@ GPlatesAppLogic::ReconstructUtils::get_stage_pole(
 	// the stage pole from time t1 to time t2 for plate M w.r.t. plate F.
 
 	GPlatesMaths::FiniteRotation rot_t1 = 
-		GPlatesMaths::compose(rot_0_to_t1_M, GPlatesMaths::get_reverse(rot_0_to_t1_F));
+		GPlatesMaths::compose(GPlatesMaths::get_reverse(rot_0_to_t1_F), rot_0_to_t1_M);
 
 	GPlatesMaths::FiniteRotation rot_t2 = 
-		GPlatesMaths::compose(rot_0_to_t2_M, GPlatesMaths::get_reverse(rot_0_to_t2_F));	
+		GPlatesMaths::compose(GPlatesMaths::get_reverse(rot_0_to_t2_F), rot_0_to_t2_M);	
 
 	GPlatesMaths::FiniteRotation stage_pole = 
 		GPlatesMaths::compose(rot_t2,GPlatesMaths::get_reverse(rot_t1));	
