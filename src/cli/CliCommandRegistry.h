@@ -34,6 +34,7 @@
 #include "CliEquivalentTotalRotation.h"
 #include "CliReconstructCommand.h"
 #include "CliRelativeTotalRotation.h"
+#include "CliStageRotationCommand.h"
 
 
 namespace GPlatesCli
@@ -46,9 +47,10 @@ namespace GPlatesCli
 		typedef boost::mpl::vector<
 				AssignPlateIdsCommand,
 				ConvertFileFormatCommand,
+				EquivalentTotalRotationCommand,
 				ReconstructCommand,
 				RelativeTotalRotationCommand,
-				EquivalentTotalRotationCommand
+				StageRotationCommand
 		> command_types;
 	}
 }

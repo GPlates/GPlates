@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2011 The University of Sydney, Australia
+ * Copyright (C) 2012 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_CLI_CLIRELATIVETOTALROTATION_H
-#define GPLATES_CLI_CLIRELATIVETOTALROTATION_H
+#ifndef GPLATES_CLI_CLISTAGEROTATIONCOMMAND_H
+#define GPLATES_CLI_CLISTAGEROTATIONCOMMAND_H
 
 #include <string>
 #include <vector>
@@ -40,11 +40,11 @@
 
 namespace GPlatesCli
 {
-	class RelativeTotalRotationCommand :
+	class StageRotationCommand :
 			public Command
 	{
 	public:
-		RelativeTotalRotationCommand();
+		StageRotationCommand();
 
 
 		//! Name of this command as seen on the command-line.
@@ -52,7 +52,7 @@ namespace GPlatesCli
 		std::string
 		get_command_name() const
 		{
-			return "relative-total-rotation";
+			return "stage-rotation";
 		}
 
 
@@ -61,7 +61,7 @@ namespace GPlatesCli
 		std::string
 		get_command_description() const
 		{
-			return "print the relative (moving/fixed plate pair) total rotation pole";
+			return "print the stage rotation (full or half stage) between two plates and two times";
 		}
 
 
@@ -86,10 +86,17 @@ namespace GPlatesCli
 				loaded_feature_collection_file_seq_type;
 
 		GPlatesModel::ModelInterface d_model;
-		double d_recon_time;
+		double d_start_time;
+		double d_end_time;
 		GPlatesModel::integer_plate_id_type d_fixed_plate_id;
 		GPlatesModel::integer_plate_id_type d_moving_plate_id;
+
+		/**
+		 * The asymmetry is in the range [-1,1] where the value 0 represents half-stage rotation
+		 * and the value 1 represents full-stage rotation.
+		 */
+		double d_asymmetry;
 	};
 }
 
-#endif // GPLATES_CLI_CLIRELATIVETOTALROTATION_H
+#endif // GPLATES_CLI_CLISTAGEROTATIONCOMMAND_H

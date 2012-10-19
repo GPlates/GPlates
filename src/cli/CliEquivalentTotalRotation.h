@@ -89,8 +89,6 @@ namespace GPlatesCli
 		double d_recon_time;
 		GPlatesModel::integer_plate_id_type d_anchor_plate_id;
 		GPlatesModel::integer_plate_id_type d_plate_id;
-
-		std::string d_export_filename;
 	};
 }
 

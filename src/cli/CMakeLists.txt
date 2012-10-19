@@ -29,6 +29,8 @@ set(srcs
     CliRelativeTotalRotation.cc
     CliRelativeTotalRotation.h
     CliRequiredOptionNotPresent.h
+    CliStageRotationCommand.cc
+    CliStageRotationCommand.h
 )
 
 

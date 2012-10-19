@@ -113,8 +113,8 @@ set(srcs
     OgrFormatResolvedTopologicalBoundaryExport.h
     OgrGeometryExporter.cc
     OgrGeometryExporter.h
-	OgrUtils.cc
-	OgrUtils.h
+    OgrUtils.cc
+    OgrUtils.h
     OgrWriter.cc
     OgrWriter.h
     PlatesFormatUtils.cc

@@ -493,12 +493,16 @@ GPlatesAppLogic::ReconstructUtils::get_stage_pole(
 	const GPlatesModel::integer_plate_id_type &fixed_plate_id)
 {
 	//
-	// Stage rotation of moving plate relative to fixed plate and from time 1 to time 2:
+	// Stage rotation of moving plate relative to fixed plate and from time 't1' to time 't2':
 	//
-	// R(t1->t2,F->M) = R(0->t2,F->M) * R(t1->0,F->M)
-	//                = R(0->t2,F->M) * inverse[R(0->t1,F->M)]
-	//                = R(0->t2,M) * inverse[R(0->t2,F)] * inverse[R(0->t1,M) * inverse[R(0->t1,F)]]
-	//                = R(0->t2,M) * inverse[R(0->t2,F)] * R(0->t1,F) * inverse[R(0->t1,M)]
+	// R(t1->t2,F->M)
+	//    = R(0->t2,F->M) * R(t1->0,F->M)
+	//    = R(0->t2,F->M) * inverse[R(0->t1,F->M)]
+	//    = R(0->t2,A->M) * R(0->t2,F->A) * inverse[R(0->t1,A->M) * R(0->t1,F->A)]
+	//    = R(0->t2,A->M) * inverse[R(0->t2,A->F)] * inverse[R(0->t1,A->M) * inverse[R(0->t1,A->F)]]
+	//    = R(0->t2,A->M) * inverse[R(0->t2,A->F)] * R(0->t1,A->F) * inverse[R(0->t1,A->M)]
+	//
+	// ...where 'A' is the anchor plate, 'F' is the fixed plate and 'M' is the moving plate.
 	//
 
 	// For t1, get the rotation for plate M w.r.t. anchor	
