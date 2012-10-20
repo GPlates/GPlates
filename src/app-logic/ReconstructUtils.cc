@@ -452,6 +452,18 @@ GPlatesAppLogic::ReconstructUtils::get_half_stage_rotation(
 		GPlatesModel::integer_plate_id_type left_plate_id,
 		GPlatesModel::integer_plate_id_type right_plate_id)
 {
+	//
+	// Rotation from present day (0Ma) to current reconstruction time 't' of mid-ocean ridge MOR
+	// with left/right plate ids 'L' and 'R':
+	//
+	// R(0->t,A->MOR)
+	// R(0->t,A->L) * R(0->t,L->MOR)
+	// R(0->t,A->L) * Half[R(0->t,L->R)] // Assumes L->R spreading from 0->t1 *and* t1->t2
+	// R(0->t,A->L) * Half[R(0->t,L->A) * R(0->t,A->R)]
+	// R(0->t,A->L) * Half[inverse[R(0->t,A->L)] * R(0->t,A->R)]
+	//
+	// ...where 'A' is the anchor plate id.
+	//
 
 	using namespace GPlatesMaths;
 
@@ -459,7 +471,7 @@ GPlatesAppLogic::ReconstructUtils::get_half_stage_rotation(
 
 	FiniteRotation left_rotation = reconstruction_tree.get_composed_absolute_rotation(left_plate_id).first;
 
-	const FiniteRotation& r = compose(left_rotation, get_reverse(right_rotation));
+	const FiniteRotation& r = compose(get_reverse(left_rotation), right_rotation);
  
 	UnitQuaternion3D quat = r.unit_quat();
 
@@ -475,14 +487,40 @@ GPlatesAppLogic::ReconstructUtils::get_half_stage_rotation(
 			half_angle),
 			r.axis_hint());
 
-
-		return compose(half_rotation,right_rotation);
+		return compose(left_rotation, half_rotation);
 
 	}
 	else
 	{
 		return boost::none;
 	}
+
+	//
+	// NOTE: The above algorithm works only if there is no motion of the right plate relative to
+	// the left plate outside time intervals when ridge spreading is occurring because the algorithm
+	// does not know when spreading is not occurring and just calculates the half-stage rotation
+	// from the current reconstruction time back to present day (0Ma).
+	//
+	// The following example is for a mid-ocean ridge that only spreads between t1->t2:
+	//
+	// This assumes no spreading from 0->t1 and spreading from t1->t2...
+	// R(0->t2,A->MOR)
+	// R(0->t2,A->L) * R(0->t2,L->MOR)
+	// R(0->t2,A->L) * R(t1->t2,L->MOR) * R(0->t1,L->MOR)
+	// R(0->t2,A->L) * Half[R(t1->t2,L->R)] * R(0->t1,L->R) // No L->R spreading from 0->t1
+	//
+	// This (incorrectly) assumes spreading from 0->t2 (ie, both 0->t1 and t1->t2)...
+	// R(0->t2,A->MOR)
+	// R(0->t2,A->L) * R(0->t2,L->MOR)
+	// R(0->t2,A->L) * Half[R(0->t2,L->R)] // Assumes L->R spreading from 0->t1 *and* t1->t2
+	// R(0->t2,A->L) * Half[R(t1->t2,L->R) * R(0->t1,L->R)]
+	//
+	// Both equations above are only equivalent if there is no rotation between L and R from 0->t1.
+	// Which happens if R(0->t1,L->R) is the identity rotation.
+	// Note that the second equation is the one we actually use so it only works if the rotation
+	// file has identity stage rotations between poles (of the MOR moving/fixed plate pair) where
+	// no ridge spreading is occurring (ie, the two poles around an identity stage rotation are equal).
+	//
 }
 
 GPlatesMaths::FiniteRotation
@@ -519,6 +557,31 @@ GPlatesAppLogic::ReconstructUtils::get_stage_pole(
 	// occurs relative to the global spin axis but a rotation relative to the local coordinate system
 	// of plate 'F' *after* it has been rotated relative to the anchor plate 'A'.
 	// For the times 0->t1->t2 this local/relative coordinate system concept does not apply.
+	//
+	// NOTE: A rotation must be relative to present day (0Ma) before it can be separated into
+	// a (plate circuit) chain of moving/fixed plate pairs.
+	// For example, the following is correct...
+	//
+	//    R(t1->t2,A->C)
+	//       = R(0->t2,A->C) * R(t1->0,A->C)
+	//       = R(0->t2,A->C) * inverse[R(0->t1,A->C)]
+	//       // Now that all times are relative to 0Ma we can split A->C into A->B->C...
+	//       = R(0->t2,A->B) * R(0->t2,B->C) * inverse[R(0->t1,A->B) * R(0->t1,B->C)]
+	//       = R(0->t2,A->B) * R(0->t2,B->C) * inverse[R(0->t1,B->C)] * inverse[R(0->t1,A->B)]
+	//
+	// ...but the following is *incorrect*...
+	//
+	//    R(t1->t2,A->C)
+	//       = R(t1->t2,A->B) * R(t1->t2,B->C)   // <-- This line is *incorrect*
+	//       = R(0->t2,A->B) * R(t1->0,A->B) * R(0->t2,B->C) * R(t1->0,B->C)
+	//       = R(0->t2,A->B) * inverse[R(0->t1,A->B)] * R(0->t2,B->C) * inverse[R(0->t1,B->C)]
+	//
+	// ...as can be seen above this gives two different results - the same four rotations are
+	// present in each result but in a different order.
+	// A->B->C means B->C is the rotation of C relative to B and A->B is the rotation of B relative to A.
+	// The need for rotation A->C to be relative to present day (0Ma) before it can be split into
+	// A->B and B->C is because A->B and B->C are defined (in the rotation file) as total reconstruction
+	// poles which are always relative to present day.
 	//
 	//
 	// So the stage rotation of moving plate relative to fixed plate and from time 't1' to time 't2':
