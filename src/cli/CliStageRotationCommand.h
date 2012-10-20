@@ -33,6 +33,8 @@
 
 #include "file-io/File.h"
 
+#include "maths/FiniteRotation.h"
+
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
 #include "model/types.h"
@@ -88,6 +90,7 @@ namespace GPlatesCli
 		GPlatesModel::ModelInterface d_model;
 		double d_start_time;
 		double d_end_time;
+		GPlatesModel::integer_plate_id_type d_anchor_plate_id;
 		GPlatesModel::integer_plate_id_type d_fixed_plate_id;
 		GPlatesModel::integer_plate_id_type d_moving_plate_id;
 
@@ -96,6 +99,13 @@ namespace GPlatesCli
 		 * and the value 1 represents full-stage rotation.
 		 */
 		double d_asymmetry;
+
+
+
+		void
+		output_stage_rotation(
+				const GPlatesMaths::FiniteRotation &stage_rotation,
+				bool output_indeterminate_for_identity_rotations);
 	};
 }
 

@@ -26,6 +26,7 @@
 #include <iostream>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
+#include <QString>
 
 #include "CliStageRotationCommand.h"
 
@@ -46,7 +47,6 @@
 
 #include "maths/FiniteRotation.h"
 #include "maths/LatLonPoint.h"
-#include "maths/UnitQuaternion3D.h"
 
 #include "model/Model.h"
 
@@ -64,6 +64,9 @@ namespace
 	//! Option name for end time with short version.
 	const char *END_TIME_OPTION_NAME_WITH_SHORT_OPTION = "end-time,e";
 
+	//! Option name for anchor plate id with short version.
+	const char *ANCHOR_PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION = "anchor-plate-id,a";
+
 	//! Option name for fixed plate id with short version.
 	const char *FIXED_PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION = "fixed-plate-id,f";
 
@@ -71,7 +74,14 @@ namespace
 	const char *MOVING_PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION = "moving-plate-id,m";
 
 	//! Option name for asymmetry with short version.
-	const char *ASYMMETRY_OPTION_NAME_WITH_SHORT_OPTION = "asymmetry,a";
+	const char *ASYMMETRY_OPTION_NAME_WITH_SHORT_OPTION = "asymmetry,y";
+
+	//! Option name for enabling stage rotations relative to the anchor plate.
+	const char *RELATIVE_TO_ANCHOR_PLATE_OPTION_NAME =
+			"relative-to-anchor-plate";
+	//! Option name enabling stage rotations relative to the anchor plate with short version.
+	const char *RELATIVE_TO_ANCHOR_PLATE_OPTION_NAME_WITH_SHORT_OPTION =
+			"relative-to-anchor-plate,l";
 
 	//! Option name for replacing 'Indeterminate' rotations with zero-angle north pole.
 	const char *INDETERMINATE_IS_ZERO_ANGLE_NORTH_POLE_OPTION_NAME =
@@ -85,6 +95,7 @@ namespace
 GPlatesCli::StageRotationCommand::StageRotationCommand() :
 	d_start_time(0),
 	d_end_time(0),
+	d_anchor_plate_id(0),
 	d_fixed_plate_id(0),
 	d_moving_plate_id(0),
 	d_asymmetry(1)
@@ -118,6 +129,14 @@ GPlatesCli::StageRotationCommand::add_options(
 			"set end time (defaults to zero)"
 		)
 		(
+			ANCHOR_PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION,
+			boost::program_options::value<GPlatesModel::integer_plate_id_type>(
+					&d_anchor_plate_id)->default_value(0),
+			QString("set anchor plate id (defaults to zero) - only used with '%1' option")
+					.arg(RELATIVE_TO_ANCHOR_PLATE_OPTION_NAME)
+					.toLatin1().data()
+		)
+		(
 			FIXED_PLATE_ID_OPTION_NAME_WITH_SHORT_OPTION,
 			boost::program_options::value<GPlatesModel::integer_plate_id_type>(
 					&d_fixed_plate_id)->default_value(0),
@@ -136,6 +155,14 @@ GPlatesCli::StageRotationCommand::add_options(
 			"asymmetry determines the ratio of the full-stage rotation angle according to "
 			"'angle_ratio = (1 + a) / 2' - "
 			"1.0 is a full-stage rotation and 0.0 is a half-stage rotation"
+		)
+		(
+			RELATIVE_TO_ANCHOR_PLATE_OPTION_NAME_WITH_SHORT_OPTION,
+			"output stage rotation relative to the anchor plate instead of relative to the fixed plate - "
+			"this option uses the anchor plate id - "
+			"useful for mid-ocean ridge stage rotations relative to the spin axis - "
+			"not necessary when 'asymmetry' is '1.0' (full-stage rotation) since can instead set "
+			"fixed plate id to the anchor plate"
 		)
 		(
 			INDETERMINATE_IS_ZERO_ANGLE_NORTH_POLE_OPTION_NAME_WITH_SHORT_OPTION,
@@ -158,6 +185,10 @@ GPlatesCli::StageRotationCommand::run(
 	const bool output_indeterminate_for_identity_rotations =
 			vm.count(INDETERMINATE_IS_ZERO_ANGLE_NORTH_POLE_OPTION_NAME) == 0;
 
+	// Output stage rotation relative to the anchor plate.
+	const bool output_stage_rotation_relative_to_anchor_plate =
+			vm.count(RELATIVE_TO_ANCHOR_PLATE_OPTION_NAME) != 0;
+
 	FeatureCollectionFileIO file_io(d_model, vm);
 	GPlatesFileIO::ReadErrorAccumulation read_errors;
 
@@ -177,15 +208,22 @@ GPlatesCli::StageRotationCommand::run(
 	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_type start_reconstruction_tree =
 			GPlatesAppLogic::create_reconstruction_tree(
 					d_start_time,
-					0/*anchor_plate_id*/,
+					d_anchor_plate_id,
 					reconstruction_feature_collections);
 	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_type end_reconstruction_tree =
 			GPlatesAppLogic::create_reconstruction_tree(
 					d_end_time,
-					0/*anchor_plate_id*/,
+					d_anchor_plate_id,
 					reconstruction_feature_collections);
 
-	// Let's make sure the fixed/moving plate ids are actually in the rotation files.
+	// Let's make sure the anchor/fixed/moving plate ids are actually in the rotation files.
+	if (start_reconstruction_tree->get_composed_absolute_rotation(d_anchor_plate_id).second ==
+		GPlatesAppLogic::ReconstructionTree::NoPlateIdMatchesFound)
+	{
+		throw GPlatesGlobal::LogException(
+				GPLATES_EXCEPTION_SOURCE,
+				"Unable to find anchor plate id in rotation files.");
+	}
 	if (start_reconstruction_tree->get_composed_absolute_rotation(d_fixed_plate_id).second ==
 		GPlatesAppLogic::ReconstructionTree::NoPlateIdMatchesFound)
 	{
@@ -210,14 +248,73 @@ GPlatesCli::StageRotationCommand::run(
 	}
 
 	// Get the full-stage pole rotation.
-	const GPlatesMaths::FiniteRotation full_stage_pole =
+	const GPlatesMaths::FiniteRotation full_stage_rotation =
 			GPlatesAppLogic::ReconstructUtils::get_stage_pole(
 					*start_reconstruction_tree,
 					*end_reconstruction_tree,
 					d_moving_plate_id,
 					d_fixed_plate_id);
-	
-	if (represents_identity_rotation(full_stage_pole.unit_quat()))
+
+	// Calculate the asymmetric stage rotation (if asymmetry is not 1.0).
+	const GPlatesMaths::UnitQuaternion3D::RotationParams full_stage_rotation_params =
+			full_stage_rotation.unit_quat().get_rotation_params(full_stage_rotation.axis_hint());
+
+	const double asymmetry_angle_factor = 0.5 * (1 + d_asymmetry);
+	const double asymmetry_angle = asymmetry_angle_factor * full_stage_rotation_params.angle.dval();
+
+	// The asymmetric stage pole rotation.
+	GPlatesMaths::FiniteRotation asymmetric_stage_rotation =
+			GPlatesMaths::FiniteRotation::create(
+					GPlatesMaths::UnitQuaternion3D::create_rotation(
+							full_stage_rotation_params.axis,
+							asymmetry_angle),
+					full_stage_rotation.axis_hint());
+
+	// If the stage rotation is meant to be relative to the anchor plate (instead of the fixed plate)...
+	if (output_stage_rotation_relative_to_anchor_plate)
+	{
+		//
+		// Rotation from anchor plate 'A' to mid-ocean ridge 'MOR' via left (or fixed) plate 'L'
+		// from time 't1' to 't2':
+		//
+		// R(t1->t2,A->MOR)
+		// R(0->t2,A->MOR) * R(t1->0,A->MOR)
+		// R(0->t2,A->MOR) * inverse[R(0->t1,A->MOR)] // See NOTE 1
+		// R(0->t2,A->MOR) * inverse[R(0->t1,A->L) * R(0->t1,L->MOR)]
+		// R(0->t2,A->MOR) * inverse[R(0->t1,L->MOR)] * inverse[R(0->t1,A->L)]
+		// R(0->t2,A->L) * R(0->t2,L->MOR) * inverse[R(0->t1,L->MOR)] * inverse[R(0->t1,A->L)]
+		// R(0->t2,A->L) * R(0->t2,L->MOR) * R(t1->0,L->MOR) * inverse[R(0->t1,A->L)]
+		// R(0->t2,A->L) * R(t1->t2,L->MOR) * inverse[R(0->t1,A->L)]
+		// R(0->t2,A->L) * AsymmetricStageRotation(t1->t2,L->R) * inverse[R(0->t1,A->L)]
+		//
+		// Where A->B means rotation of plate B relative to plate A.
+		//
+		// NOTE 1: A rotation must be relative to present day (0Ma) before it can be separated into
+		// a (plate circuit) chain of moving/fixed plate pairs.
+		// See "ReconstructUtils::get_stage_pole()" for more details.
+		//
+
+		asymmetric_stage_rotation =
+				compose(
+						compose(
+								end_reconstruction_tree->get_composed_absolute_rotation(d_fixed_plate_id).first,
+								asymmetric_stage_rotation),
+						get_reverse(start_reconstruction_tree->get_composed_absolute_rotation(d_fixed_plate_id).first));
+	}
+
+	// Output the stage rotation relative to the anchor plate.
+	output_stage_rotation(
+			asymmetric_stage_rotation,
+			output_indeterminate_for_identity_rotations);
+}
+
+
+void
+GPlatesCli::StageRotationCommand::output_stage_rotation(
+		const GPlatesMaths::FiniteRotation &stage_rotation,
+		bool output_indeterminate_for_identity_rotations)
+{
+	if (represents_identity_rotation(stage_rotation.unit_quat()))
 	{
 		if (output_indeterminate_for_identity_rotations)
 		{
@@ -230,18 +327,15 @@ GPlatesCli::StageRotationCommand::run(
 		return;
 	}
 
-	const GPlatesMaths::UnitQuaternion3D::RotationParams full_stage_rotation_params =
-			full_stage_pole.unit_quat().get_rotation_params(full_stage_pole.axis_hint());
+	const GPlatesMaths::UnitQuaternion3D::RotationParams stage_rotation__params =
+			stage_rotation.unit_quat().get_rotation_params(stage_rotation.axis_hint());
 
-	const double asymmetry_angle_factor = 0.5 * (1 + d_asymmetry);
-	const double asymmetry_angle = asymmetry_angle_factor * full_stage_rotation_params.angle.dval();
-
-	GPlatesMaths::PointOnSphere euler_pole(full_stage_rotation_params.axis);
+	GPlatesMaths::PointOnSphere euler_pole(stage_rotation__params.axis);
 	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(euler_pole);
 
 	std::cout << "("
 			<< llp.latitude() << ", "
 			<< llp.longitude() << ", "
-			<< GPlatesMaths::convert_rad_to_deg(asymmetry_angle)
+			<< GPlatesMaths::convert_rad_to_deg(stage_rotation__params.angle)
 			<< ")" << std::endl;
 }
