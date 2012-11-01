@@ -82,8 +82,15 @@ namespace
 	}
 }
 
-const GPlatesModel::FeatureType GPlatesQtWidgets::AddPropertyDialog::DEFAULT_FEATURE_TYPE(
-		GPlatesModel::FeatureType::create_gml("AbstractFeature"));
+
+const GPlatesModel::FeatureType &
+GPlatesQtWidgets::AddPropertyDialog::get_default_feature_type()
+{
+	static const GPlatesModel::FeatureType DEFAULT_FEATURE_TYPE =
+			GPlatesModel::FeatureType::create_gml("AbstractFeature");
+
+	return DEFAULT_FEATURE_TYPE;
+}
 
 
 GPlatesQtWidgets::AddPropertyDialog::AddPropertyDialog(
@@ -95,7 +102,7 @@ GPlatesQtWidgets::AddPropertyDialog::AddPropertyDialog(
 	d_feature_focus(feature_focus_),
 	// Start off with the most basic feature type.
 	// It's actually an 'abstract' feature but it'll get reset to a 'concrete' feature...
-	d_feature_type(DEFAULT_FEATURE_TYPE),
+	d_feature_type(get_default_feature_type()),
 	d_edit_widget_group_box_ptr(new GPlatesQtWidgets::EditWidgetGroupBox(view_state_, this))
 {
 	setupUi(this);
@@ -117,7 +124,7 @@ GPlatesQtWidgets::AddPropertyDialog::set_feature(
 	// Determine the new feature type.
 	d_feature_type = new_feature_ref.is_valid()
 			? new_feature_ref->feature_type()
-			: DEFAULT_FEATURE_TYPE;
+			: get_default_feature_type();
 
 	// NOTE: We always populate the list of property names even if the feature reference is
 	// the same (as before) and the feature type is the same - because it's possible the properties

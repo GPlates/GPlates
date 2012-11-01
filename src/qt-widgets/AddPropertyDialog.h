@@ -134,7 +134,9 @@ namespace GPlatesQtWidgets
 
 
 		//! Default feature type to use when no available feature or invalid feature reference.
-		static const GPlatesModel::FeatureType DEFAULT_FEATURE_TYPE;
+		static
+		const GPlatesModel::FeatureType &
+		get_default_feature_type();
 
 
 		//! Determines if a property name is valid for a feature type.
@@ -149,7 +151,7 @@ namespace GPlatesQtWidgets
 		//! The type of feature that properties are being added to.
 		GPlatesModel::FeatureType d_feature_type;
 
-		GPlatesQtWidgets::EditWidgetGroupBox *d_edit_widget_group_box_ptr;
+		EditWidgetGroupBox *d_edit_widget_group_box_ptr;
 	};
 }
 
