@@ -88,20 +88,20 @@ set(srcs
     GpmlTimeSample.h
     GpmlTimeWindow.cc
     GpmlTimeWindow.h
-    GpmlTopologicalInterior.cc
-    GpmlTopologicalInterior.h
-    GpmlTopologicalIntersection.cc
-    GpmlTopologicalIntersection.h
     GpmlTopologicalLine.cc
     GpmlTopologicalLine.h
     GpmlTopologicalLineSection.cc
     GpmlTopologicalLineSection.h
+    GpmlTopologicalNetwork.cc
+    GpmlTopologicalNetwork.h
     GpmlTopologicalPoint.cc
     GpmlTopologicalPoint.h
     GpmlTopologicalPolygon.cc
     GpmlTopologicalPolygon.h
     GpmlTopologicalSection.cc
     GpmlTopologicalSection.h
+    OldVersionPropertyValue.cc
+    OldVersionPropertyValue.h
     PropertyValues.cc
     PropertyValues.h
     ProxiedRasterCache.cc
@@ -115,7 +115,7 @@ set(srcs
     RawRaster.h
     RawRasterUtils.cc
     RawRasterUtils.h
-    TemplateTypeParameterType.h
+    StructuralType.h
     TextContent.h
     UninterpretedPropertyValue.cc
     UninterpretedPropertyValue.h

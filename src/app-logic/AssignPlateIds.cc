@@ -32,9 +32,9 @@
 #include "ReconstructLayerProxy.h"
 #include "ReconstructParams.h"
 #include "ReconstructUtils.h"
-#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalGeometry.h"
 #include "ResolvedTopologicalNetwork.h"
-#include "TopologyBoundaryResolverLayerProxy.h"
+#include "TopologyGeometryResolverLayerProxy.h"
 #include "TopologyNetworkResolverLayerProxy.h"
 #include "TopologyUtils.h"
 
@@ -81,7 +81,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	register_default_reconstruct_method_types(reconstruct_method_registry);
 
 	// Contains the reconstructed static polygons used for cookie-cutting.
-	// Can also contain the topological section geometries referenced by topological polygons.
+	// Can also contain the topological section geometries referenced by topologies.
 	std::vector<reconstructed_feature_geometry_non_null_ptr_type> reconstructed_feature_geometries;
 
 	const ReconstructHandle::type reconstruct_handle = ReconstructUtils::reconstruct(
@@ -94,8 +94,26 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 
 	std::vector<ReconstructHandle::type> reconstruct_handles(1, reconstruct_handle);
 
+	// Contains the resolved topological line sections referenced by topological polygons and networks.
+	std::vector<resolved_topological_geometry_non_null_ptr_type> resolved_topological_lines;
+	if (allow_partitioning_using_topological_plate_polygons ||
+		allow_partitioning_using_topological_networks)
+	{
+		// Resolving topological lines generates its own reconstruct handle that will be used by
+		// topological polygons and networks to find this group of resolved lines.
+		const ReconstructHandle::type resolved_topological_lines_handle =
+				TopologyUtils::resolve_topological_lines(
+						resolved_topological_lines,
+						partitioning_feature_collections,
+						reconstruction_tree_cache.get_reconstruction_tree(),
+						// Resolved topo lines use the reconstructed non-topo geometries...
+						reconstruct_handles);
+
+		reconstruct_handles.push_back(resolved_topological_lines_handle);
+	}
+
 	// Contains the resolved topological polygons used for cookie-cutting.
-	std::vector<resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
+	std::vector<resolved_topological_geometry_non_null_ptr_type> resolved_topological_boundaries;
 
 	// Contains the resolved topological networks used for cookie-cutting.
 	// See comment in header for why a deforming region is currently used to assign plate ids.
@@ -107,6 +125,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 				resolved_topological_boundaries,
 				partitioning_feature_collections,
 				reconstruction_tree_cache.get_reconstruction_tree(),
+				// Resolved topo boundaries use the resolved topo lines *and* the reconstructed non-topo geometries...
 				reconstruct_handles);
 	}
 
@@ -116,6 +135,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 				resolved_topological_networks,
 				partitioning_feature_collections,
 				reconstruction_tree_cache.get_reconstruction_tree(),
+				// Resolved topo networks use the resolved topo lines *and* the reconstructed non-topo geometries...
 				reconstruct_handles);
 	}
 
@@ -160,7 +180,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	std::vector<reconstructed_feature_geometry_non_null_ptr_type> reconstructed_static_polygons;
 
 	// Contains the resolved topological polygons used for cookie-cutting.
-	std::vector<resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
+	std::vector<resolved_topological_geometry_non_null_ptr_type> resolved_topological_boundaries;
 
 	// Contains the resolved topological networks used for cookie-cutting.
 	// See comment in header for why a deforming region is currently used to assign plate ids.
@@ -188,9 +208,9 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 
 
 		// See if the input layer proxy is a topology boundary resolver layer proxy.
-		boost::optional<TopologyBoundaryResolverLayerProxy *> dynamic_polygons_layer_proxy =
+		boost::optional<TopologyGeometryResolverLayerProxy *> dynamic_polygons_layer_proxy =
 				LayerProxyUtils::get_layer_proxy_derived_type<
-						TopologyBoundaryResolverLayerProxy>(partitioning_layer_proxy);
+						TopologyGeometryResolverLayerProxy>(partitioning_layer_proxy);
 		if (dynamic_polygons_layer_proxy)
 		{
 			dynamic_polygons_layer_proxy.get()->get_resolved_topological_boundaries(

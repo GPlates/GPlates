@@ -57,7 +57,7 @@ POP_MSVC_WARNINGS
 #include "app-logic/VelocityFieldCalculatorLayerProxy.h"
 
 #include "file-io/File.h"
-#include "file-io/GpmlOnePointSixOutputVisitor.h"
+#include "file-io/GpmlOutputVisitor.h"
 #include "file-io/ReconstructionGeometryExportImpl.h"
 
 #include "global/NotYetImplementedException.h"
@@ -280,7 +280,9 @@ GPlatesGui::ExportVelocityAnimationStrategy::export_velocity_fields_to_file(
 	}
 
 	GPlatesFileIO::FileInfo export_file_info(filename);
-	GPlatesFileIO::GpmlOnePointSixOutputVisitor gpml_writer(export_file_info, false);
+	const GPlatesModel::Gpgim &gpgim =
+			d_export_animation_context_ptr->view_state().get_application_state().get_gpgim();
+	GPlatesFileIO::GpmlOutputVisitor gpml_writer(export_file_info, gpgim, false);
 	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
 			feature_collection_ref, gpml_writer);
 }

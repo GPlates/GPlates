@@ -354,20 +354,6 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Returns the optional reconstruct handle that this RFG was created with.
-		 *
-		 * The main reason this was added was to enable identification of an RFG among a list
-		 * of RFG observers of a feature - this is useful when searching for an RFG that was
-		 * generated in a specific scenario (reconstruct handle) such a topological section
-		 * geometries that are found via the topological section feature.
-		 */
-		const boost::optional<ReconstructHandle::type> &
-		get_reconstruct_handle() const
-		{
-			return d_reconstruct_handle;
-		}
-
-		/**
 		 * Accept a ConstReconstructionGeometryVisitor instance.
 		 */
 		virtual
@@ -461,11 +447,6 @@ namespace GPlatesAppLogic
 		 * feature geometries by age.
 		 */
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_formation;
-
-		/**
-		 * An optional reconstruct handle that can be used by clients to identify where this RFG came from.
-		 */
-		boost::optional<ReconstructHandle::type> d_reconstruct_handle;
 	};
 }
 

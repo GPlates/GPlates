@@ -51,7 +51,7 @@
 #include "file-io/ErrorOpeningPipeFromGzipException.h"
 #include "file-io/ErrorOpeningPipeToGzipException.h"
 #include "file-io/FileFormatNotSupportedException.h"
-#include "file-io/GpmlOnePointSixOutputVisitor.h"
+#include "file-io/GpmlOutputVisitor.h"
 #include "file-io/OgrException.h"
 #include "file-io/File.h"
 

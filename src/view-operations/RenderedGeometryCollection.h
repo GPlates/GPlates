@@ -143,9 +143,6 @@ namespace GPlatesViewOperations
 			// All reconstructed geometries, etc get rendered into this layer...
 			RECONSTRUCTION_LAYER,
 
-			// The focused feature geometry highlight gets rendered into this layer...
-			GEOMETRY_FOCUS_HIGHLIGHT_LAYER,
-
 			// Canvas tool workflow layers...
 			FEATURE_INSPECTION_CANVAS_TOOL_WORKFLOW_LAYER,
 			DIGITISATION_CANVAS_TOOL_WORKFLOW_LAYER,

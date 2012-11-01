@@ -294,8 +294,8 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 					ModelUtils::create_gml_time_instant(d_recon_time);
 			boost::intrusive_ptr<XsString> description =
 					XsString::create(GPlatesUtils::make_icu_string_from_qstring(d_comment)).get();
-			TemplateTypeParameterType value_type =
-					TemplateTypeParameterType::create_gpml("FiniteRotation");
+			StructuralType value_type =
+					StructuralType::create_gpml("FiniteRotation");
 			GpmlTimeSample new_time_sample(value, valid_time, description, value_type);
 
 			// Now insert the time-sample at the appropriate position.

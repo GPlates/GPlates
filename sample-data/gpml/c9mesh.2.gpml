@@ -1,506 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
+<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0319" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
     <gml:featureMember>
         <gpml:MeshNode>
             <gpml:identity>GPlates-3c32b148-0215-4b30-b551-9d349aaeda0d</gpml:identity>
             <gpml:revision>GPlates-44d134e9-2ae8-4c3e-8e4b-d290994273f2</gpml:revision>
-            <gpml:meshPoints>
-                        <gml:MultiPoint>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>1.988354 134.965480</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-2.481232 130.756417</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-7.337107 126.134080</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-12.449151 121.103511</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-17.627601 115.695763</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-22.650263 109.972774</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-27.305488 104.028509</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-31.434165 97.982716</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-34.951667 91.967748</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-2.178882 139.474027</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-6.994249 135.281294</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-12.247756 130.564018</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-17.783273 125.293666</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-23.364799 119.472243</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-28.712157 113.147419</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-33.561213 106.423587</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-37.722950 99.460775</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-41.112740 92.457340</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-6.705020 144.418711</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-11.907477 140.363487</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-17.606631 135.675718</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-23.619593 130.273758</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-29.659199 124.100997</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-35.376573 117.156004</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-40.441520 109.526440</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-44.623596 101.411639</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-47.834222 93.109481</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-11.463893 149.781710</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-17.066274 146.017263</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-23.227633 141.537592</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-29.743939 136.190234</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-36.281044 129.821236</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-42.419714 122.316692</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-47.749883 113.675686</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-51.976478 104.097551</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-54.986340 94.021171</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-16.272899 155.513351</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-22.240885 152.216265</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-28.825774 148.176569</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-35.815860 143.168116</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-42.850922 136.906775</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-49.458959 129.077078</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-55.146367 119.431792</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-59.514597 108.007987</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-62.367698 95.384696</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-20.920160 161.528090</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-27.163051 158.878962</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-34.063124 155.544806</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-41.419788 151.254212</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-48.883021 145.603931</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-55.975380 138.011725</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-62.150318 127.731429</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-66.869141 114.146772</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-69.726997 97.642952</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-25.206801 167.707726</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-31.585884 165.862687</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-38.630744 163.490298</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-46.166800 160.338916</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-53.891303 155.983348</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-61.388112 149.669124</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-68.149816 140.026932</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-73.550344 124.789864</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-76.791738 102.082343</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-28.986890 173.912630</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-35.340247 172.974698</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-42.327983 171.752235</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-49.803822 170.094153</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-57.526491 167.722508</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-65.181608 164.069730</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-72.410960 157.798765</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-78.762828 145.112276</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-83.218663 114.401967</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-32.187490 180.000020</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-38.360594 180.000020</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-45.098062 180.000020</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-52.272583 180.000020</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-59.687516 180.000020</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-67.102392 180.000020</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-74.276912 180.000020</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-81.014437 180.000020</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                            <gml:pointMember>
-                                <gml:Point>
-                                    <gml:pos>-87.187485 180.000020</gml:pos>
-                                </gml:Point>
-                            </gml:pointMember>
-
-                        </gml:MultiPoint>
-            </gpml:meshPoints>
-            <gpml:reconstructionPlateId>
-                <gpml:ConstantValue>
-                    <gpml:value>0</gpml:value>
-                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
-                </gpml:ConstantValue>
-            </gpml:reconstructionPlateId>
+            <gml:name>c9mesh.2.gpml</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
                     <gml:begin>
@@ -515,9 +19,421 @@
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-
-            <gml:name>c9mesh.2.gpml</gml:name>
-
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>0</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:meshPoints>
+                <gml:MultiPoint>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>1.9883540000000002 134.96548000000001</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-2.4812319999999999 130.756417</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-7.3371069999999996 126.13408</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-12.449151000000001 121.10351099999998</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-17.627600999999999 115.695763</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-22.650262999999999 109.972774</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-27.305488 104.028509</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-31.434164999999997 97.982715999999996</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-34.951667 91.967748</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-2.1788820000000002 139.47402700000004</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-6.9942489999999999 135.281294</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-12.247756000000001 130.564018</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-17.783273000000001 125.29366600000002</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-23.364799000000001 119.47224300000001</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-28.712157000000001 113.147419</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-33.561213000000002 106.423587</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-37.722949999999997 99.460774999999998</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-41.112740000000002 92.457340000000002</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-6.7050200000000002 144.41871100000003</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-11.907477 140.36348699999999</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-17.606631 135.67571799999999</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-23.619593000000002 130.27375799999999</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-29.659199000000001 124.10099700000002</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-35.376573 117.156004</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-40.441519999999997 109.52643999999999</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-44.623595999999999 101.41163899999999</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-47.834221999999997 93.109481000000002</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-11.463893000000001 149.78171</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-17.066274 146.01726300000001</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-23.227633000000001 141.53759199999999</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-29.743939000000005 136.190234</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-36.281044000000001 129.821236</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-42.419714000000006 122.316692</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-47.749882999999997 113.675686</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-51.976478 104.097551</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-54.986339999999998 94.02117100000001</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-16.272898999999999 155.51335100000003</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-22.240884999999999 152.21626499999999</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-28.825774000000003 148.17656900000003</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-35.815860000000001 143.168116</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-42.850922000000004 136.90677500000001</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-49.458958999999993 129.077078</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-55.146366999999998 119.43179200000002</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-59.514596999999995 108.007987</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-62.367697999999997 95.384696000000005</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-20.920159999999999 161.52808999999999</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-27.163050999999999 158.878962</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-34.063124000000002 155.54480599999999</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-41.419787999999997 151.254212</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-48.883020999999999 145.60393099999999</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-55.975380000000001 138.01172500000001</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-62.150318000000013 127.73142899999999</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-66.869140999999999 114.146772</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-69.726996999999983 97.642951999999994</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-25.206800999999999 167.70772600000001</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-31.585883999999997 165.86268699999999</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-38.630744 163.490298</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-46.166799999999995 160.33891600000001</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-53.891303000000001 155.98334800000001</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-61.388112000000014 149.66912400000004</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-68.149816000000015 140.02693199999999</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-73.55034400000001 124.78986399999999</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-76.791737999999995 102.08234299999999</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-28.986890000000002 173.91263000000001</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-35.340246999999998 172.97469799999999</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-42.327983000000003 171.75223500000001</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-49.803821999999997 170.09415300000001</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-57.526491 167.722508</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-65.181607999999997 164.06972999999999</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-72.410960000000003 157.798765</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-78.762827999999985 145.11227600000001</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-83.218663000000035 114.401967</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-32.187489999999997 -179.99998000000002</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-38.360594000000006 -179.99998000000002</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-45.098061999999999 -179.99998000000002</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-52.27258299999999 -179.99998000000002</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-59.687516000000002 -179.99998000000002</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-67.102391999999995 -179.99998000000002</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-74.276911999999996 -179.99998000000002</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-81.014436999999987 -179.99998000000002</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                    <gml:pointMember>
+                        <gml:Point>
+                            <gml:pos>-87.187485000000009 -179.99998000000002</gml:pos>
+                        </gml:Point>
+                    </gml:pointMember>
+                </gml:MultiPoint>
+            </gpml:meshPoints>
         </gpml:MeshNode>
     </gml:featureMember>
 </gpml:FeatureCollection>

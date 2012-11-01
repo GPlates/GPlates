@@ -53,6 +53,7 @@
 
 GPlatesViewOperations::SplitFeatureGeometryOperation::SplitFeatureGeometryOperation(
 		GPlatesGui::FeatureFocus &feature_focus,
+		const GPlatesModel::Gpgim &gpgim,
 		GPlatesModel::ModelInterface model_interface,	
 		GeometryBuilder &geometry_builder,
 		GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
@@ -61,6 +62,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::SplitFeatureGeometryOperat
 		GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
 		const QueryProximityThreshold &query_proximity_threshold) :
 	d_feature_focus(feature_focus),
+	d_gpgim(gpgim),
 	d_model_interface(model_interface),
 	d_geometry_builder(geometry_builder),
 	d_geometry_operation_state(geometry_operation_state),
@@ -470,6 +472,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::split_feature(
 	std::auto_ptr<QUndoCommand> split_feature_command(
 			new SplitFeatureUndoCommand(
 					d_feature_focus,
+					d_gpgim,
 					d_model_interface,
 					insert_vertex_index,
 					insert_pos_on_sphere));

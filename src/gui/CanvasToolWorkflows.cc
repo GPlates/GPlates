@@ -24,6 +24,7 @@
  */
 
 #include <boost/foreach.hpp>
+#include <boost/optional.hpp>
 
 #include "CanvasToolWorkflows.h"
 
@@ -33,9 +34,11 @@
 #include "PoleManipulationCanvasToolWorkflow.h"
 #include "SmallCircleCanvasToolWorkflow.h"
 #include "TopologyCanvasToolWorkflow.h"
+#include "ViewCanvasToolWorkflow.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 #include "presentation/ViewState.h"
 
@@ -43,7 +46,7 @@
 
 
 GPlatesGui::CanvasToolWorkflows::CanvasToolWorkflows() :
-	d_active_workflow(WORKFLOW_FEATURE_INSPECTION)
+	d_active_workflow(WORKFLOW_VIEW)
 {
 }
 
@@ -98,7 +101,12 @@ GPlatesGui::CanvasToolWorkflows::initialise(
 
 		canvas_tool_workflow->initialise();
 	}
+}
 
+
+void
+GPlatesGui::CanvasToolWorkflows::activate()
+{
 	// Starts things off by activating the default workflow and its default tool.
 	d_canvas_tool_workflows[d_active_workflow]->activate();
 
@@ -121,6 +129,33 @@ GPlatesGui::CanvasToolWorkflows::get_active_canvas_tool() const
 }
 
 
+GPlatesGui::CanvasToolWorkflows::ToolType
+GPlatesGui::CanvasToolWorkflows::get_selected_canvas_tool_in_workflow(
+		WorkflowType workflow) const
+{
+	// Make sure 'initialise()' has been called.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			!d_canvas_tool_workflows.empty(),
+			GPLATES_ASSERTION_SOURCE);
+
+	return d_canvas_tool_workflows[workflow]->get_selected_tool();
+}
+
+
+bool
+GPlatesGui::CanvasToolWorkflows::is_canvas_tool_enabled(
+		WorkflowType workflow,
+		ToolType tool) const
+{
+	// Make sure 'initialise()' has been called.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			!d_canvas_tool_workflows.empty(),
+			GPLATES_ASSERTION_SOURCE);
+
+	return d_canvas_tool_workflows[workflow]->is_tool_enabled(tool);
+}
+
+
 bool
 GPlatesGui::CanvasToolWorkflows::does_workflow_contain_tool(
 		WorkflowType workflow,
@@ -131,14 +166,49 @@ GPlatesGui::CanvasToolWorkflows::does_workflow_contain_tool(
 			!d_canvas_tool_workflows.empty(),
 			GPLATES_ASSERTION_SOURCE);
 
-	return d_canvas_tool_workflows[d_active_workflow]->contains_tool(tool);
+	return d_canvas_tool_workflows[workflow]->contains_tool(tool);
 }
 
 
 void
 GPlatesGui::CanvasToolWorkflows::choose_canvas_tool(
-		GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
-		boost::optional<GPlatesGui::CanvasToolWorkflows::ToolType> tool_opt)
+		ToolType tool)
+{
+	// Make sure 'initialise()' has been called.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			!d_canvas_tool_workflows.empty(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Iterate over the workflows and make sure tool only exists in one workflow.
+	boost::optional<WorkflowType> workflow;
+	for (unsigned int workflow_index = 0; workflow_index < NUM_WORKFLOWS; ++workflow_index)
+	{
+		const WorkflowType workflow_type = static_cast<WorkflowType>(workflow_index);
+
+		if (d_canvas_tool_workflows[workflow_type]->contains_tool(tool))
+		{
+			// Make sure tool doesn't exist in multiple workflows.
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					!workflow,
+					GPLATES_ASSERTION_SOURCE);
+
+			workflow = workflow_type;
+		}
+	}
+
+	// The tool should exist in one of the workflows.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			workflow,
+			GPLATES_ASSERTION_SOURCE);
+
+	choose_canvas_tool(workflow.get(), tool);
+}
+
+
+void
+GPlatesGui::CanvasToolWorkflows::choose_canvas_tool(
+		WorkflowType workflow,
+		boost::optional<ToolType> tool_opt)
 {
 	// Make sure 'initialise()' has been called.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -146,8 +216,7 @@ GPlatesGui::CanvasToolWorkflows::choose_canvas_tool(
 			GPLATES_ASSERTION_SOURCE);
 
 	// The selected tool.
-	const GPlatesGui::CanvasToolWorkflows::ToolType tool =
-			tool_opt
+	const ToolType tool = tool_opt
 			? tool_opt.get()
 			: d_canvas_tool_workflows[workflow]->get_selected_tool();
 
@@ -174,8 +243,8 @@ GPlatesGui::CanvasToolWorkflows::choose_canvas_tool(
 
 void
 GPlatesGui::CanvasToolWorkflows::handle_canvas_tool_enabled(
-		GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
-		GPlatesGui::CanvasToolWorkflows::ToolType tool,
+		WorkflowType workflow,
+		ToolType tool,
 		bool enable)
 {
 	// Get the canvas tool workflow that emitted the signal.
@@ -204,6 +273,13 @@ GPlatesGui::CanvasToolWorkflows::create_canvas_tool_workflows(
 	// Initialise the individual canvas tool workflows.
 	d_canvas_tool_workflows.resize(NUM_WORKFLOWS);
 
+ 	d_canvas_tool_workflows[WORKFLOW_VIEW].reset(
+ 			new ViewCanvasToolWorkflow(
+					*this,
+					status_bar_callback,
+					view_state,
+					viewport_window));
+
  	d_canvas_tool_workflows[WORKFLOW_FEATURE_INSPECTION].reset(
  			new FeatureInspectionCanvasToolWorkflow(
 					*this,
@@ -227,8 +303,6 @@ GPlatesGui::CanvasToolWorkflows::create_canvas_tool_workflows(
 	d_canvas_tool_workflows[WORKFLOW_TOPOLOGY].reset(
 			new TopologyCanvasToolWorkflow(
 					*this,
-					geometry_operation_state,
-					measure_distance_state,
 					status_bar_callback,
 					view_state,
 					viewport_window));
@@ -236,8 +310,6 @@ GPlatesGui::CanvasToolWorkflows::create_canvas_tool_workflows(
 	d_canvas_tool_workflows[WORKFLOW_POLE_MANIPULATION].reset(
 			new PoleManipulationCanvasToolWorkflow(
 					*this,
-					geometry_operation_state,
-					measure_distance_state,
 					status_bar_callback,
 					view_state,
 					viewport_window));

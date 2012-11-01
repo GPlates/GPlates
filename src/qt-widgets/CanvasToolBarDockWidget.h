@@ -201,6 +201,9 @@ namespace GPlatesQtWidgets
 		set_up_workflows();
 
 		void
+		set_up_view_workflow();
+
+		void
 		set_up_feature_inspection_workflow();
 
 		void
@@ -246,6 +249,11 @@ namespace GPlatesQtWidgets
 
 		QAction *
 		get_tool_action(
+				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
+				GPlatesGui::CanvasToolWorkflows::ToolType tool);
+
+		void
+		copy_canvas_tool_icon_to_workflow_tab(
 				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
 				GPlatesGui::CanvasToolWorkflows::ToolType tool);
 

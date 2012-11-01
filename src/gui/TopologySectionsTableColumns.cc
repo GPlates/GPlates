@@ -205,8 +205,9 @@ namespace
 			QTableWidgetItem &cell)
 	{
 		if (row_data.get_feature_ref().is_valid()) {
-			cell.setData(Qt::DisplayRole, QVariant(GPlatesUtils::make_qstring_from_icu_string(
-					row_data.get_feature_ref()->feature_type().build_aliased_name() )));
+			cell.setData(
+					Qt::DisplayRole,
+					QVariant(convert_qualified_xml_name_to_qstring(row_data.get_feature_ref()->feature_type())));
 		}
 	}
 			

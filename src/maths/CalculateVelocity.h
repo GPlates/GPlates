@@ -37,7 +37,6 @@
 #include <utility>  /* std::pair */
 #include <boost/optional.hpp>
 
-#include "global/types.h"
 #include "maths/FiniteRotation.h"
 #include "maths/types.h"
 

@@ -36,6 +36,7 @@
 
 #include "AppLogicFwd.h"
 #include "ReconstructHandle.h"
+#include "TopologyGeometryType.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -57,7 +58,7 @@ namespace GPlatesAppLogic
 		//
 
 		//! Typedef for a sequence of resolved topological boundaries.
-		typedef std::vector<const ResolvedTopologicalBoundary *>
+		typedef std::vector<const ResolvedTopologicalGeometry *>
 				resolved_topological_boundary_seq_type;
 
 		//! Typedef for a sequence of 'GeometryOnSphere::non_null_ptr_to_const_type'.
@@ -69,10 +70,10 @@ namespace GPlatesAppLogic
 		{
 		public:
 			ResolvedBoundaryPartitionedGeometries(
-					const ResolvedTopologicalBoundary *resolved_topological_boundary);
+					const ResolvedTopologicalGeometry *resolved_topological_boundary);
 
 			//! The resolved topological boundary that partitioned the polylines.
-			const ResolvedTopologicalBoundary *resolved_topological_boundary;
+			const ResolvedTopologicalGeometry *resolved_topological_boundary;
 
 			//! The partitioned geometries.
 			partitioned_geometry_seq_type partitioned_inside_geometries;
@@ -81,7 +82,7 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Typedef for a sequence of associations of partitioned geometries and
-		 * the @a ResolvedTopologicalBoundary that they were partitioned into.
+		 * the @a ResolvedTopologicalGeometry that they were partitioned into.
 		 */
 		typedef std::list<ResolvedBoundaryPartitionedGeometries>
 				resolved_boundary_partitioned_geometries_seq_type;
@@ -96,37 +97,100 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns true if @a feature is a topological closed plate boundary feature.
+		 * Returns true if @a feature contains any topological geometry.
+		 *
+		 * Currently this includes a topological boundary (polygon), line (polyline) or network.
 		 */
 		bool
-		is_topological_closed_plate_boundary_feature(
-				const GPlatesModel::FeatureHandle &feature);
-
+		is_topological_geometry_feature(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
 
 		/**
-		 * Returns true if @a feature_collection contains topological closed plate boundary features.
+		 * Returns true if @a feature feature_collection any topological geometry.
+		 *
+		 * Currently this includes a topological boundary (polygon), line (polyline) or network.
 		 */
 		bool
-		has_topological_closed_plate_boundary_features(
+		has_topological_geometry_features(
 				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection);
 
 
 		/**
-		 * Create and return a sequence of @a ResolvedTopologicalBoundary objects by resolving
-		 * topological closed plate boundaries in @a topological_closed_plate_polygon_features_collection.
+		 * Returns true if @a feature contains a topological line geometry.
+		 */
+		bool
+		is_topological_line_feature(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
+
+		/**
+		 * Returns true if @a feature_collection contains topological line features.
+		 */
+		bool
+		has_topological_line_features(
+				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection);
+
+
+		/**
+		 * Create and return a sequence of @a ResolvedTopologicalGeometry objects by resolving
+		 * topological lines in @a topological_line_features_collection.
 		 *
-		 * The boundaries are resolved by referencing already reconstructed topological boundary
-		 * section features in @a reconstructed_topological_boundary_sections.
+		 * NOTE: The sections are resolved by referencing already reconstructed topological section
+		 * features which in turn must have already have been reconstructed.
 		 *
 		 * @param reconstruction_tree is associated with the output resolved topological boundaries.
 		 * @param topological_sections_reconstruct_handles is a list of reconstruct handles that
 		 *        identifies the subset, of all RFGs observing the topological section features,
-		 *        that should be searched when resolving the topological boundaries.
-		 *        This is useful to avoid outdated RFGs still in existence among other scenarios.
+		 *        that should be searched when resolving the topological lines.
+		 *        This is useful to avoid outdated RFGs still in existence (among other scenarios).
+		 *
+		 * The returned reconstruct handle can be used to identify the resolved topological lines
+		 * when resolving topological *boundaries* (since they can reference resolved *lines*).
 		 */
-		void
+		ReconstructHandle::type
+		resolve_topological_lines(
+				std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_lines,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_line_features_collection,
+				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none);
+
+
+		/**
+		 * Returns true if @a feature contains a topological polygon geometry.
+		 */
+		bool
+		is_topological_boundary_feature(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
+
+		/**
+		 * Returns true if @a feature_collection contains topological polygon features.
+		 */
+		bool
+		has_topological_boundary_features(
+				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection);
+
+
+		/**
+		 * Create and return a sequence of @a ResolvedTopologicalGeometry objects by resolving
+		 * topological closed plate boundaries in @a topological_closed_plate_polygon_features_collection.
+		 *
+		 * NOTE: The sections are resolved by referencing already reconstructed topological section
+		 * features which in turn must have already have been reconstructed.
+		 * This includes any resolved topological lines that form sections.
+		 *
+		 * @param reconstruction_tree is associated with the output resolved topological boundaries.
+		 * @param topological_sections_reconstruct_handles is a list of reconstruct handles that
+		 *        identifies the subset, of all RFGs observing the topological section features,
+		 *        and all resolved topological lines (@a ResolvedTopologicalGeometry containing polylines)
+		 *        observing the topological section features,
+		 *        that should be searched when resolving the topological boundaries.
+		 *        This is useful to avoid outdated RFGs and RTGS still in existence (among other scenarios).
+		 *
+		 * The returned reconstruct handle can be used to identify the resolved topological boundaries.
+		 * This is not currently used though.
+		 */
+		ReconstructHandle::type
 		resolve_topological_boundaries(
-				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
+				std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_closed_plate_polygon_features_collection,
 				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none);
@@ -134,18 +198,18 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Returns a structure for partitioning geometry using the polygon
-		 * of each @a ResolvedTopologicalBoundary in @a resolved_topological_boundaries.
+		 * of each @a ResolvedTopologicalGeometry in @a resolved_topological_boundaries.
 		 *
 		 * The returned structure can be tested like a bool - it's true if
 		 * @a resolved_topological_boundaries is not empty.
 		 */
 		resolved_boundaries_for_geometry_partitioning_query_type
 		query_resolved_topologies_for_geometry_partitioning(
-				const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries);
+				const std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries);
 
 
 		/**
-		 * Searches all @a ResolvedTopologicalBoundary objects in @a resolved_geoms_query
+		 * Searches all @a ResolvedTopologicalGeometry objects in @a resolved_geoms_query
 		 * (returned from a call to @a query_resolved_topologies_for_geometry_partitioning)
 		 * to see which ones contain @a point and returns any found in
 		 * @a resolved_topological_boundary_seq.
@@ -204,7 +268,7 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional< std::pair<
 				GPlatesModel::integer_plate_id_type,
-				const ResolvedTopologicalBoundary * > >
+				const ResolvedTopologicalGeometry * > >
 		find_reconstruction_plate_id_furthest_from_anchor_in_plate_circuit(
 				const resolved_topological_boundary_seq_type &resolved_boundaries);
 
@@ -266,7 +330,7 @@ namespace GPlatesAppLogic
 		 */
 		bool
 		is_topological_network_feature(
-				const GPlatesModel::FeatureHandle &feature);
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature);
 
 
 		/**
@@ -281,21 +345,27 @@ namespace GPlatesAppLogic
 		 * Create and return a sequence of @a ResolvedTopologicalNetwork objects by resolving
 		 * topological networks in @a topological_network_features_collection.
 		 *
-		 * The sections are resolved by referencing already reconstructed topological
-		 * section features in @a reconstructed_topological_sections.
+		 * NOTE: The sections are resolved by referencing already reconstructed topological section
+		 * features which in turn must have already have been reconstructed.
+		 * This includes any resolved topological lines that form sections.
 		 *
 		 * @param reconstruction_tree is associated with the output resolved topological networks.
-		 * @param topological_sections_reconstruct_handles is a list of reconstruct handles that
-		 *        identifies the subset, of all RFGs observing the topological section features,
-		 *        that should be searched when resolving the topological boundaries.
-		 *        This is useful to avoid outdated RFGs still in existence among other scenarios.
+		 * @param topological_geometry_reconstruct_handles is a list of reconstruct handles that
+		 *        identifies the subset, of all RFGs observing the topological boundary section and/or
+		 *        interior features, and all resolved topological lines (@a ResolvedTopologicalGeometry
+		 *        containing polylines) observing the topological boundary section features,
+		 *        that should be searched when resolving the topological networks.
+		 *        This is useful to avoid outdated RFGs and RTGS still in existence (among other scenarios).
+		 *
+		 * The returned reconstruct handle can be used to identify the resolved topological networks.
+		 * This is not currently used though.
 		 */
-		void
+		ReconstructHandle::type
 		resolve_topological_networks(
 				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_network_features_collection,
 				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
-				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles);
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles);
 
 
 		/**

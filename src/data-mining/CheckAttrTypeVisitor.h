@@ -231,12 +231,6 @@ namespace GPlatesDataMining
 
 		virtual
 		void
-		visit_gpml_topological_intersection(
-				gpml_topological_intersection_type &gpml_toplogical_intersection)
-		{  }
-
-		virtual
-		void
 		visit_gpml_topological_point(
 				gpml_topological_point_type &gpml_toplogical_point)
 		{  }

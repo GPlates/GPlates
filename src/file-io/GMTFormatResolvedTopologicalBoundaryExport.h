@@ -36,7 +36,7 @@
 
 namespace GPlatesAppLogic
 {
-	class ResolvedTopologicalBoundary;
+	class ResolvedTopologicalGeometry;
 }
 
 namespace GPlatesFileIO
@@ -61,7 +61,7 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * Exports @a ResolvedTopologicalBoundary objects to GMT format.
+		 * Exports @a ResolvedTopologicalGeometry objects to GMT format.
 		 */
 		void
 		export_resolved_topological_boundaries(

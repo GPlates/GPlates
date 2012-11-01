@@ -48,7 +48,7 @@
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlTimeSample.h"
-#include "property-values/TemplateTypeParameterType.h"
+#include "property-values/StructuralType.h"
 
 #include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
@@ -259,8 +259,8 @@ namespace
 			description = (XsString::create(comment.c_str())).get();
 		}
 
-		TemplateTypeParameterType value_type = 
-			TemplateTypeParameterType::create_gpml("FiniteRotation");
+		StructuralType value_type = 
+			StructuralType::create_gpml("FiniteRotation");
 
 		// Finally, as we're creating the GpmlTimeSample, don't forget to check whether the
 		// sample should be disabled.
@@ -665,6 +665,7 @@ void
 GPlatesFileIO::PlatesRotationFormatReader::read_file(
 		File::Reference &file,
 		GPlatesModel::ModelInterface &model,
+		const GPlatesModel::Gpgim &gpgim,
 		ReadErrorAccumulation &read_errors)
 {
 	PROFILE_FUNC();

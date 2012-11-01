@@ -70,7 +70,6 @@ namespace GPlatesGui
 	class ExportAnimationRegistry;
 	class FeatureTableModel;
 	class FeatureFocus;
-	class GeometryFocusHighlight;
 	class GraticuleSettings;
 	class MapTransform;
 	class PythonManager;
@@ -384,13 +383,6 @@ namespace GPlatesPresentation
 		 * Holds map of feature type to symbol.
 		 */
 		GPlatesGui::symbol_map_type d_feature_type_symbol_map;
-
-		/**
-		 * Renders the focused geometry highlighted.
-		 *
-		 * Depends on d_rendered_geometry_collection.
-		 */
-		boost::scoped_ptr<GPlatesGui::GeometryFocusHighlight> d_geometry_focus_highlight;
 
 		/**
 		 * Manages the various layers (usually corresponding to each loaded feature collection)

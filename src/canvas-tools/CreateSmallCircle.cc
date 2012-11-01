@@ -37,11 +37,11 @@
 GPlatesCanvasTools::CreateSmallCircle::CreateSmallCircle(
 		const status_bar_callback_type &status_bar_callback,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+		GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
 		GPlatesQtWidgets::SmallCircleWidget &small_circle_widget) :
 	CanvasTool(status_bar_callback),
 	d_rendered_geom_collection_ptr(&rendered_geom_collection),
-	d_small_circle_layer_ptr(rendered_geom_collection.get_main_rendered_layer(
-			GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_CANVAS_TOOL_WORKFLOW_LAYER)),
+	d_small_circle_layer_ptr(rendered_geom_collection.get_main_rendered_layer(main_rendered_layer_type)),
 	d_small_circle_widget_ptr(&small_circle_widget),
 	d_small_circle_collection_ref(small_circle_widget.small_circle_collection()),
 	d_circle_is_being_drawn(false)
@@ -54,19 +54,17 @@ GPlatesCanvasTools::CreateSmallCircle::CreateSmallCircle(
 void
 GPlatesCanvasTools::CreateSmallCircle::handle_activation()
 {
-        set_status_bar_message(QT_TR_NOOP("Click to mark the centre and radius. Shift+click to add more radii."));
-
-	// activate rendered layer
-        d_rendered_geom_collection_ptr->set_main_layer_active(
-			GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_CANVAS_TOOL_WORKFLOW_LAYER);
+    set_status_bar_message(QT_TR_NOOP("Click to mark the centre and radius. Shift+click to add more radii."));
 
 	d_small_circle_layer_ptr->set_active();
+	d_small_circle_widget_ptr->setEnabled(true);
 }
 
 void
 GPlatesCanvasTools::CreateSmallCircle::handle_deactivation()
 {
 	d_small_circle_layer_ptr->set_active(false);
+	d_small_circle_widget_ptr->setEnabled(false);
 }
 
 

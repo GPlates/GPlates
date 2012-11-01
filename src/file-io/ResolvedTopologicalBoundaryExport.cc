@@ -45,6 +45,7 @@ POP_MSVC_WARNINGS
 #include "OgrFormatResolvedTopologicalBoundaryExport.h"
 
 #include "app-logic/GeometryUtils.h"
+#include "app-logic/TopologyUtils.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
@@ -57,12 +58,13 @@ using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
 using namespace GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl;
 
 //
-// This is a temporary hack to be removed when deformation of deforming zones
-// is implemented as an overlaying deforming mesh that deforms a deforming *polyline*.
-// In the meantime a deforming zone is deformed by individually moving point geometries
-// spread out along the deforming zone (each moving according to a separate Plate ID).
-// To export deforming boundary segments of a topological polygon we need to join adjacent
-// deforming point geometries into one deforming polyline subsegment.
+// This was meant to be a temporary hack to be removed when resolved *line* topologies were implemented.
+// Prior to the ability to have resolved *line* topologies a deforming zone was deformed by individually
+// moving point geometries spread out along the deforming zone (each moving according to a separate Plate ID).
+// Exporting these required joining adjacent deforming point geometries into one deforming polyline subsegment.
+// That's no longer needed now that resolved *line* topologies can be used.
+// However, unfortunately it seems we need to keep this hack in place for any old data files that
+// use the old method.
 //
 #define HACK_FOR_EXPORTING_DEFORMING_POINTS
 
@@ -176,7 +178,7 @@ namespace GPlatesFileIO
 				bool found_deforming_points = false;
 				for ( ; sub_segment_iter != sub_segment_end; ++sub_segment_iter)
 				{
-					const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment &sub_segment = *sub_segment_iter;
+					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_iter;
 
 					bool is_deforming_point = false;
 					// This is commented out so that this procedure works for any feature type
@@ -224,7 +226,7 @@ namespace GPlatesFileIO
 
 				// The first previous subsegment is the last entry (its previous to the first entry).
 				bool prev_is_deforming_point = deforming_point_flags.back();
-				const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment *prev_sub_segment =
+				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment *prev_sub_segment =
 						&*--sub_segment_seq.end();
 
 				// Find the start of a sequence of deforming points.
@@ -233,7 +235,7 @@ namespace GPlatesFileIO
 					sub_segment_index < deforming_point_flags.size();
 					++sub_segment_iter, ++sub_segment_index)
 				{
-					const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment &sub_segment = *sub_segment_iter;
+					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_iter;
 					const bool is_deforming_point = deforming_point_flags[sub_segment_index];
 
 					if (is_deforming_point)
@@ -274,7 +276,7 @@ namespace GPlatesFileIO
 
 					// Add to the final list of subsegments.
 					merged_sub_segments.push_back(
-							GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment(
+							GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment(
 									merged_deforming_polyline,
 									// Note: We'll use the previous subsegment deforming point,
 									// out of all the merged deforming points, as the feature
@@ -301,7 +303,7 @@ namespace GPlatesFileIO
 						sub_segment_iter = sub_segment_seq.begin();
 					}
 
-					const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment &sub_segment = *sub_segment_iter;
+					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_iter;
 					const bool is_deforming_point = deforming_point_flags[sub_segment_index];
 
 					if (is_deforming_point)
@@ -350,7 +352,7 @@ namespace GPlatesFileIO
 
 							// Add to the final list of subsegments.
 							merged_sub_segments.push_back(
-									GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment(
+									GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment(
 											merged_subduction_polyline,
 											// Note: We'll use the previous subsegment deforming point,
 											// out of all the merged deforming points, as the feature
@@ -438,7 +440,7 @@ namespace GPlatesFileIO
 				boost::optional<const GPlatesAppLogic::sub_segment_seq_type &> boundary_sub_segments =
 						GPlatesAppLogic::ReconstructionGeometryUtils
 								::get_resolved_topological_boundary_sub_segment_sequence(resolved_geom);
-				// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
+				// If not a ResolvedTopologicalGeometry (containing a polygon) or ResolvedTopologicalNetwork then skip.
 				if (!boundary_sub_segments)
 				{
 					return;
@@ -467,7 +469,7 @@ namespace GPlatesFileIO
 #endif
 				for ( ; sub_segment_iter != sub_segment_end; ++sub_segment_iter)
 				{
-					const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment &sub_segment = *sub_segment_iter;
+					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_iter;
 
 					// The export file with all subsegments (regardless of type).
 					if (output_options.export_plate_polygon_subsegments_to_lines)
@@ -538,7 +540,7 @@ namespace GPlatesFileIO
 				boost::optional<const GPlatesAppLogic::sub_segment_seq_type &> boundary_sub_segments =
 						GPlatesAppLogic::ReconstructionGeometryUtils
 								::get_resolved_topological_boundary_sub_segment_sequence(resolved_geom);
-				// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
+				// If not a ResolvedTopologicalGeometry (containing a polygon) or ResolvedTopologicalNetwork then skip.
 				if (!boundary_sub_segments)
 				{
 					return;
@@ -567,7 +569,7 @@ namespace GPlatesFileIO
 #endif
 				for ( ; sub_segment_iter != sub_segment_end; ++sub_segment_iter)
 				{
-					const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment &sub_segment = *sub_segment_iter;
+					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_iter;
 
 					// The export file with all subsegments (regardless of type).
 					if (output_options.export_network_polygon_subsegments_to_lines)
@@ -734,7 +736,7 @@ namespace GPlatesFileIO
 				boost::optional<const GPlatesAppLogic::sub_segment_seq_type &> boundary_sub_segments =
 						GPlatesAppLogic::ReconstructionGeometryUtils
 								::get_resolved_topological_boundary_sub_segment_sequence(resolved_geom);
-				// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
+				// If not a ResolvedTopologicalGeometry (containing a polygon) or ResolvedTopologicalNetwork then skip.
 				if (!boundary_sub_segments)
 				{
 					return;
@@ -763,7 +765,7 @@ namespace GPlatesFileIO
 #endif
 				for ( ; sub_segment_iter != sub_segment_end; ++sub_segment_iter)
 				{
-					const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment &sub_segment = *sub_segment_iter;
+					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_iter;
 
 					// The export file with all subsegments (regardless of type).
 					if (output_options.export_slab_polygon_subsegments_to_lines)
@@ -897,6 +899,19 @@ namespace GPlatesFileIO
 						continue;
 					}
 
+					//
+					// FIXME
+					//
+					// Are interested specifically in feature types
+					// "TopologicalClosedPlateBoundary" and "TopologicalSlabBoundary" ?
+					// Otherwise it's better to just select any feature that has a
+					// 'gpml:TopologicalPolygon' property (regardless of feature type).
+					// Because it's now possible for almost any feature type to have a topological
+					// geometry (where previously it was limited to a few specific feature types).
+					// In which case we should use
+					// "GPlatesAppLogic::TopologyUtils::is_topological_boundary_feature()".
+					//
+
 					static const GPlatesModel::FeatureType plate_type = 
 						GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary");
 
@@ -924,14 +939,9 @@ namespace GPlatesFileIO
 
 
 					//
-					// NOTE: We're just exporting the ResolvedTopologicalBoundary of the network.
-					// Networks now create ResolvedTopologicalNetwork *and*
-					// ResolvedTopologicalBoundary objects.
-					// However here we are only exporting the boundary.
+					// NOTE: We're just exporting the resolved topological boundary of the network.
 					//
-					static const GPlatesModel::FeatureType network_type = 
-						GPlatesModel::FeatureType::create_gpml("TopologicalNetwork");
-					if (feature_ref.get()->feature_type() == network_type)
+					if (GPlatesAppLogic::TopologyUtils::is_topological_network_feature(feature_ref.get()))
 					{
 						add_topological_network_boundary(
 								resolved_geom,
@@ -945,8 +955,7 @@ namespace GPlatesFileIO
 
 
 			/**
-			 * Exports a sequence of @a ResolvedTopologicalBoundary objects
-			 * to the specified export file format.
+			 * Exports a sequence of resolved topological boundaries to the specified export file format.
 			 */
 			void
 			export_resolved_topological_boundaries_file(
@@ -1482,10 +1491,7 @@ namespace GPlatesFileIO
 				//
 				// Network polygons
 				//
-				// NOTE: We're just exporting the ResolvedTopologicalBoundary of the network.
-				// Networks now create ResolvedTopologicalNetwork *and*
-				// ResolvedTopologicalBoundary objects.
-				// However here we are only exporting the boundary.
+				// NOTE: We're just exporting the resolved topological boundary of the network.
 				//
 
 				if (output_options.export_all_network_polygons_to_a_single_file)

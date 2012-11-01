@@ -35,7 +35,7 @@
 #include "model/PropertyValue.h"
 
 
-// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlGridEnvelope, visit_gml_grid_envelope)
@@ -111,6 +111,17 @@ namespace GPlatesPropertyValues
 		set_low_and_high(
 				const integer_list_type &low_,
 				const integer_list_type &high_);
+
+		/**
+		 * Returns the structural type associated with this property value class.
+		 */
+		virtual
+		StructuralType
+		get_structural_type() const
+		{
+			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gml("GridEnvelope");
+			return STRUCTURAL_TYPE;
+		}
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.

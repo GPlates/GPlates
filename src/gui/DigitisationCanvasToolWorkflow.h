@@ -116,16 +116,6 @@ namespace GPlatesGui
 		//! For rendering purposes
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
 
-		//! For dragging the globe in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_drag_globe_tool;
-		//! For dragging the globe in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_drag_globe_tool;
-
-		//! For zooming the globe in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_zoom_globe_tool;
-		//! For zooming the globe in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_zoom_globe_tool;
-
 		//! For measuring distance in the 3D globe view.
 		boost::scoped_ptr<GlobeCanvasTool> d_globe_measure_distance_tool;
 		//! For measuring distance in the 2D map view.

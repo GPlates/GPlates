@@ -66,9 +66,10 @@ GPlatesUnitTest::CoregTestSuite::CoregTestSuite(
 	init(level);
 } 
 
-GPlatesUnitTest::CoregTest::CoregTest()
+GPlatesUnitTest::CoregTest::CoregTest() :
+	d_gpgim(GPlatesModel::Gpgim::create())
 {
-	register_default_file_formats(d_file_format_registry, d_model);
+	register_default_file_formats(d_file_format_registry, d_model, *d_gpgim);
 
 	load_test_data();
 }

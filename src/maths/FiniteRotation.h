@@ -54,7 +54,6 @@ namespace GPlatesMaths
 	class GreatCircleArc;
 	class GreatCircle;
 	class SmallCircle;
-	class GridOnSphere;
 
 
 	/** 
@@ -357,17 +356,6 @@ namespace GPlatesMaths
 	operator*(
 			const FiniteRotation &r,
 			const SmallCircle &s);
-
-
-	/**
-	 * Apply the given rotation to the given grid-on-sphere.
-	 *
-	 * This operation is not supposed to be symmetrical.
-	 */
-	const GridOnSphere
-	operator*(
-			const FiniteRotation &r,
-			const GridOnSphere &g);
 
 
 	std::ostream &

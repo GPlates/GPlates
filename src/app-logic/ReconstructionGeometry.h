@@ -28,6 +28,9 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTIONGEOMETRY_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTIONGEOMETRY_H
 
+#include <boost/optional.hpp>
+
+#include "ReconstructHandle.h"
 #include "ReconstructionTree.h"
 #include "ReconstructionGeometryVisitor.h"
 
@@ -72,6 +75,21 @@ namespace GPlatesAppLogic
 		}
 
 		/**
+		 * Returns the optional reconstruct handle that this reconstruction geometry was created with.
+		 *
+		 * The main reason this was added was to enable identification of a reconstruction geometry
+		 * among a list - this is useful when searching for a reconstruction geometry that was
+		 * generated in a specific scenario (reconstruct handle) such as topological section
+		 * geometries that are found via the topological section feature.
+		 * This is useful to avoid outdated reconstruction geometries still in existence (among other scenarios).
+		 */
+		const boost::optional<ReconstructHandle::type> &
+		get_reconstruct_handle() const
+		{
+			return d_reconstruct_handle;
+		}
+
+		/**
 		 * Accept a ConstReconstructionGeometryVisitor instance.
 		 */
 		virtual
@@ -98,8 +116,10 @@ namespace GPlatesAppLogic
 		 */
 		explicit
 		ReconstructionGeometry(
-				ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_) :
-			d_reconstruction_tree(reconstruction_tree_)
+				ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_,
+				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none) :
+			d_reconstruction_tree(reconstruction_tree_),
+			d_reconstruct_handle(reconstruct_handle_)
 		{  }
 
 	private:
@@ -107,6 +127,11 @@ namespace GPlatesAppLogic
 		 * The reconstruction tree used to reconstruct us.
 		 */
 		ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;
+
+		/**
+		 * An optional reconstruct handle that can be used by clients to identify where this RG came from.
+		 */
+		boost::optional<ReconstructHandle::type> d_reconstruct_handle;
 	};
 }
 

@@ -39,7 +39,7 @@ namespace GPlatesAppLogic
 	class ReconstructedVirtualGeomagneticPole;
 	class ResolvedRaster;
 	class ResolvedScalarField3D;
-	class ResolvedTopologicalBoundary;
+	class ResolvedTopologicalGeometry;
 	class ResolvedTopologicalNetwork;
 }
 
@@ -215,8 +215,8 @@ namespace GPlatesModel
 		 */
 		virtual
 		void
-		visit_resolved_topological_boundary(
-				GPlatesAppLogic::ResolvedTopologicalBoundary &rtb)
+		visit_resolved_topological_geometry(
+				GPlatesAppLogic::ResolvedTopologicalGeometry &rtb)
 		{  }
 
 		/**

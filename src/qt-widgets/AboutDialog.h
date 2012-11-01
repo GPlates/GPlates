@@ -38,6 +38,11 @@ namespace GPlatesGui
 	class Dialogs;
 }
 
+namespace GPlatesModel
+{
+	class Gpgim;
+}
+
 namespace GPlatesQtWidgets
 {
 	class LicenseDialog;
@@ -53,6 +58,7 @@ namespace GPlatesQtWidgets
 		explicit
 		AboutDialog(
 				GPlatesGui::Dialogs &dialogs,
+				const GPlatesModel::Gpgim &gpgim,
 				QWidget *parent_ = NULL);
 
 	private:

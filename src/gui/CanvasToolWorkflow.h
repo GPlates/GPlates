@@ -27,6 +27,7 @@
 #define GPLATES_GUI_CANVASTOOLWORKFLOW_H
 
 #include <utility>
+#include <vector>
 #include <boost/optional.hpp>
 #include <QObject>
 
@@ -91,6 +92,13 @@ namespace GPlatesGui
 
 
 		/**
+		 * Returns the workflow type of this workflow.
+		 */
+		CanvasToolWorkflows::WorkflowType
+		get_workflow() const;
+
+
+		/**
 		 * Returns the currently selected tool in the workflow.
 		 *
 		 * NOTE: This can be called even if the workflow is not active in which case
@@ -109,10 +117,20 @@ namespace GPlatesGui
 		contains_tool(
 				CanvasToolWorkflows::ToolType tool) const;
 
+
+		/**
+		 * Returns true if the specified tool is currently enabled.
+		 */
+		bool
+		is_tool_enabled(
+				CanvasToolWorkflows::ToolType tool) const;
+
 	signals:
 
 		/**
 		 * Emitted when a canvas tool is enabled/disabled.
+		 *
+		 * NOTE: Derived classes should call @a emit_canvas_tool_enabled instead of directly emitting this signal.
 		 */
 		void
 		canvas_tool_enabled(
@@ -124,7 +142,24 @@ namespace GPlatesGui
 
 		CanvasToolWorkflow(
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
-				GPlatesQtWidgets::MapView &map_view);
+				GPlatesQtWidgets::MapView &map_view,
+				CanvasToolWorkflows::WorkflowType workflow,
+				CanvasToolWorkflows::ToolType selected_tool);
+
+
+		//! Returns true if this workflow is currently active.
+		bool
+		is_workflow_active() const
+		{
+			return d_is_workflow_active;
+		}
+
+		//! Emits the @a canvas_tool_enabled signal.
+		void
+		emit_canvas_tool_enabled(
+				GPlatesGui::CanvasToolWorkflows::ToolType tool,
+				bool enable);
+
 
 		/**
 		 * Implemented by derived class to perform any setup when workflow is activated.
@@ -165,7 +200,15 @@ namespace GPlatesGui
 		get_selected_globe_and_map_canvas_tools(
 					CanvasToolWorkflows::ToolType selected_tool) const = 0;
 
+	//
+	// NOTE: The following are 'private' to ensure that derived classes cannot directly access them.
+	// Use 'protected' methods to provide interface for derived classes.
+	//
 	private:
+
+		//! Typedef for a sequence of flags specifying which tools are enabled in this workflow.
+		typedef std::vector<bool> enabled_tools_seq_type;
+
 
 		/**
 		 * Feeds mouse events from @a GlobeCanvas to our selected *globe-view* tool.
@@ -176,6 +219,11 @@ namespace GPlatesGui
 		 * Feeds mouse events from @a MapView to our selected *map-view* tool.
 		 */
 		MapCanvasToolAdapter d_map_canvas_tool_adapter;
+
+		/**
+		 * The type of this workflow.
+		 */
+		CanvasToolWorkflows::WorkflowType d_workflow;
 
 		/**
 		 * The currently selected tool for this workflow.
@@ -191,6 +239,16 @@ namespace GPlatesGui
 		 * Also means the currently selected tool (for this workflow) is active.
 		 */
 		bool d_is_workflow_active;
+
+		/**
+		 * Is true if the selected tool is currently active.
+		 */
+		bool d_is_selected_tool_active;
+
+		/**
+		 * Flags recording which tools, in this workflow, are currently enabled.
+		 */
+		enabled_tools_seq_type d_enabled_tools;
 
 
 		void

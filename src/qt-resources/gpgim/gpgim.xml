@@ -1,0 +1,1947 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GPGIM gpgim:version="1.6.0320" xmlns="http://www.gplates.org/gpgim" xmlns:gpgim="http://www.gplates.org/gpgim" xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance">
+	<!--
+		The structure of this document is in the following paragraph.
+		Some notes regarding that paragraph:
+		 - The number in square brackets '[]', after each XML element name, is the range of allowed
+		   number of occurrences of that XML element within its parent XML element.
+		 - For example, '[1]' means exactly one occurrence is required and '[0..*]' means any number of occurrences.
+		 - Each level of indentation represents a nested, or child, level.
+		 - For example, 'Name' is a child XML element of 'FeatureClass'.
+		
+		NOTE: 'gpml:UnclassifiedFeature' is handled as a special-case feature type inside GPlates and
+		should not be added to this XML file. Features of type 'gpml:UnclassifiedFeature' can have any number of
+		any property listed in this XML file (listed under 'PropertyList').
+		
+		PropertyTypeList[1]:
+			* <PropertyTypeList> contains the complete list of feature property types supported by the GPGIM.
+			* Currently the two types of property are <Enumeration> and <NativeProperty>.
+			Enumeration[0..*]:
+				* A string type that has a finite set of accepted (string) values.
+				* An <Enumeration> is a property type (and hence can be used in a feature class as a property).
+				Type[1]:
+					* The (namespace qualified) property type - such as 'gpml:ContinentalBoundaryCrustEnumeration'.
+					* This should be given a unique name to distinguish it from other enumeration types and native property types.
+					* Note that enumerations can be added without requiring modifications to the GPlates source code.
+				Description[1]:
+					* A short description of the enumeration type.
+				Content[1..*]:
+					* Each <Content> element defines one allowed enumeration value.
+					Value[1]:
+						* An allowed (string) value for the enumeration.
+					Description[1]:
+						* A short description of the enumeration value.
+			NativeProperty[0..*]:
+				* A property that is implemented inside the GPlates source code with specific functionality.
+				* Most properties in GPlates are native properties (with the exception of enumerations).
+				Type[1]:
+					* The (namespace qualified) property type - such as 'gpml:PolarityChronId'.
+				Description[1]:
+					* A short description of the property type.
+		FeatureClassList[1]:
+			* <FeatureClassList> contains a list of all feature classes defined by the GPGIM.
+			* <FeatureClassList> can only contain <FeatureClass> elements.
+			FeatureClass[0..*]:
+				* Each <FeatureClass> defines, along with its chain of inherited feature classes,
+				  a feature type in the GPlates Geological Information Model (GPGIM).
+				Name[1]:
+					* The name of the feature class.
+					* Is the same as the feature type specified in a GPML file.
+				Description[1]:
+					* A short description of the feature type.
+				ClassType[1]:
+					* The type of feature class.
+					* Must be either 'abstract' or 'concrete'.
+					* Only 'concrete' classes are visible to the user.
+					* Only 'concrete' classes can appear as feature types in a GPML file.
+					* 'abstract' classes are typically inherited by many concrete classes.
+					* 'concrete' classes can also be inherited from.
+				Inherits[0..1]:
+					* The parent feature class that this feature class inherits from (if any).
+					* Only single inheritance is supported (can only in herit from at most one parent feature class).
+				Property[0..*]:
+					* Each <Property> defines the conditions under which a property can appear in its feature container.
+					Name[1]:
+						* The property name.
+					Type[1..*]:
+						* The type of the property.
+						* Multiple occurrences of '<Type>' is typically useful when specifying a
+						  geometry property that can be, for example, a point, polyline, polygon, etc.
+					Multiplicity[1]:
+						* The number of times the property can appear in a feature.
+						* Can only contain the following values:
+							0..1  // zero or one occurrences
+							1     // only one occurrence
+							0..*  // any number of occurrences
+							1..*  // one or more occurrences
+					TimeDependent[0..*]:
+						* Determines whether the property is a time-dependent property or not.
+						* Zero occurrences of '<TimeDependent>' means the property is *not* time-dependent.
+						* Multiple occurrences means the property's dependence on time can
+						  be specified in different ways (eg, 'gpml:ConstantValue' or 'gpml:PiecewiseAggregation').
+						* Can only contain the following values:
+							gpml:ConstantValue         // Same property value for all time.
+							gpml:IrregularSampling     // Irregularly spaced property values, in time, with interpolation inbetween.
+							gpml:PiecewiseAggregation  // Multiple time windows - each with own time-dependence (recursive).
+	-->
+	
+	<!--
+		'gpml:IrregularSampling' is currently only supported for finite rotations (see 'gpml:TotalReconstructionSequence').
+		In the future support will be added for non-categorical properties (eg, 'xsi:double') and for geometry properties.
+		In the meantime time-dependent geometries should be restricted to 'gpml:ConstantValue' and/or 'gpml:PiecewiseAggregation'.
+	-->
+	
+	<!--
+		Developer note:
+		For language translation of human-readable text, like feature class descriptions, we might need to write a
+		tool to place the text strings in a C++ source file (wrapped in QT_TR_NOOP) so Qt's lupdate can translate them.
+	-->
+	
+	
+	
+	
+	
+	<!-- List of property types supported by GPlates. -->
+	<!-- NOTE: New 'Enumeration's can be added here without having to update the GPlates source code. -->
+	<!-- NOTE: However, any new 'NativeProperty's added must also be implemented in the GPlates source code. -->
+	<PropertyTypeList>
+		<!--
+			NOTE: Please keep the <Enumeration> elements ordered alphabetically by their '<Type>'.
+			Note that some text editors (like Notepad++) let you collapse a level - for example, collapsing
+			level 4 collapses all the <Content> definitions making it easier to scroll through the enumeration types.
+		-->
+		<Enumeration>
+			<Type>gpml:AbsoluteReferenceFrameEnumeration</Type>
+			<Description>Type of absolute reference frame.</Description>
+			<Content>
+				<Value>Paleomag</Value>
+				<Description>Paleo-magnetic absolute reference frame.</Description>
+			</Content>
+			<Content>
+				<Value>HotSpot</Value>
+				<Description>HotSpot-derived absolute reference frame.</Description>
+			</Content>
+			<Content>
+				<Value>Mantle</Value>
+				<Description>Mantle-derived absolute reference frame.</Description>
+			</Content>
+			<Content>
+				<Value>NoNetTorque</Value>
+				<Description>No-Net-Torque absolute reference frame (new).</Description>
+			</Content>
+			<Content>
+				<Value>Other</Value>
+				<Description>The 'Other' type is not the "option #4" which Trond was talking about, ie "relative to any other plate in the hierachy", but rather a way out in case there actually -is- a fourth type which we don't know about.</Description>
+			</Content>
+		</Enumeration>
+		<Enumeration>
+			<Type>gpml:ContinentalBoundaryCrustEnumeration</Type>
+			<Description>The type of the crust contained within a boundary.</Description>
+			<Content>
+				<Value>Continental</Value>
+				<Description>The interior of a boundary is a region of continental crust.</Description>
+			</Content>
+			<Content>
+				<Value>Oceanic</Value>
+				<Description>The interior of a boundary is a region of oceanic crust.</Description>
+			</Content>
+			<Content>
+				<Value>Unknown</Value>
+				<Description>The value of a property is officially unknown; there is no information about which type of crust a boundary is defining.</Description>
+			</Content>
+		</Enumeration>
+		<Enumeration>
+			<Type>gpml:ContinentalBoundaryEdgeEnumeration</Type>
+			<Description>Enumerates whether a continental boundary is the inner or outer boundary in the broad area of change between continental and oceanic crust.</Description>
+			<Content>
+				<Value>InnerContinentalBoundary</Value>
+				<Description>The boundary defines the Inner edge of the continental boundary (closest to centre of continental crust). For the ClosedContinentalBoundary feature type - note that in the less common case of defining a closed boundary of type=oceanic crust, the "Inner" enumeration still refers to the innermost edge of -Continental- crust.</Description>
+			</Content>
+			<Content>
+				<Value>OuterContinentalBoundary</Value>
+				<Description>The boundary defines the Outer edge of the continental boundary (furthest away from centre of continental crust, closest to oceanic crust). For the ClosedContinentalBoundary feature type - note that in the less common case of defining a closed boundary of type=oceanic crust, the "Outer" enumeration still refers to the outermost edge of the -Continental- crust.</Description>
+			</Content>
+			<Content>
+				<Value>Unknown</Value>
+				<Description>The boundary was digitised or imported without any data telling us how the boundary was chosen with regard to inner and outer edges of the continental crust. The value of this property is officially unknown.</Description>
+			</Content>
+		</Enumeration>
+		<Enumeration>
+			<Type>gpml:ContinentalBoundarySideEnumeration</Type>
+			<Description>Assuming there is a suitable centerLineOf supplied, and understanding that the order of points in the line matters, we can establish a "Left" side and a "Right" side to the .centerLineOf. this property indicates which direction leads to the continental crust.</Description>
+			<Content>
+				<Value>Left</Value>
+				<Description>The continental crust for this PassiveContinentalBoundary can be found to the left, oceanic crust can be found on the right. Depending on the .edge of this PassiveContinentalBoundary, this may also imply some transitional "grey area" crust is on one side or the other.</Description>
+			</Content>
+			<Content>
+				<Value>Right</Value>
+				<Description>The continental crust for this PassiveContinentalBoundary can be found to the right, oceanic crust can be found on the left. Depending on the .edge of this PassiveContinentalBoundary, this may also imply some transitional "grey area" crust is on one side or the other.</Description>
+			</Content>
+			<Content>
+				<Value>Unknown</Value>
+				<Description>No information is known about which {continental,oceanic} side is which for this PassiveContinentalBoundary. This property is officially unknown.</Description>
+			</Content>
+		</Enumeration>
+		<Enumeration>
+			<Type>gpml:DipSideEnumeration</Type>
+			<Description>The side of the line that the 'dip' is on, giving a hint at what the plane of the surface looks like.</Description>
+			<Content>
+				<Value>Left</Value>
+				<Description>The Plane (e.g. Fault) dips to the 'Left' of this line (relative to the order of points defining the Strike).</Description>
+			</Content>
+			<Content>
+				<Value>Right</Value>
+				<Description>The Plane (e.g. Fault) dips to the 'Right' of this line (relative to the order of points defining the Strike).</Description>
+			</Content>
+			<Content>
+				<Value>Undefined</Value>
+				<Description>If the Dip angle of the Plane is 90 degrees (straight down), this property is not clearly defined regardless of its value. For new data, it may be convenient to assign it this "Undefined" value, but bear in mind that when .dipAngle == 90, any value the .dipSide property takes should be considered arbitrary.</Description>
+			</Content>
+			<Content>
+				<Value>Unknown</Value>
+				<Description>The value is officially unknown; there is no information about the dip of the GeologicalPlane (for example, the plane of a Fault's surface).</Description>
+			</Content>
+		</Enumeration>
+		<Enumeration>
+			<Type>gpml:DipSlipEnumeration</Type>
+			<Description>The motion along the 'dip', or cross-section line of the Fault.</Description>
+			<Content>
+				<Value>Extension</Value>
+				<Description>Also called a 'normal' fault. The two sides of the Fault are sliding away from each other.</Description>
+			</Content>
+			<Content>
+				<Value>Compression</Value>
+				<Description>Also called a 'reverse' fault. The two sides of the Fault are sliding towards each other.</Description>
+			</Content>
+			<Content>
+				<Value>None</Value>
+				<Description>There is no motion along the dip of the Fault.</Description>
+			</Content>
+			<Content>
+				<Value>Unknown</Value>
+				<Description>The value is officially unknown; there is no information about the dip motion.</Description>
+			</Content>
+		</Enumeration>
+		<Enumeration>
+			<Type>gpml:FoldPlaneAnnotationEnumeration</Type>
+			<Description>Type of annotation for a FoldPlane. Appears as symbols along the line of the fold.</Description>
+			<Content>
+				<Value>Syncline</Value>
+				<Description>Arrows pointing inward.</Description>
+			</Content>
+			<Content>
+				<Value>Anticline</Value>
+				<Description>Arrows pointing outward.</Description>
+			</Content>
+			<Content>
+				<Value>None</Value>
+				<Description>No annotation.</Description>
+			</Content>
+			<Content>
+				<Value>Unknown</Value>
+				<Description>There is no data about the type of the FoldPlane.</Description>
+			</Content>
+		</Enumeration>
+		<Enumeration>
+			<Type>gpml:ReconstructionMethodEnumeration</Type>
+			<Description>The method used to reconstruct feature geometry to paleo times.</Description>
+			<Content>
+				<Value>ByPlateId</Value>
+				<Description>Reconstruct using a single 'gpml:reconstructionPlateId'.</Description>
+			</Content>
+			<Content>
+				<Value>HalfStageRotation</Value>
+				<Description>Reconstruct using a half-stage rotation between a 'gpml:leftPlate' and 'gpml:rightPlate'.</Description>
+			</Content>
+		</Enumeration>
+		<Enumeration>
+			<Type>gpml:SlipComponentEnumeration</Type>
+			<Description>For Faults with both Dip-Slip and Strike-Slip motion (sometimes termed "Oblique Slip"), this property indicates which of Dip-Slip or Strike-Slip is the primary component of the motion, if any.</Description>
+			<Content>
+				<Value>StrikeSlip</Value>
+				<Description>The strike motion is the stronger component.</Description>
+			</Content>
+			<Content>
+				<Value>DipSlip</Value>
+				<Description>The dip motion is the stronger component.</Description>
+			</Content>
+			<Content>
+				<Value>None</Value>
+				<Description>There is no dominant component.</Description>
+			</Content>
+			<Content>
+				<Value>Unknown</Value>
+				<Description>The value is officially unknown; there is no information about which of Strike-Slip or Dip-Slip is the primary slip component.</Description>
+			</Content>
+		</Enumeration>
+		<Enumeration>
+			<Type>gpml:StrikeSlipEnumeration</Type>
+			<Description>The motion along the 'strike', or map-view line of the Fault.</Description>
+			<Content>
+				<Value>LeftLateral</Value>
+				<Description>Also called Sinistral motion. When viewed from one side of the Fault, the opposite side appears to be moving to the observer's left.</Description>
+			</Content>
+			<Content>
+				<Value>RightLateral</Value>
+				<Description>Also called Dextral motion. When viewed from one side of the Fault, the opposite side appears to be moving to the observer's right.</Description>
+			</Content>
+			<Content>
+				<Value>None</Value>
+				<Description>There is no motion along the strike of the Fault.</Description>
+			</Content>
+			<Content>
+				<Value>Unknown</Value>
+				<Description>The value is officially unknown; there is no information about the strike motion.</Description>
+			</Content>
+		</Enumeration>
+		<Enumeration>
+			<Type>gpml:SubductionPolarityEnumeration</Type>
+			<Description>Indicates the side of the line that the subducting slab is on. The overriding plate will be on the opposite side.
+.subductingSlab is an enumeration: Assuming there is a suitable centerLineOf supplied, and understanding that the order of points in the line matters, we can establish a "left" side and a "right" side to the .centerLineOf. this property indicates which of those "left" and "right" sides the subducting slab is on. The overriding plate will be on the opposite side.</Description>
+			<Content>
+				<Value>Left</Value>
+				<Description>The subducting slab is on the left of this SubductionZone, according to the directed gml:LineString .centerLineOf.</Description>
+			</Content>
+			<Content>
+				<Value>Right</Value>
+				<Description>The subducting slab is on the right of this SubductionZone, according to the directed gml:LineString .centerLineOf.</Description>
+			</Content>
+			<Content>
+				<Value>Unknown</Value>
+				<Description>The value of is officially unknown; there is no information about which side of the SubductionZone is which.</Description>
+			</Content>
+		</Enumeration>
+		
+		<!-- NOTE: Please keep the 'xsi' <NativeProperty> elements ordered alphabetically by their '<Type>'. -->
+		<NativeProperty>
+			<Type>xsi:boolean</Type>
+			<Description>A true/false boolean.</Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>xsi:double</Type>
+			<Description>A double-precision floating-point number.</Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>xsi:integer</Type>
+			<Description>A signed integer number.</Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>xsi:string</Type>
+			<Description>An arbitrary string of characters.</Description>
+		</NativeProperty>
+		
+		<!-- NOTE: Please keep the 'gml' <NativeProperty> elements ordered alphabetically by their '<Type>'. -->
+		<NativeProperty>
+			<Type>gml:File</Type>
+			<Description>A reference to a file in the file system.</Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gml:LineString</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gml:MultiPoint</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gml:OrientableCurve</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gml:Point</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gml:Polygon</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gml:RectifiedGrid</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gml:TimeInstant</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gml:TimePeriod</Type>
+			<Description>The period of time the feature is in existence.</Description>
+			<Comment>Consists of two variables, "begin" and "end", which are the points in time (in millions of years ago or Ma) in which the feature came in and out of existence respectively.</Comment>
+			<Comment>"Begin" and "end" can also be set to "Distant Past" and "Distant Future" respectively.</Comment>
+		</NativeProperty>
+		
+		<!-- NOTE: Please keep the 'gpml' <NativeProperty> elements ordered alphabetically by their '<Type>'. -->
+		<NativeProperty>
+			<!--
+				Developer note:
+				'gpml:Array' is currently the only *template* type (besides the time-dependent wrappers).
+				Currently GPlates assumes the template type is 'gml:TimePeriod' in the following ways:
+					(1) Edit Feature Properties widget selects Edit Time Sequence widget when it visits a 'gpml:Array' property.
+					(2) Add Property dialog selects Edit Time Sequence widget when it finds the 'gpml:Array' string (eg, specified here).
+				Later, when other template types are supported, we'll need to be able to specify the template type in this (XML) file.
+				And, in GPlates, we'll also need to be able to select the appropriate edit widget based not only on 'gpml:Array'
+				but also on its template type (essentially both determine the actual type of the property).
+			-->
+			<Type>gpml:Array</Type>
+			<Description>A sequence of elements of a specified template type.</Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gpml:FeatureReference</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gpml:FeatureSnapshotReference</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gpml:FiniteRotation</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gpml:HotSpotTrailMark</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gpml:KeyValueDictionary</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gpml:measure</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gpml:OldPlatesHeader</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gpml:plateId</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gpml:PolarityChronId</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gpml:RasterBandNames</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gpml:revisionId</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gpml:ScalarField3DFile</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gpml:StringList</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gpml:TopologicalLine</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gpml:TopologicalNetwork</Type>
+			<Description></Description>
+		</NativeProperty>
+		<NativeProperty>
+			<Type>gpml:TopologicalPolygon</Type>
+			<Description></Description>
+		</NativeProperty>
+	</PropertyTypeList>
+	
+	
+	
+	
+	
+	<!-- List of properties supported by GPlates. -->
+	<!-- NOTE: New 'Property's can be added here without having to update the GPlates source code
+		(as long as they reference a property 'type' that already exists). -->
+	<PropertyList>
+		<!--
+			NOTE: Please keep the <Property> elements ordered alphabetically by their '<Name>'.
+			Note that some text editors (like Notepad++) let you collapse a level - for example, collapsing
+			level 4 collapses all the <Content> definitions making it easier to scroll through the enumeration types.
+		-->
+		<Property>
+			<Name>gpml:absoluteReferenceFrame</Name>
+			<Description>Type of absolute reference frame.</Description>
+			<Type>gpml:AbsoluteReferenceFrameEnumeration</Type>
+			<Multiplicity>1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:angularRadius</Name>
+			<Description>Angular radius.</Description>
+			<Type>gpml:measure</Type>
+			<Multiplicity>1</Multiplicity>
+			<Comment>This is currently used for small circle radii.</Comment>
+		</Property>
+		<Property>
+			<!-- FIXME:  Should change this to a gml:TimeInstant rather than an xsi:double. -->
+			<Name>gpml:averageAge</Name>
+			<Description>Average magnetisation age (GeologicalTime of magnetisation) based on multiple sites.</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:averageDeclination</Name>
+			<Description></Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:averageInclination</Name>
+			<Description></Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:averageSampleSitePosition</Name>
+			<Description>Average sample-site position (based on multiple sites).</Description>
+			<Type>gml:Point</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
+		</Property>
+		<Property>
+			<Name>gpml:bandNames</Name>
+			<Description>The names of the raster bands in a raster.</Description>
+			<Type>gpml:RasterBandNames</Type>
+			<Multiplicity>1</Multiplicity>
+		</Property>
+		<Property gpgim:defaultType="gml:Polygon">
+			<Name>gpml:boundary</Name>
+			<UserFriendlyName>Boundary</UserFriendlyName>
+			<Description>A static or topological (plate) boundary depending on the feature type.</Description>
+			<Type>gml:Polygon</Type>
+			<Type>gpml:TopologicalPolygon</Type>
+			<Type>gml:OrientableCurve</Type>
+			<Type>gml:LineString</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
+		</Property>
+		<Property gpgim:defaultType="gml:LineString">
+			<Name>gpml:centerLineOf</Name>
+			<UserFriendlyName>Centre line</UserFriendlyName>
+			<Description>The central line defining the feature's geometry.</Description>
+			<Type>gml:Point</Type>
+			<Type>gml:OrientableCurve</Type>
+			<Type>gml:LineString</Type>
+			<Type>gml:MultiPoint</Type>
+			<Type>gml:Polygon</Type>
+			<Type>gpml:TopologicalLine</Type>
+			<Multiplicity>0..*</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+		</Property>
+		<Property>
+			<Name>gpml:centre</Name>
+			<Description>Centre of a small circle.</Description>
+			<Type>gml:Point</Type>
+			<Multiplicity>1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:conjugate</Name>
+			<Description>A reference to the 'pair' or 'twin' of the isochron.</Description>
+			<Type>gpml:FeatureReference</Type>
+			<Multiplicity>0..*</Multiplicity>
+			<Comment>Due to Isochrons getting split into pieces in PLATES data, it must support more than one conjugate on the other side of the MOR.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:conjugatePlateId</Name>
+			<Description>A reference to the plate Id that has the 'pair' or 'twin' of the feature.</Description>
+			<Type>gpml:plateId</Type>
+			<Multiplicity>0..*</Multiplicity>
+			<Comment>The plate Id is a general-purpose plate Id or specific plate Id for motion of a cluster of Features.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:crust</Name>
+			<Description>The type of the crust contained within a boundary.</Description>
+			<Type>gpml:ContinentalBoundaryCrustEnumeration</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gml:description</Name>
+			<Description>A description of the feature.</Description>
+			<Type>xsi:string</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<Comment>A 'hidden but useful' property inherited from GML.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:dipAngle</Name>
+			<Description>Used to describe the angle a surface "dips" from the horizontal, usually in degrees.</Description>
+			<Type>gpml:measure</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<Comment>The complete orientation of the plane is the strike (stored in the centerLineOf geometry property), the dip angle (stored in this property), and the dip direction (stored in the dipSide property).</Comment>
+			<Comment>This property is optional. If not present, it indicates that there is no information about the dip available. The property is unspecified or indeterminate.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:dipSide</Name>
+			<Description>Used to specify the dip direction of the plane.</Description>
+			<Type>gpml:DipSideEnumeration</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<Comment>The complete orientation of the plane is the strike (stored in the centerLineOf geometry property), the dip angle (stored in the dipAngle property), and the dip direction (stored in this property).</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:dipSlip</Name>
+			<Description>The motion along the 'dip', or cross-section line of the Fault.</Description>
+			<Type>gpml:DipSlipEnumeration</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:domainSet</Name>
+			<Description>The region-of-interest of a coverage or raster on which the corresponding 'gpml:rangeSet' is based.</Description>
+			<Type>gml:RectifiedGrid</Type>
+			<Multiplicity>1</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
+			<Comment>This is currently only used for rasters.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:edge</Name>
+			<Description>Enumerates whether a continental boundary is the inner or outer boundary in the broad area of change between continental and oceanic crust.</Description>
+			<Type>gpml:ContinentalBoundaryEdgeEnumeration</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property gpgim:defaultType="gml:Polygon">
+			<Name>gpml:errorBounds</Name>
+			<UserFriendlyName>Error boundary</UserFriendlyName>
+			<Description>An optional error boundary for the feature.</Description>
+			<Type>gml:Point</Type>
+			<Type>gml:OrientableCurve</Type>
+			<Type>gml:MultiPoint</Type>
+			<Type>gml:Polygon</Type>
+			<Type>gpml:TopologicalPolygon</Type>
+			<Multiplicity>0..*</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+			<Comment>Note that we can use LineStrings or Polygons or a combination of both.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:evidence</Name>
+			<Description>Features listed as evidence of the HotSpotTrail.</Description>
+			<Type>gpml:FeatureReference</Type>
+			<Multiplicity>0..*</Multiplicity>
+			<Comment>As a convenience, you may also include references to other gpml:Features here, as the 'evidence' of the HotSpotTrail. These can be the physical features that indicate the path the HotSpot took- Volcanoes, Seamounts, maybe even AseismicRidges - we have to be pretty forgiving with what features the user wants to associate with the HotSpotTrail.</Comment>
+		</Property>
+		<Property>
+			<!-- FIXME: Either rename to something more specific of a scalar field - later this will include more than just a filename. -->
+			<Name>gpml:file</Name>
+			<Description>Type of annotation for a FoldPlane. Appears as symbols along the line of the fold.</Description>
+			<Type>gpml:ScalarField3DFile</Type>
+			<Multiplicity>1</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
+		</Property>
+		<Property>
+			<Name>gpml:foldAnnotation</Name>
+			<Description>Type of annotation for a FoldPlane. Appears as symbols along the line of the fold.</Description>
+			<Type>gpml:FoldPlaneAnnotationEnumeration</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:fixedReferenceFrame</Name>
+			<Description>The plate Id for which motion is treated as 'fixed'.</Description>
+			<Type>gpml:plateId</Type>
+			<Multiplicity>1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:isActive</Name>
+			<Description>Time-dependent boolean indicates when the feature is active over time.</Description>
+			<Type>xsi:boolean</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
+			<Comment>In the case of MidOceanRidge and ContinentalRift, isActive should be "True" if the ridge is actively spreading, and "False" otherwise.</Comment>
+			<Comment>In the case of IslandArc, isActive is "True" if the IslandArc is in the process of being created via subduction, and "False" otherwise.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:islandArc</Name>
+			<Description>Multiple small island arcs potentially forming part of a large subduction zone.</Description>
+			<Type>gpml:FeatureReference</Type>
+			<Multiplicity>0..*</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:leftPlate</Name>
+			<Description>Annotation property describing the plate on the "left" side of the feature.</Description>
+			<Type>gpml:plateId</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<Comment>Not to be used for reconstruction purposes, as these properties would be an imprecise representation of the crust on each
+			side in many cases. Primarily of interest to the MidOceanRidge feature, where it is used for the purpose of a richer description.</Comment>
+			<Comment>Not a time-dependent property because, for MidOceanRidge at any rate, that's insanity. A MidOceanRidge -generates- crust. For other boundary features, like SubductionZone, this property is only really used as annotation, (i.e. "this SZ is mostly consuming plate 541") and doesn't need to be over-complex.</Comment>
+			<Comment>This property doesn't support multiple plateIds per side for similar reasons to the ones above; in the case of MidOceanRidge, the usefuless of this property hinges on the potential to e.g. interpolate between both sides of the MOR and determine velocity. If more than one plateId per side were supported, topology would have to be taken into consideration, and pieces would have to move at different rates - and so the MOR would have to be broken up into segments, PLATES style. Perhaps when we get segmented MORs in the next release GPGIM, we can consider these extra possibilities. Until then, there's really no point in making this more complex than it needs to be.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:leftUnit</Name>
+			<Description>Defines what is on the "Left" side of the contact, using an AbstractRockUnit.</Description>
+			<Type>gpml:FeatureReference</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<Comment>Assuming there is a suitable centerLineOf supplied, and understanding that the order of points in the line matters, we can establish a "Left" and "Right" side of the centerLine.</Comment>
+			<Comment>Particular implementations of AbstractRockUnit can include BasicRockUnit for simple free-text descriptions plus an extent, or more complex rock unit definitions.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:locationNames</Name>
+			<UserFriendlyName>Location names</UserFriendlyName>
+			<Description>List of location, dredge or drill site names.</Description>
+			<Type>gpml:StringList</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:mark</Name>
+			<Description>Forms a table of hotspot position and age, using HotSpotTrailMark to represent each row.</Description>
+			<Type>gpml:HotSpotTrailMark</Type>
+			<Multiplicity>1..*</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:meshPoints</Name>
+			<Description>Global positions to calculate plate velocities at.</Description>
+			<Type>gml:MultiPoint</Type>
+			<Multiplicity>1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:motion</Name>
+			<Description>The motion along the 'strike', or map-view line of the Transform.</Description>
+			<Type>gpml:StrikeSlipEnumeration</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
+		</Property>
+		<Property>
+			<Name>gpml:movingReferenceFrame</Name>
+			<Description>The 'conjugate' or 'moving' plate Id.</Description>
+			<Type>gpml:plateId</Type>
+			<Multiplicity>1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:multiPosition</Name>
+			<UserFriendlyName>Multiple positions</UserFriendlyName>
+			<Description>When a feature’s geometry is described as a multiple points, it is appropriate to use the MultiPoint geometry.</Description>
+			<Type>gml:MultiPoint</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gml:name</Name>
+			<Description>A descriptive name of the feature.</Description>
+			<Type>xsi:string</Type>
+			<Multiplicity>0..*</Multiplicity>
+			<Comment>More than one gml:name can be assigned, the distinction between two names being handled by the 'codeSpace=' attribute of gml:name.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:network</Name>
+			<Description>A topological network used to define a deforming region.</Description>
+			<Type>gpml:TopologicalNetwork</Type>
+			<Multiplicity>1</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
+		</Property>
+		<Property>
+			<Name>gpml:networkMaxEdge</Name>
+			<Description>Another parameter to controal triangulation quality in a topological network.</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<Comment>This is a Computational Geometry Algorithms Library (CGAL) parameter.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:networkShapeFactor</Name>
+			<Description>Determines the shape (or closeness to being equilateral) the triangles in a topological network triangulation should be.</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<Comment>This is a Computational Geometry Algorithms Library (CGAL) parameter.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:oldPlatesHeader</Name>
+			<Description>Metadata imported from a PLATES data file.</Description>
+			<Type>gpml:OldPlatesHeader</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<Comment>Since a Feature in GPML will often correspond to a PLATES polyline (if a PLATES file was the original source of data), we include an optional reference to a Plates-compatible header object. This is used to keep metadata around if we import from a PLATES data file.</Comment>
+		</Property>
+		<Property gpgim:defaultType="gml:Polygon">
+			<Name>gpml:outlineOf</Name>
+			<UserFriendlyName>Outline</UserFriendlyName>
+			<Description>Geometry specifying a closed or partial outline.</Description>
+			<Type>gml:Point</Type>
+			<Type>gml:OrientableCurve</Type>
+			<Type>gml:LineString</Type>
+			<Type>gml:MultiPoint</Type>
+			<Type>gml:Polygon</Type>
+			<Type>gpml:TopologicalPolygon</Type>
+			<Multiplicity>0..*</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+		</Property>
+		<Property>
+			<Name>gpml:pick</Name>
+			<Description>An (optional) reference to the MagneticAnomalyIdentification s recorded from this ship track data.</Description>
+			<Type>gpml:FeatureReference</Type>
+			<Multiplicity>0..*</Multiplicity>
+			<Comment>A feature reference because these data sometimes exist independently of each other, so they should both be gpml:Features.</Comment>
+			<Comment>Optional because you may get a bunch of picks all in close proximity and things stop being clear, odd datasets, etc.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:polarityChronId</Name>
+			<Description>The string name of the polarity chron based on the geomagnetic reversal timescale.</Description>
+			<Type>gpml:PolarityChronId</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<Comment>This identifier indicates which Polarity Chron this pick is linked to: other picks on different ship-tracks will share this Id if they belong to the same Chron. e.g. "C34b".</Comment>
+			<Comment>Note that we want this to be unique for each Chron, so the tradition of packing extra info like the 'young/old' value onto the end of the Id ("C34o0.2") is discouraged; polarityChronOffset can be used to store the young/old offset, and any miscellaneous extra information can go in metadata, gml:name, gml:description, or gpml:subcategory as appropriate.</Comment>
+			<Comment>It is called "polarity chron" because it is the 'chron' of all positions sharing the same polarity.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:polarityChronOffset</Name>
+			<Description>Specifies the location on the polarity chron, from youngest to oldest.</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<Comment>A number from 0.0 to 1.0, indicating the proportion from 'young' to 'old'; 0.0 = young, 1.0 = old; This property stores the offset of this pick's chron position compared to the synthetic chron.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:poleA95</Name>
+			<Description>Error circle based on uncertainty of the average of pole positions.</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:poleDm</Name>
+			<Description>VGP uncertainty, meridian.</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:poleDp</Name>
+			<Description>VGP uncertainty, parallel latitude.</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:polePosition</Name>
+			<Description></Description>
+			<Type>gml:Point</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
+		</Property>
+		<Property>
+			<Name>gpml:position</Name>
+			<UserFriendlyName>Position</UserFriendlyName>
+			<Description>When a feature’s geometry is described as a point, it is appropriate to use the Point geometry.</Description>
+			<Type>gml:Point</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:primarySlipComponent</Name>
+			<Description>For Faults with both Dip-Slip and Strike-Slip motion (sometimes termed "Oblique Slip"), this property indicates which of Dip-Slip or Strike-Slip is the primary component of the motion, if any.</Description>
+			<Type>gpml:SlipComponentEnumeration</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:rangeSet</Name>
+			<Description>The coverage or raster values at the corresponding 'gpml:domainSet' region-of-interest.</Description>
+			<Type>gml:File</Type>
+			<Multiplicity>1</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
+		</Property>
+		<Property>
+			<Name>gpml:reconstructionMethod</Name>
+			<Description>The method used to reconstruct feature geometry to paleo times.</Description>
+			<Type>gpml:ReconstructionMethodEnumeration</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:reconstructionPlateId</Name>
+			<Description>The plateID that will be used for reconstruction purposes.</Description>
+			<Type>gpml:plateId</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+		</Property>
+		<Property>
+			<Name>gpml:relativePlate</Name>
+			<Description>The plate that something is relative to.</Description>
+			<Type>gpml:plateId</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<Comment>This is currently used in MotionPath features as the plate that the motion is relative to.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:rheaFault</Name>
+			<!-- FIXME: Come up with a better description. -->
+			<Description>Rhea fault.</Description>
+			<Type>xsi:string</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:rightPlate</Name>
+			<Description>Annotation property describing the plate on the "right" side of the feature.</Description>
+			<Type>gpml:plateId</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<Comment>Not to be used for reconstruction purposes, as these properties would be an imprecise representation of the crust on each
+			side in many cases. Primarily of interest to the MidOceanRidge feature, where it is used for the purpose of a richer description.</Comment>
+			<Comment>Not a time-dependent property because, for MidOceanRidge at any rate, that's insanity. A MidOceanRidge -generates- crust. For other boundary features, like SubductionZone, this property is only really used as annotation, (i.e. "this SZ is mostly consuming plate 541") and doesn't need to be over-complex.</Comment>
+			<Comment>This property doesn't support multiple plateIds per side for similar reasons to the ones above; in the case of MidOceanRidge, the usefuless of this property hinges on the potential to e.g. interpolate between both sides of the MOR and determine velocity. If more than one plateId per side were supported, topology would have to be taken into consideration, and pieces would have to move at different rates - and so the MOR would have to be broken up into segments, PLATES style. Perhaps when we get segmented MORs in the next release GPGIM, we can consider these extra possibilities. Until then, there's really no point in making this more complex than it needs to be.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:rightUnit</Name>
+			<Description>Defines what is on the "Right" side of the contact, using an AbstractRockUnit.</Description>
+			<Type>gpml:FeatureReference</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<Comment>Assuming there is a suitable centerLineOf supplied, and understanding that the order of points in the line matters, we can establish a "Left" and "Right" side of the centerLine.</Comment>
+			<Comment>Particular implementations of AbstractRockUnit can include BasicRockUnit for simple free-text descriptions plus an extent, or more complex rock unit definitions.</Comment>
+		</Property>
+		<Property gpgim:defaultType="gml:MultiPoint">
+			<Name>gpml:seedPoints</Name>
+			<Description>The points from which the Flowline and MotionPath time-paths are generated.</Description>
+			<Type>gml:Point</Type>
+			<Type>gml:MultiPoint</Type>
+			<Multiplicity>1</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+		</Property>
+		<Property>
+			<!-- FIXME: Rename this from 'gpml:shapefileAttributes' to 'gpml:importedAttributes' since Shapefile is only one type of OGR-supported format. -->
+			<Name>gpml:shapefileAttributes</Name>
+			<Description>Attribute data imported from a Shapefile data file.</Description>
+			<Type>gpml:KeyValueDictionary</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<Comment>As a large amount of data may be imported from Shapefiles, and there is not always an obvious way to map from (arbitrary) shapefile attributes to GPML property names, the user may need to set up a mapping that defines which shapefile attributes should be mapped, and the GPML property they are mapped to.</Comment>
+			<Comment>For example, the user may have a data set with "PLATEID" and "NAME" shapefile properties - these need to be mapped to the Feature's gpml:reconstructionPlateId and gml:name properties. Storing the mapping is important so that data can be returned to the original shapefile attributes later.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:shipTrack</Name>
+			<Description>Optional reference to the MagneticAnomalyShipTrack that this pick originates from.</Description>
+			<Type>gpml:FeatureReference</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:side</Name>
+			<Description>Indicates which direction leads to the continental crust.</Description>
+			<Type>gpml:ContinentalBoundarySideEnumeration</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:slabEdgeType</Name>
+			<Description>The type of slab edge.</Description>
+			<Type>xsi:string</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:slabFlatLying</Name>
+			<Description>Whether the slab is flat lying or not.</Description>
+			<Type>xsi:boolean</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:slabFlatLyingDepth</Name>
+			<Description>The slab flat lying depth.</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:strikeSlip</Name>
+			<Description>The motion along the 'strike', or map-view line of the Fault.</Description>
+			<Type>gpml:StrikeSlipEnumeration</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:subcategory</Name>
+			<Description>A free-form text string to optionally assign one or more subcategories to a feature type.</Description>
+			<Type>xsi:string</Type>
+			<Multiplicity>0..*</Multiplicity>
+			<Comment>Every gpml:Feature can optionally have one or more subcategories assigned to it. These are free-form text strings, and behave very similarly to the gml:name property; they also possess a 'codeSpace=' attribute to indicate what convention was used when assigning this subcategory to this Feature.</Comment>
+			<Comment>Use of the .subcategory property is entirely optional, however it is useful in several situations. There are many possible subcategories of real-world:Features, and these are highly subjective, depending on scientist, dataset, and area of research. Permitting arbitrary subcategorisation in the GPGIM has two benefits. One, GPlates can to continue to treat those real-world:Features as the appropriate gpml:Feature since any subcategory must have the same properties as the parent gpml:Feature. Two, it allows the scientist to have a finer grain of control over the categorisation of those real-world:Features without messing around with XML trying to extend the GPGIM.</Comment>
+			<Comment>An example: Seamount s and Guyot s. A Guyot is a special case of Seamount with a flat top. Functionally, they are identical. A problem arises; do we create a GPGIM feature for both of them, or just use Seamount for both cases? Some scientists and datasets may not care about the distinction, and wish to treat everything as a gpml:Seamount without being forced to go over the data and classify everything. On the other hand, a "Guyot Expert" would be very interested in the distinction between the two. The .subcategory property allows you to do this, without forcing you to.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:subductionPolarity</Name>
+			<Description>Indicates the side of the line that the subducting slab is on.</Description>
+			<Type>gpml:SubductionPolarityEnumeration</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
+		</Property>
+		<Property>
+			<Name>gpml:subductionZoneAge</Name>
+			<Description>Age of subduction zone.</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:subductionZoneDeepDip</Name>
+			<Description>Subduction zone deep dig.</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:subductionZoneDepth</Name>
+			<Description>Subduction zone depth.</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:supersededRevision</Name>
+			<Description>Lists all revisions of this feature that were superseded by this one.</Description>
+			<Type>gpml:revisionId</Type>
+			<Multiplicity>0..*</Multiplicity>
+			<Comment>This is a more accurate way of keeping track of the past, older revisions of a feature.</Comment>
+			<Comment>It will be purged on occasion to ensure files do not get bloated from many small changes. Newly superseded revisionId s get unshifted onto the front/head of the list, older ones are at the end/tail of the list.</Comment>
+			<Comment>A simple linear 'version number' would fail if a feature collection was concurrently modified by multiple users and then merged.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:times</Name>
+			<Description>An array of time instants.</Description>
+			<!--
+				Developer note:
+				'gpml:Array' is currently the only *template* type (besides the time-dependent wrappers).
+				Currently GPlates assumes the template type is 'gml:TimePeriod' in the following ways:
+					(1) Edit Feature Properties widget selects Edit Time Sequence widget when it visits a 'gpml:Array' property.
+					(2) Add Property dialog selects Edit Time Sequence widget when it finds the 'gpml:Array' string (eg, specified here).
+				Later, when other template types are supported, we'll need to be able to specify the template type in this (XML) file.
+				And, in GPlates, we'll also need to be able to select the appropriate edit widget based not only on 'gpml:Array'
+				but also on its template type (essentially both determine the actual type of the property).
+			-->
+			<Type>gpml:Array</Type>
+			<Multiplicity>1</Multiplicity>
+			<Comment>Typically used to store the time instants at which Flowline and MotionPath features output points along the time-path.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:totalReconstructionPole</Name>
+			<Description>A sequence of FiniteRotations and associated gml:TimeInstants, with FiniteRotationSlerp interpolation between them.</Description>
+			<Type>gpml:FiniteRotation</Type>
+			<Multiplicity>1</Multiplicity>
+			<TimeDependent>gpml:IrregularSampling</TimeDependent>
+		</Property>
+		<Property>
+			<Name>gpml:trail</Name>
+			<Description>HotSpots can be associated with zero, one, or more HotSpotTrails.</Description>
+			<Type>gpml:FeatureReference</Type>
+			<Multiplicity>0..*</Multiplicity>
+			<Comment>HotSpots can be associated with zero, one, or more HotSpotTrails. Zero because there might not be any data about the movement of the HotSpot; One will be the most common case; and Two or more for disjoint HotSpotTrails. It is a reference to a HotSpotTrail, because HotSpotTrails may be rotated independently, and should be gpml:Features in their own right.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:truncatedSection</Name>
+			<Description>Optional references to other Features that the user has indicated are supposed to be the same feature.</Description>
+			<Type>gpml:FeatureReference</Type>
+			<Multiplicity>0..*</Multiplicity>
+			<Comment>While GPlates will treat each individual gpml:Feature separately, it is intended as a reminder that this Feature is part of a larger whole.</Comment>
+			<Comment>A common problem in PLATES datasets is the lack of any deformable geometry. This is often hacked around by creating multiple 'features' for the same real-world thing, for example, an Isochron getting subducted might have have been 'cut up' into multiple PLATES 'IS' features, to simulate the Isochron slowly disappearing. One day, this property will be used by a magical algorithm to undo all the 'cutting up' of features done in data sets for the purpose of hacking deformable geometry into PLATES.</Comment>
+		</Property>
+		<Property gpgim:defaultType="gml:LineString">
+			<Name>gpml:unclassifiedGeometry</Name>
+			<UserFriendlyName>Unclassified / miscellaneous</UserFriendlyName>
+			<Description>All geometry defined for the feature where the purpose is not given or is unclear.</Description>
+			<Type>gml:Point</Type>
+			<Type>gml:OrientableCurve</Type>
+			<Type>gml:LineString</Type>
+			<Type>gml:MultiPoint</Type>
+			<Type>gml:Polygon</Type>
+			<Type>gpml:TopologicalLine</Type>
+			<Type>gpml:TopologicalPolygon</Type>
+			<Multiplicity>0..*</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
+		</Property>
+		<Property>
+			<Name>gml:validTime</Name>
+			<Description>The period of time the feature is in existence.</Description>
+			<Type>gml:TimePeriod</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+	</PropertyList>
+	
+	
+	
+	
+	
+	<!-- List of feature classes defined by the GPGIM. -->
+	<!-- NOTE: New feature classes can be added here without having to update the GPlates source code. -->
+	<FeatureClassList>
+		<!--
+			NOTE: Please keep the <FeatureClass> elements ordered alphabetically by their '<Name>'.
+			Note that some text editors (like Notepad++) let you collapse a level - for example, collapsing
+			level 4 collapses all the property definitions making it easier to scroll through the feature classes.
+		-->
+		<FeatureClass>
+			<Name>gpml:AbsoluteReferenceFrame</Name>
+			<Description>A means of describing the motion of plates over time, relative to a fixed point or frame.</Description>
+			<ClassType>abstract</ClassType>
+			<Inherits>gpml:TotalReconstructionSequence</Inherits>
+			<Property>gpml:absoluteReferenceFrame</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gml:AbstractFeature</Name>
+			<Description>An identifiable real-world object in a selected domain of discourse.</Description>
+			<ClassType>abstract</ClassType>
+			<Property>gml:name</Property>
+			<Property>gml:description</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:AbstractFeature</Name>
+			<Description>Highest-level abstract parent of all GPML Features.</Description>
+			<ClassType>abstract</ClassType>
+			<Inherits>gml:AbstractFeature</Inherits>
+			<!--
+				NOTE: 'gpml:identity' and 'gpml:revision' are special properties.
+				They are hard-coded into all 'gpml' feature types and don't need to be listed here.
+			-->
+			<Property>gpml:supersededRevision</Property>
+			<Property>gpml:oldPlatesHeader</Property>
+			<Property>gpml:subcategory</Property>
+			<Property>gpml:shapefileAttributes</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:AbstractField</Name>
+			<Description>Abstract superclass for various field data, including stand-alone Contours and outlines.</Description>
+			<ClassType>abstract</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:outlineOf</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:AbstractGeologicalContact</Name>
+			<Description>Abstract base for all Geological Contacts.</Description>
+			<ClassType>abstract</ClassType>
+			<Inherits>gpml:AbstractGeologicalPlane</Inherits>
+			<Property>gpml:leftUnit</Property>
+			<Property>gpml:rightUnit</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:AbstractGeologicalPlane</Name>
+			<Description>Abstract base for all Geological Surface Planes, including Surfaces such as Bedding Surfaces, Cleavage, intangible planes such as Fold Plane, as well as Contacts and Faults.</Description>
+			<ClassType>abstract</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:dipSide</Property>
+			<Property>gpml:dipAngle</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:centerLineOf</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:AbstractRockUnit</Name>
+			<Description>Abstract base for all geological rock units.</Description>
+			<ClassType>abstract</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:ArtificialFeature</Name>
+			<Description>Abstract base for geometry that has been arbitrarily created, or possibly derived from a TangibleFeature.</Description>
+			<ClassType>abstract</ClassType>
+			<Inherits>gpml:ReconstructableFeature</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:AseismicRidge</Name>
+			<Description>Miscellaneous inactive ridge feature.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:BasicRockUnit</Name>
+			<Description>Basic definition of a geological rock unit.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractRockUnit</Inherits>
+			<!-- FIXME: 'gpml:position' was not originally in the GPGIM - is this 'gml:Point' property necessary? -->
+			<Property>gpml:position</Property>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Basin</Name>
+			<Description>Regional scale depression of erosional or structural origin.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Bathymetry</Name>
+			<Description>Sea floor depth data, including bathymetric contours and grids.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractField</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:ClosedContinentalBoundary</Name>
+			<Description>Rigid closed polygon continental crust boundary that can be reconstructed to any time.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:ArtificialFeature</Inherits>
+			<Property>gpml:crust</Property>
+			<Property>gpml:edge</Property>
+			<Property>gpml:boundary</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:ClosedPlateBoundary</Name>
+			<Description>Rigid closed polygon plate boundary that can be reconstructed to any time.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:ArtificialFeature</Inherits>
+			<Property>gpml:boundary</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Coastline</Name>
+			<Description>Present day coastline.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:ContinentalFragment</Name>
+			<Description>A fragment of continental crust that has become detached.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:ContinentalRift</Name>
+			<Description>A spreading rift on continental crust.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TectonicSection</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Craton</Name>
+			<Description>Large portion of a continental plate that has been relatively undisturbed since the Precambrian era and includes both shield and platform layers.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:CrustalThickness</Name>
+			<Description>Crustal thickness data, typically represented using grids, related to Isopach data.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractField</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<!--
+				FIXME: Do we need this feature type ?
+				Perhaps instead we should use arbitrary (point-geometry) feature types to build deforming topologies.
+			-->
+			<Name>gpml:DisplacementPoint</Name>
+			<Description>A position used to build deforming regions.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:ReconstructableFeature</Inherits>
+			<Property>gpml:position</Property>
+			<Property>gpml:multiPosition</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:DynamicTopography</Name>
+			<Description>Elevation differences caused by the flow within the Earth's mantle.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractField</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:ExtendedContinentalCrust</Name>
+			<Description>Continental crust which has been pulled apart.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Fault</Name>
+			<Description>Fracture in a rock body along which observable relative displacement has occurred between adjacent blocks.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractGeologicalContact</Inherits>
+			<Property>gpml:strikeSlip</Property>
+			<Property>gpml:dipSlip</Property>
+			<Property>gpml:primarySlipComponent</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Flowline</Name>
+			<Description>Tracks plate motion away from spreading ridges over time using half-stage rotations.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TimeVariantFeature</Inherits>
+			<Property>gpml:seedPoints</Property>
+			<Property>gpml:times</Property>
+			<Property>gpml:reconstructionMethod</Property>
+			<Property>gpml:leftPlate</Property>
+			<Property>gpml:rightPlate</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:FoldPlane</Name>
+			<Description>Inferred plane of geological folding.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractGeologicalPlane</Inherits>
+			<Property>gpml:foldAnnotation</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<!--
+				FIXME: Add an enumeration to 'gpml:BasicRockUnit' instead of inheriting from it.
+				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
+			-->
+			<Name>gpml:FossilCollection_small</Name>
+			<!-- FIXME: Come up with a better description. And what quantifies 'small' ? -->
+			<Description>A collection of small fossils.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:BasicRockUnit</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<!--
+				FIXME: Add an enumeration to 'gpml:BasicRockUnit' instead of inheriting from it.
+				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
+			-->
+			<Name>gpml:FossilCollection_medium</Name>
+			<!-- FIXME: Come up with a better description. And what quantifies 'medium' ? -->
+			<Description>A collection of medium fossils.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:BasicRockUnit</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<!--
+				FIXME: Add an enumeration to 'gpml:BasicRockUnit' instead of inheriting from it.
+				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
+			-->
+			<Name>gpml:FossilCollection_large</Name>
+			<!-- FIXME: Come up with a better description. And what quantifies 'large' ? -->
+			<Description>A collection of large fossils.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:BasicRockUnit</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:FractureZone</Name>
+			<Description>Inactive fracture in the crust that was once part of a Transform boundary.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TectonicSection</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:FractureZoneIdentification</Name>
+			<Description>Pick to identify fracture zone.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:position</Property>
+			<Property>gpml:polarityChronId</Property>
+			<Property>gpml:polarityChronOffset</Property>
+			<Property>gpml:shipTrack</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:GeologicalLineation</Name>
+			<Description>Undefined linear region.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:GeologicalPlane</Name>
+			<Description>Surface plane indicator based on rock unit observations, e.g. Bedding and Cleavage planes.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractGeologicalPlane</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:GlobalElevation</Name>
+			<Description>Merged bathymetric and topographic elevation data.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractField</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Gravimetry</Name>
+			<Description>Gravity grids, outlines, and contours.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractField</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:HeatFlow</Name>
+			<Description>Oceanic heat-flow data.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractField</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:HotSpot</Name>
+			<Description>Location in the mantle linked with high igneous activity.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:position</Property>
+			<Property>gpml:multiPosition</Property>
+			<Property>gpml:trail</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:HotSpotTrail</Name>
+			<Description>Used to track the paleo-movement of HotSpots.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:mark</Property>
+			<Property>gpml:evidence</Property>
+			<Property>gpml:errorBounds</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:InferredPaleoBoundary</Name>
+			<Description>Part of a plate boundary defined by hand for real-world geology that no longer exists.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:ArtificialFeature</Inherits>
+			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:errorBounds</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:IslandArc</Name>
+			<Description>Type of volcanic arc formed by plate tectonics as an oceanic plate subducts under another and produces magma which rises to form the arc.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:isActive</Property>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Isochron</Name>
+			<Description>Simple line defining points of equal age for oceanic crust.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:conjugate</Property>
+			<Property>gpml:conjugatePlateId</Property>
+			<Property>gpml:polarityChronId</Property>
+			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:LargeIgneousProvince</Name>
+			<Description>An extensive region of basalts resulting from flood basalt volcanism.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:MagneticAnomalyIdentification</Name>
+			<Description>Magnetic 'pick' to identify age of oceanic crust based on magnetostratigraphic time-scale.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:position</Property>
+			<Property>gpml:multiPosition</Property>
+			<Property>gpml:polarityChronId</Property>
+			<Property>gpml:polarityChronOffset</Property>
+			<Property>gpml:shipTrack</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:MagneticAnomalyShipTrack</Name>
+			<Description>Ship Track data for Magnetic 'pick's.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:pick</Property>
+			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Magnetics</Name>
+			<Description>Magnetic field feature for grid data and contours.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractField</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:MantleDensity</Name>
+			<Description>Density of the mantle, computed using Seismic Tomography.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractField</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:MeshNode</Name>
+			<Description>Global positions to calculate plate velocities at.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:ReconstructableFeature</Inherits>
+			<Property>gpml:meshPoints</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:MidOceanRidge</Name>
+			<Description>A spreading rift on oceanic crust.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TectonicSection</Inherits>
+			<Property>gpml:isActive</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:MotionPath</Name>
+			<Description>Tracks absolute plate motion over time.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:ReconstructableFeature</Inherits>
+			<Property>gpml:seedPoints</Property>
+			<Property>gpml:times</Property>
+			<Property>gpml:reconstructionMethod</Property>
+			<Property>gpml:relativePlate</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<!-- FIXME: This should represent a geological feature type, not a sample from a specific database. -->
+			<Name>gpml:NavdatSample</Name>
+			<Description>Abstract base class representing a sample from the North American Volcanic and Intrusive Rock Database (NAVDAT).</Description>
+			<ClassType>abstract</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:position</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<!-- FIXME: Add a chemical composition enumeration to 'gpml:NavdatSample' instead of inheriting from it. -->
+			<Name>gpml:NavdatSampleMafic</Name>
+			<!-- FIXME: Come up with a better description. -->
+			<Description>A sample from the NAVDAT database with mafic chemical composition.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:NavdatSample</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<!-- FIXME: Add a chemical composition to 'gpml:NavdatSample' instead of inheriting from it. -->
+			<Name>gpml:NavdatSampleIntermediate</Name>
+			<!-- FIXME: Come up with a better description. -->
+			<Description>A sample from the NAVDAT database with chemical composition intermediate between mafic and felsic.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:NavdatSample</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<!-- FIXME: Adda chemical composition to 'gpml:NavdatSample' instead of inheriting from it. -->
+			<Name>gpml:NavdatSampleFelsicLow</Name>
+			<!-- FIXME: Come up with a better description. -->
+			<Description>A sample from the NAVDAT database with low felsic chemical composition.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:NavdatSample</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<!-- FIXME: Adda chemical composition to 'gpml:NavdatSample' instead of inheriting from it. -->
+			<Name>gpml:NavdatSampleFelsicHigh</Name>
+			<!-- FIXME: Come up with a better description. -->
+			<Description>A sample from the NAVDAT database with high felsic chemical composition.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:NavdatSample</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:OceanicAge</Name>
+			<Description>Age of seafloor, for contours and grids.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractField</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:OldPlatesGridMark</Name>
+			<Description>Backwards-compatibility with PLATES "GR" code.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:ArtificialFeature</Inherits>
+			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Ophiolite</Name>
+			<Description>Uplifted oceanic crust attached to edges of continental plates.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:position</Property>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:OrogenicBelt</Name>
+			<Description>A linear or arcuate zone on a regional scale which has undergone compressional tectonics.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TectonicSection</Inherits>
+			<Property>gpml:subductionPolarity</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:PassiveContinentalBoundary</Name>
+			<Description>Border line between oceanic and continental crust.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TectonicSection</Inherits>
+			<Property>gpml:edge</Property>
+			<Property>gpml:side</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Pluton</Name>
+			<Description>A body of intrusive igneous rock.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:position</Property>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<!-- A political boundary in a geological information model ? -->
+			<Name>gpml:PoliticalBoundary</Name>
+			<!-- Come up with a better description or remove/rename this feature type. -->
+			<Description>A political boundary.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:ArtificialFeature</Inherits>
+			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<!-- FIXME: This should really be part of the 'gpml:TopologicalNetwork' property type (not a feature type). -->
+			<Name>gpml:PolygonCentroidPoint</Name>
+			<Description>The centroid of a polygon used when meshing a deforming region that contains non-deforming interior blocks.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:ReconstructableFeature</Inherits>
+			<Property>gpml:position</Property>
+			<Property>gpml:multiPosition</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:PseudoFault</Name>
+			<Description>Fault-like contact caused by ridge propagation.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<!-- FIXME: 'gpml:AbstractField' should probably be used instead. -->
+			<Name>gpml:Raster</Name>
+			<Description>Generic multi-band, geo-referenced gridded image data.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractFeature</Inherits>
+			<Property>gpml:domainSet</Property>
+			<Property>gpml:rangeSet</Property>
+			<Property>gpml:bandNames</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:ReconstructableFeature</Name>
+			<Description>Parent of all GPML Features we may want to associate with a plateId and are reconstructable.</Description>
+			<ClassType>abstract</ClassType>
+			<Inherits>gpml:TimeVariantFeature</Inherits>
+			<Property>gpml:reconstructionPlateId</Property>
+			<Property>gpml:truncatedSection</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:ReconstructionFeature</Name>
+			<Description>Top-level abstract class that all rotations inherit from.</Description>
+			<ClassType>abstract</ClassType>
+			<Inherits>gpml:AbstractFeature</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<!--
+				FIXME: Add an enumeration to 'gpml:BasicRockUnit' instead of inheriting from it.
+				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
+			-->
+			<Name>gpml:RockUnit_carbonate</Name>
+			<Description></Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:BasicRockUnit</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<!--
+				FIXME: Add an enumeration to 'gpml:BasicRockUnit' instead of inheriting from it.
+				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
+			-->
+			<Name>gpml:RockUnit_siliciclastic</Name>
+			<Description></Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:BasicRockUnit</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<!--
+				FIXME: Add an enumeration to 'gpml:BasicRockUnit' instead of inheriting from it.
+				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
+			-->
+			<Name>gpml:RockUnit_evaporite</Name>
+			<Description></Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:BasicRockUnit</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<!--
+				FIXME: Add an enumeration to 'gpml:BasicRockUnit' instead of inheriting from it.
+				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
+			-->
+			<Name>gpml:RockUnit_organic</Name>
+			<Description></Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:BasicRockUnit</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<!--
+				FIXME: Add an enumeration to 'gpml:BasicRockUnit' instead of inheriting from it.
+				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
+			-->
+			<Name>gpml:RockUnit_chemical</Name>
+			<Description></Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:BasicRockUnit</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<!--
+				FIXME: Add an enumeration to 'gpml:BasicRockUnit' instead of inheriting from it.
+				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
+			-->
+			<Name>gpml:RockUnit_plutonic</Name>
+			<Description></Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:BasicRockUnit</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<!--
+				FIXME: Add an enumeration to 'gpml:BasicRockUnit' instead of inheriting from it.
+				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
+			-->
+			<Name>gpml:RockUnit_volcanic</Name>
+			<Description></Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:BasicRockUnit</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<!--
+				FIXME: Add an enumeration to 'gpml:BasicRockUnit' instead of inheriting from it.
+				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
+			-->
+			<Name>gpml:RockUnit_metamorphic</Name>
+			<Description></Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:BasicRockUnit</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<!--
+				FIXME: Add an enumeration to 'gpml:BasicRockUnit' instead of inheriting from it.
+				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
+			-->
+			<Name>gpml:RockUnit_indeterminate_igneous</Name>
+			<Description></Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:BasicRockUnit</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Roughness</Name>
+			<Description>Roughness data computed from Gravity grids.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractField</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<!-- FIXME: Has same issue as 'gpml:Raster' versus 'gpml:AbstractField'. -->
+			<Name>gpml:ScalarField3D</Name>
+			<Description>Generic 3D field of scalar values representing arbitrary sub-surface data.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractFeature</Inherits>
+			<Property>gpml:file</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Seamount</Name>
+			<Description>Igneous cone-shaped mountain that is below sea level.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:position</Property>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:SedimentThickness</Name>
+			<Description>Isopach data indicating sediment thickness using grids and/or contours.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractField</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:SlabEdge</Name>
+			<Description></Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:subductionPolarity</Property>
+			<Property>gpml:slabEdgeType</Property>
+			<Property>gpml:slabFlatLying</Property>
+			<Property>gpml:slabFlatLyingDepth</Property>
+			<Property>gpml:subductionZoneAge</Property>
+			<Property>gpml:subductionZoneDeepDip</Property>
+			<Property>gpml:subductionZoneDepth</Property>
+			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<!--
+				Some things to consider regarding small-circles-as-features:
+			
+				* small-circles may have been created via centre-plus-multiple-radii; do we store
+				these as separate small circles, or make provision for multiple radii to be stored
+				in a single feature?
+
+				* small-circle centres may have been created via a stage pole; do we store this fact, and
+				any stage-pole ingredients, so that we can re-create the stage-pole centre dynamically for
+				different reconstruction trees?radius
+
+				The simplest answers are "no" to both of the above; so the current implementation (below) stores
+				only a centre and a radius.
+			-->
+			<Name>gpml:SmallCircle</Name>
+			<Description>A global position and small circle radius for small circle visualisations.</Description>
+			<ClassType>concrete</ClassType>
+			<!--
+				Should small circles be reconstructable? I'm forcing them to be reconstructable for now
+				so that they'll get treated along with other reconstructable features.
+			-->
+			<Inherits>gpml:ReconstructableFeature</Inherits>
+			<Property>gpml:centre</Property>
+			<Property>gpml:angularRadius</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:SpreadingAsymmetry</Name>
+			<Description>Asymmetry in sea-floor spreading rate.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractField</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:SpreadingRate</Name>
+			<Description>Sea-floor spreading rate.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractField</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Stress</Name>
+			<Description>Stress grids and contour data.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractField</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:SubductionZone</Name>
+			<Description>A zone of descending lithospheric plate.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TectonicSection</Inherits>
+			<Property>gpml:subductionPolarity</Property>
+			<Property>gpml:islandArc</Property>
+			<Property>gpml:subductionZoneAge</Property>
+			<Property>gpml:subductionZoneDeepDip</Property>
+			<Property>gpml:subductionZoneDepth</Property>
+			<Property>gpml:isActive</Property>
+			<Property>gpml:slabEdgeType</Property>
+			<Property>gpml:rheaFault</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Suture</Name>
+			<Description>Large scale structural feature associated with continental collision, separating crust that once belonged to two different plates.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:TangibleFeature</Name>
+			<Description>Abstract base for real geological features (compare with 'ArtificalFeature').</Description>
+			<ClassType>abstract</ClassType>
+			<Inherits>gpml:ReconstructableFeature</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:TectonicSection</Name>
+			<Description>Superclass to group ridgelike and related tectonic features together.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:reconstructionMethod</Property>
+			<Property>gpml:leftPlate</Property>
+			<Property>gpml:rightPlate</Property>
+			<Property>gpml:conjugatePlateId</Property>
+			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:TerraneBoundary</Name>
+			<Description>Regional scale miscellaneous contact line between two rock units.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractGeologicalContact</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:TimeVariantFeature</Name>
+			<Description>Abstract base class for all features that have a valid time period (compared to instantaneous features).</Description>
+			<ClassType>abstract</ClassType>
+			<Inherits>gpml:AbstractFeature</Inherits>
+			<Property>gml:validTime</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Topography</Name>
+			<Description>Elevation data, including topographic contours and grids.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractField</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:TopologicalClosedPlateBoundary</Name>
+			<Description>A plate boundary formed by rubber-banding vertex lists, which are obtained by intersecting the geometry of other features.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TopologicalFeature</Inherits>
+			<!-- NOTE: this might change to effectivePlateId -->
+			<Property>gpml:reconstructionPlateId</Property>
+			<Property>gpml:boundary</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<!--
+				FIXME: It is now possible and desirable to allow any feature type to have topological geometry properties.
+				This means features inheriting directly or indirectly from 'gpml:ReconstructableFeature' will obtain a plate id
+				that is not used to generate the paleo geometry positions (since topologically referenced geometries are used instead).
+				It also means that the usage of 'gpml:TopologicalFeature' as a distinction between topological and non-topological
+				feature types becomes questionable.
+				Perhaps 'gpml:TopologicalFeature' should be removed and allow features, inheriting from 'gpml:ReconstructableFeature',
+				to have topological geometry properties (like 'gpml:TopologicalLine' or 'gpml:TopologicalPolygon') and
+				make 'gpml:reconstructionPlateId' optional and its meaning a little looser, ie, either can be used to reconstruct
+				a non-topological geometry property or it means something else (like the plate id of the plate
+				bounded by a 'gpml:TopologicalPolygon' or the plate that a 'gpml:TopologicalLine' is essentially attached to
+				if the topological line is a deforming subduction zone boundary for example).
+			-->
+			<Name>gpml:TopologicalFeature</Name>
+			<Description>Abstract base class for features that topologically reference geometries from other features.</Description>
+			<ClassType>abstract</ClassType>
+			<Inherits>gpml:TimeVariantFeature</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:TopologicalNetwork</Name>
+			<Description>A triangulated region inside a topological boundary, comprising internal constraint geometries and excluding interior polygons, used to calculate velocities in deforming regions.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TopologicalFeature</Inherits>
+			<!-- NOTE: this might change to effectivePlateId -->
+			<Property>gpml:reconstructionPlateId</Property>
+			<Property>gpml:network</Property>
+			<Property>gpml:networkShapeFactor</Property>
+			<Property>gpml:networkMaxEdge</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:TopologicalSlabBoundary</Name>
+			<!-- FIXME: Come up with a better description. -->
+			<Description>A topological closed boundary around a subducting slab.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TopologicalClosedPlateBoundary</Inherits>
+			<Property>gpml:slabFlatLying</Property>
+			<Property>gpml:slabFlatLyingDepth</Property>
+			<Property>gpml:dipAngle</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:TotalReconstructionSequence</Name>
+			<Description>A sequence of total reconstruction poles for a specific fixed/moving plate pair.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:ReconstructionFeature</Inherits>
+			<Property>gpml:fixedReferenceFrame</Property>
+			<Property>gpml:movingReferenceFrame</Property>
+			<Property>gpml:totalReconstructionPole</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Transform</Name>
+			<Description>Regional scale strike-slip plate boundary.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TectonicSection</Inherits>
+			<Property>gpml:motion</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:TransitionalCrust</Name>
+			<Description>Undefined region between continental crust and oceanic crust.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Unconformity</Name>
+			<Description>Surface of contact between two differing rock units.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractGeologicalContact</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:UnknownContact</Name>
+			<Description>Regional scale unknown geological contact line.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:AbstractGeologicalContact</Inherits>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:VirtualGeomagneticPole</Name>
+			<Description>Magnetic pole location consistent with the observed direction of remanence at a particular location.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:averageSampleSitePosition</Property>
+			<Property>gpml:polePosition</Property>
+			<Property>gpml:averageInclination</Property>
+			<Property>gpml:averageDeclination</Property>
+			<Property>gpml:poleA95</Property>
+			<Property>gpml:poleDp</Property>
+			<Property>gpml:poleDm</Property>
+				<!-- FIXME:  Should change this to a gml:TimeInstant rather than an xsi:double. -->
+			<Property>gpml:averageAge</Property>
+			<Property>gpml:locationNames</Property>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:Volcano</Name>
+			<Description>An opening in the crust, which allows magma to escape from below.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:position</Property>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+	</FeatureClassList>
+</GPGIM>

@@ -89,7 +89,7 @@ namespace
 			GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
 				key,
 				plateid_value,
-				GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"));
+				GPlatesPropertyValues::StructuralType::create_xsi("integer"));
 			dictionary->elements().push_back(element);
 		}
 
@@ -104,7 +104,7 @@ namespace
 		GPlatesPropertyValues::GpmlKeyValueDictionaryElement anchor_element(
 			key,
 			anchor_value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"));
+			GPlatesPropertyValues::StructuralType::create_xsi("integer"));
 		dictionary->elements().push_back(anchor_element);	
 
 		// Reconstruction time.
@@ -115,7 +115,7 @@ namespace
 		GPlatesPropertyValues::GpmlKeyValueDictionaryElement time_element(
 			key,
 			time_value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("double"));
+			GPlatesPropertyValues::StructuralType::create_xsi("double"));
 		dictionary->elements().push_back(time_element);	
 
 		// Referenced files.
@@ -154,7 +154,7 @@ namespace
 			GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
 				key,
 				file_value,
-				GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"));
+				GPlatesPropertyValues::StructuralType::create_xsi("string"));
 			dictionary->elements().push_back(element);	
 		}
 

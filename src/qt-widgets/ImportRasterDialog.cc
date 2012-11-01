@@ -570,8 +570,8 @@ GPlatesQtWidgets::ImportRasterDialog::create_range_set(
 
 	// Items common to both branches.
 	const TimeDependentRasterSequence::sequence_type &sequence = d_raster_sequence.get_sequence();
-	static const TemplateTypeParameterType GML_FILE_VALUE_TYPE =
-		TemplateTypeParameterType::create_gml("File");
+	static const StructuralType GML_FILE_VALUE_TYPE =
+		StructuralType::create_gml("File");
 
 	if (time_dependent_raster)
 	{
@@ -670,8 +670,8 @@ GPlatesQtWidgets::ImportRasterDialog::create_domain_set() const
 
 	// Then wrap it up in a constant value.
 	// FIXME: We need to allow the user to create time-dependent georeferencing.
-	static const TemplateTypeParameterType VALUE_TYPE =
-		TemplateTypeParameterType::create_gml("RectifiedGrid");
+	static const StructuralType VALUE_TYPE =
+		StructuralType::create_gml("RectifiedGrid");
 	return GpmlConstantValue::create(rectified_grid, VALUE_TYPE);
 }
 

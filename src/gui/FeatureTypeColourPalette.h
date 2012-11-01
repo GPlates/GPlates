@@ -37,6 +37,12 @@
 #include "model/FeatureType.h"
 #include "HTMLColourNames.h"
 
+
+namespace GPlatesModel
+{
+	class Gpgim;
+}
+
 namespace GPlatesGui
 {
 	class Colour;
@@ -48,9 +54,13 @@ namespace GPlatesGui
 	{
 	public:
 
+		/**
+		 * The GPGIM is used to query all feature types available.
+		 */
 		static
 		non_null_ptr_type
-		create();
+		create(
+				const GPlatesModel::Gpgim &gpgim);
 
 		virtual
 		boost::optional<Colour>
@@ -75,7 +85,8 @@ namespace GPlatesGui
 
 	private:
 
-		FeatureTypeColourPalette();
+		FeatureTypeColourPalette(
+				const GPlatesModel::Gpgim &gpgim);
 
 		/**
 		 * A mapping of FeatureType to Colours.

@@ -38,7 +38,6 @@
 #include "PointOnSphere.h"
 #include "PolylineOnSphere.h"
 #include "PolygonOnSphere.h"
-#include "GridOnSphere.h"
 #include "GreatCircleArc.h"
 #include "GreatCircle.h"
 #include "SmallCircle.h"
@@ -463,19 +462,6 @@ GPlatesMaths::operator*(
 {
 	UnitVector3D axis = r * s.axis_vector();
 	return SmallCircle::create_cosine_colatitude(axis, s.cos_colatitude());
-}
-
-
-const GPlatesMaths::GridOnSphere
-GPlatesMaths::operator*(
-		const FiniteRotation &r,
-		const GridOnSphere &g)
-{
-	SmallCircle sc = r * g.lineOfLat();
-	GreatCircle gc = r * g.lineOfLon();
-	PointOnSphere p = r * g.origin();
-
-	return GridOnSphere(sc, gc, p, g.deltaAlongLat(), g.deltaAlongLon());
 }
 
 

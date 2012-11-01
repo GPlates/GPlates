@@ -115,8 +115,7 @@ namespace GPlatesFileIO
 				// Check if the feature is topological.
 				if (!classifications.test(TOPOLOGICAL)) // Only test if not classified already...
 				{
-					if (GPlatesAppLogic::TopologyUtils::is_topological_closed_plate_boundary_feature(*feature.handle_ptr()) ||
-						GPlatesAppLogic::TopologyUtils::is_topological_network_feature(*feature.handle_ptr()))
+					if (GPlatesAppLogic::TopologyUtils::is_topological_geometry_feature(feature))
 					{
 						classifications.set(TOPOLOGICAL);
 					}

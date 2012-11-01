@@ -126,16 +126,16 @@ GPlatesQtWidgets::EditShapefileAttributesWidget::update_property_value_from_widg
 				d_key_value_dictionary_ptr->elements().at(row);
 
 
-			static const GPlatesPropertyValues::TemplateTypeParameterType string_type =
-				GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string");
-			static const GPlatesPropertyValues::TemplateTypeParameterType integer_type =
-				GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer");
-			static const GPlatesPropertyValues::TemplateTypeParameterType double_type =
-				GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("double");
+			static const GPlatesPropertyValues::StructuralType string_type =
+				GPlatesPropertyValues::StructuralType::create_xsi("string");
+			static const GPlatesPropertyValues::StructuralType integer_type =
+				GPlatesPropertyValues::StructuralType::create_xsi("integer");
+			static const GPlatesPropertyValues::StructuralType double_type =
+				GPlatesPropertyValues::StructuralType::create_xsi("double");
 
 			// Get the existing key and type. 
 			GPlatesPropertyValues::XsString::non_null_ptr_type key = dictionary_element.key();
-			GPlatesPropertyValues::TemplateTypeParameterType type = dictionary_element.value_type();
+			GPlatesPropertyValues::StructuralType type = dictionary_element.value_type();
 
 			QString item_string = table_elements->item(row,column)->text();	
 

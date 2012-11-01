@@ -32,6 +32,7 @@
 #include <QString>
 
 #include "ReconstructedFeatureGeometry.h"
+#include "TopologyGeometryType.h"
 
 #include "maths/GeometryOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -40,8 +41,9 @@
 #include "model/FeatureId.h"
 
 #include "property-values/GpmlPropertyDelegate.h"
-#include "property-values/GpmlTopologicalIntersection.h"
+#include "property-values/GpmlTopologicalNetwork.h"
 #include "property-values/GpmlTopologicalSection.h"
+#include "property-values/StructuralType.h"
 
 
 namespace GPlatesMaths
@@ -64,22 +66,23 @@ namespace GPlatesAppLogic
 	namespace TopologyInternalUtils
 	{
 		/**
+		 * Determines the type of topological geometry property value.
+		 *
+		 * Returns boost::none if the specified property is not topological.
+		 */
+		boost::optional<GPlatesPropertyValues::StructuralType>
+		get_topology_geometry_property_value_type(
+				const GPlatesModel::FeatureHandle::const_iterator &property);
+
+
+		/**
 		 * Creates and returns a gpml topological section property value that references
 		 * the geometry property @a geometry_property.
 		 *
 		 * Returns false if @a geometry_property is invalid or does not refer to one
-		 * of @a GmlPoint, @a GmlLineString or @a GmlPolygon.
+		 * of @a GmlPoint, @a GmlLineString, @a GmlPolygon or @a GpmlTopologicalLine.
 		 *
 		 * FIXME: Don't return false for a @a GmlMultiPoint.
-		 *
-		 * If @a start_intersecting_geometry_property and/or @a end_intersecting_geometry_property
-		 * is true (and if @a present_day_reference_point is true) then appropriate
-		 * start and end @a GpmlTopologicalIntersection objects are set on the
-		 * topological section being created (provided it is of type
-		 * @a GpmlTopologicalLineSection).
-		 * NOTE: These should only be set if the previous/next sections relative
-		 * to the topological section (in the topological polygon) are intersecting
-		 * (or contain geometry that is intersectable such as line geometry).
 		 *
 		 * @a reverse_order is only used if a @a GpmlTopologicalLineSection is returned.
 		 *
@@ -93,45 +96,40 @@ namespace GPlatesAppLogic
 		boost::optional<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
 		create_gpml_topological_section(
 				const GPlatesModel::FeatureHandle::iterator &geometry_property,
-				bool reverse_order = false,
-				const boost::optional<GPlatesModel::FeatureHandle::iterator>
-						&start_intersecting_geometry_property = boost::none,
-				const boost::optional<GPlatesModel::FeatureHandle::iterator>
-						&end_intersecting_geometry_property = boost::none,
-				const boost::optional<GPlatesMaths::PointOnSphere> &
-						present_day_reference_point = boost::none);
+				bool reverse_order = false);
 
 
 		/**
-		 * Creates and returns a gpml topological intersection property value that references
-		 * the geometry property @a adjacent_geometry_property and has unrotated click point
-		 * @a present_day_reference_point.
+		 * Creates and returns a gpml topological network interior that references
+		 * the geometry property @a geometry_property.
 		 *
-		 * Returns false if @a adjacent_geometry_property is invalid or does not refer to one
-		 * of @a GmlLineString or @a GmlPolygon - this is because point and multi-point
-		 * are not considered intersectable geometries.
+		 * Returns false if @a geometry_property is invalid or does not refer to one of
+		 * @a GmlPoint, @a GmlMultiPoint, @a GmlLineString, @a GmlPolygon or @a GpmlTopologicalLine.
 		 *
-		 * This function is used internally by @a create_gpml_topological_section.
+		 * The @a geometry_property is a feature properties iterator but currently
+		 * it we just get the property name from it and use that to create the
+		 * property delegate - when a better method of property delegation is devised
+		 * (one that works in the presence of multiple geometry properties with the
+		 * same property name inside a single feature) then the properties iterator
+		 * might refer to something that has a unique property id.
 		 */
-		boost::optional<GPlatesPropertyValues::GpmlTopologicalIntersection>
-		create_gpml_topological_intersection(
-				const GPlatesModel::FeatureHandle::iterator &adjacent_geometry_property,
-				const GPlatesMaths::PointOnSphere &present_day_reference_point);
+		boost::optional<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior>
+		create_gpml_topological_network_interior(
+				const GPlatesModel::FeatureHandle::iterator &geometry_property);
 
 
 		/**
 		 * Create a geometry property delegate from a feature properties iterator and
-		 * a property value type string (eg, "LineString").
+		 * a property value type string (eg, "gml:LineString").
 		 *
 		 * Returns false if @a geometry_property is invalid.
 		 *
-		 * This function is used internally by @a create_gpml_topological_section and
-		 * @a create_gpml_topological_intersection.
+		 * This function is used internally by @a create_gpml_topological_section.
 		 */
 		boost::optional<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type>
 		create_geometry_property_delegate(
 				const GPlatesModel::FeatureHandle::iterator &geometry_property,
-				const QString &property_value_type);
+				const GPlatesPropertyValues::StructuralType &property_value_type);
 
 
 		/**
@@ -147,31 +145,35 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Finds the reconstructed feature geometry for the geometry property referenced by the
+		 * Finds the reconstruction geometry for the geometry property referenced by the
 		 * property delegate @a geometry_delegate.
 		 *
-		 * If @a reconstruct_handles is specified then an RFG is returned only if it has a
+		 * If @a reconstruct_handles is specified then an RG is returned only if it has a
 		 * reconstruct handle in that set.
 		 *
-		 * NOTE: If more than one RFG is found then the first found is returned and an error message
+		 * NOTE: If more than one RG is found then the first found is returned and a warning message
 		 * is output to the console.
 		 *
-		 * NOTE: The RFGs must be generated before calling this function otherwise no RFGs will be found.
+		 * NOTE: The RGs must be generated before calling this function otherwise no RGs will be found.
+		 * This includes reconstructing static geometries and resolving topological lines since both
+		 * types of reconstruction geometry can be used as topological sections.
 		 *
 		 * Returns false if:
 		 * - there is *not* exactly *one* feature referencing the delegate feature id
-		 *   (in this case an error message is output to the console), or
-		 * - there are *no* RFGs satisfying the specified constraints (reconstruct handles) and
-		 *   in this case an error message is output to the console.
+		 *   (in this case an warning message is output to the console), or
+		 * - there are *no* RGs satisfying the specified constraints (reconstruct handles).
 		 *
-		 * If there is no RFG that is reconstructed from @a geometry_delegate, and satisfying the
-		 * other constraints, then it probably means the reconstruction time is outside the
-		 * age range of the delegate feature).
+		 * If there is no RG that is reconstructed from @a geometry_delegate, and satisfying the
+		 * other constraints, then either:
+		 *  - the reconstruction time @a reconstruction_time is outside the age range of the
+		 *    delegate feature (this is OK and useful in some situations), or
+		 *  - the reconstruction time @a reconstruction_time is inside the age range of the
+		 *    delegate feature but the RG still cannot be found (in which case a warning is logged).
 		 *
-		 * If there is more than one RFG referencing the delegate feature then either:
+		 * If there is more than one RG referencing the delegate feature then either:
 		 * - there are multiple geometry properties in the delegate feature that have the same
 		 *   delegate property name, and/or
-		 * - somewhere, in GPlates, more than one RFG is being generated for the same
+		 * - somewhere, in GPlates, more than one RG is being generated for the same
 		 *   property iterator (might currently happen with flowlines - although we should
 		 *   consider moving away from that behaviour), and/or
 		 * - the same delegate feature is reconstructed more than once in different reconstruction
@@ -179,44 +181,51 @@ namespace GPlatesAppLogic
 		 *
 		 * WARNING: Property delegates need to be improved because they do not uniquely
 		 * identify a property since they use the property name and a feature can
-		 * have multiple properties with the same name.
+		 * have multiple properties with the same name. Alternatively we could just reference
+		 * all properties (in a feature) with the same property name?
 		 */
-		boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type>
-		find_reconstructed_feature_geometry(
+		boost::optional<ReconstructionGeometry::non_null_ptr_type>
+		find_topological_reconstruction_geometry(
 				const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate,
+				const double &reconstruction_time,
 				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none);
 
 
 		/**
-		 * Finds the reconstructed feature geometry for the geometry properties iterator @a geometry_property.
+		 * Finds the reconstruction geometry for the geometry properties iterator @a geometry_property.
 		 *
-		 * If @a reconstruct_handles is specified then an RFG is returned only if it has a
+		 * If @a reconstruct_handles is specified then an RG is returned only if it has a
 		 * reconstruct handle in that set.
 		 *
-		 * NOTE: If more than one RFG is found then the first found is returned and an error message
+		 * NOTE: If more than one RG is found then the first found is returned and a warning message
 		 * is output to the console.
 		 *
-		 * NOTE: The RFGs must be generated before calling this function otherwise no RFGs will be found.
+		 * NOTE: The RGs must be generated before calling this function otherwise no RGs will be found.
+		 * This includes reconstructing static geometries and resolving topological lines since both
+		 * types of reconstruction geometry can be used as topological sections.
 		 *
 		 * Returns false if:
 		 * - @a geometry_property is invalid, or
-		 * - there are *no* RFGs satisfying the specified constraints (reconstruct handles) and
-		 *   in this case an error message is output to the console.
+		 * - there are *no* RGs satisfying the specified constraints (reconstruct handles).
 		 *
-		 * If there is no RFG that is reconstructed from @a geometry_property, and satisfying the
-		 * other constraints, then it probably means the reconstruction time is outside the
-		 * age range of the feature containing @a geometry_property).
+		 * If there is no RG that is reconstructed from @a geometry_delegate, and satisfying the
+		 * other constraints, then either:
+		 *  - the reconstruction time @a reconstruction_time is outside the age range of the
+		 *    delegate feature (this is OK and useful in some situations), or
+		 *  - the reconstruction time @a reconstruction_time is inside the age range of the
+		 *    delegate feature but the RG still cannot be found (in which case a warning is logged).
 		 *
-		 * If there is more than one RFG referencing the feature (containing @a geometry_property) then either:
-		 * - somewhere, in GPlates, more than one RFG is being generated for the same
+		 * If there is more than one RG referencing the feature (containing @a geometry_property) then either:
+		 * - somewhere, in GPlates, more than one RG is being generated for the same
 		 *   property iterator (might currently happen with flowlines - although we should
 		 *   consider moving away from that behaviour), and/or
 		 * - the same feature (containing @a geometry_property) is reconstructed more than once in
 		 *   different reconstruction contexts (eg, multiple layers reconstructing the same feature).
 		 */
-		boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type>
-		find_reconstructed_feature_geometry(
+		boost::optional<ReconstructionGeometry::non_null_ptr_type>
+		find_topological_reconstruction_geometry(
 				const GPlatesModel::FeatureHandle::iterator &geometry_property,
+				const double &reconstruction_time,
 				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none);
 
 
@@ -492,12 +501,34 @@ namespace GPlatesAppLogic
 
 		
 		/**
-		 * A useful predicate fuction used to include only reconstructed feature geometries.
+		 * Returns true if @a recon_geom can be used as a topological section for a resolved line.
 		 *
-		 * Returns true if @a recon_geom is of type @a ReconstructedFeatureGeometry.
+		 * Returns true if @a recon_geom is a @a ReconstructedFeatureGeometry.
 		 */
 		bool
-		include_only_reconstructed_feature_geometries(
+		can_use_as_resolved_line_topological_section(
+				const ReconstructionGeometry::non_null_ptr_to_const_type &recon_geom);
+
+		
+		/**
+		 * Returns true if @a recon_geom can be used as a topological section for a resolved boundary.
+		 *
+		 * Returns true if @a recon_geom is a @a ReconstructedFeatureGeometry or a
+		 * resolved topological line (@a ResolvedTopologicalGeometry with a *polyline* geometry).
+		 */
+		bool
+		can_use_as_resolved_boundary_topological_section(
+				const ReconstructionGeometry::non_null_ptr_to_const_type &recon_geom);
+
+		
+		/**
+		 * Returns true if @a recon_geom can be used as a topological section for a resolved network.
+		 *
+		 * Returns true if @a recon_geom is a @a ReconstructedFeatureGeometry or a
+		 * resolved topological line (@a ResolvedTopologicalGeometry with a *polyline* geometry).
+		 */
+		bool
+		can_use_as_resolved_network_topological_section(
 				const ReconstructionGeometry::non_null_ptr_to_const_type &recon_geom);
 	}
 }

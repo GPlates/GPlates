@@ -43,6 +43,8 @@
 #include "LatLonCoordinatesTable.h"
 #include "QtWidgetUtils.h"
 
+#include "app-logic/GeometryUtils.h"
+
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
 
@@ -81,7 +83,7 @@ GPlatesQtWidgets::DigitisationWidget::DigitisationWidget(
 			new CreateFeatureDialog(
 				view_state_,
 				viewport_window_,
-				GPlatesQtWidgets::CreateFeatureDialog::NORMAL, this)),
+				this)),
 	d_new_geom_builder(&digitise_geometry_builder),
 	d_canvas_tool_workflows(&canvas_tool_workflows)
 {
@@ -127,8 +129,21 @@ GPlatesQtWidgets::DigitisationWidget::handle_create()
 	// points. You -have- set up a GeometryOnSphere for the current points,
 	// haven't you?
 	if (geometry_opt_ptr) {
+		// We need to pass the geometry as a property value so wrap it up in one.
+		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> geometry_property_value =
+				GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
+						geometry_opt_ptr.get());
+		if (!geometry_property_value)
+		{
+			// This pretty much shouldn't happen.
+			QMessageBox::warning(this, tr("No geometry property value for feature"),
+					tr("Failed to convert geometry to a property value."),
+					QMessageBox::Ok);
+			return;
+		}
+
 		// Give a GeometryOnSphere::non_null_ptr_to_const_type to the Create dialog.
-		bool success = d_create_feature_dialog->set_geometry_and_display(*geometry_opt_ptr);
+		bool success = d_create_feature_dialog->set_geometry_and_display(geometry_property_value.get());
 		if ( ! success) {
 			// The user cancelled the creation process. Return early and do not reset
 			// the digitisation widget.

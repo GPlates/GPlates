@@ -29,98 +29,32 @@
 #include "app-logic/FlowlineUtils.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructUtils.h"
+
 #include "model/ModelUtils.h"
+
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GpmlPlateId.h"
-#include "EditTimeSequenceWidget.h"
-#include "CreateFeatureDialog.h"
 
 #include "FlowlinePropertiesWidget.h"
 
-namespace
-{
-	/**
-	 * Copied from ReconstructionViewWidget.cc
-	 */
-	 
-	/**
-	* This function is a bit of a hack, but we need this hack in enough places
-	* in our hybrid Designer/C++ laid-out ReconstructionViewWidget that it's worthwhile
-	* compressing it into an anonymous namespace function.
-	*
-	* The problem: We want to replace a 'placeholder' widget that we set up in the
-	* designer with a widget we created in code via new.
-	*
-	* The solution: make an 'invisible' layout inside the placeholder (@a outer_widget),
-	* then add the real widget (@a inner_widget) to that layout.
-	*/
-	void
-	cram_widget_into_widget(
-		QWidget *inner_widget,
-		QWidget *outer_widget)
-	{
-		QHBoxLayout *invisible_layout = new QHBoxLayout(outer_widget);
-		invisible_layout->setSpacing(0);
-		invisible_layout->setContentsMargins(0, 0, 0, 0);
-		invisible_layout->addWidget(inner_widget);
-	}
-}
 
 GPlatesQtWidgets::FlowlinePropertiesWidget::FlowlinePropertiesWidget(
-	GPlatesAppLogic::ApplicationState *application_state_ptr,
-        CreateFeatureDialog *create_feature_dialog_ptr,
-	QWidget *parent_):
+		const GPlatesAppLogic::ApplicationState &application_state_,
+		QWidget *parent_):
 	AbstractCustomPropertiesWidget(parent_),
-	d_application_state_ptr(application_state_ptr),
-    d_time_sequence_widget(new GPlatesQtWidgets::EditTimeSequenceWidget(
-            *d_application_state_ptr,
-            this)),
-    d_create_feature_dialog_ptr(create_feature_dialog_ptr)
+	d_application_state(application_state_)
 {
 	setupUi(this);
-	
-        cram_widget_into_widget(d_time_sequence_widget,groupbox_time_sequence);
 
-        radio_centre->setChecked(true);
-
-}
-
-void
-GPlatesQtWidgets::FlowlinePropertiesWidget::add_properties_to_feature(
-	GPlatesModel::FeatureHandle::weak_ref feature_handle)
-{
-		
-	
-	GPlatesModel::PropertyValue::non_null_ptr_type time_sequence_value = 
-			d_time_sequence_widget->create_property_value_from_widget();
-	GPlatesModel::PropertyName time_sequence_name = GPlatesModel::PropertyName::create_gpml("times");
-		
-	feature_handle->add(
-		GPlatesModel::TopLevelPropertyInline::create(
-			time_sequence_name,
-			time_sequence_value));
-
-}
-
-void
-GPlatesQtWidgets::FlowlinePropertiesWidget::add_geometry_properties_to_feature(
-                GPlatesModel::FeatureHandle::weak_ref feature_handle)
-{
-
-}
-
-
-void
-GPlatesQtWidgets::FlowlinePropertiesWidget::update()
-{
+    radio_centre->setChecked(true);
 
 }
 
 
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 GPlatesQtWidgets::FlowlinePropertiesWidget::do_geometry_tasks(
-	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry_,
-	const GPlatesModel::FeatureHandle::weak_ref &feature_handle)
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &reconstruction_time_geometry_,
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 {
 // Here we correct the geometry depending on the desired role of the selected point.
 //
@@ -133,18 +67,18 @@ GPlatesQtWidgets::FlowlinePropertiesWidget::do_geometry_tasks(
 
     if (radio_centre->isChecked())
     {
-        return geometry_;
+        return reconstruction_time_geometry_;
     }
 
 
 
     GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder finder(
-		d_application_state_ptr->get_current_reconstruction_time());
-    finder.visit_feature(feature_handle);
+		d_application_state.get_current_reconstruction_time());
+    finder.visit_feature(feature_ref);
 
     if (!finder.can_correct_seed_point())
     {
-	return geometry_;
+		return reconstruction_time_geometry_;
     }
 
 
@@ -155,18 +89,18 @@ GPlatesQtWidgets::FlowlinePropertiesWidget::do_geometry_tasks(
 
     if (radio_left->isChecked())
     {
-	plate_1 = finder.get_left_plate().get();
-	plate_2 = finder.get_right_plate().get();
+		plate_1 = finder.get_left_plate().get();
+		plate_2 = finder.get_right_plate().get();
     }
     else if (radio_right->isChecked())
     {
-	plate_1 = finder.get_right_plate().get();
-	plate_2 = finder.get_left_plate().get();
+		plate_1 = finder.get_right_plate().get();
+		plate_2 = finder.get_left_plate().get();
     }
 
 	// The default reconstruction tree.
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type default_reconstruction_tree =
-			d_application_state_ptr->get_current_reconstruction()
+			d_application_state.get_current_reconstruction()
 					.get_default_reconstruction_layer_output()->get_reconstruction_tree();
 	// A function to get reconstruction trees with.
 	GPlatesAppLogic::ReconstructionTreeCreator
@@ -178,11 +112,11 @@ GPlatesQtWidgets::FlowlinePropertiesWidget::do_geometry_tasks(
 
 
     return GPlatesAppLogic::FlowlineUtils::correct_end_point_to_centre(
-		geometry_,
+		reconstruction_time_geometry_,
 		plate_1,
 		plate_2,
 		finder.get_times(),
 		reconstruction_tree_creator,
-		d_application_state_ptr->get_current_reconstruction_time());
+		d_application_state.get_current_reconstruction_time());
 
 }

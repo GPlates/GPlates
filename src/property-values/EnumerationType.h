@@ -28,14 +28,14 @@
 #ifndef GPLATES_PROPERTYVALUES_ENUMERATIONTYPE_H
 #define GPLATES_PROPERTYVALUES_ENUMERATIONTYPE_H
 
-#include "model/StringSetSingletons.h"
-#include "model/StringContentTypeGenerator.h"
+#include "model/QualifiedXmlName.h"
 
 namespace GPlatesPropertyValues {
 
 	class EnumerationTypeFactory {
 
 	public:
+
 		static
 		GPlatesUtils::StringSet &
 		instance()
@@ -44,10 +44,12 @@ namespace GPlatesPropertyValues {
 		}
 
 	private:
+
 		EnumerationTypeFactory();
 	};
 
-	typedef GPlatesModel::StringContentTypeGenerator<EnumerationTypeFactory> EnumerationType;
+
+	typedef GPlatesModel::QualifiedXmlName<EnumerationTypeFactory> EnumerationType;
 }
 
 #endif  // GPLATES_PROPERTYVALUES_ENUMERATIONTYPE_H

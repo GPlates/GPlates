@@ -48,8 +48,15 @@ namespace GPlatesAppLogic
 		 */
 		enum Type
 		{
+			// The following types *do* correspond to a GPGIM enumeration value for
+			// the enumeration type 'gpml:reconstructionMethod'...
+
 			BY_PLATE_ID,
 			HALF_STAGE_ROTATION,
+
+			// The following types do *not* correspond to a GPGIM enumeration value for
+			// the enumeration type 'gpml:reconstructionMethod'...
+
 			SMALL_CIRCLE,
 			VIRTUAL_GEOMAGNETIC_POLE,
 			FLOWLINE,

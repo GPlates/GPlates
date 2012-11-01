@@ -55,13 +55,13 @@ GPlatesModel::StringSetSingletons::property_name_instance()
 }
 
 GPlatesUtils::StringSet &
-GPlatesModel::StringSetSingletons::template_type_parameter_type_instance()
+GPlatesModel::StringSetSingletons::structural_type_instance()
 {
 	return GPlatesUtils::Singleton<
 		GPlatesUtils::StringSet,
 		GPlatesUtils::CreateUsingNew,
 		GPlatesUtils::DefaultLifetime,
-		TemplateTypeParameterTypeInstance>::instance();
+		StructuralTypeInstance>::instance();
 }
 
 GPlatesUtils::StringSet &

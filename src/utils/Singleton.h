@@ -158,7 +158,7 @@ namespace GPlatesUtils
 
 		/**
 		 * Returns a reference to the single instance of T. If the instance has not
-		 * been created yet, the instance is created using SingletonFactory.
+		 * been created yet, the instance is created using CreationPolicy.
 		 */
 		static
 		T&

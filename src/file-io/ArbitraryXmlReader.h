@@ -37,21 +37,25 @@
 
 #include "model/ModelInterface.h"
 
+namespace GPlatesModel
+{
+	class Gpgim;
+}
+
 namespace GPlatesFileIO
 {
-	static const char * ReadErrorAccumulationExceptionName = 
-			"Read Error Accumulation Exception";
 	class ArbitraryXmlReader
 	{
 	public:
-		class ReadErrorAccumulationException: 
+
+		class AccessedOutsideXmlProfileMethodException: 
 			public GPlatesGlobal::Exception
 		{
 		public:
-			ReadErrorAccumulationException():
+			AccessedOutsideXmlProfileMethodException():
 				GPlatesGlobal::Exception(GPLATES_EXCEPTION_SOURCE)
 			{ }
-			~ReadErrorAccumulationException() throw()
+			~AccessedOutsideXmlProfileMethodException() throw()
 			{ }
 		protected:
 			void
@@ -60,15 +64,17 @@ namespace GPlatesFileIO
 			{
 				write_string_message(
 					os,
-					"Invalid ReadErrorAccumulation." 
-					"ArbitraryXmlReader has not been configurated properly.");
+					"An ArbitraryXmlReader method using a XML profile has been accessed while the profile is not active.");
 			}
 
 			const char *
 			exception_name() const 
 			{
-				return ReadErrorAccumulationExceptionName;
+				return ACCESSED_OUTSIDE_XML_PROFILE_METHOD_EXCEPTION_NAME;
 			}
+
+		private:
+			static const char *ACCESSED_OUTSIDE_XML_PROFILE_METHOD_EXCEPTION_NAME;
 		};
 
 		/*
@@ -88,6 +94,7 @@ namespace GPlatesFileIO
 				File::Reference &file,
 				boost::shared_ptr<ArbitraryXmlProfile> profile,
 				GPlatesModel::ModelInterface &model,
+				const GPlatesModel::Gpgim &gpgim,
 				ReadErrorAccumulation &read_errors);
 
 		void
@@ -96,52 +103,77 @@ namespace GPlatesFileIO
 				boost::shared_ptr<ArbitraryXmlProfile> profile,
 				GPlatesModel::ModelInterface &model,
 				QByteArray& data,
+				const GPlatesModel::Gpgim &gpgim,
 				ReadErrorAccumulation &read_errors);
 		
 		int
 		count_features(
 				boost::shared_ptr<ArbitraryXmlProfile> profile,
 				QByteArray& data,
+				const GPlatesModel::Gpgim &gpgim,
 				ReadErrorAccumulation &read_errors);
 		
+		/**
+		 * Throws exception if called while not inside @a read_file, @a read_xml_data or @a count_features.
+		 */
 		ReadErrorAccumulation*
 		get_read_error_accumulation() const
 		{
 			if(!d_read_errors)
 			{
-				throw ReadErrorAccumulationException();
+				throw AccessedOutsideXmlProfileMethodException();
 			}
 			return d_read_errors;
 		}
 		
-		void
-		set_read_error_accumulation(
-				ReadErrorAccumulation* new_read_errors)
+		/**
+		 * Throws exception if called while not inside @a read_file, @a read_xml_data or @a count_features.
+		 */
+		const GPlatesModel::Gpgim *
+		get_gpgim() const
 		{
-			d_read_errors = new_read_errors;
+			if (!d_gpgim)
+			{
+				throw AccessedOutsideXmlProfileMethodException();
+			}
+			return d_gpgim;
 		}
-	private:
-		ArbitraryXmlReader():d_read_errors(NULL) {}
-		ArbitraryXmlReader(const ArbitraryXmlReader&);
-		ReadErrorAccumulation* d_read_errors;
 
-		class SetErrorAccumulation
+	private:
+
+		ArbitraryXmlReader() :
+			d_gpgim(NULL),
+			d_read_errors(NULL)
+		{  }
+
+		ArbitraryXmlReader(
+				const ArbitraryXmlReader&);
+
+
+		class SetXmlProfileAccess
 		{
 		public:
-			SetErrorAccumulation(
+			SetXmlProfileAccess(
+					const GPlatesModel::Gpgim *gpgim,
 					ReadErrorAccumulation* error_accumulation,
 					ArbitraryXmlReader* parent):
 				d_parent(parent)
 			{
-				d_parent->set_read_error_accumulation(error_accumulation);
+				d_parent->d_gpgim = gpgim;
+				d_parent->d_read_errors = error_accumulation;
 			}
-			~SetErrorAccumulation()
+			~SetXmlProfileAccess()
 			{
-				d_parent->set_read_error_accumulation(NULL);
+				d_parent->d_gpgim = NULL;
+				d_parent->d_read_errors = NULL;
 			}
 		private:
 			ArbitraryXmlReader* d_parent;
 		};
+
+
+		const GPlatesModel::Gpgim *d_gpgim;
+		ReadErrorAccumulation* d_read_errors;
 	};
 }
 

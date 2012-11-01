@@ -45,7 +45,7 @@
 
 namespace GPlatesAppLogic
 {
-	class ResolvedTopologicalBoundary;
+	class ResolvedTopologicalGeometry;
 }
 
 namespace GPlatesGui

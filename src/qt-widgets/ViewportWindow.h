@@ -120,9 +120,24 @@ namespace GPlatesQtWidgets
 		~ViewportWindow();
 
 
+		/**
+		 * Loads the specified files as a convenient alternative to having to explicitly
+		 * load them by accessing the GUI.
+		 */
 		void
 		load_files(
 				const QStringList &filenames);
+
+
+		/**
+		 * Shows the main window.
+		 *
+		 * Internally this calls QMainWindow::show() and then calls functions that rely
+		 * on the main window being visible (such as activating the default canvas tool which
+		 * checks for visibility of the main view canvas).
+		 */
+		void
+		display();
 
 
 		//! Returns the application state.

@@ -26,10 +26,29 @@
 #ifndef GPLATES_QTWIDGETS_ADDPROPERTYDIALOG_H
 #define GPLATES_QTWIDGETS_ADDPROPERTYDIALOG_H
 
+#include <vector>
+#include <boost/optional.hpp>
 #include <QDialog>
+
 #include "AddPropertyDialogUi.h"
 #include "EditWidgetGroupBox.h"
 
+#include "model/FeatureHandle.h"
+#include "model/FeatureType.h"
+
+#include "property-values/StructuralType.h"
+
+
+namespace GPlatesGui
+{
+	class FeatureFocus;
+}
+
+namespace GPlatesModel
+{
+	class Gpgim;
+	class GpgimProperty;
+}
 
 namespace GPlatesPresentation
 {
@@ -38,8 +57,6 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
-	class EditFeaturePropertiesWidget;
-	
 	class AddPropertyDialog: 
 			public QDialog,
 			protected Ui_AddPropertyDialog 
@@ -49,13 +66,10 @@ namespace GPlatesQtWidgets
 	public:
 		/**
 		 * Constructs the Add Property Dialog instance.
-		 * The reference to the EditFeaturePropertiesWidget is necessary for
-		 * this dialog to add new properties; this is done purely to keep
-		 * any model-editing functionality in EditFeaturePropertiesWidget.
 		 */
 		explicit
 		AddPropertyDialog(
-				GPlatesQtWidgets::EditFeaturePropertiesWidget &edit_widget,
+				GPlatesGui::FeatureFocus &feature_focus_,
 				GPlatesPresentation::ViewState &view_state_,
 				QWidget *parent_ = NULL);
 
@@ -64,7 +78,14 @@ namespace GPlatesQtWidgets
 		{  }
 			
 	public slots:
-	
+		
+		/**
+		 * Set the feature, and its feature type, that the properties are being added to.
+		 */
+		void
+		set_feature(
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref);
+
 		/**
 		 * Resets dialog components to default state.
 		 */
@@ -79,30 +100,55 @@ namespace GPlatesQtWidgets
 		pop_up();
 
 	private slots:
-		
-		void
-		set_appropriate_property_value_type(
-				int index);
 
 		void
 		set_appropriate_edit_widget();
 
 		void
-		check_property_name_validity(
-				int index);
+		check_property_name_validity();
 		
 		void
 		add_property();
-		
+	
+		void
+		populate_property_name_combobox();
+
+		void
+		populate_property_type_combobox();
+	
 	private:
-		
+	
+		void
+		connect_to_combobox_add_property_name_signals(
+				bool connects_signal_slot);
+
+		void
+		connect_to_combobox_add_property_type_signals(
+				bool connects_signal_slot);
+	
 		void
 		set_up_add_property_box();
 
 		void
 		set_up_edit_widgets();
 
-		GPlatesQtWidgets::EditFeaturePropertiesWidget *d_edit_feature_properties_widget_ptr;
+
+		//! Default feature type to use when no available feature or invalid feature reference.
+		static const GPlatesModel::FeatureType DEFAULT_FEATURE_TYPE;
+
+
+		//! Determines if a property name is valid for a feature type.
+		const GPlatesModel::Gpgim &d_gpgim;
+
+		//! Announce modifications to the focused feature.
+		GPlatesGui::FeatureFocus &d_feature_focus;
+
+		//! The feature that properties are being added to.
+		GPlatesModel::FeatureHandle::weak_ref d_feature_ref;
+
+		//! The type of feature that properties are being added to.
+		GPlatesModel::FeatureType d_feature_type;
+
 		GPlatesQtWidgets::EditWidgetGroupBox *d_edit_widget_group_box_ptr;
 	};
 }

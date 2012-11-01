@@ -32,9 +32,9 @@
 #include "app-logic/ReconstructionLayerProxy.h"
 #include "app-logic/ReconstructLayerProxy.h"
 #include "app-logic/ScalarField3DLayerProxy.h"
-#include "app-logic/ResolvedTopologicalBoundary.h"
+#include "app-logic/ResolvedTopologicalGeometry.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
-#include "app-logic/TopologyBoundaryResolverLayerProxy.h"
+#include "app-logic/TopologyGeometryResolverLayerProxy.h"
 #include "app-logic/TopologyNetworkResolverLayerProxy.h"
 #include "app-logic/VelocityFieldCalculatorLayerProxy.h"
 
@@ -125,20 +125,20 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 
 void
 GPlatesPresentation::LayerOutputRenderer::visit(
-		const GPlatesUtils::non_null_intrusive_ptr<topology_boundary_resolver_layer_proxy_type> &topology_boundary_resolver_layer_proxy)
+		const GPlatesUtils::non_null_intrusive_ptr<topology_geometry_resolver_layer_proxy_type> &topology_geometry_resolver_layer_proxy)
 {
-	// Get the resolved topological boundaries for the current reconstruction time.
-	std::vector<GPlatesAppLogic::resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
-	topology_boundary_resolver_layer_proxy->get_resolved_topological_boundaries(resolved_topological_boundaries);
+	// Get the resolved topological geometries for the current reconstruction time.
+	std::vector<GPlatesAppLogic::resolved_topological_geometry_non_null_ptr_type> resolved_topological_geometries;
+	topology_geometry_resolver_layer_proxy->get_resolved_topological_geometries(resolved_topological_geometries);
 
 	d_reconstruction_geometry_renderer.begin_render();
 
-	// Render each resolved topological boundary.
+	// Render each resolved topological geometry.
 	BOOST_FOREACH(
-			const GPlatesAppLogic::resolved_topological_boundary_non_null_ptr_type &resolved_topological_boundary,
-			resolved_topological_boundaries)
+			const GPlatesAppLogic::resolved_topological_geometry_non_null_ptr_type &resolved_topological_geometry,
+			resolved_topological_geometries)
 	{
-		resolved_topological_boundary->accept_visitor(d_reconstruction_geometry_renderer);
+		resolved_topological_geometry->accept_visitor(d_reconstruction_geometry_renderer);
 	}
 
 	d_reconstruction_geometry_renderer.end_render(d_rendered_geometry_layer);

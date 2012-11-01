@@ -39,8 +39,6 @@
 #include "app-logic/MultiPointVectorField.h"
 #include "app-logic/TopologyUtils.h"
 
-#include "global/types.h"
-
 #include "gui/PlateIdColourPalettes.h"
 
 #include "maths/FiniteRotation.h"

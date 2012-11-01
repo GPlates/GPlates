@@ -113,8 +113,7 @@ namespace
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
 				get_feature_weak_ref_if_valid(geometry);
 		if (weak_ref) {
-			return QVariant(GPlatesUtils::make_qstring_from_icu_string(
-					(*weak_ref)->feature_type().build_aliased_name()));
+			return QVariant(convert_qualified_xml_name_to_qstring((*weak_ref)->feature_type()));
 		}
 		return QVariant();
 	}
@@ -486,8 +485,7 @@ namespace
 		boost::optional<GPlatesModel::FeatureHandle::iterator> property =
 				get_geometry_property_if_valid(geometry);
 		if (property) {
-			return QVariant(GPlatesUtils::make_qstring_from_icu_string(
-					(**property)->property_name().build_aliased_name()));
+			return QVariant(convert_qualified_xml_name_to_qstring((**property)->property_name()));
 		}
 		return QVariant();
 	}

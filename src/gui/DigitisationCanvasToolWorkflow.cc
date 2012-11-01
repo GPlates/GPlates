@@ -38,10 +38,6 @@
 #include "canvas-tools/InsertVertex.h"
 #include "canvas-tools/MeasureDistance.h"
 #include "canvas-tools/MoveVertex.h"
-#include "canvas-tools/PanMap.h"
-#include "canvas-tools/ReorientGlobe.h"
-#include "canvas-tools/ZoomGlobe.h"
-#include "canvas-tools/ZoomMap.h"
 
 #include "global/GPlatesAssert.h"
 
@@ -63,11 +59,6 @@ namespace GPlatesGui
 	namespace
 	{
 		/**
-		 * The type of this canvas tool workflow.
-		 */
-		const CanvasToolWorkflows::WorkflowType WORKFLOW_TYPE = CanvasToolWorkflows::WORKFLOW_DIGITISATION;
-
-		/**
 		 * The main rendered layer used by this canvas tool workflow.
 		 */
 		const GPlatesViewOperations::RenderedGeometryCollection::MainLayerType WORKFLOW_RENDER_LAYER =
@@ -83,7 +74,12 @@ GPlatesGui::DigitisationCanvasToolWorkflow::DigitisationCanvasToolWorkflow(
 		const GPlatesCanvasTools::CanvasTool::status_bar_callback_type &status_bar_callback,
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesQtWidgets::ViewportWindow &viewport_window) :
-	CanvasToolWorkflow(viewport_window.globe_canvas(), viewport_window.map_view()),
+	CanvasToolWorkflow(
+			viewport_window.globe_canvas(),
+			viewport_window.map_view(),
+			CanvasToolWorkflows::WORKFLOW_DIGITISATION,
+			// The tool to start off with...
+			CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYLINE),
 	d_digitise_geometry_builder(view_state.get_digitise_geometry_builder()),
 	d_geometry_operation_state(geometry_operation_state),
 	d_rendered_geom_collection(view_state.get_rendered_geometry_collection())
@@ -117,45 +113,10 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 		GPlatesQtWidgets::ViewportWindow &viewport_window)
 {
 	//
-	// Drag canvas tool.
-	//
-
-	d_globe_drag_globe_tool.reset(
-			new GPlatesCanvasTools::ReorientGlobe(
-					viewport_window.globe_canvas().globe(),
-					viewport_window.globe_canvas(),
-					view_state.get_rendered_geometry_collection(),
-					viewport_window));
-	d_map_drag_globe_tool.reset(
-			new GPlatesCanvasTools::PanMap(
-					viewport_window.map_view().map_canvas(),
-					viewport_window.map_view(),
-					view_state.get_rendered_geometry_collection(),
-					viewport_window,
-					view_state.get_map_transform()));
-
-	//
-	// Zoom canvas tool.
-	//
-
-	d_globe_zoom_globe_tool.reset(
-			new GPlatesCanvasTools::ZoomGlobe(
-					viewport_window.globe_canvas().globe(),
-					viewport_window.globe_canvas(),
-					view_state.get_rendered_geometry_collection(),
-					viewport_window,
-					view_state));
-	d_map_zoom_globe_tool.reset(
-			new GPlatesCanvasTools::ZoomMap(
-					viewport_window.map_view().map_canvas(),
-					viewport_window.map_view(),
-					view_state.get_rendered_geometry_collection(),
-					viewport_window,
-					view_state.get_map_transform(),
-					view_state.get_viewport_zoom()));
-
-	//
 	// Measure distance canvas tool.
+	//
+	// NOTE: There's also a Measure Distance tool in the Feature Inspection workflow, but we
+	// also have one in the Digitisation workflow because it is hooked up to the digitised geometry.
 	//
 
 	GPlatesCanvasTools::MeasureDistance::non_null_ptr_type measure_distance_tool =
@@ -359,31 +320,11 @@ GPlatesGui::DigitisationCanvasToolWorkflow::initialise()
 	// NOTE: If you are updating the tool in 'update_enable_state()' then you
 	// don't need to enable/disable it here.
 
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_DRAG_GLOBE,
-			true);
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_ZOOM_GLOBE,
-			true);
 	// The measure distance tool can do measurements without a digitised geometry so we leave it enabled always.
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_MEASURE_DISTANCE,
-			true);
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_DIGITISE_NEW_MULTIPOINT,
-			true);
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYLINE,
-			true);
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYGON,
-			true);
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_MEASURE_DISTANCE, true);
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_DIGITISE_NEW_MULTIPOINT, true);
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYLINE, true);
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYGON, true);
 
 	update_enable_state();
 }
@@ -417,12 +358,6 @@ GPlatesGui::DigitisationCanvasToolWorkflow::get_selected_globe_and_map_canvas_to
 {
 	switch (selected_tool)
 	{
-	case CanvasToolWorkflows::TOOL_DRAG_GLOBE:
-		return std::make_pair(d_globe_drag_globe_tool.get(), d_map_drag_globe_tool.get());
-
-	case CanvasToolWorkflows::TOOL_ZOOM_GLOBE:
-		return std::make_pair(d_globe_zoom_globe_tool.get(), d_map_zoom_globe_tool.get());
-
 	case CanvasToolWorkflows::TOOL_MEASURE_DISTANCE:
 		return std::make_pair(d_globe_measure_distance_tool.get(), d_map_measure_distance_tool.get());
 
@@ -471,10 +406,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::update_enable_state()
 	const GPlatesViewOperations::GeometryType::Value geometry_type = geometry_builder_parameters.second;
 
 	// Enable the move vertex tool if there's at least one vertex regardless of the geometry type.
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_MOVE_VERTEX,
-			num_vertices > 0);
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_MOVE_VERTEX, num_vertices > 0);
 
 	// Enable the insert vertex tool if inserting a vertex won't change the type of
 	// geometry. In other words disable in the following situations:
@@ -482,9 +414,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::update_enable_state()
 	//
 	// Note that upon insertion of a new vertex a polyline stays a polyline and
 	// a polygon stays a polygon.
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_INSERT_VERTEX,
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_INSERT_VERTEX,
 			(geometry_type == GPlatesViewOperations::GeometryType::MULTIPOINT ||
 			geometry_type == GPlatesViewOperations::GeometryType::POLYLINE ||
 			geometry_type == GPlatesViewOperations::GeometryType::POLYGON) &&
@@ -495,9 +425,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::update_enable_state()
 	//   * Geometry is a point or multipoint with one vertex.
 	//   * Geometry is a polyline with two vertices.
 	//   * Geometry is a polygon with three vertices.
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_DELETE_VERTEX,
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_DELETE_VERTEX,
 			(geometry_type == GPlatesViewOperations::GeometryType::MULTIPOINT && num_vertices > 1) ||
 			(geometry_type == GPlatesViewOperations::GeometryType::POLYLINE && num_vertices > 2) ||
 			(geometry_type == GPlatesViewOperations::GeometryType::POLYGON && num_vertices > 3));

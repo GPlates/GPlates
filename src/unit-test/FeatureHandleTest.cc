@@ -221,7 +221,7 @@ GPlatesUnitTest::FeatureHandleTest::test_case_1()
 		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
 			GPlatesModel::ModelUtils::create_gpml_constant_value(
 					gml_point, 
-					GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));
+					GPlatesPropertyValues::StructuralType::create_gml("Point"));
 
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary = 
 			GPlatesPropertyValues::GpmlKeyValueDictionary::create();
@@ -239,7 +239,7 @@ GPlatesUnitTest::FeatureHandleTest::test_case_1()
 			GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
 					key,
 					value,
-					GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"));
+					GPlatesPropertyValues::StructuralType::create_xsi("integer"));
 			
 			dictionary->elements().push_back(element);
 		}

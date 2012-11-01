@@ -29,7 +29,7 @@
 #include <vector>
 
 #include "app-logic/ReconstructionGeometry.h"
-#include "app-logic/ResolvedTopologicalBoundarySubSegment.h"
+#include "app-logic/ResolvedTopologicalGeometrySubSegment.h"
 
 
 namespace GPlatesFileIO
@@ -37,7 +37,7 @@ namespace GPlatesFileIO
 	namespace ResolvedTopologicalBoundaryExportImpl
 	{
 		//! Typedef for a sequence of subsegments of resolved topological boundaries.
-		typedef std::vector<const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment *> sub_segment_ptr_seq_type;
+		typedef std::vector<const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment *> sub_segment_ptr_seq_type;
 
 		/**
 		 * Groups a resolved topological geometry with a subset of its boundary subsegments.
@@ -109,7 +109,7 @@ namespace GPlatesFileIO
 		 */
 		SubSegmentType
 		get_sub_segment_type(
-				const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment &sub_segment,
+				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment,
 				const double &recon_time);
 
 
@@ -118,7 +118,7 @@ namespace GPlatesFileIO
 		*/
 		SubSegmentType
 		get_slab_sub_segment_type(
-				const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment &sub_segment,
+				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment,
 				const double &recon_time);
 	}
 }

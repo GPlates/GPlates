@@ -120,6 +120,17 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
+		 * Returns the structural type associated with this property value class.
+		 */
+		virtual
+		StructuralType
+		get_structural_type() const
+		{
+			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gml("DataBlock");
+			return STRUCTURAL_TYPE;
+		}
+
+		/**
 		 * Accept a ConstFeatureVisitor instance.
 		 *
 		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of

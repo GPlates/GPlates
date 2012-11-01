@@ -48,7 +48,6 @@
 #include "gui/ExportAnimationRegistry.h"
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
-#include "gui/GeometryFocusHighlight.h"
 #include "gui/GraticuleSettings.h"
 #include "gui/MapTransform.h"
 #include "gui/PythonManager.h"
@@ -105,7 +104,7 @@ GPlatesPresentation::ViewState::ViewState(
 				*d_feature_focus,
 				*d_rendered_geometry_collection)),
 	d_colour_scheme_container(
-			new GPlatesGui::ColourSchemeContainer()),
+			new GPlatesGui::ColourSchemeContainer(application_state)),
 	d_colour_scheme(
 			new GPlatesGui::ColourSchemeDelegator(*d_colour_scheme_container)),
 	d_viewport_zoom(
@@ -120,10 +119,6 @@ GPlatesPresentation::ViewState::ViewState(
 			new GPlatesViewOperations::FocusedFeatureGeometryManipulator(
 				*d_focused_feature_geometry_builder,
 				*this)),
-	d_geometry_focus_highlight(
-			new GPlatesGui::GeometryFocusHighlight(
-					*d_rendered_geometry_collection,
-					d_feature_type_symbol_map)),
 	d_visual_layers(
 			new VisualLayers(
 				d_application_state,
@@ -424,31 +419,11 @@ void
 GPlatesPresentation::ViewState::connect_to_feature_focus()
 {
 	// If the focused feature is modified, we may need to reconstruct to update the view.
-	// FIXME:  If the FeatureFocus emits the 'focused_feature_modified' signal, the view will
-	// be reconstructed twice -- once here, and once as a result of the 'set_focus' slot in the
-	// GeometryFocusHighlight below.
 	QObject::connect(
 			&get_feature_focus(),
 			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			&get_application_state(),
 			SLOT(reconstruct()));
-
-	// Connect the geometry-focus highlight to the feature focus.
-	QObject::connect(
-			&get_feature_focus(),
-			SIGNAL(focus_changed(
-					GPlatesGui::FeatureFocus &)),
-			d_geometry_focus_highlight.get(),
-			SLOT(set_focus(
-					GPlatesGui::FeatureFocus &)));
-
-	QObject::connect(
-			&get_feature_focus(),
-			SIGNAL(focused_feature_modified(
-					GPlatesGui::FeatureFocus &)),
-			d_geometry_focus_highlight.get(),
-			SLOT(set_focus(
-					GPlatesGui::FeatureFocus &)));
 }
 
 

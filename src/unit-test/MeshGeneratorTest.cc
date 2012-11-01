@@ -176,9 +176,10 @@ GPlatesUnitTest::MeshGeneratorTest::check(
 }
 
 
-GPlatesUnitTest::MeshGeneratorTest::MeshGeneratorTest()
+GPlatesUnitTest::MeshGeneratorTest::MeshGeneratorTest() :
+	d_gpgim(GPlatesModel::Gpgim::create())
 {
-	register_default_file_formats(d_file_format_registry, d_model);
+	register_default_file_formats(d_file_format_registry, d_model, *d_gpgim);
 }
 
 void 

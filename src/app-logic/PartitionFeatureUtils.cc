@@ -778,8 +778,7 @@ GPlatesAppLogic::PartitionFeatureUtils::assign_reconstruction_plate_id_to_featur
 	feature_ref->add(
 			GPlatesModel::TopLevelPropertyInline::create(
 				get_reconstruction_plate_id_property_name(),
-				GPlatesModel::ModelUtils::create_gpml_constant_value(gpml_plate_id,
-						GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId"))));
+				GPlatesModel::ModelUtils::create_gpml_constant_value(gpml_plate_id)));
 }
 
 

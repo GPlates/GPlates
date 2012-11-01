@@ -32,7 +32,7 @@
 #include "feature-visitors/PropertyValueFinder.h"
 
 
-// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlFiniteRotationSlerp, visit_gpml_finite_rotation_slerp)
@@ -67,7 +67,7 @@ namespace GPlatesPropertyValues {
 		static
 		const non_null_ptr_type
 		create(
-				const TemplateTypeParameterType &value_type_) {
+				const StructuralType &value_type_) {
 			non_null_ptr_type ptr(new GpmlFiniteRotationSlerp(value_type_));
 			return ptr;
 		}
@@ -122,7 +122,7 @@ namespace GPlatesPropertyValues {
 		// instantiation of this type on the stack.
 		explicit
 		GpmlFiniteRotationSlerp(
-				const TemplateTypeParameterType &value_type_):
+				const StructuralType &value_type_):
 			GpmlInterpolationFunction(value_type_)
 		{  }
 

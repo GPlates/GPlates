@@ -28,6 +28,7 @@
 #include <utility>
 #include <vector>
 #include <boost/cast.hpp>
+#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "AppLogicUtils.h"
@@ -35,9 +36,9 @@
 #include "GeometryUtils.h"
 #include "Reconstruction.h"
 #include "ReconstructionGeometryUtils.h"
-#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalGeometry.h"
 #include "ResolvedTopologicalNetwork.h"
-#include "TopologyBoundaryResolver.h"
+#include "TopologyGeometryResolver.h"
 #include "TopologyInternalUtils.h"
 #include "TopologyNetworkResolver.h"
 #include "TopologyUtils.h"
@@ -47,6 +48,10 @@
 
 #include "maths/PointInPolygon.h"
 #include "maths/PolygonIntersections.h"
+
+#include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlPiecewiseAggregation.h"
+#include "property-values/GpmlTopologicalLine.h"
 
 #include "utils/UnicodeStringUtils.h"
 
@@ -61,21 +66,21 @@ namespace GPlatesAppLogic
 	namespace TopologyUtils
 	{
 		/**
-		 * Associates a @a ResolvedTopologicalBoundary with its polygon structure
+		 * Associates a @a ResolvedTopologicalGeometry with its polygon structure
 		 * for geometry partitioning.
 		 */
 		class ResolvedBoundaryForGeometryPartitioning
 		{
 		public:
 			ResolvedBoundaryForGeometryPartitioning(
-					const ResolvedTopologicalBoundary *resolved_topological_boundary_,
+					const ResolvedTopologicalGeometry *resolved_topological_boundary_,
 					const GPlatesMaths::PolygonIntersections::non_null_ptr_type &polygon_intersections_) :
 				resolved_topological_boundary(resolved_topological_boundary_),
 				polygon_intersections(polygon_intersections_)
 			{  }
 
 
-			const ResolvedTopologicalBoundary *resolved_topological_boundary;
+			const ResolvedTopologicalGeometry *resolved_topological_boundary;
 			GPlatesMaths::PolygonIntersections::non_null_ptr_type polygon_intersections;
 		};
 		/**
@@ -238,52 +243,36 @@ namespace GPlatesAppLogic
 
 
 bool
-GPlatesAppLogic::TopologyUtils::is_topological_closed_plate_boundary_feature(
-		const GPlatesModel::FeatureHandle &feature)
+GPlatesAppLogic::TopologyUtils::is_topological_geometry_feature(
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 {
-	// FIXME: Do this check based on feature properties rather than feature type.
-	// So if something looks like a TCPB (because it has a topology polygon property)
-	// then treat it like one. For this to happen we first need TopologicalNetwork to
-	// use a property type different than TopologicalPolygon.
-
-	bool test = false;
-
-	static const GPlatesModel::FeatureType topo_closed_plate_boundary_type =
-			GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary");
-	if (feature.feature_type() == topo_closed_plate_boundary_type) 
+	// Iterate over the feature properties.
+	GPlatesModel::FeatureHandle::const_iterator iter = feature->begin();
+	GPlatesModel::FeatureHandle::const_iterator end = feature->end();
+	for ( ; iter != end; ++iter) 
 	{
-		test = true;
+		// If the current property is a topological geometry then we have a topological feature.
+		if (TopologyInternalUtils::get_topology_geometry_property_value_type(iter))
+		{
+			return true;
+		}
 	}
 
-	static const GPlatesModel::FeatureType slab_type =
-			GPlatesModel::FeatureType::create_gpml("TopologicalSlabBoundary");
-	if (feature.feature_type() == slab_type) 
-	{
-		test = true;
-	}
-
-	static const GPlatesModel::FeatureType unclass_type =
-			GPlatesModel::FeatureType::create_gpml("UnclassifiedTopologcialFeature");
-	if (feature.feature_type() == unclass_type) 
-	{
-		test = true;
-	}
-
-	return test;
+	return false;
 }
 
 
 bool
-GPlatesAppLogic::TopologyUtils::has_topological_closed_plate_boundary_features(
+GPlatesAppLogic::TopologyUtils::has_topological_geometry_features(
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
 {
 	GPlatesModel::FeatureCollectionHandle::const_iterator feature_collection_iter = feature_collection->begin();
 	GPlatesModel::FeatureCollectionHandle::const_iterator feature_collection_end = feature_collection->end();
 	for ( ; feature_collection_iter != feature_collection_end; ++feature_collection_iter)
 	{
-		const GPlatesModel::FeatureHandle &feature_handle = **feature_collection_iter;
+		GPlatesModel::FeatureHandle::const_weak_ref feature_ref = (*feature_collection_iter)->reference();
 
-		if (is_topological_closed_plate_boundary_feature(feature_handle))
+		if (is_topological_geometry_feature(feature_ref))
 		{ 
 			return true; 
 		}
@@ -293,29 +282,155 @@ GPlatesAppLogic::TopologyUtils::has_topological_closed_plate_boundary_features(
 }
 
 
-void
-GPlatesAppLogic::TopologyUtils::resolve_topological_boundaries(
-		std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_closed_plate_polygon_features_collection,
+bool
+GPlatesAppLogic::TopologyUtils::is_topological_line_feature(
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+{
+	// Iterate over the feature properties.
+	GPlatesModel::FeatureHandle::const_iterator iter = feature->begin();
+	GPlatesModel::FeatureHandle::const_iterator end = feature->end();
+	for ( ; iter != end; ++iter) 
+	{
+		static const GPlatesPropertyValues::StructuralType GPML_TOPOLOGICAL_LINE =
+				GPlatesPropertyValues::StructuralType::create_gpml("TopologicalLine");
+
+		if (TopologyInternalUtils::get_topology_geometry_property_value_type(iter) == GPML_TOPOLOGICAL_LINE)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
+bool
+GPlatesAppLogic::TopologyUtils::has_topological_line_features(
+		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
+{
+	GPlatesModel::FeatureCollectionHandle::const_iterator feature_collection_iter = feature_collection->begin();
+	GPlatesModel::FeatureCollectionHandle::const_iterator feature_collection_end = feature_collection->end();
+	for ( ; feature_collection_iter != feature_collection_end; ++feature_collection_iter)
+	{
+		GPlatesModel::FeatureHandle::const_weak_ref feature_ref = (*feature_collection_iter)->reference();
+
+		if (is_topological_line_feature(feature_ref))
+		{ 
+			return true; 
+		}
+	}
+
+	return false;
+}
+
+
+GPlatesAppLogic::ReconstructHandle::type
+GPlatesAppLogic::TopologyUtils::resolve_topological_lines(
+		std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_lines,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_line_features_collection,
 		const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
 		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles)
 {
-	// Visit topological boundary features.
-	TopologyBoundaryResolver topology_boundary_resolver(
-			resolved_topological_boundaries,
+	// Get the next global reconstruct handle - it'll be stored in each RTG.
+	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
+
+	// Resolve topological lines (not boundaries).
+	TopologyGeometryResolver::resolve_geometry_flags_type resolve_geometry_flags;
+	resolve_geometry_flags.set(TopologyGeometryResolver::RESOLVE_LINE);
+
+	// Visit topological line features.
+	TopologyGeometryResolver topology_line_resolver(
+			resolved_topological_lines,
+			resolve_geometry_flags,
+			reconstruct_handle,
 			reconstruction_tree,
 			topological_sections_reconstruct_handles);
 
 	AppLogicUtils::visit_feature_collections(
-		topological_closed_plate_polygon_features_collection.begin(),
-		topological_closed_plate_polygon_features_collection.end(),
-		topology_boundary_resolver);
+			topological_line_features_collection.begin(),
+			topological_line_features_collection.end(),
+			topology_line_resolver);
+
+	return reconstruct_handle;
+}
+
+
+bool
+GPlatesAppLogic::TopologyUtils::is_topological_boundary_feature(
+	const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+{
+	// Iterate over the feature properties.
+	GPlatesModel::FeatureHandle::const_iterator iter = feature->begin();
+	GPlatesModel::FeatureHandle::const_iterator end = feature->end();
+	for ( ; iter != end; ++iter) 
+	{
+		static const GPlatesPropertyValues::StructuralType GPML_TOPOLOGICAL_POLYGON =
+				GPlatesPropertyValues::StructuralType::create_gpml("TopologicalPolygon");
+
+		if (TopologyInternalUtils::get_topology_geometry_property_value_type(iter) == GPML_TOPOLOGICAL_POLYGON)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
+bool
+GPlatesAppLogic::TopologyUtils::has_topological_boundary_features(
+		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
+{
+	GPlatesModel::FeatureCollectionHandle::const_iterator feature_collection_iter = feature_collection->begin();
+	GPlatesModel::FeatureCollectionHandle::const_iterator feature_collection_end = feature_collection->end();
+	for ( ; feature_collection_iter != feature_collection_end; ++feature_collection_iter)
+	{
+		const GPlatesModel::FeatureHandle::const_weak_ref feature_ref = (*feature_collection_iter)->reference();
+
+		if (is_topological_boundary_feature(feature_ref))
+		{ 
+			return true; 
+		}
+	}
+
+	return false;
+}
+
+
+GPlatesAppLogic::ReconstructHandle::type
+GPlatesAppLogic::TopologyUtils::resolve_topological_boundaries(
+		std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_closed_plate_polygon_features_collection,
+		const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
+		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles)
+{
+	// Get the next global reconstruct handle - it'll be stored in each RTG.
+	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
+
+	// Resolve topological boundaries (not lines).
+	TopologyGeometryResolver::resolve_geometry_flags_type resolve_geometry_flags;
+	resolve_geometry_flags.set(TopologyGeometryResolver::RESOLVE_BOUNDARY);
+
+	// Visit topological boundary features.
+	TopologyGeometryResolver topology_boundary_resolver(
+			resolved_topological_boundaries,
+			resolve_geometry_flags,
+			reconstruct_handle,
+			reconstruction_tree,
+			topological_sections_reconstruct_handles);
+
+	AppLogicUtils::visit_feature_collections(
+			topological_closed_plate_polygon_features_collection.begin(),
+			topological_closed_plate_polygon_features_collection.end(),
+			topology_boundary_resolver);
+
+	return reconstruct_handle;
 }
 
 
 GPlatesAppLogic::TopologyUtils::resolved_boundaries_for_geometry_partitioning_query_type
 GPlatesAppLogic::TopologyUtils::query_resolved_topologies_for_geometry_partitioning(
-		const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries)
+		const std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries)
 {
 	// Query structure to return to the caller.
 	resolved_boundaries_for_geometry_partitioning_query_type resolved_boundaries_query;
@@ -333,18 +448,23 @@ GPlatesAppLogic::TopologyUtils::query_resolved_topologies_for_geometry_partition
 	resolved_boundaries_query->resolved_boundaries.reserve(resolved_topological_boundaries.size());
 
 	// Iterate through the resolved topological boundaries and generate polygons for geometry partitioning.
-	std::vector<resolved_topological_boundary_non_null_ptr_type>::const_iterator rtb_iter = resolved_topological_boundaries.begin();
-	std::vector<resolved_topological_boundary_non_null_ptr_type>::const_iterator rtb_end = resolved_topological_boundaries.end();
+	std::vector<resolved_topological_geometry_non_null_ptr_type>::const_iterator rtb_iter = resolved_topological_boundaries.begin();
+	std::vector<resolved_topological_geometry_non_null_ptr_type>::const_iterator rtb_end = resolved_topological_boundaries.end();
 	for ( ; rtb_iter != rtb_end; ++rtb_iter)
 	{
-		const ResolvedTopologicalBoundary::non_null_ptr_type &rtb = *rtb_iter;
+		const ResolvedTopologicalGeometry::non_null_ptr_type &rtb = *rtb_iter;
 
-		const ResolvedBoundaryForGeometryPartitioning resolved_boundary_for_geometry_partitioning(
-				rtb.get(),
-				GPlatesMaths::PolygonIntersections::create(rtb->resolved_topology_geometry()));
+		boost::optional<ResolvedTopologicalGeometry::resolved_topology_boundary_ptr_type>
+				resolved_topology_boundary_polygon = rtb->resolved_topology_boundary();
+		if (resolved_topology_boundary_polygon)
+		{
+			const ResolvedBoundaryForGeometryPartitioning resolved_boundary_for_geometry_partitioning(
+					rtb.get(),
+					GPlatesMaths::PolygonIntersections::create(resolved_topology_boundary_polygon.get()));
 
-		resolved_boundaries_query->resolved_boundaries.push_back(
-				resolved_boundary_for_geometry_partitioning);
+			resolved_boundaries_query->resolved_boundaries.push_back(
+					resolved_boundary_for_geometry_partitioning);
+		}
 	}
 
 	return resolved_boundaries_query;
@@ -505,7 +625,7 @@ namespace
 	struct PlateIdLessThanComparison
 	{
 		typedef std::pair<GPlatesModel::integer_plate_id_type,
-				const GPlatesAppLogic::ResolvedTopologicalBoundary *> plate_id_and_boundary_type;
+				const GPlatesAppLogic::ResolvedTopologicalGeometry *> plate_id_and_boundary_type;
 
 		PlateIdLessThanComparison()
 		{  }
@@ -523,12 +643,12 @@ namespace
 
 boost::optional< std::pair<
 		GPlatesModel::integer_plate_id_type,
-		const GPlatesAppLogic::ResolvedTopologicalBoundary * > >
+		const GPlatesAppLogic::ResolvedTopologicalGeometry * > >
 GPlatesAppLogic::TopologyUtils::find_reconstruction_plate_id_furthest_from_anchor_in_plate_circuit(
 		const resolved_topological_boundary_seq_type &resolved_boundaries)
 {
 	typedef std::pair<GPlatesModel::integer_plate_id_type,
-			const ResolvedTopologicalBoundary *> plate_id_and_boundary_type;
+			const ResolvedTopologicalGeometry *> plate_id_and_boundary_type;
 
 	std::vector<plate_id_and_boundary_type> reconstruction_plate_ids;
 	reconstruction_plate_ids.reserve(resolved_boundaries.size());
@@ -539,7 +659,7 @@ GPlatesAppLogic::TopologyUtils::find_reconstruction_plate_id_furthest_from_ancho
 		rtb_iter != resolved_boundaries.end();
 		++rtb_iter)
 	{
-		const ResolvedTopologicalBoundary *rtb = *rtb_iter;
+		const ResolvedTopologicalGeometry *rtb = *rtb_iter;
 
 		if (rtb->plate_id())
 		{
@@ -563,7 +683,7 @@ GPlatesAppLogic::TopologyUtils::find_reconstruction_plate_id_furthest_from_ancho
 
 
 GPlatesAppLogic::TopologyUtils::ResolvedBoundaryPartitionedGeometries::ResolvedBoundaryPartitionedGeometries(
-		const ResolvedTopologicalBoundary *resolved_topological_boundary_) :
+		const ResolvedTopologicalGeometry *resolved_topological_boundary_) :
 	resolved_topological_boundary(resolved_topological_boundary_)
 {
 }
@@ -571,16 +691,23 @@ GPlatesAppLogic::TopologyUtils::ResolvedBoundaryPartitionedGeometries::ResolvedB
 
 bool
 GPlatesAppLogic::TopologyUtils::is_topological_network_feature(
-		const GPlatesModel::FeatureHandle &feature)
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 {
-	// FIXME: Do this check based on feature properties rather than feature type.
-	// So if something looks like a TCPB (because it has a topology polygon property)
-	// then treat it like one. For this to happen we first need TopologicalNetwork to
-	// use a property type different than TopologicalPolygon.
-	//
-	static const QString type("TopologicalNetwork");
+	// Iterate over the feature properties.
+	GPlatesModel::FeatureHandle::const_iterator iter = feature->begin();
+	GPlatesModel::FeatureHandle::const_iterator end = feature->end();
+	for ( ; iter != end; ++iter) 
+	{
+		static const GPlatesPropertyValues::StructuralType GPML_TOPOLOGICAL_NETWORK =
+				GPlatesPropertyValues::StructuralType::create_gpml("TopologicalNetwork");
 
-	return type == GPlatesUtils::make_qstring_from_icu_string(feature.feature_type().get_name());
+		if (TopologyInternalUtils::get_topology_geometry_property_value_type(iter) == GPML_TOPOLOGICAL_NETWORK)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 
@@ -594,9 +721,9 @@ GPlatesAppLogic::TopologyUtils::has_topological_network_features(
 			feature_collection->end();
 	for ( ; feature_collection_iter != feature_collection_end; ++feature_collection_iter)
 	{
-		const GPlatesModel::FeatureHandle &feature_handle = **feature_collection_iter;
+		const GPlatesModel::FeatureHandle::const_weak_ref feature_ref = (*feature_collection_iter)->reference();
 
-		if (is_topological_network_feature(feature_handle))
+		if (is_topological_network_feature(feature_ref))
 		{ 
 			return true; 
 		}
@@ -606,23 +733,29 @@ GPlatesAppLogic::TopologyUtils::has_topological_network_features(
 }
 
 
-void
+GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
 		std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_network_features_collection,
 		const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
-		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles)
+		boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles)
 {
+	// Get the next global reconstruct handle - it'll be stored in each RTN.
+	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
+
 	// Visit topological network features.
 	TopologyNetworkResolver topology_network_resolver(
 			resolved_topological_networks,
+			reconstruct_handle,
 			reconstruction_tree,
-			topological_sections_reconstruct_handles);
+			topological_geometry_reconstruct_handles);
 
 	AppLogicUtils::visit_feature_collections(
-		topological_network_features_collection.begin(),
-		topological_network_features_collection.end(),
-		topology_network_resolver);
+			topological_network_features_collection.begin(),
+			topological_network_features_collection.end(),
+			topology_network_resolver);
+
+	return reconstruct_handle;
 }
 
 

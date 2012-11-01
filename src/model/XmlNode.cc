@@ -25,11 +25,67 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <iostream>
 #include <iterator>
-#include <algorithm>
 #include <boost/bind.hpp>
+
 #include "XmlNode.h"
+
+#include "XmlNodeUtils.h"
+
+#include "utils/CallStackTracker.h"
+
+
+namespace
+{
+	/**
+	 * Creates an @a QualifiedXmlName from a namespace URI, namespace alias (prefix) and local name.
+	 *
+	 * If the namespace alias (prefix) is an empty string then it is determined from the namespace URI
+	 * which is assumed to be one of the standard namespaces used by GPlates (the namespace alias
+	 * is determined internally by @a QualifiedXmlName).
+	 */
+	template <class QualifiedXmlNameType>
+	QualifiedXmlNameType
+	get_qualified_xml_name(
+			const QString &namespace_uri,
+			const QString &namespace_prefix,
+			const QString &local_name)
+	{
+		if (namespace_prefix.isEmpty())
+		{
+			return QualifiedXmlNameType(namespace_uri, local_name);
+		}
+
+		return QualifiedXmlNameType(namespace_uri, namespace_prefix, local_name);
+	}
+
+
+	const GPlatesModel::XmlElementNode::Attribute
+	convert_qxmlstreamattribute_to_attribute(
+			const QXmlStreamAttribute &attribute)
+	{
+		return std::make_pair(
+				get_qualified_xml_name<GPlatesModel::XmlAttributeName>(
+					attribute.namespaceUri().toString(),
+					attribute.prefix().toString(),
+					attribute.name().toString()),
+				GPlatesModel::XmlAttributeValue(
+					GPlatesUtils::make_icu_string_from_qstring(attribute.value().toString())));
+	}
+
+
+	const QXmlStreamAttribute
+	convert_attribute_to_qxmlstreamattribute(
+			const GPlatesModel::XmlElementNode::Attribute &attribute)
+	{
+		return QXmlStreamAttribute(
+				GPlatesUtils::make_qstring_from_icu_string(attribute.first.get_namespace()),
+				GPlatesUtils::make_qstring_from_icu_string(attribute.first.get_name()),
+				GPlatesUtils::make_qstring_from_icu_string(attribute.second.get()));
+	}
+}
 
 
 #if 0
@@ -98,8 +154,7 @@ GPlatesModel::XmlTextNode::create(
 	// ampersand will not be read in correctly.
 	QString text = reader.text().toString();
 	return non_null_ptr_type(
-			new XmlTextNode(reader.lineNumber(), reader.columnNumber(), text),
-			GPlatesUtils::NullIntrusivePointerHandler());
+			new XmlTextNode(reader.lineNumber(), reader.columnNumber(), text));
 }
 
 
@@ -111,43 +166,31 @@ GPlatesModel::XmlTextNode::write_to(
 }
 
 
-namespace
-{
-	const QString
-	get_alias_from_qualified_name(
-			const QString &name)
-	{
-		static const QChar SEPARATOR = ':';
-		static const int START_FIRST_SECTION = 0;
-		static const int END_FIRST_SECTION = 0;
-
-		return name.section(SEPARATOR, START_FIRST_SECTION, END_FIRST_SECTION);
-	}
-}
-
-
 const GPlatesModel::XmlElementNode::non_null_ptr_type
 GPlatesModel::XmlElementNode::create(
 		QXmlStreamReader &reader,
-		const boost::shared_ptr<GPlatesModel::XmlElementNode::AliasToNamespaceMap> &
-			parent_alias_map)
+		const boost::shared_ptr<GPlatesModel::XmlElementNode::AliasToNamespaceMap> &parent_alias_map)
 {
+	// Add this scope to the call stack trace that is printed for an exception thrown in this scope.
+	TRACK_CALL_STACK();
+
 	// Make sure reader is at starting element
 	Q_ASSERT(reader.isStartElement());
 
 	// Store the tag name of start element.
-	PropertyName prop_name(
-			reader.namespaceUri().toString(),
-			get_alias_from_qualified_name(reader.qualifiedName().toString()),
-			reader.name().toString());
+	const XmlElementName element_name =
+			get_qualified_xml_name<XmlElementName>(
+					reader.namespaceUri().toString(),
+					reader.prefix().toString(),
+					reader.name().toString());
 
 	non_null_ptr_type elem(
-			new XmlElementNode(reader.lineNumber(), reader.columnNumber(), prop_name),
-			GPlatesUtils::NullIntrusivePointerHandler());
+			new XmlElementNode(reader.lineNumber(), reader.columnNumber(), element_name));
 
 	QXmlStreamNamespaceDeclarations ns_decls = reader.namespaceDeclarations();
 	// If this element contains namespace declarations...
-	if ( ! ns_decls.empty()) {
+	if ( ! ns_decls.empty())
+	{
 		// ... copy the parent's map...
 		elem->d_alias_map = boost::shared_ptr<AliasToNamespaceMap>(
 				new AliasToNamespaceMap(
@@ -158,14 +201,16 @@ GPlatesModel::XmlElementNode::create(
 		QXmlStreamNamespaceDeclarations::iterator 
 			iter = ns_decls.begin(), 
 			end = ns_decls.end();
-		for ( ; iter != end; ++iter) {
+		for ( ; iter != end; ++iter)
+		{
 			elem->d_alias_map->insert(
 					std::make_pair(
 						iter->prefix().toString(),
 						iter->namespaceUri().toString()));
 		}
 	}
-	else {
+	else
+	{
 		// Otherwise, just link to the parent's map.
 		elem->d_alias_map = parent_alias_map;
 	}
@@ -176,33 +221,27 @@ GPlatesModel::XmlElementNode::create(
 	// so we must make sure we block for a moment to make sure
 	// the process is ready to feed us data.
 	reader.device()->waitForReadyRead(1000);
-	while ( ! reader.atEnd()) {
+	while ( ! reader.atEnd())
+	{
 		reader.readNext();
 
-		if (reader.isEndElement()) {
+		if (reader.isEndElement())
+		{
 			break;
 		}
 
-		try {
-			if (reader.isStartElement()) {
-				XmlNode::non_null_ptr_type child = 
-					XmlElementNode::create(reader, elem->d_alias_map);
-				elem->d_children.push_back(child);
-			} else if (reader.isCharacters() && ! reader.isWhitespace()) {
-				XmlNode::non_null_ptr_type child = XmlTextNode::create(reader);
-				elem->d_children.push_back(child);
-			}
-
-		// FIXME: Fix these catch clauses.
-		} catch (std::exception &exc) {
-			qWarning() << "GPlatesModel::XmlElementNode::create: " << exc.what();
-			throw;
-		} catch (const char *ex) {
-			qWarning() << "GPlatesModel::XmlElementNode::create: " << ex;
-			throw;
-		} catch (...) {
-			throw;
+		if (reader.isStartElement())
+		{
+			XmlNode::non_null_ptr_type child = 
+				XmlElementNode::create(reader, elem->d_alias_map);
+			elem->d_children.push_back(child);
 		}
+		else if (reader.isCharacters() && ! reader.isWhitespace())
+		{
+			XmlNode::non_null_ptr_type child = XmlTextNode::create(reader);
+			elem->d_children.push_back(child);
+		}
+
 		reader.device()->waitForReadyRead(1000);
 	}
 
@@ -213,42 +252,13 @@ GPlatesModel::XmlElementNode::create(
 const GPlatesModel::XmlElementNode::non_null_ptr_type
 GPlatesModel::XmlElementNode::create(
 		const GPlatesModel::XmlTextNode::non_null_ptr_type &text,
-		const GPlatesModel::PropertyName &prop_name)
+		const GPlatesModel::XmlElementName &element_name)
 {	
 	non_null_ptr_type elem(
-			new XmlElementNode(text->line_number(), text->column_number(), prop_name),
-			GPlatesUtils::NullIntrusivePointerHandler());
+			new XmlElementNode(text->line_number(), text->column_number(), element_name));
 
 	elem->d_children.push_back(text);
 	return elem;
-}
-
-
-namespace
-{
-	const GPlatesModel::XmlElementNode::Attribute
-	convert_qxmlstreamattribute_to_attribute(
-			const QXmlStreamAttribute &attribute)
-	{
-		return std::make_pair(
-				GPlatesModel::XmlAttributeName(
-					attribute.namespaceUri().toString(),
-					get_alias_from_qualified_name(attribute.qualifiedName().toString()),
-					attribute.name().toString()),
-				GPlatesModel::XmlAttributeValue(
-					GPlatesUtils::make_icu_string_from_qstring(attribute.value().toString())));
-	}
-
-
-	const QXmlStreamAttribute
-	convert_attribute_to_qxmlstreamattribute(
-			const GPlatesModel::XmlElementNode::Attribute &attribute)
-	{
-		return QXmlStreamAttribute(
-				GPlatesUtils::make_qstring_from_icu_string(attribute.first.get_namespace()),
-				GPlatesUtils::make_qstring_from_icu_string(attribute.first.get_name()),
-				GPlatesUtils::make_qstring_from_icu_string(attribute.second.get()));
-	}
 }
 
 
@@ -280,61 +290,9 @@ GPlatesModel::XmlElementNode::load_attributes(
 }
 
 
-namespace
-{
-	class FindChildByNameVisitor
-		: public GPlatesModel::XmlNodeVisitor
-	{
-	public:
-		FindChildByNameVisitor(
-				const GPlatesModel::PropertyName &name) :
-			d_name(name), found(false)
-		{ }
-
-		virtual
-		~FindChildByNameVisitor()
-		{ }
-
-		boost::optional<GPlatesModel::XmlElementNode::non_null_ptr_type>
-		get_child() const {
-			return d_child;
-		}
-
-		bool
-		check_name(
-				const GPlatesModel::XmlNode::non_null_ptr_type &node) {
-			node->accept_visitor(*this);
-			return found;
-		}
-
-		virtual
-		void
-		visit_element_node(
-				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem) {
-			found = (elem->get_name() == d_name);
-			if (found) {
-				d_child = elem;
-			}
-		}
-
-		virtual
-		void
-		visit_text_node(
-				const GPlatesModel::XmlTextNode::non_null_ptr_type &text) {
-			found = false;
-		}
-
-	private:
-		GPlatesModel::PropertyName d_name;
-		bool found;
-		boost::optional<GPlatesModel::XmlElementNode::non_null_ptr_type> d_child;
-	};
-}
-
-
 boost::optional<GPlatesModel::XmlElementNode::non_null_ptr_type>
 GPlatesModel::XmlElementNode::get_child_by_name(
-		const GPlatesModel::PropertyName &name) const
+		const GPlatesModel::XmlElementName &name) const
 {
 	return get_next_child_by_name(name, children_begin()).second;
 }
@@ -344,13 +302,25 @@ std::pair<
 	GPlatesModel::XmlElementNode::child_const_iterator, 
 	boost::optional<GPlatesModel::XmlElementNode::non_null_ptr_type> >
 GPlatesModel::XmlElementNode::get_next_child_by_name(
-		const PropertyName &name,
+		const XmlElementName &name,
 		const child_const_iterator &begin) const
 {
-	FindChildByNameVisitor visitor(name);
-	child_const_iterator child = std::find_if(begin, children_end(),
-			boost::bind(&FindChildByNameVisitor::check_name, boost::ref(visitor), _1));
-	return std::make_pair(child, visitor.get_child());
+	XmlNodeUtils::XmlElementNodeExtractionVisitor visitor(name);
+
+	boost::optional<XmlElementNode::non_null_ptr_type> child_xml_element_node;
+
+	// Iterator over the child nodes.
+	for (child_const_iterator child_iter = begin; child_iter != children_end(); ++child_iter)
+	{
+		child_xml_element_node = visitor.get_xml_element_node(*child_iter);
+		if (child_xml_element_node)
+		{
+			return std::make_pair(child_iter, child_xml_element_node);
+		}
+	}
+
+	// No child XML element node with matching element name.
+	return std::make_pair(children_end(), boost::none);
 }
 
 
@@ -358,8 +328,7 @@ void
 GPlatesModel::XmlTextNode::accept_visitor(
 		GPlatesModel::XmlNodeVisitor &visitor)
 {
-	visitor.visit_text_node(non_null_ptr_type(this,
-			GPlatesUtils::NullIntrusivePointerHandler()));
+	visitor.visit_text_node(non_null_ptr_type(this));
 }
 
 
@@ -370,8 +339,7 @@ GPlatesModel::XmlElementNode::accept_visitor(
 	// FIXME: This is nasty, but I can't think of any other way to work it
 	// at the moment.
 	//XmlElementNode *ptr = const_cast<XmlElementNode *>(this);
-	visitor.visit_element_node(non_null_ptr_type(this,
-			GPlatesUtils::NullIntrusivePointerHandler()));
+	visitor.visit_element_node(non_null_ptr_type(this));
 }
 
 

@@ -58,7 +58,7 @@ namespace GPlatesFileIO
 
 			SubSegmentType
 			get_sub_segment_feature_type(
-					const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment &sub_segment)
+					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment)
 			{
 				d_sub_segment_type = SUB_SEGMENT_TYPE_OTHER;
 
@@ -195,8 +195,8 @@ namespace GPlatesFileIO
 			visit_enumeration(
 					const GPlatesPropertyValues::Enumeration &enumeration)
 			{
-				static const GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type(
-						"gpml:SubductionPolarityEnumeration");
+				static const GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type =
+						GPlatesPropertyValues::EnumerationType::create_gpml("SubductionPolarityEnumeration");
 
 				if (!subduction_polarity_enumeration_type.is_equal_to(enumeration.type()))
 				{
@@ -279,7 +279,7 @@ namespace GPlatesFileIO
 
 			SubSegmentType
 			get_slab_sub_segment_feature_type(
-					const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment &sub_segment)
+					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment)
 			{
 				d_sub_segment_type = SUB_SEGMENT_TYPE_OTHER;
 
@@ -400,8 +400,8 @@ namespace GPlatesFileIO
 			visit_enumeration(
 					const GPlatesPropertyValues::Enumeration &enumeration)
 			{
-				static const GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type(
-						"gpml:SubductionPolarityEnumeration");
+				static const GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type =
+						GPlatesPropertyValues::EnumerationType::create_gpml("SubductionPolarityEnumeration");
 
 				if (!subduction_polarity_enumeration_type.is_equal_to(enumeration.type()))
 				{
@@ -427,7 +427,7 @@ namespace GPlatesFileIO
 
 GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl::SubSegmentType
 GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl::get_sub_segment_type(
-		const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment &sub_segment,
+		const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment,
 		const double &recon_time)
 {
 	return DetermineSubSegmentFeatureType(recon_time).get_sub_segment_feature_type(sub_segment);
@@ -436,7 +436,7 @@ GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl::get_sub_segment_type(
 
 GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl::SubSegmentType
 GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl::get_slab_sub_segment_type(
-		const GPlatesAppLogic::ResolvedTopologicalBoundarySubSegment &sub_segment,
+		const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment,
 		const double &recon_time)
 {
 	SubSegmentType d_sub_segment_type = SUB_SEGMENT_TYPE_OTHER;

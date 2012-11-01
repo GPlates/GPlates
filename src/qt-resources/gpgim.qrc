@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="/">
+    <file>gpgim/gpgim.xml</file>
+  </qresource>
+</RCC>

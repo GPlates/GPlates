@@ -31,13 +31,9 @@
 
 #include "canvas-tools/CanvasToolAdapterForGlobe.h"
 #include "canvas-tools/CanvasToolAdapterForMap.h"
+#include "canvas-tools/CreateSmallCircle.h"
 #include "canvas-tools/GeometryOperationState.h"
 #include "canvas-tools/MeasureDistance.h"
-#include "canvas-tools/PanMap.h"
-#include "canvas-tools/ReorientGlobe.h"
-#include "canvas-tools/CreateSmallCircle.h"
-#include "canvas-tools/ZoomGlobe.h"
-#include "canvas-tools/ZoomMap.h"
 
 #include "global/GPlatesAssert.h"
 
@@ -58,11 +54,6 @@ namespace GPlatesGui
 	namespace
 	{
 		/**
-		 * The type of this canvas tool workflow.
-		 */
-		const CanvasToolWorkflows::WorkflowType WORKFLOW_TYPE = CanvasToolWorkflows::WORKFLOW_SMALL_CIRCLE;
-
-		/**
 		 * The main rendered layer used by this canvas tool workflow.
 		 */
 		const GPlatesViewOperations::RenderedGeometryCollection::MainLayerType WORKFLOW_RENDER_LAYER =
@@ -77,7 +68,12 @@ GPlatesGui::SmallCircleCanvasToolWorkflow::SmallCircleCanvasToolWorkflow(
 		const GPlatesCanvasTools::CanvasTool::status_bar_callback_type &status_bar_callback,
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesQtWidgets::ViewportWindow &viewport_window) :
-	CanvasToolWorkflow(viewport_window.globe_canvas(), viewport_window.map_view()),
+	CanvasToolWorkflow(
+			viewport_window.globe_canvas(),
+			viewport_window.map_view(),
+			CanvasToolWorkflows::WORKFLOW_SMALL_CIRCLE,
+			// The tool to start off with...
+			CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE),
 	d_rendered_geom_collection(view_state.get_rendered_geometry_collection())
 {
 	create_canvas_tools(
@@ -100,44 +96,6 @@ GPlatesGui::SmallCircleCanvasToolWorkflow::create_canvas_tools(
 		GPlatesQtWidgets::ViewportWindow &viewport_window)
 {
 	//
-	// Drag canvas tool.
-	//
-
-	d_globe_drag_globe_tool.reset(
-			new GPlatesCanvasTools::ReorientGlobe(
-					viewport_window.globe_canvas().globe(),
-					viewport_window.globe_canvas(),
-					view_state.get_rendered_geometry_collection(),
-					viewport_window));
-	d_map_drag_globe_tool.reset(
-			new GPlatesCanvasTools::PanMap(
-					viewport_window.map_view().map_canvas(),
-					viewport_window.map_view(),
-					view_state.get_rendered_geometry_collection(),
-					viewport_window,
-					view_state.get_map_transform()));
-
-	//
-	// Zoom canvas tool.
-	//
-
-	d_globe_zoom_globe_tool.reset(
-			new GPlatesCanvasTools::ZoomGlobe(
-					viewport_window.globe_canvas().globe(),
-					viewport_window.globe_canvas(),
-					view_state.get_rendered_geometry_collection(),
-					viewport_window,
-					view_state));
-	d_map_zoom_globe_tool.reset(
-			new GPlatesCanvasTools::ZoomMap(
-					viewport_window.map_view().map_canvas(),
-					viewport_window.map_view(),
-					view_state.get_rendered_geometry_collection(),
-					viewport_window,
-					view_state.get_map_transform(),
-					view_state.get_viewport_zoom()));
-
-	//
 	// Create small circle canvas tool.
 	//
 
@@ -145,6 +103,7 @@ GPlatesGui::SmallCircleCanvasToolWorkflow::create_canvas_tools(
 		GPlatesCanvasTools::CreateSmallCircle::create(
 				status_bar_callback,
 				view_state.get_rendered_geometry_collection(),
+				WORKFLOW_RENDER_LAYER,
 				viewport_window.task_panel_ptr()->small_circle_widget());
 	// For the globe view.
 	d_globe_create_small_circle_tool.reset(
@@ -172,18 +131,7 @@ GPlatesGui::SmallCircleCanvasToolWorkflow::initialise()
 	// NOTE: If you are updating the tool in 'update_enable_state()' then you
 	// don't need to enable/disable it here.
 
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_DRAG_GLOBE,
-			true);
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_ZOOM_GLOBE,
-			true);
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE,
-			true);
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE, true);
 }
 
 
@@ -209,12 +157,6 @@ GPlatesGui::SmallCircleCanvasToolWorkflow::get_selected_globe_and_map_canvas_too
 {
 	switch (selected_tool)
 	{
-	case CanvasToolWorkflows::TOOL_DRAG_GLOBE:
-		return std::make_pair(d_globe_drag_globe_tool.get(), d_map_drag_globe_tool.get());
-
-	case CanvasToolWorkflows::TOOL_ZOOM_GLOBE:
-		return std::make_pair(d_globe_zoom_globe_tool.get(), d_map_zoom_globe_tool.get());
-
 	case CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE:
 		return std::make_pair(d_globe_create_small_circle_tool.get(), d_map_create_small_circle_tool.get());
 

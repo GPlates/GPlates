@@ -31,8 +31,8 @@
 #include <boost/optional.hpp>
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
+
 #include "gui/Symbol.h"
-#include "model/FeatureHandle.h"
 
 
 namespace GPlatesViewOperations
@@ -45,80 +45,22 @@ namespace GPlatesGui
 {
 	class FeatureFocus;
 
-	/**
-	 * This class is used to control the highlighting of the currently-focused reconstruction
-	 * geometry.
-	 */
-	class GeometryFocusHighlight:
-			public QObject
+	namespace GeometryFocusHighlight
 	{
-		Q_OBJECT
-	public:
-
-		GeometryFocusHighlight(
-			GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-			const GPlatesGui::symbol_map_type &symbol_map);
-
-		virtual
-		~GeometryFocusHighlight()
-		{  }
-
-	public slots:
-
 		/**
-		 * Change which reconstruction geometry is currently focused, also specifying an
-		 * (optional) weak-ref to the feature which contains the geometry whose RG is the
-		 * currently-focused reconstruction geometry.
+		 * Draw the focused geometry (if there is one) into the specified rendered geometry layer.
 		 *
-		 * The counter-intuitive ordering of the arguments (feature first, followed by the
-		 * reconstruction geometry, when the geometry is the "main" argument) is so that
-		 * this slot matches the @a focus_changed signal emitted by FeatureFocus.
+		 * If no geometry is currently in focus then the rendered geometry layer will be cleared.
+		 *
+		 * NOTE: The caller is responsible for activating/deactivating the specified rendered geometry layer.
 		 */
 		void
-		set_focus(
-				GPlatesGui::FeatureFocus &feature_focus);
-
-		/**
-		 * Draw the focused geometry (if there is one) on the screen.
-		 */
-		void
-		draw_focused_geometry();
-
-	private:
-		/**
-		 * The feature which contains the geometry whose RFG is the currently-focused
-		 * reconstruction geometry.
-		 *
-		 * Note that there might not be any such feature, in which case this would be an
-		 * invalid weak-ref.
-		 */
-		GPlatesModel::FeatureHandle::weak_ref d_feature;
-
-		/**
-		 * The reconstruction geometry which is focused.
-		 *
-		 * Note that there may not be a focused reconstruction geometry, in which case this
-		 * would be a null pointer.
-		 */
-		GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type d_focused_geometry;
-
-		/**
-		 * Used to find the visible reconstruction geometries as a short-list for searching
-		 * for new reconstruction geometries for a new reconstruction because we don't want to
-		 * pick up any old or invisible reconstruction geometries.
-		 */
-		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
-
-		/**
-		 * The layer of rendered geometries which is used for highlighting.
-		 */
-		GPlatesViewOperations::RenderedGeometryLayer *d_geometry_focus_highlight_layer_ptr;
-
-		/**
-		 * A reference to the viewstate's feature-type-to-symbol-map
-		 */
-		const GPlatesGui::symbol_map_type &d_symbol_map;
-	};
+		draw_focused_geometry(
+				FeatureFocus &feature_focus,
+				GPlatesViewOperations::RenderedGeometryLayer &render_geom_layer,
+				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				const symbol_map_type &symbol_map);
+	}
 }
 
 #endif // GPLATES_GUI_GEOMETRYFOCUSHIGHLIGHT_H

@@ -35,8 +35,14 @@
 #include "model/ModelInterface.h"
 #include "model/FeatureCollectionHandle.h"
 
-namespace GPlatesFileIO {
 
+namespace GPlatesModel
+{
+	class Gpgim;
+}
+
+namespace GPlatesFileIO
+{
 	class PlatesLineFormatReader
 	{
 	public:
@@ -51,6 +57,7 @@ namespace GPlatesFileIO {
 		read_file(
 				File::Reference &file,
 				GPlatesModel::ModelInterface &model,
+				const GPlatesModel::Gpgim &gpgim,
 				ReadErrorAccumulation &read_errors);
 	};
 	

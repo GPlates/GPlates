@@ -437,6 +437,26 @@ GPlatesQtWidgets::ViewportWindow::load_files(
 
 
 void
+GPlatesQtWidgets::ViewportWindow::display()
+{
+	//
+	// First show the main window so that everything is visible.
+	//
+
+	show();
+
+	//
+	// Then call functions that rely on the main window being visible.
+	//
+
+	// Activate the default canvas tool which checks for visibility of the main view canvas.
+	// In particular this needs to be done after the globe canvas is visible otherwise the default
+	// canvas tool will not get activated.
+	canvas_tool_workflows().activate();
+}
+
+
+void
 GPlatesQtWidgets::ViewportWindow::handle_read_errors(
 		GPlatesAppLogic::FeatureCollectionFileIO &,
 		const GPlatesFileIO::ReadErrorAccumulation &new_read_errors)
@@ -1263,40 +1283,12 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 		GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
 		GPlatesGui::CanvasToolWorkflows::ToolType tool)
 {
-	// Need to switch to the proper task panel tab depending on which canvas tool was just activated.
+	// Switch to the proper task panel tab depending on which canvas tool was just activated.
 	switch (tool)
 	{
 	case GPlatesGui::CanvasToolWorkflows::TOOL_DRAG_GLOBE:
 	case GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM_GLOBE:
-		// We have to pick a tab otherwise the previous tab from another canvas tool workflow will remain.
-		// Use the feature tab for the Feature Inspection workflow.
-		// Use the digitisation tab for the Digitisation workflow.
-		switch (workflow)
-		{
-		case GPlatesGui::CanvasToolWorkflows::WORKFLOW_FEATURE_INSPECTION:
-			d_task_panel_ptr->choose_feature_tab();
-			break;
-
-		case GPlatesGui::CanvasToolWorkflows::WORKFLOW_DIGITISATION:
-			d_task_panel_ptr->choose_digitisation_tab();
-			break;
-
-		case GPlatesGui::CanvasToolWorkflows::WORKFLOW_TOPOLOGY:
-			d_task_panel_ptr->choose_topology_tools_tab();
-			break;
-
-		case GPlatesGui::CanvasToolWorkflows::WORKFLOW_POLE_MANIPULATION:
-			d_task_panel_ptr->choose_modify_pole_tab();
-			break;
-
-		case GPlatesGui::CanvasToolWorkflows::WORKFLOW_SMALL_CIRCLE:
-			d_task_panel_ptr->choose_small_circle_tab();
-			break;
-
-		default:
-			// Shouldn't get here - if we do then do nothing - just let that previous tab remain.
-			break;
-		}
+		// We don't pick a tab - the previous tab from another canvas tool workflow will remain.
 		break;
 
 	case GPlatesGui::CanvasToolWorkflows::TOOL_CLICK_GEOMETRY:
@@ -1339,7 +1331,15 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 		d_task_panel_ptr->choose_modify_pole_tab();
 		break;
 
-	case GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_TOPOLOGY:
+	case GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_LINE_TOPOLOGY:
+		d_task_panel_ptr->choose_topology_tools_tab();
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_BOUNDARY_TOPOLOGY:
+		d_task_panel_ptr->choose_topology_tools_tab();
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_NETWORK_TOPOLOGY:
 		d_task_panel_ptr->choose_topology_tools_tab();
 		break;
 

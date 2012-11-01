@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <vector>
 #include <QDebug>
+#include <QDir>
 #include <QStringList>
 #include <QTextStream>
 
@@ -634,6 +635,12 @@ namespace
 int
 internal_main(int argc, char* argv[])
 {
+	// Initialise Qt resources that exist in the static 'qt-resources' library.
+	// NOTE: This is done here so that both the GUI and command-line-only paths have initialised resources.
+	Q_INIT_RESOURCE(gpgim);
+	Q_INIT_RESOURCE(qt_widgets);
+	Q_INIT_RESOURCE(opengl);
+
 	//on Ubuntu Natty, we need to set this env variable to avoid the funny looking of spherical grid.
 	#if defined(linux) || defined(__linux__) || defined(__linux)
 	{
@@ -712,9 +719,6 @@ internal_main(int argc, char* argv[])
 	// Note that python references 'Application' so this should be instantiated before python is initialised.
 	GPlatesPresentation::Application application;
 
-	Q_INIT_RESOURCE(qt_widgets);
-	Q_INIT_RESOURCE(opengl);
-
 	// Initialise python if it's enabled.
 	if(GPlatesUtils::ComponentManager::instance().is_enabled(
 			GPlatesUtils::ComponentManager::Component::python()))
@@ -741,8 +745,13 @@ internal_main(int argc, char* argv[])
 // 	{
 // 		application.get_main_window().hide_symbol_menu();
 // 	}
-    	
-	application.get_main_window().show();
+
+	// Display the main window.
+	// This calls QMainWindow::show() and then performs extra actions that depend on the
+	// main window being visible.
+	application.get_main_window().display();
+
+	// Start the application event loop.
 	const int ret = qapplication.exec();
 
 	clean_up();

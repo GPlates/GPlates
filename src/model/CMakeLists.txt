@@ -33,8 +33,18 @@ set(srcs
     FeatureType.h
     FeatureVisitor.cc
     FeatureVisitor.h
-    GPGIMInfo.cc
-    GPGIMInfo.h
+    Gpgim.cc
+    Gpgim.h
+    GpgimEnumerationType.h
+    GpgimFeatureClass.cc
+    GpgimFeatureClass.h
+    GpgimInitialisationException.cc
+    GpgimInitialisationException.h
+    GpgimProperty.cc
+    GpgimProperty.h
+    GpgimStructuralType.h
+    GpgimVersion.cc
+    GpgimVersion.h
     HandleTraits.h
     IdTypeGenerator.h
     Model.cc
@@ -70,8 +80,11 @@ set(srcs
     WeakReferenceVisitors.h
     XmlAttributeName.h
     XmlAttributeValue.h
+    XmlElementName.h
     XmlNode.cc
     XmlNode.h
+    XmlNodeUtils.cc
+    XmlNodeUtils.h
 )
 
 

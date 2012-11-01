@@ -26,6 +26,8 @@
  */
 
 #include <map>
+#include <boost/foreach.hpp>
+
 #include "EditWidgetGroupBox.h"
 
 #include "AbstractEditWidget.h"
@@ -48,50 +50,31 @@
 #include "EditWidgetChooser.h"
 #include "NoActiveEditWidgetException.h"
 
+#include "app-logic/ApplicationState.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
+#include "model/Gpgim.h"
+#include "model/GpgimEnumerationType.h"
+#include "model/GpgimProperty.h"
+
 #include "presentation/ViewState.h"
+
 #include "property-values/GpmlPlateId.h"
-
-
-namespace
-{
-	/**
-	 * EditGeometryWidget is a little special; it wants a Plate ID for reconstruction.
-	 * Find it, and set it (or unset it).
-	 */
-	void
-	find_reconstruction_plate_id_for_geometry_widget(
-			GPlatesModel::FeatureHandle::weak_ref feature_ref,
-			GPlatesQtWidgets::EditGeometryWidget *edit_geometry_widget_ptr)
-	{
-		static const GPlatesModel::PropertyName plate_id_property_name =
-				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-		// Find it.
-		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
-		if (GPlatesFeatureVisitors::get_property_value(
-				feature_ref, plate_id_property_name, recon_plate_id))
-		{
-			// Set it.
-			edit_geometry_widget_ptr->set_reconstruction_plate_id(
-					recon_plate_id->value());
-		} else {
-			// Unset it.
-			edit_geometry_widget_ptr->unset_reconstruction_plate_id();
-		}
-	}
-}
 
 
 GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 		GPlatesPresentation::ViewState &view_state_,
-		QWidget *parent_):
+		QWidget *parent_) :
+	QGroupBox(parent_),
+	d_gpgim(view_state_.get_application_state().get_gpgim()),
 	d_active_widget_ptr(NULL),
 	d_edit_time_instant_widget_ptr(new EditTimeInstantWidget(this)),
 	d_edit_time_period_widget_ptr(new EditTimePeriodWidget(this)),
 	d_edit_old_plates_header_widget_ptr(new EditOldPlatesHeaderWidget(this)),
 	d_edit_double_widget_ptr(new EditDoubleWidget(this)),
-	d_edit_enumeration_widget_ptr(new EditEnumerationWidget(this)),
-	d_edit_geometry_widget_ptr(new EditGeometryWidget(view_state_, this)),
+	d_edit_enumeration_widget_ptr(new EditEnumerationWidget(d_gpgim, this)),
+	d_edit_geometry_widget_ptr(new EditGeometryWidget(this)),
 	d_edit_integer_widget_ptr(new EditIntegerWidget(this)),
 	d_edit_plate_id_widget_ptr(new EditPlateIdWidget(this)),
 	d_edit_polarity_chron_id_widget_ptr(new EditPolarityChronIdWidget(this)),
@@ -104,6 +87,9 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
                 view_state_.get_application_state(), this)),
 	d_edit_verb(tr("Edit"))
 {
+	// Build the mapping of property structural types to edit widgets.
+	build_widget_map();
+
 	// We stay invisible unless we are called on for a specific widget.
 	hide();
 	
@@ -162,58 +148,69 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 }
 
 
-const GPlatesQtWidgets::EditWidgetGroupBox::widget_map_type &
-GPlatesQtWidgets::EditWidgetGroupBox::build_widget_map() const
+void
+GPlatesQtWidgets::EditWidgetGroupBox::build_widget_map()
 {
-	static widget_map_type map;
-	map["gml:TimeInstant"] = d_edit_time_instant_widget_ptr;
-	map["gml:TimePeriod"] = d_edit_time_period_widget_ptr;
-	map["gpml:OldPlatesHeader"] = d_edit_old_plates_header_widget_ptr;
-	map["xs:double"] = d_edit_double_widget_ptr;
-	map["gpml:ContinentalBoundaryCrustEnumeration"] = d_edit_enumeration_widget_ptr;
-	map["gpml:ContinentalBoundaryEdgeEnumeration"] = d_edit_enumeration_widget_ptr;
-	map["gpml:ContinentalBoundarySideEnumeration"] = d_edit_enumeration_widget_ptr;
-	map["gpml:ReconstructionMethodEnumeration"] = d_edit_enumeration_widget_ptr;
-	map["gpml:SubductionPolarityEnumeration"] = d_edit_enumeration_widget_ptr;
-	map["gpml:StrikeSlipEnumeration"] = d_edit_enumeration_widget_ptr;
-	map["gpml:DipSlipEnumeration"] = d_edit_enumeration_widget_ptr;
-	map["gpml:DipSideEnumeration"] = d_edit_enumeration_widget_ptr;
-	map["gpml:SlipComponentEnumeration"] = d_edit_enumeration_widget_ptr;
-	map["gpml:FoldPlaneAnnotationEnumeration"] = d_edit_enumeration_widget_ptr;
-	map["gpml:AbsoluteReferenceFrameEnumeration"] = d_edit_enumeration_widget_ptr;
-	map["gml:LineString"] = d_edit_geometry_widget_ptr;
-	map["gml:MultiPoint"] = d_edit_geometry_widget_ptr;
-	map["gml:Point"] = d_edit_geometry_widget_ptr;
-	map["gml:Polygon"] = d_edit_geometry_widget_ptr;
-	map["xs:integer"] = d_edit_integer_widget_ptr;
-	map["gpml:plateId"] = d_edit_plate_id_widget_ptr;
-	map["gpml:PolarityChronId"] = d_edit_polarity_chron_id_widget_ptr;
-	map["gpml:angle"] = d_edit_angle_widget_ptr;
-	map["xs:string"] = d_edit_string_widget_ptr;
-	map["xs:boolean"] = d_edit_boolean_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gml("TimeInstant")] = d_edit_time_instant_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gml("TimePeriod")] = d_edit_time_period_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("OldPlatesHeader")] = d_edit_old_plates_header_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_xsi("double")] = d_edit_double_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gml("LineString")] = d_edit_geometry_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gml("MultiPoint")] = d_edit_geometry_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gml("Point")] = d_edit_geometry_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gml("Polygon")] = d_edit_geometry_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_xsi("integer")] = d_edit_integer_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("plateId")] = d_edit_plate_id_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("PolarityChronId")] = d_edit_polarity_chron_id_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("angle")] = d_edit_angle_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_xsi("string")] = d_edit_string_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_xsi("boolean")] = d_edit_boolean_widget_ptr;
 
 	// FIXME: check if IrregularSampling should correspond to the time-sequence-widget, 
-	// and if it should be included in this map. I think 
-	map["gpml:IrregularSampling"] = d_edit_time_sequence_widget_ptr;
-	map["gpml:StringList"] = d_edit_string_list_widget_ptr;
+	// and if it should be included in this map.
+	//
+	// UPDATE:
+	// 'gpml:Array' is currently the only *template* type (besides the time-dependent wrappers).
+	// Currently GPlates assumes the template type is 'gml:TimePeriod' in the following ways:
+	// (1) Edit Feature Properties widget selects Edit Time Sequence widget when it visits a 'gpml:Array' property.
+	// (2) Add Property dialog selects Edit Time Sequence widget when it finds the 'gpml:Array' string (eg, specified here).
+	// Later, when other template types are supported for 'gpml:Array', we'll need to be able to
+	// select the appropriate edit widget based not only on'gpml:Array' but also on its template type
+	// (essentially both determine the actual type of the property).
+	//
+	// For now just hardwiring any template of 'gpml:Array' to the Edit Time Sequence widget.
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("Array")] = d_edit_time_sequence_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("StringList")] = d_edit_string_list_widget_ptr;
 #if 0
 	// Keep the KeyValueDictionary out of the map until we have the
 	// ability to create one. 
-	map["gpml:KeyValueDictionary"] = d_edit_shapefile_attributes_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("KeyValueDictionary")] =
+			d_edit_shapefile_attributes_widget_ptr;
 
 #endif
-	return map;
+
+	//
+	// Add the enumeration types specified in the GPGIM.
+	//
+
+	const GPlatesModel::Gpgim::property_enumeration_type_seq_type &gpgim_property_enumeration_types =
+			d_gpgim.get_property_enumeration_types();
+	BOOST_FOREACH(
+			const GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type &gpgim_property_enumeration_type,
+			gpgim_property_enumeration_types)
+	{
+		d_widget_map[gpgim_property_enumeration_type->get_structural_type()] = d_edit_enumeration_widget_ptr;
+	}
 }
 
 
 GPlatesQtWidgets::EditWidgetGroupBox::property_types_list_type
 GPlatesQtWidgets::EditWidgetGroupBox::get_handled_property_types_list() const
 {
-	static const widget_map_type map = build_widget_map();
 	property_types_list_type list;
 	
-	widget_map_const_iterator it = map.begin();
-	widget_map_const_iterator end = map.end();
+	widget_map_const_iterator it = d_widget_map.begin();
+	widget_map_const_iterator end = d_widget_map.end();
 	for ( ; it != end; ++it)
 	{
 		list.push_back(it->first);
@@ -223,19 +220,70 @@ GPlatesQtWidgets::EditWidgetGroupBox::get_handled_property_types_list() const
 }
 
 
-void
-GPlatesQtWidgets::EditWidgetGroupBox::activate_appropriate_edit_widget(
-		GPlatesModel::FeatureHandle::weak_ref feature_ref,
-		GPlatesModel::FeatureHandle::iterator it)
+bool
+GPlatesQtWidgets::EditWidgetGroupBox::get_handled_property_types(
+		const GPlatesModel::GpgimProperty &gpgim_property,
+		boost::optional<property_types_list_type &> property_types) const
 {
-	if ( ! feature_ref.is_valid())
+	// Get the sequence of structural types allowed (by GPGIM) for the specified property.
+	const GPlatesModel::GpgimProperty::structural_type_seq_type &gpgim_structural_types =
+			gpgim_property.get_structural_types();
+	BOOST_FOREACH(
+			const GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type &gpgim_structural_type,
+			gpgim_structural_types)
 	{
-		// Although in principle we only need the properties_iterator here,
-		// not having a valid feature ref is still worth checking for.
-		deactivate_edit_widgets();
-		return;
+		const GPlatesPropertyValues::StructuralType structural_type =
+				gpgim_structural_type->get_structural_type();
+
+		static const GPlatesPropertyValues::StructuralType OLD_PLATES_HEADER_STRUCTURAL_TYPE =
+				GPlatesPropertyValues::StructuralType::create_gpml("OldPlatesHeader");
+
+		// Hack: Since OldPlatesHeaderWidget is no longer editable, we need to exclude this from the list
+		// of addable value types (despite it being a valid option for the EditWidgetGroupBox).
+		if (structural_type == OLD_PLATES_HEADER_STRUCTURAL_TYPE)
+		{
+			continue;
+		}
+
+		// If the current structural type is implemented as an edit widget then add it to the list.
+		if (d_widget_map.find(structural_type) != d_widget_map.end())
+		{
+			// If the caller only needs to know that at least one property type is
+			// supported then return early.
+			if (!property_types)
+			{
+				return true;
+			}
+
+			property_types->push_back(structural_type);
+		}
 	}
 
+	return property_types && !property_types->empty();
+}
+
+
+void
+GPlatesQtWidgets::EditWidgetGroupBox::activate_appropriate_edit_widget(
+		const GPlatesModel::TopLevelProperty::non_null_ptr_type &top_level_property)
+{
+	// Get EditWidgetChooser to tell us what widgets to show.
+	deactivate_edit_widgets();
+
+	GPlatesQtWidgets::EditWidgetChooser chooser(*this);
+	top_level_property->accept_visitor(chooser);
+
+	d_current_property = top_level_property;
+	// The property does not belong to a feature.
+	d_current_property_iterator = boost::none;
+
+}
+
+
+void
+GPlatesQtWidgets::EditWidgetGroupBox::activate_appropriate_edit_widget(
+		GPlatesModel::FeatureHandle::iterator it)
+{
 	if (!(*it))
 	{
 		// Always check your property iterators.
@@ -243,30 +291,21 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_appropriate_edit_widget(
 		return;
 	}
 
-	// Get EditWidgetChooser to tell us what widgets to show.
 	// Note that we have to make a clone of the property in order to edit it.
 	// We also save the iterator so we can save the modified property back into the model.
-	deactivate_edit_widgets();
-	GPlatesQtWidgets::EditWidgetChooser chooser(*this, feature_ref);
 	GPlatesModel::TopLevelProperty::non_null_ptr_type property_clone = (*it)->deep_clone();
-	d_current_property_clone = property_clone;
+
+	activate_appropriate_edit_widget(property_clone);
+
+	// Property does belong to a feature.
 	d_current_property_iterator = it;
-	property_clone->accept_visitor(chooser);
 }
 
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::refresh_edit_widget(
-		GPlatesModel::FeatureHandle::weak_ref feature_ref,
 		GPlatesModel::FeatureHandle::iterator it)
 {
-	if ( ! feature_ref.is_valid())
-	{
-		// Although in principle we only need the properties_iterator here,
-		// not having a valid feature ref is still worth checking for.
-		return;
-	}
-
 	if (!(*it))
 	{
 		// Always check your property iterators.
@@ -276,29 +315,31 @@ GPlatesQtWidgets::EditWidgetGroupBox::refresh_edit_widget(
 	// Get EditWidgetChooser to tell us what widgets to update.
 	// Note that we have to make a clone of the property in order to edit it.
 	// We also save the iterator so we can save the modified property back into the model.
-	GPlatesQtWidgets::EditWidgetChooser chooser(*this, feature_ref);
+	GPlatesQtWidgets::EditWidgetChooser chooser(*this);
 	GPlatesModel::TopLevelProperty::non_null_ptr_type property_clone = (*it)->deep_clone();
-	d_current_property_clone = property_clone;
+	d_current_property = property_clone;
 	d_current_property_iterator = it;
 	property_clone->accept_visitor(chooser);
 }
 
 
 void
-GPlatesQtWidgets::EditWidgetGroupBox::activate_widget_by_property_value_name(
-		const QString &property_value_name)
+GPlatesQtWidgets::EditWidgetGroupBox::activate_widget_by_property_value_type(
+		const GPlatesPropertyValues::StructuralType &property_value_type)
 {
 	deactivate_edit_widgets();
-	AbstractEditWidget *widget_ptr = get_widget_by_name(property_value_name);
+	AbstractEditWidget *widget_ptr = get_widget_by_property_value_type(property_value_type);
 	
 	if (widget_ptr != NULL)
 	{
 		// FIXME: Human readable property value name?
-		setTitle(tr("%1 %2").arg(d_edit_verb).arg(property_value_name));
+		setTitle(tr("%1 %2")
+				.arg(d_edit_verb)
+				.arg(convert_qualified_xml_name_to_qstring(property_value_type)));
 		show();
 		d_active_widget_ptr = widget_ptr;
 		widget_ptr->reset_widget_to_default_values();
-		widget_ptr->configure_for_property_value_type(property_value_name);
+		widget_ptr->configure_for_property_value_type(property_value_type);
 		widget_ptr->show();
 	}
 }
@@ -341,6 +382,8 @@ GPlatesQtWidgets::EditWidgetGroupBox::update_property_value_from_widget()
 
 		// Because the above call just updated the clone of the property value
 		// we must now commit the changed property back into the model.
+		//
+		// Note that this does nothing if the current property does not belong to a feature.
 		commit_property_to_model();
 
 		return result;
@@ -445,16 +488,11 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_enumeration_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_line_string_widget(
-		GPlatesPropertyValues::GmlLineString &gml_line_string,
-		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+		GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
 	setTitle(tr("%1 Polyline").arg(d_edit_verb));
 	show();
 	d_edit_geometry_widget_ptr->update_widget_from_line_string(gml_line_string);
-	
-	// EditGeometryWidget is a little special; it wants a Plate ID for reconstruction.
-	// Find it, and set it (or unset it).
-	find_reconstruction_plate_id_for_geometry_widget(feature_ref, d_edit_geometry_widget_ptr);
 	
 	d_active_widget_ptr = d_edit_geometry_widget_ptr;
 	d_edit_geometry_widget_ptr->show();
@@ -462,16 +500,11 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_line_string_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_multi_point_widget(
-		GPlatesPropertyValues::GmlMultiPoint &gml_multi_point,
-		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+		GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
 	setTitle(tr("%1 Multi-Point").arg(d_edit_verb));
 	show();
 	d_edit_geometry_widget_ptr->update_widget_from_multi_point(gml_multi_point);
-	
-	// EditGeometryWidget is a little special; it wants a Plate ID for reconstruction.
-	// Find it, and set it (or unset it).
-	find_reconstruction_plate_id_for_geometry_widget(feature_ref, d_edit_geometry_widget_ptr);
 	
 	d_active_widget_ptr = d_edit_geometry_widget_ptr;
 	d_edit_geometry_widget_ptr->show();
@@ -479,16 +512,11 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_multi_point_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_point_widget(
-		GPlatesPropertyValues::GmlPoint &gml_point,
-		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+		GPlatesPropertyValues::GmlPoint &gml_point)
 {
 	setTitle(tr("%1 Point").arg(d_edit_verb));
 	show();
 	d_edit_geometry_widget_ptr->update_widget_from_point(gml_point);
-	
-	// EditGeometryWidget is a little special; it wants a Plate ID for reconstruction.
-	// Find it, and set it (or unset it).
-	find_reconstruction_plate_id_for_geometry_widget(feature_ref, d_edit_geometry_widget_ptr);
 	
 	d_active_widget_ptr = d_edit_geometry_widget_ptr;
 	d_edit_geometry_widget_ptr->show();
@@ -496,16 +524,11 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_point_widget(
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_polygon_widget(
-		GPlatesPropertyValues::GmlPolygon &gml_polygon,
-		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+		GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
 	setTitle(tr("%1 Polygon").arg(d_edit_verb));
 	show();
 	d_edit_geometry_widget_ptr->update_widget_from_polygon(gml_polygon);
-	
-	// EditGeometryWidget is a little special; it wants a Plate ID for reconstruction.
-	// Find it, and set it (or unset it).
-	find_reconstruction_plate_id_for_geometry_widget(feature_ref, d_edit_geometry_widget_ptr);
 	
 	d_active_widget_ptr = d_edit_geometry_widget_ptr;
 	d_edit_geometry_widget_ptr->show();
@@ -661,13 +684,12 @@ GPlatesQtWidgets::EditWidgetGroupBox::edit_widget_wants_committing()
 
 
 GPlatesQtWidgets::AbstractEditWidget *
-GPlatesQtWidgets::EditWidgetGroupBox::get_widget_by_name(
-		const QString &property_value_type_name)
+GPlatesQtWidgets::EditWidgetGroupBox::get_widget_by_property_value_type(
+		const GPlatesPropertyValues::StructuralType &property_value_type)
 {
-	static const widget_map_type &map = build_widget_map();
-	widget_map_const_iterator result = map.find(property_value_type_name);
+	widget_map_const_iterator result = d_widget_map.find(property_value_type);
 
-	if (result != map.end())
+	if (result != d_widget_map.end())
 	{
 		return result->second;
 	}
@@ -683,10 +705,11 @@ GPlatesQtWidgets::EditWidgetGroupBox::get_widget_by_name(
 void
 GPlatesQtWidgets::EditWidgetGroupBox::commit_property_to_model()
 {
-	if (d_current_property_iterator && d_current_property_clone)
+	// Only if the current property belongs to a feature do we need to commit it back to the model.
+	if (d_current_property_iterator && d_current_property)
 	{
 		GPlatesModel::FeatureHandle::iterator &it = *d_current_property_iterator;
-		GPlatesModel::TopLevelProperty::non_null_ptr_type &property_clone = *d_current_property_clone;
+		GPlatesModel::TopLevelProperty::non_null_ptr_type &property_clone = *d_current_property;
 		*it = property_clone;
 	}
 }

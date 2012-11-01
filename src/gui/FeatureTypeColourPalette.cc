@@ -31,7 +31,7 @@
 #include "FeatureTypeColourPalette.h"
 #include "HTMLColourNames.h"
 
-#include "file-io/FeaturePropertiesMap.h"
+#include "model/Gpgim.h"
 
 #include "utils/UnicodeStringUtils.h"
 
@@ -95,25 +95,27 @@ namespace
 
 
 GPlatesGui::FeatureTypeColourPalette::non_null_ptr_type
-GPlatesGui::FeatureTypeColourPalette::create()
+GPlatesGui::FeatureTypeColourPalette::create(
+		const GPlatesModel::Gpgim &gpgim)
 {
-	return new FeatureTypeColourPalette();
+	return new FeatureTypeColourPalette(gpgim);
 }
 
 
-GPlatesGui::FeatureTypeColourPalette::FeatureTypeColourPalette()
+GPlatesGui::FeatureTypeColourPalette::FeatureTypeColourPalette(
+		const GPlatesModel::Gpgim &gpgim)
 {
 	// Populate the colours map with FeatureTypes that we know about.
-	typedef GPlatesFileIO::FeaturePropertiesMap::const_iterator iterator_type;
-	GPlatesFileIO::FeaturePropertiesMap &feature_properties_map =
-		GPlatesFileIO::FeaturePropertiesMap::instance();
+
+	const GPlatesModel::Gpgim::feature_type_seq_type &feature_types =
+			gpgim.get_concrete_feature_types();
+
 	unsigned int count = 0;
-	for (iterator_type iter = feature_properties_map.begin();
-			iter != feature_properties_map.end(); ++iter)
+	BOOST_FOREACH(const GPlatesModel::FeatureType &feature_type, feature_types)
 	{
 		d_colours.insert(
 				std::make_pair(
-					iter->first,
+					feature_type,
 					map_to_colour(count)));
 		++count;
 	}

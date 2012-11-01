@@ -40,8 +40,6 @@ set(srcs
     GreatCircle.h
     GreatCircleArc.cc
     GreatCircleArc.h
-    GridOnSphere.cc
-    GridOnSphere.h
     HierarchicalTriangularMesh.h
     HighPrecision.h
     IndeterminateArcRotationAxisException.h

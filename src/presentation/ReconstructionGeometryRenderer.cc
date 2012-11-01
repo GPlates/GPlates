@@ -53,7 +53,7 @@
 #include "app-logic/ReconstructedVirtualGeomagneticPole.h"
 #include "app-logic/ResolvedRaster.h"
 #include "app-logic/ResolvedScalarField3D.h"
-#include "app-logic/ResolvedTopologicalBoundary.h"
+#include "app-logic/ResolvedTopologicalGeometry.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/PlateVelocityUtils.h"
 
@@ -566,7 +566,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 
 void
 GPlatesPresentation::ReconstructionGeometryRenderer::visit(
-		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -574,38 +574,21 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			GPLATES_ASSERTION_SOURCE);
 
 	GPlatesGui::DrawStyle ds = d_style_adapter ? 
-			d_style_adapter->get_style(rtb->get_feature_ref()) : 
+			d_style_adapter->get_style(rtg->get_feature_ref()) : 
 			GPlatesGui::DrawStyle();
-	// FIXME: POLYGON, POLYLINE
 
-	if ( rtb->is_polygon() )
-	{
-		GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			create_rendered_reconstruction_geometry(
-					rtb->resolved_topology_geometry(), 
-					rtb, 
-					d_render_params, 
-					d_colour,
-					boost::none,
-					boost::none,
-					ds);
+	GPlatesViewOperations::RenderedGeometry rendered_geometry =
+		create_rendered_reconstruction_geometry(
+				rtg->resolved_topology_geometry(), 
+				rtg, 
+				d_render_params, 
+				d_colour,
+				boost::none,
+				boost::none,
+				ds);
 
-		// Render the rendered geometry.
-		render(rendered_geometry);
-	}
-	else
-	{
-		GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			create_rendered_reconstruction_geometry(
-					rtb->resolved_topology_geometry_as_line(), 
-					rtb, 
-					d_render_params, 
-					d_colour);
-
-		// Render the rendered geometry.
-		render(rendered_geometry);
-	}
-
+	// Render the rendered geometry.
+	render(rendered_geometry);
 }
 
 

@@ -23,9 +23,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <deque>
 #include <utility>
 #include <boost/foreach.hpp>
+#include <Qt>
+#include <QIcon>
+#include <QKeySequence>
 #include <QList>
+#include <QMatrix>
+#include <QPixmap>
 #include <QVariant>
 #include <QVector>
 
@@ -143,11 +149,36 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::CanvasToolBarDockWidget(
 void
 GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_workflows()
 {
+	set_up_view_workflow();
 	set_up_feature_inspection_workflow();
 	set_up_digitisation_workflow();
 	set_up_topology_workflow();
 	set_up_pole_manipulation_workflow();
 	set_up_small_circle_workflow();
+}
+
+
+void
+GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_view_workflow()
+{
+	//
+	// Set up the 'view' canvas tools workflow.
+	//
+
+	Workflow view_workflow = create_workflow(
+			GPlatesGui::CanvasToolWorkflows::WORKFLOW_VIEW,
+			tr("View"),
+			tab_view,
+			view_toolbar_placeholder);
+
+	add_tool_action_to_workflow(
+			view_workflow,
+			GPlatesGui::CanvasToolWorkflows::TOOL_DRAG_GLOBE,
+			action_Drag_Globe);
+	add_tool_action_to_workflow(
+			view_workflow,
+			GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM_GLOBE,
+			action_Zoom_Globe);
 }
 
 
@@ -160,18 +191,10 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_feature_inspection_workflow()
 
 	Workflow feature_inspection_workflow = create_workflow(
 			GPlatesGui::CanvasToolWorkflows::WORKFLOW_FEATURE_INSPECTION,
-			tr("Feature &Inspection"),
+			tr("Feature Inspection"),
 			tab_feature_inspection,
 			feature_inspection_toolbar_placeholder);
 
-	add_tool_action_to_workflow(
-			feature_inspection_workflow,
-			GPlatesGui::CanvasToolWorkflows::TOOL_DRAG_GLOBE,
-			action_Drag_Globe);
-	add_tool_action_to_workflow(
-			feature_inspection_workflow,
-			GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM_GLOBE,
-			action_Zoom_Globe);
 	add_tool_action_to_workflow(
 			feature_inspection_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_MEASURE_DISTANCE,
@@ -208,18 +231,10 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_digitisation_workflow()
 
 	Workflow digitisation_workflow = create_workflow(
 			GPlatesGui::CanvasToolWorkflows::WORKFLOW_DIGITISATION,
-			tr("&Digitisation"),
+			tr("Digitisation"),
 			tab_digitisation,
 			digitisation_toolbar_placeholder);
 
-	add_tool_action_to_workflow(
-			digitisation_workflow,
-			GPlatesGui::CanvasToolWorkflows::TOOL_DRAG_GLOBE,
-			action_Drag_Globe);
-	add_tool_action_to_workflow(
-			digitisation_workflow,
-			GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM_GLOBE,
-			action_Zoom_Globe);
 	add_tool_action_to_workflow(
 			digitisation_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_MEASURE_DISTANCE,
@@ -260,30 +275,22 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_topology_workflow()
 
 	Workflow topology_workflow = create_workflow(
 			GPlatesGui::CanvasToolWorkflows::WORKFLOW_TOPOLOGY,
-			tr("&Topology"),
+			tr("Topology"),
 			tab_topology,
 			topology_toolbar_placeholder);
 
 	add_tool_action_to_workflow(
 			topology_workflow,
-			GPlatesGui::CanvasToolWorkflows::TOOL_DRAG_GLOBE,
-			action_Drag_Globe);
+			GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_LINE_TOPOLOGY,
+			action_Build_Line_Topology);
 	add_tool_action_to_workflow(
 			topology_workflow,
-			GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM_GLOBE,
-			action_Zoom_Globe);
+			GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_BOUNDARY_TOPOLOGY,
+			action_Build_Boundary_Topology);
 	add_tool_action_to_workflow(
 			topology_workflow,
-			GPlatesGui::CanvasToolWorkflows::TOOL_MEASURE_DISTANCE,
-			action_Measure_Distance);
-	add_tool_action_to_workflow(
-			topology_workflow,
-			GPlatesGui::CanvasToolWorkflows::TOOL_CLICK_GEOMETRY,
-			action_Click_Geometry);
-	add_tool_action_to_workflow(
-			topology_workflow,
-			GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_TOPOLOGY,
-			action_Build_Topology);
+			GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_NETWORK_TOPOLOGY,
+			action_Build_Network_Topology);
 	add_tool_action_to_workflow(
 			topology_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_EDIT_TOPOLOGY,
@@ -300,22 +307,10 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_pole_manipulation_workflow()
 
 	Workflow pole_manipulation_workflow = create_workflow(
 			GPlatesGui::CanvasToolWorkflows::WORKFLOW_POLE_MANIPULATION,
-			tr("&Pole Manipulation"),
+			tr("Pole Manipulation"),
 			tab_pole_manipulation,
 			pole_manipulation_toolbar_placeholder);
 
-	add_tool_action_to_workflow(
-			pole_manipulation_workflow,
-			GPlatesGui::CanvasToolWorkflows::TOOL_DRAG_GLOBE,
-			action_Drag_Globe);
-	add_tool_action_to_workflow(
-			pole_manipulation_workflow,
-			GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM_GLOBE,
-			action_Zoom_Globe);
-	add_tool_action_to_workflow(
-			pole_manipulation_workflow,
-			GPlatesGui::CanvasToolWorkflows::TOOL_CLICK_GEOMETRY,
-			action_Click_Geometry);
 	add_tool_action_to_workflow(
 			pole_manipulation_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_MANIPULATE_POLE,
@@ -332,18 +327,10 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_small_circle_workflow()
 
 	Workflow small_circle_workflow = create_workflow(
 			GPlatesGui::CanvasToolWorkflows::WORKFLOW_SMALL_CIRCLE,
-			tr("Small &Circle"),
+			tr("Small Circle"),
 			tab_small_circle,
 			small_circle_toolbar_placeholder);
 
-	add_tool_action_to_workflow(
-			small_circle_workflow,
-			GPlatesGui::CanvasToolWorkflows::TOOL_DRAG_GLOBE,
-			action_Drag_Globe);
-	add_tool_action_to_workflow(
-			small_circle_workflow,
-			GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM_GLOBE,
-			action_Zoom_Globe);
 	add_tool_action_to_workflow(
 			small_circle_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE,
@@ -459,7 +446,9 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_canvas_tool_shortcuts()
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_INSERT_VERTEX, action_Insert_Vertex);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_SPLIT_FEATURE, action_Split_Feature);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_MANIPULATE_POLE, action_Manipulate_Pole);
-	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_TOPOLOGY, action_Build_Topology);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_LINE_TOPOLOGY, action_Build_Line_Topology);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_BOUNDARY_TOPOLOGY, action_Build_Boundary_Topology);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_NETWORK_TOPOLOGY, action_Build_Network_Topology);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_EDIT_TOPOLOGY, action_Edit_Topology);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE, action_Create_Small_Circle);
 }
@@ -491,36 +480,21 @@ void
 GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_canvas_workflow_shortcuts()
 {
 	// Use keys 0-9 for the workflows.
-	unsigned int key_offset = 0;
+	unsigned int tool_workflow = 0;
 
-	add_canvas_workflow_shortcut(
-			GPlatesGui::CanvasToolWorkflows::WORKFLOW_FEATURE_INSPECTION,
-			QKeySequence(static_cast<Qt::Key>(Qt::Key_1 + key_offset)));
-	++key_offset;
+	for ( ; tool_workflow < GPlatesGui::CanvasToolWorkflows::NUM_WORKFLOWS; ++tool_workflow)
+	{
+		const GPlatesGui::CanvasToolWorkflows::WorkflowType canvas_tool_workflow =
+				static_cast<GPlatesGui::CanvasToolWorkflows::WorkflowType>(tool_workflow);
 
-	add_canvas_workflow_shortcut(
-			GPlatesGui::CanvasToolWorkflows::WORKFLOW_DIGITISATION,
-			QKeySequence(static_cast<Qt::Key>(Qt::Key_1 + key_offset)));
-	++key_offset;
-
-	add_canvas_workflow_shortcut(
-			GPlatesGui::CanvasToolWorkflows::WORKFLOW_TOPOLOGY,
-			QKeySequence(static_cast<Qt::Key>(Qt::Key_1 + key_offset)));
-	++key_offset;
-
-	add_canvas_workflow_shortcut(
-			GPlatesGui::CanvasToolWorkflows::WORKFLOW_POLE_MANIPULATION,
-			QKeySequence(static_cast<Qt::Key>(Qt::Key_1 + key_offset)));
-	++key_offset;
-
-	add_canvas_workflow_shortcut(
-			GPlatesGui::CanvasToolWorkflows::WORKFLOW_SMALL_CIRCLE,
-			QKeySequence(static_cast<Qt::Key>(Qt::Key_1 + key_offset)));
-	++key_offset;
+		add_canvas_workflow_shortcut(
+				canvas_tool_workflow,
+				QKeySequence(static_cast<Qt::Key>(Qt::Key_1 + tool_workflow)));
+	}
 
 	// We're expecting keys 0-9 to be enough for all workflows.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			key_offset < 10,
+			tool_workflow < 10,
 			GPLATES_ASSERTION_SOURCE);
 }
 
@@ -662,24 +636,57 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::handle_tool_shortcut_triggered()
 			static_cast<GPlatesGui::CanvasToolWorkflows::ToolType>(
 					shortcut_tool_action->data().toUInt());
 
-	// The shortcut applies to the tool in the currently active workflow (if it exists in the workflow).
+	// The shortcut applies, by default, to the tool in the currently active workflow
+	// (if it exists in the workflow).
 	const GPlatesGui::CanvasToolWorkflows::WorkflowType active_workflow =
 			d_canvas_tool_workflows.get_active_canvas_tool().first;
 
-	// See if the current workflow even has the tool (corresponding to the shortcut).
-	// For example there is not a "Choose Feature F" tool in the digitisation workflow so if the
-	// user presses "F" then nothing will happen (if the digitisation workflow is currently active).
-	if (d_canvas_tool_workflows.does_workflow_contain_tool(active_workflow, tool))
+	// We will search all workflows for the tool (starting with the active workflow).
+	std::deque<GPlatesGui::CanvasToolWorkflows::WorkflowType> workflows;
+	for (unsigned int tool_workflow = 0;
+		tool_workflow < GPlatesGui::CanvasToolWorkflows::NUM_WORKFLOWS;
+		++tool_workflow)
 	{
+		const GPlatesGui::CanvasToolWorkflows::WorkflowType workflow =
+				static_cast<GPlatesGui::CanvasToolWorkflows::WorkflowType>(tool_workflow);
+
+		if (workflow == active_workflow)
+		{
+			// Make sure the active workflow is at the start of the list.
+			workflows.push_front(workflow);
+		}
+		else
+		{
+			// Inactive workflows get second priority and are searched in the order they are listed.
+			workflows.push_back(workflow);
+		}
+	}
+
+	// Iterate over all the workflows (starting with the active workflow).
+	BOOST_FOREACH(GPlatesGui::CanvasToolWorkflows::WorkflowType workflow, workflows)
+	{
+		// See if the current workflow even has the tool (corresponding to the shortcut).
+		// For example there is not a "Choose Feature F" tool in the digitisation workflow.
+		if (!d_canvas_tool_workflows.does_workflow_contain_tool(workflow, tool))
+		{
+			// Try the next workflow in the list.
+			continue;
+		}
+
 		// See if the canvas tool is enabled.
 		// Only select the tool if it is currently enabled.
-		if (get_tool_action(active_workflow, tool)->isEnabled())
+		if (!get_tool_action(workflow, tool)->isEnabled())
 		{
-			// Select the new canvas tool.
-			// This was caused by the user selecting a tool shortcut (versus an automatic tool conversion
-			// by some code in GPlates that wishes to change the canvas tool).
-			choose_canvas_tool_selected_by_user(active_workflow, tool);
+			// Try the next workflow in the list.
+			continue;
 		}
+
+		// Select the new canvas tool.
+		// This was caused by the user selecting a tool shortcut (versus an automatic tool
+		// conversion by some code in GPlates that wishes to change the canvas tool).
+		choose_canvas_tool_selected_by_user(workflow, tool);
+
+		break;
 	}
 }
 
@@ -753,6 +760,12 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::handle_canvas_tool_enabled(
 
 	// Enable or disable the tool action.
 	tool_action->setEnabled(enable);
+
+	// If the tool is the selected tool in its workflow then copy its icon to its workflow tab.
+	if (d_canvas_tool_workflows.get_selected_canvas_tool_in_workflow(workflow) == tool)
+	{
+		copy_canvas_tool_icon_to_workflow_tab(workflow, tool);
+	}
 }
 
 
@@ -782,6 +795,9 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::handle_canvas_tool_activated(
 	connect_to_workflow_tab_changed(false);
 	tab_widget_canvas_tools->setCurrentIndex(d_workflows[workflow].tab_index);
 	connect_to_workflow_tab_changed(true);
+
+	// Copy the icon of the newly activated canvas tool to its workflow tab.
+	copy_canvas_tool_icon_to_workflow_tab(workflow, tool);
 }
 
 
@@ -821,6 +837,44 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::get_tool_action(
 			GPLATES_ASSERTION_SOURCE);
 
 	return tool_action;
+}
+
+
+void
+GPlatesQtWidgets::CanvasToolBarDockWidget::copy_canvas_tool_icon_to_workflow_tab(
+		GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
+		GPlatesGui::CanvasToolWorkflows::ToolType tool)
+{
+	// Find the tool action corresponding to the specified workflow/tool.
+	QAction *tool_action = get_tool_action(workflow, tool);
+
+	// Get the specified workflow's tab.
+	const int workflow_tab_index = d_workflows[workflow].tab_index;
+
+	// Get the current icon size.
+	const QSize tool_icon_size = tab_widget_canvas_tools->iconSize();
+
+	// The icon mode depends on whether the tool is currently enabled or disabled.
+	const QIcon::Mode icon_mode = d_canvas_tool_workflows.is_canvas_tool_enabled(workflow, tool)
+			? QIcon::Normal
+			: QIcon::Disabled;
+
+	// Get the enabled/disabled icon pixmap from the canvas tool icon.
+	const QPixmap un_rotated_icon_pixmap = tool_action->icon().pixmap(tool_icon_size, icon_mode);
+
+	// Rotate the pixmap 90 degree clockwise.
+	// We need to do this because the tab widget is vertical instead of horizontal and so placing
+	// icons on the tabs has the effect of rotating them 90 degrees counter-clockwise.
+	// So we need to undo that effect.
+	QMatrix rotate_90_degree_clockwise;
+	rotate_90_degree_clockwise.rotate(90);
+	const QPixmap rotated_icon_pixmap = un_rotated_icon_pixmap.transformed(rotate_90_degree_clockwise);
+
+	// The enabled/disabled rotated icon.
+	const QIcon tab_icon(rotated_icon_pixmap);
+	
+	// Set the icon on the tab widget.
+	tab_widget_canvas_tools->setTabIcon(workflow_tab_index, tab_icon);
 }
 
 

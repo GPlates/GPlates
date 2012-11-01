@@ -44,8 +44,8 @@
 #include "ReconstructedVirtualGeomagneticPole.h"
 #include "ReconstructionGeometry.h"
 #include "ReconstructionGeometryVisitor.h"
-#include "ResolvedTopologicalBoundary.h"
-#include "ResolvedTopologicalBoundarySubSegment.h"
+#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalGeometrySubSegment.h"
 #include "ResolvedTopologicalNetwork.h"
 
 #include "property-values/GeoTimeInstant.h"
@@ -156,7 +156,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Visits a @a ReconstructionGeometry to get a plate id (the plate id could be
 		 * a reconstruction plate id in @a ReconstructedFeatureGeometry or a plate id
-		 * to assign to other features in @a ResolvedTopologicalBoundary).
+		 * of a resolved topology).
 		 * Returns boost::none if derived type of reconstruction geometry has no plate id.
 		 * NOTE: @a reconstruction_geom_ptr can be anything that acts like a const or
 		 * non-const pointer to a @a ReconstructionGeometry.
@@ -181,11 +181,13 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the boundary subsegment sequence for the specified resolved topological geometry.
+		 * Returns the *boundary* subsegment sequence for the specified resolved topology.
 		 *
-		 * @a reconstruction_geom_ptr should be either @a ResolvedTopologicalBoundary or @a ResolvedTopologicalNetwork.
+		 * @a reconstruction_geom_ptr should be either a @a ResolvedTopologicalGeometry (with a
+		 * *polygon* geometry - not a polyline) or a @a ResolvedTopologicalNetwork (the network boundary).
+		 * Resolved topological lines are excluded as they do not form a closed boundary.
 		 *
-		 * Returns boost::none if the specified reconstruction geometry is not a resolved topological geometry.
+		 * Returns boost::none if the specified reconstruction geometry is not a resolved topology.
 		 */
 		template <typename ReconstructionGeometryPointer>
 		boost::optional<const sub_segment_seq_type &>
@@ -195,7 +197,8 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns the boundary polygon of the specified resolved topological geometry.
 		 *
-		 * @a reconstruction_geom_ptr should be either @a ResolvedTopologicalBoundary or @a ResolvedTopologicalNetwork.
+		 * @a reconstruction_geom_ptr can be either a @a ResolvedTopologicalGeometry or @a ResolvedTopologicalNetwork.
+		 * However only @a ResolvedTopologicalGeometry objects containing *polylines* are ignored.
 		 *
 		 * Returns boost::none if the specified reconstruction geometry is not a resolved topological geometry.
 		 */
@@ -325,6 +328,9 @@ namespace GPlatesAppLogic
 		 *
 		 * This class is only designed to use 'ReconstructedFeatureGeometry' or
 		 * 'const ReconstructedFeatureGeometry' as the template parameter.
+		 *
+		 * It should have @a visit methods for all classes derived from @a ReconstructedFeatureGeometry
+		 * since this visitor should return any derived type when clients request a @a ReconstructedFeatureGeometry.
 		 */
 		template <class ReconstructedFeatureGeometryType>
 		class ReconstructedFeatureGeometryTypeFinderBase :
@@ -380,6 +386,7 @@ namespace GPlatesAppLogic
 				d_found_geometries.push_back(rvgp.get());
 			}
 
+			//! A @a ReconstructedFlowline is derived from @a ReconstructedFeatureGeometry.
 			virtual
 			void
 			visit(
@@ -388,6 +395,7 @@ namespace GPlatesAppLogic
 				d_found_geometries.push_back(rf.get());
 			}
 
+			//! A @a ReconstructedMotionPath is derived from @a ReconstructedFeatureGeometry.
 			virtual
 			void
 			visit(
@@ -556,9 +564,9 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
 			{
-				d_feature_ref = rtb->get_feature_ref();
+				d_feature_ref = rtg->get_feature_ref();
 			}
 
 			virtual
@@ -661,9 +669,9 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
 			{
-				d_property = rtb->property();
+				d_property = rtg->property();
 			}
 
 			virtual
@@ -740,9 +748,9 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
 			{
-				d_plate_id = rtb->plate_id();
+				d_plate_id = rtg->plate_id();
 			}
 
 			virtual
@@ -835,9 +843,9 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
 			{
-				d_time_of_formation = rtb->time_of_formation();
+				d_time_of_formation = rtg->time_of_formation();
 			}
 
 			virtual
@@ -897,9 +905,13 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
 			{
-				d_sub_segment_sequence = rtb->get_sub_segment_sequence();
+				// Only a resolved topological geometry with a *polygon* is a resolved topological *boundary*.
+				if (rtg->resolved_topology_boundary())
+				{
+					d_sub_segment_sequence = rtg->get_sub_segment_sequence();
+				}
 			}
 
 			virtual
@@ -943,9 +955,11 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
 			{
-				d_boundary_polygon = rtb->resolved_topology_geometry();
+				// See if the resolved topology geometry is a polygon.
+				// It might be a polyline in which case boost::none is returned.
+				d_boundary_polygon = rtg->resolved_topology_boundary();
 			}
 
 			virtual
@@ -958,6 +972,15 @@ namespace GPlatesAppLogic
 
 		private:
 			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> d_boundary_polygon;
+
+
+			virtual
+			void
+			visit_polygon_on_sphere(
+					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+			{
+				d_boundary_polygon = polygon_on_sphere;
+			}
 		};
 
 

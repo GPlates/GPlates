@@ -23,325 +23,109 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QStringList>
-#include <QMessageBox>
+#include <algorithm>
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
-#include <boost/none.hpp>
+#include <QDebug>
+#include <QMessageBox>
+#include <QStringList>
 
 #include "AddPropertyDialog.h"
-#include "EditFeaturePropertiesWidget.h"
 #include "InvalidPropertyValueException.h"
 
-#include "file-io/FeaturePropertiesMap.h"
+#include "app-logic/ApplicationState.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
+#include "gui/FeatureFocus.h"
+
+#include "model/Gpgim.h"
+#include "model/GpgimFeatureClass.h"
+#include "model/GpgimProperty.h"
+#include "model/GpgimStructuralType.h"
+#include "model/ModelUtils.h"
 #include "model/PropertyName.h"
 
-#include "property-values/GpmlConstantValue.h"
-#include "property-values/TemplateTypeParameterType.h"
+#include "presentation/ViewState.h"
+
+#include "property-values/StructuralType.h"
 
 #include "utils/UnicodeStringUtils.h"
 
 
-#define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
-
-
 namespace
 {
-	struct PropertyNameInfo
+	bool
+	feature_has_property_name(
+			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+			const GPlatesModel::PropertyName &property_name)
 	{
-		const QString name;
-		const QString suggested_type;
-		bool is_time_dependent;		// Do we need to deal with a ConstantValue wrapper?
-		bool is_very_common;			// Should this be emboldened and at the top of the list?
-	};
-	
-	/**
-	 * Sourced from the GPGIM_1.6.juuml document.
-	 * Grep script used to hunt down unique property names stored in
-	 * /gpgim/trunk/tools/grep_for_properties.pl
-	 *
-	 * Note that the properties listed here should be properties of Features only -
-	 * no properties of structural types.
-	 *
-	 * Unimplemented properties (i.e. unimplemented property types) are commented out.
-	 *
-	 * Properties which are not intended to be user-editable (e.g. gpml:identity) are
-	 * not included in this list.
-	 *
-	 * Contour's properties aren't included because Contour is a geometry type.
-	 *
-	 * Oh and naturally, when you're editing an InstantaneousFeature, all time-dependent
-	 * stuff needs to be stripped out.
-	 */
-	static const PropertyNameInfo property_name_info_table[] = {
-		{ "gpml:angle", "gpml:angle", false, false },
-		{ "gpml:averageAge", "xs:double", false, false },
-		{ "gpml:averageDeclination", "xs:double", false, false },
-		{ "gpml:averageInclination", "xs:double", false, false },
-		{ "gpml:averageSampleSitePosition", "gml:Point", false, false },	// Geometry
-		{ "gpml:boundary", "gml:Polygon", true, false }, // TimeDependentPropertyValue<>
-		{ "gpml:centerLineOf", "gml:LineString", true, false }, // TimeDependentPropertyValue<> _Geometry
-		{ "gpml:conjugatePlateId", "gpml:plateId", false, true },	// half-way support for Isochron.
-		{ "gpml:continentalSide", "gpml:ContinentalBoundarySideEnumeration", false, false }, // Enumeration
-		{ "gpml:reconstructionMethod", "gpml:ReconstructionMethodEnumeration", false, false }, // Enumeration
-		{ "gpml:depth", "xs:double", false, false },
-		{ "gml:description", "xs:string", false, true },
-		{ "gpml:dipAngle", "gpml:angle", false, false },
-		{ "gpml:dipSide", "gpml:DipSideEnumeration", false, false }, // Enumeration
-		{ "gpml:dipSlip", "gpml:DipSlipEnumeration", false, false }, // Enumeration
-		{ "gpml:edge", "gpml:ContinentalBoundaryEdgeEnumeration", false, false }, // Enumeration
-		{ "gpml:errorBounds", "gml:Polygon", true, false }, // TimeDependentPropertyValue<_Geometry>
-	//	{ "gpml:fixedReferenceFrame", "gpml:plateId", false, false }, // For TotalReconstructionSequence
-	//	{ "gpml:movingReferenceFrame", "gpml:plateId", false, false }, // For TotalReconstructionSequence
-		{ "gpml:foldAnnotation", "gpml:FoldPlaneAnnotationEnumeration", false, false }, // Enumeration
-		{ "gpml:isActive", "xs:boolean", true, false }, // TimeDependentPropertyValue<>
-		{ "gpml:leftPlate", "gpml:plateId", false, true },
-	//	{ "gpml:leftUnit", "gpml:FeatureReference", false, false }, // FeatureReference<AbstractRockUnit>
-		{ "gpml:maxEdge", "xs:double", false, false },
-	//	{ "gml:metaDataProperty", "gml:_MetaData", false, false },
-		{ "gpml:motion", "gpml:StrikeSlipEnumeration", true, false }, // Enumeration. Just for fun, it's also time-dependent.
-		{ "gml:name", "xs:string", false, true },
-//		{ "gpml:oldPlatesHeader", "gpml:OldPlatesHeader", false, false }, // Removed as OldPlatesHeaderWidget is no longer editable.
-		{ "gpml:outlineOf", "gml:Polygon", true, false }, // _Geometry
-		{ "gpml:polarityChronId", "gpml:PolarityChronId", false, false },
-		{ "gpml:polarityChronOffset", "xs:double", false, false },
-		{ "gpml:poleA95", "xs:double", false, false },
-		{ "gpml:poleDp", "xs:double", false, false },
-		{ "gpml:poleDm", "xs:double", false, false },
-		{ "gpml:polePosition", "gml:Point", false, false },	// Geometry
-		{ "gpml:position", "gml:Point", false, false },
-		{ "gpml:primarySlipComponent", "gpml:SlipComponentEnumeration", false, false }, // Enumeration
-		{ "gpml:reconstructedPlateId", "gpml:plateId", false, false }, // For InstantaneousFeatures
-		{ "gpml:reconstructedTime", "gml:TimeInstant", false, false }, // For InstantaneousFeatures
-		{ "gpml:reconstructionPlateId", "gpml:plateId", true, true }, // For ReconstructableFeatures
-		{ "gpml:rightPlate", "gpml:plateId", false, true },
-	//	{ "gpml:rightUnit", "gpml:FeatureReference", false, false }, // FeatureReference<AbstractRockUnit>
-		{ "gpml:rigidBlock", "xs:boolean", false, false }, 
-		{ "gpml:shapeFactor", "xs:double", false, false },
-	//	{ "gpml:shipTrack", "gpml:FeatureReference", false, false }, // FeatureReference<MagneticAnomalyShipTrack>
-		{ "gpml:slabEdgeType", "xs:string", false, false }, 
-		{ "gpml:slabFlatLying", "xs:boolean", false, false }, 
-		{ "gpml:slabFlatLyingDepth", "xs:double", false, false }, 
-		{ "gpml:strikeSlip", "gpml:StrikeSlipEnumeration", false, false },
-		{ "gpml:subductionPolarity", "gpml:SubductionPolarityEnumeration", true, false }, // TimeDependentPropertyValue<>
-		{ "gpml:subductionZoneAge", "xs:double", false, false }, 
-		{ "gpml:subductionZoneDeepDip", "xs:double", false, false }, 
-		{ "gpml:subductionZoneDepth", "xs:double", false, false }, 
-		{ "gpml:rheaFault", "xs:string", false, false }, 
+		if (!feature_ref.is_valid())
+		{
+			return false;
+		}
 
-	//	{ "gpml:totalReconstructionPole", "gpml:FiniteRotation", true, false }, // For TotalReconstructionSequence. IrregularSampling<FiniteRotation>
-	//	{ "gpml:type", "gpml:AbsoluteReferenceFrameEnumeration", false, false }, // Enumeration. For AbsoluteReferenceFrame.
-		{ "gpml:unclassifiedGeometry", "gml:MultiPoint", true, false },	// _Geometry
-		{ "gml:validTime", "gml:TimePeriod", false, true },
-	};
-	
-	void
-	populate_property_name_combobox(
-			QComboBox *combobox)
-	{
-		// Icons to indicate useful properties. Blanks to keep list spaced properly.
-		static const QIcon commonly_useful_icon(":/gnome_emblem_new_16.png");
-		static const QIcon blank_icon(":/blank_16.png");
-		
-		const PropertyNameInfo *iter = property_name_info_table;
-		const PropertyNameInfo *end = iter + NUM_ELEMS(property_name_info_table);
-
-		// First add the most commonly useful property names  in the property_name_info_table,
-		// along with their suggested property mapping etc. This list can't (easily) be in bold,
-		// because we'd have to implement it as a Model/View rather than a simple item list,
-		// but we can set a "Favourite" icon or somesuch.
-		for ( ; iter != end; ++iter) {
-			// Set up property name combo box from table.
-			if (iter->is_very_common) {
-				combobox->addItem(commonly_useful_icon, iter->name, iter->suggested_type);
+		// Iterate over all feature properties.
+		GPlatesModel::FeatureHandle::const_iterator iter = feature_ref->begin();
+		GPlatesModel::FeatureHandle::const_iterator end = feature_ref->end();
+		for ( ; iter != end; ++iter)
+		{
+			if ((*iter)->property_name() == property_name)
+			{
+				// Found a matching property name.
+				return true;
 			}
 		}
-		
-		// Then add all property names present in the property_name_info_table, and their
-		// suggested property type mapping.
-		iter = property_name_info_table;
-		end = iter + NUM_ELEMS(property_name_info_table);
-		
-		for ( ; iter != end; ++iter) {
-			// Set up property name combo box from table.
-			combobox->addItem(blank_icon, iter->name, iter->suggested_type);
-		}
-	}
-	
-	void
-	populate_property_type_combobox(
-			QComboBox *combobox,
-			const GPlatesQtWidgets::EditWidgetGroupBox &edit_widget_group_box)
-	{
-		// Obtain a list of all property value type names that the EditWidgetGroupBox
-		// is capable of handling, and ensure it is sorted.
-		GPlatesQtWidgets::EditWidgetGroupBox::property_types_list_type list =
-				edit_widget_group_box.get_handled_property_types_list();
-		// Also include all property value types mentioned in the property_name_info_table,
-		// because there may be types which are not implemented as an edit widget (yet).
-		const PropertyNameInfo *info_begin = property_name_info_table;
-		const PropertyNameInfo *info_end = info_begin + NUM_ELEMS(property_name_info_table);
-		for ( ; info_begin != info_end; ++info_begin) {
-			list.push_back(info_begin->suggested_type);
-		}
-		
-		list.sort();
-		list.unique();
-		// Hack: Since OldPlatesHeaderWidget is no longer editable, we need to exclude this from the list
-		// of addable value types (despite it being a valid option for the EditWidgetGroupBox).
-		list.remove(QString("gpml:OldPlatesHeader"));
-		
-		// Populate the combobox from the list of handled types.
-		GPlatesQtWidgets::EditWidgetGroupBox::property_types_list_const_iterator it =
-				list.begin();
-		GPlatesQtWidgets::EditWidgetGroupBox::property_types_list_const_iterator end =
-				list.end();
-		for ( ; it != end; ++it) {
-			combobox->addItem(*it);
-		}
-	}
-	
 
-	/**
-	 * Attempts to convert a QString to a qualified PropertyName.
-	 * If the namespace alias is 'gml' or 'gpml', this is relatively pain-free.
-	 * However the user is currently free to enter whatever the hell they feel like.
-	 */
-	boost::optional<GPlatesModel::PropertyName>
-	string_to_property_name(
-			const QString &property_name_str)
-	{
-		boost::optional<GPlatesModel::PropertyName> property_name;
-		QStringList parts = property_name_str.split(':');
-		if (parts.size() == 2) {
-			// alias:name format. Handle it if it is something we know (gml or gpml).
-			// FIXME: Handle user-defined namespaces and aliases. Probably needs some
-			// clever dialog to let the user edit the mapping.
-			if (parts[0] == "gml") {
-				return GPlatesModel::PropertyName::create_gml(parts[1]);
-			} else if (parts[0] == "gpml") {
-				return GPlatesModel::PropertyName::create_gpml(parts[1]);
-			} else {
-				// FIXME: Can't handle user defined namespaces.
-				return boost::none;
-			}
-			
-		} else if (parts.size() == 1) {
-			// name (no alias). Assume the user is attempting to put it in the gpml namespace.
-			return GPlatesModel::PropertyName::create_gpml(parts[1]);
-
-		} else {
-			// some invalid not qualified or 'overqualified' name.
-			return boost::none;
-		}
-	}
-
-	/**
-	 * Attempts to convert a QString to a qualified TemplateTypeParameterType.
-	 * If the namespace alias is 'gml' or 'gpml', this is relatively pain-free.
-	 * However the user is currently free to enter whatever the hell they feel like.
-	 */
-	boost::optional<GPlatesPropertyValues::TemplateTypeParameterType>
-	string_to_template_type(
-			const QString &type_name_str)
-	{
-		boost::optional<GPlatesPropertyValues::TemplateTypeParameterType> type_name;
-		QStringList parts = type_name_str.split(':');
-		if (parts.size() == 2) {
-			// alias:name format. Handle it if it is something we know (gml or gpml).
-			// FIXME: Handle user-defined namespaces and aliases. Probably needs some
-			// clever dialog to let the user edit the mapping.
-			if (parts[0] == "gml") {
-				return GPlatesPropertyValues::TemplateTypeParameterType::create_gml(parts[1]);
-			} else if (parts[0] == "gpml") {
-				return GPlatesPropertyValues::TemplateTypeParameterType::create_gpml(parts[1]);
-			} else {
-				// FIXME: Can't handle user defined namespaces.
-				return boost::none;
-			}
-			
-		} else if (parts.size() == 1) {
-			// name (no alias). Assume the user is attempting to put it in the gpml namespace.
-			return GPlatesPropertyValues::TemplateTypeParameterType::create_gpml(parts[1]);
-
-		} else {
-			// some invalid not qualified or 'overqualified' name.
-			return boost::none;
-		}
-	}
-
-	
-	/**
-	 * Wraps a newly-created PropertyValue in a time-dependent wrapper
-	 * (GpmlConstantValue) if appropriate. If the property we are adding
-	 * is not listed as taking time-dependent property values, this function
-	 * simply returns the original PropertyValue::non_null_ptr_type.
-	 *
-	 * FIXME: We should really convert the property_info_table to use
-	 * the new PropertyName class rather than QStrings, although we do
-	 * need them as QStrings eventually because of the way QComboBox is
-	 * feeding us the appropriate value type to select.
-	 */
-	GPlatesModel::PropertyValue::non_null_ptr_type
-	add_time_dependency_if_necessary(
-			const QString &property_name_as_string,
-			const QString &property_type_as_string,
-			const GPlatesModel::PropertyName &property_name,
-			GPlatesModel::PropertyValue::non_null_ptr_type property_value)
-	{
-		// Assume no time dependency (The user might have entered their own
-		// property name, and selected a PropertyValue type to create for it)
-		bool is_time_dependent = false;
-		// Look up the time-dependency from the property_info_table.
-		const PropertyNameInfo *begin = property_name_info_table;
-		const PropertyNameInfo *end = begin + NUM_ELEMS(property_name_info_table);
-		for ( ; begin != end; ++begin) {
-			if (begin->name == property_name_as_string) {
-				is_time_dependent = begin->is_time_dependent;
-				break;
-			}
-		}
-		
-		if (is_time_dependent) {
-			// We need a time-dependent wrapper - set this up as a gpml:ConstantValue<thing>
-			// for now, and the user can change it after the property is added with the
-			// "ChangeTimeDependentPropertyDialog" (to be completed 2019)
-			
-			// We need to supply ConstantValue's constructor with a TemplateTypeParameterType of
-			// the type of PropertyValue that it is wrapping.
-			boost::optional<GPlatesPropertyValues::TemplateTypeParameterType> value_type = 
-					string_to_template_type(property_type_as_string);
-			
-			if (value_type) {
-				return GPlatesPropertyValues::GpmlConstantValue::create(property_value, *value_type);
-			} else {
-				// FIXME: Is this an exceptional state?
-				return property_value;
-			}
-			
-		} else {
-			// Just keep it as an ordinary PropertyValue.
-			return property_value;
-		}
+		return false;
 	}
 }
 
+const GPlatesModel::FeatureType GPlatesQtWidgets::AddPropertyDialog::DEFAULT_FEATURE_TYPE(
+		GPlatesModel::FeatureType::create_gml("AbstractFeature"));
+
 
 GPlatesQtWidgets::AddPropertyDialog::AddPropertyDialog(
-		GPlatesQtWidgets::EditFeaturePropertiesWidget &edit_widget,
+		GPlatesGui::FeatureFocus &feature_focus_,
 		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
-	d_edit_feature_properties_widget_ptr(&edit_widget),
+	d_gpgim(view_state_.get_application_state().get_gpgim()),
+	d_feature_focus(feature_focus_),
+	// Start off with the most basic feature type.
+	// It's actually an 'abstract' feature but it'll get reset to a 'concrete' feature...
+	d_feature_type(DEFAULT_FEATURE_TYPE),
 	d_edit_widget_group_box_ptr(new GPlatesQtWidgets::EditWidgetGroupBox(view_state_, this))
 {
 	setupUi(this);
-	
+
 	set_up_add_property_box();
 	set_up_edit_widgets();
-	populate_property_name_combobox(combobox_add_property_name);
-	populate_property_type_combobox(combobox_add_property_type, *d_edit_widget_group_box_ptr);
 
+	populate_property_name_combobox();
+	reset();
+}
+
+
+void
+GPlatesQtWidgets::AddPropertyDialog::set_feature(
+		const GPlatesModel::FeatureHandle::weak_ref &new_feature_ref)
+{
+	d_feature_ref = new_feature_ref;
+
+	// Determine the new feature type.
+	d_feature_type = new_feature_ref.is_valid()
+			? new_feature_ref->feature_type()
+			: DEFAULT_FEATURE_TYPE;
+
+	// NOTE: We always populate the list of property names even if the feature reference is
+	// the same (as before) and the feature type is the same - because it's possible the properties
+	// of the feature have changed which (due to GPGIM property multiplicity) can affect which
+	// properties get listed. The alternative is to listen to model callbacks but this is easier
+	// since the Add Property dialog is modal nothing within the dialog can change the feature
+	// (until the property is added and then the dialog closes).
+	populate_property_name_combobox();
 	reset();
 }
 
@@ -349,14 +133,11 @@ GPlatesQtWidgets::AddPropertyDialog::AddPropertyDialog(
 void
 GPlatesQtWidgets::AddPropertyDialog::reset()
 {
-	// Doing setCurrentIndex() should cause a chain reaction that will reset everything else.
-	// Except it doesn't, does it? No, if it's already on that value, there is no
-	// 'change' event, so we can't rely on ANYTHING.
-	static const int default_index = combobox_add_property_name->findText("gml:name");
-	combobox_add_property_name->setCurrentIndex(default_index);
-	set_appropriate_property_value_type(default_index);
-	set_appropriate_edit_widget();
-	check_property_name_validity(default_index);
+	// Choose a property name that all feature types have.
+	// "gml:name" is a property of "gml:AbstractFeature" which all feature types inherit from.
+	static const int default_property_name_index = combobox_add_property_name->findText("gml:name");
+
+	combobox_add_property_name->setCurrentIndex(default_property_name_index);
 }
 
 
@@ -369,17 +150,49 @@ GPlatesQtWidgets::AddPropertyDialog::pop_up()
 
 
 void
+GPlatesQtWidgets::AddPropertyDialog::connect_to_combobox_add_property_name_signals(
+		bool connects_signal_slot)
+{
+	if (connects_signal_slot)
+	{
+		// Choose appropriate property value type for property name.
+		QObject::connect(combobox_add_property_name, SIGNAL(currentIndexChanged(int)),
+				this, SLOT(populate_property_type_combobox()));
+		// Check if the selected property name is appropriate for the current feature's type.
+		QObject::connect(combobox_add_property_name, SIGNAL(currentIndexChanged(int)),
+				this, SLOT(check_property_name_validity()));
+	}
+	else // disconnect...
+	{
+		// Disconnect this receiver from all signals from 'combobox_add_property_name':
+		QObject::disconnect(combobox_add_property_name, 0, this, 0);
+	}
+}
+
+
+void
+GPlatesQtWidgets::AddPropertyDialog::connect_to_combobox_add_property_type_signals(
+		bool connects_signal_slot)
+{
+	if (connects_signal_slot)
+	{
+		// Choose appropriate edit widget for property type.
+		QObject::connect(combobox_add_property_type, SIGNAL(currentIndexChanged(int)),
+				this, SLOT(set_appropriate_edit_widget()));
+	}
+	else // disconnect...
+	{
+		// Disconnect this receiver from all signals from 'combobox_add_property_type':
+		QObject::disconnect(combobox_add_property_type, 0, this, 0);
+	}
+}
+
+
+void
 GPlatesQtWidgets::AddPropertyDialog::set_up_add_property_box()
 {
-	// Choose appropriate property value type for property name.
-	QObject::connect(combobox_add_property_name, SIGNAL(currentIndexChanged(int)),
-			this, SLOT(set_appropriate_property_value_type(int)));
-	// Choose appropriate edit widget for property type.
-	QObject::connect(combobox_add_property_type, SIGNAL(currentIndexChanged(int)),
-			this, SLOT(set_appropriate_edit_widget()));
-	// Check if the selected property is appropriate for the current feature's type.
-	QObject::connect(combobox_add_property_type, SIGNAL(currentIndexChanged(int)),
-			this, SLOT(check_property_name_validity(int)));
+	connect_to_combobox_add_property_name_signals(true/*connect*/);
+	connect_to_combobox_add_property_type_signals(true/*connect*/);
 
 	// Add property when user hits "Add".
 	QObject::connect(buttonBox, SIGNAL(accepted()),
@@ -405,99 +218,100 @@ GPlatesQtWidgets::AddPropertyDialog::set_up_edit_widgets()
 
 
 void
-GPlatesQtWidgets::AddPropertyDialog::set_appropriate_property_value_type(
-		int index)
-{
-	// Update the "Type" combobox based on what property name is selected.
-	QString suggested_value_type = combobox_add_property_name->itemData(index).toString();
-	int target_index = combobox_add_property_type->findText(suggested_value_type);
-	if (target_index != -1) {
-		combobox_add_property_type->setCurrentIndex(target_index);
-	}
-}
-
-
-void
 GPlatesQtWidgets::AddPropertyDialog::set_appropriate_edit_widget()
 {
-	d_edit_widget_group_box_ptr->activate_widget_by_property_value_name(
-			combobox_add_property_type->currentText());
+	// Get the property value type from the combobox_add_property_type text.
+	boost::optional<GPlatesPropertyValues::StructuralType> property_value_type =
+			GPlatesModel::convert_qstring_to_qualified_xml_name<
+					GPlatesPropertyValues::StructuralType>(
+							combobox_add_property_type->currentText());
+	// Should always be able to convert to a qualified XML name.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			property_value_type,
+			GPLATES_ASSERTION_SOURCE);
+
+	d_edit_widget_group_box_ptr->activate_widget_by_property_value_type(property_value_type.get());
 }
 
 
 void
-GPlatesQtWidgets::AddPropertyDialog::check_property_name_validity(
-		int index)
+GPlatesQtWidgets::AddPropertyDialog::check_property_name_validity()
 {
-	bool property_name_valid = true;
-
-	try
+	boost::optional<GPlatesModel::PropertyName> property_name =
+			GPlatesModel::convert_qstring_to_qualified_xml_name<GPlatesModel::PropertyName>(
+					combobox_add_property_name->currentText());
+	if (!property_name)
 	{
-		const GPlatesModel::FeatureHandle::weak_ref &feature_ref =
-			d_edit_feature_properties_widget_ptr->current_feature();
+		static const char *WARNING_TEXT = "Internal error: '%1' is a malformed property name.";
+		label_warning->setText(tr(WARNING_TEXT)
+				.arg(combobox_add_property_name->currentText()));
 
-		if (feature_ref.is_valid())
-		{
-			GPlatesUtils::Parse<GPlatesModel::PropertyName> parse;
-			GPlatesModel::PropertyName property_name = parse(combobox_add_property_name->currentText());
-
-			// Check whether the file-io code thinks the selected property is valid for the feature type.
-			const GPlatesFileIO::FeaturePropertiesMap &feature_properties_map =
-				GPlatesFileIO::FeaturePropertiesMap::instance();
-			GPlatesFileIO::FeaturePropertiesMap::const_iterator feature_properties_iter =
-				feature_properties_map.find(feature_ref->feature_type());
-			if (feature_properties_iter != feature_properties_map.end())
-			{
-				typedef GPlatesFileIO::PropertyCreationUtils::PropertyCreatorMap property_creator_map_type;
-				const property_creator_map_type &property_creator_map = feature_properties_iter->second;
-				property_name_valid = (property_creator_map.find(property_name) != property_creator_map.end());
-
-				if (!property_name_valid)
-				{
-					static const char *WARNING_TEXT = "%1 is not a valid property for a %2 feature.";
-					label_warning->setText(tr(WARNING_TEXT).arg(
-							combobox_add_property_name->currentText()).arg(
-							GPlatesUtils::make_qstring_from_icu_string(
-								feature_ref->feature_type().build_aliased_name())));
-				}
-			}
-		}
-	}
-	catch (const GPlatesUtils::ParseError &)
-	{
-		// Do nothing and fall through.
+		widget_warning->setVisible(true);
+		return;
 	}
 
-	widget_warning->setVisible(!property_name_valid);
+	// Check whether the selected property name is valid for the feature type.
+	if (!d_gpgim.get_feature_property(d_feature_type, property_name.get()))
+	{
+		static const char *WARNING_TEXT = "'%1' is not a valid property for a '%2' feature.";
+		label_warning->setText(tr(WARNING_TEXT)
+				.arg(combobox_add_property_name->currentText())
+				.arg(convert_qualified_xml_name_to_qstring(d_feature_type)));
+
+		widget_warning->setVisible(true);
+		return;
+	}
+
+	widget_warning->setVisible(false);
 }
 
 
 void
 GPlatesQtWidgets::AddPropertyDialog::add_property()
 {
+	if (!d_feature_ref.is_valid())
+	{
+		QMessageBox::warning(this, tr("Unable to add property"),
+				tr("The feature, to contain the property, is no longer valid."),
+				QMessageBox::Ok);
+		return;
+	}
+
 	if (d_edit_widget_group_box_ptr->is_edit_widget_active()) {
 		// Calculate name.
 		boost::optional<GPlatesModel::PropertyName> property_name = 
-				string_to_property_name(combobox_add_property_name->currentText());
+				GPlatesModel::convert_qstring_to_qualified_xml_name<GPlatesModel::PropertyName>(
+						combobox_add_property_name->currentText());
 		if (property_name) {
 		
 			// If the name was something we understood, create the property value too.
 			try {
 				GPlatesModel::PropertyValue::non_null_ptr_type property_value =
 						d_edit_widget_group_box_ptr->create_property_value_from_widget();
-				
-				property_value = add_time_dependency_if_necessary(
-						combobox_add_property_name->currentText(),
-						combobox_add_property_type->currentText(),
-						*property_name,
-						property_value);
-				
-				// Do the adding via EditFeaturePropertiesWidget, so that most of
-				// the model-editing code is in one place.
-				d_edit_feature_properties_widget_ptr->append_property_value_to_feature(
-						property_value, *property_name);
 
-			} catch (InvalidPropertyValueException &e) {
+				// Add the geometry property to the feature.
+				GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
+				if (!GPlatesModel::ModelUtils::add_property(
+						d_feature_ref,
+						property_name.get(),
+						property_value,
+						d_gpgim,
+						// We're allowing *any* property to be added to the feature...
+						false/*check_property_name_allowed_for_feature_type*/,
+						&add_property_error_code))
+				{
+					// Not successful in adding property; show error message.
+					QMessageBox::warning(this,
+							QObject::tr("Unable to add property."),
+							QObject::tr(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)),
+							QMessageBox::Ok);
+					return;
+				}
+
+				// We have just changed the model. Tell anyone who cares to know.
+				d_feature_focus.announce_modification_of_focused_feature();
+
+			} catch (const InvalidPropertyValueException &e) {
 				// Not enough points for a constructable polyline, etc.
 				QMessageBox::warning(this, tr("Property Value Invalid"),
 						tr("The property can not be added: %1").arg(e.reason()),
@@ -523,3 +337,171 @@ GPlatesQtWidgets::AddPropertyDialog::add_property()
 	accept();
 }
 
+
+void
+GPlatesQtWidgets::AddPropertyDialog::populate_property_name_combobox()
+{
+	// Icons to indicate useful properties. Blanks to keep list spaced properly.
+	static const QIcon allowed_property_icon(":/gnome_emblem_new_16.png");
+	static const QIcon blank_icon(":/blank_16.png");
+
+	// Temporarily disconnect slots from the combobox.
+	// This avoids updates (such as to the property 'type' combobox) when we clear this combobox.
+	connect_to_combobox_add_property_name_signals(false/*connects_signal_slot*/);
+
+	// Clear the combobox first.
+	combobox_add_property_name->clear();
+
+	// Re-connects_signal_slot slots to the combobox.
+	connect_to_combobox_add_property_name_signals(true/*connects_signal_slot*/);
+
+	// First add the property names allowed for the current feature type as dictated by the GPGIM
+	// along with their suggested property structural type. This list can't (easily) be in bold,
+	// because we'd have to implement it as a Model/View rather than a simple item list,
+	// but we can set a "Favourite" icon or somesuch.
+	//
+	// Query the GPGIM for the feature class.
+	boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
+			d_gpgim.get_feature_class(d_feature_type);
+	if (gpgim_feature_class)
+	{
+		// Get allowed properties for the feature type.
+		GPlatesModel::GpgimFeatureClass::gpgim_property_seq_type gpgim_feature_properties;
+		gpgim_feature_class.get()->get_feature_properties(gpgim_feature_properties);
+
+		// Iterate over the allowed properties for the feature type and add each property name
+		// and associated default structural type.
+		BOOST_FOREACH(
+				const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &gpgim_feature_property,
+				gpgim_feature_properties)
+		{
+			// Only add property types supported by edit widgets, otherwise the user will be
+			// left with the inability to actually add their selected property.
+			if (!d_edit_widget_group_box_ptr->get_handled_property_types(*gpgim_feature_property))
+			{
+				continue;
+			}
+
+			// If the current property is allowed to occur at most once per feature then only allow
+			// the user to add the property if it doesn't already exist in the feature.
+			if (gpgim_feature_property->get_multiplicity() == GPlatesModel::GpgimProperty::ZERO_OR_ONE ||
+				gpgim_feature_property->get_multiplicity() == GPlatesModel::GpgimProperty::ONE)
+			{
+				if (feature_has_property_name(d_feature_ref, gpgim_feature_property->get_property_name()))
+				{
+					continue;
+				}
+			}
+
+			// Passed all tests so we can add the current property name.
+			combobox_add_property_name->addItem(
+					allowed_property_icon,
+					convert_qualified_xml_name_to_qstring(gpgim_feature_property->get_property_name()));
+		}
+	}
+	else
+	{
+		// FIXME: Is this an exceptional state?
+		qWarning() << "Internal error: Unable to find feature type '"
+			<< convert_qualified_xml_name_to_qstring(d_feature_type)
+			<< "' in the GPGIM.";
+	}
+
+	// Then add all property names present in the GPGIM.
+	// This will also duplicate the feature properties added above (but this time they'll only have
+	// a blank icon to indicate they are not allowed by the GPGIM for the current feature type).
+	const GPlatesModel::Gpgim::property_seq_type &gpgim_properties = d_gpgim.get_properties();
+	BOOST_FOREACH(
+			const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &gpgim_property,
+			gpgim_properties)
+	{
+		// Only add property types supported by edit widgets, otherwise the user will be
+		// left with the inability to actually add their selected property.
+		if (d_edit_widget_group_box_ptr->get_handled_property_types(*gpgim_property))
+		{
+			combobox_add_property_name->addItem(
+					blank_icon,
+					convert_qualified_xml_name_to_qstring(gpgim_property->get_property_name()));
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::AddPropertyDialog::populate_property_type_combobox()
+{
+	// Temporarily disconnect slots from the combobox.
+	// This avoids updates (such as setting up the appropriate edit widget) when we clear this combobox.
+	connect_to_combobox_add_property_type_signals(false/*connects_signal_slot*/);
+
+	// Clear the combobox.
+	combobox_add_property_type->clear();
+
+	// Re-connects_signal_slot slots to the combobox.
+	connect_to_combobox_add_property_type_signals(true/*connects_signal_slot*/);
+
+	// Get the current property name.
+	boost::optional<GPlatesModel::PropertyName> property_name = 
+			GPlatesModel::convert_qstring_to_qualified_xml_name<GPlatesModel::PropertyName>(
+					combobox_add_property_name->currentText());
+	if (!property_name)
+	{
+		// FIXME: Is this an exceptional state?
+		qWarning() << "Internal error: '"
+			<< combobox_add_property_name->currentText()
+			<< "' is a malformed property name.";
+		return;
+	}
+
+	//
+	// Add the property types allowed for the current property name as dictated by the GPGIM.
+	//
+
+	// Query the GPGIM for the property definition.
+	boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> gpgim_property =
+			d_gpgim.get_property(property_name.get());
+	if (!gpgim_property)
+	{
+		// FIXME: Is this an exceptional state?
+		qWarning() << "Internal error: Unable to find property name '"
+			<< convert_qualified_xml_name_to_qstring(property_name.get())
+			<< "' in the GPGIM - no property structural types will be listed.";
+		return;
+	}
+
+	// Index into structural type combobox.
+	int structural_type_index = -1;
+
+	// Get the sequence of structural types allowed (by GPGIM) for the current property name.
+	// Only add property types supported by edit widgets, there's no point listing structural types
+	// that do not have an edit widget.
+	EditWidgetGroupBox::property_types_list_type structural_types;
+	if (!d_edit_widget_group_box_ptr->get_handled_property_types(*gpgim_property.get(), structural_types))
+	{
+		// None of the current property's structural types are supported by edit widgets.
+		return;
+	}
+
+	// The default structural type for the current property.
+	const GPlatesPropertyValues::StructuralType &default_structural_type =
+			gpgim_property.get()->get_default_structural_type()->get_structural_type();
+
+	BOOST_FOREACH(
+			const GPlatesPropertyValues::StructuralType &structural_type,
+			structural_types)
+	{
+		combobox_add_property_type->addItem(convert_qualified_xml_name_to_qstring(structural_type));
+
+		// Get the combobox index of the 'default' structural type.
+		if (structural_type == default_structural_type)
+		{
+			structural_type_index = combobox_add_property_type->count() - 1;
+		}
+	}
+
+	// Set the combobox index to the default structural type.
+	if (structural_type_index >= 0)
+	{
+		combobox_add_property_type->setCurrentIndex(structural_type_index);
+	}
+}

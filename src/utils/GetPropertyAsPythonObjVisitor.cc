@@ -67,7 +67,6 @@
 #include "property-values/GpmlStringList.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTimeWindow.h"
-#include "property-values/GpmlTopologicalIntersection.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalPoint.h"
 #include "property-values/GpmlTopologicalPolygon.h"
@@ -354,21 +353,6 @@ GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_topological_line_section
 	d_val =	
 		GPlatesApi::PythonUtils::qstring_to_python_string(
 				property_value_to_qstring(v));
-}
-
-
-void
-GPlatesUtils::GetPropertyAsPythonObjVisitor::visit_gpml_topological_intersection(
-		gpml_topological_intersection_type &v)
-{ 
-	//TODO:
-
-	// it is not a property value?
-	d_val = bp::str("Not implement yet -- gpml_topological_intersection");
-
-// 	d_val =	
-// 		GPlatesApi::PythonUtils::qstring_to_python_string(
-// 				property_value_to_qstring(v));
 }
 
 

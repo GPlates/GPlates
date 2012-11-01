@@ -31,16 +31,22 @@
 #include "utils/Profile.h"
 
 
+const char * GPlatesFileIO::ArbitraryXmlReader::AccessedOutsideXmlProfileMethodException
+		::ACCESSED_OUTSIDE_XML_PROFILE_METHOD_EXCEPTION_NAME =
+				"Accessed Outside XML Profile Method Exception";
+
+
 void
 GPlatesFileIO::ArbitraryXmlReader::read_file(
 		File::Reference &file_ref,
 		boost::shared_ptr<ArbitraryXmlProfile> profile,
 		GPlatesModel::ModelInterface &model,
+		const GPlatesModel::Gpgim &gpgim,
 		ReadErrorAccumulation &read_errors)
 {
 	PROFILE_FUNC();
 
-	SetErrorAccumulation setter(&read_errors,this);
+	SetXmlProfileAccess xml_profile_access(&gpgim, &read_errors, this);
 	profile->populate(file_ref);
 }
 
@@ -51,10 +57,11 @@ GPlatesFileIO::ArbitraryXmlReader::read_xml_data(
 		boost::shared_ptr<ArbitraryXmlProfile> profile,
 		GPlatesModel::ModelInterface &model,
 		QByteArray& data,
+		const GPlatesModel::Gpgim &gpgim,
 		ReadErrorAccumulation &read_errors)
 {
 // qDebug() << "GPlatesFileIO::ArbitraryXmlReader::read_xml_data()";
-	SetErrorAccumulation setter(&read_errors,this);
+	SetXmlProfileAccess xml_profile_access(&gpgim, &read_errors, this);
 	profile->populate(
 			data,
 			file_ref.get_feature_collection());
@@ -66,10 +73,11 @@ int
 GPlatesFileIO::ArbitraryXmlReader::count_features(
 		boost::shared_ptr<ArbitraryXmlProfile> profile,
 		QByteArray& data,
+		const GPlatesModel::Gpgim &gpgim,
 		ReadErrorAccumulation &read_errors)
 {
 // qDebug() << "GPlatesFileIO::ArbitraryXmlReader::count_features()";
-	SetErrorAccumulation setter(&read_errors,this);
+	SetXmlProfileAccess xml_profile_access(&gpgim, &read_errors, this);
 	return profile->count_features(data);
 }
 

@@ -63,7 +63,7 @@ namespace GPlatesAppLogic
 	class ReconstructedVirtualGeomagneticPole;
 	class ResolvedRaster;
 	class ResolvedScalarField3D;
-	class ResolvedTopologicalBoundary;
+	class ResolvedTopologicalGeometry;
 	class ResolvedTopologicalNetwork;
 	class CoRegistrationData;
 
@@ -120,10 +120,10 @@ namespace GPlatesAppLogic
 				ReconstructionGeometryType, ResolvedScalarField3D>::type
 						resolved_scalar_field_3d_type;
 
-		//! Typedef for @a ResolvedTopologicalBoundary of appropriate const-ness.
+		//! Typedef for @a ResolvedTopologicalGeometry of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
-				ReconstructionGeometryType, ResolvedTopologicalBoundary>::type
-						resolved_topological_boundary_type;
+				ReconstructionGeometryType, ResolvedTopologicalGeometry>::type
+						resolved_topological_geometry_type;
 
 		//! Typedef for @a ResolvedTopologicalNetwork of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
@@ -222,7 +222,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
 		{  }
 
 		/**

@@ -138,8 +138,7 @@ GPlatesQtWidgets::FeaturePropertiesDialog::refresh_display()
 	
 	// Update our text fields at the top.
 	lineedit_feature_type->setText(
-			GPlatesUtils::make_qstring_from_icu_string(
-				d_feature_ref->feature_type().build_aliased_name()));
+			convert_qualified_xml_name_to_qstring(d_feature_ref->feature_type()));
 	
 	// Update our tabbed sub-widgets.
 	d_query_feature_properties_widget->display_feature(d_feature_ref, d_focused_rg);

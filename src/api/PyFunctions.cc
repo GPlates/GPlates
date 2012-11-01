@@ -40,6 +40,8 @@
 
 #include "global/python.h"
 
+#include "model/Gpgim.h"
+
 
 #if !defined(GPLATES_NO_PYTHON)
 namespace bp = boost::python;
@@ -92,7 +94,8 @@ namespace
 		boost::scoped_ptr<FeatureCollectionFileFormat::Registry> registry(new FeatureCollectionFileFormat::Registry());
 		
 		GPlatesModel::ModelInterface  model;
-		register_default_file_formats(*registry,model);
+		GPlatesModel::Gpgim::non_null_ptr_to_const_type gpgim = GPlatesModel::Gpgim::create();
+		register_default_file_formats(*registry, model, *gpgim);
 		
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> recon_fc = 
 			utils::load_files(s_recon_files, p_recon_files,*registry);
@@ -178,9 +181,10 @@ namespace
 		const QString output_file_format = QString(bp::extract<const char *>(python_output_file_format));
 		const QString output_file_basename_suffix = QString(bp::extract<const char *>(python_output_file_basename_suffix));
 
-		GPlatesModel::ModelInterface model;
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry feature_collection_file_format_registry;
-		register_default_file_formats(feature_collection_file_format_registry, model);
+		GPlatesModel::ModelInterface model;
+		GPlatesModel::Gpgim::non_null_ptr_to_const_type gpgim = GPlatesModel::Gpgim::create();
+		register_default_file_formats(feature_collection_file_format_registry, model, *gpgim);
 
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> reconstruction_files;
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstruction_feature_collections = 

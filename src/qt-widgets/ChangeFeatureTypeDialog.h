@@ -48,9 +48,14 @@ namespace GPlatesGui
 	class FeatureFocus;
 }
 
+namespace GPlatesModel
+{
+	class Gpgim;
+}
+
 namespace GPlatesQtWidgets
 {
-	class ChangeGeometryPropertyWidget;
+	class ChangePropertyWidget;
 	class ChooseFeatureTypeWidget;
 
 	class ChangeFeatureTypeDialog : 
@@ -107,6 +112,7 @@ namespace GPlatesQtWidgets
 		};
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
+		const GPlatesModel::Gpgim &d_gpgim;
 		GPlatesGui::FeatureFocus &d_feature_focus;
 
 		/**
@@ -115,7 +121,7 @@ namespace GPlatesQtWidgets
 		ChooseFeatureTypeWidget *d_new_feature_type_widget;
 
 		/**
-		 * The container holding all the ChangeGeometryPropertyWidgets.
+		 * The container holding all the ChangePropertyWidgets.
 		 */
 		QWidget *d_widget_container;
 
@@ -125,18 +131,18 @@ namespace GPlatesQtWidgets
 		QBoxLayout *d_widget_container_layout;
 
 		/**
-		 * Displays invalid non-geometric properties to the user.
+		 * Displays invalid properties to the user.
 		 */
 		InvalidPropertiesWidget *d_invalid_properties_widget;
 
 		/**
-		 * A pool of ChangeGeometryPropertyWidget instances, to save us from having to
+		 * A pool of ChangePropertyWidget instances, to save us from having to
 		 * continuously destroy and create these objects.
 		 */
-		std::vector<ChangeGeometryPropertyWidget *> d_change_geometry_property_widget_pool;
+		std::vector<ChangePropertyWidget *> d_change_property_widget_pool;
 
 		/**
-		 * The number of widgets active in d_change_geometry_property_widget_pool.
+		 * The number of widgets active in d_change_property_widget_pool.
 		 */
 		unsigned int d_num_active_widgets;
 

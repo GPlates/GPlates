@@ -37,7 +37,7 @@
 #include "PlateVelocityUtils.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionGeometry.h"
-#include "ResolvedTopologicalBoundarySubSegment.h"
+#include "ResolvedTopologicalGeometrySubSegment.h"
 
 #include "maths/PolygonOnSphere.h"
 
@@ -194,7 +194,8 @@ namespace GPlatesAppLogic
 				InteriorPolygonForwardIter interior_polygon_sequence_begin,
 				InteriorPolygonForwardIter interior_polygon_sequence_end,
 				boost::optional<GPlatesModel::integer_plate_id_type> plate_id_ = boost::none,
-				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none)
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none,
+				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none)
 		{
 			return non_null_ptr_type(
 					new ResolvedTopologicalNetwork(
@@ -211,8 +212,8 @@ namespace GPlatesAppLogic
 							interior_polygon_sequence_begin,
 							interior_polygon_sequence_end,
 							plate_id_,
-							time_of_formation_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+							time_of_formation_,
+							reconstruct_handle_));
 		}
 
 		/**
@@ -547,9 +548,10 @@ namespace GPlatesAppLogic
 				const boundary_polygon_ptr_type &boundary_polygon_ptr,
 				InteriorPolygonForwardIter interior_polygon_sequence_begin,
 				InteriorPolygonForwardIter interior_polygon_sequence_end,
-				boost::optional<GPlatesModel::integer_plate_id_type> plate_id_ = boost::none,
-				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none) :
-			ReconstructionGeometry(reconstruction_tree_),
+				boost::optional<GPlatesModel::integer_plate_id_type> plate_id_,
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_,
+				boost::optional<ReconstructHandle::type> reconstruct_handle_) :
+			ReconstructionGeometry(reconstruction_tree_, reconstruct_handle_),
 			WeakObserverType(feature_handle),
 			d_property_iterator(property_iterator_),
 			d_plate_id(plate_id_),

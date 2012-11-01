@@ -55,6 +55,12 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelUtils.h"
 
+
+namespace GPlatesModel
+{
+	class Gpgim;
+}
+
 namespace GPlatesFileIO
 {
 	namespace FeatureCollectionFileFormat
@@ -84,6 +90,7 @@ namespace GPlatesFileIO
 				GPlatesFileIO::File::Reference &file_ref,
 				const boost::shared_ptr<const FeatureCollectionFileFormat::OGRConfiguration> &default_file_configuration,
 				GPlatesModel::ModelInterface &model,
+				const GPlatesModel::Gpgim &gpgim,
 				ReadErrorAccumulation &read_errors);
 
 		static

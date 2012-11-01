@@ -36,7 +36,7 @@
 
 namespace GPlatesAppLogic
 {
-	class ResolvedTopologicalBoundary;
+	class ResolvedTopologicalGeometry;
 }
 
 namespace GPlatesFileIO
@@ -61,7 +61,7 @@ namespace GPlatesFileIO
 
 
 		/**
-		* Exports @a ResolvedTopologicalBoundary objects to Shapefile format.
+		* Exports @a ResolvedTopologicalGeometry objects to Shapefile format.
 		*
 		* If @a wrap_to_dateline is true then exported polygon boundaries are wrapped/clipped to the dateline.
 		*/

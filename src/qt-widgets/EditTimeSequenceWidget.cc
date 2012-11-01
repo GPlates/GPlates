@@ -350,8 +350,8 @@ GPlatesQtWidgets::EditTimeSequenceWidget::create_property_value_from_widget() co
 {
 	std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> time_periods;
 
-	static const GPlatesPropertyValues::TemplateTypeParameterType gml_time_period_type =
-		GPlatesPropertyValues::TemplateTypeParameterType::create_gml("TimePeriod");
+	static const GPlatesPropertyValues::StructuralType gml_time_period_type =
+		GPlatesPropertyValues::StructuralType::create_gml("TimePeriod");
 
 	// Find first valid time in table, so we can store it as the "end" part of the first gpml:Array element. 
 	boost::optional<double> begin_time,end_time;
@@ -391,6 +391,18 @@ GPlatesQtWidgets::EditTimeSequenceWidget::create_property_value_from_widget() co
 		}
 
 	}
+
+	// There should be at least one time *period* in the array (which is really two time *samples*).
+	//
+	// FIXME: Currently 'gpml:Array' is currently hardwired (or expected) to be a sequence of time samples.
+	// Later, when other template types are supported for 'gpml:Array', we'll need to be able to handle them.
+	// For now the we're assuming time periods and one time period needs two time samples.
+	if (time_periods.empty())
+	{
+		throw InvalidPropertyValueException(GPLATES_EXCEPTION_SOURCE,
+				tr("The time sequence should contain at least two time samples."));
+	}
+
 	return GPlatesPropertyValues::GpmlArray::create(
 		gml_time_period_type,
 		time_periods);		
@@ -430,8 +442,8 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_time_period_array(
     // the previous time period.
     d_array_ptr = &gpml_array;
 
-    static const GPlatesPropertyValues::TemplateTypeParameterType gml_time_period_type =
-            GPlatesPropertyValues::TemplateTypeParameterType::create_gml("TimePeriod");
+    static const GPlatesPropertyValues::StructuralType gml_time_period_type =
+            GPlatesPropertyValues::StructuralType::create_gml("TimePeriod");
 
     if (gpml_array.type() != gml_time_period_type)
     {
@@ -497,8 +509,8 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_times()
 {
 	std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> time_periods;
 
-	static const GPlatesPropertyValues::TemplateTypeParameterType gml_time_period_type =
-		GPlatesPropertyValues::TemplateTypeParameterType::create_gml("TimePeriod");
+	static const GPlatesPropertyValues::StructuralType gml_time_period_type =
+		GPlatesPropertyValues::StructuralType::create_gml("TimePeriod");
 
 	// Find first valid time in table, so we can store it as the "end" part of the first gpml:Array element. 
 	boost::optional<double> begin_time, end_time;

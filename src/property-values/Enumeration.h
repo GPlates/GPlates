@@ -32,11 +32,13 @@
 #include "EnumerationType.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/PropertyValue.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 
-// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::Enumeration, visit_enumeration)
@@ -58,11 +60,10 @@ namespace GPlatesPropertyValues
 		~Enumeration()
 		{  }
 
-		// FIXME: enum_type should probably be a PropertyName.
 		static
 		const non_null_ptr_type
 		create(
-				const GPlatesUtils::UnicodeString &enum_type,
+				const EnumerationType &enum_type,
 				const GPlatesUtils::UnicodeString &enum_content)
 		{
 			Enumeration::non_null_ptr_type ptr(new Enumeration(enum_type, enum_content));
@@ -115,6 +116,16 @@ namespace GPlatesPropertyValues
 			return d_type;
 		}
 
+		/**
+		 * Returns the structural type associated with this property value class.
+		 */
+		virtual
+		StructuralType
+		get_structural_type() const
+		{
+			return StructuralType(d_type);
+		}
+
 		virtual
 		void
 		accept_visitor(
@@ -140,7 +151,7 @@ namespace GPlatesPropertyValues
 
 		explicit
 		Enumeration(
-				const GPlatesUtils::UnicodeString &enum_type,
+				const EnumerationType &enum_type,
 				const GPlatesUtils::UnicodeString &enum_content) :
 			PropertyValue(),
 			d_type(enum_type),

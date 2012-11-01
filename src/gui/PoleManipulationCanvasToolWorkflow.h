@@ -35,39 +35,22 @@
 
 #include "GlobeCanvasToolAdapter.h"
 
-#include "app-logic/ReconstructionGeometry.h"
-
 #include "canvas-tools/CanvasTool.h"
 
 
-namespace GPlatesAppLogic
-{
-	class ReconstructGraph;
-}
-
-namespace GPlatesCanvasTools
-{
-	class ClickGeometry;
-	class GeometryOperationState;
-	class MeasureDistanceState;
-}
-
 namespace GPlatesQtWidgets
 {
-	class GlobeCanvas;
 	class ViewportWindow;
 }
 
 namespace GPlatesViewOperations
 {
-	class GeometryBuilder;
 	class RenderedGeometryCollection;
 }
 
 namespace GPlatesGui
 {
 	class FeatureFocus;
-	class FeatureTableModel;
 
 	/**
 	 * The canvas tool workflow for manipulating rotation poles.
@@ -81,8 +64,6 @@ namespace GPlatesGui
 
 		PoleManipulationCanvasToolWorkflow(
 				CanvasToolWorkflows &canvas_tool_workflows,
-				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
-				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
 				const GPlatesCanvasTools::CanvasTool::status_bar_callback_type &status_bar_callback,
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesQtWidgets::ViewportWindow &viewport_window);
@@ -122,56 +103,8 @@ namespace GPlatesGui
 		 */
 		FeatureFocus &d_feature_focus;
 
-		GPlatesViewOperations::GeometryBuilder &d_focused_feature_geometry_builder;
-
-		GPlatesCanvasTools::GeometryOperationState &d_geometry_operation_state;
-
 		//! For rendering purposes
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
-
-		//! Used when restoring the clicked geometries on workflow activation.
-		GPlatesGui::FeatureTableModel &d_clicked_table_model;
-
-		//! Used when restoring the clicked geometries on workflow activation.
-		const GPlatesAppLogic::ReconstructGraph &d_reconstruct_graph;
-
-		//! Used when restoring the clicked geometries on workflow activation.
-		GPlatesQtWidgets::ViewportWindow &d_viewport_window;
-
-		/**
-		 * The sequence of clicked geometries (if any) to restore when this canvas tool workflow re-activates.
-		 */
-		std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type> d_save_restore_clicked_geom_seq;
-
-		/**
-		 * The focused feature (if any) to restore when this canvas tool workflow re-activates.
-		 */
-		GPlatesModel::FeatureHandle::weak_ref d_save_restore_focused_feature;
-
-		/**
-		 * The focused feature geometry property (if any) to restore when this canvas tool workflow re-activates.
-		 */
-		GPlatesModel::FeatureHandle::iterator d_save_restore_focused_feature_geometry_property;
-
-		/**
-		 * Used to set/get the clicked geometries when this canvas tool workflow is activated/deactivated.
-		 */
-		GPlatesCanvasTools::ClickGeometry *d_click_geometry_tool;
-
-		//! For dragging the globe in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_drag_globe_tool;
-		//! For dragging the globe in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_drag_globe_tool;
-
-		//! For zooming the globe in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_zoom_globe_tool;
-		//! For zooming the globe in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_zoom_globe_tool;
-
-		//! For clicking geometries in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_click_geometry_tool;
-		//! For clicking geometries in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_click_geometry_tool;
 
 		//! For manipulating poles in the 3D globe view.
 		boost::scoped_ptr<GlobeCanvasTool> d_globe_manipulate_pole_tool;
@@ -182,8 +115,6 @@ namespace GPlatesGui
 		void
 		create_canvas_tools(
 				CanvasToolWorkflows &canvas_tool_workflows,
-				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
-				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
 				const GPlatesCanvasTools::CanvasTool::status_bar_callback_type &status_bar_callback,
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesQtWidgets::ViewportWindow &viewport_window);

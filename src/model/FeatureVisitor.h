@@ -77,12 +77,12 @@ namespace GPlatesPropertyValues
 	class GpmlRevisionId;
 	class GpmlScalarField3DFile;
 	class GpmlStringList;
-	class GpmlTopologicalInterior;
+	class GpmlTopologicalNetwork;
 	class GpmlTopologicalPolygon;
 	class GpmlTopologicalLine;
 	class GpmlTopologicalLineSection;
-	class GpmlTopologicalIntersection;
 	class GpmlTopologicalPoint;
+	class OldVersionPropertyValue;
 	class UninterpretedPropertyValue;
 	class XsBoolean;
 	class XsDouble;
@@ -213,12 +213,12 @@ namespace GPlatesModel
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlRevisionId>::type gpml_revision_id_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlScalarField3DFile>::type gpml_scalar_field_3d_file_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlStringList>::type gpml_string_list_type;
-		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalInterior>::type gpml_topological_interior_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalNetwork>::type gpml_topological_network_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalPolygon>::type gpml_topological_polygon_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalLine>::type gpml_topological_line_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalLineSection>::type gpml_topological_line_section_type;
-		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalIntersection>::type gpml_topological_intersection_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTopologicalPoint>::type gpml_topological_point_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::OldVersionPropertyValue>::type old_version_property_value_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::UninterpretedPropertyValue>::type uninterpreted_property_value_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::XsBoolean>::type xs_boolean_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::XsDouble>::type xs_double_type;
@@ -580,8 +580,8 @@ namespace GPlatesModel
 
 		virtual
 		void
-		visit_gpml_topological_interior(
-				gpml_topological_interior_type &gpml_toplogical_interior)
+		visit_gpml_topological_network(
+				gpml_topological_network_type &gpml_toplogical_network)
 		{  }
 
 		virtual
@@ -604,14 +604,14 @@ namespace GPlatesModel
 
 		virtual
 		void
-		visit_gpml_topological_intersection(
-				gpml_topological_intersection_type &gpml_toplogical_intersection)
+		visit_gpml_topological_point(
+				gpml_topological_point_type &gpml_toplogical_point)
 		{  }
 
 		virtual
 		void
-		visit_gpml_topological_point(
-				gpml_topological_point_type &gpml_toplogical_point)
+		visit_old_version_property_value(
+				old_version_property_value_type &old_version_prop_val) 
 		{  }
 
 		virtual

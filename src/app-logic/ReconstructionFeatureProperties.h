@@ -107,7 +107,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns optional reconstruction method if "gpml:reonstructionMethod" property is found.
 		 */
-		const boost::optional<GPlatesAppLogic::ReconstructMethod::Type> &
+		const boost::optional<ReconstructMethod::Type> &
 		get_reconstruction_method() const
 		{
 			return d_recon_method;
@@ -178,7 +178,7 @@ namespace GPlatesAppLogic
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_appearance;
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_dissappearance;
 
-		boost::optional<GPlatesAppLogic::ReconstructMethod::Type> d_recon_method;
+		boost::optional<ReconstructMethod::Type> d_recon_method;
 		boost::optional<GPlatesModel::integer_plate_id_type> d_right_plate_id;
 		boost::optional<GPlatesModel::integer_plate_id_type> d_left_plate_id;
 	};

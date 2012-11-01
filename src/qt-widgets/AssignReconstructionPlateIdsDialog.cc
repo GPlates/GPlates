@@ -588,7 +588,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::get_possible_partitioning_
 			// plate ids don't exist in the rotation file so they'll need to be added - for example
 			// the Andes deforming region has plate id 29201 which should be mapped to 201 in
 			// the rotation file).
-			if (layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER ||
+			if (layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER ||
 				layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER ||
 				layer.get_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCT)
 			{

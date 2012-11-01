@@ -67,7 +67,7 @@ GPlatesApi::Feature::get_properties()
 	bp::ssize_t n = bp::len(all_names);
 	for(bp::ssize_t i=0; i<n; i++) 
 	{
-		qDebug() << "Property name: " << QString(bp::extract<const char*>(all_names[i]));
+		//qDebug() << "Property name: " << QString(bp::extract<const char*>(all_names[i]));
  		ret.append(get_properties_by_name(all_names[i]));
 	}
 	return ret;
@@ -131,7 +131,7 @@ GPlatesApi::Feature::get_properties_by_name(
 
 				if(0 == std::distance(visitor.found_qvariants_begin(),visitor.found_qvariants_end()))
 				{
-					qDebug() << "No shape file attribute found.";
+					//qDebug() << "No shape file attribute found.";
 					continue;
 				}
 
@@ -206,7 +206,7 @@ GPlatesApi::Feature::get_all_property_names()
 		else
 		{
 			const QByteArray buf = name.build_aliased_name().qstring().toUtf8();
-			qDebug() << "name: " << QString(buf);
+			//qDebug() << "name: " << QString(buf);
 			ret.append(bp::str(buf.data()));
 		}
 	}

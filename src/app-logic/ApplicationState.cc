@@ -48,6 +48,8 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "model/Gpgim.h"
+
 #include "utils/Profile.h"
 
 
@@ -75,12 +77,14 @@ namespace
 
 
 GPlatesAppLogic::ApplicationState::ApplicationState() :
+	d_gpgim(GPlatesModel::Gpgim::create()),
 	d_feature_collection_file_state(
 			new FeatureCollectionFileState(d_model)),
 	d_feature_collection_file_format_registry(
 			new GPlatesFileIO::FeatureCollectionFileFormat::Registry()),
 	d_feature_collection_file_io(
 			new FeatureCollectionFileIO(
+					*d_gpgim,
 					d_model,
 					*d_feature_collection_file_format_registry,
 					*d_feature_collection_file_state)),
@@ -103,7 +107,7 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_callback_feature_store(d_model->root())
 {
 	// Register the default file formats for reading and/or writing feature collections.
-	register_default_file_formats(*d_feature_collection_file_format_registry, d_model);
+	register_default_file_formats(*d_feature_collection_file_format_registry, d_model, *d_gpgim);
 
 	// Register default reconstruct method types with the reconstruct method registry.
 	register_default_reconstruct_method_types(*d_reconstruct_method_registry);

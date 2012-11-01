@@ -131,7 +131,7 @@ namespace
 		GpmlKeyValueDictionaryElement name_element(
 			key,
 			name_value,
-			TemplateTypeParameterType::create_xsi("string"));
+			StructuralType::create_xsi("string"));
 		dictionary->elements().push_back(name_element);	
 
 		// Seed points.
@@ -143,7 +143,7 @@ namespace
 		GpmlKeyValueDictionaryElement flowline_seeds_element(
 			key,
 			flowline_seeds_value,
-			TemplateTypeParameterType::create_xsi("string"));
+			StructuralType::create_xsi("string"));
 		dictionary->elements().push_back(flowline_seeds_element);
 
 		// Anchor plate.
@@ -154,7 +154,7 @@ namespace
 		GpmlKeyValueDictionaryElement anchor_element(
 			key,
 			anchor_value,
-			TemplateTypeParameterType::create_xsi("integer"));
+			StructuralType::create_xsi("integer"));
 		dictionary->elements().push_back(anchor_element);	
 
 		// Reconstruction time.
@@ -165,7 +165,7 @@ namespace
 		GpmlKeyValueDictionaryElement time_element(
 			key,
 			time_value,
-			TemplateTypeParameterType::create_xsi("double"));
+			StructuralType::create_xsi("double"));
 		dictionary->elements().push_back(time_element);	
 
 		if (should_add_referenced_files)
@@ -206,7 +206,7 @@ namespace
 				GpmlKeyValueDictionaryElement element(
 					key,
 					file_value,
-					TemplateTypeParameterType::create_xsi("string"));
+					StructuralType::create_xsi("string"));
 				dictionary->elements().push_back(element);	
 			}
 		}

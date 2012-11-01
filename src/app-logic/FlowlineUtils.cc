@@ -54,8 +54,8 @@ GPlatesAppLogic::FlowlineUtils::get_times_from_time_period_array(
 	std::vector<double> &times,
 	const GPlatesPropertyValues::GpmlArray &gpml_array)
 {
-	static const GPlatesPropertyValues::TemplateTypeParameterType gml_time_period_type =
-		GPlatesPropertyValues::TemplateTypeParameterType::create_gml("TimePeriod");	
+	static const GPlatesPropertyValues::StructuralType gml_time_period_type =
+		GPlatesPropertyValues::StructuralType::create_gml("TimePeriod");	
 
 	if (gpml_array.type() != gml_time_period_type)
 	{

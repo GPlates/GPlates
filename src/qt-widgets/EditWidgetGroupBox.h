@@ -28,14 +28,24 @@
 #ifndef GPLATES_QTWIDGETS_EDITWIDGETGROUPBOX_H
 #define GPLATES_QTWIDGETS_EDITWIDGETGROUPBOX_H
 
-#include <QGroupBox>
+#include <list>
+#include <map>
 #include <boost/optional.hpp>
+#include <QGroupBox>
 
 #include "AbstractEditWidget.h"
 
 #include "model/FeatureHandle.h"
 #include "model/PropertyValue.h"
 
+#include "property-values/StructuralType.h"
+
+
+namespace GPlatesModel
+{
+	class Gpgim;
+	class GpgimProperty;
+}
 
 namespace GPlatesPresentation
 {
@@ -98,17 +108,12 @@ namespace GPlatesQtWidgets
 	public:
 		
 		/**
-		 * Map type used to activate appropriate edit widget given a property value name.
-		 */
-		typedef std::map<QString, AbstractEditWidget *> widget_map_type;
-		typedef widget_map_type::const_iterator widget_map_const_iterator;
-		
-		/**
-		 * List of property type names that are handled by this EditWidgetGroupBox.
+		 * List of property structural types that are handled by this EditWidgetGroupBox.
 		 * Used by AddPropertyDialog.
 		 */
-		typedef std::list<QString> property_types_list_type;
+		typedef std::list<GPlatesPropertyValues::StructuralType> property_types_list_type;
 		typedef property_types_list_type::const_iterator property_types_list_const_iterator;
+
 		
 		explicit
 		EditWidgetGroupBox(
@@ -130,23 +135,37 @@ namespace GPlatesQtWidgets
 		}
 		
 		/**
-		 * List of property type names that are handled by this EditWidgetGroupBox.
+		 * List of property structural types that are handled by this EditWidgetGroupBox.
 		 * Used by AddPropertyDialog.
 		 */
 		property_types_list_type
 		get_handled_property_types_list() const;
 
 		/**
+		 * Returns true if the specified GPGIM property has at least one structural type that is
+		 * supported by an edit widget.
+		 *
+		 * Optionally returns the list of structural types, of the GPGIM property, that are supported.
+		 */
+		bool
+		get_handled_property_types(
+				const GPlatesModel::GpgimProperty &gpgim_property,
+				boost::optional<property_types_list_type &> property_types = boost::none) const;
+
+		/**
 		 * Uses EditWidgetChooser to activate the editing widget most appropriate
-		 * for the given property iterator @a it. Used by EditFeaturePropertiesWidget.
-		 * 
-		 * @a feature_ref only needs to be provided as context - for example,
-		 * EditGeometryWidget needs it so it can figure out what reconstruction plate id
-		 * to use.
+		 * for the given top-level property.
 		 */
 		void
 		activate_appropriate_edit_widget(
-				GPlatesModel::FeatureHandle::weak_ref feature_ref,
+				const GPlatesModel::TopLevelProperty::non_null_ptr_type &top_level_property);
+
+		/**
+		 * Uses EditWidgetChooser to activate the editing widget most appropriate
+		 * for the given property iterator @a it. Used by EditFeaturePropertiesWidget.
+		 */
+		void
+		activate_appropriate_edit_widget(
 				GPlatesModel::FeatureHandle::iterator it);
 
 		/**
@@ -156,14 +175,9 @@ namespace GPlatesQtWidgets
 		 * the interface would appear to 'flicker') - it is used by EditFeaturePropertiesWidget
 		 * to handle a case where a user has edited a value via the QTableView and the
 		 * currently selected edit widget needs to be updated.
-		 * 
-		 * @a feature_ref only needs to be provided as context - for example,
-		 * EditGeometryWidget needs it so it can figure out what reconstruction plate id
-		 * to use.
 		 */
 		void
 		refresh_edit_widget(
-				GPlatesModel::FeatureHandle::weak_ref feature_ref,
 				GPlatesModel::FeatureHandle::iterator it);
 		 
 		/**
@@ -171,8 +185,8 @@ namespace GPlatesQtWidgets
 		 * PropertyValue type name. Used by AddPropertyDialog.
 		 */
 		void
-		activate_widget_by_property_value_name(
-				const QString &property_value_name);
+		activate_widget_by_property_value_type(
+				const GPlatesPropertyValues::StructuralType &property_value_type);
 		
 		/**
 		 * Call this function before you call create_property_value_from_widget()
@@ -282,43 +296,31 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
-		 * 
-		 * @a feature_ref is used as context for the EditGeometryWidget.
 		 */
 		void
 		activate_edit_line_string_widget(
-				GPlatesPropertyValues::GmlLineString &gml_line_string,
-				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+				GPlatesPropertyValues::GmlLineString &gml_line_string);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
-		 * 
-		 * @a feature_ref is used as context for the EditGeometryWidget.
 		 */
 		void
 		activate_edit_multi_point_widget(
-				GPlatesPropertyValues::GmlMultiPoint &gml_multi_point,
-				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+				GPlatesPropertyValues::GmlMultiPoint &gml_multi_point);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
-		 * 
-		 * @a feature_ref is used as context for the EditGeometryWidget.
 		 */
 		void
 		activate_edit_point_widget(
-				GPlatesPropertyValues::GmlPoint &gml_point,
-				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+				GPlatesPropertyValues::GmlPoint &gml_point);
 		
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
-		 * 
-		 * @a feature_ref is used as context for the EditGeometryWidget.
 		 */
 		void
 		activate_edit_polygon_widget(
-				GPlatesPropertyValues::GmlPolygon &gml_polygon,
-				GPlatesModel::FeatureHandle::weak_ref feature_ref);
+				GPlatesPropertyValues::GmlPolygon &gml_polygon);
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
@@ -426,13 +428,20 @@ namespace GPlatesQtWidgets
 		edit_widget_wants_committing();
 	
 	private:
-		
+
+		/**
+		 * Map type used to activate appropriate edit widget given a property value type.
+		 */
+		typedef std::map<GPlatesPropertyValues::StructuralType, AbstractEditWidget *> widget_map_type;
+		typedef widget_map_type::const_iterator widget_map_const_iterator;
+
+
 		/**
 		 * Builds a map of QString to AbstractEditWidget *, to activate edit widgets
 		 * based on their property values' names.
 		 */
-		const widget_map_type &
-		build_widget_map() const;
+		void
+		build_widget_map();
 
 		/**
 		 * Given the name of a property value type, returns a pointer to the widget
@@ -440,8 +449,12 @@ namespace GPlatesQtWidgets
 		 * Returns NULL in the event that no such value type is registered.
 		 */
 		GPlatesQtWidgets::AbstractEditWidget *
-		get_widget_by_name(
-				const QString &property_value_type_name);
+		get_widget_by_property_value_type(
+				const GPlatesPropertyValues::StructuralType &property_value_type);
+
+
+		//! Used to query available property enumeration types from the GPGIM.
+		const GPlatesModel::Gpgim &d_gpgim;
 
 		/**
 		 * This pointer always refers to the one edit widget which is currently active
@@ -464,6 +477,11 @@ namespace GPlatesQtWidgets
 		GPlatesQtWidgets::EditBooleanWidget *d_edit_boolean_widget_ptr;
 		GPlatesQtWidgets::EditShapefileAttributesWidget *d_edit_shapefile_attributes_widget_ptr;
 		GPlatesQtWidgets::EditTimeSequenceWidget *d_edit_time_sequence_widget_ptr;
+
+		/**
+		 * Map of property structural types to edit widgets.
+		 */
+		widget_map_type d_widget_map;
 		
 		/**
 		 * The verb in front of the title of the groupbox, prepended to the PropertyValue
@@ -473,16 +491,21 @@ namespace GPlatesQtWidgets
 		QString d_edit_verb;
 
 		/**
-		 * The clone of the TopLevelProperty that we're currently editing using an edit widget.
-		 * Because we cannot directly edit the TopLevelProperty object stored in the model,
-		 * the edit widgets must work with a clone, which is later committed back into the model.
+		 * The TopLevelProperty that we're currently editing using an edit widget.
+		 * Because, for a feature iterator, we cannot directly edit the TopLevelProperty object
+		 * stored in the model, the edit widgets must work with a clone, which is later
+		 * committed back into the model.
 		 */
-		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> d_current_property_clone;
+		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> d_current_property;
 
 		/**
 		 * The iterator to the TopLevelProperty that we're currently editing using an edit widget.
+		 *
 		 * We need to keep the iterator so that we can commit the clone back into the model
 		 * after the edit widget is done with it.
+		 *
+		 * Note that if we're editing a standalone top-level property (that's not part of a feature)
+		 * then this iterator will be boost::none.
 		 */
 		boost::optional<GPlatesModel::FeatureHandle::iterator> d_current_property_iterator;
 

@@ -27,28 +27,22 @@
 #ifndef GPLATES_QTWIDGETS_EDITGEOMETRYWIDGET_H
 #define GPLATES_QTWIDGETS_EDITGEOMETRYWIDGET_H
 
-#include <boost/optional.hpp>
 #include <boost/intrusive_ptr.hpp>
+#include <boost/optional.hpp>
+
 #include "AbstractEditWidget.h"
+#include "EditGeometryWidgetUi.h"
 #include "EditTableWidget.h"
+
+#include "model/types.h"
+
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
-#include "model/types.h"
 
-#include "EditGeometryWidgetUi.h"
+#include "view-operations/GeometryType.h"
 
-
-namespace GPlatesAppLogic
-{
-	class ApplicationState;
-}
-
-namespace GPlatesPresentation
-{
-	class ViewState;
-}
 
 namespace GPlatesQtWidgets
 {
@@ -64,7 +58,6 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		EditGeometryWidget(
-				GPlatesPresentation::ViewState &view_state_,
 				QWidget *parent_ = NULL);
 		
 		virtual
@@ -74,14 +67,7 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		configure_for_property_value_type(
-				const QString &property_value_name);
-
-		void
-		set_reconstruction_plate_id(
-				boost::optional<GPlatesModel::integer_plate_id_type> plate_id_opt);
-
-		void
-		unset_reconstruction_plate_id();
+				const GPlatesPropertyValues::StructuralType &property_value_type);
 
 		void
 		update_widget_from_line_string(
@@ -152,17 +138,6 @@ namespace GPlatesQtWidgets
 			spinbox_lat->selectAll();
 		}
 		
-		/**
-		 * Updates the widget to display the current reconstruction time in the
-		 * "coordinate time" combobox.
-		 * Depending on which coordinate mode is currently selected, this may
-		 * also cause the table of points to be updated.
-		 */
-		void
-		handle_reconstruction(
-				GPlatesAppLogic::ApplicationState &application_state,
-				const double &reconstruction_time);
-		
 
 		/**
 		 * Creates an EditTableActionWidget item in the current row.
@@ -196,13 +171,6 @@ namespace GPlatesQtWidgets
 		void
 		delete_point_from_table(
 				int row);
-		
-		/**
-		 * Updates the combobox's displayed reconstruction time.
-		 */
-		void
-		update_reconstruction_time_display(
-				double time);
 
 		/**
 		 * Does appropriate tests for the current geometry of the table,
@@ -219,20 +187,11 @@ namespace GPlatesQtWidgets
 		 */
 		bool
 		set_geometry_for_property_value();
-		
+
 		/**
-		 * A pointer to the reconstruction generator so that the EditGeometryWidget can query
-		 * it for the current reconstruction time and perform reconstructions
-		 * of the points in the table.
+		 * The type of geometry being edited.
 		 */
-		const GPlatesAppLogic::ApplicationState *d_application_state_ptr;
-		
-		/**
-		 * The plate ID that should be used for reconstructions.
-		 * If this member is boost::none, the "Reconstructed to x Ma" option will
-		 * not be available.
-		 */
-		boost::optional<GPlatesModel::integer_plate_id_type> d_reconstruction_plate_id_opt;
+		GPlatesViewOperations::GeometryType::Value d_geometry_type;
 		
 		/**
 		 * This boost::intrusive_ptr is used to remember the property value which

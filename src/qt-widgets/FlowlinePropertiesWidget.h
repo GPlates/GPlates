@@ -39,7 +39,7 @@ namespace GPlatesAppLogic
 
 namespace GPlatesQtWidgets
 {
-        class CreateFeatureDialog;
+	class CreateFeatureDialog;
 	class EditTimeSequenceWidget;
 
 	class FlowlinePropertiesWidget:
@@ -48,33 +48,20 @@ namespace GPlatesQtWidgets
 	{
 		Q_OBJECT
 	public:
+
 		explicit
 		FlowlinePropertiesWidget(
-			GPlatesAppLogic::ApplicationState *application_state_ptr,
-                        CreateFeatureDialog *create_feature_dialog_ptr,
-			QWidget *parent_ = NULL);
+				const GPlatesAppLogic::ApplicationState &application_state,
+				QWidget *parent_ = NULL);
 			
 		~FlowlinePropertiesWidget()
 		{}	
-		
-		virtual
-		void
-		add_properties_to_feature(
-			GPlatesModel::FeatureHandle::weak_ref feature_handle);
-		
-		virtual
-		void
-		add_geometry_properties_to_feature(
-                        GPlatesModel::FeatureHandle::weak_ref feature_handle);
-					
-		void
-		update();
 
-                virtual
-                GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-                do_geometry_tasks(
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-			const GPlatesModel::FeatureHandle::weak_ref &feature_handle);
+        virtual
+        GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+        do_geometry_tasks(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &reconstruction_time_geometry_,
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref);
 		
 		
 	private:
@@ -82,18 +69,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * Application state, for getting reconstruction time.     
 		 */
-		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
-		
-		/**
-		 * Custom edit widget used for time sequence. 
-		 */
-		EditTimeSequenceWidget *d_time_sequence_widget;
-
-
-                /**
-                 * Create feature dialog,for grabbing common properties.
-                 */
-                CreateFeatureDialog *d_create_feature_dialog_ptr;
+		const GPlatesAppLogic::ApplicationState &d_application_state;
 		
 	};
 }

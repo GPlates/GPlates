@@ -58,7 +58,7 @@
 #include "property-values/GpmlRevisionId.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/UninterpretedPropertyValue.h"
-#include "property-values/TemplateTypeParameterType.h"
+#include "property-values/StructuralType.h"
 #include "property-values/XsString.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"

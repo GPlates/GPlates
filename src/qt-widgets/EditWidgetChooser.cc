@@ -101,9 +101,7 @@ void
 GPlatesQtWidgets::EditWidgetChooser::visit_gml_line_string(
 		GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
-	// The EditGeometryWidget wants an extra bit of context; the feature weak_ref
-	// which contains the geometric property we are editing.
-	d_edit_widget_group_box_ptr->activate_edit_line_string_widget(gml_line_string, d_feature_ref);
+	d_edit_widget_group_box_ptr->activate_edit_line_string_widget(gml_line_string);
 }
 
 
@@ -111,9 +109,7 @@ void
 GPlatesQtWidgets::EditWidgetChooser::visit_gml_multi_point(
 		GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
-	// The EditGeometryWidget wants an extra bit of context; the feature weak_ref
-	// which contains the geometric property we are editing.
-	d_edit_widget_group_box_ptr->activate_edit_multi_point_widget(gml_multi_point, d_feature_ref);
+	d_edit_widget_group_box_ptr->activate_edit_multi_point_widget(gml_multi_point);
 }
 
 
@@ -131,9 +127,7 @@ void
 GPlatesQtWidgets::EditWidgetChooser::visit_gml_point(
 		GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	// The EditGeometryWidget wants an extra bit of context; the feature weak_ref
-	// which contains the geometric property we are editing.
-	d_edit_widget_group_box_ptr->activate_edit_point_widget(gml_point, d_feature_ref);
+	d_edit_widget_group_box_ptr->activate_edit_point_widget(gml_point);
 }
 
 
@@ -141,9 +135,7 @@ void
 GPlatesQtWidgets::EditWidgetChooser::visit_gml_polygon(
 		GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
-	// The EditGeometryWidget wants an extra bit of context; the feature weak_ref
-	// which contains the geometric property we are editing.
-	d_edit_widget_group_box_ptr->activate_edit_polygon_widget(gml_polygon, d_feature_ref);
+	d_edit_widget_group_box_ptr->activate_edit_polygon_widget(gml_polygon);
 }
 
 

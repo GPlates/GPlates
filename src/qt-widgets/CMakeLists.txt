@@ -37,7 +37,6 @@ set(srcs
     AssignReconstructionPlateIdsDialog.cc
     AssignReconstructionPlateIdsDialog.h
     AssignReconstructionPlateIdsDialogUi.ui
-    BuildTopologyWidgetUi.ui
     CalculateReconstructionPoleDialog.cc
     CalculateReconstructionPoleDialog.h
     CalculateReconstructionPoleDialogUi.ui
@@ -47,9 +46,9 @@ set(srcs
     ChangeFeatureTypeDialog.cc
     ChangeFeatureTypeDialog.h
     ChangeFeatureTypeDialogUi.ui
-    ChangeGeometryPropertyWidget.cc
-    ChangeGeometryPropertyWidget.h
-    ChangeGeometryPropertyWidgetUi.ui
+    ChangePropertyWidget.cc
+    ChangePropertyWidget.h
+    ChangePropertyWidgetUi.ui
     ChooseColourButton.cc
     ChooseColourButton.h
     ChooseFeatureCollectionDialog.cc
@@ -62,8 +61,8 @@ set(srcs
     ChooseFeatureTypeWidget.h
     ChooseFontButton.cc
     ChooseFontButton.h
-    ChooseGeometryPropertyWidget.cc
-    ChooseGeometryPropertyWidget.h
+    ChoosePropertyWidget.cc
+    ChoosePropertyWidget.h
     ColouringDialog.cc
     ColouringDialog.h
     ColouringDialogUi.ui
@@ -91,9 +90,15 @@ set(srcs
     CoRegistrationResultTableDialog.cc
     CoRegistrationResultTableDialog.h
     CoRegistrationResultTableDialogUi.ui
+    CreateFeatureAddOrEditPropertyDialog.cc
+    CreateFeatureAddOrEditPropertyDialog.h
+    CreateFeatureAddOrEditPropertyDialogUi.ui
     CreateFeatureDialog.cc
     CreateFeatureDialog.h
     CreateFeatureDialogUi.ui
+    CreateFeaturePropertiesPage.cc
+    CreateFeaturePropertiesPage.h
+    CreateFeaturePropertiesPageUi.ui
     CreateSmallCircleDialog.cc
     CreateSmallCircleDialog.h
     CreateSmallCircleDialogUi.ui
@@ -172,7 +177,6 @@ set(srcs
     EditTimeSequenceWidget.cc
     EditTimeSequenceWidget.h
     EditTimeSequenceWidgetUi.ui
-    EditTopologyWidgetUi.ui
     EditTotalReconstructionSequenceDialog.cc
     EditTotalReconstructionSequenceDialog.h
     EditTotalReconstructionSequenceDialogUi.ui
@@ -276,9 +280,6 @@ set(srcs
     ModifyReconstructionPoleWidget.cc
     ModifyReconstructionPoleWidget.h
     ModifyReconstructionPoleWidgetUi.ui
-    MotionPathPropertiesWidget.cc
-    MotionPathPropertiesWidget.h
-    MotionPathPropertiesWidgetUi.ui
     NoActiveEditWidgetException.h
     OpenDirectoryDialog.cc
     OpenDirectoryDialog.h
@@ -419,9 +420,6 @@ set(srcs
     TopologyBoundaryResolverLayerOptionsWidget.cc
     TopologyBoundaryResolverLayerOptionsWidget.h
     TopologyBoundaryResolverLayerOptionsWidgetUi.ui
-    TopologyNetworkPropertiesWidget.cc
-    TopologyNetworkPropertiesWidget.h
-    TopologyNetworkPropertiesWidgetUi.ui
     TopologyNetworkResolverLayerOptionsWidget.cc
     TopologyNetworkResolverLayerOptionsWidget.h
     TopologyNetworkResolverLayerOptionsWidgetUi.ui

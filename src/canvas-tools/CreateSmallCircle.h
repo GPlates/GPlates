@@ -32,9 +32,10 @@
 
 #include "CanvasTool.h"
 
-#include "qt-widgets/SmallCircleWidget.h"
-#include "view-operations/GeometryBuilder.h"
 #include "view-operations/RenderedGeometryCollection.h"
+
+#include "qt-widgets/SmallCircleWidget.h"
+
 
 namespace GPlatesGui
 {
@@ -74,11 +75,13 @@ namespace GPlatesCanvasTools
 		create(
 				const status_bar_callback_type &status_bar_callback,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
 				GPlatesQtWidgets::SmallCircleWidget &small_circle_widget)
 		{
 			return new CreateSmallCircle(
 					status_bar_callback,
 					rendered_geom_collection,
+					main_rendered_layer_type,
 					small_circle_widget);
 		}
 
@@ -133,6 +136,7 @@ namespace GPlatesCanvasTools
 		CreateSmallCircle(
 				const status_bar_callback_type &status_bar_callback,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
 				GPlatesQtWidgets::SmallCircleWidget &small_circle_widget);
 
 		//! For rendering purposes

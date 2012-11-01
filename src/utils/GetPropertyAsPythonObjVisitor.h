@@ -192,11 +192,6 @@ namespace GPlatesUtils
 
 
 		void
-		visit_gpml_topological_intersection(
-				gpml_topological_intersection_type &v);
-
-
-		void
 		visit_gpml_topological_point(
 				gpml_topological_point_type &v);
 

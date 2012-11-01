@@ -24,17 +24,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
- #include "EllipseGenerator.h"
- #include "GreatCircle.h"
- #include "PointOnSphere.h"
- #include "Rotation.h"
- #include "UnitVector3D.h"
- 
- #include "global/types.h"
+#include "EllipseGenerator.h"
+#include "GreatCircle.h"
+#include "PointOnSphere.h"
+#include "Rotation.h"
+#include "UnitVector3D.h"
  
  
- namespace
- {
+namespace
+{
  #if 0
 	void
 	draw_point(
@@ -68,7 +66,7 @@
 
 		return angle;
 	}	
- }
+}
  
 GPlatesMaths::EllipseGenerator::EllipseGenerator(
 	const PointOnSphere &centre, 

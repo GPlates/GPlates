@@ -34,9 +34,12 @@
 
 #include "TopologyInternalUtils.h"
 
-#include "ReconstructedFeatureGeometryFinder.h"
+#include "ReconstructedFeatureGeometry.h"
+#include "ReconstructionFeatureProperties.h"
+#include "ReconstructionGeometryFinder.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructionTree.h"
+#include "ResolvedTopologicalGeometry.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
@@ -54,13 +57,21 @@
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/PropertyName.h"
 
-#include "property-values/GpmlConstantValue.h"
+#include "property-values/GmlLineString.h"
+#include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
+#include "property-values/GmlPoint.h"
+#include "property-values/GmlPolygon.h"
+#include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlPropertyDelegate.h"
-#include "property-values/GpmlTopologicalIntersection.h"
+#include "property-values/GpmlTimeWindow.h"
+#include "property-values/GpmlTopologicalLine.h"
 #include "property-values/GpmlTopologicalLineSection.h"
+#include "property-values/GpmlTopologicalNetwork.h"
 #include "property-values/GpmlTopologicalPoint.h"
+#include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/XsString.h"
 
 #include "utils/UnicodeStringUtils.h"
@@ -69,19 +80,95 @@
 namespace
 {
 	/**
+	 * Used to determine if a feature property is a topological geometry.
+	 *
+	 * This should be used to visit a single feature *property* (not a feature).
+	 */
+	class TopologicalGeometryPropertyValueType :
+			public GPlatesModel::ConstFeatureVisitor
+	{
+	public:
+
+		boost::optional<GPlatesPropertyValues::StructuralType>
+		get_topological_geometry_property_value_type()
+		{
+			return d_topological_geometry_property_value_type;
+		}
+
+
+		virtual
+		void
+		visit_gpml_constant_value(
+				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+		{
+			gpml_constant_value.value()->accept_visitor(*this);
+		}
+
+		virtual
+		void
+		visit_gpml_piecewise_aggregation(
+				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
+		{
+			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator begin =
+					gpml_piecewise_aggregation.time_windows().begin();
+			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+					gpml_piecewise_aggregation.time_windows().end();
+
+			// Only need to visit the first time window - all windows have the same template type.
+			if (begin != end)
+			{
+				const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window = *begin;
+				gpml_time_window.time_dependent_value()->accept_visitor(*this);
+			}
+		}
+
+		virtual
+		void
+		visit_gpml_topological_network(
+				const GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_toplogical_network)
+		{
+			d_topological_geometry_property_value_type = gpml_toplogical_network.get_structural_type();
+		}
+
+		virtual
+		void
+		visit_gpml_topological_line(
+				const GPlatesPropertyValues::GpmlTopologicalLine &gpml_topological_line)
+		{
+			d_topological_geometry_property_value_type = gpml_topological_line.get_structural_type();
+		}
+
+		virtual
+		void
+		visit_gpml_topological_polygon(
+				const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_topological_polygon)
+		{
+			d_topological_geometry_property_value_type = gpml_topological_polygon.get_structural_type();
+		}
+
+	private:
+
+		boost::optional<GPlatesPropertyValues::StructuralType> d_topological_geometry_property_value_type;
+	};
+
+
+	/**
 	 * Creates a @a GpmlTopologicalSection
 	 */
 	class CreateTopologicalSectionPropertyValue :
 			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
+
+		CreateTopologicalSectionPropertyValue() :
+			d_reverse_order(false),
+			d_visited_topological_line(false)
+		{  }
+
 		boost::optional<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
 		create_gpml_topological_section(
 				const GPlatesModel::FeatureHandle::iterator &geometry_property,
-				bool reverse_order,
-				const boost::optional<GPlatesModel::FeatureHandle::iterator> &start_geometry_property,
-				const boost::optional<GPlatesModel::FeatureHandle::iterator> &end_geometry_property,
-				const boost::optional<GPlatesMaths::PointOnSphere> &present_day_reference_point)
+				bool reverse_order)
 		{
 			if (!geometry_property.is_still_valid())
 			{
@@ -92,11 +179,9 @@ namespace
 			// Initialise data members.
 			d_geometry_property = geometry_property;
 			d_reverse_order = reverse_order;
-			d_start_geometry_property = start_geometry_property;
-			d_end_geometry_property = end_geometry_property;
-			d_present_day_reference_point = present_day_reference_point;
 
 			d_topological_section = boost::none;
+			d_visited_topological_line = false;
 
 			(*geometry_property)->accept_visitor(*this);
 
@@ -106,20 +191,22 @@ namespace
 	private:
 		GPlatesModel::FeatureHandle::iterator d_geometry_property;
 		bool d_reverse_order;
-		boost::optional<GPlatesModel::FeatureHandle::iterator> d_start_geometry_property;
-		boost::optional<GPlatesModel::FeatureHandle::iterator> d_end_geometry_property;
-		boost::optional<GPlatesMaths::PointOnSphere> d_present_day_reference_point;
 
 		boost::optional<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> d_topological_section;
+
+		//! If GpmlTopologicalLine is in a piecewise aggregration then we only need to visit one time window.
+		bool d_visited_topological_line;
 
 
 		virtual
 		void
 		visit_gml_line_string(
-			const GPlatesPropertyValues::GmlLineString &/*gml_line_string*/)
+			const GPlatesPropertyValues::GmlLineString &gml_line_string)
 		{
-			static const QString property_value_type = "LineString";
-			create_topological_line_section(property_value_type);
+			static const GPlatesPropertyValues::StructuralType property_value_type =
+					GPlatesPropertyValues::StructuralType::create_gml("LineString");
+
+			create_topological_line_section(gml_line_string.get_structural_type());
 		}
 
 
@@ -128,10 +215,10 @@ namespace
 		visit_gml_multi_point(
 			const GPlatesPropertyValues::GmlMultiPoint &/*gml_multi_point*/)
 		{
-			qDebug() << "WARNING: GpmlTopologicalSection not created for gml:MultiPoint.";
-			qDebug() << "FeatureId = " << GPlatesUtils::make_qstring_from_icu_string(
+			qWarning() << "WARNING: GpmlTopologicalSection not created for gml:MultiPoint.";
+			qWarning() << "FeatureId = " << GPlatesUtils::make_qstring_from_icu_string(
 					d_geometry_property.handle_weak_ref()->feature_id().get());
-			qDebug() << "PropertyName = " << GPlatesUtils::make_qstring_from_icu_string(
+			qWarning() << "PropertyName = " << GPlatesUtils::make_qstring_from_icu_string(
 					(*d_geometry_property)->property_name().get_name());
 		}
 
@@ -148,10 +235,9 @@ namespace
 		virtual
 		void
 		visit_gml_point(
-			const GPlatesPropertyValues::GmlPoint &/*gml_point*/)
+			const GPlatesPropertyValues::GmlPoint &gml_point)
 		{
-			static QString property_value_type = "Point";
-			create_topological_point(property_value_type);
+			create_topological_point(gml_point.get_structural_type());
 		}
 
 
@@ -160,7 +246,9 @@ namespace
 		visit_gml_polygon(
 			const GPlatesPropertyValues::GmlPolygon &/*gml_polygon*/)
 		{
-			static const QString property_value_type = "LinearRing";
+			static const GPlatesPropertyValues::StructuralType property_value_type =
+					GPlatesPropertyValues::StructuralType::create_gml("LinearRing");
+
 			create_topological_line_section(property_value_type);
 		}
 
@@ -174,9 +262,47 @@ namespace
 		}
 
 
+		virtual
+		void
+		visit_gpml_piecewise_aggregation(
+				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
+		{
+			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
+					gpml_piecewise_aggregation.time_windows().begin();
+			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+					gpml_piecewise_aggregation.time_windows().end();
+
+			for ( ; iter != end; ++iter) 
+			{
+				const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window = *iter;
+				gpml_time_window.time_dependent_value()->accept_visitor(*this);
+
+				// Break out early if (first) time window has a topological line property.
+				// We only need to know there's a GpmlTopologicalLine present in order to reference it.
+				if (d_visited_topological_line)
+				{
+					break;
+				}
+			}
+		}
+
+
+		virtual
+		void
+		visit_gpml_topological_line(
+				const GPlatesPropertyValues::GpmlTopologicalLine &gpml_topological_line)
+		{
+			// FIXME: This might need to be "PiecewiseAggregation" instead of "TopologicalLine".
+			// In any case the property *type* is not currently used by the topology resolver.
+			create_topological_line_section(gpml_topological_line.get_structural_type());
+
+			d_visited_topological_line = true;
+		}
+
+
 		void
 		create_topological_point(
-				const QString &property_value_type)
+				const GPlatesPropertyValues::StructuralType &property_value_type)
 		{
 			boost::optional<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> geom_delegate =
 					GPlatesAppLogic::TopologyInternalUtils::create_geometry_property_delegate(
@@ -195,7 +321,7 @@ namespace
 
 		void
 		create_topological_line_section(
-				const QString &property_value_type)
+				const GPlatesPropertyValues::StructuralType &property_value_type)
 		{
 			boost::optional<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> geom_delegate =
 					GPlatesAppLogic::TopologyInternalUtils::create_geometry_property_delegate(
@@ -206,103 +332,78 @@ namespace
 				return;
 			}
 
-			// If there was a start intersection then create a topological intersection for it.
-			boost::optional<GPlatesPropertyValues::GpmlTopologicalIntersection> start_intersection;
-			if (d_start_geometry_property && d_present_day_reference_point)
-			{
-				start_intersection = GPlatesAppLogic::TopologyInternalUtils
-						::create_gpml_topological_intersection(
-								*d_start_geometry_property,
-								*d_present_day_reference_point);
-			}
-
-			// If there was an end intersection then create a topological intersection for it.
-			boost::optional<GPlatesPropertyValues::GpmlTopologicalIntersection> end_intersection;
-			if (d_end_geometry_property && d_present_day_reference_point)
-			{
-				end_intersection = GPlatesAppLogic::TopologyInternalUtils
-						::create_gpml_topological_intersection(
-								*d_end_geometry_property,
-								*d_present_day_reference_point);
-			}
-
 			// Create a GpmlTopologicalLineSection from the delegate.
 			d_topological_section = GPlatesPropertyValues::GpmlTopologicalLineSection::create(
 					*geom_delegate,
-					start_intersection,
-					end_intersection,
 					d_reverse_order);
 		}
 	};
 
 
 	/**
-	 * Creates a @a GpmlTopologicalIntersection
+	 * Creates a @a GpmlTopologicalNetwork::Interior
 	 */
-	class CreateTopologicalIntersectionPropertyValue :
+	class CreateTopologicalNetworkInterior :
 			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
-		CreateTopologicalIntersectionPropertyValue(
-				const GPlatesMaths::PointOnSphere &reference_point) :
-			d_reference_point(reference_point)
+
+		CreateTopologicalNetworkInterior() :
+			d_visited_topological_line(false)
 		{  }
 
-
-		boost::optional<GPlatesPropertyValues::GpmlTopologicalIntersection>
-		create_gpml_topological_intersection(
-				const GPlatesModel::FeatureHandle::iterator &adjacent_geometry_property)
+		boost::optional<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior>
+		create_gpml_topological_network_interior(
+				const GPlatesModel::FeatureHandle::iterator &geometry_property)
 		{
-			if (!adjacent_geometry_property.is_still_valid())
+			if (!geometry_property.is_still_valid())
 			{
-				// Return false.
+				// Return invalid iterator.
 				return boost::none;
 			}
 
 			// Initialise data members.
-			d_adjacent_geometry_property = adjacent_geometry_property;
+			d_geometry_property = geometry_property;
 
-			d_topological_intersection = boost::none;
+			d_topological_interior = boost::none;
+			d_visited_topological_line = false;
 
-			(*adjacent_geometry_property)->accept_visitor(*this);
+			(*geometry_property)->accept_visitor(*this);
 
-			return d_topological_intersection;
+			return d_topological_interior;
 		}
 
 	private:
-		GPlatesModel::FeatureHandle::iterator d_adjacent_geometry_property;
-		GPlatesMaths::PointOnSphere d_reference_point;
+		GPlatesModel::FeatureHandle::iterator d_geometry_property;
 
-		boost::optional<GPlatesPropertyValues::GpmlTopologicalIntersection> d_topological_intersection;
+		boost::optional<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior> d_topological_interior;
+
+		//! If GpmlTopologicalLine is in a piecewise aggregration then we only need to visit one time window.
+		bool d_visited_topological_line;
 
 
 		virtual
 		void
 		visit_gml_line_string(
-			const GPlatesPropertyValues::GmlLineString &/*gml_line_string*/)
+				const GPlatesPropertyValues::GmlLineString &gml_line_string)
 		{
-			static const QString property_value_type = "LineString";
-			create_intersection(property_value_type);
+			create_topological_network_interior(gml_line_string.get_structural_type());
 		}
 
 
 		virtual
 		void
 		visit_gml_multi_point(
-			const GPlatesPropertyValues::GmlMultiPoint &/*gml_multi_point*/)
+				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 		{
-			qDebug() << "WARNING: GpmlTopologicalIntersection not created for gml:Point.";
-			qDebug() << "FeatureId = " << GPlatesUtils::make_qstring_from_icu_string(
-					d_adjacent_geometry_property.handle_weak_ref()->feature_id().get());
-			qDebug() << "PropertyName = " << GPlatesUtils::make_qstring_from_icu_string(
-					(*d_adjacent_geometry_property)->property_name().get_name());
+			create_topological_network_interior(gml_multi_point.get_structural_type());
 		}
 
 
 		virtual
 		void
 		visit_gml_orientable_curve(
-			const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
+				const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 		{
 			gml_orientable_curve.base_curve()->accept_visitor(*this);
 		}
@@ -311,89 +412,155 @@ namespace
 		virtual
 		void
 		visit_gml_point(
-			const GPlatesPropertyValues::GmlPoint &/*gml_point*/)
+				const GPlatesPropertyValues::GmlPoint &gml_point)
 		{
-			qDebug() << "WARNING: GpmlTopologicalIntersection not created for gml:MultiPoint.";
-			qDebug() << "FeatureId = " << GPlatesUtils::make_qstring_from_icu_string(
-					d_adjacent_geometry_property.handle_weak_ref()->feature_id().get());
-			qDebug() << "PropertyName = " << GPlatesUtils::make_qstring_from_icu_string(
-					(*d_adjacent_geometry_property)->property_name().get_name());
+			create_topological_network_interior(gml_point.get_structural_type());
 		}
 
 
 		virtual
 		void
 		visit_gml_polygon(
-			const GPlatesPropertyValues::GmlPolygon &/*gml_polygon*/)
+				const GPlatesPropertyValues::GmlPolygon &/*gml_polygon*/)
 		{
-			static const QString property_value_type = "LinearRing";
-			create_intersection(property_value_type);
+			static const GPlatesPropertyValues::StructuralType property_value_type =
+					GPlatesPropertyValues::StructuralType::create_gml("LinearRing");
+
+			create_topological_network_interior(property_value_type);
 		}
 
 
 		virtual
 		void
 		visit_gpml_constant_value(
-			const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 		{
 			gpml_constant_value.value()->accept_visitor(*this);
 		}
 
 
+		virtual
 		void
-		create_intersection(
-				const QString &property_value_type)
+		visit_gpml_piecewise_aggregation(
+				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 		{
-			//
-			// Create geometry delegate.
-			//
+			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
+					gpml_piecewise_aggregation.time_windows().begin();
+			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+					gpml_piecewise_aggregation.time_windows().end();
 
+			for ( ; iter != end; ++iter) 
+			{
+				const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window = *iter;
+				gpml_time_window.time_dependent_value()->accept_visitor(*this);
+
+				// Break out early if (first) time window has a topological line property.
+				// We only need to know there's a GpmlTopologicalLine present in order to reference it.
+				if (d_visited_topological_line)
+				{
+					break;
+				}
+			}
+		}
+
+
+		virtual
+		void
+		visit_gpml_topological_line(
+				const GPlatesPropertyValues::GpmlTopologicalLine &gpml_topological_line)
+		{
+			// FIXME: This might need to be "PiecewiseAggregation" instead of "TopologicalLine".
+			// In any case the property *type* is not currently used by the topology resolver.
+			create_topological_network_interior(gpml_topological_line.get_structural_type());
+
+			d_visited_topological_line = true;
+		}
+
+
+		void
+		create_topological_network_interior(
+				const GPlatesPropertyValues::StructuralType &property_value_type)
+		{
 			boost::optional<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> geom_delegate =
 					GPlatesAppLogic::TopologyInternalUtils::create_geometry_property_delegate(
-							d_adjacent_geometry_property, property_value_type);
+							d_geometry_property, property_value_type);
 
-			// This only happens if 'd_adjacent_geometry_property' is invalid
-			// but we've already checked for that - so this shouldn't happen.
 			if (!geom_delegate)
 			{
 				return;
 			}
 
-			//
-			// Create the reference point and plate id used to reconstruct the reference point.
-			//
-
-			// The reference gml point.
-			GPlatesPropertyValues::GmlPoint::non_null_ptr_type reference_gml_point =
-					GPlatesPropertyValues::GmlPoint::create(d_reference_point);
-
-			static const GPlatesModel::PropertyName reference_point_plate_id_property_name =
-					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-
-			static const GPlatesPropertyValues::TemplateTypeParameterType reference_point_value_type =
-					GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId" );
-
-			// Feature id of feature used to lookup plate id for reconstructing reference point.
-			// This is the feature that contains the adjacent geometry properties iterator.
-			const GPlatesModel::FeatureId &reference_point_feature_id =
-					d_adjacent_geometry_property.handle_weak_ref()->feature_id();
-
-			GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type plate_id_delegate = 
-					GPlatesPropertyValues::GpmlPropertyDelegate::create( 
-							reference_point_feature_id,
-							reference_point_plate_id_property_name,
-							reference_point_value_type);
-
-			//
-			// Create the GpmlTopologicalIntersection
-			//
-
-			d_topological_intersection = GPlatesPropertyValues::GpmlTopologicalIntersection(
-					*geom_delegate,
-					reference_gml_point,
-					plate_id_delegate);
+			// Create a GpmlTopologicalNetwork::Interior from the delegate.
+			d_topological_interior =
+					GPlatesPropertyValues::GpmlTopologicalNetwork::Interior(*geom_delegate);
 		}
 	};
+
+
+	boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>
+	find_topological_section_reconstruction_geometry(
+			const GPlatesAppLogic::ReconstructionGeometryFinder &rg_finder,
+			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+			const GPlatesModel::PropertyName &property_name,
+			const double &reconstruction_time)
+	{
+		// FIXME: MULTIPLE GEOM
+
+		if (rg_finder.num_rgs_found() == 0)
+		{
+			// If we found no RFG that is reconstructed from 'geometry_property' then it probably means
+			// the reconstruction time is outside the age range of the feature containing 'geometry_property'.
+			// This is ok - it's not necessarily an error.
+			// In fact we only report an error if the referenced feature exists at the current
+			// reconstruction time because, with the addition of resolved *line* topologies, one use
+			// case is emulating a time-dependent section list by using a single list where a subset
+			// of the resolved line's sections emulate one physical section over time (because each section
+			// in the subset represents that section for a small time period and these time periods do
+			// not overlap) - as the time changes one section will disappear at the same time another
+			// will appear to take its place - and in this case, at any particular time, not all sections
+			// in the list will actually exist and we don't want to report this as an error.
+			GPlatesAppLogic::ReconstructionFeatureProperties visitor;
+			visitor.visit_feature(feature_ref);
+			if (visitor.is_feature_defined_at_recon_time())
+			{
+				qWarning() << "No topological sections were found at " << reconstruction_time << "Ma for:";
+				qWarning() << "  feature id =" 
+					<< GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
+				static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
+				const GPlatesPropertyValues::XsString *name;
+				if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop, name) ) {
+					qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name->value() );
+				} else {
+					qWarning() << "  feature name = UNKNOWN";
+				}
+				qWarning() << "  property name =" << property_name.get_name().qstring();
+				qWarning() << "  Unable to use any topological section.";
+			}
+
+			return boost::none;
+		}
+		else if (rg_finder.num_rgs_found() > 1)
+		{
+			// We should only return boost::none for the case == 0, as above.
+			// For the case >1 we return the rg_finder.found_rgs_begin() as normally
+			int num = rg_finder.num_rgs_found();
+			qWarning() << num << "Topological sections found for:";
+			qWarning() << "  feature id =" 
+				<< GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
+			static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
+			const GPlatesPropertyValues::XsString *name;
+			if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop, name) ) {
+				qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name->value() );
+			} else {
+				qWarning() << "  feature name = UNKNOWN";
+			}
+			qWarning() << "  property name =" << property_name.get_name().qstring();
+			qWarning() << "  Using the first topological section found.";
+		}
+
+		// Return the first RG found.
+		return *rg_finder.found_rgs_begin();
+	}
 
 
 	/**
@@ -640,43 +807,45 @@ namespace
 }
 
 
+boost::optional<GPlatesPropertyValues::StructuralType>
+GPlatesAppLogic::TopologyInternalUtils::get_topology_geometry_property_value_type(
+		const GPlatesModel::FeatureHandle::const_iterator &property)
+{
+	TopologicalGeometryPropertyValueType visitor;
+	(*property)->accept_visitor(visitor);
+
+	return visitor.get_topological_geometry_property_value_type();
+}
+
+
 boost::optional<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::create_gpml_topological_section(
 		const GPlatesModel::FeatureHandle::iterator &geometry_property,
-		bool reverse_order,
-		const boost::optional<GPlatesModel::FeatureHandle::iterator> &start_geometry_property,
-		const boost::optional<GPlatesModel::FeatureHandle::iterator> &end_geometry_property,
-		const boost::optional<GPlatesMaths::PointOnSphere> &present_day_reference_point)
+		bool reverse_order)
 
 {
 	CreateTopologicalSectionPropertyValue create_topological_section_property_value;
 
 	return create_topological_section_property_value.create_gpml_topological_section(
 			geometry_property,
-			reverse_order,
-			start_geometry_property,
-			end_geometry_property,
-			present_day_reference_point);
+			reverse_order);
 }
 
 
-boost::optional<GPlatesPropertyValues::GpmlTopologicalIntersection>
-GPlatesAppLogic::TopologyInternalUtils::create_gpml_topological_intersection(
-		const GPlatesModel::FeatureHandle::iterator &adjacent_geometry_property,
-		const GPlatesMaths::PointOnSphere &present_day_reference_point)
+boost::optional<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior>
+GPlatesAppLogic::TopologyInternalUtils::create_gpml_topological_network_interior(
+		const GPlatesModel::FeatureHandle::iterator &geometry_property)
 {
-	CreateTopologicalIntersectionPropertyValue create_topological_intersection_property_value(
-			present_day_reference_point);
+	CreateTopologicalNetworkInterior create_topological_interior_property_value;
 
-	return create_topological_intersection_property_value.create_gpml_topological_intersection(
-			adjacent_geometry_property);
+	return create_topological_interior_property_value.create_gpml_topological_network_interior(geometry_property);
 }
 
 
 boost::optional<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type>
 GPlatesAppLogic::TopologyInternalUtils::create_geometry_property_delegate(
 		const GPlatesModel::FeatureHandle::iterator &geometry_property,
-		const QString &property_value_type)
+		const GPlatesPropertyValues::StructuralType &property_value_type)
 {
 	if (!geometry_property.is_still_valid())
 	{
@@ -695,14 +864,10 @@ GPlatesAppLogic::TopologyInternalUtils::create_geometry_property_delegate(
 	const GPlatesModel::PropertyName prop_name =
 			GPlatesModel::PropertyName::create_gpml(property_name);
 
-	const GPlatesPropertyValues::TemplateTypeParameterType value_type =
-			GPlatesPropertyValues::TemplateTypeParameterType::create_gml(
-					property_value_type);
-
 	return GPlatesPropertyValues::GpmlPropertyDelegate::create( 
 			feature_id,
 			prop_name,
-			value_type);
+			property_value_type);
 }
 
 
@@ -721,14 +886,14 @@ GPlatesAppLogic::TopologyInternalUtils::resolve_feature_id(
 		// so print debug message and return null feature reference.
 		if ( back_ref_targets.empty() )
 		{
-			qDebug() 
-				<< "ERROR: missing feature for id ="
+			qWarning() 
+				<< "Missing feature for feature-id = "
 				<< GPlatesUtils::make_qstring_from_icu_string( feature_id.get() );
 		}
 		else
 		{
-			qDebug() 
-				<< "ERROR: multiple features for id ="
+			qWarning() 
+				<< "Multiple features for feature-id = "
 				<< GPlatesUtils::make_qstring_from_icu_string( feature_id.get() );
 		}
 
@@ -740,9 +905,10 @@ GPlatesAppLogic::TopologyInternalUtils::resolve_feature_id(
 }
 
 
-boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>
-GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
+boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>
+GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry(
 		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate,
+		const double &reconstruction_time,
 		boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles)
 {
 	const GPlatesModel::FeatureHandle::weak_ref feature_ref = resolve_feature_id(
@@ -759,99 +925,49 @@ GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
 	const GPlatesModel::PropertyName property_name = GPlatesModel::PropertyName::create_gpml(
 			property_name_qstring);
 
-	// Find the RFGs for the feature ref and target property.
-	ReconstructedFeatureGeometryFinder rfg_finder(property_name, reconstruct_handles); 
-	rfg_finder.find_rfgs_of_feature(feature_ref);
+	// Find the reconstruction geometries for the feature ref and target property.
+	ReconstructionGeometryFinder rg_finder(
+			property_name,
+			boost::none/*reconstruction_tree_to_match*/,
+			reconstruct_handles); 
+	rg_finder.find_rgs_of_feature(feature_ref);
 
-// FIXME: MULTIPLE GEOM
-
-// FIXME: get this code able to use RTB 
-
-	// If we found no RFG that is reconstructed from 'geometry_property' then it probably means
-	// the reconstruction time is outside the age range of the feature containing 'geometry_property'.
-	// This is ok - it's not necessarily an error.
-	if (rfg_finder.num_rfgs_found() == 0)
-	{ 
-		int num = rfg_finder.num_rfgs_found();
-		qDebug() << "ERROR: " << num << "Reconstruction Feature Geometries (RFGs) found for:";
-		qDebug() << "  feature id =" 
-			<< GPlatesUtils::make_qstring_from_icu_string( geometry_delegate.feature_id().get() );
-		static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
-		const GPlatesPropertyValues::XsString *name;
-        if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop, name) ) {
-            qDebug() << "  feature name =" << GPlatesUtils::make_qstring( name->value() );
-        } else {
-            qDebug() << "  feature name = UNKNOWN";
-        }
-        qDebug() << "  property name =" << property_name_qstring;
-        qDebug() << "  Unable to use any RFG.";
-
-        return boost::none;
-    }
-    else if (rfg_finder.num_rfgs_found() > 1)
-    {
-        // We should only return boost::none for the case == 0, as above.
-        // For the case >1 we return the rfg_finder.found_rfgs_begin() as normally
-        int num = rfg_finder.num_rfgs_found();
-        qDebug() << "WARNING: " << num << "Reconstruction Feature Geometries (RFGs) found for:";
-        qDebug() << "  feature id =" 
-			<< GPlatesUtils::make_qstring_from_icu_string( geometry_delegate.feature_id().get() );
-        static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
-        const GPlatesPropertyValues::XsString *name;
-        if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop, name) ) {
-            qDebug() << "  feature name =" << GPlatesUtils::make_qstring( name->value() );
-        } else {
-            qDebug() << "  feature name = UNKNOWN";
-        }
-        qDebug() << "  property name =" << property_name_qstring;
-        qDebug() << "  Using the first RFG found.";
-    }
-
-	// Return the first RFG found.
-	return *rfg_finder.found_rfgs_begin();
+	return ::find_topological_section_reconstruction_geometry(
+			rg_finder,
+			feature_ref,
+			property_name,
+			reconstruction_time);
 }
 
 
-boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>
-GPlatesAppLogic::TopologyInternalUtils::find_reconstructed_feature_geometry(
+boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>
+GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry(
 		const GPlatesModel::FeatureHandle::iterator &geometry_property,
+		const double &reconstruction_time,
 		boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles)
 {
-	/*
-	if (!geometry_property.is_valid())
+	if (!geometry_property.is_still_valid())
 	{
 		return boost::none;
 	}
-	*/
 
 	// Get a reference to the feature containing the geometry property.
 	const GPlatesModel::FeatureHandle::weak_ref &feature_ref =
 			geometry_property.handle_weak_ref();
 
-	// Find the RFGs, referencing 'reconstruction_tree', for the feature ref and geometry property.
-	ReconstructedFeatureGeometryFinder rfg_finder(geometry_property, reconstruct_handles); 
-	rfg_finder.find_rfgs_of_feature(feature_ref);
+	// Find the reconstruction geometries, referencing 'reconstruction_tree', for the feature ref
+	// and geometry property.
+	ReconstructionGeometryFinder rg_finder(
+			geometry_property,
+			boost::none/*reconstruction_tree_to_match*/,
+			reconstruct_handles); 
+	rg_finder.find_rgs_of_feature(feature_ref);
 
-	// If we found no RFG that is reconstructed from 'geometry_property' then it probably means
-	// the reconstruction time is outside the age range of the feature containing 'geometry_property'.
-	// This is ok - it's not necessarily an error.
-	if (rfg_finder.num_rfgs_found() == 0)
-	{
-		qDebug() <<
-			"WARNING: TopologyInternalUtils::find_reconstructed_feature_geometry: "
-			"Found no Reconstruction Feature Geometries (RFGs) - ignoring.";
-
-		return boost::none;
-	}
-	else if (rfg_finder.num_rfgs_found() > 1)
-	{
-		qDebug() <<
-			"WARNING: TopologyInternalUtils::find_reconstructed_feature_geometry: "
-			"Found more than one Reconstruction Feature Geometry (RFG) - using the first one found.";
-	}
-
-	// Return the first RFG found.
-	return *rfg_finder.found_rfgs_begin();
+	return ::find_topological_section_reconstruction_geometry(
+			rg_finder,
+			feature_ref,
+			(*geometry_property)->property_name(),
+			reconstruction_time);
 }
 
 
@@ -1116,12 +1232,10 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections(
 	// Produce a warning message if there is more than one intersection.
 	if (intersection_graph->intersections.size() >= 2)
 	{
-		std::cerr << "TopologyInternalUtils::intersect_topological_sections: " << std::endl
-			<< "WARN: num_intersect=" << intersection_graph->intersections.size() << std::endl 
-			<< "WARN: Boundary feature intersection relations may not be correct!" << std::endl
-			<< "WARN: Make sure boundary feature's only intersect once." << std::endl
-			<< std::endl;
-		std::cerr << std::endl;
+		qWarning() << "TopologyInternalUtils::intersect_topological_sections: ";
+		qWarning() << "	num_intersect=" << intersection_graph->intersections.size();
+		qWarning() << "	Boundary feature intersection relations may not be correct!";
+		qWarning() << "	Make sure boundary feature's only intersect once.";
 	}
 
 	//
@@ -1346,15 +1460,10 @@ GPlatesAppLogic::TopologyInternalUtils::intersect_topological_sections_allowing_
 	// Produce a warning message if there is more than two intersections.
 	if (intersection_graph->intersections.size() >= 3)
 	{
-		std::cerr
-			<< "TopologyInternalUtils::intersect_topological_sections_allowing_two_intersections: "
-			<< std::endl
-			<< "WARN: num_intersect=" << intersection_graph->intersections.size() << std::endl 
-			<< "WARN: Boundary feature intersection relations may not be correct!" << std::endl
-			<< "WARN: Make sure a boundary with exactly two sections only intersects twice."
-			<< std::endl
-			<< std::endl;
-		std::cerr << std::endl;
+		qWarning() << "TopologyInternalUtils::intersect_topological_sections_allowing_two_intersections: ";
+		qWarning() << "	num_intersect=" << intersection_graph->intersections.size();
+		qWarning() << "	Boundary feature intersection relations may not be correct!";
+		qWarning() << "	Make sure a boundary with exactly two sections only intersects twice.";
 	}
 
 	//
@@ -1594,11 +1703,9 @@ GPlatesAppLogic::TopologyInternalUtils::find_closest_intersected_segment_to_refe
 	if ( !is_reference_point_close_to_first_segment &&
 		!is_reference_point_close_to_second_segment ) 
 	{
-		std::cerr << "TopologyInternalUtils::find_closest_intersected_segment_to_reference_point: "
-			<< std::endl
-			<< "WARN: reference point not close to anything!" << std::endl
-			<< "WARN: Arbitrarily selecting one of the intersected segments!" 
-			<< std::endl;
+		qWarning() << "TopologyInternalUtils::find_closest_intersected_segment_to_reference_point: ";
+		qWarning() << "	reference point not close to anything!";
+		qWarning() << "	Arbitrarily selecting one of the intersected segments!";
 
 		// FIXME: do something better than just arbitrarily select one of the segments as closest.
 		return first_intersected_segment;
@@ -1610,11 +1717,48 @@ GPlatesAppLogic::TopologyInternalUtils::find_closest_intersected_segment_to_refe
 			: second_intersected_segment;
 }
 
+
 bool
-GPlatesAppLogic::TopologyInternalUtils::include_only_reconstructed_feature_geometries(
+GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_line_topological_section(
 		const ReconstructionGeometry::non_null_ptr_to_const_type &recon_geom)
 {
 	// We only return true if the reconstruction geometry is a reconstructed feature geometry.
 	return ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
 			const ReconstructedFeatureGeometry>(recon_geom);
+}
+
+
+bool
+GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_boundary_topological_section(
+		const ReconstructionGeometry::non_null_ptr_to_const_type &recon_geom)
+{
+	// Return true if an RFG.
+	if (ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+		const ReconstructedFeatureGeometry>(recon_geom))
+	{
+		return true;
+	}
+
+	// See if RTG.
+	boost::optional<const ResolvedTopologicalGeometry *> resolved_topological_geometry =
+			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					const ResolvedTopologicalGeometry>(recon_geom);
+	if (resolved_topological_geometry)
+	{
+		// Return true if an RTG with a polyline geometry (a resolved topological line).
+		if (resolved_topological_geometry.get()->resolved_topology_line())
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
+bool
+GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_network_topological_section(
+		const ReconstructionGeometry::non_null_ptr_to_const_type &recon_geom)
+{
+	return can_use_as_resolved_boundary_topological_section(recon_geom);
 }

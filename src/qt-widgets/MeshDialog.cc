@@ -317,9 +317,7 @@ GPlatesQtWidgets::MeshDialog::gen_mesh()
 		feature->add(
 				GPlatesModel::TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-					GPlatesModel::ModelUtils::create_gpml_constant_value(
-						gpml_plate_id,
-						GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId"))));
+					GPlatesModel::ModelUtils::create_gpml_constant_value(gpml_plate_id)));
 
 
 		GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_valid_time = 

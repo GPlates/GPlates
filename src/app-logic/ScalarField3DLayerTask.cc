@@ -84,7 +84,7 @@ GPlatesAppLogic::ScalarField3DLayerTask::get_input_channel_types() const
 	// - resolved topological networks.
 	std::vector<LayerTaskType::Type> surface_geometries_input_channel_types;
 	surface_geometries_input_channel_types.push_back(LayerTaskType::RECONSTRUCT);
-	surface_geometries_input_channel_types.push_back(LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER);
+	surface_geometries_input_channel_types.push_back(LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER);
 	surface_geometries_input_channel_types.push_back(LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
 	input_channel_types.push_back(
 			LayerInputChannelType(
@@ -231,8 +231,8 @@ GPlatesAppLogic::ScalarField3DLayerTask::add_input_layer_proxy_connection(
 					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
 		}
 
-		boost::optional<TopologyBoundaryResolverLayerProxy *> topological_boundary_resolver_layer_proxy =
-				LayerProxyUtils::get_layer_proxy_derived_type<TopologyBoundaryResolverLayerProxy>(layer_proxy);
+		boost::optional<TopologyGeometryResolverLayerProxy *> topological_boundary_resolver_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<TopologyGeometryResolverLayerProxy>(layer_proxy);
 		if (topological_boundary_resolver_layer_proxy)
 		{
 			d_scalar_field_layer_proxy->add_topological_boundary_resolver_layer_proxy(
@@ -270,8 +270,8 @@ GPlatesAppLogic::ScalarField3DLayerTask::remove_input_layer_proxy_connection(
 					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
 		}
 
-		boost::optional<TopologyBoundaryResolverLayerProxy *> topological_boundary_resolver_layer_proxy =
-				LayerProxyUtils::get_layer_proxy_derived_type<TopologyBoundaryResolverLayerProxy>(layer_proxy);
+		boost::optional<TopologyGeometryResolverLayerProxy *> topological_boundary_resolver_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<TopologyGeometryResolverLayerProxy>(layer_proxy);
 		if (topological_boundary_resolver_layer_proxy)
 		{
 			d_scalar_field_layer_proxy->remove_topological_boundary_resolver_layer_proxy(

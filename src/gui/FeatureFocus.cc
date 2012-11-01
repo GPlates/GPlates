@@ -28,7 +28,9 @@
 
 #include "FeatureFocus.h"
 #include "PythonManager.h"
+
 #include "app-logic/ApplicationState.h"
+#include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructGraph.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGeometry.h"
@@ -36,15 +38,19 @@
 #include "app-logic/ReconstructionGeometryFinder.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/GeometryUtils.h"
+
 #include "feature-visitors/GeometryFinder.h"
+
 #include "model/FeatureHandle.h"
 #include "model/WeakReferenceCallback.h"
+
 #include "presentation/Application.h"
+#include "presentation/ViewState.h"
+
 #include "qt-widgets/ReconstructionViewWidget.h"
 #include "qt-widgets/SceneView.h"
-#include "utils/FeatureUtils.h"
 
-#include "presentation/ViewState.h"
+#include "utils/FeatureUtils.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryUtils.h"
@@ -366,9 +372,13 @@ protected:
 		{ }
 
 		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+		visit(const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
 		{
-			d_location = GPlatesMaths::make_lat_lon_point(rtb->resolved_topology_geometry()->first_vertex());
+			// We want the first vertex.
+			std::vector<GPlatesMaths::PointOnSphere> points;
+			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rtg->resolved_topology_geometry(), points);
+
+			d_location = GPlatesMaths::make_lat_lon_point(points.front());
 		}
 
 		void
@@ -377,7 +387,9 @@ protected:
 			std::vector<GPlatesMaths::PointOnSphere> points;
 			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rtn->nodes_begin()->get_geometry(),points);
 			if(points.size())
+			{
 				d_location =  GPlatesMaths::make_lat_lon_point(points[0]);
+			}
 		}
 
 		void

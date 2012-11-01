@@ -34,7 +34,7 @@
 #include "LayerProxyUtils.h"
 #include "ReconstructionLayerProxy.h"
 #include "ReconstructLayerProxy.h"
-#include "TopologyBoundaryResolverLayerProxy.h"
+#include "TopologyGeometryResolverLayerProxy.h"
 #include "TopologyNetworkResolverLayerProxy.h"
 
 #include "utils/SubjectObserverToken.h"
@@ -164,14 +164,14 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_topological_boundary_resolver_layer_proxy(
-				const TopologyBoundaryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
+				const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
 
 		/**
 		 * Remove a topological boundary resolver layer proxy.
 		 */
 		void
 		remove_topological_boundary_resolver_layer_proxy(
-				const TopologyBoundaryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
+				const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
 
 		/**
 		 * Add a topological network resolver layer proxy.
@@ -237,7 +237,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Used to get resolved topology boundary surfaces to calculate velocities on.
 		 */
-		LayerProxyUtils::InputLayerProxySequence<TopologyBoundaryResolverLayerProxy>
+		LayerProxyUtils::InputLayerProxySequence<TopologyGeometryResolverLayerProxy>
 				d_current_topological_boundary_resolver_layer_proxies;
 
 		/**

@@ -31,7 +31,7 @@
 
 #include "ExtractScalarField3DFeatureProperties.h"
 #include "ReconstructedFeatureGeometry.h"
-#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalGeometry.h"
 #include "ResolvedTopologicalNetwork.h"
 
 
@@ -131,24 +131,24 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_surface_geometries(
 					reconstructed_static_geometry->reconstructed_geometry());
 		}
 
-		// Topological closed plate polygons...
-		std::vector<resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
+		// Resolved topological geometries...
+		std::vector<resolved_topological_geometry_non_null_ptr_type> resolved_topological_geometries;
 		// Iterate over the layers.
 		BOOST_FOREACH(
-				LayerProxyUtils::InputLayerProxy<TopologyBoundaryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
+				LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
 				d_current_topological_boundary_resolver_layer_proxies.get_input_layer_proxies())
 		{
-			topological_boundary_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_boundaries(
-					resolved_topological_boundaries,
+			topological_boundary_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_geometries(
+					resolved_topological_geometries,
 					reconstruction_time);
 		}
-		// Iterate over the resolved topological boundaries.
+		// Iterate over the resolved topological geometries.
 		BOOST_FOREACH(
-				const resolved_topological_boundary_non_null_ptr_type &resolved_topological_boundary,
-				resolved_topological_boundaries)
+				const resolved_topological_geometry_non_null_ptr_type &resolved_topological_geometry,
+				resolved_topological_geometries)
 		{
 			d_cached_surface_geometries.cached_surface_geometries->push_back(
-					resolved_topological_boundary->resolved_topology_geometry());
+					resolved_topological_geometry->resolved_topology_geometry());
 		}
 
 		// Topological networks...
@@ -284,7 +284,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::remove_reconstructed_geometries_layer_
 
 void
 GPlatesAppLogic::ScalarField3DLayerProxy::add_topological_boundary_resolver_layer_proxy(
-		const TopologyBoundaryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy)
+		const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy)
 {
 	d_current_topological_boundary_resolver_layer_proxies.add_input_layer_proxy(topological_boundary_resolver_layer_proxy);
 
@@ -298,7 +298,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::add_topological_boundary_resolver_laye
 
 void
 GPlatesAppLogic::ScalarField3DLayerProxy::remove_topological_boundary_resolver_layer_proxy(
-		const TopologyBoundaryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy)
+		const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy)
 {
 	d_current_topological_boundary_resolver_layer_proxies.remove_input_layer_proxy(topological_boundary_resolver_layer_proxy);
 
@@ -446,7 +446,7 @@ GPlatesAppLogic::ScalarField3DLayerProxy::check_input_layer_proxies()
 
 	// See if any resolved boundaries layer proxies have changed.
 	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<TopologyBoundaryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
+			LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
 			d_current_topological_boundary_resolver_layer_proxies.get_input_layer_proxies())
 	{
 		check_input_layer_proxy(topological_boundary_resolver_layer_proxy);

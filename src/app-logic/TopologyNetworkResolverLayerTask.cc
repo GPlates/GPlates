@@ -27,6 +27,7 @@
 
 #include "AppLogicUtils.h"
 #include "ReconstructUtils.h"
+#include "TopologyGeometryResolverLayerProxy.h"
 #include "TopologyUtils.h"
 
 
@@ -93,8 +94,13 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::activate(
 	// If deactivated then specify an empty set of topological sections layer proxies.
 	if (!active)
 	{
-		d_topology_network_resolver_layer_proxy->set_current_topological_sections_layer_proxies(
+		// Topological sections that are reconstructed static geometries.
+		d_topology_network_resolver_layer_proxy->set_current_reconstructed_geometry_topological_sections_layer_proxies(
 				std::vector<GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type>());
+
+		// Topological sections that are resolved topological lines.
+		d_topology_network_resolver_layer_proxy->set_current_resolved_line_topological_sections_layer_proxies(
+				std::vector<GPlatesAppLogic::TopologyGeometryResolverLayerProxy::non_null_ptr_type>());
 	}
 }
 
@@ -192,13 +198,28 @@ GPlatesAppLogic::TopologyNetworkResolverLayerTask::update(
 	d_topology_network_resolver_layer_proxy->set_current_reconstruction_time(reconstruction->get_reconstruction_time());
 
 	// Find those layer outputs that come from a reconstruct layer.
-	// These will be our topological sections layer proxies.
+	// These will be our topological sections layer proxies that generate reconstructed static geometries.
 	// NOTE: We reference all active reconstruct layers because we don't know which ones contain
 	// the topological sections that our topologies are referencing (it's a global lookup).
-	std::vector<GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type> topological_sections_layer_proxies;
-	reconstruction->get_active_layer_outputs<GPlatesAppLogic::ReconstructLayerProxy>(topological_sections_layer_proxies);
-	// Notify our layer proxy of the topological sections layer proxies.
-	d_topology_network_resolver_layer_proxy->set_current_topological_sections_layer_proxies(topological_sections_layer_proxies);
+	std::vector<GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type>
+			reconstructed_geometry_topological_sections_layer_proxies;
+	reconstruction->get_active_layer_outputs<GPlatesAppLogic::ReconstructLayerProxy>(
+			reconstructed_geometry_topological_sections_layer_proxies);
+	// Notify our layer proxy of the reconstructed topological sections layer proxies.
+	d_topology_network_resolver_layer_proxy->set_current_reconstructed_geometry_topological_sections_layer_proxies(
+			reconstructed_geometry_topological_sections_layer_proxies);
+
+	// Find those layer outputs that come from a topological geometry layer.
+	// These will be our topological sections layer proxies that generate resolved topological *lines*.
+	// NOTE: We reference all active reconstruct layers because we don't know which ones contain
+	// the topological sections that our topologies are referencing (it's a global lookup).
+	std::vector<GPlatesAppLogic::TopologyGeometryResolverLayerProxy::non_null_ptr_type>
+			resolved_line_topological_sections_layer_proxies;
+	reconstruction->get_active_layer_outputs<GPlatesAppLogic::TopologyGeometryResolverLayerProxy>(
+			resolved_line_topological_sections_layer_proxies);
+	// Notify our layer proxy of the resolved topological line sections layer proxies.
+	d_topology_network_resolver_layer_proxy->set_current_resolved_line_topological_sections_layer_proxies(
+			resolved_line_topological_sections_layer_proxies);
 
 	// If our layer proxy is currently using the default reconstruction layer proxy then
 	// tell our layer proxy about the new default reconstruction layer proxy.

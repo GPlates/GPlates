@@ -40,13 +40,12 @@
 #include "canvas-tools/InsertVertex.h"
 #include "canvas-tools/MeasureDistance.h"
 #include "canvas-tools/MoveVertex.h"
-#include "canvas-tools/PanMap.h"
-#include "canvas-tools/ReorientGlobe.h"
 #include "canvas-tools/SplitFeature.h"
-#include "canvas-tools/ZoomGlobe.h"
-#include "canvas-tools/ZoomMap.h"
 
 #include "global/GPlatesAssert.h"
+
+#include "gui/CanvasToolWorkflows.h"
+#include "gui/GeometryFocusHighlight.h"
 
 #include "presentation/ViewState.h"
 
@@ -65,11 +64,6 @@ namespace GPlatesGui
 	namespace
 	{
 		/**
-		 * The type of this canvas tool workflow.
-		 */
-		const CanvasToolWorkflows::WorkflowType WORKFLOW_TYPE = CanvasToolWorkflows::WORKFLOW_FEATURE_INSPECTION;
-
-		/**
 		 * The main rendered layer used by this canvas tool workflow.
 		 */
 		const GPlatesViewOperations::RenderedGeometryCollection::MainLayerType WORKFLOW_RENDER_LAYER =
@@ -85,15 +79,19 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::FeatureInspectionCanvasToolWork
 		const GPlatesCanvasTools::CanvasTool::status_bar_callback_type &status_bar_callback,
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesQtWidgets::ViewportWindow &viewport_window) :
-	CanvasToolWorkflow(viewport_window.globe_canvas(), viewport_window.map_view()),
+	CanvasToolWorkflow(
+			viewport_window.globe_canvas(),
+			viewport_window.map_view(),
+			CanvasToolWorkflows::WORKFLOW_FEATURE_INSPECTION,
+			// The tool to start off with...
+			CanvasToolWorkflows::TOOL_CLICK_GEOMETRY),
+	d_canvas_tool_workflows(canvas_tool_workflows),
 	d_feature_focus(view_state.get_feature_focus()),
 	d_focused_feature_geometry_builder(view_state.get_focused_feature_geometry_builder()),
 	d_geometry_operation_state(geometry_operation_state),
 	d_rendered_geom_collection(view_state.get_rendered_geometry_collection()),
-	d_clicked_table_model(view_state.get_feature_table_model()),
-	d_reconstruct_graph(view_state.get_application_state().get_reconstruct_graph()),
-	d_viewport_window(viewport_window),
-	d_click_geometry_tool(NULL) // Will be non-null once 'create_canvas_tools()' is called.
+	d_symbol_map(view_state.get_feature_type_symbol_map()),
+	d_viewport_window(viewport_window)
 {
 	create_canvas_tools(
 			canvas_tool_workflows,
@@ -110,15 +108,30 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::FeatureInspectionCanvasToolWork
 		SIGNAL(focus_changed(
 				GPlatesGui::FeatureFocus &)),
 		this,
-		SLOT(feature_focus_changed(
+		SLOT(update_enable_state()));
+	QObject::connect(
+		&d_feature_focus,
+		SIGNAL(focus_changed(
+				GPlatesGui::FeatureFocus &)),
+		this,
+		SLOT(draw_feature_focus(
 				GPlatesGui::FeatureFocus &)));
+	QObject::connect(
+			&d_feature_focus,
+			SIGNAL(focused_feature_modified(
+					GPlatesGui::FeatureFocus &)),
+			this,
+			SLOT(draw_feature_focus(
+					GPlatesGui::FeatureFocus &)));
 
 	// Listen for focused feature geometry changes.
+	// We use this to determine if a geometry, that's being operated on or will potentially
+	// be operated on, has got vertices or not.
 	QObject::connect(
 			&d_focused_feature_geometry_builder,
 			SIGNAL(stopped_updating_geometry_excluding_intermediate_moves()),
 			this,
-			SLOT(geometry_builder_stopped_updating_geometry_excluding_intermediate_moves()));
+			SLOT(update_enable_state()));
 }
 
 
@@ -133,45 +146,10 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 		GPlatesQtWidgets::ViewportWindow &viewport_window)
 {
 	//
-	// Drag canvas tool.
-	//
-
-	d_globe_drag_globe_tool.reset(
-			new GPlatesCanvasTools::ReorientGlobe(
-					viewport_window.globe_canvas().globe(),
-					viewport_window.globe_canvas(),
-					view_state.get_rendered_geometry_collection(),
-					viewport_window));
-	d_map_drag_globe_tool.reset(
-			new GPlatesCanvasTools::PanMap(
-					viewport_window.map_view().map_canvas(),
-					viewport_window.map_view(),
-					view_state.get_rendered_geometry_collection(),
-					viewport_window,
-					view_state.get_map_transform()));
-
-	//
-	// Zoom canvas tool.
-	//
-
-	d_globe_zoom_globe_tool.reset(
-			new GPlatesCanvasTools::ZoomGlobe(
-					viewport_window.globe_canvas().globe(),
-					viewport_window.globe_canvas(),
-					view_state.get_rendered_geometry_collection(),
-					viewport_window,
-					view_state));
-	d_map_zoom_globe_tool.reset(
-			new GPlatesCanvasTools::ZoomMap(
-					viewport_window.map_view().map_canvas(),
-					viewport_window.map_view(),
-					view_state.get_rendered_geometry_collection(),
-					viewport_window,
-					view_state.get_map_transform(),
-					view_state.get_viewport_zoom()));
-
-	//
 	// Measure distance canvas tool.
+	//
+	// NOTE: There's also a Measure Distance tool in the Digitisation workflow, but we also have one
+	// in the Feature Inspection workflow because it is hooked up to the focused feature geometry.
 	//
 
 	GPlatesCanvasTools::MeasureDistance::non_null_ptr_type measure_distance_tool =
@@ -211,7 +189,6 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 					viewport_window.dialogs().feature_properties_dialog(),
 					view_state.get_feature_focus(),
 					view_state.get_application_state());
-	d_click_geometry_tool = click_geometry_tool.get();
 	// For the globe view.
 	d_globe_click_geometry_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
@@ -317,6 +294,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 			GPlatesCanvasTools::SplitFeature::create(
 					status_bar_callback,
 					view_state.get_feature_focus(),
+					view_state.get_application_state().get_gpgim(),
 					view_state.get_application_state().get_model_interface(),
 					view_state.get_focused_feature_geometry_builder(),
 					geometry_operation_state,
@@ -350,23 +328,9 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::initialise()
 	// NOTE: If you are updating the tool in 'update_enable_state()' then you
 	// don't need to enable/disable it here.
 
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_DRAG_GLOBE,
-			true);
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_ZOOM_GLOBE,
-			true);
 	// The measure distance tool can do measurements without a focused feature so we leave it enabled always.
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_MEASURE_DISTANCE,
-			true);
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_CLICK_GEOMETRY,
-			true);
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_MEASURE_DISTANCE, true);
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_CLICK_GEOMETRY, true);
 
 	update_enable_state();
 }
@@ -380,35 +344,6 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::activate_workflow()
 
 	// Activate the main rendered layer.
 	d_rendered_geom_collection.set_main_layer_active(WORKFLOW_RENDER_LAYER, true/*active*/);
-
-	// Restore the focused feature (saved when workflow was deactivated).
-	if (d_save_restore_focused_feature.is_valid())
-	{
-		if (d_save_restore_focused_feature_geometry_property.is_still_valid())
-		{
-			d_feature_focus.set_focus(
-					d_save_restore_focused_feature,
-					d_save_restore_focused_feature_geometry_property);
-		}
-		else // Focused feature but geometry property no longer valid...
-		{
-			// Set focus to first geometry found within the feature.
-			d_feature_focus.set_focus(d_save_restore_focused_feature);
-		}
-	}
-	else // No focused feature...
-	{
-		d_feature_focus.unset_focus();
-	}
-	// Restore the sequence of clicked geometries for this workflow (saved when workflow was deactivated).
-	// NOTE: We do this *after* focusing the feature so that it can be found in the updated clicked feature table.
-	GPlatesGui::add_clicked_geometries_to_feature_table(
-			d_save_restore_clicked_geom_seq,
-			d_viewport_window,
-			d_clicked_table_model,
-			d_feature_focus,
-			d_reconstruct_graph,
-			false/*highlight_first_clicked_feature_in_table*/);
 }
 
 
@@ -420,18 +355,6 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::deactivate_workflow()
 
 	// Deactivate the main rendered layer.
 	d_rendered_geom_collection.set_main_layer_active(WORKFLOW_RENDER_LAYER, false/*active*/);
-
-	// Save the sequence of clicked geometries for this workflow so we can restore on re-activation.
-	d_save_restore_clicked_geom_seq = d_click_geometry_tool->get_clicked_geom_seq();
-	// Save the focused feature for this workflow so we can restore on re-activation.
-	d_save_restore_focused_feature = d_feature_focus.focused_feature();
-	d_save_restore_focused_feature_geometry_property = d_feature_focus.associated_geometry_property();
-
-	// Clear the clicked geometries table and unset the focused feature.
-	// If the canvas tool workflow, that's about to be activated, uses the feature focus then it'll
-	// populate the table with its own selections (from when the user clicked geometries in that workflow).
-	d_clicked_table_model.clear();
-	d_feature_focus.unset_focus();
 }
 
 
@@ -441,12 +364,6 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::get_selected_globe_and_map_canv
 {
 	switch (selected_tool)
 	{
-	case CanvasToolWorkflows::TOOL_DRAG_GLOBE:
-		return std::make_pair(d_globe_drag_globe_tool.get(), d_map_drag_globe_tool.get());
-
-	case CanvasToolWorkflows::TOOL_ZOOM_GLOBE:
-		return std::make_pair(d_globe_zoom_globe_tool.get(), d_map_zoom_globe_tool.get());
-
 	case CanvasToolWorkflows::TOOL_MEASURE_DISTANCE:
 		return std::make_pair(d_globe_measure_distance_tool.get(), d_map_measure_distance_tool.get());
 
@@ -474,49 +391,30 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::get_selected_globe_and_map_canv
 
 
 void
-GPlatesGui::FeatureInspectionCanvasToolWorkflow::feature_focus_changed(
+GPlatesGui::FeatureInspectionCanvasToolWorkflow::draw_feature_focus(
 		GPlatesGui::FeatureFocus &feature_focus)
 {
-	update_enable_state();
-}
-
-
-void
-GPlatesGui::FeatureInspectionCanvasToolWorkflow::geometry_builder_stopped_updating_geometry_excluding_intermediate_moves()
-{
-	// We use this to determine if a geometry, that's being operated on or will potentially
-	// be operated on, has got vertices or not.
-
-	update_enable_state();
+	GeometryFocusHighlight::draw_focused_geometry(
+			feature_focus,
+			*d_rendered_geom_collection.get_main_rendered_layer(WORKFLOW_RENDER_LAYER),
+			d_rendered_geom_collection,
+			d_symbol_map);
 }
 
 
 void
 GPlatesGui::FeatureInspectionCanvasToolWorkflow::update_enable_state()
 {
-	const GPlatesModel::FeatureHandle::weak_ref focused_feature = d_feature_focus.focused_feature();
+	const GPlatesModel::FeatureHandle::const_weak_ref focused_feature = d_feature_focus.focused_feature();
 
 	// If there's no focused feature or it's a topological feature then most of the tools are disabled.
 	if (!focused_feature.is_valid() ||
-		GPlatesAppLogic::TopologyUtils::is_topological_closed_plate_boundary_feature(*focused_feature.handle_ptr()) ||
-		GPlatesAppLogic::TopologyUtils::is_topological_network_feature(*focused_feature.handle_ptr()))
+		GPlatesAppLogic::TopologyUtils::is_topological_geometry_feature(focused_feature))
 	{
-		emit canvas_tool_enabled(
-				WORKFLOW_TYPE,
-				CanvasToolWorkflows::TOOL_MOVE_VERTEX,
-				false);
-		emit canvas_tool_enabled(
-				WORKFLOW_TYPE,
-				CanvasToolWorkflows::TOOL_INSERT_VERTEX,
-				false);
-		emit canvas_tool_enabled(
-				WORKFLOW_TYPE,
-				CanvasToolWorkflows::TOOL_DELETE_VERTEX,
-				false);
-		emit canvas_tool_enabled(
-				WORKFLOW_TYPE,
-				CanvasToolWorkflows::TOOL_SPLIT_FEATURE,
-				false);
+		emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_MOVE_VERTEX, false);
+		emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_INSERT_VERTEX, false);
+		emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_DELETE_VERTEX, false);
+		emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_SPLIT_FEATURE, false);
 
 		return;
 	}
@@ -528,10 +426,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::update_enable_state()
 	const GPlatesViewOperations::GeometryType::Value geometry_type = geometry_builder_parameters.second;
 
 	// Enable the move vertex tool if there's at least one vertex regardless of the geometry type.
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_MOVE_VERTEX,
-			num_vertices > 0);
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_MOVE_VERTEX, num_vertices > 0);
 
 	// Enable the insert vertex tool if inserting a vertex won't change the type of
 	// geometry. In other words disable in the following situations:
@@ -539,9 +434,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::update_enable_state()
 	//
 	// Note that upon insertion of a new vertex a polyline stays a polyline and
 	// a polygon stays a polygon.
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_INSERT_VERTEX,
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_INSERT_VERTEX,
 			(geometry_type == GPlatesViewOperations::GeometryType::MULTIPOINT ||
 			geometry_type == GPlatesViewOperations::GeometryType::POLYLINE ||
 			geometry_type == GPlatesViewOperations::GeometryType::POLYGON) &&
@@ -552,17 +445,13 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::update_enable_state()
 	//   * Geometry is a point or multipoint with one vertex.
 	//   * Geometry is a polyline with two vertices.
 	//   * Geometry is a polygon with three vertices.
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_DELETE_VERTEX,
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_DELETE_VERTEX,
 			(geometry_type == GPlatesViewOperations::GeometryType::MULTIPOINT && num_vertices > 1) ||
 			(geometry_type == GPlatesViewOperations::GeometryType::POLYLINE && num_vertices > 2) ||
 			(geometry_type == GPlatesViewOperations::GeometryType::POLYGON && num_vertices > 3));
 
 	// Only enable splitting of a polyline.
-	emit canvas_tool_enabled(
-			WORKFLOW_TYPE,
-			CanvasToolWorkflows::TOOL_SPLIT_FEATURE,
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_SPLIT_FEATURE,
 			geometry_type == GPlatesViewOperations::GeometryType::POLYLINE && num_vertices > 1);
 }
 

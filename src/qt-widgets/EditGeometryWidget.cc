@@ -32,23 +32,27 @@
 #include <QLocale>
 
 #include "EditGeometryWidget.h"
-#include "EditTableWidget.h"
 #include "EditTableActionWidget.h"
+#include "EditTableWidget.h"
 #include "InvalidPropertyValueException.h"
 #include "UninitialisedEditWidgetException.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/GeometryUtils.h"
+
 #include "feature-visitors/GeometrySetter.h"
+
+#include "maths/GeometryOnSphere.h"
 #include "maths/InvalidLatLonException.h"
 #include "maths/LatLonPoint.h"
-#include "maths/GeometryOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "presentation/ViewState.h"
-#include "property-values/GmlPoint.h"
+
 #include "property-values/GmlLineString.h"
+#include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
+
 #include "utils/GeometryCreationUtils.h"
 
 
@@ -517,21 +521,22 @@ namespace
 	create_geometry_on_sphere(
 			const std::vector<GPlatesMaths::PointOnSphere> &points,
 			GPlatesUtils::GeometryConstruction::GeometryConstructionValidity &validity,
-			int which_type)
+			GPlatesViewOperations::GeometryType::Value geometry_type)
 	{
-		// FIXME: Okay stupid switch() time, Sorry but I want to go home so I can
-		// go on holiday! See other comments regarding combobox_geometry_type and
-		// how it should really be a lookup table.
-		switch(which_type)
+		switch(geometry_type)
 		{
-		case 0:
+		case GPlatesViewOperations::GeometryType::POLYLINE:
 			return geometry_opt_ptr_type(GPlatesUtils::create_polyline_on_sphere(points, validity));
-		case 1:
+
+		case GPlatesViewOperations::GeometryType::MULTIPOINT:
 			return geometry_opt_ptr_type(GPlatesUtils::create_multipoint_on_sphere(points, validity));
-		case 2:
+
+		case GPlatesViewOperations::GeometryType::POINT:
 			return geometry_opt_ptr_type(GPlatesUtils::create_point_on_sphere(points, validity));
-		case 3:
+
+		case GPlatesViewOperations::GeometryType::POLYGON:
 			return geometry_opt_ptr_type(GPlatesUtils::create_polygon_on_sphere(points, validity));
+
 		default:
 			return boost::none;
 		}
@@ -590,55 +595,13 @@ namespace
 		table.horizontalHeader()->resizeSection(COLUMN_ACTION, dummy.width() + 1);
 		table.horizontalHeader()->resizeSection(COLUMN_ACTION, dummy.width());
 	}
-	
-
-	/**
-	 * Apply a reverse reconstruction to the given vector of points, so that the
-	 * coordinates are set to present-day location given the supplied plate id and
-	 * current reconstruction tree.
-	 *
-	 * @a points is the vector of points created from build_points_from_table_rows(),
-	 * and will be modified by this function!
-	 *
-	 * FIXME: Handle invalid rows...? Perhaps this makes a strong case for converting
-	 * EditGeometryWidget to use a Qt model-view, so that we can store points in
-	 * present-day and merely display them reconstructed... I'm sure we'll think of
-	 * a case where we want to reuse a user-editable list of coordinates later on.
-	 * DigitisationWidget was a little easier because we didn't need to worry so much
-	 * about what the user can enter.
-	 * 
-	 * FIXME: Unused - when we do implement this, it will probably be as a rewrite
-	 * and use Qt-model-view.
-	 */
-	void
-	reverse_reconstruct(
-			std::vector<GPlatesMaths::PointOnSphere> &points,
-			const GPlatesModel::integer_plate_id_type plate_id,
-			GPlatesAppLogic::ReconstructionTree &recon_tree)
-	{
-		// Get the composed absolute rotation needed to bring a thing on that plate
-		// in the present day to this time.
-		const GPlatesMaths::FiniteRotation rotation =
-				recon_tree.get_composed_absolute_rotation(plate_id).first;
-		const GPlatesMaths::FiniteRotation reverse = GPlatesMaths::get_reverse(rotation);
-		
-		// Iterate over points, modifying as we go.
-		std::vector<GPlatesMaths::PointOnSphere>::iterator it = points.begin();
-		std::vector<GPlatesMaths::PointOnSphere>::iterator end = points.end();
-		for ( ; it != end; ++it) {
-			// Apply the reverse rotation.
-			GPlatesMaths::PointOnSphere present_day_point = reverse * (*it);
-			*it = present_day_point;
-		}
-	}
 }
 
 
 GPlatesQtWidgets::EditGeometryWidget::EditGeometryWidget(
-		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
 	AbstractEditWidget(parent_),
-	d_application_state_ptr(&view_state_.get_application_state())
+	d_geometry_type(GPlatesViewOperations::GeometryType::NONE)
 {
 	setupUi(this);
 	// Set column widths and resizabilty.
@@ -651,27 +614,6 @@ GPlatesQtWidgets::EditGeometryWidget::EditGeometryWidget(
 	// Set up a minimum row height as well, for the action widgets' sake.
 	table_points->verticalHeader()->setDefaultSectionSize(dummy.height());
 	
-	// Set up combobox with all the  geometry types we can edit.
-	combobox_geometry_type->addItem("gml:LineString");
-	combobox_geometry_type->addItem("gml:MultiPoint");
-	combobox_geometry_type->addItem("gml:Point");
-	combobox_geometry_type->addItem("gml:Polygon");
-	// Since implementing the ability to transmogrify one type of PropertyValue
-	// to another is exceedingly non-trivial, we also .. yes! .. hide this combobox too.
-	// It is now only used to keep track of what kind of PropertyValue we should be
-	// creating.
-	combobox_geometry_type->setVisible(false);
-	// Set up combobox with Present Day / Reconstructed coordinate display.
-	combobox_coordinate_time_display->addItem(tr("Present Day"));
-	combobox_coordinate_time_display->addItem(tr("Reconstructed"));
-	// TODO: As the Reconstruction Time view is extremely non-trivial to implement,
-	// I am disabling (hiding) the 'coordinate time' display combobox, so that
-	// users aren't irritated with nonfunctioning UI elements.
-	// Remove this temporary code after release when we have the time to implement it.
-#if 1
-	combobox_coordinate_time_display->setVisible(false);
-#endif
-	
 	// Clear spinboxes and things.
 	reset_widget_to_default_values();
 	
@@ -681,11 +623,6 @@ GPlatesQtWidgets::EditGeometryWidget::EditGeometryWidget(
 	// fires when we're populating the table...
 	QObject::connect(table_points, SIGNAL(cellActivated(int, int)),
 			this, SLOT(handle_cell_changed(int, int)));
-	
-	// Handle view state time changes.
-	QObject::connect(d_application_state_ptr,
-			SIGNAL(reconstruction_time_changed(GPlatesAppLogic::ApplicationState &, const double &)),
-			this, SLOT(handle_reconstruction(GPlatesAppLogic::ApplicationState &, const double &)));
 	
 	// Signals for managing data entry focus for the "Append Point" widgets.
 	QObject::connect(button_append_point, SIGNAL(clicked()),
@@ -703,7 +640,6 @@ GPlatesQtWidgets::EditGeometryWidget::EditGeometryWidget(
 void
 GPlatesQtWidgets::EditGeometryWidget::reset_widget_to_default_values()
 {
-	set_reconstruction_plate_id(boost::none);
 	d_property_value_ptr = NULL;
 	// Reset table.
 	table_points->clearContents();
@@ -713,9 +649,7 @@ GPlatesQtWidgets::EditGeometryWidget::reset_widget_to_default_values()
 	test_geometry_validity();
 
 	// Reset widgets.
-	combobox_geometry_type->setCurrentIndex(0);
-	combobox_coordinate_time_display->setCurrentIndex(0);
-	update_reconstruction_time_display(d_application_state_ptr->get_current_reconstruction_time());
+	d_geometry_type = GPlatesViewOperations::GeometryType::POLYLINE;
 	spinbox_lat->setValue(0.0);
 	spinbox_lon->setValue(0.0);
 	
@@ -725,38 +659,38 @@ GPlatesQtWidgets::EditGeometryWidget::reset_widget_to_default_values()
 
 void
 GPlatesQtWidgets::EditGeometryWidget::configure_for_property_value_type(
-		const QString &property_value_name)
+		const GPlatesPropertyValues::StructuralType &property_value_type)
 {
-	// TODO: Clean this up; use a table instead of relying on the name present
-	// in the combobox_geometry_type.
-	int type_index = combobox_geometry_type->findText(property_value_name);
-	if (type_index != -1) {
-		combobox_geometry_type->setCurrentIndex(type_index);
-	} else {
+	static const GPlatesPropertyValues::StructuralType LINE_STRING_PROPERTY_TYPE =
+			GPlatesPropertyValues::StructuralType::create_gml("LineString");
+	static const GPlatesPropertyValues::StructuralType MULTI_POINT_PROPERTY_TYPE =
+			GPlatesPropertyValues::StructuralType::create_gml("MultiPoint");
+	static const GPlatesPropertyValues::StructuralType POINT_PROPERTY_TYPE =
+			GPlatesPropertyValues::StructuralType::create_gml("Point");
+	static const GPlatesPropertyValues::StructuralType POLYGON_PROPERTY_TYPE =
+			GPlatesPropertyValues::StructuralType::create_gml("Polygon");
+
+	if (property_value_type == LINE_STRING_PROPERTY_TYPE)
+	{
+		d_geometry_type = GPlatesViewOperations::GeometryType::POLYLINE;
+	}
+	else if (property_value_type == MULTI_POINT_PROPERTY_TYPE)
+	{
+		d_geometry_type = GPlatesViewOperations::GeometryType::MULTIPOINT;
+	}
+	else if (property_value_type == POINT_PROPERTY_TYPE)
+	{
+		d_geometry_type = GPlatesViewOperations::GeometryType::POINT;
+	}
+	else if (property_value_type == POLYGON_PROPERTY_TYPE)
+	{
+		d_geometry_type = GPlatesViewOperations::GeometryType::POLYGON;
+	}
+	else
+	{
+		d_geometry_type = GPlatesViewOperations::GeometryType::NONE;
 		throw PropertyValueNotSupportedException(GPLATES_EXCEPTION_SOURCE);
 	}
-}
-
-
-void
-GPlatesQtWidgets::EditGeometryWidget::set_reconstruction_plate_id(
-		boost::optional<GPlatesModel::integer_plate_id_type> plate_id_opt)
-{
-	d_reconstruction_plate_id_opt = plate_id_opt;
-	update_reconstruction_time_display(d_application_state_ptr->get_current_reconstruction_time());
-	
-	// If we don't have a plate id anymore, we can't view reconstruction-time coords.
-	if ( ! d_reconstruction_plate_id_opt) {
-		combobox_coordinate_time_display->setCurrentIndex(0);
-	}
-	// TODO: If viewing reconstruction time coordinates, reconstruct.
-}
-
-
-void
-GPlatesQtWidgets::EditGeometryWidget::unset_reconstruction_plate_id()
-{
-	set_reconstruction_plate_id(boost::none);
 }
 
 
@@ -769,9 +703,8 @@ GPlatesQtWidgets::EditGeometryWidget::update_widget_from_line_string(
 	table_points->clearContents();
 	table_points->setRowCount(0);
 	populate_table_rows_from_polyline(*this, *table_points, 0, gml_line_string.polyline());
-		
-	// FIXME: lookup based on table, THEN set combobox.
-	combobox_geometry_type->setCurrentIndex(0);
+
+	d_geometry_type = GPlatesViewOperations::GeometryType::POLYLINE;
 
 	// Reset error feedback.
 	test_geometry_validity();
@@ -792,8 +725,7 @@ GPlatesQtWidgets::EditGeometryWidget::update_widget_from_multi_point(
 	table_points->setRowCount(0);
 	populate_table_rows_from_multi_point(*this, *table_points, 0, gml_multi_point.multipoint());
 	
-	// FIXME: lookup based on table, THEN set combobox.
-	combobox_geometry_type->setCurrentIndex(1);
+	d_geometry_type = GPlatesViewOperations::GeometryType::MULTIPOINT;
 
 	// Reset error feedback.
 	test_geometry_validity();
@@ -814,8 +746,7 @@ GPlatesQtWidgets::EditGeometryWidget::update_widget_from_point(
 	table_points->setRowCount(0);
 	populate_table_rows_from_point(*this, *table_points, 0, gml_point.point());
 	
-	// FIXME: lookup based on table, THEN set combobox.
-	combobox_geometry_type->setCurrentIndex(2);
+	d_geometry_type = GPlatesViewOperations::GeometryType::POINT;
 
 	// Reset error feedback.
 	test_geometry_validity();
@@ -836,8 +767,7 @@ GPlatesQtWidgets::EditGeometryWidget::update_widget_from_polygon(
 	table_points->setRowCount(0);
 	populate_table_rows_from_polygon(*this, *table_points, 0, gml_polygon.exterior());
 	
-	// FIXME: lookup based on table, THEN set combobox.
-	combobox_geometry_type->setCurrentIndex(3);
+	d_geometry_type = GPlatesViewOperations::GeometryType::POLYGON;
 
 	// Reset error feedback.
 	test_geometry_validity();
@@ -861,16 +791,13 @@ GPlatesQtWidgets::EditGeometryWidget::create_property_value_from_widget() const
 			*table_points, line_start, line_length, problems.invalid_rows);
 
 	// FIXME: needs a better hint than the combobox index.
-	geometry_opt_ptr_type geometry_opt_ptr = create_geometry_on_sphere(points, problems.validity,
-			combobox_geometry_type->currentIndex());
+	geometry_opt_ptr_type geometry_opt_ptr =
+			create_geometry_on_sphere(points, problems.validity, d_geometry_type);
 	if (geometry_opt_ptr) {
-		bool geom_prop_needs_constant_value = true; // Is it?
-		// Create a property value using the present-day GeometryOnSphere and optionally
-		// wrap with a GpmlConstantValue wrapper.
+		// Create a property value using the present-day GeometryOnSphere.
 		const boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> geometry_value_opt =
 				GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
-						geometry_opt_ptr.get(),
-						geom_prop_needs_constant_value);
+						geometry_opt_ptr.get());
 
 		if (geometry_value_opt) {
 			// Give them the PropertyValue they desire so much.
@@ -953,17 +880,6 @@ GPlatesQtWidgets::EditGeometryWidget::handle_cell_changed(
 		set_dirty();
 		emit commit_me();
 	}
-}
-
-
-void
-GPlatesQtWidgets::EditGeometryWidget::handle_reconstruction(
-		GPlatesAppLogic::ApplicationState &application_state,
-		const double &reconstruction_time)
-{
-	update_reconstruction_time_display(reconstruction_time);
-	// TODO: If we are in "Reconstruction Time" mode, we also need to update the
-	// table of points.
 }
 
 
@@ -1070,21 +986,6 @@ GPlatesQtWidgets::EditGeometryWidget::delete_point_from_table(
 }
 
 
-void
-GPlatesQtWidgets::EditGeometryWidget::update_reconstruction_time_display(
-		double time)
-{
-	if (d_reconstruction_plate_id_opt) {
-		combobox_coordinate_time_display->setItemText(1,
-				tr("Reconstructed to %1 Ma on plate %2")
-						.arg(time)
-						.arg(*d_reconstruction_plate_id_opt));
-	} else {
-		combobox_coordinate_time_display->setItemText(1, tr("<Error: No Plate ID>"));
-	}
-}
-
-
 bool
 GPlatesQtWidgets::EditGeometryWidget::test_geometry_validity()
 {
@@ -1100,8 +1001,8 @@ GPlatesQtWidgets::EditGeometryWidget::test_geometry_validity()
 	bool ok = true;
 	// Instead of the obsolete test_polyline_on_sphere_validity, just attempt
 	// to make a GeometryOnSphere using the utility code.
-	geometry_opt_ptr_type geometry_opt_ptr = create_geometry_on_sphere(points, problems.validity,
-			combobox_geometry_type->currentIndex());
+	geometry_opt_ptr_type geometry_opt_ptr =
+			create_geometry_on_sphere(points, problems.validity, d_geometry_type);
 	if ( ! geometry_opt_ptr) {
 		ok = false;
 	}
@@ -1132,8 +1033,8 @@ GPlatesQtWidgets::EditGeometryWidget::set_geometry_for_property_value()
 	// It's late and I'm tired and there's no time for big API changes right now though.
 	if (d_property_value_ptr.get() != NULL) {
 		// FIXME: Pass some kind of BETTER hint to create_geometry_on_sphere.
-		geometry_opt_ptr_type geometry_opt_ptr = create_geometry_on_sphere(points, problems.validity,
-				combobox_geometry_type->currentIndex());
+		geometry_opt_ptr_type geometry_opt_ptr =
+				create_geometry_on_sphere(points, problems.validity, d_geometry_type);
 		if (geometry_opt_ptr) {
 			GPlatesFeatureVisitors::GeometrySetter geometry_setter(*geometry_opt_ptr);
 			geometry_setter.set_geometry(d_property_value_ptr.get());

@@ -40,6 +40,7 @@
 #include "file-io/ReadErrorAccumulation.h"
 
 #include "model/FeatureCollectionHandle.h"
+#include "model/Gpgim.h"
 #include "model/ModelInterface.h"
 
 
@@ -200,6 +201,11 @@ namespace GPlatesCli
 		 * Used to create feature collections when loading files.
 		 */
 		GPlatesModel::ModelInterface d_model;
+
+		/**
+		 * Used to help the feature collection readers know about GPGIM feature types and their properties.
+		 */
+		GPlatesModel::Gpgim::non_null_ptr_to_const_type d_gpgim;
 
 		/**
 		 * A registry of the file formats for reading/writing feature collections.

@@ -318,8 +318,8 @@ namespace
 
 		boost::intrusive_ptr<XsString> description =
 			XsString::create(GPlatesUtils::make_icu_string_from_qstring(comment)).get();
-		TemplateTypeParameterType value_type =
-			TemplateTypeParameterType::create_gpml("FiniteRotation");
+		StructuralType value_type =
+			StructuralType::create_gpml("FiniteRotation");
 		return GpmlTimeSample(value, gml_time_instant, description, value_type);
 	}
 

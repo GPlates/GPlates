@@ -1,15 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
+<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0319" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
     <gml:featureMember>
         <gpml:TopologicalClosedPlateBoundary>
             <gpml:identity>GPlates-566a1e27-d80d-497b-9983-c0dc94de2973</gpml:identity>
             <gpml:revision>GPlates-64190b07-dd62-4dd9-a827-b6d61975482c</gpml:revision>
-            <gpml:reconstructionPlateId>
-                <gpml:ConstantValue>
-                    <gpml:value>101</gpml:value>
-                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
-                </gpml:ConstantValue>
-            </gpml:reconstructionPlateId>
+            <gml:name>West Plate</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
                     <gml:begin>
@@ -24,7 +19,12 @@
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gml:name>West Plate</gml:name>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>101</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
             <gpml:boundary>
                 <gpml:PiecewiseAggregation>
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:TopologicalPolygon</gpml:valueType>
@@ -34,134 +34,46 @@
                                 <gpml:ConstantValue>
                                     <gpml:value>
                                         <gpml:TopologicalPolygon>
-                                            <gpml:section>
-                                                <gpml:TopologicalLineSection>
-                                                    <gpml:sourceGeometry>
-                                                        <gpml:PropertyDelegate>
-                                                            <gpml:targetFeature>GPlates-489e6a7a-2b51-4785-b3ca-d32281e1993b</gpml:targetFeature>
-                                                            <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
-                                                            <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
-                                                        </gpml:PropertyDelegate>
-                                                    </gpml:sourceGeometry>
-                                                    <gpml:endIntersection>
-                                                        <gpml:TopologicalIntersection>
-                                                            <gpml:intersectionGeometry>
-                                                                <gpml:PropertyDelegate>
-                                                                    <gpml:targetFeature>GPlates-7629068d-ef69-49c5-827a-2d76898682dc</gpml:targetFeature>
-                                                                    <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
-                                                                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
-                                                                </gpml:PropertyDelegate>
-                                                            </gpml:intersectionGeometry>
-                                                            <gpml:referencePoint>
-                                                                <gml:Point>
-                                                                    <gml:pos>20.1644 7.20935</gml:pos>
-                                                                </gml:Point>
-                                                            </gpml:referencePoint>
-                                                            <gpml:referencePointPlateId>
-                                                                <gpml:PropertyDelegate>
-                                                                    <gpml:targetFeature>GPlates-7629068d-ef69-49c5-827a-2d76898682dc</gpml:targetFeature>
-                                                                    <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:reconstructionPlateId</gpml:targetProperty>
-                                                                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:PlateId</gpml:valueType>
-                                                                </gpml:PropertyDelegate>
-                                                            </gpml:referencePointPlateId>
-                                                        </gpml:TopologicalIntersection>
-                                                    </gpml:endIntersection>
-                                                    <gpml:reverseOrder>false</gpml:reverseOrder>
-                                                </gpml:TopologicalLineSection>
-                                            </gpml:section>
-                                            <gpml:section>
-                                                <gpml:TopologicalLineSection>
-                                                    <gpml:sourceGeometry>
-                                                        <gpml:PropertyDelegate>
-                                                            <gpml:targetFeature>GPlates-7629068d-ef69-49c5-827a-2d76898682dc</gpml:targetFeature>
-                                                            <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
-                                                            <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
-                                                        </gpml:PropertyDelegate>
-                                                    </gpml:sourceGeometry>
-                                                    <gpml:startIntersection>
-                                                        <gpml:TopologicalIntersection>
-                                                            <gpml:intersectionGeometry>
+                                            <gpml:exterior>
+                                                <gpml:TopologicalSections>
+                                                    <gpml:section>
+                                                        <gpml:TopologicalLineSection>
+                                                            <gpml:sourceGeometry>
                                                                 <gpml:PropertyDelegate>
                                                                     <gpml:targetFeature>GPlates-489e6a7a-2b51-4785-b3ca-d32281e1993b</gpml:targetFeature>
                                                                     <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
                                                                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                                 </gpml:PropertyDelegate>
-                                                            </gpml:intersectionGeometry>
-                                                            <gpml:referencePoint>
-                                                                <gml:Point>
-                                                                    <gml:pos>14.742 9.76429</gml:pos>
-                                                                </gml:Point>
-                                                            </gpml:referencePoint>
-                                                            <gpml:referencePointPlateId>
-                                                                <gpml:PropertyDelegate>
-                                                                    <gpml:targetFeature>GPlates-489e6a7a-2b51-4785-b3ca-d32281e1993b</gpml:targetFeature>
-                                                                    <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:reconstructionPlateId</gpml:targetProperty>
-                                                                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:PlateId</gpml:valueType>
-                                                                </gpml:PropertyDelegate>
-                                                            </gpml:referencePointPlateId>
-                                                        </gpml:TopologicalIntersection>
-                                                    </gpml:startIntersection>
-                                                    <gpml:endIntersection>
-                                                        <gpml:TopologicalIntersection>
-                                                            <gpml:intersectionGeometry>
-                                                                <gpml:PropertyDelegate>
-                                                                    <gpml:targetFeature>GPlates-2dd2a6d9-18e1-4306-9861-260dbac4a9ba</gpml:targetFeature>
-                                                                    <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
-                                                                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
-                                                                </gpml:PropertyDelegate>
-                                                            </gpml:intersectionGeometry>
-                                                            <gpml:referencePoint>
-                                                                <gml:Point>
-                                                                    <gml:pos>14.742 9.76429</gml:pos>
-                                                                </gml:Point>
-                                                            </gpml:referencePoint>
-                                                            <gpml:referencePointPlateId>
-                                                                <gpml:PropertyDelegate>
-                                                                    <gpml:targetFeature>GPlates-2dd2a6d9-18e1-4306-9861-260dbac4a9ba</gpml:targetFeature>
-                                                                    <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:reconstructionPlateId</gpml:targetProperty>
-                                                                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:PlateId</gpml:valueType>
-                                                                </gpml:PropertyDelegate>
-                                                            </gpml:referencePointPlateId>
-                                                        </gpml:TopologicalIntersection>
-                                                    </gpml:endIntersection>
-                                                    <gpml:reverseOrder>false</gpml:reverseOrder>
-                                                </gpml:TopologicalLineSection>
-                                            </gpml:section>
-                                            <gpml:section>
-                                                <gpml:TopologicalLineSection>
-                                                    <gpml:sourceGeometry>
-                                                        <gpml:PropertyDelegate>
-                                                            <gpml:targetFeature>GPlates-2dd2a6d9-18e1-4306-9861-260dbac4a9ba</gpml:targetFeature>
-                                                            <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
-                                                            <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
-                                                        </gpml:PropertyDelegate>
-                                                    </gpml:sourceGeometry>
-                                                    <gpml:startIntersection>
-                                                        <gpml:TopologicalIntersection>
-                                                            <gpml:intersectionGeometry>
+                                                            </gpml:sourceGeometry>
+                                                            <gpml:reverseOrder>false</gpml:reverseOrder>
+                                                        </gpml:TopologicalLineSection>
+                                                    </gpml:section>
+                                                    <gpml:section>
+                                                        <gpml:TopologicalLineSection>
+                                                            <gpml:sourceGeometry>
                                                                 <gpml:PropertyDelegate>
                                                                     <gpml:targetFeature>GPlates-7629068d-ef69-49c5-827a-2d76898682dc</gpml:targetFeature>
                                                                     <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
                                                                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                                 </gpml:PropertyDelegate>
-                                                            </gpml:intersectionGeometry>
-                                                            <gpml:referencePoint>
-                                                                <gml:Point>
-                                                                    <gml:pos>10.1938 7.26553</gml:pos>
-                                                                </gml:Point>
-                                                            </gpml:referencePoint>
-                                                            <gpml:referencePointPlateId>
+                                                            </gpml:sourceGeometry>
+                                                            <gpml:reverseOrder>false</gpml:reverseOrder>
+                                                        </gpml:TopologicalLineSection>
+                                                    </gpml:section>
+                                                    <gpml:section>
+                                                        <gpml:TopologicalLineSection>
+                                                            <gpml:sourceGeometry>
                                                                 <gpml:PropertyDelegate>
-                                                                    <gpml:targetFeature>GPlates-7629068d-ef69-49c5-827a-2d76898682dc</gpml:targetFeature>
-                                                                    <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:reconstructionPlateId</gpml:targetProperty>
-                                                                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:PlateId</gpml:valueType>
+                                                                    <gpml:targetFeature>GPlates-2dd2a6d9-18e1-4306-9861-260dbac4a9ba</gpml:targetFeature>
+                                                                    <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
+                                                                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
                                                                 </gpml:PropertyDelegate>
-                                                            </gpml:referencePointPlateId>
-                                                        </gpml:TopologicalIntersection>
-                                                    </gpml:startIntersection>
-                                                    <gpml:reverseOrder>true</gpml:reverseOrder>
-                                                </gpml:TopologicalLineSection>
-                                            </gpml:section>
+                                                            </gpml:sourceGeometry>
+                                                            <gpml:reverseOrder>true</gpml:reverseOrder>
+                                                        </gpml:TopologicalLineSection>
+                                                    </gpml:section>
+                                                </gpml:TopologicalSections>
+                                            </gpml:exterior>
                                         </gpml:TopologicalPolygon>
                                     </gpml:value>
                                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:TopologicalPolygon</gpml:valueType>

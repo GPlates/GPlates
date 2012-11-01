@@ -28,7 +28,7 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLFEATURESNAPSHOTREFERENCE_H
 #define GPLATES_PROPERTYVALUES_GPMLFEATURESNAPSHOTREFERENCE_H
 
-#include "TemplateTypeParameterType.h"
+#include "StructuralType.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
@@ -37,7 +37,7 @@
 #include "utils/UnicodeStringUtils.h"
 
 
-// Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
+// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlFeatureSnapshotReference, visit_gpml_feature_snapshot_reference)
@@ -78,7 +78,7 @@ namespace GPlatesPropertyValues
 		create(
 				const GPlatesModel::FeatureId &feature_,
 				const GPlatesModel::RevisionId &revision_,
-				const TemplateTypeParameterType &value_type_)
+				const StructuralType &value_type_)
 		{
 			non_null_ptr_type ptr(
 					new GpmlFeatureSnapshotReference(feature_, revision_, value_type_));
@@ -117,10 +117,21 @@ namespace GPlatesPropertyValues
 
 		// Note that no "setter" is provided:  The value type of a GpmlFeatureSnapshotReference
 		// instance should never be changed.
-		const TemplateTypeParameterType &
+		const StructuralType &
 		value_type() const
 		{
 			return d_value_type;
+		}
+
+		/**
+		 * Returns the structural type associated with this property value class.
+		 */
+		virtual
+		StructuralType
+		get_structural_type() const
+		{
+			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("FeatureSnapshotReference");
+			return STRUCTURAL_TYPE;
 		}
 
 		/**
@@ -163,7 +174,7 @@ namespace GPlatesPropertyValues
 		GpmlFeatureSnapshotReference(
 				const GPlatesModel::FeatureId &feature_,
 				const GPlatesModel::RevisionId &revision_,
-				const TemplateTypeParameterType &value_type_):
+				const StructuralType &value_type_):
 			PropertyValue(),
 			d_feature(feature_),
 			d_revision(revision_),
@@ -187,7 +198,7 @@ namespace GPlatesPropertyValues
 
 		GPlatesModel::FeatureId d_feature;
 		GPlatesModel::RevisionId d_revision;
-		TemplateTypeParameterType d_value_type;
+		StructuralType d_value_type;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

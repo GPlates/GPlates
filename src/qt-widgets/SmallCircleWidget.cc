@@ -61,7 +61,11 @@ GPlatesQtWidgets::SmallCircleWidget::SmallCircleWidget(
 	QObject::connect(this, SIGNAL(feature_created()),d_application_state_ptr,SLOT(reconstruct()));
         QObject::connect(button_specify,SIGNAL(clicked()),this,SLOT(handle_specify()));
 
-	d_small_circle_layer->set_active();
+	// Disable the task panel widget.
+	// It will get enabled when the Create Small Circle canvas tool is activated.
+	// This prevents the user from interacting with the task panel widget if the
+	// canvas tool happens to be disabled at startup.
+	setEnabled(false);
 }
 
 void
@@ -91,14 +95,11 @@ GPlatesQtWidgets::SmallCircleWidget::hideEvent(
 {
 	// If the small circle canvas tool gets deactivated, then we 
 	// want to hide the stage pole dialog too.
-        if (d_create_small_circle_dialog_ptr)
+	if (d_create_small_circle_dialog_ptr)
 	{
-                d_create_small_circle_dialog_ptr->close();
+		d_create_small_circle_dialog_ptr->close();
 	}
-
-	d_small_circle_layer->set_active(false);
 }
-
 
 
 void
@@ -125,7 +126,6 @@ GPlatesQtWidgets::SmallCircleWidget::update_small_circle_layer()
 void
 GPlatesQtWidgets::SmallCircleWidget::handle_activation()
 {
-	d_small_circle_layer->set_active();
 }
 
 void

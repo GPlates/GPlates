@@ -31,7 +31,7 @@
 
 #include <iosfwd>
 
-#include "property-values/TemplateTypeParameterType.h"
+#include "property-values/StructuralType.h"
 #include "property-values/XsString.h"
 
 #include "utils/QtStreamable.h"
@@ -50,7 +50,7 @@ namespace GPlatesPropertyValues
 		GpmlKeyValueDictionaryElement(
 			GPlatesPropertyValues::XsString::non_null_ptr_type key_,
 			GPlatesModel::PropertyValue::non_null_ptr_type value_,
-			const TemplateTypeParameterType &value_type_):
+			const StructuralType &value_type_):
 				d_key(key_),
 				d_value(value_),
 				d_value_type(value_type_)
@@ -87,7 +87,7 @@ namespace GPlatesPropertyValues
 				return d_value;
 		}
 
-		const TemplateTypeParameterType &
+		const StructuralType &
 		value_type() const
 		{
 			return d_value_type;		
@@ -101,7 +101,7 @@ namespace GPlatesPropertyValues
 
 		XsString::non_null_ptr_type d_key;
 		GPlatesModel::PropertyValue::non_null_ptr_type d_value;
-		TemplateTypeParameterType d_value_type;
+		StructuralType d_value_type;
 
 	};
 

@@ -41,20 +41,22 @@
 #include "app-logic/ReconstructionTreePopulator.h"
 #include "app-logic/ReconstructUtils.h"
 
-#include "model/Model.h"
-#include "model/ModelInterface.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureCollectionRevision.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureRevision.h"
+#include "model/Gpgim.h"
+#include "model/Model.h"
+#include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
 #include "model/XmlNode.h"
 
-#include "file-io/GpmlOnePointSixOutputVisitor.h"
-#include "file-io/XmlOutputInterface.h"
+#include "file-io/GpmlOutputVisitor.h"
+#include "file-io/GpmlPropertyStructuralTypeReader.h"
 #include "file-io/PlatesLineFormatWriter.h"
+#include "file-io/XmlOutputInterface.h"
 
-#include "file-io/GpmlOnePointSixReader.h"
+#include "file-io/GpmlReader.h"
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/FileInfo.h"
 
@@ -65,7 +67,7 @@
 
 #include "property-values/GpmlPlateId.h"
 #include "property-values/XsString.h"
-#include "property-values/TemplateTypeParameterType.h"
+#include "property-values/StructuralType.h"
 
 
 const GPlatesModel::FeatureHandle::weak_ref
@@ -94,9 +96,7 @@ create_isochron(
 	feature_handle->add(
 			GPlatesModel::TopLevelPropertyInline::create(
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-				GPlatesModel::ModelUtils::create_gpml_constant_value(
-					recon_plate_id, 
-					GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId"))));
+				GPlatesModel::ModelUtils::create_gpml_constant_value(recon_plate_id)));
 
 	std::list<GPlatesMaths::PointOnSphere> points;
 	GPlatesMaths::populate_point_on_sphere_sequence(points, coords_vector);
@@ -107,9 +107,7 @@ create_isochron(
 	GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type gml_orientable_curve =
 			GPlatesModel::ModelUtils::create_gml_orientable_curve(gml_line_string);
 	GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
-			GPlatesModel::ModelUtils::create_gpml_constant_value(
-					gml_orientable_curve, 
-					GPlatesPropertyValues::TemplateTypeParameterType::create_gml("OrientableCurve"));
+			GPlatesModel::ModelUtils::create_gpml_constant_value(gml_orientable_curve);
 
 	feature_handle->add(
 			GPlatesModel::TopLevelPropertyInline::create(
@@ -363,7 +361,7 @@ populate_feature_store(
 
 	static const unsigned long fixed_plate_id1 = 511;
 	static const unsigned long moving_plate_id1 = 501;
-	static const GPlatesModel::ModelUtils::TotalReconstructionPoleData five_tuples1[] = {
+	static const GPlatesModel::ModelUtils::TotalReconstructionPole five_tuples1[] = {
 		//	time	e.lat	e.lon	angle	comment
 		{	0.0,	90.0,	0.0,	0.0,	"IND-CIB India-Central Indian Basin"	},
 		{	9.9,	-8.7,	76.9,	2.75,	"IND-CIB AN 5 JYR 7/4/89"	},
@@ -371,7 +369,7 @@ populate_feature_store(
 		{	83.5,	-5.2,	74.3,	5.93,	"IND-CIB switchover"	},
 	};
 	static const unsigned num_five_tuples1 = sizeof(five_tuples1) / sizeof(five_tuples1[0]);
-	static const std::vector<GPlatesModel::ModelUtils::TotalReconstructionPoleData> five_tuples_vec1(
+	static const std::vector<GPlatesModel::ModelUtils::TotalReconstructionPole> five_tuples_vec1(
 				five_tuples1, five_tuples1 + num_five_tuples1);
 
 	GPlatesModel::FeatureHandle::weak_ref total_recon_seq1 =
@@ -380,14 +378,14 @@ populate_feature_store(
 
 	static const unsigned long fixed_plate_id2 = 702;
 	static const unsigned long moving_plate_id2 = 501;
-	static const GPlatesModel::ModelUtils::TotalReconstructionPoleData five_tuples2[] = {
+	static const GPlatesModel::ModelUtils::TotalReconstructionPole five_tuples2[] = {
 		//	time	e.lat	e.lon	angle	comment
 		{	83.5,	22.8,	19.1,	-51.28,	"IND-MAD"	},
 		{	88.0,	19.8,	27.2,	-59.16,	" RDM/chris 30/11/2001"	},
 		{	120.4,	24.02,	32.04,	-53.01,	"IND-MAD M0 RDM 21/01/02"	},
 	};
 	static const unsigned num_five_tuples2 = sizeof(five_tuples2) / sizeof(five_tuples2[0]);
-	static const std::vector<GPlatesModel::ModelUtils::TotalReconstructionPoleData> five_tuples_vec2(
+	static const std::vector<GPlatesModel::ModelUtils::TotalReconstructionPole> five_tuples_vec2(
 				five_tuples2, five_tuples2 + num_five_tuples2);
 
 	GPlatesModel::FeatureHandle::weak_ref total_recon_seq2 =
@@ -396,7 +394,7 @@ populate_feature_store(
 
 	static const unsigned long fixed_plate_id3 = 501;
 	static const unsigned long moving_plate_id3 = 502;
-	static const GPlatesModel::ModelUtils::TotalReconstructionPoleData five_tuples3[] = {
+	static const GPlatesModel::ModelUtils::TotalReconstructionPole five_tuples3[] = {
 		//	time	e.lat	e.lon	angle	comment
 		{	0.0,	0.0,	0.0,	0.0,	"SLK-IND Sri Lanka-India"	},
 		{	75.0,	0.0,	0.0,	0.0,	"SLK-ANT Sri Lanka-Ant"	},
@@ -404,7 +402,7 @@ populate_feature_store(
 		{	129.5,	21.97,	72.79,	-10.13,	"SLK-IND M9 FIT CG01/04-for sfs in Enderby"	},
 	};
 	static const unsigned num_five_tuples3 = sizeof(five_tuples3) / sizeof(five_tuples3[0]);
-	static const std::vector<GPlatesModel::ModelUtils::TotalReconstructionPoleData> five_tuples_vec3(
+	static const std::vector<GPlatesModel::ModelUtils::TotalReconstructionPole> five_tuples_vec3(
 				five_tuples3, five_tuples3 + num_five_tuples3);
 
 	GPlatesModel::FeatureHandle::weak_ref total_recon_seq3 =
@@ -418,11 +416,12 @@ populate_feature_store(
 void
 output_as_gpml(
 		GPlatesModel::FeatureCollectionHandle::const_iterator begin,
-		GPlatesModel::FeatureCollectionHandle::const_iterator end)
+		GPlatesModel::FeatureCollectionHandle::const_iterator end,
+		const GPlatesModel::Gpgim &gpgim)
 {
 	QFile standard_output;
 	standard_output.open(stdout, QIODevice::WriteOnly);
-	GPlatesFileIO::GpmlOnePointSixOutputVisitor v(&standard_output);
+	GPlatesFileIO::GpmlOutputVisitor v(&standard_output, gpgim);
 
 	for ( ; begin != end; ++begin) {
 		v.visit_feature(begin);
@@ -550,6 +549,13 @@ main(int argc, char *argv[])
 
 	GPlatesModel::ModelInterface model;
 
+	GPlatesModel::Gpgim::non_null_ptr_to_const_type gpgim = GPlatesModel::Gpgim::create();
+
+	// Used to read structural types from a GPML file.
+	GPlatesFileIO::GpmlPropertyStructuralTypeReader::non_null_ptr_to_const_type gpml_structural_type_reader =
+			GPlatesFileIO::GpmlPropertyStructuralTypeReader::create(*gpgim);
+
+
 	std::pair<GPlatesModel::FeatureCollectionHandle::weak_ref,
 			GPlatesModel::FeatureCollectionHandle::weak_ref>
 			isochrons_and_total_recon_seqs =
@@ -560,7 +566,7 @@ main(int argc, char *argv[])
 	GPlatesModel::FeatureCollectionHandle::weak_ref total_recon_seqs =
 			isochrons_and_total_recon_seqs.second;
 
-	::output_as_gpml(isochrons->begin(), isochrons->end());
+	::output_as_gpml(isochrons->begin(), isochrons->end(), *gpgim);
 	//::output_reconstructions(isochrons, total_recon_seqs);
 
 	// Test GPML 1.6 reader.
@@ -578,11 +584,16 @@ main(int argc, char *argv[])
 		GPlatesFileIO::File::non_null_ptr_type file = GPlatesFileIO::File::create_file(fileinfo);
 
 		// Read new features from the file into the empty feature collection.
-		GPlatesFileIO::GpmlOnePointSixReader::read_file(file->get_reference(), new_model, accum);
+		GPlatesFileIO::GpmlReader::read_file(
+				file->get_reference(),
+				new_model,
+				*gpgim,
+				gpml_structural_type_reader,
+				accum);
 
 		GPlatesModel::FeatureCollectionHandle::const_weak_ref features =
 				file->get_reference().get_feature_collection();
-		::output_as_gpml(features->begin(), features->end());
+		::output_as_gpml(features->begin(), features->end(), *gpgim);
 
 #if 0
 		QFile file(filename);

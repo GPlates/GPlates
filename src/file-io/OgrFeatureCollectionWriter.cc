@@ -143,7 +143,7 @@ namespace
 	add_field_to_kvd(
 		const QString &key_string,
 		GPlatesModel::PropertyValue::non_null_ptr_type value,
-		const GPlatesPropertyValues::TemplateTypeParameterType &type,
+		const GPlatesPropertyValues::StructuralType &type,
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary)
 	{
 		GPlatesPropertyValues::XsString::non_null_ptr_type key = 
@@ -171,7 +171,7 @@ namespace
 						
 		add_field_to_kvd(key_string,
 						value,
-						GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"),
+						GPlatesPropertyValues::StructuralType::create_xsi("integer"),
 						dictionary);
 	}
 	
@@ -186,7 +186,7 @@ namespace
 
 		add_field_to_kvd(key_string,
 			value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("double"),
+			GPlatesPropertyValues::StructuralType::create_xsi("double"),
 			dictionary);
 	}	
 	
@@ -201,7 +201,7 @@ namespace
 
 		add_field_to_kvd(key_string,
 			value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("double"),
+			GPlatesPropertyValues::StructuralType::create_xsi("double"),
 			dictionary);
 	}		
 	
@@ -216,7 +216,7 @@ namespace
 
 		add_field_to_kvd(key_string,
 			value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"),
+			GPlatesPropertyValues::StructuralType::create_xsi("string"),
 			dictionary);
 	}	
 	
@@ -231,7 +231,7 @@ namespace
 
 		add_field_to_kvd(key_string,
 			value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"),
+			GPlatesPropertyValues::StructuralType::create_xsi("string"),
 			dictionary);
 	}		
 	
@@ -246,7 +246,7 @@ namespace
 
 		add_field_to_kvd(key_string,
 			value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"),
+			GPlatesPropertyValues::StructuralType::create_xsi("string"),
 			dictionary);
 	}	
 	
@@ -261,7 +261,7 @@ namespace
 
 		add_field_to_kvd(key_string,
 			value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"),
+			GPlatesPropertyValues::StructuralType::create_xsi("string"),
 			dictionary);
 	}		
 	
@@ -275,7 +275,7 @@ namespace
 
 		add_field_to_kvd(key_string,
 			value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"),
+			GPlatesPropertyValues::StructuralType::create_xsi("integer"),
 			dictionary);
 	}		
 	
@@ -292,7 +292,7 @@ namespace
 			
 		add_field_to_kvd(key_string,
 			value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"),
+			GPlatesPropertyValues::StructuralType::create_xsi("integer"),
 			dictionary);
 
 	}
@@ -309,7 +309,7 @@ namespace
 
 		add_field_to_kvd(key_string,
 			value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"),
+			GPlatesPropertyValues::StructuralType::create_xsi("integer"),
 			dictionary);
 	}
 	
@@ -325,7 +325,7 @@ namespace
 		
 		add_field_to_kvd(key_string,
 			value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"),
+			GPlatesPropertyValues::StructuralType::create_xsi("integer"),
 			dictionary);		
 	}
 	
@@ -341,7 +341,7 @@ namespace
 
 		add_field_to_kvd(key_string,
 			value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"),
+			GPlatesPropertyValues::StructuralType::create_xsi("integer"),
 			dictionary);			
 
 	}		
@@ -358,7 +358,7 @@ namespace
 
 		add_field_to_kvd(key_string,
 			value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"),
+			GPlatesPropertyValues::StructuralType::create_xsi("string"),
 			dictionary);			
 	}				
 
@@ -375,7 +375,7 @@ namespace
 
 		add_field_to_kvd(key_string,
 			value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"),
+			GPlatesPropertyValues::StructuralType::create_xsi("integer"),
 			dictionary);			
 
 	}		
@@ -392,7 +392,7 @@ namespace
 
 		add_field_to_kvd(key_string,
 			value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"),
+			GPlatesPropertyValues::StructuralType::create_xsi("integer"),
 			dictionary);			
 
 	}	
@@ -491,7 +491,7 @@ namespace
 				GPlatesPropertyValues::GpmlKeyValueDictionaryElement feature_id_element(
 					key,
 					feature_id_value,
-					GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"));
+					GPlatesPropertyValues::StructuralType::create_xsi("string"));
 
 				kvd->elements().push_back(feature_id_element);									
 			}
@@ -687,7 +687,7 @@ namespace
 				GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
 					key,
 					value,
-					GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"));
+					GPlatesPropertyValues::StructuralType::create_xsi("integer"));
 
 				add_or_replace_kvd_element(new_element,key_string,dictionary);		
 
@@ -725,7 +725,7 @@ namespace
 				GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
 					key,
 					value,
-					GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"));
+					GPlatesPropertyValues::StructuralType::create_xsi("integer"));
 
 				add_or_replace_kvd_element(new_element,key_string,dictionary);		
 
@@ -779,7 +779,7 @@ namespace
 			GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
 				key,
 				value,
-				GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"));
+				GPlatesPropertyValues::StructuralType::create_xsi("string"));
 
 			add_or_replace_kvd_element(new_element,key_string,dictionary);	
 		}
@@ -824,7 +824,7 @@ namespace
 				GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
 					key,
 					begin_value,
-					GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("double"));
+					GPlatesPropertyValues::StructuralType::create_xsi("double"));
 
 				add_or_replace_kvd_element(new_element,key_string,dictionary);		
 			}
@@ -843,7 +843,7 @@ namespace
 				GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
 					key,
 					end_value,
-					GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("double"));
+					GPlatesPropertyValues::StructuralType::create_xsi("double"));
 
 				add_or_replace_kvd_element(new_element,key_string,dictionary);		
 			}
@@ -883,7 +883,7 @@ namespace
 				GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
 					key,
 					value,
-					GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"));
+					GPlatesPropertyValues::StructuralType::create_xsi("string"));
 
 				add_or_replace_kvd_element(new_element,key_string,dictionary);		
 			}
@@ -920,10 +920,10 @@ namespace
                 GPlatesPropertyValues::XsString::non_null_ptr_type key =
                     GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(key_string));
 
-                GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
-                    key,
-                    value,
-                    GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"));
+				GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
+					key,
+					value,
+					GPlatesPropertyValues::StructuralType::create_xsi("string"));
 
                 add_or_replace_kvd_element(new_element,key_string,dictionary);
             }
@@ -959,7 +959,7 @@ namespace
 				// We've found an element corresponding to the description; replace it with 
 				// a new element containing the value extracted from the feature. 
 				GPlatesPropertyValues::XsString::non_null_ptr_type key = element->key();
-				GPlatesPropertyValues::TemplateTypeParameterType type = element->value_type();
+				GPlatesPropertyValues::StructuralType type = element->value_type();
 
 				GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
 					key,
@@ -995,7 +995,7 @@ namespace
 		GPlatesPropertyValues::GpmlKeyValueDictionaryElement plate_id_element(
 					key,
 					plate_id_value,
-					GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"));
+					GPlatesPropertyValues::StructuralType::create_xsi("integer"));
 		elements.push_back(plate_id_element);		
 
 		// Add a feature type entry.
@@ -1008,7 +1008,7 @@ namespace
 		GPlatesPropertyValues::GpmlKeyValueDictionaryElement type_element(
 			key,
 			type_value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"));
+			GPlatesPropertyValues::StructuralType::create_xsi("string"));
 		elements.push_back(type_element);	
 
 		// Add a time-of-appearance entry.
@@ -1021,7 +1021,7 @@ namespace
 		GPlatesPropertyValues::GpmlKeyValueDictionaryElement begin_element(
 					key,
 					begin_value,
-					GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("double"));
+					GPlatesPropertyValues::StructuralType::create_xsi("double"));
 		elements.push_back(begin_element);	
 
 		// Add a time-of-disappearance entry.
@@ -1034,7 +1034,7 @@ namespace
 		GPlatesPropertyValues::GpmlKeyValueDictionaryElement end_element(
 					key,
 					end_value,
-					GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("double"));
+					GPlatesPropertyValues::StructuralType::create_xsi("double"));
 		elements.push_back(end_element);	
 
 		// Add a name entry.
@@ -1047,7 +1047,7 @@ namespace
 		GPlatesPropertyValues::GpmlKeyValueDictionaryElement name_element(
 			key,
 			name_value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"));
+			GPlatesPropertyValues::StructuralType::create_xsi("string"));
 		elements.push_back(name_element);	
 
 		// Add a description entry.
@@ -1060,7 +1060,7 @@ namespace
 		GPlatesPropertyValues::GpmlKeyValueDictionaryElement description_element(
 			key,
 			description_value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"));
+			GPlatesPropertyValues::StructuralType::create_xsi("string"));
 		elements.push_back(description_element);	
 		
 		
@@ -1074,7 +1074,7 @@ namespace
 		GPlatesPropertyValues::GpmlKeyValueDictionaryElement feature_id_element(
 			key,
 			feature_id_value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"));
+			GPlatesPropertyValues::StructuralType::create_xsi("string"));
 		elements.push_back(feature_id_element);		
 		
 		// Add a conjugate plate id entry.
@@ -1088,7 +1088,7 @@ namespace
 		GPlatesPropertyValues::GpmlKeyValueDictionaryElement conjugate_plate_id_element(
 			key,
 			conjugate_plate_id_value,
-			GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"));
+			GPlatesPropertyValues::StructuralType::create_xsi("integer"));
 		elements.push_back(conjugate_plate_id_element);				
 		
 
@@ -1214,7 +1214,8 @@ namespace
 
 GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 	File::Reference &file_ref,
-	const FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &default_ogr_file_configuration)
+	const FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &default_ogr_file_configuration,
+	const GPlatesModel::Gpgim &gpgim)
 {
 	const FileInfo &file_info = file_ref.get_file_info();
 	const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection_ref =

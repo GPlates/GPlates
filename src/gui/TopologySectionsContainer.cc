@@ -62,6 +62,7 @@ GPlatesGui::TopologySectionsContainer::insert(
 			1,
 			d_container.begin() + index,
 			d_container.begin() + index + 1);
+	emit container_changed(*this);
 }
 
 
@@ -77,6 +78,7 @@ GPlatesGui::TopologySectionsContainer::update_at(
 	d_container.at(index) = entry;
 	// Emit signals.
 	emit entry_modified(index);
+	emit container_changed(*this);
 }
 
 
@@ -96,6 +98,7 @@ GPlatesGui::TopologySectionsContainer::remove_at(
 	}
 	// Emit signals
 	emit entry_removed(index);
+	emit container_changed(*this);
 }
 
 
@@ -130,6 +133,7 @@ GPlatesGui::TopologySectionsContainer::move_insertion_point(
 		d_insertion_point = new_index;
 		// Emit signals.
 		emit insertion_point_moved(new_index);
+		emit container_changed(*this);
 	}// else, no need to move, and no need to emit signals.
 }
 
@@ -146,6 +150,7 @@ GPlatesGui::TopologySectionsContainer::update_table_from_container()
 {
 	// Emit signals.
 	emit do_update();
+	emit container_changed(*this);
 }
 
 void
@@ -157,6 +162,7 @@ GPlatesGui::TopologySectionsContainer::clear()
 	// Emit signals.
 	emit cleared();
 	emit insertion_point_moved(0);
+	emit container_changed(*this);
 }
 
 void
@@ -165,6 +171,7 @@ GPlatesGui::TopologySectionsContainer::set_focus_feature_at_index(
 {
 	// Emit signals.
 	emit focus_feature_at_index( index );
+	emit container_changed(*this);
 }
 
 void
@@ -173,6 +180,7 @@ GPlatesGui::TopologySectionsContainer::set_container_ptr_in_table(
 {
 	// Emit signals.
 	emit container_change( ptr );
+	emit container_changed(*this);
 }
 
 namespace
@@ -224,8 +232,7 @@ namespace
 GPlatesGui::TopologySectionsContainer::TableRow::TableRow(
 		const GPlatesModel::FeatureId &feature_id,
 		const GPlatesModel::PropertyName &geometry_property_name,
-		bool reverse_order,
-		const boost::optional<GPlatesMaths::PointOnSphere> &click_point) :
+		bool reverse_order) :
 	d_feature_id(feature_id),
 	d_feature_ref(
 			GPlatesAppLogic::TopologyInternalUtils::resolve_feature_id(feature_id)),
@@ -233,14 +240,12 @@ GPlatesGui::TopologySectionsContainer::TableRow::TableRow(
 	// since it is initialised from it.
 	d_geometry_property(
 			find_properties_iterator(d_feature_ref, geometry_property_name)),
-	d_present_day_click_point(click_point),
 	d_reverse(reverse_order)
 {
 }
 
 GPlatesGui::TopologySectionsContainer::TableRow::TableRow(
 		const GPlatesModel::FeatureHandle::iterator &geometry_property,
-		const boost::optional<GPlatesMaths::PointOnSphere> &click_point,
 		bool reverse_order) :
 	d_feature_id(
 			geometry_property.is_still_valid()
@@ -251,7 +256,6 @@ GPlatesGui::TopologySectionsContainer::TableRow::TableRow(
 					? geometry_property.handle_weak_ref()
 					: GPlatesModel::FeatureHandle::weak_ref()),
 	d_geometry_property(geometry_property),
-	d_present_day_click_point(click_point),
 	d_reverse(reverse_order)
 {
 }

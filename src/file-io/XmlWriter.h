@@ -59,7 +59,7 @@ namespace GPlatesFileIO
 		
 		/**
 		 * Constructs the XmlWriter without specifying a QIODevice.
-		 * This is provided as a convenience function for GpmlOnePointSixOutputVisitor's
+		 * This is provided as a convenience function for GpmlOutputVisitor's
 		 * constructor to use. Do not attempt to write to this XmlWriter without
 		 * first specifying a QIODevice with setDevice()!
 		 */

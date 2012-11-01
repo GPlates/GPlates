@@ -67,19 +67,16 @@ GPlatesViewOperations::CloneOperation::clone_focused_geometry()
 	{
 	case GPlatesViewOperations::GeometryType::POLYLINE:
 		d_canvas_tool_workflows.choose_canvas_tool(
-				GPlatesGui::CanvasToolWorkflows::WORKFLOW_DIGITISATION,
 				GPlatesGui::CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYLINE);
 		break;
 
 	case GPlatesViewOperations::GeometryType::MULTIPOINT:
 		d_canvas_tool_workflows.choose_canvas_tool(
-				GPlatesGui::CanvasToolWorkflows::WORKFLOW_DIGITISATION,
 				GPlatesGui::CanvasToolWorkflows::TOOL_DIGITISE_NEW_MULTIPOINT);
 		break;
 
 	case GPlatesViewOperations::GeometryType::POLYGON:
 		d_canvas_tool_workflows.choose_canvas_tool(
-				GPlatesGui::CanvasToolWorkflows::WORKFLOW_DIGITISATION,
 				GPlatesGui::CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYGON);
 		break;
 

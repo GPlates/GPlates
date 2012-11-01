@@ -45,6 +45,11 @@
 #include "model/ModelInterface.h"
 
 
+namespace GPlatesModel
+{
+	class Gpgim;
+}
+
 namespace GPlatesFileIO
 {
 	class FileInfo;
@@ -333,7 +338,8 @@ namespace GPlatesFileIO
 		void
 		register_default_file_formats(
 				Registry &registry,
-				GPlatesModel::ModelInterface &model);
+				GPlatesModel::ModelInterface model,
+				const GPlatesModel::Gpgim &gpgim);
 	}
 }
 

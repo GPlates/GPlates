@@ -57,6 +57,7 @@
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/GpmlStringList.h"
+#include "property-values/UninterpretedPropertyValue.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
 #include "property-values/XsInteger.h"
@@ -107,8 +108,7 @@ bool
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	const QString name = GPlatesUtils::make_qstring_from_icu_string(
-			top_level_property_inline.property_name().build_aliased_name());
+	const QString name = convert_qualified_xml_name_to_qstring(top_level_property_inline.property_name());
 
 	const GPlatesGui::TreeWidgetBuilder::item_handle_type item_handle =
 			add_child_to_current_item(d_tree_widget_builder, name);
@@ -687,6 +687,18 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_string
 		add_child(d_tree_widget_builder, item_handle, elem_id, elem);
 	}
 	d_tree_widget_builder.pop_current_item();
+}
+
+
+void
+GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_uninterpreted_property_value(
+		const GPlatesPropertyValues::UninterpretedPropertyValue &uninterpreted_prop_val)
+{
+	static const int which_column = 1;
+	const QString qstring("<uninterpreted>");
+
+	// This assumes that the stack is non-empty.
+	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
 }
 
 

@@ -85,6 +85,12 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::ModifyReconstructionPoleWidget
 	make_signal_slot_connections(view_state);
 
 	create_child_rendered_layers();
+
+	// Disable the task panel widget.
+	// It will get enabled when the Manipulate Pole canvas tool is activated.
+	// This prevents the user from interacting with the task panel widget if the
+	// canvas tool happens to be disabled at startup.
+	setEnabled(false);
 }
 
 
@@ -96,6 +102,9 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::~ModifyReconstructionPoleWidge
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::activate()
 {
+	// Enable the task panel widget.
+	setEnabled(true);
+
 	d_is_active = true;
 
 	// Activate both rendered layers.
@@ -110,6 +119,9 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::activate()
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::deactivate()
 {
+	// Disable the task panel widget.
+	setEnabled(false);
+
 	d_is_active = false;
 
 	// Deactivate both rendered layers.
@@ -647,9 +659,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 	const GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_geometry =
 			feature_focus.associated_reconstruction_geometry();
 
-	// We're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalBoundary's,
-	// for instance, are used to assign plate ids to regular features so we probably only
-	// want to look at geometries of regular features).
+	// We're only interested in ReconstructedFeatureGeometry's (resolved topologies are excluded
+	// since they, in turn, reference reconstructed static geometries).
 	// NOTE: ReconstructedVirtualGeomagneticPole's will also be included since they derive
 	// from ReconstructedFeatureGeometry.
 	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
@@ -747,9 +758,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 			layer_outputs.begin(), layer_outputs.end(), reconstruct_outputs))
 	{
 		// Iterate over the *reconstruct* layers because...
-		// ...we're only interested in ReconstructedFeatureGeometry's (ResolvedTopologicalBoundary's,
-		// for instance, are used to assign plate ids to regular features so we probably only
-		// want to look at geometries of regular features).
+		// ...we're only interested in ReconstructedFeatureGeometry's (resolved topologies are excluded
+		// since they, in turn, reference reconstructed static geometries).
 		// NOTE: ReconstructedVirtualGeomagneticPole's will also be included since they derive
 		// from ReconstructedFeatureGeometry.
 		BOOST_FOREACH(

@@ -333,7 +333,7 @@ namespace GPlatesAppLogic
 		 * @a reconstruction_tree_ptr_2
 		 */
 		GPlatesMaths::FiniteRotation
-                get_stage_pole(
+        get_stage_pole(
 			const ReconstructionTree &reconstruction_tree_ptr_1, 
 			const ReconstructionTree &reconstruction_tree_ptr_2, 
 			const GPlatesModel::integer_plate_id_type &moving_plate_id, 

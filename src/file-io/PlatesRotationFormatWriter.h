@@ -41,6 +41,11 @@
 #include "maths/FiniteRotation.h"
 
 
+namespace GPlatesModel
+{
+	class Gpgim;
+}
+
 namespace GPlatesPropertyValues
 {
 	class GpmlTimeSample;
@@ -56,7 +61,8 @@ namespace GPlatesFileIO
 
 		explicit
 		PlatesRotationFormatWriter(
-				const FileInfo &file_info);
+				const FileInfo &file_info,
+				const GPlatesModel::Gpgim &gpgim);
 
 	protected:
 

@@ -46,27 +46,88 @@
 #include "maths/PolylineIntersections.h"
 
 #include "model/FeatureHandleWeakRefBackInserter.h"
+#include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
 
-#include "property-values/GpmlConstantValue.h"
-#include "property-values/GmlOrientableCurve.h"
-#include "property-values/GpmlPlateId.h"
-#include "property-values/GpmlPropertyDelegate.h"
-#include "property-values/GpmlTopologicalIntersection.h"
-#include "property-values/GpmlTopologicalLineSection.h"
-#include "property-values/GpmlTopologicalPoint.h"
+#include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
+#include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlPolygon.h"
 #include "property-values/GmlPoint.h"
+#include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlPlateId.h"
+#include "property-values/GpmlPropertyDelegate.h"
+#include "property-values/GpmlTopologicalLineSection.h"
+#include "property-values/GpmlTopologicalPoint.h"
 
 #include "utils/UnicodeStringUtils.h"
 
 
 namespace
 {
+	/**
+	 * Determines the geometry type of a derived @a GeometryOnSphere.
+	 */
+	class GetGeometryOnSphereType :
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+		GetGeometryOnSphereType() :
+			d_geometry_on_sphere_type(GPlatesViewOperations::GeometryType::NONE)
+		{  }
+
+
+		GPlatesViewOperations::GeometryType::Value
+		get_geometry_on_sphere_type() const
+		{
+			return d_geometry_on_sphere_type;
+		}
+
+
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
+		{
+			d_geometry_on_sphere_type = GPlatesViewOperations::GeometryType::POINT;
+		}
+
+
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type /*multi_point_on_sphere*/)
+		{
+			d_geometry_on_sphere_type = GPlatesViewOperations::GeometryType::MULTIPOINT;
+		}
+
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type /*polygon_on_sphere*/)
+		{
+			d_geometry_on_sphere_type = GPlatesViewOperations::GeometryType::POLYGON;
+		}
+
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type /*polyline_on_sphere*/)
+		{
+			d_geometry_on_sphere_type = GPlatesViewOperations::GeometryType::POLYLINE;
+		}
+
+	private:
+
+		GPlatesViewOperations::GeometryType::Value d_geometry_on_sphere_type;
+	};
+
+
 	/**
 	 * Retrieves points in a derived @a GeometryOnSphere.
 	 *
@@ -397,6 +458,105 @@ namespace
 
 
 	/**
+	 * Visits a property value to retrieve the geometry contained inside it.
+	 */
+	class GetGeometryFromPropertyVisitor : 
+			public GPlatesModel::ConstFeatureVisitor
+	{
+	public:
+
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+		get_geometry_from_property_value(
+				const GPlatesModel::PropertyValue &property_value,
+				const double &reconstruction_time)
+		{
+			d_reconstruction_time = GPlatesPropertyValues::GeoTimeInstant(reconstruction_time);
+			d_geometry = boost::none;
+
+			property_value.accept_visitor(*this);
+
+			return d_geometry;
+		}
+
+	private:
+
+		virtual
+		void
+		visit_gpml_constant_value(
+				const gpml_constant_value_type &gpml_constant_value)
+		{
+			gpml_constant_value.value()->accept_visitor(*this);
+		}
+
+		virtual
+		void
+		visit_gpml_piecewise_aggregation(
+				const gpml_piecewise_aggregation_type &gpml_piecewise_aggregation)
+		{
+			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
+				gpml_piecewise_aggregation.time_windows().begin();
+			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+				gpml_piecewise_aggregation.time_windows().end();
+			for ( ; iter != end; ++iter)
+			{
+				// If the time window covers our reconstruction time then visit.
+				if (iter->valid_time()->contains(d_reconstruction_time.get()))
+				{
+					iter->time_dependent_value()->accept_visitor(*this);
+
+					// Break out of loop since time windows should be non-overlapping.
+					return;
+				}
+			}
+		}
+
+		virtual
+		void
+		visit_gml_line_string(
+				const gml_line_string_type &gml_line_string)
+		{
+			d_geometry = gml_line_string.polyline();
+		}
+
+		virtual
+		void
+		visit_gml_multi_point(
+				const gml_multi_point_type &gml_multi_point)
+		{
+			d_geometry = gml_multi_point.multipoint();
+		}
+
+		virtual
+		void
+		visit_gml_orientable_curve(
+				const gml_orientable_curve_type &gml_orientable_curve)
+		{
+			gml_orientable_curve.base_curve()->accept_visitor(*this);
+		}
+
+		virtual
+		void
+		visit_gml_point(
+				const gml_point_type &gml_point)
+		{
+			d_geometry = gml_point.point();
+		}
+
+		virtual
+		void
+		visit_gml_polygon(
+				const gml_polygon_type &gml_polygon)
+		{
+			d_geometry = gml_polygon.exterior();
+		}
+
+
+		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_reconstruction_time;
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry;
+	};
+
+
+	/**
 	 * Visits a @a GeometryOnSphere and creates a suitable property value for it.
 	 */
 	class CreateGeometryProperty :
@@ -405,11 +565,9 @@ namespace
 	public:
 		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
 		create_geometry_property(
-				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-				bool wrap_with_gpml_constant_value)
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry)
 		{
 			d_geometry_property = boost::none;
-			d_wrap_with_gpml_constant_value = wrap_with_gpml_constant_value;
 
 			geometry->accept_visitor(*this);
 
@@ -424,8 +582,7 @@ namespace
 		{
 			d_geometry_property =
 					GPlatesAppLogic::GeometryUtils::create_multipoint_geometry_property_value(
-							multi_point_on_sphere,
-							d_wrap_with_gpml_constant_value);
+							multi_point_on_sphere);
 		}
 
 		virtual
@@ -435,8 +592,7 @@ namespace
 		{
 			d_geometry_property =
 					GPlatesAppLogic::GeometryUtils::create_point_geometry_property_value(
-							*point_on_sphere,
-							d_wrap_with_gpml_constant_value);
+							*point_on_sphere);
 		}
 
 		virtual
@@ -446,8 +602,7 @@ namespace
 		{
 			d_geometry_property =
 					GPlatesAppLogic::GeometryUtils::create_polygon_geometry_property_value(
-							polygon_on_sphere,
-							d_wrap_with_gpml_constant_value);
+							polygon_on_sphere);
 		}
 
 		virtual
@@ -457,14 +612,22 @@ namespace
 		{
 			d_geometry_property =
 					GPlatesAppLogic::GeometryUtils::create_polyline_geometry_property_value(
-							polyline_on_sphere,
-							d_wrap_with_gpml_constant_value);
+							polyline_on_sphere);
 		}
 
 	private:
 		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> d_geometry_property;
-		bool d_wrap_with_gpml_constant_value;
 	};
+}
+
+GPlatesViewOperations::GeometryType::Value
+GPlatesAppLogic::GeometryUtils::get_geometry_type(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
+{
+	GetGeometryOnSphereType visitor;
+	geometry_on_sphere.accept_visitor(visitor);
+
+	return visitor.get_geometry_on_sphere_type();
 }
 
 void
@@ -517,59 +680,44 @@ GPlatesAppLogic::GeometryUtils::convert_geometry_to_polygon(
 }
 
 
+boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(
+		const GPlatesModel::PropertyValue &property_value,
+		const double &reconstruction_time)
+{
+	GetGeometryFromPropertyVisitor visitor;
+	return visitor.get_geometry_from_property_value(property_value, reconstruction_time);
+}
+
+
 boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
 GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
-		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-		bool wrap_with_gpml_constant_value)
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry)
 {
 	CreateGeometryProperty create_geometry;
-	return create_geometry.create_geometry_property(geometry, wrap_with_gpml_constant_value);
+	return create_geometry.create_geometry_property(geometry);
 }
 
 
 GPlatesModel::PropertyValue::non_null_ptr_type
 GPlatesAppLogic::GeometryUtils::create_point_geometry_property_value(
-		const GPlatesMaths::PointOnSphere &point,
-		bool wrap_with_gpml_constant_value)
+		const GPlatesMaths::PointOnSphere &point)
 {
-	GPlatesModel::PropertyValue::non_null_ptr_type geometry_property =
-			GPlatesPropertyValues::GmlPoint::create(point);
-
-	if (wrap_with_gpml_constant_value)
-	{
-		geometry_property = GPlatesModel::ModelUtils::create_gpml_constant_value(
-				geometry_property.get(),
-				GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));
-	}
-
-	return geometry_property;
+	return GPlatesPropertyValues::GmlPoint::create(point);
 }
 
 
 GPlatesModel::PropertyValue::non_null_ptr_type
 GPlatesAppLogic::GeometryUtils::create_multipoint_geometry_property_value(
-		const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type &multipoint,
-		bool wrap_with_gpml_constant_value)
-		
+		const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type &multipoint)
 {
-	GPlatesModel::PropertyValue::non_null_ptr_type geometry_property =
-			GPlatesPropertyValues::GmlMultiPoint::create(multipoint);
-
-	if (wrap_with_gpml_constant_value)
-	{
-		geometry_property = GPlatesModel::ModelUtils::create_gpml_constant_value(
-				geometry_property.get(),
-				GPlatesPropertyValues::TemplateTypeParameterType::create_gml("MultiPoint"));
-	}
-
-	return geometry_property;
+	return GPlatesPropertyValues::GmlMultiPoint::create(multipoint);
 }
 
 
 GPlatesModel::PropertyValue::non_null_ptr_type
 GPlatesAppLogic::GeometryUtils::create_polyline_geometry_property_value(
-		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
-		bool wrap_with_gpml_constant_value)
+		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline)
 {
 	const GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =
 			GPlatesPropertyValues::GmlLineString::create(polyline);
@@ -577,33 +725,15 @@ GPlatesAppLogic::GeometryUtils::create_polyline_geometry_property_value(
 	GPlatesModel::PropertyValue::non_null_ptr_type geometry_property =
 			GPlatesModel::ModelUtils::create_gml_orientable_curve(gml_line_string);
 
-	if (wrap_with_gpml_constant_value)
-	{
-		geometry_property = GPlatesModel::ModelUtils::create_gpml_constant_value(
-				geometry_property.get(), 
-				GPlatesPropertyValues::TemplateTypeParameterType::create_gml("OrientableCurve"));
-	}
-
 	return geometry_property;
 }
 
 
 GPlatesModel::PropertyValue::non_null_ptr_type
 GPlatesAppLogic::GeometryUtils::create_polygon_geometry_property_value(
-		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon,
-		bool wrap_with_gpml_constant_value)
+		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon)
 {
-	GPlatesModel::PropertyValue::non_null_ptr_type geometry_property =
-			GPlatesPropertyValues::GmlPolygon::create(polygon);
-
-	if (wrap_with_gpml_constant_value)
-	{
-		geometry_property = GPlatesModel::ModelUtils::create_gpml_constant_value(
-				geometry_property.get(),
-				GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Polygon"));
-	}
-
-	return geometry_property;
+	return GPlatesPropertyValues::GmlPolygon::create(polygon);
 }
 
 

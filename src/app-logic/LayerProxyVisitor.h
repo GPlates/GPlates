@@ -56,7 +56,7 @@ namespace GPlatesAppLogic
 	class ReconstructLayerProxy;
 	class ReconstructionLayerProxy;
 	class ScalarField3DLayerProxy;
-	class TopologyBoundaryResolverLayerProxy;
+	class TopologyGeometryResolverLayerProxy;
 	class TopologyNetworkResolverLayerProxy;
 	class VelocityFieldCalculatorLayerProxy;
 
@@ -102,10 +102,10 @@ namespace GPlatesAppLogic
 				LayerProxyType, ScalarField3DLayerProxy>::type
 						scalar_field_3d_layer_proxy_type;
 
-		//! Typedef for @a TopologyBoundaryResolverLayerProxy of appropriate const-ness.
+		//! Typedef for @a TopologyGeometryResolverLayerProxy of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
-				LayerProxyType, TopologyBoundaryResolverLayerProxy>::type
-						topology_boundary_resolver_layer_proxy_type;
+				LayerProxyType, TopologyGeometryResolverLayerProxy>::type
+						topology_geometry_resolver_layer_proxy_type;
 
 		//! Typedef for @a TopologyNetworkResolverLayerProxy of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
@@ -179,7 +179,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<topology_boundary_resolver_layer_proxy_type> &layer_proxy)
+				const GPlatesUtils::non_null_intrusive_ptr<topology_geometry_resolver_layer_proxy_type> &layer_proxy)
 		{  }
 
 

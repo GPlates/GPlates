@@ -45,13 +45,10 @@
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionTree.h"
-#include "app-logic/ResolvedTopologicalBoundary.h"
+#include "app-logic/ResolvedTopologicalGeometry.h"
 #include "app-logic/TopologyUtils.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
-
-#include "file-io/GpmlOnePointSixOutputVisitor.h"
-#include "file-io/FileInfo.h"
 
 #include "maths/CalculateVelocity.h"
 #include "maths/CartesianConvMatrix3D.h"
@@ -526,7 +523,7 @@ std::cout << "ComputationalMeshSolver::process_point_in_plate_polygon: " << llp 
 
 	boost::optional< std::pair<
 			GPlatesModel::integer_plate_id_type,
-			const GPlatesAppLogic::ResolvedTopologicalBoundary * > > recon_plate_id_opt =
+			const GPlatesAppLogic::ResolvedTopologicalGeometry * > > recon_plate_id_opt =
 			GPlatesAppLogic::TopologyUtils::
 					find_reconstruction_plate_id_furthest_from_anchor_in_plate_circuit(
 							resolved_topological_boundaries_containing_point);
@@ -546,7 +543,7 @@ std::cout << "ComputationalMeshSolver::process_point_in_plate_polygon: " << llp 
 	}
 
 	GPlatesModel::integer_plate_id_type recon_plate_id = recon_plate_id_opt->first;
-	const GPlatesAppLogic::ResolvedTopologicalBoundary *resolved_topo_boundary = recon_plate_id_opt->second;
+	const GPlatesAppLogic::ResolvedTopologicalGeometry *resolved_topo_boundary = recon_plate_id_opt->second;
 
 	// compute the velocity for this point
 	const GPlatesMaths::Vector3D vector_xyz =

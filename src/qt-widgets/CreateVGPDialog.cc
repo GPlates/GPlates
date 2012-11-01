@@ -89,9 +89,7 @@ namespace
 			GPlatesPropertyValues::GmlPoint::create(point);
 
 		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
-			GPlatesModel::ModelUtils::create_gpml_constant_value(
-			gml_point, 
-			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));
+			GPlatesModel::ModelUtils::create_gpml_constant_value(gml_point);
 
 		feature->add(
 			GPlatesModel::TopLevelPropertyInline::create(
@@ -164,9 +162,7 @@ namespace
 			GPlatesPropertyValues::GmlPoint::create(point);	
 
 		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
-			GPlatesModel::ModelUtils::create_gpml_constant_value(
-			gml_point, 
-			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));			
+			GPlatesModel::ModelUtils::create_gpml_constant_value(gml_point);			
 
 
 		feature->add(
@@ -187,9 +183,7 @@ namespace
 		feature->add(
 			GPlatesModel::TopLevelPropertyInline::create(
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-				GPlatesModel::ModelUtils::create_gpml_constant_value(
-					gpml_plate_id,
-					GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId"))));			
+				GPlatesModel::ModelUtils::create_gpml_constant_value(gpml_plate_id)));			
 			
 	}
 

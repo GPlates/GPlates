@@ -77,7 +77,7 @@ namespace GPlatesUtils
 		if(rx.indexIn(name) != -1)
 		{
 			shape_name = rx.cap(2);
-		//	qDebug() << "Shapefile attribute name: " << *shape_name;
+			//qDebug() << "Shapefile attribute name: " << *shape_name;
 		}
 		return shape_name;
 	}

@@ -47,9 +47,15 @@
 
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
+#include "model/TopLevelProperty.h"
 
 #include "presentation/ViewState.h"
 
+
+namespace GPlatesModel
+{
+	class Gpgim;
+}
 
 namespace GPlatesViewOperations
 {
@@ -64,12 +70,14 @@ namespace GPlatesViewOperations
 	public:
 		SplitFeatureUndoCommand(
 				GPlatesGui::FeatureFocus &feature_focus,
+				const GPlatesModel::Gpgim &gpgim,
 				GPlatesModel::ModelInterface model_interface,
 				GeometryBuilder::PointIndex point_index_to_insert_at,
 				boost::optional<const GPlatesMaths::PointOnSphere> &oriented_pos_on_globe,
 				QUndoCommand *parent = 0) :
 			QUndoCommand(parent),
 			d_feature_focus(&feature_focus),
+			d_gpgim(gpgim),
 			d_model_interface(model_interface),
 			d_point_index_to_insert_at(point_index_to_insert_at),
 			d_oriented_pos_on_globe(oriented_pos_on_globe),
@@ -88,10 +96,11 @@ namespace GPlatesViewOperations
 		
 	private:
 		GPlatesGui::FeatureFocus *d_feature_focus;
+		const GPlatesModel::Gpgim &d_gpgim;
 		GPlatesModel::ModelInterface d_model_interface;
 		GeometryBuilder::PointIndex d_point_index_to_insert_at;
 		boost::optional<GPlatesMaths::PointOnSphere> d_oriented_pos_on_globe;
-		boost::optional<GPlatesModel::TopLevelPropertyInline::non_null_ptr_type> d_old_geometry_property;
+		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> d_old_geometry_property;
 		GPlatesModel::FeatureCollectionHandle::weak_ref d_feature_collection_ref;
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_new_feature;
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_old_feature;

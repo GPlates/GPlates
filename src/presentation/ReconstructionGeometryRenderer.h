@@ -315,7 +315,7 @@ namespace GPlatesPresentation
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb);
+				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg);
 
 		virtual
 		void

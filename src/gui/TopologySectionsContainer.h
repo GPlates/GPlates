@@ -86,8 +86,7 @@ namespace GPlatesGui
 			TableRow(
 					const GPlatesModel::FeatureId &feature_id,
 					const GPlatesModel::PropertyName &geometry_property_name,
-					bool reverse_order = false,
-					const boost::optional<GPlatesMaths::PointOnSphere> &click_point = boost::none);
+					bool reverse_order = false);
 
 
 			/**
@@ -98,7 +97,6 @@ namespace GPlatesGui
 			 */
 			TableRow(
 					const GPlatesModel::FeatureHandle::iterator &geometry_property,
-					const boost::optional<GPlatesMaths::PointOnSphere> &click_point = boost::none,
 					bool reverse_order = false);
 
 
@@ -121,21 +119,6 @@ namespace GPlatesGui
 			get_geometry_property() const
 			{
 				return d_geometry_property;
-			}
-
-			//! Set the present day click point.
-			const boost::optional<GPlatesMaths::PointOnSphere> &
-			get_present_day_click_point() const
-			{
-				return d_present_day_click_point;
-			}
-
-			//! Set the present day click point.
-			void
-			set_present_day_click_point(
-					const boost::optional<GPlatesMaths::PointOnSphere> &present_day_click_point)
-			{
-				d_present_day_click_point = present_day_click_point;
 			}
 
 			//! Get the reverse order of section points.
@@ -229,13 +212,6 @@ namespace GPlatesGui
 			 * since it uses it when constructed.
 			 */
 			GPlatesModel::FeatureHandle::iterator d_geometry_property;
-
-			/**
-			 * The point the user clicked on to select the section.
-			 * Used as a reference point to aid the intersection algorithm.
-			 * Coords are present-day.
-			 */
-			boost::optional<GPlatesMaths::PointOnSphere> d_present_day_click_point;
 
 			/**
 			 * Whether this topology section should be used in reverse.
@@ -537,6 +513,9 @@ namespace GPlatesGui
 #endif	// testing slots.
 
 	signals:
+		// NOTE: all signals/slots should use namespace scope for all arguments
+		//       otherwise differences between signals and slots will cause Qt
+		//       to not be able to connect them at runtime.
 
 		//! emmited when table is updated
 		void
@@ -609,9 +588,26 @@ namespace GPlatesGui
 		
 		/** 
 		 * Emitted whenever the container changes
+		 *
+		 * FIXME: Ugh, what is this ?
 		 */ 
 		void
-		container_change(GPlatesGui::TopologySectionsContainer *);
+		container_change(
+				GPlatesGui::TopologySectionsContainer *);
+
+
+		//
+		// An alternative to the above signals is to listen to only one signal
+		// when all you are interested in is knowing that the state has been modified.
+		//
+
+		/** 
+		 * Emitted whenever any state of this container has changed.
+		 */ 
+		void
+		container_changed(
+				GPlatesGui::TopologySectionsContainer &topology_sections_container);
+
 
 	private:
 

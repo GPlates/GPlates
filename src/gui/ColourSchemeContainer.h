@@ -36,6 +36,11 @@
 #include "ColourSchemeInfo.h"
 
 
+namespace GPlatesAppLogic
+{
+	class ApplicationState;
+}
+
 namespace GPlatesGui
 {
 	namespace ColourSchemeCategory
@@ -172,7 +177,9 @@ namespace GPlatesGui
 		 *
 		 * Loads a set of built-in colour schemes into this ColourSchemeContainer.
 		 */
-		ColourSchemeContainer();
+		explicit
+		ColourSchemeContainer(
+				GPlatesAppLogic::ApplicationState &application_state);
 
 		/**
 		 * Returns a 'begin' iterator over the colour schemes in @a category.
@@ -245,7 +252,8 @@ namespace GPlatesGui
 		 * Creates the built-in colour schemes and places them into the categories.
 		 */
 		void
-		create_built_in_colour_schemes();
+		create_built_in_colour_schemes(
+				GPlatesAppLogic::ApplicationState &application_state);
 
 		ColourSchemeInfo
 		create_single_colour_scheme(

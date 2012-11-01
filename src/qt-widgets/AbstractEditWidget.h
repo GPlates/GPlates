@@ -33,6 +33,8 @@
 
 #include "model/PropertyValue.h"
 
+#include "property-values/StructuralType.h"
+
 
 namespace GPlatesQtWidgets
 {
@@ -115,18 +117,19 @@ namespace GPlatesQtWidgets
 		 * It is called by EditWidgetGroupBox, as part of the
 		 * activate_widget_by_property_value_name() function, which is used by
 		 * AddPropertyDialog.
-		 *
-		 * FIXME: We ought to change the QString to a suitable QualifiedXmlName.
 		 */
 		virtual
 		void
 		configure_for_property_value_type(
-				const QString &property_value_name)
+				const GPlatesPropertyValues::StructuralType &property_value_type)
 		{  }
 		
 		/**
 		 * Requests that the edit widget convert its fields into a new PropertyValue
 		 * and return it, ready for insertion into the Model.
+		 *
+		 * NOTE: Can throw exception @a InvalidPropertyValueException if the user has left the
+		 * edit widget in a state that generates an invalid property.
 		 */
 		virtual
 		GPlatesModel::PropertyValue::non_null_ptr_type

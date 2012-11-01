@@ -36,7 +36,7 @@
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructUtils.h"
-#include "app-logic/ResolvedTopologicalBoundary.h"
+#include "app-logic/ResolvedTopologicalGeometry.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
 
 #include "feature-visitors/GeometrySetter.h"
@@ -260,8 +260,8 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::set_focus(
 	d_feature = feature_focus.focused_feature();
 
 	// Accept any type of ReconstructionGeometry derivation (not just ReconstructedFeatureGeometry's)
-	// because then the CloneGeometry tool, for example, can copy a ResolvedTopologicalBoundary's geometry.
-	// Other operations on ResolvedTopologicalBoundary's don't make sense though, such as MoveVertex,
+	// because then the CloneGeometry tool, for example, can copy a ResolvedTopologicalGeometry's geometry.
+	// Other operations on ResolvedTopologicalGeometry's don't make sense though, such as MoveVertex,
 	// and so the appropriate canvas tools will need to be disabled in these situations.
 	d_focused_geometry = NULL;
 	if (feature_focus.associated_reconstruction_geometry())
@@ -320,9 +320,9 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::get_geometry_from_feat
 	}
 
 	// See if the focused reconstruction geometry is a resolved topological boundary.
-	boost::optional<const GPlatesAppLogic::ResolvedTopologicalBoundary *> focused_rtb =
+	boost::optional<const GPlatesAppLogic::ResolvedTopologicalGeometry *> focused_rtb =
 			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ResolvedTopologicalBoundary>(d_focused_geometry);
+					const GPlatesAppLogic::ResolvedTopologicalGeometry>(d_focused_geometry);
 	if (focused_rtb)
 	{
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_geom =

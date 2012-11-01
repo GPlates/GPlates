@@ -31,7 +31,7 @@
 
 #include "QtWidgetUtils.h"
 
-#include "model/GPGIMInfo.h"
+#include "model/Gpgim.h"
 
 #include "utils/UnicodeStringUtils.h"
 
@@ -66,37 +66,6 @@ namespace
 
 		boost::optional<GPlatesModel::FeatureType> d_feature_type;
 	};
-
-
-	/**
-	 * Fill the list with possible feature types we can create.
-	 */
-	void
-	populate_feature_types_list(
-			GPlatesQtWidgets::SelectionWidget &selection_widget,
-			bool is_topological)
-	{
-		// FIXME: For extra brownie points, filter -this- list based on features
-		// which you couldn't possibly create given the digitised geometry.
-		// E.g. no Cratons made from PolylineOnSphere!
-		typedef GPlatesModel::GPGIMInfo::feature_set_type feature_set_type;
-		const feature_set_type &list = GPlatesModel::GPGIMInfo::get_feature_set(is_topological);
-
-		selection_widget.clear();
-
-		// Add all the feature types from the finished list.
-		BOOST_FOREACH(const GPlatesModel::FeatureType &feature_type, list)
-		{
-			selection_widget.add_item<DefaultConstructibleFeatureType>(
-					GPlatesUtils::make_qstring_from_icu_string(feature_type.build_aliased_name()),
-					feature_type);
-		}
-
-		if (selection_widget.get_count())
-		{
-			selection_widget.set_current_index(0);
-		}
-	}
 }
 
 
@@ -104,9 +73,11 @@ Q_DECLARE_METATYPE( DefaultConstructibleFeatureType )
 
 
 GPlatesQtWidgets::ChooseFeatureTypeWidget::ChooseFeatureTypeWidget(
+		const GPlatesModel::Gpgim &gpgim,
 		SelectionWidget::DisplayWidget display_widget,
 		QWidget *parent_) :
 	QWidget(parent_),
+	d_gpgim(gpgim),
 	d_selection_widget(new SelectionWidget(display_widget, this))
 {
 	QtWidgetUtils::add_widget_to_placeholder(d_selection_widget, this);
@@ -117,9 +88,33 @@ GPlatesQtWidgets::ChooseFeatureTypeWidget::ChooseFeatureTypeWidget(
 
 void
 GPlatesQtWidgets::ChooseFeatureTypeWidget::populate(
-		bool is_topological)
+		boost::optional<GPlatesPropertyValues::StructuralType> property_type)
 {
-	populate_feature_types_list(*d_selection_widget, is_topological);
+	d_selection_widget->clear();
+
+	const GPlatesModel::Gpgim::feature_type_seq_type &all_feature_types =
+			d_gpgim.get_concrete_feature_types();
+
+	// Iterate over all the feature types.
+	BOOST_FOREACH(const GPlatesModel::FeatureType &feature_type, all_feature_types)
+	{
+		// Filter out feature types that don't have properties matching the target property type (if specified).
+		if (property_type &&
+			// Do any of the current feature's properties match the target property type ?
+			!d_gpgim.get_feature_properties(feature_type, property_type.get()))
+		{
+			continue;
+		}
+
+		d_selection_widget->add_item<DefaultConstructibleFeatureType>(
+				convert_qualified_xml_name_to_qstring(feature_type),
+				feature_type);
+	}
+
+	if (d_selection_widget->get_count())
+	{
+		d_selection_widget->set_current_index(0);
+	}
 }
 
 

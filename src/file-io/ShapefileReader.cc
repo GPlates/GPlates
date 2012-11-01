@@ -99,9 +99,7 @@ namespace
 			GPlatesModel::ModelUtils::create_gml_orientable_curve(gml_line_string);
 
 		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
-			GPlatesModel::ModelUtils::create_gpml_constant_value(
-			gml_orientable_curve, 
-			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("OrientableCurve"));
+			GPlatesModel::ModelUtils::create_gpml_constant_value(gml_orientable_curve);
 
 		feature->add(
 				GPlatesModel::TopLevelPropertyInline::create(
@@ -126,9 +124,7 @@ namespace
 
 
 		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
-			GPlatesModel::ModelUtils::create_gpml_constant_value(
-			gml_polygon, 
-			GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Polygon"));
+			GPlatesModel::ModelUtils::create_gpml_constant_value(gml_polygon);
 
 		// Anything that's got a polygon geometry is going to get an "unclassifiedGeometry" property name. 
 		feature->add(
@@ -219,9 +215,7 @@ namespace
 		feature->add(
 				GPlatesModel::TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-					GPlatesModel::ModelUtils::create_gpml_constant_value(
-						plate_id,
-						GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId"))));
+					GPlatesModel::ModelUtils::create_gpml_constant_value(plate_id)));
 	}
 
 	void
@@ -940,9 +934,7 @@ GPlatesFileIO::ShapefileReader::create_polygon_feature_from_list(
 		GPlatesPropertyValues::GmlPolygon::create(polygon_on_sphere);
 
 	GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
-		GPlatesModel::ModelUtils::create_gpml_constant_value(
-							gml_polygon, 
-							GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Polygon"));
+		GPlatesModel::ModelUtils::create_gpml_constant_value(gml_polygon);
 
 	// Anything that's got a polygon geometry is going to get an "unclassifiedGeometry" property name. 
 	feature->add(
@@ -972,9 +964,7 @@ GPlatesFileIO::ShapefileReader::create_line_feature_from_list(
 		GPlatesModel::ModelUtils::create_gml_orientable_curve(gml_line_string);
 			
 	GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
-			GPlatesModel::ModelUtils::create_gpml_constant_value(
-							gml_orientable_curve, 
-							GPlatesPropertyValues::TemplateTypeParameterType::create_gml("OrientableCurve"));
+			GPlatesModel::ModelUtils::create_gpml_constant_value(gml_orientable_curve);
 
 	feature->add(
 			GPlatesModel::TopLevelPropertyInline::create(
@@ -998,9 +988,7 @@ GPlatesFileIO::ShapefileReader::create_point_feature_from_pair(
 		GPlatesPropertyValues::GmlPoint::create(point);
 
 	GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
-		GPlatesModel::ModelUtils::create_gpml_constant_value(
-							gml_point, 
-							GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));
+		GPlatesModel::ModelUtils::create_gpml_constant_value(gml_point);
 
 	// What sort of gpml property name should a point have? 
 	feature->add(
@@ -1026,9 +1014,7 @@ GPlatesFileIO::ShapefileReader::create_point_feature_from_point_on_sphere(
 		GPlatesPropertyValues::GmlPoint::create(point);
 
 	GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
-		GPlatesModel::ModelUtils::create_gpml_constant_value(
-							gml_point, 
-							GPlatesPropertyValues::TemplateTypeParameterType::create_gml("Point"));
+		GPlatesModel::ModelUtils::create_gpml_constant_value(gml_point);
 
 	// What sort of gpml property name should a point have? 
 	// I'm going to leave it as an unclassifiedGeometry for now. 
@@ -1057,9 +1043,7 @@ GPlatesFileIO::ShapefileReader::create_multi_point_feature_from_list(
 		GPlatesPropertyValues::GmlMultiPoint::create(multi_point_on_sphere);
 
 	GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
-		GPlatesModel::ModelUtils::create_gpml_constant_value(
-							gml_multi_point, 
-							GPlatesPropertyValues::TemplateTypeParameterType::create_gml("MultiPoint"));
+		GPlatesModel::ModelUtils::create_gpml_constant_value(gml_multi_point);
 
 	feature->add(
 			GPlatesModel::TopLevelPropertyInline::create(
@@ -1177,7 +1161,7 @@ GPlatesFileIO::ShapefileReader::add_attributes_to_feature(
 					GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
 						key,
 						value,
-						GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("integer"));
+						GPlatesPropertyValues::StructuralType::create_xsi("integer"));
 					dictionary->elements().push_back(element);
 				}
 			}
@@ -1192,7 +1176,7 @@ GPlatesFileIO::ShapefileReader::add_attributes_to_feature(
 					GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
 						key,
 						value,
-						GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("double"));
+						GPlatesPropertyValues::StructuralType::create_xsi("double"));
 					dictionary->elements().push_back(element);
 				}
 			}
@@ -1205,7 +1189,7 @@ GPlatesFileIO::ShapefileReader::add_attributes_to_feature(
 				GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
 					key,
 					value,
-					GPlatesPropertyValues::TemplateTypeParameterType::create_xsi("string"));
+					GPlatesPropertyValues::StructuralType::create_xsi("string"));
 				dictionary->elements().push_back(element);
 				break;
 		}
@@ -1280,6 +1264,7 @@ GPlatesFileIO::ShapefileReader::read_file(
 		GPlatesFileIO::File::Reference &file_ref,
 		const FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &default_file_configuration,
 		GPlatesModel::ModelInterface &model,
+		const GPlatesModel::Gpgim &gpgim,
 		ReadErrorAccumulation &read_errors)
 {
 	PROFILE_FUNC();

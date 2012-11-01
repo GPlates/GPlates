@@ -31,6 +31,8 @@
 #include "ReconstructedFeatureGeometryFinder.h"
 #include "Reconstruction.h"
 #include "ReconstructLayerProxy.h"
+#include "ResolvedTopologicalGeometry.h"
+#include "TopologyGeometryResolverLayerProxy.h"
 
 
 void
@@ -59,6 +61,30 @@ GPlatesAppLogic::LayerProxyUtils::get_reconstructed_feature_geometries(
 
 
 void
+GPlatesAppLogic::LayerProxyUtils::get_resolved_topological_lines(
+		std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_lines,
+		std::vector<ReconstructHandle::type> &reconstruct_handles,
+		const Reconstruction &reconstruction)
+{
+	// Get the resolved geometry layer outputs.
+	std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> topology_geometry_resolver_layer_proxies;
+	reconstruction.get_active_layer_outputs<TopologyGeometryResolverLayerProxy>(topology_geometry_resolver_layer_proxies);
+
+	BOOST_FOREACH(
+			const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topology_geometry_resolver_layer_proxy,
+			topology_geometry_resolver_layer_proxies)
+	{
+		// Get the resolved topological lines from the current layer.
+		const ReconstructHandle::type reconstruct_handle =
+				topology_geometry_resolver_layer_proxy->get_resolved_topological_lines(resolved_topological_lines);
+
+		// Add the reconstruct handle to the list.
+		reconstruct_handles.push_back(reconstruct_handle);
+	}
+}
+
+
+void
 GPlatesAppLogic::LayerProxyUtils::find_reconstructed_feature_geometries_of_feature(
 		std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
 		GPlatesModel::FeatureHandle::weak_ref feature_ref,
@@ -74,7 +100,9 @@ GPlatesAppLogic::LayerProxyUtils::find_reconstructed_feature_geometries_of_featu
 	get_reconstructed_feature_geometries(rfgs_in_reconstruction, reconstruct_handles, reconstruction);
 
 	// Iterate through all RFGs observing 'feature_ref' and that were reconstructed just now (above).
-	ReconstructedFeatureGeometryFinder rfg_finder(reconstruct_handles);
+	ReconstructedFeatureGeometryFinder rfg_finder(
+			boost::none/*reconstruction_tree_to_match*/,
+			reconstruct_handles);
 	rfg_finder.find_rfgs_of_feature(feature_ref);
 
 	// Add the found RFGs to the caller's sequence.

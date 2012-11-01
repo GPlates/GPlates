@@ -35,39 +35,22 @@
 
 #include "GlobeCanvasToolAdapter.h"
 
-#include "app-logic/ReconstructionGeometry.h"
-
 #include "canvas-tools/CanvasTool.h"
 
 
-namespace GPlatesAppLogic
-{
-	class ReconstructGraph;
-}
-
-namespace GPlatesCanvasTools
-{
-	class ClickGeometry;
-	class GeometryOperationState;
-	class MeasureDistanceState;
-}
-
 namespace GPlatesQtWidgets
 {
-	class GlobeCanvas;
 	class ViewportWindow;
 }
 
 namespace GPlatesViewOperations
 {
-	class GeometryBuilder;
 	class RenderedGeometryCollection;
 }
 
 namespace GPlatesGui
 {
 	class FeatureFocus;
-	class FeatureTableModel;
 
 	/**
 	 * The canvas tool workflow for building/editing topological features.
@@ -81,8 +64,6 @@ namespace GPlatesGui
 
 		TopologyCanvasToolWorkflow(
 				CanvasToolWorkflows &canvas_tool_workflows,
-				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
-				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
 				const GPlatesCanvasTools::CanvasTool::status_bar_callback_type &status_bar_callback,
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesQtWidgets::ViewportWindow &viewport_window);
@@ -100,10 +81,6 @@ namespace GPlatesGui
 		virtual
 		void
 		deactivate_workflow();
-
-		virtual
-		void
-		deactivated_selected_tool();
 
 		virtual
 		boost::optional< std::pair<GPlatesGui::GlobeCanvasTool *, GPlatesGui::MapCanvasTool *> >
@@ -129,71 +106,31 @@ namespace GPlatesGui
 
 	private:
 
+		//! For determining the curently active workflow/tool.
+		CanvasToolWorkflows &d_canvas_tool_workflows;
+
 		/**
 		 * The focused feature, in part, determines which tools are enabled.
 		 */
 		FeatureFocus &d_feature_focus;
 
-		GPlatesViewOperations::GeometryBuilder &d_focused_feature_geometry_builder;
-
-		GPlatesCanvasTools::GeometryOperationState &d_geometry_operation_state;
-
 		//! For rendering purposes
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
 
-		//! Used when restoring the clicked geometries on workflow activation.
-		GPlatesGui::FeatureTableModel &d_clicked_table_model;
+		//! For building line topologies in the 3D globe view.
+		boost::scoped_ptr<GlobeCanvasTool> d_globe_build_line_topology_tool;
+		//! For building line topologies in the 2D map view.
+		boost::scoped_ptr<MapCanvasTool> d_map_build_line_topology_tool;
 
-		//! Used when restoring the clicked geometries on workflow activation.
-		const GPlatesAppLogic::ReconstructGraph &d_reconstruct_graph;
+		//! For building boundary topologies in the 3D globe view.
+		boost::scoped_ptr<GlobeCanvasTool> d_globe_build_boundary_topology_tool;
+		//! For building boundary topologies in the 2D map view.
+		boost::scoped_ptr<MapCanvasTool> d_map_build_boundary_topology_tool;
 
-		//! Used when restoring the clicked geometries on workflow activation.
-		GPlatesQtWidgets::ViewportWindow &d_viewport_window;
-
-		/**
-		 * The sequence of clicked geometries (if any) to restore when this canvas tool workflow re-activates.
-		 */
-		std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type> d_save_restore_clicked_geom_seq;
-
-		/**
-		 * The focused feature (if any) to restore when this canvas tool workflow re-activates.
-		 */
-		GPlatesModel::FeatureHandle::weak_ref d_save_restore_focused_feature;
-
-		/**
-		 * The focused feature geometry property (if any) to restore when this canvas tool workflow re-activates.
-		 */
-		GPlatesModel::FeatureHandle::iterator d_save_restore_focused_feature_geometry_property;
-
-		/**
-		 * Used to set/get the clicked geometries when this canvas tool workflow is activated/deactivated.
-		 */
-		GPlatesCanvasTools::ClickGeometry *d_click_geometry_tool;
-
-		//! For dragging the globe in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_drag_globe_tool;
-		//! For dragging the globe in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_drag_globe_tool;
-
-		//! For zooming the globe in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_zoom_globe_tool;
-		//! For zooming the globe in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_zoom_globe_tool;
-
-		//! For measuring distance in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_measure_distance_tool;
-		//! For measuring distance in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_measure_distance_tool;
-
-		//! For clicking geometries in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_click_geometry_tool;
-		//! For clicking geometries in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_click_geometry_tool;
-
-		//! For building topologies in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_build_topology_tool;
-		//! For building topologies in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_build_topology_tool;
+		//! For building network topologies in the 3D globe view.
+		boost::scoped_ptr<GlobeCanvasTool> d_globe_build_network_topology_tool;
+		//! For building network topologies in the 2D map view.
+		boost::scoped_ptr<MapCanvasTool> d_map_build_network_topology_tool;
 
 		//! For editing topologies in the 3D globe view.
 		boost::scoped_ptr<GlobeCanvasTool> d_globe_edit_topology_tool;
@@ -204,8 +141,6 @@ namespace GPlatesGui
 		void
 		create_canvas_tools(
 				CanvasToolWorkflows &canvas_tool_workflows,
-				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
-				GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
 				const GPlatesCanvasTools::CanvasTool::status_bar_callback_type &status_bar_callback,
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesQtWidgets::ViewportWindow &viewport_window);
@@ -214,7 +149,7 @@ namespace GPlatesGui
 		update_enable_state();
 
 		void
-		update_build_topology_tool();
+		update_build_topology_tools();
 
 		void
 		update_edit_topology_tool();

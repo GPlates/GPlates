@@ -113,7 +113,10 @@ GPlatesGui::Dialogs::about_dialog()
 
 	if (d_dialogs[dialog_type].isNull())
 	{
-		d_dialogs[dialog_type] = new dialog_typename(*this, &viewport_window());
+		d_dialogs[dialog_type] = new dialog_typename(
+				*this,
+				application_state().get_gpgim(),
+				&viewport_window());
 	}
 
 	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);

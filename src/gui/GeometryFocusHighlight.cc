@@ -33,6 +33,8 @@
 #include "gui/FeatureFocus.h"
 #include "gui/Symbol.h"
 
+#include "model/FeatureHandle.h"
+
 #include "presentation/ReconstructionGeometryRenderer.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
@@ -42,49 +44,21 @@
 #include "view-operations/RenderedGeometryUtils.h"
 
 
-GPlatesGui::GeometryFocusHighlight::GeometryFocusHighlight(
+void
+GPlatesGui::GeometryFocusHighlight::draw_focused_geometry(
+		FeatureFocus &feature_focus,
+		GPlatesViewOperations::RenderedGeometryLayer &render_geom_layer,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
-		const GPlatesGui::symbol_map_type &symbol_map):
-	d_rendered_geom_collection(rendered_geom_collection),
-	d_geometry_focus_highlight_layer_ptr(
-			rendered_geom_collection.get_main_rendered_layer(
-					GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER)),
-	d_symbol_map(symbol_map)
+		const symbol_map_type &symbol_map)
 {
-}
-
-void
-GPlatesGui::GeometryFocusHighlight::set_focus(
-		GPlatesGui::FeatureFocus &feature_focus)
-{
-	if (d_focused_geometry == feature_focus.associated_reconstruction_geometry() &&
-		d_feature == feature_focus.focused_feature())
-	{
-		// No change, so nothing to do.
-		return;
-	}
-
-	// Else, presumably the focused geometry has changed.
-	d_feature = feature_focus.focused_feature();
-	d_focused_geometry = feature_focus.associated_reconstruction_geometry();
-	draw_focused_geometry();
-}
-
-
-void
-GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
-{
-	// Delay any notification of changes to the rendered geometry collection
-	// until end of current scope block.
-	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
-
-	// Activate the main rendered layer within the GEOMETRY_FOCUS_HIGHLIGHT_LAYER layer.
-	d_geometry_focus_highlight_layer_ptr->set_active();
-
 	// Clear all geometries from layer before adding them.
-	d_geometry_focus_highlight_layer_ptr->clear_rendered_geometries();
+	render_geom_layer.clear_rendered_geometries();
 
-	if (!d_focused_geometry)
+	const GPlatesModel::FeatureHandle::weak_ref feature = feature_focus.focused_feature();
+	GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_geometry =
+			feature_focus.associated_reconstruction_geometry();
+
+	if (!feature.is_valid() || !focused_geometry)
 	{
 		// There's no focused geometry so there's nothing to draw.
 		// NOTE: we do this after clearing the rendered geometries so that
@@ -103,11 +77,11 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 	GPlatesViewOperations::RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geometries_observing_feature;
 	if (!GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries_observing_feature(
 			reconstruction_geometries_observing_feature,
-			d_rendered_geom_collection,
-			d_feature,
+			rendered_geom_collection,
+			feature,
 			// Restrict the found RGs to those reconstructed by same tree as focused geometry.
 			// They all come from current reconstruction time so should have the same reconstruction tree...
-			d_focused_geometry->reconstruction_tree()))
+			focused_geometry->reconstruction_tree()))
 	{
 		// Shouldn't really get here since there's a focused geometry (and associated focused feature)
 		// so we should get at least one reconstruction geometry.
@@ -130,7 +104,7 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 		// If the RG is the same as the focused geometry (the geometry that the
 		// user clicked on) then highlight it in a different colour.
 		const GPlatesGui::Colour &highlight_colour =
-				(reconstruction_geometry == d_focused_geometry.get())
+				(reconstruction_geometry == focused_geometry.get())
 				? GPlatesViewOperations::FocusedFeatureParameters::CLICKED_GEOMETRY_OF_FOCUSED_FEATURE_COLOUR
 				: GPlatesViewOperations::FocusedFeatureParameters::NON_CLICKED_GEOMETRY_OF_FOCUSED_FEATURE_COLOUR;
 
@@ -139,12 +113,12 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry()
 				render_style_params,
 				highlight_colour, 
 				boost::none,
-				d_symbol_map);
+				symbol_map);
 
 		highlighted_geometry_renderer.begin_render();
 
 		reconstruction_geometry->accept_visitor(highlighted_geometry_renderer);
 
-		highlighted_geometry_renderer.end_render(*d_geometry_focus_highlight_layer_ptr);
+		highlighted_geometry_renderer.end_render(render_geom_layer);
 	}
 }

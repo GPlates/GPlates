@@ -103,7 +103,7 @@ namespace
 			GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
 		const GPlatesPresentation::VisualLayerType::Type t3 = 
 			static_cast<GPlatesPresentation::VisualLayerType::Type>(
-			GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER);
+			GPlatesAppLogic::LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER);
 		return (t == t1 || t == t2 || t == t3);
 	}
 

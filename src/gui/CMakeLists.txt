@@ -225,6 +225,8 @@ set(srcs
     UnsavedChangesTracker.h
     UtilitiesMenu.cc
     UtilitiesMenu.h
+    ViewCanvasToolWorkflow.cc
+    ViewCanvasToolWorkflow.h
     ViewportProjection.h
     ViewportZoom.cc
     ViewportZoom.h

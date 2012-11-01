@@ -109,6 +109,7 @@
     <file>delete_vertex_35.png</file>
     <file>insert_vertex_35.png</file>
     <file>plate_pole_modification_35.png</file>
+	<file>preview_not_available.png</file>
     <file>query_feature_35.png</file>
     <file>reorient_poles_16.png</file>
     <file>reorient_poles_22.png</file>
@@ -126,11 +127,12 @@
     <file>tango_list_add_22.png</file>
     <file>tango_process_stop_22.png</file>
     <file>topology_blank_35.png</file>
-    <file>topology_build_35.png</file>
+    <file>topology_build_boundary_35.png</file>
+    <file>topology_build_line_35.png</file>
+	<file>topology_build_network_35.png</file>
     <file>topology_edit_35.png</file>
     <file>unsaved_changes_red_disk_bang_22.png</file>
     <file>unsaved_changes_red_disk_question_22.png</file>
     <file>zoom_globe_35.png</file>
-	<file>preview_not_available.png</file>
   </qresource>
 </RCC>

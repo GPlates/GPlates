@@ -44,9 +44,15 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::EditFeaturePropertiesWidget(
 		QWidget *parent_):
 	QWidget(parent_),
 	d_feature_focus_ptr(&view_state_.get_feature_focus()),
-	d_property_model_ptr(new GPlatesGui::FeaturePropertyTableModel(view_state_.get_feature_focus())),
-	d_edit_widget_group_box_ptr(new GPlatesQtWidgets::EditWidgetGroupBox(view_state_, this)),
-	d_add_property_dialog_ptr(new GPlatesQtWidgets::AddPropertyDialog(*this, view_state_, this))
+	d_property_model_ptr(
+			new GPlatesGui::FeaturePropertyTableModel(
+					view_state_.get_feature_focus())),
+	d_edit_widget_group_box_ptr(
+			new GPlatesQtWidgets::EditWidgetGroupBox(
+					view_state_, this)),
+	d_add_property_dialog_ptr(
+			new GPlatesQtWidgets::AddPropertyDialog(
+					view_state_.get_feature_focus(), view_state_, this))
 {
 	setupUi(this);
 	
@@ -127,10 +133,17 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::edit_feature(
 		// Load new data.
 		d_property_model_ptr->set_feature_reference(feature_ref);
 		d_feature_ref = feature_ref;
+
 	} else {
 		// A redisplay of the current feature!
 		d_property_model_ptr->refresh_data();
 	}
+
+	// Update the Add Property Dialog.
+	// NOTE: We do this regardless of whether the feature reference or type has changed or not
+	// because the feature's existing properties may have changed and this affects the listing
+	// of properties that can be added to the feature (due to allowed GPGIM property multiplicity).
+	d_add_property_dialog_ptr->set_feature(feature_ref);
 }
 
 
@@ -156,7 +169,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::handle_model_change()
 	// We need to update the edit widget to fix this before it becomes a problem.
 	if (d_edit_widget_group_box_ptr->is_edit_widget_active()) {
 		if (d_selected_property_iterator) {
-			d_edit_widget_group_box_ptr->refresh_edit_widget(d_feature_ref, *d_selected_property_iterator);
+			d_edit_widget_group_box_ptr->refresh_edit_widget(*d_selected_property_iterator);
 		}
 	}
 }
@@ -195,16 +208,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::handle_selection_change(
 	// Enable things which depend on an item being selected.
 	button_delete_property->setDisabled(false);
 	
-	// Note: We pass d_feature_ref as context. In the event that we are
-	// about to activate EditGeometryWidget, it will want to use the
-	// feature ref to determine the appropriate reconstruction plate id,
-	// if any, so that it can express coordinates in reconstruction time.
-	// We should be able to get away with just this, since the only way
-	// to change the plate ID is to click onto a different property, and
-	// then clicking back should reinitialise the EditGeometryWidget,
-	// so we won't have to do anything clever like anticipate plate ID
-	// changes while EditGeometryWidget is active.
-	d_edit_widget_group_box_ptr->activate_appropriate_edit_widget(d_feature_ref, it);
+	d_edit_widget_group_box_ptr->activate_appropriate_edit_widget(it);
 	d_selected_property_iterator = it;
 }
 
@@ -243,26 +247,6 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::delete_selected_property()
 
 	// We have just changed the model. Tell anyone who cares to know.
 	// This will cause FeaturePropertyTableModel to refresh_data(), amongst other things.
-	d_feature_focus_ptr->announce_modification_of_focused_feature();
-}
-
-
-void
-GPlatesQtWidgets::EditFeaturePropertiesWidget::append_property_value_to_feature(
-		GPlatesModel::PropertyValue::non_null_ptr_type property_value,
-		const GPlatesModel::PropertyName &property_name)
-{
-	if ( ! d_feature_ref.is_valid()) {
-		// Nothing can be done.
-		return;
-	}
-
-	d_feature_ref->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-				property_name,
-				property_value));
-
-	// We have just changed the model. Tell anyone who cares to know.
 	d_feature_focus_ptr->announce_modification_of_focused_feature();
 }
 

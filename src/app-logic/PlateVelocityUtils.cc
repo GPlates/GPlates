@@ -720,7 +720,7 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 		const double &reconstruction_time,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &velocity_domain_feature_collections,
 		const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &velocity_surface_reconstructed_static_polygons,
-		const std::vector<resolved_topological_boundary_non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
+		const std::vector<resolved_topological_geometry_non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
 		const std::vector<resolved_topological_network_non_null_ptr_type> &velocity_surface_resolved_topological_networks)
 {
 	// Return early if there are no velocity domain feature collections on which to solve velocities.

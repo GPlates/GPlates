@@ -42,8 +42,6 @@ set(srcs
     FeatureCollectionFileFormatConfigurations.h
     FeatureCollectionFileFormatRegistry.cc
     FeatureCollectionFileFormatRegistry.h
-    FeaturePropertiesMap.cc
-    FeaturePropertiesMap.h
     File.cc
     File.h
     FileFormatNotSupportedException.h
@@ -74,14 +72,29 @@ set(srcs
     GMTFormatResolvedTopologicalBoundaryExport.h
     GMTFormatWriter.cc
     GMTFormatWriter.h
-    GpmlOnePointFiveOutputVisitor.cc
-    GpmlOnePointFiveOutputVisitor.h
-    GpmlOnePointSixOutputVisitor.cc
-    GpmlOnePointSixOutputVisitor.h
-    GpmlOnePointSixReader.cc
-    GpmlOnePointSixReader.h
+    GpmlFeatureReaderFactory.cc
+    GpmlFeatureReaderFactory.h
+    GpmlFeatureReaderImpl.cc
+    GpmlFeatureReaderImpl.h
+    GpmlFeatureReaderInterface.cc
+    GpmlFeatureReaderInterface.h
+    GpmlOutputVisitor.cc
+    GpmlOutputVisitor.h
+    GpmlPropertyReader.cc
+    GpmlPropertyReader.h
+    GpmlPropertyStructuralTypeReader.cc
+    GpmlPropertyStructuralTypeReader.h
+    GpmlPropertyStructuralTypeReaderUtils.cc
+    GpmlPropertyStructuralTypeReaderUtils.h
+    GpmlReader.cc
+    GpmlReader.h
+    GpmlReaderException.h
     GpmlReaderUtils.cc
     GpmlReaderUtils.h
+    GpmlStructuralTypeReaderUtils.cc
+    GpmlStructuralTypeReaderUtils.h
+    GpmlUpgradeReaderUtils.cc
+    GpmlUpgradeReaderUtils.h
     GsmlConst.h
     GsmlFeatureHandlers.cc
     GsmlFeatureHandlers.h
@@ -131,8 +144,6 @@ set(srcs
     PlatesRotationFormatReader.h
     PlatesRotationFormatWriter.cc
     PlatesRotationFormatWriter.h
-    PropertyCreationUtils.cc
-    PropertyCreationUtils.h
     PropertyMapper.h
     RasterBandReader.cc
     RasterBandReader.h
@@ -177,8 +188,6 @@ set(srcs
     ShapefileXmlWriter.cc
     ShapefileXmlWriter.h
     SourceRasterFileCacheFormatReader.h
-    StructurePropertyCreatorMap.cc
-    StructurePropertyCreatorMap.h
     SymbolFileReader.cc
     SymbolFileReader.h
     TemporaryFileRegistry.cc

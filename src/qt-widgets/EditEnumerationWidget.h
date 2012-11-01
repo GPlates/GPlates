@@ -27,10 +27,19 @@
 #define GPLATES_QTWIDGETS_EDITENUMERATIONWIDGET_H
 
 #include <boost/intrusive_ptr.hpp>
+#include <boost/optional.hpp>
+
 #include "AbstractEditWidget.h"
+
 #include "property-values/Enumeration.h"
+#include "property-values/StructuralType.h"
 
 #include "EditEnumerationWidgetUi.h"
+
+namespace GPlatesModel
+{
+	class Gpgim;
+}
 
 namespace GPlatesQtWidgets
 {
@@ -43,12 +52,13 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		EditEnumerationWidget(
+				const GPlatesModel::Gpgim &gpgim,
 				QWidget *parent_ = NULL);
 		
 		virtual
 		void
 		configure_for_property_value_type(
-				const QString &property_value_name);
+				const GPlatesPropertyValues::StructuralType &property_value_type);
 
 		virtual
 		void
@@ -78,11 +88,12 @@ namespace GPlatesQtWidgets
 	
 	private:
 		
+		const GPlatesModel::Gpgim &d_gpgim;
+
 		/**
-		 * The name of the PropertyValue which this widget is currently configured
-		 * to produce.
+		 * The type of the PropertyValue which this widget is currently configured to produce.
 		 */
-		QString d_property_value_name;
+		boost::optional<GPlatesPropertyValues::StructuralType> d_property_value_type;
 
 		/**
 		 * This boost::intrusive_ptr is used to remember the property value which

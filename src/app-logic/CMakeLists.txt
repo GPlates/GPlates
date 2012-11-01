@@ -159,9 +159,9 @@ set(srcs
     ResolvedRaster.h
     ResolvedScalarField3D.cc
     ResolvedScalarField3D.h
-    ResolvedTopologicalBoundary.cc
-    ResolvedTopologicalBoundary.h
-    ResolvedTopologicalBoundarySubSegment.h
+    ResolvedTopologicalGeometry.cc
+    ResolvedTopologicalGeometry.h
+    ResolvedTopologicalGeometrySubSegment.h
     ResolvedTopologicalNetwork.cc
     ResolvedTopologicalNetwork.h
     ScalarField3DLayerProxy.cc
@@ -176,16 +176,17 @@ set(srcs
     SessionManagement.h
     SmallCircleGeometryPopulator.cc
     SmallCircleGeometryPopulator.h
-    TopologyBoundaryIntersections.cc
-    TopologyBoundaryIntersections.h
-    TopologyBoundaryResolver.cc
-    TopologyBoundaryResolver.h
-    TopologyBoundaryResolverLayerProxy.cc
-    TopologyBoundaryResolverLayerProxy.h
-    TopologyBoundaryResolverLayerTask.cc
-    TopologyBoundaryResolverLayerTask.h
+    TopologyGeometryResolver.cc
+    TopologyGeometryResolver.h
+    TopologyGeometryResolverLayerProxy.cc
+    TopologyGeometryResolverLayerProxy.h
+    TopologyGeometryResolverLayerTask.cc
+    TopologyGeometryResolverLayerTask.h
+    TopologyGeometryType.h
     TopologyInternalUtils.cc
     TopologyInternalUtils.h
+    TopologyIntersections.cc
+    TopologyIntersections.h
     TopologyNetworkResolver.cc
     TopologyNetworkResolver.h
     TopologyNetworkResolverLayerProxy.cc

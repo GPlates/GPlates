@@ -101,7 +101,7 @@ namespace
 	{
 		for (LayerForwardIter layer_iter = layers_begin ; layer_iter != layers_end; layer_iter++)
 		{
-			if (layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER &&
+			if (layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER &&
 			   layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER)
 			{
 				continue;
@@ -631,7 +631,7 @@ GPlatesAppLogic::ReconstructGraph::auto_connect_layer(
 
 	// If the layer is a topology resolver then look for any velocity field calculator layers
 	// and connect the topology resolver output to the input of the velocity layers.
-	if (layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER ||
+	if (layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER ||
 		layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER)
 	{
 		connect_topology_resolver_layer_output_to_velocity_field_calculator_layer_inputs(layer, begin(), end());

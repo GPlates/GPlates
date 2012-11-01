@@ -29,10 +29,12 @@
 
 #include "CanvasTool.h"
 
+#include "app-logic/TopologyGeometryType.h"
+
+#include "gui/AddClickedGeometriesToFeatureTable.h"
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
 #include "gui/TopologySectionsContainer.h"
-#include "gui/TopologyTools.h"
 
 
 namespace GPlatesAppLogic
@@ -73,6 +75,7 @@ namespace GPlatesCanvasTools
 		static
 		const non_null_ptr_type
 		create(
+				GPlatesAppLogic::TopologyGeometry::Type build_topology_geometry_type,
 				const status_bar_callback_type &status_bar_callback,
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesQtWidgets::ViewportWindow &viewport_window,
@@ -81,6 +84,7 @@ namespace GPlatesCanvasTools
 				GPlatesAppLogic::ApplicationState &application_state)
 		{
 			return new BuildTopology(
+					build_topology_geometry_type,
 					status_bar_callback,
 					view_state,
 					viewport_window,
@@ -107,13 +111,6 @@ namespace GPlatesCanvasTools
 		
 		virtual
 		void
-		handle_left_shift_click(
-				const GPlatesMaths::PointOnSphere &point_on_sphere,
-				bool is_on_earth,
-				double proximity_inclusion_threshold);
-		
-		virtual
-		void
 		handle_left_control_click(
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
@@ -122,6 +119,7 @@ namespace GPlatesCanvasTools
 	private:
 
 		BuildTopology(
+				GPlatesAppLogic::TopologyGeometry::Type build_topology_geometry_type,
 				const status_bar_callback_type &status_bar_callback,
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesQtWidgets::ViewportWindow &viewport_window,
@@ -165,6 +163,16 @@ namespace GPlatesCanvasTools
 		 * Used when adding reconstruction geometries to the clicked feature table.
 		 */
 		const GPlatesAppLogic::ReconstructGraph &d_reconstruct_graph;
+
+		/**
+		 * The topological geometry type this tool is building.
+		 */
+		GPlatesAppLogic::TopologyGeometry::Type d_build_topology_geometry_type;
+
+		/**
+		 * Determines which reconstructed/resolved feature geometries can be used as topological sections.
+		 */
+		GPlatesGui::filter_reconstruction_geometry_predicate_type d_topology_sections_filter;
 
 	};
 }

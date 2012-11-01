@@ -70,21 +70,18 @@ GPlatesCanvasTools::ClickGeometry::ClickGeometry(
 void
 GPlatesCanvasTools::ClickGeometry::handle_activation()
 {
-	// Activate the focused feature geometry highlight main rendered layer.
-	d_rendered_geom_collection.set_main_layer_active(
-			GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER);
-
 	set_status_bar_message(QT_TR_NOOP("Click a geometry to choose a feature. Shift+click to query immediately."));
+
+	// Only display focused feature when this tool is active.
+	d_rendered_geom_collection.get_main_rendered_layer(d_main_rendered_layer_type)->set_active();
 }
 
 
 void
 GPlatesCanvasTools::ClickGeometry::handle_deactivation()
 {
-	// Deactivate the focused feature geometry highlight main rendered layer.
-	d_rendered_geom_collection.set_main_layer_active(
-			GPlatesViewOperations::RenderedGeometryCollection::GEOMETRY_FOCUS_HIGHLIGHT_LAYER,
-			false/*active*/);
+	// Only display focused feature when this tool is active.
+	d_rendered_geom_collection.get_main_rendered_layer(d_main_rendered_layer_type)->set_active(false);
 }
 
 

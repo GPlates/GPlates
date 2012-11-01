@@ -123,6 +123,27 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Returns the resolved topological lines from all active topological geometry layers
+		 * in the specified reconstruction.
+		 *
+		 * The reconstruct handles associated with the resolved topological lines are
+		 * appended to @a reconstruct_handles.
+		 *
+		 * This is useful for topological features that reference topological lines as their topological
+		 * sections - these features could be in any layer so all layers are resolved.
+		 *
+		 * NOTE: Typically each layer will keep a cache of its resolved topological lines
+		 * for the reconstruction time - so unless the reconstruction time has changed since
+		 * @a reconstruction was created then this should be a fairly inexpensive call.
+		 */
+		void
+		get_resolved_topological_lines(
+				std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_lines,
+				std::vector<ReconstructHandle::type> &reconstruct_handles,
+				const Reconstruction &reconstruction);
+
+
+		/**
 		 * Returns the reconstructed feature geometries, referencing the feature @a feature_ref,
 		 * and limited to those generated from all active reconstruct layers in @a reconstruction.
 		 */
@@ -143,10 +164,16 @@ namespace GPlatesAppLogic
 		class InputLayerProxy
 		{
 		public:
+
+			//! Typedef for a layer proxy member function that returns a subject token.
+			typedef const GPlatesUtils::SubjectToken & (LayerProxyType::*subject_token_method_type)();
+
 			explicit
 			InputLayerProxy(
-					const typename LayerProxyType::non_null_ptr_type &input_layer_proxy) :
-				d_input_layer_proxy(input_layer_proxy)
+					const typename LayerProxyType::non_null_ptr_type &input_layer_proxy,
+					const subject_token_method_type &subject_token_method = &LayerProxyType::get_subject_token) :
+				d_input_layer_proxy(input_layer_proxy),
+				d_subject_token_method(subject_token_method)
 			{  }
 
 
@@ -180,7 +207,7 @@ namespace GPlatesAppLogic
 			bool
 			is_up_to_date() const
 			{
-				return d_input_layer_proxy->get_subject_token().is_observer_up_to_date(
+				return (d_input_layer_proxy.get()->*d_subject_token_method)().is_observer_up_to_date(
 						d_input_layer_proxy_observer_token);
 			}
 
@@ -191,12 +218,22 @@ namespace GPlatesAppLogic
 			void
 			set_up_to_date()
 			{
-				d_input_layer_proxy->get_subject_token().update_observer(
+				(d_input_layer_proxy.get()->*d_subject_token_method)().update_observer(
 						d_input_layer_proxy_observer_token);
+			}
+
+			/**
+			 * Returns the subject token method passed into the constructor.
+			 */
+			const subject_token_method_type &
+			get_subject_token_method() const
+			{
+				return d_subject_token_method;
 			}
 
 		private:
 			typename LayerProxyType::non_null_ptr_type d_input_layer_proxy;
+			subject_token_method_type d_subject_token_method;
 			GPlatesUtils::ObserverToken d_input_layer_proxy_observer_token;
 		};
 
@@ -345,8 +382,12 @@ namespace GPlatesAppLogic
 		class InputLayerProxySequence
 		{
 		public:
+
 			//! Typedef for a sequence of @a InputLayerProxy objects.
 			typedef std::vector<InputLayerProxy<LayerProxyType> > seq_type;
+
+			//! Typedef for a layer proxy member function that returns a subject token.
+			typedef const GPlatesUtils::SubjectToken & (LayerProxyType::*subject_token_method_type)();
 
 
 			//! Get the 'const' sequence of input layer proxies.
@@ -372,7 +413,8 @@ namespace GPlatesAppLogic
 			 */
 			bool
 			set_input_layer_proxies(
-					const std::vector<typename LayerProxyType::non_null_ptr_type> &src_input_layer_proxies)
+					const std::vector<typename LayerProxyType::non_null_ptr_type> &src_input_layer_proxies,
+					const subject_token_method_type &subject_token_method = &LayerProxyType::get_subject_token)
 			{
 				bool input_layer_proxies_updated = false;
 
@@ -384,7 +426,7 @@ namespace GPlatesAppLogic
 				else
 				{
 					// Both sequences are the same size.
-					// Iterate over our internal sequence.
+					// Iterate over our internal sequence and see if they are the same layer proxy objects.
 					typename seq_type::iterator input_layer_proxy_iter = d_seq.begin();
 					const typename seq_type::iterator input_layer_proxy_end = d_seq.end();
 					for ( ; input_layer_proxy_iter != input_layer_proxy_end; ++input_layer_proxy_iter)
@@ -402,6 +444,14 @@ namespace GPlatesAppLogic
 							input_layer_proxies_updated = true;
 							break;
 						}
+
+						// If the layer proxy is the same but the subject token method is different
+						// then the source sequence and our internal sequence differ.
+						if (input_layer_proxy_iter->get_subject_token_method() != subject_token_method)
+						{
+							input_layer_proxies_updated = true;
+							break;
+						}
 					}
 				}
 
@@ -414,7 +464,7 @@ namespace GPlatesAppLogic
 							const typename LayerProxyType::non_null_ptr_type &src_input_layer_proxy,
 							src_input_layer_proxies)
 					{
-						add_input_layer_proxy(src_input_layer_proxy);
+						add_input_layer_proxy(src_input_layer_proxy, subject_token_method);
 					}
 				}
 
@@ -427,9 +477,10 @@ namespace GPlatesAppLogic
 			 */
 			void
 			add_input_layer_proxy(
-					const typename LayerProxyType::non_null_ptr_type &input_layer_proxy)
+					const typename LayerProxyType::non_null_ptr_type &input_layer_proxy,
+					const subject_token_method_type &subject_token_method = &LayerProxyType::get_subject_token)
 			{
-				d_seq.push_back(InputLayerProxy<LayerProxyType>(input_layer_proxy));
+				d_seq.push_back(InputLayerProxy<LayerProxyType>(input_layer_proxy, subject_token_method));
 			}
 
 			/**

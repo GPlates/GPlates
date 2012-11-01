@@ -36,7 +36,8 @@
 #include "AppLogicFwd.h"
 #include "ReconstructHandle.h"
 #include "ReconstructionFeatureProperties.h"
-#include "TopologyBoundaryIntersections.h"
+#include "ReconstructionGeometry.h"
+#include "TopologyIntersections.h"
 
 #include "maths/GeometryOnSphere.h"
 
@@ -47,6 +48,7 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/Model.h"
 
+#include "property-values/GpmlTopologicalNetwork.h"
 #include "property-values/GpmlTopologicalSection.h"
 
 
@@ -72,16 +74,20 @@ namespace GPlatesAppLogic
 		/**
 		 * The resolved networks are appended to @a resolved_topological_networks.
 		 *
+		 * @param reconstruct_handle is placed in all resolved topological networks as a reconstruction identifier.
 		 * @param reconstruction_tree is associated with the output resolved topological networks.
-		 * @param topological_sections_reconstruct_handles is a list of reconstruct handles that
-		 *        identifies the subset, of all RFGs observing the topological section features,
-		 *        that should be searched when resolving the topological boundaries.
-		 *        This is useful to avoid outdated RFGs still in existence among other scenarios.
+		 * @param topological_geometry_reconstruct_handles is a list of reconstruct handles that
+		 *        identifies the subset, of all RFGs observing the topological boundary section and/or
+		 *        interior features, and all resolved topological lines (@a ResolvedTopologicalGeometry
+		 *        containing polylines) observing the topological boundary section features,
+		 *        that should be searched when resolving the topological networks.
+		 *        This is useful to avoid outdated RFGs and RTGS still in existence (among other scenarios).
 		 */
 		TopologyNetworkResolver(
 				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
+				ReconstructHandle::type reconstruct_handle,
 				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
-				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles);
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles);
 
 		virtual
 		~TopologyNetworkResolver() 
@@ -90,11 +96,6 @@ namespace GPlatesAppLogic
 		virtual
 		bool
 		initialise_pre_feature_properties(
-				GPlatesModel::FeatureHandle &feature_handle);
-
-		virtual
-		void
-		finalise_post_feature_properties(
 				GPlatesModel::FeatureHandle &feature_handle);
 
 		virtual
@@ -113,13 +114,8 @@ namespace GPlatesAppLogic
 
 		virtual
 		void
-		visit_gpml_topological_interior(
-			 	GPlatesPropertyValues::GpmlTopologicalInterior &gpml_toplogical_interior);
-
-		virtual
-		void
-		visit_gpml_topological_polygon(
-			 	GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon);
+		visit_gpml_topological_network(
+			 	GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_toplogical_network);
 
 		virtual
 		void
@@ -142,60 +138,35 @@ namespace GPlatesAppLogic
 			void
 			reset()
 			{
-				d_sections.clear();
+				d_boundary_sections.clear();
 			}
 
-			//////////////////////////////////////
-			// NOTE: from TopologyBoundaryResolver
-			//! Keeps track of @a GpmlTopologicalIntersection information.
-			class Intersection
+			//! Keeps track of topological boundary section information when visiting topological sections.
+			class BoundarySection
 			{
 			public:
-				Intersection(
-						const GPlatesMaths::PointOnSphere &reference_point) :
-					d_reference_point(reference_point)
-				{  }
-
-				//! The reference (clicked) point for the intersection.
-				GPlatesMaths::PointOnSphere d_reference_point;
-
-				//! The reconstructed reference point - optional because valid not known at construction.
-				boost::optional<GPlatesMaths::PointOnSphere> d_reconstructed_reference_point;
-			};
-			//////////////////////////////////////
-
-			//! Keeps track of topological section information when visiting topological sections.
-			class Section
-			{
-			public:
-				Section(
+				BoundarySection(
 						const GPlatesModel::FeatureId &source_feature_id,
-						const reconstructed_feature_geometry_non_null_ptr_type &source_rfg);
+						const ReconstructionGeometry::non_null_ptr_type &source_rg,
+						const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &section_geometry);
 
 				//! The feature id of the feature referenced by this topological section.
 				GPlatesModel::FeatureId d_source_feature_id;
 
-				//! The source @a ReconstructedFeatureGeometry.
-				reconstructed_feature_geometry_non_null_ptr_type d_source_rfg;
+				//! The source reconstruction geometry.
+				ReconstructionGeometry::non_null_ptr_type d_source_rg;
 
-				//! The optional start intersection - only topological line sections can have this.
-				boost::optional<Intersection> d_start_intersection;
-
-				//! The optional end intersection - only topological line sections can have this.
-				boost::optional<Intersection> d_end_intersection;
+				/**
+				 * The original source geometry-on-sphere.
+				 *
+				 * NOTE: This is *not* the intersection-clipped *subsegment* geometry.
+				 */
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_source_geometry;
 
 				/**
 				 * Should the subsegment geometry be reversed when creating polygon boundary.
 				 */
 				bool d_use_reverse;
-
-				//! flag to keep track of polygon_centroid points to determine if poly should be meshed
-				bool d_is_seed_point;
-
-				//! flags to keep track of geom types going into a network
-				bool d_is_point;
-				bool d_is_line;
-				bool d_is_polygon;
 
 				/**
 				 * The final possibly clipped boundary segment geometry.
@@ -211,20 +182,67 @@ namespace GPlatesAppLogic
 				 * Keeps track of temporary results from intersections of this section
 				 * with its neighbours.
 				 */
-				TopologicalBoundaryIntersections d_intersection_results;
+				TopologicalIntersections d_intersection_results;
 
 				//! The segment geometry.
 				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry;
 			};
 
-			//! Typedef for a sequence of sections.
-			typedef std::vector<Section> section_seq_type;
+			//! Keeps track of interior geometry information when visiting topological interiors.
+			class InteriorGeometry
+			{
+			public:
+				InteriorGeometry(
+						const GPlatesModel::FeatureId &source_feature_id,
+						const ReconstructionGeometry::non_null_ptr_type &source_rg,
+						const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry);
 
-			//! Sequence of sections of the currently visited topological polygon.
-			section_seq_type d_sections;
+				//! The feature id of the feature referenced by this topological interior.
+				GPlatesModel::FeatureId d_source_feature_id;
 
-			//! Sequence of sections of the currently visited topological interior.
-			section_seq_type d_sections_interior;
+				//! The source reconstruction geometry.
+				ReconstructionGeometry::non_null_ptr_type d_source_rg;
+
+				//! The geometry-on-sphere.
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_geometry;
+			};
+
+			//! Keeps track of the seed points (used to avoid CGAL meshing inside interior polygons).
+			class SeedGeometry
+			{
+			public:
+				explicit
+				SeedGeometry(
+						const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry);
+
+				/**
+				 * The seed geometry-on-sphere.
+				 *
+				 * Should be a point but allow any geometry type just in case.
+				 * All points in this geometry will be given to CGAL as seed points.
+				 */
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_geometry;
+			};
+
+
+			//! Typedef for a sequence of boundary sections.
+			typedef std::vector<BoundarySection> boundary_section_seq_type;
+
+			//! Typedef for a sequence of interior geometries.
+			typedef std::vector<InteriorGeometry> interior_geometry_seq_type;
+
+			//! Typedef for a sequence of seed geometries.
+			typedef std::vector<SeedGeometry> seed_geometry_seq_type;
+
+
+			//! Sequence of boundary sections.
+			boundary_section_seq_type d_boundary_sections;
+
+			//! Sequence of interior geometries.
+			interior_geometry_seq_type d_interior_geometries;
+
+			//! Sequence of seed geometries.
+			seed_geometry_seq_type d_seed_geometries;
 		};
 
 
@@ -234,18 +252,24 @@ namespace GPlatesAppLogic
 		std::vector<resolved_topological_network_non_null_ptr_type> &d_resolved_topological_networks;
 
 		/**
+		 * The reconstruction identifier placed in all resolved topological networks.
+		 */
+		ReconstructHandle::type d_reconstruct_handle;
+
+		/**
 		 * The reconstruction tree associated with the resolved topological boundaries begin generated.
 		 */
 		reconstruction_tree_non_null_ptr_to_const_type d_reconstruction_tree;
 
 		/**
-		 * The reconstructed topogical boundary sections we're using to assemble our dynamic polygons.
+		 * The reconstructed topological boundary sections and/or interior geometries we're using to
+		 * assemble our network.
 		 *
 		 * NOTE: We don't reference them directly but by forcing clients to produce them we
 		 * ensure they exist while we search for them indirectly via feature observers.
 		 * If the client didn't produce them, or forgot to, then we'd find no RFGs during the global search.
 		 */
-		boost::optional<std::vector<ReconstructHandle::type> > d_topological_sections_reconstruct_handles;
+		boost::optional<std::vector<ReconstructHandle::type> > d_topological_geometry_reconstruct_handles;
 
 		//! The current feature being visited.
 		GPlatesModel::FeatureHandle::weak_ref d_currently_visited_feature;
@@ -256,19 +280,10 @@ namespace GPlatesAppLogic
 		//! Used to help build the resolved network of the current topological polygon.
 		ResolvedNetwork d_resolved_network;
 
-		//! The number of topologies visited.
-		int d_num_topologies;
-
 		//! controls on the triangulation
 		double d_shape_factor;
 		//! controls on the triangulation
 		double d_max_edge;
-
-		//! Visitor mode: controls where and how to visit TopologicalPoint and Line
-		bool d_is_visit_interior;
-
-		//! The feature property iterator of the GpmlTopologicalPolygon property.
-		boost::optional<feature_iterator_type> d_topological_polygon_feature_iterator;
 
 		/**
 		 * Create a @a ResolvedTopologicalNetwork from information gathered
@@ -276,82 +291,59 @@ namespace GPlatesAppLogic
 		 * (stored in @a d_resolved_network) and add it to the @a Reconstruction.
 		 */
 		void
-		create_resolved_topology_network(
-				GPlatesModel::FeatureHandle &feature_handle);
+		create_resolved_topology_network();
 
-		//! 
-		void
-		record_topological_sections(
-				std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> &
-						sections);
-
-#if 0
-		void
-		record_topological_section_reconstructed_geometry(
-				ResolvedNetwork::Section &section,
-				const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate);
-#endif
-
-		boost::optional<ResolvedNetwork::Section>
-		record_topological_section_reconstructed_geometry(
-				const GPlatesModel::FeatureId &source_feature_id,
+		boost::optional<ReconstructionGeometry::non_null_ptr_type>
+		find_topological_reconstruction_geometry(
 				const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate);
 
-
-		// validate sections
-		void
-		validate_topological_section_intersections_boundary();
-
-		void
-		validate_topological_section_intersection_boundary(
-				const std::size_t current_section_index);
+		boost::optional<ResolvedNetwork::SeedGeometry>
+		find_seed_geometry(
+				const ReconstructionGeometry::non_null_ptr_type &reconstruction_geometry);
 
 		void
-		validate_topological_section_intersections_interior();
+		record_topological_interior_geometries(
+				GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network);
 
 		void
-		validate_topological_section_intersection_interior(
-				const std::size_t current_section_index);
+		record_topological_interior_geometry(
+				const GPlatesPropertyValues::GpmlTopologicalNetwork::Interior &gpml_topological_interior);
 
+		boost::optional<ResolvedNetwork::InteriorGeometry>
+		record_topological_interior_reconstructed_geometry(
+				const GPlatesModel::FeatureId &interior_source_feature_id,
+				const ReconstructionGeometry::non_null_ptr_type &interior_source_rg);
 
-		// process section intersections 
 		void
-		process_topological_section_intersections_boundary();
+		record_topological_boundary_sections(
+				GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network);
+
+		boost::optional<ResolvedNetwork::BoundarySection>
+		record_topological_boundary_section_reconstructed_geometry(
+				const GPlatesModel::FeatureId &boundary_section_source_feature_id,
+				const ReconstructionGeometry::non_null_ptr_type &boundary_section_source_rg);
+
+
+		void
+		process_topological_boundary_section_intersections();
 
 		void
 		process_topological_section_intersection_boundary(
 				const std::size_t current_section_index,
 				const bool two_sections = false);
 
-		void
-		process_topological_section_intersections_interior();
 
 		void
-		process_topological_section_intersection_interior(
-				const std::size_t current_section_index,
-				const bool two_sections = false);
-
-
-		// assign segments geom
-		void
-		assign_boundary_segments_boundary();
+		assign_boundary_segments();
 
 		void
 		assign_boundary_segment_boundary(
 				const std::size_t section_index);
 
-		void
-		assign_boundary_segments_interior();
 
 		void
-		assign_boundary_segment_interior(
-				const std::size_t section_index);
-
-
-		// debugging 
-		void
-		debug_output_topological_section(
-				const ResolvedNetwork::Section &section);
+		debug_output_topological_source_feature(
+				const GPlatesModel::FeatureId &source_feature_id);
 	};
 }
 

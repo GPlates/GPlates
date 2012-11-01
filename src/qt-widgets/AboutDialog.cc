@@ -31,9 +31,13 @@
 
 #include "gui/Dialogs.h"
 
+#include "model/Gpgim.h"
+#include "model/GpgimVersion.h"
+
 
 GPlatesQtWidgets::AboutDialog::AboutDialog(
 		GPlatesGui::Dialogs &dialogs,
+		const GPlatesModel::Gpgim &gpgim,
 		QWidget *parent_):
 	GPlatesDialog(
 			parent_,
@@ -79,6 +83,10 @@ GPlatesQtWidgets::AboutDialog::AboutDialog(
 		}
 		label_subversion_info->setText(subversion_info);
 	}
+
+	// Set the GPGIM version label.
+	const QString gpgim_version_string = gpgim.get_version().version_string();
+	label_GPGIM->setText(QString("GPlates Geological Information Model: %1").arg(gpgim_version_string));
 
 	// Set contents of copyright box.
 	QString copyright(QObject::tr(GPlatesGlobal::HtmlCopyrightString));

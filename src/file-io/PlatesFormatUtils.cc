@@ -138,12 +138,12 @@ namespace
 		if (GPlatesFeatureVisitors::get_property_value(
 				feature, dipslip_property_name, dipslip_property_value))
 		{
-			static GPlatesPropertyValues::EnumerationType dipslip_enumeration_type(
-				"gpml:DipSlipEnumeration");
-			static GPlatesPropertyValues::EnumerationContent dipslip_enumeration_value_compression(
-				"Compression");
-			static GPlatesPropertyValues::EnumerationContent dipslip_enumeration_value_extension(
-				"Extension");
+			static const GPlatesPropertyValues::EnumerationType dipslip_enumeration_type =
+					GPlatesPropertyValues::EnumerationType::create_gpml("DipSlipEnumeration");
+			static const GPlatesPropertyValues::EnumerationContent
+					dipslip_enumeration_value_compression("Compression");
+			static const GPlatesPropertyValues::EnumerationContent
+					dipslip_enumeration_value_extension("Extension");
 
 			if (dipslip_enumeration_type.is_equal_to(dipslip_property_value->type()))
 			{
@@ -180,10 +180,10 @@ namespace
 		if (GPlatesFeatureVisitors::get_property_value(
 				feature, strike_slip_property_name, strike_slip_property_value))
 		{
-			static GPlatesPropertyValues::EnumerationType strike_slip_enumeration_type(
-				"gpml:StrikeSlipEnumeration");
-			static GPlatesPropertyValues::EnumerationContent strike_slip_enumeration_value_unknown(
-				"Unknown");
+			static const GPlatesPropertyValues::EnumerationType strike_slip_enumeration_type =
+					GPlatesPropertyValues::EnumerationType::create_gpml("StrikeSlipEnumeration");
+			static const GPlatesPropertyValues::EnumerationContent
+					strike_slip_enumeration_value_unknown("Unknown");
 
 			if (strike_slip_enumeration_type.is_equal_to(strike_slip_property_value->type()))
 			{
@@ -384,12 +384,12 @@ namespace
 		if (GPlatesFeatureVisitors::get_property_value(
 				feature, subduction_polarity_property_name, subduction_polarity_property_value))
 		{
-			static GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type(
-				"gpml:SubductionPolarityEnumeration");
-			static GPlatesPropertyValues::EnumerationContent subduction_polarity_enumeration_value_left(
-				"Left");
-			static GPlatesPropertyValues::EnumerationContent subduction_polarity_enumeration_value_right(
-				"Right");
+			static const GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type =
+					GPlatesPropertyValues::EnumerationType::create_gpml("SubductionPolarityEnumeration");
+			static const GPlatesPropertyValues::EnumerationContent
+					subduction_polarity_enumeration_value_left("Left");
+			static const GPlatesPropertyValues::EnumerationContent
+					subduction_polarity_enumeration_value_right("Right");
 
 			if (subduction_polarity_enumeration_type.is_equal_to(subduction_polarity_property_value->type()))
 			{

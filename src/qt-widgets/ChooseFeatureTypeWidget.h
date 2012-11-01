@@ -27,12 +27,20 @@
 #define GPLATES_QTWIDGETS_CHOOSEFEATURETYPEWIDGET_H
 
 #include <boost/optional.hpp>
-#include <QWidget>
 #include <QFocusEvent>
+#include <QWidget>
 
 #include "SelectionWidget.h"
 
 #include "model/FeatureType.h"
+
+#include "property-values/StructuralType.h"
+
+
+namespace GPlatesModel
+{
+	class Gpgim;
+}
 
 
 namespace GPlatesQtWidgets
@@ -46,15 +54,21 @@ namespace GPlatesQtWidgets
 
 		explicit
 		ChooseFeatureTypeWidget(
+				const GPlatesModel::Gpgim &gpgim,
 				SelectionWidget::DisplayWidget display_widget,
 				QWidget *parent_ = NULL);
 
+
 		/**
-		 * Initialises the list widget with feature types.
+		 * Initialises the list widget with feature types that, according to the GPGIM,
+		 * have one (or more) property(s) of the specified structural type.
+		 *
+		 * If no property type is specified then all feature types are populated.
 		 */
 		void
 		populate(
-				bool is_topological);
+				boost::optional<GPlatesPropertyValues::StructuralType> property_type = boost::none);
+
 
 		/**
 		 * Gets the currently selected feature type, or boost::none if no feature type
@@ -100,6 +114,8 @@ namespace GPlatesQtWidgets
 
 		void
 		make_signal_slot_connections();
+
+		const GPlatesModel::Gpgim &d_gpgim;
 
 		SelectionWidget *d_selection_widget;
 	};

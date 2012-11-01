@@ -47,6 +47,14 @@ namespace GPlatesAppLogic
 	namespace GeometryUtils
 	{
 		/**
+		 * Returns the type of the specified @a GeometryOnSphere object.
+		 */
+		GPlatesViewOperations::GeometryType::Value
+		get_geometry_type(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
+
+
+		/**
 		 * Copies the @a PointOnSphere points from @a geometry_on_sphere to the @a points array.
 		 *
 		 * Does not clear @a points - just appends whatever points it
@@ -103,50 +111,54 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Visits a @a geometry and attempts to
-		 * create a suitable geometric @a PropertyValue using it and
-		 * wrap that property value in a @a GpmlConstantValue.
+		 * Returns the geometry contained within the specified property value.
+		 *
+		 * Returns boost::none if the property value is not geometric.
+		 *
+		 * @a reconstruction_time only applies to time-dependent properties in which case the
+		 * value of the property at the specified time is returned.
+		 * It is effectively ignored for constant-valued properties.
+		 */
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+		get_geometry_from_property_value(
+				const GPlatesModel::PropertyValue &property_value,
+				const double &reconstruction_time = 0);
+
+
+		/**
+		 * Visits a @a geometry and attempts to create a suitable geometric @a PropertyValue using it.
 		 */
 		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
 		create_geometry_property_value(
-				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-				bool wrap_with_gpml_constant_value = true);
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry);
 		
 		/**
-		 * Creates a suitable geometric @a PropertyValue using @a point and
-		 * wraps that property value in a @a GpmlConstantValue if required.
+		 * Creates a suitable geometric @a PropertyValue using @a point.
 		 */
 		GPlatesModel::PropertyValue::non_null_ptr_type
 		create_point_geometry_property_value(
-				const GPlatesMaths::PointOnSphere &point,
-				bool wrap_with_gpml_constant_value = true);
+				const GPlatesMaths::PointOnSphere &point);
 
 		/**
-		 * Creates a suitable geometric @a PropertyValue using @a multipoint and
-		 * wraps that property value in a @a GpmlConstantValue if required.
+		 * Creates a suitable geometric @a PropertyValue using @a multipoint.
 		 */
 		GPlatesModel::PropertyValue::non_null_ptr_type
 		create_multipoint_geometry_property_value(
-				const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type &multipoint,
-				bool wrap_with_gpml_constant_value = true);
+				const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type &multipoint);
 
 		/**
-		 * Creates a suitable geometric @a PropertyValue using @a polyline and
-		 * wraps that property value in a @a GpmlConstantValue if required.
+		 * Creates a suitable geometric @a PropertyValue using @a polyline.
 		 */
 		GPlatesModel::PropertyValue::non_null_ptr_type
 		create_polyline_geometry_property_value(
-				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
-				bool wrap_with_gpml_constant_value = true);
+				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline);
 
 		/**
-		 * Creates a suitable geometric @a PropertyValue using @a polygon and
-		 * wraps that property value in a @a GpmlConstantValue if required.
+		 * Creates a suitable geometric @a PropertyValue using @a polygon.
 		 */
 		GPlatesModel::PropertyValue::non_null_ptr_type
 		create_polygon_geometry_property_value(
-				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon,
-				bool wrap_with_gpml_constant_value = true);
+				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon);
 
 
 		/**
@@ -158,13 +170,12 @@ namespace GPlatesAppLogic
 		create_geometry_property_value(
 				PointForwardIter begin, 
 				PointForwardIter end,
-				GPlatesViewOperations::GeometryType::Value type,
-				bool wrap_with_gpml_constant_value = true);
+				GPlatesViewOperations::GeometryType::Value type);
 
 
 		/**
-		* Removes any properties that contain geometry from @a feature_ref.
-		*/
+		 * Removes any properties that contain geometry from @a feature_ref.
+		 */
 		void
 		remove_geometry_properties_from_feature(
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref);
@@ -181,8 +192,7 @@ namespace GPlatesAppLogic
 		create_geometry_property_value(
 				PointForwardIter begin, 
 				PointForwardIter end,
-				GPlatesViewOperations::GeometryType::Value type,
-				bool wrap_with_gpml_constant_value)
+				GPlatesViewOperations::GeometryType::Value type)
 		{
 			if (begin == end)
 			{
@@ -193,23 +203,18 @@ namespace GPlatesAppLogic
 			{
 			case GPlatesViewOperations::GeometryType::POLYLINE:
 				return create_polyline_geometry_property_value(
-						GPlatesMaths::PolylineOnSphere::create_on_heap(begin, end),
-						wrap_with_gpml_constant_value);
+						GPlatesMaths::PolylineOnSphere::create_on_heap(begin, end));
 
 			case GPlatesViewOperations::GeometryType::MULTIPOINT:
 				return create_multipoint_geometry_property_value(
-						GPlatesMaths::MultiPointOnSphere::create_on_heap(begin, end),
-						wrap_with_gpml_constant_value);
+						GPlatesMaths::MultiPointOnSphere::create_on_heap(begin, end));
 
 			case GPlatesViewOperations::GeometryType::POLYGON:
 				return create_polygon_geometry_property_value(
-						GPlatesMaths::PolygonOnSphere::create_on_heap(begin, end),
-						wrap_with_gpml_constant_value);
+						GPlatesMaths::PolygonOnSphere::create_on_heap(begin, end));
 
 			case GPlatesViewOperations::GeometryType::POINT:
-				return create_point_geometry_property_value(
-						*begin,
-						wrap_with_gpml_constant_value);
+				return create_point_geometry_property_value(*begin);
 
 			case GPlatesViewOperations::GeometryType::NONE:
 				break;

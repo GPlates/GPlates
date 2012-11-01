@@ -482,7 +482,7 @@ GPlatesGui::FeaturePropertyTableModel::get_property_name_as_qvariant(
 		int row) const
 {
 	const GPlatesModel::PropertyName &property_name = get_property_name(row);
-	return GPlatesUtils::make_qstring_from_icu_string(property_name.build_aliased_name());
+	return convert_qualified_xml_name_to_qstring(property_name);
 }
 
 

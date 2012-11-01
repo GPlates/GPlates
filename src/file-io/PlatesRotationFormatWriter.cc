@@ -88,7 +88,8 @@ namespace
 
 
 GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatWriter(
-		const FileInfo &file_info)
+		const FileInfo &file_info,
+		const GPlatesModel::Gpgim &gpgim)
 {
 	d_output.reset(new std::ofstream(file_info.get_qfileinfo().filePath().toStdString().c_str()));
 

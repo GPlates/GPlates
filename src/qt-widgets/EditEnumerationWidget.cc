@@ -23,144 +23,88 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <QString>
 #include <QStringList>
+
 #include "EditEnumerationWidget.h"
+
+#include "UninitialisedEditWidgetException.h"
 
 #include "property-values/Enumeration.h"
 #include "property-values/EnumerationContent.h"
+#include "property-values/EnumerationType.h"
+
+#include "model/Gpgim.h"
+#include "model/GpgimEnumerationType.h"
 #include "model/ModelUtils.h"
+
 #include "utils/UnicodeStringUtils.h"
-#include "UninitialisedEditWidgetException.h"
-
-
-#define NUM_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 
 
 namespace
 {
 	/**
-	 * Typedef for multimap used to convert static table into a map of QStringList.
+	 * Query GPGIM to see if the specified property value type is a recognised enumeration type.
 	 */
-	typedef std::multimap <const QString, const QString> intermediate_map_type;
-	typedef intermediate_map_type::const_iterator intermediate_map_const_iterator;
-
-	/**
-	 * Struct used to define the const array of all possible enumeration values,
-	 * for each individual gpml enumeration type.
-	 */
-	struct EnumerationTypeInfo
-	{
-		const QString name;
-		const QString value;
-	};
-	
-	/**
-	 * Static table used to define all legal values for enumeration types.
-	 * It will be loaded into an STL multimap.
-	 */
-	static const EnumerationTypeInfo enumeration_info_table[] = {
-		{ "gpml:ContinentalBoundaryCrustEnumeration", "Continental" },
-		{ "gpml:ContinentalBoundaryCrustEnumeration", "Oceanic" },
-		{ "gpml:ContinentalBoundaryCrustEnumeration", "Unknown" },
-
-		{ "gpml:ContinentalBoundaryEdgeEnumeration", "InnerContinentalBoundary" },
-		{ "gpml:ContinentalBoundaryEdgeEnumeration", "OuterContinentalBoundary" },
-		{ "gpml:ContinentalBoundaryEdgeEnumeration", "Unknown" },
-
-		{ "gpml:ContinentalBoundarySideEnumeration", "Left" },
-		{ "gpml:ContinentalBoundarySideEnumeration", "Right" },
-		{ "gpml:ContinentalBoundarySideEnumeration", "Unknown" },
-
-		{ "gpml:SubductionPolarityEnumeration", "Left" },
-		{ "gpml:SubductionPolarityEnumeration", "Right" },
-		{ "gpml:SubductionPolarityEnumeration", "Unknown" },
-
-		{ "gpml:StrikeSlipEnumeration", "LeftLateral" },
-		{ "gpml:StrikeSlipEnumeration", "RightLateral" },
-		{ "gpml:StrikeSlipEnumeration", "None" },
-		{ "gpml:StrikeSlipEnumeration", "Unknown" },
-
-		{ "gpml:DipSlipEnumeration", "Extension" },
-		{ "gpml:DipSlipEnumeration", "Compression" },
-		{ "gpml:DipSlipEnumeration", "None" },
-		{ "gpml:DipSlipEnumeration", "Unknown" },
-
-		{ "gpml:DipSideEnumeration", "Left" },
-		{ "gpml:DipSideEnumeration", "Right" },
-		{ "gpml:DipSideEnumeration", "Undefined" },
-		{ "gpml:DipSideEnumeration", "Unknown" },
-
-		{ "gpml:SlipComponentEnumeration", "StrikeSlip" },
-		{ "gpml:SlipComponentEnumeration", "DipSlip" },
-		{ "gpml:SlipComponentEnumeration", "None" },
-		{ "gpml:SlipComponentEnumeration", "Unknown" },
-
-		{ "gpml:FoldPlaneAnnotationEnumeration", "Syncline" },
-		{ "gpml:FoldPlaneAnnotationEnumeration", "Anticline" },
-		{ "gpml:FoldPlaneAnnotationEnumeration", "None" },
-		{ "gpml:FoldPlaneAnnotationEnumeration", "Unknown" },
-
-		{ "gpml:AbsoluteReferenceFrameEnumeration", "Paleomag" },
-		{ "gpml:AbsoluteReferenceFrameEnumeration", "HotSpot" },
-		{ "gpml:AbsoluteReferenceFrameEnumeration", "Mantle" },
-		{ "gpml:AbsoluteReferenceFrameEnumeration", "NoNetTorque" },
-		{ "gpml:AbsoluteReferenceFrameEnumeration", "Other" },
-
-		{ "gpml:ReconstructionMethodEnumeration", "HalfStageRotation" },
-		{ "gpml:ReconstructionMethodEnumeration", "ByPlateId" },
-		
-	};
-		
-	
 	bool
 	is_property_value_type_handled(
-			const QString &property_value_name)
+			const GPlatesPropertyValues::StructuralType &property_value_type,
+			const GPlatesModel::Gpgim &gpgim)
 	{
-		const EnumerationTypeInfo *begin = enumeration_info_table;
-		const EnumerationTypeInfo *end = begin + NUM_ELEMS(enumeration_info_table);
-		for ( ; begin != end; ++begin) {
-			if (begin->name == property_value_name) {
+		const GPlatesModel::Gpgim::property_enumeration_type_seq_type &gpgim_property_enumeration_types =
+				gpgim.get_property_enumeration_types();
+
+		// Compare the property value type (enumeration type) with those listed in the GPGIM.
+		BOOST_FOREACH(
+				const GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type &gpgim_property_enumeration_type,
+				gpgim_property_enumeration_types)
+		{
+			if (property_value_type == gpgim_property_enumeration_type->get_structural_type())
+			{
 				return true;
 			}
 		}
+
 		return false;
 	}
-	
-	const intermediate_map_type &
-	build_intermediate_map()
-	{
-		static intermediate_map_type intermediate_map;
-		
-		const EnumerationTypeInfo *begin = enumeration_info_table;
-		const EnumerationTypeInfo *end = begin + NUM_ELEMS(enumeration_info_table);
-		for ( ; begin != end; ++begin) {
-			intermediate_map.insert(std::make_pair(begin->name, begin->value));
-		}
-		
-		return intermediate_map;
-	}
-	
+
+	/**
+	 * Retrieve the list of allowed enumeration values for the specified property (enumeration) type.
+	 */
 	const QStringList
 	get_enumeration_string_list(
-			const QString &property_value_name)
+			const GPlatesPropertyValues::StructuralType &property_value_type,
+			const GPlatesModel::Gpgim &gpgim)
 	{
-		static const intermediate_map_type map = build_intermediate_map();
-		QStringList list;
-		
-		intermediate_map_const_iterator it = map.lower_bound(property_value_name);
-		intermediate_map_const_iterator end = map.upper_bound(property_value_name);
-		for ( ; it != end; ++it) {
-			list.append(it->second);
+		QStringList enum_value_list;
+
+		// Get the GPGIM enumeration type.
+		boost::optional<GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type>
+				gpgim_property_enumeration_type =
+						gpgim.get_property_enumeration_type(property_value_type);
+		if (gpgim_property_enumeration_type)
+		{
+			const GPlatesModel::GpgimEnumerationType::content_seq_type &enum_contents =
+					gpgim_property_enumeration_type.get()->get_contents();
+
+			// Add each allowed enumeration value to the list.
+			BOOST_FOREACH(const GPlatesModel::GpgimEnumerationType::Content &enum_content, enum_contents)
+			{
+				enum_value_list.append(enum_content.value);
+			}
 		}
-		return list;
+
+		return enum_value_list;
 	}
 }
 
 
 GPlatesQtWidgets::EditEnumerationWidget::EditEnumerationWidget(
+		const GPlatesModel::Gpgim &gpgim,
 		QWidget *parent_):
-	AbstractEditWidget(parent_)
+	AbstractEditWidget(parent_),
+	d_gpgim(gpgim)
 {
 	setupUi(this);
 	reset_widget_to_default_values();
@@ -176,15 +120,16 @@ GPlatesQtWidgets::EditEnumerationWidget::EditEnumerationWidget(
 
 void
 GPlatesQtWidgets::EditEnumerationWidget::configure_for_property_value_type(
-		const QString &property_value_name)
+		const GPlatesPropertyValues::StructuralType &property_value_type)
 {
-	if (is_property_value_type_handled(property_value_name)) {
-		d_property_value_name = property_value_name;
-		combobox_enumeration->clear();
-		combobox_enumeration->addItems(get_enumeration_string_list(d_property_value_name));
-	} else {
+	if (!is_property_value_type_handled(property_value_type, d_gpgim))
+	{
 		throw PropertyValueNotSupportedException(GPLATES_EXCEPTION_SOURCE);
 	}
+
+	d_property_value_type = property_value_type;
+	combobox_enumeration->clear();
+	combobox_enumeration->addItems(get_enumeration_string_list(d_property_value_type.get(), d_gpgim));
 }
 
 
@@ -193,7 +138,11 @@ GPlatesQtWidgets::EditEnumerationWidget::reset_widget_to_default_values()
 {
 	d_enumeration_ptr = NULL;
 	combobox_enumeration->clear();
-	combobox_enumeration->addItems(get_enumeration_string_list(d_property_value_name));
+	if (d_property_value_type)
+	{
+		combobox_enumeration->addItems(
+				get_enumeration_string_list(d_property_value_type.get(), d_gpgim));
+	}
 	set_clean();
 }
 
@@ -204,8 +153,7 @@ GPlatesQtWidgets::EditEnumerationWidget::update_widget_from_enumeration(
 {
 	d_enumeration_ptr = &enumeration;
 	// Get the type of Enumeration to use from the Enumeration property value.
-	QString enum_type = GPlatesUtils::make_qstring_from_icu_string(
-			enumeration.type().get());
+	const GPlatesPropertyValues::StructuralType enum_type(enumeration.type());
 	configure_for_property_value_type(enum_type);
 	
 	QString enum_value = GPlatesUtils::make_qstring_from_icu_string(
@@ -227,16 +175,20 @@ GPlatesQtWidgets::EditEnumerationWidget::update_widget_from_enumeration(
 GPlatesModel::PropertyValue::non_null_ptr_type
 GPlatesQtWidgets::EditEnumerationWidget::create_property_value_from_widget() const
 {
-	if (is_property_value_type_handled(d_property_value_name)) {
-		const QString value = combobox_enumeration->currentText();
-		GPlatesModel::PropertyValue::non_null_ptr_type property_value = 
-				GPlatesPropertyValues::Enumeration::create(
-						GPlatesUtils::make_icu_string_from_qstring(d_property_value_name),
-						GPlatesUtils::make_icu_string_from_qstring(value));
-		return property_value;
-	} else {
+	if (!d_property_value_type ||
+		!is_property_value_type_handled(d_property_value_type.get(), d_gpgim))
+	{
 		throw PropertyValueNotSupportedException(GPLATES_EXCEPTION_SOURCE);
 	}
+
+	const QString value = combobox_enumeration->currentText();
+
+	GPlatesModel::PropertyValue::non_null_ptr_type property_value = 
+			GPlatesPropertyValues::Enumeration::create(
+					GPlatesPropertyValues::EnumerationType(d_property_value_type.get()),
+					GPlatesUtils::make_icu_string_from_qstring(value));
+
+	return property_value;
 }
 
 

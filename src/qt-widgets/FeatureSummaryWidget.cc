@@ -269,8 +269,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	// Populate the widget from the FeatureHandle:
 	
 	// Feature Type.
-	lineedit_type->setText(GPlatesUtils::make_qstring_from_icu_string(
-			feature_ref->feature_type().build_aliased_name()));
+	lineedit_type->setText(convert_qualified_xml_name_to_qstring(feature_ref->feature_type()));
 	
 	// Feature Name.
 	// FIXME: Need to adapt according to user's current codeSpace setting.
@@ -334,8 +333,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 		if (geometry_property)
 		{
 			lineedit_clicked_geometry->setText(
-					GPlatesUtils::make_qstring_from_icu_string(
-						(*geometry_property.get())->property_name().build_aliased_name()));
+					convert_qualified_xml_name_to_qstring((*geometry_property.get())->property_name()));
 		}
 		else
 		{

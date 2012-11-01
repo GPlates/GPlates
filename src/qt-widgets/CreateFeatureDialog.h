@@ -28,11 +28,14 @@
 #define GPLATES_QTWIDGETS_CREATEFEATUREDIALOG_H
 
 #include <utility>
+#include <vector>
 #include <boost/optional.hpp>
 
 #include <QCheckBox>
 
 #include "CreateFeatureDialogUi.h"
+
+#include "CreateFeaturePropertiesPage.h"
 
 #include "app-logic/ReconstructMethodType.h"
 
@@ -40,8 +43,13 @@
 
 #include "maths/GeometryOnSphere.h"
 
-#include "model/ModelInterface.h"
+#include "model/FeatureCollectionHandle.h"
 #include "model/FeatureHandle.h"
+#include "model/FeatureType.h"
+#include "model/ModelInterface.h"
+#include "model/PropertyName.h"
+#include "model/PropertyValue.h"
+#include "model/TopLevelProperty.h"
 
 
 class QComboBox;
@@ -51,6 +59,11 @@ namespace GPlatesAppLogic
 	class ApplicationState;
 	class FeatureCollectionFileState;
 	class FeatureCollectionFileIO;
+}
+
+namespace GPlatesModel
+{
+	class Gpgim;
 }
 
 namespace GPlatesPresentation
@@ -63,10 +76,11 @@ namespace GPlatesQtWidgets
 	class AbstractCustomPropertiesWidget;
 	class ChooseFeatureCollectionWidget;
 	class ChooseFeatureTypeWidget;
+	class CreateFeaturePropertiesPage;
 	class EditPlateIdWidget;
 	class EditTimePeriodWidget;
 	class EditStringWidget;
-	class ChooseGeometryPropertyWidget;
+	class ChoosePropertyWidget;
 	class InformationDialog;
 	class ViewportWindow;
 
@@ -78,55 +92,44 @@ namespace GPlatesQtWidgets
 		
 	public:
 
-		/**
-		* What kinds of features to create 
-		*/ 
-		enum FeatureType
-		{
-			NORMAL, TOPOLOGICAL
-		};
-
 		enum StackedWidgetPage
 		{
 			FEATURE_TYPE_PAGE,
-			PROPERTIES_PAGE,
-			CUSTOM_PAGE,
-			COLLECTION_PAGE
+			COMMON_PROPERTIES_PAGE,
+			ALL_PROPERTIES_PAGE,
+			FEATURE_COLLECTION_PAGE
 		};
 
 
-		explicit
 		CreateFeatureDialog(
 				GPlatesPresentation::ViewState &view_state_,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_,
-				FeatureType creation_type,
 				QWidget *parent_ = NULL);
-		
+
+
 		/**
-		 * Rather than simply exec()ing the dialog, you should call this method to
-		 * ensure you are feeding the CreateFeatureDialog some valid geometry
-		 * at the same time.
+		 * Rather than simply exec()ing the dialog, you should call this method to ensure
+		 * you are feeding the CreateFeatureDialog some valid geometry at the same time.
+		 *
+		 * NOTE: The property value does not need to be wrapped in a time-dependent wrapper because
+		 * the GPGIM will be used to determine if that should be done based on the property name.
+		 *
+		 * NOTE: An exception is thrown if the specified geometric property value is not one
+		 * of the following structural types:
+		 *   GPlatesPropertyValues::GmlLineString::non_null_ptr_type,
+		 *   GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type,
+		 *   GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type,
+		 *   GPlatesPropertyValues::GmlPoint::non_null_ptr_type,
+		 *   GPlatesPropertyValues::GmlPolygon::non_null_ptr_type,
+		 *   GPlatesPropertyValues::GpmlTopologicalLine::non_null_ptr_type,
+		 *   GPlatesPropertyValues::GpmlTopologicalPolygon::non_null_ptr_type, or
+		 *   GPlatesPropertyValues::GpmlTopologicalNetwork::non_null_ptr_type.
+		 *
+		 * Returns true on success.
 		 */
 		bool
 		set_geometry_and_display(
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_);
-
-		bool
-		display();
-
-		bool
-		display(int index);
-
-		GPlatesModel::FeatureHandle::weak_ref
-		get_feature_ref() {
-			return d_feature_ref;
-		}
-
-		boost::optional<GPlatesModel::integer_plate_id_type>
-		get_left_plate();
-
-		boost::optional<GPlatesModel::integer_plate_id_type>
-		get_right_plate();
+				const GPlatesModel::PropertyValue::non_null_ptr_type &geometry_property_value);
 
 
 	signals:
@@ -179,19 +182,61 @@ namespace GPlatesQtWidgets
 		set_up_feature_type_page();
 
 		void
+		set_up_common_properties_page();
+
+		void
 		set_up_feature_properties_page();
 
 		void
 		set_up_feature_collection_page();
-		
+
+		void
+		set_up_feature_list();
+
 		void
 		set_up_geometric_property_list();
 
 		void
-		add_geometry(
-		    GPlatesModel::FeatureHandle::weak_ref &feature,
-		    const GPlatesModel::PropertyName &geom_prop_name);
+		set_up_feature_properties();
 
+		void
+		add_common_feature_property_to_list(
+				CreateFeaturePropertiesPage::property_seq_type &common_feature_properties,
+				const GPlatesModel::PropertyName &property_name,
+				const GPlatesModel::PropertyValue::non_null_ptr_type &property_value,
+				const GPlatesModel::FeatureType &feature_type);
+
+		bool
+		display();
+
+		boost::optional<GPlatesModel::FeatureHandle::iterator>
+		add_geometry_property(
+				const GPlatesModel::FeatureHandle::weak_ref &feature,
+				const GPlatesModel::PropertyName &geometry_property_name);
+
+		bool
+		reverse_reconstruct_geometry_property(
+				const GPlatesModel::FeatureHandle::weak_ref &feature,
+				const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator);
+
+		/**
+		 * Creates an isochron feature using the provided geometry and properties,
+		 * but reversing the plate-id and conjugate-plate-id properties. 
+		 *
+		 * The geometry will be reconstructed to present day given its new plate-id,
+		 * i.e. the conjugate-plate-id passed to this function.
+		 */
+		void
+		create_conjugate_isochron(
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
+				const GPlatesModel::FeatureHandle::weak_ref &isochron_feature,
+				const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator);
+
+
+		/**
+		 * The GPGIM contains information about the feature types and their properties.
+		 */
+		const GPlatesModel::Gpgim &d_gpgim;
 
 		/**
 		 * The Model interface, used to create new features.
@@ -220,18 +265,13 @@ namespace GPlatesQtWidgets
 		ViewportWindow *d_viewport_window_ptr;
 
 		/**
-		* Type of feature to create 
-		*/
-		FeatureType d_creation_type;
-
-		/**
 		 * The geometry that is to be included with the feature.
-		 * Note that the coordinates may have to be moved to present-day, once we know
-		 * what plate ID the user wishes to assign to the feature.
+		 * Note that the coordinates may have to be moved to present-day (for non-topological geometries),
+		 * once we know what plate ID the user wishes to assign to the feature.
 		 * 
 		 * This may be boost::none if the create dialog has not been fed any geometry yet.
 		 */
-		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry_opt_ptr;
+		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> d_geometry_property_value;
 
 		/**
 		 * The custom edit widget for reconstruction. Memory managed by Qt.
@@ -275,9 +315,9 @@ namespace GPlatesQtWidgets
 		ChooseFeatureCollectionWidget *d_choose_feature_collection_widget;
 
 		/**
-		 * The newly created feature.
+		 * The reconstruction method widget (containing label and combobox).
 		 */
-		GPlatesModel::FeatureHandle::weak_ref d_feature_ref;
+		QWidget *d_recon_method_widget;
 
 		/**
 		 * reconstruction method combox
@@ -295,27 +335,37 @@ namespace GPlatesQtWidgets
 		EditPlateIdWidget *d_left_plate_id;
 
 		/**
-		 *  Abstract base widget for custom properties widgets.                                                                    
+		 * Abstract base widget for custom properties widgets.                                                                    
+		 * 
+		 * This widget handles special-case properties for specific feature types.
+		 * This is currently only needed for a very small number of feature types.
 		 */
-		AbstractCustomPropertiesWidget *d_custom_properties_widget;
+		boost::optional<AbstractCustomPropertiesWidget *> d_custom_properties_widget;
 
+		/**
+		 * The stacked widget page where properties (allowed by the GPGIM for the feature type)
+		 * can be added to the feature by the user.
+		 */
+		CreateFeaturePropertiesPage *d_create_feature_properties_page;
 
 		/**
 		 * Allows the user to pick the property that will store the geometry.
 		 */
-		ChooseGeometryPropertyWidget *d_listwidget_geometry_destinations;
+		ChoosePropertyWidget *d_listwidget_geometry_destinations;
 
 		GPlatesAppLogic::ReconstructMethod::Type d_recon_method;
-
-		/**
-		 *  Whether or not a customisable feature type has been selected.                                                                    
-		 */
-		bool d_customisable_feature_type_selected;
 
 		/**
 		 *  Checkbox for creating conjugate isochron.                                                                    
 		 */
 		QCheckBox *d_create_conjugate_isochron_checkbox;
+
+		/**
+		 * The index of the current stacked widget page.
+		 *
+		 * This is used, along with "currentIndex()", to determine page transitions.
+		 */
+		StackedWidgetPage d_current_page;
 
 		/**
 		 * The last canvas tool explicitly chosen by the user (i.e. not the

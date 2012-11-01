@@ -30,6 +30,7 @@
 #include "CreateSmallCircleFeatureDialog.h"
 
 #include "ChooseFeatureCollectionWidget.h"
+#include "InvalidPropertyValueException.h"
 #include "QtWidgetUtils.h"
 
 #include "app-logic/ApplicationState.h"
@@ -237,9 +238,7 @@ GPlatesQtWidgets::CreateSmallCircleFeatureDialog::handle_create()
 			feature->add(
 				GPlatesModel::TopLevelPropertyInline::create(
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-				GPlatesModel::ModelUtils::create_gpml_constant_value(
-					gpml_plate_id,
-					GPlatesPropertyValues::TemplateTypeParameterType::create_gpml("plateId"))));	
+				GPlatesModel::ModelUtils::create_gpml_constant_value(gpml_plate_id)));	
 		}
 
 
@@ -265,6 +264,13 @@ GPlatesQtWidgets::CreateSmallCircleFeatureDialog::handle_create()
 	{
 		QMessageBox::critical(this, tr("No feature collection selected"),
 				tr("Please select a feature collection to add the new feature to."));
+		return;
+	}
+	catch (const InvalidPropertyValueException &exc)
+	{
+		QMessageBox::critical(this, tr("Property Value Invalid"),
+				tr("A feature property could not be added: %1.").arg(exc.reason()),
+				QMessageBox::Ok);
 		return;
 	}
 

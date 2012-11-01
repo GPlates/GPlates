@@ -33,6 +33,7 @@
 GPlatesCanvasTools::SplitFeature::SplitFeature(
 		const status_bar_callback_type &status_bar_callback,
 		GPlatesGui::FeatureFocus &feature_focus,
+		const GPlatesModel::Gpgim &gpgim,
 		GPlatesModel::ModelInterface model_interface,
 		GPlatesViewOperations::GeometryBuilder &geometry_builder,
 		GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
@@ -44,6 +45,7 @@ GPlatesCanvasTools::SplitFeature::SplitFeature(
 	d_split_feature_geometry_operation(
 			new GPlatesViewOperations::SplitFeatureGeometryOperation(
 					feature_focus,
+					gpgim,
 					model_interface,
 					geometry_builder,
 					geometry_operation_state,

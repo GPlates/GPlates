@@ -203,7 +203,7 @@ namespace
 			// Version 1 added a connection for topological boundary sections in topology layers.
 			// Version 2 then deprecated this connection and so versions 2 and above can simply
 			// ignore the connection without loss of functionality.
-			if (to_layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER)
+			if (to_layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER)
 			{
 				// Note that the following string literal is deprecated and so this is now
 				// the only instance of it in the GPlates source code.

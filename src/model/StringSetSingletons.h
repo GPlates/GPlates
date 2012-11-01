@@ -46,7 +46,7 @@ namespace GPlatesModel
 		property_name_instance();
 
 		GPlatesUtils::StringSet &
-		template_type_parameter_type_instance();
+		structural_type_instance();
 
 		GPlatesUtils::StringSet &
 		text_content_instance();
@@ -76,7 +76,7 @@ namespace GPlatesModel
 		// from different *_instance() functions.
 		struct FeatureTypeInstance { };
 		struct PropertyNameInstance { };
-		struct TemplateTypeParameterTypeInstance { };
+		struct StructuralTypeInstance { };
 		struct TextContentInstance { };
 		struct XMLAttributeNameInstance { };
 		struct XMLAttributeValueInstance { };

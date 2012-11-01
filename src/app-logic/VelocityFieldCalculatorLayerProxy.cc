@@ -32,7 +32,7 @@
 #include "PlateVelocityUtils.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionTreeCreator.h"
-#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalGeometry.h"
 #include "ResolvedTopologicalNetwork.h"
 
 
@@ -102,10 +102,10 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 		}
 
 		// Topological closed plate polygons...
-		std::vector<resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
+		std::vector<resolved_topological_geometry_non_null_ptr_type> resolved_topological_boundaries;
 
 		BOOST_FOREACH(
-				LayerProxyUtils::InputLayerProxy<TopologyBoundaryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
+				LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
 				d_current_topological_boundary_resolver_layer_proxies.get_input_layer_proxies())
 		{
 			topological_boundary_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_boundaries(
@@ -228,7 +228,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_reconstructed_polygon
 
 void
 GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::add_topological_boundary_resolver_layer_proxy(
-		const TopologyBoundaryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy)
+		const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy)
 {
 	d_current_topological_boundary_resolver_layer_proxies.add_input_layer_proxy(topological_boundary_resolver_layer_proxy);
 
@@ -242,7 +242,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::add_topological_boundary_res
 
 void
 GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_topological_boundary_resolver_layer_proxy(
-		const TopologyBoundaryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy)
+		const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy)
 {
 	d_current_topological_boundary_resolver_layer_proxies.remove_input_layer_proxy(topological_boundary_resolver_layer_proxy);
 
@@ -372,7 +372,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::check_input_layer_proxies()
 
 	// See if any resolved boundaries layer proxies have changed.
 	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<TopologyBoundaryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
+			LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
 			d_current_topological_boundary_resolver_layer_proxies.get_input_layer_proxies())
 	{
 		check_input_layer_proxy(topological_boundary_resolver_layer_proxy);

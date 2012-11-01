@@ -476,17 +476,17 @@ GPlatesPresentation::register_default_visual_layers(
 
 	// DERIVED_DATA group.
 	registry.register_visual_layer_type(
-			VisualLayerType::Type(TOPOLOGY_BOUNDARY_RESOLVER),
+			VisualLayerType::Type(TOPOLOGY_GEOMETRY_RESOLVER),
 			VisualLayerGroup::DERIVED_DATA,
-			"Resolved Topological Closed Plate Boundaries",
-			"Plate boundaries will be generated dynamically by referencing topological section "
-			"features, that have been reconstructed to a geological time, and joining them to "
-			"form a closed polygon boundary.",
+			"Resolved Topological Geometries",
+			"Topological plate boundaries and lines will be generated dynamically by referencing "
+			"topological section features, that have been reconstructed to a geological time, and "
+			"joining them to form a closed polygon boundary or a polyline.",
 			*html_colours.get_colour("plum"),
 			CreateAppLogicLayer(
 				reconstruct_graph,
 				layer_task_registry,
-				TOPOLOGY_BOUNDARY_RESOLVER),
+				TOPOLOGY_GEOMETRY_RESOLVER),
 			&GPlatesQtWidgets::TopologyBoundaryResolverLayerOptionsWidget::create,
 			&TopologyBoundaryVisualLayerParams::create,
 			true);

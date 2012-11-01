@@ -78,6 +78,7 @@ namespace GPlatesGui
 		 */
 		enum WorkflowType
 		{
+			WORKFLOW_VIEW,
 			WORKFLOW_FEATURE_INSPECTION,
 			WORKFLOW_DIGITISATION,
 			WORKFLOW_TOPOLOGY,
@@ -107,7 +108,9 @@ namespace GPlatesGui
 			TOOL_INSERT_VERTEX,
 			TOOL_SPLIT_FEATURE,
 			TOOL_MANIPULATE_POLE,
-			TOOL_BUILD_TOPOLOGY,
+			TOOL_BUILD_LINE_TOPOLOGY,
+			TOOL_BUILD_BOUNDARY_TOPOLOGY,
+			TOOL_BUILD_NETWORK_TOPOLOGY,
 			TOOL_EDIT_TOPOLOGY,
 			TOOL_CREATE_SMALL_CIRCLE,
 
@@ -132,10 +135,40 @@ namespace GPlatesGui
 
 
 		/**
+		 * Call once the application's main window is visible.
+		 *
+		 * This starts things off by activating the default workflow and its default tool.
+		 */
+		void
+		activate();
+
+
+		/**
 		 * Returns the currently active canvas tool workflow/tool.
 		 */
 		std::pair<WorkflowType, ToolType>
 		get_active_canvas_tool() const;
+
+
+		/**
+		 * Returns the currently selected tool in the specified workflow.
+		 *
+		 * Each workflow has one selected tool.
+		 * There is, however, only one *active* tool across all workflows which is the selected tool
+		 * of the *active* workflow - see @a get_active_canvas_tool.
+		 */
+		ToolType
+		get_selected_canvas_tool_in_workflow(
+				WorkflowType workflow) const;
+
+
+		/**
+		 * Returns true if the specified workflow/tool is currently enabled.
+		 */
+		bool
+		is_canvas_tool_enabled(
+				WorkflowType workflow,
+				ToolType tool) const;
 
 
 		/**
@@ -148,6 +181,34 @@ namespace GPlatesGui
 		does_workflow_contain_tool(
 				WorkflowType workflow,
 				ToolType tool) const;
+
+
+		/**
+		 * Makes the specified canvas tool the currently active tool.
+		 *
+		 * NOTE: The specified tool *must* exist in only one workflow.
+		 * If this is not the case then use the other overload of @a choose_canvas_tool (the slot version).
+		 *
+		 * @throws PreconditionViolationError if the specified tool is contained in more than one workflow.
+		 */
+		void
+		choose_canvas_tool(
+				ToolType tool);
+
+	public slots:
+
+		/**
+		 * Makes the specified canvas workflow/tool the currently active workflow/tool.
+		 *
+		 * If @a tool is not specified then the currently selected tool in @a workflow is used.
+		 *
+		 * NOTE: Not all workflows support all tools (in fact no workflow supports all tools).
+		 * Invalid combinations will results in a thrown exception.
+		 */
+		void
+		choose_canvas_tool(
+				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
+				boost::optional<GPlatesGui::CanvasToolWorkflows::ToolType> tool = boost::none);
 
 	signals:
 
@@ -172,21 +233,6 @@ namespace GPlatesGui
 		canvas_tool_activated(
 				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
 				GPlatesGui::CanvasToolWorkflows::ToolType tool);
-
-	public slots:
-
-		/**
-		 * Makes the specified canvas workflow/tool the currently active workflow/tool.
-		 *
-		 * If @a tool is not specified then the currently selected tool in @a workflow is used.
-		 *
-		 * NOTE: Not all workflows support all tools (in fact no workflow supports all tools).
-		 * Invalid combinations will results in a thrown exception.
-		 */
-		void
-		choose_canvas_tool(
-				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
-				boost::optional<GPlatesGui::CanvasToolWorkflows::ToolType> tool = boost::none);
 
 	private slots:
 

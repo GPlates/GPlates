@@ -35,7 +35,7 @@
 #include "ReconstructLayerProxy.h"
 #include "ResolvedScalarField3D.h"
 #include "ScalarField3DLayerTask.h"
-#include "TopologyBoundaryResolverLayerProxy.h"
+#include "TopologyGeometryResolverLayerProxy.h"
 #include "TopologyNetworkResolverLayerProxy.h"
 
 #include "maths/GeometryOnSphere.h"
@@ -134,7 +134,7 @@ namespace GPlatesAppLogic
 		 * or for surface fill masks (to limit region in which scalar field is rendered).
 		 *
 		 * The surface geometries can be reconstructed feature geometries, resolved topological
-		 * boundaries and resolved networks.
+		 * geometries (polygons and polylines) and resolved networks.
 		 *
 		 * Returns false if there are no surface geometry layers connected
 		 * (or no surface geometries in connected layers).
@@ -267,14 +267,14 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_topological_boundary_resolver_layer_proxy(
-				const TopologyBoundaryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
+				const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
 
 		/**
 		 * Remove a topological boundary resolver layer proxy.
 		 */
 		void
 		remove_topological_boundary_resolver_layer_proxy(
-				const TopologyBoundaryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
+				const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
 
 		/**
 		 * Add a topological network resolver layer proxy.
@@ -349,7 +349,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Used to get surface geometries from resolved topological boundaries.
 		 */
-		LayerProxyUtils::InputLayerProxySequence<TopologyBoundaryResolverLayerProxy>
+		LayerProxyUtils::InputLayerProxySequence<TopologyGeometryResolverLayerProxy>
 				d_current_topological_boundary_resolver_layer_proxies;
 
 		/**

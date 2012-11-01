@@ -83,7 +83,7 @@ namespace GPlatesPresentation
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<topology_boundary_resolver_layer_proxy_type> &layer_proxy);
+				const GPlatesUtils::non_null_intrusive_ptr<topology_geometry_resolver_layer_proxy_type> &layer_proxy);
 
 		virtual
 		void

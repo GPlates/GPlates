@@ -437,8 +437,8 @@ GPlatesQtWidgets::ImportScalarField3DDialog::create_scalar_field_3d_file_propert
 
 	GpmlScalarField3DFile::non_null_ptr_type scalar_field_3d_file = GpmlScalarField3DFile::create(filename);
 
-	static const TemplateTypeParameterType VALUE_TYPE =
-			TemplateTypeParameterType::create_gpml("ScalarField3DFile");
+	static const StructuralType VALUE_TYPE =
+			StructuralType::create_gpml("ScalarField3DFile");
 
 	return GpmlConstantValue::create(scalar_field_3d_file, VALUE_TYPE);
 }

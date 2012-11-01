@@ -224,9 +224,9 @@ namespace GPlatesAppLogic
 		/**
 		 * The partitioning static or dynamic polygons come from a layer output.
 		 *
-		 * It is expected that the layer proxy type is either @a ReconstructLayerProxy
-		 * (for static partitioning polygons) or @a TopologyBoundaryResolverLayerProxy or
-		 * @a TopologicalNetwork, otherwise no partitioning will occur.
+		 * It is expected that the partitioning layer proxy types are @a ReconstructLayerProxy
+		 * (for static partitioning polygons), @a TopologyGeometryResolverLayerProxy or
+		 * @a TopologyNetworkResolverLayerProxy, otherwise no partitioning will occur.
 		 *
 		 * NOTE: We also include topological network here even though they are deforming
 		 * and not rigid regions. This is because the current topological closed plate polygons
@@ -358,9 +358,9 @@ namespace GPlatesAppLogic
 		/**
 		 * The partitioning static or dynamic polygons come from layer outputs.
 		 *
-		 * It is expected that the layer proxy type is either @a ReconstructLayerProxy or
-		 * @a TopologyBoundaryResolverLayerProxy or @a TopologyNetworkResolverLayerProxy,
-		 * otherwise no partitioning will occur.
+		 * It is expected that the partitioning layer proxy types are @a ReconstructLayerProxy
+		 * (for static partitioning polygons), @a TopologyGeometryResolverLayerProxy or
+		 * @a TopologyNetworkResolverLayerProxy, otherwise no partitioning will occur.
 		 *
 		 * @throws PreconditionViolationError exception if @a partitioning_layer_proxies is empty.
 		 */

@@ -31,45 +31,9 @@
 #include "UninterpretedPropertyValue.h"
 
 
-const GPlatesPropertyValues::UninterpretedPropertyValue::non_null_ptr_type
-GPlatesPropertyValues::UninterpretedPropertyValue::deep_clone() const
-{
-	UninterpretedPropertyValue::non_null_ptr_type dup = clone();
-
-	// As a first pass, assign the XmlElementNode pointer directly, since the XmlElementNode is
-	// never modified (AFAIK).
-	// FIXME:  On the next pass, implement the same recursive "deep-clone" in the XmlNode class
-	// hierarchy, and invoke it here, to do this "properly".  Either that, or change the
-	// 'GPlatesModel::XmlElementNode::non_null_ptr_type' to
-	// 'GPlatesModel::XmlElementNode::non_null_ptr_to_const_type'.
-
-	dup->d_value = d_value;
-
-	return dup;
-}
-
-
 std::ostream &
 GPlatesPropertyValues::UninterpretedPropertyValue::print_to(
 		std::ostream &os) const
 {
 	return os << d_value->get_name().build_aliased_name();
 }
-
-
-bool
-GPlatesPropertyValues::UninterpretedPropertyValue::directly_modifiable_fields_equal(
-		const GPlatesModel::PropertyValue &other) const
-{
-	try
-	{
-		const UninterpretedPropertyValue &other_casted = dynamic_cast<const UninterpretedPropertyValue &>(other);
-		return *d_value == *other_casted.d_value;
-	}
-	catch (const std::bad_cast &)
-	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
-	}
-}
-

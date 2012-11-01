@@ -62,7 +62,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_input_channel_types() con
 	// - resolved topological networks.
 	std::vector<LayerTaskType::Type> surfaces_input_channel_types;
 	surfaces_input_channel_types.push_back(LayerTaskType::RECONSTRUCT);
-	surfaces_input_channel_types.push_back(LayerTaskType::TOPOLOGY_BOUNDARY_RESOLVER);
+	surfaces_input_channel_types.push_back(LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER);
 	surfaces_input_channel_types.push_back(LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
 	input_channel_types.push_back(
 			LayerInputChannelType(
@@ -165,8 +165,8 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::add_input_layer_proxy_connect
 					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
 		}
 
-		boost::optional<TopologyBoundaryResolverLayerProxy *> topological_boundary_resolver_layer_proxy =
-				LayerProxyUtils::get_layer_proxy_derived_type<TopologyBoundaryResolverLayerProxy>(layer_proxy);
+		boost::optional<TopologyGeometryResolverLayerProxy *> topological_boundary_resolver_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<TopologyGeometryResolverLayerProxy>(layer_proxy);
 		if (topological_boundary_resolver_layer_proxy)
 		{
 			d_velocity_field_calculator_layer_proxy->add_topological_boundary_resolver_layer_proxy(
@@ -219,8 +219,8 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::remove_input_layer_proxy_conn
 					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
 		}
 
-		boost::optional<TopologyBoundaryResolverLayerProxy *> topological_boundary_resolver_layer_proxy =
-				LayerProxyUtils::get_layer_proxy_derived_type<TopologyBoundaryResolverLayerProxy>(layer_proxy);
+		boost::optional<TopologyGeometryResolverLayerProxy *> topological_boundary_resolver_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<TopologyGeometryResolverLayerProxy>(layer_proxy);
 		if (topological_boundary_resolver_layer_proxy)
 		{
 			d_velocity_field_calculator_layer_proxy->remove_topological_boundary_resolver_layer_proxy(
