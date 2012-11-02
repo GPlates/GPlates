@@ -1,54 +1,141 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <GPGIM gpgim:version="1.6.0320" xmlns="http://www.gplates.org/gpgim" xmlns:gpgim="http://www.gplates.org/gpgim" xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance">
 	<!--
-		The structure of this document is in the following paragraph.
-		Some notes regarding that paragraph:
+		==================================================
+		==================================================
+		 The GPlates Geological Information Model (GPGIM)
+		==================================================
+		==================================================
+	-->
+	
+	<!--
+		==================================================
+		            GPGIM structure (or schema)
+		==================================================
+		
+		The following paragraphs describe the structure, or schema, of this document.
+		In other words, what XML elements you can add to this document and where and how often.
+		
+		Some notes regarding the following schema-like description:
 		 - The number in square brackets '[]', after each XML element name, is the range of allowed
 		   number of occurrences of that XML element within its parent XML element.
 		 - For example, '[1]' means exactly one occurrence is required and '[0..*]' means any number of occurrences.
 		 - Each level of indentation represents a nested, or child, level.
 		 - For example, 'Name' is a child XML element of 'FeatureClass'.
 		
-		NOTE: 'gpml:UnclassifiedFeature' is handled as a special-case feature type inside GPlates and
-		should not be added to this XML file. Features of type 'gpml:UnclassifiedFeature' can have any number of
-		any property listed in this XML file (listed under 'PropertyList').
+		The three main elements are:
+			PropertyTypeList - the list of property types supported by GPlates.
+			PropertyList     - the list of properties (property name-to-type associations) supported by GPlates.
+			FeatureClassList - the list of feature classes supported by GPlates.
 		
 		PropertyTypeList[1]:
-			* <PropertyTypeList> contains the complete list of feature property types supported by the GPGIM.
-			* Currently the two types of property are <Enumeration> and <NativeProperty>.
+			* PropertyTypeList contains the complete list of feature property *types* supported by the GPGIM.
+			* Currently PropertyTypeList can only contain Enumeration and NativeProperty elements.
+			
 			Enumeration[0..*]:
-				* A string type that has a finite set of accepted (string) values.
-				* An <Enumeration> is a property type (and hence can be used in a feature class as a property).
+				* An enumeration is a string type that has a finite set of accepted (string) values.
+				
 				Type[1]:
 					* The (namespace qualified) property type - such as 'gpml:ContinentalBoundaryCrustEnumeration'.
 					* This should be given a unique name to distinguish it from other enumeration types and native property types.
-					* Note that enumerations can be added without requiring modifications to the GPlates source code.
+					* Note that, unlike NativeProperty, an Enumeration can be added to this XML file without requiring modifications to the GPlates source code.
+					
 				Description[1]:
 					* A short description of the enumeration type.
+					
 				Content[1..*]:
-					* Each <Content> element defines one allowed enumeration value.
+					* Each Content element defines one allowed enumeration value.
+					
 					Value[1]:
 						* An allowed (string) value for the enumeration.
+						
 					Description[1]:
 						* A short description of the enumeration value.
+						
+				Comment[0..*]:
+					* A comment regarding the enumeration.
+					* These could potentially be used to generate/update the GPlates data manual and GPGIM website.
+					
 			NativeProperty[0..*]:
 				* A property that is implemented inside the GPlates source code with specific functionality.
 				* Most properties in GPlates are native properties (with the exception of enumerations).
+				* Developer note: Perhaps in the future this XML file can be extended to allow one to define nested structures of complex native property types - that would require implementing, among others things, an arbitrary Edit Widget that can be built from an XML property type description.
+				
 				Type[1]:
 					* The (namespace qualified) property type - such as 'gpml:PolarityChronId'.
+					
 				Description[1]:
 					* A short description of the property type.
+					
+				Comment[0..*]:
+					* A comment regarding the native property.
+					* These could potentially be used to generate/update the GPlates data manual and GPGIM website.
+		
+		PropertyList[1]:
+			* PropertyList contains the complete list of all properties (that can be referenced by 'FeatureClass's).
+			* PropertyList can only contain Property elements.
+			
+			Property[0..*](attribute 'gpgim:defaultType'):
+				* Associates a property 'Name' with one or more property 'Type's.
+				* It also defines the conditions under which a property can appear in its feature container such as how many times it can occur in a feature and whether the property can vary with (paleo) time or not.
+				* This XML element can also have a 'gpgim:defaultType' XML attribute that defines the default property 'Type'.
+				* The 'gpgim:defaultType' attribute is required if there is more than one 'Type' element in a property, otherwise it's optional.
+				
+				Name[1]:
+					* The property name.
+					* The property name must unique among all property names listed in PropertyList.
+					
+				Description[1]:
+					* A short description of the property.
+					
+				Type[1..*]:
+					* The type of the property.
+					* References a NativeProperty or Enumeration (defined in PropertyTypeList).
+					* There is usually only one occurrence of 'Type' within a property.
+					* Multiple occurrences of 'Type' are typically useful when specifying a
+					  'geometry' property that can be, for example, a point, polyline, or polygon, etc.
+					* Note that multiple occurrences of 'Type' require the parent 'Property' element to have a 'gpgim:defaultType' attribute.
+					
+				Multiplicity[1]:
+					* The number of times the property can appear (in a feature).
+					* Can only contain the following values:
+						0..1  // zero or one occurrence
+						1     // exactly one occurrence
+						0..*  // any number of occurrences
+						1..*  // one or more occurrences
+						
+				TimeDependent[0..*]:
+					* Determines whether the property is a time-dependent property or not.
+					* Zero occurrences of 'TimeDependent' means the property is *not* time-dependent.
+					* Multiple occurrences means the property's dependence on time can
+					  be specified in different ways (eg, 'gpml:ConstantValue' or 'gpml:PiecewiseAggregation').
+					* The following values are supported:
+						gpml:ConstantValue         // Same property value for all time.
+						gpml:IrregularSampling     // Irregularly spaced property values, in time, with interpolation inbetween.
+						gpml:PiecewiseAggregation  // Multiple time windows - each with own time-dependence (recursive).
+					* There is essentially no real difference between having a '<TimeDependent>gpml:ConstantValue</TimeDependent>' and not having a 'TimeDependent' value at all since both result in a property that does not change with time.
+					* Traditionally a property was defined as 'gpml:ConstantValue' when there was potential for it to be time-dependent but there was no support for it yet within GPlates.
+					* Generally, if you know a property will not change over time then don't give it a 'TimeDependent' element.
+					* Support for time-dependent properties is not ubiquitous throughout GPlates so if a property is changed to become time-dependent then this will also need to be implemented within GPlates.
+					
+				Comment[0..*]:
+					* A comment regarding the property.
+					* These could potentially be used to generate/update the GPlates data manual and GPGIM website.
+		
 		FeatureClassList[1]:
-			* <FeatureClassList> contains a list of all feature classes defined by the GPGIM.
-			* <FeatureClassList> can only contain <FeatureClass> elements.
+			* FeatureClassList contains a list of all feature classes defined by the GPGIM.
+			* FeatureClassList can only contain FeatureClass elements.
+			
 			FeatureClass[0..*]:
-				* Each <FeatureClass> defines, along with its chain of inherited feature classes,
-				  a feature type in the GPlates Geological Information Model (GPGIM).
+				* Each FeatureClass defines a feature type in the GPlates Geological Information Model (GPGIM).
+				
 				Name[1]:
 					* The name of the feature class.
-					* Is the same as the feature type specified in a GPML file.
+					* This is the same as the "feature type" specified in a GPML file.
+					
 				Description[1]:
 					* A short description of the feature type.
+					
 				ClassType[1]:
 					* The type of feature class.
 					* Must be either 'abstract' or 'concrete'.
@@ -56,35 +143,31 @@
 					* Only 'concrete' classes can appear as feature types in a GPML file.
 					* 'abstract' classes are typically inherited by many concrete classes.
 					* 'concrete' classes can also be inherited from.
+					
 				Inherits[0..1]:
-					* The parent feature class that this feature class inherits from (if any).
+					* The parent feature class that this feature class (optionally) inherits from.
 					* Only single inheritance is supported (can only in herit from at most one parent feature class).
+					* However the parent feature class can, in turn, inherit from another (single) feature class and so on.
+					* The chain of inheritance typically ends with the feature class 'gml:AbstractFeature'.
+					* Each feature class in the chain (optionally) supplies a list of properties that belong to the feature class being defined.
+					* Inheritance simply provides a convenient way to inherit properties that are common across a group of feature types.
+					* For example, there are many feature types that can form boundaries between plates and hence their feature classes inherit from 'gpml:TectonicSection'.
+					
 				Property[0..*]:
-					* Each <Property> defines the conditions under which a property can appear in its feature container.
-					Name[1]:
-						* The property name.
-					Type[1..*]:
-						* The type of the property.
-						* Multiple occurrences of '<Type>' is typically useful when specifying a
-						  geometry property that can be, for example, a point, polyline, polygon, etc.
-					Multiplicity[1]:
-						* The number of times the property can appear in a feature.
-						* Can only contain the following values:
-							0..1  // zero or one occurrences
-							1     // only one occurrence
-							0..*  // any number of occurrences
-							1..*  // one or more occurrences
-					TimeDependent[0..*]:
-						* Determines whether the property is a time-dependent property or not.
-						* Zero occurrences of '<TimeDependent>' means the property is *not* time-dependent.
-						* Multiple occurrences means the property's dependence on time can
-						  be specified in different ways (eg, 'gpml:ConstantValue' or 'gpml:PiecewiseAggregation').
-						* Can only contain the following values:
-							gpml:ConstantValue         // Same property value for all time.
-							gpml:IrregularSampling     // Irregularly spaced property values, in time, with interpolation inbetween.
-							gpml:PiecewiseAggregation  // Multiple time windows - each with own time-dependence (recursive).
+					* A property of the feature class.
+					* References a Property (defined in PropertyList) by its property name.
+					
+				Comment[0..*]:
+					* A comment regarding the feature class.
+					* These could potentially be used to generate/update the GPlates data manual and GPGIM website.
 	-->
 	
+	<!--
+		NOTE: 'gpml:UnclassifiedFeature' is handled as a special-case feature type inside GPlates and
+		should not be added to this XML file. Features of type 'gpml:UnclassifiedFeature' can have any number of
+		any property listed in this XML file (listed under 'PropertyList').
+	-->
+		
 	<!--
 		'gpml:IrregularSampling' is currently only supported for finite rotations (see 'gpml:TotalReconstructionSequence').
 		In the future support will be added for non-categorical properties (eg, 'xsi:double') and for geometry properties.
@@ -101,9 +184,18 @@
 	
 	
 	
-	<!-- List of property types supported by GPlates. -->
-	<!-- NOTE: New 'Enumeration's can be added here without having to update the GPlates source code. -->
-	<!-- NOTE: However, any new 'NativeProperty's added must also be implemented in the GPlates source code. -->
+	<!--
+		==================================================
+		               PropertyTypeList
+		==================================================
+		List of property types supported by GPlates.
+	-->
+	<!--
+		NOTE: New 'Enumeration's can be added here without having to update the GPlates source code.
+	-->
+	<!--
+		NOTE: However, any new 'NativeProperty's added must also be implemented in the GPlates source code.
+	-->
 	<PropertyTypeList>
 		<!--
 			NOTE: Please keep the <Enumeration> elements ordered alphabetically by their '<Type>'.
@@ -337,31 +429,32 @@
 		</NativeProperty>
 		<NativeProperty>
 			<Type>gml:LineString</Type>
-			<Description></Description>
+			<Description>A list of latitude/longitude coordinate tuples defining a polyline.</Description>
 		</NativeProperty>
 		<NativeProperty>
 			<Type>gml:MultiPoint</Type>
-			<Description></Description>
+			<Description>A list of latitude/longitude coordinate tuples defining an unordered set of points.</Description>
 		</NativeProperty>
 		<NativeProperty>
 			<Type>gml:OrientableCurve</Type>
-			<Description></Description>
+			<Description>A list of latitude/longitude coordinate tuples defining a polyline and a '+' or '-' orientation.</Description>
 		</NativeProperty>
 		<NativeProperty>
 			<Type>gml:Point</Type>
-			<Description></Description>
+			<Description>A single latitude/longitude coordinate tuple defining a point.</Description>
 		</NativeProperty>
 		<NativeProperty>
 			<Type>gml:Polygon</Type>
-			<Description></Description>
+			<Description>A list of latitude/longitude coordinate tuples defining a closed polyline exterior and zero or more lists of latitude/longitude coordinate tuples each defining an interior hole region.</Description>
+			<Comment>Currently interiors holes are not yet supported in GPlates.</Comment>
 		</NativeProperty>
 		<NativeProperty>
 			<Type>gml:RectifiedGrid</Type>
-			<Description></Description>
+			<Description>A grid for which there is an affine transformation between the grid coordinates and the coordinates of an external coordinate reference system. Defined by a grid origin and two offset vectors.</Description>
 		</NativeProperty>
 		<NativeProperty>
 			<Type>gml:TimeInstant</Type>
-			<Description></Description>
+			<Description>Represents an identifiable position in time.</Description>
 		</NativeProperty>
 		<NativeProperty>
 			<Type>gml:TimePeriod</Type>
@@ -387,7 +480,7 @@
 		</NativeProperty>
 		<NativeProperty>
 			<Type>gpml:FeatureReference</Type>
-			<Description></Description>
+			<Description>Reference to a remote feature.</Description>
 		</NativeProperty>
 		<NativeProperty>
 			<Type>gpml:FeatureSnapshotReference</Type>
@@ -455,9 +548,16 @@
 	
 	
 	
-	<!-- List of properties supported by GPlates. -->
-	<!-- NOTE: New 'Property's can be added here without having to update the GPlates source code
-		(as long as they reference a property 'type' that already exists). -->
+	<!--
+		==================================================
+		                 PropertyList
+		==================================================
+		List of properties supported by GPlates.
+	-->
+	<!--
+		NOTE: New 'Property's can be added here without having to update the GPlates source code
+		(as long as they reference a property 'type' that already exists).
+	-->
 	<PropertyList>
 		<!--
 			NOTE: Please keep the <Property> elements ordered alphabetically by their '<Name>'.
@@ -486,13 +586,13 @@
 		</Property>
 		<Property>
 			<Name>gpml:averageDeclination</Name>
-			<Description></Description>
+			<Description>Average direction in stratigraphic coordinates, declination.</Description>
 			<Type>xsi:double</Type>
 			<Multiplicity>0..1</Multiplicity>
 		</Property>
 		<Property>
 			<Name>gpml:averageInclination</Name>
-			<Description></Description>
+			<Description>Average direction in stratigraphic coordinates, inclination.</Description>
 			<Type>xsi:double</Type>
 			<Multiplicity>0..1</Multiplicity>
 		</Property>
@@ -812,7 +912,7 @@
 		</Property>
 		<Property>
 			<Name>gpml:polePosition</Name>
-			<Description></Description>
+			<Description>Virtual geomagnetic pole.</Description>
 			<Type>gml:Point</Type>
 			<Multiplicity>0..1</Multiplicity>
 			<TimeDependent>gpml:ConstantValue</TimeDependent>
@@ -1047,8 +1147,15 @@
 	
 	
 	
-	<!-- List of feature classes defined by the GPGIM. -->
-	<!-- NOTE: New feature classes can be added here without having to update the GPlates source code. -->
+	<!--
+		==================================================
+		                 PropertyList
+		==================================================
+		List of feature classes supported by GPlates.
+	-->
+	<!--
+		NOTE: New feature classes can be added here without having to update the GPlates source code.
+	-->
 	<FeatureClassList>
 		<!--
 			NOTE: Please keep the <FeatureClass> elements ordered alphabetically by their '<Name>'.
@@ -1600,7 +1707,7 @@
 				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
 			-->
 			<Name>gpml:RockUnit_carbonate</Name>
-			<Description></Description>
+			<Description>A carbonate rock unit.</Description>
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:BasicRockUnit</Inherits>
 		</FeatureClass>
@@ -1610,7 +1717,7 @@
 				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
 			-->
 			<Name>gpml:RockUnit_siliciclastic</Name>
-			<Description></Description>
+			<Description>A siliciclastic rock unit.</Description>
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:BasicRockUnit</Inherits>
 		</FeatureClass>
@@ -1620,7 +1727,7 @@
 				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
 			-->
 			<Name>gpml:RockUnit_evaporite</Name>
-			<Description></Description>
+			<Description>An evaporite rock unit.</Description>
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:BasicRockUnit</Inherits>
 		</FeatureClass>
@@ -1630,7 +1737,7 @@
 				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
 			-->
 			<Name>gpml:RockUnit_organic</Name>
-			<Description></Description>
+			<Description>An organic rock unit.</Description>
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:BasicRockUnit</Inherits>
 		</FeatureClass>
@@ -1640,7 +1747,7 @@
 				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
 			-->
 			<Name>gpml:RockUnit_chemical</Name>
-			<Description></Description>
+			<Description>A chemical rock unit.</Description>
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:BasicRockUnit</Inherits>
 		</FeatureClass>
@@ -1650,7 +1757,7 @@
 				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
 			-->
 			<Name>gpml:RockUnit_plutonic</Name>
-			<Description></Description>
+			<Description>A plutonic rock unit.</Description>
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:BasicRockUnit</Inherits>
 		</FeatureClass>
@@ -1660,7 +1767,7 @@
 				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
 			-->
 			<Name>gpml:RockUnit_volcanic</Name>
-			<Description></Description>
+			<Description>A volcanic rock unit.</Description>
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:BasicRockUnit</Inherits>
 		</FeatureClass>
@@ -1670,7 +1777,7 @@
 				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
 			-->
 			<Name>gpml:RockUnit_metamorphic</Name>
-			<Description></Description>
+			<Description>A metamorphic rock unit.</Description>
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:BasicRockUnit</Inherits>
 		</FeatureClass>
@@ -1680,7 +1787,7 @@
 				Or use the 'gpml:subcategory' property in 'gpml:AbstractFeature'.
 			-->
 			<Name>gpml:RockUnit_indeterminate_igneous</Name>
-			<Description></Description>
+			<Description>An indeterminate_igneous rock unit.</Description>
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:BasicRockUnit</Inherits>
 		</FeatureClass>
@@ -1715,7 +1822,7 @@
 		</FeatureClass>
 		<FeatureClass>
 			<Name>gpml:SlabEdge</Name>
-			<Description></Description>
+			<Description>A slab edge.</Description>
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:subductionPolarity</Property>
