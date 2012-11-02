@@ -47,7 +47,8 @@ namespace GPlatesAppLogic
 			TOPOLOGY_NETWORK_RESOLVER,
 			VELOCITY_FIELD_CALCULATOR,
 			CO_REGISTRATION,
-			// Entries for new built-in layer task types should go here.
+
+			NUM_BUILT_IN_TYPES, // This must be after all built-in types and before MIN_USER.
 
 			// The following two members should be the third-last and second-last,
 			// just before NUM_TYPES. Although we don't have user-defined layer

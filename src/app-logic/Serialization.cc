@@ -39,13 +39,125 @@
 #include "LayerTask.h"
 #include "LayerTaskType.h"
 #include "LayerTaskRegistry.h"
+#include "Session.h"
 
 #include "file-io/FileInfo.h"
+
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 
 namespace
 {
 	typedef QMap<GPlatesAppLogic::Layer, QString> LayerIdMap;
 	typedef QMap<QString, GPlatesAppLogic::Layer> IdLayerMap;
+
+	typedef QMap<QString, GPlatesAppLogic::LayerTaskType::Type> IdLayerTaskTypeMap;
+
+
+	/**
+	 * Returns the layer task type id.
+	 */
+	const IdLayerTaskTypeMap &
+	get_id_layer_task_type_map(
+			int session_version)
+	{
+		// Prior to version 3 the layer task type was an integer directly mapped to the
+		// layer task type enumeration. This proved a bit error-prone when new enumerations were
+		// added so later versions convert the enumerations to strings.
+		if (session_version < 3)
+		{
+			static bool initialised_map = false;
+			static IdLayerTaskTypeMap ID_LAYER_TASK_TYPE_MAP;
+			if (!initialised_map)
+			{
+				ID_LAYER_TASK_TYPE_MAP["0"] = GPlatesAppLogic::LayerTaskType::RECONSTRUCTION;
+				ID_LAYER_TASK_TYPE_MAP["1"] = GPlatesAppLogic::LayerTaskType::RECONSTRUCT;
+				ID_LAYER_TASK_TYPE_MAP["2"] = GPlatesAppLogic::LayerTaskType::RASTER;
+				ID_LAYER_TASK_TYPE_MAP["3"] = GPlatesAppLogic::LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER;
+				ID_LAYER_TASK_TYPE_MAP["4"] = GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER;
+				ID_LAYER_TASK_TYPE_MAP["5"] = GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR;
+				ID_LAYER_TASK_TYPE_MAP["6"] = GPlatesAppLogic::LayerTaskType::CO_REGISTRATION;
+
+				initialised_map = true;
+			}
+
+			return ID_LAYER_TASK_TYPE_MAP;
+		}
+
+		static bool initialised_map = false;
+		static IdLayerTaskTypeMap ID_LAYER_TASK_TYPE_MAP;
+		if (!initialised_map)
+		{
+			ID_LAYER_TASK_TYPE_MAP["Reconstruction"] = GPlatesAppLogic::LayerTaskType::RECONSTRUCTION;
+			ID_LAYER_TASK_TYPE_MAP["Reconstruct"] = GPlatesAppLogic::LayerTaskType::RECONSTRUCT;
+			ID_LAYER_TASK_TYPE_MAP["Raster"] = GPlatesAppLogic::LayerTaskType::RASTER;
+			ID_LAYER_TASK_TYPE_MAP["ScalarField3D"] = GPlatesAppLogic::LayerTaskType::SCALAR_FIELD_3D;
+			ID_LAYER_TASK_TYPE_MAP["TopologyGeometryResolver"] = GPlatesAppLogic::LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER;
+			ID_LAYER_TASK_TYPE_MAP["TopologyNetworkResolver"] = GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER;
+			ID_LAYER_TASK_TYPE_MAP["VelocityFieldCalculator"] = GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR;
+			ID_LAYER_TASK_TYPE_MAP["CoRegistration"] = GPlatesAppLogic::LayerTaskType::CO_REGISTRATION;
+
+			// For the latest session version we check to make sure all the layer task type enumerations
+			// have been mapped - this helps detect situations where an enumeration is added or removed.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					ID_LAYER_TASK_TYPE_MAP.size() == GPlatesAppLogic::LayerTaskType::NUM_BUILT_IN_TYPES,
+					GPLATES_ASSERTION_SOURCE);
+
+			initialised_map = true;
+		}
+
+		return ID_LAYER_TASK_TYPE_MAP;
+	}
+
+
+	/**
+	 * Returns the layer task type id.
+	 */
+	boost::optional<GPlatesAppLogic::LayerTaskType::Type>
+	load_layer_task_type(
+			QDomElement el,
+			int session_version)
+	{
+		// Get the id-to-layer-task-type map depending on the session version.
+		const IdLayerTaskTypeMap &id_layer_task_type_map = get_id_layer_task_type_map(session_version);
+
+		const QString id_layer_task_type = el.attribute("type");
+		IdLayerTaskTypeMap::const_iterator id_layer_task_type_iter =
+				id_layer_task_type_map.find(id_layer_task_type);
+		if (id_layer_task_type_iter == id_layer_task_type_map.end())
+		{
+			return boost::none;
+		}
+
+		return id_layer_task_type_iter.value();
+	}
+
+
+	/**
+	 * Saves the specified layer task type.
+	 */
+	void
+	save_layer_task_type(
+			QDomElement el,
+			GPlatesAppLogic::LayerTaskType::Type layer_task_type)
+	{
+		// Get the id-to-layer-task-type map for the latest session version.
+		const IdLayerTaskTypeMap &id_layer_task_type_map =
+				get_id_layer_task_type_map(
+						GPlatesAppLogic::Session::get_latest_session_version());
+
+		// Lookup the id string from the layer task type.
+		QList<QString> layer_task_type_ids = id_layer_task_type_map.keys(layer_task_type);
+		if (layer_task_type_ids.size() != 1)
+		{
+			// Shouldn't happen because mapping should be one-to-one.
+			return;
+		}
+		const QString layer_task_type_id = layer_task_type_ids.front();
+
+		el.setAttribute("type", layer_task_type_id);
+	}
+
 
 	/**
 	 * Turn a Layer into a QDomElement.
@@ -63,7 +175,7 @@ namespace
 
 		QDomElement el = dom.createElement("Layer");
 		el.setAttribute("id", idmap.value(layer));
-		el.setAttribute("type", layer.get_type());
+		save_layer_task_type(el, layer.get_type());
 		el.setAttribute("main_input_channel", layer.get_main_input_feature_collection_channel());
 		el.setAttribute("is_active", layer.is_active() ? 1 : 0);
 		el.setAttribute("auto_created", layer.get_auto_created() ? 1 : 0);
@@ -95,17 +207,29 @@ namespace
 			GPlatesAppLogic::LayerTaskRegistry &ltr,
 			GPlatesAppLogic::ReconstructGraph &rg,
 			QDomElement el,
-			IdLayerMap &idmap)
+			IdLayerMap &idmap,
+			int session_version)
 	{
 		// Before we can create a Layer, we must first know the LayerTaskType.
-		GPlatesAppLogic::LayerTaskType::Type layer_task_id =
-				static_cast<GPlatesAppLogic::LayerTaskType::Type>(el.attribute("type").toInt());
-		int is_active = el.attribute("is_active").toInt();
-		int auto_created = el.attribute("auto_created").toInt();
-		GPlatesAppLogic::LayerTaskRegistry::LayerTaskType ltt = get_layer_task_type(ltr, layer_task_id);
+		boost::optional<GPlatesAppLogic::LayerTaskType::Type> layer_task_type_type =
+				load_layer_task_type(el, session_version);
+		if (!layer_task_type_type)
+		{
+			return GPlatesAppLogic::Layer();
+		}
+
+		GPlatesAppLogic::LayerTaskRegistry::LayerTaskType layer_task_type =
+				get_layer_task_type(ltr, layer_task_type_type.get());
+		if (!layer_task_type.is_valid())
+		{
+			return GPlatesAppLogic::Layer();
+		}
+
+		const int is_active = el.attribute("is_active").toInt();
+		const int auto_created = el.attribute("auto_created").toInt();
 
 		// Before we can create a Layer, we must first create a LayerTask.
-		boost::shared_ptr<GPlatesAppLogic::LayerTask> lt_ptr = ltt.create_layer_task();
+		boost::shared_ptr<GPlatesAppLogic::LayerTask> lt_ptr = layer_task_type.create_layer_task();
 
 		// Finally, can we create a Layer?
 		GPlatesAppLogic::Layer layer = rg.add_layer(lt_ptr);
@@ -422,7 +546,7 @@ GPlatesAppLogic::Serialization::load_layers_state(
 	for (QDomElement el_layer = el_layers.firstChildElement("Layer");
 		  ! el_layer.isNull();
 		  el_layer = el_layer.nextSiblingElement("Layer")) {
-		load_layer(ltr, rg, el_layer, idmap);
+		load_layer(ltr, rg, el_layer, idmap, session_version);
 	}
 
 	// Once that's done, we can reference Layers by ID. One such relationship we need to load is
