@@ -36,6 +36,8 @@
 
 #include "CreateFeatureAddOrEditPropertyDialog.h"
 #include "EditWidgetGroupBox.h"
+#include "QtWidgetUtils.h"
+#include "ResizeToContentsTextEdit.h"
 
 #include "feature-visitors/ToQvariantConverter.h"
 
@@ -150,9 +152,22 @@ GPlatesQtWidgets::CreateFeaturePropertiesPage::CreateFeaturePropertiesPage(
 	// Start off with the most basic feature type.
 	// It's actually an 'abstract' feature but it'll get reset to a 'concrete' feature...
 	d_feature_type(GPlatesModel::FeatureType::create_gml("AbstractFeature")),
+	d_property_description_widget(new ResizeToContentsTextEdit(this)),
 	d_add_or_edit_property_dialog(new CreateFeatureAddOrEditPropertyDialog(view_state, this))
 {
 	setupUi(this);
+
+	// Set up the property description text edit widget.
+	GPlatesQtWidgets::QtWidgetUtils::add_widget_to_placeholder(
+			d_property_description_widget,
+			property_description_placeholder_widget);
+	d_property_description_widget->setReadOnly(true);
+	d_property_description_widget->setSizePolicy(
+			QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed/*Use sizeHint() since we've overridden it*/));
+	d_property_description_widget->setLineWrapMode(QTextEdit::WidgetWidth);
+	d_property_description_widget->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+	// Limit the maximum height of the property description so it doesn't push the dialog off the screen.
+	d_property_description_widget->setMaximumHeight(100);
 
 	// Set some table widget properties not set in the Qt UI designer.
 	// For 'available properties' we stretch the first column to ensure the property names
@@ -560,7 +575,33 @@ GPlatesQtWidgets::CreateFeaturePropertiesPage::get_feature_properties(
 void
 GPlatesQtWidgets::CreateFeaturePropertiesPage::handle_available_properties_selection_changed()
 {
+	// Enable or disable the Add property button.
 	add_property_button->setDisabled(available_properties_table_widget->selectedItems().isEmpty());
+
+	// Get the property description text (if a property is selected).
+	QString property_description_string;
+	if (available_properties_table_widget->selectedItems().count() > 0)
+	{
+		// Get the GPGIM property from the currently selected row in the 'available properties' table widget.
+		boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> gpgim_feature_property =
+				get_available_property(available_properties_table_widget->currentRow());
+		if (gpgim_feature_property)
+		{
+			property_description_string = gpgim_feature_property.get()->get_property_description();
+		}
+	}
+
+	// Set or clear the property description QTextEdit.
+	if (!property_description_string.isEmpty())
+	{
+		property_description_widget->show();
+		d_property_description_widget->setPlainText(property_description_string);
+	}
+	else
+	{
+		property_description_widget->hide();
+		d_property_description_widget->clear();
+	}
 }
 
 

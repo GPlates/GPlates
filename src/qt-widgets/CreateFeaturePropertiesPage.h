@@ -53,6 +53,7 @@ namespace GPlatesQtWidgets
 {
 	class CreateFeatureAddOrEditPropertyDialog;
 	class EditWidgetGroupBox;
+	class ResizeToContentsTextEdit;
 
 	class CreateFeaturePropertiesPage :
 			public QWidget, 
@@ -174,6 +175,9 @@ namespace GPlatesQtWidgets
 
 		//! The name of the geometry property that the feature will be created with.
 		boost::optional<GPlatesModel::PropertyName> d_geometry_property_name;
+
+		//! A property description QTextEdit that resizes to its contents.
+		ResizeToContentsTextEdit *d_property_description_widget;
 
 		//! Dialog used to add and edit feature properties.
 		CreateFeatureAddOrEditPropertyDialog *d_add_or_edit_property_dialog;

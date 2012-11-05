@@ -354,6 +354,8 @@ set(srcs
     ReconstructLayerOptionsWidget.cc
     ReconstructLayerOptionsWidget.h
     ReconstructLayerOptionsWidgetUi.ui
+    ResizeToContentsTextEdit.cc
+    ResizeToContentsTextEdit.h
     SaveFileDialog.cc
     SaveFileDialog.h
     SaveFileDialogImpl.cc

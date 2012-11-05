@@ -158,7 +158,7 @@ GPlatesQtWidgets::CreateFeatureAddOrEditPropertyDialog::set_up_edit_widgets()
 	edit_layout->setContentsMargins(0, 0, 0, 0);
 	edit_layout->addWidget(d_edit_widget_group_box);
 	placeholder_edit_widget->setLayout(edit_layout);
-	
+
 	QObject::connect(d_edit_widget_group_box, SIGNAL(commit_me()), buttonBox, SLOT(setFocus()));
 }
 

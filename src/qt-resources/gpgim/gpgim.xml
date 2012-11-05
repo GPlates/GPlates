@@ -836,7 +836,7 @@
 		</Property>
 		<Property>
 			<Name>gpml:networkMaxEdge</Name>
-			<Description>Another parameter to controal triangulation quality in a topological network.</Description>
+			<Description>Another parameter to control triangulation quality in a topological network.</Description>
 			<Type>xsi:double</Type>
 			<Multiplicity>0..1</Multiplicity>
 			<Comment>This is a Computational Geometry Algorithms Library (CGAL) parameter.</Comment>

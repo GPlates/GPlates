@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>464</width>
-    <height>465</height>
+    <height>487</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -77,6 +77,25 @@
             <string>Multiplicity</string>
            </property>
           </column>
+         </widget>
+        </item>
+        <item>
+         <widget class="QWidget" name="property_description_widget" native="true">
+          <layout class="QHBoxLayout" name="property_description_layout">
+           <property name="margin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="property_description_label">
+             <property name="text">
+              <string>Description:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QWidget" name="property_description_placeholder_widget" native="true"/>
+           </item>
+          </layout>
          </widget>
         </item>
         <item>

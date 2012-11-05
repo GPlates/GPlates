@@ -47,6 +47,7 @@
 #include "FlowlinePropertiesWidget.h"
 #include "InformationDialog.h"
 #include "InvalidPropertyValueException.h"
+#include "ResizeToContentsTextEdit.h"
 #include "QtWidgetUtils.h"
 #include "ViewportWindow.h"
 
@@ -71,6 +72,7 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureType.h"
 #include "model/Gpgim.h"
+#include "model/GpgimFeatureClass.h"
 #include "model/Model.h"
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
@@ -327,6 +329,11 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 				view_state_.get_application_state().get_gpgim(),
 				SelectionWidget::Q_LIST_WIDGET,
 				this)),
+	d_feature_type_description_widget(
+			new ResizeToContentsTextEdit(
+					convert_qualified_xml_name_to_qstring(
+							GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature")),
+					this)),
 	d_choose_feature_collection_widget(
 			new ChooseFeatureCollectionWidget(
 				view_state_.get_application_state().get_reconstruct_method_registry(),
@@ -358,6 +365,9 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 			d_choose_feature_type_widget,
 			widget_choose_feature_type_placeholder);
 	GPlatesQtWidgets::QtWidgetUtils::add_widget_to_placeholder(
+			d_feature_type_description_widget,
+			widget_description_feature_type_placeholder);
+	GPlatesQtWidgets::QtWidgetUtils::add_widget_to_placeholder(
 			d_choose_feature_collection_widget,
 			widget_choose_feature_collection_placeholder);
 	GPlatesQtWidgets::QtWidgetUtils::add_widget_to_placeholder(
@@ -373,7 +383,7 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 	set_up_common_properties_page();
 	set_up_feature_properties_page();
 	set_up_feature_collection_page();
-		
+
 	// When the current page is changed, we need to enable and disable some buttons.
 	QObject::connect(stack, SIGNAL(currentChanged(int)),
 			this, SLOT(handle_page_change(int)));
@@ -435,7 +445,16 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_type_page()
 			d_choose_feature_type_widget, 
 			SIGNAL(current_index_changed(boost::optional<GPlatesModel::FeatureType>)),
 			this, 
-			SLOT(handle_feature_type_changed()));	
+			SLOT(handle_feature_type_changed()));
+
+	// Set up the feature type description QTextEdit.
+	d_feature_type_description_widget->setReadOnly(true);
+	d_feature_type_description_widget->setSizePolicy(
+			QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed/*Use sizeHint() since we've overridden it*/));
+	d_feature_type_description_widget->setLineWrapMode(QTextEdit::WidgetWidth);
+	d_feature_type_description_widget->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+	// Limit the maximum height of the feature type description so it doesn't push the dialog off the screen.
+	d_feature_type_description_widget->setMaximumHeight(100);
 }
 
 
@@ -1058,6 +1077,10 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_conjugate_value_changed()
 void
 GPlatesQtWidgets::CreateFeatureDialog::handle_feature_type_changed()
 {
+	//
+	// Set up a custom properties widget if necessary.
+	//
+
 	if (d_custom_properties_widget)
 	{
 		delete d_custom_properties_widget.get();
@@ -1075,6 +1098,30 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_feature_type_changed()
 		d_custom_properties_widget = custom_properties_widget.get();
 		set_up_custom_properties_page();
 	}
+
+	//
+	// Update the feature type description widget.
+	//
+
+	// Get the feature type description text.
+	QString feature_type_description_string;
+
+	// Get the FeatureType the user has currently selected.
+	boost::optional<GPlatesModel::FeatureType> feature_type =
+			d_choose_feature_type_widget->get_feature_type();
+	if (feature_type)
+	{
+		// Get the GPGIM feature class.
+		boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
+				d_gpgim.get_feature_class(feature_type.get());
+		if (gpgim_feature_class)
+		{
+			feature_type_description_string = gpgim_feature_class.get()->get_feature_description();
+		}
+	}
+
+	// Set the feature type description QTextEdit.
+	d_feature_type_description_widget->setPlainText(feature_type_description_string);
 }
 
 void

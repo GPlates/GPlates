@@ -76,12 +76,13 @@ namespace GPlatesQtWidgets
 	class AbstractCustomPropertiesWidget;
 	class ChooseFeatureCollectionWidget;
 	class ChooseFeatureTypeWidget;
+	class ChoosePropertyWidget;
 	class CreateFeaturePropertiesPage;
 	class EditPlateIdWidget;
 	class EditTimePeriodWidget;
 	class EditStringWidget;
-	class ChoosePropertyWidget;
 	class InformationDialog;
+	class ResizeToContentsTextEdit;
 	class ViewportWindow;
 
 	class CreateFeatureDialog :
@@ -306,6 +307,11 @@ namespace GPlatesQtWidgets
 		 * Memory managed by Qt.
 		 */
 		ChooseFeatureTypeWidget *d_choose_feature_type_widget;
+
+		/**
+		 * A feature type description QTextEdit that resizes to its contents.
+		 */
+		ResizeToContentsTextEdit *d_feature_type_description_widget;
 
 		/**
 		 * The widget that allows the user to select an existing feature collection
