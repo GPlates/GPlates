@@ -204,6 +204,12 @@ set(srcs
     ExportResolvedTopologicalBoundaryOptionsWidget.cc
     ExportResolvedTopologicalBoundaryOptionsWidget.h
     ExportResolvedTopologicalBoundaryOptionsWidgetUi.ui
+    ExportRotationOptionsWidget.h
+    ExportRotationOptionsWidgetUi.ui
+    ExportStageRotationOnlyOptionsWidget.h
+    ExportStageRotationOnlyOptionsWidgetUi.ui
+    ExportStageRotationOptionsWidget.h
+    ExportTotalRotationOptionsWidget.h
     FeaturePropertiesDialog.cc
     FeaturePropertiesDialog.h
     FeaturePropertiesDialogUi.ui

@@ -30,6 +30,8 @@
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/ReconstructionTreeEdge.h"
 
+#include "global/GPlatesAssert.h"
+
 #include "gui/ExportAnimationContext.h"
 #include "gui/AnimationController.h"
 #include "gui/CsvExport.h"
@@ -84,15 +86,6 @@ GPlatesGui::ExportTotalRotationAnimationStrategy::do_export_iteration(
 
 	for(it = it_begin; it != it_end ; ++it)
 	{
-		// insert the plate id into the first column of the table
-		QString plate_id_string;
-		QString euler_pole_lat_string;
-		QString euler_pole_lon_string;
-		QString angle_string;
-
-		plate_id_string.setNum(it->first);
-				
-	
 		const bool is_relative_rotation = (
 				(d_configuration->rotation_type == Configuration::RELATIVE_COMMA) ||
 				(d_configuration->rotation_type == Configuration::RELATIVE_SEMICOLON) ||
@@ -104,32 +97,82 @@ GPlatesGui::ExportTotalRotationAnimationStrategy::do_export_iteration(
 				: it->second->composed_absolute_rotation();
 
 		const GPlatesMaths::UnitQuaternion3D &uq = fr.unit_quat();
-		
+
+		QString plate_id_string;
+		QString euler_pole_x_string, euler_pole_y_string, euler_pole_z_string;
+		QString euler_pole_lat_string, euler_pole_lon_string;
+		QString angle_string;
+
+		QLocale locale;
+
+		plate_id_string.setNum(it->first);
+
 		if (GPlatesMaths::represents_identity_rotation(uq)) 
 		{
-			euler_pole_lat_string = euler_pole_lon_string = QObject::tr("Indeterminate");
-			angle_string.setNum(0.0);
+			switch (d_configuration->rotation_options.identity_rotation_format)
+			{
+			case ExportOptionsUtils::ExportRotationOptions::WRITE_IDENTITY_AS_INDETERMINATE:
+				euler_pole_x_string = euler_pole_y_string = euler_pole_z_string = QObject::tr("Indeterminate");
+				euler_pole_lat_string = euler_pole_lon_string = QObject::tr("Indeterminate");
+				angle_string = QObject::tr("Indeterminate");
+				break;
+
+			case ExportOptionsUtils::ExportRotationOptions::WRITE_IDENTITY_AS_NORTH_POLE:
+				euler_pole_x_string = locale.toString(0.0);
+				euler_pole_y_string = locale.toString(0.0);
+				euler_pole_z_string = locale.toString(1.0);
+				euler_pole_lat_string = locale.toString(90.0);
+				euler_pole_lon_string = locale.toString(0.0);
+				angle_string = locale.toString(0.0);
+				break;
+
+			default:
+				// Shouldn't get here.
+				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+				break;
+			}
 		} 
 		else 
 		{
 			using namespace GPlatesMaths;
 			UnitQuaternion3D::RotationParams params = uq.get_rotation_params(fr.axis_hint());
 
+			euler_pole_x_string = locale.toString(params.axis.x().dval());
+			euler_pole_y_string = locale.toString(params.axis.y().dval());
+			euler_pole_z_string = locale.toString(params.axis.z().dval());
+
 			PointOnSphere euler_pole(params.axis);
 			LatLonPoint llp = make_lat_lon_point(euler_pole);
 
-			QLocale locale_;
-			euler_pole_lat_string = locale_.toString(llp.latitude());
-			euler_pole_lon_string = locale_.toString(llp.longitude());
+			euler_pole_lat_string = locale.toString(llp.latitude());
+			euler_pole_lon_string = locale.toString(llp.longitude());
 
-			angle_string = locale_.toString(
+			angle_string = locale.toString(
 					GPlatesMaths::convert_rad_to_deg(params.angle).dval());
-			
 		}
 
 		data_line.push_back(plate_id_string);
-		data_line.push_back(euler_pole_lat_string);
-		data_line.push_back(euler_pole_lon_string);
+
+		// Write out the euler pole depending on the pole format requested.
+		switch (d_configuration->rotation_options.euler_pole_format)
+		{
+		case ExportOptionsUtils::ExportRotationOptions::WRITE_EULER_POLE_AS_LATITUDE_LONGITUDE:
+			data_line.push_back(euler_pole_lat_string);
+			data_line.push_back(euler_pole_lon_string);
+			break;
+
+		case ExportOptionsUtils::ExportRotationOptions::WRITE_EULER_POLE_AS_CARTESIAN:
+			data_line.push_back(euler_pole_x_string);
+			data_line.push_back(euler_pole_y_string);
+			data_line.push_back(euler_pole_z_string);
+			break;
+
+		default:
+			// Shouldn't get here.
+			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+			break;
+		}
+
 		data_line.push_back(angle_string);
 		
 		if (is_relative_rotation)

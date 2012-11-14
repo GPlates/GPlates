@@ -85,28 +85,36 @@ namespace GPlatesGui
 							"- 'relative' is between a moving/fixed plate pair,\n"
 							"- 'total' is from the export reconstruction time to present day.\n"
 							"Each line in exported file(s) will contain the following entries...\n"
-							" 'moving_plate_id' 'euler_pole_lat' 'euler_pole_lon' 'euler_pole_angle' 'fixed_plate_id'\n");
+							"  <moving_plate_id> <euler_pole_lat> <euler_pole_lon> <euler_pole_angle> <fixed_plate_id>\n"
+							"...for latitude/longitude format, or for 3D cartesian format...\n"
+							"  <moving_plate_id> <euler_pole_x> <euler_pole_y> <euler_pole_z> <euler_pole_angle> <fixed_plate_id>\n");
 				export_type_description_map[EQUIVALENT_TOTAL_ROTATION] = 
 						QObject::tr(
 							"Export equivalent total rotation data:\n"
 							"- 'equivalent' is from an exported plate id to the anchor plate,\n"
 							"- 'total' is from the export reconstruction time to present day.\n"
 							"Each line in exported file(s) will contain the following entries...\n"
-							" 'plate_id' 'euler_pole_lat' 'euler_pole_lon' 'euler_pole_angle'\n");
+							"  <plate_id> <euler_pole_lat> <euler_pole_lon> <euler_pole_angle>\n"
+							"...for latitude/longitude format, or for 3D cartesian format...\n"
+							"  <plate_id> <euler_pole_x> <euler_pole_y> <euler_pole_z> <euler_pole_angle>\n");
 				export_type_description_map[RELATIVE_STAGE_ROTATION] = 
 						QObject::tr(
 							"Export relative stage rotation data:\n"
 							"- 'relative' is between a moving/fixed plate pair,\n"
-							"- 'stage' is from 't+1' Ma to 't' Ma where 't' is the export reconstruction time.\n"
+							"- 'stage' is from 't+interval' Ma to 't' Ma where 't' is the export reconstruction time.\n"
 							"Each line in exported file(s) will contain the following entries...\n"
-							" 'moving_plate_id' 'stage_pole_x' 'stage_pole_y' 'stage_pole_z' 'stage_pole_1My_angle' 'fixed_plate_id'\n");
+							"  <moving_plate_id> <stage_pole_lat> <stage_pole_lon> <stage_pole_angle> <fixed_plate_id>\n"
+							"...for latitude/longitude format, or for 3D cartesian format...\n"
+							"  <moving_plate_id> <stage_pole_x> <stage_pole_y> <stage_pole_z> <stage_pole_angle> <fixed_plate_id>\n");
 				export_type_description_map[EQUIVALENT_STAGE_ROTATION] = 
 						QObject::tr(
-							"Export equivalent stage(1My) rotation data:\n"
+							"Export equivalent stage rotation data:\n"
 							"- 'equivalent' is from an exported plate id to the anchor plate,\n"
-							"- 'stage' is from 't+1' Ma to 't' Ma where 't' is the export reconstruction time.\n"
+							"- 'stage' is from 't+interval' Ma to 't' Ma where 't' is the export reconstruction time.\n"
 							"Each line in exported file(s) will contain the following entries...\n"
-							" 'plate_id' 'stage_pole_x' 'stage_pole_y' 'stage_pole_z' 'stage_pole_1My_angle'\n");
+							"  <plate_id> <stage_pole_lat> <stage_pole_lon> <stage_pole_angle>\n"
+							"...for latitude/longitude format, or for 3D cartesian format...\n"
+							"  <plate_id> <stage_pole_x> <stage_pole_y> <stage_pole_z> <stage_pole_angle>\n");
 				export_type_description_map[RASTER] =
 						QObject::tr("Export raster data as image.");
 				export_type_description_map[FLOWLINES] =

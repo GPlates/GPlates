@@ -23,8 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <iostream>
-#include <sstream>
-#include <QLocale> 
+#include <QLocale>
 #include <QDebug>
 
 #include "ExportStageRotationAnimationStrategy.h"
@@ -34,6 +33,8 @@
 #include "app-logic/ReconstructionTreeCreator.h"
 #include "app-logic/ReconstructionTreeEdge.h"
 #include "app-logic/ReconstructUtils.h"
+
+#include "global/GPlatesAssert.h"
 
 #include "gui/ExportAnimationContext.h"
 #include "gui/AnimationController.h"
@@ -87,19 +88,18 @@ GPlatesGui::ExportStageRotationAnimationStrategy::do_export_iteration(
 
 	GPlatesGui::CsvExport::LineDataType data_line;
 	std::vector<GPlatesGui::CsvExport::LineDataType> data;
+
+	// Use the stage time interval requested.
+	const double stage_time_interval = d_configuration->stage_rotation_options.time_interval;
 	
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree2 =
 			GPlatesAppLogic::create_reconstruction_tree(
-					tree1->get_reconstruction_time() + 1,
+					tree1->get_reconstruction_time() + stage_time_interval,
 					tree1->get_anchor_plate_id(),
 					tree1->get_reconstruction_features());
 
 	for (tree1_edges_iter = tree1_edges_begin; tree1_edges_iter != tree1_edges_end ; ++tree1_edges_iter)
 	{
-		QString plate_id_string;
-		QString axis_x_string, axis_y_string, axis_z_string;
-		QString angle_string;
-
 		const bool is_relative_rotation = (
 				(d_configuration->rotation_type == Configuration::RELATIVE_COMMA) ||
 				(d_configuration->rotation_type == Configuration::RELATIVE_SEMICOLON) ||
@@ -114,9 +114,39 @@ GPlatesGui::ExportStageRotationAnimationStrategy::do_export_iteration(
 				? get_relative_stage_rotation(*tree1, *tree2, moving_plate_id, fixed_plate_id)
 				: get_equivalent_stage_rotation(*tree1, *tree2, moving_plate_id);
 
+		QString plate_id_string;
+		QString axis_x_string, axis_y_string, axis_z_string;
+		QString axis_lat_string, axis_lon_string;
+		QString angle_string;
+
+		QLocale locale;
+
+		plate_id_string.setNum(moving_plate_id);
+
 		if ( represents_identity_rotation( q ) ) 
 		{
-			axis_x_string = axis_y_string = axis_z_string = angle_string = QObject::tr("Indeterminate");
+			switch (d_configuration->rotation_options.identity_rotation_format)
+			{
+			case ExportOptionsUtils::ExportRotationOptions::WRITE_IDENTITY_AS_INDETERMINATE:
+				axis_x_string = axis_y_string = axis_z_string = QObject::tr("Indeterminate");
+				axis_lat_string = axis_lon_string = QObject::tr("Indeterminate");
+				angle_string = QObject::tr("Indeterminate");
+				break;
+
+			case ExportOptionsUtils::ExportRotationOptions::WRITE_IDENTITY_AS_NORTH_POLE:
+				axis_x_string = locale.toString(0.0);
+				axis_y_string = locale.toString(0.0);
+				axis_z_string = locale.toString(1.0);
+				axis_lat_string = locale.toString(90.0);
+				axis_lon_string = locale.toString(0.0);
+				angle_string = locale.toString(0.0);
+				break;
+
+			default:
+				// Shouldn't get here.
+				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+				break;
+			}
 		}
 		else
 		{
@@ -130,30 +160,42 @@ GPlatesGui::ExportStageRotationAnimationStrategy::do_export_iteration(
 			const GPlatesMaths::UnitQuaternion3D::RotationParams params =
 					q.get_rotation_params(boost::none);
 
-			std::ostringstream ostr;
-			ostr<<params.angle;
-			angle_string=ostr.str().c_str();
-			ostr.seekp(0);ostr.str("");
-			
-			ostr<<params.axis.x();
-			axis_x_string=ostr.str().c_str();
-			ostr.seekp(0);ostr.str("");
-			
-			ostr<<params.axis.y();
-			axis_y_string=ostr.str().c_str();
-			ostr.seekp(0);ostr.str("");
-			
-			ostr<<params.axis.z();
-			axis_z_string=ostr.str().c_str();
-			ostr.seekp(0);ostr.str("");
-		}	
-		
-		plate_id_string.setNum(tree1_edges_iter->first);
+			axis_x_string = locale.toString(params.axis.x().dval());
+			axis_y_string = locale.toString(params.axis.y().dval());
+			axis_z_string = locale.toString(params.axis.z().dval());
+
+			GPlatesMaths::PointOnSphere euler_pole(params.axis);
+			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(euler_pole);
+
+			axis_lat_string = locale.toString(llp.latitude());
+			axis_lon_string = locale.toString(llp.longitude());
+
+			angle_string = locale.toString(
+					GPlatesMaths::convert_rad_to_deg(params.angle).dval());
+		}
 		
 		data_line.push_back(plate_id_string);
-		data_line.push_back(axis_x_string);
-		data_line.push_back(axis_y_string);
-		data_line.push_back(axis_z_string);
+
+		// Write out the euler pole depending on the pole format requested.
+		switch (d_configuration->rotation_options.euler_pole_format)
+		{
+		case ExportOptionsUtils::ExportRotationOptions::WRITE_EULER_POLE_AS_LATITUDE_LONGITUDE:
+			data_line.push_back(axis_lat_string);
+			data_line.push_back(axis_lon_string);
+			break;
+
+		case ExportOptionsUtils::ExportRotationOptions::WRITE_EULER_POLE_AS_CARTESIAN:
+			data_line.push_back(axis_x_string);
+			data_line.push_back(axis_y_string);
+			data_line.push_back(axis_z_string);
+			break;
+
+		default:
+			// Shouldn't get here.
+			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+			break;
+		}
+
 		data_line.push_back(angle_string);
 
 		if (is_relative_rotation)

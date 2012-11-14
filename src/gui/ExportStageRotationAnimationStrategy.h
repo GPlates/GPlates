@@ -31,6 +31,7 @@
 #include <QString>
 
 #include "ExportAnimationStrategy.h"
+#include "ExportOptionsUtils.h"
 
 #include "maths/UnitQuaternion3D.h"
 
@@ -88,9 +89,13 @@ namespace GPlatesGui
 			explicit
 			Configuration(
 					const QString& filename_template_,
-					RotationType rotation_type_) :
+					RotationType rotation_type_,
+					const ExportOptionsUtils::ExportRotationOptions &rotation_options_,
+					const ExportOptionsUtils::ExportStageRotationOptions &stage_rotation_options_) :
 				ConfigurationBase(filename_template_),
-				rotation_type(rotation_type_)
+				rotation_type(rotation_type_),
+				rotation_options(rotation_options_),
+				stage_rotation_options(stage_rotation_options_)
 			{  }
 
 			virtual
@@ -101,6 +106,8 @@ namespace GPlatesGui
 			}
 
 			RotationType rotation_type;
+			ExportOptionsUtils::ExportRotationOptions rotation_options;
+			ExportOptionsUtils::ExportStageRotationOptions stage_rotation_options;
 		};
 
 		//! Typedef for a shared pointer to const @a Configuration.

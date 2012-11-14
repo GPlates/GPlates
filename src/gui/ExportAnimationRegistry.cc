@@ -47,6 +47,8 @@
 #include "qt-widgets/ExportMotionPathOptionsWidget.h"
 #include "qt-widgets/ExportReconstructedGeometryOptionsWidget.h"
 #include "qt-widgets/ExportResolvedTopologicalBoundaryOptionsWidget.h"
+#include "qt-widgets/ExportStageRotationOptionsWidget.h"
+#include "qt-widgets/ExportTotalRotationOptionsWidget.h"
 
 
 namespace GPlatesGui
@@ -512,6 +514,14 @@ GPlatesGui::register_default_export_animation_types(
 #endif
 
 
+	//
+	// Export rotations
+	//
+
+	// By default write out identity rotations as "Indeterminate".
+	const ExportOptionsUtils::ExportRotationOptions default_rotation_export_options(
+			ExportOptionsUtils::ExportRotationOptions::WRITE_IDENTITY_AS_INDETERMINATE,
+			ExportOptionsUtils::ExportRotationOptions::WRITE_EULER_POLE_AS_LATITUDE_LONGITUDE);
 
 	//
 	// Export relative total rotations
@@ -524,9 +534,14 @@ GPlatesGui::register_default_export_animation_types(
 			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
 					new ExportTotalRotationAnimationStrategy::Configuration(
 							"relative_total_rotation_comma_%0.2fMa.csv",
-							ExportTotalRotationAnimationStrategy::Configuration::RELATIVE_COMMA)),
+							ExportTotalRotationAnimationStrategy::Configuration::RELATIVE_COMMA,
+							default_rotation_export_options)),
 			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					&create_export_options_widget<
+							GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
+							ExportTotalRotationAnimationStrategy>,
+					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -536,9 +551,14 @@ GPlatesGui::register_default_export_animation_types(
 			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
 					new ExportTotalRotationAnimationStrategy::Configuration(
 							"relative_total_rotation_semicolon_%0.2fMa.csv",
-							ExportTotalRotationAnimationStrategy::Configuration::RELATIVE_SEMICOLON)),
+							ExportTotalRotationAnimationStrategy::Configuration::RELATIVE_SEMICOLON,
+							default_rotation_export_options)),
 			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					&create_export_options_widget<
+							GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
+							ExportTotalRotationAnimationStrategy>,
+					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -548,9 +568,14 @@ GPlatesGui::register_default_export_animation_types(
 			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
 					new ExportTotalRotationAnimationStrategy::Configuration(
 							"relative_total_rotation_tab_%0.2fMa.csv",
-							ExportTotalRotationAnimationStrategy::Configuration::RELATIVE_TAB)),
+							ExportTotalRotationAnimationStrategy::Configuration::RELATIVE_TAB,
+							default_rotation_export_options)),
 			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					&create_export_options_widget<
+							GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
+							ExportTotalRotationAnimationStrategy>,
+					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	//
@@ -564,9 +589,14 @@ GPlatesGui::register_default_export_animation_types(
 			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
 					new ExportTotalRotationAnimationStrategy::Configuration(
 							"equivalent_total_rotation_comma_%0.2fMa.csv",
-							ExportTotalRotationAnimationStrategy::Configuration::EQUIVALENT_COMMA)),
+							ExportTotalRotationAnimationStrategy::Configuration::EQUIVALENT_COMMA,
+							default_rotation_export_options)),
 			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					&create_export_options_widget<
+							GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
+							ExportTotalRotationAnimationStrategy>,
+					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -576,9 +606,14 @@ GPlatesGui::register_default_export_animation_types(
 			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
 					new ExportTotalRotationAnimationStrategy::Configuration(
 							"equivalent_total_rotation_semicolon_%0.2fMa.csv",
-							ExportTotalRotationAnimationStrategy::Configuration::EQUIVALENT_SEMICOLON)),
+							ExportTotalRotationAnimationStrategy::Configuration::EQUIVALENT_SEMICOLON,
+							default_rotation_export_options)),
 			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					&create_export_options_widget<
+							GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
+							ExportTotalRotationAnimationStrategy>,
+					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -588,14 +623,24 @@ GPlatesGui::register_default_export_animation_types(
 			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
 					new ExportTotalRotationAnimationStrategy::Configuration(
 							"equivalent_total_rotation_tab_%0.2fMa.csv",
-							ExportTotalRotationAnimationStrategy::Configuration::EQUIVALENT_TAB)),
+							ExportTotalRotationAnimationStrategy::Configuration::EQUIVALENT_TAB,
+							default_rotation_export_options)),
 			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					&create_export_options_widget<
+							GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
+							ExportTotalRotationAnimationStrategy>,
+					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	//
 	// Export relative stage rotations
 	//
+
+	// Default *stage* rotation export options.
+	const ExportOptionsUtils::ExportStageRotationOptions default_stage_rotation_export_options(
+			// Default stage rotation time interval is 1.0 My...
+			1.0);
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
@@ -604,9 +649,15 @@ GPlatesGui::register_default_export_animation_types(
 			ExportStageRotationAnimationStrategy::const_configuration_ptr(
 					new ExportStageRotationAnimationStrategy::Configuration(
 							"relative_stage_rotation_semicolon_%0.2fMa.csv",
-							ExportStageRotationAnimationStrategy::Configuration::RELATIVE_SEMICOLON)),
+							ExportStageRotationAnimationStrategy::Configuration::RELATIVE_SEMICOLON,
+							default_rotation_export_options,
+							default_stage_rotation_export_options)),
 			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					&create_export_options_widget<
+							GPlatesQtWidgets::ExportStageRotationOptionsWidget,
+							ExportStageRotationAnimationStrategy>,
+					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -616,9 +667,15 @@ GPlatesGui::register_default_export_animation_types(
 			ExportStageRotationAnimationStrategy::const_configuration_ptr(
 					new ExportStageRotationAnimationStrategy::Configuration(
 							"relative_stage_rotation_comma_%0.2fMa.csv",
-							ExportStageRotationAnimationStrategy::Configuration::RELATIVE_COMMA)),
+							ExportStageRotationAnimationStrategy::Configuration::RELATIVE_COMMA,
+							default_rotation_export_options,
+							default_stage_rotation_export_options)),
 			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					&create_export_options_widget<
+							GPlatesQtWidgets::ExportStageRotationOptionsWidget,
+							ExportStageRotationAnimationStrategy>,
+					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -628,9 +685,15 @@ GPlatesGui::register_default_export_animation_types(
 			ExportStageRotationAnimationStrategy::const_configuration_ptr(
 					new ExportStageRotationAnimationStrategy::Configuration(
 							"relative_stage_rotation_tab_%0.2fMa.csv",
-							ExportStageRotationAnimationStrategy::Configuration::RELATIVE_TAB)),
+							ExportStageRotationAnimationStrategy::Configuration::RELATIVE_TAB,
+							default_rotation_export_options,
+							default_stage_rotation_export_options)),
 			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					&create_export_options_widget<
+							GPlatesQtWidgets::ExportStageRotationOptionsWidget,
+							ExportStageRotationAnimationStrategy>,
+					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	//
@@ -644,9 +707,15 @@ GPlatesGui::register_default_export_animation_types(
 			ExportStageRotationAnimationStrategy::const_configuration_ptr(
 					new ExportStageRotationAnimationStrategy::Configuration(
 							"equivalent_stage_rotation_semicolon_%0.2fMa.csv",
-							ExportStageRotationAnimationStrategy::Configuration::EQUIVALENT_SEMICOLON)),
+							ExportStageRotationAnimationStrategy::Configuration::EQUIVALENT_SEMICOLON,
+							default_rotation_export_options,
+							default_stage_rotation_export_options)),
 			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					&create_export_options_widget<
+							GPlatesQtWidgets::ExportStageRotationOptionsWidget,
+							ExportStageRotationAnimationStrategy>,
+					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -656,9 +725,15 @@ GPlatesGui::register_default_export_animation_types(
 			ExportStageRotationAnimationStrategy::const_configuration_ptr(
 					new ExportStageRotationAnimationStrategy::Configuration(
 							"equivalent_stage_rotation_comma_%0.2fMa.csv",
-							ExportStageRotationAnimationStrategy::Configuration::EQUIVALENT_COMMA)),
+							ExportStageRotationAnimationStrategy::Configuration::EQUIVALENT_COMMA,
+							default_rotation_export_options,
+							default_stage_rotation_export_options)),
 			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					&create_export_options_widget<
+							GPlatesQtWidgets::ExportStageRotationOptionsWidget,
+							ExportStageRotationAnimationStrategy>,
+					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
@@ -668,9 +743,15 @@ GPlatesGui::register_default_export_animation_types(
 			ExportStageRotationAnimationStrategy::const_configuration_ptr(
 					new ExportStageRotationAnimationStrategy::Configuration(
 							"equivalent_stage_rotation_tab_%0.2fMa.csv",
-							ExportStageRotationAnimationStrategy::Configuration::EQUIVALENT_TAB)),
+							ExportStageRotationAnimationStrategy::Configuration::EQUIVALENT_TAB,
+							default_rotation_export_options,
+							default_stage_rotation_export_options)),
 			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					&create_export_options_widget<
+							GPlatesQtWidgets::ExportStageRotationOptionsWidget,
+							ExportStageRotationAnimationStrategy>,
+					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	//

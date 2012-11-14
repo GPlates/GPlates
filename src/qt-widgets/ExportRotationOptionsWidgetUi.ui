@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ExportRotationOptionsWidget</class>
+ <widget class="QWidget" name="ExportRotationOptionsWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>468</width>
+    <height>153</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="margin">
+    <number>0</number>
+   </property>
+   <item>
+    <widget class="QGroupBox" name="group_box_rotation_options">
+     <property name="title">
+      <string>Rotation options</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <layout class="QVBoxLayout" name="layer_rotation_options">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QGroupBox" name="group_box_indeterminate">
+          <property name="title">
+           <string>Write indeterminate rotations as:</string>
+          </property>
+          <layout class="QHBoxLayout" name="layout_indeterminate">
+           <item>
+            <widget class="QRadioButton" name="radio_button_indeterminate">
+             <property name="text">
+              <string>&quot;Indeterminate&quot;</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="radio_button_north_pole">
+             <property name="text">
+              <string>North Pole Euler Pole</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="group_box_pole_format">
+          <property name="title">
+           <string>Euler pole format:</string>
+          </property>
+          <layout class="QHBoxLayout" name="layout_pole_format">
+           <item>
+            <widget class="QRadioButton" name="radio_button_lat_lon">
+             <property name="text">
+              <string>Latitude/longitude</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="radio_button_cartesian">
+             <property name="text">
+              <string>3D Cartesion (x,y,z)</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

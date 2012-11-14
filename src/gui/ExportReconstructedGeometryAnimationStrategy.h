@@ -33,7 +33,6 @@
 #include <QString>
 
 #include "ExportAnimationStrategy.h"
-
 #include "ExportOptionsUtils.h"
 
 #include "utils/non_null_intrusive_ptr.h"

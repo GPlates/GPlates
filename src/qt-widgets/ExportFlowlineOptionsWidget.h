@@ -43,9 +43,6 @@ namespace GPlatesQtWidgets
 	/**
 	 * ExportFlowlineOptionsWidget is used to show export options for
 	 * exporting flowlines.
-	 *
-	 * Currently it's just a placeholder for the @a ExportFileOptionsWidget since no
-	 * other options are currently required.
 	 */
 	class ExportFlowlineOptionsWidget :
 			public ExportOptionsWidget

@@ -43,9 +43,6 @@ namespace GPlatesQtWidgets
 	/**
 	 * ExportMotionPathOptionsWidget is used to show export options for
 	 * exporting motion paths.
-	 *
-	 * Currently it's just a placeholder for the @a ExportFileOptionsWidget since no
-	 * other options are currently required.
 	 */
 	class ExportMotionPathOptionsWidget :
 			public ExportOptionsWidget

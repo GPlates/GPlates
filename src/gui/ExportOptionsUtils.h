@@ -58,6 +58,57 @@ namespace GPlatesGui
 			 */
 			bool export_to_multiple_files;
 		};
+
+
+		/**
+		 * Common rotations options useful when exporting either total or stage rotations.
+		 */
+		struct ExportRotationOptions
+		{
+			//! How to write out an identity rotation.
+			enum IdentityRotationFormatType
+			{
+				WRITE_IDENTITY_AS_INDETERMINATE,
+				WRITE_IDENTITY_AS_NORTH_POLE
+			};
+
+			//! How to write out a Euler pole.
+			enum EulerPoleFormatType
+			{
+				WRITE_EULER_POLE_AS_CARTESIAN,
+				WRITE_EULER_POLE_AS_LATITUDE_LONGITUDE,
+			};
+
+
+			explicit
+			ExportRotationOptions(
+					IdentityRotationFormatType identity_rotation_format_,
+					EulerPoleFormatType euler_pole_format_) :
+				identity_rotation_format(identity_rotation_format_),
+				euler_pole_format(euler_pole_format_)
+			{  }
+
+
+			IdentityRotationFormatType identity_rotation_format;
+			EulerPoleFormatType euler_pole_format;
+		};
+
+
+		/**
+		 * Rotations options useful when exporting *stage* rotations only.
+		 */
+		struct ExportStageRotationOptions
+		{
+			explicit
+			ExportStageRotationOptions(
+					const double &time_interval_) :
+				time_interval(time_interval_)
+			{  }
+
+
+			//! The stage rotation time interval (in My).
+			double time_interval;
+		};
 	}
 }
 

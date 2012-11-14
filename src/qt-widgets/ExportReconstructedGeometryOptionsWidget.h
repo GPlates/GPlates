@@ -43,9 +43,6 @@ namespace GPlatesQtWidgets
 	/**
 	 * ExportReconstructedGeometryOptionsWidget is used to show export options for
 	 * exporting reconstructed geometries.
-	 *
-	 * Currently it's just a placeholder for the @a ExportFileOptionsWidget since no
-	 * other options are currently required.
 	 */
 	class ExportReconstructedGeometryOptionsWidget :
 			public ExportOptionsWidget
@@ -115,7 +112,7 @@ namespace GPlatesQtWidgets
 				widget_layout->addWidget(d_dateline_wrap_options_widget);
 			}
 
-			// Delegate to the export file options widget to collection the file options.
+			// Delegate to the export file options widget to collect the file options.
 			d_export_file_options_widget =
 					ExportFileOptionsWidget::create(
 							parent_,
