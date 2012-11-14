@@ -53,6 +53,15 @@ GPlatesMaths::calculate_velocity_vector(
 	static const real_t radius_of_earth = 6.378e8;  // in centimetres.
 
 	// This quaternion represents a rotation from t2 to t1.
+	//
+	// Note the t1 is a more recent time (closer to present day) than t2.
+	//
+	// R(t2->t1,A->P)
+	//    = R(0->t1,A->P) * R(t2->0,A->P)
+	//    = R(0->t1,A->P) * inverse[R(0->t2,A->P)]
+	//
+	// ...where 'A' is the anchor plate and 'P' is the plate the point is in.
+	//
 	UnitQuaternion3D q = fr_t1.unit_quat() * fr_t2.unit_quat().get_inverse();
 	
 	if ( represents_identity_rotation( q ) ) 

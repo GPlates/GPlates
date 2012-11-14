@@ -23,20 +23,28 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_GUI_EXPORTROTATIONSTRATEGY_H
-#define GPLATES_GUI_EXPORTROTATIONSTRATEGY_H
+#ifndef GPLATES_GUI_EXPORTSTAGEROTATIONSTRATEGY_H
+#define GPLATES_GUI_EXPORTSTAGEROTATIONSTRATEGY_H
 
-#include <boost/optional.hpp>
 #include <boost/none.hpp>
 
 #include <QString>
 
 #include "ExportAnimationStrategy.h"
 
+#include "maths/UnitQuaternion3D.h"
+
+#include "model/types.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
 #include "utils/ReferenceCount.h"
 
+
+namespace GPlatesAppLogic
+{
+	class ReconstructionTree;
+}
 
 namespace GPlatesGui
 {
@@ -44,21 +52,21 @@ namespace GPlatesGui
 	class ExportAnimationContext;
 
 	/**
-	 * Concrete implementation of the ExportAnimationStrategy class for 
-	 * writing reconstructed feature geometries at each timestep.
-	 * 
-	 * ExportReconstructedGeometryAnimationStrategy serves as the concrete Strategy role as
-	 * described in Gamma et al. p315. It is used by ExportAnimationContext.
+	 * Concrete implementation of the ExportAnimationStrategy class for writing
+	 * *stage* (t + delta_t -> t) rotation poles at each timestep 't' for either:
+	 *  (1) equivalent (to anchor plate), or
+	 *  (2) relative (fixed/moving pairs).
 	 */
-	class ExportRotationAnimationStrategy:
+	class ExportStageRotationAnimationStrategy:
 			public GPlatesGui::ExportAnimationStrategy
 	{
 	public:
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportReconstructedGeometryAnimationStrategy>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ExportRotationAnimationStrategy> non_null_ptr_type;
 
+		/**
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportStageRotationAnimationStrategy>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<ExportStageRotationAnimationStrategy> non_null_ptr_type;
+	
 
 		/**
 		 * Configuration options.
@@ -98,7 +106,7 @@ namespace GPlatesGui
 		//! Typedef for a shared pointer to const @a Configuration.
 		typedef boost::shared_ptr<const Configuration> const_configuration_ptr;
 
-		
+
 		static
 		const non_null_ptr_type
 		create(
@@ -106,13 +114,13 @@ namespace GPlatesGui
 				const const_configuration_ptr &export_configuration)
 		{
 			return non_null_ptr_type(
-					new ExportRotationAnimationStrategy(
+					new ExportStageRotationAnimationStrategy(
 							export_animation_context,
 							export_configuration));
 		}
 
 		virtual
-		~ExportRotationAnimationStrategy()
+		~ExportStageRotationAnimationStrategy()
 		{  }
 
 		/**
@@ -124,23 +132,45 @@ namespace GPlatesGui
 		do_export_iteration(
 				std::size_t frame_index);
 
+
 	protected:
 		/**
 		 * Protected constructor to prevent instantiation on the stack.
 		 * Use the create() method on the individual Strategy subclasses.
 		 */
 		explicit
-		ExportRotationAnimationStrategy(
+		ExportStageRotationAnimationStrategy(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
 				const const_configuration_ptr &export_configuration);
 		
 	private:
+
 		//! Export configuration parameters.
 		const_configuration_ptr d_configuration;
+
+
+		/**
+		 * Calculates the relative stage rotation for the specified fixed/moving plate pair from time t2 -> t1.
+		 */
+		GPlatesMaths::UnitQuaternion3D
+		get_relative_stage_rotation(
+				const GPlatesAppLogic::ReconstructionTree &tree1,
+				const GPlatesAppLogic::ReconstructionTree &tree2,
+				GPlatesModel::integer_plate_id_type moving_plate_id,
+				GPlatesModel::integer_plate_id_type fixed_plate_id) const;
+
+		/**
+		 * Calculates the equivalent stage rotation for the specified plate id from time t2 -> t1.
+		 */
+		GPlatesMaths::UnitQuaternion3D
+		get_equivalent_stage_rotation(
+				const GPlatesAppLogic::ReconstructionTree &tree1,
+				const GPlatesAppLogic::ReconstructionTree &tree2,
+				GPlatesModel::integer_plate_id_type plate_id) const;
 	};
 }
 
 
-#endif //GPLATES_GUI_EXPORTROTATIONSTRATEGY_H
+#endif //GPLATES_GUI_EXPORTSTAGEROTATIONSTRATEGY_H
 
 

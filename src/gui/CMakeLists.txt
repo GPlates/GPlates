@@ -87,12 +87,12 @@ set(srcs
     ExportReconstructedGeometryAnimationStrategy.h
     ExportResolvedTopologyAnimationStrategy.cc
     ExportResolvedTopologyAnimationStrategy.h
-    ExportRotationAnimationStrategy.cc
-    ExportRotationAnimationStrategy.h
-    ExportRotationParamsAnimationStrategy.cc
-    ExportRotationParamsAnimationStrategy.h
+    ExportStageRotationAnimationStrategy.cc
+    ExportStageRotationAnimationStrategy.h
     ExportSvgAnimationStrategy.cc
     ExportSvgAnimationStrategy.h
+    ExportTotalRotationAnimationStrategy.cc
+    ExportTotalRotationAnimationStrategy.h
     ExportVelocityAnimationStrategy.cc
     ExportVelocityAnimationStrategy.h
     ExternalSyncController.cc

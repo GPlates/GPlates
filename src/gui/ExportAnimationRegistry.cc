@@ -35,7 +35,8 @@
 #include "ExportRasterAnimationStrategy.h"
 #include "ExportReconstructedGeometryAnimationStrategy.h"
 #include "ExportResolvedTopologyAnimationStrategy.h"
-#include "ExportRotationAnimationStrategy.h"
+#include "ExportTotalRotationAnimationStrategy.h"
+#include "ExportStageRotationAnimationStrategy.h"
 #include "ExportSvgAnimationStrategy.h"
 #include "ExportVelocityAnimationStrategy.h"
 
@@ -513,78 +514,162 @@ GPlatesGui::register_default_export_animation_types(
 
 
 	//
-	// Export relative rotations
+	// Export relative total rotations
 	//
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-					ExportAnimationType::RELATIVE_ROTATION,
+					ExportAnimationType::RELATIVE_TOTAL_ROTATION,
 					ExportAnimationType::CSV_COMMA),
-			ExportRotationAnimationStrategy::const_configuration_ptr(
-					new ExportRotationAnimationStrategy::Configuration(
+			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
+					new ExportTotalRotationAnimationStrategy::Configuration(
 							"relative_total_rotation_comma_%0.2fMa.csv",
-							ExportRotationAnimationStrategy::Configuration::RELATIVE_COMMA)),
-			&create_animation_strategy<ExportRotationAnimationStrategy>,
+							ExportTotalRotationAnimationStrategy::Configuration::RELATIVE_COMMA)),
+			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
 			&create_null_export_options_widget,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-					ExportAnimationType::RELATIVE_ROTATION,
+					ExportAnimationType::RELATIVE_TOTAL_ROTATION,
 					ExportAnimationType::CSV_SEMICOLON),
-			ExportRotationAnimationStrategy::const_configuration_ptr(
-					new ExportRotationAnimationStrategy::Configuration(
+			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
+					new ExportTotalRotationAnimationStrategy::Configuration(
 							"relative_total_rotation_semicolon_%0.2fMa.csv",
-							ExportRotationAnimationStrategy::Configuration::RELATIVE_SEMICOLON)),
-			&create_animation_strategy<ExportRotationAnimationStrategy>,
+							ExportTotalRotationAnimationStrategy::Configuration::RELATIVE_SEMICOLON)),
+			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
 			&create_null_export_options_widget,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-					ExportAnimationType::RELATIVE_ROTATION,
+					ExportAnimationType::RELATIVE_TOTAL_ROTATION,
 					ExportAnimationType::CSV_TAB),
-			ExportRotationAnimationStrategy::const_configuration_ptr(
-					new ExportRotationAnimationStrategy::Configuration(
+			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
+					new ExportTotalRotationAnimationStrategy::Configuration(
 							"relative_total_rotation_tab_%0.2fMa.csv",
-							ExportRotationAnimationStrategy::Configuration::RELATIVE_TAB)),
-			&create_animation_strategy<ExportRotationAnimationStrategy>,
+							ExportTotalRotationAnimationStrategy::Configuration::RELATIVE_TAB)),
+			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
 			&create_null_export_options_widget,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
+	//
+	// Export equivalent total rotations
+	//
+
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-					ExportAnimationType::EQUIVALENT_ROTATION,
+					ExportAnimationType::EQUIVALENT_TOTAL_ROTATION,
 					ExportAnimationType::CSV_COMMA),
-			ExportRotationAnimationStrategy::const_configuration_ptr(
-					new ExportRotationAnimationStrategy::Configuration(
+			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
+					new ExportTotalRotationAnimationStrategy::Configuration(
 							"equivalent_total_rotation_comma_%0.2fMa.csv",
-							ExportRotationAnimationStrategy::Configuration::EQUIVALENT_COMMA)),
-			&create_animation_strategy<ExportRotationAnimationStrategy>,
+							ExportTotalRotationAnimationStrategy::Configuration::EQUIVALENT_COMMA)),
+			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
 			&create_null_export_options_widget,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-					ExportAnimationType::EQUIVALENT_ROTATION,
+					ExportAnimationType::EQUIVALENT_TOTAL_ROTATION,
 					ExportAnimationType::CSV_SEMICOLON),
-			ExportRotationAnimationStrategy::const_configuration_ptr(
-					new ExportRotationAnimationStrategy::Configuration(
+			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
+					new ExportTotalRotationAnimationStrategy::Configuration(
 							"equivalent_total_rotation_semicolon_%0.2fMa.csv",
-							ExportRotationAnimationStrategy::Configuration::EQUIVALENT_SEMICOLON)),
-			&create_animation_strategy<ExportRotationAnimationStrategy>,
+							ExportTotalRotationAnimationStrategy::Configuration::EQUIVALENT_SEMICOLON)),
+			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
 			&create_null_export_options_widget,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-					ExportAnimationType::EQUIVALENT_ROTATION,
+					ExportAnimationType::EQUIVALENT_TOTAL_ROTATION,
 					ExportAnimationType::CSV_TAB),
-			ExportRotationAnimationStrategy::const_configuration_ptr(
-					new ExportRotationAnimationStrategy::Configuration(
+			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
+					new ExportTotalRotationAnimationStrategy::Configuration(
 							"equivalent_total_rotation_tab_%0.2fMa.csv",
-							ExportRotationAnimationStrategy::Configuration::EQUIVALENT_TAB)),
-			&create_animation_strategy<ExportRotationAnimationStrategy>,
+							ExportTotalRotationAnimationStrategy::Configuration::EQUIVALENT_TAB)),
+			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
+			&create_null_export_options_widget,
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	//
+	// Export relative stage rotations
+	//
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::RELATIVE_STAGE_ROTATION,
+					ExportAnimationType::CSV_SEMICOLON),
+			ExportStageRotationAnimationStrategy::const_configuration_ptr(
+					new ExportStageRotationAnimationStrategy::Configuration(
+							"relative_stage_rotation_semicolon_%0.2fMa.csv",
+							ExportStageRotationAnimationStrategy::Configuration::RELATIVE_SEMICOLON)),
+			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
+			&create_null_export_options_widget,
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::RELATIVE_STAGE_ROTATION,
+					ExportAnimationType::CSV_COMMA),
+			ExportStageRotationAnimationStrategy::const_configuration_ptr(
+					new ExportStageRotationAnimationStrategy::Configuration(
+							"relative_stage_rotation_comma_%0.2fMa.csv",
+							ExportStageRotationAnimationStrategy::Configuration::RELATIVE_COMMA)),
+			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
+			&create_null_export_options_widget,
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::RELATIVE_STAGE_ROTATION,
+					ExportAnimationType::CSV_TAB),
+			ExportStageRotationAnimationStrategy::const_configuration_ptr(
+					new ExportStageRotationAnimationStrategy::Configuration(
+							"relative_stage_rotation_tab_%0.2fMa.csv",
+							ExportStageRotationAnimationStrategy::Configuration::RELATIVE_TAB)),
+			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
+			&create_null_export_options_widget,
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	//
+	// Export equivalent stage rotations
+	//
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::EQUIVALENT_STAGE_ROTATION,
+					ExportAnimationType::CSV_SEMICOLON),
+			ExportStageRotationAnimationStrategy::const_configuration_ptr(
+					new ExportStageRotationAnimationStrategy::Configuration(
+							"equivalent_stage_rotation_semicolon_%0.2fMa.csv",
+							ExportStageRotationAnimationStrategy::Configuration::EQUIVALENT_SEMICOLON)),
+			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
+			&create_null_export_options_widget,
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::EQUIVALENT_STAGE_ROTATION,
+					ExportAnimationType::CSV_COMMA),
+			ExportStageRotationAnimationStrategy::const_configuration_ptr(
+					new ExportStageRotationAnimationStrategy::Configuration(
+							"equivalent_stage_rotation_comma_%0.2fMa.csv",
+							ExportStageRotationAnimationStrategy::Configuration::EQUIVALENT_COMMA)),
+			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
+			&create_null_export_options_widget,
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::EQUIVALENT_STAGE_ROTATION,
+					ExportAnimationType::CSV_TAB),
+			ExportStageRotationAnimationStrategy::const_configuration_ptr(
+					new ExportStageRotationAnimationStrategy::Configuration(
+							"equivalent_stage_rotation_tab_%0.2fMa.csv",
+							ExportStageRotationAnimationStrategy::Configuration::EQUIVALENT_TAB)),
+			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
 			&create_null_export_options_widget,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 

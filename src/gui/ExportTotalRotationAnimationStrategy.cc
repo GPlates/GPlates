@@ -24,7 +24,7 @@
  */
 #include <QLocale> 
 
-#include "ExportRotationAnimationStrategy.h"
+#include "ExportTotalRotationAnimationStrategy.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
@@ -39,7 +39,7 @@
 #include "presentation/ViewState.h"
 
 
-GPlatesGui::ExportRotationAnimationStrategy::ExportRotationAnimationStrategy(
+GPlatesGui::ExportTotalRotationAnimationStrategy::ExportTotalRotationAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context,
 		const const_configuration_ptr &configuration):
 	ExportAnimationStrategy(export_animation_context),
@@ -49,7 +49,7 @@ GPlatesGui::ExportRotationAnimationStrategy::ExportRotationAnimationStrategy(
 }
 
 bool
-GPlatesGui::ExportRotationAnimationStrategy::do_export_iteration(
+GPlatesGui::ExportTotalRotationAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
 {	
 	GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator &filename_it = 
@@ -58,7 +58,7 @@ GPlatesGui::ExportRotationAnimationStrategy::do_export_iteration(
 	GPlatesAppLogic::ApplicationState &application_state =
 		d_export_animation_context_ptr->view_state().get_application_state();
 
-	// Export the default rotation tree.
+	// Export the default rotation layer.
 	//
 	// Now that layers enables users to have more than one reconstruction tree we need to
 	// distinguish which one the user intends to export.

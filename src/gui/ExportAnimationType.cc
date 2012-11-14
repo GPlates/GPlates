@@ -46,17 +46,18 @@ namespace GPlatesGui
 			{
 				std::map<Type, QString> export_type_name_map;
 
-				export_type_name_map[RECONSTRUCTED_GEOMETRIES]=QObject::tr("Reconstructed Geometries");
-				export_type_name_map[PROJECTED_GEOMETRIES]    =QObject::tr("Projected Geometries");
-				export_type_name_map[MESH_VELOCITIES]         =QObject::tr("Colat/lon Mesh Velocities");
-				export_type_name_map[RESOLVED_TOPOLOGIES]     =QObject::tr("Resolved Topologies");
-				export_type_name_map[RELATIVE_ROTATION]       =QObject::tr("Relative Total Rotation");
-				export_type_name_map[EQUIVALENT_ROTATION]     =QObject::tr("Equivalent Total Rotation");
-				export_type_name_map[ROTATION_PARAMS]         =QObject::tr("Equivalent Stage Rotation");
-				export_type_name_map[RASTER]                  =QObject::tr("Raster");
-				export_type_name_map[FLOWLINES]               =QObject::tr("Flowlines");
-				export_type_name_map[MOTION_PATHS]            =QObject::tr("Motion Paths");
-				export_type_name_map[CO_REGISTRATION]         =QObject::tr("Co-registration data");
+				export_type_name_map[RECONSTRUCTED_GEOMETRIES]  =QObject::tr("Reconstructed Geometries");
+				export_type_name_map[PROJECTED_GEOMETRIES]      =QObject::tr("Projected Geometries");
+				export_type_name_map[MESH_VELOCITIES]           =QObject::tr("Colat/lon Mesh Velocities");
+				export_type_name_map[RESOLVED_TOPOLOGIES]       =QObject::tr("Resolved Topologies");
+				export_type_name_map[RELATIVE_TOTAL_ROTATION]   =QObject::tr("Relative Total Rotation");
+				export_type_name_map[EQUIVALENT_TOTAL_ROTATION] =QObject::tr("Equivalent Total Rotation");
+				export_type_name_map[RELATIVE_STAGE_ROTATION]   =QObject::tr("Relative Stage Rotation");
+				export_type_name_map[EQUIVALENT_STAGE_ROTATION] =QObject::tr("Equivalent Stage Rotation");
+				export_type_name_map[RASTER]                    =QObject::tr("Raster");
+				export_type_name_map[FLOWLINES]                 =QObject::tr("Flowlines");
+				export_type_name_map[MOTION_PATHS]              =QObject::tr("Motion Paths");
+				export_type_name_map[CO_REGISTRATION]           =QObject::tr("Co-registration data");
 
 				return export_type_name_map;
 			}
@@ -78,21 +79,28 @@ namespace GPlatesGui
 							"Export resolved topologies:\n"
 							"- exports resolved topological closed plate polygons,\n"
 							"- optionally exports the subsegment geometries of polygon boundaries.\n");
-				export_type_description_map[RELATIVE_ROTATION] = 
+				export_type_description_map[RELATIVE_TOTAL_ROTATION] = 
 						QObject::tr(
 							"Export relative total rotation data:\n"
 							"- 'relative' is between a moving/fixed plate pair,\n"
 							"- 'total' is from the export reconstruction time to present day.\n"
 							"Each line in exported file(s) will contain the following entries...\n"
 							" 'moving_plate_id' 'euler_pole_lat' 'euler_pole_lon' 'euler_pole_angle' 'fixed_plate_id'\n");
-				export_type_description_map[EQUIVALENT_ROTATION] = 
+				export_type_description_map[EQUIVALENT_TOTAL_ROTATION] = 
 						QObject::tr(
 							"Export equivalent total rotation data:\n"
 							"- 'equivalent' is from an exported plate id to the anchor plate,\n"
 							"- 'total' is from the export reconstruction time to present day.\n"
 							"Each line in exported file(s) will contain the following entries...\n"
 							" 'plate_id' 'euler_pole_lat' 'euler_pole_lon' 'euler_pole_angle'\n");
-				export_type_description_map[ROTATION_PARAMS] = 
+				export_type_description_map[RELATIVE_STAGE_ROTATION] = 
+						QObject::tr(
+							"Export relative stage rotation data:\n"
+							"- 'relative' is between a moving/fixed plate pair,\n"
+							"- 'stage' is from 't+1' Ma to 't' Ma where 't' is the export reconstruction time.\n"
+							"Each line in exported file(s) will contain the following entries...\n"
+							" 'moving_plate_id' 'stage_pole_x' 'stage_pole_y' 'stage_pole_z' 'stage_pole_1My_angle' 'fixed_plate_id'\n");
+				export_type_description_map[EQUIVALENT_STAGE_ROTATION] = 
 						QObject::tr(
 							"Export equivalent stage(1My) rotation data:\n"
 							"- 'equivalent' is from an exported plate id to the anchor plate,\n"
