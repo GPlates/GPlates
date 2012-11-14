@@ -155,7 +155,15 @@ GPlatesGui::ExportStageRotationAnimationStrategy::do_export_iteration(
 		data_line.push_back(axis_y_string);
 		data_line.push_back(axis_z_string);
 		data_line.push_back(angle_string);
-		
+
+		if (is_relative_rotation)
+		{
+			QString fixed_plate_id_string;
+			fixed_plate_id_string.setNum(fixed_plate_id);
+
+			data_line.push_back(fixed_plate_id_string);
+		}
+
 		data.push_back(data_line);
 		data_line.clear();
 	}
