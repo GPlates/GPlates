@@ -128,7 +128,6 @@ namespace GPlatesGui
 					dynamic_cast_export_configuration<ExportAnimationStrategyType>(default_export_configuration));
 		}
 
-
 		/**
 		 * Same as the other overload of @a create_export_options_widget but has an extra parameter.
 		 */
@@ -144,6 +143,17 @@ namespace GPlatesGui
 					dynamic_cast_export_configuration<ExportAnimationStrategyType>(default_export_configuration),
 					arg1);
 		}
+
+		/**
+		 * A convenience typedef because a static_cast is needed on some compilers to help determine
+		 * the correct overload of 'create_export_options_widget()' to use with boost::bind.
+		 *
+		 * Note: It seems the static_cast is only needed for the overload with no extra arguments.
+		 */
+		typedef GPlatesQtWidgets::ExportOptionsWidget *
+				(*create_export_options_widget_function_pointer_type)(
+						QWidget *,
+						const ExportAnimationStrategy::const_configuration_base_ptr &);
 
 
 		/**
@@ -538,9 +548,12 @@ GPlatesGui::register_default_export_animation_types(
 							default_rotation_export_options)),
 			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
 			boost::bind(
-					&create_export_options_widget<
-							GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
-							ExportTotalRotationAnimationStrategy>,
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
+									ExportTotalRotationAnimationStrategy>),
 					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
@@ -555,9 +568,12 @@ GPlatesGui::register_default_export_animation_types(
 							default_rotation_export_options)),
 			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
 			boost::bind(
-					&create_export_options_widget<
-							GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
-							ExportTotalRotationAnimationStrategy>,
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
+									ExportTotalRotationAnimationStrategy>),
 					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
@@ -572,9 +588,12 @@ GPlatesGui::register_default_export_animation_types(
 							default_rotation_export_options)),
 			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
 			boost::bind(
-					&create_export_options_widget<
-							GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
-							ExportTotalRotationAnimationStrategy>,
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
+									ExportTotalRotationAnimationStrategy>),
 					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
@@ -593,9 +612,12 @@ GPlatesGui::register_default_export_animation_types(
 							default_rotation_export_options)),
 			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
 			boost::bind(
-					&create_export_options_widget<
-							GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
-							ExportTotalRotationAnimationStrategy>,
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
+									ExportTotalRotationAnimationStrategy>),
 					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
@@ -610,9 +632,12 @@ GPlatesGui::register_default_export_animation_types(
 							default_rotation_export_options)),
 			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
 			boost::bind(
-					&create_export_options_widget<
-							GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
-							ExportTotalRotationAnimationStrategy>,
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
+									ExportTotalRotationAnimationStrategy>),
 					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
@@ -627,9 +652,12 @@ GPlatesGui::register_default_export_animation_types(
 							default_rotation_export_options)),
 			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
 			boost::bind(
-					&create_export_options_widget<
-							GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
-							ExportTotalRotationAnimationStrategy>,
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportTotalRotationOptionsWidget,
+									ExportTotalRotationAnimationStrategy>),
 					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
@@ -654,9 +682,12 @@ GPlatesGui::register_default_export_animation_types(
 							default_stage_rotation_export_options)),
 			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
 			boost::bind(
-					&create_export_options_widget<
-							GPlatesQtWidgets::ExportStageRotationOptionsWidget,
-							ExportStageRotationAnimationStrategy>,
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportStageRotationOptionsWidget,
+									ExportStageRotationAnimationStrategy>),
 					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
@@ -672,9 +703,12 @@ GPlatesGui::register_default_export_animation_types(
 							default_stage_rotation_export_options)),
 			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
 			boost::bind(
-					&create_export_options_widget<
-							GPlatesQtWidgets::ExportStageRotationOptionsWidget,
-							ExportStageRotationAnimationStrategy>,
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportStageRotationOptionsWidget,
+									ExportStageRotationAnimationStrategy>),
 					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
@@ -690,9 +724,12 @@ GPlatesGui::register_default_export_animation_types(
 							default_stage_rotation_export_options)),
 			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
 			boost::bind(
-					&create_export_options_widget<
-							GPlatesQtWidgets::ExportStageRotationOptionsWidget,
-							ExportStageRotationAnimationStrategy>,
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportStageRotationOptionsWidget,
+									ExportStageRotationAnimationStrategy>),
 					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
@@ -712,9 +749,12 @@ GPlatesGui::register_default_export_animation_types(
 							default_stage_rotation_export_options)),
 			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
 			boost::bind(
-					&create_export_options_widget<
-							GPlatesQtWidgets::ExportStageRotationOptionsWidget,
-							ExportStageRotationAnimationStrategy>,
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportStageRotationOptionsWidget,
+									ExportStageRotationAnimationStrategy>),
 					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
@@ -730,9 +770,12 @@ GPlatesGui::register_default_export_animation_types(
 							default_stage_rotation_export_options)),
 			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
 			boost::bind(
-					&create_export_options_widget<
-							GPlatesQtWidgets::ExportStageRotationOptionsWidget,
-							ExportStageRotationAnimationStrategy>,
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportStageRotationOptionsWidget,
+									ExportStageRotationAnimationStrategy>),
 					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
@@ -748,9 +791,12 @@ GPlatesGui::register_default_export_animation_types(
 							default_stage_rotation_export_options)),
 			&create_animation_strategy<ExportStageRotationAnimationStrategy>,
 			boost::bind(
-					&create_export_options_widget<
-							GPlatesQtWidgets::ExportStageRotationOptionsWidget,
-							ExportStageRotationAnimationStrategy>,
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportStageRotationOptionsWidget,
+									ExportStageRotationAnimationStrategy>),
 					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 

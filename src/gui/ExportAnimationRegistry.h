@@ -71,11 +71,15 @@ namespace GPlatesGui
 		 *
 		 * Returns the created @a ExportAnimationStrategy.
 		 */
-		typedef boost::function<
-				ExportAnimationStrategy::non_null_ptr_type (
+		typedef ExportAnimationStrategy::non_null_ptr_type
+				create_export_animation_strategy_function_signature_type(
 						ExportAnimationContext &,
-						const ExportAnimationStrategy::const_configuration_base_ptr &)>
-								create_export_animation_strategy_function_type;
+						const ExportAnimationStrategy::const_configuration_base_ptr &);
+
+		//! The boost::function typedef that creates a @a ExportAnimationStrategy.
+		typedef boost::function<create_export_animation_strategy_function_signature_type>
+				create_export_animation_strategy_function_type;
+
 
 		/**
 		 * Convenience typedef for a function that creates a @a ExportOptionsWidget.
@@ -87,11 +91,15 @@ namespace GPlatesGui
 		 *
 		 * Returns the created @a ExportOptionsWidget.
 		 */
-		typedef boost::function<
-				GPlatesQtWidgets::ExportOptionsWidget * (
+		typedef GPlatesQtWidgets::ExportOptionsWidget *
+				create_export_options_widget_function_signature_type(
 						QWidget *,
-						const ExportAnimationStrategy::const_configuration_base_ptr &)>
-								create_export_options_widget_function_type;
+						const ExportAnimationStrategy::const_configuration_base_ptr &);
+
+		//! The boost::function typedef that creates a @a ExportOptionsWidget.
+		typedef boost::function<create_export_options_widget_function_signature_type>
+				create_export_options_widget_function_type;
+
 
 		/**
 		 * Convenience typedef for a function that validates a filename template.
@@ -102,7 +110,13 @@ namespace GPlatesGui
 		 *
 		 * Returns true if successfully validated.
 		 */
-		typedef boost::function<bool (const QString &, QString &)>
+		typedef bool
+				validate_filename_template_function_signature_type(
+						const QString &,
+						QString &);
+
+		//! The boost::function typedef that validates a filename template.
+		typedef boost::function<validate_filename_template_function_signature_type>
 				validate_filename_template_function_type;
 
 

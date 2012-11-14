@@ -49,7 +49,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_Ma">
+         <widget class="QLabel" name="label_My">
           <property name="text">
            <string>My</string>
           </property>
