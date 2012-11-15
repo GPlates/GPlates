@@ -1,4 +1,5 @@
 /* $Id: Colour.h 11559 2011-05-16 07:41:01Z mchin $ */
+#include <boost/foreach.hpp>
 
 /**
  * @file 
@@ -28,7 +29,6 @@
 #ifndef GPLATES_GUI_DRAWSTYLEADAPTERS_H
 #define GPLATES_GUI_DRAWSTYLEADAPTERS_H
 #include <iostream>
-#include <boost/foreach.hpp>
 #include <boost/ref.hpp>
 #include <map>
 #include <string>

@@ -24,7 +24,6 @@
  */
 
 #include <algorithm>
-#include <boost/foreach.hpp>
 #include <QDebug>
 
 #include "ScalarField3DLayerProxy.h"
@@ -35,6 +34,7 @@
 #include "ResolvedTopologicalNetwork.h"
 
 
+#include <boost/foreach.hpp>
 const boost::optional<GPlatesPropertyValues::TextContent> &
 GPlatesAppLogic::ScalarField3DLayerProxy::get_scalar_field_filename(
 		const double &reconstruction_time)

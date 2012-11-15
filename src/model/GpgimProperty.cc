@@ -23,11 +23,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/foreach.hpp>
 
 #include "GpgimProperty.h"
 
 
+#include <boost/foreach.hpp>
 boost::optional<GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type>
 GPlatesModel::GpgimProperty::get_structural_type(
 		const GPlatesPropertyValues::StructuralType &structural_type_name) const

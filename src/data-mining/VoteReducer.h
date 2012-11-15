@@ -28,11 +28,11 @@
 #include <map>
 #include <vector>
 #include <QDebug>
-#include <boost/foreach.hpp>
 
 #include "CoRegReducer.h"
 #include "OpaqueDataToQString.h"
 
+#include <boost/foreach.hpp>
 namespace GPlatesDataMining
 {
 	class VoteReducer : public CoRegReducer

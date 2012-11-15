@@ -27,10 +27,10 @@
 
 #include <vector>
 #include <QDebug>
-#include <boost/foreach.hpp>
 
 #include "CoRegFilter.h"
 
+#include <boost/foreach.hpp>
 namespace GPlatesAppLogic
 {
 	class ReconstructedFeatureGeometry;

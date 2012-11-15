@@ -28,7 +28,6 @@
 #ifndef GPLATES_GUI_COLOURPALETTE_H
 #define GPLATES_GUI_COLOURPALETTE_H
 #include <map>
-#include <boost/foreach.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -45,6 +44,7 @@
 #include "utils/Select.h"
 #include "utils/TypeTraits.h"
 
+#include <boost/foreach.hpp>
 namespace GPlatesGui 
 {
 	// Forward declarations.

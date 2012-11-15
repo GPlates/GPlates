@@ -1,4 +1,5 @@
 /* $Id: CommandLineParser.h 7795 2010-03-16 04:26:54Z jcannon $ */
+#include <boost/foreach.hpp>
 
 /**
 * \file
@@ -31,7 +32,6 @@
 
 #include <QDir>
 #include <QFileInfoList>
-#include <boost/foreach.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 

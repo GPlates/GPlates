@@ -36,7 +36,6 @@
 #include <vector>
 #include <boost/bind.hpp>
 #include <boost/current_function.hpp>
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QStringList>
 #include <QTextStream>
@@ -74,6 +73,7 @@
 
 #define EXCEPTION_SOURCE BOOST_CURRENT_FUNCTION
 
+#include <boost/foreach.hpp>
 namespace
 {
 	template< typename T >

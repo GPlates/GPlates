@@ -29,7 +29,6 @@
 #include <algorithm>
 #include <utility>
 #include <vector>
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
 
@@ -48,6 +47,7 @@
 #include "utils/SubjectObserverToken.h"
 
 
+#include <boost/foreach.hpp>
 namespace GPlatesAppLogic
 {
 	class Reconstruction;

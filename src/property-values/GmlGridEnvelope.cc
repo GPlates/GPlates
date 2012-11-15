@@ -26,7 +26,6 @@
  */
 
 #include <iostream>
-#include <boost/foreach.hpp>
 
 #include "GmlGridEnvelope.h"
 
@@ -34,6 +33,7 @@
 #include "global/AssertionFailureException.h"
 
 
+#include <boost/foreach.hpp>
 const GPlatesPropertyValues::GmlGridEnvelope::non_null_ptr_type
 GPlatesPropertyValues::GmlGridEnvelope::create(
 		const integer_list_type &low_,

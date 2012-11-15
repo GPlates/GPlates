@@ -27,7 +27,6 @@
 #include <cmath>
 #include <utility>
 #include <vector>
-#include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
 #include <opengl/OpenGL.h>
@@ -47,6 +46,7 @@
 #include "opengl/GLVertexArray.h"
 
 
+#include <boost/foreach.hpp>
 namespace
 {
 	// Vertex stream.

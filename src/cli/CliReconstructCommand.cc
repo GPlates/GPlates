@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/foreach.hpp>
 
 #include "CliReconstructCommand.h"
 #include "CliFeatureCollectionFileIO.h"
@@ -43,6 +42,7 @@
 #include "model/Model.h"
 
 
+#include <boost/foreach.hpp>
 namespace
 {
 	//! Option name for loading reconstructable feature collection file(s).

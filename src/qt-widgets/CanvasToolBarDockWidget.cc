@@ -25,7 +25,6 @@
 
 #include <deque>
 #include <utility>
-#include <boost/foreach.hpp>
 #include <Qt>
 #include <QIcon>
 #include <QKeySequence>
@@ -41,6 +40,7 @@
 #include "global/GPlatesAssert.h"
 
 
+#include <boost/foreach.hpp>
 namespace GPlatesQtWidgets
 {
 	namespace

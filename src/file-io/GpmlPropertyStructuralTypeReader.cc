@@ -25,7 +25,6 @@
  */
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <QDebug>
 
 #include "GpmlPropertyStructuralTypeReader.h"
@@ -39,6 +38,7 @@
 #include "utils/UnicodeStringUtils.h"
 
 
+#include <boost/foreach.hpp>
 using GPlatesPropertyValues::StructuralType;
 
 

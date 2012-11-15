@@ -24,7 +24,6 @@
  */
 
 #include <iostream>
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QString>
 
@@ -51,6 +50,7 @@
 #include "model/Model.h"
 
 
+#include <boost/foreach.hpp>
 namespace
 {
 	//! Option name for loading reconstruction feature collection file(s).

@@ -27,10 +27,10 @@
 
 #include <vector>
 #include <QDebug>
-#include <boost/foreach.hpp>
 
 #include "CoRegReducer.h"
 
+#include <boost/foreach.hpp>
 namespace GPlatesDataMining
 {
 	class WeightedMeanReducer : public CoRegReducer

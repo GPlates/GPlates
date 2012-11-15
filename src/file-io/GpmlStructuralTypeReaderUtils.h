@@ -30,7 +30,6 @@
 #include <map>
 #include <utility>
 #include <vector>
-#include <boost/foreach.hpp>
 
 #include "ReadErrors.h"
 
@@ -62,6 +61,7 @@
 #include "property-values/GpmlTopologicalSection.h"
 
 
+#include <boost/foreach.hpp>
 namespace GPlatesModel
 {
 	class GpgimVersion;

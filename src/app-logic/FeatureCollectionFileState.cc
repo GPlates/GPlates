@@ -28,7 +28,6 @@
 #include <algorithm>
 #include <functional>
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 
 #include "FeatureCollectionFileState.h"
 
@@ -38,6 +37,7 @@
 #include "model/Model.h"
 
 
+#include <boost/foreach.hpp>
 namespace
 {
 	inline

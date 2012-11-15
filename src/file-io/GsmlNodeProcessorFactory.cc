@@ -24,12 +24,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 
 #include "GsmlNodeProcessor.h"
 #include "GsmlNodeProcessorFactory.h"
 #include "GsmlFeaturesDef.h"
 
+#include <boost/foreach.hpp>
 GPlatesFileIO::GsmlNodeProcessorFactory::GsmlNodeProcessorFactory(
 		GPlatesModel::FeatureHandle::weak_ref f):
 	d_property_handler(new GsmlPropertyHandlers(f))

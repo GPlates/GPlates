@@ -30,7 +30,6 @@
 
 #include "global/CompilerWarnings.h"
 #include <boost/assign.hpp>
-#include <boost/foreach.hpp>
 
 #include "CoRegFilterCache.h"
 #include "CoRegFilterMapReduceFactory.h"
@@ -53,6 +52,7 @@
 #include "utils/Profile.h"
 
 
+#include <boost/foreach.hpp>
 GPlatesDataMining::DataTable GPlatesDataMining::DataSelector::d_data_table;
 
 

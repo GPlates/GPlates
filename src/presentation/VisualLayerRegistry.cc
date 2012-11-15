@@ -24,7 +24,6 @@
  */
 
 #include <algorithm>
-#include <boost/foreach.hpp>
 #include <QPixmap>
 
 #include "VisualLayerRegistry.h"
@@ -56,6 +55,7 @@
 #include "qt-widgets/CoRegistrationOptionsWidget.h"
 #include "utils/ComponentManager.h"
 
+#include <boost/foreach.hpp>
 namespace
 {
 	QPixmap

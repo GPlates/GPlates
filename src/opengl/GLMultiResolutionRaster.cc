@@ -29,7 +29,6 @@
 #include <boost/bind.hpp>
 #include <boost/cast.hpp>
 #include <boost/cstdint.hpp>
-#include <boost/foreach.hpp>
 #include <boost/scoped_array.hpp>
 
 /*
@@ -62,6 +61,7 @@
 #include "utils/Profile.h"
 
 
+#include <boost/foreach.hpp>
 namespace GPlatesOpenGL
 {
 	namespace

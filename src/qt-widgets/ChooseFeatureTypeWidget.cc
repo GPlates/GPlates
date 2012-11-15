@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/foreach.hpp>
 #include <QListWidget>
 #include <QListWidgetItem>
 
@@ -36,6 +35,7 @@
 #include "utils/UnicodeStringUtils.h"
 
 
+#include <boost/foreach.hpp>
 namespace
 {
 	class DefaultConstructibleFeatureType

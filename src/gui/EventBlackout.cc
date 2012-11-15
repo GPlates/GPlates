@@ -24,7 +24,6 @@
  */
  
 #include <algorithm>
-#include <boost/foreach.hpp>
 #include <QEvent>
 #include <QApplication>
 #include <QDebug>
@@ -34,6 +33,7 @@
 #include "qt-widgets/QtWidgetUtils.h"
 
 
+#include <boost/foreach.hpp>
 namespace
 {
 	QEvent::Type PERMITTED_EVENTS[] = {

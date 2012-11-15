@@ -25,7 +25,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/foreach.hpp>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -33,6 +32,7 @@
 #include "TemporaryFileRegistry.h"
 
 
+#include <boost/foreach.hpp>
 namespace
 {
 	QString

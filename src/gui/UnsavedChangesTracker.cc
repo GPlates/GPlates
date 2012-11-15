@@ -24,7 +24,6 @@
  */
 
 #include <algorithm>
-#include <boost/foreach.hpp>
 #include <QDialogButtonBox>
 #include <QtGlobal>
 #include <QDebug>
@@ -49,6 +48,7 @@
 #include "qt-widgets/ManageFeatureCollectionsDialog.h"
 
 
+#include <boost/foreach.hpp>
 namespace
 {
 	/**

@@ -26,7 +26,6 @@
 
 #include <algorithm>
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <opengl/OpenGL.h>
 
 #include "ColourScheme.h"
@@ -73,6 +72,7 @@
 
 
 
+#include <boost/foreach.hpp>
 namespace 
 {
 	/**

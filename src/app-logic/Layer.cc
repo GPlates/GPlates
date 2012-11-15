@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/foreach.hpp>
 
 #include "Layer.h"
 
@@ -35,6 +34,7 @@
 #include "global/PreconditionViolationError.h"
 
 
+#include <boost/foreach.hpp>
 GPlatesAppLogic::Layer::Layer(
 		const boost::weak_ptr<ReconstructGraphImpl::Layer> &layer_impl) :
 	d_impl(layer_impl)

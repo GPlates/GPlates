@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/foreach.hpp>
 
 #include "LayerProxyUtils.h"
 
@@ -35,6 +34,7 @@
 #include "TopologyGeometryResolverLayerProxy.h"
 
 
+#include <boost/foreach.hpp>
 void
 GPlatesAppLogic::LayerProxyUtils::get_reconstructed_feature_geometries(
 		std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,

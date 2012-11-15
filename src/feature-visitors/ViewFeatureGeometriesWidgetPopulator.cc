@@ -30,7 +30,6 @@
 #include <QList>
 #include <vector>
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/none.hpp>
 
 #include "ViewFeatureGeometriesWidgetPopulator.h"
@@ -60,6 +59,7 @@
 //#include "utils/Profile.h"
 
 
+#include <boost/foreach.hpp>
 namespace
 {
 	/**

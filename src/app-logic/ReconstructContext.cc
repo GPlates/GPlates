@@ -24,7 +24,6 @@
  */
 
 #include <cstddef> // std::size_t
-#include <boost/foreach.hpp>
 
 #include "ReconstructContext.h"
 
@@ -36,6 +35,7 @@
 #include "utils/Profile.h"
 
 
+#include <boost/foreach.hpp>
 GPlatesAppLogic::ReconstructContext::ReconstructContext(
 		const ReconstructMethodRegistry &reconstruct_method_registry,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
