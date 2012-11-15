@@ -26,6 +26,8 @@
 #ifndef GPLATES_GUI_UTILITIESMENU_H
 #define GPLATES_GUI_UTILITIESMENU_H
 
+#ifndef Q_MOC_RUN //workaround. Qt moc doesn't like BOOST_JOIN. Make them not seeing each other.
+
 #include <map>
 #include <boost/function.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -35,6 +37,8 @@
 
 #include "api/Sleeper.h"
 #include "gui/PythonManager.h"
+
+#endif // Q_MOC_RUN
 
 #if !defined(GPLATES_NO_PYTHON)
 

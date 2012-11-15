@@ -27,6 +27,9 @@
 
 #ifndef GPLATES_GUI_DRAWSTYLEMANAGER_H
 #define GPLATES_GUI_DRAWSTYLEMANAGER_H
+
+#ifndef Q_MOC_RUN //workaround. Qt moc doesn't like BOOST_JOIN. Make them not seeing each other.
+
 #include <iostream>
 #include <boost/foreach.hpp>
 #include <boost/ref.hpp>
@@ -37,6 +40,8 @@
 #include "model/FeatureHandle.h"
 #include "DrawStyleAdapters.h"
 #include "app-logic/UserPreferences.h"
+
+#endif //Q_MOC_RUN
 
 namespace GPlatesGui
 {

@@ -26,6 +26,8 @@
 #ifndef GPLATES_API_PYTHONEXECUTIONTHREAD_H
 #define GPLATES_API_PYTHONEXECUTIONTHREAD_H
 
+#ifndef Q_MOC_RUN //workaround. Qt moc doesn't like BOOST_JOIN. Make them not seeing each other.
+
 #include <boost/function.hpp>
 #include <QThread>
 #include <QEvent>
@@ -38,6 +40,8 @@
 #include "PythonExecutionMonitor.h"
 #include "PythonUtils.h"
 #include "PythonRunner.h"
+
+#endif //Q_MOC_RUN
 
 #if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesAppLogic

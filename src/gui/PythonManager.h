@@ -26,6 +26,9 @@
 */
 #ifndef GPLATES_GUI_PYTHON_MANAGER_H
 #define GPLATES_GUI_PYTHON_MANAGER_H
+
+#ifndef Q_MOC_RUN //workaround. Qt moc doesn't like BOOST_JOIN. Make them not seeing each other.
+
 #include <QDir>
 #include <QFileInfoList>
 #include <boost/foreach.hpp>
@@ -36,6 +39,7 @@
 #include "global/python.h"
 #include "EventBlackout.h"
 
+#endif //Q_MOC_RUN
 
 namespace GPlatesAppLogic
 {
