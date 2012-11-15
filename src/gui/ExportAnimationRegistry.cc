@@ -1,5 +1,4 @@
 /* $Id$ */
-#include <boost/foreach.hpp>
 
 /**
  * \file 
@@ -25,6 +24,7 @@
  */
 
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 
 #include "ExportAnimationRegistry.h"
 

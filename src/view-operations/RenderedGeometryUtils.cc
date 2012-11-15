@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
 
@@ -37,7 +38,6 @@
 #include "RenderedGeometryVisitor.h"
 
 
-#include <boost/foreach.hpp>
 namespace GPlatesViewOperations
 {
 	namespace RenderedGeometryUtils

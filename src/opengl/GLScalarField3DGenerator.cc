@@ -27,6 +27,7 @@
 #include <cmath>
 #include <limits>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
  * Must be included before the OpenGL headers (which also means before Qt headers).
@@ -75,7 +76,6 @@
 
 //#define SCALAR_FIELD_VERSION_ZERO
 
-#include <boost/foreach.hpp>
 namespace GPlatesOpenGL
 {
 	namespace

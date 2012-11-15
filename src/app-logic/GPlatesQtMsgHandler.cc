@@ -26,6 +26,7 @@
 #include <string>
 #include <iostream>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 
 #include "GPlatesQtMsgHandler.h"
 
@@ -38,7 +39,6 @@
 #include "utils/Environment.h"
 
 
-#include <boost/foreach.hpp>
 QtMsgHandler GPlatesAppLogic::GPlatesQtMsgHandler::s_prev_msg_handler = NULL;
 
 

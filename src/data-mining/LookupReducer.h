@@ -27,6 +27,7 @@
 
 #include <vector>
 #include <QDebug>
+#include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 
 #include "CoRegReducer.h"
@@ -34,7 +35,6 @@
 
 #include <maths/MathsUtils.h>
 
-#include <boost/foreach.hpp>
 namespace GPlatesDataMining
 {
 	class LookupReducer : public CoRegReducer

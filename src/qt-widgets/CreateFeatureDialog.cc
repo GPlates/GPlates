@@ -24,6 +24,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
 #include <map>
@@ -95,7 +96,6 @@
 #include "utils/UnicodeStringUtils.h"
 
 
-#include <boost/foreach.hpp>
 namespace
 {
 	bool

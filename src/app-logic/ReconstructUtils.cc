@@ -28,6 +28,7 @@
 #include <QDebug>
 
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 
 #include "ReconstructUtils.h"
 
@@ -41,7 +42,6 @@
 #include "model/types.h"
 
 
-#include <boost/foreach.hpp>
 namespace
 {
 	/**

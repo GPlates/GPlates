@@ -1,5 +1,4 @@
 /* $Id:  $ */
-#include <boost/foreach.hpp>
 
 /**
  * \file 
@@ -26,6 +25,7 @@
 #include "global/python.h"
 #if !defined(GPLATES_NO_PYTHON)
 
+#include <boost/foreach.hpp>
 
 #include "PyFeatureCollection.h"
 #include "PythonRunner.h"

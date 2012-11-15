@@ -1,5 +1,4 @@
 /* $Id$ */
-#include <boost/foreach.hpp>
 
 /**
  * \file 
@@ -26,6 +25,7 @@
 
 #include <list>
 #include <map>
+#include <boost/foreach.hpp>
 #include "global/CompilerWarnings.h"
 PUSH_MSVC_WARNINGS
 // Disable Visual Studio warning "qualifier applied to function type has no meaning; ignored" in boost 1.36.0

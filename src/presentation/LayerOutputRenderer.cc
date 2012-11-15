@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 
 #include "LayerOutputRenderer.h"
 
@@ -40,7 +41,6 @@
 #include "presentation/ReconstructionGeometryRenderer.h"
 
 
-#include <boost/foreach.hpp>
 GPlatesPresentation::LayerOutputRenderer::LayerOutputRenderer(
 		ReconstructionGeometryRenderer &reconstruction_geometry_renderer,
 		GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer) :

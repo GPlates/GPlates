@@ -24,12 +24,12 @@
  */	
 #include <algorithm>
 
+#include <boost/foreach.hpp>
 
 #include "CoRegConfigurationTable.h"
 #include "RegionOfInterestFilter.h"
 #include "global/GPlatesAssert.h"
 
-#include <boost/foreach.hpp>
 namespace
 {
 	using namespace GPlatesDataMining;

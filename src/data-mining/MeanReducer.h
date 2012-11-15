@@ -28,10 +28,10 @@
 #include <numeric>
 #include <vector>
 #include <QDebug>
+#include <boost/foreach.hpp>
 
 #include "CoRegReducer.h"
 
-#include <boost/foreach.hpp>
 namespace GPlatesDataMining
 {
 	class MeanReducer : public CoRegReducer

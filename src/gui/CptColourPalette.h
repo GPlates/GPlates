@@ -29,6 +29,7 @@
 #define GPLATES_GUI_CPTCOLOURPALETTE_H
 
 #include <vector>
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits/is_integral.hpp>
@@ -46,7 +47,6 @@
 #include "utils/TypeTraits.h"
 
 
-#include <boost/foreach.hpp>
 namespace GPlatesGui
 {
 	/**

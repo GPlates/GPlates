@@ -40,6 +40,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/utility/enable_if.hpp>
+#include <boost/foreach.hpp>
 #include <boost/function.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/lambda/construct.hpp>
@@ -54,7 +55,6 @@
 #include "model/WeakReferenceCallback.h"
 
 
-#include <boost/foreach.hpp>
 namespace GPlatesAppLogic
 {
 	class ApplicationState;

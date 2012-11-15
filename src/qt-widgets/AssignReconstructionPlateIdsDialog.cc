@@ -26,6 +26,7 @@
 #include <numeric>
 #include <vector>
 #include <boost/cast.hpp>
+#include <boost/foreach.hpp>
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QRadioButton>
@@ -55,7 +56,6 @@
 #include "presentation/VisualLayers.h"
 
 
-#include <boost/foreach.hpp>
 namespace
 {
 	const QString HELP_PARTITIONING_LAYER_DIALOG_TITLE = QObject::tr("Selecting one or more partitioning layers");

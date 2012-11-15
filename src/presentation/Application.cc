@@ -25,6 +25,7 @@
 
 #include <string>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
 
@@ -46,7 +47,6 @@
 #include "qt-widgets/TaskPanel.h"
 
 
-#include <boost/foreach.hpp>
 GPlatesPresentation::Application::Application() :
 	d_view_state(d_application_state),
 	d_main_window(d_application_state, d_view_state)

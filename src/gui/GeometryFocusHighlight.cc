@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <boost/none.hpp>
 
 #include "Colour.h"
@@ -43,7 +44,6 @@
 #include "view-operations/RenderedGeometryUtils.h"
 
 
-#include <boost/foreach.hpp>
 void
 GPlatesGui::GeometryFocusHighlight::draw_focused_geometry(
 		FeatureFocus &feature_focus,

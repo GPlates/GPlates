@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <iterator>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <boost/mem_fn.hpp>
 #include <boost/optional.hpp>
 #include <QFileInfo>
@@ -47,7 +48,6 @@
 #include "view-operations/RenderedGeometryUtils.h"
 
 
-#include <boost/foreach.hpp>
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::ExportResolvedTopologyAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context,
 		const const_configuration_ptr &cfg) :

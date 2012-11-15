@@ -24,6 +24,7 @@
  */
 
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 
 #include "ReconstructMethodRegistry.h"
 
@@ -38,7 +39,6 @@
 #include "global/GPlatesAssert.h"
 
 
-#include <boost/foreach.hpp>
 void
 GPlatesAppLogic::ReconstructMethodRegistry::register_reconstruct_method(
 		ReconstructMethod::Type reconstruct_method_type,

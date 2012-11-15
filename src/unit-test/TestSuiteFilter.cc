@@ -30,11 +30,11 @@
 
 #include <QDebug>
 
+#include <boost/foreach.hpp>
 #include <boost/tokenizer.hpp>
 
 #include "unit-test/TestSuiteFilter.h"
 
-#include <boost/foreach.hpp>
 void
 GPlatesUnitTest::TestSuiteFilter::set_filter_string(
 		std::string filter_str)

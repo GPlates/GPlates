@@ -1,5 +1,4 @@
 /* $Id: CommandLineParser.h 7795 2010-03-16 04:26:54Z jcannon $ */
-#include <boost/foreach.hpp>
 
 /**
 * \file
@@ -33,6 +32,7 @@
 
 #include "global/python.h"
 
+#include <boost/foreach.hpp>
 
 #include <QString>
 #include <QVariant>

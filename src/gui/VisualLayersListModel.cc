@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <QMimeData>
 #include <QByteArray>
 #include <QDataStream>
@@ -32,7 +33,6 @@
 #include "VisualLayersProxy.h"
 
 
-#include <boost/foreach.hpp>
 const QString
 GPlatesGui::VisualLayersListModel::VISUAL_LAYERS_MIME_TYPE = "application/gplates.visuallayers.index";
 

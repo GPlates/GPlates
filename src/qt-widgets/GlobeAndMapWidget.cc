@@ -25,6 +25,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <QHBoxLayout>
 
 #include "GlobeAndMapWidget.h"
@@ -48,7 +49,6 @@
 
 
 // Fresh GlobeAndMapWidget
-#include <boost/foreach.hpp>
 GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_) :

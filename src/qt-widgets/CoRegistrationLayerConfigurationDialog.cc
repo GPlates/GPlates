@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <boost/foreach.hpp>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDoubleSpinBox>
@@ -63,7 +64,6 @@
 #include "utils/UnicodeStringUtils.h"
 
 
-#include <boost/foreach.hpp>
 namespace
 {
 	const char* DISTANCE = QT_TR_NOOP("Distance");

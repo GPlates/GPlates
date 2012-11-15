@@ -24,6 +24,7 @@
  */
 
 #include <algorithm>
+#include <boost/foreach.hpp>
 #include <QDebug>
 
 #include "RasterLayerTask.h"
@@ -37,7 +38,6 @@
 #include "property-values/TextContent.h"
 
 
-#include <boost/foreach.hpp>
 const QString GPlatesAppLogic::RasterLayerTask::RASTER_FEATURE_CHANNEL_NAME =
 		"Raster feature";
 const QString GPlatesAppLogic::RasterLayerTask::RECONSTRUCTED_POLYGONS_CHANNEL_NAME =

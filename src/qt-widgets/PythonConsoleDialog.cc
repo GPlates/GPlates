@@ -25,6 +25,7 @@
 
 #include <cstdio>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <QFont>
 #include <QKeyEvent>
 #include <QTextCharFormat>
@@ -73,7 +74,6 @@
 #include "utils/DeferredCallEvent.h"
 
 #if !defined(GPLATES_NO_PYTHON)
-#include <boost/foreach.hpp>
 namespace
 {
 	const char *START_PROMPT_TEXT = QT_TR_NOOP(">>>\t");

@@ -30,6 +30,7 @@
 #include <limits>
 #include <map>
 
+#include <boost/foreach.hpp>
 #include <boost/integer_traits.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/construct.hpp>
@@ -134,7 +135,6 @@
 #include "view-operations/RenderedGeometryParameters.h"
 
 
-#include <boost/foreach.hpp>
 namespace
 {
 	//! Returns the wrapped previous index before @@a index in @@a sequence.

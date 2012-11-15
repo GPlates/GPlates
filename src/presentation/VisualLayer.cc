@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 
 #include "VisualLayer.h"
 
@@ -40,7 +41,6 @@
 
 
 
-#include <boost/foreach.hpp>
 GPlatesPresentation::VisualLayer::VisualLayer(
 		VisualLayers &visual_layers,
 		const VisualLayerRegistry &visual_layer_registry,

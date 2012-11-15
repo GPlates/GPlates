@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <QDir>
 #include <QCoreApplication>
 #include <QFileInfo>
@@ -44,7 +45,6 @@
 
 
 #if !defined(GPLATES_NO_PYTHON)
-#include <boost/foreach.hpp>
 using namespace boost::python;
 
 // For PyUnicode_Check and PyString_Check below.

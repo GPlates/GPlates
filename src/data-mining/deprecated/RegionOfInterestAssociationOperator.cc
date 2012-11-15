@@ -1,5 +1,4 @@
 /* $Id: RegionOfInterestAssociationOperator.cc 10247 2010-11-17 08:41:29Z jboyden $ */
-#include <boost/foreach.hpp>
 
 /**
  * \file .
@@ -24,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 
 #include "global/CompilerWarnings.h"
 #include "utils/Profile.h"

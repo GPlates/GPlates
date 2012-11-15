@@ -26,6 +26,7 @@
 #ifndef GPLATESDATAMINING_DATAMININGUTILS_H
 #define GPLATESDATAMINING_DATAMININGUTILS_H
 
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <QString>
@@ -41,7 +42,6 @@
 
 #include "model/FeatureHandle.h"
 
-#include <boost/foreach.hpp>
 namespace GPlatesAppLogic
 {
 	class ReconstructedFeatureGeometry;

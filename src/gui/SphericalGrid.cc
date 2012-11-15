@@ -27,6 +27,7 @@
 
 #include <cmath>
 #include <algorithm>
+#include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <opengl/OpenGL.h>
 
@@ -49,7 +50,6 @@
 #include "opengl/GLVertexArray.h"
 
 
-#include <boost/foreach.hpp>
 namespace
 {
 	typedef GPlatesOpenGL::GLColourVertex vertex_type;

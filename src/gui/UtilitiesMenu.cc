@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
+#include <boost/foreach.hpp>
 #include <QMetaType>
 #include <QVariant>
 #include <QDebug>
@@ -36,7 +37,6 @@
 
 #if !defined(GPLATES_NO_PYTHON)
 
-#include <boost/foreach.hpp>
 Q_DECLARE_METATYPE( boost::function< void () > )
 
 GPlatesGui::UtilitiesMenu::UtilitiesMenu(

@@ -32,6 +32,7 @@
 #include <ostream>
 #include <string>
 #include <vector>
+#include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/type_traits/is_floating_point.hpp>
@@ -68,7 +69,6 @@
 #include "utils/Profile.h"
 
 
-#include <boost/foreach.hpp>
 namespace GPlatesFileIO
 {
 	namespace MipmappedRasterFormatWriterInternals

@@ -1,5 +1,4 @@
 /* $Id: Colour.h 11559 2011-05-16 07:41:01Z mchin $ */
-#include <boost/foreach.hpp>
 
 /**
  * @file 
@@ -32,6 +31,7 @@
 #ifndef Q_MOC_RUN //workaround. Qt moc doesn't like BOOST_JOIN. Make them not seeing each other.
 
 #include <iostream>
+#include <boost/foreach.hpp>
 #include <boost/ref.hpp>
 #include <map>
 #include <QObject>

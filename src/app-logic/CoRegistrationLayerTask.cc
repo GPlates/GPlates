@@ -22,6 +22,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#include <boost/foreach.hpp>
 #include <boost/range/concepts.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/weak_ptr.hpp>
@@ -37,7 +38,6 @@
 #include "data-mining/DataSelector.h"
 
 
-#include <boost/foreach.hpp>
 const QString GPlatesAppLogic::CoRegistrationLayerTask::CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME =
 		"Reconstructed seed geometries";
 const QString GPlatesAppLogic::CoRegistrationLayerTask::CO_REGISTRATION_TARGET_GEOMETRIES_CHANNEL_NAME =

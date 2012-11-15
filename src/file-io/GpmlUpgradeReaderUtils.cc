@@ -25,6 +25,7 @@
 
 #include <vector>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QDebug>
 
@@ -50,7 +51,6 @@
 #include "property-values/StructuralType.h"
 
 
-#include <boost/foreach.hpp>
 namespace GPlatesFileIO
 {
 	namespace

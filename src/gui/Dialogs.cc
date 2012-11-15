@@ -24,6 +24,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <QDebug>
 #include <QtGlobal>
 
@@ -79,7 +80,6 @@
 #include "qt-widgets/VisualLayersDialog.h"
 
 
-#include <boost/foreach.hpp>
 GPlatesGui::Dialogs::Dialogs(
 		GPlatesAppLogic::ApplicationState &_application_state,
 		GPlatesPresentation::ViewState &_view_state,

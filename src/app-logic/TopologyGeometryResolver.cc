@@ -26,6 +26,7 @@
 
 #include <cstddef> // For std::size_t
 #include <vector>
+#include <boost/foreach.hpp>
 #include <QDebug>
 
 #include "TopologyGeometryResolver.h"
@@ -58,7 +59,6 @@
 #include "utils/UnicodeStringUtils.h"
 
 
-#include <boost/foreach.hpp>
 GPlatesAppLogic::TopologyGeometryResolver::TopologyGeometryResolver(
 		std::vector<ResolvedTopologicalGeometry::non_null_ptr_type> &resolved_topological_geometries,
 		const resolve_geometry_flags_type &resolve_geometry_flags,

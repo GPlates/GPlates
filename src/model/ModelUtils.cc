@@ -26,6 +26,7 @@
  */
 
 #include <vector>
+#include <boost/foreach.hpp>
 #include <boost/static_assert.hpp>
 #include <QtGlobal>
 
@@ -56,7 +57,6 @@
 #include "property-values/StructuralType.h"
 
 
-#include <boost/foreach.hpp>
 namespace
 {
 	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>

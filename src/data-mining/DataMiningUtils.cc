@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <fstream>
+#include <boost/foreach.hpp>
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "feature-visitors/ShapefileAttributeFinder.h"
@@ -37,7 +38,6 @@
 #include "GetValueFromPropertyVisitor.h"
 #include "IsCloseEnoughChecker.h"
 
-#include <boost/foreach.hpp>
 using namespace GPlatesUtils;
 
 boost::optional< double > 

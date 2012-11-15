@@ -1,5 +1,4 @@
 /* $Id: LookupReducer.h 11660 2011-05-27 07:12:20Z mchin $ */
-#include <boost/foreach.hpp>
 
 /**
  * \file 
@@ -24,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */	
 
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
 #include "app-logic/ReconstructedFeatureGeometry.h"

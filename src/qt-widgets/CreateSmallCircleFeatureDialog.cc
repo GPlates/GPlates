@@ -1,5 +1,4 @@
 /* $Id: CreateVGPDialog.cc 11436 2011-05-04 11:04:00Z rwatson $ */
-#include <boost/foreach.hpp>
 
 /**
  * \file 
@@ -24,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <QListWidget>
 #include <QMessageBox>
 

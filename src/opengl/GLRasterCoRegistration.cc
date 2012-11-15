@@ -27,6 +27,7 @@
 #include <limits>
 #include <boost/cast.hpp>
 #include <boost/cstdint.hpp>
+#include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
@@ -59,7 +60,6 @@
 #include "utils/Profile.h"
 
 
-#include <boost/foreach.hpp>
 namespace GPlatesOpenGL
 {
 	namespace

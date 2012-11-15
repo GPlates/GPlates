@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <QString>
 #include <QStringList>
 
@@ -41,7 +42,6 @@
 #include "utils/UnicodeStringUtils.h"
 
 
-#include <boost/foreach.hpp>
 namespace
 {
 	/**
