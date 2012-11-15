@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/foreach.hpp>
 #include <QPalette>
 #include <QApplication>
 #include <QColorDialog>
@@ -66,6 +65,7 @@
 
 #include "utils/UnicodeStringUtils.h"
 
+#include <boost/foreach.hpp>
 
 // This is to allow FeatureCollectionHandle::const_weak_ref to be stored in the
 // userData of a QComboBox item, which is of type QVariant.

@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QLocale>
 #include <QDebug>
@@ -53,6 +52,7 @@
 #include "property-values/XsString.h"
 #include "presentation/ViewState.h"
 
+#include <boost/foreach.hpp>
 
 namespace
 {

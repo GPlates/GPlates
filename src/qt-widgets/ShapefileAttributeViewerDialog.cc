@@ -23,9 +23,6 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
-#include <boost/foreach.hpp>
-
 #include "ShapefileAttributeViewerDialog.h"
 
 #include "app-logic/FeatureCollectionFileState.h"
@@ -35,6 +32,7 @@
 
 #include "file-io/FileInfo.h"
 
+#include <boost/foreach.hpp>
 
 namespace
 {

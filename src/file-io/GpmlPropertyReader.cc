@@ -25,7 +25,6 @@
 
 #include <sstream>
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QDebug>
 
@@ -52,6 +51,7 @@
 
 #include "utils/UnicodeStringUtils.h"
 
+#include <boost/foreach.hpp>
 
 GPlatesFileIO::GpmlPropertyReader::GpmlPropertyReader(
 		const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &gpgim_property,

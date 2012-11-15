@@ -32,10 +32,10 @@
 
 #include "global/python.h"
 
-#include <boost/foreach.hpp>
-
 #include <QString>
 #include <QVariant>
+
+#include <boost/foreach.hpp>
 
 namespace GPlatesGui
 {

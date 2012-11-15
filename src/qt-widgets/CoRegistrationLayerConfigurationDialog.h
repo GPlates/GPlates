@@ -28,7 +28,6 @@
 #define GPLATES_QT_WIDGETS_COREGISTRATIONLAYERCONFIGURATIONDIALOG_H
 
 #include <boost/weak_ptr.hpp>
-#include <boost/foreach.hpp>
 
 #include <QListView>
 #include <QCheckBox>
@@ -52,6 +51,7 @@
 
 #include "presentation/ViewState.h"
 
+#include <boost/foreach.hpp>
 
 namespace GPlatesOpenGL
 {

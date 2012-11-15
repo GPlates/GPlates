@@ -26,7 +26,6 @@
 #include <algorithm>
 #include <iterator>
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <QDebug>
 #include <QMessageBox>
 #include <QString>
@@ -83,6 +82,7 @@
 #include "utils/Parse.h"
 #include "utils/UnicodeStringUtils.h"
 
+#include <boost/foreach.hpp>
 
 const QString
 GPlatesQtWidgets::ImportScalarField3DDialog::GPML_EXT = ".gpml";

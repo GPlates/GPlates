@@ -24,7 +24,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/foreach.hpp>
 #include <QListWidget>
 #include <QMessageBox>
 
@@ -57,6 +56,8 @@
 #include "property-values/GpmlPlateId.h"
 #include "property-values/XsDouble.h"
 #include "property-values/XsString.h"
+
+#include <boost/foreach.hpp>
 
 namespace
 {

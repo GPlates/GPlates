@@ -27,7 +27,6 @@
 #include <iterator>
 #include <memory>
 #include <utility>
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
 #include "PointInPolygon.h"
@@ -42,6 +41,7 @@
 
 #include "utils/Profile.h"
 
+#include <boost/foreach.hpp>
 
 namespace GPlatesMaths
 {

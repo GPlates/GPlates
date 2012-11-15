@@ -28,7 +28,6 @@
 #ifndef GPLATES_GUI_DRAWSTYLEADAPTERS_H
 #define GPLATES_GUI_DRAWSTYLEADAPTERS_H
 #include <iostream>
-#include <boost/foreach.hpp>
 #include <boost/ref.hpp>
 #include <map>
 #include <string>
@@ -46,6 +45,8 @@
 #include "Palette.h"
 #include "PlateIdColourPalettes.h"
 #include "PythonConfiguration.h"
+
+#include <boost/foreach.hpp>
 
 namespace GPlatesGui
 {

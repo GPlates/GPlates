@@ -24,7 +24,6 @@
  */
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 
 #include "VelocityFieldCalculatorLayerProxy.h"
 
@@ -35,6 +34,7 @@
 #include "ResolvedTopologicalGeometry.h"
 #include "ResolvedTopologicalNetwork.h"
 
+#include <boost/foreach.hpp>
 
 GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::VelocityFieldCalculatorLayerProxy() :
 	// Start off with a reconstruction layer proxy that does identity rotations.

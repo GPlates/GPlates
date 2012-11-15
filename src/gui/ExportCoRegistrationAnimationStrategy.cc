@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/foreach.hpp>
 #include <QLocale> 
 
 #include "ExportCoRegistrationAnimationStrategy.h"
@@ -47,6 +46,7 @@
 #include "qt-widgets/ReconstructionViewWidget.h"
 #include "qt-widgets/ViewportWindow.h"
 
+#include <boost/foreach.hpp>
 
 namespace
 {

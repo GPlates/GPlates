@@ -34,7 +34,6 @@
 #include <memory>
 #include <boost/format.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
 #include <QActionGroup>
@@ -135,6 +134,7 @@
 #include "view-operations/RenderedGeometryParameters.h"
 #include "view-operations/UndoRedo.h"
 
+#include <boost/foreach.hpp>
 
 namespace GPlatesQtWidgets
 {

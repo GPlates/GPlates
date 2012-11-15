@@ -24,7 +24,6 @@
  */
 
 #include <set>
-#include <boost/foreach.hpp>
 #include <QString>
 #include <QHeaderView>
 #include <QTableWidgetItem>
@@ -35,6 +34,7 @@
 
 #include "RasterBandPage.h"
 
+#include <boost/foreach.hpp>
 
 namespace
 {

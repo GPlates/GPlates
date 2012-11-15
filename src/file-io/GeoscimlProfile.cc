@@ -32,7 +32,6 @@
 #include <QXmlResultItems>
 #include <QXmlSerializer>
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 
 #include "GeoscimlProfile.h"
 #include "GsmlFeatureHandlers.h"
@@ -40,6 +39,8 @@
 #include "GsmlNodeProcessorFactory.h"
 
 #include "utils/XQueryUtils.h"
+
+#include <boost/foreach.hpp>
 
 void
 GPlatesFileIO::GeoscimlProfile::populate(

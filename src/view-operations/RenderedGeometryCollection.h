@@ -36,11 +36,11 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/foreach.hpp>
 #include <QObject>
 
 #include "RenderedGeometryLayer.h"
 
+#include <boost/foreach.hpp>
 
 namespace GPlatesViewOperations
 {

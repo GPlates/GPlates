@@ -25,7 +25,6 @@
 
 #include <iostream>
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <QCoreApplication>
 #include <QDebug>
 #include <QMessageBox>
@@ -64,6 +63,7 @@
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/ManageFeatureCollectionsDialog.h"
 
+#include <boost/foreach.hpp>
 
 namespace
 {

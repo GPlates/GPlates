@@ -24,7 +24,6 @@
  */
 
 #include <boost/cast.hpp>
-#include <boost/foreach.hpp>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
  * Must be included before the OpenGL headers (which also means before Qt headers).
@@ -46,6 +45,7 @@
 
 #include "utils/Profile.h"
 
+#include <boost/foreach.hpp>
 
 namespace GPlatesOpenGL
 {

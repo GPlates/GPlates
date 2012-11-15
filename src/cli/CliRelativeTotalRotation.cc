@@ -24,7 +24,6 @@
  */
 
 #include <iostream>
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
 #include "CliRelativeTotalRotation.h"
@@ -47,6 +46,7 @@
 
 #include "model/Model.h"
 
+#include <boost/foreach.hpp>
 
 namespace
 {

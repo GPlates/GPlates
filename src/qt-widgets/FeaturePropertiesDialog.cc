@@ -27,7 +27,6 @@
 #include <vector>
 #include <typeinfo>
 #include <boost/optional.hpp>
-#include <boost/foreach.hpp>
 #include <QString>
 #include <QStringList>
 
@@ -46,6 +45,7 @@
 
 #include "utils/UnicodeStringUtils.h"
 
+#include <boost/foreach.hpp>
 
 GPlatesQtWidgets::FeaturePropertiesDialog::FeaturePropertiesDialog(
 		GPlatesPresentation::ViewState &view_state_,

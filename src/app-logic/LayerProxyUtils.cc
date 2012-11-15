@@ -22,9 +22,6 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
-#include <boost/foreach.hpp>
-
 #include "LayerProxyUtils.h"
 
 #include "ReconstructedFeatureGeometry.h"
@@ -33,7 +30,6 @@
 #include "ReconstructLayerProxy.h"
 #include "ResolvedTopologicalGeometry.h"
 #include "TopologyGeometryResolverLayerProxy.h"
-
 
 void
 GPlatesAppLogic::LayerProxyUtils::get_reconstructed_feature_geometries(

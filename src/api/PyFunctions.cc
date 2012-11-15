@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/foreach.hpp>
 #include <QString>
 
 #include "PythonUtils.h"
@@ -42,6 +41,7 @@
 
 #include "model/Gpgim.h"
 
+#include <boost/foreach.hpp>
 
 #if !defined(GPLATES_NO_PYTHON)
 namespace bp = boost::python;

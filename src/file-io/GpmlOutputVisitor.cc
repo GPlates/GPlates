@@ -30,7 +30,6 @@
 #include <utility>
 #include <vector>
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
@@ -102,6 +101,7 @@
 #include "utils/UnicodeStringUtils.h"
 #include "utils/XmlNamespaces.h"
 
+#include <boost/foreach.hpp>
 
 namespace
 {

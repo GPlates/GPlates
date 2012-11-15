@@ -25,7 +25,6 @@
 
 #include <list>
 #include <map>
-#include <boost/foreach.hpp>
 #include "global/CompilerWarnings.h"
 PUSH_MSVC_WARNINGS
 // Disable Visual Studio warning "qualifier applied to function type has no meaning; ignored" in boost 1.36.0
@@ -53,6 +52,7 @@ POP_MSVC_WARNINGS
 
 #include "property-values/GmlPoint.h"
 
+#include <boost/foreach.hpp>
 
 using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
 using namespace GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl;

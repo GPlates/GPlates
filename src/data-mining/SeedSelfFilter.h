@@ -27,7 +27,6 @@
 
 #include <vector>
 #include <QDebug>
-#include <boost/foreach.hpp>
 
 #include "CoRegFilter.h"
 

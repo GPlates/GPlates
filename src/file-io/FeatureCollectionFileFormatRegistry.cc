@@ -24,7 +24,6 @@
  */
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QByteArray>
 #include <QDebug>
@@ -57,6 +56,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include <boost/foreach.hpp>
 
 namespace GPlatesFileIO
 {

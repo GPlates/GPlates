@@ -28,8 +28,6 @@
 #include <vector>
 #include <QDebug>
 
-#include <boost/foreach.hpp>
-
 #include "CoRegMapper.h"
 #include "DataTable.h"
 #include "DataMiningUtils.h"

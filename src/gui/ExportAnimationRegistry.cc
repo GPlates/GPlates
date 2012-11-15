@@ -24,7 +24,6 @@
  */
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 
 #include "ExportAnimationRegistry.h"
 
@@ -50,6 +49,7 @@
 #include "qt-widgets/ExportStageRotationOptionsWidget.h"
 #include "qt-widgets/ExportTotalRotationOptionsWidget.h"
 
+#include <boost/foreach.hpp>
 
 namespace GPlatesGui
 {

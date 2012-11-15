@@ -24,12 +24,12 @@
  */
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 
 #include "TopologyGeometryResolverLayerProxy.h"
 
 #include "TopologyUtils.h"
 
+#include <boost/foreach.hpp>
 
 GPlatesAppLogic::TopologyGeometryResolverLayerProxy::TopologyGeometryResolverLayerProxy() :
 	// Start off with a reconstruction layer proxy that does identity rotations.

@@ -22,11 +22,9 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
-#include <boost/foreach.hpp>
-
 #include "GpgimFeatureClass.h"
 
+#include <boost/foreach.hpp>
 
 void
 GPlatesModel::GpgimFeatureClass::get_feature_properties(

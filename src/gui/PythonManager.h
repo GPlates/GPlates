@@ -31,13 +31,14 @@
 
 #include <QDir>
 #include <QFileInfoList>
-#include <boost/foreach.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "global/GPlatesException.h"
 #include "global/python.h"
 #include "EventBlackout.h"
+
+#include <boost/foreach.hpp>
 
 #endif //Q_MOC_RUN
 

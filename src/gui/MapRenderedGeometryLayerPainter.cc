@@ -29,7 +29,6 @@
 #include <limits>
 #include <stack>
 #include <iostream>
-#include <boost/foreach.hpp>
 #include <boost/type_traits/is_same.hpp>
 
 #include <QDebug>
@@ -69,6 +68,7 @@
 #include "view-operations/RenderedString.h"
 #include "view-operations/RenderedTriangleSymbol.h"
 
+#include <boost/foreach.hpp>
 
 namespace
 {

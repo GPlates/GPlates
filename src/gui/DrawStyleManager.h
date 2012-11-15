@@ -31,7 +31,6 @@
 #ifndef Q_MOC_RUN //workaround. Qt moc doesn't like BOOST_JOIN. Make them not seeing each other.
 
 #include <iostream>
-#include <boost/foreach.hpp>
 #include <boost/ref.hpp>
 #include <map>
 #include <QObject>
@@ -40,6 +39,8 @@
 #include "model/FeatureHandle.h"
 #include "DrawStyleAdapters.h"
 #include "app-logic/UserPreferences.h"
+
+#include <boost/foreach.hpp>
 
 #endif //Q_MOC_RUN
 

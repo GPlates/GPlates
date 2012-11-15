@@ -24,7 +24,6 @@
  */
 
 #include <cmath>
-#include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 #include <boost/weak_ptr.hpp>
 #include <QTableWidgetItem>
@@ -53,6 +52,7 @@
 
 #include "utils/Parse.h"
 
+#include <boost/foreach.hpp>
 
 namespace
 {

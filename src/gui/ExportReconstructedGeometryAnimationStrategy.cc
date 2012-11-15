@@ -23,9 +23,6 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
-#include <boost/foreach.hpp>
-
 #include "ExportReconstructedGeometryAnimationStrategy.h"
 
 #include "app-logic/ApplicationState.h"
@@ -36,6 +33,7 @@
 
 #include "presentation/ViewState.h"
 
+#include <boost/foreach.hpp>
 
 GPlatesGui::ExportReconstructedGeometryAnimationStrategy::ExportReconstructedGeometryAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context,

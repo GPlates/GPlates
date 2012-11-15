@@ -22,12 +22,9 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
-
 #include <QDebug>
 #include <QFileInfo>
 #include <QMap>
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
 #include "Serialization.h"
@@ -45,6 +42,8 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+
+#include <boost/foreach.hpp>
 
 namespace
 {

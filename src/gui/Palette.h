@@ -29,7 +29,6 @@
 #define GPLATES_GUI_PALETTE_H
 #include <map>
 #include <boost/assign.hpp>
-#include <boost/foreach.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -41,6 +40,8 @@
 #include "ColourSpectrum.h"
 #include "HTMLColourNames.h"
 #include "model/types.h"
+
+#include <boost/foreach.hpp>
 
 namespace GPlatesGui 
 {

@@ -28,7 +28,6 @@
 #include <algorithm>
 #include <vector>
 #include <QDebug>
-#include <boost/foreach.hpp>
 
 #include "CoRegReducer.h"
 #include "DataMiningUtils.h"

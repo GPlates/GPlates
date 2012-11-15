@@ -28,11 +28,11 @@
 #define GPLATES_OPENGL_GLOBJECTRESOURCEMANAGER_H
 
 #include <vector>
-#include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <opengl/OpenGL.h>
 
+#include <boost/foreach.hpp>
 
 namespace GPlatesOpenGL
 {

@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/foreach.hpp>
 #include <QThread>
 
 #include "ApplicationState.h"
@@ -52,6 +51,7 @@
 
 #include "utils/Profile.h"
 
+#include <boost/foreach.hpp>
 
 namespace
 {
