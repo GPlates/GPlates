@@ -26,6 +26,15 @@
       <string>Dateline Wrapping</string>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout">
+      <property name="spacing">
+       <number>1</number>
+      </property>
+      <property name="topMargin">
+       <number>1</number>
+      </property>
+      <property name="bottomMargin">
+       <number>1</number>
+      </property>
       <item>
        <widget class="QCheckBox" name="check_box_wrap_dateline">
         <property name="text">

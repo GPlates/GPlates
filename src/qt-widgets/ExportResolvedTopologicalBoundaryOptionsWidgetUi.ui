@@ -7,13 +7,19 @@
     <x>0</x>
     <y>0</y>
     <width>540</width>
-    <height>373</height>
+    <height>382</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Export Options</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <property name="margin">
+    <number>0</number>
+   </property>
    <item>
     <widget class="QWidget" name="widget_shapefile_dateline_wrap" native="true"/>
    </item>
@@ -23,6 +29,21 @@
       <string>Feature Type Options</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
+      <property name="spacing">
+       <number>1</number>
+      </property>
+      <property name="leftMargin">
+       <number>9</number>
+      </property>
+      <property name="topMargin">
+       <number>1</number>
+      </property>
+      <property name="rightMargin">
+       <number>9</number>
+      </property>
+      <property name="bottomMargin">
+       <number>1</number>
+      </property>
       <item>
        <widget class="QCheckBox" name="checkBox_export_individual_plate_polygon_files">
         <property name="text">

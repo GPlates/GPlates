@@ -14,6 +14,9 @@
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>0</number>
+   </property>
    <property name="margin">
     <number>0</number>
    </property>
@@ -23,8 +26,23 @@
       <string>Stage rotation options</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>1</number>
+      </property>
+      <property name="bottomMargin">
+       <number>1</number>
+      </property>
       <item>
        <layout class="QHBoxLayout" name="layout_time_interval">
+        <property name="spacing">
+         <number>6</number>
+        </property>
+        <property name="margin">
+         <number>1</number>
+        </property>
         <item>
          <widget class="QLabel" name="label_time_interval">
           <property name="text">
