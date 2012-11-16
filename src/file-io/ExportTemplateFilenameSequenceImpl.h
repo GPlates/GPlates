@@ -76,6 +76,7 @@ namespace GPlatesFileIO
 		ExportTemplateFilenameSequenceImpl(
 				const QString &filename_template,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+				const QString &default_recon_tree_layer_name,
 				const double &begin_reconstruction_time,
 				const double &reconstruction_time_increment,
 				const GPlatesUtils::AnimationSequence::SequenceInfo sequence_info);
@@ -141,12 +142,14 @@ namespace GPlatesFileIO
 			FormatExtractor(
 					QString &filename_template,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+					const QString &default_recon_tree_layer_name,
 					format_seq_type &format_seq,
 					const GPlatesUtils::AnimationSequence::SequenceInfo sequence_info) :
 				d_filename_template(filename_template),
 				d_format_seq(format_seq),
 				d_sequence_info(sequence_info),
 				d_reconstruction_anchor_plate_id(reconstruction_anchor_plate_id),
+				d_default_recon_tree_layer_name(default_recon_tree_layer_name),
 				d_format_index(0),
 				d_filename_current_pos(0)
 			{  }
@@ -230,6 +233,7 @@ namespace GPlatesFileIO
 
 			const GPlatesUtils::AnimationSequence::SequenceInfo d_sequence_info;
 			GPlatesModel::integer_plate_id_type d_reconstruction_anchor_plate_id;
+			QString d_default_recon_tree_layer_name;
 
 			int d_format_index;
 			int d_filename_current_pos;

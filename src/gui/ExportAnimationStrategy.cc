@@ -23,15 +23,20 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
+#include <QString>
 
 #include "ExportAnimationStrategy.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/Layer.h"
+#include "app-logic/ReconstructGraph.h"
 
 #include "gui/AnimationController.h"
 #include "gui/ExportAnimationContext.h"
 
 #include "presentation/ViewState.h"
+#include "presentation/VisualLayer.h"
+#include "presentation/VisualLayers.h"
 
 
 GPlatesGui::ExportAnimationStrategy::ExportAnimationStrategy(
@@ -46,8 +51,38 @@ void
 GPlatesGui::ExportAnimationStrategy::set_template_filename(
 		const QString &filename)
 {
-	d_filename_sequence_opt = GPlatesFileIO::ExportTemplateFilenameSequence(filename,
-			d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
+	GPlatesPresentation::ViewState &view_state = d_export_animation_context_ptr->view_state();
+	GPlatesAppLogic::ApplicationState &application_state = view_state.get_application_state();
+
+	//
+	// Get the name of the visual layer associated with the default reconstruction tree layer.
+	// 
+	// If there is no reconstruction tree layer loaded then the layer name will be empty.
+	//
+
+	QString default_recon_tree_layer_name;
+
+	GPlatesAppLogic::Layer default_recon_tree_layer =
+			application_state.get_reconstruct_graph().get_default_reconstruction_tree_layer();
+
+	boost::weak_ptr<const GPlatesPresentation::VisualLayer> default_recon_tree_visual_layer =
+			view_state.get_visual_layers().get_visual_layer(default_recon_tree_layer);
+
+	boost::shared_ptr<const GPlatesPresentation::VisualLayer> locked_default_recon_tree_visual_layer =
+			default_recon_tree_visual_layer.lock();
+	if (locked_default_recon_tree_visual_layer)
+	{
+		default_recon_tree_layer_name = locked_default_recon_tree_visual_layer->get_name();
+	}
+
+	//
+	// Create the export template filename sequence.
+	//
+
+	d_filename_sequence_opt = GPlatesFileIO::ExportTemplateFilenameSequence(
+			filename,
+			application_state.get_current_anchored_plate_id(),
+			default_recon_tree_layer_name,
 			d_export_animation_context_ptr->get_sequence().actual_start_time,
 			d_export_animation_context_ptr->get_sequence().actual_end_time,
 			d_export_animation_context_ptr->get_sequence().raw_time_increment,
