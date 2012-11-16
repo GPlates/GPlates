@@ -43,11 +43,43 @@
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="checkBox_export_to_multiple_files">
-        <property name="text">
-         <string>Export to multiple files (one output directory per input file/layer)</string>
-        </property>
+       <widget class="QWidget" name="multiple_files_options_widget" native="true">
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>1</number>
+         </property>
+         <property name="bottomMargin">
+          <number>1</number>
+         </property>
+         <item>
+          <widget class="QCheckBox" name="checkBox_export_to_multiple_files">
+           <property name="text">
+            <string>Export to multiple files (one per input file/layer)</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="layout_separate_output_directory">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>18</number>
+        </property>
+        <item>
+         <widget class="QCheckBox" name="checkBox_separate_output_directory_per_file">
+          <property name="text">
+           <string>Separate output directory per input file/layer</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </widget>

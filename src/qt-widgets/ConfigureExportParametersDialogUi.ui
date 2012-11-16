@@ -285,14 +285,6 @@
               <string>time format &quot;hh-mm-ss&quot;</string>
              </property>
             </item>
-            <item>
-             <property name="text">
-              <string>%%</string>
-             </property>
-             <property name="text">
-              <string>%</string>
-             </property>
-            </item>
            </widget>
           </item>
           <item>

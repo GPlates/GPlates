@@ -189,7 +189,8 @@ namespace GPlatesFileIO
 		get_output_filenames(
 			std::vector<QString> &output_filenames,
 			const QString &output_filename,
-			const std::list< FeatureCollectionFeatureGroup<ReconstructionGeometryType> > &grouped_features_seq);
+			const std::list< FeatureCollectionFeatureGroup<ReconstructionGeometryType> > &grouped_features_seq,
+			bool export_separate_output_directory_per_input_file);
 
 
 		/**
@@ -406,7 +407,8 @@ namespace GPlatesFileIO
 		get_output_filenames(
 				std::vector<QString> &output_filenames,
 				const QString &filename,
-				const std::list< FeatureCollectionFeatureGroup<ReconstructionGeometryType> > &grouped_features_seq)
+				const std::list< FeatureCollectionFeatureGroup<ReconstructionGeometryType> > &grouped_features_seq,
+				bool export_separate_output_directory_per_input_file)
 		{
 			typename std::list< FeatureCollectionFeatureGroup<ReconstructionGeometryType> >::const_iterator 
 					it = grouped_features_seq.begin(),
@@ -423,15 +425,13 @@ namespace GPlatesFileIO
 				QFileInfo qfile_info = file_info.get_qfileinfo();
 				QString collection_filename = qfile_info.completeBaseName();
 
-		#if 1
-				// Folder-structure output
-				QString output_filename = build_folder_structure_filename(
-						export_path, collection_filename, export_filename);
-		#else	
-				// Flat-structure output.
-				QString output_filename = build_flat_structure_filename(
-						export_path, collection_filename, export_filename);
-		#endif
+				const QString output_filename = export_separate_output_directory_per_input_file
+						// Folder-structure output...
+						? build_folder_structure_filename(
+								export_path, collection_filename, export_filename)
+						// Flat-structure output...
+						: build_flat_structure_filename(
+								export_path, collection_filename, export_filename);
 
 				output_filenames.push_back(output_filename);
 			} // iterate over collections

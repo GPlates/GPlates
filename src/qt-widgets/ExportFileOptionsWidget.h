@@ -51,6 +51,7 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 
 	public:
+
 		/**
 		 * Creates a @a ExportFileOptionsWidget using default options.
 		 */
@@ -74,17 +75,26 @@ namespace GPlatesQtWidgets
 		}
 
 	private slots:
+
 		void
 		react_check_box_state_changed(
 				int state)
 		{
 			d_export_file_options.export_to_a_single_file =
 					checkBox_export_to_single_file->isChecked();
+
 			d_export_file_options.export_to_multiple_files =
 					checkBox_export_to_multiple_files->isChecked();
+
+			d_export_file_options.separate_output_directory_per_file =
+					checkBox_separate_output_directory_per_file->isChecked();
+
+			// Enable "Separate output directory per input file/layer" checkbox only if outputting multiple files.
+			checkBox_separate_output_directory_per_file->setEnabled(checkBox_export_to_multiple_files->isChecked());
 		}
 
 	private:
+
 		explicit
 		ExportFileOptionsWidget(
 				QWidget *parent_,
@@ -107,6 +117,12 @@ namespace GPlatesQtWidgets
 					d_export_file_options.export_to_multiple_files
 					? Qt::Checked
 					: Qt::Unchecked);
+			checkBox_separate_output_directory_per_file->setCheckState(
+					d_export_file_options.separate_output_directory_per_file
+					? Qt::Checked
+					: Qt::Unchecked);
+			// Enable "Separate output directory per input file/layer" checkbox only if outputting multiple files.
+			checkBox_separate_output_directory_per_file->setEnabled(d_export_file_options.export_to_multiple_files);
 
 			make_signal_slot_connections();
 		}
@@ -122,6 +138,11 @@ namespace GPlatesQtWidgets
 					SLOT(react_check_box_state_changed(int)));
 			QObject::connect(
 					checkBox_export_to_multiple_files,
+					SIGNAL(stateChanged(int)),
+					this,
+					SLOT(react_check_box_state_changed(int)));
+			QObject::connect(
+					checkBox_separate_output_directory_per_file,
 					SIGNAL(stateChanged(int)),
 					this,
 					SLOT(react_check_box_state_changed(int)));

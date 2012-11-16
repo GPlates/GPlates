@@ -99,6 +99,19 @@ namespace GPlatesCli
 		bool d_export_single_output_file;
 
 		/**
+		 * If 'true' then the *multiple* export files will follow the pattern...
+		 *
+		 *   "<export_path>/<collection_filename>/<export_template_filename>"
+		 *
+		 * ...otherwise they will follow the pattern...
+		 *
+		 *   "<export_path>/<collection_filename>_<export_template_filename>"
+		 *
+		 * NOTE: This option only applies if @a d_export_single_output_file is 'false'.
+		 */
+		bool d_export_separate_output_directory_per_input_file;
+
+		/**
 		 * Wraps reconstructed geometries to the dateline.
 		 *
 		 * This currently only applies to Shapefiles.

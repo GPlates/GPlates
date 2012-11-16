@@ -39,9 +39,11 @@ namespace GPlatesGui
 			explicit
 			ExportFileOptions(
 					bool export_to_a_single_file_ = true,
-					bool export_to_multiple_files_ = true) :
+					bool export_to_multiple_files_ = true,
+					bool separate_output_directory_per_file_ = true) :
 				export_to_a_single_file(export_to_a_single_file_),
-				export_to_multiple_files(export_to_multiple_files_)
+				export_to_multiple_files(export_to_multiple_files_),
+				separate_output_directory_per_file(separate_output_directory_per_file_)
 			{  }
 
 
@@ -53,10 +55,23 @@ namespace GPlatesGui
 			/**
 			 * Export @a ReconstructionGeometry derived objects to multiple export files.
 			 *
-			 * Each output file corresponds to an input file that the features
+			 * By default each output file corresponds to an input file that the features
 			 * (that generated the reconstruction geometries) came from.
 			 */
 			bool export_to_multiple_files;
+
+			/**
+			 * If 'true' then the *multiple* export files will follow the pattern...
+			 *
+			 *   "<export_path>/<collection_filename>/<export_template_filename>"
+			 *
+			 * ...otherwise they will follow the pattern...
+			 *
+			 *   "<export_path>/<collection_filename>_<export_template_filename>"
+			 *
+			 * NOTE: This option only applies if @a export_to_multiple_files is true.
+			 */
+			bool separate_output_directory_per_file;
 		};
 
 

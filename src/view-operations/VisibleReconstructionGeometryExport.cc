@@ -63,6 +63,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 		const double &reconstruction_time,
 		bool export_single_output_file,
 		bool export_per_input_file,
+		bool export_separate_output_directory_per_input_file,
 		bool wrap_to_dateline)
 {
 	// Get any ReconstructionGeometry objects that are visible in any active layers
@@ -91,6 +92,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 			reconstruction_time,
 			export_single_output_file,
 			export_per_input_file,
+			export_separate_output_directory_per_input_file,
 			wrap_to_dateline);
 }
 
@@ -105,6 +107,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	const double &reconstruction_time,
 	bool export_single_output_file,
 	bool export_per_input_file,
+	bool export_separate_output_directory_per_input_file,
 	bool wrap_to_dateline)
 {
 	// Get any ReconstructionGeometry objects that are visible in any active layers
@@ -133,6 +136,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 		reconstruction_time,
 		export_single_output_file,
 		export_per_input_file,
+		export_separate_output_directory_per_input_file,
 		wrap_to_dateline);
 }
 
@@ -146,6 +150,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	const double &reconstruction_time,
 	bool export_single_output_file,
 	bool export_per_input_file,
+	bool export_separate_output_directory_per_input_file,
 	bool wrap_to_dateline)
 {
 	// Get any ReconstructionGeometry objects that are visible in any active layers
@@ -174,5 +179,6 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 		reconstruction_time,
 		export_single_output_file,
 		export_per_input_file,
+		export_separate_output_directory_per_input_file,
 		wrap_to_dateline);
 }

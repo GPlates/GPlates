@@ -70,6 +70,10 @@ namespace
 	//! Option name for outputting to a single file with short version.
 	const char *SINGLE_OUTPUT_FILE_OPTION_NAME_WITH_SHORT_OPTION = "single-output-file,s";
 
+	//! Option name for outputting each file to a separate directory with short version.
+	const char *SEPARATE_OUTPUT_DIRECTORY_OPTION_NAME_WITH_SHORT_OPTION = "separate-output-dir,d";
+
+
 	//! Option name for wrapping-to-dateline with short version.
 	const char *WRAP_TO_DATELINE_OPTION_NAME_WITH_SHORT_OPTION = "wrap-to-dateline,w";
 
@@ -102,6 +106,7 @@ GPlatesCli::ReconstructCommand::ReconstructCommand() :
 	d_recon_time(0),
 	d_anchor_plate_id(0),
 	d_export_single_output_file(true),
+	d_export_separate_output_directory_per_input_file(true),
 	d_wrap_to_dateline(false)
 {
 }
@@ -165,6 +170,12 @@ GPlatesCli::ReconstructCommand::add_options(
 			"output to a single file (defaults to 'true')\n"
 			"  NOTE: Only applies if export file type is Shapefile in which case\n"
 			"  'false' will generate a matching output file for each input file."
+		)
+		(
+			SEPARATE_OUTPUT_DIRECTORY_OPTION_NAME_WITH_SHORT_OPTION,
+			boost::program_options::value<bool>(&d_export_separate_output_directory_per_input_file)->default_value(true),
+			"output to a separate directory for each file (defaults to 'true')\n"
+			"  NOTE: Only applies if outputting multiple files."
 		)
 		(
 			WRAP_TO_DATELINE_OPTION_NAME_WITH_SHORT_OPTION,
@@ -264,5 +275,6 @@ GPlatesCli::ReconstructCommand::run(
 				d_recon_time,
 				d_export_single_output_file/*export_single_output_file*/,
 				!d_export_single_output_file/*export_per_input_file*/,
+				d_export_separate_output_directory_per_input_file,
 				d_wrap_to_dateline);
 }
