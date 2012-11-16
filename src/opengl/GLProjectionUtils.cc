@@ -180,15 +180,15 @@ GPlatesOpenGL::GLProjectionUtils::get_min_pixel_size_on_unit_sphere(
 
 	const double window_xy_coords[9][2] =
 	{
-		{viewport.x(),                          viewport.y()                           },
-		{viewport.x() + 0.5 * viewport.width(), viewport.y()                           },
-		{viewport.x() + viewport.width(),       viewport.y()                           },
-		{viewport.x(),                          viewport.y() + 0.5 * viewport.height() },
-		{viewport.x() + 0.5 * viewport.width(), viewport.y() + 0.5 * viewport.height() },
-		{viewport.x() + viewport.width(),       viewport.y() + 0.5 * viewport.height() },
-		{viewport.x(),                          viewport.y() + viewport.height()       },
-		{viewport.x() + 0.5 * viewport.width(), viewport.y() + viewport.height()       },
-		{viewport.x() + viewport.width(),       viewport.y() + viewport.height()       }
+		{double(viewport.x()),                          double(viewport.y())                           },
+                {double(viewport.x() + 0.5 * viewport.width()), double(viewport.y())                           },
+                {double(viewport.x() + viewport.width()),       double(viewport.y())                           },
+                {double(viewport.x()),                          double(viewport.y() + 0.5 * viewport.height()) },
+                {double(viewport.x() + 0.5 * viewport.width()), double(viewport.y() + 0.5 * viewport.height()) },
+                {double(viewport.x() + viewport.width()),       double(viewport.y() + 0.5 * viewport.height()) },
+                {double(viewport.x()),                          double(viewport.y() + viewport.height())       },
+                {double(viewport.x() + 0.5 * viewport.width()), double(viewport.y() + viewport.height())       },
+                {double(viewport.x() + viewport.width()),       double(viewport.y() + viewport.height())       }
 	};
 
 	// Iterate over all sample points and project onto the unit sphere in model space.

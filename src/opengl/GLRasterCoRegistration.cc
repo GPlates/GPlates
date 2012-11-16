@@ -3473,8 +3473,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 	const GPlatesMaths::UnitVector3D &second_point = line.end_point().position_vector();
 	const GPlatesMaths::UnitVector3D &arc_normal = line.rotation_axis();
 
-	const GLfloat first_point_gl[3] = { first_point.x().dval(), first_point.y().dval(), first_point.z().dval() };
-	const GLfloat second_point_gl[3] = { second_point.x().dval(), second_point.y().dval(), second_point.z().dval() };
+	const GLfloat first_point_gl[3] =  { GLfloat(first_point.x().dval()),  GLfloat(first_point.y().dval()),  GLfloat(first_point.z().dval()) };
+	const GLfloat second_point_gl[3] = { GLfloat(second_point.x().dval()), GLfloat(second_point.y().dval()), GLfloat(second_point.z().dval()) };
 
 	// All four vertices have the same arc normal.
 	vertex.line_arc_normal[0] = arc_normal.x().dval();
@@ -3750,9 +3750,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 	const GPlatesMaths::UnitVector3D &second_point = line.end_point().position_vector();
 	const GPlatesMaths::UnitVector3D &arc_normal = line.rotation_axis();
 
-	const GLfloat first_point_gl[3] = { first_point.x().dval(), first_point.y().dval(), first_point.z().dval() };
-	const GLfloat second_point_gl[3] = { second_point.x().dval(), second_point.y().dval(), second_point.z().dval() };
-
+	const GLfloat first_point_gl[3] =  { GLfloat(first_point.x().dval()),  GLfloat(first_point.y().dval()),  GLfloat(first_point.z().dval()) };
+        const GLfloat second_point_gl[3] = { GLfloat(second_point.x().dval()), GLfloat(second_point.y().dval()), GLfloat(second_point.z().dval()) };
 	//
 	// Two mesh vertices remain at the line (arc) end points, another two lie in the plane containing
 	// the arc start point and arc normal (and origin) and another two lie in the plane containing

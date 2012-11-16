@@ -158,6 +158,9 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 			if (CXX_MINOR_VERSION STRLESS "4")
 				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-uninitialized")
 			endif (CXX_MINOR_VERSION STRLESS "4")
+			if (CXX_MINOR_VERSION EQUAL "7")#Due to G++4.7 bug, not treat maybe-uninitialized warning as error.
+                                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=maybe-uninitialized")
+                        endif (CXX_MINOR_VERSION EQUAL "7")
 		endif (CXX_MAJOR_VERSION EQUAL "4")
     endif (GPLATES_PUBLIC_RELEASE)
 

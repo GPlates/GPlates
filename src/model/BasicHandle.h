@@ -848,7 +848,7 @@ namespace GPlatesModel
 	{
 		// We always set the unsaved changes flag immediately regardless of
 		// whether there is a NotificationGuard.
-		set_unsaved_changes();
+		this->set_unsaved_changes();
 
 		Model *model = model_ptr();
 
@@ -894,10 +894,10 @@ namespace GPlatesModel
 					publisher_bit | child_bit);
 
 		WeakReferencePublisherModifiedVisitor<HandleType> visitor(type);
-		apply_weak_observer_visitor(visitor);
+		this->apply_weak_observer_visitor(visitor);
 		WeakReferencePublisherModifiedVisitor<const HandleType> const_visitor(
 				static_cast<typename WeakReferencePublisherModifiedEvent<const HandleType>::Type>(type));
-		apply_const_weak_observer_visitor(const_visitor);
+		this->apply_const_weak_observer_visitor(const_visitor);
 	}
 
 
@@ -932,11 +932,11 @@ namespace GPlatesModel
 			const std::vector<iterator> &new_children)
 	{
 		WeakReferencePublisherAddedVisitor<HandleType> visitor(new_children);
-		apply_weak_observer_visitor(visitor);
+		this->apply_weak_observer_visitor(visitor);
 
 		std::vector<const_iterator> const_new_children(new_children.begin(), new_children.end());
 		WeakReferencePublisherAddedVisitor<const HandleType> const_visitor(const_new_children);
-		apply_const_weak_observer_visitor(const_visitor);
+		this->apply_const_weak_observer_visitor(const_visitor);
 	}
 
 
@@ -979,10 +979,10 @@ namespace GPlatesModel
 	BasicHandle<HandleType>::actual_notify_listeners_of_deactivation()
 	{
 		WeakReferencePublisherDeactivatedVisitor<HandleType> visitor;
-		apply_weak_observer_visitor(visitor);
+		this->apply_weak_observer_visitor(visitor);
 
 		WeakReferencePublisherDeactivatedVisitor<const HandleType> const_visitor;
-		apply_const_weak_observer_visitor(const_visitor);
+		this->apply_const_weak_observer_visitor(const_visitor);
 	}
 
 
@@ -1007,10 +1007,10 @@ namespace GPlatesModel
 	BasicHandle<HandleType>::actual_notify_listeners_of_reactivation()
 	{
 		WeakReferencePublisherReactivatedVisitor<HandleType> visitor;
-		apply_weak_observer_visitor(visitor);
+		this->apply_weak_observer_visitor(visitor);
 
 		WeakReferencePublisherReactivatedVisitor<const HandleType> const_visitor;
-		apply_const_weak_observer_visitor(const_visitor);
+		this->apply_const_weak_observer_visitor(const_visitor);
 	}
 
 
@@ -1021,10 +1021,10 @@ namespace GPlatesModel
 		// We always notify our listeners of impending destruction, even if there is
 		// a NotificationGuard active.
 		WeakReferencePublisherDestroyedVisitor<HandleType> visitor;
-		apply_weak_observer_visitor(visitor);
+		this->apply_weak_observer_visitor(visitor);
 
 		WeakReferencePublisherDestroyedVisitor<const HandleType> const_visitor;
-		apply_const_weak_observer_visitor(const_visitor);
+		this->apply_const_weak_observer_visitor(const_visitor);
 	}
 
 
