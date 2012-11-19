@@ -26,8 +26,6 @@
 #ifndef GPLATES_API_PYTHONEXECUTIONMONITOR_H
 #define GPLATES_API_PYTHONEXECUTIONMONITOR_H
 
-#ifndef Q_MOC_RUN //workaround. Qt moc doesn't like BOOST_JOIN. Make them not seeing each other.
-
 #include <QEventLoop>
 #include <QString>
 #include <QMutex>
@@ -36,8 +34,6 @@
 #include "global/GPlatesException.h"
 #include "global/python.h"
 #include "utils/CallStackTracker.h"
-
-#endif //Q_MOC_RUN
 
 #if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesApi

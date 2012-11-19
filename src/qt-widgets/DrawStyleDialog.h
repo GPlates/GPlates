@@ -26,8 +26,6 @@
 #ifndef GPLATES_QTWIDGETS_DRAWSTYLEDIALOG_H
 #define GPLATES_QTWIDGETS_DRAWSTYLEDIALOG_H
 
-#ifndef Q_MOC_RUN //workaround. Qt moc doesn't like BOOST_JOIN. Make them not seeing each other.
-
 #include <boost/thread/mutex.hpp>
 #include <boost/weak_ptr.hpp>
 
@@ -42,8 +40,6 @@
 #include "gui/PythonConfiguration.h"
 
 #include "presentation/Application.h"
-
-#endif //Q_MOC_RUN
 
 namespace GPlatesAppLogic
 {
