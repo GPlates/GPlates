@@ -31,9 +31,12 @@
 #include "StructuralType.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
-#include "model/PropertyValue.h"
+
 #include "model/FeatureId.h"
+#include "model/FeatureType.h"
+#include "model/PropertyValue.h"
 #include "model/RevisionId.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -78,7 +81,7 @@ namespace GPlatesPropertyValues
 		create(
 				const GPlatesModel::FeatureId &feature_,
 				const GPlatesModel::RevisionId &revision_,
-				const StructuralType &value_type_)
+				const GPlatesModel::FeatureType &value_type_)
 		{
 			non_null_ptr_type ptr(
 					new GpmlFeatureSnapshotReference(feature_, revision_, value_type_));
@@ -117,7 +120,7 @@ namespace GPlatesPropertyValues
 
 		// Note that no "setter" is provided:  The value type of a GpmlFeatureSnapshotReference
 		// instance should never be changed.
-		const StructuralType &
+		const GPlatesModel::FeatureType &
 		value_type() const
 		{
 			return d_value_type;
@@ -174,7 +177,7 @@ namespace GPlatesPropertyValues
 		GpmlFeatureSnapshotReference(
 				const GPlatesModel::FeatureId &feature_,
 				const GPlatesModel::RevisionId &revision_,
-				const StructuralType &value_type_):
+				const GPlatesModel::FeatureType &value_type_):
 			PropertyValue(),
 			d_feature(feature_),
 			d_revision(revision_),
@@ -198,7 +201,7 @@ namespace GPlatesPropertyValues
 
 		GPlatesModel::FeatureId d_feature;
 		GPlatesModel::RevisionId d_revision;
-		StructuralType d_value_type;
+		GPlatesModel::FeatureType d_value_type;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

@@ -55,6 +55,7 @@
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 
+#include "model/FeatureType.h"
 #include "model/GpgimEnumerationType.h"
 #include "model/GpgimVersion.h"
 #include "model/types.h"
@@ -548,7 +549,9 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_feature_refere
 	GPlatesModel::FeatureId target_feature =
 			find_and_create_one(elem, &create_feature_id, TARGET_FEATURE, gpml_version, read_errors);
 
-	return GPlatesPropertyValues::GpmlFeatureReference::create(target_feature, value_type);
+	return GPlatesPropertyValues::GpmlFeatureReference::create(
+			target_feature,
+			GPlatesModel::FeatureType(value_type));
 }
 
 
@@ -576,7 +579,9 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_feature_snapsh
 			find_and_create_one(elem, &create_revision_id, TARGET_REVISION, gpml_version, read_errors);
 
 	return GPlatesPropertyValues::GpmlFeatureSnapshotReference::create(
-			target_feature, target_revision, value_type);
+			target_feature,
+			target_revision,
+			GPlatesModel::FeatureType(value_type));
 }
 
 

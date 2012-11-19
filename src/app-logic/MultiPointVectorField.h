@@ -157,6 +157,11 @@ namespace GPlatesAppLogic
 			 * The reconstruction geometry is optional in case the point does not lie
 			 * inside a plate boundary (or original domain feature has no plate ID),
 			 * but the client code still wishes to assign a 3-D vector.
+			 *
+			 * This is also used to store the reconstructed domain point when the 'Reason' is
+			 * 'ReconstructedDomainPoint', ie, when no velocity surfaces (like plate boundaries)
+			 * are used and, instead, the domain points themselves are reconstructed to new positions
+			 * rather than having static positions.
 			 */
 			ReconstructionGeometry::maybe_null_ptr_to_const_type d_plate_id_reconstruction_geometry;
 
@@ -296,8 +301,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Return a weak-ref to the feature whose reconstructed geometry this RFG contains,
-		 * or an invalid weak-ref, if this pointer is not valid to be dereferenced.
+		 * Return a weak-ref to the *domain* feature used for the domain of the vector field.
 		 */
 		const GPlatesModel::FeatureHandle::weak_ref
 		get_feature_ref() const;

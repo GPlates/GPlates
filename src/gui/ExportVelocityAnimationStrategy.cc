@@ -54,6 +54,7 @@ POP_MSVC_WARNINGS
 #include "app-logic/LayerProxyUtils.h"
 #include "app-logic/ReconstructGraph.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/ReconstructionTree.h"
 #include "app-logic/VelocityFieldCalculatorLayerProxy.h"
 
 #include "file-io/File.h"
@@ -65,12 +66,16 @@ POP_MSVC_WARNINGS
 #include "gui/ExportAnimationContext.h"
 #include "gui/AnimationController.h"
 
+#include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
 
 #include "presentation/ViewState.h"
 
+#include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlDataBlock.h"
 #include "property-values/GmlMultiPoint.h"
+#include "property-values/GmlTimeInstant.h"
+#include "property-values/GpmlFeatureSnapshotReference.h"
 
 
 namespace
@@ -161,6 +166,56 @@ namespace
 				GPlatesModel::FeatureHandle::create(
 						feature_collection,
 						feature_type);
+
+		//
+		// Store the time instant at which the velocity field was generated.
+		//
+
+		static const GPlatesModel::PropertyName RECONSTRUCTED_TIME_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("reconstructedTime");
+
+		GPlatesPropertyValues::GeoTimeInstant reconstructed_geo_time_instant(
+				velocity_field->reconstruction_tree()->get_reconstruction_time());
+		GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type reconstructed_gml_time_instant =
+			GPlatesModel::ModelUtils::create_gml_time_instant(reconstructed_geo_time_instant);
+
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+						RECONSTRUCTED_TIME_PROPERTY_NAME,
+						reconstructed_gml_time_instant));
+
+		//
+		// Store a feature snapshot reference to the domain feature.
+		//
+		// This is useful when the domain point is reconstructed - when no velocity surfaces
+		// (like plate boundaries) were used to calculate velocities and, instead, the domain points
+		// themselves are reconstructed to new positions and their plate ids used to calculate velocities.
+		// In this case it can be useful to trace back to the original domain feature and hence
+		// associate exported velocity fields at multiple time-steps with each other (via the
+		// domain feature's feature id).
+		//
+		// Ultimately a time-dependent velocity property export (to a single file) might be a good idea.
+		// That would require non-trivial changes to the export dialog since it currently exports
+		// each time step to a separate export file.
+
+		// The domain feature used when generating the velocity field.
+		const GPlatesModel::FeatureHandle::weak_ref domain_feature_ref = velocity_field->get_feature_ref();
+		if (domain_feature_ref.is_valid())
+		{
+			static const GPlatesModel::PropertyName DOMAIN_DERIVED_FROM_PROPERTY_NAME =
+					GPlatesModel::PropertyName::create_gpml("domainDerivedFrom");
+
+			const GPlatesPropertyValues::GpmlFeatureSnapshotReference::non_null_ptr_type domain_derived_from =
+					GPlatesPropertyValues::GpmlFeatureSnapshotReference::create(
+							domain_feature_ref->feature_id(),
+							GPlatesModel::RevisionId(),
+							domain_feature_ref->feature_type());
+
+			feature->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+							DOMAIN_DERIVED_FROM_PROPERTY_NAME,
+							domain_derived_from));
+		}
 
 		//
 		// Create the "gml:domainSet" property of type GmlMultiPoint -
