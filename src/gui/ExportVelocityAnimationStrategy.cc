@@ -48,10 +48,11 @@ POP_MSVC_WARNINGS
 #include "model/FeatureHandle.h"
 #include "model/types.h"
 
-#include "app-logic/ApplicationState.h"
 #include "app-logic/AppLogicUtils.h"
-#include "app-logic/FeatureCollectionFileState.h"
+#include "app-logic/ApplicationState.h"
 #include "app-logic/MultiPointVectorField.h"
+#include "app-logic/LayerProxyUtils.h"
+#include "app-logic/ReconstructGraph.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/VelocityFieldCalculatorLayerProxy.h"
@@ -75,9 +76,6 @@ POP_MSVC_WARNINGS
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GpmlFeatureSnapshotReference.h"
-
-#include "view-operations/RenderedGeometryCollection.h"
-#include "view-operations/RenderedGeometryUtils.h"
 
 
 namespace
@@ -391,24 +389,38 @@ namespace
 
 
 	void
-	populate_visible_vector_field_seq(
+	populate_vector_field_seq(
 			vector_field_seq_type &vector_field_seq,
-			const GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection)
+			const GPlatesAppLogic::ApplicationState &application_state)
 	{
-		// Get any MultiPointVectorField objects that are visible in any active layers
-		// of the RenderedGeometryCollection.
-		GPlatesViewOperations::RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geom_seq;
-		GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries(
-				reconstruction_geom_seq,
-				rendered_geom_collection,
-				// Don't want to export a duplicate velocity field if one is currently in focus...
-				GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
+		using namespace GPlatesAppLogic;
 
-		// Get any ReconstructionGeometry objects that are of type MultiPointVectorField.
-		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-				reconstruction_geom_seq.begin(),
-				reconstruction_geom_seq.end(),
-				vector_field_seq);
+		const Reconstruction &reconstruction = application_state.get_current_reconstruction();
+
+		// Get the velocity field calculator layer outputs.
+		std::vector<GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::non_null_ptr_type> velocity_field_outputs;
+		if (!reconstruction.get_active_layer_outputs<GPlatesAppLogic::VelocityFieldCalculatorLayerProxy>(
+				velocity_field_outputs))
+		{
+			return;
+		}
+
+		// Iterate over the layers that have velocity field calculator outputs.
+		std::vector<multi_point_vector_field_non_null_ptr_type> multi_point_velocity_fields;
+		BOOST_FOREACH(
+				const GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::non_null_ptr_type &velocity_field_calculator_layer_proxy,
+				velocity_field_outputs)
+		{
+			velocity_field_calculator_layer_proxy->get_velocity_multi_point_vector_fields(multi_point_velocity_fields);
+		}
+
+		// Convert sequence of non_null_ptr_type's to a sequence of raw pointers expected by the caller.
+		BOOST_FOREACH(
+				const multi_point_vector_field_non_null_ptr_type &multi_point_velocity_field,
+				multi_point_velocity_fields)
+		{
+			vector_field_seq.push_back(multi_point_velocity_field.get());
+		}
 
 #if 0  // Just for testing/demonstration.
 		vector_field_seq_type::const_iterator iter = vector_field_seq.begin();
@@ -495,10 +507,10 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 	QString output_filename_prefix = *filename_it++;
 	QDir target_dir = d_export_animation_context_ptr->target_dir();
 
-	// Get all *visible* MultiPointVectorFields from the current reconstruction.
+	// Get all the MultiPointVectorFields from the current reconstruction.
 	vector_field_seq_type vector_field_seq;
-	populate_visible_vector_field_seq(vector_field_seq,
-			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection());
+	populate_vector_field_seq(vector_field_seq,
+			d_export_animation_context_ptr->view_state().get_application_state());
 
 	// Determine which velocity fields came from which mesh files.
 	file_to_vector_fields_map_type file_to_vector_fields_map;

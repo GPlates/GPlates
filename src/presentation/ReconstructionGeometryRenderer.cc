@@ -347,13 +347,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 							velocity.d_vector,
 							d_render_params.velocity_ratio_unit_vector_direction_to_globe_radius,
 							GPlatesGui::Colour::get_black());
-
 			// Render the rendered geometry.
-			render(
-					// Associate the MultiPointVectorField with the rendered geometry...
-					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
-							mpvf,
-							rendered_arrow));
+			render(rendered_arrow);
 
 		} else if (velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::InPlateBoundary ||
 			velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::InStaticPolygon ||
@@ -381,11 +376,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 								GPlatesGui::ColourProxy(rg_non_null_ptr));
 
 				// Render the rendered geometry.
-				render(
-						// Associate the MultiPointVectorField with the rendered geometry...
-						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
-								mpvf,
-								rendered_arrow));
+				render(rendered_arrow);
 			} else {
 				const GPlatesViewOperations::RenderedGeometry rendered_arrow =
 						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
@@ -395,11 +386,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 								GPlatesGui::Colour::get_olive());
 
 				// Render the rendered geometry.
-				render(
-						// Associate the MultiPointVectorField with the rendered geometry...
-						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
-								mpvf,
-								rendered_arrow));
+				render(rendered_arrow);
 			}
 		}
 		// else, don't render
@@ -929,7 +916,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 		// Create a RenderedGeometry for storing the ReconstructionGeometry and
 		// a RenderedGeometry associated with it.
 		//
-		// This means the resolved topological network can be selected by clicking one of
+		// This means the resolved topological network can be selected by clicking on of
 		// its velocity arrows (note: currently arrows cannot be selected so this will
 		// not do anything).
 		const GPlatesViewOperations::RenderedGeometry rendered_reconstruction_geometry =
