@@ -149,6 +149,9 @@ namespace
 		//
 		// If we've found a suitable proxy from the system or environment, enable it by default.
 		defaults.setValue("net/proxy/enabled", ! defaults.value("net/proxy/url").toString().isEmpty());
+
+		defaults.setValue("net/server/port", 9777);
+		defaults.setValue("net/server/local", true);
 		
 	}
 }

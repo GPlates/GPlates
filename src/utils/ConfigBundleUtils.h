@@ -29,6 +29,12 @@
 #include <QString>
 #include <QStringList>
 
+namespace GPlatesQtWidgets
+{
+	class ConfigTableView;
+}
+
+
 namespace GPlatesUtils
 {
 	////////////////////////////////////////////////////////////////////////

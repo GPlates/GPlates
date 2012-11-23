@@ -24,6 +24,8 @@
  */
 #include <fstream>
 
+#include "app-logic/AppLogicFwd.h"
+#include "app-logic/ReconstructionLayerProxy.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "feature-visitors/ShapefileAttributeFinder.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
@@ -40,6 +42,13 @@
 #include <boost/foreach.hpp>
 
 using namespace GPlatesUtils;
+
+// Undefine the min and max macros as they can interfere with the min and
+// max functions in std::numeric_limits<T>, on Visual Studio.
+#if defined(_MSC_VER)
+	#undef min
+	#undef max
+#endif
 
 boost::optional< double > 
 GPlatesDataMining::DataMiningUtils::minimum(
@@ -279,6 +288,36 @@ GPlatesDataMining::DataMiningUtils::load_cfg(
 	}
 	return ret;
 }
+
+
+std::vector<GPlatesModel::FeatureHandle::weak_ref>
+GPlatesDataMining::DataMiningUtils::get_all_seed_features(
+		GPlatesAppLogic::CoRegistrationLayerProxy::non_null_ptr_type co_proxy)
+{
+	using namespace GPlatesAppLogic;
+	std::vector<GPlatesModel::FeatureHandle::weak_ref> ret;
+
+	std::vector<reconstruct_layer_proxy_non_null_ptr_type> seed_proxies =
+		co_proxy->get_coregistration_seed_layer_proxy();
+
+	std::vector<ReconstructContext::ReconstructedFeature> reconstructed_seed_features;
+	BOOST_FOREACH(reconstruct_layer_proxy_non_null_ptr_type p, seed_proxies)
+	{
+		p->get_reconstructed_features(reconstructed_seed_features);
+
+		BOOST_FOREACH(ReconstructContext::ReconstructedFeature rsf, reconstructed_seed_features)
+		{
+			const GPlatesModel::FeatureHandle::weak_ref f = rsf.get_feature();
+			if(f.is_valid())
+				ret.push_back(f);
+		}
+	}
+	return ret;
+}
+
+
+
+
 
 
 

@@ -135,13 +135,15 @@ namespace GPlatesDataMining
 		}
 
 		void
-		set_data_index(std::size_t idx)
+		set_data_index(
+				std::size_t idx)
 		{
 			d_data_index = idx;
 		}
 
 		void
-		to_qstring_table(std::vector<std::vector<QString> >&) const;
+		to_qstring_table(
+				std::vector<std::vector<QString> >&) const;
 
 
 	protected:

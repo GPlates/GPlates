@@ -62,6 +62,11 @@ namespace GPlatesUtils
 			const GPlatesModel::FeatureHandle* feature_ptr);
 
 
+	boost::optional<GPlatesMaths::Real>
+	get_begin_time(
+			const GPlatesModel::FeatureHandle* feature_ptr);
+
+
 	boost::optional<GPlatesModel::PropertyName>
 	convert_property_name(
 			const QString&);
@@ -77,7 +82,7 @@ namespace GPlatesUtils
 		if(rx.indexIn(name) != -1)
 		{
 			shape_name = rx.cap(2);
-			//qDebug() << "Shapefile attribute name: " << *shape_name;
+		//	qDebug() << "Shapefile attribute name: " << *shape_name;
 		}
 		return shape_name;
 	}

@@ -112,12 +112,14 @@ bool
 GPlatesDataMining::ConfigurationTableRow::operator==(
 		const ConfigurationTableRow &rhs) const
 {
-	return target_layer == rhs.target_layer &&
-		*filter_cfg == *rhs.filter_cfg && // Dereference to use 'CoRegFilter::Config' equality operator.
-		attr_name == rhs.attr_name &&
-		attr_type == rhs.attr_type &&
-		reducer_type == rhs.reducer_type &&
-		raster_level_of_detail == rhs.raster_level_of_detail &&
-		raster_fill_polygons == rhs.raster_fill_polygons &&
+	return 
+		assoc_name == rhs.assoc_name		&&
+		target_layer == rhs.target_layer	&&
+		*filter_cfg == *rhs.filter_cfg		&& // Dereference to use 'CoRegFilter::Config' equality operator.
+		attr_name == rhs.attr_name			&&
+		attr_type == rhs.attr_type			&&
+		reducer_type == rhs.reducer_type	&&
+		raster_level_of_detail == rhs.raster_level_of_detail	&&
+		raster_fill_polygons == rhs.raster_fill_polygons		&&
 		index == rhs.index;
 }

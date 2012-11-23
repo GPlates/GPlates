@@ -53,14 +53,38 @@ namespace GPlatesDataMining
 
 		GPlatesAppLogic::Layer target_layer;
 		boost::shared_ptr<CoRegFilter::Config> filter_cfg;
-		QString attr_name;
+		QString attr_name, layer_name, assoc_name;
 		AttributeType attr_type;
 		ReducerType reducer_type; //TODO: change to CoRegReducer::config
 		unsigned int raster_level_of_detail; // Only used if target layer is a raster.
-		bool raster_fill_polygons; // Cuurently only used if target layer is a raster.
+		bool raster_fill_polygons; // Currently only used if target layer is a raster.
 		unsigned index;
 	};
 
+
+	inline
+	QString 
+	to_string(
+			const GPlatesDataMining::ConfigurationTableRow& row)
+	{
+		QString ret;
+		ret += "<Assosiation>";
+		ret += "<Name>" + row.assoc_name + "</Name>";
+		ret += "<LayerName>" + row.layer_name + "</LayerName>";
+		ret += "<AssociationType>" + row.filter_cfg->filter_name() + "</AssociationType>";
+		std::vector<QString> paras = row.filter_cfg->get_parameters_as_strings();
+		for(std::vector<QString>::iterator it = paras.begin(); it != paras.end(); it++)
+		{
+			ret += "<AssociationParameter>" + *it + "</AssociationParameter>";
+		}
+		ret += "<AttributeName>" + row.attr_name + "</AttributeName>";
+		ret += "<AttributeType>" + to_string(row.attr_type) + "</AttributeType>";
+		ret += "<DataOperator>" + to_string(row.reducer_type) + "</DataOperator>";
+		ret += "</Assosiation>";
+		return ret;
+	}
+
+	
 	class CoRegCfgTableOptimized : GPlatesGlobal::Exception
 	{
 	public:
@@ -200,6 +224,11 @@ namespace GPlatesDataMining
 	}
 }
 #endif //GPLATESDATAMINING_COREGCONFIGURATIONTABLE_H
+
+
+
+
+
 
 
 

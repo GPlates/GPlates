@@ -30,17 +30,43 @@ namespace GPlatesDataMining
 {
 	enum AttributeType
 	{
-		CO_REGISTRATION_GPML_ATTRIBUTE,
+		CO_REGISTRATION_GPML_ATTRIBUTE = 0,
 		CO_REGISTRATION_SHAPEFILE_ATTRIBUTE,
 		CO_REGISTRATION_RASTER_ATTRIBUTE,
 		DISTANCE_ATTRIBUTE,
 		PRESENCE_ATTRIBUTE,
-		NUMBER_OF_PRESENCE_ATTRIBUTE
+		NUMBER_OF_PRESENCE_ATTRIBUTE,
+		NUM_OF_Attribute_Type
 	};
+
+	inline
+	QString
+	to_string(
+		AttributeType type)
+	{
+		const static char* names[] = 
+		{
+			"CO_REGISTRATION_GPML_ATTRIBUTE",
+			"CO_REGISTRATION_SHAPEFILE_ATTRIBUTE",
+			"CO_REGISTRATION_RASTER_ATTRIBUTE",
+			"DISTANCE_ATTRIBUTE",
+			"PRESENCE_ATTRIBUTE",
+			"NUMBER_OF_PRESENCE_ATTRIBUTE"
+		};
+		if(static_cast<unsigned>(type)<static_cast<unsigned>(NUM_OF_Attribute_Type))
+		{
+			return names[static_cast<unsigned>(type)];
+		}
+		else
+		{
+			return "";
+		}
+		
+	}
 
 	enum ReducerType
 	{
-		REDUCER_MIN,
+		REDUCER_MIN = 0,
 		REDUCER_MAX,
 		REDUCER_MEAN,
 		REDUCER_STANDARD_DEVIATION,
@@ -51,9 +77,42 @@ namespace GPlatesDataMining
 		REDUCER_PERCENTILE,
 		REDUCER_MIN_DISTANCE,
 		REDUCER_PRESENCE,
-		REDUCER_NUM_IN_ROI
+		REDUCER_NUM_IN_ROI,
+		NUM_OF_Reducer_Type
 	};
+
+	inline
+	QString
+	to_string(
+			ReducerType type)
+	{
+		const static char* names[] = 
+		{
+			"REDUCER_MIN",
+			"REDUCER_MAX",
+			"REDUCER_MEAN",
+			"REDUCER_STANDARD_DEVIATION",
+			"REDUCER_MEDIAN",
+			"REDUCER_LOOKUP",
+			"REDUCER_VOTE",
+			"REDUCER_WEIGHTED_MEAN",
+			"REDUCER_PERCENTILE",
+			"REDUCER_MIN_DISTANCE",
+			"REDUCER_PRESENCE",
+			"REDUCER_NUM_IN_ROI"
+		};
+		if(static_cast<unsigned>(type) < static_cast<unsigned>(NUM_OF_Reducer_Type))
+		{
+			return names[static_cast<unsigned>(type)];
+		}
+		else
+		{
+			return "";
+		}
+
+	}
 }
 #endif //GPLATESDATAMINING_REDUCERTYPES_H
+
 
 

@@ -83,7 +83,8 @@ namespace GPlatesQtWidgets
 
 		enum ConfigurationTableColumnType
 		{
-			LAYER_NAME = 0,
+			ASSOCIATION_NAME = 0,
+			LAYER_NAME,
 			FILTER_TYPE,
 			ATTRIBUTE_NAME,
 			RANGE,

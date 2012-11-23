@@ -34,6 +34,7 @@
 
 #include "OpaqueData.h"
 
+#include "app-logic/CoRegistrationLayerProxy.h"
 #include "app-logic/ReconstructContext.h"
 
 #include "file-io/File.h"
@@ -133,6 +134,12 @@ namespace GPlatesDataMining
 		{
 			return get_shape_file_value_by_name(feature_ref.handle_ptr(),attr_name);
 		}
+
+
+		std::vector<GPlatesModel::FeatureHandle::weak_ref>
+		get_all_seed_features(
+				GPlatesAppLogic::CoRegistrationLayerProxy::non_null_ptr_type);
+		
 
 		GPlatesFileIO::File::non_null_ptr_type 
 		load_file(

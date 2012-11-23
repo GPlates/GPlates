@@ -1,57 +1,58 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>CoRegistrationLayerConfigurationDialog</class>
- <widget class="QDialog" name="CoRegistrationLayerConfigurationDialog" >
-  <property name="geometry" >
+ <widget class="QDialog" name="CoRegistrationLayerConfigurationDialog">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>664</width>
-    <height>556</height>
+    <width>868</width>
+    <height>595</height>
    </rect>
   </property>
-  <property name="windowTitle" >
+  <property name="windowTitle">
    <string>Co-Registration Layer Configuration</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_5" >
+  <layout class="QVBoxLayout" name="verticalLayout_5">
    <item>
-    <widget class="QGroupBox" name="group_box_2" >
-     <property name="title" >
+    <widget class="QGroupBox" name="group_box_2">
+     <property name="title">
       <string>Select Attributes</string>
      </property>
-     <layout class="QGridLayout" name="gridLayout" >
-      <item row="0" column="0" >
-       <widget class="QLabel" name="target_layers_label" >
-        <property name="text" >
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="target_layers_label">
+        <property name="text">
          <string>Target layers:</string>
         </property>
        </widget>
       </item>
-      <item row="0" column="1" >
-       <layout class="QHBoxLayout" name="horizontal_layout" >
+      <item row="0" column="1">
+       <layout class="QHBoxLayout" name="horizontal_layout">
         <item>
-         <widget class="QRadioButton" name="relational_radio_button" >
-          <property name="text" >
+         <widget class="QRadioButton" name="relational_radio_button">
+          <property name="text">
            <string>Relational</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QRadioButton" name="co_reg_radio_buttton" >
-          <property name="text" >
+         <widget class="QRadioButton" name="co_reg_radio_buttton">
+          <property name="text">
            <string>Coregistration</string>
           </property>
          </widget>
         </item>
        </layout>
       </item>
-      <item rowspan="2" row="0" column="2" >
-       <layout class="QVBoxLayout" name="vertical_layout_3" >
+      <item row="0" column="2" rowspan="2">
+       <layout class="QVBoxLayout" name="vertical_layout_3">
         <item>
-         <spacer name="vertical_spacer" >
-          <property name="orientation" >
+         <spacer name="vertical_spacer">
+          <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>
-          <property name="sizeHint" stdset="0" >
+          <property name="sizeHint" stdset="0">
            <size>
             <width>20</width>
             <height>40</height>
@@ -60,90 +61,95 @@
          </spacer>
         </item>
         <item>
-         <widget class="QPushButton" name="add_push_button" >
-          <property name="text" >
+         <widget class="QPushButton" name="add_push_button">
+          <property name="text">
            <string>Add</string>
           </property>
          </widget>
         </item>
        </layout>
       </item>
-      <item row="1" column="0" >
-       <widget class="QListWidget" name="target_layers_list_widget" />
+      <item row="1" column="0">
+       <widget class="QListWidget" name="target_layers_list_widget"/>
       </item>
-      <item row="1" column="1" >
-       <widget class="QListWidget" name="attributes_list_widget" />
+      <item row="1" column="1">
+       <widget class="QListWidget" name="attributes_list_widget"/>
       </item>
      </layout>
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="group_box" >
-     <property name="title" >
+    <widget class="QGroupBox" name="group_box">
+     <property name="title">
       <string>Configuration Table</string>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout" >
+     <layout class="QVBoxLayout" name="verticalLayout">
       <item>
-       <widget class="QTableWidget" name="co_reg_cfg_table_widget" >
+       <widget class="QTableWidget" name="co_reg_cfg_table_widget">
         <column>
-         <property name="text" >
+         <property name="text">
+          <string>Association Name</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
           <string>Layer Name</string>
          </property>
         </column>
         <column>
-         <property name="text" >
+         <property name="text">
           <string>Association Type</string>
          </property>
         </column>
         <column>
-         <property name="text" >
+         <property name="text">
           <string>Attribute Name</string>
          </property>
         </column>
         <column>
-         <property name="text" >
+         <property name="text">
           <string>Range (Km)</string>
          </property>
         </column>
         <column>
-         <property name="text" >
+         <property name="text">
           <string>Data Operator</string>
          </property>
         </column>
         <column>
-         <property name="text" >
+         <property name="text">
           <string>Level of detail</string>
          </property>
         </column>
         <column>
-         <property name="text" >
+         <property name="text">
           <string>Fill polygons</string>
          </property>
         </column>
        </widget>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontal_layout_3" >
+       <layout class="QHBoxLayout" name="horizontal_layout_3">
         <item>
-         <widget class="QPushButton" name="remove_push_button" >
-          <property name="text" >
+         <widget class="QPushButton" name="remove_push_button">
+          <property name="text">
            <string>Remove</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="remove_all_push_button" >
-          <property name="text" >
+         <widget class="QPushButton" name="remove_all_push_button">
+          <property name="text">
            <string>Remove All</string>
           </property>
          </widget>
         </item>
         <item>
-         <spacer name="horizontal_spacer" >
-          <property name="orientation" >
+         <spacer name="horizontal_spacer">
+          <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
-          <property name="sizeHint" stdset="0" >
+          <property name="sizeHint" stdset="0">
            <size>
             <width>40</width>
             <height>20</height>
@@ -157,13 +163,13 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontal_layout_4" >
+    <layout class="QHBoxLayout" name="horizontal_layout_4">
      <item>
-      <spacer name="horizontal_spacer_2" >
-       <property name="orientation" >
+      <spacer name="horizontal_spacer_2">
+       <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="sizeHint" stdset="0" >
+       <property name="sizeHint" stdset="0">
         <size>
          <width>40</width>
          <height>20</height>
@@ -172,11 +178,11 @@
       </spacer>
      </item>
      <item>
-      <widget class="QDialogButtonBox" name="button_box" >
-       <property name="orientation" >
+      <widget class="QDialogButtonBox" name="button_box">
+       <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="standardButtons" >
+       <property name="standardButtons">
         <set>QDialogButtonBox::Apply</set>
        </property>
       </widget>
@@ -193,11 +199,11 @@
    <receiver>CoRegistrationLayerConfigurationDialog</receiver>
    <slot>accept()</slot>
    <hints>
-    <hint type="sourcelabel" >
+    <hint type="sourcelabel">
      <x>248</x>
      <y>254</y>
     </hint>
-    <hint type="destinationlabel" >
+    <hint type="destinationlabel">
      <x>157</x>
      <y>274</y>
     </hint>
@@ -209,11 +215,11 @@
    <receiver>CoRegistrationLayerConfigurationDialog</receiver>
    <slot>reject()</slot>
    <hints>
-    <hint type="sourcelabel" >
+    <hint type="sourcelabel">
      <x>316</x>
      <y>260</y>
     </hint>
-    <hint type="destinationlabel" >
+    <hint type="destinationlabel">
      <x>286</x>
      <y>274</y>
     </hint>

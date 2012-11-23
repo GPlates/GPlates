@@ -74,6 +74,14 @@ namespace GPlatesDataMining
 				return QString("Region of Interest(%1)").arg(d_range);
 			}
 
+			std::vector<QString>
+			get_parameters_as_strings() const
+			{
+				std::vector<QString> ret;
+				ret.push_back(QString::number(d_range));
+				return ret;
+			}
+
 			bool
 			operator< (const CoRegFilter::Config& other)
 			{

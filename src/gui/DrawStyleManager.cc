@@ -42,7 +42,8 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 
 bool GPlatesGui::DrawStyleManager::d_alive_flag = false;
 
-GPlatesGui::DrawStyleManager::DrawStyleManager(bool local_user_pref) :
+GPlatesGui::DrawStyleManager::DrawStyleManager(
+		bool local_user_pref) :
 	d_next_cata_id(0),
 	d_next_style_id(0),
 	d_default_style(NULL),
@@ -414,6 +415,7 @@ GPlatesGui::DrawStyleManager::get_built_in_styles(
 // 	}
 	return ret;
 }
+
 
 
 

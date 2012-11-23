@@ -67,6 +67,7 @@ namespace GPlatesApi
 		feature_id();
 
 		
+		
 		bp::tuple
 		valid_time();
 
@@ -97,6 +98,39 @@ namespace GPlatesApi
 	public:
 		bp::list
 		get_all_property_names();
+
+
+		
+		bp::object
+		get_property(bp::object name_)
+		{
+			using namespace GPlatesDataMining;
+			QString name = QString::fromUtf8(bp::extract<const char*>(name_));
+			OpaqueData data = DataMiningUtils::get_property_value_by_name(d_handle, name);
+			
+			if(is_empty_opaque(data))
+			{
+				data = DataMiningUtils::get_shape_file_value_by_name(d_handle, name);
+
+				if(is_empty_opaque(data))
+					return bp::object();
+			}
+			
+			if(boost::optional<double> int_tmp = 
+				boost::apply_visitor(ConvertOpaqueDataToDouble(), data))
+			{
+				return bp::object(*int_tmp);
+			}
+
+			if(boost::optional<QString> str_tmp = 
+				boost::apply_visitor(ConvertOpaqueDataToString(), data))
+			{
+				const QByteArray buf = str_tmp->toUtf8();
+				return bp::str(buf.data());
+			}
+			
+			return bp::object();
+		}
 
 	private:
 		GPlatesModel::FeatureHandle::weak_ref d_handle;

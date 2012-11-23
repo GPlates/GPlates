@@ -172,6 +172,21 @@ namespace GPlatesAppLogic
 		add_coregistration_seed_layer_proxy(
 				const ReconstructLayerProxy::non_null_ptr_type &coregistration_seed_layer_proxy);
 
+		
+		std::vector<reconstruct_layer_proxy_non_null_ptr_type>  
+		get_coregistration_seed_layer_proxy()
+		{
+			std::vector<reconstruct_layer_proxy_non_null_ptr_type> ret;
+			BOOST_FOREACH(
+					LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> input_proxy, 
+					d_current_seed_layer_proxies.get_input_layer_proxies())
+			{
+				ret.push_back(input_proxy.get_input_layer_proxy());
+			}
+			return ret;
+		}
+
+
 		/**
 		 * Removes a co-registration seed layer proxy.
 		 */
@@ -213,6 +228,13 @@ namespace GPlatesAppLogic
 		void
 		set_current_coregistration_configuration_table(
 				const GPlatesDataMining::CoRegConfigurationTable &coregistration_configuration_table);
+
+
+		const GPlatesDataMining::CoRegConfigurationTable&
+		get_current_coregistration_configuration_table() const 
+		{
+			return d_current_coregistration_configuration_table;
+		}
 
 	private:
 		/**

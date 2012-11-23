@@ -59,15 +59,24 @@ namespace GPlatesDataMining
 			
 			virtual
 			bool
-			is_same_type(const Config* other) = 0;
+			is_same_type(
+					const Config* other) = 0;
 
 			virtual
 			const QString
-			to_string(){ return QString("derived class doesn't override this function.");}
+			to_string(){ return QString("The derived class doesn't override this function.");}
 
 			virtual 
 			const QString
 			filter_name() = 0;
+
+			virtual
+			std::vector<QString>
+			get_parameters_as_strings() const 
+			{
+				qDebug() << "Using get_parameters_as_strings() in base class.";
+				return std::vector<QString>();
+			}
 
 			virtual
 			bool

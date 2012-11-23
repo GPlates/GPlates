@@ -96,7 +96,7 @@ namespace
 			debug_gui(false),
 			enable_python(true), // Enabled by default.
 			enable_external_syncing(false),
-			enable_data_mining(false),
+			enable_data_mining(true),//Enable data mining by default
 			enable_symbol_table(false)
 		{
 #if defined(GPLATES_NO_PYTHON)

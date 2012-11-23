@@ -199,6 +199,36 @@ GPlatesUtils::get_start_end_time(
 }
 
 
+boost::optional<GPlatesMaths::Real>
+GPlatesUtils::get_begin_time(
+		const GPlatesModel::FeatureHandle* feature_ptr)
+{
+	PropertyFinder finder;
+	boost::optional<GPlatesPropertyValues::GeoTimeInstant> s_time = boost::none;
+	GPlatesModel::FeatureHandle::const_iterator 
+		iter = feature_ptr->begin(),
+		end = feature_ptr->end();
+
+	for ( ; iter != end; ++iter)
+	{
+		(*iter)->accept_visitor(finder);
+		s_time = finder.start_time();
+		if(s_time)
+			break;
+	}
+	GPlatesMaths::Real st =  0.0;
+	if(s_time)
+	{
+		st = to_real(*s_time);
+		return st;
+	}
+	else
+	{
+		return boost::none;
+	}
+}
+
+
 boost::optional<GPlatesModel::PropertyName>
 GPlatesUtils::convert_property_name(
 		const QString& name)

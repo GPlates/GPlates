@@ -48,6 +48,11 @@ GPlatesQtWidgets::PreferencesPaneNetwork::PreferencesPaneNetwork(
 	// This is so that the when net/proxy/enabled changes, the checkbox changes and the
 	// line edit is disabled/enabled appropriately.
 	connect(checkbox_use_proxy, SIGNAL(toggled(bool)), lineedit_proxy_url, SLOT(setEnabled(bool)));
+
+	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(port_spinbox, prefs,
+		"net/server/port", reset_port_button);
+	GPlatesGui::ConfigGuiUtils::link_widget_to_preference(listen_local_checkbox, prefs,
+		"net/server/local",reset_port_button);
 	
 }
 

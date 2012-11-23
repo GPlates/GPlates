@@ -486,6 +486,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_rendered_geometries_spatial_partition,
 			GPLATES_ASSERTION_SOURCE);
+	
+	GPlatesGui::DrawStyle ds = d_style_adapter ? 
+		d_style_adapter->get_style(rvgp->get_feature_ref()) : 
+		GPlatesGui::DrawStyle();
 
 	if(rvgp->vgp_params().d_vgp_point)
 	{
@@ -495,7 +499,9 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 						rvgp,
 						d_render_params,
 						d_colour,
-						d_reconstruction_adjustment);
+						d_reconstruction_adjustment,
+						boost::none,
+						ds);
 
 		// Render the rendered geometry.
 		render(rendered_vgp_point);
@@ -527,7 +533,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 						GPlatesMaths::SmallCircle::create_colatitude(
 								pole_point->position_vector(),
 								GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_a95)),
-						GPlatesGui::ColourProxy(rvgp));
+						ds.colour);
 
 		// The circle/ellipse geometries are not (currently) queryable, so we
 		// just add the rendered geometry to the layer.
@@ -554,7 +560,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 					GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_dp),
 					GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_dm),
 					great_circle,
-					GPlatesGui::ColourProxy(rvgp));
+					ds.colour);
 
 		// The circle/ellipse geometries are not (currently) queryable, so we
 		// just add the rendered geometry to the layer.
@@ -794,14 +800,19 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		d_rendered_geometries_spatial_partition,
 		GPLATES_ASSERTION_SOURCE);
 
+	GPlatesGui::DrawStyle ds = d_style_adapter ? 
+		d_style_adapter->get_style(rsc->get_feature_ref()) : 
+		GPlatesGui::DrawStyle();
+
 	// Create a RenderedGeometry for drawing the reconstructed geometry.
 	// Draw it in the specified colour (if specified) otherwise defer colouring to a later time
 	// using ColourProxy.
+
 	GPlatesViewOperations::RenderedGeometry rendered_geom =
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_small_circle(
 			GPlatesMaths::SmallCircle::create_colatitude(
 				rsc->centre()->position_vector(),rsc->radius()),
-			d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rsc));
+			ds.colour);
 
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(

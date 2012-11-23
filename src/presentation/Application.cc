@@ -33,6 +33,7 @@
 #include "file-io/ShapefileReader.h"
 
 #include "gui/AnimationController.h"
+#include "gui/CommandServer.h"
 #include "gui/Dialogs.h"
 #include "gui/FeatureFocus.h"
 
@@ -49,7 +50,8 @@
 
 GPlatesPresentation::Application::Application() :
 	d_view_state(d_application_state),
-	d_main_window(d_application_state, d_view_state)
+	d_main_window(d_application_state, d_view_state),
+	d_cmd_server(new GPlatesGui::CommandServer())
 {
 	initialise();
 }

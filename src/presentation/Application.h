@@ -38,6 +38,10 @@
 
 #include "utils/Singleton.h"
 
+namespace GPlatesGui
+{
+	class CommandServer;
+}
 
 namespace GPlatesPresentation
 {
@@ -141,6 +145,7 @@ namespace GPlatesPresentation
 		GPlatesAppLogic::ApplicationState d_application_state;
 		GPlatesPresentation::ViewState d_view_state;
 		GPlatesQtWidgets::ViewportWindow d_main_window;
+		boost::shared_ptr<GPlatesGui::CommandServer> d_cmd_server;
 
 		/**
 		 * Controller for external communication.

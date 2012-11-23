@@ -709,6 +709,11 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::react_add_configuratio
 						attr_item->text(),
 						attr_item->attr_type));
 
+		co_reg_cfg_table_widget->setItem(
+				row_num, 
+				ASSOCIATION_NAME, 
+				new QTableWidgetItem(QString("Assoc_")+ QString().setNum(row_num)));
+
 		//Data Operator column
 		QComboBox* combo = new QComboBox();       
 		co_reg_cfg_table_widget->setCellWidget(
@@ -720,7 +725,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::react_add_configuratio
 				attr_item->text(),
 				combo,
 				target_layer_type);
-
+		
 		// Layer Name column
 		co_reg_cfg_table_widget->setItem(
 				row_num,
@@ -1006,6 +1011,9 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::create_configuration_t
 
 	for(int row = 0; row < num_rows; row++)
 	{
+		QTableWidgetItem* assoc_name_item = 
+			dynamic_cast<QTableWidgetItem*>(
+					co_reg_cfg_table_widget->item(row, ASSOCIATION_NAME));
 		LayerTableItem* layer_item = 
 			dynamic_cast< LayerTableItem* > (
 					co_reg_cfg_table_widget->item(row, LAYER_NAME) );
@@ -1019,9 +1027,10 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::create_configuration_t
 			dynamic_cast< QDoubleSpinBox* >(
 					co_reg_cfg_table_widget->cellWidget(row, RANGE) );
 		
-		if( !(	layer_item &&
+		if( !(	assoc_name_item			&&
+				layer_item				&&
 				attr_item				&&
-				reducer_box			&&
+				reducer_box				&&
 				spinbox_ROI_range) )
 		{
 			qWarning() << "CoRegistrationLayerConfigurationDialog: Invalid input table item found! Skip this iteration";
@@ -1041,8 +1050,9 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::create_configuration_t
 		config_row.target_layer = target_layer;
  
 		//TODO: TO BE IMPLEMENTED
+		config_row.assoc_name = assoc_name_item->text();
 		config_row.filter_cfg.reset(new GPlatesDataMining::RegionOfInterestFilter::Config(spinbox_ROI_range->value()));
-		
+		config_row.layer_name = layer_item->text();
 		config_row.attr_name = attr_item->text();
 		config_row.attr_type = attr_item->attr_type;
 		config_row.reducer_type = reducer_operation;

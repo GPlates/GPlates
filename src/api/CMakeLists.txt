@@ -22,6 +22,8 @@ set(srcs
     DeferredApiCallImpl.h
     PyApplication.cc
     PyColour.cc
+    PyCoregistrationLayerProxy.cc
+    PyCoregistrationLayerProxy.h
     PyFeature.cc
     PyFeature.h
     PyFeatureCollection.cc

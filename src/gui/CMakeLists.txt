@@ -42,6 +42,8 @@ set(srcs
     ColourSchemeInfo.h
     ColourSpectrum.cc
     ColourSpectrum.h
+    CommandServer.cc
+    CommandServer.h
     ConfigGuiUtils.cc
     ConfigGuiUtils.h
     ConfigModel.cc
