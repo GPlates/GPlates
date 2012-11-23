@@ -193,6 +193,23 @@ namespace
 						reconstructed_gml_time_instant));
 
 		//
+		// Add the anchor plate id used for the reconstruction (and hence for the velocity calculations).
+		//
+
+		static const GPlatesModel::PropertyName ANCHORED_PLATE_ID_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("anchoredPlateId");
+
+		const GPlatesModel::integer_plate_id_type anchored_plate_id =
+				velocity_field->reconstruction_tree()->get_anchor_plate_id();
+		GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type anchored_gpml_plate_id =
+				GPlatesPropertyValues::GpmlPlateId::create(anchored_plate_id);
+
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+						ANCHORED_PLATE_ID_PROPERTY_NAME,
+						anchored_gpml_plate_id));
+
+		//
 		// Store a feature snapshot reference to the domain feature.
 		//
 		// This is useful when the domain point is reconstructed - when no velocity surfaces
