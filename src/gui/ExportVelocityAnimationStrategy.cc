@@ -57,6 +57,8 @@ POP_MSVC_WARNINGS
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/VelocityFieldCalculatorLayerProxy.h"
 
+#include "feature-visitors/PropertyValueFinder.h"
+
 #include "file-io/File.h"
 #include "file-io/GpmlOutputVisitor.h"
 #include "file-io/ReconstructionGeometryExportImpl.h"
@@ -76,6 +78,8 @@ POP_MSVC_WARNINGS
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GpmlFeatureSnapshotReference.h"
+#include "property-values/GpmlPlateId.h"
+#include "property-values/XsString.h"
 
 
 namespace
@@ -159,6 +163,10 @@ namespace
 			GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 			const GPlatesAppLogic::MultiPointVectorField *velocity_field)
 	{
+		// The domain feature used when generating the velocity field.
+		const GPlatesModel::FeatureHandle::weak_ref domain_feature_ref =
+				velocity_field->get_feature_ref();
+
 		static const GPlatesModel::FeatureType feature_type = 
 				GPlatesModel::FeatureType::create_gpml("VelocityField");
 
@@ -198,8 +206,6 @@ namespace
 		// That would require non-trivial changes to the export dialog since it currently exports
 		// each time step to a separate export file.
 
-		// The domain feature used when generating the velocity field.
-		const GPlatesModel::FeatureHandle::weak_ref domain_feature_ref = velocity_field->get_feature_ref();
 		if (domain_feature_ref.is_valid())
 		{
 			static const GPlatesModel::PropertyName DOMAIN_DERIVED_FROM_PROPERTY_NAME =
@@ -215,6 +221,71 @@ namespace
 					GPlatesModel::TopLevelPropertyInline::create(
 							DOMAIN_DERIVED_FROM_PROPERTY_NAME,
 							domain_derived_from));
+		}
+
+		//
+		// Add the reconstruction plate id from the domain feature.
+		//
+		// This is a bit questionable since velocity fields can contain a different plate id at
+		// each domain point (ie, one domain feature can have multiple domain points each with a
+		// different plate id). This happens when surfaces (eg, plate polygons) are used in the
+		// velocity layer, in which case each point's plate id is the plate id of the surface that
+		// points falls within. MultiPointVectorField does store these plate ids but we currently
+		// don't export them. However when no surfaces are used then the plate id of the domain
+		// feature determines the velocity. So here we store the single plate id of the domain
+		// feature for that particular situation (no surfaces). This plate id should be ignored
+		// when surfaces are used - and is why the property has "domain" in its name.
+		//
+
+		if (domain_feature_ref.is_valid())
+		{
+			static const GPlatesModel::PropertyName RECONSTRUCTION_PLATE_ID_PROPERTY_NAME =
+					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
+
+			// Get the property value from the domain feature.
+			const GPlatesPropertyValues::GpmlPlateId *domain_reconstruction_plate_id_property_value = NULL;
+			if (GPlatesFeatureVisitors::get_property_value(
+				domain_feature_ref,
+				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME,
+				domain_reconstruction_plate_id_property_value))
+			{
+				static const GPlatesModel::PropertyName DOMAIN_RECONSTRUCTION_PLATE_ID_PROPERTY_NAME =
+						GPlatesModel::PropertyName::create_gpml("domainReconstructionPlateId");
+
+				feature->add(
+						GPlatesModel::TopLevelPropertyInline::create(
+								DOMAIN_RECONSTRUCTION_PLATE_ID_PROPERTY_NAME,
+								domain_reconstruction_plate_id_property_value->deep_clone_as_prop_val()));
+			}
+		}
+
+		//
+		// Add the name of the domain feature.
+		//
+		// A perhaps questionable request since this information can be obtained via the domain
+		// feature reference property added above.
+		//
+
+		if (domain_feature_ref.is_valid())
+		{
+			static const GPlatesModel::PropertyName NAME_PROPERTY_NAME =
+					GPlatesModel::PropertyName::create_gml("name");
+
+			// Get the property value from the domain feature.
+			const GPlatesPropertyValues::XsString *name_property_value = NULL;
+			if (GPlatesFeatureVisitors::get_property_value(
+				domain_feature_ref,
+				NAME_PROPERTY_NAME,
+				name_property_value))
+			{
+				static const GPlatesModel::PropertyName DOMAIN_NAME_PROPERTY_NAME =
+						GPlatesModel::PropertyName::create_gpml("domainName");
+
+				feature->add(
+						GPlatesModel::TopLevelPropertyInline::create(
+								DOMAIN_NAME_PROPERTY_NAME,
+								name_property_value->deep_clone_as_prop_val()));
+			}
 		}
 
 		//
