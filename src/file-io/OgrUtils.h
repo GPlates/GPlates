@@ -129,13 +129,20 @@ namespace GPlatesFileIO
 		const feature_map_type &
 			build_feature_map();
 
+		/*!
+		 * Return a QString description of the variant type - used for debug information.
+		 */
+		QString
+		get_type_qstring_from_qvariant(
+			const QVariant &variant);
+
 
 		/**
-		* Given a shapefile name in the form <name>.shp , this will produce a filename of the form
-		* <name>.gplates.xml
+		* Given a filename in the form <name>.<ext> , this will produce a filename of the form
+		* <name>.<ext>.gplates.xml
 		*/
 		QString
-		make_shapefile_xml_filename(
+		make_ogr_xml_filename(
 			const QFileInfo &file_info);
 
 		/**

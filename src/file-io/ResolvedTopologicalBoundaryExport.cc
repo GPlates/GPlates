@@ -985,7 +985,10 @@ namespace GPlatesFileIO
 						reconstruction_time);
 					break;
 
+                // Both SHAPEFILE and OGRGMT formats use the same
+                // OgrFormat.... exporter.
 				case SHAPEFILE:
+                case OGRGMT:
 					OgrFormatResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
 						resolved_geoms,
 						filename,
@@ -1040,7 +1043,10 @@ namespace GPlatesFileIO
 						reconstruction_time);
 					break;
 
-				case SHAPEFILE:
+                // Both SHAPEFILE and OGRGMT formats use the same
+                // OgrFormat.... exporter.
+                case SHAPEFILE:
+                case OGRGMT:
 					OgrFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 						sub_segment_groups,
 						filename,

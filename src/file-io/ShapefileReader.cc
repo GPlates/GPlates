@@ -80,6 +80,24 @@ boost::shared_ptr< GPlatesFileIO::PropertyMapper> GPlatesFileIO::ShapefileReader
 namespace
 {
 
+	const GPlatesPropertyValues::GeoTimeInstant
+	create_geo_time_instant(
+			const double &time)
+	{
+		if (time < -998.9 && time > -1000.0) {
+			// It's in the distant future, which is denoted in PLATES4 line-format
+			// files using times like -999.0 or -999.9.
+			return GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
+		}
+		if (time > 998.9 && time < 1000.0) {
+			// It's in the distant past, which is denoted in PLATES4 line-format files
+			// using times like 999.0 or 999.9.
+			return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
+		}
+		return GPlatesPropertyValues::GeoTimeInstant(time);
+	}
+
+
 
 	/**
 	 * Creates a gml line string from @a list_of_points and adds this to @a feature.
@@ -224,8 +242,10 @@ namespace
 		double age_of_appearance,
 		double age_of_disappearance)
 	{
-		const GPlatesPropertyValues::GeoTimeInstant geo_time_instant_begin(age_of_appearance);
-		const GPlatesPropertyValues::GeoTimeInstant geo_time_instant_end(age_of_disappearance);
+		const GPlatesPropertyValues::GeoTimeInstant geo_time_instant_begin =
+				create_geo_time_instant(age_of_appearance);
+		const GPlatesPropertyValues::GeoTimeInstant geo_time_instant_end =
+				create_geo_time_instant(age_of_disappearance);
 
 		GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_valid_time = 
 			GPlatesModel::ModelUtils::create_gml_time_period(geo_time_instant_begin,
@@ -291,23 +311,11 @@ namespace
 
 		for ( ; p_iter != p_iter_end ; ++p_iter)
 		{
-			/*
-			if (!p_iter.is_valid())
-			{
-				continue;
-			}
-			if (!(*p_iter))
-			{
-				continue;
-			}
-			*/
 			GPlatesModel::PropertyName property_name = (*p_iter)->property_name();
 			QString q_prop_name = GPlatesUtils::make_qstring_from_icu_string(property_name.get_name());
 			if (property_name_list.contains(q_prop_name))
 			{
-				// GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
 				feature->remove(p_iter);
-				// transaction.commit();
 			}
 
 		} // loop over properties in feature. 
@@ -664,13 +672,13 @@ GPlatesFileIO::ShapefileReader::check_file_format(
 	ReadErrorAccumulation &read_error)
 {
 	if (!d_data_source_ptr){
-	// we should not be here
+		// we should not be here
 		return false;
 	}
 
 	boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
 		new GPlatesFileIO::LocalFileDataSource(d_filename, GPlatesFileIO::DataFormats::Shapefile));
-	boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
+  	boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
 				new GPlatesFileIO::LineNumber(0));
 
 	d_num_layers = d_data_source_ptr->GetLayerCount();
@@ -682,7 +690,6 @@ GPlatesFileIO::ShapefileReader::check_file_format(
 				e_location,
 				GPlatesFileIO::ReadErrors::NoLayersFoundInFile,
 				GPlatesFileIO::ReadErrors::FileNotLoaded));
-
 		return false;
 	}
 
@@ -717,33 +724,6 @@ GPlatesFileIO::ShapefileReader::check_file_format(
 	}
 
 	d_layer_ptr->ResetReading();
-
-	d_geometry_ptr = d_feature_ptr->GetGeometryRef();
-	if (d_geometry_ptr == NULL){
-
-		qDebug() << "Null Geometry Ref";
-
-		read_error.d_failures_to_begin.push_back(
-			GPlatesFileIO::ReadErrorOccurrence(
-				e_source,
-				e_location,
-				GPlatesFileIO::ReadErrors::ErrorReadingShapefileGeometry,
-				GPlatesFileIO::ReadErrors::FileNotLoaded));
-		return false;
-	}
-	d_type = d_geometry_ptr->getGeometryType();
-	OGRwkbGeometryType flat_type;
-
-	flat_type = wkb_flatten(d_type);
-
-	if( d_type != flat_type){
-		read_error.d_warnings.push_back(
-			GPlatesFileIO::ReadErrorOccurrence(
-				e_source,
-				e_location,
-				GPlatesFileIO::ReadErrors::TwoPointFiveDGeometryDetected,
-				GPlatesFileIO::ReadErrors::GeometryFlattenedTo2D));
-	}
 		
 	OGRFeature::DestroyFeature(d_feature_ptr);
 	return true;
@@ -868,7 +848,17 @@ GPlatesFileIO::ShapefileReader::read_features(
 		
 
 		d_type = d_geometry_ptr->getGeometryType();
-		d_type = wkb_flatten(d_type);
+		OGRwkbGeometryType flattened_type = wkb_flatten(d_type);
+
+		if( d_type != flattened_type){
+			read_errors.d_warnings.push_back(
+						GPlatesFileIO::ReadErrorOccurrence(
+							e_source,
+							e_location,
+							GPlatesFileIO::ReadErrors::TwoPointFiveDGeometryDetected,
+							GPlatesFileIO::ReadErrors::GeometryFlattenedTo2D));
+		}
+
 		switch (d_type){
 		case wkbPoint:
 			{
@@ -1291,7 +1281,7 @@ GPlatesFileIO::ShapefileReader::read_file(
 	}
 	reader.get_field_names(read_errors);
 
-	QString shapefile_xml_filename = OgrUtils::make_shapefile_xml_filename(fileinfo.get_qfileinfo());
+	QString shapefile_xml_filename = OgrUtils::make_ogr_xml_filename(fileinfo.get_qfileinfo());
 
 	reader.d_model_to_attribute_map.clear();
 
@@ -1306,7 +1296,7 @@ GPlatesFileIO::ShapefileReader::read_file(
 				false))
 		{
 			// The user has cancelled the mapper-dialog routine, so cancel the whole shapefile loading procedure.
-			throw FileLoadAbortedException(GPLATES_EXCEPTION_SOURCE, "File load aborted.");
+			throw FileLoadAbortedException(GPLATES_EXCEPTION_SOURCE, "File load aborted.",filename);
 		}
 		OgrUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,reader.d_model_to_attribute_map);
 	}
@@ -1888,8 +1878,9 @@ GPlatesFileIO::ShapefileReader::read_field_names(
 	reader.get_field_names(read_errors);
 
 	return reader.d_field_names;
-}
 
+
+}
 
 void
 GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(
@@ -1910,7 +1901,7 @@ GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(
 
 	// Save the model-to-attribute map to the mapping xml file.
 	OgrUtils::save_attribute_map_as_xml_file(
-			OgrUtils::make_shapefile_xml_filename(file_info.get_qfileinfo()),
+			OgrUtils::make_ogr_xml_filename(file_info.get_qfileinfo()),
 			model_to_attribute_map);
 
 	remap_feature_collection(file, model_to_attribute_map, read_errors);

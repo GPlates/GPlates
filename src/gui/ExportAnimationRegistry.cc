@@ -506,7 +506,7 @@ GPlatesGui::register_default_export_animation_types(
 					_1, _2, true),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 
-#if 0 // Not yet supported...
+#if 1 // Not yet supported...
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
 				ExportAnimationType::RESOLVED_TOPOLOGIES,
@@ -517,9 +517,12 @@ GPlatesGui::register_default_export_animation_types(
 							ExportResolvedTopologyAnimationStrategy::Configuration::OGRGMT,
 							default_resolved_topological_boundary_export_options)),
 			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
-			&create_export_options_widget<
+            boost::bind(&create_export_options_widget<
 					GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget,
-					ExportResolvedTopologyAnimationStrategy>,
+                    ExportResolvedTopologyAnimationStrategy,
+                    bool>,
+    // The 'false' prevents user from turning on/off dateline wrapping of geometries...
+                        _1,_2,false),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 #endif
 

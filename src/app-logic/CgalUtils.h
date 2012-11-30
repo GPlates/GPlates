@@ -704,5 +704,8 @@ typedef CGAL::Delaunay_mesh_size_criteria_2<CDT> Criteria;
 typedef CGAL::Delaunay_mesher_2<CDT, Criteria> Mesher;
 */
 
+DISABLE_MSVC_WARNING( 4503 )
+
+
 #endif // GPLATES_APP_LOGIC_CGALUTILS_H
 

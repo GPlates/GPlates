@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2009, 2011 Geological Survey of Norway
+ * Copyright (C) 2009, 2011, 2012 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -32,29 +32,22 @@
 #include <QFileInfo>
 #include <QVariant>
 
-#include "OgrWriter.h"
+
 #include "OgrException.h"
+#include "OgrWriter.h"
+#include "OgrUtils.h"
 #include "feature-visitors/ToQvariantConverter.h"
 #include "maths/LatLonPoint.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlKeyValueDictionaryElement.h"
 
-#if 1
-// The only driver we're interested in for now is the Shapefile one. 
-static const QString OGR_DRIVER_NAME("ESRI Shapefile");
-
-#else
-// But we'll try the KML driver for kicks....seems to work OK :) 
-static const QString OGR_DRIVER_NAME("KML");
-#endif
-
 namespace{
 
 	typedef std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> element_type;
 	typedef element_type::const_iterator element_iterator_type;
-	typedef std::map<QString, QStringList> extension_to_driver_map_type; 
+	typedef std::map<QString, QStringList> file_to_driver_map_type;
 
-	enum driver_string
+	enum ogr_driver_string
 	{
 		FORMAT_NAME,
 		CODE
@@ -67,10 +60,10 @@ namespace{
 	 * The map data are the "Format Name" and "Code" terms from the list of OGR Vector Formats
 	 * (http://www.gdal.org/ogr/ogr_formats.html)
 	 */
-	extension_to_driver_map_type
-	create_extension_to_driver_map()
+	file_to_driver_map_type
+	create_file_to_driver_map()
 	{
-		static extension_to_driver_map_type map;
+		static file_to_driver_map_type map;
 		QStringList shp_driver;
 		shp_driver << "ESRI Shapefile" << "ESRI Shapefile";
 		map["shp"] = shp_driver;
@@ -83,14 +76,14 @@ namespace{
 	}
 
 	QString
-	get_driver_name_from_extension(
-		QString extension)
+	get_driver_name_from_file_extension(
+		QString file_extension)
 	{
-		extension = extension.toLower();
+		file_extension = file_extension.toLower();
 	
-		extension_to_driver_map_type map = create_extension_to_driver_map();
+		file_to_driver_map_type map = create_file_to_driver_map();
 	
-		extension_to_driver_map_type::const_iterator iter = map.find(extension);
+		file_to_driver_map_type::const_iterator iter = map.find(file_extension);
 		if (iter != map.end())
 		{
 			return iter->second.at(FORMAT_NAME);
@@ -115,26 +108,6 @@ namespace{
 		else
 		{
 			return QVariant();
-		}
-	}
-
-	QString
-	get_type_qstring_from_qvariant(
-		QVariant &variant)
-	{
-		switch (variant.type())
-		{
-		case QVariant::Int:
-			return QString("integer");
-			break;
-		case QVariant::Double:
-			return QString("double");
-			break;
-		case QVariant::String:
-			return QString("string");
-			break;
-		default:
-			return QString();
 		}
 	}
 
@@ -192,7 +165,7 @@ namespace{
 				QString key_string = GPlatesUtils::make_qstring_from_icu_string(iter->key()->value().get());
 
 				QVariant value_variant = get_qvariant_from_element(*iter);
-				QString type_string = get_type_qstring_from_qvariant(value_variant);
+				QString type_string = GPlatesFileIO::OgrUtils::get_type_qstring_from_qvariant(value_variant);
 
 				//qDebug() << "Field name: " << key_string << ", type: " << type_string;
 
@@ -226,7 +199,10 @@ namespace{
 
 			if (num_attributes_in_layer != num_attributes_in_dictionary)
 			{
+				// This shouldn't really happen.
 				qDebug() << "OGR Writer: Mismatch in number of fields.";
+				qDebug() << "Layer has " << num_attributes_in_layer << " fields, kvd has " <<
+							num_attributes_in_dictionary << " fields";
 			}
 
 			element_iterator_type 
@@ -241,27 +217,25 @@ namespace{
 
 				if (QString::compare(model_string,layer_string) != 0)
 				{
-					// FIXME: Think of something suitable to do here. 
+					// This shouldn't really happen.
 					qDebug() << "Mismatch in field names: model: " << model_string << ", layer : " << layer_string;
 				}
 
+				// FIXME: do I really need to put this in variant form first?
 				QVariant value_variant = get_qvariant_from_element(*iter);
-				QString type_string = get_type_qstring_from_qvariant(value_variant);
 
 				OGRFieldType layer_type = ogr_layer->GetLayerDefn()->GetFieldDefn(count)->GetType();	
 				OGRFieldType model_type  = get_ogr_field_type_from_qvariant(value_variant);
 
 				if (layer_type != model_type)
 				{
-					// FIXME: Think of something suitable to do here. 
+					// This shouldn't really happen.
 					qDebug() << "OGR Writer: Mismatch in field types.";
+					qDebug() << "Layer type: " << layer_type;
+					qDebug() << "Model type: " << model_type;
 				}
 
-				// FIXME: Check that it's possible to represent the variants in the required forms.
-				// The various QVariant .toXXX functions will return 0/0.0/empty-string if the 
-				// QVariant could not be converted to the requested form, but we should 
-				// warn the user if this happens.
-				bool ok;
+				bool ok = true;
 				switch(layer_type)
 				{
 				case OFTInteger:
@@ -286,6 +260,10 @@ namespace{
 				default:
 					ogr_feature->SetField(count,value_variant.toString().toStdString().c_str());
 					break;
+				}
+				if (!ok)
+				{
+					qWarning() << "The QVariant containing the property value could not be converted to a type.";
 				}
 
 			}
@@ -355,7 +333,8 @@ namespace{
 
 		if (ogr_data_source_ptr == NULL)
 		{
-			throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,"OGR data source creation failed.");
+			throw GPlatesFileIO::OgrException(GPLATES_EXCEPTION_SOURCE,
+											  "OGR data source creation failed when trying to remove layers.");
 		}
 		
 		int number_of_layers = ogr_data_source_ptr->GetLayerCount();
@@ -641,13 +620,12 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 	d_ogr_polygon_data_source_ptr(0),
 	d_dateline_wrapper(GPlatesMaths::DateLineWrapper::create())
 {
-	OGRRegisterAll();
 
 	QFileInfo q_file_info_original(d_filename);
 	d_extension = q_file_info_original.suffix();
 	d_extension = d_extension.toLower();
 
-	QString driver_name = get_driver_name_from_extension(d_extension);
+	QString driver_name = get_driver_name_from_file_extension(d_extension);
 
 	d_ogr_driver_ptr = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(driver_name.toStdString().c_str());
 	if (d_ogr_driver_ptr == NULL)

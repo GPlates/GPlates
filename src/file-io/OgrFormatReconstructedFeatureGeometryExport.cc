@@ -256,8 +256,8 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries(
 
 		OgrUtils::add_referenced_files_to_kvd(kvd_for_export,referenced_files);
 
-        OgrUtils::add_standard_properties_to_kvd(
-                    feature_ref,kvd_for_export);
+		OgrUtils::add_standard_properties_to_kvd(
+					feature_ref,kvd_for_export);
 
 
 

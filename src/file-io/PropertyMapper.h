@@ -28,6 +28,8 @@
 #ifndef GPLATES_FILEIO_PROPERTYMAPPER_H
 #define GPLATES_FILEIO_PROPERTYMAPPER_H
 
+typedef QMap< QString, QString > model_to_attribute_map_type;
+
 namespace ShapefileAttributes {
 	enum ModelProperties {
 
@@ -87,7 +89,7 @@ namespace GPlatesFileIO
 		map_properties(
 				QString &filename,
 				QStringList &field_names,
-				QMap<QString,QString> &model_to_attribute_map,
+                model_to_attribute_map_type &model_to_attribute_map,
 				bool remapping
 		) = 0;
 

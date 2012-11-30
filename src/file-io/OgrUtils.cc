@@ -58,13 +58,33 @@ namespace
 }
 
 QString
-GPlatesFileIO::OgrUtils::make_shapefile_xml_filename(
+GPlatesFileIO::OgrUtils::get_type_qstring_from_qvariant(
+	const QVariant &variant)
+{
+	switch (variant.type())
+	{
+	case QVariant::Int:
+		return QString("integer");
+		break;
+	case QVariant::Double:
+		return QString("double");
+		break;
+	case QVariant::String:
+		return QString("string");
+		break;
+	default:
+		return QString();
+	}
+}
+
+QString
+GPlatesFileIO::OgrUtils::make_ogr_xml_filename(
 		const QFileInfo &file_info)
 {
 
-	QString shapefile_xml_filename = file_info.absoluteFilePath() + ".gplates.xml";
+	QString ogr_xml_filename = file_info.absoluteFilePath() + ".gplates.xml";
 
-	return shapefile_xml_filename;
+	return ogr_xml_filename;
 }
 
 

@@ -50,6 +50,7 @@
 #include "file-io/ErrorOpeningPipeFromGzipException.h"
 #include "file-io/ErrorOpeningPipeToGzipException.h"
 #include "file-io/FileFormatNotSupportedException.h"
+#include "file-io/FileLoadAbortedException.h"
 #include "file-io/GpmlOutputVisitor.h"
 #include "file-io/OgrException.h"
 #include "file-io/File.h"
@@ -719,8 +720,22 @@ GPlatesGui::FileIOFeedback::try_catch_file_or_session_load_with_feedback(
 				<< tr("Error: GPlates was unable to read the file '%1': \n").arg(exc.filename())
 				<< exc;
 		QMessageBox::critical(parent_widget, tr("Error Opening File"), message,
-				QMessageBox::Ok, QMessageBox::Ok);
+							  QMessageBox::Ok, QMessageBox::Ok);
 		qWarning() << message; // Also log the detailed error message.
+	}
+	catch (GPlatesFileIO::FileLoadAbortedException &exc)
+	{
+		QString message;
+		QTextStream(&message)
+				<< tr("File load aborted when reading file '%1': \n").arg(exc.filename())
+				<< exc;
+		// Don't display a message box here. The only way this exception is thrown
+		// at present is if the user cancels shapefile import (by cancelling the mapping dialog),
+		// and this doesn't need message box -it makes it look like something bad has happened.
+		//
+		// Abandoning the mapping process isn't really an error so probably shouldn't throw,
+		// but that's the easiest way of getting out of the file-load procedure at the moment.
+		qWarning() << message; // Log the detailed error message.
 	}
 	catch (GPlatesGlobal::Exception &exc)
 	{
