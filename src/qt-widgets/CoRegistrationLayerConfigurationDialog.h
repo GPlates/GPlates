@@ -234,8 +234,16 @@ namespace GPlatesQtWidgets
 		void
 		remove_all();
 
-	private:
+		void
+		cfg_table_cell_changed(
+				int row,
+				int column);
 
+		void
+		update_cfg_table();
+
+	private:
+	
 		/**
 		 * The model callback that notifies us when the feature store is modified so that
 		 * we can do a reconstruction.

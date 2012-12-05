@@ -110,6 +110,9 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::CoRegistrationLayerCon
 	QObject::connect(remove_all_push_button, SIGNAL(clicked()), 
 		this, SLOT(remove_all()));
 
+	QObject::connect(co_reg_cfg_table_widget, SIGNAL(cellChanged(int, int)), 
+		this, SLOT(cfg_table_cell_changed(int,int)));
+
 	QObject::connect(
 		&d_application_state.get_reconstruct_graph(),
 		SIGNAL(layer_added_input_connection(
@@ -702,13 +705,17 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::react_add_configuratio
 		co_reg_cfg_table_widget->insertRow(row_num);
 
 		//Attribute Name column 
+		AttributeTableItem * attr_name_item = 
+			new AttributeTableItem(
+					attr_item->text(),
+					attr_item->attr_type);
+		attr_name_item->setFlags(attr_name_item->flags() & ~Qt::ItemIsEditable);
 		co_reg_cfg_table_widget->setItem(
 				row_num, 
 				ATTRIBUTE_NAME, 
-				new AttributeTableItem(
-						attr_item->text(),
-						attr_item->attr_type));
+				attr_name_item);
 
+		//association name column
 		co_reg_cfg_table_widget->setItem(
 				row_num, 
 				ASSOCIATION_NAME, 
@@ -716,6 +723,8 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::react_add_configuratio
 
 		//Data Operator column
 		QComboBox* combo = new QComboBox();       
+		QObject::connect(combo, SIGNAL(currentIndexChanged(int)), 
+			this, SLOT(update_cfg_table()));
 		co_reg_cfg_table_widget->setCellWidget(
 				row_num, 
 				REDUCER, 
@@ -727,16 +736,21 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::react_add_configuratio
 				target_layer_type);
 		
 		// Layer Name column
+		LayerTableItem* layer_name_item = 
+			new LayerTableItem(
+					current_target_layer_item->layer,
+					current_target_layer_item->label);
+		layer_name_item->setFlags(layer_name_item->flags() & ~Qt::ItemIsEditable);
 		co_reg_cfg_table_widget->setItem(
 				row_num,
 				LAYER_NAME,
-				new LayerTableItem(
-						current_target_layer_item->layer,
-						current_target_layer_item->label));
+				layer_name_item);
 
 		//Association Type column
 		//TODO: To be finished...
 		QComboBox* association_combo = new QComboBox();       
+		QObject::connect(association_combo, SIGNAL(currentIndexChanged(int)), 
+			this, SLOT(update_cfg_table()));
 		co_reg_cfg_table_widget->setCellWidget(
 				row_num, 
 				FILTER_TYPE, 
@@ -746,6 +760,8 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::react_add_configuratio
 
 		//Range column
 		QDoubleSpinBox* ROI_range_spinbox = new QDoubleSpinBox(); 
+		QObject::connect(ROI_range_spinbox, SIGNAL(valueChanged(double)), 
+			this, SLOT(update_cfg_table()));
 		ROI_range_spinbox->setRange(0,25000);
 		ROI_range_spinbox->setValue(0);
 		co_reg_cfg_table_widget->setCellWidget(
@@ -781,6 +797,8 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::react_add_configuratio
 			setup_raster_fill_polygons_check_box(raster_fill_polygons_check_box);
 		}
 	}
+	co_reg_cfg_table_widget->resizeColumnsToContents();
+	update_cfg_table();
 }
 
 
@@ -1033,7 +1051,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::create_configuration_t
 				reducer_box				&&
 				spinbox_ROI_range) )
 		{
-			qWarning() << "CoRegistrationLayerConfigurationDialog: Invalid input table item found! Skip this iteration";
+			qDebug() << "CoRegistrationLayerConfigurationDialog: Invalid input table item found! Skip this iteration";
 			continue;
 		}
 
@@ -1147,19 +1165,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::apply(
 		return;
 	}
 
-	GPlatesDataMining::CoRegConfigurationTable cfg_table;
-	create_configuration_table(cfg_table);
-
-	// If the configuration has changed then let the co-registration layer know.
-	if (d_cfg_table != cfg_table)
-	{
-		d_cfg_table = cfg_table;
-
-		set_configuration_table_on_layer(cfg_table);
-
-		// Force a reconstruction so that the co-registration layer uses the updated configuration.
-		d_application_state.reconstruct();
-	}
+	update_cfg_table();
 
 	done(QDialog::Accepted);
 }
@@ -1236,6 +1242,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::remove()
 {
 	int idx = co_reg_cfg_table_widget->currentRow();
 	co_reg_cfg_table_widget->removeRow(idx);
+	update_cfg_table();
 }
 
 
@@ -1244,6 +1251,39 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::remove_all()
 {
 	co_reg_cfg_table_widget->clearContents();
 	co_reg_cfg_table_widget->setRowCount(0);
+	update_cfg_table();
+}
+
+
+void
+GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::cfg_table_cell_changed(
+		int row,
+		int col)
+{
+	if(static_cast<std::size_t>(row) < d_cfg_table.size())
+	{
+		update_cfg_table();
+	}
+	return;
+}
+
+
+void
+GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::update_cfg_table()
+{
+	GPlatesDataMining::CoRegConfigurationTable cfg_table;
+	create_configuration_table(cfg_table);
+
+	// If the configuration has changed then let the co-registration layer know.
+	if (d_cfg_table != cfg_table)
+	{
+		d_cfg_table = cfg_table;
+
+		set_configuration_table_on_layer(cfg_table);
+	}
+	// Force a reconstruction so that the co-registration layer uses the updated configuration.
+        d_application_state.reconstruct();
+	return;
 }
 
 
@@ -1251,4 +1291,5 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::remove_all()
 // This is here at the end of the layer because the problem resides in a template
 // being instantiated at the end of the compilation unit.
 DISABLE_GCC_WARNING("-Wshadow")
+
 

@@ -23,7 +23,7 @@ class OWBirthAttribute(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'Birth Attribute', wantMainArea = 0, resizingEnabled = 0)
 
         self.inputs = []
-        self.outputs = [("Attribute Data", ExampleTable),("Feature IDs", ExampleTable),("Birth Time", ExampleTable)]
+        self.outputs = [("Attribute At Birth", ExampleTable),("Feature IDs", ExampleTable),("Birth Time", ExampleTable)]
 
         script_path = os.path.dirname(__file__)
         self.ui = uic.loadUi(script_path+'/birth_attr.ui')
@@ -102,7 +102,7 @@ class OWBirthAttribute(OWWidget):
         data = Orange.data.Table(domain) #create empty table.
         for i in vec:
             data.append([i])
-        self.send("Attribute Data", data)
+        self.send("Attribute At Birth", data)
 
         v = [orange.StringVariable('Feature ID')]
         domain = Orange.data.Domain(v)

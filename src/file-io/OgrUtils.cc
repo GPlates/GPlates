@@ -26,6 +26,7 @@
 */
 
 #include <QMessageBox>
+#include <QVariant>
 
 #include "feature-visitors/KeyValueDictionaryFinder.h"
 #include "property-values/GmlTimePeriod.h"

@@ -64,6 +64,7 @@ class OWTimeSeries(OWWidget):
             
 
     def refresh(self):
+        self.ui.property_comboBox.clear()
         if not self.coreg_layer:
             try:
                 c = gplates.Client('localhost', 9777)
@@ -78,7 +79,7 @@ class OWTimeSeries(OWWidget):
         self.ui.end_time.setValue(self.e_time)
         self.ui.increment.setValue(self.inc)
         
-        self.ui.property_comboBox.clear()
+       
         associations = self.coreg_layer.get_coreg_associations()
         if associations:
            for a in associations:
@@ -107,21 +108,23 @@ class OWTimeSeries(OWWidget):
         self.ui.property_comboBox.setEnabled(False)
         self.ui.refresh_button.setEnabled(False)
         self.ui.commit_button.setEnabled(False)
-        for time in time_seq:
-            pb.advance()
-            t = self.coreg_layer.get_coreg_data(time)
-            if t:
-                counter=0
-                for row in t:
-                    if(len(matrix) == counter):
-                        matrix.append([str(row[cur_idx+2])]) #treat everything as strings
-                        feature_ids.append(str(row[0]))
-                    else:
-                        matrix[counter].append(str(row[cur_idx+2]))
-                    counter += 1
-
+        try:
+            for time in time_seq:
+                pb.advance()
+                t = self.coreg_layer.get_coreg_data(time)
+                if t:
+                    counter=0
+                    for row in t:
+                        if(len(matrix) == counter):
+                            matrix.append([str(row[cur_idx+2])]) #treat everything as strings
+                            feature_ids.append(str(row[0]))
+                        else:
+                            matrix[counter].append(str(row[cur_idx+2]))
+                        counter += 1
+        except Exception,e:
+            print e
+        pb.finish()
         data =  self._creat_data_table(matrix, time_seq)
-        pb.finish() 
         self.ui.property_comboBox.setEnabled(True)
         self.ui.refresh_button.setEnabled(True)
         self.ui.commit_button.setEnabled(True)

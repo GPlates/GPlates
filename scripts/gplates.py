@@ -77,17 +77,17 @@ class Association:
 
 
 class CoregistrationLayer:
-    def __init__(self, client, coreg_layer_name=None):
+    def __init__(self, coreg_layer_name=None):
         self.layer_name = coreg_layer_name
-        self.d_client = client
-
+       
 
     #The get_coreg_seeds returns all feature ids of coregistration "seeds" as a list of strings.
     def get_coreg_seeds(self):
         request=('<Request><Name>GetSeeds</Name><LayerName>'
                  + self.layer_name +'</LayerName></Request>')
+        c = Client()
         try:
-            data = self.d_client.send_request_return_response(request)
+            data = c.send_request_return_response(request)
             dom = parseString(data)
             ele = dom.getElementsByTagName('Response')
             if ele:
@@ -97,7 +97,7 @@ class CoregistrationLayer:
             raise
               
         except:
-            print self.d_client.get_error_msg()
+            print c.get_error_msg()
             print "No Seed found."
             return []
 
@@ -109,16 +109,16 @@ class CoregistrationLayer:
         request=('<Request><Name>GetBeginTime</Name><FeatureID>'
                                 + feature_id + '</FeatureID></Request>')
         ret = 0
-
+        c = Client()
         try:
-            data = self.d_client.send_request_return_response(request)
+            data = c.send_request_return_response(request)
                 
             dom = parseString(data)
             ele = dom.getElementsByTagName('Response')
             if ele:
                 ret = float(ele[0].firstChild.nodeValue)     
         except:
-            print self.d_client.get_error_msg()
+            print c.get_error_msg()
             raise
         return ret
 
@@ -129,6 +129,7 @@ class CoregistrationLayer:
                  + self.layer_name +'</LayerName></Request>')
         ret = []
         data = ''
+        self.d_client = Client()
         try:
             data = self.d_client.send_request_return_response(request)
             dom = parseString(data)
@@ -145,6 +146,7 @@ class CoregistrationLayer:
     def get_time_setting(self):
         request=('<Request><Name>GetTimeSetting</Name></Request>')
         data = ''
+        self.d_client = Client()
         try:
             bt = 140.0
             et = 0.0
@@ -177,6 +179,7 @@ class CoregistrationLayer:
                 + str(time) + '</ReconstructionTime><LayerName>'
                  + self.layer_name +'</LayerName></Request>')
         data = ''
+        self.d_client = Client()
         try:
             data = self.d_client.send_request_return_response(request)
             dom = parseString(data)
@@ -220,7 +223,7 @@ class CoregistrationLayer:
         
 
 class Client:
-    def __init__(self, host='localhost', port=9777, timeout=None):
+    def __init__(self, host='localhost', port=9777, timeout=300):
         is_inside_gplates = False;
         self.errorMsg = None
         try:
@@ -242,7 +245,7 @@ class Client:
         self.client_socket.connect((self.host, self.port))
        
     def get_coregistration_layer(self, layer_name=''):
-         return CoregistrationLayer(self, layer_name)
+         return CoregistrationLayer(layer_name)
 
 
     def set_reconstruction_time(self, time):

@@ -377,15 +377,22 @@ GPlatesDataMining::DataSelector::co_register_target_reconstructed_geometries(
 					create_filter_map_reduce(config_row, reconstructed_seed_feature);
 
 			//filter
-			CoRegFilter::reconstructed_feature_vector_type filter_result;
-			if(!filter_cache.find(config_row, filter_result))
+			CoRegFilter::reconstructed_feature_vector_type filter_result, cache_hit;
+			if(filter_cache.find(config_row, cache_hit))
+			{
+				filter->process(
+						cache_hit.begin(),
+						cache_hit.end(),
+						filter_result);
+			}
+			else
 			{
 				filter->process(
 						reconstructed_target_features.begin(),
 						reconstructed_target_features.end(),
 						filter_result);
-				filter_cache.insert(config_row,filter_result);
 			}
+			filter_cache.insert(config_row,filter_result);
 
 			//map
 			CoRegMapper::MapperOutDataset map_result;
@@ -472,7 +479,7 @@ GPlatesDataMining::DataSelector::populate_table_header()
 	{
 		// Display the attribute name and the reducer operation - that helps the user to
 		// visually identify which configuration row the current table column is referring to.
-		QString column_header = row.attr_name;
+		QString column_header = row.assoc_name+ "_" + row.attr_name + "_";
 		switch (row.reducer_type)
 		{
 		case REDUCER_MIN:

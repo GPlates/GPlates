@@ -55,7 +55,7 @@ namespace
 			const ConfigurationTableRow& row_1,
 			const ConfigurationTableRow& row_2)
 	{
-		return row_2.filter_cfg < row_1.filter_cfg ;
+		return *row_2.filter_cfg < *row_1.filter_cfg;
 	}
 }
 
@@ -82,16 +82,16 @@ GPlatesDataMining::CoRegConfigurationTable::group_and_sort()
 		std::pair<iterator,iterator> bounds;
 		bounds = std::equal_range(it, it_end, *it, compare_layer);
 		it = bounds.second;
-		iterator inner_it = bounds.first, inner_it_end =--bounds.second;
-		std::sort(inner_it, inner_it_end, compare_filter_type); // sort by filter type
+		iterator inner_it = bounds.first, inner_it_end =bounds.second;
+		std::sort(inner_it, inner_it_end, compare_filter_type); // group by filter type
 		while(inner_it != inner_it_end)
 		{
 			std::pair<iterator,iterator> inner_bounds;
 			inner_bounds = std::equal_range(inner_it, inner_it_end, *inner_it, compare_filter_type);
 			inner_it = inner_bounds.second;
-			if(dynamic_cast<RegionOfInterestFilter*> (inner_bounds.first->filter_cfg.get()))//if it is region of interest filter, sort by range.
+			if(inner_bounds.first != inner_bounds.second)
 			{
-				std::sort(inner_bounds.first,inner_bounds.second,compare_filter);
+				std::sort(inner_bounds.first, inner_bounds.second, compare_filter); //sort by filter
 			}
 		}
 	}
