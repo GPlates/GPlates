@@ -87,6 +87,19 @@ namespace
 
 	const double TWO_PI = 2. * GPlatesMaths::PI;
 
+	/*!
+	 * Scaling factor for symbols
+	 */
+	const double SYMBOL_SCALE_FACTOR = 0.01;
+
+	/*!
+	 * Correction factor for size of filled circle symbol, which uses the standard point rendering,
+	 * and which therefore would appear considerably smaller than other symbol types.
+	 *
+	 * This correction factor brings it in line with the size of the unfilled circle symbol.
+	 */
+	const double FILLED_CIRCLE_SYMBOL_CORRECTION = 5.;
+
 } // anonymous namespace
 
 
@@ -738,25 +751,29 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_triangle_symbol(
 
     GPlatesMaths::Rotation r3 = r2*r1;
 
-    double d = 0.02 * d_inverse_zoom_factor * rendered_triangle_symbol.get_size(); // fairly arbitrary initial half-altitude for testing.
 
-    // Triangle vertices defined in the plane z=1.
-    GPlatesMaths::Vector3D va(-d,0.,1.);
-    GPlatesMaths::Vector3D vb(0.5*d,-0.86*d,1.);
-    GPlatesMaths::Vector3D vc(0.5*d,0.86*d,1.);
+	double size = SYMBOL_SCALE_FACTOR * d_inverse_zoom_factor * rendered_triangle_symbol.get_size();
 
-    // Rotate to desired location.
-    va = r3 * va;
-    vb = r3 * vb;
-    vc = r3 * vc;
+	// r is radius of circumscribing circle. Factor 1.33 used here to give us a triangle height of 2*d.
+	double r = 1.333 * size;
+
+	// Triangle vertices defined in the plane z=1.
+	GPlatesMaths::Vector3D va(-r,0.,1.);
+	GPlatesMaths::Vector3D vb(0.5*r,-0.86*r,1.);
+	GPlatesMaths::Vector3D vc(0.5*r,0.86*r,1.);
+
+	// Rotate to desired location.
+	va = r3 * va;
+	vb = r3 * vb;
+	vc = r3 * vc;
 
 
-    coloured_vertex_type a(va.x().dval(), va.y().dval(),va.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type b(vb.x().dval(), vb.y().dval(),vb.z().dval(),Colour::to_rgba8(*colour));
-    coloured_vertex_type c(vc.x().dval(), vc.y().dval(),vc.z().dval(),Colour::to_rgba8(*colour));
+	coloured_vertex_type a(va.x().dval(), va.y().dval(),va.z().dval(),Colour::to_rgba8(*colour));
+	coloured_vertex_type b(vb.x().dval(), vb.y().dval(),vb.z().dval(),Colour::to_rgba8(*colour));
+	coloured_vertex_type c(vc.x().dval(), vc.y().dval(),vc.z().dval(),Colour::to_rgba8(*colour));
 
-    if (filled)
-    {
+	if (filled)
+	{
 		stream_primitives_type &stream =
 			d_layer_painter->translucent_drawables_on_the_sphere.get_triangles_stream();
 
@@ -770,9 +787,9 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_triangle_symbol(
 		stream_triangles.add_vertex(b);
 		stream_triangles.add_vertex(c);
 		stream_triangles.end_triangles();
-    }
-    else
-    {
+	}
+	else
+	{
 		const float line_width = rendered_triangle_symbol.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
 		stream_primitives_type &stream =
@@ -786,7 +803,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_triangle_symbol(
 		stream_line_strips.add_vertex(c);
 		stream_line_strips.add_vertex(a);
 		stream_line_strips.end_line_strip();
-    }
+	}
 }
 
 void
@@ -836,14 +853,14 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_square_symbol(
 
     GPlatesMaths::Rotation r3 = r2*r1;
 
-    double d = 0.01 * d_inverse_zoom_factor * rendered_square_symbol.get_size(); // fairly arbitrary initial half-altitude for testing.
+	double size = SYMBOL_SCALE_FACTOR * d_inverse_zoom_factor * rendered_square_symbol.get_size();
 
     // Make a triangle fan with centre (0,0,1)
     GPlatesMaths::Vector3D v3d_a(0.,0.,1.);
-    GPlatesMaths::Vector3D v3d_b(-d,-d,1.);
-    GPlatesMaths::Vector3D v3d_c(-d,d,1.);
-    GPlatesMaths::Vector3D v3d_d(d,d,1.);
-    GPlatesMaths::Vector3D v3d_e(d,-d,1.);
+	GPlatesMaths::Vector3D v3d_b(-size,-size,1.);
+	GPlatesMaths::Vector3D v3d_c(-size,size,1.);
+	GPlatesMaths::Vector3D v3d_d(size,size,1.);
+	GPlatesMaths::Vector3D v3d_e(size,-size,1.);
 
     // Rotate to desired location.
     v3d_a = r3 * v3d_a;
@@ -914,27 +931,12 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
 
     bool filled = rendered_circle_symbol.get_is_filled();
 	
-	// FIXME: copied this stuff from other visit_rendered_* functions 
-    double d = 0.01 * d_inverse_zoom_factor * rendered_circle_symbol.get_size(); 
 
-	const float line_width = rendered_circle_symbol.get_size() * LINE_WIDTH_ADJUSTMENT * d_scale;
-
-	const float point_size =
-			rendered_circle_symbol.get_size() * POINT_SIZE_ADJUSTMENT * d_scale;
-
-#if 0
-	const float point_size =
-			rendered_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT * d_scale;
-
-    const GPlatesMaths::PointOnSphere &pos =
-		    rendered_circle_symbol.get_centre();
-
-    GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos);
-#endif
 
     if (filled)
     {
-		// FIXME: copied from rendered_point_on_sphere
+		const float point_size = FILLED_CIRCLE_SYMBOL_CORRECTION *
+				rendered_circle_symbol.get_size() * POINT_SIZE_ADJUSTMENT * d_scale;
 
 		// Get the stream for points of the current point size.
 		stream_primitives_type &stream =
@@ -956,7 +958,9 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
     }
     else
     {
-		// FIXME: this was lifted from small cicle ... 
+		const float line_width = rendered_circle_symbol.get_size() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+		double radius = SYMBOL_SCALE_FACTOR * d_inverse_zoom_factor * rendered_circle_symbol.get_size();
 
 		// Get the stream for lines of the current line width.
 		stream_primitives_type &stream =
@@ -967,7 +971,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
 
 		const GPlatesMaths::SmallCircle small_circle = GPlatesMaths::SmallCircle::create_colatitude(
 				rendered_circle_symbol.get_centre().position_vector(),
-				d);
+				radius);
 
 		std::vector<GPlatesMaths::PointOnSphere> points;
 		tessellate(points, small_circle, SMALL_CIRCLE_ANGULAR_INCREMENT);
@@ -1002,13 +1006,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_cross_symbol(
 	    return;
     }
 
-    // Define the square in the tangent plane at the north pole,
-    // then rotate down to required latitude, and
-    // then east/west to required longitude.
-    //
-    // (Two rotations are required to maintain the north-alignment).
-    //
-    // Can I use a new render node to do this rotation more efficiently?
     //
     // Reminder about coordinate system:
     // x is out of the screen as we look at the globe on startup.
@@ -1031,8 +1028,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_cross_symbol(
 
     GPlatesMaths::Rotation r3 = r2*r1;
 
-	// fairly arbitrary initial half-altitude for testing.
-    double d = 0.01 * d_inverse_zoom_factor * rendered_cross_symbol.get_size(); 
+	double d = SYMBOL_SCALE_FACTOR * d_inverse_zoom_factor * rendered_cross_symbol.get_size();
 
     // Set up the vertices of a cross with centre (0,0,1).
     GPlatesMaths::Vector3D v3d_a(0.,d,1.);

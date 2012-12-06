@@ -32,7 +32,7 @@
 #include <boost/type_traits/is_same.hpp>
 
 #include <QDebug>
-#include <QPolygonF>
+#include <QTransform>
 
 #include "Colour.h"
 #include "ColourScheme.h"
@@ -55,7 +55,6 @@
 #include "view-operations/RenderedCrossSymbol.h"
 #include "view-operations/RenderedDirectionArrow.h"
 #include "view-operations/RenderedEllipse.h"
-#include "view-operations/RenderedGeometryFactory.h" // include this while triangle and squares need to create a point-on-sphere RenderedGeom.
 #include "view-operations/RenderedMultiPointOnSphere.h"
 #include "view-operations/RenderedPointOnSphere.h"
 #include "view-operations/RenderedPolylineOnSphere.h"
@@ -67,6 +66,9 @@
 #include "view-operations/RenderedCircleSymbol.h"
 #include "view-operations/RenderedString.h"
 #include "view-operations/RenderedTriangleSymbol.h"
+
+// Temporary includes for symbol testing
+#include "view-operations/RenderedGeometryFactory.h"
 
 #include <boost/foreach.hpp>
 
@@ -112,6 +114,17 @@ namespace
 	const float MAP_VELOCITY_SCALE_FACTOR = 3.0;
 	const double ARROWHEAD_BASE_HEIGHT_RATIO = 0.5;
 
+	// Scale factor for symbols.
+	const double SYMBOL_SCALE_FACTOR = 1.8;
+
+	/*!
+	 * Correction factor for size of filled circle symbol, which uses the standard point rendering,
+	 * and which therefore would appear considerably smaller than other symbol types.
+	 *
+	 * This correction factor brings it in line with the size of the unfilled circle symbol.
+	 */
+	const double FILLED_CIRCLE_SYMBOL_CORRECTION = 5.;
+
 	void
 	display_vertex(
 		const GPlatesMaths::PointOnSphere &point)
@@ -131,6 +144,54 @@ namespace
 		qDebug() << "Vertex: " << point.position_vector();
 		qDebug() << QPointF(lon, lat);
 		qDebug();
+	}
+
+	/*!
+	 * \brief tessellate_on_plane fills @a seq with vertices describing a circle on
+	 * a plane. The third component of each vertex will be zero.
+	 *
+	 * \param seq - vector of vertices to be filled
+	 * \param centre - centre of circle
+	 * \param radius - radius of circle
+	 * \param angular_increment - increment between successive vertices.
+	 * \param colour - colour applied to all vertices.
+	 */
+	void tessellate_on_plane(
+			GPlatesGui::LayerPainter::coloured_vertex_seq_type &seq,
+			const QPointF &centre,
+			const double &radius,
+			const double &angular_increment,
+			const GPlatesGui::rgba8_t &colour)
+	{
+		// Determine number of increments
+		const int num_segments = 1 + static_cast<int>(TWO_PI / SMALL_CIRCLE_ANGULAR_INCREMENT);
+
+		// Set up a rotation about the circle centre. First we translate
+		// the point so that its coordinates are relative to the circle centre, then rotate
+		// about the origin, then translate back.
+		//
+		// In the concatenated form below the transforms are applied in reverse order
+		//
+		QTransform rotation;
+		rotation.translate(centre.x(),centre.y()).
+				rotateRadians(-SMALL_CIRCLE_ANGULAR_INCREMENT).
+				translate(-centre.x(),-centre.y());
+
+		// Set up initial point on circumference of circle. We can pick any point - might
+		// as well go "north" from the centre.
+		QPointF point = centre + QPointF(0,radius);
+		GPlatesGui::LayerPainter::coloured_vertex_type initial_vertex(
+					point.x(), point.y(), 0, colour);
+		seq.push_back(initial_vertex);
+
+		for (int n = 0; n < num_segments ; ++n)
+		{
+			point = point*rotation;
+			GPlatesGui::LayerPainter::coloured_vertex_type vertex(
+						point.x(), point.y(), 0, colour);
+			seq.push_back(vertex);
+		}
+
 	}
 }
 
@@ -262,6 +323,31 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_point_on_sphere(
 	{
 		return;
 	}
+
+#if 0
+	//////////////////////////////////////////////////////////////////////////////////////
+	// Force symbol rendering for testing. This lets me easily create symbols via the
+	// digitisation tool, or by loading up point files.
+//	GPlatesViewOperations::RenderedGeometry test_symbol =
+//		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_square_symbol(
+//			rendered_point_on_sphere.get_point_on_sphere(),
+//			rendered_point_on_sphere.get_colour(),
+//			1,
+//			true);
+
+	GPlatesViewOperations::RenderedGeometry test_symbol =
+		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_circle_symbol(
+			rendered_point_on_sphere.get_point_on_sphere(),
+			rendered_point_on_sphere.get_colour(),
+			1,
+			false);
+
+	test_symbol.accept_visitor(*this);
+
+	return;
+	// End of testing code.
+	/////////////////////////////////////////////////////////////////////////////////////
+#endif
 
 	const float point_size =
 			rendered_point_on_sphere.get_point_size_hint() * POINT_SIZE_ADJUSTMENT * d_scale;
@@ -609,14 +695,70 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_triangle_symbol(
 	const GPlatesViewOperations::RenderedTriangleSymbol &rendered_triangle_symbol)
 {
-    // visit a point on sphere for now.
-    GPlatesViewOperations::RenderedGeometry point_on_sphere =
-	    GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
-		rendered_triangle_symbol.get_centre(),
-		rendered_triangle_symbol.get_colour(),
-		rendered_triangle_symbol.get_line_width_hint());
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_triangle_symbol);
+	if (!colour)
+	{
+		return;
+	}
 
-    point_on_sphere.accept_visitor(*this);
+	bool filled = rendered_triangle_symbol.get_is_filled();
+
+	double size = SYMBOL_SCALE_FACTOR * d_inverse_zoom_factor * rendered_triangle_symbol.get_size();
+
+	// r is radius of circumscribing circle. Factor 1.33 used here to give us a triangle height of 2*d.
+	double r = 1.333 * size;
+
+	// Get the point position, and project it to the canvas coordinate system.
+	const GPlatesMaths::PointOnSphere &pos =
+			rendered_triangle_symbol.get_centre();
+	// Point pcentre is the centre of our triangle.
+	QPointF pcentre = get_projected_unwrapped_position(pos);
+
+	// pa, pb and pc are the vertices of the triangle.
+	// pa is the vertex which points "up"; pb is lower right and pc lower left.
+
+	// FIXME: we can skip the QPointFs here and set up the coords directly in the
+	// coloured_vertex_type instantiations below.
+	QPointF pa(pcentre.x(),pcentre.y()+r);
+	QPointF pb(pcentre.x()-0.86*r,pcentre.y()-0.5*r);
+	QPointF pc(pcentre.x()+0.86*r,pcentre.y()-0.5*r);
+
+	coloured_vertex_type va(pa.x(), pa.y(), 0,Colour::to_rgba8(*colour));
+	coloured_vertex_type vb(pb.x(), pb.y(), 0,Colour::to_rgba8(*colour));
+	coloured_vertex_type vc(pc.x(), pc.y(), 0,Colour::to_rgba8(*colour));
+
+	if (filled)
+	{
+		stream_primitives_type &stream =
+				d_layer_painter->translucent_drawables_on_the_sphere.get_triangles_stream();
+
+		stream_primitives_type::Triangles stream_triangles(stream);
+
+		// The polygon state is fill, front/back by default, so I shouldn't need
+		// to change anything here.
+
+		stream_triangles.begin_triangles();
+		stream_triangles.add_vertex(va);
+		stream_triangles.add_vertex(vb);
+		stream_triangles.add_vertex(vc);
+		stream_triangles.end_triangles();
+	}
+	else
+	{
+		const float line_width = rendered_triangle_symbol.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+		stream_primitives_type &stream =
+			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+
+		stream_primitives_type::LineStrips stream_line_strips(stream);
+
+		stream_line_strips.begin_line_strip();
+		stream_line_strips.add_vertex(va);
+		stream_line_strips.add_vertex(vb);
+		stream_line_strips.add_vertex(vc);
+		stream_line_strips.add_vertex(va);
+		stream_line_strips.end_line_strip();
+	}
 
 }
 
@@ -624,42 +766,208 @@ void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_square_symbol(
 	const GPlatesViewOperations::RenderedSquareSymbol &rendered_square_symbol)
 {
-    // visit a point on sphere for now.
-    GPlatesViewOperations::RenderedGeometry point_on_sphere =
-	    GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
-		rendered_square_symbol.get_centre(),
-		rendered_square_symbol.get_colour(),
-		rendered_square_symbol.get_line_width_hint());
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_square_symbol);
+	if (!colour)
+	{
+		return;
+	}
 
-    point_on_sphere.accept_visitor(*this);
+	bool filled = rendered_square_symbol.get_is_filled();
+
+	double size = SYMBOL_SCALE_FACTOR * d_inverse_zoom_factor * rendered_square_symbol.get_size();
+
+	// Get the point position, and project it to the canvas coordinate system.
+	const GPlatesMaths::PointOnSphere &pos =
+			rendered_square_symbol.get_centre();
+
+	// Point pa is the centre of our square.
+	QPointF pa = get_projected_unwrapped_position(pos);
+
+	// Points pb,pc,pd and pe are the vertices of the square beginning from
+	// the top right corner and going clockwise.
+
+	// FIXME: we can skip the QPointFs here and set up the coords directly in the
+	// coloured_vertex_type instantiations below.
+	QPointF pb(pa.x()+size,pa.y()+size);
+	QPointF pc(pa.x()+size,pa.y()-size);
+	QPointF pd(pa.x()-size,pa.y()-size);
+	QPointF pe(pa.x()-size,pa.y()+size);
+
+	coloured_vertex_type va(pa.x(), pa.y(),0,Colour::to_rgba8(*colour));
+	coloured_vertex_type vb(pb.x(), pb.y(),0,Colour::to_rgba8(*colour));
+	coloured_vertex_type vc(pc.x(), pc.y(),0,Colour::to_rgba8(*colour));
+	coloured_vertex_type vd(pd.x(), pd.y(),0,Colour::to_rgba8(*colour));
+	coloured_vertex_type ve(pe.x(), pe.y(),0,Colour::to_rgba8(*colour));
+
+	if (filled)
+	{
+		stream_primitives_type &stream =
+			d_layer_painter->translucent_drawables_on_the_sphere.get_triangles_stream();
+
+		stream_primitives_type::TriangleFans stream_triangle_fans(stream);
+
+		// The polygon state is fill, front/back by default, so I shouldn't need
+		// to change anything here.
+
+		stream_triangle_fans.begin_triangle_fan();
+		stream_triangle_fans.add_vertex(va);
+		stream_triangle_fans.add_vertex(vb);
+		stream_triangle_fans.add_vertex(vc);
+		stream_triangle_fans.add_vertex(vd);
+		stream_triangle_fans.add_vertex(ve);
+		stream_triangle_fans.add_vertex(vb);
+		stream_triangle_fans.end_triangle_fan();
+	}
+	else
+	{
+		const float line_width = rendered_square_symbol.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+		stream_primitives_type &stream =
+			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+
+		stream_primitives_type::LineStrips stream_line_strips(stream);
+
+		stream_line_strips.begin_line_strip();
+		stream_line_strips.add_vertex(vb);
+		stream_line_strips.add_vertex(vc);
+		stream_line_strips.add_vertex(vd);
+		stream_line_strips.add_vertex(ve);
+		stream_line_strips.add_vertex(vb);
+		stream_line_strips.end_line_strip();
+	}
+
 }
 
 void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
 	const GPlatesViewOperations::RenderedCircleSymbol &rendered_circle_symbol)
 {
-    // visit a point on sphere for now.
-    GPlatesViewOperations::RenderedGeometry point_on_sphere =
-	    GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
-		rendered_circle_symbol.get_centre(),
-		rendered_circle_symbol.get_colour(),
-		rendered_circle_symbol.get_line_width_hint());
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_circle_symbol);
+	if (!colour)
+	{
+		return;
+	}
 
-    point_on_sphere.accept_visitor(*this);
+	bool filled = rendered_circle_symbol.get_is_filled();
+
+	// Get the circle position.
+	const GPlatesMaths::PointOnSphere &pos = rendered_circle_symbol.get_centre();
+	QPointF pcentre = get_projected_unwrapped_position(pos);
+
+	if (filled)
+	{
+		const float point_size = FILLED_CIRCLE_SYMBOL_CORRECTION *
+			rendered_circle_symbol.get_size() * POINT_SIZE_ADJUSTMENT * d_scale;
+
+		// Get the stream for points of the current point size.
+		stream_primitives_type &stream =
+				d_layer_painter->translucent_drawables_on_the_sphere.get_points_stream(point_size);
+
+		// Vertex representing the point's position and colour.
+		// Convert colour from floats to bytes to use less vertex memory.
+		const coloured_vertex_type vertex(pcentre.x(), pcentre.y(), 0, Colour::to_rgba8(*colour));
+
+		// Used to add points to the stream.
+		stream_primitives_type::Points stream_points(stream);
+
+		stream_points.begin_points();
+		stream_points.add_vertex(vertex);
+		stream_points.end_points();
+	}
+	else
+	{
+		double radius = SYMBOL_SCALE_FACTOR * d_inverse_zoom_factor * rendered_circle_symbol.get_size();
+
+		const float line_width = rendered_circle_symbol.get_size() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+		// Tessellate the circle on the plane of the map.
+		coloured_vertex_seq_type vertices;
+		tessellate_on_plane(vertices,
+							pcentre,
+							radius,
+							SMALL_CIRCLE_ANGULAR_INCREMENT,
+							Colour::to_rgba8(*colour));
+
+		// Create a closed loop from the tessellated points.
+		vertices.push_back(vertices.front());
+
+		stream_primitives_type &stream =
+				d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+
+		stream_primitives_type::LineStrips stream_line_strips(stream);
+
+		stream_line_strips.begin_line_strip();
+		BOOST_FOREACH(const coloured_vertex_type vertex,vertices)
+		{
+			stream_line_strips.add_vertex(vertex);
+		}
+		stream_line_strips.end_line_strip();
+	}
+
 }
 
 void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_cross_symbol(
 	const GPlatesViewOperations::RenderedCrossSymbol &rendered_cross_symbol)
 {
-    // visit a point on sphere for now.
-    GPlatesViewOperations::RenderedGeometry point_on_sphere =
-	    GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
-		rendered_cross_symbol.get_centre(),
-		rendered_cross_symbol.get_colour(),
-		rendered_cross_symbol.get_line_width_hint());
+	// Some thoughts about rendering symbols on the map:
+	// * symbols should probably not be projected, or north-aligned, otherwise they would look
+	// distorted at certain points on the map (e.g. near the poles in mercator/robinson).  We
+	// project only the central location of the symbol and otherwise draw the vertices in the map
+	// canvas coordinate system.
+	// * we don't want to wrap symbols - if they occur right at the edge of the map, it's fine
+	// to have part of the symbol going off the edge of the map, and onto the rest of the canvas.
 
-    point_on_sphere.accept_visitor(*this);
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_cross_symbol);
+	if (!colour)
+	{
+		return;
+	}
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(*colour);
+
+	const float line_width = rendered_cross_symbol.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+	double size = SYMBOL_SCALE_FACTOR * d_inverse_zoom_factor * rendered_cross_symbol.get_size();
+
+
+	// Get the desired cross position.
+	const GPlatesMaths::PointOnSphere &pos =
+			rendered_cross_symbol.get_centre();
+
+	// We want to project only this central point.
+	QPointF centre = get_projected_unwrapped_position(pos);
+
+	// FIXME: we can skip the QPointFs here and set up the coords directly in the
+	// coloured_vertex_type instantiations below.
+	QPointF horizontal_shift(size,0);
+	QPointF vertical_shift(0,size);
+	QPointF pa = centre - vertical_shift;
+	QPointF pb = centre + vertical_shift;
+	QPointF pc = centre - horizontal_shift;
+	QPointF pd = centre + horizontal_shift;
+
+	stream_primitives_type &stream =
+		d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+
+	const coloured_vertex_type va(pa.x(),pa.y(),0,rgba8_colour);
+	const coloured_vertex_type vb(pb.x(),pb.y(),0,rgba8_colour);
+	const coloured_vertex_type vc(pc.x(),pc.y(),0,rgba8_colour);
+	const coloured_vertex_type vd(pd.x(),pd.y(),0,rgba8_colour);
+
+	stream_primitives_type::LineStrips stream_line_strips(stream);
+
+	stream_line_strips.begin_line_strip();
+	stream_line_strips.add_vertex(va);
+	stream_line_strips.add_vertex(vb);
+	stream_line_strips.end_line_strip();
+
+	stream_line_strips.begin_line_strip();
+	stream_line_strips.add_vertex(vc);
+	stream_line_strips.add_vertex(vd);
+	stream_line_strips.end_line_strip();
+
 }
 
 

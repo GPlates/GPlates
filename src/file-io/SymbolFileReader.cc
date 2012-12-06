@@ -60,7 +60,6 @@ namespace
 	GPlatesModel::FeatureType feature_type =
 	     GPlatesModel::FeatureType::create_gpml(list[0]);
 
-
 	// Second string
 	boost::optional<GPlatesGui::Symbol::SymbolType> symbol_type =
 		GPlatesGui::get_symbol_type_from_string(list[1]);
@@ -87,7 +86,7 @@ namespace
 	    QString fill_string = list[3];
 	    if (fill_string == "UNFILLED")
 	    {
-		filled = false;
+			filled = false;
 	    }
 	}
 
@@ -105,26 +104,26 @@ GPlatesFileIO::SymbolFileReader::read_file(
     GPlatesGui::symbol_map_type &symbol_map)
 {
 
-    QFile file(filename);
+	QFile file(filename);
 
-    if ( ! file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-	    throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
-    }
-
-    //Only allow the contents of one file at a time, so clear the map now.
-    symbol_map.clear();
-
-    QTextStream input(&file);
-
-    while(!input.atEnd())
-    {
-	boost::optional<GPlatesGui::feature_type_symbol_pair_type> feature_symbol_pair =
-		read_line(input.readLine());
-
-	if (feature_symbol_pair)
-	{
-	    symbol_map.insert(*feature_symbol_pair);
+	if ( ! file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
-    }
+
+	//Only allow the contents of one file at a time, so clear the map now.
+	symbol_map.clear();
+
+	QTextStream input(&file);
+
+	while(!input.atEnd())
+	{
+		boost::optional<GPlatesGui::feature_type_symbol_pair_type> feature_symbol_pair =
+				read_line(input.readLine());
+
+		if (feature_symbol_pair)
+		{
+			symbol_map.insert(*feature_symbol_pair);
+		}
+	}
 
 }

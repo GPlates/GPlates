@@ -40,8 +40,11 @@
 #
 MagneticAnomalyIdentification CROSS 2
 Volcano TRIANGLE 2 FILLED
-HotSpot SQUARE 3 FILLED
-Seamount CIRCLE 2 UNFILLED 
+HotSpot SQUARE 2 FILLED
+Seamount CIRCLE 2 FILLED 
+NavdatSampleFelsicHigh TRIANGLE 2 UNFILLED
+NavdatSampleFelsicLow SQUARE 2 UNFILLED
+NavdatSampleIntermediate CIRCLE 2 UNFILLED
 #
 # END
 #
