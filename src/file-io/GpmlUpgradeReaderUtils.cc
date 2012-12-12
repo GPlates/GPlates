@@ -35,6 +35,7 @@
 
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "model/FeatureVisitor.h"
 #include "model/Gpgim.h"
 #include "model/GpgimProperty.h"
 #include "model/GpgimStructuralType.h"
@@ -42,6 +43,8 @@
 #include "model/PropertyValue.h"
 #include "model/XmlNodeUtils.h"
 
+#include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalNetwork.h"
 #include "property-values/GpmlTopologicalPoint.h"
@@ -134,6 +137,69 @@ namespace GPlatesFileIO
 				qWarning() << "Top-level property is not inline or does not contain exactly one property value.";
 			}
 		}
+
+
+		/**
+		 * Find a @a OldVersionPropertyValue property value given a @a PropertyValue.
+		 *
+		 * This is used instead of the general-purpose 'get_property_value()' function in
+		 * "PropertyValueFind.h" because the property value could be a piecewise aggregation
+		 * with a limited time range. There will only be one time window but we don't know what
+		 * reconstruction time to specify to get that window. Instead we just search for the
+		 * first time window using this class.
+		 */
+		class OldVersionPropertyValueFinder:
+				public GPlatesModel::ConstFeatureVisitor
+		{
+		public:
+
+			boost::optional<const GPlatesPropertyValues::OldVersionPropertyValue &>
+			get_old_version_property_value(
+					const GPlatesModel::PropertyValue &property_value)
+			{
+				d_old_version_property_value = boost::none;
+
+				property_value.accept_visitor(*this);
+
+				return d_old_version_property_value;
+			}
+
+		private:
+
+			virtual
+			void
+			visit_gpml_constant_value(
+					const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
+			{
+				gpml_constant_value.value()->accept_visitor(*this);
+			}
+
+			virtual
+			void
+			visit_gpml_piecewise_aggregation(
+					const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
+			{
+				if (gpml_piecewise_aggregation.time_windows().empty())
+				{
+					return;
+				}
+
+				// Just visit the first time window - there should only be one window.
+				gpml_piecewise_aggregation.time_windows().front().time_dependent_value()->accept_visitor(*this);
+			}
+
+			virtual
+			void
+			visit_old_version_property_value(
+					const GPlatesPropertyValues::OldVersionPropertyValue &old_version_prop_value)
+			{
+				d_old_version_property_value = old_version_prop_value;
+			}
+
+		private:
+
+			boost::optional<const GPlatesPropertyValues::OldVersionPropertyValue &> d_old_version_property_value;
+		};
 	}
 }
 
@@ -525,8 +591,10 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 	if (boundary_property_values.size() == 1)
 	{
 		// Make sure it's an 'OldVersionPropertyValue' as expected rather than 'UninterpretedPropertyValue's.
-		const GPlatesPropertyValues::OldVersionPropertyValue *old_version_property_value = NULL;
-		if (GPlatesFeatureVisitors::get_property_value(*boundary_property_values.front(), old_version_property_value))
+		OldVersionPropertyValueFinder old_version_property_value_finder;
+		boost::optional<const GPlatesPropertyValues::OldVersionPropertyValue &> old_version_property_value =
+				old_version_property_value_finder.get_old_version_property_value(*boundary_property_values.front());
+		if (old_version_property_value)
 		{
 			// Retrieve the topological sections from the old version property value.
 			boundary_topological_sections =
@@ -557,8 +625,10 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 	if (interior_property_values.size() == 1)
 	{
 		// Make sure it's an 'OldVersionPropertyValue' as expected rather than 'UninterpretedPropertyValue's.
-		const GPlatesPropertyValues::OldVersionPropertyValue *old_version_property_value = NULL;
-		if (GPlatesFeatureVisitors::get_property_value(*interior_property_values.front(), old_version_property_value))
+		OldVersionPropertyValueFinder old_version_property_value_finder;
+		boost::optional<const GPlatesPropertyValues::OldVersionPropertyValue &> old_version_property_value =
+				old_version_property_value_finder.get_old_version_property_value(*interior_property_values.front());
+		if (old_version_property_value)
 		{
 			// Retrieve the topological sections from the old version property value.
 			const topological_sections_seq_type &interior_topological_sections =
