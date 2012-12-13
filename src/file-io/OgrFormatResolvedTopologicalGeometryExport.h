@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILE_IO_OGRFORMATRESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
-#define GPLATES_FILE_IO_OGRFORMATRESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
+#ifndef GPLATES_FILE_IO_OGRFORMATRESOLVEDTOPOLOGICALGEOMETRYXPORT_H
+#define GPLATES_FILE_IO_OGRFORMATRESOLVEDTOPOLOGICALGEOMETRYXPORT_H
 
 #include <QFileInfo>
 
@@ -41,8 +41,14 @@ namespace GPlatesAppLogic
 
 namespace GPlatesFileIO
 {
-	namespace OgrFormatResolvedTopologicalBoundaryExport
+	namespace OgrFormatResolvedTopologicalGeometryExport
 	{
+		/**
+		 * Typedef for a feature geometry group of @a ResolvedTopologicalGeometry objects.
+		 */
+		typedef ReconstructionGeometryExportImpl::FeatureGeometryGroup<GPlatesAppLogic::ResolvedTopologicalGeometry>
+				feature_geometry_group_type;
+
 		/**
 		 * Typedef for a sequence of referenced files.
 		 */
@@ -51,7 +57,36 @@ namespace GPlatesFileIO
 
 
 		/**
-		* Exports @a ResolvedTopologicalGeometry objects to Shapefile format for use by CitcomS software.
+		* Exports @a ResolvedTopologicalGeometry objects to OGR format.
+		*
+		* If @a wrap_to_dateline is true then exported polyline/polygon geometries are wrapped/clipped to the dateline.
+		*/
+		void
+		export_geometries(
+				const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
+				const QFileInfo& file_info,
+				const referenced_files_collection_type &referenced_files,
+				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+				const double &reconstruction_time,
+				bool wrap_to_dateline = false);
+
+		/**
+		* Exports @a ResolvedTopologicalGeometry objects to OGR format.
+		*
+		* If @a wrap_to_dateline is true then exported polyline/polygon geometries are wrapped/clipped to the dateline.
+		*/
+		void
+		export_geometries_per_collection(
+				const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
+				const QFileInfo& file_info,
+				const std::vector<const File::Reference *> &referenced_files,
+				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+				const double &reconstruction_time,
+				bool wrap_to_dateline = false);
+
+
+		/**
+		* Exports @a ResolvedTopologicalGeometry objects to OGR format for use by CitcomS software.
 		*
 		* If @a wrap_to_dateline is true then exported polygon boundaries are wrapped/clipped to the dateline.
 		*/
@@ -66,7 +101,7 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * Exports subsegments of resolved topological boundaries to Shapefile format for use by CitcomS software.
+		 * Exports subsegments of resolved topological boundaries to OGR format for use by CitcomS software.
 		*
 		* If @a wrap_to_dateline is true then exported geometries are wrapped/clipped to the dateline.
 		 */
@@ -81,4 +116,4 @@ namespace GPlatesFileIO
 	}
 }
 
-#endif // GPLATES_FILE_IO_OGRFORMATRESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
+#endif // GPLATES_FILE_IO_OGRFORMATRESOLVEDTOPOLOGICALGEOMETRYXPORT_H

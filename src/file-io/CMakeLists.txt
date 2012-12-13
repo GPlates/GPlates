@@ -74,6 +74,8 @@ set(srcs
     GMTFormatMotionPathExport.h
     GMTFormatReconstructedFeatureGeometryExport.cc
     GMTFormatReconstructedFeatureGeometryExport.h
+    GMTFormatResolvedTopologicalGeometryExport.cc
+    GMTFormatResolvedTopologicalGeometryExport.h
     GMTFormatWriter.cc
     GMTFormatWriter.h
     GpmlFeatureReaderFactory.cc
@@ -126,8 +128,8 @@ set(srcs
     OgrFormatMotionPathExport.h
     OgrFormatReconstructedFeatureGeometryExport.cc
     OgrFormatReconstructedFeatureGeometryExport.h
-    OgrFormatResolvedTopologicalBoundaryExport.cc
-    OgrFormatResolvedTopologicalBoundaryExport.h
+    OgrFormatResolvedTopologicalGeometryExport.cc
+    OgrFormatResolvedTopologicalGeometryExport.h
     OgrGeometryExporter.cc
     OgrGeometryExporter.h
     OgrUtils.cc
@@ -175,6 +177,8 @@ set(srcs
     ReconstructedMotionPathExport.h
     ReconstructionGeometryExportImpl.cc
     ReconstructionGeometryExportImpl.h
+    ResolvedTopologicalGeometryExport.cc
+    ResolvedTopologicalGeometryExport.h
     RgbaRasterReader.cc
     RgbaRasterReader.h
     ScalarField3DFileFormat.cc

@@ -29,10 +29,9 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
-#include "ExportOptionsWidget.h"
-
 #include "DatelineWrapOptionsWidget.h"
 #include "ExportFileOptionsWidget.h"
+#include "ExportOptionsWidget.h"
 #include "QtWidgetUtils.h"
 
 #include "gui/ExportReconstructedGeometryAnimationStrategy.h"

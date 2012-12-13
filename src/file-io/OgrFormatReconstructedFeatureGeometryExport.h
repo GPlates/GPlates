@@ -59,7 +59,7 @@ namespace GPlatesFileIO
 		/**
 		* Exports @a ReconstructedFeatureGeometry objects to ESRI Shapefile format.
 		*
-		* If @a wrap_to_dateline is true then exported polyline/polygon geometrie sare wrapped/clipped to the dateline.
+		* If @a wrap_to_dateline is true then exported polyline/polygon geometries are wrapped/clipped to the dateline.
 		*/
 		void
 		export_geometries(
@@ -73,7 +73,7 @@ namespace GPlatesFileIO
 		/**
 		* Exports @a ReconstructedFeatureGeometry objects to ESRI Shapefile format.
 		*
-		* If @a wrap_to_dateline is true then exported polyline/polygon geometrie sare wrapped/clipped to the dateline.
+		* If @a wrap_to_dateline is true then exported polyline/polygon geometries are wrapped/clipped to the dateline.
 		*/
 		void
 		export_geometries_per_collection(

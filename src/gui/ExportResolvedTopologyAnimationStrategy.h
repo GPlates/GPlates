@@ -3,9 +3,9 @@
 /**
  * \file 
  * $Revision$
- * $Date$ 
+ * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2012 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -22,21 +22,21 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
-#ifndef GPLATES_GUI_EXPORTRASTERSTRATEGY_H
-#define GPLATES_GUI_EXPORTRASTERSTRATEGY_H
+
+#ifndef GPLATES_GUI_EXPORTRESOLVEDTOPOLOGYANIMATIONSTRATEGY_H
+#define GPLATES_GUI_EXPORTRESOLVEDTOPOLOGYANIMATIONSTRATEGY_H
 
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
 
 #include <QString>
-#include <QImage>
-#include "ExportAnimationStrategy.h"
 
-#include "qt-widgets/GlobeAndMapWidget.h"
-#include "utils/non_null_intrusive_ptr.h"
-#include "utils/NullIntrusivePointerHandler.h"
+#include "ExportAnimationStrategy.h"
+#include "ExportOptionsUtils.h"
+
 #include "utils/ReferenceCount.h"
+
+#include "view-operations/VisibleReconstructionGeometryExport.h"
 
 
 namespace GPlatesGui
@@ -45,24 +45,21 @@ namespace GPlatesGui
 	class ExportAnimationContext;
 
 	/**
-	 * Concrete implementation of the ExportAnimationStrategy class for 
-	 * writing reconstructed feature geometries at each timestep.
+	 * Concrete implementation of the ExportAnimationStrategy class for  exporting
+	 * resolved topologies in a general manner (as opposed to the CitcomS-specific manner).
 	 * 
 	 * This class serves as the concrete Strategy role as
 	 * described in Gamma et al. p315. It is used by ExportAnimationContext.
 	 */
-	class ExportRasterAnimationStrategy:
-			public QObject,
+	class ExportResolvedTopologyAnimationStrategy:
 			public GPlatesGui::ExportAnimationStrategy
 	{
-		Q_OBJECT
-
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportReconstructedGeometryAnimationStrategy>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportResolvedTopologyAnimationStrategy>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ExportRasterAnimationStrategy> non_null_ptr_type;
-		
+		typedef GPlatesUtils::non_null_intrusive_ptr<ExportResolvedTopologyAnimationStrategy> non_null_ptr_type;
+
 
 		/**
 		 * Configuration options.
@@ -71,38 +68,27 @@ namespace GPlatesGui
 				public ExportAnimationStrategy::ConfigurationBase
 		{
 		public:
-			//http://doc.qt.nokia.com/4.6/qimage.html#reading-and-writing-image-files
-			// 		Format	Description								Qt's support 
-			// 		BMP		Windows Bitmap							Read/write 
-			// 		GIF		Graphic Interchange Format (optional)	Read 
-			// 		JPG		Joint Photographic Experts Group		Read/write 
-			// 		JPEG	Joint Photographic Experts Group		Read/write 
-			// 		PNG		Portable Network Graphics				Read/write 
-			// 		PBM		Portable Bitmap							Read 
-			// 		PGM		Portable Graymap						Read 
-			// 		PPM		Portable Pixmap							Read/write 
-			// 		TIFF	Tagged Image File Format				Read/write 
-			// 		XBM		X11 Bitmap								Read/write 
-			// 		XPM		X11 Pixmap								Read/write 
-
-			enum ImageType
+			enum FileFormat
 			{
-				BMP,
-				JPG,
-				JPEG,
-				PNG,
-				PPM,
-				TIFF,
-				XBM,
-				XPM
+				SHAPEFILE,
+				OGRGMT,
+				GMT
 			};
 
-
+			explicit
 			Configuration(
 					const QString& filename_template_,
-					ImageType image_type_) :
+					FileFormat file_format_,
+					const ExportOptionsUtils::ExportFileOptions &file_options_,
+					bool export_topological_lines_ = true,
+					bool export_topological_polygons_ = true,
+					bool wrap_to_dateline_ = false) :
 				ConfigurationBase(filename_template_),
-				image_type(image_type_)
+				file_format(file_format_),
+				file_options(file_options_),
+				export_topological_lines(export_topological_lines_),
+				export_topological_polygons(export_topological_polygons_),
+				wrap_to_dateline(wrap_to_dateline_)
 			{  }
 
 			virtual
@@ -112,7 +98,11 @@ namespace GPlatesGui
 				return configuration_base_ptr(new Configuration(*this));
 			}
 
-			ImageType image_type;
+			FileFormat file_format;
+			ExportOptionsUtils::ExportFileOptions file_options;
+			bool export_topological_lines;
+			bool export_topological_polygons;
+			bool wrap_to_dateline;
 		};
 
 		//! Typedef for a shared pointer to const @a Configuration.
@@ -123,17 +113,18 @@ namespace GPlatesGui
 		const non_null_ptr_type
 		create(
 				ExportAnimationContext &export_animation_context,
-				const const_configuration_ptr &export_configuration)
+				const const_configuration_ptr &cfg)
 		{
 			return non_null_ptr_type(
-					new ExportRasterAnimationStrategy(
-							export_animation_context,
-							export_configuration));
+					new ExportResolvedTopologyAnimationStrategy(
+							export_animation_context, cfg));
 		}
 
+
 		virtual
-		~ExportRasterAnimationStrategy()
+		~ExportResolvedTopologyAnimationStrategy()
 		{  }
+
 
 		/**
 		 * Does one frame of export. Called by the ExportAnimationContext.
@@ -149,29 +140,20 @@ namespace GPlatesGui
 		 * Protected constructor to prevent instantiation on the stack.
 		 * Use the create() method on the individual Strategy subclasses.
 		 */
-		ExportRasterAnimationStrategy(
+		ExportResolvedTopologyAnimationStrategy(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
-				const const_configuration_ptr &export_configuration);
-
-	private slots:
-		void
-		handle_repaint(bool)
-		{
-			d_repaint_flag = true;
-			d_image = d_main_widget.grab_frame_buffer();
-		}
+				const const_configuration_ptr &cfg);
 		
 	private:
+		/**
+		 * The list of currently loaded files.
+		 */
+		GPlatesViewOperations::VisibleReconstructionGeometryExport::files_collection_type
+				d_loaded_files;
+
 		//! Export configuration parameters.
 		const_configuration_ptr d_configuration;
-		GPlatesQtWidgets::GlobeAndMapWidget& d_main_widget;
-		QImage d_image;
-		bool d_repaint_flag;
-
 	};
 }
 
-
-#endif //GPLATES_GUI_EXPORTRASTERSTRATEGY_H
-
-
+#endif // GPLATES_GUI_EXPORTRESOLVEDTOPOLOGYANIMATIONSTRATEGY_H

@@ -47,6 +47,7 @@ namespace GPlatesGui
 			RECONSTRUCTED_GEOMETRIES,
 			PROJECTED_GEOMETRIES,
 			MESH_VELOCITIES,
+			RESOLVED_TOPOLOGIES, // General (non-CitcomS-specific) resolved topology exports
 			RESOLVED_TOPOLOGIES_CITCOMS, // CitcomS-specific resolved topology exports
 			RELATIVE_TOTAL_ROTATION,
 			EQUIVALENT_TOTAL_ROTATION,

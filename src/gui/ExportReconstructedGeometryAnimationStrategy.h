@@ -51,7 +51,7 @@ namespace GPlatesGui
 	 * Concrete implementation of the ExportAnimationStrategy class for 
 	 * writing reconstructed feature geometries at each timestep.
 	 * 
-	 * ExportReconstructedGeometryAnimationStrategy serves as the concrete Strategy role as
+	 * This class serves as the concrete Strategy role as
 	 * described in Gamma et al. p315. It is used by ExportAnimationContext.
 	 */
 	class ExportReconstructedGeometryAnimationStrategy:

@@ -204,6 +204,9 @@ set(srcs
     ExportMotionPathOptionsWidget.h
     ExportOptionsWidget.h
     ExportReconstructedGeometryOptionsWidget.h
+    ExportResolvedTopologyOptionsWidget.cc
+    ExportResolvedTopologyOptionsWidget.h
+    ExportResolvedTopologyOptionsWidgetUi.ui
     ExportRotationOptionsWidget.h
     ExportRotationOptionsWidgetUi.ui
     ExportStageRotationOnlyOptionsWidget.h

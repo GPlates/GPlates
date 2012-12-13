@@ -89,6 +89,8 @@ set(srcs
     ExportRasterAnimationStrategy.h
     ExportReconstructedGeometryAnimationStrategy.cc
     ExportReconstructedGeometryAnimationStrategy.h
+    ExportResolvedTopologyAnimationStrategy.cc
+    ExportResolvedTopologyAnimationStrategy.h
     ExportStageRotationAnimationStrategy.cc
     ExportStageRotationAnimationStrategy.h
     ExportSvgAnimationStrategy.cc

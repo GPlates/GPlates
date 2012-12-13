@@ -41,7 +41,7 @@ POP_MSVC_WARNINGS
 #include "FileFormatNotSupportedException.h"
 #include "ReconstructionGeometryExportImpl.h"
 #include "CitcomsResolvedTopologicalBoundaryExportImpl.h"
-#include "OgrFormatResolvedTopologicalBoundaryExport.h"
+#include "OgrFormatResolvedTopologicalGeometryExport.h"
 
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/TopologyUtils.h"
@@ -989,7 +989,7 @@ namespace GPlatesFileIO
                 // OgrFormat.... exporter.
 				case SHAPEFILE:
                 case OGRGMT:
-					OgrFormatResolvedTopologicalBoundaryExport::export_citcoms_resolved_topological_boundaries(
+					OgrFormatResolvedTopologicalGeometryExport::export_citcoms_resolved_topological_boundaries(
 						resolved_geoms,
 						filename,
 						referenced_files,
@@ -1047,7 +1047,7 @@ namespace GPlatesFileIO
                 // OgrFormat.... exporter.
                 case SHAPEFILE:
                 case OGRGMT:
-					OgrFormatResolvedTopologicalBoundaryExport::export_citcoms_sub_segments(
+					OgrFormatResolvedTopologicalGeometryExport::export_citcoms_sub_segments(
 						sub_segment_groups,
 						filename,
 						referenced_files,

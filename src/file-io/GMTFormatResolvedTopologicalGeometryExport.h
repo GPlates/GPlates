@@ -1,11 +1,11 @@
 /* $Id$ */
 
 /**
- * \file Exports reconstructed feature geometries to a GMT format file.
+ * \file 
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2012 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILEIO_GMTFORMATRECONSTRUCTEDFEATUREGEOMETRYEXPORT_H
-#define GPLATES_FILEIO_GMTFORMATRECONSTRUCTEDFEATUREGEOMETRYEXPORT_H
+#ifndef GPLATES_FILE_IO_GMTFORMATRESOLVEDTOPOLOGICALGEOMETRYEXPORT_H
+#define GPLATES_FILE_IO_GMTFORMATRESOLVEDTOPOLOGICALGEOMETRYEXPORT_H
 
 #include <QFileInfo>
 
@@ -35,17 +35,17 @@
 
 namespace GPlatesAppLogic
 {
-	class ReconstructedFeatureGeometry;
+	class ResolvedTopologicalGeometry;
 }
 
 namespace GPlatesFileIO
 {
-	namespace GMTFormatReconstructedFeatureGeometryExport
+	namespace GMTFormatResolvedTopologicalGeometryExport
 	{
 		/**
-		 * Typedef for a feature geometry group of @a ReconstructedFeatureGeometry objects.
+		 * Typedef for a feature geometry group of @a ResolvedTopologicalGeometry objects.
 		 */
-		typedef ReconstructionGeometryExportImpl::FeatureGeometryGroup<GPlatesAppLogic::ReconstructedFeatureGeometry>
+		typedef ReconstructionGeometryExportImpl::FeatureGeometryGroup<GPlatesAppLogic::ResolvedTopologicalGeometry>
 				feature_geometry_group_type;
 
 		/**
@@ -56,7 +56,7 @@ namespace GPlatesFileIO
 
 
 		/**
-		* Exports @a ReconstructedFeatureGeometry objects to GMT format.
+		* Exports @a ResolvedTopologicalGeometry objects to GMT format.
 		*/
 		void
 		export_geometries(
@@ -68,4 +68,4 @@ namespace GPlatesFileIO
 	}
 }
 
-#endif // GPLATES_FILEIO_GMTFORMATRECONSTRUCTEDFEATUREGEOMETRYEXPORT_H
+#endif // GPLATES_FILE_IO_GMTFORMATRESOLVEDTOPOLOGICALGEOMETRYEXPORT_H

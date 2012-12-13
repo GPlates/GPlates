@@ -49,6 +49,7 @@ namespace GPlatesGui
 				export_type_name_map[RECONSTRUCTED_GEOMETRIES]    =QObject::tr("Reconstructed Geometries");
 				export_type_name_map[PROJECTED_GEOMETRIES]        =QObject::tr("Projected Geometries");
 				export_type_name_map[MESH_VELOCITIES]             =QObject::tr("Colat/lon Mesh Velocities");
+				export_type_name_map[RESOLVED_TOPOLOGIES]         =QObject::tr("Resolved Topologies (General)");
 				export_type_name_map[RESOLVED_TOPOLOGIES_CITCOMS] =QObject::tr("Resolved Topologies (CitcomS specific)");
 				export_type_name_map[RELATIVE_TOTAL_ROTATION]     =QObject::tr("Relative Total Rotation");
 				export_type_name_map[EQUIVALENT_TOTAL_ROTATION]   =QObject::tr("Equivalent Total Rotation");
@@ -74,6 +75,10 @@ namespace GPlatesGui
 						QObject::tr("Export projected geometries data.");
 				export_type_description_map[MESH_VELOCITIES] =
 						QObject::tr("Export velocity data.");
+				export_type_description_map[RESOLVED_TOPOLOGIES] = 
+						QObject::tr(
+							"Export resolved topologies:\n"
+							"- exports resolved topological lines/polygons/networks for any feature type.\n");
 				export_type_description_map[RESOLVED_TOPOLOGIES_CITCOMS] = 
 						QObject::tr(
 							"Export resolved topologies for use by CitcomS software:\n"
