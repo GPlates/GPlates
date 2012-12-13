@@ -23,13 +23,13 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILE_IO_GMTFORMATRESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
-#define GPLATES_FILE_IO_GMTFORMATRESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
+#ifndef GPLATES_FILE_IO_CITCOMSGMTFORMATRESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
+#define GPLATES_FILE_IO_CITCOMSGMTFORMATRESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
 
 #include <QFileInfo>
 
 #include "ReconstructionGeometryExportImpl.h"
-#include "ResolvedTopologicalBoundaryExportImpl.h"
+#include "CitcomsResolvedTopologicalBoundaryExportImpl.h"
 
 #include "model/types.h"
 
@@ -41,7 +41,10 @@ namespace GPlatesAppLogic
 
 namespace GPlatesFileIO
 {
-	namespace GMTFormatResolvedTopologicalBoundaryExport
+	/**
+	 * CitcomS-specific GMT format resolved topology export.
+	 */
+	namespace CitcomsGMTFormatResolvedTopologicalBoundaryExport
 	{
 		/**
 		 * Typedef for a sequence of referenced files.
@@ -52,12 +55,12 @@ namespace GPlatesFileIO
 		/**
 		 * Typedef for a feature geometry group of resolved topological geometries.
 		 */
-		typedef ResolvedTopologicalBoundaryExportImpl::resolved_geom_seq_type resolved_geom_seq_type;
+		typedef CitcomsResolvedTopologicalBoundaryExportImpl::resolved_geom_seq_type resolved_geom_seq_type;
 
 		/**
 		 * Typedef for a sequence of @a SubSegmentGroup objects.
 		 */
-		typedef ResolvedTopologicalBoundaryExportImpl::sub_segment_group_seq_type sub_segment_group_seq_type;
+		typedef CitcomsResolvedTopologicalBoundaryExportImpl::sub_segment_group_seq_type sub_segment_group_seq_type;
 
 
 		/**
@@ -66,7 +69,7 @@ namespace GPlatesFileIO
 		void
 		export_resolved_topological_boundaries(
 				const resolved_geom_seq_type &resolved_topological_geometries,
-				ResolvedTopologicalBoundaryExportImpl::ResolvedTopologicalBoundaryExportType export_type,
+				CitcomsResolvedTopologicalBoundaryExportImpl::ResolvedTopologicalBoundaryExportType export_type,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -79,7 +82,7 @@ namespace GPlatesFileIO
 		void
 		export_sub_segments(
 				const sub_segment_group_seq_type &sub_segments,
-				ResolvedTopologicalBoundaryExportImpl::SubSegmentExportType export_type,
+				CitcomsResolvedTopologicalBoundaryExportImpl::SubSegmentExportType export_type,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -87,4 +90,4 @@ namespace GPlatesFileIO
 	}
 }
 
-#endif // GPLATES_FILE_IO_GMTFORMATRESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
+#endif // GPLATES_FILE_IO_CITCOMSGMTFORMATRESOLVEDTOPOLOGICALBOUNDARYEXPORT_H

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ExportResolvedTopologicalBoundaryOptionsWidget</class>
- <widget class="QWidget" name="ExportResolvedTopologicalBoundaryOptionsWidget">
+ <class>ExportCitcomsResolvedTopologyOptionsWidget</class>
+ <widget class="QWidget" name="ExportCitcomsResolvedTopologyOptionsWidget">
   <property name="geometry">
    <rect>
     <x>0</x>

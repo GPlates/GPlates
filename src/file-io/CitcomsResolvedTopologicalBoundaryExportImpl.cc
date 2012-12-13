@@ -23,7 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "ResolvedTopologicalBoundaryExportImpl.h"
+#include "CitcomsResolvedTopologicalBoundaryExportImpl.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
@@ -41,7 +41,7 @@
 
 namespace GPlatesFileIO
 {
-	namespace ResolvedTopologicalBoundaryExportImpl
+	namespace CitcomsResolvedTopologicalBoundaryExportImpl
 	{
 		/**
 		 * Determines feature type of subsegment source feature referenced by a
@@ -425,8 +425,8 @@ namespace GPlatesFileIO
 }
 
 
-GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl::SubSegmentType
-GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl::get_sub_segment_type(
+GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl::SubSegmentType
+GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl::get_sub_segment_type(
 		const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment,
 		const double &recon_time)
 {
@@ -434,8 +434,8 @@ GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl::get_sub_segment_type(
 }
 
 
-GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl::SubSegmentType
-GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl::get_slab_sub_segment_type(
+GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl::SubSegmentType
+GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl::get_slab_sub_segment_type(
 		const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment,
 		const double &recon_time)
 {

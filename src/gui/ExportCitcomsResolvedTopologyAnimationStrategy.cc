@@ -31,7 +31,7 @@
 #include <QFileInfo>
 #include <QString>
 
-#include "ExportResolvedTopologyAnimationStrategy.h"
+#include "ExportCitcomsResolvedTopologyAnimationStrategy.h"
 
 #include "AnimationController.h"
 #include "ExportAnimationContext.h"
@@ -48,7 +48,7 @@
 
 #include <boost/foreach.hpp>
 
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::ExportResolvedTopologyAnimationStrategy(
+GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::ExportCitcomsResolvedTopologyAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context,
 		const const_configuration_ptr &cfg) :
 	ExportAnimationStrategy(export_animation_context),
@@ -73,7 +73,7 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::ExportResolvedTopologyAnima
 
 
 void
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::set_template_filename(
+GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::set_template_filename(
 		const QString &filename)
 {
 	// We want "Polygons" to look like "Polygons.%P.%d" as that
@@ -101,7 +101,7 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::set_template_filename(
 
 
 bool
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
+GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
 {
 	GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator &filename_it = 
@@ -171,7 +171,7 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::do_export_iteration(
 
 
 void
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::wrap_up(
+GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::wrap_up(
 		bool export_successful)
 {
 	// If we need to do anything after writing a whole batch of velocity files,
@@ -185,19 +185,19 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::wrap_up(
 
 
 void
-GPlatesGui::ExportResolvedTopologyAnimationStrategy::export_files(
+GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::export_files(
 		const resolved_geom_seq_type &resolved_geom_seq,
 		const double &recon_time,
 		const QString &filebasename)
 {
 	const QDir &target_dir = d_export_animation_context_ptr->target_dir();
 
-	GPlatesFileIO::ResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
+	GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
 			target_dir,
 			filebasename,
 			GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
 			d_configuration->output_options,
-			GPlatesFileIO::ResolvedTopologicalBoundaryExport::get_export_file_format(
+			GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::get_export_file_format(
 					filebasename,
 					d_export_animation_context_ptr->view_state().get_application_state()
 							.get_feature_collection_file_format_registry()),

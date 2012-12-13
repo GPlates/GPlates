@@ -46,18 +46,18 @@ namespace GPlatesGui
 			{
 				std::map<Type, QString> export_type_name_map;
 
-				export_type_name_map[RECONSTRUCTED_GEOMETRIES]  =QObject::tr("Reconstructed Geometries");
-				export_type_name_map[PROJECTED_GEOMETRIES]      =QObject::tr("Projected Geometries");
-				export_type_name_map[MESH_VELOCITIES]           =QObject::tr("Colat/lon Mesh Velocities");
-				export_type_name_map[RESOLVED_TOPOLOGIES]       =QObject::tr("Resolved Topologies");
-				export_type_name_map[RELATIVE_TOTAL_ROTATION]   =QObject::tr("Relative Total Rotation");
-				export_type_name_map[EQUIVALENT_TOTAL_ROTATION] =QObject::tr("Equivalent Total Rotation");
-				export_type_name_map[RELATIVE_STAGE_ROTATION]   =QObject::tr("Relative Stage Rotation");
-				export_type_name_map[EQUIVALENT_STAGE_ROTATION] =QObject::tr("Equivalent Stage Rotation");
-				export_type_name_map[RASTER]                    =QObject::tr("Raster");
-				export_type_name_map[FLOWLINES]                 =QObject::tr("Flowlines");
-				export_type_name_map[MOTION_PATHS]              =QObject::tr("Motion Paths");
-				export_type_name_map[CO_REGISTRATION]           =QObject::tr("Co-registration data");
+				export_type_name_map[RECONSTRUCTED_GEOMETRIES]    =QObject::tr("Reconstructed Geometries");
+				export_type_name_map[PROJECTED_GEOMETRIES]        =QObject::tr("Projected Geometries");
+				export_type_name_map[MESH_VELOCITIES]             =QObject::tr("Colat/lon Mesh Velocities");
+				export_type_name_map[RESOLVED_TOPOLOGIES_CITCOMS] =QObject::tr("Resolved Topologies (CitcomS specific)");
+				export_type_name_map[RELATIVE_TOTAL_ROTATION]     =QObject::tr("Relative Total Rotation");
+				export_type_name_map[EQUIVALENT_TOTAL_ROTATION]   =QObject::tr("Equivalent Total Rotation");
+				export_type_name_map[RELATIVE_STAGE_ROTATION]     =QObject::tr("Relative Stage Rotation");
+				export_type_name_map[EQUIVALENT_STAGE_ROTATION]   =QObject::tr("Equivalent Stage Rotation");
+				export_type_name_map[RASTER]                      =QObject::tr("Raster");
+				export_type_name_map[FLOWLINES]                   =QObject::tr("Flowlines");
+				export_type_name_map[MOTION_PATHS]                =QObject::tr("Motion Paths");
+				export_type_name_map[CO_REGISTRATION]             =QObject::tr("Co-registration data");
 
 				return export_type_name_map;
 			}
@@ -74,11 +74,11 @@ namespace GPlatesGui
 						QObject::tr("Export projected geometries data.");
 				export_type_description_map[MESH_VELOCITIES] =
 						QObject::tr("Export velocity data.");
-				export_type_description_map[RESOLVED_TOPOLOGIES] = 
+				export_type_description_map[RESOLVED_TOPOLOGIES_CITCOMS] = 
 						QObject::tr(
-							"Export resolved topologies:\n"
-							"- exports resolved topological closed plate polygons,\n"
-							"- optionally exports the subsegment geometries of polygon boundaries.\n");
+							"Export resolved topologies for use by CitcomS software:\n"
+							"- exports boundaries of resolved topological closed plate polygons/networks,\n"
+							"- optionally exports the subsegment geometries of polygon/network boundaries.\n");
 				export_type_description_map[RELATIVE_TOTAL_ROTATION] = 
 						QObject::tr(
 							"Export relative total rotation data:\n"

@@ -24,8 +24,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_GUI_EXPORTRESOLVEDTOPOLOGYSTRATEGY_H
-#define GPLATES_GUI_EXPORTRESOLVEDTOPOLOGYSTRATEGY_H
+#ifndef GPLATES_GUI_EXPORTCITCOMSRESOLVEDTOPOLOGYSTRATEGY_H
+#define GPLATES_GUI_EXPORTCITCOMSRESOLVEDTOPOLOGYSTRATEGY_H
 
 
 #include <vector>
@@ -37,7 +37,7 @@
 #include "ExportAnimationStrategy.h"
 
 #include "file-io/File.h"
-#include "file-io/ResolvedTopologicalBoundaryExport.h"
+#include "file-io/CitcomsResolvedTopologicalBoundaryExport.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/NullIntrusivePointerHandler.h"
@@ -55,19 +55,19 @@ namespace GPlatesGui
 
 	/**
 	 * Concrete implementation of the ExportAnimationStrategy class for 
-	 * writing plate velocity meshes.
+	 * exporting resolved topologies in a CitcomS-specific manner.
 	 * 
-	 * ExportResolvedTopologyAnimationStrategy serves as the concrete Strategy role as
+	 * ExportCitcomsResolvedTopologyAnimationStrategy serves as the concrete Strategy role as
 	 * described in Gamma et al. p315. It is used by ExportAnimationContext.
 	 */
-	class ExportResolvedTopologyAnimationStrategy:
+	class ExportCitcomsResolvedTopologyAnimationStrategy:
 			public GPlatesGui::ExportAnimationStrategy
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportResolvedTopologyAnimationStrategy>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportCitcomsResolvedTopologyAnimationStrategy>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ExportResolvedTopologyAnimationStrategy> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<ExportCitcomsResolvedTopologyAnimationStrategy> non_null_ptr_type;
 
 
 		class Configuration;
@@ -95,7 +95,7 @@ namespace GPlatesGui
 			Configuration(
 					const QString& filename_template_,
 					FileFormat file_format_,
-					const GPlatesFileIO::ResolvedTopologicalBoundaryExport::OutputOptions &output_options_) :
+					const GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::OutputOptions &output_options_) :
 				ConfigurationBase(filename_template_),
 				file_format(file_format_),
 				output_options(output_options_)
@@ -109,7 +109,7 @@ namespace GPlatesGui
 			}
 
 			FileFormat file_format;
-			GPlatesFileIO::ResolvedTopologicalBoundaryExport::OutputOptions output_options;
+			GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::OutputOptions output_options;
 		};
 
 
@@ -123,13 +123,13 @@ namespace GPlatesGui
 				const const_configuration_ptr &cfg)
 		{
 			return non_null_ptr_type(
-					new ExportResolvedTopologyAnimationStrategy(
+					new ExportCitcomsResolvedTopologyAnimationStrategy(
 							export_animation_context, cfg));
 		}
 
 
 		virtual
-		~ExportResolvedTopologyAnimationStrategy()
+		~ExportCitcomsResolvedTopologyAnimationStrategy()
 		{  }
 		
 
@@ -172,7 +172,7 @@ namespace GPlatesGui
 		 * Protected constructor to prevent instantiation on the stack.
 		 * Use the create() method on the individual Strategy subclasses.
 		 */
-		ExportResolvedTopologyAnimationStrategy(
+		ExportCitcomsResolvedTopologyAnimationStrategy(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
 				const const_configuration_ptr &cfg);
 		
@@ -202,4 +202,4 @@ namespace GPlatesGui
 }
 
 
-#endif // GPLATES_GUI_EXPORTRESOLVEDTOPOLOGYSTRATEGY_H
+#endif // GPLATES_GUI_EXPORTCITCOMSRESOLVEDTOPOLOGYSTRATEGY_H

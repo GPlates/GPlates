@@ -17,6 +17,12 @@ set(srcs
     ArbitraryXmlProfile.h
     ArbitraryXmlReader.cc
     ArbitraryXmlReader.h
+    CitcomsGMTFormatResolvedTopologicalBoundaryExport.cc
+    CitcomsGMTFormatResolvedTopologicalBoundaryExport.h
+    CitcomsResolvedTopologicalBoundaryExport.cc
+    CitcomsResolvedTopologicalBoundaryExport.h
+    CitcomsResolvedTopologicalBoundaryExportImpl.cc
+    CitcomsResolvedTopologicalBoundaryExportImpl.h
     CptReader.cc
     CptReader.h
     ErrorOpeningFileForReadingException.cc
@@ -68,8 +74,6 @@ set(srcs
     GMTFormatMotionPathExport.h
     GMTFormatReconstructedFeatureGeometryExport.cc
     GMTFormatReconstructedFeatureGeometryExport.h
-    GMTFormatResolvedTopologicalBoundaryExport.cc
-    GMTFormatResolvedTopologicalBoundaryExport.h
     GMTFormatWriter.cc
     GMTFormatWriter.h
     GpmlFeatureReaderFactory.cc
@@ -171,10 +175,6 @@ set(srcs
     ReconstructedMotionPathExport.h
     ReconstructionGeometryExportImpl.cc
     ReconstructionGeometryExportImpl.h
-    ResolvedTopologicalBoundaryExport.cc
-    ResolvedTopologicalBoundaryExport.h
-    ResolvedTopologicalBoundaryExportImpl.cc
-    ResolvedTopologicalBoundaryExportImpl.h
     RgbaRasterReader.cc
     RgbaRasterReader.h
     ScalarField3DFileFormat.cc

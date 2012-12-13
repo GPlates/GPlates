@@ -47,7 +47,6 @@
 #include "property-values/XsInteger.h"
 
 using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
-using namespace GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl;
 
 
 namespace
@@ -179,8 +178,8 @@ namespace
 
 
 void
-GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
-		const resolved_geom_seq_type &resolved_topological_geometries,
+GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_citcoms_resolved_topological_boundaries(
+		const CitcomsResolvedTopologicalBoundaryExportImpl::resolved_geom_seq_type &resolved_topological_geometries,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -193,7 +192,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_resolved_topol
 	GPlatesFileIO::OgrGeometryExporter geom_exporter(file_path, false/*multiple_geometries*/, wrap_to_dateline);
 
 	// Iterate through the resolved topological geometries and write to output.
-	resolved_geom_seq_type::const_iterator resolved_geom_iter;
+	CitcomsResolvedTopologicalBoundaryExportImpl::resolved_geom_seq_type::const_iterator resolved_geom_iter;
 	for (resolved_geom_iter = resolved_topological_geometries.begin();
 		resolved_geom_iter != resolved_topological_geometries.end();
 		++resolved_geom_iter)
@@ -251,8 +250,8 @@ GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_resolved_topol
 
 
 void
-GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_sub_segments(
-		const sub_segment_group_seq_type &sub_segments,
+GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_citcoms_sub_segments(
+		const CitcomsResolvedTopologicalBoundaryExportImpl::sub_segment_group_seq_type &sub_segments,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -261,12 +260,13 @@ GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 {
 	// Iterate through the subsegment groups and check which geometry types we have.
 	GPlatesFeatureVisitors::GeometryTypeFinder finder;
-	sub_segment_group_seq_type::const_iterator sub_segment_group_iter;
+	CitcomsResolvedTopologicalBoundaryExportImpl::sub_segment_group_seq_type::const_iterator sub_segment_group_iter;
 	for (sub_segment_group_iter = sub_segments.begin();
 		sub_segment_group_iter != sub_segments.end();
 		++sub_segment_group_iter)
 	{
-		const SubSegmentGroup &sub_segment_group = *sub_segment_group_iter;
+		const CitcomsResolvedTopologicalBoundaryExportImpl::SubSegmentGroup &sub_segment_group =
+				*sub_segment_group_iter;
 
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
@@ -277,7 +277,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 		}
 
 		// Iterate through the subsegment geometries of the current resolved topological boundary.
-		sub_segment_ptr_seq_type::const_iterator sub_segment_iter;
+		CitcomsResolvedTopologicalBoundaryExportImpl::sub_segment_ptr_seq_type::const_iterator sub_segment_iter;
 		for (sub_segment_iter = sub_segment_group.sub_segments.begin();
 			sub_segment_iter != sub_segment_group.sub_segments.end();
 			++sub_segment_iter)
@@ -299,7 +299,8 @@ GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 		sub_segment_group_iter != sub_segments.end();
 		++sub_segment_group_iter)
 	{
-		const SubSegmentGroup &sub_segment_group = *sub_segment_group_iter;
+		const CitcomsResolvedTopologicalBoundaryExportImpl::SubSegmentGroup &sub_segment_group =
+				*sub_segment_group_iter;
 
 #if 0
 		// The topological plate polygon feature.
@@ -312,7 +313,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 #endif
 
 		// Iterate through the subsegment geometries of the current resolved topological boundary.
-		sub_segment_ptr_seq_type::const_iterator sub_segment_iter;
+		CitcomsResolvedTopologicalBoundaryExportImpl::sub_segment_ptr_seq_type::const_iterator sub_segment_iter;
 		for (sub_segment_iter = sub_segment_group.sub_segments.begin();
 			sub_segment_iter != sub_segment_group.sub_segments.end();
 			++sub_segment_iter)

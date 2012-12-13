@@ -31,7 +31,7 @@
 #include "AnimationController.h"
 #include "ExportAnimationRegistry.h"
 #include "ExportReconstructedGeometryAnimationStrategy.h"
-#include "ExportResolvedTopologyAnimationStrategy.h"
+#include "ExportCitcomsResolvedTopologyAnimationStrategy.h"
 #include "ExportSvgAnimationStrategy.h"
 #include "ExportVelocityAnimationStrategy.h"
 

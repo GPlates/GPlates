@@ -33,14 +33,14 @@ DISABLE_MSVC_WARNING(4181)
 #include <boost/lambda/lambda.hpp>
 POP_MSVC_WARNINGS
 
-#include "ResolvedTopologicalBoundaryExport.h"
+#include "CitcomsResolvedTopologicalBoundaryExport.h"
 
-#include "GMTFormatResolvedTopologicalBoundaryExport.h"
+#include "CitcomsGMTFormatResolvedTopologicalBoundaryExport.h"
 #include "FeatureCollectionFileFormat.h"
 #include "FeatureCollectionFileFormatRegistry.h"
 #include "FileFormatNotSupportedException.h"
 #include "ReconstructionGeometryExportImpl.h"
-#include "ResolvedTopologicalBoundaryExportImpl.h"
+#include "CitcomsResolvedTopologicalBoundaryExportImpl.h"
 #include "OgrFormatResolvedTopologicalBoundaryExport.h"
 
 #include "app-logic/GeometryUtils.h"
@@ -55,7 +55,7 @@ POP_MSVC_WARNINGS
 #include <boost/foreach.hpp>
 
 using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
-using namespace GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl;
+using namespace GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl;
 
 //
 // This was meant to be a temporary hack to be removed when resolved *line* topologies were implemented.
@@ -70,7 +70,7 @@ using namespace GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl;
 
 namespace GPlatesFileIO
 {
-	namespace ResolvedTopologicalBoundaryExport
+	namespace CitcomsResolvedTopologicalBoundaryExport
 	{
 		namespace
 		{
@@ -976,7 +976,7 @@ namespace GPlatesFileIO
 				switch (export_format)
 				{
 				case GMT:
-					GMTFormatResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
+					CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
 						resolved_geoms,
 						export_type,
 						filename,
@@ -989,7 +989,7 @@ namespace GPlatesFileIO
                 // OgrFormat.... exporter.
 				case SHAPEFILE:
                 case OGRGMT:
-					OgrFormatResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
+					OgrFormatResolvedTopologicalBoundaryExport::export_citcoms_resolved_topological_boundaries(
 						resolved_geoms,
 						filename,
 						referenced_files,
@@ -1034,7 +1034,7 @@ namespace GPlatesFileIO
 				switch (export_format)
 				{
 				case GMT:
-					GMTFormatResolvedTopologicalBoundaryExport::export_sub_segments(
+					CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 						sub_segment_groups,
 						export_type,
 						filename,
@@ -1047,7 +1047,7 @@ namespace GPlatesFileIO
                 // OgrFormat.... exporter.
                 case SHAPEFILE:
                 case OGRGMT:
-					OgrFormatResolvedTopologicalBoundaryExport::export_sub_segments(
+					OgrFormatResolvedTopologicalBoundaryExport::export_citcoms_sub_segments(
 						sub_segment_groups,
 						filename,
 						referenced_files,
@@ -1649,8 +1649,8 @@ namespace GPlatesFileIO
 }
 
 
-GPlatesFileIO::ResolvedTopologicalBoundaryExport::Format
-GPlatesFileIO::ResolvedTopologicalBoundaryExport::get_export_file_format(
+GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::Format
+GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::get_export_file_format(
 		const QFileInfo& file_info,
 		const FeatureCollectionFileFormat::Registry &file_format_registry)
 {
@@ -1685,7 +1685,7 @@ GPlatesFileIO::ResolvedTopologicalBoundaryExport::get_export_file_format(
 
 
 void
-GPlatesFileIO::ResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
+GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
 		const QDir &target_dir,
 		const QString &file_basename,
 		const QString &placeholder_format_string,

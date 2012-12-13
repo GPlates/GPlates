@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILE_IO_RESOLVEDTOPOLOGICALBOUNDARYEXPORTIMPL_H
-#define GPLATES_FILE_IO_RESOLVEDTOPOLOGICALBOUNDARYEXPORTIMPL_H
+#ifndef GPLATES_FILE_IO_CITCOMSRESOLVEDTOPOLOGICALBOUNDARYEXPORTIMPL_H
+#define GPLATES_FILE_IO_CITCOMSRESOLVEDTOPOLOGICALBOUNDARYEXPORTIMPL_H
 
 #include <vector>
 
@@ -34,7 +34,10 @@
 
 namespace GPlatesFileIO
 {
-	namespace ResolvedTopologicalBoundaryExportImpl
+	/**
+	 * CitcomS-specific resolved topology export implementation.
+	 */
+	namespace CitcomsResolvedTopologicalBoundaryExportImpl
 	{
 		//! Typedef for a sequence of subsegments of resolved topological boundaries.
 		typedef std::vector<const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment *> sub_segment_ptr_seq_type;
@@ -123,4 +126,4 @@ namespace GPlatesFileIO
 	}
 }
 
-#endif // GPLATES_FILE_IO_RESOLVEDTOPOLOGICALBOUNDARYEXPORTIMPL_H
+#endif // GPLATES_FILE_IO_CITCOMSRESOLVEDTOPOLOGICALBOUNDARYEXPORTIMPL_H

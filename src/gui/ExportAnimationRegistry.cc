@@ -33,7 +33,7 @@
 #include "ExportMotionPathAnimationStrategy.h"
 #include "ExportRasterAnimationStrategy.h"
 #include "ExportReconstructedGeometryAnimationStrategy.h"
-#include "ExportResolvedTopologyAnimationStrategy.h"
+#include "ExportCitcomsResolvedTopologyAnimationStrategy.h"
 #include "ExportTotalRotationAnimationStrategy.h"
 #include "ExportStageRotationAnimationStrategy.h"
 #include "ExportSvgAnimationStrategy.h"
@@ -42,10 +42,10 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "qt-widgets/ExportCitcomsResolvedTopologyOptionsWidget.h"
 #include "qt-widgets/ExportFlowlineOptionsWidget.h"
 #include "qt-widgets/ExportMotionPathOptionsWidget.h"
 #include "qt-widgets/ExportReconstructedGeometryOptionsWidget.h"
-#include "qt-widgets/ExportResolvedTopologicalBoundaryOptionsWidget.h"
 #include "qt-widgets/ExportStageRotationOptionsWidget.h"
 #include "qt-widgets/ExportTotalRotationOptionsWidget.h"
 
@@ -422,12 +422,16 @@ GPlatesGui::register_default_export_animation_types(
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 
 	//
-	// Export resolved topologies
+	// Export resolved topologies (general)
+	//
+
+	//
+	// Export resolved topologies (CitcomS-specific)
 	//
 
 	// Set defaults 
-	const GPlatesFileIO::ResolvedTopologicalBoundaryExport::OutputOptions
-			default_resolved_topological_boundary_export_options(
+	const GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::OutputOptions
+			default_citcoms_resolved_topology_export_options(
 					/*wrap_geometries_to_the_dateline*/false,
 
 					/*export_individual_plate_polygon_files*/false,
@@ -470,18 +474,18 @@ GPlatesGui::register_default_export_animation_types(
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-					ExportAnimationType::RESOLVED_TOPOLOGIES,
+					ExportAnimationType::RESOLVED_TOPOLOGIES_CITCOMS,
 					ExportAnimationType::GMT),
-			ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
-					new ExportResolvedTopologyAnimationStrategy::Configuration(
+			ExportCitcomsResolvedTopologyAnimationStrategy::const_configuration_ptr(
+					new ExportCitcomsResolvedTopologyAnimationStrategy::Configuration(
 							"topology_%P_%0.2fMa.xy",
-							ExportResolvedTopologyAnimationStrategy::Configuration::GMT,
-							default_resolved_topological_boundary_export_options)),
-			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
+							ExportCitcomsResolvedTopologyAnimationStrategy::Configuration::GMT,
+							default_citcoms_resolved_topology_export_options)),
+			&create_animation_strategy<ExportCitcomsResolvedTopologyAnimationStrategy>,
 			boost::bind(
 					&create_export_options_widget<
-							GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget,
-							ExportResolvedTopologyAnimationStrategy,
+							GPlatesQtWidgets::ExportCitcomsResolvedTopologyOptionsWidget,
+							ExportCitcomsResolvedTopologyAnimationStrategy,
 							bool>,
 					// The 'false' prevents user from turning on/off dateline wrapping of geometries...
 					_1, _2, false),
@@ -489,42 +493,41 @@ GPlatesGui::register_default_export_animation_types(
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-					ExportAnimationType::RESOLVED_TOPOLOGIES,
+					ExportAnimationType::RESOLVED_TOPOLOGIES_CITCOMS,
 					ExportAnimationType::SHAPEFILE),
-			ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
-					new ExportResolvedTopologyAnimationStrategy::Configuration(
+			ExportCitcomsResolvedTopologyAnimationStrategy::const_configuration_ptr(
+					new ExportCitcomsResolvedTopologyAnimationStrategy::Configuration(
 							"topology_%P_%0.2fMa.shp",
-							ExportResolvedTopologyAnimationStrategy::Configuration::SHAPEFILE,
-							default_resolved_topological_boundary_export_options)),
-			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
+							ExportCitcomsResolvedTopologyAnimationStrategy::Configuration::SHAPEFILE,
+							default_citcoms_resolved_topology_export_options)),
+			&create_animation_strategy<ExportCitcomsResolvedTopologyAnimationStrategy>,
 			boost::bind(
 					&create_export_options_widget<
-							GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget,
-							ExportResolvedTopologyAnimationStrategy,
+							GPlatesQtWidgets::ExportCitcomsResolvedTopologyOptionsWidget,
+							ExportCitcomsResolvedTopologyAnimationStrategy,
 							bool>,
 					// The 'true' allows the user to turn on/off dateline wrapping of geometries...
 					_1, _2, true),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 
-#if 1 // Not yet supported...
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-				ExportAnimationType::RESOLVED_TOPOLOGIES,
+				ExportAnimationType::RESOLVED_TOPOLOGIES_CITCOMS,
 					ExportAnimationType::OGRGMT),
-			ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
-					new ExportResolvedTopologyAnimationStrategy::Configuration(
+			ExportCitcomsResolvedTopologyAnimationStrategy::const_configuration_ptr(
+					new ExportCitcomsResolvedTopologyAnimationStrategy::Configuration(
 							"topology_%P_%02fMa.gmt",
-							ExportResolvedTopologyAnimationStrategy::Configuration::OGRGMT,
-							default_resolved_topological_boundary_export_options)),
-			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
-            boost::bind(&create_export_options_widget<
-					GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget,
-                    ExportResolvedTopologyAnimationStrategy,
-                    bool>,
-    // The 'false' prevents user from turning on/off dateline wrapping of geometries...
-                        _1,_2,false),
+							ExportCitcomsResolvedTopologyAnimationStrategy::Configuration::OGRGMT,
+							default_citcoms_resolved_topology_export_options)),
+			&create_animation_strategy<ExportCitcomsResolvedTopologyAnimationStrategy>,
+            boost::bind(
+					&create_export_options_widget<
+							GPlatesQtWidgets::ExportCitcomsResolvedTopologyOptionsWidget,
+							ExportCitcomsResolvedTopologyAnimationStrategy,
+							bool>,
+					// The 'false' prevents user from turning on/off dateline wrapping of geometries...
+                    _1,_2,false),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
-#endif
 
 
 	//

@@ -29,7 +29,7 @@
 #include <QFileInfo>
 
 #include "ReconstructionGeometryExportImpl.h"
-#include "ResolvedTopologicalBoundaryExportImpl.h"
+#include "CitcomsResolvedTopologicalBoundaryExportImpl.h"
 
 #include "model/types.h"
 
@@ -49,25 +49,15 @@ namespace GPlatesFileIO
 		typedef ReconstructionGeometryExportImpl::referenced_files_collection_type
 				referenced_files_collection_type;
 
-		/**
-		 * Typedef for a feature geometry group of resolved topological geometries.
-		 */
-		typedef ResolvedTopologicalBoundaryExportImpl::resolved_geom_seq_type resolved_geom_seq_type;
 
 		/**
-		 * Typedef for a sequence of @a SubSegmentGroup objects.
-		 */
-		typedef ResolvedTopologicalBoundaryExportImpl::sub_segment_group_seq_type sub_segment_group_seq_type;
-
-
-		/**
-		* Exports @a ResolvedTopologicalGeometry objects to Shapefile format.
+		* Exports @a ResolvedTopologicalGeometry objects to Shapefile format for use by CitcomS software.
 		*
 		* If @a wrap_to_dateline is true then exported polygon boundaries are wrapped/clipped to the dateline.
 		*/
 		void
-		export_resolved_topological_boundaries(
-				const resolved_geom_seq_type &resolved_topological_geometries,
+		export_citcoms_resolved_topological_boundaries(
+				const CitcomsResolvedTopologicalBoundaryExportImpl::resolved_geom_seq_type &resolved_topological_geometries,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -76,13 +66,13 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * Exports subsegments of resolved topological boundaries to Shapefile format.
+		 * Exports subsegments of resolved topological boundaries to Shapefile format for use by CitcomS software.
 		*
 		* If @a wrap_to_dateline is true then exported geometries are wrapped/clipped to the dateline.
 		 */
 		void
-		export_sub_segments(
-				const sub_segment_group_seq_type &sub_segments,
+		export_citcoms_sub_segments(
+				const CitcomsResolvedTopologicalBoundaryExportImpl::sub_segment_group_seq_type &sub_segments,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,

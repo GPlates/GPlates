@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILE_IO_RESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
-#define GPLATES_FILE_IO_RESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
+#ifndef GPLATES_FILE_IO_CITCOMSRESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
+#define GPLATES_FILE_IO_CITCOMSRESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
 
 #include <vector>
 #include <boost/optional.hpp>
@@ -49,7 +49,10 @@ namespace GPlatesFileIO
 		class Registry;
 	}
 
-	namespace ResolvedTopologicalBoundaryExport
+	/**
+	 * CitcomS-specific resolved topology export.
+	 */
+	namespace CitcomsResolvedTopologicalBoundaryExport
 	{
 		//! Formats of files that can export resolved topological boundaries.
 		enum Format
@@ -88,7 +91,7 @@ namespace GPlatesFileIO
 		 * that substring.
 		 */
 
-		// NOTE: check default_resolved_topological_boundary_export_options 
+		// NOTE: check default_citcoms_resolved_topology_export_options 
 		// in gui/ExportAnimationRegistry.cc  for the boolean defaults created in the actual gui 
 		//
 		struct OutputOptions
@@ -140,13 +143,13 @@ namespace GPlatesFileIO
 					const QString &placeholder_left_subductions_ = "subduction_boundaries_sL",
 					const QString &placeholder_right_subductions_ = "subduction_boundaries_sR",
 
-			// network polygon place holders
-			const QString &placeholder_networks_ = "network_polygons",
+					// network polygon place holders
+					const QString &placeholder_networks_ = "network_polygons",
 
-			const QString &placeholder_network_ridge_transforms_ = "network_ridge_transform_boundaries",
-			const QString &placeholder_network_subductions_ = "network_subduction_boundaries",
-			const QString &placeholder_network_left_subductions_ = "network_subduction_boundaries_sL",
-			const QString &placeholder_network_right_subductions_ = "network_subduction_boundaries_sR",
+					const QString &placeholder_network_ridge_transforms_ = "network_ridge_transform_boundaries",
+					const QString &placeholder_network_subductions_ = "network_subduction_boundaries",
+					const QString &placeholder_network_left_subductions_ = "network_subduction_boundaries_sL",
+					const QString &placeholder_network_right_subductions_ = "network_subduction_boundaries_sR",
 
 					// slab polygon place holders 
 					const QString &placeholder_slab_polygons_ = "slab_polygons",
@@ -156,6 +159,7 @@ namespace GPlatesFileIO
 					const QString &placeholder_slab_edge_leading_right_ = "slab_edges_leading_sR",
 					const QString &placeholder_slab_edge_trench_ = "slab_edges_trench",
 					const QString &placeholder_slab_edge_side_ = "slab_edges_side") :
+
 				wrap_geometries_to_the_dateline(wrap_geometries_to_the_dateline_),
 				// plate polygon options
 				export_individual_plate_polygon_files(export_individual_plate_polygon_files_),
@@ -167,15 +171,15 @@ namespace GPlatesFileIO
 				export_left_subductions(export_left_subductions_),
 				export_right_subductions(export_right_subductions_),
 
-			// network options
-			export_individual_network_polygon_files(export_individual_network_polygon_files_),
-			export_all_network_polygons_to_a_single_file(export_all_network_polygons_to_a_single_file_),
-			export_network_polygon_subsegments_to_lines(export_network_polygon_subsegments_to_lines_),
+				// network options
+				export_individual_network_polygon_files(export_individual_network_polygon_files_),
+				export_all_network_polygons_to_a_single_file(export_all_network_polygons_to_a_single_file_),
+				export_network_polygon_subsegments_to_lines(export_network_polygon_subsegments_to_lines_),
 
-			export_network_ridge_transforms(export_network_ridge_transforms_),
-			export_network_subductions(export_network_subductions_),
-			export_network_left_subductions(export_network_left_subductions_),
-			export_network_right_subductions(export_network_right_subductions_),
+				export_network_ridge_transforms(export_network_ridge_transforms_),
+				export_network_subductions(export_network_subductions_),
+				export_network_left_subductions(export_network_left_subductions_),
+				export_network_right_subductions(export_network_right_subductions_),
 
 				// slab polygon options 
 				export_individual_slab_polygon_files(export_individual_slab_polygon_files_),
@@ -308,4 +312,4 @@ namespace GPlatesFileIO
 	}
 }
 
-#endif // GPLATES_FILE_IO_RESOLVEDTOPOLOGICALBOUNDARYEXPORT_H
+#endif // GPLATES_FILE_IO_CITCOMSRESOLVEDTOPOLOGICALBOUNDARYEXPORT_H

@@ -192,6 +192,9 @@ set(srcs
     ExportAnimationDialog.cc
     ExportAnimationDialog.h
     ExportAnimationDialogUi.ui
+    ExportCitcomsResolvedTopologyOptionsWidget.cc
+    ExportCitcomsResolvedTopologyOptionsWidget.h
+    ExportCitcomsResolvedTopologyOptionsWidgetUi.ui
     ExportCoordinatesDialog.cc
     ExportCoordinatesDialog.h
     ExportCoordinatesDialogUi.ui
@@ -201,9 +204,6 @@ set(srcs
     ExportMotionPathOptionsWidget.h
     ExportOptionsWidget.h
     ExportReconstructedGeometryOptionsWidget.h
-    ExportResolvedTopologicalBoundaryOptionsWidget.cc
-    ExportResolvedTopologicalBoundaryOptionsWidget.h
-    ExportResolvedTopologicalBoundaryOptionsWidgetUi.ui
     ExportRotationOptionsWidget.h
     ExportRotationOptionsWidgetUi.ui
     ExportStageRotationOnlyOptionsWidget.h

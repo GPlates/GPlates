@@ -23,14 +23,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_QT_WIDGETS_EXPORTRESOLVEDTOPOLOGICALBOUNDARYOPTIONSWIDGET_H
-#define GPLATES_QT_WIDGETS_EXPORTRESOLVEDTOPOLOGICALBOUNDARYOPTIONSWIDGET_H
+#ifndef GPLATES_QT_WIDGETS_EXPORTCITCOMSRESOLVEDTOPOLOGYOPTIONSWIDGET_H
+#define GPLATES_QT_WIDGETS_EXPORTCITCOMSRESOLVEDTOPOLOGYOPTIONSWIDGET_H
 
-#include "ExportResolvedTopologicalBoundaryOptionsWidgetUi.h"
+#include "ExportCitcomsResolvedTopologyOptionsWidgetUi.h"
 
 #include "ExportOptionsWidget.h"
 
-#include "gui/ExportResolvedTopologyAnimationStrategy.h"
+#include "gui/ExportCitcomsResolvedTopologyAnimationStrategy.h"
 
 
 namespace GPlatesQtWidgets
@@ -38,28 +38,27 @@ namespace GPlatesQtWidgets
 	class DatelineWrapOptionsWidget;
 
 	/**
-	 * RasterLayerOptionsWidget is used to show additional options for raster
-	 * layers in the visual layers widget.
+	 * CitcomS-specific resolved topology export options.
 	 */
-	class ExportResolvedTopologicalBoundaryOptionsWidget :
+	class ExportCitcomsResolvedTopologyOptionsWidget :
 			public ExportOptionsWidget,
-			protected Ui_ExportResolvedTopologicalBoundaryOptionsWidget
+			protected Ui_ExportCitcomsResolvedTopologyOptionsWidget
 	{
 		Q_OBJECT
 
 	public:
 		/**
-		 * Creates a @a ExportResolvedTopologicalBoundaryOptionsWidget containing default export options.
+		 * Creates a @a ExportCitcomsResolvedTopologyOptionsWidget containing default export options.
 		 */
 		static
 		ExportOptionsWidget *
 		create(
 				QWidget *parent,
-				const GPlatesGui::ExportResolvedTopologyAnimationStrategy::const_configuration_ptr &
+				const GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::const_configuration_ptr &
 						default_export_configuration,
 				bool configure_dateline_wrapping)
 		{
-			return new ExportResolvedTopologicalBoundaryOptionsWidget(
+			return new ExportCitcomsResolvedTopologyOptionsWidget(
 					parent, default_export_configuration, configure_dateline_wrapping);
 		}
 
@@ -80,9 +79,9 @@ namespace GPlatesQtWidgets
 
 	private:
 		explicit
-		ExportResolvedTopologicalBoundaryOptionsWidget(
+		ExportCitcomsResolvedTopologyOptionsWidget(
 				QWidget *parent_,
-				const GPlatesGui::ExportResolvedTopologyAnimationStrategy::const_configuration_ptr &
+				const GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::const_configuration_ptr &
 						default_export_configuration,
 				bool configure_dateline_wrapping);
 
@@ -90,10 +89,10 @@ namespace GPlatesQtWidgets
 		void
 		make_signal_slot_connections();
 
-		GPlatesGui::ExportResolvedTopologyAnimationStrategy::Configuration d_export_configuration;
+		GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::Configuration d_export_configuration;
 
 		DatelineWrapOptionsWidget *d_dateline_wrap_options_widget;
 	};
 }
 
-#endif // GPLATES_QT_WIDGETS_EXPORTRESOLVEDTOPOLOGICALBOUNDARYOPTIONSWIDGET_H
+#endif // GPLATES_QT_WIDGETS_EXPORTCITCOMSRESOLVEDTOPOLOGYOPTIONSWIDGET_H

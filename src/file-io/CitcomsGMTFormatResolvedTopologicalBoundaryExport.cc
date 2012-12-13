@@ -29,7 +29,7 @@
 #include <QString>
 #include <QTextStream>
 
-#include "GMTFormatResolvedTopologicalBoundaryExport.h"
+#include "CitcomsGMTFormatResolvedTopologicalBoundaryExport.h"
 
 #include "ErrorOpeningFileForWritingException.h"
 #include "GMTFormatGeometryExporter.h"
@@ -46,12 +46,12 @@
 #include "utils/StringFormattingUtils.h"
 
 using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
-using namespace GPlatesFileIO::ResolvedTopologicalBoundaryExportImpl;
+using namespace GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl;
 
 
 namespace GPlatesFileIO
 {
-	namespace GMTFormatResolvedTopologicalBoundaryExport
+	namespace CitcomsGMTFormatResolvedTopologicalBoundaryExport
 	{
 		namespace
 		{
@@ -870,9 +870,9 @@ namespace GPlatesFileIO
 }
 
 void
-GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
+GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
 		const resolved_geom_seq_type &resolved_topological_geometries,
-		ResolvedTopologicalBoundaryExportImpl::ResolvedTopologicalBoundaryExportType export_type,
+		CitcomsResolvedTopologicalBoundaryExportImpl::ResolvedTopologicalBoundaryExportType export_type,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -958,9 +958,9 @@ GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_resolved_topol
 
 
 void
-GPlatesFileIO::GMTFormatResolvedTopologicalBoundaryExport::export_sub_segments(
+GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 		const sub_segment_group_seq_type &sub_segments,
-		ResolvedTopologicalBoundaryExportImpl::SubSegmentExportType export_type,
+		CitcomsResolvedTopologicalBoundaryExportImpl::SubSegmentExportType export_type,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,

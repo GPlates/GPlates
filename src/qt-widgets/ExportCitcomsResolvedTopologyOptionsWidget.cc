@@ -23,15 +23,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "ExportResolvedTopologicalBoundaryOptionsWidget.h"
+#include "ExportCitcomsResolvedTopologyOptionsWidget.h"
 
 #include "DatelineWrapOptionsWidget.h"
 #include "QtWidgetUtils.h"
 
 
-GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget::ExportResolvedTopologicalBoundaryOptionsWidget(
+GPlatesQtWidgets::ExportCitcomsResolvedTopologyOptionsWidget::ExportCitcomsResolvedTopologyOptionsWidget(
 		QWidget *parent_,
-		const GPlatesGui::ExportResolvedTopologyAnimationStrategy::const_configuration_ptr &
+		const GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::const_configuration_ptr &
 				default_export_configuration,
 		bool configure_dateline_wrapping) :
 	ExportOptionsWidget(parent_),
@@ -150,7 +150,7 @@ GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget::ExportResolved
 
 
 GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr
-GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget::create_export_animation_strategy_configuration(
+GPlatesQtWidgets::ExportCitcomsResolvedTopologyOptionsWidget::create_export_animation_strategy_configuration(
 		const QString &filename_template)
 {
 	// Get the dateline wrapping options if they've been configured to allow the user to edit them.
@@ -162,14 +162,14 @@ GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget::create_export_
 
 	d_export_configuration.set_filename_template(filename_template);
 
-	return GPlatesGui::ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
-			new GPlatesGui::ExportResolvedTopologyAnimationStrategy::Configuration(
+	return GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::const_configuration_ptr(
+			new GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::Configuration(
 					d_export_configuration));
 }
 
 
 void
-GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget::make_signal_slot_connections()
+GPlatesQtWidgets::ExportCitcomsResolvedTopologyOptionsWidget::make_signal_slot_connections()
 {
 	QObject::connect(
 			checkBox_export_all_plate_polygons_to_single_file,
@@ -243,7 +243,7 @@ GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget::make_signal_sl
 
 
 void
-GPlatesQtWidgets::ExportResolvedTopologicalBoundaryOptionsWidget::react_check_box_state_changed(
+GPlatesQtWidgets::ExportCitcomsResolvedTopologyOptionsWidget::react_check_box_state_changed(
 		int state)
 {
 	// all plate polygons to a single file 
