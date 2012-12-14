@@ -22,6 +22,11 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#if defined(__APPLE__)
+//On mac, this header file must be included here to workaround a boost python bug.
+//If you don't do this, you will get strange error messages when compiling on mac.
+#include <python.h> 
+#endif
 
 #include <QString>
 
