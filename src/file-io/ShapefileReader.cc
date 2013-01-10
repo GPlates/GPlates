@@ -859,7 +859,7 @@ GPlatesFileIO::ShapefileReader::read_features(
 							GPlatesFileIO::ReadErrors::GeometryFlattenedTo2D));
 		}
 
-		switch (d_type){
+		switch (flattened_type){
 		case wkbPoint:
 			{
 				handle_point(model,collection,read_errors,e_source,e_location);
