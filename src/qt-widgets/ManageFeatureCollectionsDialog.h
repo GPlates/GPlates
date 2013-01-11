@@ -29,6 +29,7 @@
 #include <map>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+#include <Qt>
 #include <QObject>
 #include <QPointer>
 #include <QString>
@@ -193,6 +194,10 @@ namespace GPlatesQtWidgets
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
 
+		void
+		header_section_clicked(
+				int section_index);
+
 	protected:
 	
 		/**
@@ -295,6 +300,18 @@ namespace GPlatesQtWidgets
 				boost::shared_ptr<ManageFeatureCollections::EditConfiguration> >
 						edit_configuration_map_type;
 
+		//! Identifies which column (if any) is sorted and whether it's sorted ascending or descending.
+		struct ColumnSort
+		{
+			ColumnSort() :
+				column_index(0),
+				sort_order(Qt::AscendingOrder)
+			{  }
+
+			int column_index;
+			Qt::SortOrder sort_order;
+		};
+
 
 		/**
 		 * Registry of file formats.
@@ -324,6 +341,11 @@ namespace GPlatesQtWidgets
 		 * The registered edit configurations (mapped to file formats).
 		 */
 		edit_configuration_map_type d_edit_configurations;
+
+		/**
+		 * The column (and sort order) currently used for sorting, if sorting enabled.
+		 */
+		boost::optional<ColumnSort> d_column_sort;
 
 
 		/**

@@ -214,7 +214,11 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 	// Set up slots for Open File and Save All
 	QObject::connect(button_open_file, SIGNAL(clicked()), d_gui_file_io_feedback_ptr, SLOT(open_files()));
 	QObject::connect(button_save_all, SIGNAL(clicked()), this, SLOT(save_all_named()));
-	
+
+	QObject::connect(
+			table_feature_collections->horizontalHeader(), SIGNAL(sectionClicked(int)),
+			this, SLOT(header_section_clicked(int)));
+
 	// Set up slots for file load/unload notifications.
 	connect_to_file_state_signals();
 }
@@ -354,6 +358,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::handle_file_state_files_added(
 		add_row(file_ref, false/*should_highlight_unsaved_changes*/);
 	}
 
+	// Highlight unsaved changes all in one go instead of individually for each file.
 	highlight_unsaved_changes();
 }
 
@@ -389,6 +394,75 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::handle_file_state_file_info_ch
 	// Row text needs to be updated to reflect a new filename and a new default file configuration
 	// if the file's format needs a file configuration.
 	update_row(row, file_ref);
+}
+
+
+void
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::header_section_clicked(
+		int section_index)
+{
+	// We only sort by filename or file format.
+	if (section_index != ColumnNames::FILENAME &&
+		section_index != ColumnNames::FORMAT)
+	{
+		// Make sure the sort indicator remains drawn on the previously sorted column, if any,
+		// otherwise it'll be drawn on the currently selected column (the column we're ignoring).
+		if (d_column_sort)
+		{
+			table_feature_collections->horizontalHeader()->setSortIndicator(
+					d_column_sort->column_index, d_column_sort->sort_order);
+		}
+
+		return;
+	}
+
+	if (d_column_sort)
+	{
+		// If the column is the same as before then turn off sorting.
+		if (d_column_sort->column_index == section_index)
+		{
+			// Turn off sorting.
+			d_column_sort = boost::none;
+			table_feature_collections->horizontalHeader()->setSortIndicatorShown(false);
+
+			//
+			// Sort by original file order (the order in which files were loaded).
+			//
+			// This is most easily done by clearing all rows and adding them in the original order.
+
+			clear_rows();
+
+			const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> file_references =
+					d_file_state.get_loaded_files();
+			BOOST_FOREACH(
+					const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file_ref,
+					file_references)
+			{
+				add_row(file_ref, false/*should_highlight_unsaved_changes*/);
+			}
+
+			// Highlight unsaved changes all in one go instead of individually for each file.
+			highlight_unsaved_changes();
+
+			return;
+		}
+	}
+	else // Sorting is currently disabled, so enable it...
+	{
+		d_column_sort = ColumnSort();
+	}
+
+	// Set the column to sort and the sort order (currently sort order is always ascending anyway).
+	d_column_sort->column_index = section_index;
+	d_column_sort->sort_order = Qt::AscendingOrder;
+
+	// Sort the table.
+	table_feature_collections->sortItems(d_column_sort->column_index, d_column_sort->sort_order);
+
+	// Draw the sort indicator.
+	table_feature_collections->horizontalHeader()->setSortIndicator(
+			d_column_sort->column_index, d_column_sort->sort_order);
+	table_feature_collections->horizontalHeader()->setSortIndicatorShown(true);
 }
 
 
@@ -515,6 +589,12 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::update_row(
 	if (should_highlight_unsaved_changes)
 	{
 		highlight_unsaved_changes();
+	}
+
+	// Sort the table if sorting has been enabled (if the user clicked on the filename or format header).
+	if (d_column_sort)
+	{
+		table_feature_collections->sortItems(d_column_sort->column_index, d_column_sort->sort_order);
 	}
 }
 
