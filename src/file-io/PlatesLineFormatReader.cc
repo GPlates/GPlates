@@ -2129,13 +2129,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		// Pen-up plotter codes distinguish the geometries within a feature.
 		geometry_seq_type geometry_seq;
 
+		PlotterCodes::PlotterCode code;
 		point_seq_type points;
-		read_polyline_point(in, points, PlotterCodes::PEN_SKIP_TO);
+		code = read_polyline_point(in, points, PlotterCodes::PEN_SKIP_TO);
 
 		// FIXME : Rather than create millions of little features for each unbroken
 		// section of line, it would be better to create gml:MultiCurve geometry.
-		PlotterCodes::PlotterCode code;
-		do {
+		while (code != PlotterCodes::PEN_TERMINATING_POINT) {
 			code = read_polyline_point(in, points, PlotterCodes::PEN_EITHER);
 			if (code == PlotterCodes::PEN_TERMINATING_POINT) {
 				// When 'read_polyline_point' encounters the terminating point, it
@@ -2159,7 +2159,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 				points.push_back(last_point);
 			}
-		} while (code != PlotterCodes::PEN_TERMINATING_POINT);
+		}
 
 		// Now that we've read one or more geometries we can create the feature.
 		create_feature_with_geometries(model, collection, in, source,
