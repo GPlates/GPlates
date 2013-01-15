@@ -466,6 +466,36 @@ GPlatesViewOperations::RenderedGeometryCollection::end_update_collection()
 
 
 void
+GPlatesViewOperations::RenderedGeometryCollection::begin_update_all_registered_collections()
+{
+	// Get list of RenderedGeometryCollection objects.
+	const RenderedGeometryCollectionManager::collection_seq_type &collections =
+		RenderedGeometryCollectionManager::instance().get_registered_collections();
+
+	// Call begin_update_collection() on each collection.
+	std::for_each(
+			collections.begin(),
+			collections.end(),
+			boost::bind(&RenderedGeometryCollection::begin_update_collection, _1));
+}
+
+
+void
+GPlatesViewOperations::RenderedGeometryCollection::end_update_all_registered_collections()
+{
+	// Get list of RenderedGeometryCollection objects.
+	const RenderedGeometryCollectionManager::collection_seq_type &collections =
+		RenderedGeometryCollectionManager::instance().get_registered_collections();
+
+	// Call end_update_collection() on each collection.
+	std::for_each(
+			collections.begin(),
+			collections.end(),
+			boost::bind(&RenderedGeometryCollection::end_update_collection, _1));
+}
+
+
+void
 GPlatesViewOperations::RenderedGeometryCollection::signal_update(
 		MainLayerType main_layer_type)
 {
@@ -552,15 +582,7 @@ GPlatesViewOperations::RenderedGeometryCollection::MainLayerActiveState::is_acti
 
 GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard::UpdateGuard()
 {
-	// Get list of RenderedGeometryCollection objects.
-	const RenderedGeometryCollectionManager::collection_seq_type &collections =
-		RenderedGeometryCollectionManager::instance().get_registered_collections();
-
-	// Call begin_update_collection() on each collection.
-	std::for_each(
-			collections.begin(),
-			collections.end(),
-			boost::bind(&RenderedGeometryCollection::begin_update_collection, _1));
+	begin_update_all_registered_collections();
 }
 
 
@@ -570,15 +592,7 @@ GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard::~UpdateGuard()
 	// If one is thrown we just have to lump it and continue on.
 	try
 	{
-		// Get list of RenderedGeometryCollection objects.
-		const RenderedGeometryCollectionManager::collection_seq_type &collections =
-			RenderedGeometryCollectionManager::instance().get_registered_collections();
-
-		// Call end_update_collection() on each collection.
-		std::for_each(
-				collections.begin(),
-				collections.end(),
-				boost::bind(&RenderedGeometryCollection::end_update_collection, _1));
+		end_update_all_registered_collections();
 	}
 	catch (...)
 	{

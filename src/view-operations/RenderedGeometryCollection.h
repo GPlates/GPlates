@@ -449,6 +449,24 @@ namespace GPlatesViewOperations
 		end_update_collection();
 		//@}
 
+
+		//@{
+		/**
+		 * Delays signaling updates to observers for all registered collections.
+		 *
+		 * This essentially calls @a begin_update_collection for each @a RenderedGeometryCollection
+		 * that currently exists (each collection internally registers itself with a manager).
+		 */
+		static
+		void
+		begin_update_all_registered_collections();
+
+		static
+		void
+		end_update_all_registered_collections();
+		//@}
+
+
 		/**
 		 * A convenience structure for automating calls to
 		 * @a begin_update_collection() and @a end_update_collection()

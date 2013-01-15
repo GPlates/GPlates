@@ -131,6 +131,7 @@
 
 #include "view-operations/CloneOperation.h"
 #include "view-operations/DeleteFeatureOperation.h"
+#include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryParameters.h"
 #include "view-operations/UndoRedo.h"
 
@@ -1146,6 +1147,19 @@ GPlatesQtWidgets::ViewportWindow::closeEvent(
 	// Make sure we really do quit - stray dialogs not caught by @a close_all_dialogs()
 	// (e.g. PyQt windows) will keep GPlates open.
 	QCoreApplication::quit();
+
+	//
+	// Optimisations to avoid long shutdown times for GPlates.
+	//
+
+	// Prevent modifications to any rendered geometry collection from signaling updates
+	// to various listening clients. We're shutting down so rendered geometry updates are not
+	// getting drawn (or used for export, etc).
+	// Note that this call starts blocking updates and also we don't subsequently call
+	// 'end_update_all_registered_collections()' to unblock them as this is not necessary
+	// (if we did it would be limited to this scope anyway and wouldn't block updates from here onwards,
+	// including the destructor of class Application and the destructors of all its sub-objects, etc).
+	GPlatesViewOperations::RenderedGeometryCollection::begin_update_all_registered_collections();
 }
 
 
