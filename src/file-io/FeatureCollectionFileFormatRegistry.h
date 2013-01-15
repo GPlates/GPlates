@@ -312,8 +312,6 @@ namespace GPlatesFileIO
 			typedef std::map<Format, FileFormatInfo> file_format_info_map_type;
 
 
-			GPlatesModel::ModelInterface d_model;
-
 			/**
 			 * Stores a struct of information for each file format.
 			 */

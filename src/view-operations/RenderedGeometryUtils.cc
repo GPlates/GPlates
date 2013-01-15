@@ -25,6 +25,7 @@
  */
 
 #include <algorithm>
+#include <set>
 #include <boost/bind.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
@@ -132,20 +133,31 @@ namespace GPlatesViewOperations
 			{
 				// Instead of using std::sort, std::unique and erase we keep the reconstruction geometry
 				// sequence in its original order.
-				const reconstruction_geom_seq_type original_reconstruction_geom_seq(reconstruction_geom_seq);
-				reconstruction_geom_seq.clear();
+
+				// Use a std::set to avoid an O(N^2) search which is a large bottleneck for
+				// very large number of geometries.
+				typedef std::set<const GPlatesAppLogic::ReconstructionGeometry *> unique_recons_geoms_set_type;
+				unique_recons_geoms_set_type unique_recon_geoms_set;
+
+				reconstruction_geom_seq_type unique_reconstruction_geom_seq;
+				unique_reconstruction_geom_seq.reserve(reconstruction_geom_seq.size());
 
 				BOOST_FOREACH(
 					const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &recon_geom,
-					original_reconstruction_geom_seq)
+					reconstruction_geom_seq)
 				{
-					// Add reconstruction geometry is it isn't already in the sequence.
-					if (std::find(reconstruction_geom_seq.begin(), reconstruction_geom_seq.end(), recon_geom)
-						== reconstruction_geom_seq.end())
+					const std::pair<unique_recons_geoms_set_type::const_iterator, bool>
+							unique_recon_geoms_insert_result = unique_recon_geoms_set.insert(recon_geom.get());
+
+					// Add reconstruction geometry if it isn't already in the sequence.
+					if (unique_recon_geoms_insert_result.second)
 					{
-						reconstruction_geom_seq.push_back(recon_geom);
+						unique_reconstruction_geom_seq.push_back(recon_geom);
 					}
 				}
+
+				// Replace the caller's sequence with the unique sequence.
+				reconstruction_geom_seq.swap(unique_reconstruction_geom_seq);
 			}
 		}
 	}

@@ -1152,6 +1152,12 @@ GPlatesQtWidgets::ViewportWindow::closeEvent(
 	// Optimisations to avoid long shutdown times for GPlates.
 	//
 
+	//
+	// NOTE: This is a very SIGNIFICANT optimisation for large files.
+	//
+	// For small files it's not noticeable, but for very large files it can reduce shutdown
+	// times from minutes to a few seconds.
+	//
 	// Prevent modifications to any rendered geometry collection from signaling updates
 	// to various listening clients. We're shutting down so rendered geometry updates are not
 	// getting drawn (or used for export, etc).
