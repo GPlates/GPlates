@@ -27,6 +27,7 @@
 
 #include "AppLogicUtils.h"
 #include "PlateVelocityUtils.h"
+#include "VelocityFieldCalculatorLayerProxy.h"
 
 
 const QString GPlatesAppLogic::VelocityFieldCalculatorLayerTask::VELOCITY_DOMAIN_FEATURES_CHANNEL_NAME =
@@ -34,6 +35,16 @@ const QString GPlatesAppLogic::VelocityFieldCalculatorLayerTask::VELOCITY_DOMAIN
 
 const QString GPlatesAppLogic::VelocityFieldCalculatorLayerTask::VELOCITY_SURFACE_LAYERS_CHANNEL_NAME =
 		"Velocity surfaces (static/dynamic polygons/networks)";
+
+
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::VelocityFieldCalculatorLayerTask() :
+	d_default_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
+	d_using_default_reconstruction_layer_proxy(true),
+	d_velocity_field_calculator_layer_proxy(
+			VelocityFieldCalculatorLayerProxy::create(
+					d_layer_task_params.get_solve_velocities_method()))
+{
+}
 
 
 bool
@@ -244,6 +255,15 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::update(
 {
 	d_velocity_field_calculator_layer_proxy->set_current_reconstruction_time(reconstruction->get_reconstruction_time());
 
+	// If the layer task params have been modified then update our velocity layer proxy.
+	if (d_layer_task_params.d_set_solve_velocities_method_called)
+	{
+		d_layer_task_params.d_set_solve_velocities_method_called = false;
+
+		d_velocity_field_calculator_layer_proxy->set_solve_velocities_method(
+				d_layer_task_params.get_solve_velocities_method());
+	}
+
 	// If our layer proxy is currently using the default reconstruction layer proxy then
 	// tell our layer proxy about the new default reconstruction layer proxy.
 	if (d_using_default_reconstruction_layer_proxy)
@@ -257,4 +277,36 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::update(
 	}
 
 	d_default_reconstruction_layer_proxy = reconstruction->get_default_reconstruction_layer_output();
+}
+
+
+GPlatesAppLogic::LayerProxy::non_null_ptr_type
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_layer_proxy()
+{
+	return d_velocity_field_calculator_layer_proxy;
+}
+
+
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::Params() :
+	// Default to using surfaces since that's how GPlates started out calculating velocities...
+	d_solve_velocities_method(SOLVE_VELOCITIES_ON_SURFACES),
+	d_set_solve_velocities_method_called(false)
+{
+}
+
+
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::get_solve_velocities_method() const
+{
+	return d_solve_velocities_method;
+}
+
+
+void
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::set_solve_velocities_method(
+		SolveVelocitiesMethodType solve_velocities_method)
+{
+	d_solve_velocities_method = solve_velocities_method;
+
+	d_set_solve_velocities_method_called = true;
 }

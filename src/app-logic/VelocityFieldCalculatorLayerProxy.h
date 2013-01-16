@@ -36,6 +36,7 @@
 #include "ReconstructLayerProxy.h"
 #include "TopologyGeometryResolverLayerProxy.h"
 #include "TopologyNetworkResolverLayerProxy.h"
+#include "VelocityFieldCalculatorLayerTask.h"
 
 #include "utils/SubjectObserverToken.h"
 
@@ -63,9 +64,10 @@ namespace GPlatesAppLogic
 		 */
 		static
 		non_null_ptr_type
-		create()
+		create(
+				VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType solve_velocities_method)
 		{
-			return non_null_ptr_type(new VelocityFieldCalculatorLayerProxy());
+			return non_null_ptr_type(new VelocityFieldCalculatorLayerProxy(solve_velocities_method));
 		}
 
 
@@ -137,6 +139,13 @@ namespace GPlatesAppLogic
 		void
 		set_current_reconstruction_time(
 				const double &reconstruction_time);
+
+		/**
+		 * Sets the velocity calculation method.
+		 */
+		void
+		set_solve_velocities_method(
+				VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType solve_velocities_method);
 
 		/**
 		 * Set the reconstruction layer proxy.
@@ -252,6 +261,11 @@ namespace GPlatesAppLogic
 		double d_current_reconstruction_time;
 
 		/**
+		 * The current method to calculate velocities.
+		 */
+		VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType d_current_solve_velocities_method;
+
+		/**
 		 * The cached velocities.
 		 */
 		boost::optional< std::vector<multi_point_vector_field_non_null_ptr_type> >
@@ -269,7 +283,9 @@ namespace GPlatesAppLogic
 
 
 		//! Default constructor.
-		VelocityFieldCalculatorLayerProxy();
+		explicit
+		VelocityFieldCalculatorLayerProxy(
+				VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType solve_velocities_method);
 
 
 		/**

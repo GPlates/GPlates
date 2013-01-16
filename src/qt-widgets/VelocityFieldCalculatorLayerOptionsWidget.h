@@ -28,6 +28,7 @@
 
 #include "VelocityFieldCalculatorLayerOptionsWidgetUi.h"
 
+#include "InformationDialog.h"
 #include "LayerOptionsWidget.h"
 
 
@@ -83,6 +84,10 @@ namespace GPlatesQtWidgets
 		void
 		handle_triangulation_clicked();
 
+		void
+		handle_solve_velocity_method_combobox_activated(
+				int index);
+
 	private:
 
 		VelocityFieldCalculatorLayerOptionsWidget(
@@ -99,6 +104,8 @@ namespace GPlatesQtWidgets
 		 * The visual layer for which we are currently displaying options.
 		 */
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_current_visual_layer;
+
+		GPlatesQtWidgets::InformationDialog *d_help_solve_velocities_method_dialog;
 	};
 }
 

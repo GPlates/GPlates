@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>486</width>
-    <height>177</height>
+    <width>469</width>
+    <height>116</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,6 +22,44 @@
         <string>Show Velocity interpolated from Delaunay Triangulation (in black)</string>
        </property>
       </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QLabel" name="solve_velocities_method_label">
+         <property name="text">
+          <string>Calculate velocities </string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="solve_velocities_method_combobox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="push_button_help_solve_velocities_method">
+         <property name="toolTip">
+          <string>What does this mean?</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../qt-resources/qt_widgets.qrc">
+           <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>

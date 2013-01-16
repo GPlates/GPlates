@@ -31,9 +31,9 @@
 #include <boost/shared_ptr.hpp>
 #include <QString>
 
+#include "AppLogicFwd.h"
 #include "LayerTask.h"
 #include "LayerTaskParams.h"
-#include "VelocityFieldCalculatorLayerProxy.h"
 
 #include "model/FeatureCollectionHandle.h"
 
@@ -49,6 +49,50 @@ namespace GPlatesAppLogic
 			public LayerTask
 	{
 	public:
+		/**
+		 * App-logic parameters for a velocity layer.
+		 */
+		class Params :
+				public LayerTaskParams
+		{
+		public:
+
+			//! How to calculate velocities.
+			enum SolveVelocitiesMethodType
+			{
+				SOLVE_VELOCITIES_ON_SURFACES, // Uses plate id from intersecting polygon/network surface.
+				SOLVE_VELOCITIES_BY_PLATE_ID, // Uses plate id of velocity domain feature.
+
+				NUM_SOLVE_VELOCITY_METHODS    // This must be last.
+			};
+
+			//! Gets the velocity calculation method.
+			SolveVelocitiesMethodType
+			get_solve_velocities_method() const;
+
+			//! Sets the velocity calculation method.
+			void
+			set_solve_velocities_method(
+					SolveVelocitiesMethodType solve_velocities_method);
+
+		private:
+
+			SolveVelocitiesMethodType d_solve_velocities_method;
+
+			/**
+			 * Is true if @a set_solve_velocities_method has been called - VelocityFieldCalculatorLayerTask will reset this explicitly.
+			 *
+			 * Used to let VelocityFieldCalculatorLayerTask know that an external client has modified this state.
+			 */
+			bool d_set_solve_velocities_method_called;
+
+			Params();
+
+			// Make friend so can access constructor and @a d_set_solve_velocities_method_called.
+			friend class VelocityFieldCalculatorLayerTask;
+		};
+
+
 		static
 		bool
 		can_process_feature_collection(
@@ -129,10 +173,7 @@ namespace GPlatesAppLogic
 
 		virtual
 		LayerProxy::non_null_ptr_type
-		get_layer_proxy()
-		{
-			return d_velocity_field_calculator_layer_proxy;
-		}
+		get_layer_proxy();
 
 
 		virtual
@@ -150,7 +191,10 @@ namespace GPlatesAppLogic
 		static const QString VELOCITY_SURFACE_LAYERS_CHANNEL_NAME;
 
 
-		LayerTaskParams d_layer_task_params;
+		/**
+		 * Parameters used when calculating velocities.
+		 */
+		Params d_layer_task_params;
 
 		/**
 		 * Keep track of the default reconstruction layer proxy.
@@ -163,15 +207,11 @@ namespace GPlatesAppLogic
 		/**
 		 * Does all the velocity calculations.
 		 */
-		VelocityFieldCalculatorLayerProxy::non_null_ptr_type d_velocity_field_calculator_layer_proxy;
+		velocity_field_calculator_layer_proxy_non_null_ptr_type d_velocity_field_calculator_layer_proxy;
 
 
 		//! Constructor.
-		VelocityFieldCalculatorLayerTask() :
-				d_default_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
-				d_using_default_reconstruction_layer_proxy(true),
-				d_velocity_field_calculator_layer_proxy(VelocityFieldCalculatorLayerProxy::create())
-		{  }
+		VelocityFieldCalculatorLayerTask();
 	};
 }
 

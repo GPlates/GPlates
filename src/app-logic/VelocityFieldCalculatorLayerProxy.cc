@@ -24,6 +24,7 @@
  */
 
 #include <boost/bind.hpp>
+#include <boost/static_assert.hpp>
 
 #include "VelocityFieldCalculatorLayerProxy.h"
 
@@ -34,12 +35,17 @@
 #include "ResolvedTopologicalGeometry.h"
 #include "ResolvedTopologicalNetwork.h"
 
+#include "global/GPlatesAssert.h"
+
 #include <boost/foreach.hpp>
 
-GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::VelocityFieldCalculatorLayerProxy() :
+
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::VelocityFieldCalculatorLayerProxy(
+		VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType solve_velocities_method) :
 	// Start off with a reconstruction layer proxy that does identity rotations.
 	d_current_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
-	d_current_reconstruction_time(0)
+	d_current_reconstruction_time(0),
+	d_current_solve_velocities_method(solve_velocities_method)
 {
 	// Defined in ".cc" file because...
 	// non_null_ptr destructors require complete type of class they're referring to.
@@ -124,22 +130,11 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 					reconstruction_time);
 		}
 
-		// If we have no surfaces to calculate velocities on then just use the plate IDs of the velocity
-		// domain features to calculate velocities (the plate IDs effectively define the surface).
-		if (reconstructed_static_polygons.empty() &&
-			resolved_topological_boundaries.empty() &&
-			resolved_topological_networks.empty())
+		// Update this source code if more 'solve velocities' enumeration values have been added (or removed).
+		BOOST_STATIC_ASSERT(VelocityFieldCalculatorLayerTask::Params::NUM_SOLVE_VELOCITY_METHODS == 2);
+		switch (d_current_solve_velocities_method)
 		{
-			// Calculate the velocity fields using the plate IDs of the velocity domain features.
-			PlateVelocityUtils::solve_velocities_by_plate_id(
-					d_cached_multi_point_velocity_fields.get(),
-					// Used to call when a reconstruction tree is needed for any time/anchor.
-					d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree_creator(),
-					reconstruction_time,
-					d_current_velocity_domain_feature_collections);
-		}
-		else
-		{
+		case VelocityFieldCalculatorLayerTask::Params::SOLVE_VELOCITIES_ON_SURFACES:
 			// Calculate the velocity fields using the surfaces.
 			PlateVelocityUtils::solve_velocities_on_surfaces(
 					d_cached_multi_point_velocity_fields.get(),
@@ -150,6 +145,21 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 					reconstructed_static_polygons,
 					resolved_topological_boundaries,
 					resolved_topological_networks);
+			break;
+
+		case VelocityFieldCalculatorLayerTask::Params::SOLVE_VELOCITIES_BY_PLATE_ID:
+			// Calculate the velocity fields using the plate IDs of the velocity domain features.
+			PlateVelocityUtils::solve_velocities_by_plate_id(
+					d_cached_multi_point_velocity_fields.get(),
+					// Used to call when a reconstruction tree is needed for any time/anchor.
+					d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree_creator(),
+					reconstruction_time,
+					d_current_velocity_domain_feature_collections);
+			break;
+
+		default:
+			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+			break;
 		}
 	}
 
@@ -181,6 +191,25 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::set_current_reconstruction_t
 
 	// Note that we don't reset our caches because we only do that when the client
 	// requests a reconstruction time that differs from the cached reconstruction time.
+}
+
+
+void
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::set_solve_velocities_method(
+		VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType solve_velocities_method)
+{
+	if (d_current_solve_velocities_method == solve_velocities_method)
+	{
+		// The current velocity method hasn't changed so avoid updating any observers unnecessarily.
+		return;
+	}
+	d_current_solve_velocities_method = solve_velocities_method;
+
+	// The velocities are now invalid.
+	reset_cache();
+
+	// Polling observers need to update themselves with respect to us.
+	d_subject_token.invalidate();
 }
 
 
