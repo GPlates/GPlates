@@ -88,6 +88,13 @@ namespace GPlatesQtWidgets
 		handle_solve_velocity_method_combobox_activated(
 				int index);
 
+		void
+		handle_arrow_spacing_value_changed(
+				double arrow_spacing);
+
+		void
+		handle_unlimited_arrow_spacing_clicked();
+
 	private:
 
 		VelocityFieldCalculatorLayerOptionsWidget(
@@ -106,6 +113,7 @@ namespace GPlatesQtWidgets
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_current_visual_layer;
 
 		GPlatesQtWidgets::InformationDialog *d_help_solve_velocities_method_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_arrow_spacing_dialog;
 	};
 }
 

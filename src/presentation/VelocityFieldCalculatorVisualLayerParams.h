@@ -47,6 +47,26 @@ namespace GPlatesPresentation
 			return new VelocityFieldCalculatorVisualLayerParams( layer_task_params );
 		}
 
+		float
+		get_arrow_spacing() const
+		{
+			return d_arrow_spacing;
+		}
+
+		/**
+		 * Set the screen-space spacing of rendered arrows.
+		 *
+		 * A value of zero has the special meaning of unlimited density (ie, no limit on number of arrows).
+		 * NOTE: Small values can cause large memory usage.
+		 */
+		void
+		set_arrow_spacing(
+				float arrow_spacing)
+		{
+			d_arrow_spacing = arrow_spacing;
+			emit_modified();
+		}
+
 		bool
 		show_delaunay_vectors() const
 		{
@@ -97,12 +117,14 @@ namespace GPlatesPresentation
 		VelocityFieldCalculatorVisualLayerParams( 
 				GPlatesAppLogic::LayerTaskParams &layer_task_params ) :
 			VisualLayerParams(layer_task_params),
+			d_arrow_spacing(0.175f),
 			d_show_delaunay_vectors(true),
 			d_show_constrained_vectors(true)
 		{  }
 
 	private:
 
+		float d_arrow_spacing;
 		bool d_show_delaunay_vectors;
 		bool d_show_constrained_vectors;
 	};

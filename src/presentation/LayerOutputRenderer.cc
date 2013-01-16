@@ -65,12 +65,12 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 
 	if (resolved_raster)
 	{
-		d_reconstruction_geometry_renderer.begin_render();
+		d_reconstruction_geometry_renderer.begin_render(d_rendered_geometry_layer);
 
 		// Render the resolved raster.
 		resolved_raster.get()->accept_visitor(d_reconstruction_geometry_renderer);
 
-		d_reconstruction_geometry_renderer.end_render(d_rendered_geometry_layer);
+		d_reconstruction_geometry_renderer.end_render();
 	}
 }
 
@@ -84,12 +84,12 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 			rfg_spatial_partition =
 					reconstruct_layer_proxy->get_reconstructed_feature_geometries_spatial_partition();
 
-	d_reconstruction_geometry_renderer.begin_render();
+	d_reconstruction_geometry_renderer.begin_render(d_rendered_geometry_layer);
 
 	// Render all reconstructed feature geometries in the spatial partition.
 	d_reconstruction_geometry_renderer.render(*rfg_spatial_partition);
 
-	d_reconstruction_geometry_renderer.end_render(d_rendered_geometry_layer);
+	d_reconstruction_geometry_renderer.end_render();
 }
 
 
@@ -111,12 +111,12 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 
 	if (resolved_scalar_field)
 	{
-		d_reconstruction_geometry_renderer.begin_render();
+		d_reconstruction_geometry_renderer.begin_render(d_rendered_geometry_layer);
 
 		// Render the resolved scalar field.
 		resolved_scalar_field.get()->accept_visitor(d_reconstruction_geometry_renderer);
 
-		d_reconstruction_geometry_renderer.end_render(d_rendered_geometry_layer);
+		d_reconstruction_geometry_renderer.end_render();
 	}
 }
 
@@ -129,7 +129,7 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 	std::vector<GPlatesAppLogic::resolved_topological_geometry_non_null_ptr_type> resolved_topological_geometries;
 	topology_geometry_resolver_layer_proxy->get_resolved_topological_geometries(resolved_topological_geometries);
 
-	d_reconstruction_geometry_renderer.begin_render();
+	d_reconstruction_geometry_renderer.begin_render(d_rendered_geometry_layer);
 
 	// Render each resolved topological geometry.
 	BOOST_FOREACH(
@@ -139,7 +139,7 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 		resolved_topological_geometry->accept_visitor(d_reconstruction_geometry_renderer);
 	}
 
-	d_reconstruction_geometry_renderer.end_render(d_rendered_geometry_layer);
+	d_reconstruction_geometry_renderer.end_render();
 }
 
 
@@ -152,7 +152,7 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 
 	topology_network_resolver_layer_proxy->get_resolved_topological_networks(resolved_topological_networks);
 
-	d_reconstruction_geometry_renderer.begin_render();
+	d_reconstruction_geometry_renderer.begin_render(d_rendered_geometry_layer);
 
 	// Render each resolved topological network.
 	BOOST_FOREACH(
@@ -162,7 +162,7 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 		resolved_topological_network->accept_visitor(d_reconstruction_geometry_renderer);
 	}
 
-	d_reconstruction_geometry_renderer.end_render(d_rendered_geometry_layer);
+	d_reconstruction_geometry_renderer.end_render();
 }
 
 
@@ -174,7 +174,7 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 	std::vector<GPlatesAppLogic::multi_point_vector_field_non_null_ptr_type> multi_point_vector_fields;
 	velocity_field_calculator_layer_proxy->get_velocity_multi_point_vector_fields(multi_point_vector_fields);
 
-	d_reconstruction_geometry_renderer.begin_render();
+	d_reconstruction_geometry_renderer.begin_render(d_rendered_geometry_layer);
 
 	// Render each velocity vector field.
 	BOOST_FOREACH(
@@ -184,5 +184,5 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 		multi_point_vector_field->accept_visitor(d_reconstruction_geometry_renderer);
 	}
 
-	d_reconstruction_geometry_renderer.end_render(d_rendered_geometry_layer);
+	d_reconstruction_geometry_renderer.end_render();
 }

@@ -62,6 +62,19 @@ namespace
 			"<li>Any layers currently connected to the <i>velocity surfaces</i> layer input are <b>ignored</b>.<li>"
 			"</ul>"
 			"</body></html>\n");
+
+	const QString HELP_ARROW_SPACING_DIALOG_TITLE = QObject::tr("Spacing between arrows");
+	const QString HELP_ARROW_SPACING_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>This parameter limits the number of velocity arrows that can be displayed on the screen or monitor.</p>"
+			"<p>This is achieved by dividing the globe into equal area regions where the area of each region "
+			"is controlled by this parameter. If there are too many arrows in a region then only the arrow closest to "
+			"the centre of the region is displayed and this rule is repeated for each region. "
+			"In this way only a limited number of arrows are rendered and they are distributed evenly across the globe.</p>"
+			"<p>The density of arrows on the screen is <i>independent</i> of the zoom level. "
+			"That is, the number of arrows per unit screen area remains constant across the zoom levels.</p>"
+			"<p>Select the 'X' button to remove any limit to the number of arrows on the screen.</p>"
+			"</body></html>\n");
 }
 
 
@@ -78,12 +91,20 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::VelocityFieldCalcul
 			new InformationDialog(
 					HELP_SOLVE_VELOCITIES_METHOD_DIALOG_TEXT,
 					HELP_SOLVE_VELOCITIES_METHOD_DIALOG_TITLE,
+					viewport_window)),
+	d_help_arrow_spacing_dialog(
+			new InformationDialog(
+					HELP_ARROW_SPACING_DIALOG_TEXT,
+					HELP_ARROW_SPACING_DIALOG_TITLE,
 					viewport_window))
 {
 	setupUi(this);
 	triangulation_checkbox->setCursor(QCursor(Qt::ArrowCursor));
 	solve_velocities_method_combobox->setCursor(QCursor(Qt::ArrowCursor));
 	push_button_help_solve_velocities_method->setCursor(QCursor(Qt::ArrowCursor));
+	arrow_spacing_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+	push_button_help_arrow_spacing->setCursor(QCursor(Qt::ArrowCursor));
+	push_button_unlimited_arrow_spacing->setCursor(QCursor(Qt::ArrowCursor));
 
 #if 0
 	QObject::connect(
@@ -99,11 +120,20 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::VelocityFieldCalcul
 	QObject::connect(
 			solve_velocities_method_combobox, SIGNAL(activated(int)),
 			this, SLOT(handle_solve_velocity_method_combobox_activated(int)));
-	// Connect the 'solve velocities' help dialog.
+	QObject::connect(
+			arrow_spacing_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_arrow_spacing_value_changed(double)));
+	QObject::connect(
+			push_button_unlimited_arrow_spacing, SIGNAL(clicked()),
+			this, SLOT(handle_unlimited_arrow_spacing_clicked()));
+
+	// Connect the help dialogs.
 	QObject::connect(
 			push_button_help_solve_velocities_method, SIGNAL(clicked()),
 			d_help_solve_velocities_method_dialog, SLOT(show()));
-
+	QObject::connect(
+			push_button_help_arrow_spacing, SIGNAL(clicked()),
+			d_help_arrow_spacing_dialog, SLOT(show()));
 }
 
 
@@ -173,6 +203,17 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::set_data(
 		{
 			//constrained_checkbox->setChecked(visual_layer_params->show_constrained_vectors());
 			triangulation_checkbox->setChecked(visual_layer_params->show_delaunay_vectors());
+
+			// Setting values in a spin box will emit signals if the value changes
+			// which can lead to an infinitely recursive decent.
+			// To avoid this we temporarily disconnect the signals.
+			QObject::disconnect(
+					arrow_spacing_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_arrow_spacing_value_changed(double)));
+			arrow_spacing_spinbox->setValue(visual_layer_params->get_arrow_spacing());
+			QObject::connect(
+					arrow_spacing_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_arrow_spacing_value_changed(double)));
 		}
 	}
 }
@@ -248,4 +289,30 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_solve_veloci
 							index));
 		}
 	}
+}
+
+
+void
+GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_arrow_spacing_value_changed(
+		double arrow_spacing)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::VelocityFieldCalculatorVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::VelocityFieldCalculatorVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			params->set_arrow_spacing(arrow_spacing);
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_unlimited_arrow_spacing_clicked()
+{
+	// Set to the minimum value.
+	// This will also display the special value text of "Not limited".
+	arrow_spacing_spinbox->setValue(0);
 }

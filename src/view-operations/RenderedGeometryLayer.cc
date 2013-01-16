@@ -74,8 +74,17 @@ namespace GPlatesViewOperations
 
 		virtual
 		void
+		set_ratio_zoom_dependent_bin_dimension_to_globe_radius(
+				float ratio_zoom_dependent_bin_dimension_to_globe_radius) = 0;
+
+		virtual
+		void
 		set_viewport_zoom_factor(
 				const double &viewport_zoom_factor) = 0;
+
+		virtual
+		const double &
+		get_viewport_zoom_factor() const = 0;
 
 		virtual
 		bool
@@ -120,16 +129,35 @@ namespace GPlatesViewOperations
 				public RenderedGeometryLayerImpl
 		{
 		public:
-			ZoomIndependentLayerImpl() :
-				d_is_rendered_geom_seq_valid(true)
+			explicit
+			ZoomIndependentLayerImpl(
+					const double &viewport_zoom_factor) :
+				d_is_rendered_geom_seq_valid(true),
+				d_current_viewport_zoom_factor(viewport_zoom_factor)
 			{  }
 
 			virtual
 			void
-			set_viewport_zoom_factor(
-					const double &/*viewport_zoom_factor*/)
+			set_ratio_zoom_dependent_bin_dimension_to_globe_radius(
+					float ratio_zoom_dependent_bin_dimension_to_globe_radius)
 			{
-				// Do nothing - we're not interested in zoom.
+				// Do nothing.
+			}
+
+			virtual
+			void
+			set_viewport_zoom_factor(
+					const double &viewport_zoom_factor)
+			{
+				// Only store it in case client requests it - otherwise we're not interested in zoom.
+				d_current_viewport_zoom_factor = viewport_zoom_factor;
+			}
+
+			virtual
+			const double &
+			get_viewport_zoom_factor() const
+			{
+				return d_current_viewport_zoom_factor;
 			}
 
 			virtual
@@ -278,6 +306,7 @@ namespace GPlatesViewOperations
 			mutable rendered_geom_seq_type d_rendered_geom_seq;
 			boost::optional<rendered_geometries_spatial_partition_type::non_null_ptr_type> d_spatial_partition;
 			mutable bool d_is_rendered_geom_seq_valid;
+			double d_current_viewport_zoom_factor;
 
 
 			void
@@ -372,7 +401,7 @@ namespace GPlatesViewOperations
 			ZoomDependentLayerImpl(
 					float ratio_zoom_dependent_bin_dimension_to_globe_radius,
 					const double &viewport_zoom_factor) :
-				d_ratio_zoom_dependent_bin_dimension_to_globe_radius(
+				d_current_ratio_zoom_dependent_bin_dimension_to_globe_radius(
 						ratio_zoom_dependent_bin_dimension_to_globe_radius),
 				d_current_viewport_zoom_factor(viewport_zoom_factor),
 				d_zoom_dependent_seq(
@@ -382,26 +411,46 @@ namespace GPlatesViewOperations
 			{  }
 
 
+			virtual
+			void
+			set_ratio_zoom_dependent_bin_dimension_to_globe_radius(
+					float ratio_zoom_dependent_bin_dimension_to_globe_radius)
+			{
+				// If the ratio hasn't changed then nothing to do.
+				if (GPlatesMaths::are_almost_exactly_equal(
+					ratio_zoom_dependent_bin_dimension_to_globe_radius,
+					d_current_ratio_zoom_dependent_bin_dimension_to_globe_radius))
+				{
+					return;
+				}
+
+				d_current_ratio_zoom_dependent_bin_dimension_to_globe_radius =
+						ratio_zoom_dependent_bin_dimension_to_globe_radius;
+				reset_sample_spacing();
+			}
+
+
+			virtual
 			void
 			set_viewport_zoom_factor(
 					const double &viewport_zoom_factor)
 			{
 				// If zoom factor hasn't changed then nothing to do.
-				// We dont' need exact bit-for-bit comparisons here so use GPlatesMaths::real_t.
+				// We don't need exact bit-for-bit comparisons here, so we use GPlatesMaths::real_t.
 				if (viewport_zoom_factor == d_current_viewport_zoom_factor)
 				{
 					return;
 				}
 
 				d_current_viewport_zoom_factor = viewport_zoom_factor;
+				reset_sample_spacing();
+			}
 
-				// Modify the lat/lon area sampling with a new spacing
-				// that reflects the new zoom factor.
-				const double sample_bin_angle_spacing_degrees =
-						get_zoom_dependent_sample_spacing(
-								d_ratio_zoom_dependent_bin_dimension_to_globe_radius,
-								d_current_viewport_zoom_factor.dval());
-				d_zoom_dependent_seq.reset_sample_spacing(sample_bin_angle_spacing_degrees);
+			virtual
+			const double &
+			get_viewport_zoom_factor() const
+			{
+				return d_current_viewport_zoom_factor.dval();
 			}
 
 
@@ -512,7 +561,7 @@ namespace GPlatesViewOperations
 			typedef GPlatesUtils::LatLonAreaSampling<RenderedGeometry> zoom_dependent_seq_type;
 
 
-			const float d_ratio_zoom_dependent_bin_dimension_to_globe_radius;
+			float d_current_ratio_zoom_dependent_bin_dimension_to_globe_radius;
 			GPlatesMaths::real_t d_current_viewport_zoom_factor;
 
 			zoom_independent_seq_type d_zoom_independent_seq;
@@ -535,16 +584,30 @@ namespace GPlatesViewOperations
 
 				return sample_spacing_degrees;
 			}
+
+			void
+			reset_sample_spacing()
+			{
+				// Modify the lat/lon area sampling with a new spacing that reflects the current
+				// zoom factor and bin dimension to globe radius ratio.
+				const double sample_bin_angle_spacing_degrees =
+						get_zoom_dependent_sample_spacing(
+								d_current_ratio_zoom_dependent_bin_dimension_to_globe_radius,
+								d_current_viewport_zoom_factor.dval());
+
+				d_zoom_dependent_seq.reset_sample_spacing(sample_bin_angle_spacing_degrees);
+			}
 		};
 	}
 }
 
 
 GPlatesViewOperations::RenderedGeometryLayer::RenderedGeometryLayer(
+		const double &viewport_zoom_factor,
 		user_data_type user_data) :
-d_user_data(user_data),
-d_impl(new ZoomIndependentLayerImpl()),
-d_is_active(false)
+	d_user_data(user_data),
+	d_impl(new ZoomIndependentLayerImpl(viewport_zoom_factor)),
+	d_is_active(false)
 {
 }
 
@@ -553,10 +616,10 @@ GPlatesViewOperations::RenderedGeometryLayer::RenderedGeometryLayer(
 		float ratio_zoom_dependent_bin_dimension_to_globe_radius,
 		const double &viewport_zoom_factor,
 		user_data_type user_data) :
-d_user_data(user_data),
-d_impl(new ZoomDependentLayerImpl(
-		ratio_zoom_dependent_bin_dimension_to_globe_radius, viewport_zoom_factor)),
-d_is_active(false)
+	d_user_data(user_data),
+	d_impl(new ZoomDependentLayerImpl(
+			ratio_zoom_dependent_bin_dimension_to_globe_radius, viewport_zoom_factor)),
+	d_is_active(false)
 {
 }
 
@@ -565,6 +628,73 @@ GPlatesViewOperations::RenderedGeometryLayer::~RenderedGeometryLayer()
 {
 	// boost::intrusive_ptr destructor requires complete type.
 }
+
+
+void
+GPlatesViewOperations::RenderedGeometryLayer::set_ratio_zoom_dependent_bin_dimension_to_globe_radius(
+		float ratio_zoom_dependent_bin_dimension_to_globe_radius)
+{
+	if (ratio_zoom_dependent_bin_dimension_to_globe_radius == 0)
+	{
+		// A value of zero means zoom *independent*.
+		// However if we have a zoom *dependent* layer then we need to convert it.
+		if (dynamic_cast<ZoomDependentLayerImpl *>(d_impl.get()))
+		{
+			// Create a new zoom *independent* implementation.
+			rendered_geometry_layer_impl_ptr_type new_impl(
+					new ZoomIndependentLayerImpl(d_impl->get_viewport_zoom_factor()));
+
+			// Iterate over the old impl's rendered geometries and add them to the new impl.
+			const unsigned int num_rendered_geoms = d_impl->get_num_rendered_geometries();
+			for (rendered_geometry_index_type rendered_geom_index = 0;
+				rendered_geom_index < num_rendered_geoms;
+				++rendered_geom_index)
+			{
+				const RenderedGeometry &rendered_geom = d_impl->get_rendered_geometry(rendered_geom_index);
+				new_impl->add_rendered_geometry(rendered_geom);
+			}
+
+			// Replace the old impl with the new impl.
+			d_impl = new_impl;
+
+			return;
+		}
+	}
+	else // ratio_zoom_dependent_bin_dimension_to_globe_radius > 0 ...
+	{
+		// A non-zero value means zoom *dependent*.
+		// However if we have a zoom *independent* layer then we need to convert it.
+		if (dynamic_cast<ZoomIndependentLayerImpl *>(d_impl.get()))
+		{
+			// Create a new zoom *dependent* implementation.
+			rendered_geometry_layer_impl_ptr_type new_impl(
+					new ZoomDependentLayerImpl(
+							ratio_zoom_dependent_bin_dimension_to_globe_radius,
+							d_impl->get_viewport_zoom_factor()));
+
+			// Iterate over the old impl's rendered geometries and add them to the new impl.
+			// NOTE: This can remove the benefits of the spatial partition inside the
+			// zoom *independent* spatial partition but not much can be done about that.
+			const unsigned int num_rendered_geoms = d_impl->get_num_rendered_geometries();
+			for (rendered_geometry_index_type rendered_geom_index = 0;
+				rendered_geom_index < num_rendered_geoms;
+				++rendered_geom_index)
+			{
+				const RenderedGeometry &rendered_geom = d_impl->get_rendered_geometry(rendered_geom_index);
+				new_impl->add_rendered_geometry(rendered_geom);
+			}
+
+			// Replace the old impl with the new impl.
+			d_impl = new_impl;
+
+			return;
+		}
+	}
+
+	// Otherwise the type of implementation has not changed so just delegate to it.
+	d_impl->set_ratio_zoom_dependent_bin_dimension_to_globe_radius(ratio_zoom_dependent_bin_dimension_to_globe_radius);
+}
+
 
 void
 GPlatesViewOperations::RenderedGeometryLayer::set_viewport_zoom_factor(

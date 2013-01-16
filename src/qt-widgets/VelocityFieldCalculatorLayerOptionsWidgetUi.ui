@@ -17,13 +17,6 @@
    <item>
     <layout class="QVBoxLayout" name="verticalLayout_2">
      <item>
-      <widget class="QCheckBox" name="triangulation_checkbox">
-       <property name="text">
-        <string>Show Velocity interpolated from Delaunay Triangulation (in black)</string>
-       </property>
-      </widget>
-     </item>
-     <item>
       <layout class="QHBoxLayout" name="horizontalLayout_2">
        <property name="spacing">
         <number>0</number>
@@ -60,6 +53,90 @@
         </widget>
        </item>
       </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_3">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QLabel" name="arrow_spacing_label">
+         <property name="text">
+          <string>Arrow spacing:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QDoubleSpinBox" name="arrow_spacing_spinbox">
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+         </property>
+         <property name="specialValueText">
+          <string>Not limited</string>
+         </property>
+         <property name="decimals">
+          <number>3</number>
+         </property>
+         <property name="maximum">
+          <double>1.000000000000000</double>
+         </property>
+         <property name="singleStep">
+          <double>0.010000000000000</double>
+         </property>
+         <property name="value">
+          <double>0.000000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="push_button_unlimited_arrow_spacing">
+         <property name="toolTip">
+          <string>Not limited</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../qt-resources/qt_widgets.qrc">
+           <normaloff>:/gnome_window_close_22.png</normaloff>:/gnome_window_close_22.png</iconset>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="push_button_help_arrow_spacing">
+         <property name="toolTip">
+          <string>What does this mean?</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../qt-resources/qt_widgets.qrc">
+           <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="triangulation_checkbox">
+       <property name="text">
+        <string>Show Velocity interpolated from Delaunay Triangulation (in black)</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>

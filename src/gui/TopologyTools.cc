@@ -1849,11 +1849,11 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 			boost::none,
 			boost::none);
 
-	reconstruction_geometry_renderer.begin_render();
+	reconstruction_geometry_renderer.begin_render(*d_focused_feature_layer_ptr);
 
 	focused_recon_geom->accept_visitor(reconstruction_geometry_renderer);
 
-	reconstruction_geometry_renderer.end_render(*d_focused_feature_layer_ptr);
+	reconstruction_geometry_renderer.end_render();
 
 	// Get the start and end points of the focused feature's geometry.
 	// Since the geometry is in focus but has not been added to the topology

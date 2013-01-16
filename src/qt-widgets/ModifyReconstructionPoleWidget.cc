@@ -851,7 +851,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 			boost::none,
 			boost::none);
 
-	initial_geometry_renderer.begin_render();
+	initial_geometry_renderer.begin_render(*d_initial_geom_layer_ptr);
 
 	reconstructed_feature_geometry_collection_type::const_iterator rfg_iter =
 			d_reconstructed_feature_geometries.begin();
@@ -863,7 +863,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 		(*rfg_iter)->accept_visitor(initial_geometry_renderer);
 	}
 
-	initial_geometry_renderer.end_render(*d_initial_geom_layer_ptr);
+	initial_geometry_renderer.end_render();
 }
 
 
@@ -905,7 +905,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 			d_accum_orientation->rotation(),
 			boost::none);
 
-	dragged_geometry_renderer.begin_render();
+	dragged_geometry_renderer.begin_render(*d_dragged_geom_layer_ptr);
 
 	reconstructed_feature_geometry_collection_type::const_iterator rfg_iter =
 			d_reconstructed_feature_geometries.begin();
@@ -917,7 +917,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 		(*rfg_iter)->accept_visitor(dragged_geometry_renderer);
 	}
 
-	dragged_geometry_renderer.end_render(*d_dragged_geom_layer_ptr);
+	dragged_geometry_renderer.end_render();
 }
 
 

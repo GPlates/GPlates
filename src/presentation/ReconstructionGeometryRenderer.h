@@ -82,6 +82,7 @@ namespace GPlatesPresentation
 					float reconstruction_point_size_hint_ =
 							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_POINT_SIZE_HINT,
 					bool fill_polygons_ = false,
+					float ratio_zoom_dependent_bin_dimension_to_globe_radius_ = 0,
 					// FIXME: Move this hard-coded value somewhere sensible...
 					float velocity_ratio_unit_vector_direction_to_globe_radius_ = 0.05f,
 
@@ -96,6 +97,14 @@ namespace GPlatesPresentation
 			float reconstruction_line_width_hint;
 			float reconstruction_point_size_hint;
 			bool fill_polygons;
+
+			/**
+			 * Used to control density of points/arrows in rendered geometry layer
+			 *
+			 * A value of zero means there is no limit on the density (all points/arrows are rendered).
+			 */
+			float ratio_zoom_dependent_bin_dimension_to_globe_radius;
+
 			float velocity_ratio_unit_vector_direction_to_globe_radius;
 
 			// Scalar field render parameters.
@@ -204,8 +213,11 @@ namespace GPlatesPresentation
 				const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map = boost::none,
 				const GPlatesGui::StyleAdapter* sa = NULL);
 
+
 		/**
-		 * Must be called before any rendering including visiting any reconstruction geometries.
+		 * Begins rendering into the specified @a rendered_geometry_layer.
+		 *
+		 * This must be called before any rendering including visiting any reconstruction geometries.
 		 *
 		 * Internally creates a rendered geometries spatial partition that all rendered
 		 * geometries are added to.
@@ -220,18 +232,19 @@ namespace GPlatesPresentation
 		 * @throws PreconditionViolationError if does not match a @a end_render call.
 		 */
 		void
-		begin_render();
+		begin_render(
+				GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer);
 
 
 		/**
 		 * Renders all created rendered geometries since the last call to @a begin_render
-		 * into the rendered geometry layer @a rendered_geometry_layer.
+		 * into the rendered geometry layer specified in @a begin_render.
 		 *
 		 * Rendering, including visiting any reconstruction geometries, should be done
 		 * between a @a begin_render / @a end_render pair.
 		 *
 		 * Internally transfers the rendered geometries spatial partition to the
-		 * specified rendered geometries layer.
+		 * rendered geometries layer specified in @a begin_render.
 		 *
 		 * NOTE: Multiple @a begin_render / @a end_render pairs to the *same*
 		 * rendered geometry layer will accumulate rendered geometries as expected.
@@ -241,8 +254,7 @@ namespace GPlatesPresentation
 		 * @throws PreconditionViolationError if does not match a @a begin_render call.
 		 */
 		void
-		end_render(
-				GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer);
+		end_render();
 
 
 		/**
@@ -346,6 +358,11 @@ namespace GPlatesPresentation
 		boost::optional<GPlatesMaths::Rotation> d_reconstruction_adjustment;
 		boost::optional<GPlatesGui::symbol_map_type> d_feature_type_symbol_map;
 		const GPlatesGui::StyleAdapter* d_style_adapter;
+
+		/**
+		 * The rendered geometry layer for all rendering between @a begin_render and @a end_render.
+		 */
+		boost::optional<GPlatesViewOperations::RenderedGeometryLayer &> d_rendered_geometry_layer;
 
 		/**
 		 * All rendered geometries are added to this spatial partition.

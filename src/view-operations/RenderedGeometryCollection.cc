@@ -108,7 +108,8 @@ GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryCollection() 
 		MainLayerType main_rendered_layer_type =
 			static_cast<MainLayerType>(main_layer_index);
 
-		d_main_layer_seq.push_back(MainLayer(main_rendered_layer_type));
+		d_main_layer_seq.push_back(
+				MainLayer(main_rendered_layer_type, d_current_viewport_zoom_factor));
 
 		// Get this main layer's RenderedGeometryLayer object.
 		RenderedGeometryLayer *rendered_geom_layer =
@@ -181,7 +182,9 @@ GPlatesViewOperations::RenderedGeometryCollection::create_child_rendered_layer(
 {
 	// Create rendered geometry layer.
 	const child_layer_index_type child_layer_index =
-		d_rendered_geometry_layer_manager.create_rendered_geometry_layer(parent_layer);
+			d_rendered_geometry_layer_manager.create_rendered_geometry_layer(
+					parent_layer,
+					d_current_viewport_zoom_factor);
 
 	connect_child_rendered_layer_to_parent(child_layer_index, parent_layer);
 
@@ -638,7 +641,8 @@ GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager:
 
 GPlatesViewOperations::RenderedGeometryCollection::child_layer_index_type
 GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager::create_rendered_geometry_layer(
-		MainLayerType main_layer)
+		MainLayerType main_layer,
+		const double &current_viewport_zoom_factor)
 {
 	// TODO: make this method exception-safe
 
@@ -655,7 +659,7 @@ GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager:
 			GPLATES_ASSERTION_SOURCE);
 
 	// Create a new rendered geometry layer.
-	d_layer_storage[layer_index] = new RenderedGeometryLayer(user_data);
+	d_layer_storage[layer_index] = new RenderedGeometryLayer(current_viewport_zoom_factor, user_data);
 
 	return layer_index;
 }
@@ -763,10 +767,10 @@ GPlatesViewOperations::RenderedGeometryCollection::RenderedGeometryLayerManager:
 
 
 GPlatesViewOperations::RenderedGeometryCollection::MainLayer::MainLayer(
-		MainLayerType main_layer_type)
+		MainLayerType main_layer_type,
+		const double &viewport_zoom_factor)
 {
 	RenderedGeometryLayer::user_data_type user_data(main_layer_type);
 
-	d_rendered_geom_layer.reset(new RenderedGeometryLayer(user_data));
+	d_rendered_geom_layer.reset(new RenderedGeometryLayer(viewport_zoom_factor, user_data));
 }
-

@@ -168,6 +168,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 		float reconstruction_line_width_hint_,
 		float reconstruction_point_size_hint_,
 		bool fill_polygons_,
+		float ratio_zoom_dependent_bin_dimension_to_globe_radius_,
 		float velocity_ratio_unit_vector_direction_to_globe_radius_,
 		bool show_topological_network_delaunay_triangulation_,
 		bool show_topological_network_constrained_triangulation_,
@@ -178,6 +179,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 	reconstruction_line_width_hint(reconstruction_line_width_hint_),
 	reconstruction_point_size_hint(reconstruction_point_size_hint_),
 	fill_polygons(fill_polygons_),
+	ratio_zoom_dependent_bin_dimension_to_globe_radius(ratio_zoom_dependent_bin_dimension_to_globe_radius_),
 	velocity_ratio_unit_vector_direction_to_globe_radius(
 			velocity_ratio_unit_vector_direction_to_globe_radius_),
 	raster_colour_palette(GPlatesGui::RasterColourPalette::create()),
@@ -261,6 +263,7 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_velocity_field_calculator_visual_layer_params(
 		const VelocityFieldCalculatorVisualLayerParams &params)
 {
+	d_render_params.ratio_zoom_dependent_bin_dimension_to_globe_radius = params.get_arrow_spacing();
 	d_render_params.show_velocity_field_delaunay_vectors = params.show_delaunay_vectors();
 	d_render_params.show_velocity_field_constrained_vectors = params.show_constrained_vectors();
 }
@@ -282,11 +285,20 @@ GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructionGeometryRende
 
 
 void
-GPlatesPresentation::ReconstructionGeometryRenderer::begin_render()
+GPlatesPresentation::ReconstructionGeometryRenderer::begin_render(
+		GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			!d_rendered_geometries_spatial_partition,
+			!d_rendered_geometry_layer && !d_rendered_geometries_spatial_partition,
 			GPLATES_ASSERTION_SOURCE);
+
+	// We've started targeting a rendered geometry layer.
+	d_rendered_geometry_layer = rendered_geometry_layer;
+
+	// Set up any limits on the screen-space density of geometries in the rendered geometry layer.
+	// A value of zero will set no limits.
+	d_rendered_geometry_layer->set_ratio_zoom_dependent_bin_dimension_to_globe_radius(
+			d_render_params.ratio_zoom_dependent_bin_dimension_to_globe_radius);
 
 	// Create a new rendered geometries spatial partition.
 	d_rendered_geometries_spatial_partition =
@@ -295,11 +307,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::begin_render()
 
 
 void
-GPlatesPresentation::ReconstructionGeometryRenderer::end_render(
-		GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer)
+GPlatesPresentation::ReconstructionGeometryRenderer::end_render()
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer && d_rendered_geometries_spatial_partition,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Now transfer ownership of the rendered geometries spatial partition to
@@ -308,10 +319,13 @@ GPlatesPresentation::ReconstructionGeometryRenderer::end_render(
 	// NOTE: It's important to add rendered geometries as a spatial partition because it gives
 	// spatial locality to each geometry which makes some types of rendering faster such as
 	// filled polygons (which are actually rendered as multi-resolution cube rasters).
-	rendered_geometry_layer.add_rendered_geometries(d_rendered_geometries_spatial_partition.get());
+	d_rendered_geometry_layer->add_rendered_geometries(d_rendered_geometries_spatial_partition.get());
 
 	// Release our shared reference to the spatial partition.
 	d_rendered_geometries_spatial_partition = boost::none;
+
+	// We're not targeting a rendered geometry layer anymore.
+	d_rendered_geometry_layer = boost::none;
 }
 
 

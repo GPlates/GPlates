@@ -546,7 +546,8 @@ namespace GPlatesViewOperations
 			 */
 			child_layer_index_type
 			create_rendered_geometry_layer(
-					MainLayerType main_layer);
+					MainLayerType main_layer,
+					const double &current_viewport_zoom_factor);
 
 			/**
 			 * Same as other overloaded @a create_rendered_geometry_layer except
@@ -587,7 +588,8 @@ namespace GPlatesViewOperations
 		struct MainLayer
 		{
 			MainLayer(
-					MainLayerType main_layer_type);
+					MainLayerType main_layer_type,
+					const double &viewport_zoom_factor);
 
 			typedef boost::shared_ptr<RenderedGeometryLayer> rendered_geom_layer_ptr_type;
 

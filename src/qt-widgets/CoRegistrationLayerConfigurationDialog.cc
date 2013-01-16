@@ -1281,9 +1281,9 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::update_cfg_table()
 
 		set_configuration_table_on_layer(cfg_table);
 	}
+
 	// Force a reconstruction so that the co-registration layer uses the updated configuration.
-        d_application_state.reconstruct();
-	return;
+	d_application_state.reconstruct();
 }
 
 

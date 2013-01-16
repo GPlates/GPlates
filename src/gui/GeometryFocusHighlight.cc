@@ -115,10 +115,10 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry(
 				boost::none,
 				symbol_map);
 
-		highlighted_geometry_renderer.begin_render();
+		highlighted_geometry_renderer.begin_render(render_geom_layer);
 
 		reconstruction_geometry->accept_visitor(highlighted_geometry_renderer);
 
-		highlighted_geometry_renderer.end_render(render_geom_layer);
+		highlighted_geometry_renderer.end_render();
 	}
 }

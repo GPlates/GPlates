@@ -130,6 +130,7 @@ namespace GPlatesViewOperations
 		 *        only be used by @a RenderedGeometryCollection.
 		 */
 		RenderedGeometryLayer(
+				const double &viewport_zoom_factor,
 				user_data_type user_data);
 
 
@@ -160,6 +161,23 @@ namespace GPlatesViewOperations
 
 
 		~RenderedGeometryLayer();
+
+
+		/**
+		 * If set to a non-zero value then constructs a zoom-dependent rendered geometry layer
+		 * where the globe is divided into roughly equal area latitude/longitude bins that the
+		 * rendered geometries are added to (at most one geometry is rendered per bin).
+		 *
+		 * If set to zero then there is no limit to the number of geometries rendered per bin region.
+		 *
+		 * Note that changing from a zero to non-zero value (or vice versa) will change the
+		 * internal rendered layer implementation.
+		 *
+		 * If the specified value equals the internal value then nothing changes.
+		 */
+		void
+		set_ratio_zoom_dependent_bin_dimension_to_globe_radius(
+				float ratio_zoom_dependent_bin_dimension_to_globe_radius = 0);
 
 
 		/**
