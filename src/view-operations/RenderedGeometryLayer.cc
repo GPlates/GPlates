@@ -634,7 +634,7 @@ void
 GPlatesViewOperations::RenderedGeometryLayer::set_ratio_zoom_dependent_bin_dimension_to_globe_radius(
 		float ratio_zoom_dependent_bin_dimension_to_globe_radius)
 {
-	if (ratio_zoom_dependent_bin_dimension_to_globe_radius == 0)
+	if (GPlatesMaths::are_almost_exactly_equal(ratio_zoom_dependent_bin_dimension_to_globe_radius, 0.0f))
 	{
 		// A value of zero means zoom *independent*.
 		// However if we have a zoom *dependent* layer then we need to convert it.
