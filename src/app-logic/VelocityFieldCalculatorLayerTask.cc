@@ -317,4 +317,5 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::set_solve_velocities_
 	d_solve_velocities_method = solve_velocities_method;
 
 	d_set_solve_velocities_method_called = true;
+	emit_modified();
 }

@@ -128,8 +128,9 @@ namespace GPlatesAppLogic
 		/**
 		 * Constructor.
 		 */
+		explicit
 		ReconstructGraph(
-				const LayerTaskRegistry &layer_task_registry);
+				ApplicationState &application_state);
 
 
 		/**
@@ -556,6 +557,11 @@ namespace GPlatesAppLogic
 		//! Typedef for a stack of reconstruction tree layers.
 		typedef std::vector<Layer> default_reconstruction_tree_layer_stack_type;
 
+
+		/**
+		 * Used to reconstruct when a modification is made to a layer's task parameters.
+		 */
+		ApplicationState &d_application_state;
 
 		/**
 		 * Used to create layer task when auto-creating layers (when adding a file).

@@ -35,8 +35,10 @@
 #include "Serialization.h"
 
 
+#include "ApplicationState.h"
 #include "LayerProxyUtils.h"
 #include "LayerTask.h"
+#include "LayerTaskParams.h"
 #include "LayerTaskRegistry.h"
 #include "ReconstructGraph.h"
 #include "ReconstructGraphImpl.h"
@@ -139,8 +141,9 @@ namespace
 
 
 GPlatesAppLogic::ReconstructGraph::ReconstructGraph(
-		const LayerTaskRegistry &layer_task_registry) :
-	d_layer_task_registry(layer_task_registry),
+		ApplicationState &application_state) :
+	d_application_state(application_state),
+	d_layer_task_registry(application_state.get_layer_task_registry()),
 	d_identity_rotation_reconstruction_layer_proxy(
 			ReconstructionLayerProxy::create(1/*max_num_reconstruction_trees_in_cache*/))
 {
@@ -285,6 +288,11 @@ GPlatesAppLogic::ReconstructGraph::add_layer(
 
 	// Let clients know of the new layer.
 	emit layer_added(*this, layer);
+
+	// Ensure a full reconstruction each time the layer task parameters of this layer are modified.
+	QObject::connect(
+			&layer_task->get_layer_task_params(), SIGNAL(modified()),
+			&d_application_state, SLOT(reconstruct()));
 
 	// Return the weak reference.
 	return layer;

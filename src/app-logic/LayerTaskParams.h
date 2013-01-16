@@ -27,6 +27,8 @@
 #ifndef GPLATES_APP_LOGIC_LAYERTASKPARAMS_H
 #define GPLATES_APP_LOGIC_LAYERTASKPARAMS_H
 
+#include <QObject>
+
 
 namespace GPlatesAppLogic
 {
@@ -39,13 +41,35 @@ namespace GPlatesAppLogic
 	 * additional parameters, it can, instead, store an instance of a subclass
 	 * of LayerTaskParams.
 	 */
-	class LayerTaskParams
+	class LayerTaskParams :
+			public QObject
 	{
+		Q_OBJECT
+
 	public:
 
 		virtual
 		~LayerTaskParams()
 		{  }
+
+	signals:
+
+		/**
+		 * Emitted when any aspect of the parameters has been modified.
+		 */
+		void
+		modified();
+
+	protected:
+
+		/**
+		 * Subclasses should call this method to cause the @a modified() signal to be emitted.
+		 */
+		void
+		emit_modified()
+		{
+			emit modified();
+		}
 	};
 }
 

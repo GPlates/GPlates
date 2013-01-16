@@ -94,7 +94,7 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_reconstruct_method_registry(new ReconstructMethodRegistry()),
 	d_layer_task_registry(new LayerTaskRegistry()),
 	d_log_model(new LogModel(NULL)),
-	d_reconstruct_graph(new ReconstructGraph(*d_layer_task_registry)),
+	d_reconstruct_graph(new ReconstructGraph(*this)),
 	d_update_default_reconstruction_tree_layer(true),
 	d_reconstruction_time(0.0),
 	d_anchored_plate_id(0),

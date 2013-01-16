@@ -237,5 +237,10 @@ GPlatesAppLogic::ReconstructLayerTask::Params::get_reconstruct_params()
 {
 	d_non_const_get_reconstruct_params_called = true;
 
+	// FIXME: Should probably call 'emit_modified()' but first need to change 'get_reconstruct_params()'
+	// to 'set_reconstruct_params()' so that a signal is emitted *after* modifications have been made.
+	// Currently this is not needed because 'SetVGPVisibilityDialog::handle_apply()'
+	// explicitly does a reconstruction which ensures an update after all modifications are made.
+
 	return d_reconstruct_params;
 }

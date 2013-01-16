@@ -94,17 +94,14 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::VelocityFieldCalcul
 #endif
 
 	QObject::connect(
-			triangulation_checkbox,
-			SIGNAL(clicked()),
-			this,
-			SLOT(handle_triangulation_clicked()));
+			triangulation_checkbox, SIGNAL(clicked()),
+			this, SLOT(handle_triangulation_clicked()));
 	QObject::connect(
-			solve_velocities_method_combobox,
-			SIGNAL(activated(int)),
-			this,
-			SLOT(handle_solve_velocity_method_combobox_activated(int)));
+			solve_velocities_method_combobox, SIGNAL(activated(int)),
+			this, SLOT(handle_solve_velocity_method_combobox_activated(int)));
 	// Connect the 'solve velocities' help dialog.
-	QObject::connect(push_button_help_solve_velocities_method, SIGNAL(clicked()),
+	QObject::connect(
+			push_button_help_solve_velocities_method, SIGNAL(clicked()),
 			d_help_solve_velocities_method_dialog, SLOT(show()));
 
 }
@@ -249,11 +246,6 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_solve_veloci
 			layer_task_params->set_solve_velocities_method(
 					static_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType>(
 							index));
-
-			// Force a reconstruction so that the velocity layer uses the updated configuration.
-			// This is only needed for modifications to the *app-logic* params (not the *visual* params).
-			// TODO: Fix thi
-			d_application_state.reconstruct();
 		}
 	}
 }

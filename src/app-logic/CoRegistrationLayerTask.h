@@ -67,6 +67,16 @@ namespace GPlatesAppLogic
 
 				// Let the owning @a CoRegistrationLayerTask object know the configuration has changed.
 				d_set_cfg_table_called = true;
+
+				// FIXME: Should probably call 'emit_modified()'.
+				// Currently this seems to update properly because
+				// 'CoRegistrationLayerConfigurationDialog::update_cfg_table()' and
+				// 'CoRegistrationLayerConfigurationDialog::update()', which are the two places
+				// that call this method 'Params::set_cfg_table(), also explicitly do a reconstruction
+				// which ensures an update after this modification is made.
+				// TODO: Remove those calls to 'ApplicationState::reconstruct()' and call
+				// 'emit_modified()' here instead. However, 'CoRegistrationLayerConfigurationDialog::update_cfg_table()'
+				// does a reconstruction even if the cfg table has not changed, so that needs to be handled with care.
 			}
 
 		private:

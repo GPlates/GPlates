@@ -350,6 +350,7 @@ GPlatesAppLogic::RasterLayerTask::Params::set_band_name(
 	d_band_name = band_name;
 
 	d_set_band_name_called = true;
+	emit_modified();
 }
 
 
