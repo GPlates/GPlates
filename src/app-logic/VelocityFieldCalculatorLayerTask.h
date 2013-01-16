@@ -101,11 +101,7 @@ namespace GPlatesAppLogic
 
 		static
 		boost::shared_ptr<VelocityFieldCalculatorLayerTask>
-		create_layer_task()
-		{
-			return boost::shared_ptr<VelocityFieldCalculatorLayerTask>(
-					new VelocityFieldCalculatorLayerTask());
-		}
+		create_layer_task();
 
 
 		virtual

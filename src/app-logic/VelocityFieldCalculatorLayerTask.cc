@@ -55,6 +55,14 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::can_process_feature_collectio
 }
 
 
+boost::shared_ptr<GPlatesAppLogic::VelocityFieldCalculatorLayerTask>
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::create_layer_task()
+{
+	return boost::shared_ptr<VelocityFieldCalculatorLayerTask>(
+			new VelocityFieldCalculatorLayerTask());
+}
+
+
 std::vector<GPlatesAppLogic::LayerInputChannelType>
 GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_input_channel_types() const
 {
