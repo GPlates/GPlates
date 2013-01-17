@@ -83,8 +83,10 @@ namespace GPlatesPresentation
 							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_POINT_SIZE_HINT,
 					bool fill_polygons_ = false,
 					float ratio_zoom_dependent_bin_dimension_to_globe_radius_ = 0,
-					// FIXME: Move this hard-coded value somewhere sensible...
-					float velocity_ratio_unit_vector_direction_to_globe_radius_ = 0.05f,
+					float ratio_arrow_unit_vector_direction_to_globe_radius_ =
+							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_RATIO_ARROW_UNIT_VECTOR_DIRECTION_TO_GLOBE_RADIUS,
+					float ratio_arrowhead_size_to_globe_radius_ =
+							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS,
 
 					bool show_topological_network_mesh_triangulation_ 			= true,
 					bool show_topological_network_constrained_triangulation_ 	= false,
@@ -105,7 +107,9 @@ namespace GPlatesPresentation
 			 */
 			float ratio_zoom_dependent_bin_dimension_to_globe_radius;
 
-			float velocity_ratio_unit_vector_direction_to_globe_radius;
+			// Arrow body and head scaling.
+			float ratio_arrow_unit_vector_direction_to_globe_radius;
+			float ratio_arrowhead_size_to_globe_radius;
 
 			// Scalar field render parameters.
 			GPlatesViewOperations::ScalarField3DRenderParameters scalar_field_render_parameters;

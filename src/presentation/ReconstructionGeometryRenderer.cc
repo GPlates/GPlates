@@ -169,7 +169,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 		float reconstruction_point_size_hint_,
 		bool fill_polygons_,
 		float ratio_zoom_dependent_bin_dimension_to_globe_radius_,
-		float velocity_ratio_unit_vector_direction_to_globe_radius_,
+		float ratio_arrow_unit_vector_direction_to_globe_radius_,
+		float ratio_arrowhead_size_to_globe_radius_,
 		bool show_topological_network_delaunay_triangulation_,
 		bool show_topological_network_constrained_triangulation_,
 		bool show_topological_network_mesh_triangulation_,
@@ -180,8 +181,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 	reconstruction_point_size_hint(reconstruction_point_size_hint_),
 	fill_polygons(fill_polygons_),
 	ratio_zoom_dependent_bin_dimension_to_globe_radius(ratio_zoom_dependent_bin_dimension_to_globe_radius_),
-	velocity_ratio_unit_vector_direction_to_globe_radius(
-			velocity_ratio_unit_vector_direction_to_globe_radius_),
+	ratio_arrow_unit_vector_direction_to_globe_radius(ratio_arrow_unit_vector_direction_to_globe_radius_),
+	ratio_arrowhead_size_to_globe_radius(ratio_arrowhead_size_to_globe_radius_),
 	raster_colour_palette(GPlatesGui::RasterColourPalette::create()),
 	vgp_draw_circular_error(true),
 	show_topological_network_mesh_triangulation( show_topological_network_mesh_triangulation_),
@@ -264,6 +265,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 		const VelocityFieldCalculatorVisualLayerParams &params)
 {
 	d_render_params.ratio_zoom_dependent_bin_dimension_to_globe_radius = params.get_arrow_spacing();
+	d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius = params.get_arrow_body_scale();
+	d_render_params.ratio_arrowhead_size_to_globe_radius = params.get_arrowhead_scale();
 	d_render_params.show_velocity_field_delaunay_vectors = params.show_delaunay_vectors();
 	d_render_params.show_velocity_field_constrained_vectors = params.show_constrained_vectors();
 }
@@ -359,8 +362,9 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
 							point,
 							velocity.d_vector,
-							d_render_params.velocity_ratio_unit_vector_direction_to_globe_radius,
-							GPlatesGui::Colour::get_black());
+							d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
+							GPlatesGui::Colour::get_black(),
+							d_render_params.ratio_arrowhead_size_to_globe_radius);
 			// Render the rendered geometry.
 			render(rendered_arrow);
 
@@ -386,8 +390,9 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
 								point,
 								velocity.d_vector,
-								d_render_params.velocity_ratio_unit_vector_direction_to_globe_radius,
-								GPlatesGui::ColourProxy(rg_non_null_ptr));
+								d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
+								GPlatesGui::ColourProxy(rg_non_null_ptr),
+								d_render_params.ratio_arrowhead_size_to_globe_radius);
 
 				// Render the rendered geometry.
 				render(rendered_arrow);
@@ -396,8 +401,9 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
 								point,
 								velocity.d_vector,
-								d_render_params.velocity_ratio_unit_vector_direction_to_globe_radius,
-								GPlatesGui::Colour::get_olive());
+								d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
+								GPlatesGui::Colour::get_olive(),
+								d_render_params.ratio_arrowhead_size_to_globe_radius);
 
 				// Render the rendered geometry.
 				render(rendered_arrow);
@@ -935,8 +941,9 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
 				point,
 				velocity_vector,
-				render_params.velocity_ratio_unit_vector_direction_to_globe_radius,
-				velocity_colour);
+				render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
+				velocity_colour,
+				d_render_params.ratio_arrowhead_size_to_globe_radius);
 
 		// Create a RenderedGeometry for storing the ReconstructionGeometry and
 		// a RenderedGeometry associated with it.

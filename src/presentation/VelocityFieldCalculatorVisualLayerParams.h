@@ -28,6 +28,8 @@
 
 #include "VisualLayerParams.h"
 
+#include "view-operations/RenderedGeometryParameters.h"
+
 
 namespace GPlatesPresentation
 {
@@ -46,6 +48,39 @@ namespace GPlatesPresentation
 		{
 			return new VelocityFieldCalculatorVisualLayerParams( layer_task_params );
 		}
+
+
+		float
+		get_arrow_body_scale() const
+		{
+			return d_arrow_body_scale;
+		}
+
+		//! Set the arrow body scale of rendered arrows.
+		void
+		set_arrow_body_scale(
+				float arrow_body_scale)
+		{
+			d_arrow_body_scale = arrow_body_scale;
+			emit_modified();
+		}
+
+
+		float
+		get_arrowhead_scale() const
+		{
+			return d_arrowhead_scale;
+		}
+
+		//! Set the arrowhead scale of rendered arrows.
+		void
+		set_arrowhead_scale(
+				float arrowhead_scale)
+		{
+			d_arrowhead_scale = arrowhead_scale;
+			emit_modified();
+		}
+
 
 		float
 		get_arrow_spacing() const
@@ -66,6 +101,7 @@ namespace GPlatesPresentation
 			d_arrow_spacing = arrow_spacing;
 			emit_modified();
 		}
+
 
 		bool
 		show_delaunay_vectors() const
@@ -117,7 +153,11 @@ namespace GPlatesPresentation
 		VelocityFieldCalculatorVisualLayerParams( 
 				GPlatesAppLogic::LayerTaskParams &layer_task_params ) :
 			VisualLayerParams(layer_task_params),
-			d_arrow_spacing(0.175f),
+			d_arrow_spacing(GPlatesViewOperations::RenderedLayerParameters::VELOCITY_ARROW_SPACING),
+			d_arrow_body_scale(GPlatesViewOperations::RenderedLayerParameters
+					::RECONSTRUCTION_RATIO_ARROW_UNIT_VECTOR_DIRECTION_TO_GLOBE_RADIUS),
+			d_arrowhead_scale(GPlatesViewOperations::RenderedLayerParameters
+					::RECONSTRUCTION_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS),
 			d_show_delaunay_vectors(true),
 			d_show_constrained_vectors(true)
 		{  }
@@ -125,6 +165,9 @@ namespace GPlatesPresentation
 	private:
 
 		float d_arrow_spacing;
+		float d_arrow_body_scale;
+		float d_arrowhead_scale;
+
 		bool d_show_delaunay_vectors;
 		bool d_show_constrained_vectors;
 	};
