@@ -210,6 +210,24 @@ namespace GPlatesPresentation
 				size_t last_index);
 
 		/**
+		 * This signal is emitted before any layers are added or removed.
+		 *
+		 * begin_add_or_remove_layers / end_add_or_remove_layers usually surrounds the
+		 * addition or removal of one or more layers.
+		 */
+		void
+		begin_add_or_remove_layers();
+
+		/**
+		 * This signal is emitted after layers have been added or removed.
+		 *
+		 * begin_add_or_remove_layers / end_add_or_remove_layers usually surrounds the
+		 * addition or removal of one or more layers.
+		 */
+		void
+		end_add_or_remove_layers();
+
+		/**
 		 * This signal is emitted just before a new visual layer is added.
 		 *
 		 * The @a index provided is the prospective index of the new visual layer in
@@ -309,6 +327,12 @@ namespace GPlatesPresentation
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
+
+		void
+		handle_begin_add_or_remove_layers();
+
+		void
+		handle_end_add_or_remove_layers();
 
 		void
 		handle_layer_added(

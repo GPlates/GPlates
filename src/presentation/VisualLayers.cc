@@ -209,6 +209,16 @@ GPlatesPresentation::VisualLayers::connect_to_application_state_signals()
 	GPlatesAppLogic::ReconstructGraph *reconstruct_graph = &d_application_state.get_reconstruct_graph();
 	QObject::connect(
 			reconstruct_graph,
+			SIGNAL(begin_add_or_remove_layers()),
+			this,
+			SLOT(handle_begin_add_or_remove_layers()));
+	QObject::connect(
+			reconstruct_graph,
+			SIGNAL(end_add_or_remove_layers()),
+			this,
+			SLOT(handle_end_add_or_remove_layers()));
+	QObject::connect(
+			reconstruct_graph,
 			SIGNAL(layer_added(
 					GPlatesAppLogic::ReconstructGraph &,
 					GPlatesAppLogic::Layer)),
@@ -283,6 +293,20 @@ GPlatesPresentation::VisualLayers::connect_to_application_state_signals()
 					GPlatesAppLogic::FeatureCollectionFileState &)),
 			SLOT(handle_file_state_changed(
 					GPlatesAppLogic::FeatureCollectionFileState &)));
+}
+
+
+void
+GPlatesPresentation::VisualLayers::handle_begin_add_or_remove_layers()
+{
+	emit begin_add_or_remove_layers();
+}
+
+
+void
+GPlatesPresentation::VisualLayers::handle_end_add_or_remove_layers()
+{
+	emit end_add_or_remove_layers();
 }
 
 

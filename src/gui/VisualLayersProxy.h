@@ -106,6 +106,12 @@ namespace GPlatesGui
 				size_t last_index);
 
 		void
+		handle_begin_add_or_remove_layers();
+
+		void
+		handle_end_add_or_remove_layers();
+
+		void
 		handle_layer_about_to_be_added(
 				size_t index);
 
@@ -143,6 +149,12 @@ namespace GPlatesGui
 		layer_order_changed(
 				size_t first_index,
 				size_t last_index);
+
+		void
+		begin_add_or_remove_layers();
+
+		void
+		end_add_or_remove_layers();
 
 		void
 		layer_about_to_be_added(

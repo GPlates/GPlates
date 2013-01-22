@@ -420,6 +420,11 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			SLOT(handle_visual_layer_added(size_t)));
 	
 	set_internal_release_window_title();
+
+    // Create the visual layers dialog (but don't show it yet).
+    // This is so it can listen for signals before it first pops up
+    // (which is when the first layer is added).
+	dialogs().visual_layers_dialog();
 }
 
 

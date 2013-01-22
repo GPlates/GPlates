@@ -29,7 +29,11 @@
 
 #include "VisualLayersDelegate.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
 #include "gui/VisualLayersListModel.h"
+#include "gui/VisualLayersProxy.h"
 
 
 GPlatesQtWidgets::VisualLayersListView::VisualLayersListView(
@@ -38,7 +42,9 @@ GPlatesQtWidgets::VisualLayersListView::VisualLayersListView(
 		GPlatesPresentation::ViewState &view_state,
 		ViewportWindow *viewport_window,
 		QWidget *parent_) :
-	QListView(parent_)
+	QListView(parent_),
+	d_visual_layers(visual_layers),
+	d_list_model(NULL)
 {
 	// Customise behaviour.
 	setAcceptDrops(true);
@@ -51,9 +57,8 @@ GPlatesQtWidgets::VisualLayersListView::VisualLayersListView(
 	setFocusPolicy(Qt::NoFocus);
 
 	// Install the model and the delegate.
-	GPlatesGui::VisualLayersListModel *list_model =
-		new GPlatesGui::VisualLayersListModel(visual_layers, this);
-	setModel(list_model);
+	d_list_model = new GPlatesGui::VisualLayersListModel(visual_layers, this); // Qt managed memory
+	setModel(d_list_model);
 	VisualLayersDelegate *delegate = new VisualLayersDelegate(
 			visual_layers,
 			application_state,
@@ -62,8 +67,10 @@ GPlatesQtWidgets::VisualLayersListView::VisualLayersListView(
 			this);
 	setItemDelegate(delegate);
 
+	make_signal_slot_connections();
+
 	// Open the persistent editor for all rows in existence at creation.
-	open_persistent_editors(0, list_model->rowCount());
+	open_persistent_editors(0, d_list_model->rowCount());
 }
 
 
@@ -99,8 +106,50 @@ GPlatesQtWidgets::VisualLayersListView::rowsInserted(
 {
 	QListView::rowsInserted(parent_, start, end);
 
-	// Open the persistent editor for the new rows.
-	open_persistent_editors(start, end + 1);
+	// If we are currently connected to a model then open the persistent editors.
+	// Otherwise we will open the persistent editors when we reconnect to the model since
+	// that's more efficient when adding/removing multiple layers.
+	// This is really just to catch the case where a layer was added without the
+	// 'begin_add_or_remove_layers' / 'end_add_or_remove_layers' VisualLayers signals getting emitted.
+	if (model())
+	{
+		// Open the persistent editor for the new rows.
+		open_persistent_editors(start, end + 1);
+	}
+}
+
+
+void
+GPlatesQtWidgets::VisualLayersListView::handle_begin_add_or_remove_layers()
+{
+	// Close the persistent editors for all rows currently in existence.
+	close_persistent_editors(0, d_list_model->rowCount());
+
+	// Disconnect from the model to prevent the view from being updated by it.
+	// The model will be reconnected when 'handle_add_add_or_remove_layers()' is called.
+	//
+	// This is an optimisation that *dramatically* speeds up the addition (or removal) of layers
+	// during file loading (or session restore).
+	// The gain is not so noticeable for a few layers but for a few tens of layers the difference
+	// is very noticeable.
+	setModel(NULL);
+}
+
+
+void
+GPlatesQtWidgets::VisualLayersListView::handle_end_add_or_remove_layers()
+{
+	// Now that the model has been updated we reconnect to it.
+	// The view will then update itself from the model.
+	//
+	// This is an optimisation that *dramatically* speeds up the addition (or removal) of layers
+	// during file loading (or session restore).
+	// The gain is not so noticeable for a few layers but for a few tens of layers the difference
+	// is very noticeable.
+	setModel(d_list_model);
+
+	// Open the persistent editors for all rows currently in existence.
+	open_persistent_editors(0, d_list_model->rowCount());
 }
 
 
@@ -110,9 +159,45 @@ GPlatesQtWidgets::VisualLayersListView::open_persistent_editors(
 		int end_row)
 {
 	const QAbstractItemModel *list_model = model();
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			list_model,
+			GPLATES_ASSERTION_SOURCE);
+
 	for (; begin_row != end_row; ++begin_row)
 	{
 		openPersistentEditor(list_model->index(begin_row, 0));
 	}
 }
 
+
+void
+GPlatesQtWidgets::VisualLayersListView::close_persistent_editors(
+		int begin_row,
+		int end_row)
+{
+	const QAbstractItemModel *list_model = model();
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			list_model,
+			GPLATES_ASSERTION_SOURCE);
+
+	for (; begin_row != end_row; ++begin_row)
+	{
+		closePersistentEditor(list_model->index(begin_row, 0));
+	}
+}
+
+
+void
+GPlatesQtWidgets::VisualLayersListView::make_signal_slot_connections()
+{
+// 	QObject::connect(
+// 			&d_visual_layers,
+// 			SIGNAL(begin_add_or_remove_layers()),
+// 			this,
+// 			SLOT(handle_begin_add_or_remove_layers()));
+// 	QObject::connect(
+// 			&d_visual_layers,
+// 			SIGNAL(end_add_or_remove_layers()),
+// 			this,
+// 			SLOT(handle_end_add_or_remove_layers()));
+}

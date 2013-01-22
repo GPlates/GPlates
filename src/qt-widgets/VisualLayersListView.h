@@ -26,6 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_VISUALLAYERSLISTVIEW_H
 #define GPLATES_QTWIDGETS_VISUALLAYERSLISTVIEW_H
 
+#include <QAbstractItemModel>
 #include <QListView>
 
 
@@ -52,6 +53,8 @@ namespace GPlatesQtWidgets
 	class VisualLayersListView :
 			public QListView
 	{
+		Q_OBJECT
+
 	public:
 
 		VisualLayersListView(
@@ -80,6 +83,14 @@ namespace GPlatesQtWidgets
 				int start,
 				int end);
 
+	private slots:
+
+		void
+		handle_begin_add_or_remove_layers();
+
+		void
+		handle_end_add_or_remove_layers();
+
 	private:
 
 		/**
@@ -90,6 +101,22 @@ namespace GPlatesQtWidgets
 		open_persistent_editors(
 				int begin_row,
 				int end_row);
+
+		/**
+		 * Same as @a open_persistent_editors but closes editors.
+		 */
+		void
+		close_persistent_editors(
+				int begin_row,
+				int end_row);
+
+		void
+		make_signal_slot_connections();
+
+
+		GPlatesGui::VisualLayersProxy &d_visual_layers;
+		QAbstractItemModel *d_list_model;
+
 	};
 
 }

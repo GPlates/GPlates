@@ -111,6 +111,20 @@ GPlatesGui::VisualLayersProxy::handle_layer_order_changed(
 
 
 void
+GPlatesGui::VisualLayersProxy::handle_begin_add_or_remove_layers()
+{
+	emit begin_add_or_remove_layers();
+}
+
+
+void
+GPlatesGui::VisualLayersProxy::handle_end_add_or_remove_layers()
+{
+	emit end_add_or_remove_layers();
+}
+
+
+void
 GPlatesGui::VisualLayersProxy::handle_layer_about_to_be_added(
 		size_t index)
 {
@@ -185,6 +199,16 @@ GPlatesGui::VisualLayersProxy::make_signal_slot_connections()
 			SIGNAL(layer_order_changed(size_t, size_t)),
 			this,
 			SLOT(handle_layer_order_changed(size_t, size_t)));
+	QObject::connect(
+			&d_visual_layers,
+			SIGNAL(begin_add_or_remove_layers()),
+			this,
+			SLOT(handle_begin_add_or_remove_layers()));
+	QObject::connect(
+			&d_visual_layers,
+			SIGNAL(end_add_or_remove_layers()),
+			this,
+			SLOT(handle_end_add_or_remove_layers()));
 	QObject::connect(
 			&d_visual_layers,
 			SIGNAL(layer_about_to_be_added(size_t)),

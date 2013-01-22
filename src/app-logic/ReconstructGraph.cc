@@ -145,7 +145,8 @@ GPlatesAppLogic::ReconstructGraph::ReconstructGraph(
 	d_application_state(application_state),
 	d_layer_task_registry(application_state.get_layer_task_registry()),
 	d_identity_rotation_reconstruction_layer_proxy(
-			ReconstructionLayerProxy::create(1/*max_num_reconstruction_trees_in_cache*/))
+			ReconstructionLayerProxy::create(1/*max_num_reconstruction_trees_in_cache*/)),
+	d_add_or_remove_layers_group_nested_count(0)
 {
 }
 
@@ -168,10 +169,15 @@ GPlatesAppLogic::ReconstructGraph::add_files(
 	// of layers emits signals (that clients connect to).
 	if (auto_create_layers)
 	{
+		AddOrRemoveLayersGroup add_layers_group(*this);
+		add_layers_group.begin_add_or_remove_layers();
+
 		BOOST_FOREACH(const Layer::InputFile &input_file, input_files)
 		{
 			auto_create_layers_for_new_input_file(input_file, auto_create_layers.get());
 		}
+
+		add_layers_group.end_add_or_remove_layers();
 	}
 }
 
@@ -272,6 +278,10 @@ GPlatesAppLogic::Layer
 GPlatesAppLogic::ReconstructGraph::add_layer(
 		const boost::shared_ptr<LayerTask> &layer_task)
 {
+	// Make sure each layer addition is part of an add layers group.
+	AddOrRemoveLayersGroup add_layers_group(*this);
+	add_layers_group.begin_add_or_remove_layers();
+
 	boost::shared_ptr<ReconstructGraphImpl::Layer> layer_impl(
 			new ReconstructGraphImpl::Layer(layer_task, *this));
 
@@ -294,6 +304,9 @@ GPlatesAppLogic::ReconstructGraph::add_layer(
 			&layer_task->get_layer_task_params(), SIGNAL(modified()),
 			&d_application_state, SLOT(reconstruct()));
 
+	// End the add layers group.
+	add_layers_group.end_add_or_remove_layers();
+
 	// Return the weak reference.
 	return layer;
 }
@@ -303,6 +316,10 @@ void
 GPlatesAppLogic::ReconstructGraph::remove_layer(
 		Layer layer)
 {
+	// Make sure each layer removal is part of a remove layers group.
+	AddOrRemoveLayersGroup remove_layers_group(*this);
+	remove_layers_group.begin_add_or_remove_layers();
+
 	// Throw our own exception to track location of throw.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 		layer.is_valid(),
@@ -330,6 +347,9 @@ GPlatesAppLogic::ReconstructGraph::remove_layer(
 
 	// Let clients know a layer has been removed.
 	emit layer_removed(*this);
+
+	// End the remove layers group.
+	remove_layers_group.end_add_or_remove_layers();
 }
 
 
@@ -807,6 +827,29 @@ GPlatesAppLogic::ReconstructGraph::debug_reconstruct_graph_state()
 }
 
 
+void
+GPlatesAppLogic::ReconstructGraph::emit_begin_add_or_remove_layers()
+{
+	if (d_add_or_remove_layers_group_nested_count == 0)
+	{
+		emit begin_add_or_remove_layers();
+	}
+
+	++d_add_or_remove_layers_group_nested_count;
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraph::emit_end_add_or_remove_layers()
+{
+	--d_add_or_remove_layers_group_nested_count;
+
+	if (d_add_or_remove_layers_group_nested_count == 0)
+	{
+		emit end_add_or_remove_layers();
+	}
+}
+
 
 void
 GPlatesAppLogic::ReconstructGraph::emit_layer_activation_changed(
@@ -842,3 +885,53 @@ GPlatesAppLogic::ReconstructGraph::emit_layer_removed_input_connection(
 	emit layer_removed_input_connection(*this, layer);
 }
 
+
+GPlatesAppLogic::ReconstructGraph::AddOrRemoveLayersGroup::AddOrRemoveLayersGroup(
+		ReconstructGraph &reconstruct_graph) :
+	d_reconstruct_graph(reconstruct_graph),
+	d_inside_group(false)
+{
+}
+
+
+GPlatesAppLogic::ReconstructGraph::AddOrRemoveLayersGroup::~AddOrRemoveLayersGroup()
+{
+	if (d_inside_group)
+	{
+		// Since this is a destructor we cannot let any exceptions escape.
+		// If one is thrown we just have to lump it and continue on.
+		try
+		{
+			end_add_or_remove_layers();
+		}
+		catch (...)
+		{
+		}
+	}
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraph::AddOrRemoveLayersGroup::begin_add_or_remove_layers()
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!d_inside_group,
+			GPLATES_ASSERTION_SOURCE);
+
+	d_reconstruct_graph.emit_begin_add_or_remove_layers();
+
+	d_inside_group = true;
+}
+
+
+void
+GPlatesAppLogic::ReconstructGraph::AddOrRemoveLayersGroup::end_add_or_remove_layers()
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_inside_group,
+			GPLATES_ASSERTION_SOURCE);
+
+	d_reconstruct_graph.emit_end_add_or_remove_layers();
+
+	d_inside_group = false;
+}

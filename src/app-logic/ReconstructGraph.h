@@ -357,10 +357,65 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type anchored_plated_id);
 
 
+		/**
+		 * Used to group one or more layers that are added or removed.
+		 *
+		 * It is not necessary for clients to explicitly use this class since it is used
+		 * internally (inside ReconstructGraph) whenever layers are added or removed.
+		 * However it does provide efficiency improvements in some areas of GPlates (such as
+		 * dramatically improving the layout management speed of the Visual Layers dialog) so
+		 * clients should group together multiple additions/removals of layers where possible.
+		 *
+		 * Instances of this class can be safely nested.
+		 */
+		class AddOrRemoveLayersGroup
+		{
+		public:
+
+			//! NOTE: Constructor does *not* call @a begin_add_or_remove_layers.
+			explicit
+			AddOrRemoveLayersGroup(
+					ReconstructGraph &reconstruct_graph);
+
+			//! Destructor calls @a end_add_or_remove_layers if necessary.
+			~AddOrRemoveLayersGroup();
+
+			//! Starts an add/remove group for layers about to be added or removed.
+			void
+			begin_add_or_remove_layers();
+
+			//! Ends an add/remove group for layers added or removed since @a begin_add_or_remove_layers.
+			void
+			end_add_or_remove_layers();
+
+		private:
+			ReconstructGraph &d_reconstruct_graph;
+			bool d_inside_group;
+		};
+
+
 	signals:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
+
+		/**
+		 * This signal is emitted before any layers are added or removed.
+		 *
+		 * begin_add_or_remove_layers / end_add_or_remove_layers usually surrounds the
+		 * addition or removal of one or more layers.
+		 */
+		void
+		begin_add_or_remove_layers();
+
+		/**
+		 * This signal is emitted after layers have been added or removed.
+		 *
+		 * begin_add_or_remove_layers / end_add_or_remove_layers usually surrounds the
+		 * addition or removal of one or more layers.
+		 */
+		void
+		end_add_or_remove_layers();
 
 		/**
 		 * Emitted when a new layer has been added by @a add_layer.
@@ -454,6 +509,15 @@ namespace GPlatesAppLogic
 
 
 	private:
+
+		//! Emits the @a begin_add_or_remove_layers signal.
+		void
+		emit_begin_add_or_remove_layers();
+
+		//! Emits the @a end_add_or_remove_layers signal.
+		void
+		emit_end_add_or_remove_layers();
+
 		//! Emits the @a layer_activation_changed signal.
 		void
 		emit_layer_activation_changed(
@@ -594,6 +658,11 @@ namespace GPlatesAppLogic
 		 * Generates identity rotations.
 		 */
 		ReconstructionLayerProxy::non_null_ptr_type d_identity_rotation_reconstruction_layer_proxy;
+
+		/**
+		 * Keeps track of the nesting count for @a emit_begin_add_or_remove_layers / @a emit_end_add_or_remove_layers.
+		 */
+		int d_add_or_remove_layers_group_nested_count;
 
 
 		/**

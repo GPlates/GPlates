@@ -539,6 +539,10 @@ GPlatesAppLogic::Serialization::load_layers_state(
 	// but for now stick with this ID map and a bunch of anon namespace fns.
 	IdLayerMap idmap;
 
+	// Put all layer additions in a single add layers group.
+	ReconstructGraph::AddOrRemoveLayersGroup add_layers_group(rg);
+	add_layers_group.begin_add_or_remove_layers();
+
 	// First we need to re-instate the Layers that are specified in the LayersStateType though.
 	QDomElement el_root = dom.firstChildElement("LayersState");
 	QDomElement el_layers = el_root.firstChildElement("Layers");
@@ -569,6 +573,9 @@ GPlatesAppLogic::Serialization::load_layers_state(
 					d_app_state_ptr->get_feature_collection_file_state(), ltr, rg, el_con, idmap, session_version);
 		}
 	}
+
+	// End the add layers group.
+	add_layers_group.end_add_or_remove_layers();
 
 
 	// Aaaand we're done.
