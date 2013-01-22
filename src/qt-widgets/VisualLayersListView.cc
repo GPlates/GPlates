@@ -190,14 +190,14 @@ GPlatesQtWidgets::VisualLayersListView::close_persistent_editors(
 void
 GPlatesQtWidgets::VisualLayersListView::make_signal_slot_connections()
 {
-// 	QObject::connect(
-// 			&d_visual_layers,
-// 			SIGNAL(begin_add_or_remove_layers()),
-// 			this,
-// 			SLOT(handle_begin_add_or_remove_layers()));
-// 	QObject::connect(
-// 			&d_visual_layers,
-// 			SIGNAL(end_add_or_remove_layers()),
-// 			this,
-// 			SLOT(handle_end_add_or_remove_layers()));
+	QObject::connect(
+			&d_visual_layers,
+			SIGNAL(begin_add_or_remove_layers()),
+			this,
+			SLOT(handle_begin_add_or_remove_layers()));
+	QObject::connect(
+			&d_visual_layers,
+			SIGNAL(end_add_or_remove_layers()),
+			this,
+			SLOT(handle_end_add_or_remove_layers()));
 }
