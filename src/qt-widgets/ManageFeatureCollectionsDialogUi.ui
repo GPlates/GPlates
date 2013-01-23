@@ -1,7 +1,8 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>ManageFeatureCollectionsDialog</class>
- <widget class="QDialog" name="ManageFeatureCollectionsDialog" >
-  <property name="geometry" >
+ <widget class="QDialog" name="ManageFeatureCollectionsDialog">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
@@ -9,82 +10,91 @@
     <height>343</height>
    </rect>
   </property>
-  <property name="acceptDrops" >
+  <property name="acceptDrops">
    <bool>true</bool>
   </property>
-  <property name="windowTitle" >
+  <property name="windowTitle">
    <string>Manage Feature Collections</string>
   </property>
-  <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >
+  <property name="windowIcon">
+   <iconset resource="../qt-resources/qt_widgets.qrc">
     <normaloff>:/gnome_preferences_desktop_16.png</normaloff>:/gnome_preferences_desktop_16.png</iconset>
   </property>
-  <property name="sizeGripEnabled" >
+  <property name="sizeGripEnabled">
    <bool>true</bool>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout" >
+  <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QLabel" name="label" >
-     <property name="text" >
+    <widget class="QLabel" name="label">
+     <property name="text">
       <string>Manage the feature collections which are loaded in the application.</string>
      </property>
     </widget>
    </item>
    <item>
-    <widget class="QTableWidget" name="table_feature_collections" >
-     <property name="alternatingRowColors" >
+    <widget class="QTableWidget" name="table_feature_collections">
+     <property name="tabKeyNavigation">
+      <bool>false</bool>
+     </property>
+     <property name="alternatingRowColors">
       <bool>true</bool>
      </property>
-     <property name="selectionMode" >
-      <enum>QAbstractItemView::NoSelection</enum>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::ExtendedSelection</enum>
      </property>
-     <property name="selectionBehavior" >
+     <property name="selectionBehavior">
       <enum>QAbstractItemView::SelectRows</enum>
      </property>
-     <property name="horizontalScrollMode" >
+     <property name="horizontalScrollMode">
       <enum>QAbstractItemView::ScrollPerPixel</enum>
      </property>
-     <property name="gridStyle" >
+     <property name="gridStyle">
       <enum>Qt::DashLine</enum>
      </property>
+     <attribute name="horizontalHeaderHighlightSections">
+      <bool>false</bool>
+     </attribute>
+     <attribute name="verticalHeaderHighlightSections">
+      <bool>false</bool>
+     </attribute>
      <column>
-      <property name="text" >
+      <property name="text">
        <string>File Name</string>
       </property>
      </column>
      <column>
-      <property name="text" >
+      <property name="text">
        <string>File Format</string>
       </property>
      </column>
      <column>
-      <property name="text" >
+      <property name="text">
        <string>Actions</string>
       </property>
      </column>
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout" >
+    <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QLabel" name="label_unsaved_changes_swatch" >
-       <property name="pixmap" >
-        <pixmap resource="../qt-resources/qt_widgets.qrc" >:/info_sign_16.png</pixmap>
+      <widget class="QLabel" name="label_unsaved_changes_swatch">
+       <property name="pixmap">
+        <pixmap resource="../qt-resources/qt_widgets.qrc">:/info_sign_16.png</pixmap>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLabel" name="label_unsaved_changes" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Preferred" hsizetype="Expanding" >
+      <widget class="QLabel" name="label_unsaved_changes">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-       <property name="text" >
+       <property name="text">
         <string>Feature collections with a red background have unsaved changes.</string>
        </property>
-       <property name="wordWrap" >
+       <property name="wordWrap">
         <bool>true</bool>
        </property>
       </widget>
@@ -92,26 +102,26 @@
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2" >
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
-      <widget class="QLabel" name="label_no_presence_on_disk_swatch" >
-       <property name="pixmap" >
-        <pixmap resource="../qt-resources/qt_widgets.qrc" >:/info_sign_16.png</pixmap>
+      <widget class="QLabel" name="label_no_presence_on_disk_swatch">
+       <property name="pixmap">
+        <pixmap resource="../qt-resources/qt_widgets.qrc">:/info_sign_16.png</pixmap>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLabel" name="label_no_presence_on_disk" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Preferred" hsizetype="Expanding" >
+      <widget class="QLabel" name="label_no_presence_on_disk">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-       <property name="text" >
+       <property name="text">
         <string>Feature collections with an orange background are new and have not yet been saved with a filename.</string>
        </property>
-       <property name="wordWrap" >
+       <property name="wordWrap">
         <bool>true</bool>
        </property>
       </widget>
@@ -119,53 +129,130 @@
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" >
+    <layout class="QHBoxLayout">
      <item>
-      <widget class="QPushButton" name="button_open_file" >
-       <property name="text" >
+      <widget class="QPushButton" name="button_open_file">
+       <property name="text">
         <string>&amp;Open File...</string>
        </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="button_save_all" >
-       <property name="enabled" >
+       <property name="autoDefault">
         <bool>true</bool>
        </property>
-       <property name="toolTip" >
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="button_save_all">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="toolTip">
         <string>Save all modified feature collections that have a filename</string>
        </property>
-       <property name="text" >
+       <property name="text">
         <string>&amp;Save All</string>
+       </property>
+       <property name="autoDefault">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
      <item>
-      <spacer>
-       <property name="orientation" >
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="sizeType" >
-        <enum>QSizePolicy::Expanding</enum>
-       </property>
-       <property name="sizeHint" stdset="0" >
+       <property name="sizeHint" stdset="0">
         <size>
          <width>40</width>
          <height>20</height>
         </size>
        </property>
       </spacer>
+     </item>
+     <item>
+      <widget class="QWidget" name="selection_buttons" native="true">
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <property name="margin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QPushButton" name="button_save_selected">
+          <property name="toolTip">
+           <string>Save selected feature collections that have been modified and have a filename</string>
+          </property>
+          <property name="text">
+           <string>Save Selected</string>
+          </property>
+          <property name="autoDefault">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_reload_selected">
+          <property name="toolTip">
+           <string>Reload selected feature collections that have a filename</string>
+          </property>
+          <property name="text">
+           <string>Reload Selected</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_unload_selected">
+          <property name="toolTip">
+           <string>Unload selected feature collections</string>
+          </property>
+          <property name="text">
+           <string>Unload Selected</string>
+          </property>
+          <property name="autoDefault">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>12</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_clear_selection">
+          <property name="toolTip">
+           <string>Clear the current selection of feature collections</string>
+          </property>
+          <property name="text">
+           <string>Clear Selection</string>
+          </property>
+          <property name="autoDefault">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </item>
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" >
+    <layout class="QHBoxLayout">
      <item>
       <spacer>
-       <property name="orientation" >
+       <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="sizeHint" stdset="0" >
+       <property name="sizeHint" stdset="0">
         <size>
          <width>40</width>
          <height>20</height>
@@ -174,11 +261,11 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="button_close" >
-       <property name="text" >
+      <widget class="QPushButton" name="button_close">
+       <property name="text">
         <string>Close</string>
        </property>
-       <property name="default" >
+       <property name="default">
         <bool>true</bool>
        </property>
       </widget>
@@ -194,7 +281,9 @@
   <tabstop>table_feature_collections</tabstop>
  </tabstops>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_widgets.qrc"/>
  </resources>
  <connections>
   <connection>
@@ -203,11 +292,11 @@
    <receiver>ManageFeatureCollectionsDialog</receiver>
    <slot>reject()</slot>
    <hints>
-    <hint type="sourcelabel" >
+    <hint type="sourcelabel">
      <x>595</x>
      <y>434</y>
     </hint>
-    <hint type="destinationlabel" >
+    <hint type="destinationlabel">
      <x>596</x>
      <y>473</y>
     </hint>

@@ -471,6 +471,7 @@ GPlatesGui::Dialogs::manage_feature_collections_dialog()
 				application_state().get_feature_collection_file_state(),
 				application_state().get_feature_collection_file_io(),
 				viewport_window().file_io_feedback(),
+				application_state().get_reconstruct_graph(),
 				view_state(),
 				&viewport_window());
 	}

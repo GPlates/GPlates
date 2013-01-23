@@ -27,6 +27,7 @@
 #define GPLATES_GUI_MANAGEFEATURECOLLECTIONSDIALOG_H
 
 #include <map>
+#include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <Qt>
@@ -47,6 +48,7 @@
 namespace GPlatesAppLogic
 {
 	class FeatureCollectionFileIO;
+	class ReconstructGraph;
 }
 
 namespace GPlatesFileIO
@@ -90,6 +92,7 @@ namespace GPlatesQtWidgets
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io,
 				GPlatesGui::FileIOFeedback &gui_file_io_feedback,
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 				GPlatesPresentation::ViewState& d_view_state,
 				QWidget *parent_ = NULL);
 		
@@ -197,6 +200,21 @@ namespace GPlatesQtWidgets
 		void
 		header_section_clicked(
 				int section_index);
+
+		void
+		handle_selection_changed();
+
+		void
+		save_selected();
+
+		void
+		reload_selected();
+
+		void
+		unload_selected();
+
+		void
+		clear_selection();
 
 	protected:
 	
@@ -334,6 +352,13 @@ namespace GPlatesQtWidgets
 		 * Guarded pointer, ViewportWindow/Qt owns FileIOFeedback.
 		 */
 		QPointer<GPlatesGui::FileIOFeedback> d_gui_file_io_feedback_ptr;
+
+		/**
+		 * As an optimisation, group a sequence of file unloads into a single remove layers group.
+		 *
+		 * File unloading can trigger layer removals.
+		 */
+		GPlatesAppLogic::ReconstructGraph &d_reconstruct_graph;
 
 		GPlatesPresentation::ViewState& d_view_state;
 

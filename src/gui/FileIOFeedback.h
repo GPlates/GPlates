@@ -26,14 +26,15 @@
 #ifndef GPLATES_GUI_FILEIOFEEDBACK_H
 #define GPLATES_GUI_FILEIOFEEDBACK_H
 
+#include <vector>
+#include <boost/function.hpp>
+#include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 #include <QObject>
 #include <QPointer>
 #include <QString>
 #include <QList>
 #include <QUrl>
-#include <boost/function.hpp>
-#include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include "app-logic/FeatureCollectionFileState.h"
 
@@ -188,6 +189,17 @@ namespace GPlatesGui
 		bool
 		save_file(
 				GPlatesAppLogic::FeatureCollectionFileState::file_reference file);
+
+
+		/**
+		 * Save the specified files as though the 'save in place' button was used.
+		 * If @a include_unnamed_files, we'll also try to save files that don't have names yet,
+		 * which will mean popping up save dialogs.
+		 */
+		bool
+		save_files(
+				const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &files,
+				bool include_unnamed_files);
 
 
 		/**

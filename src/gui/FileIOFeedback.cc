@@ -615,40 +615,42 @@ GPlatesGui::FileIOFeedback::save_file(
 
 
 bool
-GPlatesGui::FileIOFeedback::save_all(
+GPlatesGui::FileIOFeedback::save_files(
+		const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &files,
 		bool include_unnamed_files)
 {
 	viewport_window().status_message("GPlates is saving files...");
-
-	// For each loaded file; if it has unsaved changes, behave as though 'save in place' was clicked.
-	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
-			d_file_state_ptr->get_loaded_files();
 
 	// Return true only if all files saved without issue.
 	bool all_ok = true;
 
 	BOOST_FOREACH(
-			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &loaded_file,
-			loaded_files)
+			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file,
+			files)
 	{
 		// Attempt to ensure GUI still gets updates... FIXME, it's not enough.
 		QCoreApplication::processEvents();
 
 		// Get the FeatureCollectionHandle, to determine unsaved state.
 		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
-				loaded_file.get_file().get_feature_collection();
+				file.get_file().get_feature_collection();
 
 		// Does this file need saving?
-		if (feature_collection_ref.is_valid() && feature_collection_ref->contains_unsaved_changes()) {
+		if (feature_collection_ref.is_valid() && feature_collection_ref->contains_unsaved_changes())
+		{
 			// For now, to avoid pointless 'give me a name for this file (which you can't identify)'
 			// situations, only save the files which we have a name for already (unless @a include_unnamed_files)
-			if (file_is_unnamed(loaded_file) && ! include_unnamed_files) {
+			if (file_is_unnamed(file) && ! include_unnamed_files)
+			{
 				// Skip the unnamed file.
-			} else {
+			}
+			else
+			{
 				// Save the feature collection, in place or with dialog, with GUI feedback.
-				bool ok = save_file_as_appropriate(loaded_file);
+				bool ok = save_file_as_appropriate(file);
 				// save_all() needs to report any failures.
-				if ( ! ok) {
+				if ( ! ok)
+				{
 					all_ok = false;
 				}
 
@@ -657,13 +659,28 @@ GPlatesGui::FileIOFeedback::save_all(
 	}
 
 	// Some more user feedback in the status message.
-	if (all_ok) {
+	if (all_ok)
+	{
 		viewport_window().status_message("Files were saved successfully.", 2000);
-	} else {
+	}
+	else
+	{
 		viewport_window().status_message("Some files could not be saved.");
 	}
 
 	return all_ok;
+}
+
+
+bool
+GPlatesGui::FileIOFeedback::save_all(
+		bool include_unnamed_files)
+{
+	// For each loaded file; if it has unsaved changes, behave as though 'save in place' was clicked.
+	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
+			d_file_state_ptr->get_loaded_files();
+
+	return save_files(loaded_files, include_unnamed_files);
 }
 
 
