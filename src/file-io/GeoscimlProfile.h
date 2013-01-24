@@ -67,7 +67,7 @@ namespace GPlatesFileIO
 		count_features(
 				QByteArray& xml_data);
 
-	public slots:
+	public Q_SLOTS:
 
 		void cancel(); // will cancel read process
 

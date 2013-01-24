@@ -160,7 +160,7 @@ namespace GPlatesGui
 					QEvent *event);
 #endif
 
-		private slots:
+		private Q_SLOTS:
 			void
 			set_spinbox_time_in_topology_section(
 					double time);

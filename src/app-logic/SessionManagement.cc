@@ -420,7 +420,7 @@ GPlatesAppLogic::SessionManagement::store_recent_session_list(
 	}
 
 	// Ensure menu is updated.
-	emit session_list_updated();
+	Q_EMIT session_list_updated();
 }
 
 

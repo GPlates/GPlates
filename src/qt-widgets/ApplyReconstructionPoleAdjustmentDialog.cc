@@ -173,7 +173,7 @@ GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::handle_pole_sequence_
 	if (selected_items.isEmpty()) {
 		// Somehow there's no selection.  I'm not really sure how this happened, but
 		// anyway...
-		emit pole_sequence_choice_cleared();
+		Q_EMIT pole_sequence_choice_cleared();
 	} else {
 		// Since the table is configured to only allow a single selection at any time, and
 		// to select by whole row, presumably all the items in this list are cells in the
@@ -182,9 +182,9 @@ GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::handle_pole_sequence_
 		if (an_item->row() < 0) {
 			// Somehow there's no selection.  I'm not really sure how this happened,
 			// but anyway...
-			emit pole_sequence_choice_cleared();
+			Q_EMIT pole_sequence_choice_cleared();
 		} else {
-			emit pole_sequence_choice_changed(an_item->row());
+			Q_EMIT pole_sequence_choice_changed(an_item->row());
 		}
 	}
 }
@@ -194,7 +194,7 @@ void
 GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::handle_pole_time_changed(
 		double new_pole_time)
 {
-	emit pole_time_changed(new_pole_time);
+	Q_EMIT pole_time_changed(new_pole_time);
 }
 
 
@@ -398,5 +398,5 @@ GPlatesQtWidgets::AdjustmentApplicator::apply_adjustment()
 	// Note that we do this before emitting the 'have_reconstructed' signal.
 	model_notification_guard.release_guard();
 
-	emit have_reconstructed();
+	Q_EMIT have_reconstructed();
 }

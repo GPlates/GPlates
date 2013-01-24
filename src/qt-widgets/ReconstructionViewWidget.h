@@ -139,7 +139,7 @@ namespace GPlatesQtWidgets
 		boost::optional<GPlatesMaths::LatLonPoint>
 		camera_llp();
 
-	public slots:
+	public Q_SLOTS:
 
 		void
 		activate_time_spinbox();
@@ -163,7 +163,7 @@ namespace GPlatesQtWidgets
 		void
 		handle_update_tools_and_status_message();
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		update_tools_and_status_message();
@@ -177,7 +177,7 @@ namespace GPlatesQtWidgets
 		send_orientation_to_stdout(
 			GPlatesMaths::Rotation &);
 	
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_globe_and_map_widget_resized(

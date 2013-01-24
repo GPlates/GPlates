@@ -56,7 +56,7 @@ namespace GPlatesQtWidgets
         virtual
         ~EditTotalReconstructionSequenceDialog();
 
-	private slots:
+	private Q_SLOTS:
 
 		/**
 		 * Handle the apply button being clicked.                                                                    

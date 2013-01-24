@@ -103,12 +103,12 @@ namespace GPlatesQtWidgets
 		set_disable_update(
 				bool b);
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		repainted();
 
-	public slots:
+	public Q_SLOTS:
 		
 		void
 		update_canvas();

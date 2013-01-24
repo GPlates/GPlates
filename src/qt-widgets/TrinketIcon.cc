@@ -81,7 +81,7 @@ GPlatesQtWidgets::TrinketIcon::mouseReleaseEvent(
 			d_clicked_callback();
 		}
 		// Let's also emit a signal, in case that approach is preferable.
-		emit clicked(this, ev);
+		Q_EMIT clicked(this, ev);
 	}
 	ev->accept();
 }

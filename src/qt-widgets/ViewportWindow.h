@@ -204,7 +204,7 @@ namespace GPlatesQtWidgets
 		GPlatesGui::UtilitiesMenu &
 		utilities_menu();
 
-	public slots:
+	public Q_SLOTS:
 		
 		void
 		status_message(
@@ -340,7 +340,7 @@ namespace GPlatesQtWidgets
 
 	
 		
-		private slots:
+		private Q_SLOTS:
 
 		void
 		set_visual_layers_dialog_visibility(

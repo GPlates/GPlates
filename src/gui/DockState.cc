@@ -328,7 +328,7 @@ GPlatesGui::DockState::react_dockwidget_location_change(
 	}
 	
 	// Notify all docks, so that menus are updated to be accurate.
-	emit dock_configuration_changed();
+	Q_EMIT dock_configuration_changed();
 }
 
 

@@ -158,7 +158,7 @@ namespace GPlatesQtWidgets
 		set_zoom_enabled(
 				bool enabled);
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		update_tools_and_status_message();
@@ -202,7 +202,7 @@ namespace GPlatesQtWidgets
 		wheelEvent(
 				QWheelEvent *event);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		init();

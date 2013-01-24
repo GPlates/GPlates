@@ -102,7 +102,7 @@ namespace GPlatesQtWidgets
 		void
 		insert_multiple();
 
-	private slots:
+	private Q_SLOTS:
 	
 		/**
 		 * Fired when the data of a cell has been modified.

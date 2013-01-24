@@ -92,7 +92,7 @@ namespace GPlatesQtWidgets
 		is_property_supported(
 				const GPlatesModel::GpgimProperty &gpgim_property) const;
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		set_appropriate_edit_widget_by_property_value_type();

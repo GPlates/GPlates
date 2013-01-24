@@ -142,7 +142,7 @@ namespace GPlatesQtWidgets
 	private:
 		
 	
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_co_registration_configuration_button_clicked()

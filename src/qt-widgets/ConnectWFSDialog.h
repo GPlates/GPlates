@@ -86,7 +86,7 @@ namespace GPlatesQtWidgets
 		void
 		process_xml();
 
-	private slots:
+	private Q_SLOTS:
 
 		void downloadFile(); // will call startRequest(url);
 

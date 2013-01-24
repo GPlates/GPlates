@@ -75,7 +75,7 @@ namespace GPlatesQtWidgets
 			return d_read_errors;
 		}
 	
-	public slots:
+	public Q_SLOTS:
 	
 		void pop_up_help_dialog()
 		{
@@ -109,7 +109,7 @@ namespace GPlatesQtWidgets
 			clear();
 		}
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_buttonbox_clicked(

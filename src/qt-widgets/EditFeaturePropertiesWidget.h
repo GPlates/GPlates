@@ -78,7 +78,7 @@ namespace GPlatesQtWidgets
 			return d_feature_ref;
 		}
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Updates the dialog to display and edit a new Feature.
@@ -102,7 +102,7 @@ namespace GPlatesQtWidgets
 		void
 		commit_edit_widget_data();
 
-	private slots:
+	private Q_SLOTS:
 		
 		/**
 		 * Wipes the EditFeaturePropertiesWidget clean without causing any leftover

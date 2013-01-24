@@ -299,12 +299,12 @@ namespace GPlatesCanvasTools
 		void
 		remove_distance_label_and_highlight();
 
-	public slots:
+	public Q_SLOTS:
 
 		void
 		feature_changed();
 
-	private slots:
+	private Q_SLOTS:
 	
 		void
 		handle_quick_measure_cleared();

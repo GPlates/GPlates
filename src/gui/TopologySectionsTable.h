@@ -80,7 +80,7 @@ namespace GPlatesGui
 		~TopologySectionsTable()
 		{  }
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Updates the table rows from the data vector.
@@ -99,7 +99,7 @@ namespace GPlatesGui
 		void
 		react_container_change(GPlatesGui::TopologySectionsContainer*);
 
-	private slots:
+	private Q_SLOTS:
 		void
 		react_cell_entered(
 				int row,

@@ -714,7 +714,7 @@ GPlatesGui::ExternalSyncController::handle_process_finished(
 	QProcess::ExitStatus exit_status)
 {
 	// Emit here so that the dialog can update. 
-	emit process_finished();	
+	Q_EMIT process_finished();	
 }
 
 void
@@ -724,7 +724,7 @@ GPlatesGui::ExternalSyncController::handle_process_error(
 	std::cout << "Error with external process started from GPlates." << std::endl;
 	std::cout << "Error code: " << error << std::endl;
 	d_process->waitForFinished();
-	emit process_finished();
+	Q_EMIT process_finished();
 }
 
 void
@@ -795,6 +795,6 @@ GPlatesGui::StdInThread::run()
 	while(true)
 	{
 		std::getline(std::cin, input_line);
-		emit std_in_string_read(QString(input_line.c_str()));
+		Q_EMIT std_in_string_read(QString(input_line.c_str()));
 	}
 }

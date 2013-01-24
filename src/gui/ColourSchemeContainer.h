@@ -239,7 +239,7 @@ namespace GPlatesGui
 				const Colour &colour,
 				const QString &colour_name);
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		colour_scheme_edited(

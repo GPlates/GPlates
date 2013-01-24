@@ -193,10 +193,10 @@ GPlatesGui::ConfigGuiUtils::ConfigWidgetAdapter::handle_key_value_updated(
 	// Otherwise re-emit signals that are more useful to the various widgets.
 	QVariant value = d_config.get_value(key);
 	
-	emit value_changed(value.toString());
-	emit value_changed(value.toBool());
-	emit value_changed(value.toInt());
-	emit value_changed(value.toDouble());
+	Q_EMIT value_changed(value.toString());
+	Q_EMIT value_changed(value.toBool());
+	Q_EMIT value_changed(value.toInt());
+	Q_EMIT value_changed(value.toDouble());
 }
 
 

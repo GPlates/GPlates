@@ -73,7 +73,7 @@ namespace GPlatesGui
 		init();
 
 	
-	public slots:
+	public Q_SLOTS:
 
 		void
 		leave_full_screen();

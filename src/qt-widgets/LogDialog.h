@@ -64,12 +64,12 @@ namespace GPlatesQtWidgets
 		~LogDialog()
 		{  };
 	
-	public slots:
+	public Q_SLOTS:
 		
 		void
 		copy_selection_to_clipboard();
 	
-	private slots:
+	private Q_SLOTS:
 	
 		void
 		handle_filter_typing();

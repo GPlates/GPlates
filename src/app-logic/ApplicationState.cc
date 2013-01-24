@@ -156,7 +156,7 @@ GPlatesAppLogic::ApplicationState::set_reconstruction_time(
 	d_reconstruction_time = new_reconstruction_time;
 	reconstruct();
 
-	emit reconstruction_time_changed(*this, d_reconstruction_time);
+	Q_EMIT reconstruction_time_changed(*this, d_reconstruction_time);
 }
 
 
@@ -172,7 +172,7 @@ GPlatesAppLogic::ApplicationState::set_anchored_plate_id(
 	d_anchored_plate_id = new_anchor_plate_id;
 	reconstruct();
 
-	emit anchor_plate_id_changed(*this, d_anchored_plate_id);
+	Q_EMIT anchor_plate_id_changed(*this, d_anchored_plate_id);
 }
 
 
@@ -196,7 +196,7 @@ GPlatesAppLogic::ApplicationState::reconstruct()
 
 	//PROFILE_BLOCK("ApplicationState::reconstruct: emit reconstructed");
 
-	emit reconstructed(*this);
+	Q_EMIT reconstructed(*this);
 }
 
 

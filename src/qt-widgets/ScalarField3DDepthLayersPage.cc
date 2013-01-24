@@ -704,7 +704,7 @@ GPlatesQtWidgets::ScalarField3DDepthLayersPage::check_if_complete()
 	if (is_complete ^ d_is_complete)
 	{
 		d_is_complete = is_complete;
-		emit completeChanged();
+		Q_EMIT completeChanged();
 	}
 }
 

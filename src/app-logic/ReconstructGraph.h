@@ -394,7 +394,7 @@ namespace GPlatesAppLogic
 		};
 
 
-	signals:
+	Q_SIGNALS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
@@ -499,7 +499,7 @@ namespace GPlatesAppLogic
 				GPlatesAppLogic::Layer prev_default_reconstruction_tree_layer,
 				GPlatesAppLogic::Layer new_default_reconstruction_tree_layer);
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Used by GuiDebug to print out current reconstruct graph state.

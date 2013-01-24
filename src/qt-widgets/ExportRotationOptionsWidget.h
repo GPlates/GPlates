@@ -74,7 +74,7 @@ namespace GPlatesQtWidgets
 			return d_export_rotation_options;
 		}
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		react_identity_radio_button_clicked()

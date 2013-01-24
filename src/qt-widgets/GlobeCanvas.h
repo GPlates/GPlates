@@ -281,7 +281,7 @@ namespace GPlatesQtWidgets
 			return d_gl_visual_layers;
 		}
 
-	public slots:
+	public Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
@@ -447,7 +447,7 @@ namespace GPlatesQtWidgets
 			QPaintEvent *paint_event);
 #endif
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		mouse_pointer_position_changed(
@@ -509,7 +509,7 @@ namespace GPlatesQtWidgets
 		repainted(
 				bool mouse_down);
 
-	public slots:
+	public Q_SLOTS:
 
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt

@@ -61,7 +61,7 @@ namespace GPlatesQtWidgets
 		void
 		populate_from_data();
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_colour_map_lineedit_editing_finished();

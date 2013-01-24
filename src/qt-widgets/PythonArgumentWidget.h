@@ -59,7 +59,7 @@ namespace GPlatesQtWidgets
 			QWidget(parent_)
 		{ }
 
-		signals:
+		Q_SIGNALS:
 		void
 		configuration_changed();
 	};
@@ -97,7 +97,7 @@ namespace GPlatesQtWidgets
 					SLOT(handle_editing_finished()));
 			 
 		}
-	private slots:
+	private Q_SLOTS:
 		
 		void
 		handle_string_changed(
@@ -109,7 +109,7 @@ namespace GPlatesQtWidgets
 		void
 		handle_editing_finished()
 		{
-			emit configuration_changed();
+			Q_EMIT configuration_changed();
 		}
 
 
@@ -161,7 +161,7 @@ namespace GPlatesQtWidgets
 					this,
 					SLOT(handle_choose_button_clicked(bool)));
 		}
-		private slots:
+		private Q_SLOTS:
 			void
 			handle_choose_button_clicked(bool b)
 			{
@@ -179,7 +179,7 @@ namespace GPlatesQtWidgets
 			handle_color_name_changed(const QString& _color_name)
 			{
 				d_cfg_item->set_value(_color_name);
-				emit configuration_changed();
+				Q_EMIT configuration_changed();
 			}
 
 	private:
@@ -231,7 +231,7 @@ namespace GPlatesQtWidgets
 					this,
 					SLOT(handle_cpt_file_changed(const QString&)));
 		}
-		private slots:
+		private Q_SLOTS:
 			void
 			handle_choose_button_clicked(bool b)
 			{
@@ -252,7 +252,7 @@ namespace GPlatesQtWidgets
 			handle_cpt_file_changed(const QString& cpt_file)
 			{
 				d_cfg_item->set_value(cpt_file);
-				emit configuration_changed();
+				Q_EMIT configuration_changed();
 			}
 	private:
 		QHBoxLayout* hboxLayout;

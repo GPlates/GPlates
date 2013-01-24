@@ -218,7 +218,7 @@ void
 GPlatesQtWidgets::ChooseFeatureCollectionWidget::handle_listwidget_item_activated(
 		QListWidgetItem *)
 {
-	emit item_activated();
+	Q_EMIT item_activated();
 }
 
 

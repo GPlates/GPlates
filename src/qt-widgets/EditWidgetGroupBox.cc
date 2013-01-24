@@ -679,7 +679,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::deactivate_edit_widgets()
 void
 GPlatesQtWidgets::EditWidgetGroupBox::edit_widget_wants_committing()
 {
-	emit commit_me();
+	Q_EMIT commit_me();
 }
 
 

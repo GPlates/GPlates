@@ -77,7 +77,7 @@ namespace GPlatesQtWidgets
 		set_default_widget_values();
 		
 		
-	private slots:
+	private Q_SLOTS:
 		void
 		handle_vertex_checkbox_changed(int);
 		

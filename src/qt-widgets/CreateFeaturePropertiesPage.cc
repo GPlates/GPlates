@@ -687,7 +687,7 @@ GPlatesQtWidgets::CreateFeaturePropertiesPage::update_focus()
 	// required property and set the focus to the "Add" button.
 	if (is_finished())
 	{
-		emit finished();
+		Q_EMIT finished();
 	}
 	else
 	{

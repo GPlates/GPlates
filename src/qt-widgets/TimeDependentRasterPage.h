@@ -88,7 +88,7 @@ namespace GPlatesQtWidgets
 		dropEvent(
 				QDropEvent *ev);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_add_directory_button_clicked();

@@ -297,7 +297,7 @@ GPlatesAppLogic::ReconstructGraph::add_layer(
 	const Layer layer(layer_impl);
 
 	// Let clients know of the new layer.
-	emit layer_added(*this, layer);
+	Q_EMIT layer_added(*this, layer);
 
 	// Ensure a full reconstruction each time the layer task parameters of this layer are modified.
 	QObject::connect(
@@ -334,7 +334,7 @@ GPlatesAppLogic::ReconstructGraph::remove_layer(
 	layer.activate(false);
 
 	// Let clients know the layer is about to be removed.
-	emit layer_about_to_be_removed(*this, layer);
+	Q_EMIT layer_about_to_be_removed(*this, layer);
 
 	// Convert from weak_ptr.
 	boost::shared_ptr<ReconstructGraphImpl::Layer> layer_impl(layer.get_impl());
@@ -346,7 +346,7 @@ GPlatesAppLogic::ReconstructGraph::remove_layer(
 	layer_impl.reset();
 
 	// Let clients know a layer has been removed.
-	emit layer_removed(*this);
+	Q_EMIT layer_removed(*this);
 
 	// End the remove layers group.
 	remove_layers_group.end_add_or_remove_layers();
@@ -374,7 +374,7 @@ GPlatesAppLogic::ReconstructGraph::set_default_reconstruction_tree_layer(
 	d_default_reconstruction_tree_layer_stack.push_back(new_default_reconstruction_tree_layer);
 
 	// Let clients know of the new default reconstruction tree layer.
-	emit default_reconstruction_tree_layer_changed(
+	Q_EMIT default_reconstruction_tree_layer_changed(
 			*this,
 			prev_default_reconstruction_tree_layer,
 			new_default_reconstruction_tree_layer);
@@ -788,7 +788,7 @@ GPlatesAppLogic::ReconstructGraph::handle_default_reconstruction_tree_layer_remo
 
 	// Let clients know of the new default reconstruction tree layer even if there are no
 	// default reconstruction trees left.
-	emit default_reconstruction_tree_layer_changed(
+	Q_EMIT default_reconstruction_tree_layer_changed(
 			*this,
 			prev_default_reconstruction_tree_layer,
 			new_default_reconstruction_tree_layer);
@@ -832,7 +832,7 @@ GPlatesAppLogic::ReconstructGraph::emit_begin_add_or_remove_layers()
 {
 	if (d_add_or_remove_layers_group_nested_count == 0)
 	{
-		emit begin_add_or_remove_layers();
+		Q_EMIT begin_add_or_remove_layers();
 	}
 
 	++d_add_or_remove_layers_group_nested_count;
@@ -846,7 +846,7 @@ GPlatesAppLogic::ReconstructGraph::emit_end_add_or_remove_layers()
 
 	if (d_add_or_remove_layers_group_nested_count == 0)
 	{
-		emit end_add_or_remove_layers();
+		Q_EMIT end_add_or_remove_layers();
 	}
 }
 
@@ -856,7 +856,7 @@ GPlatesAppLogic::ReconstructGraph::emit_layer_activation_changed(
 		const Layer &layer,
 		bool activation)
 {
-	emit layer_activation_changed(*this, layer, activation);
+	Q_EMIT layer_activation_changed(*this, layer, activation);
 }
 
 
@@ -865,7 +865,7 @@ GPlatesAppLogic::ReconstructGraph::emit_layer_added_input_connection(
 		GPlatesAppLogic::Layer layer,
 		GPlatesAppLogic::Layer::InputConnection input_connection)
 {
-	emit layer_added_input_connection(*this, layer, input_connection);
+	Q_EMIT layer_added_input_connection(*this, layer, input_connection);
 }
 
 
@@ -874,7 +874,7 @@ GPlatesAppLogic::ReconstructGraph::emit_layer_about_to_remove_input_connection(
 		GPlatesAppLogic::Layer layer,
 		GPlatesAppLogic::Layer::InputConnection input_connection)
 {
-	emit layer_about_to_remove_input_connection(*this, layer, input_connection);
+	Q_EMIT layer_about_to_remove_input_connection(*this, layer, input_connection);
 }
 
 
@@ -882,7 +882,7 @@ void
 GPlatesAppLogic::ReconstructGraph::emit_layer_removed_input_connection(
 		GPlatesAppLogic::Layer layer)
 {
-	emit layer_removed_input_connection(*this, layer);
+	Q_EMIT layer_removed_input_connection(*this, layer);
 }
 
 

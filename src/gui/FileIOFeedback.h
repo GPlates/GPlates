@@ -211,7 +211,7 @@ namespace GPlatesGui
 		save_all(
 				bool include_unnamed_files);
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Opens an Open File dialog allowing the user to select zero or more files,

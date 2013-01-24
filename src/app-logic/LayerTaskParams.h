@@ -52,7 +52,7 @@ namespace GPlatesAppLogic
 		~LayerTaskParams()
 		{  }
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Emitted when any aspect of the parameters has been modified.
@@ -68,7 +68,7 @@ namespace GPlatesAppLogic
 		void
 		emit_modified()
 		{
-			emit modified();
+			Q_EMIT modified();
 		}
 	};
 }

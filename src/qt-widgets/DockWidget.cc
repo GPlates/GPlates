@@ -181,7 +181,7 @@ GPlatesQtWidgets::DockWidget::handle_floating_change(
 		bool floating)
 {
 	//qDebug() << this<<"::handle_floating_change("<<floating<<")";
-	emit location_changed(*this, Qt::NoDockWidgetArea, floating);
+	Q_EMIT location_changed(*this, Qt::NoDockWidgetArea, floating);
 }
 
 void
@@ -189,7 +189,7 @@ GPlatesQtWidgets::DockWidget::handle_location_change(
 		Qt::DockWidgetArea area)
 {
 	//qDebug() << this<<"::handle_location_change("<<area<<")";
-	emit location_changed(*this, area, false);
+	Q_EMIT location_changed(*this, area, false);
 }
 
 

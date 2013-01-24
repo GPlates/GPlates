@@ -102,7 +102,7 @@ namespace GPlatesQtWidgets
 		}
 
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		discard_changes()

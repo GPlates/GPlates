@@ -111,7 +111,7 @@ GPlatesGui::CanvasToolWorkflows::activate()
 	d_canvas_tool_workflows[d_active_workflow]->activate();
 
 	// Let clients know of the initial workflow/tool.
-	emit canvas_tool_activated(d_active_workflow, d_canvas_tool_workflows[d_active_workflow]->get_selected_tool());
+	Q_EMIT canvas_tool_activated(d_active_workflow, d_canvas_tool_workflows[d_active_workflow]->get_selected_tool());
 }
 
 
@@ -237,7 +237,7 @@ GPlatesGui::CanvasToolWorkflows::choose_canvas_tool(
 	// Activate the specified tool in the workflow.
 	d_canvas_tool_workflows[d_active_workflow]->activate(tool);
 
-	emit canvas_tool_activated(workflow, tool);
+	Q_EMIT canvas_tool_activated(workflow, tool);
 }
 
 
@@ -257,7 +257,7 @@ GPlatesGui::CanvasToolWorkflows::handle_canvas_tool_enabled(
 
 	// Emit a signal for our clients.
 	// We're gathering signals emitted by individual workflows and re-emitting for client's convenience.
-	emit canvas_tool_enabled(workflow, tool, enable);
+	Q_EMIT canvas_tool_enabled(workflow, tool, enable);
 }
 
 

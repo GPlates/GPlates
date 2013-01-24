@@ -84,7 +84,7 @@ namespace GPlatesQtWidgets
 		set_feature_type(
 				const GPlatesModel::FeatureType &feature_type);
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		item_activated();
@@ -100,7 +100,7 @@ namespace GPlatesQtWidgets
 		focusInEvent(
 				QFocusEvent *ev);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_item_activated(

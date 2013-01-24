@@ -95,7 +95,7 @@ namespace GPlatesQtWidgets
 		process(
 				GPlatesModel::FeatureHandle::iterator &new_focused_geometry_property);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_checkbox_state_changed(

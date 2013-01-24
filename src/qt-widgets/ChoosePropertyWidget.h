@@ -102,12 +102,12 @@ namespace GPlatesQtWidgets
 				const GPlatesModel::FeatureHandle::weak_ref &source_feature_ref =
 						GPlatesModel::FeatureHandle::weak_ref());
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		item_activated();
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_item_activated(

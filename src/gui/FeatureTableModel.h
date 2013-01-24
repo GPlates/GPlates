@@ -318,7 +318,7 @@ namespace GPlatesGui
 		get_index_for_geometry(
 				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry);
 
-	public slots:
+	public Q_SLOTS:
 		
 		/**
 		 * ViewportWindow connects the QTableView's selection model's change event to this

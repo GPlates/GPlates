@@ -220,7 +220,7 @@ namespace GPlatesApi
 		void
 		set_other_exception_raised();
 
-	private slots:
+	private Q_SLOTS:
 		void
 		handle_exec_interactive_command_finished(
 				bool continue_interactive_input_);

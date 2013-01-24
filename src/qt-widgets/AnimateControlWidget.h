@@ -68,7 +68,7 @@ namespace GPlatesQtWidgets
 		~AnimateControlWidget()
 		{  }
 	
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Sets whether you want a single button for play and pause
@@ -91,7 +91,7 @@ namespace GPlatesQtWidgets
 		show_step_buttons(
 				bool show_);
 
-	private slots:
+	private Q_SLOTS:
 		
 		void
 		handle_play_or_pause_clicked();

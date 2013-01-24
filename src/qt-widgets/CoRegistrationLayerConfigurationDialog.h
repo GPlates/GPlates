@@ -182,7 +182,7 @@ namespace GPlatesQtWidgets
 			d_visual_layer = layer;
 		}
 
-	public slots:
+	public Q_SLOTS:
 
 		void
 		reject()
@@ -203,7 +203,7 @@ namespace GPlatesQtWidgets
 		update(
 				bool update_only_when_visible = true);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		react_target_layer_selection_changed();

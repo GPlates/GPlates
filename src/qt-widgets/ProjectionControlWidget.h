@@ -57,7 +57,7 @@ namespace GPlatesQtWidgets
 				GPlatesGui::ViewportProjection &viewport_projection,
 				QWidget *parent_);
 
-	private slots:
+	private Q_SLOTS:
 		
 		void
 		handle_combobox_changed(
@@ -66,7 +66,7 @@ namespace GPlatesQtWidgets
 		void
 		handle_shortcut_triggered();
 
-	public slots:
+	public Q_SLOTS:
 		void
 		handle_projection_type_changed(
 				const GPlatesGui::ViewportProjection &);

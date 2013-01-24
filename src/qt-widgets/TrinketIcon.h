@@ -100,7 +100,7 @@ namespace GPlatesQtWidgets
 			d_clicked_callback = f;
 		}
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		clicked(

@@ -104,12 +104,12 @@ namespace GPlatesGui
 				Qt::DockWidgetArea area,
 				bool tabify_as_appropriate);
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		dock_configuration_changed();
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		react_dockwidget_location_change(

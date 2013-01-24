@@ -140,7 +140,7 @@ GPlatesGui::FeatureFocus::set_focus(
 	d_associated_geometry_property = new_geometry_property
 			? new_geometry_property.get() : GPlatesModel::FeatureHandle::iterator();
 
-	emit focus_changed(*this);
+	Q_EMIT focus_changed(*this);
 }
 
 
@@ -176,7 +176,7 @@ GPlatesGui::FeatureFocus::set_focus(
 	find_new_associated_reconstruction_geometry();
 
 	// tell the rest of the application about the new focus
-	emit focus_changed(*this);
+	Q_EMIT focus_changed(*this);
 }
 
 
@@ -216,7 +216,7 @@ GPlatesGui::FeatureFocus::unset_focus()
 	d_associated_reconstruction_geometry = NULL;
 	d_associated_geometry_property = GPlatesModel::FeatureHandle::iterator();
 
-	emit focus_changed(*this);
+	Q_EMIT focus_changed(*this);
 }
 
 
@@ -295,7 +295,7 @@ GPlatesGui::FeatureFocus::announce_modification_of_focused_feature()
 		unset_focus();
 	}
 
-	emit focused_feature_modified(*this);
+	Q_EMIT focused_feature_modified(*this);
 }
 
 
@@ -306,7 +306,7 @@ GPlatesGui::FeatureFocus::announce_deletion_of_focused_feature()
 		// You can't have deleted it, nothing is focused!
 		return;
 	}
-	emit focused_feature_deleted(*this);
+	Q_EMIT focused_feature_deleted(*this);
 	unset_focus();
 }
 
@@ -323,7 +323,7 @@ GPlatesGui::FeatureFocus::handle_rendered_geometry_collection_update()
 	{
 		// A new ReconstructionGeometry has been found so we should
 		// emit a signal in case clients need to know this.
-		emit focus_changed(*this);
+		Q_EMIT focus_changed(*this);
 	}
 }
 

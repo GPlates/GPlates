@@ -81,7 +81,7 @@ namespace GPlatesGui
 		double
 		zoom_level() const;
 	
-	public slots:
+	public Q_SLOTS:
 
 		void
 		zoom_in(
@@ -102,7 +102,7 @@ namespace GPlatesGui
 		set_zoom_level(
 				double new_zoom_level);
 		
-	signals:
+	Q_SIGNALS:
 	
 		/**
 		 * This signal should only be emitted if the zoom is actually different to what it

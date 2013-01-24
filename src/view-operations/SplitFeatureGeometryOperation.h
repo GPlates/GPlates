@@ -116,7 +116,7 @@ namespace GPlatesViewOperations
 				const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere,
 				const double &closeness_inclusion_threshold);
 
-	public slots:
+	public Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.

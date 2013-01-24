@@ -74,7 +74,7 @@ namespace GPlatesGui
 		void
 		deactivate_canvas_tool();
 
-	private slots:
+	private Q_SLOTS:
 	
 		void
 		handle_press(

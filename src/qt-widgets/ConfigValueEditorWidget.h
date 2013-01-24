@@ -55,7 +55,7 @@ namespace GPlatesQtWidgets
 			return d_wants_reset;
 		}
 	
-	signals:
+	Q_SIGNALS:
 		
 		/**
 		 * This widget wants to reset to the default value and close the editor, please.
@@ -68,7 +68,7 @@ namespace GPlatesQtWidgets
 		reset_requested(
 				QWidget *editor);
 	
-	private slots:
+	private Q_SLOTS:
 	
 		/**
 		 * Reset button has been clicked(), re-emit as our own custom signal.

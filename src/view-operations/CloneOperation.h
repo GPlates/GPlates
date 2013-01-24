@@ -65,7 +65,7 @@ namespace GPlatesViewOperations
 		~CloneOperation()
 		{ }
 
-	public slots:
+	public Q_SLOTS:
 			
 		void
 		clone_focused_geometry();

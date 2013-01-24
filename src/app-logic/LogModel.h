@@ -165,7 +165,7 @@ namespace GPlatesAppLogic
 		rowCount(
 				const QModelIndex &parent_idx) const;
 		
-	private slots:
+	private Q_SLOTS:
 		
 		/**
 		 * Called after a short period of no further incoming messages, to

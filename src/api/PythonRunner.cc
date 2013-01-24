@@ -439,7 +439,7 @@ GPlatesApi::PythonRunner::handle_system_exit(
 
 		if(monitor)
 			monitor->set_system_exit_exception_raised(exit_status, error_message);
-		emit system_exit_exception_raised(exit_status, error_message);
+		Q_EMIT system_exit_exception_raised(exit_status, error_message);
 	}
 	catch (const error_already_set &)
 	{

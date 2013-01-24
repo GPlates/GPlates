@@ -181,7 +181,7 @@ namespace GPlatesGui
 		void
 		handle_sections_combobox_index_changed( int i );
 
-	public slots:
+	public Q_SLOTS:
 		
 		void
 		handle_reconstruction();

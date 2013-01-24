@@ -170,7 +170,7 @@ namespace GPlatesPresentation
 		const_iterator
 		order_end() const;
 
-	public slots:
+	public Q_SLOTS:
 
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
@@ -198,7 +198,7 @@ namespace GPlatesPresentation
 		void
 		create_rendered_geometries();
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Indicates that there has been a change in the ordering of layer indices
@@ -322,7 +322,7 @@ namespace GPlatesPresentation
 		void
 		changed();
 
-	private slots:
+	private Q_SLOTS:
 
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt

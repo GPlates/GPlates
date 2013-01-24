@@ -57,12 +57,12 @@ GPlatesGui::TopologySectionsContainer::insert(
 	// Which will naturally bump the insertion point down one row.
 	move_insertion_point(insertion_point() + 1);
 	// Emit signals
-	emit entries_inserted(
+	Q_EMIT entries_inserted(
 			index,
 			1,
 			d_container.begin() + index,
 			d_container.begin() + index + 1);
-	emit container_changed(*this);
+	Q_EMIT container_changed(*this);
 }
 
 
@@ -77,8 +77,8 @@ GPlatesGui::TopologySectionsContainer::update_at(
 
 	d_container.at(index) = entry;
 	// Emit signals.
-	emit entry_modified(index);
-	emit container_changed(*this);
+	Q_EMIT entry_modified(index);
+	Q_EMIT container_changed(*this);
 }
 
 
@@ -97,8 +97,8 @@ GPlatesGui::TopologySectionsContainer::remove_at(
 		move_insertion_point(insertion_point() - 1);
 	}
 	// Emit signals
-	emit entry_removed(index);
-	emit container_changed(*this);
+	Q_EMIT entry_removed(index);
+	Q_EMIT container_changed(*this);
 }
 
 
@@ -132,8 +132,8 @@ GPlatesGui::TopologySectionsContainer::move_insertion_point(
 		// Do the move.
 		d_insertion_point = new_index;
 		// Emit signals.
-		emit insertion_point_moved(new_index);
-		emit container_changed(*this);
+		Q_EMIT insertion_point_moved(new_index);
+		Q_EMIT container_changed(*this);
 	}// else, no need to move, and no need to emit signals.
 }
 
@@ -149,8 +149,8 @@ void
 GPlatesGui::TopologySectionsContainer::update_table_from_container()
 {
 	// Emit signals.
-	emit do_update();
-	emit container_changed(*this);
+	Q_EMIT do_update();
+	Q_EMIT container_changed(*this);
 }
 
 void
@@ -160,9 +160,9 @@ GPlatesGui::TopologySectionsContainer::clear()
 	d_container.clear();
 	d_insertion_point = 0;
 	// Emit signals.
-	emit cleared();
-	emit insertion_point_moved(0);
-	emit container_changed(*this);
+	Q_EMIT cleared();
+	Q_EMIT insertion_point_moved(0);
+	Q_EMIT container_changed(*this);
 }
 
 void
@@ -170,8 +170,8 @@ GPlatesGui::TopologySectionsContainer::set_focus_feature_at_index(
 		size_type index )
 {
 	// Emit signals.
-	emit focus_feature_at_index( index );
-	emit container_changed(*this);
+	Q_EMIT focus_feature_at_index( index );
+	Q_EMIT container_changed(*this);
 }
 
 void
@@ -179,8 +179,8 @@ GPlatesGui::TopologySectionsContainer::set_container_ptr_in_table(
 	GPlatesGui::TopologySectionsContainer *ptr)
 {
 	// Emit signals.
-	emit container_change( ptr );
-	emit container_changed(*this);
+	Q_EMIT container_change( ptr );
+	Q_EMIT container_changed(*this);
 }
 
 namespace

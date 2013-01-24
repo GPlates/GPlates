@@ -309,7 +309,7 @@ namespace GPlatesPresentation
 			return *d_python_manager_ptr;
 		}
 
-	private slots:
+	private Q_SLOTS:
 
 
 		void

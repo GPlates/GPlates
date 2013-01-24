@@ -194,6 +194,6 @@ void
 GPlatesQtWidgets::ChoosePropertyWidget::handle_item_activated(
 		int index)
 {
-	emit item_activated();
+	Q_EMIT item_activated();
 }
 

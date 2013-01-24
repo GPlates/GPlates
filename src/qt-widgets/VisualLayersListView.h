@@ -74,7 +74,7 @@ namespace GPlatesQtWidgets
 		dropEvent(
 				QDropEvent *event_);
 
-	protected slots:
+	protected Q_SLOTS:
 
 		virtual
 		void
@@ -83,7 +83,7 @@ namespace GPlatesQtWidgets
 				int start,
 				int end);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_begin_add_or_remove_layers();

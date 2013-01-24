@@ -86,7 +86,7 @@ namespace GPlatesQtWidgets
 		get_workflow_tool_menu_actions(
 				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow) const;
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Emitted when a canvas tool action is triggered by the user (as opposed to automatically by GPlates).
@@ -109,7 +109,7 @@ namespace GPlatesQtWidgets
 				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
 				GPlatesGui::CanvasToolWorkflows::ToolType tool);
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Use dimension 16 or 35 icons depending on @a use_small_icons.
@@ -125,7 +125,7 @@ namespace GPlatesQtWidgets
 		set_icon_size(
 				const QSize &icon_size);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_tool_action_triggered();

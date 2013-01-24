@@ -206,7 +206,7 @@ void
 GPlatesQtWidgets::MapView::handle_map_canvas_repainted()
 {
 	// If d_mouse_press_info is not boost::none, then mouse is down.
-	emit repainted(d_mouse_press_info);
+	Q_EMIT repainted(d_mouse_press_info);
 }
 
 
@@ -227,7 +227,7 @@ GPlatesQtWidgets::MapView::handle_mouse_pointer_pos_change()
 
 	d_mouse_pointer_is_on_surface = llp;
 
-	emit mouse_pointer_position_changed(llp, d_mouse_pointer_is_on_surface);
+	Q_EMIT mouse_pointer_position_changed(llp, d_mouse_pointer_is_on_surface);
 }
 
 
@@ -255,7 +255,7 @@ GPlatesQtWidgets::MapView::mousePressEvent(
 					press_event->button(),
 					press_event->modifiers());
 					
-	emit mouse_pressed(
+	Q_EMIT mouse_pressed(
 			d_mouse_press_info->d_mouse_pointer_scene_coords,
 			d_mouse_press_info->d_is_on_surface,
 			d_mouse_press_info->d_button,
@@ -300,7 +300,7 @@ GPlatesQtWidgets::MapView::mouseReleaseEvent(
 	if ((d_mouse_press_info->d_is_mouse_drag))
 	{
 
-		emit mouse_released_after_drag(
+		Q_EMIT mouse_released_after_drag(
 				d_mouse_press_info->d_mouse_pointer_scene_coords,
 				d_mouse_press_info->d_is_on_surface,
 				mouse_pointer_scene_coords(),
@@ -310,7 +310,7 @@ GPlatesQtWidgets::MapView::mouseReleaseEvent(
 				d_mouse_press_info->d_modifiers);
 
 	} else {
-		emit mouse_clicked(
+		Q_EMIT mouse_clicked(
 				d_mouse_press_info->d_mouse_pointer_scene_coords,
 				d_mouse_press_info->d_is_on_surface,
 				d_mouse_press_info->d_button,
@@ -320,7 +320,7 @@ GPlatesQtWidgets::MapView::mouseReleaseEvent(
 
 	// Emit repainted signal with mouse_down = false so that those listeners who
 	// didn't care about intermediate repaints can now deal with the repaint.
-	emit repainted(false);
+	Q_EMIT repainted(false);
 }
 
 
@@ -352,7 +352,7 @@ GPlatesQtWidgets::MapView::mouseMoveEvent(
 
 		if (d_mouse_press_info->d_is_mouse_drag)
 		{
-			emit mouse_dragged(
+			Q_EMIT mouse_dragged(
 					d_mouse_press_info->d_mouse_pointer_scene_coords,
 					d_mouse_press_info->d_is_on_surface,
 					mouse_pointer_scene_coords(),
@@ -372,7 +372,7 @@ GPlatesQtWidgets::MapView::mouseMoveEvent(
 		// Either way it is an mouse movement that is not currently invoking a
 		// canvas tool operation.
 		//
-		emit mouse_moved_without_drag(
+		Q_EMIT mouse_moved_without_drag(
 				mouse_pointer_scene_coords(),
 				mouse_pointer_is_on_surface(),
 				translation);

@@ -211,7 +211,7 @@ namespace GPlatesQtWidgets
 		keyPressEvent(
 				QKeyEvent *ev);
 	
-	public slots:
+	public Q_SLOTS:
 		
 		/**
 		 * set_dirty() should be called whenever a widget is modified by a user
@@ -241,7 +241,7 @@ namespace GPlatesQtWidgets
 		set_handle_enter_key(
 				bool should_handle);
 	
-	signals:
+	Q_SIGNALS:
 	
 		/**
 		 * Signal typically emitted when the user presses enter, indicating an updated value.

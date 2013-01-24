@@ -780,7 +780,7 @@ GPlatesGui::FeatureTableModel::handle_feature_modified(
 			{
 				QModelIndex idx_begin = index(row, 0);
 				QModelIndex idx_end = index(row, NUM_ELEMS(column_heading_info_table) - 1);
-				emit dataChanged(idx_begin, idx_end);
+				Q_EMIT dataChanged(idx_begin, idx_end);
 			}
 		}
 		// Else it doesn't reference a feature.
@@ -891,7 +891,7 @@ GPlatesGui::FeatureTableModel::handle_rendered_geometry_collection_update()
 		// Notify of the changed rows.
 		QModelIndex idx_begin = index(start_row, 0);
 		QModelIndex idx_end = index(last_row, NUM_ELEMS(column_heading_info_table) - 1);
-		emit dataChanged(idx_begin, idx_end);
+		Q_EMIT dataChanged(idx_begin, idx_end);
 	}
 
 	if (rows_to_remove.empty())

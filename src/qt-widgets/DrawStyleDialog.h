@@ -214,7 +214,7 @@ namespace GPlatesQtWidgets
 		apply_style_to_all_layers();
 
 
-	private slots:
+	private Q_SLOTS:
 		void
 		handle_close_button_clicked();
 

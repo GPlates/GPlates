@@ -127,7 +127,7 @@ namespace GPlatesQtWidgets
 		bool
 		valid();
 
-	private slots:
+	private Q_SLOTS:
 	
 		void
 		handle_appearance_is_distant_past_check();

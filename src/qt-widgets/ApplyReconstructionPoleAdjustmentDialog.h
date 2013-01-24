@@ -152,7 +152,7 @@ namespace GPlatesQtWidgets
 			emit value_changed(d_value);
 		}
 #endif
-	protected slots:
+	protected Q_SLOTS:
 		void
 		handle_pole_sequence_selection_changed();
 
@@ -160,7 +160,7 @@ namespace GPlatesQtWidgets
 		handle_pole_time_changed(
 				double new_pole_time);
 
-	signals:
+	Q_SIGNALS:
 		void
 		pole_sequence_choice_changed(
 				int new_choice);
@@ -204,7 +204,7 @@ namespace GPlatesQtWidgets
 			d_pole_time = reconstruction_tree_->get_reconstruction_time();
 		}
 
-	public slots:
+	public Q_SLOTS:
 
 		void
 		handle_pole_sequence_choice_changed(
@@ -220,7 +220,7 @@ namespace GPlatesQtWidgets
 		void
 		apply_adjustment();
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		have_reconstructed();

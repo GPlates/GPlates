@@ -92,6 +92,6 @@ void
 GPlatesQtWidgets::ZoomControlWidget::handle_spinbox_changed()
 {
 	d_viewport_zoom_ptr->set_zoom_percent(spinbox_zoom_percent->value());
-	emit editing_finished();
+	Q_EMIT editing_finished();
 }
 

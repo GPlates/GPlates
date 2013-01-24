@@ -77,7 +77,7 @@ namespace GPlatesQtWidgets
 		~AddPropertyDialog()
 		{  }
 			
-	public slots:
+	public Q_SLOTS:
 		
 		/**
 		 * Set the feature, and its feature type, that the properties are being added to.
@@ -99,7 +99,7 @@ namespace GPlatesQtWidgets
 		void
 		pop_up();
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		set_appropriate_edit_widget();

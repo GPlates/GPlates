@@ -84,7 +84,7 @@ namespace GPlatesQtWidgets
 			ReadErrorAccumulationDialog &read_error_accumulation_dialog,
 			QWidget* parent_ = NULL);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_close_button_clicked(

@@ -701,7 +701,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::delete_time_from_table(
 	
 		
 	set_dirty();
-	emit commit_me();
+	Q_EMIT commit_me();
 }
 
 
@@ -710,7 +710,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::sort_and_commit()
 {
 	table_times->sortItems(COLUMN_TIME);
 	set_dirty();
-	emit commit_me();
+	Q_EMIT commit_me();
 }
 
 void

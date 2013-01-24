@@ -74,7 +74,7 @@ namespace GPlatesQtWidgets
 		virtual
 		~VisualLayersWidget();
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_add_new_layer_button_clicked();

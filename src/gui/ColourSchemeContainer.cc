@@ -255,7 +255,7 @@ GPlatesGui::ColourSchemeContainer::edit_single_colour_scheme(
 				colour_name,
 				false /* should only edit non-built-in single colour schemes */);
 
-		emit colour_scheme_edited(ColourSchemeCategory::SINGLE_COLOUR, id);
+		Q_EMIT colour_scheme_edited(ColourSchemeCategory::SINGLE_COLOUR, id);
 	}
 }
 

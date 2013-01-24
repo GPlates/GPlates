@@ -237,7 +237,7 @@ GPlatesGui::VisualLayersListModel::handle_visual_layers_order_changed(
 		size_t first_row,
 		size_t last_row)
 {
-	emit dataChanged(index(first_row, 0), index(last_row, 0));
+	Q_EMIT dataChanged(index(first_row, 0), index(last_row, 0));
 }
 
 
@@ -292,6 +292,6 @@ GPlatesGui::VisualLayersListModel::handle_visual_layer_modified(
 		size_t row)
 {
 	QModelIndex model_index = index(row, 0);
-	emit dataChanged(model_index, model_index);
+	Q_EMIT dataChanged(model_index, model_index);
 }
 

@@ -113,7 +113,7 @@ namespace GPlatesQtWidgets
 		append_string_element(
 				const QString &str);
 
-	private slots:
+	private Q_SLOTS:
 	
 		/**
 		 * Handle a change to the data contained in a cell.

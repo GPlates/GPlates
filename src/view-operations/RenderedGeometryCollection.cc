@@ -531,7 +531,7 @@ GPlatesViewOperations::RenderedGeometryCollection::signal_update(
 void
 GPlatesViewOperations::RenderedGeometryCollection::send_update_signal()
 {
-	emit collection_was_updated(*this, d_main_layers_updated);
+	Q_EMIT collection_was_updated(*this, d_main_layers_updated);
 	d_main_layers_updated.reset();
 
 	d_update_notify_queued = false;

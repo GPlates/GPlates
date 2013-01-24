@@ -105,7 +105,7 @@ namespace GPlatesGui
 				int column,
 				const QModelIndex &parent_);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_visual_layers_order_changed(

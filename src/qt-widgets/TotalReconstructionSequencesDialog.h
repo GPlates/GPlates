@@ -99,7 +99,7 @@ namespace GPlatesQtWidgets
 
                 ~TotalReconstructionSequencesDialog();
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Update the dialog (after a file has been loaded or unloaded, for example).

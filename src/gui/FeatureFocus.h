@@ -106,7 +106,7 @@ namespace GPlatesGui
 			return d_associated_geometry_property;
 		}
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Change which feature is currently focused, also specifying an associated
@@ -209,7 +209,7 @@ namespace GPlatesGui
 		void
 		handle_rendered_geometry_collection_update();
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Emitted when a new feature has been clicked on, or the current focus has been

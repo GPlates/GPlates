@@ -50,7 +50,7 @@ namespace GPlatesQtWidgets
 		bool
 		isComplete() const;
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_save_checkbox_state_changed(

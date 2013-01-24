@@ -56,10 +56,10 @@ namespace GPlatesCanvasTools
 				bool should_use_plate_id,
 				GPlatesModel::integer_plate_id_type plate_id)
 		{
-			emit snap_vertices_setup_changed(should_check_nearby_vertices, threshold, should_use_plate_id, plate_id);
+			Q_EMIT snap_vertices_setup_changed(should_check_nearby_vertices, threshold, should_use_plate_id, plate_id);
 		}
 
-	signals:
+	Q_SIGNALS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.

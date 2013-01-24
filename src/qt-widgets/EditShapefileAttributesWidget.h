@@ -60,7 +60,7 @@ namespace GPlatesQtWidgets
 		update_widget_from_key_value_dictionary(
 			GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
 
-	private slots:
+	private Q_SLOTS:
 
 		/**
 		 * Handle the content of a cell changing. 

@@ -79,7 +79,7 @@ namespace GPlatesQtWidgets
 		populate(
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_feature_type_changed(

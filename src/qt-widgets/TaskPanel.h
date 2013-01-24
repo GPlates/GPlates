@@ -209,7 +209,7 @@ namespace GPlatesQtWidgets
 			return d_clear_action;
 		}
 	
-	public slots:
+	public Q_SLOTS:
 		
 		/**
 		 * Select a particular tab/page and make it visible.
@@ -257,7 +257,7 @@ namespace GPlatesQtWidgets
 		void
 		choose_small_circle_tab();
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_clear_action_enabled_changed(

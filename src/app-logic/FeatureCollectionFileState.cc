@@ -166,8 +166,8 @@ GPlatesAppLogic::FeatureCollectionFileState::add_files(
 	}
 
 	// Emit to signal that all requested files have been added.
-	emit file_state_files_added(*this, file_references);
-	emit file_state_changed(*this);
+	Q_EMIT file_state_files_added(*this, file_references);
+	Q_EMIT file_state_changed(*this);
 
 	// Also let direct caller know which files were added so doesn't have to
 	// listen to signal and interrupt its call flow.
@@ -328,8 +328,8 @@ GPlatesAppLogic::FeatureCollectionFileState::set_file_info(
 	d_file_slots[file_handle].d_file_slot_extra->d_file_ref->set_file_info(new_file_info, new_file_configuration);
 
 	file_reference file_ref(*this, file_handle);
-	emit file_state_file_info_changed(*this, file_ref);
-	emit file_state_changed(*this);
+	Q_EMIT file_state_file_info_changed(*this, file_ref);
+	Q_EMIT file_state_changed(*this);
 }
 
 
@@ -349,7 +349,7 @@ GPlatesAppLogic::FeatureCollectionFileState::deactivated_feature_collection(
 	// Let clients know a file is about to be removed.
 	// We need to do this here rather than in FeatureCollectionFileState:remove because
 	// an undo of a file addition also is equivalent to a file remove as far as the client knows.
-	emit file_state_file_about_to_be_removed(*this, file_reference(*this, file_handle));
+	Q_EMIT file_state_file_about_to_be_removed(*this, file_reference(*this, file_handle));
 
 	// Flag the slot as not a currently loaded file.
 	file_slot.d_is_active_in_model = false;
@@ -387,7 +387,7 @@ GPlatesAppLogic::FeatureCollectionFileState::deactivated_feature_collection(
 			GPLATES_ASSERTION_SOURCE);
 	--d_num_currently_loaded_files;
 
-	emit file_state_changed(*this);
+	Q_EMIT file_state_changed(*this);
 }
 
 
@@ -439,8 +439,8 @@ GPlatesAppLogic::FeatureCollectionFileState::reactivated_feature_collection(
 
 	// To our clients this will look like a file has been added.
 	const std::vector<file_reference> file_references(1, file_reference(*this, file_handle));
-	emit file_state_files_added(*this, file_references);
-	emit file_state_changed(*this);
+	Q_EMIT file_state_files_added(*this, file_references);
+	Q_EMIT file_state_changed(*this);
 }
 
 

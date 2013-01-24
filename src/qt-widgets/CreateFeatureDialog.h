@@ -133,13 +133,13 @@ namespace GPlatesQtWidgets
 				const GPlatesModel::PropertyValue::non_null_ptr_type &geometry_property_value);
 
 
-	signals:
+	Q_SIGNALS:
 		
 		void
 		feature_created(
 				GPlatesModel::FeatureHandle::weak_ref feature);
 					
-	private slots:
+	private Q_SLOTS:
 		
 		void
 		handle_prev();

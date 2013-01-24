@@ -77,7 +77,7 @@ namespace GPlatesQtWidgets
 			return d_trs_feature;
 		}
 
-	private slots:
+	private Q_SLOTS:
 
 		/**
 		 * Handle the create button being clicked.                                                                    

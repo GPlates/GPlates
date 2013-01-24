@@ -193,7 +193,7 @@ void
 GPlatesCanvasTools::MeasureDistanceState::reexamine_geometry_builder()
 {
 	process_geometry_builder(d_current_geometry_builder_ptr);
-	emit feature_in_geometry_builder_changed();
+	Q_EMIT feature_in_geometry_builder_changed();
 }
 
 
@@ -232,7 +232,7 @@ GPlatesCanvasTools::MeasureDistanceState::get_feature_segment_distance()
 void
 GPlatesCanvasTools::MeasureDistanceState::emit_quick_measure_updated()
 {
-	emit quick_measure_updated(
+	Q_EMIT quick_measure_updated(
 			d_quick_measure_start,
 			d_quick_measure_end,
 			get_quick_measure_distance());
@@ -278,7 +278,7 @@ GPlatesCanvasTools::MeasureDistanceState::clear_quick_measure()
 		d_quick_measure_start = boost::none;
 		d_quick_measure_end = boost::none;
 
-		emit quick_measure_cleared();
+		Q_EMIT quick_measure_cleared();
 
 		emit_quick_measure_updated();
 	}
@@ -305,7 +305,7 @@ GPlatesCanvasTools::MeasureDistanceState::emit_feature_measure_updated()
 {
 	if (d_feature_total_distance)
 	{
-		emit feature_measure_updated(
+		Q_EMIT feature_measure_updated(
 				*d_feature_total_distance,
 				d_feature_area,
 				d_feature_segment_start,
@@ -314,7 +314,7 @@ GPlatesCanvasTools::MeasureDistanceState::emit_feature_measure_updated()
 	}
 	else
 	{
-		emit feature_measure_updated();
+		Q_EMIT feature_measure_updated();
 	}
 }
 
@@ -417,7 +417,7 @@ GPlatesCanvasTools::MeasureDistanceState::set_quick_measure_highlight(
 	if (d_is_quick_measure_highlighted != is_highlighted)
 	{
 		d_is_quick_measure_highlighted = is_highlighted;
-		emit quick_measure_highlight_changed(is_highlighted);
+		Q_EMIT quick_measure_highlight_changed(is_highlighted);
 	}
 }
 
@@ -429,7 +429,7 @@ GPlatesCanvasTools::MeasureDistanceState::set_feature_measure_highlight(
 	if (d_is_feature_measure_highlighted != is_highlighted)
 	{
 		d_is_feature_measure_highlighted = is_highlighted;
-		emit feature_measure_highlight_changed(is_highlighted);
+		Q_EMIT feature_measure_highlight_changed(is_highlighted);
 	}
 }
 

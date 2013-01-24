@@ -67,7 +67,7 @@ namespace GPlatesQtWidgets
 		showEvent(
 				QShowEvent *ev);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		propagate_value();
@@ -79,7 +79,7 @@ namespace GPlatesQtWidgets
 		void
 		reset_to_zero();
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		value_changed(

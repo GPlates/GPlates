@@ -276,7 +276,7 @@ GPlatesGui::FeaturePropertyTableModel::setData(
 		if (success) {
 			// Presence of the old property value implies a new one was set.
 			// Tell the QTableView about it.
-			emit dataChanged(idx, idx);
+			Q_EMIT dataChanged(idx, idx);
 			return true;
 		} else {
 			// A failure to set the new property value.
@@ -416,7 +416,7 @@ GPlatesGui::FeaturePropertyTableModel::refresh_data()
 	}
 
 	// Update every single data cell because we just don't know what's changed and what hasn't.
-	emit dataChanged(index(0, 1), index(static_cast<int>(d_property_info_cache.size()) - 1, 1));
+	Q_EMIT dataChanged(index(0, 1), index(static_cast<int>(d_property_info_cache.size()) - 1, 1));
 }
 
 

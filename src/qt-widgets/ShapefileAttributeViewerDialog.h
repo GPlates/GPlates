@@ -60,7 +60,7 @@ namespace GPlatesQtWidgets
 		~ShapefileAttributeViewerDialog()
 		{  }
 		
-	public slots:
+	public Q_SLOTS:
 		/**
 		 * Update the dialog to reflect the current Application State.
 		 */
@@ -77,7 +77,7 @@ namespace GPlatesQtWidgets
 		connect_feature_collection_file_state_signals(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state);
 
-	private slots:
+	private Q_SLOTS:
 		/**
 		 * Handle the feature-collection combo-box changing, which will require us
 		 * to update the table contents. 

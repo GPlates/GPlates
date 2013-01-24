@@ -414,12 +414,12 @@ namespace GPlatesQtWidgets
 		void
 		commit_property_to_model();
 	
-	signals:
+	Q_SIGNALS:
 		
 		void
 		commit_me();
 
-	public slots:
+	public Q_SLOTS:
 	
 		void
 		deactivate_edit_widgets();

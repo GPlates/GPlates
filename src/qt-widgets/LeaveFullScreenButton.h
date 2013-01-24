@@ -64,7 +64,7 @@ namespace GPlatesQtWidgets
 		~LeaveFullScreenButton()
 		{  }
 	
-	signals:
+	Q_SIGNALS:
 	
 		void
 		clicked();

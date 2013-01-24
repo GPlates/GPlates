@@ -122,7 +122,7 @@ namespace GPlatesPresentation
 			return d_style;
 		}
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Emitted when any aspect of the parameters has been modified.
@@ -153,7 +153,7 @@ namespace GPlatesPresentation
 		void
 		emit_modified()
 		{
-			emit modified();
+			Q_EMIT modified();
 		}
 
 	private:

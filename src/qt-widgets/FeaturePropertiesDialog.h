@@ -66,7 +66,7 @@ namespace GPlatesQtWidgets
 		~FeaturePropertiesDialog()
 		{  }
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Display the given feature, which may or may not be different
@@ -105,7 +105,7 @@ namespace GPlatesQtWidgets
 		setVisible(
 				bool visible);
 	
-	private slots:
+	private Q_SLOTS:
 		
 		void
 		handle_tab_change(

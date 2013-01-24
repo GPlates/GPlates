@@ -1004,7 +1004,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 		// be up-to-date with the modified model.
 		model_notification_guard.release_guard();
 
-		emit feature_created(feature->reference());
+		Q_EMIT feature_created(feature->reference());
 
 		// If the user got into digitisation mode because they clicked the
 		// "Clone Geometry" button whilst in the Click Geometry tool, for

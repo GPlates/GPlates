@@ -73,7 +73,7 @@ namespace GPlatesQtWidgets
 		create_export_animation_strategy_configuration(
 				const QString &filename_template);
 
-	private slots:
+	private Q_SLOTS:
 		void
 		react_check_box_state_changed(
 				int state);

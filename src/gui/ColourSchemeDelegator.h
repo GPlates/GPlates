@@ -138,12 +138,12 @@ namespace GPlatesGui
 			return boost::none;
 		}
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		changed();
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_colour_scheme_edited(

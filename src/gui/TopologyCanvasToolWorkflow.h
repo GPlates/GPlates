@@ -87,7 +87,7 @@ namespace GPlatesGui
 		get_selected_globe_and_map_canvas_tools(
 					CanvasToolWorkflows::ToolType selected_tool) const;
 
-	private slots:
+	private Q_SLOTS:
 
 		/**
 		 * Changed which reconstruction geometry is currently focused.

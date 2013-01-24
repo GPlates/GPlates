@@ -363,6 +363,6 @@ GPlatesAppLogic::FeatureCollectionFileIO::emit_handle_read_errors_signal(
 	// This is useful for client code interested in displaying errors to the user.
 	if (!read_errors.is_empty())
 	{
-		emit handle_read_errors(*this, read_errors);
+		Q_EMIT handle_read_errors(*this, read_errors);
 	}
 }

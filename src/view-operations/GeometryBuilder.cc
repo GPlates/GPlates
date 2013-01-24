@@ -308,7 +308,7 @@ GPlatesViewOperations::GeometryBuilder::clear_all_geometries()
 	{
 		d_current_geometry_index = DEFAULT_GEOMETRY_INDEX;
 
-		emit changed_current_geometry_index(DEFAULT_GEOMETRY_INDEX);
+		Q_EMIT changed_current_geometry_index(DEFAULT_GEOMETRY_INDEX);
 	}
 
 	// Resize space for geometries to be copied to undo operation.
@@ -385,7 +385,7 @@ GPlatesViewOperations::GeometryBuilder::insert_point_into_current_geometry(
 	std::advance(insert_iter, point_index);
 	geometry.get_point_seq().insert(insert_iter, oriented_pos_on_globe);
 
-	emit inserted_point_into_current_geometry(point_index, oriented_pos_on_globe);
+	Q_EMIT inserted_point_into_current_geometry(point_index, oriented_pos_on_globe);
 
 	return boost::any( GeometryBuilderInternal::UndoImpl(
 			new GeometryBuilderInternal::InsertPointUndoImpl(point_index)) );
@@ -415,7 +415,7 @@ GPlatesViewOperations::GeometryBuilder::remove_point_from_current_geometry(
 
 	geometry.get_point_seq().erase(erase_iter);
 
-	emit removed_point_from_current_geometry(point_index);
+	Q_EMIT removed_point_from_current_geometry(point_index);
 
 	// If no points left in geometry then remove it.
 	if (geometry.get_point_seq().empty())
@@ -461,7 +461,7 @@ GPlatesViewOperations::GeometryBuilder::move_point_in_current_geometry(
 		move_secondary_geometry_vertices(secondary_geometries,secondary_points);
 	}
 
-	emit moved_point_in_current_geometry(
+	Q_EMIT moved_point_in_current_geometry(
 			point_index, new_oriented_pos_on_globe, is_intermediate_move);
 
 	return boost::any( GeometryBuilderInternal::UndoImpl(
@@ -506,14 +506,14 @@ GPlatesViewOperations::GeometryBuilder::insert_geometry(
 	// Insert new geometry.
 	d_geometry_builder_seq.insert(insert_iter, geometry_ptr);
 
-	emit inserted_geometry(geom_index);
+	Q_EMIT inserted_geometry(geom_index);
 
 	// If geometry was inserted before the current geometry then
 	// change the current geometry index.
 	if (d_geometry_builder_seq.size() > 1 && geom_index <= d_current_geometry_index)
 	{
 		++d_current_geometry_index;
-		emit changed_current_geometry_index(d_current_geometry_index);
+		Q_EMIT changed_current_geometry_index(d_current_geometry_index);
 	}
 
 	return boost::any( GeometryBuilderInternal::UndoImpl(
@@ -533,7 +533,7 @@ GPlatesViewOperations::GeometryBuilder::remove_geometry(
 
 	d_geometry_builder_seq.erase(erase_iter);
 
-	emit removed_geometry(geom_index);
+	Q_EMIT removed_geometry(geom_index);
 
 	// If geometry was erased at or before the current geometry then
 	// change the current geometry index.
@@ -545,7 +545,7 @@ GPlatesViewOperations::GeometryBuilder::remove_geometry(
 		if (d_current_geometry_index > 0)
 		{
 			--d_current_geometry_index;
-			emit changed_current_geometry_index(d_current_geometry_index);
+			Q_EMIT changed_current_geometry_index(d_current_geometry_index);
 		}
 	}
 }
@@ -784,14 +784,14 @@ GPlatesViewOperations::GeometryBuilder::begin_update_geometry(
 {
 	if (d_update_geometry_depth == 0)
 	{
-		emit started_updating_geometry();
+		Q_EMIT started_updating_geometry();
 
 		if (!is_intermediate_move)
 		{
 			// Some clients are only interested in knowing about operations that
 			// are not intermediate moves. This significantly reduces the number
 			// of notifications they get when the user is dragging vertices.
-			emit started_updating_geometry_excluding_intermediate_moves();
+			Q_EMIT started_updating_geometry_excluding_intermediate_moves();
 		}
 	}
 
@@ -835,21 +835,21 @@ GPlatesViewOperations::GeometryBuilder::end_update_geometry(
 		// Emit a signal if they differ.
 		if (final_geom_type != initial_geom_type)
 		{
-			emit changed_actual_geometry_type(geometry_index, final_geom_type);
+			Q_EMIT changed_actual_geometry_type(geometry_index, final_geom_type);
 		}
 	}
 
 	//
 	// Notify observers that we've stopped updating geometry.
 	//
-	emit stopped_updating_geometry();
+	Q_EMIT stopped_updating_geometry();
 
 	if (!is_intermediate_move)
 	{
 		// Some clients are only interested in knowing about operations that
 		// are not intermediate moves. This significantly reduces the number
 		// of notifications they get when the user is dragging vertices.
-		emit stopped_updating_geometry_excluding_intermediate_moves();
+		Q_EMIT stopped_updating_geometry_excluding_intermediate_moves();
 	}
 }
 

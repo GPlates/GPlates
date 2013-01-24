@@ -57,7 +57,7 @@ namespace GPlatesQtWidgets
 		bool
 		isComplete() const;
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_table_cell_changed(
@@ -93,7 +93,7 @@ namespace GPlatesQtWidgets
 			set_model_index(
 					const QModelIndex &model_index);
 
-		private slots:
+		private Q_SLOTS:
 
 			void
 			handle_text_changed(

@@ -71,7 +71,7 @@ namespace GPlatesQtWidgets
 		QSize
 		minimumSizeHint() const;
 
-	public slots:
+	public Q_SLOTS:
 
 		void
 		fit_to_document_width();

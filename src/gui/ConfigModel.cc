@@ -290,7 +290,7 @@ GPlatesGui::ConfigModel::react_key_value_updated(
 			QModelIndex idx_bottom_right = index(i, 1);
 
 			// Update our Views.
-			emit dataChanged(idx_top_left, idx_bottom_right);
+			Q_EMIT dataChanged(idx_top_left, idx_bottom_right);
 			return;
 		}
 	}

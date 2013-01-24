@@ -66,7 +66,7 @@ namespace GPlatesQtWidgets
 		~TimeControlWidget()
 		{  }
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Emitted when the user has entered a new time value in the spinbox.
@@ -76,7 +76,7 @@ namespace GPlatesQtWidgets
 		void
 		editing_finished();
 	
-	public slots:
+	public Q_SLOTS:
 		
 		/**
 		 * Focuses the spinbox and highlights text, ready to be replaced.
@@ -100,7 +100,7 @@ namespace GPlatesQtWidgets
 		show_label(
 				bool show_);
 
-	private slots:
+	private Q_SLOTS:
 		
 		void
 		handle_time_spinbox_editing_finished();

@@ -90,7 +90,7 @@ GPlatesQtWidgets::LinkWidget::event(
 void
 GPlatesQtWidgets::LinkWidget::handle_link_activated()
 {
-	emit link_activated();
+	Q_EMIT link_activated();
 }
 
 

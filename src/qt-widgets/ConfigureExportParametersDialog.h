@@ -216,7 +216,7 @@ namespace GPlatesQtWidgets
 			}
 		}
 
-	private slots:
+	private Q_SLOTS:
 		void
 		react_add_item_clicked();
 

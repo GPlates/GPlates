@@ -247,7 +247,7 @@ namespace GPlatesGui
 		print_py_msg(
 				const QString& msg);
 
-	signals:
+	Q_SIGNALS:
 		void
 		system_exit_exception_raised(
 				int exit_status,
@@ -305,7 +305,7 @@ namespace GPlatesGui
 
 		friend class PythonExecGuard;
 
-	public slots:
+	public Q_SLOTS:
 		
 		void
 		exec_function_slot(

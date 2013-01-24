@@ -223,7 +223,7 @@ namespace GPlatesPresentation
 		VisualLayerParams::non_null_ptr_to_const_type
 		get_visual_layer_params() const;
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_params_modified();

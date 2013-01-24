@@ -70,7 +70,7 @@ namespace GPlatesQtWidgets
 			GPlatesPresentation::ViewState &view_state,
 			QWidget *parent_ = NULL);
 	
-	private slots:
+	private Q_SLOTS:
 		
 		void
 		handle_calculate();

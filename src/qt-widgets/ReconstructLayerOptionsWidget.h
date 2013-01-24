@@ -79,7 +79,7 @@ namespace GPlatesQtWidgets
 
 		~ReconstructLayerOptionsWidget();
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		open_vgp_visibility_dialog();

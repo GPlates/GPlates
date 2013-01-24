@@ -148,7 +148,7 @@ void
 GPlatesQtWidgets::ChooseFeatureTypeWidget::handle_item_activated(
 		int index)
 {
-	emit item_activated();
+	Q_EMIT item_activated();
 }
 
 
@@ -156,7 +156,7 @@ void
 GPlatesQtWidgets::ChooseFeatureTypeWidget::handle_current_index_changed(
 		int index)
 {
-	emit current_index_changed(
+	Q_EMIT current_index_changed(
 			boost::optional<GPlatesModel::FeatureType>(
 				d_selection_widget->get_data<DefaultConstructibleFeatureType>(index)));
 }

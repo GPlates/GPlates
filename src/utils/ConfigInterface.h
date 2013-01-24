@@ -284,7 +284,7 @@ namespace GPlatesUtils
 				const QString &prefix,
 				const KeyValueMap &keyvalues) = 0;
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Signal emitted whenever a specific key's value is changed.

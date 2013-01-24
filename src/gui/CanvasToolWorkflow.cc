@@ -160,7 +160,7 @@ GPlatesGui::CanvasToolWorkflow::emit_canvas_tool_enabled(
 		}
 	}
 
-	emit canvas_tool_enabled(d_workflow, tool, enable);
+	Q_EMIT canvas_tool_enabled(d_workflow, tool, enable);
 }
 
 

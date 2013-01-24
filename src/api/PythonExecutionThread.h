@@ -214,7 +214,7 @@ namespace GPlatesApi
 			return d_monitor.continue_interactive_input();
 		}
 
-	signals:
+	Q_SIGNALS:
 		/**
 		 * Emitted when an unhandled Python SystemExit exception is raised in the thread.
 		 */
@@ -264,14 +264,14 @@ namespace GPlatesApi
 			d_monitor.exec();
 		}
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_system_exit_exception_raised(
 				int exit_status,
 				QString exit_error_message)
 		{
-			emit system_exit_exception_raised(exit_status, exit_error_message);
+			Q_EMIT system_exit_exception_raised(exit_status, exit_error_message);
 		}
 
 	private:

@@ -58,7 +58,7 @@ namespace GPlatesQtWidgets
 		{ 
 		}
 			
-	public slots:
+	public Q_SLOTS:
 		
 		void
 		insert_row_above();

@@ -197,7 +197,7 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 		// At scope exit OpenGL should now be back in the default OpenGL state...
 	}
 
-	emit repainted();
+	Q_EMIT repainted();
 }
 
 void

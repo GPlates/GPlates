@@ -266,7 +266,7 @@ void
 GPlatesQtWidgets::GlobeAndMapWidget::handle_globe_or_map_repainted(
 		bool mouse_down)
 {
-	emit repainted(mouse_down);
+	Q_EMIT repainted(mouse_down);
 }
 
 
@@ -318,7 +318,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 	// view would not have known about it.
 	d_active_view_ptr->handle_zoom_change();
 
-	emit update_tools_and_status_message();
+	Q_EMIT update_tools_and_status_message();
 }
 
 
@@ -382,7 +382,7 @@ void
 GPlatesQtWidgets::GlobeAndMapWidget::resizeEvent(
 		QResizeEvent *resize_event)
 {
-	emit resized(resize_event->size().width(), resize_event->size().height());
+	Q_EMIT resized(resize_event->size().width(), resize_event->size().height());
 }
 
 

@@ -69,7 +69,7 @@ namespace GPlatesQtWidgets
 
 		~SearchResultsDockWidget();
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Highlights the row of the 'clicked geometry' feature table that corresponds to the focused feature.

@@ -88,7 +88,7 @@ namespace GPlatesQtWidgets
 
 		~ScalarField3DLayerOptionsWidget();
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_render_mode_button(

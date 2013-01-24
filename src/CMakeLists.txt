@@ -128,6 +128,10 @@ SET(QT_USE_QTOPENGL 1)
 SET(QT_USE_QTSVG 1)
 include(${QT_USE_FILE})
 
+#Define QT_NO_KEYWORDS so that Qt will not pollute namespaces.
+#Must use "Q_SLOTS Q_EMIT Q_SIGNALS" instead of "slots emit signals"
+ADD_DEFINITIONS(-DQT_NO_KEYWORDS)
+
 # Include compiler options for the C++ programming language.
 # NOTE: We do this after all dependency packages have been found because we are going to modify the
 # compiler/linker flags without overriding them (by appending to them).

@@ -62,7 +62,7 @@ namespace GPlatesQtWidgets
 				ViewportWindow &main_window,
 				boost::optional<QString> object_name_suffix = boost::none);
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		location_changed(
@@ -70,7 +70,7 @@ namespace GPlatesQtWidgets
 				Qt::DockWidgetArea area,
 				bool floating);
 
-	public slots:
+	public Q_SLOTS:
 
 		void
 		dock_at_top();
@@ -96,7 +96,7 @@ namespace GPlatesQtWidgets
 		void
 		tabify_at_right();
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_floating_change(

@@ -344,7 +344,7 @@ GPlatesQtWidgets::CreateVGPDialog::handle_create()
 		model_notification_guard.release_guard();
 
 		// To trigger a reconstruction.
-		emit feature_created();
+		Q_EMIT feature_created();
 	
 		accept();
 	}

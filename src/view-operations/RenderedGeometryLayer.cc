@@ -712,7 +712,7 @@ GPlatesViewOperations::RenderedGeometryLayer::set_active(
 	{
 		d_is_active = active;
 
-		emit layer_was_updated(*this, d_user_data);
+		Q_EMIT layer_was_updated(*this, d_user_data);
 	}
 }
 
@@ -759,7 +759,7 @@ GPlatesViewOperations::RenderedGeometryLayer::add_rendered_geometry(
 {
 	d_impl->add_rendered_geometry(rendered_geom);
 
-	emit layer_was_updated(*this, d_user_data);
+	Q_EMIT layer_was_updated(*this, d_user_data);
 }
 
 
@@ -774,7 +774,7 @@ GPlatesViewOperations::RenderedGeometryLayer::clear_rendered_geometries()
 #endif
 		d_impl->clear_rendered_geometries();
 
-		emit layer_was_updated(*this, d_user_data);
+		Q_EMIT layer_was_updated(*this, d_user_data);
 #if 0
 	}
 #endif

@@ -82,7 +82,7 @@ namespace GPlatesQtWidgets
 		void
 		handle_clear_action_triggered();
 		
-	private slots:
+	private Q_SLOTS:
 
 		/**
 		 * Update the Quick Measure part of the widget

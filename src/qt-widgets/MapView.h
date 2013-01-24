@@ -301,7 +301,7 @@ namespace GPlatesQtWidgets
 			QGraphicsView::paintEvent(paint_event);
 		}
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		mouse_pointer_position_changed(
@@ -353,7 +353,7 @@ namespace GPlatesQtWidgets
 		repainted(
 				bool mouse_down);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_transform_changed(

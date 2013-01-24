@@ -354,7 +354,7 @@ namespace GPlatesGui
 			// Adding iterator range for caller's convenience since caller may want
 			// an iterator but should not assume a random access iterator (we can however
 			// since this is our implementation).
-			emit entries_inserted(
+			Q_EMIT entries_inserted(
 					index,
 					quantity,
 					d_container.begin() + index/*original insertion point*/,
@@ -383,7 +383,7 @@ namespace GPlatesGui
 			// Adding iterator range for caller's convenience since caller may want
 			// an iterator but should not assume a random access iterator (we can however
 			// since this is our implementation).
-			emit entries_initialised(
+			Q_EMIT entries_initialised(
 					seq_num,
 					index,
 					quantity,
@@ -457,7 +457,7 @@ namespace GPlatesGui
 		set_container_ptr_in_table( 
 				GPlatesGui::TopologySectionsContainer *ptr);
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Moves the Insertion Point to the end of the table.
@@ -512,7 +512,7 @@ namespace GPlatesGui
 		}
 #endif	// testing slots.
 
-	signals:
+	Q_SIGNALS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.

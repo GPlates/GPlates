@@ -552,7 +552,7 @@ GPlatesQtWidgets::GlobeCanvas::handle_mouse_pointer_pos_change()
 		d_mouse_pointer_is_on_globe = is_now_on_globe;
 
 		GPlatesMaths::PointOnSphere oriented_new_pos = d_globe.orient(new_pos);
-		emit mouse_pointer_position_changed(oriented_new_pos, is_now_on_globe);
+		Q_EMIT mouse_pointer_position_changed(oriented_new_pos, is_now_on_globe);
 	}
 }
 
@@ -570,7 +570,7 @@ GPlatesQtWidgets::GlobeCanvas::force_mouse_pointer_pos_change()
 	d_mouse_pointer_is_on_globe = is_now_on_globe;
 
 	GPlatesMaths::PointOnSphere oriented_new_pos = d_globe.orient(new_pos);
-	emit mouse_pointer_position_changed(oriented_new_pos, is_now_on_globe);
+	Q_EMIT mouse_pointer_position_changed(oriented_new_pos, is_now_on_globe);
 }
 
 
@@ -698,7 +698,7 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 	}
 
 	// If d_mouse_press_info is not boost::none, then mouse is down.
-	emit repainted(d_mouse_press_info);
+	Q_EMIT repainted(d_mouse_press_info);
 }
 
 
@@ -721,7 +721,7 @@ GPlatesQtWidgets::GlobeCanvas::mousePressEvent(
 					press_event->button(),
 					press_event->modifiers());
 
-	emit mouse_pressed(
+	Q_EMIT mouse_pressed(
 		d_mouse_press_info->d_mouse_pointer_pos,
 		d_globe.orient(d_mouse_press_info->d_mouse_pointer_pos),
 		d_mouse_press_info->d_is_on_globe,
@@ -750,7 +750,7 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 		}
 
 		if (d_mouse_press_info->d_is_mouse_drag) {
-			emit mouse_dragged(
+			Q_EMIT mouse_dragged(
 					d_mouse_press_info->d_mouse_pointer_pos,
 					d_globe.orient(d_mouse_press_info->d_mouse_pointer_pos),
 					d_mouse_press_info->d_is_on_globe,
@@ -771,7 +771,7 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 		// Either way it is an mouse movement that is not currently invoking a
 		// canvas tool operation.
 		//
-		emit mouse_moved_without_drag(
+		Q_EMIT mouse_moved_without_drag(
 				virtual_mouse_pointer_pos_on_globe(),
 				d_globe.orient(virtual_mouse_pointer_pos_on_globe()),
 				mouse_pointer_is_on_globe(),
@@ -807,7 +807,7 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 		d_mouse_press_info->d_is_mouse_drag = true;
 	}
 	if (d_mouse_press_info->d_is_mouse_drag) {
-		emit mouse_released_after_drag(
+		Q_EMIT mouse_released_after_drag(
 				d_mouse_press_info->d_mouse_pointer_pos,
 				d_globe.orient(d_mouse_press_info->d_mouse_pointer_pos),
 				d_mouse_press_info->d_is_on_globe,
@@ -818,7 +818,7 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 				d_mouse_press_info->d_button,
 				d_mouse_press_info->d_modifiers);
 	} else {
-		emit mouse_clicked(
+		Q_EMIT mouse_clicked(
 				d_mouse_press_info->d_mouse_pointer_pos,
 				d_globe.orient(d_mouse_press_info->d_mouse_pointer_pos),
 				d_mouse_press_info->d_is_on_globe,
@@ -829,7 +829,7 @@ GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
 
 	// Emit repainted signal with mouse_down = false so that those listeners who
 	// didn't care about intermediate repaints can now deal with the repaint.
-	emit repainted(false);
+	Q_EMIT repainted(false);
 }
 
 

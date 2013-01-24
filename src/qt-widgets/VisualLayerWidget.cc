@@ -162,7 +162,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::ToggleIcon::mousePressEvent(
 {
 	if (event_->button() == Qt::LeftButton && d_is_clickable)
 	{
-		emit clicked();
+		Q_EMIT clicked();
 	}
 	else
 	{

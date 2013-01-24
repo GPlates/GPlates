@@ -68,10 +68,10 @@ namespace GPlatesGui
 		~GuiDebug()
 		{  }
 
-	public slots:
+	public Q_SLOTS:
 
 
-	private slots:
+	private Q_SLOTS:
 
 		/**
 		 * Respond to the all-purpose 'Debug Action' hotkey, Ctrl-Alt-/

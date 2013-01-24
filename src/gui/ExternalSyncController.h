@@ -71,7 +71,7 @@ namespace GPlatesGui
 	void
 	run();
 
-    signals:
+    Q_SIGNALS:
 
 	void
 	std_in_string_read(
@@ -183,7 +183,7 @@ namespace GPlatesGui
 	send_external_command(
 		QString &command);
 
-	signals:
+	Q_SIGNALS:
 
 	/**
 	 * Emitted when the external process finishes. This can be
@@ -192,7 +192,7 @@ namespace GPlatesGui
 	void
 	process_finished();
 
-    private slots:
+    private Q_SLOTS:
 
 	void
 	handle_command_received(

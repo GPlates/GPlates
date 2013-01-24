@@ -89,11 +89,11 @@ namespace GPlatesQtWidgets
 		void
 		exec_partition_features_dialog();
 
-	public slots:
+	public Q_SLOTS:
 		void
 		reject();
 
-	private slots:
+	private Q_SLOTS:
 		void
 		apply();
 

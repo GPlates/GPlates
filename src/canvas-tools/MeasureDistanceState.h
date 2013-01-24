@@ -232,7 +232,7 @@ namespace GPlatesCanvasTools
 		process_geometry_builder(
 				const GPlatesViewOperations::GeometryBuilder *geometry_builder);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		switch_geometry_builder(
@@ -241,7 +241,7 @@ namespace GPlatesCanvasTools
 		void
 		reexamine_geometry_builder();
 
-	signals:
+	Q_SIGNALS:
 
 		//! Emitted when the Quick Measure state is cleared
 		void

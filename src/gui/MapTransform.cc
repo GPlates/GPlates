@@ -75,7 +75,7 @@ GPlatesGui::MapTransform::set_centre_of_viewport(
 	}
 
 	d_centre_of_viewport = centre_of_viewport;
-	emit transform_changed(*this);
+	Q_EMIT transform_changed(*this);
 }
 
 
@@ -101,7 +101,7 @@ GPlatesGui::MapTransform::set_rotation(
 		d_rotation -= num_steps * 360.0;
 	}
 
-	emit transform_changed(*this);
+	Q_EMIT transform_changed(*this);
 }
 
 
@@ -123,6 +123,6 @@ GPlatesGui::MapTransform::get_zoom_factor() const
 void
 GPlatesGui::MapTransform::handle_zoom_changed()
 {
-	emit transform_changed(*this);
+	Q_EMIT transform_changed(*this);
 }
 

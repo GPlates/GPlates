@@ -171,7 +171,7 @@ GPlatesQtWidgets::SelectionWidget::handle_listwidget_item_activated(
 	int index = d_listwidget->indexFromItem(item).row();
 	if (index != -1)
 	{
-		emit item_activated(index);
+		Q_EMIT item_activated(index);
 	}
 }
 
@@ -180,7 +180,7 @@ void
 GPlatesQtWidgets::SelectionWidget::handle_listwidget_current_row_changed(
 		int current_row)
 {
-	emit current_index_changed(current_row);
+	Q_EMIT current_index_changed(current_row);
 }
 
 
@@ -188,6 +188,6 @@ void
 GPlatesQtWidgets::SelectionWidget::handle_combobox_current_index_changed(
 		int index)
 {
-	emit current_index_changed(index);
+	Q_EMIT current_index_changed(index);
 }
 

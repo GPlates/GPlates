@@ -878,7 +878,7 @@ GPlatesQtWidgets::EditGeometryWidget::handle_cell_changed(
 	
 	if (test_geometry_validity()) {
 		set_dirty();
-		emit commit_me();
+		Q_EMIT commit_me();
 	}
 }
 
@@ -922,7 +922,7 @@ GPlatesQtWidgets::EditGeometryWidget::append_point_to_table(
 	// Check if what we have now is (still) a valid polyline.
 	if (test_geometry_validity()) {
 		set_dirty();
-		emit commit_me();
+		Q_EMIT commit_me();
 	}
 
 	// Set the current cell to be a cell from the new row, so that an action widget is added to it. 
@@ -957,7 +957,7 @@ GPlatesQtWidgets::EditGeometryWidget::insert_blank_point_into_table(
 	// Check if what we have now is (still) a valid polyline.
 	if (test_geometry_validity()) {
 		set_dirty();
-		emit commit_me();
+		Q_EMIT commit_me();
 	}
 }
 
@@ -981,7 +981,7 @@ GPlatesQtWidgets::EditGeometryWidget::delete_point_from_table(
 	// Check if what we have now is (still) a valid polyline.
 	if (test_geometry_validity()) {
 		set_dirty();
-		emit commit_me();
+		Q_EMIT commit_me();
 	}
 }
 

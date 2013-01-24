@@ -195,7 +195,7 @@ namespace GPlatesGui
 		choose_canvas_tool(
 				ToolType tool);
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Makes the specified canvas workflow/tool the currently active workflow/tool.
@@ -210,7 +210,7 @@ namespace GPlatesGui
 				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
 				boost::optional<GPlatesGui::CanvasToolWorkflows::ToolType> tool = boost::none);
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Emitted when a canvas tool in a workflow is enabled/disabled.
@@ -234,7 +234,7 @@ namespace GPlatesGui
 				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
 				GPlatesGui::CanvasToolWorkflows::ToolType tool);
 
-	private slots:
+	private Q_SLOTS:
 
 		/**
 		 * This handler is connected to each individual workflow.

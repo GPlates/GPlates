@@ -87,7 +87,7 @@ namespace GPlatesQtWidgets
 		set_geometry_and_display(
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_);
 					
-	private slots:
+	private Q_SLOTS:
 		
 		/**
 		 * Fired when user (or code..) selects a format from the combobox.

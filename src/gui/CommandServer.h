@@ -319,7 +319,7 @@ namespace GPlatesGui
 			 d_disabled = false;
 		 }
 
-	private slots:
+	private Q_SLOTS:
 		void 
 		readClient();
 

@@ -137,7 +137,7 @@ GPlatesQtWidgets::SmallCircleWidget::handle_clear()
 	update_small_circle_layer();
 
 	// The canvas tool will listen for this and reset any of its circles. 
-	emit clear_geometries();
+	Q_EMIT clear_geometries();
 }
 
 
@@ -221,7 +221,7 @@ void
 GPlatesQtWidgets::SmallCircleWidget::update_circles(
         small_circle_collection_type &small_circle_collection_)
 {
-    emit clear_geometries();
+    Q_EMIT clear_geometries();
     d_small_circles = small_circle_collection_;
     update_current_circles();
 }

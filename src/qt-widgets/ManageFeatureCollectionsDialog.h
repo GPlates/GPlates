@@ -158,7 +158,7 @@ namespace GPlatesQtWidgets
 		unload_file(
 				ManageFeatureCollectionsActionWidget *action_widget_ptr);
 	
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Recolours table rows' background colours based on saved/unsaved state.
@@ -177,7 +177,7 @@ namespace GPlatesQtWidgets
 		void
 		save_all_named();
 
-	private slots:
+	private Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.

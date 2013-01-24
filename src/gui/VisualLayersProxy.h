@@ -98,7 +98,7 @@ namespace GPlatesGui
 		get_visual_layer(
 				const GPlatesAppLogic::Layer &layer);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_layer_order_changed(
@@ -143,7 +143,7 @@ namespace GPlatesGui
 		handle_layer_modified(
 				boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer);
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		layer_order_changed(

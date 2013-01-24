@@ -906,7 +906,7 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::choose_canvas_tool_selected_by_user(
 	{
 		// Let any interested clients know that the canvas tool was triggered explicitly through
 		// a tool action rather than an automatic canvas tool selection.
-		emit canvas_tool_triggered_by_user(
+		Q_EMIT canvas_tool_triggered_by_user(
 				active_canvas_tool_after_selection.first,
 				active_canvas_tool_after_selection.second);
 	}

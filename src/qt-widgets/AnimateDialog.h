@@ -60,7 +60,7 @@ namespace GPlatesQtWidgets
 		const double &
 		view_time() const;
 
-	public slots:
+	public Q_SLOTS:
 		void
 		set_start_time_value_to_view_time();
 
@@ -73,12 +73,12 @@ namespace GPlatesQtWidgets
 		void
 		rewind();
 
-	signals:
+	Q_SIGNALS:
 		void
 		current_time_changed(
 				double new_value);
 
-	private slots:
+	private Q_SLOTS:
 		void
 		react_start_time_spinbox_changed(
 				double new_val);

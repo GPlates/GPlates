@@ -392,7 +392,7 @@ void
 GPlatesQtWidgets::ReconstructionViewWidget::handle_update_tools_and_status_message()
 {
 	recalc_camera_position();
-	emit update_tools_and_status_message();
+	Q_EMIT update_tools_and_status_message();
 }
 
 
@@ -641,7 +641,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::recalc_camera_position()
 	{
 		if (llp)
 		{
-			emit send_camera_pos_to_stdout(llp->latitude(),llp->longitude());
+			Q_EMIT send_camera_pos_to_stdout(llp->latitude(),llp->longitude());
 		}
 	}
 	else if (globe_is_active())
@@ -649,7 +649,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::recalc_camera_position()
 		boost::optional<GPlatesMaths::Rotation> rotation = active_view().orientation();
 		if (rotation)
 		{
-			emit send_orientation_to_stdout(*rotation);
+			Q_EMIT send_orientation_to_stdout(*rotation);
 #if 0
 			// For now, continue to emit llp as well. 
 			emit send_camera_pos_to_stdout(llp->latitude(),llp->longitude());

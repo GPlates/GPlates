@@ -80,7 +80,7 @@ namespace GPlatesQtWidgets
 		void
 		reset();
 			
-	signals:
+	Q_SIGNALS:
 
 		void
 		feature_created();
@@ -102,7 +102,7 @@ namespace GPlatesQtWidgets
 		void
 		setup_collection_page();
 		
-	private slots:
+	private Q_SLOTS:
 		
 		void
 		handle_previous();

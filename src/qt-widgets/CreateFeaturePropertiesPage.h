@@ -106,7 +106,7 @@ namespace GPlatesQtWidgets
 		get_feature_properties(
 				property_seq_type &feature_properties) const;
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Emitted when there are no remaining *required* feature properties for the user to add.
@@ -124,7 +124,7 @@ namespace GPlatesQtWidgets
 		focusInEvent(
 				QFocusEvent *event);
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		handle_available_properties_selection_changed();

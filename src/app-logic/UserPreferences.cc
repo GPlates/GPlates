@@ -264,7 +264,7 @@ GPlatesAppLogic::UserPreferences::set_value(
 	QVariant orig_value = settings.value(key);
 	settings.setValue(key, value);
 	if (orig_value != value) {
-		emit key_value_updated(key);
+		Q_EMIT key_value_updated(key);
 	}
 }
 
@@ -291,7 +291,7 @@ GPlatesAppLogic::UserPreferences::clear_value(
 		settings.setValue(fullkey, backup.value(subkey));
 	}
 	
-	emit key_value_updated(key);
+	Q_EMIT key_value_updated(key);
 }
 
 
@@ -305,7 +305,7 @@ GPlatesAppLogic::UserPreferences::clear_prefix(
 	}
 	
 	settings.remove(prefix);
-	emit key_value_updated(prefix);	// FIXME: Might not be doing what we want, may have to emit multiple signals.
+	Q_EMIT key_value_updated(prefix);	// FIXME: Might not be doing what we want, may have to emit multiple signals.
 }
 
 

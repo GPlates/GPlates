@@ -216,7 +216,7 @@ namespace GPlatesGui
 		void
 		emit_style_changed()
 		{
-			emit draw_style_changed();
+			Q_EMIT draw_style_changed();
 		}
 
 		StyleContainer
@@ -238,7 +238,7 @@ namespace GPlatesGui
 		save_user_defined_styles();
 
 
-	signals:
+	Q_SIGNALS:
 		void
 		draw_style_changed();
 

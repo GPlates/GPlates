@@ -264,5 +264,5 @@ GPlatesQtWidgets::EditShapefileAttributesWidget::handle_cell_changed(
 	}
  
 	set_dirty();
-	emit commit_me();
+	Q_EMIT commit_me();
 }

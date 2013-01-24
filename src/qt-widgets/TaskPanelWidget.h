@@ -86,7 +86,7 @@ namespace GPlatesQtWidgets
 			// Default implementation does nothing.
 		}
 
-	signals:
+	Q_SIGNALS:
 
 		void
 		clear_action_enabled_changed(
@@ -98,7 +98,7 @@ namespace GPlatesQtWidgets
 		emit_clear_action_enabled_changed(
 				bool enabled)
 		{
-			emit clear_action_enabled_changed(enabled);
+			Q_EMIT clear_action_enabled_changed(enabled);
 		}
 	};
 }

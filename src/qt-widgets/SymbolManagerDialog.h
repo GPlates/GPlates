@@ -45,7 +45,7 @@ namespace GPlatesQtWidgets
 				QWidget *parent = 0);
 
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 			handle_close();

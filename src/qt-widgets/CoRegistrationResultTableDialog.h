@@ -202,7 +202,7 @@ namespace GPlatesQtWidgets
 			return d_table;
 		}
 
-	public slots:
+	public Q_SLOTS:
 	protected:
 		const GPlatesDataMining::DataTable d_table;
 	};
@@ -237,7 +237,7 @@ namespace GPlatesQtWidgets
 			d_visual_layer = visual_layer;
 		}
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Retrieves co-registration results from the associated co-registration layer proxy.
@@ -255,7 +255,7 @@ namespace GPlatesQtWidgets
 		void
 		highlight_seed();
 
-	signals:
+	Q_SIGNALS:
 		
 	private:
 

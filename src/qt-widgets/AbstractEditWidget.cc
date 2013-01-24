@@ -45,13 +45,13 @@ GPlatesQtWidgets::AbstractEditWidget::keyPressEvent(
 	
 	if (ev->key() == Qt::Key_Enter) {
 		// This is the big newline button on my num pad.
-		emit enter_pressed();
-		emit commit_me();
+		Q_EMIT enter_pressed();
+		Q_EMIT commit_me();
 		ev->accept();
 	} else if (ev->key() == Qt::Key_Return) {
 		// THIS is the big newline button labelled Enter on my keyboard proper.
-		emit enter_pressed();
-		emit commit_me();
+		Q_EMIT enter_pressed();
+		Q_EMIT commit_me();
 		ev->accept();
 	} else {
 		ev->ignore();

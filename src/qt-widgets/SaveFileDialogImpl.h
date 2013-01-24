@@ -164,7 +164,7 @@ namespace GPlatesQtWidgets
 			select_file(
 					const QString &file_path);
 
-		private slots:
+		private Q_SLOTS:
 
 			void
 			handle_filter_changed();

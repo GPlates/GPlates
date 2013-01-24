@@ -62,7 +62,7 @@ namespace GPlatesQtWidgets
 			return d_configuration;
 		}
 
-	public slots:
+	public Q_SLOTS:
 		void
 		finished();
 

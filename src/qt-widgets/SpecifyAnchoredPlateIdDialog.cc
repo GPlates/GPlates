@@ -147,7 +147,7 @@ GPlatesQtWidgets::SpecifyAnchoredPlateIdDialog::showEvent(
 void
 GPlatesQtWidgets::SpecifyAnchoredPlateIdDialog::propagate_value()
 {
-	emit value_changed(
+	Q_EMIT value_changed(
 			static_cast<GPlatesModel::integer_plate_id_type>(
 				fixed_plate_spinbox->value()));
 }

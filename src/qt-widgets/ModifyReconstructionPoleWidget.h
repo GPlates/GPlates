@@ -101,7 +101,7 @@ namespace GPlatesQtWidgets
 		void
 		handle_clear_action_triggered();
 
-	public slots:
+	public Q_SLOTS:
 
 		void
 		start_new_drag(
@@ -185,7 +185,7 @@ namespace GPlatesQtWidgets
 		void
 		update_adjustment_fields();
 
-	protected slots:
+	protected Q_SLOTS:
 
 		/**
 		 * Draw the initial geometries when the canvas tool is first activated.

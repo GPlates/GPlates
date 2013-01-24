@@ -68,7 +68,7 @@ namespace GPlatesQtWidgets
 		void
 		reload_if_necessary();
 
-	private slots:
+	private Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.

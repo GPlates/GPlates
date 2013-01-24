@@ -57,7 +57,7 @@ namespace GPlatesQtWidgets
 		//	qDebug() << "destructing mesh dialog";
 		}
 		
-	private slots:
+	private Q_SLOTS:
 
 		void 
 		gen_mesh();

@@ -111,7 +111,7 @@ namespace GPlatesQtWidgets
 		void
 		handle_clear_action_triggered();
 
-	public slots:
+	public Q_SLOTS:
 		
 		void 
 		activate(

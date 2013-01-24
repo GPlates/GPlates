@@ -125,7 +125,7 @@ namespace GPlatesGui
 		is_tool_enabled(
 				CanvasToolWorkflows::ToolType tool) const;
 
-	signals:
+	Q_SIGNALS:
 
 		/**
 		 * Emitted when a canvas tool is enabled/disabled.

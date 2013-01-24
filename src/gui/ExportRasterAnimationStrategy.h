@@ -153,7 +153,7 @@ namespace GPlatesGui
 				GPlatesGui::ExportAnimationContext &export_animation_context,
 				const const_configuration_ptr &export_configuration);
 
-	private slots:
+	private Q_SLOTS:
 		void
 		handle_repaint(bool)
 		{

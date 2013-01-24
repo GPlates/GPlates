@@ -121,8 +121,8 @@ GPlatesGui::ViewportZoom::set_zoom_percent(
 	if (GPlatesMaths::Real(new_zoom_percent) != d_zoom_percent)
 	{
 		d_zoom_percent = new_zoom_percent;
-		emit zoom_changed();
-		emit send_zoom_to_stdout(d_zoom_percent);
+		Q_EMIT zoom_changed();
+		Q_EMIT send_zoom_to_stdout(d_zoom_percent);
 	}
 }
 

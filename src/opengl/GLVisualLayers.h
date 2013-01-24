@@ -228,7 +228,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const filled_polygons_type &filled_polygons);
 
-	public slots:
+	public Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.

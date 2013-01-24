@@ -74,7 +74,7 @@ namespace GPlatesQtWidgets
 			return d_export_file_options;
 		}
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		react_check_box_state_changed(

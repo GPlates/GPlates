@@ -72,7 +72,7 @@ namespace GPlatesCanvasTools
 			{
 				d_active_geometry_operation = geometry_operation;
 
-				emit switched_geometry_operation(geometry_operation);
+				Q_EMIT switched_geometry_operation(geometry_operation);
 			}
 		}
 
@@ -90,7 +90,7 @@ namespace GPlatesCanvasTools
 			{
 				d_active_geometry_operation = NULL;
 
-				emit switched_geometry_operation(NULL);
+				Q_EMIT switched_geometry_operation(NULL);
 			}
 		}
 
@@ -109,7 +109,7 @@ namespace GPlatesCanvasTools
 			{
 				d_active_geometry_builder = geometry_builder;
 
-				emit switched_geometry_builder(geometry_builder);
+				Q_EMIT switched_geometry_builder(geometry_builder);
 			}
 		}
 
@@ -127,12 +127,12 @@ namespace GPlatesCanvasTools
 			{
 				d_active_geometry_builder = NULL;
 
-				emit switched_geometry_builder(NULL);
+				Q_EMIT switched_geometry_builder(NULL);
 			}
 		}
 
 
-	signals:
+	Q_SIGNALS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.

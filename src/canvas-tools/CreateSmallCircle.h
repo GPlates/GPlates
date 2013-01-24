@@ -120,7 +120,7 @@ namespace GPlatesCanvasTools
 				bool is_on_earth, 
 				double proximity_inclusion_threshold);
 
-	private slots:
+	private Q_SLOTS:
 
 		/**
 		 *  Respond to the widget's clear signal.                                                                    

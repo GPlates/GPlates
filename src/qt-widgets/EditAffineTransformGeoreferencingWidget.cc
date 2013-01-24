@@ -188,7 +188,7 @@ GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::update_affine_transfo
 		}
 		d_georeferencing->set_parameters(new_parameters);
 
-		emit georeferencing_changed();
+		Q_EMIT georeferencing_changed();
 
 		// Read it back into the spinboxes (there's no guarantee that what we put in
 		// is what we get back out).
@@ -201,7 +201,7 @@ void
 GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::handle_use_global_extents_button_clicked()
 {
 	d_georeferencing->reset_to_global_extents(d_raster_width, d_raster_height);
-	emit georeferencing_changed();
+	Q_EMIT georeferencing_changed();
 	refresh();
 }
 

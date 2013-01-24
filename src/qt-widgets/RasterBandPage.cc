@@ -172,7 +172,7 @@ GPlatesQtWidgets::RasterBandPage::handle_table_cell_changed(
 		QString text = band_names_table->item(row, 1)->text();
 		d_band_names[row] = text.trimmed();
 
-		emit completeChanged();
+		Q_EMIT completeChanged();
 	}
 }
 

@@ -136,7 +136,7 @@ namespace GPlatesQtWidgets
 		void
 		handle_clear_action_triggered();
 
-	private slots:
+	private Q_SLOTS:
 
 		/**
 		 * The slot that gets called when the user clicks "Create".

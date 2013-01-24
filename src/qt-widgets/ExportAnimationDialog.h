@@ -80,7 +80,7 @@ namespace GPlatesQtWidgets
 				GPlatesGui::ExportAnimationType::Format export_format,
 				const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr &export_configuration);
 	
-	public slots:
+	public Q_SLOTS:
 		/**
 		 * Reset controls to their "Eagerly awaiting user input" state.
 		 */
@@ -116,12 +116,12 @@ namespace GPlatesQtWidgets
 		setVisible(
 				bool visible);
 		
-	signals:
+	Q_SIGNALS:
 		void
 		current_time_changed(
 				double new_value);
 
-	private slots:
+	private Q_SLOTS:
 		void
 		react_start_time_spinbox_changed(
 				double new_val);

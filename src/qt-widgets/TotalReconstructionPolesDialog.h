@@ -68,7 +68,7 @@ namespace GPlatesQtWidgets
 				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = NULL);
 
-	public slots:
+	public Q_SLOTS:
 
 		/**
 		 * Updates the dialog. (After the reconstruction time/plate has been
@@ -90,7 +90,7 @@ namespace GPlatesQtWidgets
 		showEvent(
 				QShowEvent *event_);
 
-	private slots:
+	private Q_SLOTS:
 
 		/**
 		 * Export the relative-rotation data in csv form. 

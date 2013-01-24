@@ -74,7 +74,7 @@ namespace GPlatesQtWidgets
 			return d_export_stage_rotation_options;
 		}
 
-	private slots:
+	private Q_SLOTS:
 
 		void
 		react_time_interval_value_changed(

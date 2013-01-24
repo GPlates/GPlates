@@ -423,7 +423,7 @@ GPlatesQtWidgets::EditStringListWidget::append_string_element(
 	work_around_table_graphical_glitch(*this, *table_elements);
 
 	set_dirty();
-	emit commit_me();
+	Q_EMIT commit_me();
 }
 
 
@@ -471,7 +471,7 @@ GPlatesQtWidgets::EditStringListWidget::delete_row(
 	// an empty table?
 
 	set_dirty();
-	emit commit_me();
+	Q_EMIT commit_me();
 }
 
 
@@ -479,7 +479,7 @@ void
 GPlatesQtWidgets::EditStringListWidget::commit_changes()
 {
 	set_dirty();
-	emit commit_me();
+	Q_EMIT commit_me();
 }
 
 
