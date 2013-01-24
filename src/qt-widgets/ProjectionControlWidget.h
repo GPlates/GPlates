@@ -26,6 +26,8 @@
 #ifndef GPLATES_QTWIDGETS_PROJECTIONCONTROLWIDGET_H
 #define GPLATES_QTWIDGETS_PROJECTIONCONTROLWIDGET_H
 
+#include <QKeySequence>
+#include <QString>
 #include <QWidget>
 
 #include "ProjectionControlWidgetUi.h"
@@ -60,7 +62,10 @@ namespace GPlatesQtWidgets
 		void
 		handle_combobox_changed(
 				int idx);
-		
+
+		void
+		handle_shortcut_triggered();
+
 	public slots:
 		void
 		handle_projection_type_changed(
@@ -73,7 +78,14 @@ namespace GPlatesQtWidgets
 	private:
 
 		GPlatesGui::ViewportProjection &d_viewport_projection;
-		
+
+
+		void
+		add_projection(
+				const QString &projection_text,
+				GPlatesGui::MapProjection::Type projection_type,
+				const QKeySequence &shortcut_key_sequence);
+
 	};
 }
 
