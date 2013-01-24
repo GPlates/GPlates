@@ -854,10 +854,16 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::copy_canvas_tool_icon_to_workflow_tab
 	// Get the current icon size.
 	const QSize tool_icon_size = tab_widget_canvas_tools->iconSize();
 
+#if 1
+	// Currently we always use a non-greyed-out icon on the workflow *tab*.
+	// This avoids the confusing the user into thinking they cannot select the workflow tab.
+	const QIcon::Mode icon_mode = QIcon::Normal;
+#else
 	// The icon mode depends on whether the tool is currently enabled or disabled.
 	const QIcon::Mode icon_mode = d_canvas_tool_workflows.is_canvas_tool_enabled(workflow, tool)
 			? QIcon::Normal
 			: QIcon::Disabled;
+#endif
 
 	// Get the enabled/disabled icon pixmap from the canvas tool icon.
 	const QPixmap un_rotated_icon_pixmap = tool_action->icon().pixmap(tool_icon_size, icon_mode);
