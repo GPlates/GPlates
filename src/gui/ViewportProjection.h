@@ -56,6 +56,8 @@ namespace GPlatesGui
 		set_projection_type(
 				GPlatesGui::MapProjection::Type projection_type)
 		{
+			emit projection_type_about_to_change(*this);
+
 			d_projection_type = projection_type;
 
 			emit projection_type_changed(*this);
@@ -67,6 +69,8 @@ namespace GPlatesGui
 		set_central_meridian(
 				const double &central_meridian)
 		{
+			emit central_meridian_about_to_change(*this);
+
 			d_central_meridian = central_meridian;
 
 			emit central_meridian_changed(*this);
@@ -89,11 +93,19 @@ namespace GPlatesGui
 
 	signals:
 		void
+		projection_type_about_to_change(
+				const GPlatesGui::ViewportProjection &viewport_projection);
+
+		void
 		projection_type_changed(
 				const GPlatesGui::ViewportProjection &viewport_projection);
 
 		void
 		central_meridian_changed(
+				const GPlatesGui::ViewportProjection &viewport_projection);
+
+		void
+		central_meridian_about_to_change(
 				const GPlatesGui::ViewportProjection &viewport_projection);
 
 	private:

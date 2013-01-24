@@ -211,6 +211,10 @@ namespace GPlatesQtWidgets
 		handle_zoom_change();
 
 		void
+		about_to_change_projection(
+				const GPlatesGui::ViewportProjection &view_projection);
+
+		void
 		change_projection(
 			const GPlatesGui::ViewportProjection &view_projection);
 
@@ -237,6 +241,13 @@ namespace GPlatesQtWidgets
 		 * Which of globe and map is currently active.
 		 */
 		SceneView *d_active_view_ptr;
+
+		/**
+		 * The camera position of the currently active view.
+		 *
+		 * Is boost::none if unable to retrieve the camera position from the currently active view.
+		 */
+		boost::optional<GPlatesMaths::LatLonPoint> d_active_camera_llp;
 
 		/**
 		 * Whether zooming (via mouse wheel or pinch gesture) is enabled.

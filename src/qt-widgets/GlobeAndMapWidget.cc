@@ -234,6 +234,11 @@ GPlatesQtWidgets::GlobeAndMapWidget::make_signal_slot_connections()
 	GPlatesGui::ViewportProjection &vprojection = d_view_state.get_viewport_projection();
 	QObject::connect(
 			&vprojection,
+			SIGNAL(projection_type_about_to_change(const GPlatesGui::ViewportProjection &)),
+			this,
+			SLOT(about_to_change_projection(const GPlatesGui::ViewportProjection &)));
+	QObject::connect(
+			&vprojection,
 			SIGNAL(projection_type_changed(const GPlatesGui::ViewportProjection &)),
 			this,
 			SLOT(change_projection(const GPlatesGui::ViewportProjection &)));
@@ -266,6 +271,16 @@ GPlatesQtWidgets::GlobeAndMapWidget::handle_globe_or_map_repainted(
 
 
 void
+GPlatesQtWidgets::GlobeAndMapWidget::about_to_change_projection(
+		const GPlatesGui::ViewportProjection &view_projection)
+{
+	// Save the camera position of the currently active view before we potentially change
+	// to a different view (eg, globe to map view or vice versa).
+	d_active_camera_llp = get_camera_llp();
+}
+
+
+void
 GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 		const GPlatesGui::ViewportProjection &view_projection)
 {
@@ -275,17 +290,14 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 	d_map_view_ptr->map_canvas().map().set_central_meridian(
 		view_projection.get_central_meridian());
 
-	// Save the existing camera llp.
-	boost::optional<GPlatesMaths::LatLonPoint> camera_llp = get_camera_llp();
-
 	if (view_projection.get_projection_type() == GPlatesGui::MapProjection::ORTHOGRAPHIC)
 	{
 		// Switch to globe.
 		d_active_view_ptr = d_globe_canvas_ptr.get();
 		d_globe_canvas_ptr->update_canvas();
-		if (camera_llp)
+		if (d_active_camera_llp)
 		{
-			d_globe_canvas_ptr->set_camera_viewpoint(*camera_llp);
+			d_globe_canvas_ptr->set_camera_viewpoint(d_active_camera_llp.get());
 		}
 		d_layout->setCurrentWidget(d_globe_canvas_ptr.get());
 	}
@@ -295,13 +307,17 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 		d_active_view_ptr = d_map_view_ptr.get();
 		// d_map_view_ptr->set_view();
 		d_map_view_ptr->update_canvas();
-		if (camera_llp)
+		if (d_active_camera_llp)
 		{
-			d_map_view_ptr->set_camera_viewpoint(*camera_llp);	
+			d_map_view_ptr->set_camera_viewpoint(d_active_camera_llp.get());	
 		}
 		d_layout->setCurrentWidget(d_map_view_ptr.get());
 	}
 	
+	// There might have been a zoom change while the previous view was active and the current
+	// view would not have known about it.
+	d_active_view_ptr->handle_zoom_change();
+
 	emit update_tools_and_status_message();
 }
 
