@@ -33,6 +33,7 @@
 #include <QAction>
 #include <QMetaMethod>
 #include <QDesktopServices>
+#include <boost/foreach.hpp>
 
 #include "GuiDebug.h"
 
@@ -45,8 +46,6 @@
 #include "app-logic/ReconstructGraph.h"
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/TaskPanel.h"
-
-#include <boost/foreach.hpp>
 
 namespace
 {

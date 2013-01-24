@@ -24,6 +24,7 @@
  */
 
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
 #include "CoRegistrationLayerProxy.h"
@@ -35,8 +36,6 @@
 #include "data-mining/DataSelector.h"
 
 #include "opengl/GLRasterCoRegistration.h"
-
-#include <boost/foreach.hpp>
 
 GPlatesAppLogic::CoRegistrationLayerProxy::CoRegistrationLayerProxy() :
 	// Start off with a reconstruction layer proxy that does identity rotations.

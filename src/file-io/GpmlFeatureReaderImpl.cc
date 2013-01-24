@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 
 #include "GpmlFeatureReaderImpl.h"
 #include "GpmlReaderException.h"
@@ -41,8 +42,6 @@
 #include "model/XmlNodeUtils.h"
 
 #include "property-values/UninterpretedPropertyValue.h"
-
-#include <boost/foreach.hpp>
 
 GPlatesModel::FeatureHandle::non_null_ptr_type
 GPlatesFileIO::GpmlFeatureCreator::read_feature(

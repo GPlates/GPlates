@@ -22,6 +22,8 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#include <boost/foreach.hpp>
+
 #include "LayerOutputRenderer.h"
 
 #include "app-logic/MultiPointVectorField.h"
@@ -36,8 +38,6 @@
 #include "app-logic/VelocityFieldCalculatorLayerProxy.h"
 
 #include "presentation/ReconstructionGeometryRenderer.h"
-
-#include <boost/foreach.hpp>
 
 GPlatesPresentation::LayerOutputRenderer::LayerOutputRenderer(
 		ReconstructionGeometryRenderer &reconstruction_geometry_renderer,

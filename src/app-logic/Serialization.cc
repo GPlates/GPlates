@@ -25,6 +25,7 @@
 #include <QDebug>
 #include <QFileInfo>
 #include <QMap>
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
 #include "Serialization.h"
@@ -43,7 +44,6 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
-#include <boost/foreach.hpp>
 
 namespace
 {

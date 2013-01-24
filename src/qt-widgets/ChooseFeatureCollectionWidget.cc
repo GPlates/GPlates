@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QString>
@@ -39,8 +40,6 @@
 #include "global/GPlatesAssert.h"
 
 #include "model/FeatureCollectionHandle.h"
-
-#include <boost/foreach.hpp>
 
 namespace
 {

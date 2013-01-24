@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
+
 #include <set>
 #include <QCoreApplication>
 #include <QTableWidget>
@@ -65,9 +67,6 @@
 #include "ManageFeatureCollectionsEditConfigurations.h"
 
 #include "ManageFeatureCollectionsDialog.h"
-
-#include <boost/foreach.hpp>
-
 namespace
 {
 	// The colours to be used for row backgrounds and icon colours.

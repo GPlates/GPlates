@@ -28,6 +28,7 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTION_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTION_H
 
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
 #include "LayerProxyUtils.h"
@@ -39,8 +40,6 @@
 #include "model/types.h"
 
 #include "utils/ReferenceCount.h"
-
-#include <boost/foreach.hpp>
 
 namespace GPlatesAppLogic
 {

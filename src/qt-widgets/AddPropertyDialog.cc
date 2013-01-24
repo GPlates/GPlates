@@ -24,6 +24,7 @@
  */
 
 #include <algorithm>
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QDebug>
 #include <QMessageBox>
@@ -51,8 +52,6 @@
 #include "property-values/StructuralType.h"
 
 #include "utils/UnicodeStringUtils.h"
-
-#include <boost/foreach.hpp>
 
 namespace
 {

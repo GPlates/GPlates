@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <QListWidget>
 #include <QMessageBox>
 
@@ -60,8 +61,6 @@
 #include "property-values/XsString.h"
 
 #include "qt-widgets/EditTimePeriodWidget.h"
-
-#include <boost/foreach.hpp>
 
 namespace
 {

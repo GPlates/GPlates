@@ -35,7 +35,6 @@
 
 #include "presentation/ViewState.h"
 
-
 GPlatesGui::ExportResolvedTopologyAnimationStrategy::ExportResolvedTopologyAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context,
 		const const_configuration_ptr &cfg) :

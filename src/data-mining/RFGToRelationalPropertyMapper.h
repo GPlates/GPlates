@@ -28,12 +28,12 @@
 #include <vector>
 #include <QDebug>
 
+#include <boost/foreach.hpp>
+
 #include "CoRegMapper.h"
 #include "DualGeometryVisitor.h"
 #include "Types.h"
 #include "DataMiningUtils.h"
-
-#include <boost/foreach.hpp>
 
 namespace GPlatesDataMining
 {

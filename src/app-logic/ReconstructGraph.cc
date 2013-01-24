@@ -29,6 +29,7 @@
 #include <list>
 #include <set>
 #include <vector>
+#include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
 #include <QDebug>
@@ -51,8 +52,6 @@
 #include "global/PreconditionViolationError.h"
 
 #include "utils/Profile.h"
-
-#include <boost/foreach.hpp>
 
 namespace
 {

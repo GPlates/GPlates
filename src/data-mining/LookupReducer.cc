@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */	
 
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
@@ -31,8 +32,6 @@
 
 #include "DataMiningUtils.h"
 #include "LookupReducer.h"
-
-#include <boost/foreach.hpp>
 
 namespace
 {

@@ -26,6 +26,7 @@
 #include <cmath>
 #include <boost/optional.hpp>
 #include <boost/numeric/conversion/converter.hpp>
+#include <boost/foreach.hpp>
 #include <QPainter>
 #include <QBrush>
 #include <QResizeEvent>
@@ -48,8 +49,6 @@
 #include "gui/ColourPaletteAdapter.h"
 #include "gui/ColourPaletteVisitor.h"
 #include "gui/Dialogs.h"
-
-#include <boost/foreach.hpp>
 
 namespace
 {

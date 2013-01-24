@@ -25,6 +25,7 @@
 
 #include <utility>
 #include <boost/optional.hpp>
+#include <boost/foreach.hpp>
  
 #include "RasterVisualLayerParams.h"
 
@@ -33,8 +34,6 @@
 #include "app-logic/RasterLayerTask.h"
 
 #include "maths/MathsUtils.h"
-
-#include <boost/foreach.hpp>
 
 namespace
 {

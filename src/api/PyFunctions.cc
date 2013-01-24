@@ -28,6 +28,7 @@
 #include <python.h> 
 #endif
 
+#include <boost/foreach.hpp>
 #include <QString>
 
 #include "PythonUtils.h"
@@ -45,8 +46,6 @@
 #include "global/python.h"
 
 #include "model/Gpgim.h"
-
-#include <boost/foreach.hpp>
 
 #if !defined(GPLATES_NO_PYTHON)
 namespace bp = boost::python;

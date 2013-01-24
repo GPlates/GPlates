@@ -26,6 +26,7 @@
  */
 
 #include <map>
+#include <boost/foreach.hpp>
 
 #include "EditWidgetGroupBox.h"
 
@@ -60,8 +61,6 @@
 #include "presentation/ViewState.h"
 
 #include "property-values/GpmlPlateId.h"
-
-#include <boost/foreach.hpp>
 
 GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 		GPlatesPresentation::ViewState &view_state_,

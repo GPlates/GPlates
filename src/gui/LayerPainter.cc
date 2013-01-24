@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
 #include "LayerPainter.h"
@@ -37,8 +38,6 @@
 #include "opengl/GLText.h"
 
 #include "utils/Profile.h"
-
-#include <boost/foreach.hpp>
 
 namespace GPlatesGui
 {

@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <boost/foreach.hpp>
 #include <QDebug>
 
 #include "VisualLayers.h"
@@ -41,8 +42,6 @@
 
 #include "view-operations/RenderedGeometryLayer.h"
 #include "utils/Profile.h"
-
-#include <boost/foreach.hpp>
 
 GPlatesPresentation::VisualLayers::VisualLayers(
 		GPlatesAppLogic::ApplicationState &application_state,

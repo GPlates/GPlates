@@ -24,6 +24,7 @@
  */
 
 #include <cstddef> // std::size_t
+#include <boost/foreach.hpp>
 
 #include "ReconstructContext.h"
 
@@ -33,8 +34,6 @@
 #include "global/GPlatesAssert.h"
 
 #include "utils/Profile.h"
-
-#include <boost/foreach.hpp>
 
 GPlatesAppLogic::ReconstructContext::ReconstructContext(
 		const ReconstructMethodRegistry &reconstruct_method_registry,

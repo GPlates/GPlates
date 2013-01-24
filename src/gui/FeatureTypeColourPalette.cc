@@ -26,6 +26,7 @@
  */
 
 #include <string>
+#include <boost/foreach.hpp>
 
 #include "FeatureTypeColourPalette.h"
 #include "HTMLColourNames.h"
@@ -33,8 +34,6 @@
 #include "model/Gpgim.h"
 
 #include "utils/UnicodeStringUtils.h"
-
-#include <boost/foreach.hpp>
 
 namespace
 {

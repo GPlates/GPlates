@@ -24,6 +24,7 @@
  */
 
 #include <vector>
+#include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <opengl/OpenGL.h>
 
@@ -45,8 +46,6 @@
 #include "maths/SmallCircleBounds.h"
 
 #include "utils/Profile.h"
-
-#include <boost/foreach.hpp>
 
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::GLReconstructedStaticPolygonMeshes(
 		GLRenderer &renderer,

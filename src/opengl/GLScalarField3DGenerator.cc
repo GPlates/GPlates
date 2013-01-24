@@ -27,6 +27,7 @@
 #include <cmath>
 #include <limits>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
  * Must be included before the OpenGL headers (which also means before Qt headers).
@@ -67,8 +68,6 @@
 
 #include "utils/Endian.h"
 #include "utils/Profile.h"
-
-#include <boost/foreach.hpp>
 
 // Uses a shader-generated test scalar field instead of importing from depth layer rasters.
 // WARNING: Turning this on will overwrite the scalar field file if it exists.

@@ -24,6 +24,7 @@
  */
 
 #include <algorithm>
+#include <boost/foreach.hpp>
 #include <QDebug>
 #include <QFileInfo>
 
@@ -38,8 +39,6 @@
 #include "model/FeatureVisitor.h"
 
 #include "utils/UnicodeStringUtils.h"
-
-#include <boost/foreach.hpp>
 
 const QString GPlatesAppLogic::ScalarField3DLayerTask::SCALAR_FIELD_FEATURE_CHANNEL_NAME = "Scalar field feature";
 const QString GPlatesAppLogic::ScalarField3DLayerTask::SURFACE_GEOMETRIES_CHANNEL_NAME = "Surface geometries";

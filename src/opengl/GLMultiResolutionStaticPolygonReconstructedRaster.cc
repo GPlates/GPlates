@@ -29,6 +29,7 @@
 #include "global/CompilerWarnings.h"
 
 #include <boost/cast.hpp>
+#include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
@@ -61,8 +62,6 @@
 #include "gui/Colour.h"
 
 #include "utils/Profile.h"
-
-#include <boost/foreach.hpp>
 
 namespace
 {

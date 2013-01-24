@@ -27,13 +27,13 @@
 
 #include <vector>
 #include <QDebug>
+#include <boost/foreach.hpp>
 
 #include "CoRegFilter.h"
 #include "IsCloseEnoughChecker.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
 
-#include <boost/foreach.hpp>
 
 namespace GPlatesDataMining
 {

@@ -29,10 +29,10 @@
 #include <QXmlQuery>
 #include <QXmlSerializer>
 
+#include <boost/foreach.hpp>
+
 #include "GsmlNodeProcessor.h"
 #include "utils/XQueryUtils.h"
-
-#include <boost/foreach.hpp>
 
 void
 GPlatesFileIO::GsmlNodeProcessor::execute(

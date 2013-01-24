@@ -25,6 +25,7 @@
 
 #include <map>
 #include <vector>
+#include <boost/foreach.hpp>
 #include <QFile>
 #include <QXmlStreamReader>
 
@@ -45,8 +46,6 @@
 
 #include "utils/UnicodeStringUtils.h"
 #include "utils/XmlNamespaces.h"
-
-#include <boost/foreach.hpp>
 
 namespace GPlatesModel
 {

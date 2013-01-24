@@ -36,6 +36,7 @@
 #include <vector>
 #include <boost/bind.hpp>
 #include <boost/current_function.hpp>
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QStringList>
 #include <QTextStream>
@@ -70,8 +71,6 @@
 
 #include "utils/Parse.h"
 #include "utils/UnicodeStringUtils.h"
-
-#include <boost/foreach.hpp>
 
 #define EXCEPTION_SOURCE BOOST_CURRENT_FUNCTION
 

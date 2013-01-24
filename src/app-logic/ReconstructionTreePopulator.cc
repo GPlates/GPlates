@@ -25,6 +25,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <boost/none.hpp>  // boost::none
 
 #include "ReconstructionTreePopulator.h"
@@ -39,7 +40,6 @@
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
 
-#include <boost/foreach.hpp>
 /*
 namespace
 {

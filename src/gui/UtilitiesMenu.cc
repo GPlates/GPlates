@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
+#include <boost/foreach.hpp>
 #include <QMetaType>
 #include <QVariant>
 #include <QDebug>
@@ -33,8 +34,6 @@
 #include "api/PythonExecutionThread.h"
 #include "api/PythonInterpreterLocker.h"
 #include "api/Sleeper.h"
-
-#include <boost/foreach.hpp>
 
 #if !defined(GPLATES_NO_PYTHON)
 

@@ -24,6 +24,7 @@
  */
 
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 
 #include "LayerTaskRegistry.h"
 
@@ -41,8 +42,6 @@
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
-
-#include <boost/foreach.hpp>
 
 GPlatesAppLogic::LayerTaskRegistry::LayerTaskType
 GPlatesAppLogic::LayerTaskRegistry::register_layer_task_type(

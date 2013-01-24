@@ -24,6 +24,7 @@
  */
 
 #include <algorithm>
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
 #include "GeometryCookieCutter.h"
@@ -33,8 +34,6 @@
 #include "ResolvedTopologicalGeometry.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
-
-#include <boost/foreach.hpp>
 
 namespace
 {

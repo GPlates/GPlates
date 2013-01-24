@@ -24,6 +24,8 @@
  */
 
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
+
 #include <QDebug>
 
 #include "ReconstructLayerProxy.h"
@@ -31,8 +33,6 @@
 #include "maths/CubeQuadTreePartitionUtils.h"
 
 #include "utils/Profile.h"
-
-#include <boost/foreach.hpp>
 
 namespace GPlatesAppLogic
 {

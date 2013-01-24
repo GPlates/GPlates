@@ -25,6 +25,7 @@
 
 #include <cstdio>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <QFont>
 #include <QKeyEvent>
 #include <QTextCharFormat>
@@ -71,8 +72,6 @@
 #include "presentation/ViewState.h"
 
 #include "utils/DeferredCallEvent.h"
-
-#include <boost/foreach.hpp>
 
 #if !defined(GPLATES_NO_PYTHON)
 namespace

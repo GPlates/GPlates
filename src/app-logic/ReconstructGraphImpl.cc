@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <boost/mpl/assert.hpp>
 #include <boost/mpl/contains.hpp>
 #include <boost/variant.hpp>
@@ -35,8 +36,6 @@
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
-
-#include <boost/foreach.hpp>
 
 GPlatesAppLogic::ReconstructGraphImpl::Data::Data(
 		const FeatureCollectionFileState::file_reference &file) :

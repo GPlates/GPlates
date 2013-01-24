@@ -26,6 +26,7 @@
  */
 
 #include <vector>
+#include <boost/foreach.hpp>
 #include <boost/static_assert.hpp>
 #include <QtGlobal>
 
@@ -54,8 +55,6 @@
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalPoint.h"
 #include "property-values/StructuralType.h"
-
-#include <boost/foreach.hpp>
 
 namespace
 {

@@ -26,6 +26,7 @@
 
 #include <cstddef> // For std::size_t
 
+#include <boost/foreach.hpp>
 
 #include "global/CompilerWarnings.h"
 
@@ -73,8 +74,6 @@
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
 #include "view-operations/RenderedGeometryParameters.h"
-
-#include <boost/foreach.hpp>
 
 namespace
 {

@@ -25,6 +25,8 @@
 #include "global/python.h"
 #if !defined(GPLATES_NO_PYTHON)
 
+#include <boost/foreach.hpp>
+
 #include "PyFeatureCollection.h"
 #include "PythonRunner.h"
 #include "DeferredApiCall.h"
@@ -48,8 +50,6 @@
 #include "qt-widgets/ViewportWindow.h"
 
 #include "utils/StringUtils.h"
-
-#include <boost/foreach.hpp>
 
 namespace
 {

@@ -29,6 +29,7 @@
 #define GPLATES_GUI_DRAWSTYLEMANAGER_H
 
 #include <iostream>
+#include <boost/foreach.hpp>
 #include <boost/ref.hpp>
 #include <map>
 #include <QObject>
@@ -37,8 +38,6 @@
 #include "model/FeatureHandle.h"
 #include "DrawStyleAdapters.h"
 #include "app-logic/UserPreferences.h"
-
-#include <boost/foreach.hpp>
 
 namespace GPlatesGui
 {

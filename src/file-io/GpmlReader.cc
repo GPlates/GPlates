@@ -30,6 +30,7 @@
 #include <sstream>
 #include <string>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QFile>
 #include <QFileInfo>
@@ -66,8 +67,6 @@
 #include "utils/Profile.h"
 #include "utils/StringUtils.h"
 #include "utils/UnicodeStringUtils.h"
-
-#include <boost/foreach.hpp>
 
 const GPlatesFileIO::ExternalProgram &
 GPlatesFileIO::GpmlReader::gunzip_program()

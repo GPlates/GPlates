@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <fstream>
+#include <boost/foreach.hpp>
 
 #include "app-logic/AppLogicFwd.h"
 #include "app-logic/ReconstructionLayerProxy.h"
@@ -39,7 +40,6 @@
 #include "GetValueFromPropertyVisitor.h"
 #include "IsCloseEnoughChecker.h"
 
-#include <boost/foreach.hpp>
 
 using namespace GPlatesUtils;
 

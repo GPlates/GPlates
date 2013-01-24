@@ -24,10 +24,10 @@
  */
 
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <boost/static_assert.hpp>
 
 #include "VelocityFieldCalculatorLayerProxy.h"
-
 #include "MultiPointVectorField.h"
 #include "PlateVelocityUtils.h"
 #include "ReconstructedFeatureGeometry.h"
@@ -36,9 +36,6 @@
 #include "ResolvedTopologicalNetwork.h"
 
 #include "global/GPlatesAssert.h"
-
-#include <boost/foreach.hpp>
-
 
 GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::VelocityFieldCalculatorLayerProxy(
 		VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType solve_velocities_method) :

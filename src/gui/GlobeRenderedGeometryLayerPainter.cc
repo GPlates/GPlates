@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <opengl/OpenGL.h>
 
 #include "ColourScheme.h"
@@ -69,8 +70,6 @@
 
 // Temporary includes for triangle testing
 #include "view-operations/RenderedGeometryFactory.h"
-
-#include <boost/foreach.hpp>
 
 namespace 
 {

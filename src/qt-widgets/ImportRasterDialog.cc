@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <iterator>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <QString>
 #include <QStringList>
 #include <QMessageBox>
@@ -77,8 +78,6 @@
 
 #include "utils/Parse.h"
 #include "utils/UnicodeStringUtils.h"
-
-#include <boost/foreach.hpp>
 
 const QString
 GPlatesQtWidgets::ImportRasterDialog::GPML_EXT = ".gpml";

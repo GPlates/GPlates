@@ -28,11 +28,10 @@
 #define GPLATES_QTWIDGETS_FILEDIALOGFILTER_H
 
 #include <boost/optional.hpp>
+#include <boost/foreach.hpp>
 #include <vector>
 #include <QString>
 #include <QStringList>
-
-#include <boost/foreach.hpp>
 
 namespace GPlatesQtWidgets
 {

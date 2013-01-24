@@ -22,6 +22,9 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+
+#include <boost/foreach.hpp>
+
 #include "Layer.h"
 
 #include "LayerTask.h"
@@ -30,8 +33,6 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
-
-#include <boost/foreach.hpp>
 
 GPlatesAppLogic::Layer::Layer(
 		const boost::weak_ptr<ReconstructGraphImpl::Layer> &layer_impl) :

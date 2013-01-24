@@ -24,6 +24,7 @@
  */
 
 #include <algorithm>
+#include <boost/foreach.hpp>
 #include <QDebug>
 
 #include "RasterLayerProxy.h"
@@ -32,8 +33,6 @@
 #include "ReconstructUtils.h"
 
 #include "property-values/RawRasterUtils.h"
-
-#include <boost/foreach.hpp>
 
 const boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &
 GPlatesAppLogic::RasterLayerProxy::get_proxied_raster(

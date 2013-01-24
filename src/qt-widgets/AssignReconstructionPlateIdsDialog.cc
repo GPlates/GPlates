@@ -26,6 +26,7 @@
 #include <numeric>
 #include <vector>
 #include <boost/cast.hpp>
+#include <boost/foreach.hpp>
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QRadioButton>
@@ -53,8 +54,6 @@
 #include "presentation/ViewState.h"
 #include "presentation/VisualLayerRegistry.h"
 #include "presentation/VisualLayers.h"
-
-#include <boost/foreach.hpp>
 
 namespace
 {

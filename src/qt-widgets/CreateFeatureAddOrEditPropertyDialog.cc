@@ -24,6 +24,7 @@
  */
 
 #include <algorithm>
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QDebug>
 #include <QDialogButtonBox>
@@ -46,8 +47,6 @@
 #include "property-values/StructuralType.h"
 
 #include "utils/UnicodeStringUtils.h"
-
-#include <boost/foreach.hpp>
 
 GPlatesQtWidgets::CreateFeatureAddOrEditPropertyDialog::CreateFeatureAddOrEditPropertyDialog(
 		GPlatesPresentation::ViewState &view_state_,

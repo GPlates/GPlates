@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
 
@@ -47,8 +48,6 @@
 
 #include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
-
-#include <boost/foreach.hpp>
 
 GPlatesOpenGL::GLVisualLayers::GLVisualLayers(
 		const GLContext::non_null_ptr_type &opengl_context,

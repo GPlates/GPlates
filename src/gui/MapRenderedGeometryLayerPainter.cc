@@ -29,6 +29,7 @@
 #include <limits>
 #include <stack>
 #include <iostream>
+#include <boost/foreach.hpp>
 #include <boost/type_traits/is_same.hpp>
 
 #include <QDebug>
@@ -70,7 +71,6 @@
 // Temporary includes for symbol testing
 #include "view-operations/RenderedGeometryFactory.h"
 
-#include <boost/foreach.hpp>
 
 namespace
 {

@@ -22,9 +22,9 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include "GpgimProperty.h"
-
 #include <boost/foreach.hpp>
+
+#include "GpgimProperty.h"
 
 boost::optional<GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type>
 GPlatesModel::GpgimProperty::get_structural_type(
