@@ -22,7 +22,8 @@ class OWTimeSeries(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'Single-var co-registration merge', wantMainArea = 0, resizingEnabled = 0)
 
         self.inputs = []
-        self.outputs = [("Coreg Data", ExampleTable), ('Feature IDs', ExampleTable)]
+        #self.outputs = [("Coreg Data", ExampleTable), ('Feature IDs', ExampleTable)]
+        self.outputs = [("Coreg Data", ExampleTable)]
 
         script_path = os.path.dirname(__file__)
         self.ui = uic.loadUi(script_path+'/time_series.ui')
@@ -90,7 +91,7 @@ class OWTimeSeries(OWWidget):
         if not self.coreg_layer:
             if not self.refresh():
                 return
-            
+
         #num = (b_time - e_time)/inc +1
         time_seq = numpy.arange(self.b_time, self.e_time, 0-self.inc)
         
@@ -124,32 +125,33 @@ class OWTimeSeries(OWWidget):
         except Exception,e:
             print e
         pb.finish()
-        data =  self._creat_data_table(matrix, time_seq)
+        data =  self._creat_data_table(matrix, time_seq, feature_ids)
         self.ui.property_comboBox.setEnabled(True)
         self.ui.refresh_button.setEnabled(True)
         self.ui.commit_button.setEnabled(True)
         self.send("Coreg Data", data)
-        v = [orange.StringVariable('Feature ID')]
+
+        '''v = [orange.StringVariable('Feature ID')]
         domain = Orange.data.Domain(v)
         ids = Orange.data.Table(domain)
         for i in feature_ids:
             ids.append([i])
-        self.send('Feature IDs', ids)
+        self.send('Feature IDs', ids)'''
                              
 
 
-    def _creat_data_table(self, matrix, time_seq):
+    def _creat_data_table(self, matrix, time_seq, feature_ids):
         v = None
         if self._is_numeric(matrix):
             v = [orange.FloatVariable(str(x)) for x in time_seq]
         else:
             vv = self._get_unique_vec(matrix)
             v = [orange.EnumVariable(str(x),values = vv) for x in time_seq]
-            
+        v[0:0] = [orange.StringVariable('Feature ID')]    
         Domain = Orange.data.Domain(v)
         data = Orange.data.Table(Domain) #create empty table.
-        for row in matrix:
-            data.append(row)
+        for row in zip(feature_ids,matrix):
+            data.append([row[0]]+row[1])
         return data
 
     def _is_numeric(self, matrix):

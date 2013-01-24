@@ -17,7 +17,8 @@ class OWBirthTime(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'Birth Time',wantMainArea = 0, resizingEnabled = 0)
 
         self.inputs = []
-        self.outputs = [("Birth Time", ExampleTable), ("Feature IDs", ExampleTable)]
+        #self.outputs = [("Birth Time", ExampleTable), ("Feature IDs", ExampleTable)]
+        self.outputs = [("Birth Time", ExampleTable)]
 
         # GUI
         #self.box = OWGUI.widgetBox(self.controlArea, "Birth Time of Seeds")
@@ -61,19 +62,23 @@ class OWBirthTime(OWWidget):
         for item in set(times):
             vv.append(item)
 
-        v = [orange.EnumVariable('Birth Time', values=vv)]
+        v = [
+            orange.StringVariable('Feature ID'),
+            orange.EnumVariable('Birth Time', values=vv)]
         domain =  Orange.data.Domain(v)
         data = Orange.data.Table(domain)
-        for i in times:
-            data.append([i])
+        
+        seeds_str=[str(s) for s in seeds]
+        for i in zip(seeds_str,times):
+            data.append(list(i))
         self.send("Birth Time",data)
 
-        v = [orange.StringVariable('Feature ID')]
+        '''v = [orange.StringVariable('Feature ID')]
         domain =  Orange.data.Domain(v)
         data = Orange.data.Table(domain)
         for i in seeds:
             data.append([str(i)])
-        self.send("Feature IDs",data)
+        self.send("Feature IDs",data)'''
 
   
 if __name__=="__main__":

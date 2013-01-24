@@ -22,7 +22,8 @@ class OWAttributeAtTime(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'Attribute At Time', wantMainArea = 0, resizingEnabled = 0)
 
         self.inputs = []
-        self.outputs = [("Attribute At Time", ExampleTable), ("Feature IDs", ExampleTable)]
+        #self.outputs = [("Attribute At Time", ExampleTable), ("Feature IDs", ExampleTable)]
+        self.outputs = [("Attribute At Time", ExampleTable)]
 
         script_path = os.path.dirname(__file__)
         self.ui = uic.loadUi(script_path+'/attr_at_time.ui')
@@ -76,19 +77,21 @@ class OWAttributeAtTime(OWWidget):
         for item in set(vec):
             vv.append(item)
             
-        v = [orange.EnumVariable(str(self.ui.property_comboBox.currentText())+'_'+str(time),values = vv)]
+        v = [
+             orange.StringVariable('Feature ID'),
+             orange.EnumVariable(str(self.ui.property_comboBox.currentText())+'_'+str(time),values = vv)]
         domain = Orange.data.Domain(v)
         data = Orange.data.Table(domain) #create empty table.
-        for i in vec:
-            data.append([i])
+        for i in zip(feature_ids, vec):
+            data.append(list(i))
         self.send("Attribute At Time", data)
 
-        v = [orange.StringVariable('Feature ID')]
+        '''v = [orange.StringVariable('Feature ID')]
         domain = Orange.data.Domain(v)
         data = Orange.data.Table(domain) #create empty table.
         for i in feature_ids:
             data.append([i])
-        self.send("Feature IDs", data)
+        self.send("Feature IDs", data)'''
        
 
     def refresh(self):

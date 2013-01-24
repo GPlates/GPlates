@@ -23,7 +23,8 @@ class OWBirthAttribute(OWWidget):
         OWWidget.__init__(self, parent, signalManager, 'Birth Attribute', wantMainArea = 0, resizingEnabled = 0)
 
         self.inputs = []
-        self.outputs = [("Attribute At Birth", ExampleTable),("Feature IDs", ExampleTable),("Birth Time", ExampleTable)]
+        self.outputs = [("Attribute At Birth", ExampleTable)]
+        #self.outputs = [("Attribute At Birth", ExampleTable),("Feature IDs", ExampleTable),("Birth Time", ExampleTable)]
 
         script_path = os.path.dirname(__file__)
         self.ui = uic.loadUi(script_path+'/birth_attr.ui')
@@ -97,13 +98,18 @@ class OWBirthAttribute(OWWidget):
         for btt in set(birth_time_vec):
             bt_vv.append(btt)
 
-        v = [orange.EnumVariable(str(self.ui.property_comboBox.currentText()),values = vv)]
+        v = [orange.StringVariable('Feature ID'),
+             orange.EnumVariable('Birth Time', values = bt_vv),
+             orange.EnumVariable(str(self.ui.property_comboBox.currentText()),values = vv)]
         domain = Orange.data.Domain(v)
         data = Orange.data.Table(domain) #create empty table.
-        for i in vec:
-            data.append([i])
+
+        seeds_str=[str(s) for s in seeds]
+        for i in zip(seeds_str,birth_time_vec,vec):
+            data.append(list(i))
         self.send("Attribute At Birth", data)
 
+        '''
         v = [orange.StringVariable('Feature ID')]
         domain = Orange.data.Domain(v)
         data = Orange.data.Table(domain) #create empty table.
@@ -116,7 +122,7 @@ class OWBirthAttribute(OWWidget):
         data = Orange.data.Table(domain) #create empty table.
         for i in birth_time_vec:
             data.append([str(i)])
-        self.send("Birth Time", data)
+        self.send("Birth Time", data)'''
 
 
     def refresh(self):
