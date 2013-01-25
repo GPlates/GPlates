@@ -25,7 +25,7 @@
 #include <QProgressBar>
 #include <boost/shared_ptr.hpp>
 
-#include "MeshGenerator.h"
+#include "GenerateVelocityDomainCitcoms.h"
 
 #include "maths/PolylineIntersections.h"
 #include "maths/Rotation.h"
@@ -382,7 +382,7 @@ namespace
 
 
 GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
-GPlatesAppLogic::MeshGenerator::generate_mesh_geometry(
+GPlatesAppLogic::GenerateVelocityDomainCitcoms::generate_mesh_geometry(
 		int node_x,
 		unsigned index)
 {
@@ -408,7 +408,7 @@ GPlatesAppLogic::MeshGenerator::generate_mesh_geometry(
 }
 
 void
-GPlatesAppLogic::MeshGenerator::generate_mesh_geometries(
+GPlatesAppLogic::GenerateVelocityDomainCitcoms::generate_mesh_geometries(
 		int node_x, 
 		std::vector<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> &geometries)
 {

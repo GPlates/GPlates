@@ -22,8 +22,8 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#ifndef GPLATES_UNIT_TEST_MESHGENERATOR_TEST_H
-#define GPLATES_UNIT_TEST_MESHGENERATOR_TEST_H
+#ifndef GPLATES_UNIT_TEST_GENERATE_VELOCITY_DOMAIN_CITCOMS_TEST_H
+#define GPLATES_UNIT_TEST_GENERATE_VELOCITY_DOMAIN_CITCOMS_TEST_H
 
 #include <boost/test/unit_test.hpp>
 
@@ -37,12 +37,12 @@
 #include "model/ModelInterface.h"
 
 
-namespace GPlatesUnitTest{
-
-	class MeshGeneratorTest
+namespace GPlatesUnitTest
+{
+	class GenerateVelocityDomainCitcomsTest
 	{
 	public:
-		MeshGeneratorTest();
+		GenerateVelocityDomainCitcomsTest();
 
 		void 
 		test_case_1();
@@ -81,11 +81,11 @@ namespace GPlatesUnitTest{
 	};
 
 	
-	class MeshGeneratorTestSuite : 
+	class GenerateVelocityDomainCitcomsTestSuite : 
 		public GPlatesUnitTest::GPlatesTestSuite
 	{
 	public:
-		MeshGeneratorTestSuite(
+		GenerateVelocityDomainCitcomsTestSuite(
 				unsigned depth);
 
 	protected:
@@ -94,5 +94,5 @@ namespace GPlatesUnitTest{
 		
 	};
 }
-#endif //GPLATES_UNIT_TEST_MESHGENERATOR_TEST_H 
+#endif //GPLATES_UNIT_TEST_GENERATE_VELOCITY_DOMAIN_CITCOMS_TEST_H
 

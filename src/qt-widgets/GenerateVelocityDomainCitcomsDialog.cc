@@ -29,13 +29,13 @@
 #include <QDir>
 #include <QDebug>
 
-#include "MeshDialog.h"
+#include "GenerateVelocityDomainCitcomsDialog.h"
 
 #include "ProgressDialog.h"
 #include "QtWidgetUtils.h"
 
 #include "app-logic/FeatureCollectionFileIO.h"
-#include "app-logic/MeshGenerator.h"
+#include "app-logic/GenerateVelocityDomainCitcoms.h"
 #include "app-logic/ApplicationState.h"
 
 #include "feature-visitors/GeometryFinder.h"
@@ -84,7 +84,7 @@ namespace
 }
 
 
-GPlatesQtWidgets::MeshDialog::MeshDialog(
+GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::GenerateVelocityDomainCitcomsDialog(
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_ ) :
 	GPlatesDialog(
@@ -166,7 +166,7 @@ GPlatesQtWidgets::MeshDialog::MeshDialog(
 }
 
 void
-GPlatesQtWidgets::MeshDialog::set_path()
+GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::set_path()
 {
 	QString new_path=lineEdit_path->text();
 	
@@ -193,7 +193,7 @@ GPlatesQtWidgets::MeshDialog::set_path()
 }
 
 void
-GPlatesQtWidgets::MeshDialog::select_path()
+GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::select_path()
 {
 	d_open_directory_dialog.select_directory(lineEdit_path->text());
 	QString pathname = d_open_directory_dialog.get_existing_directory();
@@ -206,7 +206,7 @@ GPlatesQtWidgets::MeshDialog::select_path()
 }
 
 void
-GPlatesQtWidgets::MeshDialog::set_node_x(
+GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::set_node_x(
 		int val)
 {
 	if(val<=0)
@@ -221,7 +221,7 @@ GPlatesQtWidgets::MeshDialog::set_node_x(
 }
 
 void
-GPlatesQtWidgets::MeshDialog::set_file_name_template()
+GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::set_file_name_template()
 {
 	const QString text = lineEdit_file_template->text();
 	std::size_t c_pos = text.toStdString().find(CAP_NUM_PLACE_HOLDER);
@@ -245,7 +245,7 @@ GPlatesQtWidgets::MeshDialog::set_file_name_template()
 }
 
 void
-GPlatesQtWidgets::MeshDialog::gen_mesh()
+GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::gen_mesh()
 {
 	main_buttonbox->setDisabled(true);
 
@@ -262,7 +262,7 @@ GPlatesQtWidgets::MeshDialog::gen_mesh()
 		progress_dlg->update_progress(i, stream.str().c_str());
 		
 		geometries.push_back(
-				GPlatesAppLogic::MeshGenerator::generate_mesh_geometry(d_node_x, i));
+				GPlatesAppLogic::GenerateVelocityDomainCitcoms::generate_mesh_geometry(d_node_x, i));
 		
 		if(progress_dlg->canceled())
 		{

@@ -22,8 +22,8 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#ifndef MESH_GENERATOR_H
-#define MESH_GENERATOR_H
+#ifndef GENERATE_VELOCITY_DOMAIN_CITCOMS_H
+#define GENERATE_VELOCITY_DOMAIN_CITCOMS_H
 
 #include <vector>
 
@@ -32,7 +32,7 @@
 
 namespace GPlatesAppLogic
 {
-	namespace MeshGenerator
+	namespace GenerateVelocityDomainCitcoms
 	{
 		/**
 		 *      Given the resolution, return the mesh diamond geometries

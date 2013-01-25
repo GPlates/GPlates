@@ -22,14 +22,14 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#ifndef MESH_DIALOG_H
-#define MESH_DIALOG_H
+#ifndef GENERATE_VELOCITY_DOMAIN_CITCOMS_DIALOG_H
+#define GENERATE_VELOCITY_DOMAIN_CITCOMS_DIALOG_H
 
 #include <iostream>
 #include <QObject>
 #include <QDialog>
 
-#include "MeshDialogUi.h"
+#include "GenerateVelocityDomainCitcomsDialogUi.h"
 
 #include "GPlatesDialog.h"
 #include "InformationDialog.h"
@@ -40,19 +40,19 @@
 
 namespace GPlatesQtWidgets
 {
-	class MeshDialog: 
+	class GenerateVelocityDomainCitcomsDialog: 
 		public GPlatesDialog,
-		protected Ui_MeshDialog 
+		protected Ui_GenerateVelocityDomainCitcomsDialog 
 	{
 		Q_OBJECT
 
 	public:
-		MeshDialog(
+		GenerateVelocityDomainCitcomsDialog(
 				GPlatesPresentation::ViewState &,
 				QWidget *parent_ = NULL);
 		
 		virtual
-		~MeshDialog()
+		~GenerateVelocityDomainCitcomsDialog()
 		{
 		//	qDebug() << "destructing mesh dialog";
 		}

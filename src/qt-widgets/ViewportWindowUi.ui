@@ -170,6 +170,12 @@
     <property name="title">
      <string>Fe&amp;atures</string>
     </property>
+    <widget class="QMenu" name="menuGenerate_Velocity_Point_Locations">
+     <property name="title">
+      <string>Generate Velocity Domain Points</string>
+     </property>
+     <addaction name="action_Generate_Citcoms_Velocity_Domain"/>
+    </widget>
     <addaction name="action_Manage_Colouring"/>
     <addaction name="separator"/>
     <addaction name="action_Load_Symbol"/>
@@ -180,7 +186,7 @@
     <addaction name="separator"/>
     <addaction name="action_Create_VGP"/>
     <addaction name="action_Assign_Plate_IDs"/>
-    <addaction name="action_Generate_Mesh_Cap"/>
+    <addaction name="menuGenerate_Velocity_Point_Locations"/>
    </widget>
    <widget class="QMenu" name="menu_Utilities">
     <property name="title">
@@ -835,9 +841,9 @@
     <string>Assign &amp;Plate IDs...</string>
    </property>
   </action>
-  <action name="action_Generate_Mesh_Cap">
+  <action name="action_Generate_Citcoms_Velocity_Domain">
    <property name="text">
-    <string>Generate &amp;Mesh Caps...</string>
+    <string>CitcomS...</string>
    </property>
   </action>
   <action name="action_Export_Reconstruction">

@@ -33,6 +33,8 @@ set(srcs
     FileIoTestSuite.h
     FilterTest.cc
     FilterTest.h
+    GenerateVelocityDomainCitcomsTest.cc
+    GenerateVelocityDomainCitcomsTest.h
     GeometryVisitorsTestSuite.cc
     GeometryVisitorsTestSuite.h
     GlobalTestSuite.cc
@@ -46,8 +48,6 @@ set(srcs
     MainTestSuite.h
     MathsTestSuite.cc
     MathsTestSuite.h
-    MeshGeneratorTest.cc
-    MeshGeneratorTest.h
     MipmapperTest.cc
     MipmapperTest.h
     ModelTestSuite.cc

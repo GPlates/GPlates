@@ -68,7 +68,7 @@ namespace GPlatesQtWidgets
 	class LicenseDialog;
 	class LogDialog;
 	class ManageFeatureCollectionsDialog;
-	class MeshDialog;
+	class GenerateVelocityDomainCitcomsDialog;
 	class PreferencesDialog;
 	class ReadErrorAccumulationDialog;
 	class SetCameraViewpointDialog;
@@ -174,8 +174,8 @@ namespace GPlatesGui
 		GPlatesQtWidgets::ManageFeatureCollectionsDialog &
 		manage_feature_collections_dialog();
 
-		GPlatesQtWidgets::MeshDialog &
-		mesh_dialog();
+		GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog &
+		velocity_domain_citcoms_dialog();
 
 		GPlatesQtWidgets::PreferencesDialog &
 		preferences_dialog();
@@ -276,7 +276,7 @@ namespace GPlatesGui
 		pop_up_manage_feature_collections_dialog();
 
 		void
-		pop_up_mesh_dialog();
+		pop_up_velocity_domain_citcoms_dialog();
 
 		void
 		pop_up_preferences_dialog();
@@ -344,7 +344,7 @@ namespace GPlatesGui
 			DIALOG_LICENSE,
 			DIALOG_LOG,
 			DIALOG_MANAGE_FEATURE_COLLECTIONS,
-			DIALOG_MESH,
+			DIALOG_VELOCITY_DOMAIN_CITCOMS,
 			DIALOG_PREFERENCES,
 			DIALOG_READ_ERROR_ACCUMULATION,
 			DIALOG_SET_CAMERA_VIEWPOINT,

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MeshDialog</class>
- <widget class="QDialog" name="MeshDialog">
+ <class>GenerateVelocityDomainCitcomsDialog</class>
+ <widget class="QDialog" name="GenerateVelocityDomainCitcomsDialog">
   <property name="windowModality">
    <enum>Qt::NonModal</enum>
   </property>

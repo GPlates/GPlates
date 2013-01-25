@@ -38,6 +38,8 @@ set(srcs
     FlowlineGeometryPopulator.h
     FlowlineUtils.cc
     FlowlineUtils.h
+    GenerateVelocityDomainCitcoms.cc
+    GenerateVelocityDomainCitcoms.h
     GenericPartitionFeatureTask.cc
     GenericPartitionFeatureTask.h
     GeometryCookieCutter.cc
@@ -63,8 +65,6 @@ set(srcs
     LogModel.h
     LogToModelHandler.cc
     LogToModelHandler.h
-    MeshGenerator.cc
-    MeshGenerator.h
     MotionPathGeometryPopulator.cc
     MotionPathGeometryPopulator.h
     MotionPathUtils.cc

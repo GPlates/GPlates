@@ -67,7 +67,7 @@
 #include "qt-widgets/LicenseDialog.h"
 #include "qt-widgets/LogDialog.h"
 #include "qt-widgets/ManageFeatureCollectionsDialog.h"
-#include "qt-widgets/MeshDialog.h"
+#include "qt-widgets/GenerateVelocityDomainCitcomsDialog.h"
 #include "qt-widgets/PreferencesDialog.h"
 #include "qt-widgets/ReadErrorAccumulationDialog.h"
 #include "qt-widgets/SetCameraViewpointDialog.h"
@@ -485,12 +485,12 @@ GPlatesGui::Dialogs::pop_up_manage_feature_collections_dialog()
 }
 
 
-GPlatesQtWidgets::MeshDialog &
-GPlatesGui::Dialogs::mesh_dialog()
+GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog &
+GPlatesGui::Dialogs::velocity_domain_citcoms_dialog()
 {
 	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
-	const DialogType dialog_type = DIALOG_MESH;
-	typedef GPlatesQtWidgets::MeshDialog dialog_typename;
+	const DialogType dialog_type = DIALOG_VELOCITY_DOMAIN_CITCOMS;
+	typedef GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog dialog_typename;
 
 	if (d_dialogs[dialog_type].isNull())
 	{
@@ -501,9 +501,9 @@ GPlatesGui::Dialogs::mesh_dialog()
 }
 
 void
-GPlatesGui::Dialogs::pop_up_mesh_dialog()
+GPlatesGui::Dialogs::pop_up_velocity_domain_citcoms_dialog()
 {
-	mesh_dialog().pop_up();
+	velocity_domain_citcoms_dialog().pop_up();
 }
 
 

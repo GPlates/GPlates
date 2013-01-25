@@ -26,9 +26,9 @@
 
 #include <QDebug>
 
-#include "unit-test/MeshGeneratorTest.h"
+#include "unit-test/GenerateVelocityDomainCitcomsTest.h"
 
-#include "app-logic/MeshGenerator.h"
+#include "app-logic/GenerateVelocityDomainCitcoms.h"
 #include "model/ModelInterface.h"
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/FileInfo.h"
@@ -39,21 +39,21 @@
 //copy the following code into directory level test suite file
 //for example, if the test class is in data-mining directory, the following code will
 //be copied to DataMiningTestSuite.cc
-//#include "unit-test/MeshGeneratorTest.h"
-//ADD_TESTSUITE(MeshGenerator);
+//#include "unit-test/GenerateVelocityDomainCitcomsTest.h"
+//ADD_TESTSUITE(GenerateVelocityDomainCitcoms);
 
 
-GPlatesUnitTest::MeshGeneratorTestSuite::MeshGeneratorTestSuite(
+GPlatesUnitTest::GenerateVelocityDomainCitcomsTestSuite::GenerateVelocityDomainCitcomsTestSuite(
 		unsigned level) :
 	GPlatesUnitTest::GPlatesTestSuite(
-			"MeshGeneratorTestSuite")
+			"GenerateVelocityDomainCitcomsTestSuite")
 {
 	init(level);
 } 
 
 
 std::vector<GPlatesModel::FeatureCollectionHandle::const_weak_ref>
-GPlatesUnitTest::MeshGeneratorTest::load_mesh_files(
+GPlatesUnitTest::GenerateVelocityDomainCitcomsTest::load_mesh_files(
 		int res)
 {
 	std::cout << "checking points with resolution: [ " << res << " ] ." << std::endl;
@@ -109,7 +109,7 @@ GPlatesUnitTest::MeshGeneratorTest::load_mesh_files(
 }
 
 bool 
-GPlatesUnitTest::MeshGeneratorTest::check( 
+GPlatesUnitTest::GenerateVelocityDomainCitcomsTest::check( 
 		int resolution )
 {
 	std::vector<GPlatesModel::FeatureCollectionHandle::const_weak_ref>
@@ -155,7 +155,7 @@ GPlatesUnitTest::MeshGeneratorTest::check(
 			dynamic_cast<const GPlatesMaths::MultiPointOnSphere*>(citcoms_multipoints[i].get());
 		
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type gplates_multipoint = 
-		GPlatesAppLogic::MeshGenerator::generate_mesh_geometry( (resolution-1) ,i);
+		GPlatesAppLogic::GenerateVelocityDomainCitcoms::generate_mesh_geometry( (resolution-1) ,i);
 
 		if(citcoms_multipoint)
 		{
@@ -176,14 +176,14 @@ GPlatesUnitTest::MeshGeneratorTest::check(
 }
 
 
-GPlatesUnitTest::MeshGeneratorTest::MeshGeneratorTest() :
+GPlatesUnitTest::GenerateVelocityDomainCitcomsTest::GenerateVelocityDomainCitcomsTest() :
 	d_gpgim(GPlatesModel::Gpgim::create())
 {
 	register_default_file_formats(d_file_format_registry, d_model, *d_gpgim);
 }
 
 void 
-GPlatesUnitTest::MeshGeneratorTest::test_case_1()
+GPlatesUnitTest::GenerateVelocityDomainCitcomsTest::test_case_1()
 {
 	BOOST_CHECK(check(9)	== true);
 	BOOST_CHECK(check(17)	== true);
@@ -193,59 +193,59 @@ GPlatesUnitTest::MeshGeneratorTest::test_case_1()
 }
 
 void 
-GPlatesUnitTest::MeshGeneratorTest::test_case_2()
+GPlatesUnitTest::GenerateVelocityDomainCitcomsTest::test_case_2()
 {
 	//Add you test code here
 	return;
 }
 
 void 
-GPlatesUnitTest::MeshGeneratorTest::test_case_3()
+GPlatesUnitTest::GenerateVelocityDomainCitcomsTest::test_case_3()
 {
 	//Add you test code here
 	return;
 }
 
 void 
-GPlatesUnitTest::MeshGeneratorTest::test_case_4()
+GPlatesUnitTest::GenerateVelocityDomainCitcomsTest::test_case_4()
 {
 	//Add you test code here
 	return;
 }
 
 void 
-GPlatesUnitTest::MeshGeneratorTest::test_case_5()
+GPlatesUnitTest::GenerateVelocityDomainCitcomsTest::test_case_5()
 {
 	//Add you test code here
 	return;
 }
 
 void 
-GPlatesUnitTest::MeshGeneratorTest::test_case_6()
+GPlatesUnitTest::GenerateVelocityDomainCitcomsTest::test_case_6()
 {
 	//Add you test code here
 	return;
 }
 
 void 
-GPlatesUnitTest::MeshGeneratorTest::test_case_7()
+GPlatesUnitTest::GenerateVelocityDomainCitcomsTest::test_case_7()
 {
 	//Add you test code here
 	return;
 }
 
 void
-GPlatesUnitTest::MeshGeneratorTestSuite::construct_maps()
+GPlatesUnitTest::GenerateVelocityDomainCitcomsTestSuite::construct_maps()
 {
-	boost::shared_ptr<MeshGeneratorTest> instance(
-		new MeshGeneratorTest());
+	boost::shared_ptr<GenerateVelocityDomainCitcomsTest> instance(
+		new GenerateVelocityDomainCitcomsTest());
 
-	ADD_TESTCASE(MeshGeneratorTest,test_case_1);
-	ADD_TESTCASE(MeshGeneratorTest,test_case_2);
-	ADD_TESTCASE(MeshGeneratorTest,test_case_3);
-	ADD_TESTCASE(MeshGeneratorTest,test_case_4);
-	ADD_TESTCASE(MeshGeneratorTest,test_case_5);
-	ADD_TESTCASE(MeshGeneratorTest,test_case_6);
-	ADD_TESTCASE(MeshGeneratorTest,test_case_7);
+	ADD_TESTCASE(GenerateVelocityDomainCitcomsTest,test_case_1);
+	ADD_TESTCASE(GenerateVelocityDomainCitcomsTest,test_case_2);
+	ADD_TESTCASE(GenerateVelocityDomainCitcomsTest,test_case_3);
+	ADD_TESTCASE(GenerateVelocityDomainCitcomsTest,test_case_4);
+	ADD_TESTCASE(GenerateVelocityDomainCitcomsTest,test_case_5);
+	ADD_TESTCASE(GenerateVelocityDomainCitcomsTest,test_case_6);
+	ADD_TESTCASE(GenerateVelocityDomainCitcomsTest,test_case_7);
 }
 

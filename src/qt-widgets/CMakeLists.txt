@@ -225,6 +225,9 @@ set(srcs
     FlowlinePropertiesWidgetUi.ui
     FriendlyLineEdit.cc
     FriendlyLineEdit.h
+    GenerateVelocityDomainCitcomsDialog.cc
+    GenerateVelocityDomainCitcomsDialog.h
+    GenerateVelocityDomainCitcomsDialogUi.ui
     GeoreferencingPage.cc
     GeoreferencingPage.h
     GeoreferencingPageUi.ui
@@ -280,9 +283,6 @@ set(srcs
     MeasureDistanceWidget.cc
     MeasureDistanceWidget.h
     MeasureDistanceWidgetUi.ui
-    MeshDialog.cc
-    MeshDialog.h
-    MeshDialogUi.ui
     ModifyGeometryWidget.cc
     ModifyGeometryWidget.h
     ModifyGeometryWidgetUi.ui

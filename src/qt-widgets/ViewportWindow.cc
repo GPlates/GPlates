@@ -712,8 +712,8 @@ GPlatesQtWidgets::ViewportWindow::connect_features_menu_actions()
 			&dialogs(), SLOT(pop_up_create_vgp_dialog()));
 	QObject::connect(action_Assign_Plate_IDs, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_assign_reconstruction_plate_ids_dialog()));
-	QObject::connect(action_Generate_Mesh_Cap, SIGNAL(triggered()),
-			&dialogs(), SLOT(pop_up_mesh_dialog()));
+	QObject::connect(action_Generate_Citcoms_Velocity_Domain, SIGNAL(triggered()),
+			&dialogs(), SLOT(pop_up_velocity_domain_citcoms_dialog()));
 }
 
 
