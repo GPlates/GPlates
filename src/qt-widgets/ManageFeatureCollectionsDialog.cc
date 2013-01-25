@@ -250,7 +250,11 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 	d_view_state(view_state)
 {
 	setupUi(this);
-	
+
+	// Focus on the list of feature collections so that any selected files (rows) are more visible
+	// (the row highlights are darker, and hence more noticeable, when the QTableWidget has focus).
+	setFocusProxy(table_feature_collections);
+
 	// Try to adjust column widths.
 	QHeaderView *header = table_feature_collections->horizontalHeader();
 	header->setResizeMode(ColumnNames::FILENAME, QHeaderView::Stretch);

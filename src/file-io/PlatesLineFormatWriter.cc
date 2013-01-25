@@ -31,11 +31,13 @@
 #include <numeric>
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/bind.hpp>
+#include <QDebug>
 
 #include "PlatesLineFormatWriter.h"
 #include "PlatesLineFormatHeaderVisitor.h"
 #include "PlatesLineFormatGeometryExporter.h"
 #include "ErrorOpeningFileForWritingException.h"
+#include "ErrorWritingFeatureCollectionToFileFormatException.h"
 
 #include "global/unicode.h"
 
@@ -211,31 +213,34 @@ GPlatesFileIO::PlatesLineFormatWriter::print_header_lines(
 		<< " "
 		<< GPlatesUtils::make_qstring_from_icu_string(old_plates_header.geographic_description)
 		<< endl;
-#if 0
+
+	// If the plate id or conjugate plate id have more than 4 digits then we cannot write them
+	// to the fixed-columns PLATES line format.
+	// Instead we throw an exception that propagates up to the GUI level which then reports
+	// the error - the downside of this is the entire file write gets aborted - the GUI level
+	// will also remove the file in case it was (most likely) partially written.
+	//
+	// TODO: We need a write-errors system perhaps similar to the existing read-errors system
+	// in order to report errors back to the user. We don't currently have a write-errors system
+	// because the data being written out is from the model and hence already verified.
+	// However, this is one of those few situations where a format's limitations prevents it
+	// from writing out valid data. We probably don't need a full system like the read-errors
+	// but we need something.
+	if (old_plates_header.plate_id_number > 9999 ||
+		old_plates_header.conjugate_plate_id_number > 9999)
+	{
+		throw ErrorWritingFeatureCollectionToFileFormatException(
+				GPLATES_EXCEPTION_SOURCE,
+				"Cannot write plate ids exceeding 4 digits to PLATES line format files.");
+	}
+
 	// Second line of the PLATES4 header.
-	*d_output_stream << " "
-		<< formatted_int_to_string(old_plates_header.plate_id_number, 3).c_str()
-		<< " "
-		<< formatted_double_to_string(old_plates_header.age_of_appearance, 6, 1).c_str()
-		<< " "
-		<< formatted_double_to_string(old_plates_header.age_of_disappearance, 6, 1).c_str()
-		<< " "
-		<< GPlatesUtils::make_qstring_from_icu_string(old_plates_header.data_type_code)
-		<< formatted_int_to_string(old_plates_header.data_type_code_number, 4).c_str()
-		<< " "
-		<< formatted_int_to_string(old_plates_header.conjugate_plate_id_number, 3).c_str()
-		<< " "
-		<< formatted_int_to_string(old_plates_header.colour_code, 3).c_str()
-		<< " "
-		<< formatted_int_to_string(old_plates_header.number_of_points, 5).c_str()
-		<< endl;
-#endif		
-	// Modified version of output to use 4-field plate-id and conjugate plate-id fields.
+	//
+	// NOTE: Modified version of output to use 4-field plate-id and conjugate plate-id fields.
 	// The space at the beginning of the line has been removed, as has the space before the
-	// conjugate field that used to be a placeholder for the "data type code additional number". 
-	
-	// Second line of the PLATES4 header.
+	// conjugate field that used to be a placeholder for the "data type code additional number".
 	*d_output_stream 
+		// NOTE: We don't output a space prior to the plate id in case it uses 4 digits instead of 3...
 		<< formatted_int_to_string(old_plates_header.plate_id_number, 4).c_str()
 		<< " "
 		<< formatted_double_to_string(old_plates_header.age_of_appearance, 6, 1).c_str()
@@ -244,6 +249,7 @@ GPlatesFileIO::PlatesLineFormatWriter::print_header_lines(
 		<< " "
 		<< GPlatesUtils::make_qstring_from_icu_string(old_plates_header.data_type_code)
 		<< formatted_int_to_string(old_plates_header.data_type_code_number, 4).c_str()
+		// NOTE: We don't output a space prior to the conjugate plate id in case it uses 4 digits instead of 3...
 		<< formatted_int_to_string(old_plates_header.conjugate_plate_id_number, 4).c_str()
 		<< " "
 		<< formatted_int_to_string(old_plates_header.colour_code, 3).c_str()

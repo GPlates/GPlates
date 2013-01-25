@@ -74,8 +74,8 @@ GPlatesFileIO::GMTFormatPlates4StyleHeader::format_header_lines(
 
 	// Second line of the PLATES4-style GMT header.
 	header_line_stream2
-		<< " "
-		<< formatted_int_to_string(old_plates_header.plate_id_number, 3).c_str()
+		// NOTE: We don't output a space prior to the plate id in case it uses 4 digits instead of 3...
+		<< formatted_int_to_string(old_plates_header.plate_id_number, 4).c_str()
 		<< " "
 		<< formatted_double_to_string(old_plates_header.age_of_appearance, 6, 1).c_str()
 		<< " "
@@ -83,8 +83,8 @@ GPlatesFileIO::GMTFormatPlates4StyleHeader::format_header_lines(
 		<< " "
 		<< GPlatesUtils::make_qstring_from_icu_string(old_plates_header.data_type_code)
 		<< formatted_int_to_string(old_plates_header.data_type_code_number, 4).c_str()
-		<< " "
-		<< formatted_int_to_string(old_plates_header.conjugate_plate_id_number, 3).c_str()
+		// NOTE: We don't output a space prior to the conjugate plate id in case it uses 4 digits instead of 3...
+		<< formatted_int_to_string(old_plates_header.conjugate_plate_id_number, 4).c_str()
 		<< " "
 		<< formatted_int_to_string(old_plates_header.colour_code, 3).c_str()
 		<< " "

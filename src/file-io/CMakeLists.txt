@@ -33,6 +33,7 @@ set(srcs
     ErrorOpeningPipeFromGzipException.h
     ErrorOpeningPipeToGzipException.cc
     ErrorOpeningPipeToGzipException.h
+    ErrorWritingFeatureCollectionToFileFormatException.h
     ExportTemplateFilenameSequence.cc
     ExportTemplateFilenameSequence.h
     ExportTemplateFilenameSequenceFormats.cc

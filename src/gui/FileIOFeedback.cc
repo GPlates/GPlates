@@ -28,6 +28,7 @@
 #include <boost/foreach.hpp>
 #include <QCoreApplication>
 #include <QDebug>
+#include <QFile>
 #include <QMessageBox>
 #include <QString>
 #include <QTextStream>
@@ -50,6 +51,7 @@
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/ErrorOpeningPipeFromGzipException.h"
 #include "file-io/ErrorOpeningPipeToGzipException.h"
+#include "file-io/ErrorWritingFeatureCollectionToFileFormatException.h"
 #include "file-io/FileFormatNotSupportedException.h"
 #include "file-io/FileLoadAbortedException.h"
 #include "file-io/GpmlOutputVisitor.h"
@@ -598,6 +600,21 @@ GPlatesGui::FileIOFeedback::save_file(
 		QString message;
 		QTextStream(&message)
 				<< tr("An OGR error occurred while saving the file '%1': \n")
+						.arg(file_ref.get_file_info().get_display_name(false/*use_absolute_path_name*/))
+				<< exc;
+		QMessageBox::critical(parent_widget, tr("Error Saving File"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+		qWarning() << message; // Also log the detailed error message.
+		return false;
+	}
+	catch (GPlatesFileIO::ErrorWritingFeatureCollectionToFileFormatException &exc)
+	{
+		// Remove the file on disk in case it was partially written.
+		QFile(file_ref.get_file_info().get_qfileinfo().filePath()).remove();
+
+		QString message;
+		QTextStream(&message)
+			<< tr("Error: Unable to write the file '%1' due to a file format limitation: \n")
 						.arg(file_ref.get_file_info().get_display_name(false/*use_absolute_path_name*/))
 				<< exc;
 		QMessageBox::critical(parent_widget, tr("Error Saving File"), message,
