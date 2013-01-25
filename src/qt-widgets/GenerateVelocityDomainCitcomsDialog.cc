@@ -34,9 +34,10 @@
 #include "ProgressDialog.h"
 #include "QtWidgetUtils.h"
 
+#include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
 #include "app-logic/GenerateVelocityDomainCitcoms.h"
-#include "app-logic/ApplicationState.h"
+#include "app-logic/ReconstructGraph.h"
 
 #include "feature-visitors/GeometryFinder.h"
 
@@ -289,6 +290,13 @@ GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::gen_mesh()
 	// is generated instead of many as we incrementally modify the feature below.
 	GPlatesModel::NotificationGuard model_notification_guard(model.access_model());
 
+	// Loading files will trigger layer additions.
+	// As an optimisation (ie, not required), put all layer additions in a single add layers group.
+	// It dramatically improves the speed of the Visual Layers dialog when there's many layers.
+	GPlatesAppLogic::ReconstructGraph::AddOrRemoveLayersGroup add_layers_group(
+			d_view_state.get_application_state().get_reconstruct_graph());
+	add_layers_group.begin_add_or_remove_layers();
+
 	for(int i=geometries.size()-1; i>=0; i--)
 	{
 		// Create a feature collection that is not added to the model.
@@ -349,6 +357,8 @@ GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::gen_mesh()
 				new_fileinfo, feature_collection);
 
 	}
+
+	add_layers_group.end_add_or_remove_layers();
 
 	main_buttonbox->setDisabled(false);
 	progress_dlg->reject();

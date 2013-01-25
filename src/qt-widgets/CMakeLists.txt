@@ -228,6 +228,9 @@ set(srcs
     GenerateVelocityDomainCitcomsDialog.cc
     GenerateVelocityDomainCitcomsDialog.h
     GenerateVelocityDomainCitcomsDialogUi.ui
+    GenerateVelocityDomainTerraDialog.cc
+    GenerateVelocityDomainTerraDialog.h
+    GenerateVelocityDomainTerraDialogUi.ui
     GeoreferencingPage.cc
     GeoreferencingPage.h
     GeoreferencingPageUi.ui

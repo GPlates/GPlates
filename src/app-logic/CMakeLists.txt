@@ -40,6 +40,8 @@ set(srcs
     FlowlineUtils.h
     GenerateVelocityDomainCitcoms.cc
     GenerateVelocityDomainCitcoms.h
+    GenerateVelocityDomainTerra.cc
+    GenerateVelocityDomainTerra.h
     GenericPartitionFeatureTask.cc
     GenericPartitionFeatureTask.h
     GeometryCookieCutter.cc

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>GenerateVelocityDomainCitcomsDialog</class>
- <widget class="QDialog" name="GenerateVelocityDomainCitcomsDialog">
+ <class>GenerateVelocityDomainTerraDialog</class>
+ <widget class="QDialog" name="GenerateVelocityDomainTerraDialog">
   <property name="windowModality">
    <enum>Qt::NonModal</enum>
   </property>
@@ -12,12 +12,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>566</width>
-    <height>315</height>
+    <width>567</width>
+    <height>276</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Generate CitcomS Velocity Domain Points</string>
+   <string>Generate Terra Velocity Domain Points</string>
   </property>
   <property name="windowIcon">
    <iconset resource="../qt-resources/qt_widgets.qrc">
@@ -25,30 +25,30 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_4">
    <item>
-    <widget class="QGroupBox" name="groupBox">
+    <widget class="QGroupBox" name="config_group_box">
      <property name="title">
-      <string>Resolution</string>
+      <string>Configuration</string>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_7">
-      <item>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="0" column="0">
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_6">
+         <layout class="QHBoxLayout" name="mt_layout">
           <item>
-           <widget class="QCheckBox" name="checkBox">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
+           <widget class="QLabel" name="mt_label">
             <property name="text">
-             <string>Generate &amp;global mesh</string>
+             <string>Number of grid intervals along icosahedral diamond edge (mt):</string>
             </property>
-            <property name="checked">
-             <bool>true</bool>
+            <property name="buddy">
+             <cstring>mt_spinbox</cstring>
             </property>
            </widget>
           </item>
           <item>
-           <spacer>
+           <widget class="QSpinBox" name="mt_spinbox"/>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
@@ -63,69 +63,95 @@
          </layout>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_5">
-          <property name="spacing">
-           <number>12</number>
-          </property>
+         <layout class="QHBoxLayout" name="nt_layout">
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
-            <item>
-             <widget class="QLabel" name="label_x">
-              <property name="text">
-               <string>node&amp;X:</string>
-              </property>
-              <property name="buddy">
-               <cstring>node_X</cstring>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QSpinBox" name="node_X">
-              <property name="minimum">
-               <number>2</number>
-              </property>
-              <property name="maximum">
-               <number>129</number>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           <widget class="QLabel" name="nt_label">
+            <property name="text">
+             <string>Number of grid intervals along edge of local subdomain (nt):</string>
+            </property>
+            <property name="buddy">
+             <cstring>nt_spinbox</cstring>
+            </property>
+           </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_4">
-            <item>
-             <widget class="QLabel" name="label_y">
-              <property name="text">
-               <string>node&amp;Y:</string>
-              </property>
-              <property name="buddy">
-               <cstring>node_Y</cstring>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QSpinBox" name="node_Y">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="minimum">
-               <number>2</number>
-              </property>
-              <property name="maximum">
-               <number>129</number>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           <widget class="QSpinBox" name="nt_spinbox"/>
           </item>
           <item>
-           <spacer>
+           <spacer name="horizontalSpacer_2">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>351</width>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="nd_layout">
+          <item>
+           <widget class="QLabel" name="nd_label">
+            <property name="text">
+             <string>Number of diamonds mapped to a local process (nd = 5 or 10):</string>
+            </property>
+            <property name="buddy">
+             <cstring>nd_spinbox</cstring>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="nd_spinbox">
+            <property name="readOnly">
+             <bool>false</bool>
+            </property>
+            <property name="minimum">
+             <number>5</number>
+            </property>
+            <property name="maximum">
+             <number>10</number>
+            </property>
+            <property name="singleStep">
+             <number>5</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_3">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="num_processors_layout">
+          <item>
+           <widget class="QLabel" name="num_processors_label">
+            <property name="text">
+             <string>Number of processors: </string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_4">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
               <height>20</height>
              </size>
             </property>
@@ -135,10 +161,23 @@
         </item>
        </layout>
       </item>
-      <item>
+      <item row="0" column="1">
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
-         <widget class="QPushButton" name="pushButton_info_resolution">
+         <spacer name="verticalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButton_info_configuration">
           <property name="toolTip">
            <string>More information</string>
           </property>
@@ -152,9 +191,45 @@
          </widget>
         </item>
         <item>
-         <widget class="QWidget" name="widget_2" native="true"/>
+         <spacer name="verticalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
+      </item>
+      <item row="1" column="0">
+       <spacer name="verticalSpacer_4">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="1" column="1">
+       <spacer name="verticalSpacer_5">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
+        </property>
+       </spacer>
       </item>
      </layout>
     </widget>
@@ -186,7 +261,7 @@
         <item row="1" column="0">
          <widget class="QLabel" name="label_4">
           <property name="text">
-           <string>Output &amp;directory:</string>
+           <string>&amp;Output directory:</string>
           </property>
           <property name="buddy">
            <cstring>lineEdit_path</cstring>

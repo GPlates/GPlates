@@ -63,11 +63,12 @@
 #include "qt-widgets/CreateVGPDialog.h"
 #include "qt-widgets/DrawStyleDialog.h"
 #include "qt-widgets/ExportAnimationDialog.h"
+#include "qt-widgets/GenerateVelocityDomainCitcomsDialog.h"
+#include "qt-widgets/GenerateVelocityDomainTerraDialog.h"
 #include "qt-widgets/FeaturePropertiesDialog.h"
 #include "qt-widgets/LicenseDialog.h"
 #include "qt-widgets/LogDialog.h"
 #include "qt-widgets/ManageFeatureCollectionsDialog.h"
-#include "qt-widgets/GenerateVelocityDomainCitcomsDialog.h"
 #include "qt-widgets/PreferencesDialog.h"
 #include "qt-widgets/ReadErrorAccumulationDialog.h"
 #include "qt-widgets/SetCameraViewpointDialog.h"
@@ -485,28 +486,6 @@ GPlatesGui::Dialogs::pop_up_manage_feature_collections_dialog()
 }
 
 
-GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog &
-GPlatesGui::Dialogs::velocity_domain_citcoms_dialog()
-{
-	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
-	const DialogType dialog_type = DIALOG_VELOCITY_DOMAIN_CITCOMS;
-	typedef GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog dialog_typename;
-
-	if (d_dialogs[dialog_type].isNull())
-	{
-		d_dialogs[dialog_type] = new dialog_typename(view_state(), &viewport_window());
-	}
-
-	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
-}
-
-void
-GPlatesGui::Dialogs::pop_up_velocity_domain_citcoms_dialog()
-{
-	velocity_domain_citcoms_dialog().pop_up();
-}
-
-
 GPlatesQtWidgets::PreferencesDialog &
 GPlatesGui::Dialogs::preferences_dialog()
 {
@@ -776,6 +755,50 @@ GPlatesGui::Dialogs::pop_up_total_reconstruction_sequences_dialog()
 	
 	dialog.pop_up();
 	dialog.update();
+}
+
+
+GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog &
+GPlatesGui::Dialogs::velocity_domain_citcoms_dialog()
+{
+	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
+	const DialogType dialog_type = DIALOG_VELOCITY_DOMAIN_CITCOMS;
+	typedef GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog dialog_typename;
+
+	if (d_dialogs[dialog_type].isNull())
+	{
+		d_dialogs[dialog_type] = new dialog_typename(view_state(), &viewport_window());
+	}
+
+	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
+}
+
+void
+GPlatesGui::Dialogs::pop_up_velocity_domain_citcoms_dialog()
+{
+	velocity_domain_citcoms_dialog().pop_up();
+}
+
+
+GPlatesQtWidgets::GenerateVelocityDomainTerraDialog &
+GPlatesGui::Dialogs::velocity_domain_terra_dialog()
+{
+	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
+	const DialogType dialog_type = DIALOG_VELOCITY_DOMAIN_TERRA;
+	typedef GPlatesQtWidgets::GenerateVelocityDomainTerraDialog dialog_typename;
+
+	if (d_dialogs[dialog_type].isNull())
+	{
+		d_dialogs[dialog_type] = new dialog_typename(view_state(), &viewport_window());
+	}
+
+	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
+}
+
+void
+GPlatesGui::Dialogs::pop_up_velocity_domain_terra_dialog()
+{
+	velocity_domain_terra_dialog().pop_up();
 }
 
 

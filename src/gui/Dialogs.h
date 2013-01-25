@@ -69,6 +69,7 @@ namespace GPlatesQtWidgets
 	class LogDialog;
 	class ManageFeatureCollectionsDialog;
 	class GenerateVelocityDomainCitcomsDialog;
+	class GenerateVelocityDomainTerraDialog;
 	class PreferencesDialog;
 	class ReadErrorAccumulationDialog;
 	class SetCameraViewpointDialog;
@@ -174,9 +175,6 @@ namespace GPlatesGui
 		GPlatesQtWidgets::ManageFeatureCollectionsDialog &
 		manage_feature_collections_dialog();
 
-		GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog &
-		velocity_domain_citcoms_dialog();
-
 		GPlatesQtWidgets::PreferencesDialog &
 		preferences_dialog();
 
@@ -203,6 +201,12 @@ namespace GPlatesGui
 
 		GPlatesQtWidgets::TotalReconstructionSequencesDialog &
 		total_reconstruction_sequences_dialog();
+
+		GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog &
+		velocity_domain_citcoms_dialog();
+
+		GPlatesQtWidgets::GenerateVelocityDomainTerraDialog &
+		velocity_domain_terra_dialog();
 
 		GPlatesQtWidgets::VisualLayersDialog &
 		visual_layers_dialog();
@@ -276,9 +280,6 @@ namespace GPlatesGui
 		pop_up_manage_feature_collections_dialog();
 
 		void
-		pop_up_velocity_domain_citcoms_dialog();
-
-		void
 		pop_up_preferences_dialog();
 
 		void
@@ -308,6 +309,12 @@ namespace GPlatesGui
 
 		void
 		pop_up_total_reconstruction_sequences_dialog();
+
+		void
+		pop_up_velocity_domain_citcoms_dialog();
+
+		void
+		pop_up_velocity_domain_terra_dialog();
 
 		void
 		pop_up_visual_layers_dialog();
@@ -345,6 +352,7 @@ namespace GPlatesGui
 			DIALOG_LOG,
 			DIALOG_MANAGE_FEATURE_COLLECTIONS,
 			DIALOG_VELOCITY_DOMAIN_CITCOMS,
+			DIALOG_VELOCITY_DOMAIN_TERRA,
 			DIALOG_PREFERENCES,
 			DIALOG_READ_ERROR_ACCUMULATION,
 			DIALOG_SET_CAMERA_VIEWPOINT,

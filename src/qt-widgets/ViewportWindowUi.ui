@@ -175,6 +175,7 @@
       <string>Generate Velocity Domain Points</string>
      </property>
      <addaction name="action_Generate_Citcoms_Velocity_Domain"/>
+     <addaction name="action_Generate_Terra_Velocity_Domain"/>
     </widget>
     <addaction name="action_Manage_Colouring"/>
     <addaction name="separator"/>
@@ -1090,6 +1091,11 @@
   <action name="action_Log_Dialog">
    <property name="text">
     <string>Lo&amp;g</string>
+   </property>
+  </action>
+  <action name="action_Generate_Terra_Velocity_Domain">
+   <property name="text">
+    <string>Terra...</string>
    </property>
   </action>
  </widget>

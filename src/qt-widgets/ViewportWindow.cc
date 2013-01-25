@@ -714,6 +714,8 @@ GPlatesQtWidgets::ViewportWindow::connect_features_menu_actions()
 			&dialogs(), SLOT(pop_up_assign_reconstruction_plate_ids_dialog()));
 	QObject::connect(action_Generate_Citcoms_Velocity_Domain, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_velocity_domain_citcoms_dialog()));
+// 	QObject::connect(action_Generate_Terra_Velocity_Domain, SIGNAL(triggered()),
+// 			&dialogs(), SLOT(pop_up_velocity_domain_terra_dialog()));
 }
 
 
