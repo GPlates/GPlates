@@ -138,8 +138,8 @@ namespace
 
 		explicit
 		PowerOfTwoSpinBox(
-				QWidget *parent) :
-			QSpinBox(parent)
+				QWidget *parent_) :
+			QSpinBox(parent_)
 		{  }
 
 		virtual
@@ -185,15 +185,15 @@ namespace
 		virtual
 		QValidator::State
 		validate(
-				QString &input,
-				int &pos) const
+				QString &input_,
+				int &pos_) const
 		{
 			bool ok;
-			const int value = locale().toInt(input, &ok);
+			const int value_ = locale().toInt(input_, &ok);
 
 			if (ok)
 			{
-				return GPlatesUtils::Base2::is_power_of_two(value)
+				return GPlatesUtils::Base2::is_power_of_two(value_)
 						? QValidator::Acceptable
 						: QValidator::Intermediate;
 			}
