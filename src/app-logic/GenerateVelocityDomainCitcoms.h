@@ -39,7 +39,7 @@ namespace GPlatesAppLogic
 		 *      There are 12 MultiPoint Geometries in this case.
 		 */
 		void
-		generate_mesh_geometries(
+		generate_velocity_domains(
 				int node_x, 
 				std::vector<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> &geometries);
 		
@@ -48,7 +48,7 @@ namespace GPlatesAppLogic
 		 *      return the mesh diamond geometry
 		 */
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
-		generate_mesh_geometry(
+		generate_velocity_domain(
 				int node_x,
 				unsigned index);
 	}

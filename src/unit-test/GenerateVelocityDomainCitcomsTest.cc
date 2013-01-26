@@ -155,7 +155,7 @@ GPlatesUnitTest::GenerateVelocityDomainCitcomsTest::check(
 			dynamic_cast<const GPlatesMaths::MultiPointOnSphere*>(citcoms_multipoints[i].get());
 		
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type gplates_multipoint = 
-		GPlatesAppLogic::GenerateVelocityDomainCitcoms::generate_mesh_geometry( (resolution-1) ,i);
+		GPlatesAppLogic::GenerateVelocityDomainCitcoms::generate_velocity_domain( (resolution-1) ,i);
 
 		if(citcoms_multipoint)
 		{

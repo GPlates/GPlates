@@ -26,12 +26,15 @@
 #define GENERATE_VELOCITY_DOMAIN_TERRA_DIALOG_H
 
 #include <QObject>
+#include <QSpinBox>
 
 #include "GenerateVelocityDomainTerraDialogUi.h"
 
 #include "GPlatesDialog.h"
 #include "InformationDialog.h"
 #include "OpenDirectoryDialog.h"
+
+#include "maths/MultiPointOnSphere.h"
 
 
 namespace GPlatesPresentation
@@ -83,11 +86,6 @@ namespace GPlatesQtWidgets
 
 		GPlatesPresentation::ViewState &d_view_state;
 
-		InformationDialog *d_help_dialog_configuration;
-		InformationDialog *d_help_dialog_output;
-
-		OpenDirectoryDialog d_open_directory_dialog;
-
 		int d_mt; //!< Terra 'mt' parameter.
 		int d_nt; //!< Terra 'nt' parameter.
 		int d_nd; //!< Terra 'nd' parameter.
@@ -96,12 +94,21 @@ namespace GPlatesQtWidgets
 		QString d_path;
 		std::string d_file_name_template;
 
+		QSpinBox *d_mt_spinbox; //!< Spinbox for Terra 'mt' parameter.
+		QSpinBox *d_nt_spinbox; //!< Spinbox for Terra 'nt' parameter.
+
+		InformationDialog *d_help_dialog_configuration;
+		InformationDialog *d_help_dialog_output;
+
+		OpenDirectoryDialog d_open_directory_dialog;
+
 
 		void
 		set_num_processors();
 
 		void
 		save_velocity_domain_file(
+				const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type &velocity_sub_domain,
 				int processor_number);
 
 	};

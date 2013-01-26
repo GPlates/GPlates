@@ -382,7 +382,7 @@ namespace
 
 
 GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
-GPlatesAppLogic::GenerateVelocityDomainCitcoms::generate_mesh_geometry(
+GPlatesAppLogic::GenerateVelocityDomainCitcoms::generate_velocity_domain(
 		int node_x,
 		unsigned index)
 {
@@ -408,14 +408,14 @@ GPlatesAppLogic::GenerateVelocityDomainCitcoms::generate_mesh_geometry(
 }
 
 void
-GPlatesAppLogic::GenerateVelocityDomainCitcoms::generate_mesh_geometries(
+GPlatesAppLogic::GenerateVelocityDomainCitcoms::generate_velocity_domains(
 		int node_x, 
 		std::vector<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> &geometries)
 {
 	for(int i= 0; i<DIAMONDS_MUNBER; i++)
 	{
 		geometries.push_back(
-					generate_mesh_geometry(node_x,i));
+					generate_velocity_domain(node_x,i));
 	}
 }
 

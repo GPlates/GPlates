@@ -689,8 +689,8 @@ GPlatesQtWidgets::ViewportWindow::connect_features_menu_actions()
 {
 	if(!GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
 	{
-	QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
-			&dialogs(), SLOT(pop_up_colouring_dialog()));
+		QObject::connect(action_Manage_Colouring, SIGNAL(triggered()),
+				&dialogs(), SLOT(pop_up_colouring_dialog()));
 	}
 	else
 	{
@@ -714,8 +714,8 @@ GPlatesQtWidgets::ViewportWindow::connect_features_menu_actions()
 			&dialogs(), SLOT(pop_up_assign_reconstruction_plate_ids_dialog()));
 	QObject::connect(action_Generate_Citcoms_Velocity_Domain, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_velocity_domain_citcoms_dialog()));
-// 	QObject::connect(action_Generate_Terra_Velocity_Domain, SIGNAL(triggered()),
-// 			&dialogs(), SLOT(pop_up_velocity_domain_terra_dialog()));
+	QObject::connect(action_Generate_Terra_Velocity_Domain, SIGNAL(triggered()),
+			&dialogs(), SLOT(pop_up_velocity_domain_terra_dialog()));
 }
 
 
@@ -1164,6 +1164,10 @@ GPlatesQtWidgets::ViewportWindow::closeEvent(
 	// For small files it's not noticeable, but for very large files it can reduce shutdown
 	// times from minutes to a few seconds.
 	//
+	// NOTE: This used to be in the destructor of class Application but was moved here because
+	// there was a lot of slowdown between here and the Application destructor due to the main
+	// event loop emitting events while shutting down (after which the Application destructor starts).
+	//
 	// Prevent modifications to any rendered geometry collection from signaling updates
 	// to various listening clients. We're shutting down so rendered geometry updates are not
 	// getting drawn (or used for export, etc).
@@ -1171,6 +1175,7 @@ GPlatesQtWidgets::ViewportWindow::closeEvent(
 	// 'end_update_all_registered_collections()' to unblock them as this is not necessary
 	// (if we did it would be limited to this scope anyway and wouldn't block updates from here onwards,
 	// including the destructor of class Application and the destructors of all its sub-objects, etc).
+	//
 	GPlatesViewOperations::RenderedGeometryCollection::begin_update_all_registered_collections();
 }
 

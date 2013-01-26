@@ -263,7 +263,7 @@ GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::gen_mesh()
 		progress_dlg->update_progress(i, stream.str().c_str());
 		
 		geometries.push_back(
-				GPlatesAppLogic::GenerateVelocityDomainCitcoms::generate_mesh_geometry(d_node_x, i));
+				GPlatesAppLogic::GenerateVelocityDomainCitcoms::generate_velocity_domain(d_node_x, i));
 		
 		if(progress_dlg->canceled())
 		{

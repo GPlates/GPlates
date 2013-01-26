@@ -25,9 +25,10 @@
 
 #include <sstream>
 #include <string>
-#include <QMessageBox>
-#include <QDir>
 #include <QDebug>
+#include <QDir>
+#include <QMessageBox>
+#include <QValidator>
 
 #include "GenerateVelocityDomainTerraDialog.h"
 
@@ -36,7 +37,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
-#include "app-logic/GenerateVelocityDomainCitcoms.h"
+#include "app-logic/GenerateVelocityDomainTerra.h"
 #include "app-logic/ReconstructGraph.h"
 
 #include "feature-visitors/GeometryFinder.h"
@@ -74,46 +75,132 @@ namespace
 	const char *HELP_DIALOG_TITLE_CONFIGURATION = QT_TR_NOOP("Configuration parameters");
 
 	const char *HELP_DIALOG_TEXT_CONFIGURATION = QT_TR_NOOP(
-		"<html><body>"
-		"<p/>"
-		"<p>The nodex and nodey parameters specify the number of nodes in each edge of cap diamonds.</p>"
-		"<p>These	nodes are used to divide the diamonds into smaller ones evenly.</p>"
-		"<p>For the global mesh, the nodex always equals nodey.</p>" 
-		"<p>In current release, we only support global mesh. The regional mesh might come in the future.</p>"
-		"</body></html>");
+			"<html><body>"
+			"<p/>"
+			"<p>The following Terra parameters, related to gridding, are:</p>"
+			"<ul>"
+			"<li>mt - Number of grid intervals along icosahedral diamond edge.</li>"
+			"<li>nt - Number of grid intervals along edge of local subdomain.</li>"
+			"<li>nd - Number of diamonds mapped to a local process (this must be either 5 or 10).</li>"
+			"</ul>"
+			"<p>The number of processors is determined by the above three parameters according to "
+			"'(mt/nt) * (mt/nt) * (10/nd)' and hence 'mt' must be greater or equal to 'nt'.</p>"
+			"</body></html>");
 
 	const char *HELP_DIALOG_TITLE_OUTPUT = QT_TR_NOOP("Setting output directory and file name template");
 
 	const char *HELP_DIALOG_TEXT_OUTPUT = QT_TR_NOOP(
-		"<html><body>"
-		"<p/>"
-		"<p>12 files will be generated in the specifed output directory.</p>"
-		"<p>The file name template can be specified as something like %d.mesh.%c "
-		"where the '%d' represents the mesh point density and '%c' represents the cap number.</p>"
-		"<p>%d and %c must appear in the template once and only once.</p>"
-		"</body></html>\n");
+			"<html><body>"
+			"<p/>"
+			"<p>Generated GPML files will be saved to the specifed output directory.</p>"
+			"<p>The filename template enables Terra parameters to be specified in the output filenames "
+			"using the following template parameters:</p>"
+			"<ul>"
+			"<li>%mt - gets replaced with the Terra 'mt' parameter.<li>"
+			"<li>%nt - gets replaced with the Terra 'nt' parameter.<li>"
+			"<li>%nd - gets replaced with the Terra 'nd' parameter.<li>"
+			"<li>%np - gets replaced with the Terra processor number of the current output file.<li>"
+			"</ul>"
+			"<p><b>Note that '%np' must appear at least once since it's the only parameter "
+			"that varies across the output files.</b></p>"
+			"<p>An example template filename is 'TerraMesh.%mt.%nt.%nd.%np'.</p>"
+			"</body></html>\n");
 
 
 	/**
-	 * Calculates the number of processors given the Terra parameters 'mt', 'nt' and 'nd'.
+	 * Replace all occurrences of a place holder substring with its replacement substring.
 	 */
-	int
-	calculate_num_processors(
-			int mt,
-			int nt,
-			int nd)
+	void
+	replace_place_holder(
+			std::string &str,
+			const std::string &place_holder,
+			const std::string &replacement)
 	{
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				mt > 0 && GPlatesUtils::Base2::is_power_of_two(mt) &&
-					nt > 0 && GPlatesUtils::Base2::is_power_of_two(nt) &&
-					(nd == 5 || nd == 10),
-				GPLATES_ASSERTION_SOURCE);
-
-		const int ldiv = mt / nt;
-		const int sp = ldiv * ldiv;
-
-		return 10 * sp / nd;
+		while (true)
+		{
+			const std::string::size_type str_index = str.find(place_holder);
+			if (str_index == std::string::npos)
+			{
+				break;
+			}
+			str.replace(str_index, place_holder.size(), replacement);
+		}
 	}
+
+
+	/**
+	 * A QSpinBox that only allows power-of-two values.
+	 */
+	class PowerOfTwoSpinBox :
+			public QSpinBox
+	{
+	public:
+
+		explicit
+		PowerOfTwoSpinBox(
+				QWidget *parent) :
+			QSpinBox(parent)
+		{  }
+
+		virtual
+		void
+		stepBy(
+				int steps)
+		{
+			int current_value = value();
+
+			for ( ; steps > 0; --steps)
+			{
+				// The '+1' ensures we get the next power-of-two instead of current power-of-two.
+				const int next_value = GPlatesUtils::Base2::next_power_of_two(current_value + 1);
+				if (next_value > maximum())
+				{
+					break;
+				}
+
+				current_value = next_value;
+			}
+
+			for ( ; steps < 0; ++steps)
+			{
+				// We can't go to a lower power-of-two than 1.
+				if (current_value == 1)
+				{
+					break;
+				}
+
+				// The '-1' ensures we get the previous power-of-two instead of current power-of-two.
+				const int prev_value = GPlatesUtils::Base2::previous_power_of_two(current_value - 1);
+				if (prev_value < minimum())
+				{
+					break;
+				}
+
+				current_value = prev_value;
+			}
+
+			setValue(current_value);
+		}
+
+		virtual
+		QValidator::State
+		validate(
+				QString &input,
+				int &pos) const
+		{
+			bool ok;
+			const int value = locale().toInt(input, &ok);
+
+			if (ok)
+			{
+				return GPlatesUtils::Base2::is_power_of_two(value)
+						? QValidator::Acceptable
+						: QValidator::Intermediate;
+			}
+
+			return QValidator::Invalid;
+		}
+	};
 }
 
 
@@ -121,12 +208,20 @@ GPlatesQtWidgets::GenerateVelocityDomainTerraDialog::GenerateVelocityDomainTerra
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_ ) :
 	GPlatesDialog(
-			parent_, 
-			Qt::CustomizeWindowHint | 
-			Qt::WindowTitleHint | 
-			Qt::WindowSystemMenuHint | 
+			parent_,
+			Qt::CustomizeWindowHint |
+			Qt::WindowTitleHint |
+			Qt::WindowSystemMenuHint |
 			Qt::MSWindowsFixedSizeDialogHint),
 	d_view_state(view_state),
+	d_mt(32),
+	d_nt(16),
+	d_nd(5),
+	d_num_processors(GPlatesAppLogic::GenerateVelocityDomainTerra::calculate_num_processors(d_mt, d_nt, d_nd)),
+	d_file_name_template(
+			"TerraMesh." + MT_PLACE_HOLDER + "." + NT_PLACE_HOLDER + "." + ND_PLACE_HOLDER + "." + NP_PLACE_HOLDER),
+	d_mt_spinbox(NULL),
+	d_nt_spinbox(NULL),
 	d_help_dialog_configuration(
 			new InformationDialog(
 					tr(HELP_DIALOG_TEXT_CONFIGURATION), 
@@ -140,16 +235,36 @@ GPlatesQtWidgets::GenerateVelocityDomainTerraDialog::GenerateVelocityDomainTerra
 	d_open_directory_dialog(
 			this,
 			tr("Select Path"),
-			view_state),
-	d_mt(32),
-	d_nt(16),
-	d_nd(5),
-	d_num_processors(calculate_num_processors(d_mt, d_nt, d_nd)),
-	d_file_name_template(
-			"TerraMesh." + MT_PLACE_HOLDER + "." + NT_PLACE_HOLDER + "." + ND_PLACE_HOLDER + "." + NP_PLACE_HOLDER)
+			view_state)
 {
 	setupUi(this);
-	
+
+	d_mt_spinbox = new PowerOfTwoSpinBox(this);
+	d_mt_spinbox->setRange(1, 1024);
+	QtWidgetUtils::add_widget_to_placeholder(
+			d_mt_spinbox, mt_spinbox_placeholder);
+
+	d_nt_spinbox = new PowerOfTwoSpinBox(this);
+	d_nt_spinbox->setRange(1, 1024);
+	QtWidgetUtils::add_widget_to_placeholder(
+			d_nt_spinbox, nt_spinbox_placeholder);
+
+	QObject::connect(
+			d_mt_spinbox,
+			SIGNAL(valueChanged(int)), 
+			this,
+			SLOT(handle_mt_value_changed(int)));
+	QObject::connect(
+			d_nt_spinbox,
+			SIGNAL(valueChanged(int)), 
+			this,
+			SLOT(handle_nt_value_changed(int)));
+	QObject::connect(
+			nd_spinbox,
+			SIGNAL(valueChanged(int)), 
+			this,
+			SLOT(handle_nd_value_changed(int)));
+
 	QObject::connect(
 			button_path,
 			SIGNAL(clicked()),
@@ -165,21 +280,7 @@ GPlatesQtWidgets::GenerateVelocityDomainTerraDialog::GenerateVelocityDomainTerra
 			SIGNAL(editingFinished()),
 			this,
 			SLOT(set_file_name_template()));
-	QObject::connect(
-			mt_spinbox,
-			SIGNAL(valueChanged(int)), 
-			this,
-			SLOT(handle_mt_value_changed(int)));
-	QObject::connect(
-			nt_spinbox,
-			SIGNAL(valueChanged(int)), 
-			this,
-			SLOT(handle_nt_value_changed(int)));
-	QObject::connect(
-			nd_spinbox,
-			SIGNAL(valueChanged(int)), 
-			this,
-			SLOT(handle_nd_value_changed(int)));
+
 	QObject::connect(
 			pushButton_info_output,
 			SIGNAL(clicked()),
@@ -208,8 +309,8 @@ GPlatesQtWidgets::GenerateVelocityDomainTerraDialog::GenerateVelocityDomainTerra
 	// Initialise the GUI from the initial parameter values.
 	//
 
-	mt_spinbox->setValue(d_mt);
-	nt_spinbox->setValue(d_nt);
+	d_mt_spinbox->setValue(d_mt);
+	d_nt_spinbox->setValue(d_nt);
 	nd_spinbox->setValue(d_nd);
 	
 	lineEdit_path->setText(QDir::toNativeSeparators(QDir::currentPath()));
@@ -226,6 +327,9 @@ GPlatesQtWidgets::GenerateVelocityDomainTerraDialog::handle_mt_value_changed(
 
 	// Update the number of processors.
 	set_num_processors();
+
+	// Must constrain mt >= nt.
+	d_nt_spinbox->setMaximum(mt);
 }
 
 
@@ -237,6 +341,9 @@ GPlatesQtWidgets::GenerateVelocityDomainTerraDialog::handle_nt_value_changed(
 
 	// Update the number of processors.
 	set_num_processors();
+
+	// Must constrain mt >= nt.
+	d_mt_spinbox->setMinimum(nt);
 }
 
 
@@ -254,9 +361,9 @@ GPlatesQtWidgets::GenerateVelocityDomainTerraDialog::handle_nd_value_changed(
 void
 GPlatesQtWidgets::GenerateVelocityDomainTerraDialog::set_num_processors()
 {
-	d_num_processors = calculate_num_processors(d_mt, d_nt, d_nd);
+	d_num_processors = GPlatesAppLogic::GenerateVelocityDomainTerra::calculate_num_processors(d_mt, d_nt, d_nd);
 
-	num_processors_label->setText(tr("Number of processors: %1").arg(d_num_processors));
+	num_processors_line_edit->setText(QString("%1").arg(d_num_processors));
 }
 
 
@@ -305,14 +412,11 @@ void
 GPlatesQtWidgets::GenerateVelocityDomainTerraDialog::set_file_name_template()
 {
 	const QString text = lineEdit_file_template->text();
-	std::size_t c_pos = text.toStdString().find(MT_PLACE_HOLDER);
-	std::size_t d_pos = text.toStdString().find(ND_PLACE_HOLDER);
-	
-	if(text.isEmpty() ||
-		c_pos == std::string::npos ||
-		d_pos == std::string::npos ||
-		text.toStdString().find(MT_PLACE_HOLDER, c_pos+1) != std::string::npos  ||
-		text.toStdString().find(ND_PLACE_HOLDER, d_pos+1) != std::string::npos )
+	const std::size_t np_pos = text.toStdString().find(NP_PLACE_HOLDER);
+
+	// Must have at least one occurrence of the 'processor number' placeholder so that
+	// each output filename will be different.
+	if (text.isEmpty() || np_pos == std::string::npos)
 	{
 		QMessageBox::warning(
 				this, 
@@ -345,12 +449,14 @@ GPlatesQtWidgets::GenerateVelocityDomainTerraDialog::generate_velocity_domain()
 
 	main_buttonbox->setDisabled(true);
 
-	std::vector<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> geometries;
-
 	ProgressDialog *progress_dlg = new ProgressDialog(this);
 	progress_dlg->setRange(0, d_num_processors);
 	progress_dlg->setValue(0);
 	progress_dlg->show();
+
+	// Generate the complete Terra grid in memory through recursive subdivision.
+	progress_dlg->update_progress(0, tr("Generating Terra grid..."));
+	GPlatesAppLogic::GenerateVelocityDomainTerra::Grid grid(d_mt, d_nt, d_nd);
 
 	// Iterate over the Terra processors.
 	for (int np = 0; np < d_num_processors; ++np)
@@ -359,10 +465,12 @@ GPlatesQtWidgets::GenerateVelocityDomainTerraDialog::generate_velocity_domain()
 		stream << tr("Generating domain for Terra processor # ").toStdString() << np << " ...";
 		progress_dlg->update_progress(np, stream.str().c_str());
 
-// 		geometries.push_back(
-// 				GPlatesAppLogic::GenerateVelocityDomainCitcoms::generate_mesh_geometry(d_node_x, i));
+		// Generate the sub-domain points for the current local processor.
+		const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type velocity_sub_domain =
+				grid.get_processor_sub_domain(np);
 
-		save_velocity_domain_file(np);
+		// Save to a new file.
+		save_velocity_domain_file(velocity_sub_domain, np);
 
 		if (progress_dlg->canceled())
 		{
@@ -374,6 +482,12 @@ GPlatesQtWidgets::GenerateVelocityDomainTerraDialog::generate_velocity_domain()
 	}
 	progress_dlg->disable_cancel_button(true);
 
+	// Even with this optimisation, if we are adding say 512 files then the layers dialog
+	// can still take a few minutes to update. So just before we that happens we will
+	// change the progress bar message to reflect this.
+	progress_dlg->update_progress(
+			d_num_processors,
+			tr("Updating layers dialog - this can take a few minutes if there's more than a hundred files..."));
 	add_layers_group.end_add_or_remove_layers();
 
 	main_buttonbox->setDisabled(false);
@@ -385,6 +499,7 @@ GPlatesQtWidgets::GenerateVelocityDomainTerraDialog::generate_velocity_domain()
 
 void
 GPlatesQtWidgets::GenerateVelocityDomainTerraDialog::save_velocity_domain_file(
+		const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type &velocity_sub_domain,
 		int processor_number)
 {
 	// Create a feature collection that is not added to the model.
@@ -402,11 +517,11 @@ GPlatesQtWidgets::GenerateVelocityDomainTerraDialog::save_velocity_domain_file(
 			feature_collection_ref,
 			mesh_node_feature_type);
 
-	//create the geometry property and append to feature
-// 	feature->add(
-// 			GPlatesModel::TopLevelPropertyInline::create(
-// 				GPlatesModel::PropertyName::create_gpml("meshPoints"),
-// 				GPlatesPropertyValues::GmlMultiPoint::create(geometries[i])));
+	// Create the geometry property and append to feature.
+	feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+				GPlatesModel::PropertyName::create_gpml("meshPoints"),
+				GPlatesPropertyValues::GmlMultiPoint::create(velocity_sub_domain)));
 
 	//
 	// Add 'reconstructionPlateId' and 'validTime' to mesh points feature
@@ -443,10 +558,10 @@ GPlatesQtWidgets::GenerateVelocityDomainTerraDialog::save_velocity_domain_file(
 	// Generate the filename from the template by replacing the place holders with parameter values.
 	std::string file_name = d_file_name_template;	
 	file_name.append(".gpml");
-	file_name.replace(file_name.find(MT_PLACE_HOLDER), MT_PLACE_HOLDER.size(), mt_stream.str());
-	file_name.replace(file_name.find(NT_PLACE_HOLDER), NT_PLACE_HOLDER.size(), nt_stream.str());
-	file_name.replace(file_name.find(ND_PLACE_HOLDER), ND_PLACE_HOLDER.size(), nd_stream.str());
-	file_name.replace(file_name.find(NP_PLACE_HOLDER), NP_PLACE_HOLDER.size(), np_stream.str());
+	replace_place_holder(file_name, MT_PLACE_HOLDER, mt_stream.str());
+	replace_place_holder(file_name, NT_PLACE_HOLDER, nt_stream.str());
+	replace_place_holder(file_name, ND_PLACE_HOLDER, nd_stream.str());
+	replace_place_holder(file_name, NP_PLACE_HOLDER, np_stream.str());
 	file_name = d_path.toStdString() + file_name;
 
 	// Make a new FileInfo object for saving to a new file.

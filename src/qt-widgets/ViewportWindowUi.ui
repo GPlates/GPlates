@@ -172,7 +172,7 @@
     </property>
     <widget class="QMenu" name="menuGenerate_Velocity_Point_Locations">
      <property name="title">
-      <string>Generate Velocity Domain Points</string>
+      <string>Generate Velocity &amp;Domain Points</string>
      </property>
      <addaction name="action_Generate_Citcoms_Velocity_Domain"/>
      <addaction name="action_Generate_Terra_Velocity_Domain"/>
@@ -844,7 +844,7 @@
   </action>
   <action name="action_Generate_Citcoms_Velocity_Domain">
    <property name="text">
-    <string>CitcomS...</string>
+    <string>&amp;CitcomS...</string>
    </property>
   </action>
   <action name="action_Export_Reconstruction">
@@ -1095,7 +1095,7 @@
   </action>
   <action name="action_Generate_Terra_Velocity_Domain">
    <property name="text">
-    <string>Terra...</string>
+    <string>&amp;Terra...</string>
    </property>
   </action>
  </widget>

@@ -13,7 +13,7 @@
     <x>0</x>
     <y>0</y>
     <width>567</width>
-    <height>276</height>
+    <height>289</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -39,13 +39,10 @@
             <property name="text">
              <string>Number of grid intervals along icosahedral diamond edge (mt):</string>
             </property>
-            <property name="buddy">
-             <cstring>mt_spinbox</cstring>
-            </property>
            </widget>
           </item>
           <item>
-           <widget class="QSpinBox" name="mt_spinbox"/>
+           <widget class="QWidget" name="mt_spinbox_placeholder" native="true"/>
           </item>
           <item>
            <spacer name="horizontalSpacer">
@@ -69,13 +66,10 @@
             <property name="text">
              <string>Number of grid intervals along edge of local subdomain (nt):</string>
             </property>
-            <property name="buddy">
-             <cstring>nt_spinbox</cstring>
-            </property>
            </widget>
           </item>
           <item>
-           <widget class="QSpinBox" name="nt_spinbox"/>
+           <widget class="QWidget" name="nt_spinbox_placeholder" native="true"/>
           </item>
           <item>
            <spacer name="horizontalSpacer_2">
@@ -141,6 +135,19 @@
            <widget class="QLabel" name="num_processors_label">
             <property name="text">
              <string>Number of processors: </string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="num_processors_line_edit">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
