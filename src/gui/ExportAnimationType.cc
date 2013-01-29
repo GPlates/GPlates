@@ -78,7 +78,7 @@ namespace GPlatesGui
 				export_type_description_map[RESOLVED_TOPOLOGIES] = 
 						QObject::tr(
 							"Export resolved topologies:\n"
-							"- exports resolved topological lines/polygons/networks for any feature type.\n");
+							"- exports resolved topological lines and polygons (but not networks) for any feature type.\n");
 				export_type_description_map[RESOLVED_TOPOLOGIES_CITCOMS] = 
 						QObject::tr(
 							"Export resolved topologies for use by CitcomS software:\n"

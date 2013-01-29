@@ -196,6 +196,86 @@ namespace
 
 			return QValidator::Invalid;
 		}
+
+		virtual
+		void
+		fixup(
+				QString &input_) const
+		{
+			QLocale locale_ = locale();
+
+			bool ok;
+			int value_ = locale_.toInt(input_, &ok);
+
+			if (ok)
+			{
+				// Set to the next power-of-two if value is not already a power-of-two.
+				if (!GPlatesUtils::Base2::is_power_of_two(value_))
+				{
+					int prev_value = GPlatesUtils::Base2::previous_power_of_two(value_);
+					if (prev_value < minimum())
+					{
+						prev_value = minimum();
+					}
+					int next_value = GPlatesUtils::Base2::next_power_of_two(value_);
+					if (next_value > maximum())
+					{
+						next_value = maximum();
+					}
+
+					// Round the actual value to the nearest of the previous and next power-of-two.
+					if (value_ - prev_value < next_value - value_)
+					{
+						input_ = locale_.toString(prev_value);
+					}
+					else
+					{
+						input_ = locale_.toString(next_value);
+					}
+				}
+			}
+		}
+	};
+
+
+	/**
+	 * A QSpinBox for the Terra 'nd' parameter which can only be 5 or 10.
+	 */
+	class NdSpinBox :
+			public QSpinBox
+	{
+	public:
+
+		explicit
+		NdSpinBox(
+				QWidget *parent_) :
+			QSpinBox(parent_)
+		{  }
+
+		virtual
+		QValidator::State
+		validate(
+				QString &input_,
+				int &pos_) const
+		{
+			bool ok;
+			const int value_ = locale().toInt(input_, &ok);
+
+			if (ok)
+			{
+				if (value_ == 5 || value_ == 10)
+				{
+					return QValidator::Acceptable;
+				}
+				else if (value_ == 1)
+				{
+					// "1" is intermediate for "10".
+					return QValidator::Intermediate;
+				}
+			}
+
+			return QValidator::Invalid;
+		}
 	};
 }
 
@@ -244,6 +324,12 @@ GPlatesQtWidgets::GenerateVelocityDomainTerraDialog::GenerateVelocityDomainTerra
 	d_nt_spinbox->setRange(1, 1024);
 	QtWidgetUtils::add_widget_to_placeholder(
 			d_nt_spinbox, nt_spinbox_placeholder);
+
+	NdSpinBox *nd_spinbox = new NdSpinBox(this);
+	nd_spinbox->setRange(5, 10);
+	nd_spinbox->setSingleStep(5);
+	QtWidgetUtils::add_widget_to_placeholder(
+			nd_spinbox, nd_spinbox_placeholder);
 
 	QObject::connect(
 			d_mt_spinbox,
