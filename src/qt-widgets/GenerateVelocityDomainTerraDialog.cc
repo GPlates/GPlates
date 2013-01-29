@@ -40,12 +40,8 @@
 #include "app-logic/GenerateVelocityDomainTerra.h"
 #include "app-logic/ReconstructGraph.h"
 
-#include "feature-visitors/GeometryFinder.h"
-
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
-
-#include "gui/FeatureFocus.h"
 
 #include "maths/MultiPointOnSphere.h"
 

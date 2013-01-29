@@ -64,6 +64,7 @@
 #include "qt-widgets/DrawStyleDialog.h"
 #include "qt-widgets/ExportAnimationDialog.h"
 #include "qt-widgets/GenerateVelocityDomainCitcomsDialog.h"
+#include "qt-widgets/GenerateVelocityDomainLatLonDialog.h"
 #include "qt-widgets/GenerateVelocityDomainTerraDialog.h"
 #include "qt-widgets/FeaturePropertiesDialog.h"
 #include "qt-widgets/LicenseDialog.h"
@@ -777,6 +778,28 @@ void
 GPlatesGui::Dialogs::pop_up_velocity_domain_citcoms_dialog()
 {
 	velocity_domain_citcoms_dialog().pop_up();
+}
+
+
+GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog &
+GPlatesGui::Dialogs::velocity_domain_lat_lon_dialog()
+{
+	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
+	const DialogType dialog_type = DIALOG_VELOCITY_DOMAIN_LAT_LON;
+	typedef GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog dialog_typename;
+
+	if (d_dialogs[dialog_type].isNull())
+	{
+		d_dialogs[dialog_type] = new dialog_typename(view_state(), &viewport_window());
+	}
+
+	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
+}
+
+void
+GPlatesGui::Dialogs::pop_up_velocity_domain_lat_lon_dialog()
+{
+	velocity_domain_lat_lon_dialog().pop_up();
 }
 
 

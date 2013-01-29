@@ -69,6 +69,7 @@ namespace GPlatesQtWidgets
 	class LogDialog;
 	class ManageFeatureCollectionsDialog;
 	class GenerateVelocityDomainCitcomsDialog;
+	class GenerateVelocityDomainLatLonDialog;
 	class GenerateVelocityDomainTerraDialog;
 	class PreferencesDialog;
 	class ReadErrorAccumulationDialog;
@@ -205,6 +206,9 @@ namespace GPlatesGui
 		GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog &
 		velocity_domain_citcoms_dialog();
 
+		GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog &
+		velocity_domain_lat_lon_dialog();
+
 		GPlatesQtWidgets::GenerateVelocityDomainTerraDialog &
 		velocity_domain_terra_dialog();
 
@@ -314,6 +318,9 @@ namespace GPlatesGui
 		pop_up_velocity_domain_citcoms_dialog();
 
 		void
+		pop_up_velocity_domain_lat_lon_dialog();
+
+		void
 		pop_up_velocity_domain_terra_dialog();
 
 		void
@@ -352,6 +359,7 @@ namespace GPlatesGui
 			DIALOG_LOG,
 			DIALOG_MANAGE_FEATURE_COLLECTIONS,
 			DIALOG_VELOCITY_DOMAIN_CITCOMS,
+			DIALOG_VELOCITY_DOMAIN_LAT_LON,
 			DIALOG_VELOCITY_DOMAIN_TERRA,
 			DIALOG_PREFERENCES,
 			DIALOG_READ_ERROR_ACCUMULATION,
