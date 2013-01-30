@@ -37,7 +37,7 @@ GPlatesFileIO::ReconstructionGeometryExportImpl::build_flat_structure_filename(
 	const QString &collection_filename,
 	const QString &export_filename)
 {
-	QString output_filename =  export_path + 
+	QString output_filename = export_path + 
 							QDir::separator() + 
 							collection_filename + 
 							"_" + 
@@ -52,7 +52,7 @@ GPlatesFileIO::ReconstructionGeometryExportImpl::build_folder_structure_filename
 	const QString &collection_filename,
 	const QString &export_filename)
 {
-	QString output_folder_name= export_path + 
+	QString output_folder_name = export_path + 
 		QDir::separator() + 
 		collection_filename;
 	

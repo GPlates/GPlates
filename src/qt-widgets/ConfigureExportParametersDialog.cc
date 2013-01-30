@@ -332,18 +332,13 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_format_selection
 	// Display the filename template.
 	//
 
-	const QString &default_filename_template =
-			export_animation_registry.get_default_filename_template(selected_export_id);
-	
 	main_buttonbox->button(QDialogButtonBox::Ok)->setEnabled(true);
 
 	lineEdit_filename->setText(
-			default_filename_template.toStdString().substr(
-					0, default_filename_template.toStdString().find_last_of(".")).c_str());
-	
+			export_animation_registry.get_default_filename_template(selected_export_id));
+
 	label_file_extension->setText(
-			default_filename_template.toStdString().substr(
-					default_filename_template.toStdString().find_last_of(".")).c_str());
+			QString(".") + GPlatesGui::ExportAnimationType::get_export_format_filename_extension(selected_export_format));
 
 	//
 	// Display any export options for the selected format (if there are any).

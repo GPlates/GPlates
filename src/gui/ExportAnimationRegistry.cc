@@ -338,7 +338,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::GMT),
 			ExportReconstructedGeometryAnimationStrategy::const_configuration_ptr(
 					new ExportReconstructedGeometryAnimationStrategy::Configuration(
-							"reconstructed_%0.2fMa.xy",
+							"reconstructed_%0.2fMa",
 							ExportReconstructedGeometryAnimationStrategy::Configuration::GMT,
 							default_reconstructed_geometry_file_export_options,
 							default_reconstructed_geometry_wrap_to_dateline)),
@@ -358,7 +358,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::SHAPEFILE),
 			ExportReconstructedGeometryAnimationStrategy::const_configuration_ptr(
 					new ExportReconstructedGeometryAnimationStrategy::Configuration(
-							"reconstructed_%0.2fMa.shp",
+							"reconstructed_%0.2fMa",
 							ExportReconstructedGeometryAnimationStrategy::Configuration::SHAPEFILE,
 							default_reconstructed_geometry_file_export_options,
 							default_reconstructed_geometry_wrap_to_dateline)),
@@ -378,7 +378,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::OGRGMT),
 			ExportReconstructedGeometryAnimationStrategy::const_configuration_ptr(
 				new ExportReconstructedGeometryAnimationStrategy::Configuration(
-						"reconstructed_%0.2fMa.gmt",
+						"reconstructed_%0.2fMa",
 						ExportReconstructedGeometryAnimationStrategy::Configuration::SHAPEFILE,
 						default_reconstructed_geometry_file_export_options,
 						default_reconstructed_geometry_wrap_to_dateline)),
@@ -402,7 +402,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::SVG),
 			ExportSvgAnimationStrategy::const_configuration_ptr(
 					new ExportSvgAnimationStrategy::Configuration(
-							"snapshot_%0.2fMa.svg")),
+							"snapshot_%0.2fMa")),
 			&create_animation_strategy<ExportSvgAnimationStrategy>,
 			&create_null_export_options_widget,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
@@ -413,14 +413,14 @@ GPlatesGui::register_default_export_animation_types(
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
-					ExportAnimationType::MESH_VELOCITIES,
+					ExportAnimationType::VELOCITIES,
 					ExportAnimationType::GPML),
 			ExportVelocityAnimationStrategy::const_configuration_ptr(
 					new ExportVelocityAnimationStrategy::Configuration(
-							"velocity_colat_lon_on_mesh_%P_at_%0.2fMa.gpml")),
+							"velocity_colat_lon_on_mesh_at_%0.2fMa")),
 			&create_animation_strategy<ExportVelocityAnimationStrategy>,
 			&create_null_export_options_widget,
-			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	//
 	// Export resolved topologies (general)
@@ -439,7 +439,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::GMT),
 			ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
 					new ExportResolvedTopologyAnimationStrategy::Configuration(
-							"topology_%0.2fMa.xy",
+							"topology_%0.2fMa",
 							ExportResolvedTopologyAnimationStrategy::Configuration::GMT,
 							default_resolved_topology_file_export_options,
 							default_resolved_topology_export_lines,
@@ -461,7 +461,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::SHAPEFILE),
 			ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
 					new ExportResolvedTopologyAnimationStrategy::Configuration(
-							"topology_%0.2fMa.shp",
+							"topology_%0.2fMa",
 							ExportResolvedTopologyAnimationStrategy::Configuration::SHAPEFILE,
 							default_resolved_topology_file_export_options,
 							default_resolved_topology_export_lines,
@@ -483,7 +483,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::OGRGMT),
 			ExportResolvedTopologyAnimationStrategy::const_configuration_ptr(
 					new ExportResolvedTopologyAnimationStrategy::Configuration(
-							"topology_%02fMa.gmt",
+							"topology_%02fMa",
 							ExportResolvedTopologyAnimationStrategy::Configuration::OGRGMT,
 							default_resolved_topology_file_export_options,
 							default_resolved_topology_export_lines,
@@ -553,7 +553,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::GMT),
 			ExportCitcomsResolvedTopologyAnimationStrategy::const_configuration_ptr(
 					new ExportCitcomsResolvedTopologyAnimationStrategy::Configuration(
-							"topology_%P_%0.2fMa.xy",
+							"topology_%P_%0.2fMa",
 							ExportCitcomsResolvedTopologyAnimationStrategy::Configuration::GMT,
 							default_citcoms_resolved_topology_export_options)),
 			&create_animation_strategy<ExportCitcomsResolvedTopologyAnimationStrategy>,
@@ -572,7 +572,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::SHAPEFILE),
 			ExportCitcomsResolvedTopologyAnimationStrategy::const_configuration_ptr(
 					new ExportCitcomsResolvedTopologyAnimationStrategy::Configuration(
-							"topology_%P_%0.2fMa.shp",
+							"topology_%P_%0.2fMa",
 							ExportCitcomsResolvedTopologyAnimationStrategy::Configuration::SHAPEFILE,
 							default_citcoms_resolved_topology_export_options)),
 			&create_animation_strategy<ExportCitcomsResolvedTopologyAnimationStrategy>,
@@ -591,7 +591,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::OGRGMT),
 			ExportCitcomsResolvedTopologyAnimationStrategy::const_configuration_ptr(
 					new ExportCitcomsResolvedTopologyAnimationStrategy::Configuration(
-							"topology_%P_%02fMa.gmt",
+							"topology_%P_%02fMa",
 							ExportCitcomsResolvedTopologyAnimationStrategy::Configuration::OGRGMT,
 							default_citcoms_resolved_topology_export_options)),
 			&create_animation_strategy<ExportCitcomsResolvedTopologyAnimationStrategy>,
@@ -624,7 +624,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::CSV_COMMA),
 			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
 					new ExportTotalRotationAnimationStrategy::Configuration(
-							"relative_total_rotation_comma_%0.2fMa.csv",
+							"relative_total_rotation_comma_%0.2fMa",
 							ExportTotalRotationAnimationStrategy::Configuration::RELATIVE_COMMA,
 							default_rotation_export_options)),
 			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
@@ -644,7 +644,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::CSV_SEMICOLON),
 			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
 					new ExportTotalRotationAnimationStrategy::Configuration(
-							"relative_total_rotation_semicolon_%0.2fMa.csv",
+							"relative_total_rotation_semicolon_%0.2fMa",
 							ExportTotalRotationAnimationStrategy::Configuration::RELATIVE_SEMICOLON,
 							default_rotation_export_options)),
 			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
@@ -664,7 +664,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::CSV_TAB),
 			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
 					new ExportTotalRotationAnimationStrategy::Configuration(
-							"relative_total_rotation_tab_%0.2fMa.csv",
+							"relative_total_rotation_tab_%0.2fMa",
 							ExportTotalRotationAnimationStrategy::Configuration::RELATIVE_TAB,
 							default_rotation_export_options)),
 			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
@@ -688,7 +688,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::CSV_COMMA),
 			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
 					new ExportTotalRotationAnimationStrategy::Configuration(
-							"equivalent_total_rotation_comma_%0.2fMa.csv",
+							"equivalent_total_rotation_comma_%0.2fMa",
 							ExportTotalRotationAnimationStrategy::Configuration::EQUIVALENT_COMMA,
 							default_rotation_export_options)),
 			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
@@ -708,7 +708,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::CSV_SEMICOLON),
 			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
 					new ExportTotalRotationAnimationStrategy::Configuration(
-							"equivalent_total_rotation_semicolon_%0.2fMa.csv",
+							"equivalent_total_rotation_semicolon_%0.2fMa",
 							ExportTotalRotationAnimationStrategy::Configuration::EQUIVALENT_SEMICOLON,
 							default_rotation_export_options)),
 			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
@@ -728,7 +728,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::CSV_TAB),
 			ExportTotalRotationAnimationStrategy::const_configuration_ptr(
 					new ExportTotalRotationAnimationStrategy::Configuration(
-							"equivalent_total_rotation_tab_%0.2fMa.csv",
+							"equivalent_total_rotation_tab_%0.2fMa",
 							ExportTotalRotationAnimationStrategy::Configuration::EQUIVALENT_TAB,
 							default_rotation_export_options)),
 			&create_animation_strategy<ExportTotalRotationAnimationStrategy>,
@@ -757,7 +757,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::CSV_SEMICOLON),
 			ExportStageRotationAnimationStrategy::const_configuration_ptr(
 					new ExportStageRotationAnimationStrategy::Configuration(
-							"relative_stage_rotation_semicolon_%0.2fMa.csv",
+							"relative_stage_rotation_semicolon_%0.2fMa",
 							ExportStageRotationAnimationStrategy::Configuration::RELATIVE_SEMICOLON,
 							default_rotation_export_options,
 							default_stage_rotation_export_options)),
@@ -778,7 +778,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::CSV_COMMA),
 			ExportStageRotationAnimationStrategy::const_configuration_ptr(
 					new ExportStageRotationAnimationStrategy::Configuration(
-							"relative_stage_rotation_comma_%0.2fMa.csv",
+							"relative_stage_rotation_comma_%0.2fMa",
 							ExportStageRotationAnimationStrategy::Configuration::RELATIVE_COMMA,
 							default_rotation_export_options,
 							default_stage_rotation_export_options)),
@@ -799,7 +799,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::CSV_TAB),
 			ExportStageRotationAnimationStrategy::const_configuration_ptr(
 					new ExportStageRotationAnimationStrategy::Configuration(
-							"relative_stage_rotation_tab_%0.2fMa.csv",
+							"relative_stage_rotation_tab_%0.2fMa",
 							ExportStageRotationAnimationStrategy::Configuration::RELATIVE_TAB,
 							default_rotation_export_options,
 							default_stage_rotation_export_options)),
@@ -824,7 +824,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::CSV_SEMICOLON),
 			ExportStageRotationAnimationStrategy::const_configuration_ptr(
 					new ExportStageRotationAnimationStrategy::Configuration(
-							"equivalent_stage_rotation_semicolon_%0.2fMa.csv",
+							"equivalent_stage_rotation_semicolon_%0.2fMa",
 							ExportStageRotationAnimationStrategy::Configuration::EQUIVALENT_SEMICOLON,
 							default_rotation_export_options,
 							default_stage_rotation_export_options)),
@@ -845,7 +845,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::CSV_COMMA),
 			ExportStageRotationAnimationStrategy::const_configuration_ptr(
 					new ExportStageRotationAnimationStrategy::Configuration(
-							"equivalent_stage_rotation_comma_%0.2fMa.csv",
+							"equivalent_stage_rotation_comma_%0.2fMa",
 							ExportStageRotationAnimationStrategy::Configuration::EQUIVALENT_COMMA,
 							default_rotation_export_options,
 							default_stage_rotation_export_options)),
@@ -866,7 +866,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::CSV_TAB),
 			ExportStageRotationAnimationStrategy::const_configuration_ptr(
 					new ExportStageRotationAnimationStrategy::Configuration(
-							"equivalent_stage_rotation_tab_%0.2fMa.csv",
+							"equivalent_stage_rotation_tab_%0.2fMa",
 							ExportStageRotationAnimationStrategy::Configuration::EQUIVALENT_TAB,
 							default_rotation_export_options,
 							default_stage_rotation_export_options)),
@@ -891,7 +891,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::BMP),
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
-							"raster_%0.2fMa.bmp",
+							"raster_%0.2fMa",
 							ExportRasterAnimationStrategy::Configuration::BMP)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
 			&create_null_export_options_widget,
@@ -903,7 +903,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::JPG),
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
-							"raster_%0.2fMa.jpg",
+							"raster_%0.2fMa",
 							ExportRasterAnimationStrategy::Configuration::JPG)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
 			&create_null_export_options_widget,
@@ -915,7 +915,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::JPEG),
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
-							"raster_%0.2fMa.jpeg",
+							"raster_%0.2fMa",
 							ExportRasterAnimationStrategy::Configuration::JPEG)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
 			&create_null_export_options_widget,
@@ -927,7 +927,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::PNG),
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
-							"raster_%0.2fMa.png",
+							"raster_%0.2fMa",
 							ExportRasterAnimationStrategy::Configuration::PNG)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
 			&create_null_export_options_widget,
@@ -939,7 +939,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::PPM),
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
-							"raster_%0.2fMa.ppm",
+							"raster_%0.2fMa",
 							ExportRasterAnimationStrategy::Configuration::PPM)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
 			&create_null_export_options_widget,
@@ -951,7 +951,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::TIFF),
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
-							"raster_%0.2fMa.tiff",
+							"raster_%0.2fMa",
 							ExportRasterAnimationStrategy::Configuration::TIFF)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
 			&create_null_export_options_widget,
@@ -963,7 +963,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::XBM),
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
-							"raster_%0.2fMa.xbm",
+							"raster_%0.2fMa",
 							ExportRasterAnimationStrategy::Configuration::XBM)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
 			&create_null_export_options_widget,
@@ -975,7 +975,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::XPM),
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
-							"raster_%0.2fMa.xpm",
+							"raster_%0.2fMa",
 							ExportRasterAnimationStrategy::Configuration::XPM)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
 			&create_null_export_options_widget,
@@ -998,7 +998,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::GMT),
 			ExportFlowlineAnimationStrategy::const_configuration_ptr(
 					new ExportFlowlineAnimationStrategy::Configuration(
-							"flowline_output_%0.2fMa.xy",
+							"flowline_output_%0.2fMa",
 							ExportFlowlineAnimationStrategy::Configuration::GMT,
 							default_flowline_file_export_options,
 							default_flowline_wrap_to_dateline)),
@@ -1018,7 +1018,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::SHAPEFILE),
 			ExportFlowlineAnimationStrategy::const_configuration_ptr(
 					new ExportFlowlineAnimationStrategy::Configuration(
-							"flowline_output_%0.2fMa.shp",
+							"flowline_output_%0.2fMa",
 							ExportFlowlineAnimationStrategy::Configuration::SHAPEFILE,
 							default_flowline_file_export_options,
 							default_flowline_wrap_to_dateline)),
@@ -1039,7 +1039,7 @@ GPlatesGui::register_default_export_animation_types(
 				ExportAnimationType::OGRGMT),
 		ExportFlowlineAnimationStrategy::const_configuration_ptr(
 			new ExportFlowlineAnimationStrategy::Configuration(
-					"flowline_output_%0.2fMa.gmt",
+					"flowline_output_%0.2fMa",
 					ExportFlowlineAnimationStrategy::Configuration::OGRGMT,
 					default_flowline_file_export_options,
 					default_flowline_wrap_to_dateline)),
@@ -1070,7 +1070,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::GMT),
 			ExportMotionPathAnimationStrategy::const_configuration_ptr(
 					new ExportMotionPathAnimationStrategy::Configuration(
-							"motion_path_output_%0.2fMa.xy",
+							"motion_path_output_%0.2fMa",
 							ExportMotionPathAnimationStrategy::Configuration::GMT,
 							default_motion_path_file_export_options,
 							default_motion_path_wrap_to_dateline)),
@@ -1090,7 +1090,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::SHAPEFILE),
 			ExportMotionPathAnimationStrategy::const_configuration_ptr(
 					new ExportMotionPathAnimationStrategy::Configuration(
-							"motion_path_output_%0.2fMa.shp",
+							"motion_path_output_%0.2fMa",
 							ExportMotionPathAnimationStrategy::Configuration::SHAPEFILE,
 							default_motion_path_file_export_options,
 							default_motion_path_wrap_to_dateline)),
@@ -1111,7 +1111,7 @@ GPlatesGui::register_default_export_animation_types(
 				ExportAnimationType::OGRGMT),
 			ExportMotionPathAnimationStrategy::const_configuration_ptr(
 				new ExportMotionPathAnimationStrategy::Configuration(
-					"motion_path_output_%0.2fMa.gmt",
+					"motion_path_output_%0.2fMa",
 					ExportMotionPathAnimationStrategy::Configuration::OGRGMT,
 					default_motion_path_file_export_options,
 					default_motion_path_wrap_to_dateline)),
@@ -1135,7 +1135,7 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::CSV_COMMA),
 			ExportCoRegistrationAnimationStrategy::const_configuration_ptr(
 					new ExportCoRegistrationAnimationStrategy::Configuration(
-							"co_registration_data%P_%0.2fMa.csv")),
+							"co_registration_data%P_%0.2fMa")),
 			&create_animation_strategy<ExportCoRegistrationAnimationStrategy>,
 			&create_null_export_options_widget,
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);

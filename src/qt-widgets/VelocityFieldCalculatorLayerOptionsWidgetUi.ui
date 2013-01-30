@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>469</width>
-    <height>116</height>
+    <height>133</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -137,9 +137,29 @@
         <number>0</number>
        </property>
        <item>
+        <widget class="QLabel" name="arrow_scale_label">
+         <property name="text">
+          <string>Arrow Scale</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_3">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
         <widget class="QLabel" name="arrow_body_scale_label">
          <property name="text">
-          <string>Arrow body scale (log10):</string>
+          <string>Body:</string>
          </property>
         </widget>
        </item>
@@ -175,7 +195,7 @@
        <item>
         <widget class="QLabel" name="arrowhead_scale_label">
          <property name="text">
-          <string>Arrowhead scale (log10):</string>
+          <string>Head:</string>
          </property>
         </widget>
        </item>
@@ -196,19 +216,6 @@
         </widget>
        </item>
        <item>
-        <spacer name="horizontalSpacer_3">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
         <widget class="QPushButton" name="push_button_help_arrow_scale">
          <property name="toolTip">
           <string>What does this mean?</string>
@@ -223,6 +230,9 @@
         </widget>
        </item>
       </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_5"/>
      </item>
      <item>
       <widget class="QCheckBox" name="triangulation_checkbox">

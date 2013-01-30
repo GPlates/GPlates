@@ -17,7 +17,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Generate Terra Velocity Domain Points</string>
+   <string>Generate Latitude/Longitude Velocity Domain Points</string>
   </property>
   <property name="windowIcon">
    <iconset resource="../qt-resources/qt_widgets.qrc">

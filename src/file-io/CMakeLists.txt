@@ -85,6 +85,8 @@ set(srcs
     GpmlFeatureReaderImpl.h
     GpmlFeatureReaderInterface.cc
     GpmlFeatureReaderInterface.h
+    GpmlFormatMultiPointVectorFieldExport.cc
+    GpmlFormatMultiPointVectorFieldExport.h
     GpmlOutputVisitor.cc
     GpmlOutputVisitor.h
     GpmlPropertyReader.cc
@@ -120,6 +122,8 @@ set(srcs
     MipmappedRasterFormatReader.h
     MipmappedRasterFormatWriter.cc
     MipmappedRasterFormatWriter.h
+    MultiPointVectorFieldExport.cc
+    MultiPointVectorFieldExport.h
     OgrException.h
     OgrFeatureCollectionWriter.cc
     OgrFeatureCollectionWriter.h

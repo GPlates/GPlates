@@ -197,13 +197,16 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_
 	feature_handle_to_collection_map_type feature_to_collection_map;
 	std::vector<const File::Reference *> referenced_files;
 	get_files_referenced_by_geometries(
-			referenced_files, reconstructed_feature_geom_seq, active_files,
+			referenced_files,
+			reconstructed_feature_geom_seq,
+			active_files,
 			feature_to_collection_map);
 
 	// Group the ReconstructionGeometry objects by their feature.
 	feature_geometry_group_seq_type grouped_recon_geom_seq;
 	group_reconstruction_geometries_with_their_feature(
-			grouped_recon_geom_seq, reconstructed_feature_geom_seq);
+			grouped_recon_geom_seq,
+			reconstructed_feature_geom_seq);
 
 	if (export_single_output_file)
 	{

@@ -757,8 +757,10 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_data_block(
 
 	// Now output the <gml:tupleList>.
 	d_output.writeStartGmlElement("tupleList");
-	write_gml_data_block_tuple_list(d_output, gml_data_block.tuple_list_begin(),
-			gml_data_block.tuple_list_end());
+		write_gml_data_block_tuple_list(
+				d_output,
+				gml_data_block.tuple_list_begin(),
+				gml_data_block.tuple_list_end());
 	d_output.writeEndElement(); // </gml:tupleList>
 
 	d_output.writeEndElement(); // </gml:DataBlock>

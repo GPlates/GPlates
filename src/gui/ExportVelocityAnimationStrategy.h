@@ -157,11 +157,6 @@ namespace GPlatesGui
 		export_velocity_fields_to_file(
 				const vector_field_seq_type &velocity_fields,
 				QString filename);
-
-		
-		QString
-		get_file_name_from_feature_collection_handle(
-				GPlatesModel::FeatureCollectionHandle::weak_ref);
 		
 	private:
 		/**

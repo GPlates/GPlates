@@ -93,7 +93,6 @@ void
 GPlatesGui::ExportMotionPathAnimationStrategy::set_template_filename(
 		const QString &filename)
 {
-
 	ExportAnimationStrategy::set_template_filename(filename);
 }
 

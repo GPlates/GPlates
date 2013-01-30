@@ -42,7 +42,7 @@ namespace GPlatesFileIO
 			PLATES4_ROTATION,  //!< '.rot' extension.
 			SHAPEFILE,         //!< '.shp' extension.
 			OGRGMT,			   //!< '.gmt' extension.
-			WRITE_ONLY_XY_GMT,               //!< '.xy' extension.
+			WRITE_ONLY_XY_GMT, //!< '.xy' extension.
 			GMAP,              //!< '.vgp' extension.
 			GSML,              //!< '.gsml' extension.
 

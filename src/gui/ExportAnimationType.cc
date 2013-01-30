@@ -48,7 +48,7 @@ namespace GPlatesGui
 
 				export_type_name_map[RECONSTRUCTED_GEOMETRIES]    =QObject::tr("Reconstructed Geometries");
 				export_type_name_map[PROJECTED_GEOMETRIES]        =QObject::tr("Projected Geometries");
-				export_type_name_map[MESH_VELOCITIES]             =QObject::tr("Colat/lon Mesh Velocities");
+				export_type_name_map[VELOCITIES]             =QObject::tr("Velocities");
 				export_type_name_map[RESOLVED_TOPOLOGIES]         =QObject::tr("Resolved Topologies (General)");
 				export_type_name_map[RESOLVED_TOPOLOGIES_CITCOMS] =QObject::tr("Resolved Topologies (CitcomS specific)");
 				export_type_name_map[RELATIVE_TOTAL_ROTATION]     =QObject::tr("Relative Total Rotation");
@@ -73,7 +73,7 @@ namespace GPlatesGui
 						QObject::tr("Export reconstructed geometries.");
 				export_type_description_map[PROJECTED_GEOMETRIES] =
 						QObject::tr("Export projected geometries data.");
-				export_type_description_map[MESH_VELOCITIES] =
+				export_type_description_map[VELOCITIES] =
 						QObject::tr("Export velocity data.");
 				export_type_description_map[RESOLVED_TOPOLOGIES] = 
 						QObject::tr(
@@ -154,8 +154,38 @@ namespace GPlatesGui
 				export_format_description_map[TIFF]            =QObject::tr("Tagged Image File Format (*.tiff)");
 				export_format_description_map[XBM]             =QObject::tr("X11 Bitmap (*.xbm)");
 				export_format_description_map[XPM]             =QObject::tr("X11 Pixmap (*.xpm)");
+				export_format_description_map[CITCOMS_GLOBAL]  =QObject::tr("CitcomS global velocity (*)");
+				export_format_description_map[TERRA_TEXT]      =QObject::tr("Terra velocity text format (*)");
 
 				return export_format_description_map;
+			}
+
+
+			std::map<Format, QString>
+			initialise_export_format_filename_extension_map()
+			{
+				std::map<Format, QString> export_format_filename_extension_map;
+
+				export_format_filename_extension_map[GMT]             ="xy";
+				export_format_filename_extension_map[GPML]            ="gpml";
+				export_format_filename_extension_map[SHAPEFILE]       ="shp";
+				export_format_filename_extension_map[OGRGMT]          ="gmt";
+				export_format_filename_extension_map[SVG]             ="svg";
+				export_format_filename_extension_map[CSV_COMMA]       ="csv";
+				export_format_filename_extension_map[CSV_SEMICOLON]   ="csv";
+				export_format_filename_extension_map[CSV_TAB]         ="csv";
+				export_format_filename_extension_map[BMP]             ="bmp";
+				export_format_filename_extension_map[JPG]             ="jpg";
+				export_format_filename_extension_map[JPEG]            ="jpeg";
+				export_format_filename_extension_map[PNG]             ="png";
+				export_format_filename_extension_map[PPM]             ="ppm";
+				export_format_filename_extension_map[TIFF]            ="tiff";
+				export_format_filename_extension_map[XBM]             ="xbm";
+				export_format_filename_extension_map[XPM]             ="xpm";
+				export_format_filename_extension_map[CITCOMS_GLOBAL]  ="";
+				export_format_filename_extension_map[TERRA_TEXT]      ="";
+
+				return export_format_filename_extension_map;
 			}
 		}
 	}
@@ -192,6 +222,17 @@ GPlatesGui::ExportAnimationType::get_export_format_description(
 			initialise_export_format_description_map();
 
 	return s_export_format_description_map[format];
+}
+
+
+const QString &
+GPlatesGui::ExportAnimationType::get_export_format_filename_extension(
+		Format format)
+{
+	static std::map<Format, QString> s_export_format_filename_extension_map =
+			initialise_export_format_filename_extension_map();
+
+	return s_export_format_filename_extension_map[format];
 }
 
 // For the BOOST_STATIC_ASSERT below with GCC 4.2.

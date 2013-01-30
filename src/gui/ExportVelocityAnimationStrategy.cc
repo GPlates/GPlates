@@ -27,20 +27,13 @@
 #include <iostream>
 
 #include <algorithm>
+#include <list>
 #include <map>
-#include "global/CompilerWarnings.h"
-// Disable Visual Studio warning "qualifier applied to reference type; ignored" in boost 1.36.0
-PUSH_MSVC_WARNINGS
-DISABLE_MSVC_WARNING(4181)
-#include <boost/lambda/bind.hpp>
-#include <boost/lambda/lambda.hpp>
-POP_MSVC_WARNINGS
+#include <vector>
 
 #include <QFileInfo>
 #include <QString>
 #include <QDebug>
-#include <list>
-#include <vector>
 #include <QFileInfo>
 
 #include "ExportVelocityAnimationStrategy.h"
@@ -57,423 +50,23 @@ POP_MSVC_WARNINGS
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/VelocityFieldCalculatorLayerProxy.h"
 
-#include "feature-visitors/PropertyValueFinder.h"
-
 #include "file-io/File.h"
-#include "file-io/GpmlOutputVisitor.h"
-#include "file-io/ReconstructionGeometryExportImpl.h"
+#include "file-io/MultiPointVectorFieldExport.h"
 
 #include "global/NotYetImplementedException.h"
 
 #include "gui/ExportAnimationContext.h"
 #include "gui/AnimationController.h"
 
-#include "model/ModelUtils.h"
-#include "model/NotificationGuard.h"
-
 #include "presentation/ViewState.h"
 
-#include "property-values/GeoTimeInstant.h"
-#include "property-values/GmlDataBlock.h"
-#include "property-values/GmlMultiPoint.h"
-#include "property-values/GmlTimeInstant.h"
-#include "property-values/GpmlFeatureSnapshotReference.h"
-#include "property-values/GpmlPlateId.h"
-#include "property-values/XsString.h"
-
 
 namespace
 {
-	QString
-	substitute_placeholder(
-			const QString &output_filebasename,
-			const QString &placeholder,
-			const QString &placeholder_replacement)
-	{
-		return QString(output_filebasename).replace(placeholder, placeholder_replacement);
-	}
-
-	QString
-	calculate_output_basename(
-			const QString &output_filename_prefix,
-			const QFileInfo &cap_qfileinfo)
-	{
-#if 0	
-		//remove the cap file extension name 
-		QString cap_filename = cap_qfileinfo.fileName();
-		int idx = cap_filename.lastIndexOf(".gpml",-1);
-		if(-1 != idx)
-		{
-			cap_filename = cap_filename.left(idx);
-		}
-#endif
-
-		const QString output_basename = substitute_placeholder(
-				output_filename_prefix,
-				GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
-				cap_qfileinfo.fileName());
-				//cap_filename);
-
-		return output_basename;
-	}
-}
-
-
-GPlatesGui::ExportVelocityAnimationStrategy::ExportVelocityAnimationStrategy(
-		GPlatesGui::ExportAnimationContext &export_animation_context,
-		const const_configuration_ptr &configuration):
-	ExportAnimationStrategy(export_animation_context),
-	d_configuration(configuration)
-{
-	set_template_filename(d_configuration->get_filename_template());
-
-	// This code is copied from "gui/ExportReconstructedGeometryAnimationStrategy.cc".
-	GPlatesAppLogic::FeatureCollectionFileState &file_state =
-			d_export_animation_context_ptr->view_state().get_application_state()
-					.get_feature_collection_file_state();
-
-	// From the file state, obtain the list of all currently loaded files.
-	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
-			file_state.get_loaded_files();
-
-	// Add them to our list of loaded files.
-	BOOST_FOREACH(GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref, loaded_files)
-	{
-		d_loaded_files.push_back(&file_ref.get_file());
-	}
-}
-
-void
-GPlatesGui::ExportVelocityAnimationStrategy::set_template_filename(
-		const QString &filename)
-{
-// 	TODO: temporary thing. the template needs to be sorted out completely later.
-// 						ExportAnimationStrategy::set_template_filename(
-// 								filename.toStdString().substr(
-// 										0,
-// 										filename.toStdString().find_first_of("<")).c_str());
-	ExportAnimationStrategy::set_template_filename(filename);
-}
-
-
-namespace
-{
-	void
-	insert_velocity_field_into_feature_collection(
-			GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-			const GPlatesAppLogic::MultiPointVectorField *velocity_field)
-	{
-		// The domain feature used when generating the velocity field.
-		const GPlatesModel::FeatureHandle::weak_ref domain_feature_ref =
-				velocity_field->get_feature_ref();
-
-		static const GPlatesModel::FeatureType feature_type = 
-				GPlatesModel::FeatureType::create_gpml("VelocityField");
-
-		GPlatesModel::FeatureHandle::weak_ref feature = 
-				GPlatesModel::FeatureHandle::create(
-						feature_collection,
-						feature_type);
-
-		//
-		// Store the time instant at which the velocity field was generated.
-		//
-
-		static const GPlatesModel::PropertyName RECONSTRUCTED_TIME_PROPERTY_NAME =
-				GPlatesModel::PropertyName::create_gpml("reconstructedTime");
-
-		GPlatesPropertyValues::GeoTimeInstant reconstructed_geo_time_instant(
-				velocity_field->reconstruction_tree()->get_reconstruction_time());
-		GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type reconstructed_gml_time_instant =
-			GPlatesModel::ModelUtils::create_gml_time_instant(reconstructed_geo_time_instant);
-
-		feature->add(
-				GPlatesModel::TopLevelPropertyInline::create(
-						RECONSTRUCTED_TIME_PROPERTY_NAME,
-						reconstructed_gml_time_instant));
-
-		//
-		// Add the anchor plate id used for the reconstruction (and hence for the velocity calculations).
-		//
-
-		static const GPlatesModel::PropertyName ANCHORED_PLATE_ID_PROPERTY_NAME =
-				GPlatesModel::PropertyName::create_gpml("anchoredPlateId");
-
-		const GPlatesModel::integer_plate_id_type anchored_plate_id =
-				velocity_field->reconstruction_tree()->get_anchor_plate_id();
-		GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type anchored_gpml_plate_id =
-				GPlatesPropertyValues::GpmlPlateId::create(anchored_plate_id);
-
-		feature->add(
-				GPlatesModel::TopLevelPropertyInline::create(
-						ANCHORED_PLATE_ID_PROPERTY_NAME,
-						anchored_gpml_plate_id));
-
-		//
-		// Store a feature snapshot reference to the domain feature.
-		//
-		// This is useful when the domain point is reconstructed - when no velocity surfaces
-		// (like plate boundaries) were used to calculate velocities and, instead, the domain points
-		// themselves are reconstructed to new positions and their plate ids used to calculate velocities.
-		// In this case it can be useful to trace back to the original domain feature and hence
-		// associate exported velocity fields at multiple time-steps with each other (via the
-		// domain feature's feature id).
-		//
-		// Ultimately a time-dependent velocity property export (to a single file) might be a good idea.
-		// That would require non-trivial changes to the export dialog since it currently exports
-		// each time step to a separate export file.
-
-		if (domain_feature_ref.is_valid())
-		{
-			static const GPlatesModel::PropertyName DOMAIN_DERIVED_FROM_PROPERTY_NAME =
-					GPlatesModel::PropertyName::create_gpml("domainDerivedFrom");
-
-			const GPlatesPropertyValues::GpmlFeatureSnapshotReference::non_null_ptr_type domain_derived_from =
-					GPlatesPropertyValues::GpmlFeatureSnapshotReference::create(
-							domain_feature_ref->feature_id(),
-							GPlatesModel::RevisionId(),
-							domain_feature_ref->feature_type());
-
-			feature->add(
-					GPlatesModel::TopLevelPropertyInline::create(
-							DOMAIN_DERIVED_FROM_PROPERTY_NAME,
-							domain_derived_from));
-		}
-
-		//
-		// Add the reconstruction plate id from the domain feature.
-		//
-		// This is a bit questionable since velocity fields can contain a different plate id at
-		// each domain point (ie, one domain feature can have multiple domain points each with a
-		// different plate id). This happens when surfaces (eg, plate polygons) are used in the
-		// velocity layer, in which case each point's plate id is the plate id of the surface that
-		// points falls within. MultiPointVectorField does store these plate ids but we currently
-		// don't export them. However when no surfaces are used then the plate id of the domain
-		// feature determines the velocity. So here we store the single plate id of the domain
-		// feature for that particular situation (no surfaces). This plate id should be ignored
-		// when surfaces are used - and is why the property has "domain" in its name.
-		//
-
-		if (domain_feature_ref.is_valid())
-		{
-			static const GPlatesModel::PropertyName RECONSTRUCTION_PLATE_ID_PROPERTY_NAME =
-					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-
-			// Get the property value from the domain feature.
-			const GPlatesPropertyValues::GpmlPlateId *domain_reconstruction_plate_id_property_value = NULL;
-			if (GPlatesFeatureVisitors::get_property_value(
-				domain_feature_ref,
-				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME,
-				domain_reconstruction_plate_id_property_value))
-			{
-				static const GPlatesModel::PropertyName DOMAIN_RECONSTRUCTION_PLATE_ID_PROPERTY_NAME =
-						GPlatesModel::PropertyName::create_gpml("domainReconstructionPlateId");
-
-				feature->add(
-						GPlatesModel::TopLevelPropertyInline::create(
-								DOMAIN_RECONSTRUCTION_PLATE_ID_PROPERTY_NAME,
-								domain_reconstruction_plate_id_property_value->deep_clone_as_prop_val()));
-			}
-		}
-
-		//
-		// Add the name of the domain feature.
-		//
-		// A perhaps questionable request since this information can be obtained via the domain
-		// feature reference property added above.
-		//
-
-		if (domain_feature_ref.is_valid())
-		{
-			static const GPlatesModel::PropertyName NAME_PROPERTY_NAME =
-					GPlatesModel::PropertyName::create_gml("name");
-
-			// Get the property value from the domain feature.
-			const GPlatesPropertyValues::XsString *name_property_value = NULL;
-			if (GPlatesFeatureVisitors::get_property_value(
-				domain_feature_ref,
-				NAME_PROPERTY_NAME,
-				name_property_value))
-			{
-				static const GPlatesModel::PropertyName DOMAIN_NAME_PROPERTY_NAME =
-						GPlatesModel::PropertyName::create_gpml("domainName");
-
-				feature->add(
-						GPlatesModel::TopLevelPropertyInline::create(
-								DOMAIN_NAME_PROPERTY_NAME,
-								name_property_value->deep_clone_as_prop_val()));
-			}
-		}
-
-		//
-		// Create the "gml:domainSet" property of type GmlMultiPoint -
-		// basically references "meshPoints" property in mesh node feature which
-		// should be a GmlMultiPoint.
-		//
-		static const GPlatesModel::PropertyName domain_set_prop_name =
-				GPlatesModel::PropertyName::create_gml("domainSet");
-
-		GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type domain_set_gml_multi_point =
-				GPlatesPropertyValues::GmlMultiPoint::create(
-						velocity_field->multi_point());
-
-		feature->add(
-				GPlatesModel::TopLevelPropertyInline::create(
-						domain_set_prop_name,
-						domain_set_gml_multi_point));
-
-		//
-		// Set up GmlDataBlock 
-		//
-		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type gml_data_block =
-				GPlatesPropertyValues::GmlDataBlock::create();
-
-		GPlatesPropertyValues::ValueObjectType velocity_colat_type =
-				GPlatesPropertyValues::ValueObjectType::create_gpml("VelocityColat");
-		GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type xml_attrs_velocity_colat;
-		GPlatesModel::XmlAttributeName uom = GPlatesModel::XmlAttributeName::create_gpml("uom");
-		GPlatesModel::XmlAttributeValue cm_per_year("urn:x-si:v1999:uom:cm_per_year");
-		xml_attrs_velocity_colat.insert(std::make_pair(uom, cm_per_year));
-
-		std::vector<double> colat_velocity_components;
-		std::vector<double> lon_velocity_components;
-		colat_velocity_components.reserve(velocity_field->domain_size());
-		lon_velocity_components.reserve(velocity_field->domain_size());
-
-		GPlatesMaths::MultiPointOnSphere::const_iterator domain_iter =
-				velocity_field->multi_point()->begin();
-		GPlatesMaths::MultiPointOnSphere::const_iterator domain_end =
-				velocity_field->multi_point()->end();
-		GPlatesAppLogic::MultiPointVectorField::codomain_type::const_iterator codomain_iter =
-				velocity_field->begin();
-		for ( ; domain_iter != domain_end; ++domain_iter, ++codomain_iter) {
-			if ( ! *codomain_iter) {
-				// It's a "null" element.
-				colat_velocity_components.push_back(0);
-				lon_velocity_components.push_back(0);
-				continue;
-			}
-			const GPlatesMaths::PointOnSphere &point = (*domain_iter);
-			const GPlatesMaths::Vector3D &velocity_vector = (**codomain_iter).d_vector;
-
-			GPlatesMaths::VectorColatitudeLongitude velocity_colat_lon =
-					GPlatesMaths::convert_vector_from_xyz_to_colat_lon(point, velocity_vector);
-			colat_velocity_components.push_back(velocity_colat_lon.get_vector_colatitude().dval());
-			lon_velocity_components.push_back(velocity_colat_lon.get_vector_longitude().dval());
-		}
-
-		GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type velocity_colat =
-				GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
-						velocity_colat_type, xml_attrs_velocity_colat,
-						colat_velocity_components.begin(),
-						colat_velocity_components.end());
-
-		GPlatesPropertyValues::ValueObjectType velocity_lon_type =
-				GPlatesPropertyValues::ValueObjectType::create_gpml("VelocityLon");
-		GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type xml_attrs_velocity_lon;
-		xml_attrs_velocity_lon.insert(std::make_pair(uom, cm_per_year));
-
-		GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type velocity_lon =
-				GPlatesPropertyValues::GmlDataBlockCoordinateList::create_copy(
-						velocity_lon_type, xml_attrs_velocity_lon,
-						lon_velocity_components.begin(),
-						lon_velocity_components.end());
-
-		gml_data_block->tuple_list_push_back( velocity_colat );
-		gml_data_block->tuple_list_push_back( velocity_lon );
-
-		//
-		// append the GmlDataBlock property 
-		//
-
-		GPlatesModel::PropertyName range_set_prop_name =
-				GPlatesModel::PropertyName::create_gml("rangeSet");
-
-		// add the new gml::rangeSet property
-		feature->add(
-				GPlatesModel::TopLevelPropertyInline::create(
-						range_set_prop_name,
-						gml_data_block));
-
-	}
-}
-
-void
-GPlatesGui::ExportVelocityAnimationStrategy::export_velocity_fields_to_file(
-		const vector_field_seq_type &velocity_fields,
-		QString filename)
-{
-	// We want to merge model events across this scope so that only one model event
-	// is generated instead of many in case we incrementally modify the features below.
-	GPlatesModel::NotificationGuard model_notification_guard(
-			d_export_animation_context_ptr->view_state().get_application_state().get_model_interface().access_model());
-
-	// NOTE: We don't add it to the feature store otherwise it'll remain there but
-	// we want to release it (and its memory) after export.
-	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection = 
-			GPlatesModel::FeatureCollectionHandle::create();
-	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref = feature_collection->reference();
-
-	vector_field_seq_type::const_iterator velocity_fields_iter = velocity_fields.begin();
-	vector_field_seq_type::const_iterator velocity_fields_end = velocity_fields.end();
-	for ( ; velocity_fields_iter != velocity_fields_end; ++velocity_fields_iter)
-	{
-		insert_velocity_field_into_feature_collection(
-				feature_collection_ref, *velocity_fields_iter);
-	}
-
-	GPlatesFileIO::FileInfo export_file_info(filename);
-	const GPlatesModel::Gpgim &gpgim =
-			d_export_animation_context_ptr->view_state().get_application_state().get_gpgim();
-	GPlatesFileIO::GpmlOutputVisitor gpml_writer(export_file_info, gpgim, false);
-	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(
-			feature_collection_ref, gpml_writer);
-}
-
-
-QString
-GPlatesGui::ExportVelocityAnimationStrategy::get_file_name_from_feature_collection_handle(
-		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref)
-{
-	GPlatesAppLogic::FeatureCollectionFileState& file_state = 
-		d_export_animation_context_ptr->view_state().get_application_state().get_feature_collection_file_state();
-	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_file_refs =
-			file_state.get_loaded_files();
-	
-	BOOST_FOREACH(
-			const GPlatesAppLogic::FeatureCollectionFileState::file_reference &loaded_file_ref,
-			loaded_file_refs)
-	{
-		if(feature_collection_ref == loaded_file_ref.get_file().get_feature_collection())
-		{
-			return loaded_file_ref.get_file().get_file_info().get_display_name(false);
-		}
-	}
-	return QString();
-}
-
-
-namespace
-{
-	//! Typedef for sequence of feature collection files.
-	typedef std::vector<const GPlatesFileIO::File::Reference *> files_collection_type;
-
 	/**
 	 * Typedef for a sequence of @a MultiPointVectorField pointers.
 	 */
 	typedef std::vector<const GPlatesAppLogic::MultiPointVectorField *> vector_field_seq_type;
-
-	/**
-	 * Typedef for a mapping from @a File::Reference to the vector fields calculated from the
-	 * contents of that file.
-	 */
-	typedef std::map<const GPlatesFileIO::File::Reference *, vector_field_seq_type> file_to_vector_fields_map_type;
-
-	/**
-	 * Typedef for mapping from @a FeatureHandle to the feature collection file it came from.
-	 */
-	typedef GPlatesFileIO::ReconstructionGeometryExportImpl::feature_handle_to_collection_map_type
-			feature_handle_to_collection_map_type;
 
 
 	void
@@ -521,61 +114,39 @@ namespace
 		}
 #endif
 	}
+}
 
 
-	void
-	match_files_to_velocity_fields(
-			file_to_vector_fields_map_type &file_to_vector_fields_map,
-			const vector_field_seq_type &vector_field_seq,
-			const files_collection_type &active_files)
+GPlatesGui::ExportVelocityAnimationStrategy::ExportVelocityAnimationStrategy(
+		GPlatesGui::ExportAnimationContext &export_animation_context,
+		const const_configuration_ptr &configuration):
+	ExportAnimationStrategy(export_animation_context),
+	d_configuration(configuration)
+{
+	set_template_filename(d_configuration->get_filename_template());
+
+	// This code is copied from "gui/ExportReconstructedGeometryAnimationStrategy.cc".
+	GPlatesAppLogic::FeatureCollectionFileState &file_state =
+			d_export_animation_context_ptr->view_state().get_application_state()
+					.get_feature_collection_file_state();
+
+	// From the file state, obtain the list of all currently loaded files.
+	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
+			file_state.get_loaded_files();
+
+	// Add them to our list of loaded files.
+	BOOST_FOREACH(GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref, loaded_files)
 	{
-		using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
-
-		// This code copied from "file-io/ReconstructionGeometryExportImpl.cc".
-		feature_handle_to_collection_map_type feature_handle_to_collection_map;
-		GPlatesFileIO::ReconstructionGeometryExportImpl::populate_feature_handle_to_collection_map(
-				feature_handle_to_collection_map,
-				active_files);
-
-		std::list< FeatureGeometryGroup<GPlatesAppLogic::MultiPointVectorField> > feature_geometry_group_seq;
-		GPlatesFileIO::ReconstructionGeometryExportImpl::group_reconstruction_geometries_with_their_feature(
-				feature_geometry_group_seq,
-				vector_field_seq);
-
-		std::list< FeatureCollectionFeatureGroup<GPlatesAppLogic::MultiPointVectorField> >
-				feature_collection_feature_group_seq;
-		GPlatesFileIO::ReconstructionGeometryExportImpl::group_feature_geom_groups_with_their_collection(
-				feature_handle_to_collection_map,
-				feature_collection_feature_group_seq,
-				feature_geometry_group_seq);
-
-		std::list< FeatureCollectionFeatureGroup<GPlatesAppLogic::MultiPointVectorField> >::const_iterator iter =
-				feature_collection_feature_group_seq.begin();
-		std::list< FeatureCollectionFeatureGroup<GPlatesAppLogic::MultiPointVectorField> >::const_iterator end =
-				feature_collection_feature_group_seq.end();
-		for ( ; iter != end; ++iter)
-		{
-			const GPlatesFileIO::File::Reference *file_ptr = iter->file_ptr;
-			vector_field_seq_type per_file_vector_field_seq;
-
-			std::list< FeatureGeometryGroup<GPlatesAppLogic::MultiPointVectorField> >::const_iterator iter2 =
-					iter->feature_geometry_groups.begin();
-			std::list< FeatureGeometryGroup<GPlatesAppLogic::MultiPointVectorField> >::const_iterator end2 =
-					iter->feature_geometry_groups.end();
-			for ( ; iter2 != end2; ++iter2)
-			{
-				// Append all of 'iter2->recon_feature_geoms' onto the end of
-				// 'per_file_vector_field_seq'.
-				per_file_vector_field_seq.insert(
-						per_file_vector_field_seq.end(),
-						iter2->recon_geoms.begin(),
-						iter2->recon_geoms.end());
-			}
-
-			file_to_vector_fields_map.insert(
-					std::make_pair(file_ptr, per_file_vector_field_seq));
-		}
+		d_loaded_files.push_back(&file_ref.get_file());
 	}
+}
+
+
+void
+GPlatesGui::ExportVelocityAnimationStrategy::set_template_filename(
+		const QString &filename)
+{
+	ExportAnimationStrategy::set_template_filename(filename);
 }
 
 
@@ -583,54 +154,60 @@ bool
 GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
 {
-	// We want to merge model events across this scope so that only one model event
-	// is generated instead of many in case we incrementally modify the features below.
-	GPlatesModel::NotificationGuard model_notification_guard(
-			d_export_animation_context_ptr->view_state().get_application_state().get_model_interface().access_model());
-
 	GPlatesFileIO::ExportTemplateFilenameSequence::const_iterator &filename_it = 
 		*d_filename_iterator_opt;
 
-	// Assemble parts of this iteration's filename from the template filename sequence.
-	QString output_filename_prefix = *filename_it++;
-	QDir target_dir = d_export_animation_context_ptr->target_dir();
+	// Figure out a filename from the template filename sequence.
+	QString basename = *filename_it++;
+	// Add the target dir to that to figure out the absolute path + name.
+	QString full_filename = d_export_animation_context_ptr->target_dir().absoluteFilePath(basename);
+
+	// Write status message.
+	d_export_animation_context_ptr->update_status_message(
+			QObject::tr("Writing velocity vector fields at frame %2 to file \"%1\"...")
+			.arg(basename)
+			.arg(frame_index) );
 
 	// Get all the MultiPointVectorFields from the current reconstruction.
-	vector_field_seq_type vector_field_seq;
-	populate_vector_field_seq(vector_field_seq,
+	vector_field_seq_type velocity_vector_field_seq;
+	populate_vector_field_seq(
+			velocity_vector_field_seq,
 			d_export_animation_context_ptr->view_state().get_application_state());
 
-	// Determine which velocity fields came from which mesh files.
-	file_to_vector_fields_map_type file_to_vector_fields_map;
-	match_files_to_velocity_fields(file_to_vector_fields_map, vector_field_seq, d_loaded_files);
-
-	// For each mesh file, export the velocity fields calculated from that file.
-	file_to_vector_fields_map_type::const_iterator iter = file_to_vector_fields_map.begin();
-	file_to_vector_fields_map_type::const_iterator end = file_to_vector_fields_map.end();
-	for ( ; iter != end; ++iter)
+	// Here's where we do the actual work of exporting the velocity vector fields.
+	try
 	{
-		const QString &velocity_filename =
-				iter->first->get_file_info().get_display_name(false);
-		const vector_field_seq_type &vector_fields =
-				iter->second;
+		GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields(
+				full_filename,
+				GPlatesFileIO::MultiPointVectorFieldExport::GPML,
+				velocity_vector_field_seq,
+				d_export_animation_context_ptr->view_state().get_application_state().get_gpgim(),
+				d_export_animation_context_ptr->view_state().get_application_state().get_model_interface(),
+				d_loaded_files,
+				d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
+				d_export_animation_context_ptr->view_time(),
+				false/*export_to_a_single_file*/,
+				true/*export_to_multiple_files*/,
+				false/*separate_output_directory_per_file*/);
 
-		QString output_basename = calculate_output_basename(output_filename_prefix, velocity_filename);
-		QString full_output_filename = target_dir.absoluteFilePath(output_basename);
-
-		//qDebug() << velocity_filename << "->" << full_output_filename << "<<" << vector_fields.front();
-
-		// Next, the file writing. Update the dialog status message.
-		d_export_animation_context_ptr->update_status_message(
-				QObject::tr("Writing mesh velocities at frame %2 to file \"%1\"...")
-				.arg(output_basename)
-				.arg(frame_index) );
-
-		export_velocity_fields_to_file(
-				vector_fields,
-				full_output_filename);
 	}
-
-	// Normal exit, all good, ask the Context to process the next iteration please.
+	catch (std::exception &exc)
+	{
+		d_export_animation_context_ptr->update_status_message(
+			QObject::tr("Error writing velocity vector field file \"%1\": %2")
+					.arg(full_filename)
+					.arg(exc.what()));
+		return false;
+	}
+	catch (...)
+	{
+		// FIXME: Catch all proper exceptions we might get here.
+		d_export_animation_context_ptr->update_status_message(
+			QObject::tr("Error writing reconstructed geometry file \"%1\": unknown error!").arg(full_filename));
+		return false;
+	}
+	
+	// Normal exit, all good, ask the Context process the next iteration please.
 	return true;
 }
 
@@ -647,11 +224,3 @@ GPlatesGui::ExportVelocityAnimationStrategy::wrap_up(
 	// up in the same file and we should close that file (if all steps completed
 	// successfully).
 }
-
-
-// Quash warning C4503 ("decorated name length exceeded, name was truncated")
-// on VS2008 with CGAL 3.6.1.
-// It's here at the end of the file by a process of trial and error; the warning
-// is probably being emitted here because the compiler is instantiating
-// templates at the end of the file.
-DISABLE_MSVC_WARNING(4503)
