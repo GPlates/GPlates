@@ -95,6 +95,17 @@ namespace GPlatesQtWidgets
 		{
 			d_current_visual_layer = visual_layer;
 			
+			boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock();
+			
+			if(locked_visual_layer->get_reconstruct_graph_layer().get_all_inputs().size() > 0)
+			{
+				//disable the "view result" button if there is no "seed" input. Nothing to "view".
+				view_result_button->setEnabled(true);
+			}
+			else
+			{
+				view_result_button->setEnabled(false);
+			}
 			//
 			// Create the dialogs in 'set_data()' since it's the only place we know what
 			// layer to associate with the dialogs.
@@ -165,7 +176,7 @@ namespace GPlatesQtWidgets
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 					d_result_dialog,
 					GPLATES_ASSERTION_SOURCE);
-
+			
 			d_result_dialog->pop_up();
 		}
 
@@ -181,7 +192,9 @@ namespace GPlatesQtWidgets
 			d_viewport_window(viewport_window)
 			{
 				setupUi(this);
-
+				
+				view_result_button->setDisabled(true);
+				
 				QObject::connect(
 						co_registration_configuration_button,
 						SIGNAL(clicked()),
