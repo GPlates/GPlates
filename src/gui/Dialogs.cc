@@ -841,8 +841,6 @@ GPlatesGui::Dialogs::visual_layers_dialog()
 				&viewport_window(),
 				&viewport_window());
 
-		GPlatesQtWidgets::QtWidgetUtils::reposition_to_side_of_parent(dialog);
-
 		d_dialogs[dialog_type] = dialog;
 	}
 

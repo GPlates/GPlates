@@ -454,6 +454,13 @@ GPlatesQtWidgets::ViewportWindow::display()
 	// Then call functions that rely on the main window being visible.
 	//
 
+	// Re-position the visual layers dialog relative to the main window.
+	//
+	// We do this here because the visual layers dialog now gets created in the ViewportWindow
+	// constructor (so it can receive signals earlier) and hence parent (ViewportWindow) geometry
+	// queries are not valid (because ViewportWindow is not yet visible at that stage).
+	GPlatesQtWidgets::QtWidgetUtils::reposition_to_side_of_parent(&dialogs().visual_layers_dialog());
+
 	// Activate the default canvas tool which checks for visibility of the main view canvas.
 	// In particular this needs to be done after the globe canvas is visible otherwise the default
 	// canvas tool will not get activated.
