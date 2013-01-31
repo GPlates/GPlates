@@ -140,9 +140,3 @@ GPlatesMaths::calculate_vector_components_magnitude_angle(
 
 	return std::make_pair(magnitude, angle);
 }
-
-
-
-
-
-

@@ -28,6 +28,8 @@
 #include "ExportFileOptionsWidget.h"
 #include "QtWidgetUtils.h"
 
+#include "global/GPlatesAssert.h"
+
 
 GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 		QWidget *parent_,
@@ -47,11 +49,35 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 			d_export_file_options_widget,
 			widget_file_options);
 
+	make_signal_slot_connections();
+
 	//
 	// Set the state of the export options widget according to the default export configuration passed to us.
 	//
 
-	make_signal_slot_connections();
+	// Only the GMT file format is interested in the velocity vector output format.
+	if (d_export_configuration.file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GMT)
+	{
+		if (d_export_configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D)
+		{
+			velocity_vector_3D_radio_button->setChecked(true);
+		}
+		else if (d_export_configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON)
+		{
+			velocity_vector_colat_lon_radio_button->setChecked(true);
+		}
+		else
+		{
+			velocity_vector_magnitude_angle_radio_button->setChecked(true);
+		}
+	}
+	else
+	{
+		velocity_vector_format_group_box->hide();
+	}
+
+	// Write a description depending on the file format and velocity vector format.
+	update_output_description_label();
 }
 
 
@@ -73,4 +99,87 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::create_export_animation_strategy_
 void
 GPlatesQtWidgets::ExportVelocityOptionsWidget::make_signal_slot_connections()
 {
+	QObject::connect(
+			velocity_vector_3D_radio_button,
+			SIGNAL(toggled(bool)),
+			this,
+			SLOT(react_radio_button_toggled(bool)));
+	QObject::connect(
+			velocity_vector_colat_lon_radio_button,
+			SIGNAL(toggled(bool)),
+			this,
+			SLOT(react_radio_button_toggled(bool)));
+	QObject::connect(
+			velocity_vector_magnitude_angle_radio_button,
+			SIGNAL(toggled(bool)),
+			this,
+			SLOT(react_radio_button_toggled(bool)));
+}
+
+
+void
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_radio_button_toggled(
+		bool checked)
+{
+	// Determine the file format.
+	if (velocity_vector_3D_radio_button->isChecked())
+	{
+		d_export_configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D;
+	}
+	else if (velocity_vector_colat_lon_radio_button->isChecked())
+	{
+		d_export_configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON;
+	}
+	else
+	{
+		d_export_configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE;
+	}
+
+	update_output_description_label();
+}
+
+
+void
+GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
+{
+	// Write a description depending on the file format and velocity vector format.
+	switch (d_export_configuration.file_format)
+	{
+	case GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GPML:
+		output_description_label->setText(" Velocities will be exported in (Colatitude, Longitude) format.");
+		break;
+
+	case GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GMT:
+		switch (d_export_configuration.velocity_vector_format)
+		{
+		case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D:
+			output_description_label->setText(
+					" Velocities will be exported as:\n"
+					"   domain_point_lon  domain_point_lat  velocity_x  velocity_y  velocity_z  plate_id");
+			break;
+
+		case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON:
+			output_description_label->setText(
+					" Velocities will be exported as:\n"
+					"   domain_point_lon  domain_point_lat  velocity_colat  velocity_lon  plate_id");
+			break;
+
+		case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE:
+			output_description_label->setText(
+					" Velocities will be exported as:\n"
+					"   domain_point_lon  domain_point_lat  velocity_magnitude  velocity_angle  plate_id");
+			break;
+
+		default:
+			// Shouldn't get here.
+			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+			break;
+		}
+		break;
+
+	default:
+		// Shouldn't get here.
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		break;
+	}
 }

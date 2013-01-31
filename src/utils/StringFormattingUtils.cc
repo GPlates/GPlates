@@ -25,10 +25,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <sstream>
 #include <iomanip>
+#include <sstream>
 
 #include "StringFormattingUtils.h"
+
 #include "global/GPlatesAssert.h"
 
 

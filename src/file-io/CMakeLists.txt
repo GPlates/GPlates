@@ -73,6 +73,8 @@ set(srcs
     GMTFormatHeader.h
     GMTFormatMotionPathExport.cc
     GMTFormatMotionPathExport.h
+    GMTFormatMultiPointVectorFieldExport.cc
+    GMTFormatMultiPointVectorFieldExport.h
     GMTFormatReconstructedFeatureGeometryExport.cc
     GMTFormatReconstructedFeatureGeometryExport.h
     GMTFormatResolvedTopologicalGeometryExport.cc

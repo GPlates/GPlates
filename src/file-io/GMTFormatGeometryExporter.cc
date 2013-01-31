@@ -44,11 +44,11 @@ namespace
 	* Adapted from GMTFormatWriter to work on a QTextStream.
 	*/
 	void
-		print_gmt_coordinate_line(
-		QTextStream &stream,
-		const GPlatesMaths::Real &lat,
-		const GPlatesMaths::Real &lon,
-		bool reverse_coordinate_order)
+	print_gmt_coordinate_line(
+			QTextStream &stream,
+			const GPlatesMaths::Real &lat,
+			const GPlatesMaths::Real &lon,
+			bool reverse_coordinate_order)
 	{
 		/*
 		* A coordinate in the GMT xy format is written as decimal number that
@@ -86,8 +86,8 @@ namespace
 
 
 	void
-		print_gmt_feature_termination_line(
-		QTextStream &stream)
+	print_gmt_feature_termination_line(
+			QTextStream &stream)
 	{
 		// No newline is output since a GMT header may follow in which
 		// case it will use the same line.
@@ -96,10 +96,10 @@ namespace
 
 
 	void
-		print_gmt_coordinate_line(
-		QTextStream &stream,
-		const GPlatesMaths::PointOnSphere &pos,
-		bool reverse_coordinate_order)
+	print_gmt_coordinate_line(
+			QTextStream &stream,
+			const GPlatesMaths::PointOnSphere &pos,
+			bool reverse_coordinate_order)
 	{
 		GPlatesMaths::LatLonPoint llp =
 			GPlatesMaths::make_lat_lon_point(pos);

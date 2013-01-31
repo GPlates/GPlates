@@ -71,6 +71,10 @@ namespace GPlatesQtWidgets
 
 	private Q_SLOTS:
 
+		void
+		react_radio_button_toggled(
+				bool checked);
+
 	private:
 
 		explicit
@@ -81,6 +85,10 @@ namespace GPlatesQtWidgets
 
 		void
 		make_signal_slot_connections();
+
+		void
+		update_output_description_label();
+
 
 		GPlatesGui::ExportVelocityAnimationStrategy::Configuration d_export_configuration;
 

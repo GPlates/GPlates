@@ -34,6 +34,8 @@
 #include "ExportAnimationStrategy.h"
 #include "ExportOptionsUtils.h"
 
+#include "file-io/MultiPointVectorFieldExport.h"
+
 #include "model/FeatureCollectionHandle.h"
 
 #include "utils/non_null_intrusive_ptr.h"
@@ -88,10 +90,12 @@ namespace GPlatesGui
 			Configuration(
 					const QString& filename_template_,
 					FileFormat file_format_,
-					const ExportOptionsUtils::ExportFileOptions &file_options_) :
+					const ExportOptionsUtils::ExportFileOptions &file_options_,
+					GPlatesFileIO::MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format_) :
 				ConfigurationBase(filename_template_),
 				file_format(file_format_),
-				file_options(file_options_)
+				file_options(file_options_),
+				velocity_vector_format(velocity_vector_format_)
 			{  }
 
 			virtual
@@ -103,6 +107,7 @@ namespace GPlatesGui
 
 			FileFormat file_format;
 			ExportOptionsUtils::ExportFileOptions file_options;
+			GPlatesFileIO::MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format;
 		};
 
 		//! Typedef for a shared pointer to const @a Configuration.

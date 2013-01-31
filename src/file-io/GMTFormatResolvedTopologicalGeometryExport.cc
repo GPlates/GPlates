@@ -38,6 +38,8 @@
 
 #include "file-io/FileInfo.h"
 
+#include "utils/StringFormattingUtils.h"
+
 
 namespace GPlatesFileIO
 {
