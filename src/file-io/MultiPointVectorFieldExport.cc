@@ -48,98 +48,14 @@ namespace GPlatesFileIO
 			//! Typedef for a sequence of @a FeatureCollectionFeatureGroup objects.
 			typedef std::list< FeatureCollectionFeatureGroup<GPlatesAppLogic::MultiPointVectorField> >
 					grouped_features_seq_type;
-
-
-			void
-			export_velocity_vector_fields_as_single_file(
-					const QString &filename,
-					VelocityFormat export_format,
-					const multi_point_vector_field_seq_type &grouped_velocity_vector_fields_seq,
-					const GPlatesModel::Gpgim &gpgim,
-					GPlatesModel::ModelInterface &model,
-					const std::vector<const File::Reference *> &referenced_files,
-					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-					const double &reconstruction_time)
-			{
-				switch (export_format)
-				{
-				case GPML:
-					GpmlFormatMultiPointVectorFieldExport::export_velocity_vector_fields(
-						grouped_velocity_vector_fields_seq,
-						filename,
-						gpgim,
-						model,
-						referenced_files,
-						reconstruction_anchor_plate_id,
-						reconstruction_time);
-					break;
-
-#if 0
-				case GMT:
-					GMTFormatMultiPointVectorFieldExport::export_geometries(
-						grouped_velocity_vector_fields_seq,
-						filename,
-						referenced_files,
-						reconstruction_anchor_plate_id,
-						reconstruction_time);		
-					break;
-#endif
-
-				default:
-					throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
-						"Chosen export format is not currently supported.");
-				}
-			}
-
-			void
-			export_velocity_vector_fields_per_collection(
-					const QString &filename,
-					VelocityFormat export_format,
-					const multi_point_vector_field_seq_type &grouped_velocity_vector_fields_seq,
-					const GPlatesModel::Gpgim &gpgim,
-					GPlatesModel::ModelInterface &model,
-					const std::vector<const File::Reference *> &referenced_files,
-					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-					const double &reconstruction_time)
-			{
-				switch(export_format)
-				{
-				case GPML:
-					GpmlFormatMultiPointVectorFieldExport::export_velocity_vector_fields(
-						grouped_velocity_vector_fields_seq,
-						filename,
-						gpgim,
-						model,
-						referenced_files,
-						reconstruction_anchor_plate_id,
-						reconstruction_time);
-					break;
-
-#if 0
-				case GMT:
-					GMTFormatMultiPointVectorFieldExport::export_geometries(
-						grouped_velocity_vector_fields_seq,
-						filename,
-						referenced_files,
-						reconstruction_anchor_plate_id,
-						reconstruction_time);		
-					break;
-#endif
-
-				default:
-					throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
-						"Chosen export format is not currently supported.");
-				}
-			}
 		}
 	}
 }
 
 
 void
-GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields(
+GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gpml_format(
 		const QString &filename,
-		VelocityFormat export_format,
 		const std::vector<const GPlatesAppLogic::MultiPointVectorField *> &velocity_vector_field_seq,
 		const GPlatesModel::Gpgim &gpgim,
 		GPlatesModel::ModelInterface &model,
@@ -168,10 +84,9 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields(
 
 	if (export_single_output_file)
 	{
-		export_velocity_vector_fields_as_single_file(
-				filename,
-				export_format,
+		GpmlFormatMultiPointVectorFieldExport::export_velocity_vector_fields(
 				grouped_velocity_vector_field_seq,
+				filename,
 				gpgim,
 				model,
 				referenced_files,
@@ -201,10 +116,9 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields(
 			grouped_features_iter != grouped_features_end;
 			++grouped_features_iter, ++output_filename_iter)
 		{
-			export_velocity_vector_fields_per_collection(
-					*output_filename_iter,
-					export_format,
+			GpmlFormatMultiPointVectorFieldExport::export_velocity_vector_fields(
 					grouped_features_iter->feature_geometry_groups,
+					*output_filename_iter,
 					gpgim,
 					model,
 					referenced_files,

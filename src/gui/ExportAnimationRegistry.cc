@@ -51,6 +51,7 @@
 #include "qt-widgets/ExportResolvedTopologyOptionsWidget.h"
 #include "qt-widgets/ExportStageRotationOptionsWidget.h"
 #include "qt-widgets/ExportTotalRotationOptionsWidget.h"
+#include "qt-widgets/ExportVelocityOptionsWidget.h"
 
 namespace GPlatesGui
 {
@@ -325,8 +326,6 @@ GPlatesGui::register_default_export_animation_types(
 	// Export reconstructed geometries
 	//
 
-	// By default only export to multiple files (one output file per input file) as this
-	// is the most requested output.
 	const ExportOptionsUtils::ExportFileOptions default_reconstructed_geometry_file_export_options(
 			/*export_to_a_single_file_*/true,
 			/*export_to_multiple_files_*/true);
@@ -411,16 +410,44 @@ GPlatesGui::register_default_export_animation_types(
 	// Export velocities
 	//
 
+	// By default only export to multiple files (one output file per input file).
+	const ExportOptionsUtils::ExportFileOptions default_velocity_file_export_options(
+			/*export_to_a_single_file_*/false,
+			/*export_to_multiple_files_*/true);
+
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
 					ExportAnimationType::VELOCITIES,
 					ExportAnimationType::GPML),
 			ExportVelocityAnimationStrategy::const_configuration_ptr(
 					new ExportVelocityAnimationStrategy::Configuration(
-							"velocity_colat_lon_on_mesh_at_%0.2fMa")),
+							"velocity_%0.2fMa",
+							ExportVelocityAnimationStrategy::Configuration::GPML,
+							default_velocity_file_export_options)),
 			&create_animation_strategy<ExportVelocityAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					&create_export_options_widget<
+							GPlatesQtWidgets::ExportVelocityOptionsWidget,
+							ExportVelocityAnimationStrategy>,
+					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+// 	registry.register_exporter(
+// 			ExportAnimationType::get_export_id(
+// 					ExportAnimationType::VELOCITIES,
+// 					ExportAnimationType::GMT),
+// 			ExportVelocityAnimationStrategy::const_configuration_ptr(
+// 					new ExportVelocityAnimationStrategy::Configuration(
+// 							"velocity_%0.2fMa",
+// 							ExportVelocityAnimationStrategy::Configuration::GMT,
+// 							default_velocity_file_export_options)),
+// 			&create_animation_strategy<ExportVelocityAnimationStrategy>,
+// 			boost::bind(
+// 					&create_export_options_widget<
+// 							GPlatesQtWidgets::ExportVelocityOptionsWidget,
+// 							ExportVelocityAnimationStrategy>,
+// 					_1, _2),
+// 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	//
 	// Export resolved topologies (general)

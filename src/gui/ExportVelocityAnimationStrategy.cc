@@ -79,6 +79,7 @@ namespace
 		const Reconstruction &reconstruction = application_state.get_current_reconstruction();
 
 		// Get the velocity field calculator layer outputs.
+		// Note that an active layer does not necessarily mean a visible layer.
 		std::vector<GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::non_null_ptr_type> velocity_field_outputs;
 		if (!reconstruction.get_active_layer_outputs<GPlatesAppLogic::VelocityFieldCalculatorLayerProxy>(
 				velocity_field_outputs))
@@ -102,17 +103,6 @@ namespace
 		{
 			vector_field_seq.push_back(multi_point_velocity_field.get());
 		}
-
-#if 0  // Just for testing/demonstration.
-		vector_field_seq_type::const_iterator iter = vector_field_seq.begin();
-		vector_field_seq_type::const_iterator end = vector_field_seq.end();
-		for ( ; iter != end; ++iter) {
-			std::cerr << *iter << ", FeatureHandle at " << (*iter)->feature_handle_ptr()
-					<< ", feature type = "
-					<< (*iter)->feature_handle_ptr()->feature_type().build_aliased_name()
-					<< std::endl;
-		}
-#endif
 	}
 }
 
@@ -177,19 +167,28 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 	// Here's where we do the actual work of exporting the velocity vector fields.
 	try
 	{
-		GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields(
+		switch (d_configuration->file_format)
+		{
+		case Configuration::GPML:
+			GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gpml_format(
 				full_filename,
-				GPlatesFileIO::MultiPointVectorFieldExport::GPML,
 				velocity_vector_field_seq,
 				d_export_animation_context_ptr->view_state().get_application_state().get_gpgim(),
 				d_export_animation_context_ptr->view_state().get_application_state().get_model_interface(),
 				d_loaded_files,
 				d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
 				d_export_animation_context_ptr->view_time(),
-				false/*export_to_a_single_file*/,
-				true/*export_to_multiple_files*/,
-				false/*separate_output_directory_per_file*/);
+				d_configuration->file_options.export_to_a_single_file,
+				d_configuration->file_options.export_to_multiple_files,
+				d_configuration->file_options.separate_output_directory_per_file);
+			break;
 
+		case Configuration::GMT:
+		default:
+			// Shouldn't get here.
+			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+			break;
+		}
 	}
 	catch (std::exception &exc)
 	{

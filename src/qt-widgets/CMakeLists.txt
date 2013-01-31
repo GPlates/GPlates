@@ -213,6 +213,9 @@ set(srcs
     ExportStageRotationOnlyOptionsWidgetUi.ui
     ExportStageRotationOptionsWidget.h
     ExportTotalRotationOptionsWidget.h
+    ExportVelocityOptionsWidget.cc
+    ExportVelocityOptionsWidget.h
+    ExportVelocityOptionsWidgetUi.ui
     FeaturePropertiesDialog.cc
     FeaturePropertiesDialog.h
     FeaturePropertiesDialogUi.ui

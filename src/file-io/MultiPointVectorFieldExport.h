@@ -56,25 +56,10 @@ namespace GPlatesFileIO
 		//
 
 
-		//! Formats of files that can export multi-point vector fields containing *velocities*.
-		enum VelocityFormat
-		{
-			GPML,              //!< '.gpml' extension.
-
-			GMT,               //!< '.xy' extension.
-
-			CITCOMS_GLOBAL,    //!< Citcoms global velocity file - has no extension.
-
-			TERRA_TEXT         //!< Terra velocity text file - has no extension.
-		};
-
-
 		/**
-		 * Exports @a MultiPointVectorField objects containing *velocities*.
+		 * Exports @a MultiPointVectorField objects containing *velocities* to the GPML file format.
 		 *
-		 * @param export_format specifies which format to write.
-		 * @param export_single_output_file specifies whether to write all velocity vector fields
-		 *        to a single file.
+		 * @param export_single_output_file specifies whether to write all velocity vector fields to a single file.
 		 * @param export_per_input_file specifies whether to group velocity vector fields according
 		 *        to the input files their features came from and write to corresponding output files.
 		 * @param export_separate_output_directory_per_input_file
@@ -88,9 +73,8 @@ namespace GPlatesFileIO
 		 * @throws FileFormatNotSupportedException if file format not supported.
 		 */
 		void
-		export_velocity_vector_fields(
+		export_velocity_vector_fields_to_gpml_format(
 				const QString &filename,
-				VelocityFormat export_format,
 				const std::vector<const GPlatesAppLogic::MultiPointVectorField *> &velocity_vector_field_seq,
 				const GPlatesModel::Gpgim &gpgim,
 				GPlatesModel::ModelInterface &model,

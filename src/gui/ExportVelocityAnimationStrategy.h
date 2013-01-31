@@ -32,6 +32,7 @@
 #include <QString>
 
 #include "ExportAnimationStrategy.h"
+#include "ExportOptionsUtils.h"
 
 #include "model/FeatureCollectionHandle.h"
 
@@ -70,16 +71,27 @@ namespace GPlatesGui
 
 
 		/**
-		 * Configuration options..
+		 * Configuration options.
 		 */
 		class Configuration :
 				public ExportAnimationStrategy::ConfigurationBase
 		{
 		public:
+
+			enum FileFormat
+			{
+				GPML,
+				GMT
+			};
+
 			explicit
 			Configuration(
-					const QString& filename_template_) :
-				ConfigurationBase(filename_template_)
+					const QString& filename_template_,
+					FileFormat file_format_,
+					const ExportOptionsUtils::ExportFileOptions &file_options_) :
+				ConfigurationBase(filename_template_),
+				file_format(file_format_),
+				file_options(file_options_)
 			{  }
 
 			virtual
@@ -88,6 +100,9 @@ namespace GPlatesGui
 			{
 				return configuration_base_ptr(new Configuration(*this));
 			}
+
+			FileFormat file_format;
+			ExportOptionsUtils::ExportFileOptions file_options;
 		};
 
 		//! Typedef for a shared pointer to const @a Configuration.
