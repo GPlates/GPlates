@@ -110,8 +110,6 @@ namespace GPlatesFileIO
 						velocity_vector_field.begin();
 				for ( ; domain_iter != domain_end; ++domain_iter, ++codomain_iter)
 				{
-					const GPlatesMaths::PointOnSphere &domain_point = *domain_iter;
-
 					// If the current codomain is invalid/null then default to zero velocity.
 					GPlatesMaths::Vector3D velocity_vector(0, 0, 0);
 

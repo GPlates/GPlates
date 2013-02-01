@@ -330,7 +330,8 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_ter
 
 		// Note that the Terra export velocity *filename* expects four digits for the local processor number.
 		QString np_string_four_digits;
-		QTextStream(&np_string_four_digits) << qSetFieldWidth(4) << qSetPadChar('0') << np;
+		QTextStream np_string_four_digits_stream(&np_string_four_digits);
+		np_string_four_digits_stream << qSetFieldWidth(4) << qSetPadChar('0') << np;
 
 		// Form the current export file name from the template by replacing the processor
 		// placeholder with the current processor number.
