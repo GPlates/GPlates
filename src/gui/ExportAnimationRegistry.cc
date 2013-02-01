@@ -428,9 +428,12 @@ GPlatesGui::register_default_export_animation_types(
 							GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON)),
 			&create_animation_strategy<ExportVelocityAnimationStrategy>,
 			boost::bind(
-					&create_export_options_widget<
-							GPlatesQtWidgets::ExportVelocityOptionsWidget,
-							ExportVelocityAnimationStrategy>,
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportVelocityOptionsWidget,
+									ExportVelocityAnimationStrategy>),
 					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
@@ -446,11 +449,37 @@ GPlatesGui::register_default_export_animation_types(
 							GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D)),
 			&create_animation_strategy<ExportVelocityAnimationStrategy>,
 			boost::bind(
-					&create_export_options_widget<
-							GPlatesQtWidgets::ExportVelocityOptionsWidget,
-							ExportVelocityAnimationStrategy>,
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportVelocityOptionsWidget,
+									ExportVelocityAnimationStrategy>),
 					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+
+// 	registry.register_exporter(
+// 			ExportAnimationType::get_export_id(
+// 					ExportAnimationType::VELOCITIES,
+// 					ExportAnimationType::TERRA_TEXT),
+// 			ExportVelocityAnimationStrategy::const_configuration_ptr(
+// 					new ExportVelocityAnimationStrategy::Configuration(
+// 							// An example Terra filename is "gpt.0025.100" which must have
+// 							// 3 digits for the reconstruction time (which must be an integer)...
+// 							"gpt.%P.%03d",
+// 							ExportVelocityAnimationStrategy::Configuration::TERRA_TEXT,
+// 							default_velocity_file_export_options,
+// 							GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D)),
+// 			&create_animation_strategy<ExportVelocityAnimationStrategy>,
+// 			boost::bind(
+// 					// 'static_cast' is because some compilers have trouble determining
+// 					// which overload of 'create_export_options_widget()' to use...
+// 					static_cast<create_export_options_widget_function_pointer_type>(
+// 							&create_export_options_widget<
+// 									GPlatesQtWidgets::ExportVelocityOptionsWidget,
+// 									ExportVelocityAnimationStrategy>),
+// 					_1, _2),
+// 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 
 	//
 	// Export resolved topologies (general)
