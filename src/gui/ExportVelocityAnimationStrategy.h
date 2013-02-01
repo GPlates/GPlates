@@ -28,7 +28,6 @@
 
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
-
 #include <QString>
 
 #include "ExportAnimationStrategy.h"
@@ -87,16 +86,28 @@ namespace GPlatesGui
 				TERRA_TEXT
 			};
 
+			//
+			// Used to pattern match parameters contained in Terra velocity domain file names.
+			//
+			static const QString TERRA_MT_PLACE_HOLDER; // Terra 'mt' parameter.
+			static const QString TERRA_NT_PLACE_HOLDER; // Terra 'nt' parameter.
+			static const QString TERRA_ND_PLACE_HOLDER; // Terra 'nd' parameter.
+			static const QString TERRA_PROCESSOR_PLACE_HOLDER; // Terra local processor number.
+
+
 			explicit
 			Configuration(
 					const QString& filename_template_,
 					FileFormat file_format_,
 					const ExportOptionsUtils::ExportFileOptions &file_options_,
-					GPlatesFileIO::MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format_) :
+					GPlatesFileIO::MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format_,
+					// Only used for TERRA_TEXT format...
+					const QString &terra_grid_filename_template_ = QString()) :
 				ConfigurationBase(filename_template_),
 				file_format(file_format_),
 				file_options(file_options_),
-				velocity_vector_format(velocity_vector_format_)
+				velocity_vector_format(velocity_vector_format_),
+				terra_grid_filename_template(terra_grid_filename_template_)
 			{  }
 
 			virtual
@@ -109,6 +120,7 @@ namespace GPlatesGui
 			FileFormat file_format;
 			ExportOptionsUtils::ExportFileOptions file_options;
 			GPlatesFileIO::MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format;
+			QString terra_grid_filename_template; // Only used for the TERRA_TEXT format.
 		};
 
 		//! Typedef for a shared pointer to const @a Configuration.

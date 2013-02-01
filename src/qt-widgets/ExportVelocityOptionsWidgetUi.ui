@@ -94,9 +94,7 @@
       <item>
        <widget class="QLabel" name="terra_grid_filename_template_description_label">
         <property name="text">
-         <string>This identifies the local processor number for each exported Terra velocity file.
-Use %P to locate the processor number in the Terra grid file name.
-Note that the matching Terra grid files must already be loaded.</string>
+         <string/>
         </property>
        </widget>
       </item>

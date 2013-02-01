@@ -50,6 +50,7 @@
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/VelocityFieldCalculatorLayerProxy.h"
 
+#include "file-io/ExportTemplateFilenameSequence.h"
 #include "file-io/File.h"
 #include "file-io/MultiPointVectorFieldExport.h"
 
@@ -105,6 +106,12 @@ namespace
 		}
 	}
 }
+
+
+const QString GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_MT_PLACE_HOLDER = "%MT";
+const QString GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_NT_PLACE_HOLDER = "%NT";
+const QString GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_ND_PLACE_HOLDER = "%ND";
+const QString GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_PROCESSOR_PLACE_HOLDER = "%NP";
 
 
 GPlatesGui::ExportVelocityAnimationStrategy::ExportVelocityAnimationStrategy(
@@ -198,8 +205,16 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 
 		case Configuration::TERRA_TEXT:
 			GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_terra_text_format(
+				d_configuration->terra_grid_filename_template,
 				full_filename,
-				velocity_vector_field_seq);
+				Configuration::TERRA_MT_PLACE_HOLDER,
+				Configuration::TERRA_NT_PLACE_HOLDER,
+				Configuration::TERRA_ND_PLACE_HOLDER,
+				Configuration::TERRA_PROCESSOR_PLACE_HOLDER,
+				GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+				velocity_vector_field_seq,
+				d_loaded_files,
+				static_cast<int>(d_export_animation_context_ptr->view_time()));
 			break;
 
 		default:

@@ -76,7 +76,7 @@ namespace GPlatesQtWidgets
 				bool checked);
 
 		void
-		set_terra_grid_filename_template();
+		handle_terra_grid_filename_template_changed();
 
 	private:
 

@@ -203,6 +203,8 @@ set(srcs
     SymbolFileReader.h
     TemporaryFileRegistry.cc
     TemporaryFileRegistry.h
+    TerraFormatVelocityVectorFieldExport.cc
+    TerraFormatVelocityVectorFieldExport.h
     XmlOutputInterface.cc
     XmlOutputInterface.h
     XmlWriter.cc

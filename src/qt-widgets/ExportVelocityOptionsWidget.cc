@@ -23,10 +23,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QMessageBox>
+
 #include "ExportVelocityOptionsWidget.h"
 
 #include "ExportFileOptionsWidget.h"
 #include "QtWidgetUtils.h"
+
+#include "file-io/ExportTemplateFilenameSequence.h"
+#include "file-io/MultiPointVectorFieldExport.h"
 
 #include "global/GPlatesAssert.h"
 
@@ -54,6 +59,7 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 				widget_file_options);
 	}
 
+	// Make signal/slot connections *before* we set values on the GUI controls.
 	make_signal_slot_connections();
 
 	//
@@ -84,7 +90,19 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 	// Only Terra text format has a Terra grid filename template option.
 	if (d_export_configuration.file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_TEXT)
 	{
-		terra_grid_filename_template_line_edit->setText("TerraMesh.32.16.5.%P");
+		// The default filename template.
+		terra_grid_filename_template_line_edit->setText(d_export_configuration.terra_grid_filename_template);
+
+		// Set the template description label text.
+		terra_grid_filename_template_description_label->setText(
+				tr("This identifies input Terra grid parameters required for each exported velocity file.\n"
+					"Use '%1' to locate the local processor number in the Terra grid file name.\n"
+					"Use '%2', '%3' and '%4' to locate the Terra parameters 'mt', 'nt' and 'nd'.\n"
+					"Velocities are only exported if matching Terra grid files are already loaded.")
+						.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_PROCESSOR_PLACE_HOLDER)
+						.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_MT_PLACE_HOLDER)
+						.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_NT_PLACE_HOLDER)
+						.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_ND_PLACE_HOLDER));
 	}
 	else
 	{
@@ -137,7 +155,7 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::make_signal_slot_connections()
 			terra_grid_filename_template_line_edit,
 			SIGNAL(editingFinished()),
 			this,
-			SLOT(set_terra_grid_filename_template()));
+			SLOT(handle_terra_grid_filename_template_changed()));
 }
 
 
@@ -164,9 +182,54 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::react_radio_button_toggled(
 
 
 void
-GPlatesQtWidgets::ExportVelocityOptionsWidget::set_terra_grid_filename_template()
+GPlatesQtWidgets::ExportVelocityOptionsWidget::handle_terra_grid_filename_template_changed()
 {
-	const QString terra_grid_filename_template = terra_grid_filename_template_line_edit->text();
+	const QString text = terra_grid_filename_template_line_edit->text();
+
+	// Find occurrence of each Terra parameter in file name template.
+	const int mt_pos = text.indexOf(
+			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_MT_PLACE_HOLDER);
+	const int nt_pos = text.indexOf(
+			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_NT_PLACE_HOLDER);
+	const int nd_pos = text.indexOf(
+			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_ND_PLACE_HOLDER);
+	const int np_pos = text.indexOf(
+			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_PROCESSOR_PLACE_HOLDER);
+
+	// Must have one, and only one, occurrence of each Terra parameter placeholders.
+	if (text.isEmpty() ||
+		mt_pos < 0 ||
+		nt_pos < 0 ||
+		nd_pos < 0 ||
+		np_pos < 0 ||
+		text.indexOf(
+			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_MT_PLACE_HOLDER,
+			mt_pos+1) >= 0 ||
+		text.indexOf(
+			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_NT_PLACE_HOLDER,
+			nt_pos+1) >= 0 ||
+		text.indexOf(
+			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_ND_PLACE_HOLDER,
+			nd_pos+1) >= 0 ||
+		text.indexOf(
+			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_PROCESSOR_PLACE_HOLDER,
+			np_pos+1) >= 0)
+	{
+		QMessageBox::warning(
+				this,
+				tr("Invalid Terra grid file name template"),
+				tr("The Terra grid file name template must contain one, and only one, occurrence of each of "
+					"'%1', '%2', '%3' and '%4'.")
+					.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_MT_PLACE_HOLDER)
+					.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_NT_PLACE_HOLDER)
+					.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_ND_PLACE_HOLDER)
+					.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_PROCESSOR_PLACE_HOLDER),
+				QMessageBox::Ok, QMessageBox::Ok);
+		terra_grid_filename_template_line_edit->setText(d_export_configuration.terra_grid_filename_template);
+		return;
+	}
+
+	d_export_configuration.terra_grid_filename_template = text;
 }
 
 
@@ -210,10 +273,11 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 
 	case GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_TEXT:
 		output_description_label->setText(
-				"Velocities will be exported to Terra text format.\n"
-				"The header lines, beginning with '>', contain Terra grid parameters and age.\n"
-				"Then each velocity line contains:\n"
-				"  velocity_x  velocity_y  velocity_z");
+				tr("'%1' will be replaced by the local processor number in each exported velocity file name.\n"
+					"The header lines, beginning with '>', contain Terra grid parameters and age.\n"
+					"Then each velocity line contains:\n"
+					"  velocity_x  velocity_y  velocity_z")
+					.arg(GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING));
 		break;
 
 	default:

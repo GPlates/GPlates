@@ -154,8 +154,8 @@ namespace GPlatesGui
 				export_format_description_map[TIFF]            =QObject::tr("Tagged Image File Format (*.tiff)");
 				export_format_description_map[XBM]             =QObject::tr("X11 Bitmap (*.xbm)");
 				export_format_description_map[XPM]             =QObject::tr("X11 Pixmap (*.xpm)");
-				export_format_description_map[CITCOMS_GLOBAL]  =QObject::tr("CitcomS global velocity (*)");
-				export_format_description_map[TERRA_TEXT]      =QObject::tr("Terra velocity text format (*)");
+				export_format_description_map[CITCOMS_GLOBAL]  =QObject::tr("CitcomS global (*)");
+				export_format_description_map[TERRA_TEXT]      =QObject::tr("Terra text format (*)");
 
 				return export_format_description_map;
 			}

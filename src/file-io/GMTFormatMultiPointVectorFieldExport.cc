@@ -330,7 +330,7 @@ GPlatesFileIO::GMTFormatMultiPointVectorFieldExport::export_velocity_vector_fiel
 		std::vector<QString> header_lines;
 		gmt_header.get_feature_header_lines(feature_ref, header_lines);
 
-		// Iterate through the resolved geometries of the current feature and write to output.
+		// Iterate through the vector fields of the current feature and write to output.
 		multi_point_vector_field_seq_type::const_iterator mpvf_iter;
 		for (mpvf_iter = feature_vector_field_group.recon_geoms.begin();
 			mpvf_iter != feature_vector_field_group.recon_geoms.end();
@@ -341,7 +341,7 @@ GPlatesFileIO::GMTFormatMultiPointVectorFieldExport::export_velocity_vector_fiel
 			// Print the header lines.
 			gmt_header_printer.print_feature_header_lines(output_stream, header_lines);
 
-			// Write the velocity vector field and optionally its domain positions and plate ids.
+			// Write the velocity vector field and its domain positions and plate ids.
 			print_gmt_velocity_vector_field(output_stream, *mpvf, velocity_vector_format);
 
 			// Write the final terminating symbol for the current feature.

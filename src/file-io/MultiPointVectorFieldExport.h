@@ -59,6 +59,8 @@ namespace GPlatesFileIO
 
 		/**
 		 * How to write out each velocity vector.
+		 *
+		 * Note that this is not used by all velocity formats.
 		 */
 		enum VelocityVectorFormatType
 		{
@@ -135,20 +137,51 @@ namespace GPlatesFileIO
 				bool export_separate_output_directory_per_input_file);
 
 
-
-
 		/**
 		 * Exports @a MultiPointVectorField objects containing *velocities* to the Terra text file format.
 		 *
+		 * NOTE: Only velocity vector fields associated with velocity domain (grid) files whose
+		 * file names match the template @a velocity_domain_file_name_template are exported.
+		 *
+		 * For example, a *domain* template of "TerraMesh.%MT.%NT.%ND.%NP" will match a velocity field whose
+		 * domain came from a file called "TerraMesh.32.16.5.1" where '1' is the Terra local processor number.
+		 *
+		 * The velocity *domain* template parameters are:
+		 *   @a velocity_domain_mt_place_holder - used to match Terra 'mt' parameter,
+		 *   @a velocity_domain_nt_place_holder - used to match Terra 'nt' parameter,
+		 *   @a velocity_domain_nd_place_holder - used to match Terra 'nd' parameter,
+		 *   @a velocity_domain_processor_place_holder - used to match the Terra local processor number.
+		 * And there must be one, and only one, occurrence of each of these parameter placeholders
+		 * in the *domain* file name template @a velocity_domain_file_name_template.
+		 *
+		 * For each matching velocity *domain* file, a velocity export file is created using the file name
+		 * template @a velocity_export_file_name_template where the local processor number, obtained
+		 * from matching @a velocity_domain_processor_place_holder, is used in the exported filename
+		 * by replacing @a velocity_export_processor_place_holder with that local processor number.
+		 * For example, the *domain* file name "TerraMesh.32.16.5.1" is converted to the *export*
+		 * file name "gpt.0001.025" when the domain template is "TerraMesh.%MT.%NT.%ND.%NP" and the
+		 * export template is "gpt.%P.025" - note that 4 digits are always used for the
+		 * processor number in the *export* file name.
+		 *
 		 * Each velocity line in the Terra text file, after the header lines, contains:
 		 *    velocity_x velocity_y velocity_z
+		 *
+		 * @a age is the reconstruction time rounded to an integer.
 		 *
 		 * @throws ErrorOpeningFileForWritingException if file is not writable.
 		 */
 		void
 		export_velocity_vector_fields_to_terra_text_format(
-				const QString &filename,
-				const std::vector<const GPlatesAppLogic::MultiPointVectorField *> &velocity_vector_field_seq);
+				const QString &velocity_domain_file_name_template,
+				const QString &velocity_export_file_name_template,
+				const QString &velocity_domain_mt_place_holder,
+				const QString &velocity_domain_nt_place_holder,
+				const QString &velocity_domain_nd_place_holder,
+				const QString &velocity_domain_processor_place_holder,
+				const QString &velocity_export_processor_place_holder,
+				const std::vector<const GPlatesAppLogic::MultiPointVectorField *> &velocity_vector_field_seq,
+				const std::vector<const File::Reference *> &active_files,
+				int age);
 	}
 }
 

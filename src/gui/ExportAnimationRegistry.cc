@@ -25,6 +25,7 @@
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
+#include <QString>
 
 #include "ExportAnimationRegistry.h"
 
@@ -40,6 +41,8 @@
 #include "ExportSvgAnimationStrategy.h"
 #include "ExportTotalRotationAnimationStrategy.h"
 #include "ExportVelocityAnimationStrategy.h"
+
+#include "file-io/MultiPointVectorFieldExport.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -458,28 +461,37 @@ GPlatesGui::register_default_export_animation_types(
 					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
-// 	registry.register_exporter(
-// 			ExportAnimationType::get_export_id(
-// 					ExportAnimationType::VELOCITIES,
-// 					ExportAnimationType::TERRA_TEXT),
-// 			ExportVelocityAnimationStrategy::const_configuration_ptr(
-// 					new ExportVelocityAnimationStrategy::Configuration(
-// 							// An example Terra filename is "gpt.0025.100" which must have
-// 							// 3 digits for the reconstruction time (which must be an integer)...
-// 							"gpt.%P.%03d",
-// 							ExportVelocityAnimationStrategy::Configuration::TERRA_TEXT,
-// 							default_velocity_file_export_options,
-// 							GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D)),
-// 			&create_animation_strategy<ExportVelocityAnimationStrategy>,
-// 			boost::bind(
-// 					// 'static_cast' is because some compilers have trouble determining
-// 					// which overload of 'create_export_options_widget()' to use...
-// 					static_cast<create_export_options_widget_function_pointer_type>(
-// 							&create_export_options_widget<
-// 									GPlatesQtWidgets::ExportVelocityOptionsWidget,
-// 									ExportVelocityAnimationStrategy>),
-// 					_1, _2),
-// 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
+	// Default Terra grid filename template to match, for example, "TerraMesh.32.16.5.1".
+	const QString default_terra_grid_filename_template =
+			QString("TerraMesh.") +
+				ExportVelocityAnimationStrategy::Configuration::TERRA_MT_PLACE_HOLDER + "." +
+				ExportVelocityAnimationStrategy::Configuration::TERRA_NT_PLACE_HOLDER + "." +
+				ExportVelocityAnimationStrategy::Configuration::TERRA_ND_PLACE_HOLDER + "." +
+				ExportVelocityAnimationStrategy::Configuration::TERRA_PROCESSOR_PLACE_HOLDER;
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::VELOCITIES,
+					ExportAnimationType::TERRA_TEXT),
+			ExportVelocityAnimationStrategy::const_configuration_ptr(
+					new ExportVelocityAnimationStrategy::Configuration(
+							// An example Terra filename is "gpt.0025.100" which must have
+							// 3 digits for the reconstruction time (which must be an integer)...
+							"gpt.%P.%03d",
+							ExportVelocityAnimationStrategy::Configuration::TERRA_TEXT,
+							default_velocity_file_export_options,
+							GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D,
+							default_terra_grid_filename_template)),
+			&create_animation_strategy<ExportVelocityAnimationStrategy>,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportVelocityOptionsWidget,
+									ExportVelocityAnimationStrategy>),
+					_1, _2),
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 
 	//
 	// Export resolved topologies (general)
