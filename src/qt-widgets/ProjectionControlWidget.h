@@ -84,7 +84,7 @@ namespace GPlatesQtWidgets
 		add_projection(
 				const QString &projection_text,
 				GPlatesGui::MapProjection::Type projection_type,
-				const QKeySequence &shortcut_key_sequence);
+				const QString &shortcut_key_sequence);
 
 	};
 }

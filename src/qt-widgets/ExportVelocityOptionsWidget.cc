@@ -41,13 +41,18 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 	setupUi(this);
 
 	// Delegate to the export file options widget to collect the file options.
-	d_export_file_options_widget =
-			ExportFileOptionsWidget::create(
-					parent_,
-					default_export_configuration->file_options);
-	QtWidgetUtils::add_widget_to_placeholder(
-			d_export_file_options_widget,
-			widget_file_options);
+	// Note that not all formats support this.
+	if (d_export_configuration.file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GPML ||
+		d_export_configuration.file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GMT)
+	{
+		d_export_file_options_widget =
+				ExportFileOptionsWidget::create(
+						parent_,
+						default_export_configuration->file_options);
+		QtWidgetUtils::add_widget_to_placeholder(
+				d_export_file_options_widget,
+				widget_file_options);
+	}
 
 	make_signal_slot_connections();
 
@@ -76,6 +81,16 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 		velocity_vector_format_group_box->hide();
 	}
 
+	// Only Terra text format has a Terra grid filename template option.
+	if (d_export_configuration.file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_TEXT)
+	{
+		terra_grid_filename_template_line_edit->setText("TerraMesh.32.16.5.%P");
+	}
+	else
+	{
+		terra_grid_filename_template_group_box->hide();
+	}
+
 	// Write a description depending on the file format and velocity vector format.
 	update_output_description_label();
 }
@@ -85,8 +100,11 @@ GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr
 GPlatesQtWidgets::ExportVelocityOptionsWidget::create_export_animation_strategy_configuration(
 		const QString &filename_template)
 {
-	// Get the export file options from the export file options widget.
-	d_export_configuration.file_options = d_export_file_options_widget->get_export_file_options();
+	// Get the export file options from the export file options widget, if any.
+	if (d_export_file_options_widget)
+	{
+		d_export_configuration.file_options = d_export_file_options_widget->get_export_file_options();
+	}
 
 	d_export_configuration.set_filename_template(filename_template);
 
@@ -114,6 +132,12 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::make_signal_slot_connections()
 			SIGNAL(toggled(bool)),
 			this,
 			SLOT(react_radio_button_toggled(bool)));
+
+	QObject::connect(
+			terra_grid_filename_template_line_edit,
+			SIGNAL(editingFinished()),
+			this,
+			SLOT(set_terra_grid_filename_template()));
 }
 
 
@@ -140,13 +164,20 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::react_radio_button_toggled(
 
 
 void
+GPlatesQtWidgets::ExportVelocityOptionsWidget::set_terra_grid_filename_template()
+{
+	const QString terra_grid_filename_template = terra_grid_filename_template_line_edit->text();
+}
+
+
+void
 GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 {
 	// Write a description depending on the file format and velocity vector format.
 	switch (d_export_configuration.file_format)
 	{
 	case GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GPML:
-		output_description_label->setText(" Velocities will be exported in (Colatitude, Longitude) format.");
+		output_description_label->setText("Velocities will be exported in (Colatitude, Longitude) format.");
 		break;
 
 	case GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GMT:
@@ -154,20 +185,20 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 		{
 		case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D:
 			output_description_label->setText(
-					" Velocities will be exported as:\n"
-					"   domain_point_lon  domain_point_lat  velocity_x  velocity_y  velocity_z  plate_id");
+					"Velocities will be exported as:\n"
+					"  domain_point_lon  domain_point_lat  velocity_x  velocity_y  velocity_z  plate_id");
 			break;
 
 		case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON:
 			output_description_label->setText(
-					" Velocities will be exported as:\n"
-					"   domain_point_lon  domain_point_lat  velocity_colat  velocity_lon  plate_id");
+					"Velocities will be exported as:\n"
+					"  domain_point_lon  domain_point_lat  velocity_colat  velocity_lon  plate_id");
 			break;
 
 		case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE:
 			output_description_label->setText(
-					" Velocities will be exported as:\n"
-					"   domain_point_lon  domain_point_lat  velocity_magnitude  velocity_angle  plate_id");
+					"Velocities will be exported as:\n"
+					"  domain_point_lon  domain_point_lat  velocity_magnitude  velocity_angle  plate_id");
 			break;
 
 		default:
@@ -175,6 +206,14 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 			break;
 		}
+		break;
+
+	case GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_TEXT:
+		output_description_label->setText(
+				"Velocities will be exported to Terra text format.\n"
+				"The header lines, beginning with '>', contain Terra grid parameters and age.\n"
+				"Then each velocity line contains:\n"
+				"  velocity_x  velocity_y  velocity_z");
 		break;
 
 	default:

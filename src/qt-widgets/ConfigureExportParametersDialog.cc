@@ -337,8 +337,18 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_format_selection
 	lineEdit_filename->setText(
 			export_animation_registry.get_default_filename_template(selected_export_id));
 
-	label_file_extension->setText(
-			QString(".") + GPlatesGui::ExportAnimationType::get_export_format_filename_extension(selected_export_format));
+	// Set the export format filename extension.
+	const QString export_format_filename_extension =
+			GPlatesGui::ExportAnimationType::get_export_format_filename_extension(selected_export_format);
+	if (export_format_filename_extension.isEmpty())
+	{
+		// File format has not filename extension.
+		label_file_extension->setText(QString(""));
+	}
+	else
+	{
+		label_file_extension->setText(QString(".") + export_format_filename_extension);
+	}
 
 	//
 	// Display any export options for the selected format (if there are any).

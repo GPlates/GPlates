@@ -83,7 +83,8 @@ namespace GPlatesGui
 			enum FileFormat
 			{
 				GPML,
-				GMT
+				GMT,
+				TERRA_TEXT
 			};
 
 			explicit

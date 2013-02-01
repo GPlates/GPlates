@@ -201,3 +201,11 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gmt
 		}
 	}
 }
+
+
+void
+GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_terra_text_format(
+		const QString &filename,
+		const std::vector<const GPlatesAppLogic::MultiPointVectorField *> &velocity_vector_field_seq)
+{
+}

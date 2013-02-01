@@ -65,10 +65,14 @@ void
 GPlatesQtWidgets::ProjectionControlWidget::add_projection(
 		const QString &projection_text,
 		GPlatesGui::MapProjection::Type projection_type,
-		const QKeySequence &shortcut_key_sequence)
+		const QString &shortcut_key_sequence)
 {
 	// Add to the combo box.
 	combo_projections->addItem(projection_text, projection_type);
+
+	// Set the tooltip text for the current item.
+	const QString combobox_item_tooltip_text = projection_text + " (" + shortcut_key_sequence + ")";
+	combo_projections->setItemData(combo_projections->count() - 1, combobox_item_tooltip_text, Qt::ToolTipRole);
 
 	// Create a QAction purely so we have a global shortcut.
 	// The QAction.

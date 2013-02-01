@@ -75,6 +75,9 @@ namespace GPlatesQtWidgets
 		react_radio_button_toggled(
 				bool checked);
 
+		void
+		set_terra_grid_filename_template();
+
 	private:
 
 		explicit

@@ -84,7 +84,6 @@ namespace GPlatesFileIO
 		 * in which case both a single output file is exported as well as grouped output files.
 		 *
 		 * @throws ErrorOpeningFileForWritingException if file is not writable.
-		 * @throws FileFormatNotSupportedException if file format not supported.
 		 */
 		void
 		export_velocity_vector_fields_to_gpml_format(
@@ -122,7 +121,6 @@ namespace GPlatesFileIO
 		 * in which case both a single output file is exported as well as grouped output files.
 		 *
 		 * @throws ErrorOpeningFileForWritingException if file is not writable.
-		 * @throws FileFormatNotSupportedException if file format not supported.
 		 */
 		void
 		export_velocity_vector_fields_to_gmt_format(
@@ -135,6 +133,22 @@ namespace GPlatesFileIO
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file);
+
+
+
+
+		/**
+		 * Exports @a MultiPointVectorField objects containing *velocities* to the Terra text file format.
+		 *
+		 * Each velocity line in the Terra text file, after the header lines, contains:
+		 *    velocity_x velocity_y velocity_z
+		 *
+		 * @throws ErrorOpeningFileForWritingException if file is not writable.
+		 */
+		void
+		export_velocity_vector_fields_to_terra_text_format(
+				const QString &filename,
+				const std::vector<const GPlatesAppLogic::MultiPointVectorField *> &velocity_vector_field_seq);
 	}
 }
 

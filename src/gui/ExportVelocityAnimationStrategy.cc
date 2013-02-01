@@ -196,6 +196,12 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 				d_configuration->file_options.separate_output_directory_per_file);
 			break;
 
+		case Configuration::TERRA_TEXT:
+			GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_terra_text_format(
+				full_filename,
+				velocity_vector_field_seq);
+			break;
+
 		default:
 			// Shouldn't get here.
 			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
