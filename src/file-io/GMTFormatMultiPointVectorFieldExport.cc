@@ -142,6 +142,19 @@ namespace GPlatesFileIO
 				gmt_line << "  " << domain_point_lon_str << "      " << domain_point_lat_str;
 
 				//
+				// Output plate id.
+				//
+
+				// Use a minimum width of 5 since 5-digit plate ids are currently in use.
+				static const unsigned PLATE_ID_FIELDWIDTH = 5;
+
+				const std::string plate_id_str = GPlatesUtils::formatted_int_to_string(
+						plate_id,
+						PLATE_ID_FIELDWIDTH);
+
+				gmt_line << "      " << plate_id_str;
+
+				//
 				// Output velocity.
 				//
 
@@ -211,19 +224,6 @@ namespace GPlatesFileIO
 					GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 					break;
 				}
-
-				//
-				// Output plate id.
-				//
-
-				// Use a minimum width of 5 since 5-digit plate ids are currently in use.
-				static const unsigned PLATE_ID_FIELDWIDTH = 5;
-
-				const std::string plate_id_str = GPlatesUtils::formatted_int_to_string(
-						plate_id,
-						PLATE_ID_FIELDWIDTH);
-
-				gmt_line << "      " << plate_id_str;
 
 				// Output the final line.
 				const std::string gmt_line_string = gmt_line.str();

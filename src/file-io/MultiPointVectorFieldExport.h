@@ -107,7 +107,7 @@ namespace GPlatesFileIO
 		 * Note that GMT format provides a choice of how to output each velocity vector.
 		 *
 		 * Each line in the GMT file contains:
-		 *    domain_point velocity plate_id
+		 *    domain_point plate_id velocity
 		 * ...where 'domain_point' is position at which the velocity was calculated and 'plate_id'
 		 * is the plate id used to calculate the velocity (for topological networks the plate id
 		 * only identifies the network used to calculate the velocity).

@@ -249,19 +249,19 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 		case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D:
 			output_description_label->setText(
 					"Velocities will be exported as:\n"
-					"  domain_point_lon  domain_point_lat  velocity_x  velocity_y  velocity_z  plate_id");
+					"  domain_point_lon  domain_point_lat  plate_id  velocity_x  velocity_y  velocity_z");
 			break;
 
 		case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON:
 			output_description_label->setText(
 					"Velocities will be exported as:\n"
-					"  domain_point_lon  domain_point_lat  velocity_colat  velocity_lon  plate_id");
+					"  domain_point_lon  domain_point_lat  plate_id  velocity_colat  velocity_lon");
 			break;
 
 		case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE:
 			output_description_label->setText(
 					"Velocities will be exported as:\n"
-					"  domain_point_lon  domain_point_lat  velocity_magnitude  velocity_angle  plate_id");
+					"  domain_point_lon  domain_point_lat  plate_id  velocity_magnitude  velocity_angle");
 			break;
 
 		default:
