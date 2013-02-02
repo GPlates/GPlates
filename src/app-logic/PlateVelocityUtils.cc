@@ -862,16 +862,17 @@ boost::optional<GPlatesMaths::VectorColatitudeLongitude>
 GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworkVelocities::interpolate_velocity(
 		const GPlatesMaths::PointOnSphere &point)
 {
-	const boost::optional< std::vector<double> > interpolated_velocity =
-			TopologyUtils::interpolate_resolved_topology_network(
-					d_network_velocities_query, point);
+	const boost::optional< std::pair<const ResolvedTopologicalNetwork *, std::vector<double> > >
+			interpolated_velocity =
+					TopologyUtils::interpolate_resolved_topology_network(
+							d_network_velocities_query, point);
 
 	if (!interpolated_velocity)
 	{
 		return boost::none;
 	}
 
-	return convert_velocity_scalars_to_colatitude_longitude(*interpolated_velocity);
+	return convert_velocity_scalars_to_colatitude_longitude(interpolated_velocity->second);
 }
 
 

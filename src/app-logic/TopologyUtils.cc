@@ -125,7 +125,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Interpolates the scalars in a resolved 2D network and returns them.
 		 */
-		boost::optional< std::vector<double> >
+		boost::optional< std::pair<const ResolvedTopologicalNetwork *, std::vector<double> > >
 		interpolate_resolved_topology_network(
 				const resolved_network_for_interpolation_query_shared_ptr_type &resolved_network_query,
 				const CgalUtils::cgal_point_2_type &cgal_point_2)
@@ -183,13 +183,13 @@ namespace GPlatesAppLogic
 			// We are currently just returning scalars interpolated from the first network
 			// that the point is found inside.
 			// This will probably need to be changed if the topological networks can overlap.
-			return interpolated_scalars;
+			return std::make_pair(resolved_network.network, interpolated_scalars);
 		}
 
 		/**
 		 * Interpolates the scalars in a resolved 2D + C network and returns them.
 		 */
-		boost::optional< std::vector<double> >
+		boost::optional< std::pair<const ResolvedTopologicalNetwork *, std::vector<double> > >
 		interpolate_resolved_topology_network_constrained(
 				const resolved_network_for_interpolation_query_shared_ptr_type &resolved_network_query,
 				const CgalUtils::cgal_point_2_type &cgal_point_2)
@@ -235,7 +235,7 @@ namespace GPlatesAppLogic
 			// We are currently just returning scalars interpolated from the first network
 			// that the point is found inside.
 			// This will probably need to be changed if the topological networks can overlap.
-			return interpolated_scalars;
+			return std::make_pair(resolved_network.network, interpolated_scalars);
 		}
 	}
 
@@ -959,7 +959,7 @@ GPlatesAppLogic::TopologyUtils::get_resolved_topology_network_scalars(
 }
 
 
-boost::optional< std::vector<double> >
+boost::optional< std::pair<const GPlatesAppLogic::ResolvedTopologicalNetwork *, std::vector<double> > >
 GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_networks(
 		const resolved_networks_for_interpolation_query_type &resolved_networks_query,
 		const GPlatesMaths::PointOnSphere &point)
@@ -981,8 +981,9 @@ GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_networks(
 	{
 		const resolved_network_for_interpolation_query_shared_ptr_type &resolved_network_query = *rtn_iter;
 
-		const boost::optional< std::vector<double> > interpolated_scalars =
-				interpolate_resolved_topology_network(resolved_network_query, cgal_point_2);
+		const boost::optional< std::pair<const ResolvedTopologicalNetwork *, std::vector<double> > >
+				interpolated_scalars =
+						interpolate_resolved_topology_network(resolved_network_query, cgal_point_2);
 
 		// Continue to the next network if the point is not in the current network.
 		if (interpolated_scalars)
@@ -995,7 +996,7 @@ GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_networks(
 	return boost::none;
 }
 
-boost::optional< std::vector<double> >
+boost::optional< std::pair<const GPlatesAppLogic::ResolvedTopologicalNetwork *, std::vector<double> > >
 GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_networks_constrained(
 		const resolved_networks_for_interpolation_query_type &resolved_networks_query,
 		const GPlatesMaths::PointOnSphere &point)
@@ -1017,8 +1018,9 @@ GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_networks_constrain
 	{
 		const resolved_network_for_interpolation_query_shared_ptr_type &resolved_network_query = *rtn_iter;
 
-		const boost::optional< std::vector<double> > interpolated_scalars =
-				interpolate_resolved_topology_network_constrained(resolved_network_query, cgal_point_2);
+		const boost::optional< std::pair<const ResolvedTopologicalNetwork *, std::vector<double> > >
+				interpolated_scalars =
+						interpolate_resolved_topology_network_constrained(resolved_network_query, cgal_point_2);
 
 		// Continue to the next network if the point is not in the current network.
 		if (interpolated_scalars)
@@ -1033,7 +1035,7 @@ GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_networks_constrain
 
 
 
-boost::optional< std::vector<double> >
+boost::optional< std::pair<const GPlatesAppLogic::ResolvedTopologicalNetwork *, std::vector<double> > >
 GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_network(
 		const resolved_network_for_interpolation_query_shared_ptr_type &resolved_network_query,
 		const GPlatesMaths::PointOnSphere &point)

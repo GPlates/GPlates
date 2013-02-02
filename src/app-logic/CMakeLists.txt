@@ -110,7 +110,6 @@ set(srcs
     Reconstruction.h
     ReconstructionFeatureProperties.cc
     ReconstructionFeatureProperties.h
-    ReconstructionGeometry.cc
     ReconstructionGeometry.h
     ReconstructionGeometryFinder.cc
     ReconstructionGeometryFinder.h

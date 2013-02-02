@@ -58,6 +58,7 @@
 namespace GPlatesAppLogic
 {
 	class GeometryCookieCutter;
+	class ResolvedTopologicalNetwork;
 }
 
 namespace GPlatesGui
@@ -257,7 +258,8 @@ namespace GPlatesFeatureVisitors
 		set_velocity_from_base_triangulation(
 				const GPlatesMaths::PointOnSphere &point,
 				boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element,
-				const GPlatesMaths::VectorColatitudeLongitude &velocity_colat_lon);
+				const GPlatesMaths::VectorColatitudeLongitude &velocity_colat_lon,
+				const GPlatesAppLogic::ResolvedTopologicalNetwork *resolved_topological_network);
 
 #if 0
 		// 2D+C 

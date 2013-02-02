@@ -362,7 +362,7 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::generate_velocities_in_multipoi
 
 	for ( ; iter != end; ++iter, ++field_iter)
 	{
-		d_num_points += 1;
+		++d_num_points;
 		process_point_in_base_triangulation(*iter, *field_iter);
 	}
 
@@ -379,18 +379,22 @@ GPlatesFeatureVisitors::ComputationalMeshSolver::process_point_in_base_triangula
 {
 	// First check whether point is inside any topological networks.
 
-	boost::optional< std::vector<double> > interpolated_velocity_scalars =
-			GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_networks(
-					d_resolved_networks_for_velocity_interpolation,
-					point);
+	boost::optional< std::pair<const GPlatesAppLogic::ResolvedTopologicalNetwork *, std::vector<double> > >
+			interpolated_velocity_scalars =
+					GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_networks(
+							d_resolved_networks_for_velocity_interpolation,
+							point);
 
 	if (interpolated_velocity_scalars)
 	{
 		const GPlatesMaths::VectorColatitudeLongitude velocity_colat_lon =
 				GPlatesAppLogic::PlateVelocityUtils::convert_velocity_scalars_to_colatitude_longitude(
-						*interpolated_velocity_scalars);
+						interpolated_velocity_scalars->second);
 
-		set_velocity_from_base_triangulation(point, range_element, velocity_colat_lon);
+		const GPlatesAppLogic::ResolvedTopologicalNetwork *resolved_topological_network =
+				interpolated_velocity_scalars->first;
+		set_velocity_from_base_triangulation(point, range_element, velocity_colat_lon, resolved_topological_network);
+
 		return;
 	}
 
@@ -477,14 +481,23 @@ void
 GPlatesFeatureVisitors::ComputationalMeshSolver::set_velocity_from_base_triangulation(
 		const GPlatesMaths::PointOnSphere &point, 
 		boost::optional<GPlatesAppLogic::MultiPointVectorField::CodomainElement> &range_element,
-		const GPlatesMaths::VectorColatitudeLongitude &velocity_colat_lon)
+		const GPlatesMaths::VectorColatitudeLongitude &velocity_colat_lon,
+		const GPlatesAppLogic::ResolvedTopologicalNetwork *resolved_topological_network)
 {
 	const GPlatesMaths::Vector3D velocity_vector =
 			GPlatesMaths::convert_vector_from_colat_lon_to_xyz(point, velocity_colat_lon);
 
 	GPlatesAppLogic::MultiPointVectorField::CodomainElement::Reason reason =
 			GPlatesAppLogic::MultiPointVectorField::CodomainElement::InDeformationNetwork;
-	range_element = GPlatesAppLogic::MultiPointVectorField::CodomainElement(velocity_vector, reason);
+
+	// Note that we output the plate id of the deforming network.
+	// This keeps things consistent with the plate id assignment code which assigns both
+	// static/dynamic polygon plate ids *and* network plate ids.
+	// This also means the GMT velocity export (which also exports plate ids) will export non-zero
+	// plate ids for all velocity domain points (assumming global coverage of plates/networks).
+	range_element = GPlatesAppLogic::MultiPointVectorField::CodomainElement(velocity_vector, reason,
+			resolved_topological_network->plate_id(), resolved_topological_network);
+
 	// In the previous code, the point was rendered black if it was in a deformation network.
 }
 

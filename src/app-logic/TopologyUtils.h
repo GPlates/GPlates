@@ -28,6 +28,7 @@
 #define GPLATES_APP_LOGIC_TOPOLOGYUTILS_H
 
 #include <list>
+#include <utility>
 #include <vector>
 #include <boost/any.hpp>
 #include <boost/function.hpp>
@@ -48,6 +49,9 @@
 
 namespace GPlatesAppLogic
 {
+	class ResolvedTopologicalGeometry;
+	class ResolvedTopologicalNetwork;
+
 	/**
 	 * This namespace contains utilities that clients of topology-related functionality use.
 	 */
@@ -435,13 +439,13 @@ namespace GPlatesAppLogic
 		 * For example, if interpolating 3D velocity vectors this function would
 		 * return three scalars (for the x, y and z velocity components).
 		 */
-		boost::optional< std::vector<double> >
+		boost::optional< std::pair<const ResolvedTopologicalNetwork *, std::vector<double> > >
 		interpolate_resolved_topology_networks(
 				const resolved_networks_for_interpolation_query_type &resolved_networks_query,
 				const GPlatesMaths::PointOnSphere &point);
 
-		// as above , using the 2D+C triangulation for inteprolation
-		boost::optional< std::vector<double> >
+		// as above , using the 2D+C triangulation for interpolation
+		boost::optional< std::pair<const ResolvedTopologicalNetwork *, std::vector<double> > >
 		interpolate_resolved_topology_networks_constrained(
 				const resolved_networks_for_interpolation_query_type &resolved_networks_query,
 				const GPlatesMaths::PointOnSphere &point);
@@ -460,7 +464,7 @@ namespace GPlatesAppLogic
 		 * For example, if interpolating 3D velocity vectors this function would
 		 * return three scalars (for the x, y and z velocity components).
 		 */
-		boost::optional< std::vector<double> >
+		boost::optional< std::pair<const ResolvedTopologicalNetwork *, std::vector<double> > >
 		interpolate_resolved_topology_network(
 				const resolved_network_for_interpolation_query_shared_ptr_type &resolved_network_query,
 				const GPlatesMaths::PointOnSphere &point);
