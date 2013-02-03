@@ -288,9 +288,6 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_ter
 	const int reg_exp_group_order_of_np =
 			(index_of_np > index_of_mt) + (index_of_np > index_of_nt) + (index_of_np > index_of_nd);
 
-	// Use the "C" locale to convert sub-strings (in the file names) to integers.
-	static const QLocale C_LOCALE = QLocale::c();
-
 	grouped_features_seq_type::const_iterator grouped_features_iter = grouped_features_seq.begin();
 	grouped_features_seq_type::const_iterator grouped_features_end = grouped_features_seq.end();
 	for ( ; grouped_features_iter != grouped_features_end; ++grouped_features_iter)
@@ -318,6 +315,9 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_ter
 		const QString nt_string = template_parameters.at(reg_exp_group_order_of_nt + 1);
 		const QString nd_string = template_parameters.at(reg_exp_group_order_of_nd + 1);
 		const QString np_string = template_parameters.at(reg_exp_group_order_of_np + 1);
+
+		// Use the "C" locale to convert sub-strings (in the file names) to integers.
+		static const QLocale C_LOCALE = QLocale::c();
 
 		// The regular expression has ensured the parameter strings contain only unsigned integers.
 		bool mt_ok, nt_ok, nd_ok, np_ok;
@@ -410,9 +410,6 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_cit
 	const int reg_exp_group_order_of_density = (index_of_density > index_of_cap_number);
 	const int reg_exp_group_order_of_cap_number = (index_of_cap_number > index_of_density);
 
-	// Use the "C" locale to convert sub-strings (in the file names) to integers.
-	static const QLocale C_LOCALE = QLocale::c();
-
 	grouped_features_seq_type::const_iterator grouped_features_iter = grouped_features_seq.begin();
 	grouped_features_seq_type::const_iterator grouped_features_end = grouped_features_seq.end();
 	for ( ; grouped_features_iter != grouped_features_end; ++grouped_features_iter)
@@ -440,6 +437,9 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_cit
 		const QString cap_number_string = template_parameters.at(reg_exp_group_order_of_cap_number + 1);
 
 #if 0
+		// Use the "C" locale to convert sub-strings (in the file names) to integers.
+		static const QLocale C_LOCALE = QLocale::c();
+
 		// The regular expression has ensured the parameter strings contain only unsigned integers.
 		bool density_ok, cap_number_ok;
 		const uint density = C_LOCALE.toUInt(density_string, &density_ok);
