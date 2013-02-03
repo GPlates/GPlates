@@ -83,7 +83,8 @@ namespace GPlatesGui
 			{
 				GPML,
 				GMT,
-				TERRA_TEXT
+				TERRA_TEXT,
+				CITCOMS_GLOBAL
 			};
 
 			//
@@ -94,6 +95,12 @@ namespace GPlatesGui
 			static const QString TERRA_ND_PLACE_HOLDER; // Terra 'nd' parameter.
 			static const QString TERRA_PROCESSOR_PLACE_HOLDER; // Terra local processor number.
 
+			//
+			// Used to pattern match parameters contained in CitcomS velocity domain file names.
+			//
+			static const QString CITCOMS_DENSITY_PLACE_HOLDER; // CitcomS diamond density/resolution.
+			static const QString CITCOMS_CAP_NUM_PLACE_HOLDER; // CitcomS diamond cap number.
+
 
 			explicit
 			Configuration(
@@ -101,13 +108,17 @@ namespace GPlatesGui
 					FileFormat file_format_,
 					const ExportOptionsUtils::ExportFileOptions &file_options_,
 					GPlatesFileIO::MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format_,
+					// TODO: Inherit from Configuration instead of adding format-specific parameters...
 					// Only used for TERRA_TEXT format...
-					const QString &terra_grid_filename_template_ = QString()) :
+					const QString &terra_grid_filename_template_ = QString(),
+					// Only used for CITCOMS_GLOBAL format...
+					const QString &citcoms_grid_filename_template_ = QString()) :
 				ConfigurationBase(filename_template_),
 				file_format(file_format_),
 				file_options(file_options_),
 				velocity_vector_format(velocity_vector_format_),
-				terra_grid_filename_template(terra_grid_filename_template_)
+				terra_grid_filename_template(terra_grid_filename_template_),
+				citcoms_grid_filename_template(citcoms_grid_filename_template_)
 			{  }
 
 			virtual
@@ -121,6 +132,7 @@ namespace GPlatesGui
 			ExportOptionsUtils::ExportFileOptions file_options;
 			GPlatesFileIO::MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format;
 			QString terra_grid_filename_template; // Only used for the TERRA_TEXT format.
+			QString citcoms_grid_filename_template; // Only used for the CITCOMS_GLOBAL format.
 		};
 
 		//! Typedef for a shared pointer to const @a Configuration.

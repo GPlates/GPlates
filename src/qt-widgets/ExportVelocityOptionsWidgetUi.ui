@@ -14,12 +14,6 @@
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <property name="spacing">
-    <number>3</number>
-   </property>
-   <property name="margin">
-    <number>0</number>
-   </property>
    <item>
     <widget class="QWidget" name="widget_file_options" native="true"/>
    </item>
@@ -93,6 +87,45 @@
       </item>
       <item>
        <widget class="QLabel" name="terra_grid_filename_template_description_label">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="citcoms_grid_filename_template_group_box">
+     <property name="title">
+      <string>CitcomS Grid Files</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_5">
+      <property name="spacing">
+       <number>1</number>
+      </property>
+      <property name="topMargin">
+       <number>1</number>
+      </property>
+      <property name="bottomMargin">
+       <number>1</number>
+      </property>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QLabel" name="citcoms_grid_filename_template_label">
+          <property name="text">
+           <string>CitcomS grid file names:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="citcoms_grid_filename_template_line_edit"/>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QLabel" name="citcoms_grid_filename_template_description_label">
         <property name="text">
          <string/>
         </property>

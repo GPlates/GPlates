@@ -78,6 +78,9 @@ namespace GPlatesQtWidgets
 		void
 		handle_terra_grid_filename_template_changed();
 
+		void
+		handle_citcoms_grid_filename_template_changed();
+
 	private:
 
 		explicit

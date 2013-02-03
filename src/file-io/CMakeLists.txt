@@ -17,6 +17,8 @@ set(srcs
     ArbitraryXmlProfile.h
     ArbitraryXmlReader.cc
     ArbitraryXmlReader.h
+    CitcomsFormatVelocityVectorFieldExport.cc
+    CitcomsFormatVelocityVectorFieldExport.h
     CitcomsGMTFormatResolvedTopologicalBoundaryExport.cc
     CitcomsGMTFormatResolvedTopologicalBoundaryExport.h
     CitcomsResolvedTopologicalBoundaryExport.cc

@@ -493,6 +493,37 @@ GPlatesGui::register_default_export_animation_types(
 					_1, _2),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
 
+	// Default CitcomS grid filename template to match, for example, "TerraMesh.32.16.5.1".
+	const QString default_citcoms_grid_filename_template =
+			ExportVelocityAnimationStrategy::Configuration::CITCOMS_DENSITY_PLACE_HOLDER +
+				".mesh." +
+				ExportVelocityAnimationStrategy::Configuration::CITCOMS_CAP_NUM_PLACE_HOLDER;
+
+	registry.register_exporter(
+			ExportAnimationType::get_export_id(
+					ExportAnimationType::VELOCITIES,
+					ExportAnimationType::CITCOMS_GLOBAL),
+			ExportVelocityAnimationStrategy::const_configuration_ptr(
+					new ExportVelocityAnimationStrategy::Configuration(
+							// An example Terra filename is "bvel25.9" where 25 is the reconstruction
+							// time (which must be an integer) and 9 is the cap number...
+							"bvel%d.%P",
+							ExportVelocityAnimationStrategy::Configuration::CITCOMS_GLOBAL,
+							default_velocity_file_export_options,
+							GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON,
+							"", // Terra grid filename not used.
+							default_citcoms_grid_filename_template)),
+			&create_animation_strategy<ExportVelocityAnimationStrategy>,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportVelocityOptionsWidget,
+									ExportVelocityAnimationStrategy>),
+					_1, _2),
+			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
+
 	//
 	// Export resolved topologies (general)
 	//

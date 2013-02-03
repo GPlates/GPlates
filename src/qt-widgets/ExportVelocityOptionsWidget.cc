@@ -109,6 +109,26 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 		terra_grid_filename_template_group_box->hide();
 	}
 
+	// Only CitcomS global format has a CitcomS grid filename template option.
+	if (d_export_configuration.file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_GLOBAL)
+	{
+		// The default filename template.
+		citcoms_grid_filename_template_line_edit->setText(d_export_configuration.citcoms_grid_filename_template);
+
+		// Set the template description label text.
+		citcoms_grid_filename_template_description_label->setText(
+				tr("This identifies input CitcomS grid parameters required for each exported velocity file.\n"
+					"Use '%1' to locate the diamond cap number in the CitcomS grid file name.\n"
+					"Use '%2' to locate the diamond density/resolution.\n"
+					"Velocities are only exported if matching CitcomS grid files are already loaded.")
+						.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_CAP_NUM_PLACE_HOLDER)
+						.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_DENSITY_PLACE_HOLDER));
+	}
+	else
+	{
+		citcoms_grid_filename_template_group_box->hide();
+	}
+
 	// Write a description depending on the file format and velocity vector format.
 	update_output_description_label();
 }
@@ -156,6 +176,12 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::make_signal_slot_connections()
 			SIGNAL(editingFinished()),
 			this,
 			SLOT(handle_terra_grid_filename_template_changed()));
+
+	QObject::connect(
+			citcoms_grid_filename_template_line_edit,
+			SIGNAL(editingFinished()),
+			this,
+			SLOT(handle_citcoms_grid_filename_template_changed()));
 }
 
 
@@ -234,6 +260,37 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::handle_terra_grid_filename_templa
 
 
 void
+GPlatesQtWidgets::ExportVelocityOptionsWidget::handle_citcoms_grid_filename_template_changed()
+{
+	const QString text = citcoms_grid_filename_template_line_edit->text();
+
+	// Find occurrence of the CitcomS cap number placeholder in file name template.
+	const int cap_number_pos = text.indexOf(
+			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_CAP_NUM_PLACE_HOLDER);
+
+	// Must have one, and only one, occurrence of the CitcomS cap number placeholder.
+	// The density placeholder can occur zero or more times since it's not used in the export file name.
+	if (text.isEmpty() ||
+		cap_number_pos < 0 ||
+		text.indexOf(
+			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_CAP_NUM_PLACE_HOLDER,
+			cap_number_pos+1) >= 0)
+	{
+		QMessageBox::warning(
+				this,
+				tr("Invalid CitcomS grid file name template"),
+				tr("The CitcomS grid file name template must contain one, and only one, occurrence '%1'.")
+					.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_CAP_NUM_PLACE_HOLDER),
+				QMessageBox::Ok, QMessageBox::Ok);
+		citcoms_grid_filename_template_line_edit->setText(d_export_configuration.terra_grid_filename_template);
+		return;
+	}
+
+	d_export_configuration.citcoms_grid_filename_template = text;
+}
+
+
+void
 GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 {
 	// Write a description depending on the file format and velocity vector format.
@@ -277,6 +334,14 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 					"The header lines, beginning with '>', contain Terra grid parameters and age.\n"
 					"Then each velocity line contains:\n"
 					"  velocity_x  velocity_y  velocity_z")
+					.arg(GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING));
+		break;
+
+	case GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_GLOBAL:
+		output_description_label->setText(
+				tr("'%1' will be replaced by the diamond cap number in each exported velocity file name.\n"
+					"Each velocity line contains:\n"
+					"  velocity_colat  velocity_lon")
 					.arg(GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING));
 		break;
 

@@ -113,6 +113,9 @@ const QString GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_
 const QString GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_ND_PLACE_HOLDER = "%ND";
 const QString GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_PROCESSOR_PLACE_HOLDER = "%NP";
 
+const QString GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_DENSITY_PLACE_HOLDER = "%D";
+const QString GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_CAP_NUM_PLACE_HOLDER = "%C";
+
 
 GPlatesGui::ExportVelocityAnimationStrategy::ExportVelocityAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context,
@@ -211,6 +214,18 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 				Configuration::TERRA_NT_PLACE_HOLDER,
 				Configuration::TERRA_ND_PLACE_HOLDER,
 				Configuration::TERRA_PROCESSOR_PLACE_HOLDER,
+				GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+				velocity_vector_field_seq,
+				d_loaded_files,
+				static_cast<int>(d_export_animation_context_ptr->view_time()));
+			break;
+
+		case Configuration::CITCOMS_GLOBAL:
+			GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_citcoms_global_format(
+				d_configuration->citcoms_grid_filename_template,
+				full_filename,
+				Configuration::CITCOMS_DENSITY_PLACE_HOLDER,
+				Configuration::CITCOMS_CAP_NUM_PLACE_HOLDER,
 				GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
 				velocity_vector_field_seq,
 				d_loaded_files,

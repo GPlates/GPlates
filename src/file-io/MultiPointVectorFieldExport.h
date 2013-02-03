@@ -182,6 +182,49 @@ namespace GPlatesFileIO
 				const std::vector<const GPlatesAppLogic::MultiPointVectorField *> &velocity_vector_field_seq,
 				const std::vector<const File::Reference *> &active_files,
 				int age);
+
+
+
+
+		/**
+		 * Exports @a MultiPointVectorField objects containing *velocities* to the CitcomS global file format.
+		 *
+		 * NOTE: Only velocity vector fields associated with velocity domain (grid) files whose
+		 * file names match the template @a velocity_domain_file_name_template are exported.
+		 *
+		 * For example, a *domain* template of "%D.mesh.%C" will match a velocity field whose
+		 * domain came from a file called "33.mesh.9" where '9' is the CitcomS diamond cap number.
+		 *
+		 * The velocity *domain* template parameters are:
+		 *   @a velocity_domain_density_place_holder - used to match the CitcomS diamond resolution,
+		 *   @a velocity_domain_cap_number_place_holder - used to match the CitcomS diamond cap number.
+		 * And there must be one, and only one, occurrence of @a velocity_domain_cap_number_place_holder
+		 * in the *domain* file name template @a velocity_domain_file_name_template.
+		 *
+		 * For each matching velocity *domain* file, a velocity export file is created using the file name
+		 * template @a velocity_export_file_name_template where the cap number, obtained
+		 * from matching @a velocity_domain_cap_number_place_holder, is used in the exported filename
+		 * by replacing @a velocity_export_cap_number_place_holder with that cap number.
+		 * For example, the *domain* file name "33.mesh.9" is converted to the *export* file name
+		 * "bvel25.9" when the domain template is "%D.mesh.%C" and the export template is "bvel25.%P".
+		 *
+		 * Each velocity line in the Terra text file, after the header lines, contains:
+		 *    velocity_colat velocity_lon
+		 *
+		 * @a age is the reconstruction time rounded to an integer.
+		 *
+		 * @throws ErrorOpeningFileForWritingException if file is not writable.
+		 */
+		void
+		export_velocity_vector_fields_to_citcoms_global_format(
+				const QString &velocity_domain_file_name_template,
+				const QString &velocity_export_file_name_template,
+				const QString &velocity_domain_density_place_holder,
+				const QString &velocity_domain_cap_number_place_holder,
+				const QString &velocity_export_cap_number_place_holder,
+				const std::vector<const GPlatesAppLogic::MultiPointVectorField *> &velocity_vector_field_seq,
+				const std::vector<const File::Reference *> &active_files,
+				int age);
 	}
 }
 
