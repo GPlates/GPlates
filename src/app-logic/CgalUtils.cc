@@ -179,11 +179,11 @@ qDebug() << "project_azimuthal_equal_area_to_llp: c = " << c;
 	double phi = asin( cos(c)*sin(phi_0) + y*sin(c)*cos(phi_0)/rho ); // Latitude in Radians
 	double lam; // Longitude in radians
 
-	if (phi_0 == GPlatesMaths::PI / 2)
+	if (GPlatesMaths::real_t(phi_0) == GPlatesMaths::PI / 2)
 	{
 		lam = lam_0 + atan2(x,-y); 
 	}
-	else if (phi_0 == -GPlatesMaths::PI / 2)
+	else if (GPlatesMaths::real_t(phi_0) == -GPlatesMaths::PI / 2)
 	{
 		lam = lam_0 + atan2(x,y); 
 	}
