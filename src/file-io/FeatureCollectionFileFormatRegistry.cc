@@ -254,7 +254,11 @@ namespace GPlatesFileIO
 					const GPlatesModel::Gpgim &gpgim)
 			{
 				return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
-						new GpmlOutputVisitor(file_ref.get_file_info(), gpgim, false/*use_gzip*/));
+						new GpmlOutputVisitor(
+								file_ref.get_file_info(),
+								file_ref.get_feature_collection(),
+								gpgim,
+								false/*use_gzip*/));
 			}
 
 			/**
@@ -266,7 +270,11 @@ namespace GPlatesFileIO
 					const GPlatesModel::Gpgim &gpgim)
 			{
 				return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
-						new GpmlOutputVisitor(file_ref.get_file_info(), gpgim, true/*use_gzip*/));
+						new GpmlOutputVisitor(
+								file_ref.get_file_info(),
+								file_ref.get_feature_collection(),
+								gpgim,
+								true/*use_gzip*/));
 			}
 			/**
 			 * Creates a PLATES4_LINE feature visitor writer.

@@ -184,11 +184,6 @@ GPlatesGui::UnsavedChangesTracker::close_event_hook()
 				GPlatesQtWidgets::UnsavedChangesWarningDialog::CLOSE_GPLATES);
 
 		switch (d_warning_dialog_ptr->exec()) {
-		case QDialogButtonBox::SaveAll:
-			// Save. And if this save should fail, you MUST NOT CLOSE.
-			// Note also that this save must prompt the user for filenames if necessary,
-			// unlike the MCFD Save All button.
-			return file_io_feedback().save_all(true);
 
 		case QDialogButtonBox::Discard:
 			return true;
@@ -215,11 +210,6 @@ GPlatesGui::UnsavedChangesTracker::replace_session_event_hook()
 				GPlatesQtWidgets::UnsavedChangesWarningDialog::REPLACE_SESSION);
 
 		switch (d_warning_dialog_ptr->exec()) {
-		case QDialogButtonBox::SaveAll:
-			// Save. And if this save should fail, you MUST NOT DISCARD THE CURRENT SESSION.
-			// Note also that this save must prompt the user for filenames if necessary,
-			// unlike the MCFD Save All button.
-			return file_io_feedback().save_all(true);
 
 		case QDialogButtonBox::Discard:
 			return true;

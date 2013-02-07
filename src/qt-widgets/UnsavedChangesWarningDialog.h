@@ -116,12 +116,6 @@ namespace GPlatesQtWidgets
 			done(QDialogButtonBox::Abort);
 		}
 
-		void
-		save_all_first()
-		{
-			done(QDialogButtonBox::SaveAll);
-		}
-
 	private:
 
 		/**
@@ -132,7 +126,6 @@ namespace GPlatesQtWidgets
 		tweak_buttons(
 				ActionRequested act)
 		{
-			static QPushButton *saveall = buttonbox->button(QDialogButtonBox::SaveAll);
 			static QPushButton *discard = buttonbox->button(QDialogButtonBox::Discard);
 			static QPushButton *abort = buttonbox->button(QDialogButtonBox::Abort);
 			
@@ -140,10 +133,6 @@ namespace GPlatesQtWidgets
 			{
 			default:
 			case CLOSE_GPLATES:
-					saveall->setText(tr("&Save all modified feature collections"));
-					saveall->setIcon(QIcon(":/gnome_save_22.png"));
-					saveall->setIconSize(QSize(22, 22));
-
 					discard->setText(tr("&Discard changes"));
 					discard->setIcon(QIcon(":/discard_changes_22.png"));
 					discard->setIconSize(QSize(22, 22));
@@ -154,10 +143,6 @@ namespace GPlatesQtWidgets
 					break;
 
 			case REPLACE_SESSION:
-					saveall->setText(tr("&Save all first"));
-					saveall->setIcon(QIcon(":/gnome_save_22.png"));
-					saveall->setIconSize(QSize(22, 22));
-
 					discard->setText(tr("&Discard changes, load session"));
 					discard->setIcon(QIcon(":/discard_changes_22.png"));
 					discard->setIconSize(QSize(22, 22));
@@ -205,8 +190,6 @@ namespace GPlatesQtWidgets
 					this, SLOT(discard_changes()));
 			connect(buttonbox->button(QDialogButtonBox::Abort), SIGNAL(clicked()),
 					this, SLOT(abort_close()));
-			connect(buttonbox->button(QDialogButtonBox::SaveAll), SIGNAL(clicked()),
-					this, SLOT(save_all_first()));
 		}
 			
 	};

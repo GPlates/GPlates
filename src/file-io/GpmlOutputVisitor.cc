@@ -45,6 +45,7 @@
 #include "model/FeatureHandle.h"
 #include "model/FeatureRevision.h"
 #include "model/Gpgim.h"
+#include "model/GpgimVersion.h"
 #include "model/TopLevelPropertyInline.h"
 
 #include "property-values/Enumeration.h"
@@ -507,6 +508,7 @@ GPlatesFileIO::GpmlOutputVisitor::gzip_program()
 
 GPlatesFileIO::GpmlOutputVisitor::GpmlOutputVisitor(
 		const FileInfo &file_info,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
 		const GPlatesModel::Gpgim &gpgim,
 		bool use_gzip):
 	d_qfile_ptr(new QFile(file_info.get_qfileinfo().filePath())),
@@ -573,25 +575,27 @@ GPlatesFileIO::GpmlOutputVisitor::GpmlOutputVisitor(
 		
 	}
 	
-	start_writing_document(d_output, gpgim);
+	start_writing_document(d_output, feature_collection_ref, gpgim);
 }
 
 
 GPlatesFileIO::GpmlOutputVisitor::GpmlOutputVisitor(
 		QIODevice *target,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
 		const GPlatesModel::Gpgim &gpgim):
 	d_qfile_ptr(),
 	d_qprocess_ptr(),
 	d_output(target),
 	d_gzip_afterwards(false)
 {
-	start_writing_document(d_output, gpgim);
+	start_writing_document(d_output, feature_collection_ref, gpgim);
 }
 
 
 void
 GPlatesFileIO::GpmlOutputVisitor::start_writing_document(
 		XmlWriter &writer,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
 		const GPlatesModel::Gpgim &gpgim)
 {
 	writer.writeStartDocument();
@@ -608,12 +612,28 @@ GPlatesFileIO::GpmlOutputVisitor::start_writing_document(
 
 	writer.writeStartGpmlElement("FeatureCollection");
 
-	writer.writeGpmlAttribute("version", gpgim.get_version().version_string());
+	// The version of the GPGIM built into the current GPlates.
+	const GPlatesModel::GpgimVersion &gpgim_version = gpgim.get_version();
+
+	writer.writeGpmlAttribute("version", gpgim_version.version_string());
 	writer.writeAttribute(
 			GPlatesUtils::XmlNamespaces::XSI_NAMESPACE_QSTRING,
 			"schemaLocation",
 			"http://www.gplates.org/gplates ../xsd/gpml.xsd "\
 			"http://www.opengis.net/gml ../../../gml/current/base");
+
+	// Also store the GPGIM version in the feature collection as a tag.
+	// This is so other areas of the code can query the version.
+	//
+	// This overwrites the previous version tag if any. For example, it's possible that the
+	// feature collection was loaded from a file containing an earlier GPGIM version. Since
+	// we're now saving using the current GPGIM version we should update the version tag.
+	//
+	// If a feature collection does not contain this tag (eg, some other area of GPlates creates
+	// a feature collection) then it should be assumed to be current GPGIM version since new
+	// (empty) feature collections created by this instance of GPlates will have features added
+	// according to the GPGIM version built into this instance of GPlates.
+	feature_collection_ref->tags()[GPlatesModel::GpgimVersion::FEATURE_COLLECTION_TAG] = gpgim_version;
 }
 
 

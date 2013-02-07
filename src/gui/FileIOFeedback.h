@@ -66,11 +66,12 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
+	class GpgimVersionWarningDialog;
+	class ManageFeatureCollectionsDialog;
 	// Forward declaration of ViewportWindow and MFCD to avoid spaghetti.
 	// Yes, this is ViewportWindow, not the "View State"; we need
 	// this to pop dialogs up from, and maybe some progress bars.
 	class ViewportWindow;
-	class ManageFeatureCollectionsDialog;
 }
 
 
@@ -243,6 +244,7 @@ namespace GPlatesGui
 
 
 	private:
+
 		/**
 		 * Saves the feature collection in @a file_ref to the filename in @a file_ref.
 		 * Pops up simple dialogs if there are problems, and returns false.
@@ -343,6 +345,46 @@ namespace GPlatesGui
 		 * The open files dialog box.
 		 */
 		GPlatesQtWidgets::OpenFileDialog d_open_files_dialog;
+
+		/**
+		 * Pointer to the dialog we use to notify users of files with different GPGIM versions .
+		 * This dialog is parented to ViewportWindow so Qt takes care of the cleanup.
+		 */
+		GPlatesQtWidgets::GpgimVersionWarningDialog *d_gpgim_version_warning_dialog_ptr;
+	};
+
+
+	/**
+	 * Used to collect the files loaded during the lifetime of a @a CollectLoadFilesScope object.
+	 *
+	 * This class cannot be nested since Qt meta objects features are not supported for nested classes.
+	 */
+	class CollectLoadedFilesScope :
+			public QObject
+	{
+		Q_OBJECT
+
+	public:
+
+		explicit
+		CollectLoadedFilesScope(
+				GPlatesAppLogic::FeatureCollectionFileState *feature_collection_file_state);
+
+		//! Get the files loaded during the lifetime of 'this' object.
+		const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &
+		get_loaded_files() const;
+
+	private Q_SLOTS:
+
+		void
+		handle_file_state_files_added(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state,
+				const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &new_files);
+
+	private:
+
+		std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> d_loaded_files;
+
 	};
 }
 

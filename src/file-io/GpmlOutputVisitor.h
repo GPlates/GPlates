@@ -36,6 +36,7 @@
 #include "FileInfo.h"
 #include "XmlWriter.h"
 
+#include "model/FeatureCollectionHandle.h"
 #include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 
@@ -74,11 +75,15 @@ namespace GPlatesFileIO
 		 * The GpmlOutputVisitor will take care of opening the file for writing,
 		 * and is responsible for cleaning up afterwards.
 		 *
+		 * @a feature_collection_ref is only used to write metadata at the feature collection level.
+		 * The features in the feature collection are visited externally.
+		 *
 		 * This constructor can throw a ErrorOpeningFileForWritingException.
 		 */
 		explicit
 		GpmlOutputVisitor(
 				const FileInfo &file_info,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
 				const GPlatesModel::Gpgim &gpgim,
 				bool use_gzip);
 
@@ -89,10 +94,14 @@ namespace GPlatesFileIO
 		 * The GpmlOutputVisitor will write to the QIODevice, but it is the
 		 * caller's responsibility for performing any necessary maintainance on the device,
 		 * e.g. closing files, sockets, terminating subprocesses.
+		 *
+		 * @a feature_collection_ref is only used to write metadata at the feature collection level.
+		 * The features in the feature collection are visited externally.
 		 */
 		explicit
 		GpmlOutputVisitor(
 				QIODevice *target,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
 				const GPlatesModel::Gpgim &gpgim);
 
 
@@ -107,6 +116,7 @@ namespace GPlatesFileIO
 		void
 		start_writing_document(
 				XmlWriter &writer,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
 				const GPlatesModel::Gpgim &gpgim);
 
 	protected:

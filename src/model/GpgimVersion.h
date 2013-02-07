@@ -27,6 +27,7 @@
 #define GPLATES_MODEL_GPGIMVERSION_H
 
 #include <iosfwd>
+#include <string>
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 #include <QString>
@@ -59,6 +60,11 @@ namespace GPlatesModel
 		// Although the GPML only stored "1.6" during that time.
 		//
 		static const unsigned int DEFAULT_ONE_POINT_SIX_REVISION = 317;
+
+		/**
+		 * The key string used when storing the GPGIM version as a tag in a FeatureCollectionHandle.
+		 */
+		static const std::string FEATURE_COLLECTION_TAG;
 
 
 		/**

@@ -363,10 +363,10 @@ namespace
 			}
 		}
 
-		// Default to the latest version if the GPGIM version could not be obtained.
+		// Default to version the base 1.6 version if the GPGIM version could not be obtained.
 		if (!gpml_version)
 		{
-			gpml_version = gpgim.get_version();
+			gpml_version = Model::GpgimVersion(1, 6, Model::GpgimVersion::DEFAULT_ONE_POINT_SIX_REVISION);
 		}
 
 		return gpml_version;
@@ -440,6 +440,15 @@ GPlatesFileIO::GpmlReader::read_file(
 			read_root_element(params, gpgim, alias_map);
 	if (gpml_version)
 	{
+		// Store the GPGIM version in the feature collection as a tag.
+		//
+		// This is so other areas of the code can query the version.
+		// If a feature collection does not contain this tag (eg, some other area of GPlates creates
+		// a feature collection) then it should be assumed to be current GPGIM version since new
+		// (empty) feature collections created by this instance of GPlates will have features added
+		// according to the GPGIM version built into this instance of GPlates.
+		feature_collection->tags()[GPlatesModel::GpgimVersion::FEATURE_COLLECTION_TAG] = gpml_version.get();
+
 		// Create a GPML feature reader factory that matches the GPGIM version in the GPML file.
 		const GpmlFeatureReaderFactory feature_reader_factory(
 				gpgim, property_structural_type_reader, gpml_version.get());

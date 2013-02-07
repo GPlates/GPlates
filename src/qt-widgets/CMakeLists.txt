@@ -250,6 +250,9 @@ set(srcs
     GMTFileFormatConfigurationDialog.cc
     GMTFileFormatConfigurationDialog.h
     GMTFileFormatConfigurationDialogUi.ui
+    GpgimVersionWarningDialog.cc
+    GpgimVersionWarningDialog.h
+    GpgimVersionWarningDialogUi.ui
     GPlatesDialog.cc
     GPlatesDialog.h
     ImportRasterDialog.cc

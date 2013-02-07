@@ -33,6 +33,8 @@
 #include "global/LogException.h"
 
 
+const std::string GPlatesModel::GpgimVersion::FEATURE_COLLECTION_TAG("gpgim:version");
+
 boost::optional<GPlatesModel::GpgimVersion>
 GPlatesModel::GpgimVersion::create(
 		const QString &version)

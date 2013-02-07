@@ -351,6 +351,6 @@ GPlatesFileIO::GpmlFormatMultiPointVectorFieldExport::export_velocity_vector_fie
 	FileInfo output_file(file_info.filePath());
 
 	// Write the output file by visiting the feature collection with the new velocity fields.
-	GpmlOutputVisitor gpml_writer(output_file, gpgim, false);
+	GpmlOutputVisitor gpml_writer(output_file, feature_collection_ref, gpgim, false);
 	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(feature_collection_ref, gpml_writer);
 }
