@@ -80,6 +80,8 @@ POP_MSVC_WARNINGS
 
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
+#include "maths/PolygonOnSphere.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -198,30 +200,54 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Convert a @a PointOnSphere to a point type that we use in our CGAL algorithms.
-		 *
-		 * This is a separate function because the conversion could be expensive and can
-		 * be done once and reused if possible.
+		 * Convert a Cartesian (x,y,z) point from PointOnSphere to CGAL.
 		 */
-		cgal_point_2_type
-		convert_point_to_cgal_2(
+		cgal_point_3_type
+		convert_point_on_sphere_to_cgal_3(
 				const GPlatesMaths::PointOnSphere &point);
 
-		cgal_point_3_type
-		convert_point_to_cgal_3(
-				const GPlatesMaths::PointOnSphere &point);
 
 		/**
-		 * Convert a cgal point to a @a PointOnSphere.
+		 * Convert a Cartesian (x,y,z) point from CGAL to PointOnSphere.
 		 */
 		GPlatesMaths::PointOnSphere
-		convert_point_from_cgal_2(
-				const cgal_point_2_type &point);
-
-		//GPlatesMaths::PointOnSphere
-		GPlatesMaths::PointOnSphere
-		convert_point_from_cgal_3(
+		convert_cgal_3_to_point_on_sphere(
 				const cgal_point_3_type &point);
+
+
+		/**
+		 * Project a point in Spherical (lon,lat) space to Azimuthal Equal Area (x,y) space.
+		 */
+		cgal_point_2_type
+		project_lat_lon_point_to_azimuthal_equal_area(
+				const GPlatesMaths::LatLonPoint &point, 
+				const GPlatesMaths::LatLonPoint &center_of_projection);
+	
+		/**
+		 * Project a point in Cartesian (x,y,z) space to Azimuthal Equal Area (x,y) space.
+		 */
+		cgal_point_2_type
+		project_point_on_sphere_to_azimuthal_equal_area(
+				const GPlatesMaths::PointOnSphere &point, 
+				const GPlatesMaths::LatLonPoint &center_of_projection);
+
+
+		/**
+		 * Project a point in Azimuthal Equal Area (x,y) space to Spherical (lon,lat) space.
+		 */
+		GPlatesMaths::LatLonPoint
+		project_azimuthal_equal_area_to_lat_lon_point(
+				const cgal_point_2_type &point, 
+				const GPlatesMaths::LatLonPoint &center_of_projection);
+	
+		/**
+		 * Project a point in Azimuthal Equal Area (x,y) space to Cartesian (x,y,z) space.
+		 */
+		GPlatesMaths::PointOnSphere
+		project_azimuthal_equal_area_to_point_on_sphere(
+				const GPlatesAppLogic::CgalUtils::cgal_point_2_type &point, 
+				const GPlatesMaths::LatLonPoint &center_of_projection);
+
 
 		//! locate
 		//cgal_cdt_2_locate_type 
@@ -240,7 +266,8 @@ namespace GPlatesAppLogic
 		insert_points_into_delaunay_triangulation_2(
 				cgal_delaunay_triangulation_2_type &delaunay_triangulation_2,
 				PointOnSphereForwardIterator points_begin,
-				PointOnSphereForwardIterator points_end);
+				PointOnSphereForwardIterator points_end,
+				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &boundary_polygon);
 
 		/**
 		 * Inserts a range of @a PointOnSphere points ( converted to 2D CGAL points) 
@@ -252,7 +279,8 @@ namespace GPlatesAppLogic
 				cgal_constrained_delaunay_triangulation_2_type &constrained_delaunay_triangulation_2,
 				PointOnSphereForwardIterator points_begin,
 				PointOnSphereForwardIterator points_end,
-				bool constrain_begin_and_end_points);
+				bool constrain_begin_and_end_points,
+				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &boundary_polygon);
 
 		/**
 		 * Inserts a range of @a PointOnSphere points ( converted to 2D CGAL points) 
@@ -264,7 +292,8 @@ namespace GPlatesAppLogic
 				cgal_constrained_delaunay_triangulation_2_type &constrained_delaunay_triangulation_2,
 				PointOnSphereForwardIterator points_begin,
 				PointOnSphereForwardIterator points_end,
-				bool constrain_all_points);
+				bool constrain_all_points,
+				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &boundary_polygon);
 
 		/** 
 		 * Inserts a range of @a PointOnSphere points (converted to 3D CGAL points ) 
@@ -379,13 +408,19 @@ namespace GPlatesAppLogic
 		insert_points_into_delaunay_triangulation_2(
 				cgal_delaunay_triangulation_2_type &delaunay_triangulation_2,
 				PointOnSphereForwardIterator points_begin,
-				PointOnSphereForwardIterator points_end)
+				PointOnSphereForwardIterator points_end,
+				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &boundary_polygon)
 		{
 			// If no points then nothing to insert.
 			if (points_begin == points_end)
 			{
 				return;
 			}
+
+			// Compute the centroid of the boundary polygon and get lat lon for projection
+			const GPlatesMaths::LatLonPoint proj_center =
+					GPlatesMaths::make_lat_lon_point(
+							GPlatesMaths::PointOnSphere(boundary_polygon->get_centroid()));
 
 			std::vector<cgal_point_2_type> cgal_points;
 
@@ -395,7 +430,7 @@ namespace GPlatesAppLogic
 				++points_iter)
 			{
 				cgal_points.push_back(
-						convert_point_to_cgal_2(*points_iter));
+						project_point_on_sphere_to_azimuthal_equal_area(*points_iter, proj_center));
 			}
 
 			// Build the Triangulation.
@@ -409,7 +444,8 @@ namespace GPlatesAppLogic
 				cgal_constrained_delaunay_triangulation_2_type &constrained_delaunay_triangulation_2,
 				PointOnSphereForwardIterator points_begin,
 				PointOnSphereForwardIterator points_end,
-				bool constrain_begin_and_end_points)
+				bool constrain_begin_and_end_points,
+				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &boundary_polygon)
 		{
 			// If no points then nothing to insert.
 			if (points_begin == points_end)
@@ -417,6 +453,10 @@ namespace GPlatesAppLogic
 				return;
 			}
 
+			// Compute the centroid of the boundary polygon and get lat lon for projection
+			const GPlatesMaths::LatLonPoint proj_center =
+					GPlatesMaths::make_lat_lon_point(
+							GPlatesMaths::PointOnSphere(boundary_polygon->get_centroid()));
 
 			//qDebug() << "insert_points_into_constrained_delaunay_triangulation_2";
 			//qDebug() << "Constrain begin and end?" << constrain_begin_and_end_points;
@@ -436,8 +476,8 @@ namespace GPlatesAppLogic
 			// Loop over the points, convert them, and add them to the triangulation
 			for ( pos_iter = points_begin; pos_iter != points_end; ++pos_iter)
 			{
-				//const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*pos_iter);
-				GPlatesAppLogic::CgalUtils::cgal_point_2_type point = convert_point_to_cgal_2(*pos_iter);
+				GPlatesAppLogic::CgalUtils::cgal_point_2_type point =
+						project_point_on_sphere_to_azimuthal_equal_area(*pos_iter, proj_center);
 				//qDebug() << "before do_insert vertex_handles.size() " << vertex_handles.size();
 				//qDebug() << "before do_insert point = " << point.x() << "," << point.y();
 				do_insert( point, constrained_delaunay_triangulation_2, vertex_handles);
@@ -536,13 +576,19 @@ namespace GPlatesAppLogic
 				cgal_constrained_delaunay_triangulation_2_type &constrained_delaunay_triangulation_2,
 				PointOnSphereForwardIterator points_begin,
 				PointOnSphereForwardIterator points_end,
-				bool constrain_all_points)
+				bool constrain_all_points,
+				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &boundary_polygon)
 		{
 			// If no points then nothing to insert.
 			if (points_begin == points_end)
 			{
 				return;
 			}
+
+			// Compute the centroid of the boundary polygon and get lat lon for projection
+			const GPlatesMaths::LatLonPoint proj_center =
+					GPlatesMaths::make_lat_lon_point(
+							GPlatesMaths::PointOnSphere(boundary_polygon->get_centroid()));
 
 			//qDebug() << "insert_scattered_points_into_constrained_delaunay_triangulation_2";
 			//qDebug() << "Constrain all points? " << constrain_all_points;
@@ -554,8 +600,8 @@ namespace GPlatesAppLogic
 			// Loop over the points, convert them, and add them to the triangulation
 			for ( pos_iter = points_begin; pos_iter != points_end; ++pos_iter)
 			{
-				//const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*pos_iter);
-				GPlatesAppLogic::CgalUtils::cgal_point_2_type point = convert_point_to_cgal_2(*pos_iter);
+				GPlatesAppLogic::CgalUtils::cgal_point_2_type point =
+						project_point_on_sphere_to_azimuthal_equal_area(*pos_iter, proj_center);
 				//qDebug() << "before do_insert vertex_handles.size() " << vertex_handles.size();
 				//qDebug() << "before do_insert point = " << point.x() << "," << point.y();
 				do_insert( point, constrained_delaunay_triangulation_2, vertex_handles);
@@ -625,13 +671,19 @@ namespace GPlatesAppLogic
 		insert_seed_points_into_constrained_mesh(
 				GPlatesAppLogic::CgalUtils::cgal_constrained_mesher_2_type &constrained_mesher,
 				PointOnSphereForwardIterator points_begin,
-				PointOnSphereForwardIterator points_end)
+				PointOnSphereForwardIterator points_end,
+				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &boundary_polygon)
 		{
 			// If no points then nothing to insert.
 			if (points_begin == points_end)
 			{
 				return;
 			}
+
+			// Compute the centroid of the boundary polygon and get lat lon for projection
+			const GPlatesMaths::LatLonPoint proj_center =
+					GPlatesMaths::make_lat_lon_point(
+							GPlatesMaths::PointOnSphere(boundary_polygon->get_centroid()));
 
 			//qDebug() << "insert_seed_points_into_constrained_mesh: ";
 			std::vector<cgal_point_2_type> seed_points;
@@ -641,7 +693,8 @@ namespace GPlatesAppLogic
 				points_iter != points_end;
 				++points_iter)
 			{
-				seed_points.push_back( convert_point_to_cgal_2(*points_iter));
+				seed_points.push_back(
+						project_point_on_sphere_to_azimuthal_equal_area(*points_iter, proj_center));
 			}
 
 			constrained_mesher.clear_seeds();
@@ -683,7 +736,7 @@ If false, the mesh domain is the union of the bounded components including no se
 				++points_iter)
 			{
 				cgal_points.push_back(
-						convert_point_to_cgal_3(*points_iter));
+						convert_point_on_sphere_to_cgal_3(*points_iter));
 			}
 
 			// Build the Triangulation.

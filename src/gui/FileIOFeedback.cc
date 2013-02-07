@@ -821,6 +821,11 @@ GPlatesGui::FileIOFeedback::save_files(
 			d_app_state_ptr->get_gpgim()))
 	{
 		// Return without saving.
+		//
+		// Even if some of the files have the current GPGIM version (and hence would normally have
+		// been saved without warning) those files should not be saved because we shouldn't save
+		// some files but not others because it may not make logical sense to partially save
+		// a group of files (they may become inconsistent with each other).
 		return false;
 	}
 

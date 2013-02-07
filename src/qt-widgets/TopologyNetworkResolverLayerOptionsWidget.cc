@@ -50,6 +50,11 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 {
 	setupUi(this);
 
+	mesh_checkbox->setCursor(QCursor(Qt::ArrowCursor));
+	constrained_checkbox->setCursor(QCursor(Qt::ArrowCursor));
+	triangulation_checkbox->setCursor(QCursor(Qt::ArrowCursor));
+	segment_velocity_checkbox->setCursor(QCursor(Qt::ArrowCursor));
+
 	QObject::connect(
 			mesh_checkbox,
 			SIGNAL(clicked()),

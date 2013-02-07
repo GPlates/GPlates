@@ -84,29 +84,8 @@ namespace
 		}
 
 
-GPlatesAppLogic::CgalUtils::cgal_point_2_type
-GPlatesAppLogic::CgalUtils::convert_point_to_cgal_2(
-		const GPlatesMaths::PointOnSphere &point)
-{
-	// Create a 2D point from the point on sphere.
-	const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
-	//qDebug() << "lon, lat=" << llp.longitude() << " , " << llp.latitude();
-	return cgal_point_2_type(llp.longitude(), llp.latitude());
-}
-
-
-GPlatesMaths::PointOnSphere
-GPlatesAppLogic::CgalUtils::convert_point_from_cgal_2(
-		const cgal_point_2_type &point)
-{
-	// Create a 3D point on sphere from a 2D point.
-	const GPlatesMaths::LatLonPoint llp(point.y(), point.x());
-	return GPlatesMaths::make_point_on_sphere(llp);
-}
-
-
 GPlatesAppLogic::CgalUtils::cgal_point_3_type
-GPlatesAppLogic::CgalUtils::convert_point_to_cgal_3(
+GPlatesAppLogic::CgalUtils::convert_point_on_sphere_to_cgal_3(
 		const GPlatesMaths::PointOnSphere &point)
 {
 	// Create a 3D point from the point on sphere.
@@ -119,7 +98,7 @@ GPlatesAppLogic::CgalUtils::convert_point_to_cgal_3(
 
 
 GPlatesMaths::PointOnSphere
-GPlatesAppLogic::CgalUtils::convert_point_from_cgal_3(
+GPlatesAppLogic::CgalUtils::convert_cgal_3_to_point_on_sphere(
 		const cgal_point_3_type &point)
 {
 	// Create a 3D point on sphere from a 3D CGAL point.
@@ -130,6 +109,112 @@ GPlatesAppLogic::CgalUtils::convert_point_from_cgal_3(
 	return GPlatesMaths::PointOnSphere( v );
 }
 
+
+//
+// Lambert Equal Area Projection
+//
+// http://mathworld.wolfram.com/LambertAzimuthalEqual-AreaProjection.html
+//
+
+GPlatesAppLogic::CgalUtils::cgal_point_2_type
+GPlatesAppLogic::CgalUtils::project_lat_lon_point_to_azimuthal_equal_area(
+		const GPlatesMaths::LatLonPoint &point,
+		const GPlatesMaths::LatLonPoint &proj_center)
+{
+	using namespace std;
+	double phi_0 = proj_center.latitude()  * GPlatesMaths::PI / 180.0; // center of projection lat
+	double lam_0 = proj_center.longitude() * GPlatesMaths::PI / 180.0; // center of projection lon
+
+	double phi	= point.latitude()  * GPlatesMaths::PI / 180.0; // Node latitude
+	double lam 	= point.longitude() * GPlatesMaths::PI / 180.0; // Node longitude
+
+	double k = sqrt( 2 / ( 1 + sin(phi_0) * sin(phi) + cos(phi_0) * cos(phi) * cos(lam-lam_0) ) );
+
+	double x = k * cos(phi) * sin(lam-lam_0);
+	double y = k * (cos(phi_0) * sin(phi) - sin(phi_0) * cos(phi) * cos(lam-lam_0) );
+
+#ifdef DEBUG
+qDebug() << "project_llp_to_azimuthal_equal_area: proj_center = " << proj_center;
+qDebug() << "project_llp_to_azimuthal_equal_area: point = " << point;
+qDebug() << "project_llp_to_azimuthal_equal_area: phi,lam = (" << phi << "," << lam << ")";
+qDebug() << "project_llp_to_azimuthal_equal_area: x,y = (" << x << "," << y << ")";
+#endif
+	return cgal_point_2_type(x,y);
+}
+
+
+GPlatesAppLogic::CgalUtils::cgal_point_2_type
+GPlatesAppLogic::CgalUtils::project_point_on_sphere_to_azimuthal_equal_area(
+		const GPlatesMaths::PointOnSphere &point,
+		const GPlatesMaths::LatLonPoint &proj_center)
+{
+	return project_lat_lon_point_to_azimuthal_equal_area(
+			GPlatesMaths::make_lat_lon_point(point),
+			proj_center);
+}
+
+
+GPlatesMaths::LatLonPoint
+GPlatesAppLogic::CgalUtils::project_azimuthal_equal_area_to_lat_lon_point(
+		const GPlatesAppLogic::CgalUtils::cgal_point_2_type &point,
+		const GPlatesMaths::LatLonPoint &proj_center)
+{
+	using namespace std;
+	double phi_0 = proj_center.latitude()  * GPlatesMaths::PI / 180.0; // center of projection lat
+	double lam_0 = proj_center.longitude() * GPlatesMaths::PI / 180.0; // center of projection lon
+
+	double x = point.x();
+	double y = point.y();
+
+	double rho = sqrt( x*x + y*y);
+	double a = rho / 2.0;
+	double c = 2*asin( a );
+
+#ifdef DEBUG
+qDebug() << "project_azimuthal_equal_area_to_llp: rho = " << rho;
+qDebug() << "project_azimuthal_equal_area_to_llp: a = " << a;
+qDebug() << "project_azimuthal_equal_area_to_llp: c = " << c;
+#endif
+
+	double phi = asin( cos(c)*sin(phi_0) + y*sin(c)*cos(phi_0)/rho ); // Latitude in Radians
+	double lam; // Longitude in radians
+
+	if (phi_0 == GPlatesMaths::PI / 2)
+	{
+		lam = lam_0 + atan2(x,-y); 
+	}
+	else if (phi_0 == -GPlatesMaths::PI / 2)
+	{
+		lam = lam_0 + atan2(x,y); 
+	}
+	else
+	{
+		lam = lam_0 + atan2( x*sin(c) , rho*cos(phi_0)*cos(c) - y*sin(phi_0)*sin(c) ); 
+	}
+
+	double lat = phi * 180.0 / GPlatesMaths::PI;
+	double lon = lam * 180.0 / GPlatesMaths::PI;
+
+#ifdef DEBUG
+qDebug() << "project_azimuthal_equal_area_to_llp: proj_center = " << proj_center;
+qDebug() << "project_azimuthal_equal_area_to_llp: x,y = (" << x << "," << y << ")";
+qDebug() << "project_azimuthal_equal_area_to_llp: phi,lam = (" << phi << "," << lam << ")";
+qDebug() << "project_azimuthal_equal_area_to_llp: lat,lon = (" << lat << "," << lon << ")";
+#endif
+
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::LatLonPoint(lat,lon);
+	return llp;
+}
+
+
+GPlatesMaths::PointOnSphere
+GPlatesAppLogic::CgalUtils::project_azimuthal_equal_area_to_point_on_sphere(
+		const GPlatesAppLogic::CgalUtils::cgal_point_2_type &point,
+		const GPlatesMaths::LatLonPoint &proj_center)
+{
+	return GPlatesMaths::make_point_on_sphere(
+			project_azimuthal_equal_area_to_lat_lon_point(point, proj_center));
+}
 
 
 //GPlatesAppLogic::CgalUtils::cgal_cdt_2_locate_type

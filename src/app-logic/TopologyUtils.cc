@@ -806,6 +806,11 @@ GPlatesAppLogic::TopologyUtils::query_resolved_topology_networks_for_interpolati
 							new CgalUtils::cgal_map_point_2_to_value_type()));
 		}
 
+		// Compute the centroid of the boundary polygon and get lat lon for projection
+		const GPlatesMaths::LatLonPoint proj_center =
+				GPlatesMaths::make_lat_lon_point(
+						GPlatesMaths::PointOnSphere(network->boundary_polygon()->get_centroid()));
+
 		// Iterate through the nodes of the current topological network.
 		ResolvedTopologicalNetwork::node_const_iterator nodes_iter = network->nodes_begin();
 		ResolvedTopologicalNetwork::node_const_iterator nodes_end = network->nodes_end();
@@ -846,7 +851,8 @@ GPlatesAppLogic::TopologyUtils::query_resolved_topology_networks_for_interpolati
 						GPLATES_ASSERTION_SOURCE);
 
 				const CgalUtils::cgal_point_2_type cgal_node_point_2 =
-						CgalUtils::convert_point_to_cgal_2(node_point);
+						CgalUtils::project_point_on_sphere_to_azimuthal_equal_area(
+								node_point, proj_center);
 
 				// Iterate over the scalars and insert each one into its own map.
 				for (unsigned int scalar_index = 0; scalar_index < scalars.size(); ++scalar_index)
@@ -924,6 +930,12 @@ GPlatesAppLogic::TopologyUtils::get_resolved_topology_network_scalars(
 				resolved_network.scalar_map_seq[scalar_map_iter_index]->begin());
 	}
 
+	// Compute the centroid of the boundary polygon and get lat lon for projection
+	const GPlatesMaths::LatLonPoint proj_center =
+			GPlatesMaths::make_lat_lon_point(
+					GPlatesMaths::PointOnSphere(
+							resolved_network.network->boundary_polygon()->get_centroid()));
+
 	// Progress through the network points and gather the scalar_tuple from each scalar map.
 	for (std::size_t network_point_index = 0;
 		network_point_index < num_network_points;
@@ -936,7 +948,8 @@ GPlatesAppLogic::TopologyUtils::get_resolved_topology_network_scalars(
 		// network point) so just get it from the first scalar map.
 		const CgalUtils::cgal_point_2_type &cgal_network_point_2 = scalar_map_iters[0]->first;
 		const GPlatesMaths::PointOnSphere network_point =
-				CgalUtils::convert_point_from_cgal_2(cgal_network_point_2);
+				CgalUtils::project_azimuthal_equal_area_to_point_on_sphere(
+						cgal_network_point_2, proj_center);
 
 		// Iterate through the scalar maps and collect each mapped scalar.
 		for (std::size_t scalar_map_iter_index = 0;
@@ -970,8 +983,6 @@ GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_networks(
 		return boost::none;
 	}
 
-	const CgalUtils::cgal_point_2_type cgal_point_2 = CgalUtils::convert_point_to_cgal_2(point);
-
 	// Iterate through the resolved networks.
 	ResolvedNetworksForInterpolationQuery::resolved_network_seq_type::const_iterator rtn_iter =
 			resolved_networks_query->resolved_networks.begin();
@@ -980,6 +991,15 @@ GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_networks(
 	for ( ; rtn_iter != rtn_end; ++rtn_iter)
 	{
 		const resolved_network_for_interpolation_query_shared_ptr_type &resolved_network_query = *rtn_iter;
+
+		// Compute the centroid of the boundary polygon and get lat lon for projection
+		const GPlatesMaths::LatLonPoint proj_center =
+				GPlatesMaths::make_lat_lon_point(
+						GPlatesMaths::PointOnSphere(
+								resolved_network_query->network->boundary_polygon()->get_centroid()));
+
+		const CgalUtils::cgal_point_2_type cgal_point_2 =
+				CgalUtils::project_point_on_sphere_to_azimuthal_equal_area(point, proj_center);
 
 		const boost::optional< std::pair<const ResolvedTopologicalNetwork *, std::vector<double> > >
 				interpolated_scalars =
@@ -1007,8 +1027,6 @@ GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_networks_constrain
 		return boost::none;
 	}
 
-	const CgalUtils::cgal_point_2_type cgal_point_2 = CgalUtils::convert_point_to_cgal_2(point);
-
 	// Iterate through the resolved networks.
 	ResolvedNetworksForInterpolationQuery::resolved_network_seq_type::const_iterator rtn_iter =
 			resolved_networks_query->resolved_networks.begin();
@@ -1017,6 +1035,15 @@ GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_networks_constrain
 	for ( ; rtn_iter != rtn_end; ++rtn_iter)
 	{
 		const resolved_network_for_interpolation_query_shared_ptr_type &resolved_network_query = *rtn_iter;
+
+		// Compute the centroid of the boundary polygon and get lat lon for projection
+		const GPlatesMaths::LatLonPoint proj_center =
+				GPlatesMaths::make_lat_lon_point(
+						GPlatesMaths::PointOnSphere(
+								resolved_network_query->network->boundary_polygon()->get_centroid()));
+
+		const CgalUtils::cgal_point_2_type cgal_point_2 =
+				CgalUtils::project_point_on_sphere_to_azimuthal_equal_area(point, proj_center);
 
 		const boost::optional< std::pair<const ResolvedTopologicalNetwork *, std::vector<double> > >
 				interpolated_scalars =
@@ -1040,7 +1067,14 @@ GPlatesAppLogic::TopologyUtils::interpolate_resolved_topology_network(
 		const resolved_network_for_interpolation_query_shared_ptr_type &resolved_network_query,
 		const GPlatesMaths::PointOnSphere &point)
 {
-	const CgalUtils::cgal_point_2_type cgal_point_2 = CgalUtils::convert_point_to_cgal_2(point);
+	// Compute the centroid of the boundary polygon and get lat lon for projection
+	const GPlatesMaths::LatLonPoint proj_center =
+			GPlatesMaths::make_lat_lon_point(
+					GPlatesMaths::PointOnSphere(
+							resolved_network_query->network->boundary_polygon()->get_centroid()));
+
+	const CgalUtils::cgal_point_2_type cgal_point_2 =
+			CgalUtils::project_point_on_sphere_to_azimuthal_equal_area(point, proj_center);
 
 	return interpolate_resolved_topology_network(resolved_network_query, cgal_point_2);
 }

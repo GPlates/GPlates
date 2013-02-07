@@ -59,6 +59,12 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_t
 	// 2D 
 	//
 
+	// Compute the centroid of the boundary polygon and get lat lon for projection
+	const GPlatesMaths::LatLonPoint proj_center =
+			GPlatesMaths::make_lat_lon_point(
+					GPlatesMaths::PointOnSphere(
+							d_boundary_polygon_ptr->get_centroid()));
+
 	// Iterate over the individual faces of the constrained triangulation and create a
 	// ResolvedTopologicalNetwork for each one.
 	CgalUtils::cgal_finite_faces_2_iterator finite_faces_2_iter = 
@@ -87,18 +93,15 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_t
 			// bary_points_2.push_back( std::make_pair(cgal_triangle_point, 1.0) ); 
 
 			// convert coordinates
-			const float lon = cgal_triangle_point.x();
-			const float lat = cgal_triangle_point.y();
-			const GPlatesMaths::LatLonPoint triangle_point_lat_lon(lat, lon);
-			const GPlatesMaths::PointOnSphere triangle_point =
-					GPlatesMaths::make_point_on_sphere(triangle_point_lat_lon);
-			network_triangle_points.push_back(triangle_point);
+			network_triangle_points.push_back(
+					CgalUtils::project_azimuthal_equal_area_to_point_on_sphere(
+							cgal_triangle_point, proj_center));
 		}
 
 		if ( clip_to_mesh )
 		{ // only create face polygon if its centroid is in mesh area
 
-			// compute centoid of face
+			// compute centroid of face
 			const CgalUtils::cgal_point_2_type c2 = 
 				CGAL::centroid(centroid_points_2.begin(), centroid_points_2.end(),CGAL::Dimension_tag<0>());
 			//std::cout << c2 << std::endl;
@@ -168,6 +171,12 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_c
 	// 2D + Constraints
 	//
 
+	// Compute the centroid of the boundary polygon and get lat lon for projection
+	const GPlatesMaths::LatLonPoint proj_center =
+			GPlatesMaths::make_lat_lon_point(
+					GPlatesMaths::PointOnSphere(
+							d_boundary_polygon_ptr->get_centroid()));
+
 	// Iterate over the individual faces of the constrained triangulation and create a
 	// ResolvedTopologicalNetwork for each one.
 	CgalUtils::cgal_constrained_finite_faces_2_iterator constrained_finite_faces_2_iter = 
@@ -189,12 +198,9 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_c
 			points_2.push_back( cgal_triangle_point );
 
 			// convert coordinates
-			const float lon = cgal_triangle_point.x();
-			const float lat = cgal_triangle_point.y();
-			const GPlatesMaths::LatLonPoint triangle_point_lat_lon(lat, lon);
-			const GPlatesMaths::PointOnSphere triangle_point =
-					GPlatesMaths::make_point_on_sphere(triangle_point_lat_lon);
-			network_triangle_points.push_back(triangle_point);
+			network_triangle_points.push_back(
+					CgalUtils::project_azimuthal_equal_area_to_point_on_sphere(
+							cgal_triangle_point, proj_center));
 		}
 		
 		if ( clip_to_mesh )
@@ -261,6 +267,12 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_m
 	// 2D + C + Mesh 
 	//
 
+	// Compute the centroid of the boundary polygon and get lat lon for projection
+	const GPlatesMaths::LatLonPoint proj_center =
+			GPlatesMaths::make_lat_lon_point(
+					GPlatesMaths::PointOnSphere(
+							d_boundary_polygon_ptr->get_centroid()));
+
 	// Iterate over the individual faces of the constrained triangulation and create a
 	// ResolvedTopologicalNetwork for each one.
 	CgalUtils::cgal_constrained_finite_faces_2_iterator constrained_finite_faces_2_iter = 
@@ -282,14 +294,11 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_m
 			{
 				const CgalUtils::cgal_point_2_type cgal_triangle_point =
 						constrained_finite_faces_2_iter->vertex( index )->point();
-				const float lon = cgal_triangle_point.x();
-				const float lat = cgal_triangle_point.y();
 	
 				// convert coordinates
-				const GPlatesMaths::LatLonPoint triangle_point_lat_lon(lat, lon);
-				const GPlatesMaths::PointOnSphere triangle_point =
-						GPlatesMaths::make_point_on_sphere(triangle_point_lat_lon);
-				network_triangle_points.push_back(triangle_point);
+				network_triangle_points.push_back(
+						CgalUtils::project_azimuthal_equal_area_to_point_on_sphere(
+								cgal_triangle_point, proj_center));
 			}
 		
 			try 

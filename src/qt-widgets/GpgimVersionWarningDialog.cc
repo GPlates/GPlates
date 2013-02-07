@@ -146,16 +146,14 @@ GPlatesQtWidgets::GpgimVersionWarningDialog::tweak_label(
 	default:
 	case SAVE_FILES:
 		label_context->setText(tr(
-				"GPlates saves files using the current GPlates Geological Information Model"
-				" (GPGIM) version %1.\nHowever some files were originally created with different"
-				" GPGIM versions.")
+				"The current GPlates Geological Information Model (GPGIM) version is %1.\n"
+				"GPlates will save files using the current GPGIM version.")
 						.arg(d_gpgim.get_version().version_string()));
 		break;
 
 	case LOAD_FILES:
 		label_context->setText(tr(
-				"GPlates loaded files created with different GPlates Geological Information Model"
-				" (GPGIM) versions than the current GPGIM version %1.")
+				"The current GPlates Geological Information Model (GPGIM) version is %1.")
 						.arg(d_gpgim.get_version().version_string()));
 		break;
 	}

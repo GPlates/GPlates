@@ -927,14 +927,6 @@ qDebug() << "boundary_points.size(): " << boundary_points.size();
 #endif
 
 
-	// 2D + C
-	// add boundary_points as contrained ; do contrain begin and end
-	GPlatesAppLogic::CgalUtils::insert_points_into_constrained_delaunay_triangulation_2(
-		*constrained_delaunay_triangulation_2, 
-		boundary_points.begin(), 
-		boundary_points.end(),
-		true);
-
 	// Create a polygon on sphere for the resolved boundary using 'boundary_points'.
 	GPlatesUtils::GeometryConstruction::GeometryConstructionValidity boundary_polygon_validity;
 	boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> boundary_polygon =
@@ -952,6 +944,15 @@ qDebug() << "boundary_points.size(): " << boundary_points.size();
 				d_currently_visited_feature->feature_id().get());
 		return;
 	}
+
+	// 2D + C
+	// add boundary_points as contrained ; do contrain begin and end
+	GPlatesAppLogic::CgalUtils::insert_points_into_constrained_delaunay_triangulation_2(
+		*constrained_delaunay_triangulation_2, 
+		boundary_points.begin(), 
+		boundary_points.end(),
+		true,
+		boundary_polygon.get());
 
 // qDebug() << "\ncreate_resolved_topology_network: Loop over INTERIOR d_resolved_network.d_interior_geometries\n";
 
@@ -1058,7 +1059,8 @@ qDebug() << "boundary_points.size(): " << boundary_points.size();
 				*constrained_delaunay_triangulation_2, 
 				interior_points.begin(), 
 				interior_points.end(),
-				true);
+				true,
+				boundary_polygon.get());
 
 			continue; // to next interior geometry of the topology
 		}
@@ -1083,7 +1085,8 @@ qDebug() << "boundary_points.size(): " << boundary_points.size();
 				*constrained_delaunay_triangulation_2, 
 				interior_points.begin(), 
 				interior_points.end(),
-				false);
+				false,
+				boundary_polygon.get());
 
 			continue; // to next interior geometry of the topology
 		}
@@ -1105,7 +1108,8 @@ qDebug() << "boundary_points.size(): " << boundary_points.size();
 				*constrained_delaunay_triangulation_2, 
 				interior_points.begin(), 
 				interior_points.end(),
-				true);
+				true,
+				boundary_polygon.get());
 
 // FIXME: this idea should work, but it seems like rounding errors ( or somthing else ?) 
 // causes the last vertex to shift from inside to outside the section polygon
@@ -1150,7 +1154,8 @@ qDebug() << "boundary_points.size(): " << boundary_points.size();
 			*constrained_delaunay_triangulation_2, 
 			group_of_related_points.begin(), 
 			group_of_related_points.end(),
-			true); //do contrain begin and end
+			true, //do contrain begin and end
+			boundary_polygon.get());
 	}
 
 	// Now add all the scattered_pointsl ; 
@@ -1160,7 +1165,8 @@ qDebug() << "boundary_points.size(): " << boundary_points.size();
 			*constrained_delaunay_triangulation_2, 
 			scattered_points.begin(), 
 			scattered_points.end(),
-			false); //do NOT contrain every point to ever other point 
+			false,
+			boundary_polygon.get()); //do NOT contrain every point to ever other point 
 	}
 
 
@@ -1169,7 +1175,8 @@ qDebug() << "boundary_points.size(): " << boundary_points.size();
 	GPlatesAppLogic::CgalUtils::insert_points_into_delaunay_triangulation_2(
 		*delaunay_triangulation_2, 
 		all_network_points.begin(), 
-		all_network_points.end() );
+		all_network_points.end(),
+		boundary_polygon.get());
 
 #if 0
 	// 2D + C
@@ -1213,7 +1220,10 @@ qDebug() << "boundary_points.size(): " << boundary_points.size();
 	if (all_seed_points.size() > 0) 
 	{
 		GPlatesAppLogic::CgalUtils::insert_seed_points_into_constrained_mesh(
-			*constrained_mesher, all_seed_points.begin(), all_seed_points.end());
+				*constrained_mesher,
+				all_seed_points.begin(),
+				all_seed_points.end(),
+				boundary_polygon.get());
 	}
 
 	// Mesh the data 
