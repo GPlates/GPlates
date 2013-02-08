@@ -1,11 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<GPGIM gpgim:version="1.6.0320" xmlns="http://www.gplates.org/gpgim" xmlns:gpgim="http://www.gplates.org/gpgim" xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance">
+<GPGIM gpgim:version="1.6.0322" xmlns="http://www.gplates.org/gpgim" xmlns:gpgim="http://www.gplates.org/gpgim" xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance">
 	<!--
 		==================================================
 		==================================================
+		 
 		 The GPlates Geological Information Model (GPGIM)
+		             Core GPGIM Master file
+		 
 		==================================================
 		==================================================
+	-->
+	
+	<!--
+		/**
+		* Copyright (C) 2013 California Institute of Technology
+		* Copyright (C) 2013 Geological Survey of Norway
+		* Copyright (C) 2013 The University of Sydney, Australia
+		*
+		* This file is part of GPlates.
+		*
+		* GPlates is free software; you can redistribute it and/or modify it under
+		* the terms of the GNU General Public License, version 2, as published by
+		* the Free Software Foundation.
+		*
+		* GPlates is distributed in the hope that it will be useful, but WITHOUT
+		* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+		* FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+		* for more details.
+		*
+		* You should have received a copy of the GNU General Public License along
+		* with this program; if not, write to Free Software Foundation, Inc.,
+		* 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+		*/
 	-->
 	
 	<!--
@@ -1071,6 +1097,12 @@
 			<Multiplicity>0..1</Multiplicity>
 		</Property>
 		<Property>
+			<Name>gpml:subductionZoneConvergence</Name>
+			<Description>Convergence rate of subduction zone in cm/year.</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
 			<Name>gpml:subductionZoneDeepDip</Name>
 			<Description>Subduction zone deep dig.</Description>
 			<Type>xsi:double</Type>
@@ -1934,6 +1966,7 @@
 			<Property>gpml:slabFlatLying</Property>
 			<Property>gpml:slabFlatLyingDepth</Property>
 			<Property>gpml:subductionZoneAge</Property>
+			<Property>gpml:subductionZoneConvergence</Property>
 			<Property>gpml:subductionZoneDeepDip</Property>
 			<Property>gpml:subductionZoneDepth</Property>
 			<Property>gpml:centerLineOf</Property>
@@ -1980,6 +2013,17 @@
 			<Comment>Currently, this feature provides for contour and outline data. This feature is intended to support gridded data in a future release.</Comment>
 		</FeatureClass>
 		<FeatureClass>
+			<Name>gpml:StrainMarker</Name>
+			<Description>Location on the surface to show stain data computed from interpolation via a Topologicl Network feature.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:position</Property>
+			<Property>gpml:multiPosition</Property>
+			<Property>gpml:trail</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+			<Comment>StrainMarker features are usually shown with a cross symobol, where the magnitude of each axis shows the value for a principle strain.</Comment>
+		</FeatureClass>
+		<FeatureClass>
 			<Name>gpml:Stress</Name>
 			<Description>Stress grids and contour data.</Description>
 			<ClassType>concrete</ClassType>
@@ -1994,6 +2038,7 @@
 			<Property>gpml:subductionPolarity</Property>
 			<Property>gpml:islandArc</Property>
 			<Property>gpml:subductionZoneAge</Property>
+			<Property>gpml:subductionZoneConvergence</Property>
 			<Property>gpml:subductionZoneDeepDip</Property>
 			<Property>gpml:subductionZoneDepth</Property>
 			<Property>gpml:isActive</Property>
