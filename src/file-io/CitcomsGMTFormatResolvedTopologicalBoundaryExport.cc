@@ -216,6 +216,31 @@ namespace GPlatesFileIO
 			}
 
 			/**
+			 * Looks for "gpml:subductionZoneConvergence" property in feature 
+			 * otherwise returns false.
+			 */
+			bool
+			get_feature_sz_convergence(
+					QString &age,
+					const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+			{
+				static const GPlatesModel::PropertyName property_name =
+					GPlatesModel::PropertyName::create_gpml("subductionZoneConvergence");
+				const GPlatesPropertyValues::XsDouble *property_value = NULL;
+
+				if (!GPlatesFeatureVisitors::get_property_value( feature, property_name, property_value))
+				{
+					return false;
+				}
+				double d = property_value->value();
+				std::string s = GPlatesUtils::formatted_double_to_string(d, 9, 1);
+				QString qs( s.c_str() );
+				age = qs;
+				return true;
+			}
+
+
+			/**
 			 * Looks for "gpml:subductionZoneDeepDip" property in feature 
 			 * otherwise returns false.
 			 */
@@ -523,6 +548,14 @@ namespace GPlatesFileIO
 					if ( get_feature_sz_age(age, feature) )
 					{
 						d_header_line.append( age );
+					}
+					else { d_header_line.append( unk ); }
+
+					QString convergence;
+					d_header_line.append( " # subductionZoneConvergence: " );
+					if ( get_feature_sz_convergence(convergence, feature) )
+					{
+						d_header_line.append( convergence );
 					}
 					else { d_header_line.append( unk ); }
 
