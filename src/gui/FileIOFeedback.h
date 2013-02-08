@@ -194,23 +194,31 @@ namespace GPlatesGui
 
 		/**
 		 * Save the specified files as though the 'save in place' button was used.
+		 *
 		 * If @a include_unnamed_files, we'll also try to save files that don't have names yet,
 		 * which will mean popping up save dialogs.
+		 *
+		 * If @a only_unsaved_changes is true then only files with unsaved changes will be saved.
 		 */
 		bool
 		save_files(
 				const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &files,
-				bool include_unnamed_files);
+				bool include_unnamed_files,
+				bool only_unsaved_changes);
 
 
 		/**
 		 * Save all files as though the 'save in place' button was used.
+		 *
 		 * If @a include_unnamed_files, we'll also try to save files that don't have names yet,
 		 * which will mean popping up save dialogs.
+		 *
+		 * If @a only_unsaved_changes is true then only files with unsaved changes will be saved.
 		 */
 		bool
 		save_all(
-				bool include_unnamed_files);
+				bool include_unnamed_files,
+				bool only_unsaved_changes);
 
 	public Q_SLOTS:
 

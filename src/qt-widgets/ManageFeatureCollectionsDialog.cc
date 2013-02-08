@@ -282,7 +282,7 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::ManageFeatureCollectionsDialog
 
 	// Set up slots for Open File and Save All
 	QObject::connect(button_open_file, SIGNAL(clicked()), d_gui_file_io_feedback_ptr, SLOT(open_files()));
-	QObject::connect(button_save_all, SIGNAL(clicked()), this, SLOT(save_all_named()));
+	QObject::connect(button_save_all_changes, SIGNAL(clicked()), this, SLOT(save_all_named_changes()));
 
 	// Set up slots for Save Selected, Unload Selected, Reload Selected and Clear Selection.
 	QObject::connect(button_save_selected, SIGNAL(clicked()), this, SLOT(save_selected()));
@@ -775,33 +775,34 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::remove_row(
 
 
 void
-GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_all_named()
+GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_all_named_changes()
 {
-	save_all(false);
+	save_all(false/*include_unnamed_files*/, true/*only_unsaved_changes*/);
 }
 
 
 void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_all(
-		bool include_unnamed_files)
+		bool include_unnamed_files,
+		bool only_unsaved_changes)
 {
 	// Instant feedback is nice for such a long operation with no progress bars (yet).
-	QString button_text_normal = button_save_all->text();
-	button_save_all->setText(tr("Saving..."));
-	button_save_all->setEnabled(false);
+	QString button_text_normal = button_save_all_changes->text();
+	button_save_all_changes->setText(tr("Saving..."));
+	button_save_all_changes->setEnabled(false);
 	// Attempting to make the GUI actually update...
-	button_save_all->update();
+	button_save_all_changes->update();
 	QCoreApplication::processEvents();
 
 	// Save all, with feedback.
-	d_gui_file_io_feedback_ptr->save_all(include_unnamed_files);
+	d_gui_file_io_feedback_ptr->save_all(include_unnamed_files, only_unsaved_changes);
 
 	// Update each row.
 	highlight_unsaved_changes();
 
 	// Re-enable button.
-	button_save_all->setText(button_text_normal);
-	button_save_all->setEnabled(true);
+	button_save_all_changes->setText(button_text_normal);
+	button_save_all_changes->setEnabled(true);
 }
 
 
@@ -821,7 +822,11 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_selected()
 			get_selected_files(table_feature_collections);
 
 	// Save selected files, with feedback.
-	d_gui_file_io_feedback_ptr->save_files(selected_files, false/*include_unnamed_files*/);
+	d_gui_file_io_feedback_ptr->save_files(
+			selected_files,
+			false/*include_unnamed_files*/,
+			// We're saving whether the files have unsaved changes or not...
+			false/*only_unsaved_changes*/);
 
 	// Update each row.
 	highlight_unsaved_changes();

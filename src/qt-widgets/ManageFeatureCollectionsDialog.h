@@ -175,7 +175,7 @@ namespace GPlatesQtWidgets
 		 * have not yet been given filenames.
 		 */
 		void
-		save_all_named();
+		save_all_named_changes();
 
 	private Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -281,12 +281,16 @@ namespace GPlatesQtWidgets
 
 
 		/**
-		 * Goes through each loaded file and saves-in-place each one that needs saving.
+		 * Goes through each loaded file and saves-in-place.
+		 *
+		 * If @a only_unsaved_changes is true then only files with unsaved changes will be saved.
+		 *
 		 * Will prompt for filenames on unnamed collections if @a include_unnamed_files.
 		 */
 		void
 		save_all(
-				bool include_unnamed_files);
+				bool include_unnamed_files,
+				bool only_unsaved_changes);
 
 		/**
 		 * Recolours a single row's background based on saved/unsaved state.

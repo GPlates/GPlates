@@ -221,11 +221,14 @@ namespace
 	 * Returns the list of filenames for files with a different GPGIM version than the current
 	 * GPGIM version (built into this GPlates).
 	 *
+	 * If @a only_unsaved_changes is true then only files with unsaved changes will be checked.
+	 *
 	 * Returns true if there are any files in the list(s).
 	 */
 	bool
 	get_files_with_different_gpgim_version(
 			const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &files,
+			bool only_unsaved_changes,
 			const GPlatesModel::Gpgim &gpgim,
 			QStringList &older_version_filenames,
 			QStringList &newer_version_filenames)
@@ -237,6 +240,12 @@ namespace
 		{
 			const GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
 					file.get_file().get_feature_collection();
+
+			// If we are only getting files with unsaved changes then skip those that have no changes.
+			if (only_unsaved_changes && !feature_collection_ref->contains_unsaved_changes())
+			{
+				continue;
+			}
 
 			// Look for the GPGIM version tag in the feature collection.
 			GPlatesModel::FeatureCollectionHandle::tags_type::const_iterator tag_iter =
@@ -283,11 +292,14 @@ namespace
 	 * Shows the GPGIM version warning dialog, if necessary, to inform the user that there exist
 	 * files with a different GPGIM version than the current GPGIM version (built into this GPlates).
 	 *
+	 * If @a only_unsaved_changes is true then only files with unsaved changes will be saved.
+	 *
 	 * Returns true if the files should be saved.
 	 */
 	bool
 	show_save_files_gpgim_version_dialog_if_necessary(
 			const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &files,
+			bool only_unsaved_changes,
 			GPlatesQtWidgets::GpgimVersionWarningDialog *gpgim_version_warning_dialog,
 			const GPlatesModel::Gpgim &gpgim)
 	{
@@ -297,6 +309,7 @@ namespace
 		// If there are no older or newer versions then we can save the files without querying the user.
 		if (!get_files_with_different_gpgim_version(
 			files,
+			only_unsaved_changes,
 			gpgim,
 			older_version_filenames,
 			newer_version_filenames))
@@ -331,6 +344,7 @@ namespace
 		// If there are no older or newer versions then we don't need to warn the user.
 		if (!get_files_with_different_gpgim_version(
 			files,
+			false/*only_unsaved_changes*/, // Include all files (saved or unsaved).
 			gpgim,
 			older_version_filenames,
 			newer_version_filenames))
@@ -564,6 +578,8 @@ GPlatesGui::FileIOFeedback::save_file_in_place(
 	// was originally created with.
 	if (!show_save_files_gpgim_version_dialog_if_necessary(
 			std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>(1, file),
+			// We're saving whether the file has unsaved changes or not...
+			false/*only_unsaved_changes*/,
 			d_gpgim_version_warning_dialog_ptr,
 			d_app_state_ptr->get_gpgim()))
 	{
@@ -811,12 +827,14 @@ GPlatesGui::FileIOFeedback::save_file(
 bool
 GPlatesGui::FileIOFeedback::save_files(
 		const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &files,
-		bool include_unnamed_files)
+		bool include_unnamed_files,
+		bool only_unsaved_changes)
 {
 	// Warn the user if they are about to save files using a different GPGIM version than the files
 	// were originally created with.
 	if (!show_save_files_gpgim_version_dialog_if_necessary(
 			files,
+			only_unsaved_changes,
 			d_gpgim_version_warning_dialog_ptr,
 			d_app_state_ptr->get_gpgim()))
 	{
@@ -844,6 +862,16 @@ GPlatesGui::FileIOFeedback::save_files(
 		// Get the FeatureCollectionHandle, to determine unsaved state.
 		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
 				file.get_file().get_feature_collection();
+		if (!feature_collection_ref.is_valid())
+		{
+			continue;
+		}
+		
+		// If we are only saving files with unsaved changes then skip those that have no changes.
+		if (only_unsaved_changes && !feature_collection_ref->contains_unsaved_changes())
+		{
+			continue;
+		}
 
 		// Previously we only saved the file if there were unsaved changes.
 		// However we now save regardless to ensure that the GPGIM version written to the file
@@ -885,13 +913,14 @@ GPlatesGui::FileIOFeedback::save_files(
 
 bool
 GPlatesGui::FileIOFeedback::save_all(
-		bool include_unnamed_files)
+		bool include_unnamed_files,
+		bool only_unsaved_changes)
 {
 	// For each loaded file; if it has unsaved changes, behave as though 'save in place' was clicked.
 	const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
 			d_file_state_ptr->get_loaded_files();
 
-	return save_files(loaded_files, include_unnamed_files);
+	return save_files(loaded_files, include_unnamed_files, only_unsaved_changes);
 }
 
 
