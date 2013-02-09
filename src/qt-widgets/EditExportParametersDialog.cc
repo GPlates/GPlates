@@ -33,6 +33,7 @@
 
 #include "EditExportParametersDialog.h"
 #include "ExportAnimationDialog.h"
+#include "ExportFileNameTemplateWidget.h"
 #include "ExportOptionsWidget.h"
 #include "QtWidgetUtils.h"
 
@@ -45,24 +46,6 @@
 #include "presentation/ViewState.h"
 
 
-namespace GPlatesQtWidgets
-{
-	namespace
-	{
-		void
-		set_fixed_size_for_item_view(
-				QAbstractItemView *view)
-		{
-			int num_rows = view->model()->rowCount();
-			if (num_rows > 0)
-			{
-				view->setFixedHeight(view->sizeHintForRow(0) * (num_rows + 1));
-			}
-		}
-	}
-}
-
-
 GPlatesQtWidgets::EditExportParametersDialog::EditExportParametersDialog(
 		GPlatesGui::ExportAnimationContext::non_null_ptr_type export_animation_context_ptr,
 		QWidget *parent_):
@@ -71,14 +54,11 @@ GPlatesQtWidgets::EditExportParametersDialog::EditExportParametersDialog(
 			Qt::CustomizeWindowHint | 
 			Qt::WindowTitleHint | 
 			Qt::WindowSystemMenuHint),
-	d_export_animation_context_ptr(
-			export_animation_context_ptr),
+	d_export_animation_context_ptr(export_animation_context_ptr),
+	d_export_file_name_template_widget(NULL),
 	d_export_options_widget_layout(NULL)
 {
 	setupUi(this);
-	set_fixed_size_for_item_view(treeWidget_template);
-	treeWidget_template->setHeaderHidden(true);
-	treeWidget_template->header()->setResizeMode(0, QHeaderView::ResizeToContents);
 
 	// Make the export options a scroll area since we don't know how many options
 	// will be dynamically placed there.
@@ -92,6 +72,12 @@ GPlatesQtWidgets::EditExportParametersDialog::EditExportParametersDialog(
 
 	// Qt advises setting the widget on the scroll area after its layout has been set.
 	widget_export_options->setWidget(scrollarea_widget);
+
+	// Create the filename template widget and add it to the placeholder.
+	d_export_file_name_template_widget = new ExportFileNameTemplateWidget(this);
+	QtWidgetUtils::add_widget_to_placeholder(
+			d_export_file_name_template_widget,
+			export_filename_template_place_holder);
 
 	QObject::connect(
 			main_buttonbox,
@@ -114,8 +100,7 @@ GPlatesQtWidgets::EditExportParametersDialog::initialise(
 		GPlatesGui::ExportAnimationType::ExportID export_id,
 		const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr &export_configuration)
 {
-	lineEdit_filename->clear();
-	label_file_extension->clear();
+	d_export_file_name_template_widget->clear_file_name_template();
 
 	d_export_row_in_animation_dialog = export_row_in_animation_dialog;
 	d_export_id = export_id;
@@ -124,26 +109,10 @@ GPlatesQtWidgets::EditExportParametersDialog::initialise(
 	// Display the filename template.
 	//
 
-	// Separate the filename template into base name and extension.
 	const QString filename_template = export_configuration->get_filename_template();
-	const QString export_format_filename_extension = "." +
-			GPlatesGui::ExportAnimationType::get_export_format_filename_extension(
-					GPlatesGui::ExportAnimationType::get_export_format(d_export_id.get()));
-
-	// Set the filename template base name and extension.
-	if (filename_template.endsWith(export_format_filename_extension))
-	{
-		lineEdit_filename->setText(
-				filename_template.left(filename_template.size() - export_format_filename_extension.size()));
-		label_file_extension->setText(
-				filename_template.right(export_format_filename_extension.size()));
-	}
-	else
-	{
-		// File format has no filename extension.
-		lineEdit_filename->setText(filename_template);
-		label_file_extension->setText("");
-	}
+	d_export_file_name_template_widget->set_file_name_template(
+			filename_template,
+			GPlatesGui::ExportAnimationType::get_export_format(d_export_id.get()));
 
 	//
 	// Display the export options.
@@ -153,7 +122,7 @@ GPlatesQtWidgets::EditExportParametersDialog::initialise(
 
 
 	// Focus on the filename template line edit.
-	lineEdit_filename->setFocus();
+	d_export_file_name_template_widget->focus_on_line_edit_filename();
 }
 
 
@@ -164,7 +133,7 @@ GPlatesQtWidgets::EditExportParametersDialog::react_edit_item_accepted()
 			d_export_id && d_export_row_in_animation_dialog,
 			GPLATES_ASSERTION_SOURCE);
 
-	QString filename_template = lineEdit_filename->text() + label_file_extension->text();		
+	QString filename_template = d_export_file_name_template_widget->get_file_name_template();
 
 	GPlatesGui::ExportAnimationRegistry &export_animation_registry =
 			d_export_animation_context_ptr->view_state().get_export_animation_registry();

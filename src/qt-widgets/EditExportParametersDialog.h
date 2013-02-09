@@ -44,6 +44,7 @@
 
 namespace GPlatesQtWidgets
 {
+	class ExportFileNameTemplateWidget;
 	class ExportOptionsWidget;
 
 	class EditExportParametersDialog : 
@@ -89,6 +90,11 @@ namespace GPlatesQtWidgets
 		 * It keeps all the actual export parameters.
 		 */
 		GPlatesGui::ExportAnimationContext::non_null_ptr_type d_export_animation_context_ptr;
+
+		/**
+		 * Used to set and retrieve the filename template.
+		 */
+		ExportFileNameTemplateWidget *d_export_file_name_template_widget;
 
 		/**
 		 * The export table row, in ExportAnimationDialog, of the export configuration being edited.

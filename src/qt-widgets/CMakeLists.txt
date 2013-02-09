@@ -201,6 +201,9 @@ set(srcs
     ExportCoordinatesDialog.cc
     ExportCoordinatesDialog.h
     ExportCoordinatesDialogUi.ui
+    ExportFileNameTemplateWidget.cc
+    ExportFileNameTemplateWidget.h
+    ExportFileNameTemplateWidgetUi.ui
     ExportFileOptionsWidget.h
     ExportFileOptionsWidgetUi.ui
     ExportFlowlineOptionsWidget.h
