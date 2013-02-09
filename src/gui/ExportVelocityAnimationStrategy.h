@@ -104,7 +104,7 @@ namespace GPlatesGui
 
 			explicit
 			Configuration(
-					const QString& filename_template_,
+					const QString &filename_template_,
 					FileFormat file_format_,
 					const ExportOptionsUtils::ExportFileOptions &file_options_,
 					GPlatesFileIO::MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format_,

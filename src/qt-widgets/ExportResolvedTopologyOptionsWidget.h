@@ -56,11 +56,11 @@ namespace GPlatesQtWidgets
 		create(
 				QWidget *parent,
 				const GPlatesGui::ExportResolvedTopologyAnimationStrategy::const_configuration_ptr &
-						default_export_configuration,
+						export_configuration,
 				bool configure_dateline_wrapping)
 		{
 			return new ExportResolvedTopologyOptionsWidget(
-					parent, default_export_configuration, configure_dateline_wrapping);
+					parent, export_configuration, configure_dateline_wrapping);
 		}
 
 
@@ -83,7 +83,7 @@ namespace GPlatesQtWidgets
 		ExportResolvedTopologyOptionsWidget(
 				QWidget *parent_,
 				const GPlatesGui::ExportResolvedTopologyAnimationStrategy::const_configuration_ptr &
-						default_export_configuration,
+						export_configuration,
 				bool configure_dateline_wrapping);
 
 

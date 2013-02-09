@@ -32,10 +32,10 @@
 GPlatesQtWidgets::ExportCitcomsResolvedTopologyOptionsWidget::ExportCitcomsResolvedTopologyOptionsWidget(
 		QWidget *parent_,
 		const GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::const_configuration_ptr &
-				default_export_configuration,
+				export_configuration,
 		bool configure_dateline_wrapping) :
 	ExportOptionsWidget(parent_),
-	d_export_configuration(*default_export_configuration),
+	d_export_configuration(*export_configuration),
 	d_dateline_wrap_options_widget(NULL)
 {
 	setupUi(this);

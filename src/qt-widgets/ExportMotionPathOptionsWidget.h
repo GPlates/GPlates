@@ -56,11 +56,11 @@ namespace GPlatesQtWidgets
 		create(
 				QWidget *parent,
 				const GPlatesGui::ExportMotionPathAnimationStrategy::const_configuration_ptr &
-						default_export_configuration,
+						export_configuration,
 				bool configure_dateline_wrapping)
 		{
 			return new ExportMotionPathOptionsWidget(
-					parent, default_export_configuration, configure_dateline_wrapping);
+					parent, export_configuration, configure_dateline_wrapping);
 		}
 
 
@@ -94,12 +94,12 @@ namespace GPlatesQtWidgets
 		ExportMotionPathOptionsWidget(
 				QWidget *parent_,
 				const GPlatesGui::ExportMotionPathAnimationStrategy::const_configuration_ptr &
-						default_export_configuration,
+						export_configuration,
 				bool configure_dateline_wrapping) :
 			ExportOptionsWidget(parent_),
 			d_dateline_wrap_options_widget(NULL),
 			d_export_file_options_widget(NULL),
-			d_export_configuration(*default_export_configuration)
+			d_export_configuration(*export_configuration)
 		{
 			QVBoxLayout *widget_layout = new QVBoxLayout(this);
 			widget_layout->setContentsMargins(0, 0, 0, 0);
@@ -116,7 +116,7 @@ namespace GPlatesQtWidgets
 			d_export_file_options_widget =
 					ExportFileOptionsWidget::create(
 							parent_,
-							default_export_configuration->file_options);
+							export_configuration->file_options);
 			widget_layout->addWidget(d_export_file_options_widget);
 		}
 

@@ -374,6 +374,20 @@
                </widget>
               </item>
               <item>
+               <widget class="QToolButton" name="button_edit">
+                <property name="text">
+                 <string>Edit...</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="../qt-resources/qt_widgets.qrc">
+                  <normaloff>:/gnome_gtk_edit_16.png</normaloff>:/gnome_gtk_edit_16.png</iconset>
+                </property>
+                <property name="toolButtonStyle">
+                 <enum>Qt::ToolButtonTextBesideIcon</enum>
+                </property>
+               </widget>
+              </item>
+              <item>
                <spacer>
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
@@ -700,7 +714,7 @@
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>&amp;Add Export Type...</string>
+                 <string>&amp;Add Export...</string>
                 </property>
                 <property name="icon">
                  <iconset resource="../qt-resources/qt_widgets.qrc">
@@ -725,6 +739,20 @@
                 <property name="icon">
                  <iconset resource="../qt-resources/qt_widgets.qrc">
                   <normaloff>:/tango_list_remove_16.png</normaloff>:/tango_list_remove_16.png</iconset>
+                </property>
+                <property name="toolButtonStyle">
+                 <enum>Qt::ToolButtonTextBesideIcon</enum>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QToolButton" name="button_single_edit">
+                <property name="text">
+                 <string>Edit...</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="../qt-resources/qt_widgets.qrc">
+                  <normaloff>:/gnome_gtk_edit_16.png</normaloff>:/gnome_gtk_edit_16.png</iconset>
                 </property>
                 <property name="toolButtonStyle">
                  <enum>Qt::ToolButtonTextBesideIcon</enum>

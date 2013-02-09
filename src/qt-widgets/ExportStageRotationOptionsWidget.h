@@ -56,11 +56,11 @@ namespace GPlatesQtWidgets
 		create(
 				QWidget *parent,
 				const GPlatesGui::ExportStageRotationAnimationStrategy::const_configuration_ptr &
-						default_export_configuration)
+						export_configuration)
 		{
 			return new ExportStageRotationOptionsWidget(
 					parent,
-					default_export_configuration);
+					export_configuration);
 		}
 
 
@@ -94,11 +94,11 @@ namespace GPlatesQtWidgets
 		ExportStageRotationOptionsWidget(
 				QWidget *parent_,
 				const GPlatesGui::ExportStageRotationAnimationStrategy::const_configuration_ptr &
-						default_export_configuration) :
+						export_configuration) :
 			ExportOptionsWidget(parent_),
 			d_export_rotation_options_widget(NULL),
 			d_export_stage_rotation_only_options_widget(NULL),
-			d_export_configuration(*default_export_configuration)
+			d_export_configuration(*export_configuration)
 		{
 			QVBoxLayout *widget_layout = new QVBoxLayout(this);
 			widget_layout->setContentsMargins(0, 0, 0, 0);
@@ -107,14 +107,14 @@ namespace GPlatesQtWidgets
 			d_export_rotation_options_widget =
 					ExportRotationOptionsWidget::create(
 							parent_,
-							default_export_configuration->rotation_options);
+							export_configuration->rotation_options);
 			widget_layout->addWidget(d_export_rotation_options_widget);
 
 			// Delegate to the export *stage* rotation options widget to collect the *stage* rotation options.
 			d_export_stage_rotation_only_options_widget =
 					ExportStageRotationOnlyOptionsWidget::create(
 							parent_,
-							default_export_configuration->stage_rotation_options);
+							export_configuration->stage_rotation_options);
 			widget_layout->addWidget(d_export_stage_rotation_only_options_widget);
 		}
 

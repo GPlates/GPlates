@@ -33,10 +33,10 @@
 GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::ExportResolvedTopologyOptionsWidget(
 		QWidget *parent_,
 		const GPlatesGui::ExportResolvedTopologyAnimationStrategy::const_configuration_ptr &
-				default_export_configuration,
+				export_configuration,
 		bool configure_dateline_wrapping) :
 	ExportOptionsWidget(parent_),
-	d_export_configuration(*default_export_configuration),
+	d_export_configuration(*export_configuration),
 	d_dateline_wrap_options_widget(NULL),
 	d_export_file_options_widget(NULL)
 {
@@ -56,7 +56,7 @@ GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::ExportResolvedTopologyOpt
 	d_export_file_options_widget =
 			ExportFileOptionsWidget::create(
 					parent_,
-					default_export_configuration->file_options);
+					export_configuration->file_options);
 	QtWidgetUtils::add_widget_to_placeholder(
 			d_export_file_options_widget,
 			widget_file_options);

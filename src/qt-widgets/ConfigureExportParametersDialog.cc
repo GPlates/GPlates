@@ -295,20 +295,25 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_format_selection
 
 	main_buttonbox->button(QDialogButtonBox::Ok)->setEnabled(true);
 
-	lineEdit_filename->setText(
-			export_animation_registry.get_default_filename_template(selected_export_id));
-
-	// Set the export format filename extension.
-	const QString export_format_filename_extension =
+	// Separate the filename template into base name and extension.
+	const QString filename_template =
+			export_animation_registry.get_default_filename_template(selected_export_id);
+	const QString export_format_filename_extension = "." +
 			GPlatesGui::ExportAnimationType::get_export_format_filename_extension(selected_export_format);
-	if (export_format_filename_extension.isEmpty())
+
+	// Set the filename template base name and extension.
+	if (filename_template.endsWith(export_format_filename_extension))
 	{
-		// File format has not filename extension.
-		label_file_extension->setText(QString(""));
+		lineEdit_filename->setText(
+				filename_template.left(filename_template.size() - export_format_filename_extension.size()));
+		label_file_extension->setText(
+				filename_template.right(export_format_filename_extension.size()));
 	}
 	else
 	{
-		label_file_extension->setText(QString(".") + export_format_filename_extension);
+		// File format has no filename extension.
+		lineEdit_filename->setText(filename_template);
+		label_file_extension->setText("");
 	}
 
 	//
@@ -336,8 +341,9 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_add_item_clicked()
 	{
 		return;
 	}
-	
-	QString filename_template = lineEdit_filename->text() + label_file_extension->text();		
+
+	// Recombine the filename template from the base name and the extension.
+	QString filename_template = lineEdit_filename->text() + label_file_extension->text();
 
 	// Get the currently selected export type and format.
 	const GPlatesGui::ExportAnimationType::Type selected_export_type = get_export_type(
@@ -398,13 +404,6 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_add_item_clicked()
 				const_default_export_cfg->clone();
 		default_export_cfg->set_filename_template(filename_template);
 		export_cfg = default_export_cfg;
-	}
-
-	delete d_listWidget_format->takeItem(d_listWidget_format->currentRow());
-
-	if (d_listWidget_format->count() == 0)
-	{
-		delete listWidget_export_items->takeItem(listWidget_export_items->currentRow());
 	}
 
 	clear_export_options_widget();

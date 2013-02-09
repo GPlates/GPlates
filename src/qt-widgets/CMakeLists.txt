@@ -137,6 +137,9 @@ set(srcs
     EditEnumerationWidget.cc
     EditEnumerationWidget.h
     EditEnumerationWidgetUi.ui
+    EditExportParametersDialog.cc
+    EditExportParametersDialog.h
+    EditExportParametersDialogUi.ui
     EditFeaturePropertiesWidget.cc
     EditFeaturePropertiesWidget.h
     EditFeaturePropertiesWidgetUi.ui
