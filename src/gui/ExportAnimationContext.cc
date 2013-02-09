@@ -110,11 +110,11 @@ GPlatesGui::ExportAnimationContext::do_export()
 
 		// Run through each of the exporters for one iteration.
 		bool ok = true;
-		exporter_map_type::iterator export_it = d_exporter_map.begin();
-		exporter_map_type::iterator export_end = d_exporter_map.end();
+		exporter_multimap_type::iterator export_it = d_exporter_multimap.begin();
+		exporter_multimap_type::iterator export_end = d_exporter_multimap.end();
 
 		d_export_animation_dialog_ptr->update_single_frame_progress_bar(
-					0,d_exporter_map.size());
+					0,d_exporter_multimap.size());
 		int count=0;
 		for (; export_it != export_end; ++export_it, count++) 
 		{
@@ -122,13 +122,13 @@ GPlatesGui::ExportAnimationContext::do_export()
 				(*export_it).second->check_filename_sequence() &&
 				(*export_it).second->do_export_iteration(frame_index);
 			d_export_animation_dialog_ptr->update_single_frame_progress_bar(
-					count, d_exporter_map.size());
+					count, d_exporter_multimap.size());
 		}
 		
 		if ( ! ok) {
 			// Failed. Just quit the whole thing.
-			exporter_map_type::iterator failed_it = d_exporter_map.begin();
-			exporter_map_type::iterator failed_end = d_exporter_map.end();
+			exporter_multimap_type::iterator failed_it = d_exporter_multimap.begin();
+			exporter_multimap_type::iterator failed_end = d_exporter_multimap.end();
 			for (; failed_it != failed_end; ++failed_it) {
 				(*failed_it).second->wrap_up(false);
 			}
@@ -140,12 +140,12 @@ GPlatesGui::ExportAnimationContext::do_export()
 		// Move the dialog's progress bar to indicate we have finished this frame number.
 		d_export_animation_dialog_ptr->update_progress_bar(length, frame_number);
 		d_export_animation_dialog_ptr->update_single_frame_progress_bar(
-			count, d_exporter_map.size());
+			count, d_exporter_multimap.size());
 	}
 
 	// All finished! Allow exporters to do some clean-up, if they need to.
-	exporter_map_type::iterator done_it = d_exporter_map.begin();
-	exporter_map_type::iterator done_end = d_exporter_map.end();
+	exporter_multimap_type::iterator done_it = d_exporter_multimap.begin();
+	exporter_multimap_type::iterator done_end = d_exporter_multimap.end();
 	for (; done_it != done_end; ++done_it) {
 		(*done_it).second->wrap_up(true);
 	}
@@ -168,13 +168,6 @@ GPlatesGui::ExportAnimationContext::add_export_animation_strategy(
 		ExportAnimationType::ExportID export_id,
 		const ExportAnimationStrategy::const_configuration_base_ptr &export_configuration)
 {
-	exporter_map_type::iterator exporter_iter = d_exporter_map.find(export_id);
-
-	if (exporter_iter != d_exporter_map.end())
-	{
-		d_exporter_map.erase(exporter_iter);
-	}
-
 	ExportAnimationRegistry &export_animation_registry =
 			view_state().get_export_animation_registry();
 
@@ -184,6 +177,6 @@ GPlatesGui::ExportAnimationContext::add_export_animation_strategy(
 					*this,
 					export_configuration);
 
-	d_exporter_map.insert(
+	d_exporter_multimap.insert(
 			std::make_pair(export_id, export_animation_strategy));
 }

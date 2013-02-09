@@ -26,7 +26,6 @@
 #ifndef GPLATES_QTWIDGETS_CONFIGUREEXPORTPARAMETERSDIALOG_H
 #define GPLATES_QTWIDGETS_CONFIGUREEXPORTPARAMETERSDIALOG_H
 
-#include <set>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
@@ -263,9 +262,6 @@ namespace GPlatesQtWidgets
 			}
 		};
 
-		//! Typedef for a set of exporters - identified by their export IDs.
-		typedef std::set<GPlatesGui::ExportAnimationType::ExportID> exporter_set_type;
-
 
 		/**
 		 * The ExportAnimationContext is the Context role of the Strategy pattern
@@ -274,9 +270,6 @@ namespace GPlatesQtWidgets
 		 * It keeps all the actual export parameters.
 		 */
 		GPlatesGui::ExportAnimationContext::non_null_ptr_type d_export_animation_context_ptr;
-
-		//! The currently added exporters - added by the user.
-		exporter_set_type d_exporters_added;
 
 		bool d_is_single_frame;
 

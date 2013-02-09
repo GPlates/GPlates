@@ -188,40 +188,10 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_export_type_list_w
 	{
 		const GPlatesGui::ExportAnimationType::Type supported_export_type = *export_type_iter;
 
-		// Get the supported export formats for the current export type.
-		const std::vector<GPlatesGui::ExportAnimationType::Format> supported_export_formats =
-				get_export_formats(supported_exporters, supported_export_type);
-
-		bool all_export_formats_already_added = true;
-
-		// Iterate over the export formats of the current export type.
-		std::vector<GPlatesGui::ExportAnimationType::Format>::const_iterator export_format_iter;
-		for (export_format_iter = supported_export_formats.begin();
-			export_format_iter != supported_export_formats.end();
-			++export_format_iter)
-		{
-			const GPlatesGui::ExportAnimationType::Format supported_export_format = *export_format_iter;
-
-			const GPlatesGui::ExportAnimationType::ExportID export_id =
-					get_export_id(supported_export_type, supported_export_format);
-
-			// See if the current export type and format have already been added by the user.
-			if (d_exporters_added.find(export_id) == d_exporters_added.end())
-			{
-				// We didn't find the current export format in the list of added exporters.
-				all_export_formats_already_added = false;
-				break;
-			}
-		}
-
-		// If not all export formats (for the current export type) have already been added
-		// then add a widget item for the current export type.
-		if (!all_export_formats_already_added)
-		{
-			QListWidgetItem *widget_item = new ExportTypeWidgetItem<QListWidgetItem>(supported_export_type);
-			listWidget_export_items->addItem(widget_item);
-			widget_item->setText(get_export_type_name(supported_export_type));
-		}
+		// Add a widget item for the current export type.
+		QListWidgetItem *widget_item = new ExportTypeWidgetItem<QListWidgetItem>(supported_export_type);
+		listWidget_export_items->addItem(widget_item);
+		widget_item->setText(get_export_type_name(supported_export_type));
 	}
 }
 
@@ -264,15 +234,6 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_type_selection_c
 		++export_format_iter)
 	{
 		const GPlatesGui::ExportAnimationType::Format export_format = *export_format_iter;
-
-		const GPlatesGui::ExportAnimationType::ExportID export_id =
-				get_export_id(selected_export_type, export_format);
-
-		// If we've already added the exporter then continue to the next export format.
-		if (d_exporters_added.find(export_id) != d_exporters_added.end())
-		{
-			continue;
-		}
 
 		QListWidgetItem *item = new ExportFormatWidgetItem<QListWidgetItem>(export_format);
 		d_listWidget_format->addItem(item);
@@ -448,9 +409,6 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_add_item_clicked()
 
 	clear_export_options_widget();
 
-	// Add to the list of exporters we've added so far.
-	d_exporters_added.insert(selected_export_id);
-
 	// Add the selected exporter to the export animation dialog.
 	d_export_animation_context_ptr->get_export_dialog()->insert_item(
 			selected_export_type,
@@ -464,22 +422,6 @@ void
 GPlatesQtWidgets::ConfigureExportParametersDialog::initialise(
 		QTableWidget* table)
 {
-	d_exporters_added.clear();
-	
-	for(int i=0; i<table->rowCount();i++)
-	{
-		const GPlatesGui::ExportAnimationType::Type selected_export_type =
-				get_export_type(table->item(i,0));
-		const GPlatesGui::ExportAnimationType::Format selected_export_format =
-				get_export_format(table->item(i,1));
-
-		const GPlatesGui::ExportAnimationType::ExportID selected_export_id =
-				get_export_id(selected_export_type, selected_export_format);
-
-		// Mark the exporter as having been added.
-		d_exporters_added.insert(selected_export_id);
-	}
-
 	initialize_export_type_list_widget();
 
 	lineEdit_filename->clear();
@@ -597,7 +539,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::set_export_options_widget(
 	if (d_current_export_options_widget)
 	{
 		d_current_export_options_widget.get()->layout()->setContentsMargins(0, 0, 0, 0);
-		// We 'insert' rather than 'add' the widget so that it the spacer item added in constructor
+		// We 'insert' rather than 'add' the widget so that the spacer item added in constructor
 		// is always last.
 		d_export_options_widget_layout->insertWidget(0, d_current_export_options_widget.get());
 
@@ -635,12 +577,6 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::add_all_remaining_exports()
 	{
 		const GPlatesGui::ExportAnimationType::ExportID supported_export_id = *export_id_iter;
 
-		// See if the current export id has already been added by the user.
-		if (d_exporters_added.find(supported_export_id) != d_exporters_added.end())
-		{
-			continue;
-		}
-
 		// We didn't find the current export id so add it.
 
 		const GPlatesGui::ExportAnimationType::Type supported_export_type =
@@ -667,8 +603,5 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::add_all_remaining_exports()
 				supported_export_type,
 				supported_export_format,
 				export_configuration);
-
-		// Mark the export as having been added.
-		d_exporters_added.insert(supported_export_id);
 	}
 }
