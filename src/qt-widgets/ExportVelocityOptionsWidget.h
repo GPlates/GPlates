@@ -97,9 +97,6 @@ namespace GPlatesQtWidgets
 		react_include_domain_meta_data_check_box_clicked();
 
 		void
-		react_citcoms_compatible_button_clicked();
-
-		void
 		handle_terra_grid_filename_template_changed();
 
 		void

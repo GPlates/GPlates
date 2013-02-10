@@ -280,11 +280,6 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::make_signal_slot_connections()
 			SIGNAL(stateChanged(int)),
 			this,
 			SLOT(react_include_domain_meta_data_check_box_clicked()));
-	QObject::connect(
-			citcoms_compatible_button,
-			SIGNAL(clicked(bool)),
-			this,
-			SLOT(react_citcoms_compatible_button_clicked()));
 
 	QObject::connect(
 			terra_grid_filename_template_line_edit,
@@ -416,30 +411,6 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::react_include_domain_meta_data_ch
 					*d_export_configuration);
 
 	configuration.include_domain_meta_data = include_domain_meta_data_check_box->isChecked();
-}
-
-
-void
-GPlatesQtWidgets::ExportVelocityOptionsWidget::react_citcoms_compatible_button_clicked()
-{
-	// Throws bad_cast if fails.
-	GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
-			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
-					*d_export_configuration);
-
-	//
-	// Set up some options that make the GMT output compatible with CitcomS.
-	//
-	// There are two outputs used by CitcomS:
-	//  (1) the regular 'bvel' output (exported under CITCOMS_GLOBAL), and
-	//  (2) a 'bvel.xy' output that has domain points in (lat/lon) instead of the GMT default (lon/lat).
-	//
-
-	velocity_vector_magnitude_angle_radio_button->setChecked(true);
-	lat_lon_radio_button->setChecked(true);
-	include_plate_id_check_box->setChecked(false);
-	include_domain_point_check_box->setChecked(true);
-	include_domain_meta_data_check_box->setChecked(false);
 }
 
 
