@@ -54,12 +54,22 @@ namespace GPlatesFileIO
 		 * Exports @a MultiPointVectorField objects containing *velocities* to CitcomS global format.
 		 *
 		 * @a age is the reconstruction time rounded to an integer.
+		 *
+		 * If @a include_gmt_export is true then, for each CitcomS velocity file exported, a
+		 * CitcomS-compatible GMT format velocity file is exported with the same filename but
+		 * with the GMT ".xy" filename extension added.
+		 * If @a include_gmt_export is true then, only for the GMT exported files, the
+		 * velocity magnitudes are scaled by @a gmt_velocity_scale and only every
+		 * 'gmt_velocity_stride'th velocity vector is output.
 		 */
 		void
 		export_global_velocity_vector_fields(
 				const std::list<velocity_vector_field_group_type> &velocity_vector_field_group_seq,
 				const QFileInfo& file_info,
-				int age);
+				int age,
+				bool include_gmt_export,
+				double gmt_velocity_scale,
+				unsigned int gmt_velocity_stride);
 	}
 }
 

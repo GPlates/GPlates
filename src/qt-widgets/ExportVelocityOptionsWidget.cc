@@ -107,9 +107,13 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 		{
 			velocity_vector_colat_lon_radio_button->setChecked(true);
 		}
-		else
+		else if (configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE)
 		{
 			velocity_vector_magnitude_angle_radio_button->setChecked(true);
+		}
+		else
+		{
+			velocity_vector_magnitude_azimuth_radio_button->setChecked(true);
 		}
 
 		velocity_scale_spin_box->setValue(configuration.velocity_scale);
@@ -128,6 +132,9 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 		include_plate_id_check_box->setChecked(configuration.include_plate_id);
 		include_domain_point_check_box->setChecked(configuration.include_domain_point);
 		include_domain_meta_data_check_box->setChecked(configuration.include_domain_meta_data);
+
+		// Disable the domain point format options if we're not exporting domain points.
+		domain_point_format_options->setEnabled(configuration.include_domain_point);
 	}
 	else
 	{
@@ -180,10 +187,16 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 					"Velocities are only exported if matching CitcomS grid files are already loaded.")
 						.arg(GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration::CAP_NUM_PLACE_HOLDER)
 						.arg(GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration::DENSITY_PLACE_HOLDER));
+
+		citcoms_gmt_format_check_box->setChecked(configuration.include_gmt_export);
+		citcoms_gmt_format_options->setEnabled(configuration.include_gmt_export);
+
+		citcoms_gmt_velocity_scale_spin_box->setValue(configuration.gmt_velocity_scale);
+		citcoms_gmt_velocity_stride_spin_box->setValue(configuration.gmt_velocity_stride);
 	}
 	else
 	{
-		citcoms_grid_filename_template_group_box->hide();
+		citcoms_format_options->hide();
 	}
 
 	// Write a description depending on the file format and velocity vector format.
@@ -230,56 +243,69 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::create_export_animation_strategy_
 void
 GPlatesQtWidgets::ExportVelocityOptionsWidget::make_signal_slot_connections()
 {
+	//
+	// GMT format connections.
+	//
+
 	QObject::connect(
 			velocity_vector_3D_radio_button,
 			SIGNAL(toggled(bool)),
 			this,
-			SLOT(react_velocity_vector_format_radio_button_toggled(bool)));
+			SLOT(react_gmt_velocity_vector_format_radio_button_toggled(bool)));
 	QObject::connect(
 			velocity_vector_colat_lon_radio_button,
 			SIGNAL(toggled(bool)),
 			this,
-			SLOT(react_velocity_vector_format_radio_button_toggled(bool)));
+			SLOT(react_gmt_velocity_vector_format_radio_button_toggled(bool)));
 	QObject::connect(
 			velocity_vector_magnitude_angle_radio_button,
 			SIGNAL(toggled(bool)),
 			this,
-			SLOT(react_velocity_vector_format_radio_button_toggled(bool)));
+			SLOT(react_gmt_velocity_vector_format_radio_button_toggled(bool)));
+	QObject::connect(
+			velocity_vector_magnitude_azimuth_radio_button,
+			SIGNAL(toggled(bool)),
+			this,
+			SLOT(react_gmt_velocity_vector_format_radio_button_toggled(bool)));
 	QObject::connect(
 			velocity_scale_spin_box,
 			SIGNAL(valueChanged(double)),
 			this,
-			SLOT(react_velocity_scale_spin_box_value_changed(double)));
+			SLOT(react_gmt_velocity_scale_spin_box_value_changed(double)));
 	QObject::connect(
 			velocity_stride_spin_box,
 			SIGNAL(valueChanged(int)),
 			this,
-			SLOT(react_velocity_stride_spin_box_value_changed(int)));
+			SLOT(react_gmt_velocity_stride_spin_box_value_changed(int)));
 	QObject::connect(
 			lon_lat_radio_button,
 			SIGNAL(toggled(bool)),
 			this,
-			SLOT(react_domain_point_format_radio_button_toggled(bool)));
+			SLOT(react_gmt_domain_point_format_radio_button_toggled(bool)));
 	QObject::connect(
 			lat_lon_radio_button,
 			SIGNAL(toggled(bool)),
 			this,
-			SLOT(react_domain_point_format_radio_button_toggled(bool)));
+			SLOT(react_gmt_domain_point_format_radio_button_toggled(bool)));
 	QObject::connect(
 			include_plate_id_check_box,
 			SIGNAL(stateChanged(int)),
 			this,
-			SLOT(react_include_plate_id_check_box_clicked()));
+			SLOT(react_gmt_include_plate_id_check_box_clicked()));
 	QObject::connect(
 			include_domain_point_check_box,
 			SIGNAL(stateChanged(int)),
 			this,
-			SLOT(react_include_domain_point_check_box_clicked()));
+			SLOT(react_gmt_include_domain_point_check_box_clicked()));
 	QObject::connect(
 			include_domain_meta_data_check_box,
 			SIGNAL(stateChanged(int)),
 			this,
-			SLOT(react_include_domain_meta_data_check_box_clicked()));
+			SLOT(react_gmt_include_domain_meta_data_check_box_clicked()));
+
+	//
+	// Terra text format connections.
+	//
 
 	QObject::connect(
 			terra_grid_filename_template_line_edit,
@@ -287,16 +313,35 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::make_signal_slot_connections()
 			this,
 			SLOT(handle_terra_grid_filename_template_changed()));
 
+	//
+	// CitcomS global format connections.
+	//
+
 	QObject::connect(
 			citcoms_grid_filename_template_line_edit,
 			SIGNAL(editingFinished()),
 			this,
 			SLOT(handle_citcoms_grid_filename_template_changed()));
+	QObject::connect(
+			citcoms_gmt_format_check_box,
+			SIGNAL(stateChanged(int)),
+			this,
+			SLOT(react_citcoms_gmt_format_check_box_clicked()));
+	QObject::connect(
+			citcoms_gmt_velocity_scale_spin_box,
+			SIGNAL(valueChanged(double)),
+			this,
+			SLOT(react_citcoms_gmt_velocity_scale_spin_box_value_changed(double)));
+	QObject::connect(
+			citcoms_gmt_velocity_stride_spin_box,
+			SIGNAL(valueChanged(int)),
+			this,
+			SLOT(react_citcoms_gmt_velocity_stride_spin_box_value_changed(int)));
 }
 
 
 void
-GPlatesQtWidgets::ExportVelocityOptionsWidget::react_velocity_vector_format_radio_button_toggled(
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_gmt_velocity_vector_format_radio_button_toggled(
 		bool checked)
 {
 	// Throws bad_cast if fails.
@@ -313,9 +358,13 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::react_velocity_vector_format_radi
 	{
 		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON;
 	}
-	else
+	else if (velocity_vector_magnitude_angle_radio_button->isChecked())
 	{
 		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE;
+	}
+	else
+	{
+		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_AZIMUTH;
 	}
 
 	update_output_description_label();
@@ -323,7 +372,7 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::react_velocity_vector_format_radi
 
 
 void
-GPlatesQtWidgets::ExportVelocityOptionsWidget::react_velocity_scale_spin_box_value_changed(
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_gmt_velocity_scale_spin_box_value_changed(
 		double value)
 {
 	// Throws bad_cast if fails.
@@ -336,7 +385,7 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::react_velocity_scale_spin_box_val
 
 
 void
-GPlatesQtWidgets::ExportVelocityOptionsWidget::react_velocity_stride_spin_box_value_changed(
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_gmt_velocity_stride_spin_box_value_changed(
 		int value)
 {
 	// Throws bad_cast if fails.
@@ -349,7 +398,7 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::react_velocity_stride_spin_box_va
 
 
 void
-GPlatesQtWidgets::ExportVelocityOptionsWidget::react_domain_point_format_radio_button_toggled(
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_gmt_domain_point_format_radio_button_toggled(
 		bool checked)
 {
 	// Throws bad_cast if fails.
@@ -372,7 +421,7 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::react_domain_point_format_radio_b
 
 
 void
-GPlatesQtWidgets::ExportVelocityOptionsWidget::react_include_plate_id_check_box_clicked()
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_gmt_include_plate_id_check_box_clicked()
 {
 	// Throws bad_cast if fails.
 	GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
@@ -386,7 +435,7 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::react_include_plate_id_check_box_
 
 
 void
-GPlatesQtWidgets::ExportVelocityOptionsWidget::react_include_domain_point_check_box_clicked()
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_gmt_include_domain_point_check_box_clicked()
 {
 	// Throws bad_cast if fails.
 	GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
@@ -403,7 +452,7 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::react_include_domain_point_check_
 
 
 void
-GPlatesQtWidgets::ExportVelocityOptionsWidget::react_include_domain_meta_data_check_box_clicked()
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_gmt_include_domain_meta_data_check_box_clicked()
 {
 	// Throws bad_cast if fails.
 	GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
@@ -508,6 +557,47 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::handle_citcoms_grid_filename_temp
 
 
 void
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_citcoms_gmt_format_check_box_clicked()
+{
+	// Throws bad_cast if fails.
+	GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration &configuration =
+			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration &>(
+					*d_export_configuration);
+
+	configuration.include_gmt_export = citcoms_gmt_format_check_box->isChecked();
+	citcoms_gmt_format_options->setEnabled(configuration.include_gmt_export);
+
+	update_output_description_label();
+}
+
+
+void
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_citcoms_gmt_velocity_scale_spin_box_value_changed(
+		double value)
+{
+	// Throws bad_cast if fails.
+	GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration &configuration =
+			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration &>(
+					*d_export_configuration);
+
+	configuration.gmt_velocity_scale = value;
+}
+
+
+void
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_citcoms_gmt_velocity_stride_spin_box_value_changed(
+		int value)
+{
+	// Throws bad_cast if fails.
+	GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration &configuration =
+			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration &>(
+					*d_export_configuration);
+
+	configuration.gmt_velocity_stride = value;
+}
+
+
+void
 GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 {
 	// Write a description depending on the file format and velocity vector format.
@@ -558,6 +648,10 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 				output_description += tr("  velocity_magnitude  velocity_angle");
 				break;
 
+			case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_AZIMUTH:
+				output_description += tr("  velocity_magnitude  velocity_azimuth");
+				break;
+
 			default:
 				// Shouldn't get here.
 				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -578,11 +672,32 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 		break;
 
 	case GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_GLOBAL:
-		output_description_label->setText(
-				tr("'%1' will be replaced by the diamond cap number in each exported velocity file name.\n"
-					"Each velocity line contains:\n"
-					"  velocity_colat  velocity_lon")
-					.arg(GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING));
+		{
+			// Throws bad_cast if fails.
+			GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration &configuration =
+					dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration &>(
+							*d_export_configuration);
+
+			QString output_description = tr(
+					"In each exported velocity file name, '%1'"
+					" will be replaced by the diamond cap number.\n")
+							.arg(GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING);
+
+			output_description += tr(
+					"Each velocity line in a CitcomS file contains:\n"
+					"  velocity_colat  velocity_lon\n");
+
+			if (configuration.include_gmt_export)
+			{
+				// Note the that domain point is lat/lon and not the default GMT format lon/lat.
+				// This is the way the "convert_meshes_gpml_to_citcoms.py" script exports.
+				output_description += tr(
+						"Each velocity line in a GMT ('.xy') file contains:\n"
+						"  domain_point_lat  domain_point_lon  velocity_azimuth  velocity_magnitude\n");
+			}
+
+			output_description_label->setText(output_description);
+		}
 		break;
 
 	default:

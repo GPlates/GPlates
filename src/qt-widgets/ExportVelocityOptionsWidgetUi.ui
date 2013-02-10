@@ -13,7 +13,13 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_6">
+  <layout class="QVBoxLayout" name="verticalLayout_11">
+   <property name="spacing">
+    <number>3</number>
+   </property>
+   <property name="margin">
+    <number>0</number>
+   </property>
    <item>
     <widget class="QWidget" name="widget_file_options" native="true"/>
    </item>
@@ -58,7 +64,14 @@
          <item>
           <widget class="QRadioButton" name="velocity_vector_magnitude_angle_radio_button">
            <property name="text">
-            <string>Magnitude / Angle (-180 to +180 degrees relative to East)</string>
+            <string>Magnitude / Angle (-180 to +180 degrees anti-clockwise from East)</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="velocity_vector_magnitude_azimuth_radio_button">
+           <property name="text">
+            <string>Magnitude / Azimuth (0 to 360 degrees clockwise from North)</string>
            </property>
           </widget>
          </item>
@@ -286,39 +299,171 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="citcoms_grid_filename_template_group_box">
-     <property name="title">
-      <string>CitcomS Grid Files</string>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout_5">
+    <widget class="QWidget" name="citcoms_format_options" native="true">
+     <layout class="QVBoxLayout" name="verticalLayout_6">
       <property name="spacing">
-       <number>1</number>
+       <number>3</number>
       </property>
-      <property name="topMargin">
-       <number>1</number>
-      </property>
-      <property name="bottomMargin">
-       <number>1</number>
+      <property name="margin">
+       <number>0</number>
       </property>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_2">
-        <item>
-         <widget class="QLabel" name="citcoms_grid_filename_template_label">
-          <property name="text">
-           <string>CitcomS grid file names:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLineEdit" name="citcoms_grid_filename_template_line_edit"/>
-        </item>
-       </layout>
+       <widget class="QGroupBox" name="citcoms_grid_filename_template_group_box">
+        <property name="title">
+         <string>CitcomS Grid Files</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_5">
+         <property name="spacing">
+          <number>1</number>
+         </property>
+         <property name="topMargin">
+          <number>1</number>
+         </property>
+         <property name="bottomMargin">
+          <number>1</number>
+         </property>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <item>
+            <widget class="QLabel" name="citcoms_grid_filename_template_label">
+             <property name="text">
+              <string>CitcomS grid file names:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="citcoms_grid_filename_template_line_edit"/>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QLabel" name="citcoms_grid_filename_template_description_label">
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </item>
       <item>
-       <widget class="QLabel" name="citcoms_grid_filename_template_description_label">
-        <property name="text">
-         <string/>
+       <widget class="QGroupBox" name="citcoms_gmt_format_options_group_box">
+        <property name="title">
+         <string>GMT Export Options</string>
         </property>
+        <layout class="QVBoxLayout" name="verticalLayout_12">
+         <property name="spacing">
+          <number>4</number>
+         </property>
+         <property name="topMargin">
+          <number>1</number>
+         </property>
+         <property name="bottomMargin">
+          <number>1</number>
+         </property>
+         <item>
+          <widget class="QCheckBox" name="citcoms_gmt_format_check_box">
+           <property name="text">
+            <string>Include an additional export to GMT format (&quot;.xy&quot;)</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QWidget" name="citcoms_gmt_format_options" native="true">
+           <layout class="QVBoxLayout" name="verticalLayout_10">
+            <property name="spacing">
+             <number>3</number>
+            </property>
+            <property name="margin">
+             <number>0</number>
+            </property>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_5">
+              <item>
+               <widget class="QLabel" name="citcoms_gmt_velocity_scale_label">
+                <property name="text">
+                 <string>GMT velocity scale (velocity magnitude multiplier):</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QDoubleSpinBox" name="citcoms_gmt_velocity_scale_spin_box">
+                <property name="decimals">
+                 <number>4</number>
+                </property>
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>1000.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.050000000000000</double>
+                </property>
+                <property name="value">
+                 <double>1.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_3">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_6">
+              <property name="spacing">
+               <number>6</number>
+              </property>
+              <item>
+               <widget class="QLabel" name="citcoms_gmt_velocity_stride_label">
+                <property name="text">
+                 <string>GMT velocity stride (output every 'n'th velocity):</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QSpinBox" name="citcoms_gmt_velocity_stride_spin_box">
+                <property name="minimum">
+                 <number>1</number>
+                </property>
+                <property name="maximum">
+                 <number>99999</number>
+                </property>
+                <property name="value">
+                 <number>1</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_4">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </item>
      </layout>

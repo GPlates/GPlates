@@ -247,9 +247,15 @@ namespace GPlatesGui
 			explicit
 			CitcomsGlobalConfiguration(
 					const QString &filename_template_,
-					const QString &citcoms_grid_filename_template_) :
+					const QString &citcoms_grid_filename_template_,
+					bool include_gmt_export_,
+					double gmt_velocity_scale_,
+					unsigned int gmt_velocity_stride_) :
 				Configuration(filename_template_, CITCOMS_GLOBAL),
-				citcoms_grid_filename_template(citcoms_grid_filename_template_)
+				citcoms_grid_filename_template(citcoms_grid_filename_template_),
+				include_gmt_export(include_gmt_export_),
+				gmt_velocity_scale(gmt_velocity_scale_),
+				gmt_velocity_stride(gmt_velocity_stride_)
 			{  }
 
 			virtual
@@ -260,6 +266,9 @@ namespace GPlatesGui
 			}
 
 			QString citcoms_grid_filename_template;
+			bool include_gmt_export;
+			double gmt_velocity_scale;
+			unsigned int gmt_velocity_stride;
 		};
 
 

@@ -379,7 +379,10 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_cit
 		const QString &velocity_export_cap_number_place_holder,
 		const std::vector<const GPlatesAppLogic::MultiPointVectorField *> &velocity_vector_field_seq,
 		const std::vector<const File::Reference *> &active_files,
-		int age)
+		int age,
+		bool include_gmt_export,
+		double gmt_velocity_scale,
+		unsigned int gmt_velocity_stride)
 {
 	// Get the list of active multi-point vector field feature collection files that contain
 	// the features referenced by the MultiPointVectorField objects.
@@ -476,6 +479,9 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_cit
 		CitcomsFormatVelocityVectorFieldExport::export_global_velocity_vector_fields(
 				grouped_features_iter->feature_geometry_groups,
 				velocity_export_file_name,
-				age);
+				age,
+				include_gmt_export,
+				gmt_velocity_scale,
+				gmt_velocity_stride);
 	}
 }

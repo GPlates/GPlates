@@ -530,7 +530,10 @@ GPlatesGui::register_default_export_animation_types(
 							// An example Terra filename is "bvel25.9" where 25 is the reconstruction
 							// time (which must be an integer) and 9 is the cap number...
 							add_export_filename_extension("bvel%d.%P", ExportAnimationType::CITCOMS_GLOBAL),
-							default_citcoms_grid_filename_template)),
+							default_citcoms_grid_filename_template,
+							true/*include_gmt_export*/,
+							1.0/*gmt_velocity_scale*/,
+							1/*gmt_velocity_stride*/)),
 			&create_animation_strategy<ExportVelocityAnimationStrategy>,
 			boost::bind(
 					// 'static_cast' is because some compilers have trouble determining

@@ -252,6 +252,8 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 				const CitcomsGlobalConfiguration &configuration =
 						dynamic_cast<const CitcomsGlobalConfiguration &>(*d_configuration);
 
+				// Export the raw CitcomS velocity files.
+				// Also export CitcomS-compatible GMT format files, if requested.
 				GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_citcoms_global_format(
 					configuration.citcoms_grid_filename_template,
 					full_filename,
@@ -260,7 +262,10 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 					GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
 					velocity_vector_field_seq,
 					d_loaded_files,
-					static_cast<int>(d_export_animation_context_ptr->view_time()));
+					static_cast<int>(d_export_animation_context_ptr->view_time()),
+					configuration.include_gmt_export,
+					configuration.gmt_velocity_scale,
+					configuration.gmt_velocity_stride);
 			}
 			break;
 

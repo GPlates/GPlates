@@ -37,7 +37,9 @@
 #include "CalculateVelocity.h"
 
 #include "global/IllegalParametersException.h"
+
 #include "maths/CartesianConvMatrix3D.h"
+#include "maths/MathsUtils.h"
 #include "maths/UnitQuaternion3D.h"
 
 
@@ -45,9 +47,9 @@ using namespace GPlatesGlobal;
 
 GPlatesMaths::Vector3D
 GPlatesMaths::calculate_velocity_vector(
-	const PointOnSphere &point, 
-	const FiniteRotation &fr_t1,
-	const FiniteRotation &fr_t2)
+		const PointOnSphere &point, 
+		const FiniteRotation &fr_t1,
+		const FiniteRotation &fr_t2)
 {
 
 	static const real_t radius_of_earth = 6.378e8;  // in centimetres.
@@ -88,8 +90,8 @@ GPlatesMaths::calculate_velocity_vector(
 
 GPlatesMaths::VectorColatitudeLongitude
 GPlatesMaths::convert_vector_from_xyz_to_colat_lon(
-	const GPlatesMaths::PointOnSphere &point, 
-	const Vector3D &vector_xyz)
+		const GPlatesMaths::PointOnSphere &point, 
+		const Vector3D &vector_xyz)
 {
 	// Matrix to convert between different Cartesian representations.
 	CartesianConvMatrix3D ccm(point);
@@ -106,8 +108,8 @@ GPlatesMaths::convert_vector_from_xyz_to_colat_lon(
 
 GPlatesMaths::Vector3D
 GPlatesMaths::convert_vector_from_colat_lon_to_xyz(
-	const PointOnSphere &point, 
-	const VectorColatitudeLongitude &vector_colat_lon)
+		const PointOnSphere &point, 
+		const VectorColatitudeLongitude &vector_colat_lon)
 {
 	// Create a new vector 3d from the components.
 	GPlatesMaths::CartesianConvMatrix3D ccm(point);
@@ -121,8 +123,8 @@ GPlatesMaths::convert_vector_from_colat_lon_to_xyz(
 
 std::pair< GPlatesMaths::real_t, GPlatesMaths::real_t >
 GPlatesMaths::calculate_vector_components_magnitude_angle(
-	const GPlatesMaths::PointOnSphere &point, 
-	const Vector3D &vector_xyz)
+		const GPlatesMaths::PointOnSphere &point, 
+		const Vector3D &vector_xyz)
 {
 	// Matrix to convert between different Cartesian representations.
 	CartesianConvMatrix3D ccm(point);
@@ -139,4 +141,64 @@ GPlatesMaths::calculate_vector_components_magnitude_angle(
 	real_t magnitude = vector_ned.magnitude();
 
 	return std::make_pair(magnitude, angle);
+}
+
+
+std::pair< GPlatesMaths::real_t, GPlatesMaths::real_t >
+GPlatesMaths::calculate_vector_components_magnitude_and_azimuth(
+		const GPlatesMaths::PointOnSphere &point, 
+		const Vector3D &vector_xyz)
+{
+	// Matrix to convert between different Cartesian representations.
+	CartesianConvMatrix3D ccm(point);
+
+	// Cartesian (n, e, d) 
+	Vector3D vector_ned = ccm * vector_xyz;
+
+	double vx = -vector_ned.x().dval();
+	double vy = vector_ned.y().dval();
+
+	// compute the velocity magnitude
+
+	double magnitude = std::sqrt( ( vx * vx ) + ( vy * vy ) );
+
+	// compute the azimuth
+
+	double azimuth = 0;
+
+	if ( vy <= 0 )
+	{
+		if ( vx < 0 )
+		{
+			azimuth = std::atan( vy / vx );
+			azimuth = 2 * PI - azimuth;
+		}
+		else if ( vx > 0 )
+		{
+			azimuth = std::atan( -vy / vx );
+			azimuth = PI + azimuth;
+		}
+		else
+		{
+			azimuth = 3 * HALF_PI;
+		}
+	}
+	else
+	{
+		if ( vx < 0)
+		{
+			azimuth = std::atan( -vy / vx );
+		}
+		else if ( vx > 0 )
+		{
+			azimuth = std::atan( vy / vx );
+			azimuth = PI - azimuth;
+		}
+		else
+		{
+			azimuth = HALF_PI;
+		}
+	}
+
+	return std::make_pair(real_t(magnitude), real_t(azimuth));
 }

@@ -235,6 +235,24 @@ namespace GPlatesFileIO
 					}
 					break;
 
+				case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_AZIMUTH:
+					{
+						std::pair<GPlatesMaths::real_t, GPlatesMaths::real_t> velocity_magnitude_azimuth =
+								GPlatesMaths::calculate_vector_components_magnitude_and_azimuth(domain_point, velocity_vector);
+
+						const std::string velocity_magnitude_str = GPlatesUtils::formatted_double_to_string(
+								velocity_magnitude_azimuth.first.dval(),
+								VELOCITY_FIELDWIDTH,
+								VELOCITY_PRECISION);
+						const std::string velocity_azimuth_degrees_str = GPlatesUtils::formatted_double_to_string(
+							GPlatesMaths::convert_rad_to_deg(velocity_magnitude_azimuth.second.dval()),
+								VELOCITY_FIELDWIDTH,
+								VELOCITY_PRECISION);
+
+						gmt_line << "      " << velocity_magnitude_str << "      " << velocity_azimuth_degrees_str;
+					}
+					break;
+
 				default:
 					// Shouldn't get here.
 					GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);

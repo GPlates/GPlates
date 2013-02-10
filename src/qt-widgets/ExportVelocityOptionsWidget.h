@@ -72,35 +72,46 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
-		react_velocity_vector_format_radio_button_toggled(
+		react_gmt_velocity_vector_format_radio_button_toggled(
 				bool checked);
 
 		void
-		react_velocity_scale_spin_box_value_changed(
+		react_gmt_velocity_scale_spin_box_value_changed(
 				double value);
 
 		void
-		react_velocity_stride_spin_box_value_changed(
+		react_gmt_velocity_stride_spin_box_value_changed(
 				int value);
 
 		void
-		react_domain_point_format_radio_button_toggled(
+		react_gmt_domain_point_format_radio_button_toggled(
 				bool checked);
 
 		void
-		react_include_plate_id_check_box_clicked();
+		react_gmt_include_plate_id_check_box_clicked();
 
 		void
-		react_include_domain_point_check_box_clicked();
+		react_gmt_include_domain_point_check_box_clicked();
 
 		void
-		react_include_domain_meta_data_check_box_clicked();
+		react_gmt_include_domain_meta_data_check_box_clicked();
 
 		void
 		handle_terra_grid_filename_template_changed();
 
 		void
 		handle_citcoms_grid_filename_template_changed();
+
+		void
+		react_citcoms_gmt_format_check_box_clicked();
+
+		void
+		react_citcoms_gmt_velocity_scale_spin_box_value_changed(
+				double value);
+
+		void
+		react_citcoms_gmt_velocity_stride_spin_box_value_changed(
+				int value);
 
 	private:
 

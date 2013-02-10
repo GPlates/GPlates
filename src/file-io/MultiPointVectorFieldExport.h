@@ -66,7 +66,8 @@ namespace GPlatesFileIO
 		{
 			VELOCITY_VECTOR_3D,
 			VELOCITY_VECTOR_COLAT_LON,
-			VELOCITY_VECTOR_MAGNITUDE_ANGLE
+			VELOCITY_VECTOR_MAGNITUDE_ANGLE,
+			VELOCITY_VECTOR_MAGNITUDE_AZIMUTH
 		};
 
 
@@ -227,6 +228,13 @@ namespace GPlatesFileIO
 		 *
 		 * @a age is the reconstruction time rounded to an integer.
 		 *
+		 * If @a include_gmt_export is true then, for each CitcomS velocity file exported, a
+		 * CitcomS-compatible GMT format velocity file is exported with the same filename but
+		 * with the GMT ".xy" filename extension added.
+		 * If @a include_gmt_export is true then, only for the GMT exported files, the
+		 * velocity magnitudes are scaled by @a gmt_velocity_scale and only every
+		 * 'gmt_velocity_stride'th velocity vector is output.
+		 *
 		 * @throws ErrorOpeningFileForWritingException if file is not writable.
 		 */
 		void
@@ -238,7 +246,10 @@ namespace GPlatesFileIO
 				const QString &velocity_export_cap_number_place_holder,
 				const std::vector<const GPlatesAppLogic::MultiPointVectorField *> &velocity_vector_field_seq,
 				const std::vector<const File::Reference *> &active_files,
-				int age);
+				int age,
+				bool include_gmt_export,
+				double gmt_velocity_scale,
+				unsigned int gmt_velocity_stride);
 	}
 }
 

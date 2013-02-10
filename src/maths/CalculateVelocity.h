@@ -88,9 +88,9 @@ namespace GPlatesMaths
 	 */
 	Vector3D
 	calculate_velocity_vector(
-		const PointOnSphere &point, 
-		const FiniteRotation &fr_t1,
-	    const FiniteRotation &fr_t2);
+			const PointOnSphere &point, 
+			const FiniteRotation &fr_t1,
+			const FiniteRotation &fr_t2);
 
 	/**
 	 * Convert a vector from X Y Z space to North East Down space and 
@@ -99,26 +99,36 @@ namespace GPlatesMaths
 	 */
 	VectorColatitudeLongitude
 	convert_vector_from_xyz_to_colat_lon(
-		const PointOnSphere &point, 
-		const Vector3D &vector_xyz);
+			const PointOnSphere &point, 
+			const Vector3D &vector_xyz);
 
 	/**
 	 * Convert a vector from North East Down space to a vector from X Y Z space.
 	 */
 	Vector3D
 	convert_vector_from_colat_lon_to_xyz(
-		const PointOnSphere &point, 
-		const VectorColatitudeLongitude &vector_colat_lon);
+			const PointOnSphere &point, 
+			const VectorColatitudeLongitude &vector_colat_lon);
 
 	/**
 	 * Convert a vector from X Y Z space to North East Down space and 
-	 * return Magnitude and Azimuth components of the vector
+	 * return Magnitude and Angle components of the vector.
 	*/
-	std::pair< real_t, real_t >
+	std::pair< real_t/*magnitude*/, real_t/*angle*/ >
 	calculate_vector_components_magnitude_angle(
-		const PointOnSphere &point, 
-		const Vector3D &velocity_vector);
+			const PointOnSphere &point, 
+			const Vector3D &velocity_vector);
 
+	/**
+	 * Convert a vector from X Y Z space to North East Down space and 
+	 * return Magnitude and Azimuth components of the vector.
+	 *
+	 * This code is copied from the "convert_meshes_gpml_to_citcoms.py" script.
+	 */
+	std::pair< real_t/*magnitude*/, real_t/*azimuth*/ >
+	calculate_vector_components_magnitude_and_azimuth(
+			const GPlatesMaths::PointOnSphere &point, 
+			const Vector3D &vector_xyz);
 }
 
 #endif  // _GPLATES_MATHS_CV_H_
