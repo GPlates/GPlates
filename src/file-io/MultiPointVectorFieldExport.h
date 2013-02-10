@@ -107,10 +107,18 @@ namespace GPlatesFileIO
 		 * Note that GMT format provides a choice of how to output each velocity vector.
 		 *
 		 * Each line in the GMT file contains:
-		 *    domain_point plate_id velocity
+		 *    [domain_point] [plate_id] velocity
 		 * ...where 'domain_point' is position at which the velocity was calculated and 'plate_id'
 		 * is the plate id used to calculate the velocity (for topological networks the plate id
 		 * only identifies the network used to calculate the velocity).
+		 *
+		 * The plate ID is only included if @a include_plate_id is true.
+		 * The domain point is only included if @a include_domain_point is true.
+		 * If @a domain_point_lon_lat_format is true then the domain points are output as the
+		 * GMT default of (longitude latitude), otherwise they're output as (latitude longitude).
+		 *
+		 * Velocity magnitudes are scaled by @a velocity_scale.
+		 * Only every 'velocity_stride'th velocity vector is output.
 		 *
 		 * @param export_single_output_file specifies whether to write all velocity vector fields to a single file.
 		 * @param export_per_input_file specifies whether to group velocity vector fields according
@@ -132,6 +140,12 @@ namespace GPlatesFileIO
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
 				VelocityVectorFormatType velocity_vector_format,
+				double velocity_scale,
+				unsigned int velocity_stride,
+				bool domain_point_lon_lat_format,
+				bool include_plate_id,
+				bool include_domain_point,
+				bool include_domain_meta_data,
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file);

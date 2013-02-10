@@ -54,9 +54,9 @@ namespace GPlatesQtWidgets
 		ExportOptionsWidget *
 		create(
 				QWidget *parent,
-				const GPlatesGui::ExportVelocityAnimationStrategy::const_configuration_ptr &default_export_configuration)
+				const GPlatesGui::ExportVelocityAnimationStrategy::const_configuration_ptr &export_configuration)
 		{
-			return new ExportVelocityOptionsWidget(parent, default_export_configuration);
+			return new ExportVelocityOptionsWidget(parent, export_configuration);
 		}
 
 
@@ -72,8 +72,32 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
-		react_radio_button_toggled(
+		react_velocity_vector_format_radio_button_toggled(
 				bool checked);
+
+		void
+		react_velocity_scale_spin_box_value_changed(
+				double value);
+
+		void
+		react_velocity_stride_spin_box_value_changed(
+				int value);
+
+		void
+		react_domain_point_format_radio_button_toggled(
+				bool checked);
+
+		void
+		react_include_plate_id_check_box_clicked();
+
+		void
+		react_include_domain_point_check_box_clicked();
+
+		void
+		react_include_domain_meta_data_check_box_clicked();
+
+		void
+		react_citcoms_compatible_button_clicked();
 
 		void
 		handle_terra_grid_filename_template_changed();
@@ -86,7 +110,7 @@ namespace GPlatesQtWidgets
 		explicit
 		ExportVelocityOptionsWidget(
 				QWidget *parent_,
-				const GPlatesGui::ExportVelocityAnimationStrategy::const_configuration_ptr &default_export_configuration);
+				const GPlatesGui::ExportVelocityAnimationStrategy::const_configuration_ptr &export_configuration);
 
 
 		void
@@ -96,7 +120,7 @@ namespace GPlatesQtWidgets
 		update_output_description_label();
 
 
-		GPlatesGui::ExportVelocityAnimationStrategy::Configuration d_export_configuration;
+		GPlatesGui::ExportVelocityAnimationStrategy::configuration_ptr d_export_configuration;
 
 		ExportFileOptionsWidget *d_export_file_options_widget;
 	};

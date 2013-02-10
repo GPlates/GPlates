@@ -33,27 +33,52 @@
 #include "file-io/ExportTemplateFilenameSequence.h"
 #include "file-io/MultiPointVectorFieldExport.h"
 
+#include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
 
 GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 		QWidget *parent_,
-		const GPlatesGui::ExportVelocityAnimationStrategy::const_configuration_ptr &default_export_configuration) :
+		const GPlatesGui::ExportVelocityAnimationStrategy::const_configuration_ptr &export_configuration) :
 	ExportOptionsWidget(parent_),
-	d_export_configuration(*default_export_configuration),
+	d_export_configuration(
+			boost::dynamic_pointer_cast<
+					GPlatesGui::ExportVelocityAnimationStrategy::Configuration>(
+							export_configuration->clone())),
 	d_export_file_options_widget(NULL)
 {
 	setupUi(this);
 
 	// Delegate to the export file options widget to collect the file options.
 	// Note that not all formats support this.
-	if (d_export_configuration.file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GPML ||
-		d_export_configuration.file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GMT)
+
+	if (d_export_configuration->file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GPML)
 	{
+		// Throws bad_cast if fails.
+		const GPlatesGui::ExportVelocityAnimationStrategy::GpmlConfiguration &configuration =
+				dynamic_cast<const GPlatesGui::ExportVelocityAnimationStrategy::GpmlConfiguration &>(
+						*d_export_configuration);
+
 		d_export_file_options_widget =
 				ExportFileOptionsWidget::create(
 						parent_,
-						default_export_configuration->file_options);
+						configuration.file_options);
+		QtWidgetUtils::add_widget_to_placeholder(
+				d_export_file_options_widget,
+				widget_file_options);
+	}
+
+	if (d_export_configuration->file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GMT)
+	{
+		// Throws bad_cast if fails.
+		const GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
+				dynamic_cast<const GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
+						*d_export_configuration);
+
+		d_export_file_options_widget =
+				ExportFileOptionsWidget::create(
+						parent_,
+						configuration.file_options);
 		QtWidgetUtils::add_widget_to_placeholder(
 				d_export_file_options_widget,
 				widget_file_options);
@@ -67,13 +92,18 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 	//
 
 	// Only the GMT file format is interested in the velocity vector output format.
-	if (d_export_configuration.file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GMT)
+	if (d_export_configuration->file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GMT)
 	{
-		if (d_export_configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D)
+		// Throws bad_cast if fails.
+		const GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
+				dynamic_cast<const GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
+						*d_export_configuration);
+
+		if (configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D)
 		{
 			velocity_vector_3D_radio_button->setChecked(true);
 		}
-		else if (d_export_configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON)
+		else if (configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON)
 		{
 			velocity_vector_colat_lon_radio_button->setChecked(true);
 		}
@@ -81,17 +111,39 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 		{
 			velocity_vector_magnitude_angle_radio_button->setChecked(true);
 		}
+
+		velocity_scale_spin_box->setValue(configuration.velocity_scale);
+		velocity_stride_spin_box->setValue(configuration.velocity_stride);
+
+		if (configuration.domain_point_format ==
+			GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration::LON_LAT)
+		{
+			lon_lat_radio_button->setChecked(true);
+		}
+		else
+		{
+			lat_lon_radio_button->setChecked(true);
+		}
+
+		include_plate_id_check_box->setChecked(configuration.include_plate_id);
+		include_domain_point_check_box->setChecked(configuration.include_domain_point);
+		include_domain_meta_data_check_box->setChecked(configuration.include_domain_meta_data);
 	}
 	else
 	{
-		velocity_vector_format_group_box->hide();
+		gmt_format_options->hide();
 	}
 
 	// Only Terra text format has a Terra grid filename template option.
-	if (d_export_configuration.file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_TEXT)
+	if (d_export_configuration->file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_TEXT)
 	{
+		// Throws bad_cast if fails.
+		const GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration &configuration =
+				dynamic_cast<const GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration &>(
+						*d_export_configuration);
+
 		// The default filename template.
-		terra_grid_filename_template_line_edit->setText(d_export_configuration.terra_grid_filename_template);
+		terra_grid_filename_template_line_edit->setText(configuration.terra_grid_filename_template);
 
 		// Set the template description label text.
 		terra_grid_filename_template_description_label->setText(
@@ -99,10 +151,10 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 					"Use '%1' to locate the local processor number in the Terra grid file name.\n"
 					"Use '%2', '%3' and '%4' to locate the Terra parameters 'mt', 'nt' and 'nd'.\n"
 					"Velocities are only exported if matching Terra grid files are already loaded.")
-						.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_PROCESSOR_PLACE_HOLDER)
-						.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_MT_PLACE_HOLDER)
-						.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_NT_PLACE_HOLDER)
-						.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_ND_PLACE_HOLDER));
+						.arg(GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::PROCESSOR_PLACE_HOLDER)
+						.arg(GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::MT_PLACE_HOLDER)
+						.arg(GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::NT_PLACE_HOLDER)
+						.arg(GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::ND_PLACE_HOLDER));
 	}
 	else
 	{
@@ -110,10 +162,15 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 	}
 
 	// Only CitcomS global format has a CitcomS grid filename template option.
-	if (d_export_configuration.file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_GLOBAL)
+	if (d_export_configuration->file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_GLOBAL)
 	{
+		// Throws bad_cast if fails.
+		const GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration &configuration =
+				dynamic_cast<const GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration &>(
+						*d_export_configuration);
+
 		// The default filename template.
-		citcoms_grid_filename_template_line_edit->setText(d_export_configuration.citcoms_grid_filename_template);
+		citcoms_grid_filename_template_line_edit->setText(configuration.citcoms_grid_filename_template);
 
 		// Set the template description label text.
 		citcoms_grid_filename_template_description_label->setText(
@@ -121,8 +178,8 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 					"Use '%1' to locate the diamond cap number in the CitcomS grid file name.\n"
 					"Use '%2' to locate the diamond density/resolution.\n"
 					"Velocities are only exported if matching CitcomS grid files are already loaded.")
-						.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_CAP_NUM_PLACE_HOLDER)
-						.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_DENSITY_PLACE_HOLDER));
+						.arg(GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration::CAP_NUM_PLACE_HOLDER)
+						.arg(GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration::DENSITY_PLACE_HOLDER));
 	}
 	else
 	{
@@ -141,14 +198,32 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::create_export_animation_strategy_
 	// Get the export file options from the export file options widget, if any.
 	if (d_export_file_options_widget)
 	{
-		d_export_configuration.file_options = d_export_file_options_widget->get_export_file_options();
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				d_export_configuration->file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GMT ||
+					d_export_configuration->file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GPML,
+				GPLATES_ASSERTION_SOURCE);
+
+		if (d_export_configuration->file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GMT)
+		{
+			// Throws bad_cast if fails.
+			GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
+					dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
+							*d_export_configuration);
+			configuration.file_options = d_export_file_options_widget->get_export_file_options();
+		}
+		else
+		{
+			// Throws bad_cast if fails.
+			GPlatesGui::ExportVelocityAnimationStrategy::GpmlConfiguration &configuration =
+					dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::GpmlConfiguration &>(
+							*d_export_configuration);
+			configuration.file_options = d_export_file_options_widget->get_export_file_options();
+		}
 	}
 
-	d_export_configuration.set_filename_template(filename_template);
+	d_export_configuration->set_filename_template(filename_template);
 
-	return GPlatesGui::ExportVelocityAnimationStrategy::const_configuration_ptr(
-			new GPlatesGui::ExportVelocityAnimationStrategy::Configuration(
-					d_export_configuration));
+	return d_export_configuration->clone();
 }
 
 
@@ -159,17 +234,57 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::make_signal_slot_connections()
 			velocity_vector_3D_radio_button,
 			SIGNAL(toggled(bool)),
 			this,
-			SLOT(react_radio_button_toggled(bool)));
+			SLOT(react_velocity_vector_format_radio_button_toggled(bool)));
 	QObject::connect(
 			velocity_vector_colat_lon_radio_button,
 			SIGNAL(toggled(bool)),
 			this,
-			SLOT(react_radio_button_toggled(bool)));
+			SLOT(react_velocity_vector_format_radio_button_toggled(bool)));
 	QObject::connect(
 			velocity_vector_magnitude_angle_radio_button,
 			SIGNAL(toggled(bool)),
 			this,
-			SLOT(react_radio_button_toggled(bool)));
+			SLOT(react_velocity_vector_format_radio_button_toggled(bool)));
+	QObject::connect(
+			velocity_scale_spin_box,
+			SIGNAL(valueChanged(double)),
+			this,
+			SLOT(react_velocity_scale_spin_box_value_changed(double)));
+	QObject::connect(
+			velocity_stride_spin_box,
+			SIGNAL(valueChanged(int)),
+			this,
+			SLOT(react_velocity_stride_spin_box_value_changed(int)));
+	QObject::connect(
+			lon_lat_radio_button,
+			SIGNAL(toggled(bool)),
+			this,
+			SLOT(react_domain_point_format_radio_button_toggled(bool)));
+	QObject::connect(
+			lat_lon_radio_button,
+			SIGNAL(toggled(bool)),
+			this,
+			SLOT(react_domain_point_format_radio_button_toggled(bool)));
+	QObject::connect(
+			include_plate_id_check_box,
+			SIGNAL(stateChanged(int)),
+			this,
+			SLOT(react_include_plate_id_check_box_clicked()));
+	QObject::connect(
+			include_domain_point_check_box,
+			SIGNAL(stateChanged(int)),
+			this,
+			SLOT(react_include_domain_point_check_box_clicked()));
+	QObject::connect(
+			include_domain_meta_data_check_box,
+			SIGNAL(stateChanged(int)),
+			this,
+			SLOT(react_include_domain_meta_data_check_box_clicked()));
+	QObject::connect(
+			citcoms_compatible_button,
+			SIGNAL(clicked(bool)),
+			this,
+			SLOT(react_citcoms_compatible_button_clicked()));
 
 	QObject::connect(
 			terra_grid_filename_template_line_edit,
@@ -186,21 +301,26 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::make_signal_slot_connections()
 
 
 void
-GPlatesQtWidgets::ExportVelocityOptionsWidget::react_radio_button_toggled(
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_velocity_vector_format_radio_button_toggled(
 		bool checked)
 {
+	// Throws bad_cast if fails.
+	GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
+			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
+					*d_export_configuration);
+
 	// Determine the file format.
 	if (velocity_vector_3D_radio_button->isChecked())
 	{
-		d_export_configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D;
+		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D;
 	}
 	else if (velocity_vector_colat_lon_radio_button->isChecked())
 	{
-		d_export_configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON;
+		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON;
 	}
 	else
 	{
-		d_export_configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE;
+		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE;
 	}
 
 	update_output_description_label();
@@ -208,19 +328,140 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::react_radio_button_toggled(
 
 
 void
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_velocity_scale_spin_box_value_changed(
+		double value)
+{
+	// Throws bad_cast if fails.
+	GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
+			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
+					*d_export_configuration);
+
+	configuration.velocity_scale = value;
+}
+
+
+void
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_velocity_stride_spin_box_value_changed(
+		int value)
+{
+	// Throws bad_cast if fails.
+	GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
+			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
+					*d_export_configuration);
+
+	configuration.velocity_stride = value;
+}
+
+
+void
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_domain_point_format_radio_button_toggled(
+		bool checked)
+{
+	// Throws bad_cast if fails.
+	GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
+			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
+					*d_export_configuration);
+
+	// Determine the domain point format.
+	if (lon_lat_radio_button->isChecked())
+	{
+		configuration.domain_point_format = GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration::LON_LAT;
+	}
+	else
+	{
+		configuration.domain_point_format = GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration::LAT_LON;
+	}
+
+	update_output_description_label();
+}
+
+
+void
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_include_plate_id_check_box_clicked()
+{
+	// Throws bad_cast if fails.
+	GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
+			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
+					*d_export_configuration);
+
+	configuration.include_plate_id = include_plate_id_check_box->isChecked();
+
+	update_output_description_label();
+}
+
+
+void
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_include_domain_point_check_box_clicked()
+{
+	// Throws bad_cast if fails.
+	GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
+			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
+					*d_export_configuration);
+
+	configuration.include_domain_point = include_domain_point_check_box->isChecked();
+
+	// Disable the domain point format options if we're not exporting domain points.
+	domain_point_format_options->setEnabled(configuration.include_domain_point);
+
+	update_output_description_label();
+}
+
+
+void
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_include_domain_meta_data_check_box_clicked()
+{
+	// Throws bad_cast if fails.
+	GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
+			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
+					*d_export_configuration);
+
+	configuration.include_domain_meta_data = include_domain_meta_data_check_box->isChecked();
+}
+
+
+void
+GPlatesQtWidgets::ExportVelocityOptionsWidget::react_citcoms_compatible_button_clicked()
+{
+	// Throws bad_cast if fails.
+	GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
+			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
+					*d_export_configuration);
+
+	//
+	// Set up some options that make the GMT output compatible with CitcomS.
+	//
+	// There are two outputs used by CitcomS:
+	//  (1) the regular 'bvel' output (exported under CITCOMS_GLOBAL), and
+	//  (2) a 'bvel.xy' output that has domain points in (lat/lon) instead of the GMT default (lon/lat).
+	//
+
+	velocity_vector_magnitude_angle_radio_button->setChecked(true);
+	lat_lon_radio_button->setChecked(true);
+	include_plate_id_check_box->setChecked(false);
+	include_domain_point_check_box->setChecked(true);
+	include_domain_meta_data_check_box->setChecked(false);
+}
+
+
+void
 GPlatesQtWidgets::ExportVelocityOptionsWidget::handle_terra_grid_filename_template_changed()
 {
+	// Throws bad_cast if fails.
+	GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration &configuration =
+			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration &>(
+					*d_export_configuration);
+
 	const QString text = terra_grid_filename_template_line_edit->text();
 
 	// Find occurrence of each Terra parameter in file name template.
 	const int mt_pos = text.indexOf(
-			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_MT_PLACE_HOLDER);
+			GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::MT_PLACE_HOLDER);
 	const int nt_pos = text.indexOf(
-			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_NT_PLACE_HOLDER);
+			GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::NT_PLACE_HOLDER);
 	const int nd_pos = text.indexOf(
-			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_ND_PLACE_HOLDER);
+			GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::ND_PLACE_HOLDER);
 	const int np_pos = text.indexOf(
-			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_PROCESSOR_PLACE_HOLDER);
+			GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::PROCESSOR_PLACE_HOLDER);
 
 	// Must have one, and only one, occurrence of each Terra parameter placeholders.
 	if (text.isEmpty() ||
@@ -229,16 +470,16 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::handle_terra_grid_filename_templa
 		nd_pos < 0 ||
 		np_pos < 0 ||
 		text.indexOf(
-			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_MT_PLACE_HOLDER,
+			GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::MT_PLACE_HOLDER,
 			mt_pos+1) >= 0 ||
 		text.indexOf(
-			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_NT_PLACE_HOLDER,
+			GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::NT_PLACE_HOLDER,
 			nt_pos+1) >= 0 ||
 		text.indexOf(
-			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_ND_PLACE_HOLDER,
+			GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::ND_PLACE_HOLDER,
 			nd_pos+1) >= 0 ||
 		text.indexOf(
-			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_PROCESSOR_PLACE_HOLDER,
+			GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::PROCESSOR_PLACE_HOLDER,
 			np_pos+1) >= 0)
 	{
 		QMessageBox::warning(
@@ -246,47 +487,52 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::handle_terra_grid_filename_templa
 				tr("Invalid Terra grid file name template"),
 				tr("The Terra grid file name template must contain one, and only one, occurrence of each of "
 					"'%1', '%2', '%3' and '%4'.")
-					.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_MT_PLACE_HOLDER)
-					.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_NT_PLACE_HOLDER)
-					.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_ND_PLACE_HOLDER)
-					.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_PROCESSOR_PLACE_HOLDER),
+					.arg(GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::MT_PLACE_HOLDER)
+					.arg(GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::NT_PLACE_HOLDER)
+					.arg(GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::ND_PLACE_HOLDER)
+					.arg(GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::PROCESSOR_PLACE_HOLDER),
 				QMessageBox::Ok, QMessageBox::Ok);
-		terra_grid_filename_template_line_edit->setText(d_export_configuration.terra_grid_filename_template);
+		terra_grid_filename_template_line_edit->setText(configuration.terra_grid_filename_template);
 		return;
 	}
 
-	d_export_configuration.terra_grid_filename_template = text;
+	configuration.terra_grid_filename_template = text;
 }
 
 
 void
 GPlatesQtWidgets::ExportVelocityOptionsWidget::handle_citcoms_grid_filename_template_changed()
 {
+	// Throws bad_cast if fails.
+	GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration &configuration =
+			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration &>(
+					*d_export_configuration);
+
 	const QString text = citcoms_grid_filename_template_line_edit->text();
 
 	// Find occurrence of the CitcomS cap number placeholder in file name template.
 	const int cap_number_pos = text.indexOf(
-			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_CAP_NUM_PLACE_HOLDER);
+			GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration::CAP_NUM_PLACE_HOLDER);
 
 	// Must have one, and only one, occurrence of the CitcomS cap number placeholder.
 	// The density placeholder can occur zero or more times since it's not used in the export file name.
 	if (text.isEmpty() ||
 		cap_number_pos < 0 ||
 		text.indexOf(
-			GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_CAP_NUM_PLACE_HOLDER,
+			GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration::CAP_NUM_PLACE_HOLDER,
 			cap_number_pos+1) >= 0)
 	{
 		QMessageBox::warning(
 				this,
 				tr("Invalid CitcomS grid file name template"),
 				tr("The CitcomS grid file name template must contain one, and only one, occurrence '%1'.")
-					.arg(GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_CAP_NUM_PLACE_HOLDER),
+					.arg(GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration::CAP_NUM_PLACE_HOLDER),
 				QMessageBox::Ok, QMessageBox::Ok);
-		citcoms_grid_filename_template_line_edit->setText(d_export_configuration.terra_grid_filename_template);
+		citcoms_grid_filename_template_line_edit->setText(configuration.citcoms_grid_filename_template);
 		return;
 	}
 
-	d_export_configuration.citcoms_grid_filename_template = text;
+	configuration.citcoms_grid_filename_template = text;
 }
 
 
@@ -294,37 +540,60 @@ void
 GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 {
 	// Write a description depending on the file format and velocity vector format.
-	switch (d_export_configuration.file_format)
+	switch (d_export_configuration->file_format)
 	{
 	case GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GPML:
 		output_description_label->setText("Velocities will be exported in (Colatitude, Longitude) format.");
 		break;
 
 	case GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GMT:
-		switch (d_export_configuration.velocity_vector_format)
 		{
-		case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D:
-			output_description_label->setText(
-					"Velocities will be exported as:\n"
-					"  domain_point_lon  domain_point_lat  plate_id  velocity_x  velocity_y  velocity_z");
-			break;
+			// Throws bad_cast if fails.
+			GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
+					dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
+							*d_export_configuration);
 
-		case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON:
-			output_description_label->setText(
-					"Velocities will be exported as:\n"
-					"  domain_point_lon  domain_point_lat  plate_id  velocity_colat  velocity_lon");
-			break;
+			QString output_description = tr("Velocities will be exported as:\n");
 
-		case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE:
-			output_description_label->setText(
-					"Velocities will be exported as:\n"
-					"  domain_point_lon  domain_point_lat  plate_id  velocity_magnitude  velocity_angle");
-			break;
+			if (configuration.include_domain_point)
+			{
+				if (configuration.domain_point_format ==
+					GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration::LON_LAT)
+				{
+					output_description += tr("  domain_point_lon  domain_point_lat");
+				}
+				else
+				{
+					output_description += tr("  domain_point_lat  domain_point_lon");
+				}
+			}
 
-		default:
-			// Shouldn't get here.
-			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-			break;
+			if (configuration.include_plate_id)
+			{
+				output_description += tr("  plate_id");
+			}
+
+			switch (configuration.velocity_vector_format)
+			{
+			case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D:
+				output_description += tr("  velocity_x  velocity_y  velocity_z");
+				break;
+
+			case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON:
+				output_description += tr("  velocity_colat  velocity_lon");
+				break;
+
+			case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE:
+				output_description += tr("  velocity_magnitude  velocity_angle");
+				break;
+
+			default:
+				// Shouldn't get here.
+				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+				break;
+			}
+
+			output_description_label->setText(output_description);
 		}
 		break;
 

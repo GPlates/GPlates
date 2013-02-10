@@ -6,52 +6,279 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>533</width>
-    <height>356</height>
+    <width>587</width>
+    <height>532</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="verticalLayout_6">
    <item>
     <widget class="QWidget" name="widget_file_options" native="true"/>
    </item>
    <item>
-    <widget class="QGroupBox" name="velocity_vector_format_group_box">
-     <property name="title">
-      <string>Velocity Vector Format Options</string>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
+    <widget class="QWidget" name="gmt_format_options" native="true">
+     <layout class="QVBoxLayout" name="verticalLayout">
       <property name="spacing">
-       <number>1</number>
+       <number>3</number>
       </property>
-      <property name="topMargin">
-       <number>1</number>
-      </property>
-      <property name="bottomMargin">
-       <number>1</number>
+      <property name="margin">
+       <number>0</number>
       </property>
       <item>
-       <widget class="QRadioButton" name="velocity_vector_3D_radio_button">
-        <property name="text">
-         <string>X / Y / Z</string>
+       <widget class="QGroupBox" name="velocity_vector_format_group_box">
+        <property name="title">
+         <string>Velocity Vector Format Options</string>
         </property>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <property name="spacing">
+          <number>1</number>
+         </property>
+         <property name="topMargin">
+          <number>1</number>
+         </property>
+         <property name="bottomMargin">
+          <number>1</number>
+         </property>
+         <item>
+          <widget class="QRadioButton" name="velocity_vector_3D_radio_button">
+           <property name="text">
+            <string>X / Y / Z</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="velocity_vector_colat_lon_radio_button">
+           <property name="text">
+            <string>Colatitude / Longitude</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="velocity_vector_magnitude_angle_radio_button">
+           <property name="text">
+            <string>Magnitude / Angle (-180 to +180 degrees relative to East)</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </item>
       <item>
-       <widget class="QRadioButton" name="velocity_vector_colat_lon_radio_button">
-        <property name="text">
-         <string>Colatitude / Longitude</string>
+       <widget class="QGroupBox" name="velocity_scale_and_stride_options">
+        <property name="title">
+         <string>Velocity Scale and Stride</string>
         </property>
+        <layout class="QVBoxLayout" name="verticalLayout_8">
+         <property name="spacing">
+          <number>1</number>
+         </property>
+         <property name="topMargin">
+          <number>1</number>
+         </property>
+         <property name="bottomMargin">
+          <number>1</number>
+         </property>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <item>
+            <widget class="QLabel" name="velocity_scale_label">
+             <property name="text">
+              <string>Scale (velocity magnitude multiplier):</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="velocity_scale_spin_box">
+             <property name="decimals">
+              <number>4</number>
+             </property>
+             <property name="minimum">
+              <double>0.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>1000.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.050000000000000</double>
+             </property>
+             <property name="value">
+              <double>1.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_2">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <property name="spacing">
+            <number>6</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="velocity_stride_label">
+             <property name="text">
+              <string>Stride (output every 'n'th velocity):</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="velocity_stride_spin_box">
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>99999</number>
+             </property>
+             <property name="value">
+              <number>1</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+        </layout>
        </widget>
       </item>
       <item>
-       <widget class="QRadioButton" name="velocity_vector_magnitude_angle_radio_button">
-        <property name="text">
-         <string>Magnitude / Angle (-180 to +180 degrees relative to East)</string>
+       <widget class="QGroupBox" name="domain_point_format_options">
+        <property name="title">
+         <string>Domain Point Format Options</string>
         </property>
+        <layout class="QVBoxLayout" name="verticalLayout_7">
+         <property name="spacing">
+          <number>1</number>
+         </property>
+         <property name="leftMargin">
+          <number>9</number>
+         </property>
+         <property name="topMargin">
+          <number>1</number>
+         </property>
+         <property name="rightMargin">
+          <number>9</number>
+         </property>
+         <property name="bottomMargin">
+          <number>1</number>
+         </property>
+         <item>
+          <widget class="QRadioButton" name="lon_lat_radio_button">
+           <property name="text">
+            <string>Longitude / Latitude (GMT default)</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="lat_lon_radio_button">
+           <property name="text">
+            <string>Lattitude / Longitude</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="inclusion_options">
+        <property name="title">
+         <string>Include Options</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_9">
+         <property name="spacing">
+          <number>1</number>
+         </property>
+         <property name="topMargin">
+          <number>1</number>
+         </property>
+         <property name="bottomMargin">
+          <number>1</number>
+         </property>
+         <item>
+          <widget class="QCheckBox" name="include_plate_id_check_box">
+           <property name="text">
+            <string>Include plate ID</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="include_domain_point_check_box">
+           <property name="text">
+            <string>Include domain point</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="include_domain_meta_data_check_box">
+           <property name="text">
+            <string>Include domain metadata</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_5">
+        <property name="leftMargin">
+         <number>9</number>
+        </property>
+        <property name="rightMargin">
+         <number>9</number>
+        </property>
+        <item>
+         <widget class="QToolButton" name="citcoms_compatible_button">
+          <property name="text">
+           <string>CitcomS Compatible</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../qt-resources/qt_widgets.qrc">
+            <normaloff>:/tango_undo_16.png</normaloff>:/tango_undo_16.png</iconset>
+          </property>
+          <property name="toolButtonStyle">
+           <enum>Qt::ToolButtonTextBesideIcon</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
       </item>
      </layout>
     </widget>
@@ -161,6 +388,8 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc"/>
+ </resources>
  <connections/>
 </ui>

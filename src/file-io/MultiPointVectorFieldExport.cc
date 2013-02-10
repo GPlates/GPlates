@@ -149,6 +149,12 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gmt
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
 		VelocityVectorFormatType velocity_vector_format,
+		double velocity_scale,
+		unsigned int velocity_stride,
+		bool domain_point_lon_lat_format,
+		bool include_plate_id,
+		bool include_domain_point,
+		bool include_domain_meta_data,
 		bool export_single_output_file,
 		bool export_per_input_file,
 		bool export_separate_output_directory_per_input_file)
@@ -177,7 +183,13 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gmt
 				referenced_files,
 				reconstruction_anchor_plate_id,
 				reconstruction_time,
-				velocity_vector_format);
+				velocity_vector_format,
+				velocity_scale,
+				velocity_stride,
+				domain_point_lon_lat_format,
+				include_plate_id,
+				include_domain_point,
+				include_domain_meta_data);
 	}
 
 	if (export_per_input_file)
@@ -208,7 +220,13 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gmt
 					referenced_files,
 					reconstruction_anchor_plate_id,
 					reconstruction_time,
-					velocity_vector_format);
+					velocity_vector_format,
+					velocity_scale,
+					velocity_stride,
+					domain_point_lon_lat_format,
+					include_plate_id,
+					include_domain_point,
+					include_domain_meta_data);
 		}
 	}
 }

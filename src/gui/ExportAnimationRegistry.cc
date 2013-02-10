@@ -445,12 +445,9 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::VELOCITIES,
 					ExportAnimationType::GPML),
 			ExportVelocityAnimationStrategy::const_configuration_ptr(
-					new ExportVelocityAnimationStrategy::Configuration(
+					new ExportVelocityAnimationStrategy::GpmlConfiguration(
 							add_export_filename_extension("velocity_%0.2fMa", ExportAnimationType::GPML),
-							ExportVelocityAnimationStrategy::Configuration::GPML,
-							default_velocity_file_export_options,
-							// GPML file format always writes out velocities as colat/lon...
-							GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON)),
+							default_velocity_file_export_options)),
 			&create_animation_strategy<ExportVelocityAnimationStrategy>,
 			boost::bind(
 					// 'static_cast' is because some compilers have trouble determining
@@ -467,11 +464,17 @@ GPlatesGui::register_default_export_animation_types(
 					ExportAnimationType::VELOCITIES,
 					ExportAnimationType::GMT),
 			ExportVelocityAnimationStrategy::const_configuration_ptr(
-					new ExportVelocityAnimationStrategy::Configuration(
+					new ExportVelocityAnimationStrategy::GMTConfiguration(
 							add_export_filename_extension("velocity_%0.2fMa", ExportAnimationType::GMT),
-							ExportVelocityAnimationStrategy::Configuration::GMT,
 							default_velocity_file_export_options,
-							GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D)),
+							GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D,
+							1.0/*velocity_scale*/,
+							1/*velocity_stride*/,
+							// Lon/lat is the default GMT ordering...
+							ExportVelocityAnimationStrategy::GMTConfiguration::LON_LAT,
+							true/*include_plate_id*/,
+							true/*include_domain_point*/,
+							true/*include_domain_meta_data*/)),
 			&create_animation_strategy<ExportVelocityAnimationStrategy>,
 			boost::bind(
 					// 'static_cast' is because some compilers have trouble determining
@@ -486,23 +489,20 @@ GPlatesGui::register_default_export_animation_types(
 	// Default Terra grid filename template to match, for example, "TerraMesh.32.16.5.1".
 	const QString default_terra_grid_filename_template =
 			QString("TerraMesh.") +
-				ExportVelocityAnimationStrategy::Configuration::TERRA_MT_PLACE_HOLDER + "." +
-				ExportVelocityAnimationStrategy::Configuration::TERRA_NT_PLACE_HOLDER + "." +
-				ExportVelocityAnimationStrategy::Configuration::TERRA_ND_PLACE_HOLDER + "." +
-				ExportVelocityAnimationStrategy::Configuration::TERRA_PROCESSOR_PLACE_HOLDER;
+				ExportVelocityAnimationStrategy::TerraTextConfiguration::MT_PLACE_HOLDER + "." +
+				ExportVelocityAnimationStrategy::TerraTextConfiguration::NT_PLACE_HOLDER + "." +
+				ExportVelocityAnimationStrategy::TerraTextConfiguration::ND_PLACE_HOLDER + "." +
+				ExportVelocityAnimationStrategy::TerraTextConfiguration::PROCESSOR_PLACE_HOLDER;
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
 					ExportAnimationType::VELOCITIES,
 					ExportAnimationType::TERRA_TEXT),
 			ExportVelocityAnimationStrategy::const_configuration_ptr(
-					new ExportVelocityAnimationStrategy::Configuration(
+					new ExportVelocityAnimationStrategy::TerraTextConfiguration(
 							// An example Terra filename is "gpt.0025.100" which must have
 							// 3 digits for the reconstruction time (which must be an integer)...
 							add_export_filename_extension("gpt.%P.%03d", ExportAnimationType::TERRA_TEXT),
-							ExportVelocityAnimationStrategy::Configuration::TERRA_TEXT,
-							default_velocity_file_export_options,
-							GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D,
 							default_terra_grid_filename_template)),
 			&create_animation_strategy<ExportVelocityAnimationStrategy>,
 			boost::bind(
@@ -517,23 +517,19 @@ GPlatesGui::register_default_export_animation_types(
 
 	// Default CitcomS grid filename template to match, for example, "TerraMesh.32.16.5.1".
 	const QString default_citcoms_grid_filename_template =
-			ExportVelocityAnimationStrategy::Configuration::CITCOMS_DENSITY_PLACE_HOLDER +
+			ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration::DENSITY_PLACE_HOLDER +
 				".mesh." +
-				ExportVelocityAnimationStrategy::Configuration::CITCOMS_CAP_NUM_PLACE_HOLDER;
+				ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration::CAP_NUM_PLACE_HOLDER;
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
 					ExportAnimationType::VELOCITIES,
 					ExportAnimationType::CITCOMS_GLOBAL),
 			ExportVelocityAnimationStrategy::const_configuration_ptr(
-					new ExportVelocityAnimationStrategy::Configuration(
+					new ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration(
 							// An example Terra filename is "bvel25.9" where 25 is the reconstruction
 							// time (which must be an integer) and 9 is the cap number...
 							add_export_filename_extension("bvel%d.%P", ExportAnimationType::CITCOMS_GLOBAL),
-							ExportVelocityAnimationStrategy::Configuration::CITCOMS_GLOBAL,
-							default_velocity_file_export_options,
-							GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON,
-							"", // Terra grid filename not used.
 							default_citcoms_grid_filename_template)),
 			&create_animation_strategy<ExportVelocityAnimationStrategy>,
 			boost::bind(

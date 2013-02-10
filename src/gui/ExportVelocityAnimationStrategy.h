@@ -87,38 +87,13 @@ namespace GPlatesGui
 				CITCOMS_GLOBAL
 			};
 
-			//
-			// Used to pattern match parameters contained in Terra velocity domain file names.
-			//
-			static const QString TERRA_MT_PLACE_HOLDER; // Terra 'mt' parameter.
-			static const QString TERRA_NT_PLACE_HOLDER; // Terra 'nt' parameter.
-			static const QString TERRA_ND_PLACE_HOLDER; // Terra 'nd' parameter.
-			static const QString TERRA_PROCESSOR_PLACE_HOLDER; // Terra local processor number.
-
-			//
-			// Used to pattern match parameters contained in CitcomS velocity domain file names.
-			//
-			static const QString CITCOMS_DENSITY_PLACE_HOLDER; // CitcomS diamond density/resolution.
-			static const QString CITCOMS_CAP_NUM_PLACE_HOLDER; // CitcomS diamond cap number.
-
 
 			explicit
 			Configuration(
 					const QString &filename_template_,
-					FileFormat file_format_,
-					const ExportOptionsUtils::ExportFileOptions &file_options_,
-					GPlatesFileIO::MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format_,
-					// TODO: Inherit from Configuration instead of adding format-specific parameters...
-					// Only used for TERRA_TEXT format...
-					const QString &terra_grid_filename_template_ = QString(),
-					// Only used for CITCOMS_GLOBAL format...
-					const QString &citcoms_grid_filename_template_ = QString()) :
+					FileFormat file_format_) :
 				ConfigurationBase(filename_template_),
-				file_format(file_format_),
-				file_options(file_options_),
-				velocity_vector_format(velocity_vector_format_),
-				terra_grid_filename_template(terra_grid_filename_template_),
-				citcoms_grid_filename_template(citcoms_grid_filename_template_)
+				file_format(file_format_)
 			{  }
 
 			virtual
@@ -129,14 +104,163 @@ namespace GPlatesGui
 			}
 
 			FileFormat file_format;
-			ExportOptionsUtils::ExportFileOptions file_options;
-			GPlatesFileIO::MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format;
-			QString terra_grid_filename_template; // Only used for the TERRA_TEXT format.
-			QString citcoms_grid_filename_template; // Only used for the CITCOMS_GLOBAL format.
 		};
 
 		//! Typedef for a shared pointer to const @a Configuration.
 		typedef boost::shared_ptr<const Configuration> const_configuration_ptr;
+		//! Typedef for a shared pointer to @a Configuration.
+		typedef boost::shared_ptr<Configuration> configuration_ptr;
+
+
+		/**
+		 * GPML format configuration options.
+		 */
+		class GpmlConfiguration :
+				public Configuration
+		{
+		public:
+
+			explicit
+			GpmlConfiguration(
+					const QString &filename_template_,
+					const ExportOptionsUtils::ExportFileOptions &file_options_) :
+				Configuration(filename_template_, GPML),
+				file_options(file_options_)
+			{  }
+
+			virtual
+			configuration_base_ptr
+			clone() const
+			{
+				return configuration_base_ptr(new GpmlConfiguration(*this));
+			}
+
+			ExportOptionsUtils::ExportFileOptions file_options;
+		};
+
+
+		/**
+		 * GMT format configuration options.
+		 */
+		class GMTConfiguration :
+				public Configuration
+		{
+		public:
+
+			enum DomainPointFormatType
+			{
+				LON_LAT,
+				LAT_LON
+			};
+
+			explicit
+			GMTConfiguration(
+					const QString &filename_template_,
+					const ExportOptionsUtils::ExportFileOptions &file_options_,
+					GPlatesFileIO::MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format_,
+					double velocity_scale_,
+					unsigned int velocity_stride_,
+					DomainPointFormatType domain_point_format_,
+					bool include_plate_id_,
+					bool include_domain_point_,
+					bool include_domain_meta_data_) :
+				Configuration(filename_template_, GMT),
+				file_options(file_options_),
+				velocity_vector_format(velocity_vector_format_),
+				velocity_scale(velocity_scale_),
+				velocity_stride(velocity_stride_),
+				domain_point_format(domain_point_format_),
+				include_plate_id(include_plate_id_),
+				include_domain_point(include_domain_point_),
+				include_domain_meta_data(include_domain_meta_data_)
+			{  }
+
+			virtual
+			configuration_base_ptr
+			clone() const
+			{
+				return configuration_base_ptr(new GMTConfiguration(*this));
+			}
+
+			ExportOptionsUtils::ExportFileOptions file_options;
+			GPlatesFileIO::MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format;
+			double velocity_scale;
+			unsigned int velocity_stride;
+			DomainPointFormatType domain_point_format;
+			bool include_plate_id;
+			bool include_domain_point;
+			bool include_domain_meta_data;
+		};
+
+
+		/**
+		 * Terra text format configuration options.
+		 */
+		class TerraTextConfiguration :
+				public Configuration
+		{
+		public:
+
+			//
+			// Used to pattern match parameters contained in Terra velocity domain file names.
+			//
+			static const QString MT_PLACE_HOLDER; // Terra 'mt' parameter.
+			static const QString NT_PLACE_HOLDER; // Terra 'nt' parameter.
+			static const QString ND_PLACE_HOLDER; // Terra 'nd' parameter.
+			static const QString PROCESSOR_PLACE_HOLDER; // Terra local processor number.
+
+
+			explicit
+			TerraTextConfiguration(
+					const QString &filename_template_,
+					const QString &terra_grid_filename_template_) :
+				Configuration(filename_template_, TERRA_TEXT),
+				terra_grid_filename_template(terra_grid_filename_template_)
+			{  }
+
+			virtual
+			configuration_base_ptr
+			clone() const
+			{
+				return configuration_base_ptr(new TerraTextConfiguration(*this));
+			}
+
+			QString terra_grid_filename_template;
+		};
+
+
+		/**
+		 * CitcomS global format configuration options.
+		 */
+		class CitcomsGlobalConfiguration :
+				public Configuration
+		{
+		public:
+
+			//
+			// Used to pattern match parameters contained in CitcomS velocity domain file names.
+			//
+			static const QString DENSITY_PLACE_HOLDER; // CitcomS diamond density/resolution.
+			static const QString CAP_NUM_PLACE_HOLDER; // CitcomS diamond cap number.
+
+
+			explicit
+			CitcomsGlobalConfiguration(
+					const QString &filename_template_,
+					const QString &citcoms_grid_filename_template_) :
+				Configuration(filename_template_, CITCOMS_GLOBAL),
+				citcoms_grid_filename_template(citcoms_grid_filename_template_)
+			{  }
+
+			virtual
+			configuration_base_ptr
+			clone() const
+			{
+				return configuration_base_ptr(new CitcomsGlobalConfiguration(*this));
+			}
+
+			QString citcoms_grid_filename_template;
+		};
 
 
 		static

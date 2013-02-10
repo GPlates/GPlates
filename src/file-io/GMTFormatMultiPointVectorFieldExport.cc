@@ -110,7 +110,10 @@ namespace GPlatesFileIO
 					const GPlatesMaths::PointOnSphere &domain_point,
 					const GPlatesMaths::Vector3D &velocity_vector,
 					GPlatesModel::integer_plate_id_type plate_id,
-					MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format)
+					MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format,
+					bool domain_point_lon_lat_format,
+					bool include_plate_id,
+					bool include_domain_point)
 			{
 				/*
 				 * Write the complete line to a string stream first, so that in case an exception
@@ -118,41 +121,54 @@ namespace GPlatesFileIO
 				 */
 				std::ostringstream gmt_line;
 
+				const GPlatesMaths::LatLonPoint domain_point_lat_lon =
+						GPlatesMaths::make_lat_lon_point(domain_point);
+
 				//
 				// Output domain point.
 				//
 
-				const GPlatesMaths::LatLonPoint domain_point_lat_lon =
-						GPlatesMaths::make_lat_lon_point(domain_point);
+				if (include_domain_point)
+				{
+					/*
+					 * A coordinate in the GMT xy format is written as decimal number that
+					 * takes up 8 characters excluding sign.
+					 */
+					static const unsigned GMT_COORDINATE_FIELDWIDTH = 9;
 
-				/*
-				 * A coordinate in the GMT xy format is written as decimal number that
-				 * takes up 8 characters excluding sign.
-				 */
-				static const unsigned GMT_COORDINATE_FIELDWIDTH = 9;
+					const std::string domain_point_lat_str = GPlatesUtils::formatted_double_to_string(
+							domain_point_lat_lon.latitude(),
+							GMT_COORDINATE_FIELDWIDTH);
+					const std::string domain_point_lon_str = GPlatesUtils::formatted_double_to_string(
+							domain_point_lat_lon.longitude(),
+							GMT_COORDINATE_FIELDWIDTH);
 
-				const std::string domain_point_lat_str = GPlatesUtils::formatted_double_to_string(
-						domain_point_lat_lon.latitude(),
-						GMT_COORDINATE_FIELDWIDTH);
-				const std::string domain_point_lon_str = GPlatesUtils::formatted_double_to_string(
-						domain_point_lat_lon.longitude(),
-						GMT_COORDINATE_FIELDWIDTH);
-
-				// GMT format is by default (lon,lat) which is opposite of PLATES4 line format.
-				gmt_line << "  " << domain_point_lon_str << "      " << domain_point_lat_str;
+					// GMT format is by default (lon,lat) which is opposite of PLATES4 line format.
+					if (domain_point_lon_lat_format)
+					{
+						gmt_line << "  " << domain_point_lon_str << "      " << domain_point_lat_str;
+					}
+					else
+					{
+						gmt_line << "  " << domain_point_lat_str << "      " << domain_point_lon_str;
+					}
+				}
 
 				//
 				// Output plate id.
 				//
 
-				// Use a minimum width of 5 since 5-digit plate ids are currently in use.
-				static const unsigned PLATE_ID_FIELDWIDTH = 5;
+				if (include_plate_id)
+				{
+					// Use a minimum width of 5 since 5-digit plate ids are currently in use.
+					static const unsigned PLATE_ID_FIELDWIDTH = 5;
 
-				const std::string plate_id_str = GPlatesUtils::formatted_int_to_string(
-						plate_id,
-						PLATE_ID_FIELDWIDTH);
+					const std::string plate_id_str = GPlatesUtils::formatted_int_to_string(
+							plate_id,
+							PLATE_ID_FIELDWIDTH);
 
-				gmt_line << "      " << plate_id_str;
+					gmt_line << "      " << plate_id_str;
+				}
 
 				//
 				// Output velocity.
@@ -238,7 +254,13 @@ namespace GPlatesFileIO
 			print_gmt_velocity_vector_field(
 					QTextStream &output_stream,
 					const GPlatesAppLogic::MultiPointVectorField &velocity_vector_field,
-					MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format)
+					MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format,
+					double velocity_scale,
+					unsigned int &velocity_vector_index,
+					unsigned int velocity_stride,
+					bool domain_point_lon_lat_format,
+					bool include_plate_id,
+					bool include_domain_point)
 			{
 				GPlatesMaths::MultiPointOnSphere::const_iterator domain_iter =
 						velocity_vector_field.multi_point()->begin();
@@ -248,6 +270,12 @@ namespace GPlatesFileIO
 						velocity_vector_field.begin();
 				for ( ; domain_iter != domain_end; ++domain_iter, ++codomain_iter)
 				{
+					// Only output every 'n'th velocity vector.
+					if ((velocity_vector_index++ % velocity_stride) != 0)
+					{
+						continue;
+					}
+
 					const GPlatesMaths::PointOnSphere &domain_point = *domain_iter;
 
 					// If the current codomain is invalid/null then default to zero velocity and plate id.
@@ -269,9 +297,12 @@ namespace GPlatesFileIO
 					print_gmt_velocity_line(
 							output_stream,
 							domain_point,
-							velocity_vector,
+							velocity_scale * velocity_vector,
 							plate_id,
-							velocity_vector_format);
+							velocity_vector_format,
+							domain_point_lon_lat_format,
+							include_plate_id,
+							include_domain_point);
 				}
 			}
 		}
@@ -286,7 +317,13 @@ GPlatesFileIO::GMTFormatMultiPointVectorFieldExport::export_velocity_vector_fiel
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
-		MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format)
+		MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format,
+		double velocity_scale,
+		unsigned int velocity_stride,
+		bool domain_point_lon_lat_format,
+		bool include_plate_id,
+		bool include_domain_point,
+		bool include_domain_meta_data)
 {
 	// Open the file.
 	QFile output_file(file_info.filePath());
@@ -301,15 +338,22 @@ GPlatesFileIO::GMTFormatMultiPointVectorFieldExport::export_velocity_vector_fiel
 	// Does the actual printing of GMT header to the output stream.
 	GMTHeaderPrinter gmt_header_printer;
 
-	// Write out the global header (at the top of the exported file).
-	std::vector<QString> global_header_lines;
-	get_global_header_lines(global_header_lines,
-			referenced_files, reconstruction_anchor_plate_id, reconstruction_time);
-	gmt_header_printer.print_global_header_lines(output_stream, global_header_lines);
+	if (include_domain_meta_data)
+	{
+		// Write out the global header (at the top of the exported file).
+		std::vector<QString> global_header_lines;
+		get_global_header_lines(global_header_lines,
+				referenced_files, reconstruction_anchor_plate_id, reconstruction_time);
+		gmt_header_printer.print_global_header_lines(output_stream, global_header_lines);
+	}
 
 	// Even though we're printing out vector fields rather than present day geometry we still
 	// write out the verbose properties of the feature.
 	GMTFormatVerboseHeader gmt_header;
+
+	// Keep track of the number of velocity vectors encountered.
+	// This is needed for the velocity stride so we only output every 'n'th velocity vector.
+	unsigned int velocity_vector_index = 0;
 
 	// Iterate through the vector fields and write to output.
 	std::list<multi_point_vector_field_group_type>::const_iterator feature_iter;
@@ -338,17 +382,32 @@ GPlatesFileIO::GMTFormatMultiPointVectorFieldExport::export_velocity_vector_fiel
 		{
 			const GPlatesAppLogic::MultiPointVectorField *mpvf = *mpvf_iter;
 
-			// Print the header lines.
-			gmt_header_printer.print_feature_header_lines(output_stream, header_lines);
+			if (include_domain_meta_data)
+			{
+				// Print the header lines.
+				gmt_header_printer.print_feature_header_lines(output_stream, header_lines);
+			}
 
 			// Write the velocity vector field and its domain positions and plate ids.
-			print_gmt_velocity_vector_field(output_stream, *mpvf, velocity_vector_format);
+			print_gmt_velocity_vector_field(
+					output_stream,
+					*mpvf,
+					velocity_vector_format,
+					velocity_scale,
+					velocity_vector_index,
+					velocity_stride,
+					domain_point_lon_lat_format,
+					include_plate_id,
+					include_domain_point);
 
-			// Write the final terminating symbol for the current feature.
-			//
-			// No newline is output since a GMT header may follow (due to the next feature) in which
-			// case it will use the same line.
-			output_stream << ">";
+			if (include_domain_meta_data)
+			{
+				// Write the final terminating symbol for the current feature.
+				//
+				// No newline is output since a GMT header may follow (due to the next feature) in which
+				// case it will use the same line.
+				output_stream << ">";
+			}
 		}
 	}
 }

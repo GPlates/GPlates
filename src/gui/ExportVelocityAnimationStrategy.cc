@@ -54,6 +54,8 @@
 #include "file-io/File.h"
 #include "file-io/MultiPointVectorFieldExport.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 #include "global/NotYetImplementedException.h"
 
 #include "gui/ExportAnimationContext.h"
@@ -108,13 +110,13 @@ namespace
 }
 
 
-const QString GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_MT_PLACE_HOLDER = "%MT";
-const QString GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_NT_PLACE_HOLDER = "%NT";
-const QString GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_ND_PLACE_HOLDER = "%ND";
-const QString GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_PROCESSOR_PLACE_HOLDER = "%NP";
+const QString GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::MT_PLACE_HOLDER = "%MT";
+const QString GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::NT_PLACE_HOLDER = "%NT";
+const QString GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::ND_PLACE_HOLDER = "%ND";
+const QString GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::PROCESSOR_PLACE_HOLDER = "%NP";
 
-const QString GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_DENSITY_PLACE_HOLDER = "%D";
-const QString GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_CAP_NUM_PLACE_HOLDER = "%C";
+const QString GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration::DENSITY_PLACE_HOLDER = "%D";
+const QString GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration::CAP_NUM_PLACE_HOLDER = "%C";
 
 
 GPlatesGui::ExportVelocityAnimationStrategy::ExportVelocityAnimationStrategy(
@@ -180,56 +182,86 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 		switch (d_configuration->file_format)
 		{
 		case Configuration::GPML:
-			GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gpml_format(
-				full_filename,
-				velocity_vector_field_seq,
-				d_export_animation_context_ptr->view_state().get_application_state().get_gpgim(),
-				d_export_animation_context_ptr->view_state().get_application_state().get_model_interface(),
-				d_loaded_files,
-				d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
-				d_export_animation_context_ptr->view_time(),
-				d_configuration->file_options.export_to_a_single_file,
-				d_configuration->file_options.export_to_multiple_files,
-				d_configuration->file_options.separate_output_directory_per_file);
+			{
+				// Throws bad_cast if fails.
+				const GpmlConfiguration &configuration =
+						dynamic_cast<const GpmlConfiguration &>(*d_configuration);
+
+				GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gpml_format(
+					full_filename,
+					velocity_vector_field_seq,
+					d_export_animation_context_ptr->view_state().get_application_state().get_gpgim(),
+					d_export_animation_context_ptr->view_state().get_application_state().get_model_interface(),
+					d_loaded_files,
+					d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
+					d_export_animation_context_ptr->view_time(),
+					configuration.file_options.export_to_a_single_file,
+					configuration.file_options.export_to_multiple_files,
+					configuration.file_options.separate_output_directory_per_file);
+			}
 			break;
 
 		case Configuration::GMT:
-			GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gmt_format(
-				full_filename,
-				velocity_vector_field_seq,
-				d_loaded_files,
-				d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
-				d_export_animation_context_ptr->view_time(),
-				d_configuration->velocity_vector_format,
-				d_configuration->file_options.export_to_a_single_file,
-				d_configuration->file_options.export_to_multiple_files,
-				d_configuration->file_options.separate_output_directory_per_file);
+			{
+				// Throws bad_cast if fails.
+				const GMTConfiguration &configuration =
+						dynamic_cast<const GMTConfiguration &>(*d_configuration);
+
+				GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gmt_format(
+					full_filename,
+					velocity_vector_field_seq,
+					d_loaded_files,
+					d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
+					d_export_animation_context_ptr->view_time(),
+					configuration.velocity_vector_format,
+					configuration.velocity_scale,
+					configuration.velocity_stride,
+					(configuration.domain_point_format == GMTConfiguration::LON_LAT),
+					configuration.include_plate_id,
+					configuration.include_domain_point,
+					configuration.include_domain_meta_data,
+					configuration.file_options.export_to_a_single_file,
+					configuration.file_options.export_to_multiple_files,
+					configuration.file_options.separate_output_directory_per_file);
+			}
 			break;
 
 		case Configuration::TERRA_TEXT:
-			GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_terra_text_format(
-				d_configuration->terra_grid_filename_template,
-				full_filename,
-				Configuration::TERRA_MT_PLACE_HOLDER,
-				Configuration::TERRA_NT_PLACE_HOLDER,
-				Configuration::TERRA_ND_PLACE_HOLDER,
-				Configuration::TERRA_PROCESSOR_PLACE_HOLDER,
-				GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
-				velocity_vector_field_seq,
-				d_loaded_files,
-				static_cast<int>(d_export_animation_context_ptr->view_time()));
+			{
+				// Throws bad_cast if fails.
+				const TerraTextConfiguration &configuration =
+						dynamic_cast<const TerraTextConfiguration &>(*d_configuration);
+
+				GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_terra_text_format(
+					configuration.terra_grid_filename_template,
+					full_filename,
+					TerraTextConfiguration::MT_PLACE_HOLDER,
+					TerraTextConfiguration::NT_PLACE_HOLDER,
+					TerraTextConfiguration::ND_PLACE_HOLDER,
+					TerraTextConfiguration::PROCESSOR_PLACE_HOLDER,
+					GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+					velocity_vector_field_seq,
+					d_loaded_files,
+					static_cast<int>(d_export_animation_context_ptr->view_time()));
+			}
 			break;
 
 		case Configuration::CITCOMS_GLOBAL:
-			GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_citcoms_global_format(
-				d_configuration->citcoms_grid_filename_template,
-				full_filename,
-				Configuration::CITCOMS_DENSITY_PLACE_HOLDER,
-				Configuration::CITCOMS_CAP_NUM_PLACE_HOLDER,
-				GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
-				velocity_vector_field_seq,
-				d_loaded_files,
-				static_cast<int>(d_export_animation_context_ptr->view_time()));
+			{
+				// Throws bad_cast if fails.
+				const CitcomsGlobalConfiguration &configuration =
+						dynamic_cast<const CitcomsGlobalConfiguration &>(*d_configuration);
+
+				GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_citcoms_global_format(
+					configuration.citcoms_grid_filename_template,
+					full_filename,
+					CitcomsGlobalConfiguration::DENSITY_PLACE_HOLDER,
+					CitcomsGlobalConfiguration::CAP_NUM_PLACE_HOLDER,
+					GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING,
+					velocity_vector_field_seq,
+					d_loaded_files,
+					static_cast<int>(d_export_animation_context_ptr->view_time()));
+			}
 			break;
 
 		default:
