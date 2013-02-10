@@ -253,6 +253,13 @@ namespace GPlatesQtWidgets
 			{
 				return contentsSize();
 			}
+
+			QSize
+			minimumSizeHint() const
+			{
+				// The minimum size in the vertical direction is contents size plus a small amount.
+				return QSize(QListWidget::minimumSizeHint().width(), contentsSize().height() + 10);
+			}
 		};
 
 

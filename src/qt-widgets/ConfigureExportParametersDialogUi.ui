@@ -19,61 +19,69 @@
   <property name="windowTitle">
    <string>Add Data to Export</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_4">
+  <layout class="QVBoxLayout" name="verticalLayout_5">
    <item>
     <widget class="QSplitter" name="splitter">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
-     <widget class="QGroupBox" name="groupBox">
-      <property name="title">
-       <string>1. Choose Data Type to Export</string>
-      </property>
-      <layout class="QVBoxLayout">
+     <widget class="QWidget" name="verticalLayoutWidget">
+      <layout class="QVBoxLayout" name="verticalLayout_4">
        <item>
-        <widget class="QListWidget" name="export_type_list_widget">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
+        <widget class="QGroupBox" name="export_type_group_box">
+         <property name="title">
+          <string>1. Choose Data Type to Export</string>
          </property>
-         <property name="verticalScrollBarPolicy">
-          <enum>Qt::ScrollBarAlwaysOff</enum>
-         </property>
-         <property name="autoScroll">
-          <bool>false</bool>
-         </property>
-         <property name="uniformItemSizes">
-          <bool>true</bool>
-         </property>
+         <layout class="QVBoxLayout">
+          <item>
+           <widget class="QListWidget" name="export_type_list_widget">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="verticalScrollBarPolicy">
+             <enum>Qt::ScrollBarAsNeeded</enum>
+            </property>
+            <property name="autoScroll">
+             <bool>false</bool>
+            </property>
+            <property name="uniformItemSizes">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_export_description">
+            <property name="frameShape">
+             <enum>QFrame::StyledPanel</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Sunken</enum>
+            </property>
+            <property name="text">
+             <string>GPlates will export all feature data after it has been reconstructed to the specified time.</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="label_export_description">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Sunken</enum>
-         </property>
-         <property name="text">
-          <string>GPlates will export all feature data after it has been reconstructed to the specified time.</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-         </property>
-         <property name="wordWrap">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QWidget" name="layoutWidget">
-      <layout class="QVBoxLayout" name="verticalLayout_3">
-       <item>
-        <widget class="QGroupBox" name="groupBox_2">
+        <widget class="QGroupBox" name="export_format_group_box">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -81,12 +89,31 @@
           </sizepolicy>
          </property>
          <property name="title">
-          <string>2. Choose Output File Format and Export Options</string>
+          <string>2. Choose Output File Format</string>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_2">
+         <layout class="QVBoxLayout" name="verticalLayout_6">
           <item>
            <widget class="QWidget" name="list_widget_format_placeholder" native="true"/>
           </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="layoutWidget">
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <widget class="QGroupBox" name="export_options_group_box">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="title">
+          <string>3. Configure Export Options</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
           <item>
            <widget class="QScrollArea" name="widget_export_options">
             <property name="sizePolicy">
@@ -109,8 +136,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>444</width>
-               <height>551</height>
+               <width>423</width>
+               <height>567</height>
               </rect>
              </property>
             </widget>
@@ -128,7 +155,7 @@
           </sizepolicy>
          </property>
          <property name="title">
-          <string>3. Specify Output Filenames</string>
+          <string>4. Specify Output Filenames</string>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout">
           <item>

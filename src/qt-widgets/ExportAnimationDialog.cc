@@ -214,6 +214,10 @@ GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 	// We might actually need the 'exactly on end time' checkbox.
 	handle_options_changed();
 
+	// Start with the export animation range (instead of single export snapshot).
+	radioButton_range->setChecked(true);
+	select_range_snapshot(true);
+
 	// Reset controls to their "Eagerly awaiting user input" state.
 	reset();
 
@@ -600,6 +604,10 @@ GPlatesQtWidgets::ExportAnimationDialog::insert_item(
 			configuration_item);
 	configuration_item->setText(export_configuration->get_filename_template());
 
+	// Select the row just added so the user can edit it easily.
+	// Also serves to highlight the export just added.
+	// The column is arbitrary since the entire row will be selected (due to selection behaviour).
+	tableWidget->setCurrentCell(0, 0);
 
 	tableWidget->setSortingEnabled(true);
 

@@ -54,7 +54,7 @@
    <item>
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="page">
       <layout class="QVBoxLayout">
@@ -294,7 +294,7 @@
                <set>QAbstractItemView::NoEditTriggers</set>
               </property>
               <property name="alternatingRowColors">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <property name="selectionMode">
                <enum>QAbstractItemView::SingleSelection</enum>
@@ -342,7 +342,7 @@
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>&amp;Add Export Type...</string>
+                 <string>&amp;Add Export...</string>
                 </property>
                 <property name="icon">
                  <iconset resource="../qt-resources/qt_widgets.qrc">
@@ -675,7 +675,7 @@
                <set>QAbstractItemView::NoEditTriggers</set>
               </property>
               <property name="alternatingRowColors">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <property name="selectionMode">
                <enum>QAbstractItemView::SingleSelection</enum>

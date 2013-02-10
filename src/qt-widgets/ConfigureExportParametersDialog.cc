@@ -71,6 +71,8 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDial
 	QtWidgetUtils::add_widget_to_placeholder(d_export_format_list_widget, list_widget_format_placeholder);
     QSizePolicy list_widget_format_size_policy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     d_export_format_list_widget->setSizePolicy(list_widget_format_size_policy);
+	d_export_format_list_widget->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	d_export_format_list_widget->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
 	// Make the export options a scroll area since we don't know how many options
 	// will be dynamically placed there.
@@ -91,7 +93,15 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::ConfigureExportParametersDial
 			d_export_file_name_template_widget,
 			export_filename_template_place_holder);
 
+	// Give more space to the right side of the splitter.
+	// That's where the export options are - we don't want to crowd them too much.
+	splitter->setStretchFactor(0, 1);
+	splitter->setStretchFactor(1, 2);
+
 	initialize_export_type_list_widget();
+
+	// Only enable 'accept' button when an export type and format have been selected.
+	main_buttonbox->button(QDialogButtonBox::Ok)->setEnabled(false);
 
 	QObject::connect(
 			export_type_list_widget,
@@ -139,6 +149,8 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::initialize_export_type_list_w
 {
 	export_type_list_widget->clear();
 	d_export_format_list_widget->clear();
+	// Update the geometry since we override the size hint to match the contents size.
+	d_export_format_list_widget->updateGeometry();
 	clear_export_options_widget();
 
 	//
@@ -180,8 +192,13 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_type_selection_c
 		return;
 	}
 
+	// Only enable 'accept' button when an export type and format have been selected.
+	main_buttonbox->button(QDialogButtonBox::Ok)->setEnabled(false);
+
 	d_export_file_name_template_widget->clear_file_name_template();
 	d_export_format_list_widget->clear();
+	// Update the geometry since we override the size hint to match the contents size.
+	d_export_format_list_widget->updateGeometry();
 	clear_export_options_widget();
 
 	const GPlatesGui::ExportAnimationType::Type selected_export_type =
@@ -211,6 +228,8 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_type_selection_c
 
 		QListWidgetItem *item = new ExportFormatWidgetItem<QListWidgetItem>(export_format);
 		d_export_format_list_widget->addItem(item);
+		// Update the geometry since we override the size hint to match the contents size.
+		d_export_format_list_widget->updateGeometry();
 		item->setText(get_export_format_description(export_format));
 	}
 }
@@ -287,6 +306,9 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::react_export_format_selection
 	pal.setColor(QPalette::WindowText, QColor("black")); 
 	label_filename_desc->setPalette(pal);
 #endif
+
+	// Enable 'accept' button now that an export type and format have been selected.
+	main_buttonbox->button(QDialogButtonBox::Ok)->setEnabled(true);
 }
 
 
