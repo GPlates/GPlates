@@ -338,6 +338,14 @@ namespace
 			GPlatesQtWidgets::GpgimVersionWarningDialog *gpgim_version_warning_dialog,
 			const GPlatesModel::Gpgim &gpgim)
 	{
+		// Do not warn the user if requested us to stop bothering them.
+		// Not that we only have this option for loading files.
+		// When saving files the user is always warned.
+		if (gpgim_version_warning_dialog->do_not_show_dialog_on_loading_files())
+		{
+			return;
+		}
+
 		QStringList older_version_filenames;
 		QStringList newer_version_filenames;
 

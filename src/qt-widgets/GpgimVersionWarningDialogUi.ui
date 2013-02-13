@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>496</width>
+    <width>509</width>
     <height>338</height>
    </rect>
   </property>
@@ -156,6 +156,13 @@
     </widget>
    </item>
    <item>
+    <widget class="QCheckBox" name="do_not_show_dialog_on_loading_check_box">
+     <property name="text">
+      <string>Do not show this dialog when loading files</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QDialogButtonBox" name="buttonbox">
      <property name="sizePolicy">
       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
@@ -174,6 +181,7 @@
   </layout>
  </widget>
  <resources>
+  <include location="../qt-resources/qt_widgets.qrc"/>
   <include location="../qt-resources/qt_widgets.qrc"/>
   <include location="../qt-resources/qt_widgets.qrc"/>
  </resources>

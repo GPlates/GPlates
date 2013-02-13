@@ -35,7 +35,7 @@ GPlatesQtWidgets::GpgimVersionWarningDialog::GpgimVersionWarningDialog(
 	d_gpgim(gpgim)
 {
 	setupUi(this);
-	set_action_requested(SAVE_FILES, QStringList(), QStringList());
+	set_action_requested(LOAD_FILES, QStringList(), QStringList());
 }
 
 
@@ -62,6 +62,13 @@ GPlatesQtWidgets::GpgimVersionWarningDialog::set_action_requested(
 	tweak_label(act);
 	adjustSize();
 	ensurePolished();
+}
+
+
+bool
+GPlatesQtWidgets::GpgimVersionWarningDialog::do_not_show_dialog_on_loading_files() const
+{
+	return do_not_show_dialog_on_loading_check_box->isChecked();
 }
 
 
@@ -114,6 +121,9 @@ GPlatesQtWidgets::GpgimVersionWarningDialog::tweak_buttons(
 			connect(buttonbox->button(QDialogButtonBox::Abort), SIGNAL(clicked()),
 					this, SLOT(abort_save()));
 
+			// Hide the do-not-show-dialog-on-loading-files check box when saving files.
+			do_not_show_dialog_on_loading_check_box->hide();
+
 			abort_button->setFocus();
 		}
 		break;
@@ -127,6 +137,9 @@ GPlatesQtWidgets::GpgimVersionWarningDialog::tweak_buttons(
 
 			connect(buttonbox->button(QDialogButtonBox::Close), SIGNAL(clicked()),
 					this, SLOT(close()));
+
+			// Show the do-not-show-dialog-on-loading-files check box when loading files.
+			do_not_show_dialog_on_loading_check_box->show();
 
 			close_button->setFocus();
 		}

@@ -82,6 +82,18 @@ namespace GPlatesQtWidgets
 				QStringList older_version_filenames,
 				QStringList newer_version_filenames);
 
+
+		/**
+		 * Returns true if the user has requested that this warning dialog should *not* be
+		 * shown when *loading* files.
+		 *
+		 * We still always show this dialog when saving files with a different GPGIM version.
+		 * Warning on saving files should happen less often because, once the user saves the file
+		 * with the new version, subsequent loads and saves will emit no warning.
+		 */
+		bool
+		do_not_show_dialog_on_loading_files() const;
+
 	private Q_SLOTS:
 
 		void
