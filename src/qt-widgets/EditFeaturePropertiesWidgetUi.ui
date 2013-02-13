@@ -1,7 +1,8 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>EditFeaturePropertiesWidget</class>
- <widget class="QWidget" name="EditFeaturePropertiesWidget" >
-  <property name="geometry" >
+ <widget class="QWidget" name="EditFeaturePropertiesWidget">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
@@ -9,63 +10,67 @@
     <height>573</height>
    </rect>
   </property>
-  <property name="windowTitle" >
+  <property name="windowTitle">
    <string>Edit Feature Properties</string>
   </property>
-  <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >:/gnome_gtk_edit_16.png</iconset>
+  <property name="windowIcon">
+   <iconset resource="../qt-resources/qt_widgets.qrc">
+    <normaloff>:/gnome_gtk_edit_16.png</normaloff>:/gnome_gtk_edit_16.png</iconset>
   </property>
-  <layout class="QVBoxLayout" >
+  <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QTableView" name="property_table" >
-     <property name="sizePolicy" >
-      <sizepolicy vsizetype="Preferred" hsizetype="Expanding" >
-       <horstretch>0</horstretch>
-       <verstretch>1</verstretch>
-      </sizepolicy>
+    <widget class="QSplitter" name="splitter">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
      </property>
-     <property name="alternatingRowColors" >
-      <bool>true</bool>
-     </property>
-     <property name="selectionMode" >
-      <enum>QAbstractItemView::SingleSelection</enum>
-     </property>
-     <property name="selectionBehavior" >
-      <enum>QAbstractItemView::SelectRows</enum>
-     </property>
-     <property name="horizontalScrollMode" >
-      <enum>QAbstractItemView::ScrollPerPixel</enum>
-     </property>
+     <widget class="QTableView" name="property_table">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>1</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="alternatingRowColors">
+       <bool>true</bool>
+      </property>
+      <property name="selectionMode">
+       <enum>QAbstractItemView::SingleSelection</enum>
+      </property>
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectRows</enum>
+      </property>
+      <property name="horizontalScrollMode">
+       <enum>QAbstractItemView::ScrollPerPixel</enum>
+      </property>
+     </widget>
+     <widget class="QWidget" name="placeholder_edit_widget" native="true"/>
     </widget>
    </item>
    <item>
-    <widget class="QWidget" native="1" name="placeholder_edit_widget" />
-   </item>
-   <item>
-    <layout class="QHBoxLayout" >
+    <layout class="QHBoxLayout">
      <item>
-      <widget class="QPushButton" name="button_add_property" >
-       <property name="text" >
+      <widget class="QPushButton" name="button_add_property">
+       <property name="text">
         <string>&amp;Add Property</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="button_delete_property" >
-       <property name="enabled" >
+      <widget class="QPushButton" name="button_delete_property">
+       <property name="enabled">
         <bool>false</bool>
        </property>
-       <property name="text" >
+       <property name="text">
         <string>&amp;Delete Property</string>
        </property>
       </widget>
      </item>
      <item>
       <spacer>
-       <property name="orientation" >
+       <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="sizeHint" >
+       <property name="sizeHint" stdset="0">
         <size>
          <width>40</width>
          <height>20</height>
@@ -78,7 +83,8 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_widgets.qrc"/>
  </resources>
  <connections/>
 </ui>
