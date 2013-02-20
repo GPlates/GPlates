@@ -56,7 +56,7 @@ namespace ShapefileAttributes {
 		"ConjugatePlateId"
 	};
 	
-	static const QString default_attributes[] = {
+	static const QString default_attribute_field_names[] = {
 		"PLATEID1",
 		"TYPE",
 		"FROMAGE",

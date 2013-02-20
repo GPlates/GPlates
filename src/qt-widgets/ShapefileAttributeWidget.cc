@@ -56,7 +56,7 @@ namespace
 	}
 
 	/**
-	 * Fills the QStringList default_fields with field names from the list of default_attributes 
+	 * Fills the QStringList default_fields with field names from the list of default_attribute_names
 	 * defined in "PropertyMapper.h"
 	 */
 	void
@@ -65,9 +65,10 @@ namespace
 	{
 		for (unsigned int i = 0; i < ShapefileAttributes::NUM_PROPERTIES ; ++i)
 		{
-			default_fields.insert(i,ShapefileAttributes::default_attributes[i]);
+			default_fields.insert(i,ShapefileAttributes::default_attribute_field_names[i]);
 		}
-		default_fields.insert(ShapefileAttributes::CONJUGATE_PLATE_ID,ShapefileAttributes::default_attributes[ShapefileAttributes::CONJUGATE_PLATE_ID]);		
+		default_fields.insert(ShapefileAttributes::CONJUGATE_PLATE_ID,
+							  ShapefileAttributes::default_attribute_field_names[ShapefileAttributes::CONJUGATE_PLATE_ID]);
 	}
 
 	/**
@@ -96,7 +97,7 @@ namespace
 			{
 				// We didn't find an entry for the current model property in the map, so use the default field name. 
 				default_fields.insert(field_index,
-					ShapefileAttributes::default_attributes[field_index]);
+					ShapefileAttributes::default_attribute_field_names[field_index]);
 			}
 			else{
 
@@ -112,7 +113,7 @@ namespace
 					// The map's attribute field wasn't found amongst the shapefile's attributes, so
 					// use the default field name. 
 					default_fields.insert(field_index,
-						ShapefileAttributes::default_attributes[field_index]);
+						ShapefileAttributes::default_attribute_field_names[field_index]);
 				}
 			}	
 		}	

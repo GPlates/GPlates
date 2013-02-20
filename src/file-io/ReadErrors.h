@@ -7,6 +7,7 @@
  *   $Date$
  * 
  * Copyright (C) 2007, 2008 The University of Sydney, Australia
+ * Copyright (C) 2007, 2012 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -88,34 +89,34 @@ namespace GPlatesFileIO
 			NoValidGeometriesInPlatesFeature,
 			InvalidMultipointGeometry,
 
-			// The following are specific to GPlates 8 hydrid PLATES line-format
+			// The following are specific to GPlates 8 hydrid PLATES line-format.
 			MissingPlatepolygonBoundaryFeature,
 			InvalidPlatepolygonBoundaryFeature,
 
-			// The following apply to ESRI Shapefile import
+			// The following apply to OGR-supported file format import.
 			NoLayersFoundInFile,
 			MultipleLayersInFile,
-			ErrorReadingShapefileLayer,
-			NoFeaturesFoundInShapefile,
-			ErrorReadingShapefileGeometry,
+			ErrorReadingOgrLayer,
+			NoFeaturesFoundInOgrFile,
+			ErrorReadingOgrGeometry,
 			TwoPointFiveDGeometryDetected,
 			LessThanTwoPointsInLineString,
 			InteriorRingsInShapefile,
 			UnsupportedGeometryType,
 			NoLatitudeShapeData,
 			NoLongitudeShapeData,
-			InvalidShapefileLatitude,
-			InvalidShapefileLongitude,
+			InvalidOgrLatitude,
+			InvalidOgrLongitude,
 			NoPlateIdFound,
 			InvalidShapefilePlateIdNumber,
-			UnrecognisedShapefileFeatureType,
+			UnrecognisedOgrFeatureType,
 			InvalidShapefileAgeOfAppearance,
 			InvalidShapefileAgeOfDisappearance,
 			InvalidShapefileConjugatePlateIdNumber,
-			InvalidShapefilePoint,
-			InvalidShapefileMultiPoint,
-			InvalidShapefilePolyline,
-			InvalidShapefilePolygon,
+			InvalidOgrPoint,
+			InvalidOgrMultiPoint,
+			InvalidOgrPolyline,
+			InvalidOgrPolygon,
 			
 			// The following relate to raster files in general.
 			InsufficientMemoryToLoadRaster,
@@ -223,7 +224,7 @@ namespace GPlatesFileIO
 			FeatureDiscarded,
 			NoGeometryCreatedByMovement,
 
-			// The following are specific to ESRI shapefile reading.
+			// The following are specific to OGR-supported file format reading.
 			MultipleLayersIgnored,
 			GeometryFlattenedTo2D,
 			GeometryIgnored,
@@ -232,7 +233,7 @@ namespace GPlatesFileIO
 			NoPlateIdLoadedForFeature,
 			NoConjugatePlateIdLoadedForFeature,
 			AttributeIgnored,
-			UnclassifiedShapefileFeatureCreated,
+			UnclassifiedOgrFeatureCreated,
 
 			// The following relate to time-dependent raster file sets.
 			NoRasterSetsLoaded,

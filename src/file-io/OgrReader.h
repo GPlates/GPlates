@@ -1,14 +1,15 @@
-/* $Id$ */
+/* $Id: OgrReader.h 13647 2012-11-30 18:28:48Z rwatson $ */
 
 /**
  * \file 
  * File specific comments.
  *
  * Most recent change:
- *   $Date$
+ *   $Date: 2012-11-30 19:28:48 +0100 (Fri, 30 Nov 2012) $
  * 
- * Copyright (C) 2007, 2008, 2009 Geological Survey of Norway
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009 Geological Survey of Norway (under the name "ShapefileReader.h")
+ * Copyright (C) 2010 The University of Sydney, Australia (under the name "ShapefileReader.h")
+ * Copyright (C) 2012 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -26,8 +27,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILEIO_SHAPEFILEREADER_H
-#define GPLATES_FILEIO_SHAPEFILEREADER_H
+#ifndef GPLATES_FILEIO_OGRREADER_H
+#define GPLATES_FILEIO_OGRREADER_H
 
 #include <boost/shared_ptr.hpp>
 #ifdef HAVE_CONFIG_H
@@ -70,13 +71,13 @@ namespace GPlatesFileIO
 
 	const double SHAPE_NO_DATA = -1e38; 
 
-	class ShapefileReader
+	class OgrReader
 	{
 
 	public:
 
 		/**
-		 * Reads shapefile specified by the filename in @a file_ref and stores into feature collection
+		 * Reads file specified by the filename in @a file_ref and stores into feature collection
 		 * in @a file_ref.
 		 *
 		 * @a default_file_configuration should be the current default shapefile file configuration
@@ -127,23 +128,23 @@ namespace GPlatesFileIO
 
 	private:
 
-		ShapefileReader();
+		OgrReader();
 
-		~ShapefileReader();
+		~OgrReader();
 
 // Make copy constructor private
-		ShapefileReader(
-			const ShapefileReader &other);
+		OgrReader(
+			const OgrReader &other);
 
 
 // Make assignment private
-		ShapefileReader &
+		OgrReader &
 		operator=(
-				const ShapefileReader &other);
+				const OgrReader &other);
 
 
 		/**
-		 * Checks that the shapefile represented by ShapefileReader::d_filename can
+		 * Checks that the file represented by OgrReader::d_filename can
 		 * be opened, contains at least one layer, and that this layer contains
 		 * at least one feature with a valid geometry.
 		 *
@@ -330,4 +331,4 @@ namespace GPlatesFileIO
 
 }
 
-#endif  // GPLATES_FILEIO_SHAPEFILEREADER_H
+#endif  // GPLATES_FILEIO_OGRREADER_H

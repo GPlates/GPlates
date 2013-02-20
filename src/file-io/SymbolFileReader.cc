@@ -32,76 +32,76 @@
 
 namespace
 {
-    boost::optional<GPlatesGui::feature_type_symbol_pair_type>
-    read_line(
-	const QString &line)
-    {
-	if (line.isEmpty())
+	boost::optional<GPlatesGui::feature_type_symbol_pair_type>
+	read_line(
+			const QString &line)
 	{
-	    return boost::none;
+		if (line.isEmpty())
+		{
+			return boost::none;
+		}
+
+
+		// Treat #.... as comment line.
+		if (line.at(0) == QChar('#'))
+		{
+			return boost::none;
+		}
+
+		QStringList list = line.split(' ');
+
+		// Demand at least 3 items in the line
+		if (list.size() < 3)
+		{
+			return boost::none;
+		}
+
+		// First string: should I demand gpml: at the start?
+		GPlatesModel::FeatureType feature_type =
+				GPlatesModel::FeatureType::create_gpml(list[0]);
+
+		// Second string
+		boost::optional<GPlatesGui::Symbol::SymbolType> symbol_type =
+				GPlatesGui::get_symbol_type_from_string(list[1]);
+
+		if (!symbol_type)
+		{
+			return boost::none;
+		}
+
+		// Third string: size
+		bool ok;
+		int size_as_int = list[2].toInt(&ok);
+
+		if (!ok)
+		{
+			size_as_int = 1;
+		}
+
+		// Fourth string: FILLED or UNFILLED
+		bool filled = true;
+		if (list.size() >= 4)
+		{
+
+			QString fill_string = list[3];
+			if (fill_string == "UNFILLED")
+			{
+				filled = false;
+			}
+		}
+
+		return std::make_pair<GPlatesModel::FeatureType,GPlatesGui::Symbol>
+				(feature_type,
+				 GPlatesGui::Symbol(*symbol_type,size_as_int,filled));
+
 	}
-
-
-	// Treat #.... as comment line.
-	if (line.at(0) == QChar('#'))
-	{
-	    return boost::none;
-	}
-
-	QStringList list = line.split(' ');
-
-	// Demand at least 3 items in the line
-	if (list.size() < 3)
-	{
-	    return boost::none;
-	}
-
-	// First string: should I demand gpml: at the start?
-	GPlatesModel::FeatureType feature_type =
-	     GPlatesModel::FeatureType::create_gpml(list[0]);
-
-	// Second string
-	boost::optional<GPlatesGui::Symbol::SymbolType> symbol_type =
-		GPlatesGui::get_symbol_type_from_string(list[1]);
-
-	if (!symbol_type)
-	{
-	    return boost::none;
-	}
-
-	// Third string: size
-	bool ok;
-	int size_as_int = list[2].toInt(&ok);
-
-	if (!ok)
-	{
-	    size_as_int = 1;
-	}
-
-	// Fourth string: FILLED or UNFILLED
-	bool filled = true;
-	if (list.size() >= 4)
-	{
-
-	    QString fill_string = list[3];
-	    if (fill_string == "UNFILLED")
-	    {
-			filled = false;
-	    }
-	}
-
-	return std::make_pair<GPlatesModel::FeatureType,GPlatesGui::Symbol>
-		(feature_type,
-		 GPlatesGui::Symbol(*symbol_type,size_as_int,filled));
-
-    }
 }
 
 
 void
 GPlatesFileIO::SymbolFileReader::read_file(
-    const QString &filename,
-    GPlatesGui::symbol_map_type &symbol_map)
+		const QString &filename,
+		GPlatesGui::symbol_map_type &symbol_map)
 {
 
 	QFile file(filename);

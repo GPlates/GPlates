@@ -51,6 +51,27 @@ namespace GPlatesFileIO
 			typedef std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *>
 					reconstructed_feature_geom_seq_type;
 
+			/*!
+			 * Returns true if the feature-type of @a feature_ref is either
+			 * flowline or motion path.
+			 */
+			bool
+			feature_is_of_type_to_exclude(
+					const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
+			{
+				static const GPlatesModel::FeatureType flowline_feature_type =
+						GPlatesModel::FeatureType::create_gpml("Flowline");
+				static const GPlatesModel::FeatureType motion_path_feature_type =
+						GPlatesModel::FeatureType::create_gpml("MotionPath");
+
+				if ((feature_ref->feature_type() == flowline_feature_type) ||
+						(feature_ref->feature_type() == motion_path_feature_type))
+				{
+					return true;
+				}
+				return false;
+			}
+
 
 			/**
 			 * Prints GMT format header at top of the exported file containing information
@@ -145,6 +166,12 @@ GPlatesFileIO::GMTFormatReconstructedFeatureGeometryExport::export_geometries(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
 				feature_geom_group.feature_ref;
 		if (!feature_ref.is_valid())
+		{
+			continue;
+		}
+
+		// Prevents us from exporting flowline/motion-path seed points.
+		if (feature_is_of_type_to_exclude(feature_ref))
 		{
 			continue;
 		}

@@ -1,14 +1,15 @@
-/* $Id$ */
+/* $Id: OgrReader.cc 13710 2012-12-14 14:16:34Z rwatson $ */
 
 /**
  * \file 
  * File specific comments.
  *
  * Most recent change:
- *   $Date$
+ *   $Date: 2012-12-14 15:16:34 +0100 (Fri, 14 Dec 2012) $
  * 
- * Copyright (C) 2007, 2008, 2009 Geological Survey of Norway
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009 Geological Survey of Norway (under the name "ShapefileReader.h")
+ * Copyright (C) 2010 The University of Sydney, Australia (under the name "ShapefileReader.h")
+ * Copyright (C) 2012 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -38,9 +39,9 @@
 #include "FeatureCollectionFileFormat.h"
 #include "FeatureCollectionFileFormatConfigurations.h"
 #include "FileLoadAbortedException.h"
-#include "PropertyMapper.h"
-#include "ShapefileReader.h"
+#include "OgrReader.h"
 #include "OgrUtils.h"
+#include "PropertyMapper.h"
 #include "ShapefileXmlReader.h"
 
 #include "feature-visitors/PropertyValueFinder.h" 
@@ -74,12 +75,12 @@
 #include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
 
-
-boost::shared_ptr< GPlatesFileIO::PropertyMapper> GPlatesFileIO::ShapefileReader::s_property_mapper;
+// Comment for test commit to new server
+boost::shared_ptr< GPlatesFileIO::PropertyMapper> GPlatesFileIO::OgrReader::s_property_mapper;
 
 namespace
 {
-
+#if 0
 	const GPlatesPropertyValues::GeoTimeInstant
 	create_geo_time_instant(
 			const double &time)
@@ -95,6 +96,50 @@ namespace
 			return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
 		}
 		return GPlatesPropertyValues::GeoTimeInstant(time);
+	}
+#endif
+
+
+	const GPlatesPropertyValues::GeoTimeInstant
+	create_begin_geo_time_instant(
+			const boost::optional<double> &time)
+	{
+		if (time)
+		{
+			if (*time < -998.9 && *time > -1000.0) {
+				// It's in the distant future, which is denoted in PLATES4 line-format
+				// files using times like -999.0 or -999.9.
+				return GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
+			}
+			if (*time > 998.9 && *time < 1000.0) {
+				// It's in the distant past, which is denoted in PLATES4 line-format files
+				// using times like 999.0 or 999.9.
+				return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
+			}
+			return GPlatesPropertyValues::GeoTimeInstant(*time);
+		}
+		return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
+	}
+
+	const GPlatesPropertyValues::GeoTimeInstant
+	create_end_geo_time_instant(
+			const boost::optional<double> &time)
+	{
+		if (time)
+		{
+			if (*time < -998.9 && *time > -1000.0) {
+				// It's in the distant future, which is denoted in PLATES4 line-format
+				// files using times like -999.0 or -999.9.
+				return GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
+			}
+			if (*time > 998.9 && *time < 1000.0) {
+				// It's in the distant past, which is denoted in PLATES4 line-format files
+				// using times like 999.0 or 999.9.
+				return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
+			}
+			return GPlatesPropertyValues::GeoTimeInstant(*time);
+		}
+		return GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
 	}
 
 
@@ -237,15 +282,15 @@ namespace
 	}
 
 	void
-	append_geo_time_to_feature(
+	append_geo_times_to_feature(
 		const GPlatesModel::FeatureHandle::weak_ref &feature,
-		double age_of_appearance,
-		double age_of_disappearance)
+		const boost::optional<double> &age_of_appearance,
+		const boost::optional<double> &age_of_disappearance)
 	{
-		const GPlatesPropertyValues::GeoTimeInstant geo_time_instant_begin =
-				create_geo_time_instant(age_of_appearance);
-		const GPlatesPropertyValues::GeoTimeInstant geo_time_instant_end =
-				create_geo_time_instant(age_of_disappearance);
+
+		const GPlatesPropertyValues::GeoTimeInstant geo_time_instant_begin = create_begin_geo_time_instant(age_of_appearance);
+
+		const GPlatesPropertyValues::GeoTimeInstant geo_time_instant_end = create_end_geo_time_instant(age_of_disappearance);
 
 		GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_valid_time = 
 			GPlatesModel::ModelUtils::create_gml_time_period(geo_time_instant_begin,
@@ -405,6 +450,9 @@ namespace
 			}
 		}
 
+		append_geo_times_to_feature(feature,age_of_appearance,age_of_disappearance);
+
+
 		it = model_to_attribute_map.find(
 				ShapefileAttributes::model_properties[ShapefileAttributes::NAME]);
 		if (it != model_to_attribute_map.constEnd())
@@ -423,10 +471,7 @@ namespace
 			append_description_to_feature(feature,description);
 		}
 
-		// FIXME : allow only one of the begin/end pair to be provided.
-		if (age_of_appearance && age_of_disappearance){
-			append_geo_time_to_feature(feature,*age_of_appearance,*age_of_disappearance);
-		}
+
 		
 		it = model_to_attribute_map.find(
 				ShapefileAttributes::model_properties[ShapefileAttributes::CONJUGATE_PLATE_ID]);
@@ -486,7 +531,7 @@ namespace
 	
 	/**
 	 * Fills the QMap<QString,QString> @a model_to_attribute_map with default field names from the
-	 * list of default_attributes defined in "PropertyMapper.h"
+	 * list of default_attribute_names defined in "PropertyMapper.h"
 	 */
 	void
 	fill_attribute_map_with_default_values(
@@ -496,7 +541,7 @@ namespace
 		{
 			model_to_attribute_map.insert(
 				ShapefileAttributes::model_properties[i],
-				ShapefileAttributes::default_attributes[i]);		
+				ShapefileAttributes::default_attribute_field_names[i]);
 		}
 	}
 
@@ -590,19 +635,19 @@ namespace
 			GPlatesFileIO::File::Reference &file_ref)
 	{
 		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type>
-				shapefile_file_configuration =
+				ogr_file_configuration =
 						GPlatesFileIO::FeatureCollectionFileFormat::dynamic_cast_configuration<
 								const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration>(
 										file_ref.get_file_configuration());
 		// If we don't have a file configuration then return early and emit a warning message.
-		if (!shapefile_file_configuration)
+		if (!ogr_file_configuration)
 		{
 			qWarning() << "ERROR: Unable to load a model-to-attribute mapping from file.";
 			return;
 		}
 
 		// Load the map from the file configuration.
-		model_to_attribute_map = shapefile_file_configuration.get()->get_model_to_attribute_map();
+		model_to_attribute_map = ogr_file_configuration.get()->get_model_to_attribute_map();
 	}
 
 
@@ -614,36 +659,36 @@ namespace
 			const QMap<QString, QString> &model_to_attribute_map,
 			GPlatesFileIO::File::Reference &file_ref,
 			const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &
-					default_shapefile_file_configuration)
+					default_ogr_file_configuration)
 	{
 		// Create a new file configuration that is a copy of the current one, if there is one.
 		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type>
-				shapefile_file_configuration =
+				ogr_file_configuration =
 						GPlatesFileIO::FeatureCollectionFileFormat::copy_cast_configuration<
 								GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration>(
 										file_ref.get_file_configuration());
-		// Otherwise use the default shapefile configuration.
-		if (!shapefile_file_configuration)
+		// Otherwise use the default ogr configuration.
+		if (!ogr_file_configuration)
 		{
 			// We have to copy the default configuration since we're going to modify it.
-			shapefile_file_configuration =
+			ogr_file_configuration =
 					GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type(
 							new GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration(
-									*default_shapefile_file_configuration));
+									*default_ogr_file_configuration));
 		}
 
 		// Store the map in the new file configuration.
-		shapefile_file_configuration.get()->get_model_to_attribute_map() = model_to_attribute_map;
+		ogr_file_configuration.get()->get_model_to_attribute_map() = model_to_attribute_map;
 
 		// Store the new file configuration in the file object.
 		GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type
-				file_configuration = shapefile_file_configuration.get();
+				file_configuration = ogr_file_configuration.get();
 		file_ref.set_file_info(file_ref.get_file_info(), file_configuration);
 	}
 }
 
 
-GPlatesFileIO::ShapefileReader::ShapefileReader():
+GPlatesFileIO::OgrReader::OgrReader():
 	d_num_layers(0),
 	d_data_source_ptr(NULL),
 	d_geometry_ptr(NULL),
@@ -656,7 +701,7 @@ GPlatesFileIO::ShapefileReader::ShapefileReader():
 	OGRRegisterAll();
 }
 
-GPlatesFileIO::ShapefileReader::~ShapefileReader()
+GPlatesFileIO::OgrReader::~OgrReader()
 {
 	try{
 		if(d_data_source_ptr){OGRDataSource::DestroyDataSource(d_data_source_ptr);
@@ -668,7 +713,7 @@ GPlatesFileIO::ShapefileReader::~ShapefileReader()
 
 
 bool
-GPlatesFileIO::ShapefileReader::check_file_format(
+GPlatesFileIO::OgrReader::check_file_format(
 	ReadErrorAccumulation &read_error)
 {
 	if (!d_data_source_ptr){
@@ -708,7 +753,7 @@ GPlatesFileIO::ShapefileReader::check_file_format(
 			GPlatesFileIO::ReadErrorOccurrence(
 				e_source,
 				e_location,
-				GPlatesFileIO::ReadErrors::ErrorReadingShapefileLayer,
+				GPlatesFileIO::ReadErrors::ErrorReadingOgrLayer,
 				GPlatesFileIO::ReadErrors::FileNotLoaded));
 		return false;
 	}
@@ -718,7 +763,7 @@ GPlatesFileIO::ShapefileReader::check_file_format(
 			GPlatesFileIO::ReadErrorOccurrence(
 				e_source,
 				e_location,
-				GPlatesFileIO::ReadErrors::NoFeaturesFoundInShapefile,
+				GPlatesFileIO::ReadErrors::NoFeaturesFoundInOgrFile,
 				GPlatesFileIO::ReadErrors::FileNotLoaded));
 		return false;
 	}
@@ -730,7 +775,7 @@ GPlatesFileIO::ShapefileReader::check_file_format(
 }
 
 bool
-GPlatesFileIO::ShapefileReader::open_file(
+GPlatesFileIO::OgrReader::open_file(
 		const QString &filename)
 {
 
@@ -747,7 +792,7 @@ GPlatesFileIO::ShapefileReader::open_file(
 
 
 void
-GPlatesFileIO::ShapefileReader::read_features(
+GPlatesFileIO::OgrReader::read_features(
 	GPlatesModel::ModelInterface &model,
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 	ReadErrorAccumulation &read_errors)
@@ -783,7 +828,7 @@ GPlatesFileIO::ShapefileReader::read_features(
 				GPlatesFileIO::ReadErrorOccurrence(
 					e_source,
 					e_location,
-					GPlatesFileIO::ReadErrors::ErrorReadingShapefileGeometry,
+					GPlatesFileIO::ReadErrors::ErrorReadingOgrGeometry,
 					GPlatesFileIO::ReadErrors::GeometryIgnored));
 			continue;
 		}
@@ -812,8 +857,8 @@ GPlatesFileIO::ShapefileReader::read_features(
 					d_feature_type = *result;
 				} else {
 					read_errors.d_warnings.push_back(GPlatesFileIO::ReadErrorOccurrence(e_source, e_location, 
-					GPlatesFileIO::ReadErrors::UnrecognisedShapefileFeatureType,
-					GPlatesFileIO::ReadErrors::UnclassifiedShapefileFeatureCreated));
+					GPlatesFileIO::ReadErrors::UnrecognisedOgrFeatureType,
+					GPlatesFileIO::ReadErrors::UnclassifiedOgrFeatureCreated));
 				}
 			}
 		}
@@ -908,7 +953,7 @@ GPlatesFileIO::ShapefileReader::read_features(
 }
 
 const GPlatesModel::FeatureHandle::weak_ref
-GPlatesFileIO::ShapefileReader::create_polygon_feature_from_list(
+GPlatesFileIO::OgrReader::create_polygon_feature_from_list(
 	GPlatesModel::ModelInterface &model,
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 	std::list<GPlatesMaths::PointOnSphere> &list_of_points)
@@ -937,7 +982,7 @@ GPlatesFileIO::ShapefileReader::create_polygon_feature_from_list(
 }
 
 const GPlatesModel::FeatureHandle::weak_ref
-GPlatesFileIO::ShapefileReader::create_line_feature_from_list(
+GPlatesFileIO::OgrReader::create_line_feature_from_list(
 	GPlatesModel::ModelInterface &model,
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 	std::list<GPlatesMaths::PointOnSphere> &list_of_points)
@@ -967,7 +1012,7 @@ GPlatesFileIO::ShapefileReader::create_line_feature_from_list(
 
 
 const GPlatesModel::FeatureHandle::weak_ref
-GPlatesFileIO::ShapefileReader::create_point_feature_from_pair(
+GPlatesFileIO::OgrReader::create_point_feature_from_pair(
 	GPlatesModel::ModelInterface &model, 
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection, 
 	std::pair<double,double> &point)
@@ -992,7 +1037,7 @@ GPlatesFileIO::ShapefileReader::create_point_feature_from_pair(
 
 
 const GPlatesModel::FeatureHandle::weak_ref
-GPlatesFileIO::ShapefileReader::create_point_feature_from_point_on_sphere(
+GPlatesFileIO::OgrReader::create_point_feature_from_point_on_sphere(
 	GPlatesModel::ModelInterface &model, 
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection, 
 	GPlatesMaths::PointOnSphere &point)
@@ -1018,7 +1063,7 @@ GPlatesFileIO::ShapefileReader::create_point_feature_from_point_on_sphere(
 }
 
 const GPlatesModel::FeatureHandle::weak_ref
-GPlatesFileIO::ShapefileReader::create_multi_point_feature_from_list(
+GPlatesFileIO::OgrReader::create_multi_point_feature_from_list(
 	GPlatesModel::ModelInterface &model,
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 	std::list<GPlatesMaths::PointOnSphere> &list_of_points)
@@ -1044,7 +1089,7 @@ GPlatesFileIO::ShapefileReader::create_multi_point_feature_from_list(
 }
 
 void 
-GPlatesFileIO::ShapefileReader::get_field_names(
+GPlatesFileIO::OgrReader::get_field_names(
 	ReadErrorAccumulation &read_errors)
 {
 	boost::shared_ptr<GPlatesFileIO::DataSource> e_source(
@@ -1069,7 +1114,7 @@ GPlatesFileIO::ShapefileReader::get_field_names(
 }
 
 void 
-GPlatesFileIO::ShapefileReader::get_attributes()
+GPlatesFileIO::OgrReader::get_attributes()
 {
 	d_attributes.clear();
 	if (!d_feature_ptr){
@@ -1105,7 +1150,7 @@ GPlatesFileIO::ShapefileReader::get_attributes()
 }
 
 void
-GPlatesFileIO::ShapefileReader::add_attributes_to_feature(
+GPlatesFileIO::OgrReader::add_attributes_to_feature(
 	const GPlatesModel::FeatureHandle::weak_ref &feature,
 	GPlatesFileIO::ReadErrorAccumulation &read_errors,
 	const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -1199,7 +1244,7 @@ GPlatesFileIO::ShapefileReader::add_attributes_to_feature(
 
 
 bool
-GPlatesFileIO::ShapefileReader::is_valid_shape_data(
+GPlatesFileIO::OgrReader::is_valid_shape_data(
 		double lat,
 		double lon,
 		ReadErrorAccumulation &read_errors,
@@ -1231,7 +1276,7 @@ GPlatesFileIO::ShapefileReader::is_valid_shape_data(
 			GPlatesFileIO::ReadErrorOccurrence(
 			source,
 			location,
-			GPlatesFileIO::ReadErrors::InvalidShapefileLatitude,
+			GPlatesFileIO::ReadErrors::InvalidOgrLatitude,
 			GPlatesFileIO::ReadErrors::GeometryIgnored));
 		return false;
 	}
@@ -1241,7 +1286,7 @@ GPlatesFileIO::ShapefileReader::is_valid_shape_data(
 			GPlatesFileIO::ReadErrorOccurrence(
 			source,
 			location,
-			GPlatesFileIO::ReadErrors::InvalidShapefileLongitude,
+			GPlatesFileIO::ReadErrors::InvalidOgrLongitude,
 			GPlatesFileIO::ReadErrors::GeometryIgnored));
 		return false;
 	}
@@ -1250,7 +1295,7 @@ GPlatesFileIO::ShapefileReader::is_valid_shape_data(
 }
 
 void
-GPlatesFileIO::ShapefileReader::read_file(
+GPlatesFileIO::OgrReader::read_file(
 		GPlatesFileIO::File::Reference &file_ref,
 		const FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &default_file_configuration,
 		GPlatesModel::ModelInterface &model,
@@ -1271,7 +1316,7 @@ GPlatesFileIO::ShapefileReader::read_file(
 	QString absolute_path_filename = fileinfo.get_qfileinfo().absoluteFilePath();
 	QString filename = fileinfo.get_qfileinfo().fileName();
 
-	ShapefileReader reader;
+	OgrReader reader;
 	if (!reader.open_file(absolute_path_filename)){
 		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
@@ -1295,7 +1340,7 @@ GPlatesFileIO::ShapefileReader::read_file(
 				s_property_mapper,
 				false))
 		{
-			// The user has cancelled the mapper-dialog routine, so cancel the whole shapefile loading procedure.
+			// The user has cancelled the mapper-dialog routine, so cancel the whole ogr loading procedure.
 			throw FileLoadAbortedException(GPLATES_EXCEPTION_SOURCE, "File load aborted.",filename);
 		}
 		OgrUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,reader.d_model_to_attribute_map);
@@ -1316,7 +1361,7 @@ GPlatesFileIO::ShapefileReader::read_file(
 
 
 void
-GPlatesFileIO::ShapefileReader::set_property_mapper(
+GPlatesFileIO::OgrReader::set_property_mapper(
 	boost::shared_ptr< PropertyMapper > property_mapper)
 {
 	s_property_mapper = property_mapper;
@@ -1324,7 +1369,7 @@ GPlatesFileIO::ShapefileReader::set_property_mapper(
 
 
 void
-GPlatesFileIO::ShapefileReader::handle_point(
+GPlatesFileIO::OgrReader::handle_point(
 		GPlatesModel::ModelInterface &model,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 		ReadErrorAccumulation &read_errors,
@@ -1353,18 +1398,18 @@ GPlatesFileIO::ShapefileReader::handle_point(
 						GPlatesFileIO::ReadErrorOccurrence(
 						source,
 						location,
-						GPlatesFileIO::ReadErrors::InvalidShapefilePoint,
+						GPlatesFileIO::ReadErrors::InvalidOgrPoint,
 						GPlatesFileIO::ReadErrors::GeometryIgnored));
 				}
 				catch (...)
 				{
-					qWarning() << "GPlatesFileIO::ShapefileReader::handle_point: Unknown error";
+					qWarning() << "GPlatesFileIO::OgrReader::handle_point: Unknown error";
 
 					read_errors.d_recoverable_errors.push_back(
 						GPlatesFileIO::ReadErrorOccurrence(
 						source,
 						location,
-						GPlatesFileIO::ReadErrors::InvalidShapefilePoint,
+						GPlatesFileIO::ReadErrors::InvalidOgrPoint,
 						GPlatesFileIO::ReadErrors::GeometryIgnored));
 				}
 			}
@@ -1372,7 +1417,7 @@ GPlatesFileIO::ShapefileReader::handle_point(
 }
 
 void
-GPlatesFileIO::ShapefileReader::handle_multi_point(
+GPlatesFileIO::OgrReader::handle_multi_point(
 			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			ReadErrorAccumulation &read_errors,
@@ -1409,29 +1454,29 @@ GPlatesFileIO::ShapefileReader::handle_multi_point(
 			}
 			catch (std::exception &exc)
 			{
-				qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_point: " << exc.what();
+				qWarning() << "GPlatesFileIO::OgrReader::handle_multi_point: " << exc.what();
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
 						source,
 						location,
-						GPlatesFileIO::ReadErrors::InvalidShapefileMultiPoint,
+						GPlatesFileIO::ReadErrors::InvalidOgrMultiPoint,
 						GPlatesFileIO::ReadErrors::GeometryIgnored));
 			}
 			catch(...)
 			{
-				qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_point: Unknown error";
+				qWarning() << "GPlatesFileIO::OgrReader::handle_multi_point: Unknown error";
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
 						source,
 						location,
-						GPlatesFileIO::ReadErrors::InvalidShapefileMultiPoint,
+						GPlatesFileIO::ReadErrors::InvalidOgrMultiPoint,
 						GPlatesFileIO::ReadErrors::GeometryIgnored));
 			}
 		}
 }
 
 void
-GPlatesFileIO::ShapefileReader::handle_linestring(
+GPlatesFileIO::OgrReader::handle_linestring(
 			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			ReadErrorAccumulation &read_errors,
@@ -1474,31 +1519,31 @@ GPlatesFileIO::ShapefileReader::handle_linestring(
 	}
 	catch (std::exception &exc)
 	{
-		qWarning() << "GPlatesFileIO::ShapefileReader::handle_linestring: " << exc.what();
+		qWarning() << "GPlatesFileIO::OgrReader::handle_linestring: " << exc.what();
 
 		read_errors.d_recoverable_errors.push_back(
 			GPlatesFileIO::ReadErrorOccurrence(
 			source,
 			location,
-			GPlatesFileIO::ReadErrors::InvalidShapefilePolyline,
+			GPlatesFileIO::ReadErrors::InvalidOgrPolyline,
 			GPlatesFileIO::ReadErrors::GeometryIgnored));
 	}
 	catch (...)
 	{
-		qWarning() << "GPlatesFileIO::ShapefileReader::handle_linestring: Unknown error";
+		qWarning() << "GPlatesFileIO::OgrReader::handle_linestring: Unknown error";
 
 		read_errors.d_recoverable_errors.push_back(
 			GPlatesFileIO::ReadErrorOccurrence(
 			source,
 			location,
-			GPlatesFileIO::ReadErrors::InvalidShapefilePolyline,
+			GPlatesFileIO::ReadErrors::InvalidOgrPolyline,
 			GPlatesFileIO::ReadErrors::GeometryIgnored));
 	}
 
 }
 
 void
-GPlatesFileIO::ShapefileReader::handle_multi_linestring(
+GPlatesFileIO::OgrReader::handle_multi_linestring(
 			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			ReadErrorAccumulation &read_errors,
@@ -1558,24 +1603,24 @@ GPlatesFileIO::ShapefileReader::handle_multi_linestring(
 			}
 			catch (std::exception &exc)
 			{
-				qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_linestring: " << exc.what();
+				qWarning() << "GPlatesFileIO::OgrReader::handle_multi_linestring: " << exc.what();
 
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
 					source,
 					location,
-					GPlatesFileIO::ReadErrors::InvalidShapefilePolyline,
+					GPlatesFileIO::ReadErrors::InvalidOgrPolyline,
 					GPlatesFileIO::ReadErrors::GeometryIgnored));
 			}
 			catch (...)
 			{
-				qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_linestring: Unknown error";
+				qWarning() << "GPlatesFileIO::OgrReader::handle_multi_linestring: Unknown error";
 
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
 					source,
 					location,
-					GPlatesFileIO::ReadErrors::InvalidShapefilePolyline,
+					GPlatesFileIO::ReadErrors::InvalidOgrPolyline,
 					GPlatesFileIO::ReadErrors::GeometryIgnored));
 			}
 		}
@@ -1584,7 +1629,7 @@ GPlatesFileIO::ShapefileReader::handle_multi_linestring(
 
 
 void
-GPlatesFileIO::ShapefileReader::handle_polygon(
+GPlatesFileIO::OgrReader::handle_polygon(
 			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			ReadErrorAccumulation &read_errors,
@@ -1609,24 +1654,24 @@ GPlatesFileIO::ShapefileReader::handle_polygon(
 		}
 		catch (std::exception &exc)
 		{
-			qWarning() << "GPlatesFileIO::ShapefileReader::handle_polygon: " << exc.what();
+			qWarning() << "GPlatesFileIO::OgrReader::handle_polygon: " << exc.what();
 
 			read_errors.d_recoverable_errors.push_back(
 				GPlatesFileIO::ReadErrorOccurrence(
 				source,
 				location,
-				GPlatesFileIO::ReadErrors::InvalidShapefilePolygon,
+				GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
 				GPlatesFileIO::ReadErrors::GeometryIgnored));
 		}
 		catch (...)
 		{
-			qWarning() << "GPlatesFileIO::ShapefileReader::handle_polygon: Unknown error";
+			qWarning() << "GPlatesFileIO::OgrReader::handle_polygon: Unknown error";
 
 			read_errors.d_recoverable_errors.push_back(
 				GPlatesFileIO::ReadErrorOccurrence(
 				source,
 				location,
-				GPlatesFileIO::ReadErrors::InvalidShapefilePolygon,
+				GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
 				GPlatesFileIO::ReadErrors::GeometryIgnored));
 		}
 
@@ -1654,24 +1699,24 @@ GPlatesFileIO::ShapefileReader::handle_polygon(
 			}
 			catch (std::exception &exc)
 			{
-				qWarning() << "GPlatesFileIO::ShapefileReader::handle_polygon: " << exc.what();
+				qWarning() << "GPlatesFileIO::OgrReader::handle_polygon: " << exc.what();
 
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
 					source,
 					location,
-					GPlatesFileIO::ReadErrors::InvalidShapefilePolygon,
+					GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
 					GPlatesFileIO::ReadErrors::GeometryIgnored));
 			}
 			catch (...)
 			{
-				qWarning() << "GPlatesFileIO::ShapefileReader::handle_polygon: Unknown error";
+				qWarning() << "GPlatesFileIO::OgrReader::handle_polygon: Unknown error";
 
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
 					source,
 					location,
-					GPlatesFileIO::ReadErrors::InvalidShapefilePolygon,
+					GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
 					GPlatesFileIO::ReadErrors::GeometryIgnored));
 			}
 		}
@@ -1681,7 +1726,7 @@ GPlatesFileIO::ShapefileReader::handle_polygon(
 }
 
 void
-GPlatesFileIO::ShapefileReader::handle_multi_polygon(
+GPlatesFileIO::OgrReader::handle_multi_polygon(
 			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			ReadErrorAccumulation &read_errors,
@@ -1714,24 +1759,24 @@ GPlatesFileIO::ShapefileReader::handle_multi_polygon(
 			}
 			catch (std::exception &exc)
 			{
-				qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_polygon: " << exc.what();
+				qWarning() << "GPlatesFileIO::OgrReader::handle_multi_polygon: " << exc.what();
 
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
 					source,
 					location,
-					GPlatesFileIO::ReadErrors::InvalidShapefilePolygon,
+					GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
 					GPlatesFileIO::ReadErrors::GeometryIgnored));
 			}
 			catch (...)
 			{
-				qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_polygon: Unknown error";
+				qWarning() << "GPlatesFileIO::OgrReader::handle_multi_polygon: Unknown error";
 
 				read_errors.d_recoverable_errors.push_back(
 					GPlatesFileIO::ReadErrorOccurrence(
 					source,
 					location,
-					GPlatesFileIO::ReadErrors::InvalidShapefilePolygon,
+					GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
 					GPlatesFileIO::ReadErrors::GeometryIgnored));
 			}
 		}
@@ -1755,24 +1800,24 @@ GPlatesFileIO::ShapefileReader::handle_multi_polygon(
 				}
 				catch (std::exception &exc)
 				{
-					qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_polygon: " << exc.what();
+					qWarning() << "GPlatesFileIO::OgrReader::handle_multi_polygon: " << exc.what();
 
 					read_errors.d_recoverable_errors.push_back(
 						GPlatesFileIO::ReadErrorOccurrence(
 						source,
 						location,
-						GPlatesFileIO::ReadErrors::InvalidShapefilePolygon,
+						GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
 						GPlatesFileIO::ReadErrors::GeometryIgnored));
 				}
 				catch (...)
 				{
-					qWarning() << "GPlatesFileIO::ShapefileReader::handle_multi_polygon: Unknown error";
+					qWarning() << "GPlatesFileIO::OgrReader::handle_multi_polygon: Unknown error";
 
 					read_errors.d_recoverable_errors.push_back(
 						GPlatesFileIO::ReadErrorOccurrence(
 						source,
 						location,
-						GPlatesFileIO::ReadErrors::InvalidShapefilePolygon,
+						GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
 						GPlatesFileIO::ReadErrors::GeometryIgnored));
 				}
 			}
@@ -1783,7 +1828,7 @@ GPlatesFileIO::ShapefileReader::handle_multi_polygon(
 }
 
 void
-GPlatesFileIO::ShapefileReader::display_feature_counts()
+GPlatesFileIO::OgrReader::display_feature_counts()
 {
 
 	std::cerr << "feature/geometry count: " <<
@@ -1795,7 +1840,7 @@ GPlatesFileIO::ShapefileReader::display_feature_counts()
 
 
 void
-GPlatesFileIO::ShapefileReader::add_ring_to_points_list(
+GPlatesFileIO::OgrReader::add_ring_to_points_list(
 	OGRLinearRing *ring, 
 	std::list<GPlatesMaths::PointOnSphere> &feature_points,
 	ReadErrorAccumulation &read_errors,
@@ -1816,6 +1861,7 @@ GPlatesFileIO::ShapefileReader::add_ring_to_points_list(
 
 	num_points = ring->getNumPoints();
  
+	// TODO: check is this FIXME note relevant now...
 	// FIXME: Check if the shapefile format demands that a polygon must have
 	// at least 3 points, and if so, check for that here.  
 	// For now we are storing and drawing them as line strings, so we *can* handle 
@@ -1848,7 +1894,7 @@ GPlatesFileIO::ShapefileReader::add_ring_to_points_list(
 
 
 QStringList
-GPlatesFileIO::ShapefileReader::read_field_names(
+GPlatesFileIO::OgrReader::read_field_names(
 		GPlatesFileIO::File::Reference &file_ref,
 		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
@@ -1865,7 +1911,7 @@ GPlatesFileIO::ShapefileReader::read_field_names(
 	QString absolute_path_filename = fileinfo.get_qfileinfo().absoluteFilePath();
 	QString filename = fileinfo.get_qfileinfo().fileName();
 
-	ShapefileReader reader;
+	OgrReader reader;
 	if (!reader.open_file(absolute_path_filename))
 	{
 		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
@@ -1883,7 +1929,7 @@ GPlatesFileIO::ShapefileReader::read_field_names(
 }
 
 void
-GPlatesFileIO::ShapefileReader::remap_shapefile_attributes(
+GPlatesFileIO::OgrReader::remap_shapefile_attributes(
 	GPlatesFileIO::File::Reference &file,
 	GPlatesModel::ModelInterface &model,
 	ReadErrorAccumulation &read_errors)

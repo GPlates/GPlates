@@ -620,7 +620,7 @@ GPlatesFileIO::OgrWriter::OgrWriter(
 	d_ogr_polygon_data_source_ptr(0),
 	d_dateline_wrapper(GPlatesMaths::DateLineWrapper::create())
 {
-	OGRRegisterAll();
+    OGRRegisterAll();
 
 	QFileInfo q_file_info_original(d_filename);
 	d_extension = q_file_info_original.suffix();

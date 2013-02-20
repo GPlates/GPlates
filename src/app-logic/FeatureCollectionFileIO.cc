@@ -30,7 +30,7 @@
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/GeoscimlProfile.h"
-#include "file-io/ShapefileReader.h"
+#include "file-io/OgrReader.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"

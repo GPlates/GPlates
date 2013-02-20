@@ -141,6 +141,8 @@ set(srcs
     OgrFormatResolvedTopologicalGeometryExport.h
     OgrGeometryExporter.cc
     OgrGeometryExporter.h
+    OgrReader.cc
+    OgrReader.h
     OgrUtils.cc
     OgrUtils.h
     OgrWriter.cc
@@ -194,8 +196,6 @@ set(srcs
     ScalarField3DFileFormat.h
     ScalarField3DFileFormatReader.cc
     ScalarField3DFileFormatReader.h
-    ShapefileReader.cc
-    ShapefileReader.h
     ShapefileXmlReader.cc
     ShapefileXmlReader.h
     ShapefileXmlWriter.cc

@@ -48,7 +48,7 @@
 #include "PlatesLineFormatWriter.h"
 #include "PlatesRotationFormatReader.h"
 #include "PlatesRotationFormatWriter.h"
-#include "ShapefileReader.h"
+#include "OgrReader.h"
 #include "OgrFeatureCollectionWriter.h"
 
 #include "app-logic/AppLogicUtils.h"
@@ -201,6 +201,7 @@ namespace GPlatesFileIO
 			}
 
 
+			// This can become ogr_read_feature_collection in due course.
 			/**
 			 * Reads a SHAPEFILE feature collection.
 			 */
@@ -222,7 +223,7 @@ namespace GPlatesFileIO
 						ogr_file_configuration,
 						GPLATES_ASSERTION_SOURCE);
 
-				ShapefileReader::read_file(file_ref, ogr_file_configuration.get(), model, gpgim, read_errors);
+				OgrReader::read_file(file_ref, ogr_file_configuration.get(), model, gpgim, read_errors);
 			}
 
 
@@ -739,8 +740,9 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 			std::vector<QString>(1, FILE_FORMAT_EXT_OGRGMT),
 			ogr_gmt_classification,
 			&file_name_ends_with,
-			// Reading not currently supported...
-			boost::none,
+			Registry::read_feature_collection_function_type(
+					boost::bind(&shapefile_read_feature_collection,
+							_1, boost::cref(registry), model, boost::cref(gpgim), _2)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_ogr_feature_collection_writer,
 							_1, boost::cref(registry), OGRGMT, boost::cref(gpgim))),

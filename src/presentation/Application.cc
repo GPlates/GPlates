@@ -31,7 +31,7 @@
 
 #include "Application.h"
 
-#include "file-io/ShapefileReader.h"
+#include "file-io/OgrReader.h"
 
 #include "gui/AnimationController.h"
 #include "gui/CommandServer.h"
@@ -70,7 +70,7 @@ GPlatesPresentation::Application::initialise()
 	// qt widgets).
 	boost::shared_ptr<GPlatesQtWidgets::ShapefilePropertyMapper> shapefile_property_mapper(
 			new GPlatesQtWidgets::ShapefilePropertyMapper(&d_main_window));
-	GPlatesFileIO::ShapefileReader::set_property_mapper(shapefile_property_mapper);
+	GPlatesFileIO::OgrReader::set_property_mapper(shapefile_property_mapper);
 
 	// If the focus is changed programatically, from e.g. Clone Feature, ensure the Clicked
 	// Table still displays it.

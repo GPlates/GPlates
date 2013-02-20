@@ -55,6 +55,27 @@ namespace
 	typedef std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *>
 			reconstructed_feature_geom_seq_type;
 
+	/*!
+	 * Returns true if the feature-type of @a feature_ref is either
+	 * flowline or motion path.
+	 */
+	bool
+	feature_is_of_type_to_exclude(
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
+	{
+		static const GPlatesModel::FeatureType flowline_feature_type =
+				GPlatesModel::FeatureType::create_gpml("Flowline");
+		static const GPlatesModel::FeatureType motion_path_feature_type =
+				GPlatesModel::FeatureType::create_gpml("MotionPath");
+
+		if ((feature_ref->feature_type() == flowline_feature_type) ||
+				(feature_ref->feature_type() == motion_path_feature_type))
+		{
+			return true;
+		}
+		return false;
+	}
+
 
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type
 	create_kvd_from_feature(
@@ -210,6 +231,14 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries(
 			continue;
 		}
 
+
+		// We will exclude export of flowline/motion-path seed points, so
+		// don't include them in this geometry-type check either.
+		if (feature_is_of_type_to_exclude(feature_ref))
+		{
+			continue;
+		}
+
 		// Iterate through the reconstructed geometries of the current feature.
 		reconstructed_feature_geom_seq_type::const_iterator rfg_iter;
 		for (rfg_iter = feature_geom_group.recon_geoms.begin();
@@ -242,6 +271,12 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries(
 				feature_geom_group.feature_ref;
 
 		if (!feature_ref.is_valid())
+		{
+			continue;
+		}
+
+		// Prevents us from exporting flowline/motion-path seed points.
+		if (feature_is_of_type_to_exclude(feature_ref))
 		{
 			continue;
 		}
@@ -295,6 +330,8 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries_pe
 		bool wrap_to_dateline)
 {
 
+
+
 	// Iterate through the reconstructed geometries and check which geometry types we have.
 	GPlatesFeatureVisitors::GeometryTypeFinder finder;
 
@@ -311,6 +348,14 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries_pe
 		{
 			continue;
 		}
+
+		// We will exclude export of flowline/motion-path seed points, so
+		// don't include them in this geometry-type check either.
+		if (feature_is_of_type_to_exclude(feature_ref))
+		{
+			continue;
+		}
+
 
 		// Iterate through the reconstructed geometries of the current feature.
 		reconstructed_feature_geom_seq_type::const_iterator rfg_iter;
@@ -348,13 +393,19 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries_pe
 			continue;
 		}
 
+		// Prevents us from exporting flowline/motion-path seed points.
+		if (feature_is_of_type_to_exclude(feature_ref))
+		{
+			continue;
+		}
+
 
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd_for_export =
 			GPlatesPropertyValues::GpmlKeyValueDictionary::create();
 
-        OgrUtils::add_reconstruction_fields_to_kvd(kvd_for_export,
-                                        reconstruction_anchor_plate_id,
-                                        reconstruction_time);
+		OgrUtils::add_reconstruction_fields_to_kvd(kvd_for_export,
+												   reconstruction_anchor_plate_id,
+												   reconstruction_time);
 
 		OgrUtils::add_referenced_files_to_kvd(kvd_for_export,referenced_files);
 
@@ -372,16 +423,16 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries_pe
 				*(kvd_finder.found_key_value_dictionaries_begin());
 			add_feature_fields_to_kvd(kvd_for_export,found_kvd);
 		}
-        else
-        {
-            //FIXME: if the features being exported don't all have the standard
-            // set of properties, then we could end up with some gaps in the
-            // kvds, and so the exported kvds could be out of sync with the
-            // field names.
-            // To fix this we should define a standard kvd first, fill with default values,
-            // then replace the values as we find them in each feature.
-            OgrUtils::add_standard_properties_to_kvd(feature_ref,kvd_for_export);
-        }
+		else
+		{
+			//FIXME: if the features being exported don't all have the standard
+			// set of properties, then we could end up with some gaps in the
+			// kvds, and so the exported kvds could be out of sync with the
+			// field names.
+			// To fix this we should define a standard kvd first, fill with default values,
+			// then replace the values as we find them in each feature.
+			OgrUtils::add_standard_properties_to_kvd(feature_ref,kvd_for_export);
+		}
 
 
 

@@ -107,7 +107,7 @@ namespace
 		// If we didn't find an entry for property_enum, return the default attribute name.
 		if (it == model_to_shapefile_map.end())
 		{
-			return ShapefileAttributes::default_attributes[property_enum];
+			return ShapefileAttributes::default_attribute_field_names[property_enum];
 		}
 
 
@@ -165,6 +165,15 @@ namespace
 		}
 	}
 	
+	/*!
+	 * \brief add_field_to_kvd - adds the entry given by key @a key_string and value @a value to kvd @a dictionary.
+	 * If an entry with key @a key_string already exists, the value of the entry will be overwritten with @a value.
+	 *
+	 * \param key_string
+	 * \param value
+	 * \param type
+	 * \param dictionary
+	 */
 	void
 	add_field_to_kvd(
 			const QString &key_string,
@@ -467,7 +476,7 @@ namespace
 			{
 				model_to_shapefile_map.insert(
 							ShapefileAttributes::model_properties[i],
-							ShapefileAttributes::default_attributes[i]);
+							ShapefileAttributes::default_attribute_field_names[i]);
 			}
 		}
 	}
@@ -516,8 +525,16 @@ namespace
 
 	}
 	
+	/*!
+	 * \brief add_or_replace_model_kvd - Add @a kvd to the feature given by @a feature_handle.
+	 * If a kvd with property name "shapefileAttributes" already exists, it will be removed and @a kvd
+	 * will be added.
+	 *
+	 * \param feature_handle
+	 * \param kvd
+	 */
 	void
-	replace_model_kvd(
+	add_or_replace_model_kvd(
 			const GPlatesModel::FeatureHandle &feature_handle,
 			const GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 	{
@@ -1091,7 +1108,7 @@ namespace
 		{
 			model_to_shapefile_map.insert(
 						ShapefileAttributes::model_properties[i],
-						ShapefileAttributes::default_attributes[i]);
+						ShapefileAttributes::default_attribute_field_names[i]);
 		}
 	}
 
@@ -1194,13 +1211,14 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 	 *			* the filename
 	 *			* whether or not we have multiple geometry types (e.g. points AND polylines)
 	 *			* whether or not we want to perform dateline wrapping.
-	 *		* build a model-to-shapefile-map, using one obtained from the feature collection configuration as
-	 *		  a starting point, and adding any missing required fields to it.  We will use this model-to-shapefile
+	 *		* build an property-to-attribute-map, using one obtained from the feature collection configuration as
+	 *		  a starting point, and adding any missing required fields to it.  We will use this property-to-attribute
 	 *		  map in finalise_post_feature_properties when we actually write out the feature.
 	 *		* build a kvd, using a kvd found in the feature collection as a starting point, and adding any missing
 	 *		  required fields to it. This kvd is used as the starting point in finalise_post_feature_properties, for
 	 *		  features which did not have a kvd.
 	 *		  This lets us be sure that the kvd has the same form for all features, as it should be for shapefiles.
+	 *		* Update the file configuration's property-to-attribute map, as it may have been modified in the above steps.
 	 *
 	 */
 
@@ -1296,8 +1314,7 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 		add_missing_keys_to_kvd(*d_default_key_value_dictionary,d_model_to_shapefile_map);
 	}
 	else
-		// We didn't find one, so make one from the model-to-attribute-map. This map will already have a feature_id
-		// added to it, hence the kvd will have a feature_id element.
+		// We didn't find one, so make one from the model-to-attribute-map.
 	{
 		create_default_kvd_from_map(d_default_key_value_dictionary,
 									d_model_to_shapefile_map);
@@ -1395,7 +1412,7 @@ GPlatesFileIO::OgrFeatureCollectionWriter::finalise_post_feature_properties(
 		fill_kvd_values_from_feature(dictionary,
 									 d_model_to_shapefile_map,feature_handle);
 
-		replace_model_kvd(feature_handle,
+		add_or_replace_model_kvd(feature_handle,
 						  dictionary);
 
 		d_key_value_dictionary.reset(dictionary);
