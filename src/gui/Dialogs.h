@@ -71,6 +71,7 @@ namespace GPlatesQtWidgets
 	class GenerateVelocityDomainCitcomsDialog;
 	class GenerateVelocityDomainLatLonDialog;
 	class GenerateVelocityDomainTerraDialog;
+	class HellingerDialog;
 	class PreferencesDialog;
 	class ReadErrorAccumulationDialog;
 	class SetCameraViewpointDialog;
@@ -166,6 +167,9 @@ namespace GPlatesGui
 
 		GPlatesQtWidgets::FeaturePropertiesDialog &
 		feature_properties_dialog();
+
+		GPlatesQtWidgets::HellingerDialog &
+		hellinger_dialog();
 
 		GPlatesQtWidgets::LicenseDialog &
 		license_dialog();
@@ -275,6 +279,9 @@ namespace GPlatesGui
 		pop_up_feature_properties_dialog();
 
 		void
+		pop_up_hellinger_dialog();
+
+		void
 		pop_up_license_dialog();
 
 		void
@@ -355,6 +362,7 @@ namespace GPlatesGui
 			DIALOG_DRAW_STYLE,
 			DIALOG_EXPORT_ANIMATION,
 			DIALOG_FEATURE_PROPERTIES,
+			DIALOG_HELLINGER,
 			DIALOG_LICENSE,
 			DIALOG_LOG,
 			DIALOG_MANAGE_FEATURE_COLLECTIONS,

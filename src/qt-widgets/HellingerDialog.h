@@ -34,6 +34,7 @@
 #include "gui/Colour.h"
 #include "gui/Symbol.h"
 #include "model/types.h"
+#include "GPlatesDialog.h"
 #include "HellingerModel.h"
 #include "HellingerDialogUi.h"
 
@@ -65,7 +66,7 @@ namespace GPlatesQtWidgets
 
 
 	class HellingerDialog:
-			public QDialog,
+			public GPlatesDialog,
 			protected Ui_HellingerDialog
 	{
 		Q_OBJECT
@@ -73,7 +74,7 @@ namespace GPlatesQtWidgets
 
 		HellingerDialog(
             GPlatesPresentation::ViewState &view_state,
-			GPlatesQtWidgets::ReadErrorAccumulationDialog *read_error_dialog,
+			GPlatesQtWidgets::ReadErrorAccumulationDialog &read_error_dialog,
             QWidget *parent_ = NULL);
 
 				/**
@@ -277,7 +278,7 @@ namespace GPlatesQtWidgets
 	
                 GPlatesPresentation::ViewState &d_view_state;
                 GPlatesViewOperations::RenderedGeometryLayer &d_hellinger_layer;
-				ReadErrorAccumulationDialog *d_read_error_accumulation_dialog_ptr;
+				ReadErrorAccumulationDialog &d_read_error_accumulation_dialog;
                 HellingerModel *d_hellinger_model;
                 HellingerStatsDialog *d_hellinger_stats_dialog;
                 HellingerNewPoint *d_hellinger_new_point;

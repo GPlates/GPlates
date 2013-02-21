@@ -66,6 +66,7 @@
 #include "qt-widgets/GenerateVelocityDomainCitcomsDialog.h"
 #include "qt-widgets/GenerateVelocityDomainLatLonDialog.h"
 #include "qt-widgets/GenerateVelocityDomainTerraDialog.h"
+#include "qt-widgets/HellingerDialog.h"
 #include "qt-widgets/FeaturePropertiesDialog.h"
 #include "qt-widgets/LicenseDialog.h"
 #include "qt-widgets/LogDialog.h"
@@ -414,6 +415,28 @@ GPlatesGui::Dialogs::pop_up_feature_properties_dialog()
 	feature_properties_dialog().pop_up();
 }
 
+GPlatesQtWidgets::HellingerDialog &
+GPlatesGui::Dialogs::hellinger_dialog()
+{
+	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
+	const DialogType dialog_type = DIALOG_HELLINGER;
+	typedef GPlatesQtWidgets::HellingerDialog dialog_typename;
+
+	if (d_dialogs[dialog_type].isNull())
+	{
+		d_dialogs[dialog_type] = new dialog_typename(view_state(),
+													read_error_accumulation_dialog(),
+													&viewport_window());
+	}
+
+	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
+}
+
+void
+GPlatesGui::Dialogs::pop_up_hellinger_dialog()
+{
+	hellinger_dialog().pop_up();
+}
 
 GPlatesQtWidgets::LicenseDialog &
 GPlatesGui::Dialogs::license_dialog()

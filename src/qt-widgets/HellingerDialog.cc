@@ -120,13 +120,13 @@ namespace{
 
 GPlatesQtWidgets::HellingerDialog::HellingerDialog(
         GPlatesPresentation::ViewState &view_state,
-		GPlatesQtWidgets::ReadErrorAccumulationDialog *read_error_accumulation_dialog,
+		GPlatesQtWidgets::ReadErrorAccumulationDialog &read_error_accumulation_dialog,
 		QWidget *parent_):
-	QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
+	GPlatesDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
     d_view_state(view_state),
     d_hellinger_layer(*view_state.get_rendered_geometry_collection().get_main_rendered_layer(
                           GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_TOOL_LAYER)),
-    d_read_error_accumulation_dialog_ptr(read_error_accumulation_dialog),
+	d_read_error_accumulation_dialog(read_error_accumulation_dialog),
     d_hellinger_model(0),
     d_hellinger_stats_dialog(0),
     d_hellinger_new_point(0),
@@ -453,7 +453,7 @@ GPlatesQtWidgets::HellingerDialog::import_pick_file()
 
 
 
-	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_error_accumulation_dialog_ptr->read_errors();
+	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_error_accumulation_dialog.read_errors();
 	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
     if (type_file == "pick")
     {
@@ -465,11 +465,11 @@ GPlatesQtWidgets::HellingerDialog::import_pick_file()
     }
 
     
-	d_read_error_accumulation_dialog_ptr->update();
+	d_read_error_accumulation_dialog.update();
 	GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
 	if (num_initial_errors != num_final_errors)
 	{
-		d_read_error_accumulation_dialog_ptr->show();
+		d_read_error_accumulation_dialog.show();
 	}
 
 	line_import_file -> setText(path);
