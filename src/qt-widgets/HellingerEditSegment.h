@@ -59,7 +59,7 @@ namespace GPlatesQtWidgets
                 void
                 initialization(int &segment);
 
-	private slots:
+	private Q_SLOTS: 
 
             void
             edit_segment();

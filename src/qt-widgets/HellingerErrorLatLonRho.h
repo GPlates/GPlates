@@ -49,7 +49,7 @@ namespace GPlatesQtWidgets
             QWidget *parent_ = NULL);
 
 
-	private slots:
+	private Q_SLOTS: 
         void
         continue_process();
         void

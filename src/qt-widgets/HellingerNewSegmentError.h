@@ -58,7 +58,7 @@ namespace GPlatesQtWidgets
 
 
 
-	private slots:
+	private Q_SLOTS: 
         void
         continue_process();
         void

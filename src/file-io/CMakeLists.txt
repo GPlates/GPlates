@@ -119,6 +119,10 @@ set(srcs
     GsmlPropertyDef.h
     GsmlPropertyHandlers.cc
     GsmlPropertyHandlers.h
+    HellingerReader.cc
+    HellingerReader.h
+    HellingerWriter.cc
+    HellingerWriter.h
     LineReader.cc
     LineReader.h
     LogToFileHandler.cc

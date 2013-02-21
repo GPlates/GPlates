@@ -62,7 +62,7 @@ namespace GPlatesQtWidgets
                 reset();
                 int d_type_new_segment_error;
 
-	private slots:
+	private Q_SLOTS: 
 
             void
             add_segment();

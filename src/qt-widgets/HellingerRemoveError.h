@@ -50,7 +50,7 @@ namespace GPlatesQtWidgets
         bool
         get_status();
 
-	private slots:
+	private Q_SLOTS: 
         void
         continue_process();
         void

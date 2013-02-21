@@ -52,7 +52,7 @@ namespace GPlatesQtWidgets
                 void
                 reset();
 
-	private slots:
+	private Q_SLOTS: 
 
             void
             add_point();

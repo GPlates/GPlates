@@ -261,6 +261,43 @@ set(srcs
     GpgimVersionWarningDialogUi.ui
     GPlatesDialog.cc
     GPlatesDialog.h
+    HellingerDialog.cc
+    HellingerDialog.h
+    HellingerDialogUi.ui
+    HellingerEditPoint.cc
+    HellingerEditPoint.h
+    HellingerEditPointUi.ui
+    HellingerEditSegment.cc
+    HellingerEditSegment.h
+    HellingerEditSegmentUi.ui
+    HellingerErrorLatLonRho.cc
+    HellingerErrorLatLonRho.h
+    HellingerErrorLatLonRhoUi.ui
+    HellingerErrorOrder.cc
+    HellingerErrorOrder.h
+    HellingerErrorOrderUi.ui
+    HellingerErrorPythonFile.cc
+    HellingerErrorPythonFile.h
+    HellingerErrorPythonFileUi.ui
+    HellingerModel.cc
+    HellingerModel.h
+    HellingerNewPoint.cc
+    HellingerNewPoint.h
+    HellingerNewPointUi.ui
+    HellingerNewSegment.cc
+    HellingerNewSegment.h
+    HellingerNewSegmentUi.ui
+    HellingerNewSegmentError.cc
+    HellingerNewSegmentError.h
+    HellingerNewSegmentErrorUi.ui
+    HellingerRemoveError.cc
+    HellingerRemoveError.h
+    HellingerRemoveErrorUi.ui
+    HellingerStatsDialog.cc
+    HellingerStatsDialog.h
+    HellingerStatsDialogUi.ui
+    HellingerThread.cc
+    HellingerThread.h
     ImportRasterDialog.cc
     ImportRasterDialog.h
     ImportScalarField3DDialog.cc

@@ -88,7 +88,7 @@ namespace GPlatesQtWidgets
 				void
 				update();
 
-	public slots:
+	public Q_SLOTS:
 
 				/**
 				 * Renumber segments so that they are contiguous.                                                           
@@ -178,7 +178,7 @@ namespace GPlatesQtWidgets
                 void
                 reset_expanded_status();
 
-	private slots:	
+	private Q_SLOTS:
 
 				void
 				handle_thread_finished();

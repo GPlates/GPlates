@@ -5,7 +5,7 @@
  * $Revision: 260 $
  * $Date: 2012-05-30 15:47:23 +0200 (Wed, 30 May 2012) $ 
  * 
- * Copyright (C) 2011, 2012 Geological Survey of Norway
+ * Copyright (C) 2011, 2012, 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -54,7 +54,7 @@
 #include "QtWidgetUtils.h"
 
 
-// FIXME: is this 
+// FIXME: is this required here?
 DISABLE_GCC_WARNING("-Wwrite-strings")
 
 const double slider_multiplier = -10000.;

@@ -49,7 +49,7 @@ namespace GPlatesQtWidgets
 		update();
 
 	
-	private slots:
+	private Q_SLOTS: 
 
 		void
         save_file();
