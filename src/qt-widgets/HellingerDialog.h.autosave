@@ -1,0 +1,158 @@
+/* $Id: CalculateReconstructionPoleDialog.h 10010 2010-10-26 04:26:05Z elau $ */
+
+/**
+ * \file 
+ * $Revision: 10010 $
+ * $Date: 2010-10-26 06:26:05 +0200 (Út, 26 říj 2010) $ 
+ * 
+ * Copyright (C) 2010 Geological Survey of Norway
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+ 
+#ifndef GPLATES_QTWIDGETS_HELLINGERDIALOG_H
+#define GPLATES_QTWIDGETS_HELLINGERDIALOG_H
+
+#include <QWidget>
+
+//#include "maths/Rotation.h"
+//#include "ReconstructionPoleWidget.h"
+
+#include "HellingerDialogUi.h"
+#include "pyembed.h"
+#include <vector>
+//namespace GPlatesAppLogic
+//{
+//	class ApplicationState;
+//}
+//
+//namespace GPlatesPresentation
+//{
+//	class ViewState;
+//}
+
+namespace GPlatesQtWidgets
+{
+        struct pick_struct{
+            int segment;
+            int moveFix;
+            double lat;
+            double lon;
+            double uncert;
+        };
+        struct temp_struct{
+            int segment;
+            double lat;
+        };
+
+
+	//class InsertVGPReconstructionPoleDialog;
+
+	/**
+	 * Dialog to calculate a reconstruction pole from a VGP.                                                                     
+	 */
+        class HellingerStatsDialog;
+        class HellingerNewPoint;
+        class HellingerEditPoint;
+        class HellingerNewSegment;
+        class HellingerEditSegment;
+
+	class HellingerDialog:
+			public QDialog,
+			protected Ui_HellingerDialog
+	{
+		Q_OBJECT
+	public:
+
+		HellingerDialog(
+			//GPlatesPresentation::ViewState &view_state,
+			QWidget *parent_ = NULL);
+                void reset();
+                void add_point(QString &numValue);
+                void add_segment(QStringList &numList);
+                void change_point(QString &numValue);
+                void AddRoot(QStringList fields);
+                void AddChild(QTreeWidgetItem *parent1, QString segment, QString moveFix, QString lat, QString lon, QString err);
+                
+	
+	private slots:
+//
+		
+		void handle_calculate();
+                void import_src_file();
+                void show_statistics();
+                void new_point();
+                void new_segment();
+                void save_file();
+                void expandAll()
+		{
+                    treeWidget->expandAll();
+			
+		}
+                void collapseAll()
+                {
+                    treeWidget->collapseAll();
+                }
+                void edit_point();
+                void edit_segment();
+                void apply_filter();
+                void reset_filter();
+                void remove_point();
+                void remove_segment();
+                void selectionChangedSlot(const QItemSelection &, const QItemSelection &);
+                
+                //void run_test();
+//
+//		void
+//		handle_button_clicked(
+//				QAbstractButton *button);
+
+	private:
+	
+		void update_buttons();
+
+                HellingerStatsDialog *d_hellinger_stats_dialog;
+                HellingerNewPoint *d_hellinger_new_point;
+                HellingerEditPoint *d_hellinger_edit_point;
+                HellingerNewSegment *d_hellinger_new_segment;
+                HellingerEditSegment *d_hellinger_edit_segment;
+                QTreeWidgetItem *d_group;
+                pick_struct d_active_pick;
+                temp_struct d_temp_struct;
+                std::vector<temp_struct> tempData;
+
+
+
+
+
+//
+//		InsertVGPReconstructionPoleDialog *d_dialog_ptr;
+//
+//		ReconstructionPoleWidget *d_reconstruction_pole_widget_ptr;
+//
+//		boost::optional<ReconstructionPole> d_reconstruction_pole;
+//
+//		/**
+//		 * We need to pass this onto the InsertVGPReconstructionDialog so that
+//		 * the rotation model can be updated if necessary.
+//		 */
+//		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
+		
+		
+	};
+}
+
+#endif //GPLATES_QTWIDGETS_HELLINGERDIALOG_H
