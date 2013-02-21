@@ -149,6 +149,11 @@ namespace GPlatesViewOperations
 			POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER,
 			SMALL_CIRCLE_CANVAS_TOOL_WORKFLOW_LAYER,
 
+			// Hellinger tool layer. This is not (yet) a canvas tool, but probably
+			// will be in the future. At which point we can rename it to fit the pattern
+			// above.
+			HELLINGER_TOOL_LAYER,
+
 			NUM_LAYERS // Must be the last enum.
 		};
 
