@@ -93,7 +93,7 @@ namespace GPlatesOpenGL
 			enum ErrorType
 			{
 				SHOULD_HAVE_NO_ACTIVE_QPAINTER,
-				SHOULD_HAVE_ACTIVE_OPENGL_QPAINTER,
+				SHOULD_HAVE_ACTIVE_QPAINTER,
 				SHOULD_HAVE_NO_STATE_BLOCKS,
 				SHOULD_HAVE_A_STATE_BLOCK,
 				SHOULD_HAVE_NO_RENDER_TARGET_BLOCKS,
@@ -177,15 +177,24 @@ namespace GPlatesOpenGL
 		/**
 		 * An alternative version of @a begin_render that accepts a QPainter.
 		 *
-		 * NOTE: The QPainter must currently be active and must use an OpenGL paint engine
-		 * (ie, QPaintEngine::OpenGL or QPaintEngine::OpenGL2).
+		 * NOTE: The QPainter must currently be active and must exist until @a end_render is called.
+		 *
+		 * The QPainter is useful for rendering things like text to the framebuffer (or render target).
+		 * As such the QPainter is typically attached to the *same* framebuffer (viewport widget) as this
+		 * GLRenderer so that they both interleave drawing to the same target. In this case the QPainter
+		 * will be using an OpenGL paint engine (ie, QPaintEngine::OpenGL or QPaintEngine::OpenGL2).
 		 * An example is a QGraphicsView that has a QGLWidget viewport - here the method
 		 * QGraphicsScene::drawBackground, that you override, passes an active QPainter that uses OpenGL.
-		 * This method will get the Qt paint engine to reset to the default OpenGL state (aside from the
+		 * In this case this method assumes the Qt paint engine is in the default OpenGL state (aside from the
 		 * modelview and projection matrices which it sets according to the QPainter's current transform state).
-		 * NOTE: The specified QPainter must exist until @a end_render is called.
 		 *
-		 * Upon returning the OpenGL state will be the default state except for the modelview and
+		 * However it is possible for the QPainter to target a paint device that is not the OpenGL
+		 * framebuffer. In this case @a paint_device_is_framebuffer should be set to false because
+		 * any rendering done using the QPainter will not end up in the OpenGL framebuffer.
+		 * An example of this is rendering to SVG where the client also uses OpenGL feedback to
+		 * collect projected vector primitives to write them to SVG.
+		 *
+		 * Upon returning, the OpenGL state will be the default state except for the modelview and
 		 * projection transforms which will be set to the transform state of @a qpainter and
 		 * orthographic projection.
 		 *
@@ -193,7 +202,9 @@ namespace GPlatesOpenGL
 		 */
 		void
 		begin_render(
-				QPainter *opengl_qpainter);
+				QPainter &qpainter,
+				// Does the QPainter render to the framebuffer or some other paint device ? ...
+				bool paint_device_is_framebuffer = true);
 
 		/**
 		 * Call this method after using 'this' renderer and before it is destroyed.
@@ -201,8 +212,8 @@ namespace GPlatesOpenGL
 		 *
 		 * This sets the OpenGL state back to the default OpenGL state.
 		 *
-		 * NOTE: If a QPainter was specified in @a begin_render then its OpenGL paint engine will be
-		 * restored to its OpenGL state (to what it was before 'begin_render' was called).
+		 * NOTE: If a QPainter was specified in @a begin_render and it uses an OpenGL paint engine then
+		 * it will be restored to its OpenGL state (to what it was before 'begin_render' was called).
 		 *
 		 * @throws PreconditionViolationError if:
 		 *  - the number of begin calls of a particular type (such as state blocks) does not equal
@@ -224,7 +235,8 @@ namespace GPlatesOpenGL
 
 			RenderScope(
 					GLRenderer &renderer,
-					QPainter *opengl_qpainter);
+					QPainter &qpainter,
+					bool paint_device_is_framebuffer = true);
 
 			~RenderScope();
 
@@ -239,14 +251,26 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Returns true if we are rendering to the framebuffer of the OpenGL context.
+		 *
+		 * This is true unless @a begin_render was called with a QPainter whose paint device is not
+		 * the framebuffer (eg, if rendering to SVG).
+		 *
+		 * Note that this should be called between @a begin_render and @a end_render.
+		 */
+		bool
+		rendering_to_context_framebuffer() const;
+
+
+		/**
 		 * Begins rendering to a QPainter (and suspends rendering using GLRenderer).
 		 *
-		 * The QPainter returned is the one passed into @a begin_render, or NULL if none passed.
+		 * The QPainter returned is the one passed into @a begin_render, or boost::none if none passed.
 		 * It can be used to make QPainter calls.
 		 *
 		 * @throws @a GLRendererAPIError if @a begin_render not yet called.
 		 */
-		QPainter *
+		boost::optional<QPainter &>
 		begin_qpainter_block();
 
 		/**
@@ -254,10 +278,15 @@ namespace GPlatesOpenGL
 		 *
 		 * Upon returning no further QPainter calls can be made.
 		 *
+		 * If @a restore_model_view_projection_transforms is true then the modelview and projection
+		 * matrices are restored using the current transform state of the QPainter.
+		 * This is useful if the transform state of the QPainter was altered during usage.
+		 *
 		 * @throws @a GLRendererAPIError if there is no current QPainter block.
 		 */
 		void
-		end_qpainter_block();
+		end_qpainter_block(
+				bool restore_model_view_projection_transforms = false);
 
 		/**
 		 * RAII class to call @a begin_qpainter_block and @a end_qpainter_block over a scope.
@@ -268,12 +297,13 @@ namespace GPlatesOpenGL
 		public:
 			explicit
 			QPainterBlockScope(
-					GLRenderer &renderer);
+					GLRenderer &renderer,
+					bool restore_model_view_projection_transforms = false);
 
 			~QPainterBlockScope();
 
-			//! Returns the QPainter passed into GLRenderer::begin_render or NULL if none passed in.
-			QPainter *
+			//! Returns the QPainter passed into GLRenderer::begin_render or boost::none if none passed in.
+			boost::optional<QPainter &>
 			get_qpainter() const
 			{
 				return d_qpainter;
@@ -281,7 +311,8 @@ namespace GPlatesOpenGL
 
 		private:
 			GLRenderer &d_renderer;
-			QPainter *d_qpainter;
+			boost::optional<QPainter &> d_qpainter;
+			bool d_restore_model_view_projection_transforms;
 		};
 
 
@@ -1279,6 +1310,26 @@ namespace GPlatesOpenGL
 	private:
 
 		/**
+		 * Information about the QPainter, if any, that is active at the beginning of rendering.
+		 */
+		struct QPainterInfo
+		{
+			explicit
+			QPainterInfo(
+					QPainter &qpainter_,
+					bool paint_device_is_framebuffer_ = true) :
+				qpainter(qpainter_),
+				paint_device_is_framebuffer(paint_device_is_framebuffer_)
+			{  }
+
+			QPainter &qpainter;
+
+			//! Does the QPainter render to the framebuffer or some other paint device ?
+			bool paint_device_is_framebuffer;
+		};
+
+
+		/**
 		 * The default blend equation for 'glBlendEquation()'.
 		 *
 		 * This is here because 'GL_FUNC_ADD' is only in GLEW.h and that cannot be included in
@@ -1290,7 +1341,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Is valid if a QPainter is active during rendering (when @a begin_render is called).
 		 */
-		QPainter *d_qpainter;
+		boost::optional<QPainterInfo> d_qpainter_info;
 
 		/**
 		 * Used to begin/end rendering and manage framebuffer objects.
