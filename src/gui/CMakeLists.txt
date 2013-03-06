@@ -111,6 +111,8 @@ set(srcs
     FeatureTableModel.h
     FeatureTypeColourPalette.cc
     FeatureTypeColourPalette.h
+    FeedbackOpenGLToQPainter.cc
+    FeedbackOpenGLToQPainter.h
     FileIOFeedback.cc
     FileIOFeedback.h
     FullScreenMode.cc
@@ -201,8 +203,6 @@ set(srcs
     SphericalGrid.h
     Stars.cc
     Stars.h
-    SvgExport.cc
-    SvgExport.h
     Symbol.cc
     Symbol.h
     TextOverlay.cc

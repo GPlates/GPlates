@@ -8,6 +8,7 @@
  *   $Date$
  * 
  * Copyright (C) 2007, 2009 Geological Survey of Norway
+ * Copyright (C) 2013 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,52 +26,22 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <vector>
-#include <iostream>
+#include <exception>
 
 #include <QDebug>
-
 #include <QPainter>
 #include <QString>
-#include <QSvgGenerator>
-#include <QtOpenGL/qgl.h>
 
-#include "SvgExport.h"
+#include "FeedbackOpenGLToQPainter.h"
 
-#include "opengl/OpenGL.h"
+#include "opengl/GLRenderer.h"
+#include "opengl/GLUtils.h"
 #include "opengl/OpenGLException.h"
-
-#include "qt-widgets/SceneView.h"
 
 
 namespace
 {
-	const int VERTEX_SIZE = 7;
-
-	struct SvgExportException { };
-
-	void
-	clear_gl_errors()
-	{	
-		while (glGetError() != GL_NO_ERROR)
-		{};
-	}
-
-	GLenum
-	check_gl_errors(
-		const char *message = "")
-	{
-		GLenum error = glGetError();
-		if (error != GL_NO_ERROR)
-		{
-			std::cerr << message << ": openGL error: " << gluErrorString(error) << std::endl;
-			throw GPlatesOpenGL::OpenGLException(GPLATES_EXCEPTION_SOURCE,
-					"OpenGL error in SvgExport");
-		}
-		return error;
-	}
-
-	struct vertex_data
+	struct Vertex
 	{
 		GLfloat x;
 		GLfloat y;
@@ -81,11 +52,13 @@ namespace
 		GLfloat alpha;
 	};
 
+	const int VERTEX_SIZE = 7;
+
 
 	void
 	fill_vertex_data_from_buffer(
-			vertex_data *vertex,
-			std::vector<GLfloat>::const_iterator position)
+			Vertex *vertex,
+			const GLfloat *position)
 	{
 		vertex->x = *position;
 		position++;
@@ -104,104 +77,41 @@ namespace
 
 	void
 	parse_and_draw_polygon_vertices(
-		std::vector<GLfloat>::const_iterator buffer_position,
+		const GLfloat *&buffer_position,
 		const QPointF &offset,		
-		QPainter *painter
-		)
+		QPainter *painter,
+		int paint_device_height)
 	{
 		int num_vertices = static_cast<int>(*buffer_position);
 		buffer_position++;
 		QColor colour;		
 		QPolygonF polygon;
+		//qDebug("Polygon: ");
 		for (int i=0 ; i < num_vertices ; ++i)
 		{
-			vertex_data vertex;
-			vertex_data* vertex_ptr = &vertex;
+			Vertex vertex;
+			Vertex* vertex_ptr = &vertex;
 			fill_vertex_data_from_buffer(vertex_ptr,buffer_position);		
 			colour.setRgbF(
 				vertex.red,
 				vertex.green,
 				vertex.blue,
 				vertex.alpha);				
-			QPointF point(vertex.x,-vertex.y);
+			// Note that OpenGL and Qt y-axes are the reverse of each other...
+			QPointF point(vertex.x, paint_device_height - vertex.y);
 			point += offset;
 			polygon << point;
 			buffer_position += VERTEX_SIZE;
+			//qDebug() << point.x() << "," << point.y();
 		}
 
 
 		// Draw the polygon, filled with the last grabbed colour, and with no outline. 
 
+		painter->setPen(Qt::NoPen);
 		painter->setBrush(colour);
 		painter->drawPolygon(polygon);
 	}	
-
-	/**
-	 * Try drawing to the opengl feedback buffer, and return the number of items
-	 * in the buffer. If the buffer was not large enough, a negative number
-	 * is returned.
-	 */
-	GLint
-	draw_to_feedback_buffer(
-			std::vector<GLfloat> &feedback_buffer,
-			//GPlatesQtWidgets::GlobeCanvas *canvas)
-			GPlatesQtWidgets::SceneView *scene_view)
-	{
-
-		clear_gl_errors();
-
-		// Using the GL_3D_COLOR flag in the glFeedbackBuffer flag will
-		// tell openGL to return data in the form (x,y,z,k) where
-		// k is the number of items required to describe the colour.
-		// In RGBA mode, k will be 4.
-		// Thus we will have a total of 7 (float) values for each item.
-		// See, for example:
-		// http://www.glprogramming.com/red/chapter13.html
-
-		// FIXME:  Assert that the size is > 0, or else feedback_buffer[0] will not exist.
-		if (feedback_buffer.size() == 0)
-		{
-			throw SvgExportException();
-		}
-
-
-		glFeedbackBuffer(static_cast<GLint>(feedback_buffer.size()), GL_3D_COLOR,
-				&feedback_buffer[0]);
-
-		// According to http://www.glprogramming.com/red/chapter13.html#name1 , section
-		// "Selection", sub-section "The Basic Steps", the return value of glRenderMode has
-		// meaning only if the current mode (ie, not the parameter) is either GL_SELECT or
-		// GL_FEEDBACK.
-		//
-		// In fact, according to http://www.glprogramming.com/red/chapter13.html#name2 ,
-		// section "Feedback":
-		// "For this step, you can ignore the value returned by glRenderMode()."
-		glRenderMode(GL_FEEDBACK);
-
-		check_gl_errors("After glRenderMode(GL_FEEDBACK)");
-
-		clear_gl_errors();
-
-		scene_view->draw_svg_output();
-
-		check_gl_errors("After scene_view->draw_svg_output");
-
-		clear_gl_errors();
-
-		GLint num_items = glRenderMode(GL_RENDER);
-
-		check_gl_errors("After glRenderMode(GL_RENDER)");
-
-		// According to http://www.glprogramming.com/red/chapter13.html#name1 , section
-		// "Selection", sub-section "The Basic Steps", a negative value means that the
-		// array has overflowed.
-		if (num_items < 0) {
-			// do something about this
-			//std::cerr << "Negative value returned from glRenderMode(GL_RENDER)." <<  std::endl;
-		}
-
-		return num_items;
-	}
 
 
 	/**
@@ -210,9 +120,10 @@ namespace
 	 */
 	void
 	analyse_feedback_buffer(
-			const std::vector<GLfloat> &feedback_buffer)
+			const GLfloat *feedback_buffer,
+			unsigned int feedback_buffer_size)
 	{
-		std::vector<GLfloat>::size_type count = 0;
+		unsigned int count = 0;
 		int token;
 
 		// type_count keeps a count of the different token types.
@@ -221,7 +132,7 @@ namespace
 			type_count[i] = 0;
 		}
 
-		while (count < feedback_buffer.size()) {
+		while (count < feedback_buffer_size) {
 			token = static_cast<int>(feedback_buffer[count]);
 			count++;
 			switch(token){
@@ -250,40 +161,40 @@ namespace
 					type_count[7]++;
 					break;
 				default:
-				//	std::cerr << "hmmm unrecognised token" << std::endl;
+					//qWarning() << "FeedbackOpenGLToQPainter: unrecognised token";
 					break;
 			} // switch
 		} // while
 
 		// show how many of the different token types we found:
-		for(unsigned i = 0; i < 8; i++){
-			std::cerr << type_count[i] << " ";
+		for(unsigned i = 0; i < 8; i++)
+		{
+			qDebug("%d ", type_count[i]);
 		}
-		std::cout << std::endl;
+		qDebug() << endl;
 	}
 
 
 	/**
-	 * Go throught the buffer to establish the bounding box, so that we can use this
-	 * to centre the svg image nicely in the file.
+	 * Go through the buffer to establish the bounding box.
 	 */
 	QRectF
 	find_bounding_box(
-			const std::vector<GLfloat> &buffer)
+			const GLfloat *feedback_buffer,
+			unsigned int feedback_buffer_size)
 	{
 		int token;
 		int num_vertices;
 
-		std::vector<GLfloat>::const_iterator buffer_position = buffer.begin();
-		std::vector<GLfloat>::const_iterator buffer_end = buffer.end();
+		const GLfloat *buffer_position = feedback_buffer;
+		const GLfloat *buffer_end = feedback_buffer + feedback_buffer_size;
 
-		vertex_data vertex;
-		vertex_data* vertex_ptr = &vertex;
+		Vertex vertex;
+		Vertex* vertex_ptr = &vertex;
 
 		QPolygonF points;
 		QPainterPath lines;
 
-		//std::cerr << "entering find_bounding_box" << std::endl;
 		while (buffer_position != buffer_end) {
 			token = static_cast<int>(*buffer_position);
 			buffer_position++;
@@ -316,10 +227,11 @@ namespace
 					buffer_position++;
 					fill_vertex_data_from_buffer(vertex_ptr, buffer_position);
 					lines.moveTo(vertex.x, -(vertex.y));
+					buffer_position += VERTEX_SIZE;
 					for(int i = 1; i < num_vertices; i++){
-						buffer_position +=VERTEX_SIZE;
 						fill_vertex_data_from_buffer(vertex_ptr, buffer_position);
 						lines.lineTo(vertex.x, -(vertex.y));
+						buffer_position +=VERTEX_SIZE;
 					}
 					break;
 				case GL_BITMAP_TOKEN:
@@ -335,7 +247,7 @@ namespace
 					buffer_position++;
 					break;
 				default:
-					//std::cerr << "unrecognised token" << std::endl;
+					//qWarning() << "FeedbackOpenGLToQPainter: unrecognised token";
 					break;
 			} // switch
 		
@@ -352,13 +264,14 @@ namespace
 
 
 	/**
-	 * Go through the buffer and interpret the points/lines as Qt geometrical items,
+	 * Go through the feedback buffer and interpret the points/lines as Qt geometrical items,
 	 * and send them to the QPainter. 
 	 */
 	void
-	draw_to_svg_file(
-			QString filename,
-			const std::vector<GLfloat> &feedback_buffer)
+	draw_feedback_primitives_to_qpainter(
+			QPainter &painter,
+			const GLfloat *feedback_buffer,
+			unsigned int feedback_buffer_size)
 	{
 		// Each point encountered in the feedback buffer is converted to a QPointF and 
 		// draw using QPainter::drawPoint.
@@ -375,8 +288,8 @@ namespace
 		int token;
 		int num_items = 0;
 
-		std::vector<GLfloat>::const_iterator buffer_position = feedback_buffer.begin();
-		std::vector<GLfloat>::const_iterator buffer_end = feedback_buffer.end();
+		const GLfloat *buffer_position = feedback_buffer;
+		const GLfloat *buffer_end = feedback_buffer + feedback_buffer_size;
 
 		QColor colour = QColor(Qt::black);
 		QColor line_colour;
@@ -387,35 +300,25 @@ namespace
 		QPointF last_point(10000.0, 10000.0);
 		QPointF first_point_on_line, second_point_on_line;
 
-		vertex_data vertex;
-		vertex_data* vertex_ptr = &vertex;
+		Vertex vertex;
+		Vertex* vertex_ptr = &vertex;
 
+		// NOTE: We no longer try to centre the geometries in the SVG file.
+		// The SVG output is an exact representation of the globe/map viewport.
+		// We can provide view controls somewhere in the GUI to centre the globe/map in the
+		// viewport if desired, but we don't adjust coordinates on export to SVG.
+#if 1
+		QPointF offset;
+#else
 		// Finding the bounding box, and deriving an offset from that, allows me to 
 		// centre the image nicely in the SVG file. The offset is applied to each
 		// point as we come across them.
-		QRectF bounding_box = find_bounding_box(feedback_buffer);
+		QRectF bounding_box = find_bounding_box(feedback_buffer, feedback_buffer_size);
 		QRect rbox = bounding_box.toRect();
 		QPointF offset = -bounding_box.topLeft();
-
-		QSvgGenerator* svg_generator = new QSvgGenerator;
-
-		if (svg_generator == NULL) {
-			throw (SvgExportException() );
-		}
-
-		svg_generator->setSize(rbox.size());
-		svg_generator->setFileName(filename);
-
-		QPainter painter(svg_generator);
-
-		// We don't have any white features any more, so I'm removing this
-		// light-blue background. The background will be white.
-#if 0
-		// Add a non-white background rectangle so that white-coloured features show up. 
-		QRectF background_rectangle = bounding_box;
-		background_rectangle.translate(offset);
-		painter.fillRect(background_rectangle,QColor(230,230,255));
 #endif
+
+		const int paint_device_height = painter.device()->height();
 
 		painter.setPen(colour);
 
@@ -431,7 +334,8 @@ namespace
 
 					fill_vertex_data_from_buffer(vertex_ptr, buffer_position);
 					point.setX(vertex.x);
-					point.setY(-(vertex.y));
+					// Note that OpenGL and Qt y-axes are the reverse of each other...
+					point.setY(paint_device_height - vertex.y);
 		
 					point += offset;
 					colour.setRgbF(
@@ -442,6 +346,7 @@ namespace
 					painter.setPen(colour);
 					painter.drawPoint(point);
 					buffer_position += VERTEX_SIZE;
+					//qDebug() << "Point: " << point.x() << ", " << point.y();
 					break;
 
 				// Although GL_LINE_RESET_TOKEN tells us when a new line was begun,
@@ -456,19 +361,21 @@ namespace
 				case GL_LINE_RESET_TOKEN:
 
 					fill_vertex_data_from_buffer(vertex_ptr, buffer_position);
+					first_point_on_line.setX(vertex.x);
+					// Note that OpenGL and Qt y-axes are the reverse of each other...
+					first_point_on_line.setY(paint_device_height - vertex.y);
+					first_point_on_line += offset;			
+
+					buffer_position += VERTEX_SIZE;
+					fill_vertex_data_from_buffer(vertex_ptr, buffer_position);
 					colour.setRgbF(
 							vertex.red,
 							vertex.green,
 							vertex.blue,
 							vertex.alpha);
-					first_point_on_line.setX(vertex.x);
-					first_point_on_line.setY(-(vertex.y));
-					first_point_on_line += offset;			
-
-					buffer_position += VERTEX_SIZE;
-					fill_vertex_data_from_buffer(vertex_ptr, buffer_position);
 					second_point_on_line.setX(vertex.x);
-					second_point_on_line.setY(-(vertex.y));
+					// Note that OpenGL and Qt y-axes are the reverse of each other...
+					second_point_on_line.setY(paint_device_height - vertex.y);
 					second_point_on_line += offset;
 
 					if (first_point_on_line != last_point) {
@@ -492,6 +399,8 @@ namespace
 					
 					// move along now please.
 					buffer_position += VERTEX_SIZE;
+					//qDebug() << "Line: " << first_point_on_line.x() << ", " << first_point_on_line.y()
+					//	<< "  -->  " << second_point_on_line.x() << ", " << second_point_on_line.y();
 					break;
 
 				// Currently we do not draw anything to opengl as a polygon - any imported polygons 
@@ -502,7 +411,7 @@ namespace
 				case GL_POLYGON_TOKEN:
 					// Rendered arrow heads are drawn as triangle_fans, which are made up of triangles,
 					// which are polygons.
-					parse_and_draw_polygon_vertices(buffer_position,offset,&painter);
+					parse_and_draw_polygon_vertices(buffer_position, offset, &painter, paint_device_height);
 					break;
 				case GL_BITMAP_TOKEN:
 					buffer_position += VERTEX_SIZE;
@@ -517,7 +426,7 @@ namespace
 					buffer_position++;
 					break;
 				default:
-				//	std::cerr << "hmmm unrecognised token" << std::endl;
+					qWarning() << "FeedbackOpenGLToQPainter: unrecognised token";
 					break;
 			} // switch
 			num_items++;
@@ -530,83 +439,157 @@ namespace
 			painter.drawPolyline(line);
 			line.clear();
 		}
-
-		painter.end();
-
-		delete svg_generator;
 	}
 }
 
-bool
-GPlatesGui::SvgExport::create_svg_output(
-	QString filename,
-	GPlatesQtWidgets::SceneView *scene_view)
+
+GPlatesGui::FeedbackOpenGLToQPainter::FeedbackOpenGLToQPainter(
+		unsigned int max_num_points,
+		unsigned int max_num_lines,
+		unsigned int max_num_triangles) :
+	d_feedback_buffer_size(0)
 {
-	const unsigned long MAX_BUFFER_SIZE = static_cast<unsigned long>(1e7);
+	// The '1' for each point/line/triangle is for the feedback token.
+	const int feedback_buffer_size =
+			// Each point has at most one vertex...
+			(1 + VERTEX_SIZE) * max_num_points +
+			// Each (clipped or unclipped) line has at most two vertices...
+			(1 + 2 * VERTEX_SIZE) * max_num_lines +
+			// Each triangle produces at most 4 clipped triangles (each with 3 vertices)...
+			(1 + 3 * 4 * VERTEX_SIZE) * max_num_triangles;
 
-	unsigned long buffer_size = 100000;
+	d_feedback_buffer.reset(new GLfloat[feedback_buffer_size]);
+	d_feedback_buffer_size = feedback_buffer_size;
+}
 
-	GLint filled_size = 0;
 
-	// Rather than allocating an array manually, we'll use a std::vector instance on the stack.
-	// This has the benefits:
-	//  (i) It's easier to resize (and keep track of the correct size).
-	//  (ii) We won't accidentally leak memory (particularly in the event of an exception).
+void
+GPlatesGui::FeedbackOpenGLToQPainter::begin_render_vector_geometry(
+		GPlatesOpenGL::GLRenderer &renderer)
+{
+	// Since we're about to directly call OpenGL functions (instead of using GLRenderer) we
+	// need to make sure the GLRenderer state is flushed to OpenGL.
+	renderer.apply_current_state_to_opengl();
+
+	// Specify our feedback buffer.
 	//
-	// According to Meyers01, "Effective STL", Item 16 "Know how to pass vector and string data
-	// to legacy APIs", the elements in a vector are guaranteed by the C++ Standard to be
-	// stored in contiguous memory, just like the elements in an array.
-	std::vector<GLfloat> feedback_buffer(buffer_size);
+	// Using the GL_3D_COLOR flag in the glFeedbackBuffer flag will
+	// tell openGL to return data in the form (x,y,z,k) where
+	// k is the number of items required to describe the colour.
+	// In RGBA mode, k will be 4.
+	// Thus we will have a total of 7 (float) values for each item.
+	// See, for example:
+	// http://www.glprogramming.com/red/chapter13.html
+	//
+	// TODO: Move this function to 'GLRenderer'.
+	glFeedbackBuffer(d_feedback_buffer_size, GL_3D_COLOR, d_feedback_buffer.get());
 
-	SvgExport svg_export;
+	// Specify OpenGL feedback mode.
+	//
+	// TODO: Move this function to 'GLRenderer'.
+	//
+	// According to http://www.glprogramming.com/red/chapter13.html#name1 , section
+	// "Selection", sub-section "The Basic Steps", the return value of glRenderMode has
+	// meaning only if the current mode (ie, not the parameter) is either GL_SELECT or
+	// GL_FEEDBACK.
+	//
+	// In fact, according to http://www.glprogramming.com/red/chapter13.html#name2 ,
+	// section "Feedback":
+	// "For this step, you can ignore the value returned by glRenderMode()."
+	glRenderMode(GL_FEEDBACK);
 
-	try{
-
-		filled_size = draw_to_feedback_buffer(feedback_buffer,scene_view);
-
-		// To minimise the size of the allocated buffer, we begin with a buffer size of 10000,
-		// and check if it's big enough for our view. If not, we try a bigger value, up to a
-		// limit of MAX_BUFFER_SIZE. 
-		while ( ( filled_size < 0) &&
-			(( buffer_size*=10) <= MAX_BUFFER_SIZE)) {
-
-				feedback_buffer.resize(buffer_size);
-				filled_size = draw_to_feedback_buffer(feedback_buffer,scene_view);
-
-		} 
-
-		if (filled_size < 0) {
-			//std::cerr << "Feedback buffer not filled." << std::endl;
-			return false;
-		}
-
-		// If we have a size we are happy with, resize the vector, and send it
-		// to the svg function. 
-		feedback_buffer.resize(filled_size);	
-
-		//std::cerr << "Resized buffer size: " << feedback_buffer.size() << std::endl;
-
-		//analyse_feedback_buffer(feedback_buffer);
-
-		draw_to_svg_file(filename, feedback_buffer);
-
-	}
-	catch (const GPlatesOpenGL::OpenGLException &e){
-		e.write(std::cerr);
-		return false;
-	}
-	catch (const SvgExportException &) {
-		std::cerr << "An exception was caught in SvgExport." << std::endl;
-		return false;
-	}
-
-
-	return true;
+	GPlatesOpenGL::GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 
-GPlatesGui::SvgExport::~SvgExport()
+void
+GPlatesGui::FeedbackOpenGLToQPainter::end_render_vector_geometry(
+		GPlatesOpenGL::GLRenderer &renderer)
 {
-	glRenderMode(GL_RENDER);
-	clear_gl_errors();
+	// Since we're about to directly call OpenGL functions (instead of using GLRenderer) we
+	// need to make sure the GLRenderer state is flushed to OpenGL.
+	renderer.apply_current_state_to_opengl();
+
+	// Return to regular rendering mode.
+	//
+	// TODO: Move this function to 'GLRenderer'.
+	const GLint num_feedback_items = glRenderMode(GL_RENDER);
+
+	GPlatesOpenGL::GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+
+	// According to http://www.glprogramming.com/red/chapter13.html#name1 , section
+	// "Selection", sub-section "The Basic Steps", a negative value means that the
+	// array has overflowed.
+	GPlatesGlobal::Assert<GPlatesOpenGL::OpenGLException>(
+			num_feedback_items >= 0,
+			GPLATES_ASSERTION_SOURCE,
+			"OpenGL feedback buffer overflowed.");
+
+	// Suspend rendering with 'GLRenderer' so we can resume painting with 'QPainter'.
+	// At scope exit we can resume rendering with 'GLRenderer'.
+	GPlatesOpenGL::GLRenderer::QPainterBlockScope qpainter_block_scope(renderer);
+	boost::optional<QPainter &> qpainter = qpainter_block_scope.get_qpainter();
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			qpainter,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Get the current painter transform.
+	const QTransform prev_world_transform = qpainter->worldTransform();
+
+	// Set the identity world transform since our feedback geometry data is in *window* coordinates
+	// and we don't want it transformed by the current world transform.
+	qpainter->setWorldTransform(QTransform()/*identity*/);
+
+	// Draw the feedback primitives to the QPainter.
+	draw_feedback_primitives_to_qpainter(
+			qpainter.get(),
+			d_feedback_buffer.get(),
+			num_feedback_items);
+
+	// Restore the previous world transform in the QPainter.
+	qpainter->setWorldTransform(prev_world_transform);
+}
+
+
+GPlatesGui::FeedbackOpenGLToQPainter::VectorGeometryScope::VectorGeometryScope(
+		FeedbackOpenGLToQPainter &feedback_opengl_to_qpainter,
+		GPlatesOpenGL::GLRenderer &renderer) :
+	d_feedback_opengl_to_qpainter(feedback_opengl_to_qpainter),
+	d_renderer(renderer),
+	d_called_end_render(false)
+{
+	d_feedback_opengl_to_qpainter.begin_render_vector_geometry(renderer);
+}
+
+
+GPlatesGui::FeedbackOpenGLToQPainter::VectorGeometryScope::~VectorGeometryScope()
+{
+	if (!d_called_end_render)
+	{
+		// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
+		// But we log the exception and the location it was emitted.
+		try
+		{
+			d_feedback_opengl_to_qpainter.end_render_vector_geometry(d_renderer);
+		}
+		catch (std::exception &exc)
+		{
+			qWarning() << "FeedbackOpenGLToQPainter: exception thrown during vector geometry scope: " << exc.what();
+		}
+		catch (...)
+		{
+			qWarning() << "FeedbackOpenGLToQPainter: exception thrown during vector geometry scope: Unknown error";
+		}
+	}
+}
+
+
+void
+GPlatesGui::FeedbackOpenGLToQPainter::VectorGeometryScope::end_render()
+{
+	if (!d_called_end_render)
+	{
+		d_feedback_opengl_to_qpainter.end_render_vector_geometry(d_renderer);
+		d_called_end_render = true;
+	}
 }

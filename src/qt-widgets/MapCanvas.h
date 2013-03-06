@@ -33,6 +33,7 @@
 #include <boost/shared_ptr.hpp>
 #include <QGLWidget>
 #include <QGraphicsScene>
+#include <QTransform>
 
 #include "gui/ColourScheme.h"
 #include "gui/Map.h"
@@ -96,8 +97,15 @@ namespace GPlatesQtWidgets
 			return d_map;
 		}
 
+		/**
+		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
+		 *
+		 * @a viewport_transform is the view transform of the QGraphicsView initiating the rendering.
+		 */
 		void
-		draw_svg_output();
+		render_opengl_feedback_to_paint_device(
+				QPaintDevice &paint_device,
+				const QTransform &viewport_transform);
 
 		void
 		set_disable_update(
@@ -128,6 +136,12 @@ namespace GPlatesQtWidgets
 		//! Do some OpenGL initialisation.
 		void 
 		initializeGL();
+
+		//! Render onto the canvas.
+		void
+		render_canvas(
+				QPainter &painter,
+				bool paint_device_is_framebuffer);
 
 		//! Calculate scaling for lines, points and text based on size of view
 		float
@@ -168,7 +182,7 @@ namespace GPlatesQtWidgets
 		 * Enables frame-to-frame caching of persistent OpenGL resources.
 		 *
 		 * There is a certain amount of caching without this already.
-		 * This just prevents a render frame from re-using cached resources of the previous frame
+		 * This just prevents a render frame from invalidating cached resources of the previous frame
 		 * in order to avoid regenerating the same cached resources unnecessarily each frame.
 		 * We hold onto the previous frame's cached resources *while* generating the current frame and
 		 * then release our hold on the previous frame (and continue this pattern each new frame).

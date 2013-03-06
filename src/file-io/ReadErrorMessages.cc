@@ -537,6 +537,8 @@ namespace
 				QT_TR_NOOP("No Plate-ids have been loaded for this file.") },
 		{ GPlatesFileIO::ReadErrors::NoPlateIdLoadedForFeature,
 				QT_TR_NOOP("No Plate-id was read for this feature.") },
+		{ GPlatesFileIO::ReadErrors::NoConjugatePlateIdLoadedForFeature,
+				QT_TR_NOOP("No conjugate Plate-id was read for this feature.") },
 		{ GPlatesFileIO::ReadErrors::AttributeIgnored,
 				QT_TR_NOOP("The attribute was not mapped to a model property.") },
 		{ GPlatesFileIO::ReadErrors::UnclassifiedOgrFeatureCreated,

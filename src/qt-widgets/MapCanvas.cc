@@ -49,6 +49,8 @@
 
 #include "presentation/ViewState.h"
 
+#include "utils/Profile.h"
+
 
 GPlatesQtWidgets::MapCanvas::MapCanvas(
 		GPlatesPresentation::ViewState &view_state,
@@ -111,15 +113,15 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 			SLOT(update_canvas()));
 }
 
+GPlatesQtWidgets::MapCanvas::~MapCanvas()
+{  }
+
 void
 GPlatesQtWidgets::MapCanvas::set_disable_update(
 		bool b)
 {
 	d_disable_update = b;
 }
-
-GPlatesQtWidgets::MapCanvas::~MapCanvas()
-{  }
 
 void 
 GPlatesQtWidgets::MapCanvas::initializeGL() 
@@ -144,58 +146,71 @@ GPlatesQtWidgets::MapCanvas::initializeGL()
 	d_map.initialiseGL(*renderer);
 }
 
+
+void
+GPlatesQtWidgets::MapCanvas::render_canvas(
+		QPainter &painter,
+		bool paint_device_is_framebuffer)
+{
+	PROFILE_FUNC();
+
+	// Create a render for all our OpenGL rendering work.
+	// Note that nothing will happen until we enter a rendering scope.
+	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
+
+	// Start a begin_render/end_render scope.
+	//
+	// By default the current render target of 'renderer' is the main frame buffer (of the window).
+	//
+	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+	//
+	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
+	// This also let's GLRenderer know of the modelview/projection transforms set by the QPainter.
+	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, painter, paint_device_is_framebuffer);
+
+	// Let the text renderer know of the QPainter object (indirectly via GLRenderer) so it can use
+	// it to render text with.
+	// We need to do this before any text rendering can occur (and it can inside 'Map::paint').
+	GPlatesGui::TextRenderer::RenderScope text_render_scope(*d_text_renderer, renderer.get());
+
+	// Render the map.
+	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
+	const float scale = calculate_scale();
+	//
+	// Paint the map and its contents.
+	//
+	// NOTE: We hold onto the previous frame's cached resources *while* generating the current frame
+	// and then release our hold on the previous frame (by assigning the current frame's cache).
+	// This just prevents a render frame from invalidating cached resources of the previous frame
+	// in order to avoid regenerating the same cached resources unnecessarily each frame.
+	// Since the view direction usually differs little from one frame to the next there is a lot
+	// of overlap that we want to reuse (and not recalculate).
+	//
+	d_gl_frame_cache_handle = d_map.paint(*renderer, viewport_zoom_factor, scale);
+
+	// Draw the optional text overlay.
+	d_text_overlay->paint(
+			d_view_state.get_text_overlay_settings(),
+			d_map_view_ptr->width(),
+			d_map_view_ptr->height(),
+			scale);
+
+	// Finished text rendering.
+	text_render_scope.end_render();
+
+	// At scope exit OpenGL should now be back in the default OpenGL state...
+}
+
+
 void
 GPlatesQtWidgets::MapCanvas::drawBackground(
 		QPainter *painter,
-		const QRectF &/*rect*/)
+		const QRectF &/*exposed_rect*/)
 {
-	{
-		PROFILE_BLOCK("MapCanvas::drawBackground: render map");
+	render_canvas(*painter, true/*paint_device_is_framebuffer*/);
 
-		// Create a render for all our OpenGL rendering work.
-		// Note that nothing will happen until we enter a rendering scope.
-		GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
-
-		// Start a begin_render/end_render scope.
-		//
-		// By default the current render target of 'renderer' is the main frame buffer (of the window).
-		//
-		// We're currently in an active OpenGL QPainter so we need to let the GLRenderer know about that.
-		// This also let's GLRenderer know of the modelview/projection transforms set by the QPainter.
-		GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, painter);
-
-		// Let the text renderer know of the QPainter object (indirectly via GLRenderer) so it can use
-		// it to render text with.
-		// We need to do this before any text rendering can occur (and it can inside 'Map::paint').
-		GPlatesGui::TextRenderer::RenderScope text_render_scope(*d_text_renderer, renderer.get());
-
-		// Render the map.
-		const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
-		const float scale = calculate_scale();
-		//
-		// Paint the map and its contents.
-		//
-		// NOTE: We hold onto the previous frame's cached resources *while* generating the current frame
-		// and then release our hold on the previous frame (by assigning the current frame's cache).
-		// This just prevents a render frame from re-using cached resources of the previous frame
-		// in order to avoid regenerating the same cached resources unnecessarily each frame.
-		// Since the view direction usually differs little from one frame to the next there is a lot
-		// of overlap that we want to reuse (and not recalculate).
-		//
-		d_gl_frame_cache_handle = d_map.paint(*renderer, viewport_zoom_factor, scale);
-
-		// Draw the optional text overlay.
-		d_text_overlay->paint(
-				d_view_state.get_text_overlay_settings(),
-				d_map_view_ptr->width(),
-				d_map_view_ptr->height(),
-				scale);
-
-		// Finished text rendering.
-		text_render_scope.end_render();
-
-		// At scope exit OpenGL should now be back in the default OpenGL state...
-	}
+	// On exiting the scope of 'render_canvas()', the OpenGL state should
+	// now be back to the default state before we emit the repainted signal.
 
 	Q_EMIT repainted();
 }
@@ -203,38 +218,29 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 void
 GPlatesQtWidgets::MapCanvas::update_canvas()
 {
-	if(!d_disable_update)
+	if (!d_disable_update)
 	{
 		update();
 	}
 }
 
 void
-GPlatesQtWidgets::MapCanvas::draw_svg_output()
+GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
+		QPaintDevice &paint_device,
+		const QTransform &viewport_transform)
 {
-	// Switch off unwanted layers - taken from the Globe's painting routines. 
+	// Make sure our OpenGL context is the currently active context.
+	d_gl_context->make_current();
 
-	// Get current rendered layer active state so we can restore later.
-	const GPlatesViewOperations::RenderedGeometryCollection::MainLayerActiveState
-		prev_rendered_layer_active_state =
-		d_rendered_geometry_collection->capture_main_layer_active_state();
+	// Note that we're not rendering to the OpenGL canvas here.
+	// The OpenGL rendering gets redirected into the QPainter (using OpenGL feedback) and
+	// ends up in the specified paint device.
+	QPainter painter(&paint_device);
 
-	// Turn off rendering of digitisation layer.
-	d_rendered_geometry_collection->set_main_layer_active(
-		GPlatesViewOperations::RenderedGeometryCollection::DIGITISATION_CANVAS_TOOL_WORKFLOW_LAYER,
-		false);
+	// Set the painter transform to match the current view.
+	painter.setWorldTransform(viewport_transform);
 
-	update();
-
-	// Force the update signal to be processed so that 
-	// content is drawn to the OpenGL feedback buffer. 
-	QApplication::processEvents();
-
-
-	// Restore previous rendered layer active state.
-	d_rendered_geometry_collection->restore_main_layer_active_state(
-		prev_rendered_layer_active_state);
-
+	render_canvas(painter, false/*paint_device_is_framebuffer*/);
 }
 
 float

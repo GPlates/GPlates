@@ -318,65 +318,6 @@ GPlatesGui::Globe::paint(
 
 
 void
-GPlatesGui::Globe::paint_vector_output(
-		GPlatesOpenGL::GLRenderer &renderer,
-		const double &viewport_zoom_factor,
-		float scale)
-{
-	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_globe_state_scope(renderer);
-
-	// Most rendering should be done with depth testing *on* and depth writes *off*.
-	// The exceptions will need to save/modify/restore state.
-	renderer.gl_enable(GL_DEPTH_TEST, GL_TRUE);
-	renderer.gl_depth_mask(GL_FALSE);
-
-	// Set up the globe orientation transform.
-	GPlatesOpenGL::GLMatrix globe_orientation_transform;
-	get_globe_orientation_transform(globe_orientation_transform);
-	renderer.gl_mult_matrix(GL_MODELVIEW, globe_orientation_transform);
-
-	// Paint the circumference of the Earth.
-	d_grid->paint_circumference(
-			renderer,
-			d_globe_orientation_ptr->rotation_axis(),
-			GPlatesMaths::convert_rad_to_deg(d_globe_orientation_ptr->rotation_angle()).dval());
-
-	// Paint the grid lines.
-	d_grid->paint(renderer);
-
-	// Get current rendered layer active state so we can restore later.
-	const GPlatesViewOperations::RenderedGeometryCollection::MainLayerActiveState
-		prev_rendered_layer_active_state =
-			d_rendered_geom_collection.capture_main_layer_active_state();
-
-	// Turn off rendering of all layers except the reconstruction layer.
-	for (unsigned int layer_index = 0;
-		layer_index < GPlatesViewOperations::RenderedGeometryCollection::NUM_LAYERS;
-		++layer_index)
-	{
-		const GPlatesViewOperations::RenderedGeometryCollection::MainLayerType layer =
-				static_cast<GPlatesViewOperations::RenderedGeometryCollection::MainLayerType>(layer_index);
-
-		if (layer != GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)
-		{
-			d_rendered_geom_collection.set_main_layer_active(layer, false);
-		}
-	}
-
-	// Draw the rendered geometries.
-	d_rendered_geom_collection_painter.set_scale(scale);
-	d_rendered_geom_collection_painter.paint_surface(
-			renderer,
-			viewport_zoom_factor);
-
-	// Restore previous rendered layer active state.
-	d_rendered_geom_collection.restore_main_layer_active_state(
-		prev_rendered_layer_active_state);
-}
-
-
-void
 GPlatesGui::Globe::get_globe_orientation_transform(
 		GPlatesOpenGL::GLMatrix &transform) const
 {
@@ -469,13 +410,13 @@ GPlatesGui::Globe::render_globe_hemisphere_surface(
 		GPlatesOpenGL::GLRenderer &renderer,
 		std::vector<cache_handle_type> &cache_handle,
 		const double &viewport_zoom_factor,
-		const GPlatesOpenGL::GLMatrix &projection_transform_include_half_globe,
+		const GPlatesOpenGL::GLMatrix &projection_transform,
 		bool is_front_half_globe)
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
 
-	renderer.gl_load_matrix(GL_PROJECTION, projection_transform_include_half_globe);
+	renderer.gl_load_matrix(GL_PROJECTION, projection_transform);
 
 	// NOTE: Because we are using a different projection transform and the depth buffer values depend
 	// on the projection transform then each projection transform needs its own depth buffer clear.

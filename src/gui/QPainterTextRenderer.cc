@@ -74,9 +74,13 @@ GPlatesGui::QPainterTextRenderer::render_text(
 
 	// Suspend rendering with 'GLRenderer' so we can resume painting with 'QPainter'.
 	// At scope exit we can resume rendering with 'GLRenderer'.
+	//
+	// We do this because the QPainter's paint engine might be OpenGL and we need to make sure
+	// it's OpenGL state does not interfere with the OpenGL state of 'GLRenderer' and vice versa.
+	// This also provides a means to retrieve the QPainter for rendering text.
 	GPlatesOpenGL::GLRenderer::QPainterBlockScope qpainter_block_scope(*d_renderer);
 
-	QPainter *qpainter = qpainter_block_scope.get_qpainter();
+	boost::optional<QPainter &> qpainter = qpainter_block_scope.get_qpainter();
 
 	// We need a QPainter - one should have been specified to 'GLRenderer::begin_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(

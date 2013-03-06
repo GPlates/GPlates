@@ -65,9 +65,7 @@ namespace GPlatesGui
 	/**
 	 * Interface for streaming and queuing and rendering primitives/drawables for a single layer.
 	 *
-	 * Currently this only applies to the globe view (not map views).
-	 * Later this interface will be cleaned up and used by all views and also include
-	 * low-level general purpose symbol rendering (marker/line/fill).
+	 * Later this interface will include low-level general purpose symbol rendering (marker/line/fill).
 	 */
 	class LayerPainter :
 			private boost::noncopyable
@@ -142,10 +140,7 @@ namespace GPlatesGui
 			 * so they all get lumped into a single stream.
 			 */
 			stream_primitives_type &
-			get_triangles_stream()
-			{
-				return d_triangle_drawables.get_stream();
-			}
+			get_triangles_stream();
 
 			/**
 			 * Drawables that get filled in their interior.
@@ -200,6 +195,22 @@ namespace GPlatesGui
 				coloured_vertex_seq_type d_vertices;
 
 				boost::shared_ptr<Stream> d_stream;
+
+				void
+				draw_primitives(
+						GPlatesOpenGL::GLRenderer &renderer,
+						GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
+						GPlatesOpenGL::GLBuffer &vertex_buffer_data,
+						GPlatesOpenGL::GLVertexArray &vertex_array,
+						GLenum mode);
+
+				void
+				draw_feedback_primitives_to_qpainter(
+						GPlatesOpenGL::GLRenderer &renderer,
+						GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
+						GPlatesOpenGL::GLBuffer &vertex_buffer_data,
+						GPlatesOpenGL::GLVertexArray &vertex_array,
+						GLenum mode);
 			};
 
 

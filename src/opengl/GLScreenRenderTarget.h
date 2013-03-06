@@ -125,9 +125,9 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns viewport-size RGBA render texture and binds to the main framebuffer.
+		 * Unbinds the RGBA render texture target (binds to the main framebuffer).
 		 *
-		 * The returned texture is 'const' so that its filtering parameters, for example, cannot be modified.
+		 * The render texture can now be retrieved using @a get_texture.
 		 */
 		void
 		end_render(

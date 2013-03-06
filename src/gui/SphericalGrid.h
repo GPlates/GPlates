@@ -83,9 +83,11 @@ namespace GPlatesGui
 		boost::optional<GraticuleSettings> d_last_seen_graticule_settings;
 
 		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_grid_vertex_array;
+		unsigned int d_grid_num_line_segments;
 		boost::optional<GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type> d_grid_compiled_draw_state;
 
 		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_circumference_vertex_array;
+		unsigned int d_circumference_num_line_segments;
 		boost::optional<GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type> d_circumference_compiled_draw_state;
 	};
 }

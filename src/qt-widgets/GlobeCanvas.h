@@ -37,6 +37,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <opengl/OpenGL.h>
+#include <QPainter>
 #include <QtOpenGL/qgl.h>
 
 #include "gui/ColourScheme.h"
@@ -219,27 +220,26 @@ namespace GPlatesQtWidgets
 			return d_mouse_pointer_is_on_globe;
 		}
 
+		/**
+		 * Returns the dimensions of the viewport.
+		 */
+		virtual
+		QSize
+		get_viewport_size() const;
+
+		/**
+		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
+		 */
 		virtual
 		void
-		create_svg_output(
-			QString filename);
+		render_opengl_feedback_to_paint_device(
+				QPaintDevice &paint_device);
 
 		void
 		repaint_canvas()
 		{
 			repaint();
 		}
-
-		/**
-		*   Draw the relevant objects for svg output. This is slightly different from 
-		*	the usual paintGL method, because we don't want to draw the sphere 
-		*   (otherwise we end up with loads of little polygons);
-		*	Instead we'll use the nurbs routines to draw a circle around the circumference
-		*	of the sphere (prior to the sphere orientation).
-		*/
-		virtual
-		void
-		draw_svg_output();
 
 		virtual
 		boost::optional<GPlatesMaths::LatLonPoint>
@@ -593,7 +593,7 @@ namespace GPlatesQtWidgets
 		 * Enables frame-to-frame caching of persistent OpenGL resources.
 		 *
 		 * There is a certain amount of caching without this already.
-		 * This just prevents a render frame from re-using cached resources of the previous frame
+		 * This just prevents a render frame from invalidating cached resources of the previous frame
 		 * in order to avoid regenerating the same cached resources unnecessarily each frame.
 		 * We hold onto the previous frame's cached resources *while* generating the current frame and
 		 * then release our hold on the previous frame (and continue this pattern each new frame).
@@ -640,6 +640,14 @@ namespace GPlatesQtWidgets
 
 		void
 		set_view();
+
+		/**
+		 * Render onto the canvas.
+		 */
+		void
+		render_canvas(
+				QPainter &painter,
+				bool paint_device_is_framebuffer);
 
 		void
 		update_mouse_pointer_pos(

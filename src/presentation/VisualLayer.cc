@@ -50,14 +50,8 @@ GPlatesPresentation::VisualLayer::VisualLayer(
 	d_layer(layer),
 	// Create a child rendered geometry layer in the main RECONSTRUCTION layer.
 	d_rendered_geometry_layer_index(
-			// If the layer represents velocity then make sure the rendered velocity arrows
-			// are not clumped together (for high-resolution grids)...
-			(layer.get_type() == GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR)
-					? rendered_geometry_collection.create_child_rendered_layer(
-							GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER,
-							0.175f /* FIXME: This can be made a user-adjustable parameter */)
-					: rendered_geometry_collection.create_child_rendered_layer(
-							GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)),
+			rendered_geometry_collection.create_child_rendered_layer(
+					GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)),
 	d_rendered_geometry_layer(
 			rendered_geometry_collection.transfer_ownership_of_child_rendered_layer(
 					d_rendered_geometry_layer_index,

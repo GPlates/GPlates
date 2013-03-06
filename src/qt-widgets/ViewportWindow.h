@@ -186,10 +186,6 @@ namespace GPlatesQtWidgets
 		GPlatesGui::CanvasToolWorkflows &
 		canvas_tool_workflows();
 
-		void
-		create_svg_file(
-				const QString &filename);
-
 
 		GPlatesGui::TrinketArea &
 		trinket_area();

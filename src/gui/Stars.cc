@@ -35,6 +35,7 @@
 #include "Stars.h"
 
 #include "Colour.h"
+#include "FeedbackOpenGLToQPainter.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -121,6 +122,7 @@ namespace
 	compile_stars_draw_state(
 			GPlatesOpenGL::GLRenderer &renderer,
 			GPlatesOpenGL::GLVertexArray &vertex_array,
+			unsigned int &num_points,
 			boost::function< double () > &rand,
 			const GPlatesGui::rgba8_t &colour)
 	{
@@ -155,6 +157,9 @@ namespace
 		const unsigned int num_large_star_indices = stream_target.get_num_streamed_vertex_elements();
 
 		stream_target.stop_streaming();
+
+		// Each point in GL_POINTS uses one vertex index (this is the total number of stars).
+		num_points = vertex_elements.size();
 
 		// We're using 16-bit indices (ie, 65536 vertices) so make sure we've not exceeded that many vertices.
 		// Shouldn't get close really but check to be sure.
@@ -238,7 +243,8 @@ GPlatesGui::Stars::Stars(
 		GPlatesPresentation::ViewState &view_state,
 		const GPlatesGui::Colour &colour) :
 	d_view_state(view_state),
-	d_vertex_array(GPlatesOpenGL::GLVertexArray::create(renderer))
+	d_vertex_array(GPlatesOpenGL::GLVertexArray::create(renderer)),
+	d_num_points(0)
 {
 	// Set up the random number generator.
 	// It generates doubles uniformly from -1.0 to 1.0 inclusive.
@@ -252,7 +258,7 @@ GPlatesGui::Stars::Stars(
 
 	rgba8_t rgba8_colour = Colour::to_rgba8(colour);
 
-	d_compiled_draw_state = compile_stars_draw_state(renderer, *d_vertex_array, rand, rgba8_colour);
+	d_compiled_draw_state = compile_stars_draw_state(renderer, *d_vertex_array, d_num_points, rand, rgba8_colour);
 }
 
 
@@ -267,7 +273,21 @@ GPlatesGui::Stars::paint(
 			// Make sure we leave the OpenGL state the way it was.
 			GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
 
-			renderer.apply_compiled_draw_state(*d_compiled_draw_state.get());
+			// Either render directly to the framebuffer, or use OpenGL feedback to render to the
+			// QPainter's paint device.
+			if (renderer.rendering_to_context_framebuffer())
+			{
+				renderer.apply_compiled_draw_state(*d_compiled_draw_state.get());
+			}
+			else
+			{
+				// Create an OpenGL feedback buffer large enough to capture the primitives we're about to render.
+				FeedbackOpenGLToQPainter feedback_opengl(d_num_points, 0, 0);
+				// We are rendering to the QPainter passed into GLRenderer::begin_render().
+				FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(feedback_opengl, renderer);
+
+				renderer.apply_compiled_draw_state(*d_compiled_draw_state.get());
+			}
 		}
 	}
 }

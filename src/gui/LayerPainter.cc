@@ -28,6 +28,8 @@
 
 #include "LayerPainter.h"
 
+#include "FeedbackOpenGLToQPainter.h"
+
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
@@ -523,6 +525,9 @@ void
 GPlatesGui::LayerPainter::PointLinePolygonDrawables::begin_painting()
 {
 	d_triangle_drawables.begin_painting();
+
+	// There are multiple point and line categories depending on point sizes and line widths so
+	// we only beging painting on those when we encounter a new point size or line width.
 }
 
 
@@ -556,9 +561,13 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 	// Set up for rendering points, lines and polygons.
 	//
 
-	// TODO: Currently only applying lighting to the 3D globe view.
-	// Add to the 2D map views also.
-	if (!map_projection)
+	// If we are not rendering to the framebuffer then we need to use OpenGL feedback in order to
+	// render to the QPainter's paint device. Currently we're using base OpenGL feedback which only
+	// works with the fixed-function pipeline - so we turn off shaders.
+	// TODO: Implement OpenGL 2/3 feedback extensions to enable feedback from vertex shaders.
+	if (renderer.rendering_to_context_framebuffer() &&
+		// TODO: Currently only applying lighting to the 3D globe view (add to the 2D map views also)...
+		!map_projection)
 	{
 		// Get the OpenGL light if the runtime system supports it.
 		boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type> gl_light =
@@ -712,6 +721,13 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::get_lines_stream(
 }
 
 
+GPlatesGui::LayerPainter::stream_primitives_type &
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::get_triangles_stream()
+{
+	return d_triangle_drawables.get_stream();
+}
+
+
 void
 GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::begin_painting()
 {
@@ -733,36 +749,28 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::end_painting(
 		GPlatesOpenGL::GLVertexArray &vertex_array,
 		GLenum mode)
 {
+	// The stream should have already been created in 'begin_painting()'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_stream,
+			GPLATES_ASSERTION_SOURCE);
+
 	// Stop targeting our internal vertices/indices.
 	d_stream->stream_target.stop_streaming();
 
 	// If there are primitives to draw...
 	if (!d_vertex_elements.empty())
 	{
-		// Stream the vertex elements.
-		vertex_element_buffer_data.gl_buffer_data(
-				renderer,
-				GPlatesOpenGL::GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
-				d_vertex_elements,
-				GPlatesOpenGL::GLBuffer::USAGE_STREAM_DRAW);
-
-		// Stream the vertices.
-		vertex_buffer_data.gl_buffer_data(
-				renderer,
-				GPlatesOpenGL::GLBuffer::TARGET_ARRAY_BUFFER,
-				d_vertices,
-				GPlatesOpenGL::GLBuffer::USAGE_STREAM_DRAW);
-
-		// Draw the primitives.
-		// NOTE: The caller has already bound this vertex array.
-		vertex_array.gl_draw_range_elements(
-				renderer,
-				mode,
-				0/*start*/,
-				d_vertices.size() - 1/*end*/,
-				d_vertex_elements.size()/*count*/,
-				GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::type,
-				0/*indices_offset*/);
+		// Either render directly to the framebuffer, or use OpenGL feedback to render to the
+		// QPainter's paint device.
+		if (renderer.rendering_to_context_framebuffer())
+		{
+			draw_primitives(renderer, vertex_element_buffer_data, vertex_buffer_data, vertex_array, mode);
+		}
+		else
+		{
+			draw_feedback_primitives_to_qpainter(
+					renderer, vertex_element_buffer_data, vertex_buffer_data, vertex_array, mode);
+		}
 	}
 
 	// Destroy the stream.
@@ -770,4 +778,79 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::end_painting(
 
 	d_vertex_elements.clear();
 	d_vertices.clear();
+}
+
+
+void
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::draw_primitives(
+		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
+		GPlatesOpenGL::GLBuffer &vertex_buffer_data,
+		GPlatesOpenGL::GLVertexArray &vertex_array,
+		GLenum mode)
+{
+	// Stream the vertex elements.
+	vertex_element_buffer_data.gl_buffer_data(
+			renderer,
+			GPlatesOpenGL::GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
+			d_vertex_elements,
+			GPlatesOpenGL::GLBuffer::USAGE_STREAM_DRAW);
+
+	// Stream the vertices.
+	vertex_buffer_data.gl_buffer_data(
+			renderer,
+			GPlatesOpenGL::GLBuffer::TARGET_ARRAY_BUFFER,
+			d_vertices,
+			GPlatesOpenGL::GLBuffer::USAGE_STREAM_DRAW);
+
+	// Draw the primitives.
+	// NOTE: The caller has already bound this vertex array.
+	vertex_array.gl_draw_range_elements(
+			renderer,
+			mode,
+			0/*start*/,
+			d_vertices.size() - 1/*end*/,
+			d_vertex_elements.size()/*count*/,
+			GPlatesOpenGL::GLVertexElementTraits<vertex_element_type>::type,
+			0/*indices_offset*/);
+}
+
+
+void
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::draw_feedback_primitives_to_qpainter(
+		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
+		GPlatesOpenGL::GLBuffer &vertex_buffer_data,
+		GPlatesOpenGL::GLVertexArray &vertex_array,
+		GLenum mode)
+{
+	// Determine the number of points/lines/triangles we're about to render.
+	unsigned int max_num_points = 0;
+	unsigned int max_num_lines = 0;
+	unsigned int max_num_triangles = 0;
+
+	if (mode == GL_POINTS)
+	{
+		max_num_points += d_vertex_elements.size();
+	}
+	else if (mode == GL_LINES)
+	{
+		max_num_lines += d_vertex_elements.size() / 2;
+	}
+	else
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				mode == GL_TRIANGLES,
+				GPLATES_ASSERTION_SOURCE);
+
+		max_num_triangles += d_vertex_elements.size() / 3;
+	}
+
+	// Create an OpenGL feedback buffer large enough to capture the primitives we're about to render.
+	FeedbackOpenGLToQPainter feedback_opengl(max_num_points, max_num_lines, max_num_triangles);
+
+	// We are rendering to the QPainter passed into GLRenderer::begin_render().
+	FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(feedback_opengl, renderer);
+
+	draw_primitives(renderer, vertex_element_buffer_data, vertex_buffer_data, vertex_array, mode);
 }

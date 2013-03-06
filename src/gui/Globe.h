@@ -152,21 +152,6 @@ namespace GPlatesGui
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_stars);
 
-		/*
-		 * A special version of the globe's paint() method more suitable for vector output.
-		 *
-		 * NOTE: Unlike @a paint the caller must have pushed the projection transform onto @a renderer.
-		 *
-		 * @param viewport_zoom_factor The magnification of the globe in the viewport window.
-		 *        Value should be one when earth fills viewport and proportionately greater
-		 *        than one when viewport shows only part of the globe.
-		 */
-		void
-		paint_vector_output(
-				GPlatesOpenGL::GLRenderer &renderer,
-				const double &viewport_zoom_factor,
-				float scale);
-
 	private:
 
 		GPlatesPresentation::ViewState &d_view_state;
@@ -243,7 +228,7 @@ namespace GPlatesGui
 				GPlatesOpenGL::GLRenderer &renderer,
 				std::vector<cache_handle_type> &cache_handle,
 				const double &viewport_zoom_factor,
-				const GPlatesOpenGL::GLMatrix &projection_transform_include_half_globe,
+				const GPlatesOpenGL::GLMatrix &projection_transform,
 				bool is_front_half_globe);
 
 		void

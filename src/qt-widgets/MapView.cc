@@ -38,9 +38,11 @@
 
 #include "MapCanvas.h"
 
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
+
 #include "gui/MapTransform.h"
 #include "gui/ProjectionException.h"
-#include "gui/SvgExport.h"
 
 #include "maths/InvalidLatLonException.h"
 
@@ -464,18 +466,23 @@ GPlatesQtWidgets::MapView::keyPressEvent(
 }
 
 
-void
-GPlatesQtWidgets::MapView::create_svg_output(
-	QString filename)
+QSize
+GPlatesQtWidgets::MapView::get_viewport_size() const
 {
-	GPlatesGui::SvgExport::create_svg_output(filename,this);
+	return QSize(width(), height());
 }
 
 
 void
-GPlatesQtWidgets::MapView::draw_svg_output()
+GPlatesQtWidgets::MapView::render_opengl_feedback_to_paint_device(
+		QPaintDevice &paint_device)
 {
-	map_canvas().draw_svg_output();
+	// Ensure the paint device dimensions match our viewport.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			QSize(paint_device.width(), paint_device.height()) == get_viewport_size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	map_canvas().render_opengl_feedback_to_paint_device(paint_device, transform());
 }
 
 

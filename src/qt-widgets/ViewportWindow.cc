@@ -116,7 +116,6 @@
 #include "gui/ImportMenu.h"
 #include "gui/PythonManager.h"
 #include "gui/SessionMenu.h"
-#include "gui/SvgExport.h"
 #include "gui/TrinketArea.h"
 #include "gui/UnsavedChangesTracker.h"
 #include "gui/UtilitiesMenu.h"
@@ -1101,30 +1100,6 @@ GPlatesQtWidgets::ViewportWindow::enable_or_disable_feature_actions(
 	// we may want to modify this method to also test for a nonempty selection of features.
 	action_Add_Feature_To_Selection->setEnabled(enable_canvas_tool_actions);
 #endif
-}
-
-
-void
-GPlatesQtWidgets::ViewportWindow::create_svg_file(
-		const QString &filename)
-{
-#if 0
-	bool result = GPlatesGui::SvgExport::create_svg_output(filename,d_globe_canvas_ptr);
-	if (!result){
-		std::cerr << "Error creating SVG output.." << std::endl;
-	}
-#endif
-	try{
-		d_reconstruction_view_widget_ptr->active_view().create_svg_output(filename);
-	}
-	catch (std::exception &exc)
-	{
-		qWarning() << "Caught exception creating SVG output: " << exc.what();
-	}
-	catch (...)
-	{
-		qWarning() << "Caught exception creating SVG output: unknown error";
-    }
 }
 
 

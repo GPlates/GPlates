@@ -195,22 +195,19 @@ namespace GPlatesQtWidgets
 		handle_mouse_pointer_pos_change();
 
 		/**
-		 * Create an svg file representing the current state of the viewport window.
-		 *
-		 * This function passes control to the SvgExport class, which uses the MapView's
-		 * draw_svg_output to do the actual vector drawing.
+		 * Returns the dimensions of the viewport.
 		 */
 		virtual
-		void
-		create_svg_output(
-				QString filename);
+		QSize
+		get_viewport_size() const;
 
 		/**
-		 * Draw the reconstruction geometries on the screen.
+		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
 		 */
 		virtual
 		void
-		draw_svg_output();
+		render_opengl_feedback_to_paint_device(
+				QPaintDevice &paint_device);
 
 		const MapCanvas &
 		map_canvas() const;

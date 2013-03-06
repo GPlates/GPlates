@@ -652,7 +652,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::recalc_camera_position()
 			Q_EMIT send_orientation_to_stdout(*rotation);
 #if 0
 			// For now, continue to emit llp as well. 
-			emit send_camera_pos_to_stdout(llp->latitude(),llp->longitude());
+			Q_EMIT send_camera_pos_to_stdout(llp->latitude(),llp->longitude());
 #endif
 		}
 	}
