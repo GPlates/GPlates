@@ -38,15 +38,30 @@ GPlatesGui::ViewportZoom::s_min_zoom_level = 0;
 
 
 const int
-GPlatesGui::ViewportZoom::s_max_zoom_level = 40;
+GPlatesGui::ViewportZoom::s_max_zoom_level = 60;
 
 
 const double
 GPlatesGui::ViewportZoom::s_min_zoom_percent = 100.0;
 
 
+// NOTE: When increasing the maximum zoom percent, be sure to change the maximum zoom level such
+// that the original max zoom level and original max percent still match up.
+// This means that the various zoom control widgets and zoom keyboard shortcuts (that adjust zoom
+// *level*) will still change the zoom at the same rate (ie, change-in-zoom-percent per unit time).
+//
+// For example, when the max zoom percent was increased from 10,000 to 100,000 the corresponding
+// max zoom level was increased from 40 to 60 because...
+//
+//    zoom_percent(level=40) = pow(10, (40 - 0) / (60 - 0) * (log10(100,000) - log10(100)) + log10(100))
+//                           = pow(10, 4 / 6 * (5 - 2) + 2)
+//                           = pow(10, 4)
+//                           = 10,000
+//
+// ...and so a zoom level of 40 corresponds to a zoom percent of 10,000 which were the old maximums.
+//
 const double
-GPlatesGui::ViewportZoom::s_max_zoom_percent = 10000.0;
+GPlatesGui::ViewportZoom::s_max_zoom_percent = 100000.0;
 
 
 double
