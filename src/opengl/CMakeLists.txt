@@ -119,6 +119,8 @@ set(srcs
     GLTexture.h
     GLTextureUtils.cc
     GLTextureUtils.h
+    GLTileRender.cc
+    GLTileRender.h
     GLTransform.h
     GLUtils.cc
     GLUtils.h

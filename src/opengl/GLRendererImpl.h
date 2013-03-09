@@ -37,6 +37,7 @@
 #include "GLCompiledDrawState.h"
 #include "GLState.h"
 #include "GLTexture.h"
+#include "GLTileRender.h"
 
 #include "utils/Counter64.h"
 #include "utils/non_null_intrusive_ptr.h"
@@ -284,8 +285,24 @@ namespace GPlatesOpenGL
 
 			// The following parameters are not used if GL_EXT_framebuffer_object extension is available...
 
-			//! Used to save/restore the main framebuffer when it's used as a render target.
-			boost::optional<GLTexture::shared_ptr_to_const_type> save_restore_texture;
+			//! Using main framebuffer as a render target.
+			struct MainFrameBuffer
+			{
+				MainFrameBuffer(
+						const GLTexture::shared_ptr_to_const_type save_restore_texture_,
+						const GLTileRender &tile_render_) :
+					save_restore_texture(save_restore_texture_),
+					tile_render(tile_render_)
+				{  }
+
+				//! Used to save/restore the main framebuffer when it's used as a render target.
+				GLTexture::shared_ptr_to_const_type save_restore_texture;
+
+				//! Used to tile rendering when the main framebuffer is smaller than the render target.
+				GLTileRender tile_render;
+			};
+
+			boost::optional<MainFrameBuffer> main_frame_buffer;
 		};
 
 		//! Shadowing of the framebuffer colour attachment state to cache 'glCheckFramebufferStatus' results.

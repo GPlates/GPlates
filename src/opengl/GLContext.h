@@ -258,7 +258,7 @@ namespace GPlatesOpenGL
 					GLRenderer &renderer);
 
 			/**
-			 * Returns a convenience object for render to a screen-size render texture with and
+			 * Returns a convenience object for rendering to a screen-size render texture with an
 			 * optional depth buffer, from an internal cache, that matches the specified parameters.
 			 *
 			 * Use this when you need to render to screen-size texture temporarily and want to promote

@@ -59,8 +59,10 @@ GPlatesOpenGL::GLScreenRenderTarget::is_supported(
 
 		const GLContext::Parameters &context_params = GLContext::get_parameters();
 
-		// Require support for framebuffer objects.
-		if (!context_params.framebuffer.gl_EXT_framebuffer_object)
+		// Require support for framebuffer objects and non-power-of-two textures.
+		// The screen dimensions can change and are unlikely to be a power-of-two.
+		if (!context_params.framebuffer.gl_EXT_framebuffer_object ||
+			!context_params.texture.gl_ARB_texture_non_power_of_two)
 		{
 			return false;
 		}
@@ -70,7 +72,7 @@ GPlatesOpenGL::GLScreenRenderTarget::is_supported(
 
 		// Try a small render target so we can check the framebuffer status and make sure
 		// the internal formats of texture and depth buffer are compatible.
-		// GL_EXT_framebuffer_object is fairly strict there (GL_ARB_framebuffer_object is better)
+		// GL_EXT_framebuffer_object is fairly strict there (GL_ARB_framebuffer_object is better
 		// but not supported on as much hardware).
 		GLScreenRenderTarget render_target(renderer, texture_internalformat, include_depth_buffer);
 

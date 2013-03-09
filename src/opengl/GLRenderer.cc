@@ -313,18 +313,11 @@ GPlatesOpenGL::GLRenderer::QPainterBlockScope::~QPainterBlockScope()
 }
 
 
-bool
-GPlatesOpenGL::GLRenderer::supports_arbitrary_colour_format_render_targets() const
-{
-	// Can only render to non-RGBA8 formats if there's support for native framebuffer objects.
-	return GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object);
-}
-
-
 void
-GPlatesOpenGL::GLRenderer::begin_render_target_2D(
+GPlatesOpenGL::GLRenderer::begin_rgba8_render_target_2D(
 		const GLTexture::shared_ptr_to_const_type &texture,
-		boost::optional<GLViewport> render_target_viewport,
+		boost::optional<GLViewport> render_texture_viewport,
+		const double &max_point_size_and_line_width,
 		GLint level,
 		bool reset_to_default_state)
 {
@@ -338,11 +331,11 @@ GPlatesOpenGL::GLRenderer::begin_render_target_2D(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Set the default render-target viewport if it wasn't specified.
-	if (!render_target_viewport)
+	if (!render_texture_viewport)
 	{
 		// The default is the entire texture.
 		// Note that the texture width is for level 0 so we need to adjust if not level 0.
-		render_target_viewport = GLViewport(
+		render_texture_viewport = GLViewport(
 				0, 0,
 				texture->get_width().get() >> level,
 				texture->get_height().get() >> level);
@@ -351,30 +344,13 @@ GPlatesOpenGL::GLRenderer::begin_render_target_2D(
 	// Push a new render target block.
 	begin_render_target_block_internal(
 			reset_to_default_state,
-			RenderTextureTarget(render_target_viewport.get(), texture, level));
+			RenderTextureTarget(render_texture_viewport.get(), texture, level));
 
 	// The current render texture target.
 	// NOTE: This must reference directly into the structure stored on the render target block stack
 	// since it can get modified below.
 	RenderTextureTarget &render_texture_target =
 			get_current_render_target_block().render_texture_target.get();
-
-	// Mask off rendering outside the render target dimensions otherwise it's possible for
-	// the client to overwrite part of the main framebuffer that we're not saving.
-	// This includes a 'gl_clear()' calls which clear the entire main framebuffer.
-	// So set the scissor rectangle to match the render target dimensions.
-	//
-	// This isn't really needed for framebuffer objects but we specify it anyway in case the client
-	// requested a subsection of the render-texture instead of the entire render-texture.
-	gl_enable(GL_SCISSOR_TEST);
-	gl_scissor(
-			0, 0,
-			render_texture_target.texture_viewport.width(),
-			render_texture_target.texture_viewport.height());
-	gl_viewport(
-			0, 0,
-			render_texture_target.texture_viewport.width(),
-			render_texture_target.texture_viewport.height());
 
 	// Disable depth writing for render targets.
 	// If using framebuffer objects (as render targets) then it doesn't really matter but if using
@@ -386,24 +362,74 @@ GPlatesOpenGL::GLRenderer::begin_render_target_2D(
 	{
 		// Use framebuffer object for rendering to texture unless the driver is not supported
 		// the configuration for some reason.
-		if (!begin_framebuffer_object_2D(render_texture_target))
+		if (!begin_rgba8_framebuffer_object_2D(render_texture_target))
 		{
 			// Return the framebuffer object to the cache it was acquired from.
+			// This signals to 'end_rgba8_render_target_2D()' that we are using the main framebuffer.
 			d_framebuffer_object = boost::none;
 
 			// Start using the main framebuffer instead (for rendering to texture).
-			begin_rgba8_main_framebuffer_2D(render_texture_target);
+			begin_rgba8_main_framebuffer_2D(render_texture_target, max_point_size_and_line_width);
 		}
 	}
 	else
 	{
-		begin_rgba8_main_framebuffer_2D(render_texture_target);
+		begin_rgba8_main_framebuffer_2D(render_texture_target, max_point_size_and_line_width);
+	}
+}
+
+
+GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
+GPlatesOpenGL::GLRenderer::begin_tile_rgba8_render_target_2D(
+		GLViewport *tile_render_target_viewport)
+{
+	// The current render texture target.
+	boost::optional<RenderTextureTarget> &render_texture_target =
+			get_current_render_target_block().render_texture_target;
+
+	// Should always have a render texture target when tiling a render target 2D.
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			render_texture_target,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_TARGET);
+
+	if (render_texture_target->main_frame_buffer)
+	{
+		return begin_tile_rgba8_main_framebuffer_2D(render_texture_target.get(), tile_render_target_viewport);
+	}
+	else
+	{
+		return begin_tile_rgba8_framebuffer_object_2D(render_texture_target.get(), tile_render_target_viewport);
+	}
+}
+
+
+bool
+GPlatesOpenGL::GLRenderer::end_tile_rgba8_render_target_2D()
+{
+	// The current render texture target.
+	boost::optional<RenderTextureTarget> &render_texture_target =
+			get_current_render_target_block().render_texture_target;
+
+	// Should always have a render texture target when tiling a render target 2D.
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			render_texture_target,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_TARGET);
+
+	if (render_texture_target->main_frame_buffer)
+	{
+		return end_tile_rgba8_main_framebuffer_2D(render_texture_target.get());
+	}
+	else
+	{
+		return end_tile_rgba8_framebuffer_object_2D(render_texture_target.get());
 	}
 }
 
 
 void
-GPlatesOpenGL::GLRenderer::end_render_target_2D()
+GPlatesOpenGL::GLRenderer::end_rgba8_render_target_2D()
 {
 	//PROFILE_FUNC();
 
@@ -413,30 +439,30 @@ GPlatesOpenGL::GLRenderer::end_render_target_2D()
 		// End the current render target block.
 		//
 		// FIXME: This is risky because we are implicitly ending a stack block here
-		// before calling 'end_framebuffer_object_2D()' which could itself set some state.
+		// before calling 'end_rgba8_framebuffer_object_2D()' which could itself set some state.
 		// We really want to end the render target block last so it restores all state.
-		// Right now we get away with it because 'end_framebuffer_object_2D()' doesn't
+		// Right now we get away with it because 'end_rgba8_framebuffer_object_2D()' doesn't
 		// set any global state (it only modifies the framebuffer object's state - ie, local state).
 		// To fix: change std::stack to something where can access second from top element (not just top).
 		end_render_target_block_internal();
 
 		// Is there a parent render texture target (ie, not back to the main framebuffer yet).
-		const boost::optional<RenderTextureTarget> parent_render_texture_target =
+		const boost::optional<RenderTextureTarget> &parent_render_texture_target =
 				get_current_render_target_block().render_texture_target;
 
-		end_framebuffer_object_2D(parent_render_texture_target);
+		end_rgba8_framebuffer_object_2D(parent_render_texture_target);
 	}
 	else
 	{
 		// The current render texture target.
-		const boost::optional<RenderTextureTarget> render_texture_target =
+		const boost::optional<RenderTextureTarget> &render_texture_target =
 				get_current_render_target_block().render_texture_target;
 
 		// Should always have a render texture target when ending a render target 2D.
 		GPlatesGlobal::Assert<GLRendererAPIError>(
 				render_texture_target,
 				GPLATES_ASSERTION_SOURCE,
-				GLRendererAPIError::SHOULD_HAVE_A_RENDER_TARGET_BLOCK);
+				GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_TARGET);
 
 		end_rgba8_main_framebuffer_2D(render_texture_target.get());
 
@@ -1709,8 +1735,30 @@ GPlatesOpenGL::GLRenderer::resume_qpainter()
 
 void
 GPlatesOpenGL::GLRenderer::begin_rgba8_main_framebuffer_2D(
-		RenderTextureTarget &render_texture_target)
+		RenderTextureTarget &render_texture_target,
+		const double &max_point_size_and_line_width)
 {
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			!render_texture_target.main_frame_buffer,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_NO_RENDER_TEXTURE_MAIN_FRAME_BUFFERS);
+
+	// Set up for tiling into the main framebuffer.
+	const GLTileRender tile_render(
+			d_default_viewport->width()/*render_target_width*/,
+			d_default_viewport->height()/*render_target_height*/,
+			render_texture_target.texture_viewport/*destination_viewport*/,
+			// The border is half the point size or line width, rounded up to nearest pixel.
+			// NOTE: It is important that 'max_point_size_and_line_width = 0' maps to 'border = 0'...
+			static_cast<unsigned int>(0.5 * max_point_size_and_line_width + 1-1e-5));
+
+	// Get the maximum render target dimensions needed for tiling.
+	unsigned int max_tile_render_target_width;
+	unsigned int max_tile_render_target_height;
+	tile_render.get_max_tile_render_target_dimensions(
+			max_tile_render_target_width,
+			max_tile_render_target_height);
+
 	// Acquire a cached texture for saving the main framebuffer to.
 	// It'll get returned to its cache when we no longer reference it.
 	const GLTexture::shared_ptr_type save_restore_texture =
@@ -1721,8 +1769,9 @@ GPlatesOpenGL::GLRenderer::begin_rgba8_main_framebuffer_2D(
 					// The texture dimensions used to save restore the render target portion of the
 					// main framebuffer. The dimensions are expanded from the client-specified
 					// viewport width/height as necessary to match a power-of-two save/restore texture.
-					GPlatesUtils::Base2::next_power_of_two(render_texture_target.texture_viewport.width()),
-					GPlatesUtils::Base2::next_power_of_two(render_texture_target.texture_viewport.height()));
+					// We use power-of-two since non-power-of-two textures are probably not supported.
+					GPlatesUtils::Base2::next_power_of_two(max_tile_render_target_width),
+					GPlatesUtils::Base2::next_power_of_two(max_tile_render_target_height));
 
 	// 'acquire_texture' initialises the texture memory (to empty) but does not set the filtering
 	// state when it creates a new texture.
@@ -1749,9 +1798,6 @@ GPlatesOpenGL::GLRenderer::begin_rgba8_main_framebuffer_2D(
 		save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	}
 
-	// Record the save/restore texture so we can restore the main framebuffer later.
-	render_texture_target.save_restore_texture = save_restore_texture;
-
 	//
 	// Save the portion of the main framebuffer used as a render target so we can restore it later.
 	//
@@ -1771,20 +1817,83 @@ GPlatesOpenGL::GLRenderer::begin_rgba8_main_framebuffer_2D(
 			0/*level*/,
 			0, 0,
 			0, 0,
-			render_texture_target.save_restore_texture.get()->get_width().get(),
-			render_texture_target.save_restore_texture.get()->get_height().get());
+			max_tile_render_target_width,
+			max_tile_render_target_height);
+
+	// Keep track of the save restore texture and tiling state.
+	render_texture_target.main_frame_buffer = boost::in_place(save_restore_texture, tile_render);
+
+	// Start at the first tile.
+	render_texture_target.main_frame_buffer->tile_render.first_tile();
 }
 
 
-void
-GPlatesOpenGL::GLRenderer::end_rgba8_main_framebuffer_2D(
-		const RenderTextureTarget &render_texture_target)
+GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
+GPlatesOpenGL::GLRenderer::begin_tile_rgba8_main_framebuffer_2D(
+		RenderTextureTarget &render_texture_target,
+		GLViewport *tile_render_target_viewport)
+{
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			render_texture_target.main_frame_buffer,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_MAIN_FRAME_BUFFER);
+
+	GLViewport current_tile_render_target_viewport;
+	render_texture_target.main_frame_buffer->tile_render.get_tile_render_target_viewport(
+			current_tile_render_target_viewport);
+
+	// Mask off rendering outside the current tile render target viewport (eg, due to wide lines
+	// and fat points) in case the viewport specified is smaller than the render target.
+	// This includes a 'gl_clear()' calls which clear the entire main framebuffer.
+	// So set the scissor rectangle to match the current tile render target viewport.
+	gl_enable(GL_SCISSOR_TEST);
+	gl_scissor(
+			current_tile_render_target_viewport.x(),
+			current_tile_render_target_viewport.y(),
+			current_tile_render_target_viewport.width(),
+			current_tile_render_target_viewport.height());
+	gl_viewport(
+			current_tile_render_target_viewport.x(),
+			current_tile_render_target_viewport.y(),
+			current_tile_render_target_viewport.width(),
+			current_tile_render_target_viewport.height());
+
+	// If caller requested the tile render target viewport.
+	if (tile_render_target_viewport)
+	{
+		*tile_render_target_viewport = current_tile_render_target_viewport;
+	}
+
+	// Return the projection transform for the current tile.
+	return render_texture_target.main_frame_buffer->tile_render.get_tile_projection_transform();
+}
+
+
+bool
+GPlatesOpenGL::GLRenderer::end_tile_rgba8_main_framebuffer_2D(
+		RenderTextureTarget &render_texture_target)
 {
 	//
-	// Copy the main framebuffer (the part used for render target) to the render target texture.
+	// Copy the main framebuffer (the part used for render tile) to the render target texture
+	// (the part where the tile slots in).
 	//
-	// NOTE: We don't need to save/restore state because when we return the current state block will be popped.
-	//
+
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			render_texture_target.main_frame_buffer,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_MAIN_FRAME_BUFFER);
+
+	GLViewport tile_source_viewport;
+	render_texture_target.main_frame_buffer->tile_render.get_tile_source_viewport(tile_source_viewport);
+
+	GLViewport tile_destination_viewport;
+	render_texture_target.main_frame_buffer->tile_render.get_tile_destination_viewport(tile_destination_viewport);
+
+	// We don't want any state changes made here to interfere with the client's state changes.
+	// So save the current state and revert back to it at the end of this scope.
+	// We don't need to reset to the default OpenGL state because very little state
+	// affects glCopyTexSubImage2D so it doesn't matter what the current OpenGL state is.
+	StateBlockScope save_restore_state(*this);
 
 	// Bind the render-target texture so we can copy the main framebuffer to it.
 	gl_bind_texture(render_texture_target.texture, GL_TEXTURE0, GL_TEXTURE_2D);
@@ -1794,11 +1903,34 @@ GPlatesOpenGL::GLRenderer::end_rgba8_main_framebuffer_2D(
 			GL_TEXTURE0,
 			GL_TEXTURE_2D,
 			render_texture_target.level,
-			render_texture_target.texture_viewport.x(),
-			render_texture_target.texture_viewport.y(),
-			0, 0,
-			render_texture_target.texture_viewport.width(),
-			render_texture_target.texture_viewport.height());
+			tile_destination_viewport.x(),
+			tile_destination_viewport.y(),
+			tile_source_viewport.x(),
+			tile_source_viewport.y(),
+			tile_source_viewport.width(),
+			tile_source_viewport.height());
+
+	// Proceed to the next tile (if any).
+	render_texture_target.main_frame_buffer->tile_render.next_tile();
+	return !render_texture_target.main_frame_buffer->tile_render.finished();
+}
+
+
+void
+GPlatesOpenGL::GLRenderer::end_rgba8_main_framebuffer_2D(
+		const RenderTextureTarget &render_texture_target)
+{
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			render_texture_target.main_frame_buffer,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_MAIN_FRAME_BUFFER);
+
+	// Get the maximum render target dimensions needed for tiling.
+	unsigned int max_tile_render_target_width;
+	unsigned int max_tile_render_target_height;
+	render_texture_target.main_frame_buffer->tile_render.get_max_tile_render_target_dimensions(
+			max_tile_render_target_width,
+			max_tile_render_target_height);
 
 	// NOTE: We (temporarily) reset to the default OpenGL state since we need to draw a
 	// render-target size quad into the framebuffer with the save/restore texture applied.
@@ -1812,12 +1944,35 @@ GPlatesOpenGL::GLRenderer::end_rgba8_main_framebuffer_2D(
 	// Restore the portion of the main framebuffer used as a render target.
 	//
 
+	const GLTexture::shared_ptr_to_const_type save_restore_texture =
+			render_texture_target.main_frame_buffer->save_restore_texture;
+
 	// Bind the save restore texture to use for rendering.
-	gl_bind_texture(render_texture_target.save_restore_texture.get(), GL_TEXTURE0, GL_TEXTURE_2D);
+	gl_bind_texture(save_restore_texture, GL_TEXTURE0, GL_TEXTURE_2D);
 
 	// Set up to render using the texture.
 	gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
 	gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+
+	// Scale the texture coordinates to account for the fact that we're only writing part of the
+	// save/restore texture to the main framebuffer (only the part that was saved).
+	GLMatrix texture_coord_scale;
+	texture_coord_scale.gl_scale(
+			double(max_tile_render_target_width) / save_restore_texture->get_width().get(),
+			double(max_tile_render_target_height) / save_restore_texture->get_height().get(),
+			0);
+	gl_load_texture_matrix(GL_TEXTURE0, texture_coord_scale);
+
+	// We only want to draw the full-screen quad into the part of the main framebuffer that was saved.
+	// The remaining area of the main framebuffer should not be touched.
+	// NOTE: The viewport does *not* always clip (eg, fat points whose centre is inside the viewport
+	// can be rendered outside the viewport bounds due to the fatness) but in our case we're only
+	// copying a texture so we don't need to worry - if we did need to worry then we would specify
+	// a scissor rectangle also.
+	gl_viewport(
+			0, 0,
+			max_tile_render_target_width,
+			max_tile_render_target_height);
 
 	//
 	// Draw a render-target sized quad into the (main) framebuffer.
@@ -1828,24 +1983,13 @@ GPlatesOpenGL::GLRenderer::end_rgba8_main_framebuffer_2D(
 	const GLCompiledDrawState::non_null_ptr_to_const_type full_screen_quad =
 			get_context().get_shared_state()->get_full_screen_2D_textured_quad(*this);
 
-	// We only want to draw the full-screen quad into a render-texture sized subsection.
-	// The remaining area of the main framebuffer should not be touched.
-	// NOTE: The viewport does *not* always clip (eg, fat points whose centre is inside the viewport
-	// can be rendered outside the viewport bounds due to the fatness) but in our case we're only
-	// copying a texture so we don't need to worry - if we did need to worry then we would specify
-	// a scissor rectangle also.
-	gl_viewport(
-			0, 0,
-			render_texture_target.save_restore_texture.get()->get_width().get(),
-			render_texture_target.save_restore_texture.get()->get_height().get());
-
 	// Draw the full-screen quad into the render-texture sized viewport.
 	apply_compiled_draw_state(*full_screen_quad);
 }
 
 
 bool
-GPlatesOpenGL::GLRenderer::begin_framebuffer_object_2D(
+GPlatesOpenGL::GLRenderer::begin_rgba8_framebuffer_object_2D(
 		RenderTextureTarget &render_texture_target)
 {
 	// Attach the texture to the framebuffer object.
@@ -1887,8 +2031,60 @@ GPlatesOpenGL::GLRenderer::begin_framebuffer_object_2D(
 }
 
 
+GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
+GPlatesOpenGL::GLRenderer::begin_tile_rgba8_framebuffer_object_2D(
+		RenderTextureTarget &render_texture_target,
+		GLViewport *tile_render_target_viewport)
+{
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			!render_texture_target.main_frame_buffer,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_NO_RENDER_TEXTURE_MAIN_FRAME_BUFFERS);
+
+	// Mask off rendering outside the render target viewport (eg, due to wide lines and fat points)
+	// in case the viewport specified is smaller than the render target.
+	// This includes a 'gl_clear()' calls which clear the entire framebuffer.
+	// So set the scissor rectangle to match the render target viewport.
+	gl_enable(GL_SCISSOR_TEST);
+	gl_scissor(
+			render_texture_target.texture_viewport.x(),
+			render_texture_target.texture_viewport.y(),
+			render_texture_target.texture_viewport.width(),
+			render_texture_target.texture_viewport.height());
+	gl_viewport(
+			render_texture_target.texture_viewport.x(),
+			render_texture_target.texture_viewport.y(),
+			render_texture_target.texture_viewport.width(),
+			render_texture_target.texture_viewport.height());
+
+	// If caller requested the tile render target viewport.
+	if (tile_render_target_viewport)
+	{
+		*tile_render_target_viewport = render_texture_target.texture_viewport;
+	}
+
+	// Return the identity projection transform.
+	// There's only one tile covering the entire destination viewport.
+	return GLTransform::create();
+}
+
+
+bool
+GPlatesOpenGL::GLRenderer::end_tile_rgba8_framebuffer_object_2D(
+		RenderTextureTarget &render_texture_target)
+{
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			!render_texture_target.main_frame_buffer,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_NO_RENDER_TEXTURE_MAIN_FRAME_BUFFERS);
+
+	// There's only one tile covering the entire destination viewport - so we're finished.
+	return false;
+}
+
+
 void
-GPlatesOpenGL::GLRenderer::end_framebuffer_object_2D(
+GPlatesOpenGL::GLRenderer::end_rgba8_framebuffer_object_2D(
 		const boost::optional<RenderTextureTarget> &parent_render_texture_target)
 {
 	// If there's no parent then we've returned to rendering to the *main* framebuffer.
@@ -2128,25 +2324,27 @@ GPlatesOpenGL::GLRenderer::RenderScope::end_render()
 }
 
 
-GPlatesOpenGL::GLRenderer::RenderTarget2DScope::RenderTarget2DScope(
+GPlatesOpenGL::GLRenderer::Rgba8RenderTarget2DScope::Rgba8RenderTarget2DScope(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_to_const_type &texture,
 		boost::optional<GLViewport> render_target_viewport,
+		const double &max_point_size_and_line_width,
 		GLint level,
 		bool reset_to_default_state) :
 	d_renderer(renderer)
 {
-	d_renderer.begin_render_target_2D(texture, render_target_viewport, level, reset_to_default_state);
+	d_renderer.begin_rgba8_render_target_2D(
+			texture, render_target_viewport, max_point_size_and_line_width, level, reset_to_default_state);
 }
 
 
-GPlatesOpenGL::GLRenderer::RenderTarget2DScope::~RenderTarget2DScope()
+GPlatesOpenGL::GLRenderer::Rgba8RenderTarget2DScope::~Rgba8RenderTarget2DScope()
 {
 	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
 	// But we log the exception and the location it was emitted.
 	try
 	{
-		d_renderer.end_render_target_2D();
+		d_renderer.end_rgba8_render_target_2D();
 	}
 	catch (std::exception &exc)
 	{
@@ -2156,6 +2354,21 @@ GPlatesOpenGL::GLRenderer::RenderTarget2DScope::~RenderTarget2DScope()
 	{
 		qWarning() << "GLRenderer: exception thrown during render target scope: Unknown error";
 	}
+}
+
+
+GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
+GPlatesOpenGL::GLRenderer::Rgba8RenderTarget2DScope::begin_tile(
+		GLViewport *tile_render_target_viewport)
+{
+	return d_renderer.begin_tile_rgba8_render_target_2D(tile_render_target_viewport);
+}
+
+
+bool
+GPlatesOpenGL::GLRenderer::Rgba8RenderTarget2DScope::end_tile()
+{
+	return d_renderer.end_tile_rgba8_render_target_2D();
 }
 
 
@@ -2296,6 +2509,18 @@ GPlatesOpenGL::GLRenderer::GLRendererAPIError::write_message(
 		break;
 	case SHOULD_HAVE_A_RENDER_TARGET_BLOCK:
 		os << "expected a render-target block";
+		break;
+	case SHOULD_HAVE_NO_RENDER_TEXTURE_TARGETS:
+		os << "expected no render-texture targets";
+		break;
+	case SHOULD_HAVE_A_RENDER_TEXTURE_TARGET:
+		os << "expected a render-texture target";
+		break;
+	case SHOULD_HAVE_NO_RENDER_TEXTURE_MAIN_FRAME_BUFFERS:
+		os << "expected no render-texture main frame buffers";
+		break;
+	case SHOULD_HAVE_A_RENDER_TEXTURE_MAIN_FRAME_BUFFER:
+		os << "expected a render-texture main frame buffer";
 		break;
 	case SHOULD_HAVE_NO_RENDER_QUEUE_BLOCKS:
 		os << "expected no render-queue blocks";

@@ -921,150 +921,161 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 	++g_num_tiles_rendered;
 
 	// Begin a render target that will render the individual filled polygons to the tile texture.
-	GLRenderer::RenderTarget2DScope render_target_scope(renderer, tile_texture);
-
-	// The viewport for the tile texture.
-	renderer.gl_viewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension);
-
-	// Set the alpha-blend state since filled polygon could have a transparent colour.
-	renderer.gl_enable(GL_BLEND);
-	renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	// Set the alpha-test state to reject pixels where alpha is zero (they make no
-	// change or contribution to the render target) - this is an optimisation.
-	renderer.gl_enable(GL_ALPHA_TEST);
-	renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
-
-	// Since the polygon stencil texture is quite large (and uses a reasonable amount of video memory,
-	// eg, 2048x2048 is 16Mb) we will acquire it when we need it so it can be shared with other areas
-	// of GPlates such as rendering filled polygons in the map views.
-	const GLTexture::shared_ptr_to_const_type polygon_stencil_texture = acquire_polygon_stencil_texture(renderer);
-
-	// Set up texture state to use the polygon stencil texture to render to the tile texture.
-	GLUtils::set_full_screen_quad_texture_state(
+	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(
 			renderer,
-			polygon_stencil_texture,
-			0/*texture_unit*/,
-			GL_REPLACE);
+			tile_texture,
+			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension));
 
-#if 0
-	// Used to render as wire-frame meshes instead of filled textured meshes for
-	// visualising mesh density.
-	renderer.gl_polygon_mode(GL_FRONT_AND_BACK, GL_POINT);
-
-	// Set the anti-aliased line state.
-	renderer.gl_line_width(10.0f);
-	renderer.gl_point_size(10.0f);
-	//renderer.gl_enable(GL_LINE_SMOOTH);
-	//renderer.gl_hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-#endif
-
-	// Bind the vertex array used to copy the polygon stencil texture into the tile texture.
-	// We only need to bind it once - note that 'render_filled_polygons_to_polygon_stencil_texture'
-	// has its own render target and hence its own state so it doesn't interfere with our state here
-	// (ie, this binding will get rebound as needed when the nested render target block goes out of scope).
-	d_polygon_stencil_quads_vertex_array->gl_bind(renderer);
-
-	// We clear this tile's render texture just before we render the polygon stencil texture to it.
-	// This reduces the number of render target switches by one since no drawables are added
-	// to the tile's render target until after switching back from the polygon stencil render target.
-	bool cleared_tile_render_target = false;
-
-	// Get the maximum render target dimensions in case the main framebuffer is used as a render-target.
-	// Ie, if we're limited to the current dimensions of the main framebuffer (the current window).
-	unsigned int render_target_width;
-	unsigned int render_target_height;
-	renderer.get_max_render_target_dimensions(render_target_width, render_target_height);
-	if (render_target_width < d_tile_texel_dimension)
+	// The render target tiling loop...
+	do
 	{
-		render_target_width = d_tile_texel_dimension;
-	}
-	if (render_target_height < d_tile_texel_dimension)
-	{
-		render_target_height = d_tile_texel_dimension;
-	}
-	if (render_target_width > d_polygon_stencil_texel_width)
-	{
-		render_target_width = d_polygon_stencil_texel_width;
-	}
-	if (render_target_height > d_polygon_stencil_texel_height)
-	{
-		render_target_height = d_polygon_stencil_texel_height;
-	}
+		// Begin the current render target tile - this also sets the viewport.
+		GLTransform::non_null_ptr_to_const_type tile_projection = render_target_scope.begin_tile();
 
-	// If framebuffer objects are supported then naturally our render target dimensions will
-	// match the polygon stencil texture dimensions (that's how FBO's work), but if we're
-	// falling back to the main framebuffer as a render-target. In this case our polygon stencil
-	// quads vertex array can't be used fully (because it's populated assuming the render target
-	// dimension is the polygon stencil texture dimension). We can however use the first row
-	// of quads without problem so we'll make the render target height one tile in size.
-	if (render_target_width != d_polygon_stencil_texel_width)
-	{
-		render_target_height = d_tile_texel_dimension;
-	}
+		// Set up the projection transform adjustment for the current render target tile.
+		renderer.gl_load_matrix(GL_PROJECTION, tile_projection->get_matrix());
 
-	const unsigned int num_polygon_tiles_along_width = render_target_width / d_tile_texel_dimension;
-	const unsigned int num_polygon_tiles_along_height = render_target_height / d_tile_texel_dimension;
-	const unsigned int num_polygons_per_stencil_texture_render =
-			num_polygon_tiles_along_width * num_polygon_tiles_along_height;
+		// Set the alpha-blend state since filled polygon could have a transparent colour.
+		renderer.gl_enable(GL_BLEND);
+		renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	unsigned int num_polygons_left_to_render = transformed_sorted_filled_drawables.size();
-	filled_polygon_seq_type::const_iterator filled_drawables_iter = transformed_sorted_filled_drawables.begin();
-	while (num_polygons_left_to_render)
-	{
-		const unsigned int num_polygons_in_group =
-				(num_polygons_left_to_render > num_polygons_per_stencil_texture_render)
-				? num_polygons_per_stencil_texture_render
-				: num_polygons_left_to_render;
+		// Set the alpha-test state to reject pixels where alpha is zero (they make no
+		// change or contribution to the render target) - this is an optimisation.
+		renderer.gl_enable(GL_ALPHA_TEST);
+		renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
 
-		filled_polygon_seq_type::const_iterator filled_drawables_group_end = filled_drawables_iter;
-		std::advance(filled_drawables_group_end, num_polygons_in_group);
+		// Since the polygon stencil texture is quite large (and uses a reasonable amount of video memory,
+		// eg, 2048x2048 is 16Mb) we will acquire it when we need it so it can be shared with other areas
+		// of GPlates such as rendering filled polygons in the map views.
+		const GLTexture::shared_ptr_to_const_type polygon_stencil_texture = acquire_polygon_stencil_texture(renderer);
 
-		// Render the filled polygons to the current tile render target.
-		render_filled_polygons_to_polygon_stencil_texture(
+		// Set up texture state to use the polygon stencil texture to render to the tile texture.
+		GLUtils::set_full_screen_quad_texture_state(
 				renderer,
 				polygon_stencil_texture,
-				num_polygon_tiles_along_width,
-				num_polygon_tiles_along_height,
-				filled_polygons,
-				filled_drawables_iter,
-				filled_drawables_group_end,
-				projection_transform,
-				view_transform);
+				0/*texture_unit*/,
+				GL_REPLACE);
 
-		// We delay clearing of the tile render target until after the first rendering to the
-		// polygon stencil texture - this is an optimisation only in case the main framebuffer is
-		// being for render targets.
-		if (!cleared_tile_render_target)
+	#if 0
+		// Used to render as wire-frame meshes instead of filled textured meshes for
+		// visualising mesh density.
+		renderer.gl_polygon_mode(GL_FRONT_AND_BACK, GL_POINT);
+
+		// Set the anti-aliased line state.
+		renderer.gl_line_width(10.0f);
+		renderer.gl_point_size(10.0f);
+		//renderer.gl_enable(GL_LINE_SMOOTH);
+		//renderer.gl_hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+	#endif
+
+		// Bind the vertex array used to copy the polygon stencil texture into the tile texture.
+		// We only need to bind it once - note that 'render_filled_polygons_to_polygon_stencil_texture'
+		// has its own render target and hence its own state so it doesn't interfere with our state here
+		// (ie, this binding will get rebound as needed when the nested render target block goes out of scope).
+		d_polygon_stencil_quads_vertex_array->gl_bind(renderer);
+
+		// We clear this tile's render texture just before we render the polygon stencil texture to it.
+		// This reduces the number of render target switches by one since no drawables are added
+		// to the tile's render target until after switching back from the polygon stencil render target.
+		bool cleared_tile_render_target = false;
+
+		// Get the maximum render target dimensions in case the main framebuffer is used as a render-target.
+		// Ie, if we're limited to the current dimensions of the main framebuffer (the current window).
+		unsigned int render_target_width;
+		unsigned int render_target_height;
+		renderer.get_max_render_target_dimensions(render_target_width, render_target_height);
+		if (render_target_width < d_tile_texel_dimension)
 		{
-			// Clear the colour buffer of the render target.
-			renderer.gl_clear_color(); // Clear colour to all zeros.
-			renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
-
-			cleared_tile_render_target = true;
+			render_target_width = d_tile_texel_dimension;
+		}
+		if (render_target_height < d_tile_texel_dimension)
+		{
+			render_target_height = d_tile_texel_dimension;
+		}
+		if (render_target_width > d_polygon_stencil_texel_width)
+		{
+			render_target_width = d_polygon_stencil_texel_width;
+		}
+		if (render_target_height > d_polygon_stencil_texel_height)
+		{
+			render_target_height = d_polygon_stencil_texel_height;
 		}
 
-		PROFILE_BLOCK("d_polygon_stencil_quads_vertex_array->gl_draw_range_elements");
+		// If framebuffer objects are supported then naturally our render target dimensions will
+		// match the polygon stencil texture dimensions (that's how FBO's work), but if we're
+		// falling back to the main framebuffer as a render-target. In this case our polygon stencil
+		// quads vertex array can't be used fully (because it's populated assuming the render target
+		// dimension is the polygon stencil texture dimension). We can however use the first row
+		// of quads without problem so we'll make the render target height one tile in size.
+		if (render_target_width != d_polygon_stencil_texel_width)
+		{
+			render_target_height = d_tile_texel_dimension;
+		}
 
-		// Render the filled polygons, in the stencil texture, to the current tile render target.
-		//
-		// Draw as many quads as there were polygons rendered into the larger polygon stencil texture.
-		const unsigned int num_quad_vertices = 4 * num_polygons_in_group;
-		d_polygon_stencil_quads_vertex_array->gl_draw_range_elements(
-				renderer,
-				GL_QUADS,
-				0/*start*/,
-				num_quad_vertices - 1/*end*/,
-				num_quad_vertices/*count*/,
-				GLVertexElementTraits<stencil_quad_vertex_element_type>::type,
-				0/*indices_offset*/);
+		const unsigned int num_polygon_tiles_along_width = render_target_width / d_tile_texel_dimension;
+		const unsigned int num_polygon_tiles_along_height = render_target_height / d_tile_texel_dimension;
+		const unsigned int num_polygons_per_stencil_texture_render =
+				num_polygon_tiles_along_width * num_polygon_tiles_along_height;
 
-		++g_num_tile_draw_calls;
+		unsigned int num_polygons_left_to_render = transformed_sorted_filled_drawables.size();
+		filled_polygon_seq_type::const_iterator filled_drawables_iter = transformed_sorted_filled_drawables.begin();
+		while (num_polygons_left_to_render)
+		{
+			const unsigned int num_polygons_in_group =
+					(num_polygons_left_to_render > num_polygons_per_stencil_texture_render)
+					? num_polygons_per_stencil_texture_render
+					: num_polygons_left_to_render;
 
-		// Advance to the next group of polygons.
-		filled_drawables_iter = filled_drawables_group_end;
-		num_polygons_left_to_render -= num_polygons_in_group;
+			filled_polygon_seq_type::const_iterator filled_drawables_group_end = filled_drawables_iter;
+			std::advance(filled_drawables_group_end, num_polygons_in_group);
+
+			// Render the filled polygons to the current tile render target.
+			render_filled_polygons_to_polygon_stencil_texture(
+					renderer,
+					polygon_stencil_texture,
+					num_polygon_tiles_along_width,
+					num_polygon_tiles_along_height,
+					filled_polygons,
+					filled_drawables_iter,
+					filled_drawables_group_end,
+					projection_transform,
+					view_transform);
+
+			// We delay clearing of the tile render target until after the first rendering to the
+			// polygon stencil texture - this is an optimisation only in case the main framebuffer is
+			// being for render targets.
+			if (!cleared_tile_render_target)
+			{
+				// Clear the colour buffer of the render target.
+				renderer.gl_clear_color(); // Clear colour to all zeros.
+				renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
+
+				cleared_tile_render_target = true;
+			}
+
+			PROFILE_BLOCK("d_polygon_stencil_quads_vertex_array->gl_draw_range_elements");
+
+			// Render the filled polygons, in the stencil texture, to the current tile render target.
+			//
+			// Draw as many quads as there were polygons rendered into the larger polygon stencil texture.
+			const unsigned int num_quad_vertices = 4 * num_polygons_in_group;
+			d_polygon_stencil_quads_vertex_array->gl_draw_range_elements(
+					renderer,
+					GL_QUADS,
+					0/*start*/,
+					num_quad_vertices - 1/*end*/,
+					num_quad_vertices/*count*/,
+					GLVertexElementTraits<stencil_quad_vertex_element_type>::type,
+					0/*indices_offset*/);
+
+			++g_num_tile_draw_calls;
+
+			// Advance to the next group of polygons.
+			filled_drawables_iter = filled_drawables_group_end;
+			num_polygons_left_to_render -= num_polygons_in_group;
+		}
 	}
+	while (render_target_scope.end_tile());
 }
 
 
@@ -1082,9 +1093,11 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_polygo
 {
 	PROFILE_FUNC();
 
+	++g_num_render_target_switches;
+
 	// Begin a render target that will render the individual filled polygons to the tile texture.
 	// This is also an implicit state block (saves/restores state).
-	GLRenderer::RenderTarget2DScope render_target_scope(
+	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(
 			renderer,
 			polygon_stencil_texture,
 			// Limit rendering to a part of the polygon stencil texture if it's too big for render-target...
@@ -1094,62 +1107,70 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_polygo
 					num_polygon_tiles_along_width * d_tile_texel_dimension,
 					num_polygon_tiles_along_height * d_tile_texel_dimension));
 
-	++g_num_render_target_switches;
+	// The render target tiling loop...
+	do
+	{
+		// Begin the current render target tile - this also sets the viewport.
+		GLTransform::non_null_ptr_to_const_type tile_projection = render_target_scope.begin_tile();
 
-	// Clear the entire colour buffer of the render target.
-	// Clears the entire render target regardless of the current viewport.
-	renderer.gl_clear_color(); // All zeros.
-	// Clear only the colour buffer.
-	renderer.gl_clear(GL_COLOR_BUFFER_BIT);
+		// Set up the projection transform adjustment for the current render target tile.
+		renderer.gl_load_matrix(GL_PROJECTION, tile_projection->get_matrix());
+		// NOTE: We use the half-texel-expanded projection transform since we want to render the
+		// border pixels (in each tile) exactly on the tile (plane) boundary.
+		// The tile textures are bilinearly filtered and this way the centres of border texels match up
+		// with adjacent tiles.
+		renderer.gl_mult_matrix(GL_PROJECTION, projection_transform.get_matrix());
 
-	// Alpha-blend state set to invert destination alpha (and colour) every time a pixel
-	// is rendered (this means we get 1 where a pixel is covered by an odd number of triangles
-	// and 0 by an even number of triangles).
-	renderer.gl_enable(GL_BLEND);
-	renderer.gl_blend_func(GL_ONE_MINUS_DST_ALPHA, GL_ZERO);
+		renderer.gl_load_matrix(GL_MODELVIEW, view_transform.get_matrix());
+
+		// Clear the entire colour buffer of the render target.
+		// Clears the entire render target regardless of the current viewport.
+		renderer.gl_clear_color(); // All zeros.
+		// Clear only the colour buffer.
+		renderer.gl_clear(GL_COLOR_BUFFER_BIT);
+
+		// Alpha-blend state set to invert destination alpha (and colour) every time a pixel
+		// is rendered (this means we get 1 where a pixel is covered by an odd number of triangles
+		// and 0 by an even number of triangles).
+		renderer.gl_enable(GL_BLEND);
+		renderer.gl_blend_func(GL_ONE_MINUS_DST_ALPHA, GL_ZERO);
 
 #if 0
-	// Used to render as wire-frame meshes instead of filled textured meshes for
-	// visualising mesh density.
-	renderer.gl_polygon_mode(GL_FRONT_AND_BACK, GL_LINE);
+		// Used to render as wire-frame meshes instead of filled textured meshes for
+		// visualising mesh density.
+		renderer.gl_polygon_mode(GL_FRONT_AND_BACK, GL_LINE);
 
-	// Set the anti-aliased line state.
-	renderer.gl_line_width(4.0f);
-	//renderer.gl_enable(GL_LINE_SMOOTH);
-	//renderer.gl_hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+		// Set the anti-aliased line state.
+		renderer.gl_line_width(4.0f);
+		//renderer.gl_enable(GL_LINE_SMOOTH);
+		//renderer.gl_hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 #endif
 
-	renderer.gl_load_matrix(GL_MODELVIEW, view_transform.get_matrix());
+		// Bind the vertex array before using it to draw.
+		d_polygons_vertex_array->gl_bind(renderer);
 
-	// NOTE: We use the half-texel-expanded projection transform since we want to render the
-	// border pixels (in each tile) exactly on the tile (plane) boundary.
-	// The tile textures are bilinearly filtered and this way the centres of border texels match up
-	// with adjacent tiles.
-	renderer.gl_load_matrix(GL_PROJECTION, projection_transform.get_matrix());
-
-	// Bind the vertex array before using it to draw.
-	d_polygons_vertex_array->gl_bind(renderer);
-
-	// Stream *multiple* polygons per OpenGL draw call if supported since it's faster.
-	if (d_stream_multiple_polygons)
-	{
-		render_filled_polygons_in_groups_to_polygon_stencil_texture(
-				renderer,
-				num_polygon_tiles_along_width,
-				num_polygon_tiles_along_height,
-				filled_polygons,
-				begin_filled_drawables,
-				end_filled_drawables);
+		// Stream *multiple* polygons per OpenGL draw call if supported since it's faster.
+		if (d_stream_multiple_polygons)
+		{
+			render_filled_polygons_in_groups_to_polygon_stencil_texture(
+					renderer,
+					num_polygon_tiles_along_width,
+					num_polygon_tiles_along_height,
+					filled_polygons,
+					begin_filled_drawables,
+					end_filled_drawables);
+		}
+		else
+		{
+			render_filled_polygons_individually_to_polygon_stencil_texture(
+					renderer,
+					num_polygon_tiles_along_width,
+					num_polygon_tiles_along_height,
+					begin_filled_drawables,
+					end_filled_drawables);
+		}
 	}
-	else
-	{
-		render_filled_polygons_individually_to_polygon_stencil_texture(
-				renderer,
-				num_polygon_tiles_along_width,
-				num_polygon_tiles_along_height,
-				begin_filled_drawables,
-				end_filled_drawables);
-	}
+	while (render_target_scope.end_tile());
 
 	++g_num_render_target_switches;
 }

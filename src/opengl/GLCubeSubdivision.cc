@@ -43,7 +43,7 @@ GPlatesOpenGL::GLCubeSubdivision::GLCubeSubdivision(
 		GLdouble zNear,
 		GLdouble zFar) :
 	d_expand_frustum_ratio(expand_frustum_ratio),
-	// See http://www.opengl.org/resources/code/samples/sig99/advanced99/notes/node30.html
+	// See http://www.opengl.org/archives/resources/code/samples/sig99/advanced99/notes/node30.html
 	// to help understand why the *inverse* ratio is used to scale the projection transform...
 	d_expanded_projection_scale(1.0 / expand_frustum_ratio),
 	d_near(zNear),
@@ -103,7 +103,7 @@ GPlatesOpenGL::GLCubeSubdivision::create_projection_transform(
 	GLMatrix &projection_matrix = projection->get_matrix();
 
 	//
-	// See http://www.opengl.org/resources/code/samples/sig99/advanced99/notes/node30.html
+	// See http://www.opengl.org/archives/resources/code/samples/sig99/advanced99/notes/node30.html
 	// for an explanation of the following...
 	//
 	// Basically we're setting up off-axis perspective view frustums that view from the
@@ -122,7 +122,7 @@ GPlatesOpenGL::GLCubeSubdivision::create_projection_transform(
 			expanded_projection_scale * num_subdivisions,
 			1);
 
-	// Translate the subdivided tile so that's it is centred about the z axis.
+	// Translate the subdivided tile so that it is centred about the z axis.
 	projection_matrix.gl_translate(
 			1 - (2.0 * tile_u_offset + 1) * inv_num_subdivisions,
 			1 - (2.0 * tile_v_offset + 1) * inv_num_subdivisions,

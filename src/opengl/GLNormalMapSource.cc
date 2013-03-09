@@ -545,61 +545,74 @@ GPlatesOpenGL::GLNormalMapSource::gpu_convert_height_field_to_normal_map(
 			height_map_texel_height);
 
 	// Begin rendering to the 2D render target normal map texture.
-	GLRenderer::RenderTarget2DScope render_target_scope(renderer, target_texture);
-
-	// Viewport that matches the possibly partial tile dimensions and *not* necessarily always
-	// the full tile dimensions. This happens for tiles near the bottom or right edge of the raster.
-	renderer.gl_viewport(0, 0, normal_map_texel_width, normal_map_texel_height);
-
-	// The default normal is normal to the surface with (x,y,z) of (0,0,1).
-	// We also need to convert the x and y components from the signed range [-1,1] to unsigned range [0,1].
-	// This is because our normal map texture is unsigned 8-bit RGB.
-	// It'll get converted back to the signed range when lighting is applied in a shader program.
 	//
-	// The default normal is useful because if the region does not occupy the entire tile then it
-	// means we've reached the right or bottom edge of the raster and it's possible that our generated
-	// normal map could be sampled outside its valid region due to the fact that it's partially filled
-	// and contains undefined values outside the region.
-	// In this case the default normal will be sampled to give the same lighting results as
-	// non-normal-mapped regions of the globe.
-	// This also enables us to use discard in the shader program when the coverage is zero in order
-	// to use the default normal.
-	// NOTE: The clear is not limited to the viewport region (specified above) which is important
-	// for the above reason.
-	renderer.gl_clear_color(GLclampf(0.5), GLclampf(0.5), GLclampf(1), GLclampf(1));
-
-	// Clear only the colour buffer.
-	renderer.gl_clear(GL_COLOR_BUFFER_BIT);
-
-	// Bind the shader program.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_generate_normals_program_object,
-			GPLATES_ASSERTION_SOURCE);
-	renderer.gl_bind_program_object(d_generate_normals_program_object.get());
-
-	// Bind the height field texture to texture unit 0.
-	renderer.gl_bind_texture(height_field_texture.get(), GL_TEXTURE0, GL_TEXTURE_2D);
-
-	// Set the height field texture sampler to texture unit 0.
-	d_generate_normals_program_object.get()->gl_uniform1i(
-			renderer, "height_field_texture_sampler", 0);
-
-	// Set the texture coordinates scale/translate to convert from [0,1] in the possibly partial
-	// tile region in the viewport to the full-size square height field tile of dimension
-	//    (d_tile_texel_dimension + 2) x (d_tile_texel_dimension + 2).
-	const float inverse_full_height_map_tile = 1.0f / (d_tile_texel_dimension + 2);
-	const float u_scale = normal_map_texel_width * inverse_full_height_map_tile;
-	const float v_scale = normal_map_texel_height * inverse_full_height_map_tile;
-	d_generate_normals_program_object.get()->gl_uniform4f(
+	// Specify a viewport that matches the possibly partial tile dimensions and *not* necessarily always
+	// the full tile dimensions. This happens for tiles near the bottom or right edge of the raster.
+	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(
 			renderer,
-			"height_field_parameters",
-			u_scale, // scale u
-			v_scale, // scale v
-			inverse_full_height_map_tile, // translate u and v
-			lod_height_scale);
+			target_texture,
+			GLViewport(0, 0, normal_map_texel_width, normal_map_texel_height));
 
-	// Draw a full-screen quad.
-	renderer.apply_compiled_draw_state(*d_full_screen_quad_drawable);
+	// The render target tiling loop...
+	do
+	{
+		// Begin the current render target tile - this also sets the viewport.
+		GLTransform::non_null_ptr_to_const_type tile_projection = render_target_scope.begin_tile();
+
+		// Set up the projection transform adjustment for the current render target tile.
+		renderer.gl_load_matrix(GL_PROJECTION, tile_projection->get_matrix());
+
+		// The default normal is normal to the surface with (x,y,z) of (0,0,1).
+		// We also need to convert the x and y components from the signed range [-1,1] to unsigned range [0,1].
+		// This is because our normal map texture is unsigned 8-bit RGB.
+		// It'll get converted back to the signed range when lighting is applied in a shader program.
+		//
+		// The default normal is useful because if the region does not occupy the entire tile then it
+		// means we've reached the right or bottom edge of the raster and it's possible that our generated
+		// normal map could be sampled outside its valid region due to the fact that it's partially filled
+		// and contains undefined values outside the region.
+		// In this case the default normal will be sampled to give the same lighting results as
+		// non-normal-mapped regions of the globe.
+		// This also enables us to use discard in the shader program when the coverage is zero in order
+		// to use the default normal.
+		// NOTE: The clear is not limited to the viewport region (specified above) which is important
+		// for the above reason.
+		renderer.gl_clear_color(GLclampf(0.5), GLclampf(0.5), GLclampf(1), GLclampf(1));
+
+		// Clear only the colour buffer.
+		renderer.gl_clear(GL_COLOR_BUFFER_BIT);
+
+		// Bind the shader program.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				d_generate_normals_program_object,
+				GPLATES_ASSERTION_SOURCE);
+		renderer.gl_bind_program_object(d_generate_normals_program_object.get());
+
+		// Bind the height field texture to texture unit 0.
+		renderer.gl_bind_texture(height_field_texture.get(), GL_TEXTURE0, GL_TEXTURE_2D);
+
+		// Set the height field texture sampler to texture unit 0.
+		d_generate_normals_program_object.get()->gl_uniform1i(
+				renderer, "height_field_texture_sampler", 0);
+
+		// Set the texture coordinates scale/translate to convert from [0,1] in the possibly partial
+		// tile region in the viewport to the full-size square height field tile of dimension
+		//    (d_tile_texel_dimension + 2) x (d_tile_texel_dimension + 2).
+		const float inverse_full_height_map_tile = 1.0f / (d_tile_texel_dimension + 2);
+		const float u_scale = normal_map_texel_width * inverse_full_height_map_tile;
+		const float v_scale = normal_map_texel_height * inverse_full_height_map_tile;
+		d_generate_normals_program_object.get()->gl_uniform4f(
+				renderer,
+				"height_field_parameters",
+				u_scale, // scale u
+				v_scale, // scale v
+				inverse_full_height_map_tile, // translate u and v
+				lod_height_scale);
+
+		// Draw a full-screen quad.
+		renderer.apply_compiled_draw_state(*d_full_screen_quad_drawable);
+	}
+	while (render_target_scope.end_tile());
 }
 
 

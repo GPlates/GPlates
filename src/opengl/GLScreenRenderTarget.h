@@ -45,7 +45,7 @@ namespace GPlatesOpenGL
 	class GLRenderer;
 
 	/**
-	 * Used to render to a screen-size RGBA8 texture (with associated hardware depth buffer).
+	 * Used to render to a screen-size texture (with optional associated hardware depth buffer).
 	 *
 	 * Your rendering is done between @a begin_render and @a end_render.
 	 *
@@ -69,7 +69,12 @@ namespace GPlatesOpenGL
 		typedef boost::shared_ptr<const GLScreenRenderTarget> shared_ptr_to_const_type;
 
 
-		//! Returns true if supported by the runtime system.
+		/**
+		 * Returns true if supported by the runtime system.
+		 *
+		 * Requires support for framebuffer objects and non-power-of-two textures.
+		 * The screen dimensions can change and are unlikely to be a power-of-two.
+		 */
 		static
 		bool
 		is_supported(
@@ -114,7 +119,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Ensures internal RGBA texture and depth render buffer have a storage allocation of the
+		 * Ensures internal texture (and optional depth buffer) have a storage allocation of the
 		 * specified dimensions and binds the internal framebuffer for rendering to them.
 		 */
 		void
@@ -125,7 +130,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Unbinds the RGBA render texture target (binds to the main framebuffer).
+		 * Unbinds the render texture target (binds to the main framebuffer).
 		 *
 		 * The render texture can now be retrieved using @a get_texture.
 		 */
@@ -135,7 +140,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the viewport-size RGBA render texture.
+		 * Returns the render texture.
 		 *
 		 * The returned texture is 'const' so that its filtering parameters, for example, cannot be modified.
 		 *

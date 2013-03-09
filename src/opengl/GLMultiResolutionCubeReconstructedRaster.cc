@@ -210,46 +210,71 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::render_raster_data_into
 {
 	PROFILE_FUNC();
 
+	// Determine if anything was rendered.
+	bool rendered = false;
+
+	// We might do multiple source raster render calls (due to render target tiling).
+	boost::shared_ptr<std::vector<GLMultiResolutionStaticPolygonReconstructedRaster::cache_handle_type> > tile_cache_handle(
+			new std::vector<GLMultiResolutionStaticPolygonReconstructedRaster::cache_handle_type>());
+
 	// Begin rendering to a 2D render target texture.
-	GLRenderer::RenderTarget2DScope render_target_scope(renderer, tile_texture.texture);
+	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(
+			renderer,
+			tile_texture.texture,
+			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension));
 
-	renderer.gl_viewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension);
-
-	renderer.gl_clear_color(); // Clear colour to all zeros.
-	renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
-
-	// The model-view matrix.
-	renderer.gl_load_matrix(GL_MODELVIEW, tile.d_view_transform->get_matrix());
-	// Multiply in the requested world transform.
-	renderer.gl_mult_matrix(GL_MODELVIEW, d_world_transform);
-
-	// The projection matrix.
-	renderer.gl_load_matrix(GL_PROJECTION, tile.d_projection_transform->get_matrix());
-
-	// If the render target is floating-point...
-	if (tile_texture.texture->is_floating_point())
+	// The render target tiling loop...
+	do
 	{
-		// A lot of graphics hardware does not support blending to floating-point targets so we don't enable it.
-		// And a floating-point render target is used for data rasters (ie, not coloured as fixed-point
-		// for visual display) - where the coverage (or alpha) is in the green channel instead of the alpha channel.
-	}
-	else // an RGBA render target...
-	{
-		// Set up alpha blending for pre-multiplied alpha.
-		// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
-		// This is where the RGB channels have already been multiplied by the alpha channel.
-		// See class GLVisualRasterSource for why this is done.
-		renderer.gl_enable(GL_BLEND);
-		renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		// Begin the current render target tile - this also sets the viewport.
+		GLTransform::non_null_ptr_to_const_type tile_projection = render_target_scope.begin_tile();
 
-		// Enable alpha testing as an optimisation for culling transparent raster pixels.
-		renderer.gl_enable(GL_ALPHA_TEST);
-		renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
-	}
+		// Set up the projection transform adjustment for the current render target tile.
+		renderer.gl_load_matrix(GL_PROJECTION, tile_projection->get_matrix());
+		// Multiply in the projection matrix.
+		renderer.gl_mult_matrix(GL_PROJECTION, tile.d_projection_transform->get_matrix());
 
-	// Reconstruct source raster by rendering into the render target using the view frustum
-	// we have provided.
-	const bool rendered = d_reconstructed_raster->render(renderer, tile_texture.source_cache_handle);
+		// The model-view matrix.
+		renderer.gl_load_matrix(GL_MODELVIEW, tile.d_view_transform->get_matrix());
+		// Multiply in the requested world transform.
+		renderer.gl_mult_matrix(GL_MODELVIEW, d_world_transform);
+
+		renderer.gl_clear_color(); // Clear colour to all zeros.
+		renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
+
+		// If the render target is floating-point...
+		if (tile_texture.texture->is_floating_point())
+		{
+			// A lot of graphics hardware does not support blending to floating-point targets so we don't enable it.
+			// And a floating-point render target is used for data rasters (ie, not coloured as fixed-point
+			// for visual display) - where the coverage (or alpha) is in the green channel instead of the alpha channel.
+		}
+		else // an RGBA render target...
+		{
+			// Set up alpha blending for pre-multiplied alpha.
+			// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
+			// This is where the RGB channels have already been multiplied by the alpha channel.
+			// See class GLVisualRasterSource for why this is done.
+			renderer.gl_enable(GL_BLEND);
+			renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+			// Enable alpha testing as an optimisation for culling transparent raster pixels.
+			renderer.gl_enable(GL_ALPHA_TEST);
+			renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
+		}
+
+		// Reconstruct source raster by rendering into the render target using the view frustum
+		// we have provided.
+		GLMultiResolutionStaticPolygonReconstructedRaster::cache_handle_type source_cache_handle;
+		if (d_reconstructed_raster->render(renderer, source_cache_handle))
+		{
+			rendered = true;
+		}
+		tile_cache_handle->push_back(source_cache_handle);
+	}
+	while (render_target_scope.end_tile());
+
+	tile_texture.source_cache_handle = tile_cache_handle;
 
 	// This tile texture is now update-to-date with respect to the source raster.
 	d_reconstructed_raster->get_subject_token().update_observer(
