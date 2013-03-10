@@ -68,12 +68,14 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::is_supported(
 	{
 		tested_for_support = true;
 
+		const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
+
 		// Floating-point textures and non-power-of-two textures are required.
 		// Vertex/fragment shader programs are required.
-		if (!GLContext::get_parameters().texture.gl_ARB_texture_float ||
-			!GLContext::get_parameters().texture.gl_ARB_texture_non_power_of_two ||
-			!GLContext::get_parameters().shader.gl_ARB_vertex_shader ||
-			!GLContext::get_parameters().shader.gl_ARB_fragment_shader)
+		if (!capabilities.texture.gl_ARB_texture_float ||
+			!capabilities.texture.gl_ARB_texture_non_power_of_two ||
+			!capabilities.shader.gl_ARB_vertex_shader ||
+			!capabilities.shader.gl_ARB_fragment_shader)
 		{
 			return false;
 		}
@@ -157,9 +159,9 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::create(
 			boost::bind(&ProxiedDepthLayer::depth_radius, _2));
 
 	// Make sure our tile size does not exceed the maximum texture size...
-	if (tile_texel_dimension > GLContext::get_parameters().texture.gl_max_texture_size)
+	if (tile_texel_dimension > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
 	{
-		tile_texel_dimension = GLContext::get_parameters().texture.gl_max_texture_size;
+		tile_texel_dimension = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
 	}
 
 	// Make sure tile_texel_dimension is a power-of-two.

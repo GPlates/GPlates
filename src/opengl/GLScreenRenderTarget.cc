@@ -57,12 +57,12 @@ GPlatesOpenGL::GLScreenRenderTarget::is_supported(
 		// By default unsupported unless we make it through the following tests.
 		supported[supported_key] = false;
 
-		const GLContext::Parameters &context_params = GLContext::get_parameters();
+		const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
 
 		// Require support for framebuffer objects and non-power-of-two textures.
 		// The screen dimensions can change and are unlikely to be a power-of-two.
-		if (!context_params.framebuffer.gl_EXT_framebuffer_object ||
-			!context_params.texture.gl_ARB_texture_non_power_of_two)
+		if (!capabilities.framebuffer.gl_EXT_framebuffer_object ||
+			!capabilities.texture.gl_ARB_texture_non_power_of_two)
 		{
 			return false;
 		}

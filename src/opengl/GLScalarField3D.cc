@@ -274,7 +274,7 @@ GPlatesOpenGL::GLScalarField3D::is_supported(
 	{
 		tested_for_support = true;
 
-		const GLContext::Parameters &context_params = GLContext::get_parameters();
+		const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
 
 		// We essentially need graphics hardware supporting OpenGL 3.0.
 		//
@@ -285,27 +285,27 @@ GPlatesOpenGL::GLScalarField3D::is_supported(
 		// http://www.cultofmac.com/26065/snow-leopard-10-6-3-update-significantly-improves-opengl-3-0-support/).
 		//
 		// All the other requirement should be supported by OpenGL 3.0 hardware.
-		if (!context_params.texture.gl_EXT_texture_array ||
+		if (!capabilities.texture.gl_EXT_texture_array ||
 			// Shader relies on hardware bilinear filtering of floating-point textures...
-			!context_params.texture.gl_supports_floating_point_filtering_and_blending ||
+			!capabilities.texture.gl_supports_floating_point_filtering_and_blending ||
 			// Using floating-point textures...
-			!context_params.texture.gl_ARB_texture_float ||
+			!capabilities.texture.gl_ARB_texture_float ||
 			// We want floating-point RG texture format...
-			!context_params.texture.gl_ARB_texture_rg ||
-			!context_params.texture.gl_ARB_texture_non_power_of_two ||
-			!context_params.shader.gl_ARB_vertex_shader ||
+			!capabilities.texture.gl_ARB_texture_rg ||
+			!capabilities.texture.gl_ARB_texture_non_power_of_two ||
+			!capabilities.shader.gl_ARB_vertex_shader ||
 			// Use geometry shader to render surface geometries to all six textures of texture array at once...
-			!context_params.shader.gl_EXT_geometry_shader4 ||
-			!context_params.shader.gl_ARB_fragment_shader ||
+			!capabilities.shader.gl_EXT_geometry_shader4 ||
+			!capabilities.shader.gl_ARB_fragment_shader ||
 			// We use multiple render targets to output colour and depth to textures...
-			!context_params.framebuffer.gl_ARB_draw_buffers ||
+			!capabilities.framebuffer.gl_ARB_draw_buffers ||
 			// Need to render to surface fill mask...
-			!context_params.framebuffer.gl_EXT_framebuffer_object ||
+			!capabilities.framebuffer.gl_EXT_framebuffer_object ||
 			// Separate alpha blend for RGB and Alpha...
-			!context_params.framebuffer.gl_EXT_blend_equation_separate ||
-			!context_params.framebuffer.gl_EXT_blend_func_separate ||
+			!capabilities.framebuffer.gl_EXT_blend_equation_separate ||
+			!capabilities.framebuffer.gl_EXT_blend_func_separate ||
 			// Min/max alpha-blending...
-			!context_params.framebuffer.gl_EXT_blend_minmax)
+			!capabilities.framebuffer.gl_EXT_blend_minmax)
 		{
 			qWarning() << "3D scalar fields NOT supported by this OpenGL system - requires OpenGL 3.0.";
 			return false;
@@ -313,16 +313,16 @@ GPlatesOpenGL::GLScalarField3D::is_supported(
 
 		// Make sure we have enough texture image units for the shader programs that uses the most
 		// texture units at once.
-		if (MAX_TEXTURE_IMAGE_UNITS_USED > context_params.texture.gl_max_texture_image_units)
+		if (MAX_TEXTURE_IMAGE_UNITS_USED > capabilities.texture.gl_max_texture_image_units)
 		{
 			qWarning() << "3D scalar fields NOT supported by this OpenGL system - insufficient texture image units.";
 			return false;
 		}
 
 		// Make sure are geometry shaders don't output more vertices than allowed.
-		if (SURFACE_FILL_MASK_GEOMETRY_SHADER_MAX_OUTPUT_VERTICES > context_params.shader.gl_max_geometry_output_vertices ||
-			VOLUME_FILL_WALL_GEOMETRY_SHADER_MAX_OUTPUT_VERTICES > context_params.shader.gl_max_geometry_output_vertices ||
-			VOLUME_FILL_SPHERICAL_CAP_GEOMETRY_SHADER_MAX_OUTPUT_VERTICES > context_params.shader.gl_max_geometry_output_vertices)
+		if (SURFACE_FILL_MASK_GEOMETRY_SHADER_MAX_OUTPUT_VERTICES > capabilities.shader.gl_max_geometry_output_vertices ||
+			VOLUME_FILL_WALL_GEOMETRY_SHADER_MAX_OUTPUT_VERTICES > capabilities.shader.gl_max_geometry_output_vertices ||
+			VOLUME_FILL_SPHERICAL_CAP_GEOMETRY_SHADER_MAX_OUTPUT_VERTICES > capabilities.shader.gl_max_geometry_output_vertices)
 		{
 			qWarning() << "3D scalar fields NOT supported by this OpenGL system - too many vertices output by geometry shaders.";
 			return false;
@@ -474,7 +474,7 @@ GPlatesOpenGL::GLScalarField3D::GLScalarField3D(
 	// TODO: For now we'll just report an error but later we'll need to adapt somehow.
 	GPlatesGlobal::Assert<GPlatesGlobal::LogException>(
 			d_num_active_tiles * d_num_depth_layers <=
-				GLContext::get_parameters().texture.gl_max_texture_array_layers,
+				renderer.get_context().get_capabilities().texture.gl_max_texture_array_layers,
 			GPLATES_ASSERTION_SOURCE,
 			"GLScalarField3D: number texture layers in scalar field file exceeded GPU limit.");
 
@@ -2047,9 +2047,9 @@ GPlatesOpenGL::GLScalarField3D::initialise_surface_fill_mask_rendering(
 	d_surface_fill_mask_resolution = SURFACE_FILL_MASK_RESOLUTION;
 
 	// It can't be larger than the maximum texture dimension for the current system.
-	if (d_surface_fill_mask_resolution > GLContext::get_parameters().texture.gl_max_texture_size)
+	if (d_surface_fill_mask_resolution > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
 	{
-		d_surface_fill_mask_resolution = GLContext::get_parameters().texture.gl_max_texture_size;
+		d_surface_fill_mask_resolution = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
 	}
 
 	//
@@ -2606,9 +2606,9 @@ GPlatesOpenGL::GLScalarField3D::create_depth_radius_to_layer_texture(
 
 	unsigned int depth_radius_to_layer_resolution = DEPTH_RADIUS_TO_LAYER_RESOLUTION;
 	// Limit to max texture size if exceeds.
-	if (depth_radius_to_layer_resolution > GLContext::get_parameters().texture.gl_max_texture_size)
+	if (depth_radius_to_layer_resolution > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
 	{
-		depth_radius_to_layer_resolution = GLContext::get_parameters().texture.gl_max_texture_size;
+		depth_radius_to_layer_resolution = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
 	}
 
 	d_depth_radius_to_layer_texture->gl_tex_image_1D(
@@ -2651,9 +2651,9 @@ GPlatesOpenGL::GLScalarField3D::create_colour_palette_texture(
 
 	unsigned int colour_palette_resolution = COLOUR_PALETTE_RESOLUTION;
 	// Limit to max texture size if exceeds.
-	if (colour_palette_resolution > GLContext::get_parameters().texture.gl_max_texture_size)
+	if (colour_palette_resolution > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
 	{
-		colour_palette_resolution = GLContext::get_parameters().texture.gl_max_texture_size;
+		colour_palette_resolution = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
 	}
 
 	d_colour_palette_texture->gl_tex_image_1D(

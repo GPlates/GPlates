@@ -208,16 +208,16 @@ GPlatesOpenGL::GLScalarField3DGenerator::is_supported(
 			return false;
 		}
 
-		const GLContext::Parameters &context_params = GLContext::get_parameters();
+		const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
 
 		// Test for OpenGL features used to generate scalar fields.
 		if (// Using floating-point textures...
-			!context_params.texture.gl_ARB_texture_float ||
-			!context_params.texture.gl_ARB_texture_non_power_of_two ||
-			!context_params.shader.gl_ARB_vertex_shader ||
-			!context_params.shader.gl_ARB_fragment_shader ||
+			!capabilities.texture.gl_ARB_texture_float ||
+			!capabilities.texture.gl_ARB_texture_non_power_of_two ||
+			!capabilities.shader.gl_ARB_vertex_shader ||
+			!capabilities.shader.gl_ARB_fragment_shader ||
 			// Need to render to textures using FBO...
-			!context_params.framebuffer.gl_EXT_framebuffer_object)
+			!capabilities.framebuffer.gl_EXT_framebuffer_object)
 		{
 			qWarning() << "Generation of 3D scalar fields NOT supported by this OpenGL system.";
 			return false;
@@ -911,9 +911,9 @@ GPlatesOpenGL::GLScalarField3DGenerator::initialise_cube_face_dimension(
 		d_cube_face_dimension = 128;
 	}
 	// Also limit to max texture size if exceeds.
-	if (d_cube_face_dimension > GLContext::get_parameters().texture.gl_max_texture_size)
+	if (d_cube_face_dimension > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
 	{
-		d_cube_face_dimension = GLContext::get_parameters().texture.gl_max_texture_size;
+		d_cube_face_dimension = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
 	}
 }
 

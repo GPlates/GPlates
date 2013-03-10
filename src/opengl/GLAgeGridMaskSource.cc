@@ -130,9 +130,9 @@ GPlatesOpenGL::GLAgeGridMaskSource::create(
 	}
 
 	// Make sure our tile size does not exceed the maximum texture size...
-	if (tile_texel_dimension > GLContext::get_parameters().texture.gl_max_texture_size)
+	if (tile_texel_dimension > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
 	{
-		tile_texel_dimension = GLContext::get_parameters().texture.gl_max_texture_size;
+		tile_texel_dimension = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
 	}
 
 	// Make sure tile_texel_dimension is a power-of-two.

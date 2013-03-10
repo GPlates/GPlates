@@ -39,6 +39,7 @@
 
 #include "GLBufferImpl.h"
 #include "GLBufferObject.h"
+#include "GLCapabilities.h"
 #include "GLCompiledDrawState.h"
 #include "GLContext.h"
 #include "GLDepthRange.h"
@@ -155,6 +156,16 @@ namespace GPlatesOpenGL
 		get_context() const
 		{
 			return *d_context;
+		}
+
+
+		/**
+		 * Returns the OpenGL implementation-dependent capabilities and parameters.
+		 */
+		const GLCapabilities &
+		get_capabilities() const
+		{
+			return d_context->get_capabilities();
 		}
 
 
@@ -326,10 +337,24 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Begin a new RGBA8 2D render target to render into a texture (without using a depth/stencil buffer).
+		 * Returns true if @a begin_rgba8_render_target_2D / @a end_rgba8_render_target_2D
+		 * support rendering to floating-point textures.
 		 *
-		 * The texture should be a fixed-point format (not floating-point) - this is because
-		 * rendering to the main framebuffer might be used and the main framebuffer is fixed-point.
+		 * If false is returned then only the fixed-point format can be rendered to.
+		 *
+		 * This is effectively a test for support of the 'GL_EXT_framebuffer_object' extension.
+		 */
+		bool
+		supports_floating_point_render_target_2D() const;
+
+
+		/**
+		 * Begin a new 2D render target to render into a texture (without using a depth/stencil buffer).
+		 *
+		 * If @a supports_floating_point_render_target_2D returns true then the target texture can
+		 * be either fixed-point or floating-point. Otherwise it must be fixed-point because then
+		 * rendering to the main framebuffer will occur and the main framebuffer is fixed-point.
+		 *
 		 * The texture should have been initialised with GLTexture::gl_tex_image_2D or GLTexture::gl_tex_image_3D.
 		 * Rendering is by default to the level 0 mipmap of the texture.
 		 *
@@ -903,7 +928,8 @@ namespace GPlatesOpenGL
 				GLenum texture_unit,
 				GLenum texture_target)
 		{
-			get_current_state()->set_bind_texture(texture_object, texture_unit, texture_target);
+			get_current_state()->set_bind_texture(
+					get_capabilities(), texture_object, texture_unit, texture_target);
 		}
 
 		/**
@@ -914,7 +940,7 @@ namespace GPlatesOpenGL
 				GLenum texture_unit,
 				GLenum texture_target)
 		{
-			get_current_state()->set_unbind_texture(texture_unit, texture_target);
+			get_current_state()->set_unbind_texture(get_capabilities(), texture_unit, texture_target);
 		}
 
 
@@ -986,24 +1012,26 @@ namespace GPlatesOpenGL
 				GLsizei width,
 				GLsizei height)
 		{
-			get_current_state()->set_scissor(GLViewport(x, y, width, height), d_default_viewport.get());
+			get_current_state()->set_scissor(
+					get_capabilities(), GLViewport(x, y, width, height), d_default_viewport.get());
 		}
 
 		/**
 		 * Sets all scissor rectangles to the parameters specified in @a all_scissor_rectangles.
 		 *
-		 * NOTE: @a all_scissor_rectangles must contain exactly 'GLContext::get_parameters().viewport.gl_max_viewports' rectangles.
+		 * NOTE: @a all_scissor_rectangles must contain exactly 'context.get_capabilities().viewport.gl_max_viewports' rectangles.
 		 *
 		 * If the GL_ARB_viewport_array extension is not available then only one scissor rectangle is available.
 		 *
 		 * @throws PreconditionViolationError if:
-		 *  all_scissor_rectangles.size() != GLContext::get_parameters().viewport.gl_max_viewports
+		 *  all_scissor_rectangles.size() != context.get_capabilities().viewport.gl_max_viewports
 		 */
 		void
 		gl_scissor_array(
 				const std::vector<GLViewport> &all_scissor_rectangles)
 		{
-			get_current_state()->set_scissor_array(all_scissor_rectangles, d_default_viewport.get());
+			get_current_state()->set_scissor_array(
+					get_capabilities(), all_scissor_rectangles, d_default_viewport.get());
 		}
 
 		/**
@@ -1020,13 +1048,14 @@ namespace GPlatesOpenGL
 				GLsizei width,
 				GLsizei height)
 		{
-			get_current_state()->set_viewport(GLViewport(x, y, width, height), d_default_viewport.get());
+			get_current_state()->set_viewport(
+					get_capabilities(), GLViewport(x, y, width, height), d_default_viewport.get());
 		}
 
 		/**
 		 * Sets all viewports to the parameters specified in @a all_viewports.
 		 *
-		 * NOTE: @a all_viewports must contain exactly 'GLContext::get_parameters().viewport.gl_max_viewports' viewports.
+		 * NOTE: @a all_viewports must contain exactly 'context.get_capabilities().viewport.gl_max_viewports' viewports.
 		 *
 		 * If the GL_ARB_viewport_array extension is not available then only one viewport is available.
 		 *
@@ -1034,13 +1063,14 @@ namespace GPlatesOpenGL
 		 * we keep them as integers here for simplicity (for now).
 		 *
 		 * @throws PreconditionViolationError if:
-		 *  all_viewports.size() != GLContext::get_parameters().viewport.gl_max_viewports
+		 *  all_viewports.size() != context.get_capabilities().viewport.gl_max_viewports
 		 */
 		void
 		gl_viewport_array(
 				const std::vector<GLViewport> &all_viewports)
 		{
-			get_current_state()->set_viewport_array(all_viewports, d_default_viewport.get());
+			get_current_state()->set_viewport_array(
+					get_capabilities(), all_viewports, d_default_viewport.get());
 		}
 
 		/**
@@ -1055,24 +1085,24 @@ namespace GPlatesOpenGL
 				GLclampd zNear = 0.0,
 				GLclampd zFar = 1.0)
 		{
-			get_current_state()->set_depth_range(GLDepthRange(zNear, zFar));
+			get_current_state()->set_depth_range(get_capabilities(), GLDepthRange(zNear, zFar));
 		}
 
 		/**
 		 * Sets depth ranges of all viewports to the parameters specified in @a all_depth_ranges.
 		 *
-		 * NOTE: @a all_depth_ranges must contain exactly 'GLContext::get_parameters().viewport.gl_max_viewports' viewports.
+		 * NOTE: @a all_depth_ranges must contain exactly 'context.get_capabilities().viewport.gl_max_viewports' viewports.
 		 *
 		 * If the GL_ARB_viewport_array extension is not available then only one viewport/depth-range is available.
 		 *
 		 * @throws PreconditionViolationError if:
-		 *  all_depth_ranges.size() != GLContext::get_parameters().viewport.gl_max_viewports
+		 *  all_depth_ranges.size() != context.get_capabilities().viewport.gl_max_viewports
 		 */
 		void
 		gl_depth_range_array(
 				const std::vector<GLDepthRange> &all_depth_ranges)
 		{
-			get_current_state()->set_depth_range_array(all_depth_ranges);
+			get_current_state()->set_depth_range_array(get_capabilities(), all_depth_ranges);
 		}
 
 		/**
@@ -1333,7 +1363,7 @@ namespace GPlatesOpenGL
 		 *
 		 * If there's only one viewport set (via @a gl_viewport) then use the default index of zero.
 		 *
-		 * NOTE: @a viewport_index must be less than 'GLContext::get_parameters().viewport.gl_max_viewports'.
+		 * NOTE: @a viewport_index must be less than 'context.get_capabilities().viewport.gl_max_viewports'.
 		 * NOTE: And must be called between @a begin_render and @a end_render as usual.
 		 */
 		const GLViewport &
@@ -1440,11 +1470,6 @@ namespace GPlatesOpenGL
 		 * The framebuffer object to use for render targets (if GL_EXT_framebuff_object supported).
 		 */
 		boost::optional<GLFrameBufferObject::shared_ptr_type> d_framebuffer_object;
-
-		/**
-		 * Used to cache results of 'glCheckFramebufferStatus' as an optimisation since it's expensive to call.
-		 */
-		GLRendererImpl::frame_buffer_state_to_status_map_type d_rgba8_framebuffer_object_status_map;
 
 		/**
 		 * Stack of currently render target blocks.
@@ -1622,7 +1647,7 @@ namespace GPlatesOpenGL
 
 		bool
 		check_framebuffer_object_2D_completeness(
-				const GLRendererImpl::RenderTextureTarget &render_texture_target);
+				GLint render_texture_internal_format);
 
 		void
 		begin_render_target_block_internal(
@@ -1778,13 +1803,13 @@ namespace GPlatesOpenGL
 		 *
 		 * @throws PreconditionViolationError if @a active_texture is not in the half-open range:
 		 *   [GL_TEXTURE0,
-		 *    GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_units_ARB).
+		 *    GL_TEXTURE0 + context.get_capabilities().texture.gl_max_texture_units_ARB).
 		 */
 		void
 		gl_active_texture(
 				GLenum active_texture)
 		{
-			get_current_state()->set_active_texture(active_texture);
+			get_current_state()->set_active_texture(get_capabilities(), active_texture);
 		}
 
 		/**
@@ -1796,13 +1821,13 @@ namespace GPlatesOpenGL
 		 *
 		 * @throws PreconditionViolationError if @a client_active_texture is not in the half-open range:
 		 *   [GL_TEXTURE0,
-		 *    GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_units_ARB).
+		 *    GL_TEXTURE0 + context.get_capabilities().texture.gl_max_texture_units_ARB).
 		 */
 		void
 		gl_client_active_texture(
 				GLenum client_active_texture)
 		{
-			get_current_state()->set_client_active_texture(client_active_texture);
+			get_current_state()->set_client_active_texture(get_capabilities(), client_active_texture);
 		}
 
 		/**
@@ -1825,7 +1850,8 @@ namespace GPlatesOpenGL
 		gl_bind_frame_buffer_and_apply(
 				const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object)
 		{
-			get_current_state()->set_bind_frame_buffer_and_apply(frame_buffer_object, *d_last_applied_state);
+			get_current_state()->set_bind_frame_buffer_and_apply(
+					get_capabilities(), frame_buffer_object, *d_last_applied_state);
 		}
 
 		/**
@@ -1864,7 +1890,7 @@ namespace GPlatesOpenGL
 		void
 		gl_unbind_frame_buffer_and_apply()
 		{
-			get_current_state()->set_unbind_frame_buffer_and_apply(*d_last_applied_state);
+			get_current_state()->set_unbind_frame_buffer_and_apply(get_capabilities(), *d_last_applied_state);
 		}
 
 		/**
@@ -1903,7 +1929,8 @@ namespace GPlatesOpenGL
 		gl_bind_program_object_and_apply(
 				const GLProgramObject::shared_ptr_to_const_type &program_object)
 		{
-			get_current_state()->set_bind_program_object_and_apply(program_object, *d_last_applied_state);
+			get_current_state()->set_bind_program_object_and_apply(
+					get_capabilities(), program_object, *d_last_applied_state);
 		}
 
 		/**
@@ -1938,7 +1965,7 @@ namespace GPlatesOpenGL
 		void
 		gl_unbind_program_object_and_apply()
 		{
-			get_current_state()->set_unbind_program_object_and_apply(*d_last_applied_state);
+			get_current_state()->set_unbind_program_object_and_apply(get_capabilities(), *d_last_applied_state);
 		}
 
 		/**
@@ -1981,7 +2008,8 @@ namespace GPlatesOpenGL
 				GLenum texture_unit,
 				GLenum texture_target)
 		{
-			get_current_state()->set_bind_texture_and_apply(texture_object, texture_unit, texture_target, *d_last_applied_state);
+			get_current_state()->set_bind_texture_and_apply(
+					get_capabilities(), texture_object, texture_unit, texture_target, *d_last_applied_state);
 		}
 
 		/**
@@ -2024,7 +2052,8 @@ namespace GPlatesOpenGL
 				GLenum texture_unit,
 				GLenum texture_target)
 		{
-			get_current_state()->set_unbind_texture_and_apply(texture_unit, texture_target, *d_last_applied_state);
+			get_current_state()->set_unbind_texture_and_apply(
+					get_capabilities(), texture_unit, texture_target, *d_last_applied_state);
 		}
 
 		/**
@@ -2213,7 +2242,8 @@ namespace GPlatesOpenGL
 				const GLBufferObject::shared_ptr_to_const_type &buffer_object,
 				GLenum target)
 		{
-			get_current_state()->set_bind_buffer_object_and_apply(buffer_object, target, *d_last_applied_state);
+			get_current_state()->set_bind_buffer_object_and_apply(
+					get_capabilities(), buffer_object, target, *d_last_applied_state);
 		}
 
 		/**
@@ -2262,7 +2292,8 @@ namespace GPlatesOpenGL
 		gl_unbind_buffer_object_and_apply(
 				GLenum target)
 		{
-			get_current_state()->set_unbind_buffer_object_and_apply(target, *d_last_applied_state);
+			get_current_state()->set_unbind_buffer_object_and_apply(
+					get_capabilities(), target, *d_last_applied_state);
 		}
 
 		/**
@@ -2445,7 +2476,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Note that, as dictated by OpenGL, @a attribute_index must be in the half-closed range
 		 * [0, GL_MAX_VERTEX_ATTRIBS_ARB).
-		 * You can get GL_MAX_VERTEX_ATTRIBS_ARB from 'GLContext::get_parameters().shader.gl_max_vertex_attribs'.
+		 * You can get GL_MAX_VERTEX_ATTRIBS_ARB from 'context.get_capabilities().shader.gl_max_vertex_attribs'.
 		 *
 		 * NOTE: The 'GL_ARB_vertex_shader' extension must be supported.
 		 */

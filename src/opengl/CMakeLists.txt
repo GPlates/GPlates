@@ -19,6 +19,8 @@ set(srcs
     GLBufferImpl.h
     GLBufferObject.cc
     GLBufferObject.h
+    GLCapabilities.cc
+    GLCapabilities.h
     GLCompiledDrawState.cc
     GLCompiledDrawState.h
     GLContext.cc

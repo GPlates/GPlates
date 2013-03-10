@@ -88,8 +88,10 @@ GPlatesOpenGL::GLRenderBufferObject::gl_render_buffer_storage(
 		GLsizei height)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			width < boost::numeric_cast<GLsizei>(GLContext::get_parameters().framebuffer.gl_max_renderbuffer_size) &&
-				height < boost::numeric_cast<GLsizei>(GLContext::get_parameters().framebuffer.gl_max_renderbuffer_size),
+			width < boost::numeric_cast<GLsizei>(
+					renderer.get_context().get_capabilities().framebuffer.gl_max_renderbuffer_size) &&
+				height < boost::numeric_cast<GLsizei>(
+						renderer.get_context().get_capabilities().framebuffer.gl_max_renderbuffer_size),
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this render buffer object.

@@ -97,8 +97,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::supports_normal_map_source(
 		}
 
 		// Need vertex/fragment shader support.
-		if (!GLContext::get_parameters().shader.gl_ARB_vertex_shader ||
-			!GLContext::get_parameters().shader.gl_ARB_fragment_shader)
+		if (!renderer.get_context().get_capabilities().shader.gl_ARB_vertex_shader ||
+			!renderer.get_context().get_capabilities().shader.gl_ARB_fragment_shader)
 		{
 			//qDebug() <<
 			//		"GLMultiResolutionRaster: Disabling normal map raster lighting in OpenGL - requires vertex/fragment shader programs.";
@@ -153,8 +153,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::supports_scalar_field_depth_layers_sourc
 		}
 
 		// Need vertex/fragment shader support.
-		if (!GLContext::get_parameters().shader.gl_ARB_vertex_shader ||
-			!GLContext::get_parameters().shader.gl_ARB_fragment_shader)
+		if (!renderer.get_context().get_capabilities().shader.gl_ARB_vertex_shader ||
+			!renderer.get_context().get_capabilities().shader.gl_ARB_fragment_shader)
 		{
 			return false;
 		}
@@ -689,7 +689,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 		GLEW_EXT_texture_filter_anisotropic &&
 		d_fixed_point_texture_filter == FIXED_POINT_TEXTURE_FILTER_ANISOTROPIC)
 	{
-		const GLfloat anisotropy = GLContext::get_parameters().texture.gl_texture_max_anisotropy;
+		const GLfloat anisotropy = renderer.get_context().get_capabilities().texture.gl_texture_max_anisotropy;
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
 

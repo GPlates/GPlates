@@ -51,7 +51,7 @@ namespace GPlatesOpenGL
 	 * Framebuffer objects is an OpenGL extension "GL_EXT_framebuffer_object" for rendering
 	 * to off-screen framebuffers.
 	 *
-	 * Check "GLContext::get_parameters().framebuffer.gl_EXT_framebuffer_object" to see if supported.
+	 * Check "context.get_capabilities().framebuffer.gl_EXT_framebuffer_object" to see if supported.
 	 *
 	 * NOTE: There's also the more recent "GL_ARB_framebuffer_object" extension however it has extra features
 	 * (or less restrictions) but does not have the wide support that "GL_EXT_framebuffer_object" does.
@@ -157,7 +157,7 @@ namespace GPlatesOpenGL
 		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
 		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
@@ -174,7 +174,7 @@ namespace GPlatesOpenGL
 		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
 		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
@@ -193,7 +193,7 @@ namespace GPlatesOpenGL
 		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
 		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
@@ -214,7 +214,7 @@ namespace GPlatesOpenGL
 		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
 		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
@@ -233,7 +233,7 @@ namespace GPlatesOpenGL
 		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
 		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
@@ -249,7 +249,7 @@ namespace GPlatesOpenGL
 		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
 		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
@@ -264,7 +264,7 @@ namespace GPlatesOpenGL
 		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
 		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
@@ -288,7 +288,7 @@ namespace GPlatesOpenGL
 		 * framebuffer object is temporarily bound inside this method (and reverted on return).
 		 *
 		 * The default state is buffer 0 is GL_COLOR_ATTACHMENT0_EXT with buffers
-		 * [1, GLContext::get_parameters().framebuffer.gl_max_draw_buffers) being GL_NONE.
+		 * [1, context.get_capabilities().framebuffer.gl_max_draw_buffers) being GL_NONE.
 		 *
 		 * There is also a glDrawBuffer(s) state that applies to the default window-system framebuffer
 		 * but that is not dealt with here - that would go in the GLRenderer interface - currently
@@ -297,11 +297,11 @@ namespace GPlatesOpenGL
 		 * application-created framebuffer objects (ie, this interface).
 		 *
 		 * @throws PreconditionViolationError if 'bufs.size()' is not in the range:
-		 *   [1, GLContext::get_parameters().framebuffer.gl_max_draw_buffers]
+		 *   [1, context.get_capabilities().framebuffer.gl_max_draw_buffers]
 		 *
 		 * Note that if any values in @a bufs are not either GL_NONE or in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
 		 * ...then OpenGL will generate a GL_INVALID_OPERATION error (see 'GLUtils::assert_no_gl_errors').
 		 *
 		 * If 'bufs.size()' is greater than one then the GL_ARB_draw_buffers extension must be supported
@@ -323,7 +323,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Note that if @a mode is not either GL_NONE or in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
 		 * ...then OpenGL will generate a GL_INVALID_OPERATION error (see 'GLUtils::assert_no_gl_errors').
 		 *
 		 * There is also a glReadBuffer state that applies to the default window-system framebuffer

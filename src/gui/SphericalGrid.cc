@@ -88,7 +88,7 @@ namespace
 		//
 		//   RGB uses (src_alpha, 1 - src_alpha)  ->  (R,G,B) = (Rs*As,Gs*As,Bs*As) + (1-As) * (Rd,Gd,Bd)
 		//     A uses (1, 1 - src_alpha)          ->        A = As + (1-As) * Ad
-		if (GPlatesOpenGL::GLContext::get_parameters().framebuffer.gl_EXT_blend_func_separate)
+		if (renderer.get_context().get_capabilities().framebuffer.gl_EXT_blend_func_separate)
 		{
 			renderer.gl_enable(GL_BLEND);
 			renderer.gl_blend_func_separate(

@@ -58,6 +58,7 @@ namespace
 	 */
 	std::size_t
 	initialise_tile_texel_dimension(
+			GPlatesOpenGL::GLRenderer &renderer,
 			std::size_t tile_texel_dimension)
 	{
 		// The tile dimension should be a power-of-two *if* 'GL_ARB_texture_non_power_of_two' is *not* supported.
@@ -67,9 +68,9 @@ namespace
 		}
 
 		// And the tile dimension should not be larger than the maximum texture dimension.
-		if (tile_texel_dimension > GPlatesOpenGL::GLContext::get_parameters().texture.gl_max_texture_size)
+		if (tile_texel_dimension > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
 		{
-			tile_texel_dimension = GPlatesOpenGL::GLContext::get_parameters().texture.gl_max_texture_size;
+			tile_texel_dimension = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
 		}
 
 		return tile_texel_dimension;
@@ -78,9 +79,10 @@ namespace
 
 
 std::size_t
-GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_default_tile_texel_dimension()
+GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_default_tile_texel_dimension(
+		GLRenderer &renderer)
 {
-	return GLContext::get_parameters().framebuffer.gl_EXT_framebuffer_object ? 512 : 256;
+	return renderer.get_context().get_capabilities().framebuffer.gl_EXT_framebuffer_object ? 512 : 256;
 }
 
 
@@ -90,7 +92,7 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::GLMultiResolutionCubeRe
 		std::size_t tile_texel_dimension,
 		bool cache_tile_textures) :
 	d_reconstructed_raster(source_reconstructed_raster),
-	d_tile_texel_dimension(initialise_tile_texel_dimension(tile_texel_dimension)),
+	d_tile_texel_dimension(initialise_tile_texel_dimension(renderer, tile_texel_dimension)),
 	// Start with small size cache and just let the cache grow in size as needed (if caching enabled)...
 	d_texture_cache(tile_texture_cache_type::create(2/* GPU pipeline breathing room in case caching disabled*/)),
 	d_cache_tile_textures(cache_tile_textures),
@@ -425,7 +427,7 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::create_tile_texture(
 		// hardware (that supports floating-point textures) only supports nearest filtering.
 		if (GLEW_EXT_texture_filter_anisotropic)
 		{
-			const GLfloat anisotropy = GLContext::get_parameters().texture.gl_texture_max_anisotropy;
+			const GLfloat anisotropy = renderer.get_context().get_capabilities().texture.gl_texture_max_anisotropy;
 			tile_texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 		}
 	}

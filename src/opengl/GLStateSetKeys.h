@@ -32,6 +32,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GLCapabilities;
+
 	/**
 	 * Used to assign a separate slot for each @a GLStateSet derived state.
 	 */
@@ -51,9 +53,10 @@ namespace GPlatesOpenGL
 		 */
 		static
 		non_null_ptr_to_const_type
-		create()
+		create(
+				const GLCapabilities &capabilities)
 		{
-			return non_null_ptr_type(new GLStateSetKeys());
+			return non_null_ptr_type(new GLStateSetKeys(capabilities));
 		}
 
 
@@ -292,6 +295,8 @@ namespace GPlatesOpenGL
 			NUM_TEXTURE_COORD_KEY_OFFSETS // Must be last.
 		};
 
+		const GLCapabilities &d_capabilities;
+
 		key_type d_generic_vertex_attribute_index_zero_base_key;
 
 		key_type d_texture_image_unit_zero_base_key;
@@ -300,7 +305,8 @@ namespace GPlatesOpenGL
 		unsigned int d_num_state_set_keys;
 
 		//! Default constructor can only be called by @a create.
-		GLStateSetKeys();
+		GLStateSetKeys(
+				const GLCapabilities &capabilities);
 
 		//! Calculate a key for a texture parameter in the specified texture *image* unit.
 		key_type

@@ -30,8 +30,6 @@
 #include <map>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
 #include <opengl/OpenGL.h>
 
 #include "GLCompiledDrawState.h"
@@ -46,6 +44,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GLCapabilities;
+
 	namespace GLRendererImpl
 	{
 		/**
@@ -211,6 +211,7 @@ namespace GPlatesOpenGL
 			virtual
 			void
 			draw(
+					const GLCapabilities &capabilities,
 					const GLState &state_to_apply,
 					GLState &last_applied_state) const = 0;
 		};
@@ -304,42 +305,6 @@ namespace GPlatesOpenGL
 
 			boost::optional<MainFrameBuffer> main_frame_buffer;
 		};
-
-		//! Shadowing of the framebuffer colour attachment state to cache 'glCheckFramebufferStatus' results.
-		class FrameBufferState
-		{
-		public:
-			typedef GLint texture_level_type;
-			typedef GLsizei texture_dimension_type;
-			typedef GLenum texture_internal_format_type;
-
-			FrameBufferState(
-					texture_level_type texture_level,
-					texture_dimension_type texture_width,
-					texture_dimension_type texture_height,
-					texture_internal_format_type texture_internal_format) :
-				state(texture_level, texture_width, texture_height, texture_internal_format)
-			{  }
-
-			bool
-			operator<(
-					const FrameBufferState &rhs) const
-			{
-				return state < rhs.state;
-			}
-
-		private:
-			//! Typedef for the texture attachment state - using boost tuple for easy comparison.
-			boost::tuple<
-					texture_level_type,
-					texture_dimension_type, // texture width
-					texture_dimension_type, // texture height
-					texture_internal_format_type
-							> state;
-		};
-
-		//! Typedef for a mapping of framebuffer state to 'glCheckFramebufferStatus' result.
-		typedef std::map<FrameBufferState, bool> frame_buffer_state_to_status_map_type;
 
 		/**
 		 * Contains information for a render target block.

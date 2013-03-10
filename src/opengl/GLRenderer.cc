@@ -25,6 +25,7 @@
 
 #include <exception>
 #include <iostream>
+#include <map>
 #include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 /*
@@ -84,8 +85,8 @@ GPlatesOpenGL::GLRenderer::begin_render(
 
 	// The viewport of the window currently attached to the OpenGL context.
 	d_default_viewport = default_viewport;
-	d_default_state->set_viewport(default_viewport, default_viewport);
-	d_default_state->set_scissor(default_viewport, default_viewport);
+	d_default_state->set_viewport(get_context().get_capabilities(), default_viewport, default_viewport);
+	d_default_state->set_scissor(get_context().get_capabilities(), default_viewport, default_viewport);
 
 	// Start a new render target block with its first state block set to the default state.
 	// This render target block represents the main framebuffer.
@@ -104,7 +105,7 @@ GPlatesOpenGL::GLRenderer::begin_render(
 	glScissor(default_viewport.x(), default_viewport.y(), default_viewport.width(), default_viewport.height());
 
 	// Use the GL_EXT_framebuffer_object extension for render targets if it's available.
-	if (GLContext::get_parameters().framebuffer.gl_EXT_framebuffer_object)
+	if (get_context().get_capabilities().framebuffer.gl_EXT_framebuffer_object)
 	{
 		d_framebuffer_object = d_context->get_non_shared_state()->acquire_frame_buffer_object(*this);
 	}
@@ -186,7 +187,7 @@ GPlatesOpenGL::GLRenderer::end_render()
 	// We should be at the default OpenGL state but it has not necessarily been applied
 	// directly to OpenGL yet. So we do this now.
 	// This is because we're finished rendering and should leave OpenGL in the default state.
-	d_default_state->apply_state(*d_last_applied_state);
+	d_default_state->apply_state(get_capabilities(), *d_last_applied_state);
 
 	// End a rendering frame.
 	d_context->end_render();
@@ -313,6 +314,15 @@ GPlatesOpenGL::GLRenderer::QPainterBlockScope::~QPainterBlockScope()
 }
 
 
+bool
+GPlatesOpenGL::GLRenderer::supports_floating_point_render_target_2D() const
+{
+	// We need framebuffer object support otherwise we would end up rendering to the main
+	// framebuffer but it is a fixed-point target.
+	return get_context().get_capabilities().framebuffer.gl_EXT_framebuffer_object;
+}
+
+
 void
 GPlatesOpenGL::GLRenderer::begin_rgba8_render_target_2D(
 		const GLTexture::shared_ptr_to_const_type &texture,
@@ -360,14 +370,10 @@ GPlatesOpenGL::GLRenderer::begin_rgba8_render_target_2D(
 	// Begin the current render texture target.
 	if (d_framebuffer_object)
 	{
-		// Use framebuffer object for rendering to texture unless the driver is not supported
+		// Use framebuffer object for rendering to texture unless the driver is not supporting
 		// the configuration for some reason.
 		if (!begin_rgba8_framebuffer_object_2D(render_texture_target))
 		{
-			// Return the framebuffer object to the cache it was acquired from.
-			// This signals to 'end_rgba8_render_target_2D()' that we are using the main framebuffer.
-			d_framebuffer_object = boost::none;
-
 			// Start using the main framebuffer instead (for rendering to texture).
 			begin_rgba8_main_framebuffer_2D(render_texture_target, max_point_size_and_line_width);
 		}
@@ -433,8 +439,25 @@ GPlatesOpenGL::GLRenderer::end_rgba8_render_target_2D()
 {
 	//PROFILE_FUNC();
 
+	// The current render texture target.
+	boost::optional<RenderTextureTarget> &render_texture_target =
+			get_current_render_target_block().render_texture_target;
+
+	// Should always have a render texture target when tiling a render target 2D.
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			render_texture_target,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_TARGET);
+
 	// End the current render texture target.
-	if (d_framebuffer_object)
+	if (render_texture_target->main_frame_buffer)
+	{
+		end_rgba8_main_framebuffer_2D(render_texture_target.get());
+
+		// End the current render target block.
+		end_render_target_block_internal();
+	}
+	else
 	{
 		// End the current render target block.
 		//
@@ -452,23 +475,6 @@ GPlatesOpenGL::GLRenderer::end_rgba8_render_target_2D()
 
 		end_rgba8_framebuffer_object_2D(parent_render_texture_target);
 	}
-	else
-	{
-		// The current render texture target.
-		const boost::optional<RenderTextureTarget> &render_texture_target =
-				get_current_render_target_block().render_texture_target;
-
-		// Should always have a render texture target when ending a render target 2D.
-		GPlatesGlobal::Assert<GLRendererAPIError>(
-				render_texture_target,
-				GPLATES_ASSERTION_SOURCE,
-				GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_TARGET);
-
-		end_rgba8_main_framebuffer_2D(render_texture_target.get());
-
-		// End the current render target block.
-		end_render_target_block_internal();
-	}
 }
 
 
@@ -480,20 +486,22 @@ GPlatesOpenGL::GLRenderer::get_max_render_target_dimensions(
 	// If using framebuffer objects for render-targets...
 	if (d_framebuffer_object)
 	{
+		const GLCapabilities &capabilities = get_context().get_capabilities();
+
 		// The minimum of the maximum texture width and maximum viewport width.
-		max_render_target_width = GLContext::get_parameters().texture.gl_max_texture_size;
-		if (max_render_target_width > GLContext::get_parameters().viewport.gl_max_viewport_width)
+		max_render_target_width = capabilities.texture.gl_max_texture_size;
+		if (max_render_target_width > capabilities.viewport.gl_max_viewport_width)
 		{
-			max_render_target_width = GLContext::get_parameters().viewport.gl_max_viewport_width;
+			max_render_target_width = capabilities.viewport.gl_max_viewport_width;
 		}
 		// Should already be a power-of-two - but just in case.
 		max_render_target_width = GPlatesUtils::Base2::previous_power_of_two(max_render_target_width);
 
 		// The minimum of the maximum texture height and maximum viewport height.
-		max_render_target_height = GLContext::get_parameters().texture.gl_max_texture_size;
-		if (max_render_target_height > GLContext::get_parameters().viewport.gl_max_viewport_height)
+		max_render_target_height = capabilities.texture.gl_max_texture_size;
+		if (max_render_target_height > capabilities.viewport.gl_max_viewport_height)
 		{
-			max_render_target_height = GLContext::get_parameters().viewport.gl_max_viewport_height;
+			max_render_target_height = capabilities.viewport.gl_max_viewport_height;
 		}
 		// Should already be a power-of-two - but just in case.
 		max_render_target_height = GPlatesUtils::Base2::previous_power_of_two(max_render_target_height);
@@ -779,11 +787,12 @@ GPlatesOpenGL::GLRenderer::gl_clear(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply only the subset of state needed by 'glClear'.
-			state_to_apply.apply_state_used_by_gl_clear(last_applied_state);
+			state_to_apply.apply_state_used_by_gl_clear(capabilities, last_applied_state);
 
 			glClear(clear_mask);
 		}
@@ -825,11 +834,12 @@ GPlatesOpenGL::GLRenderer::gl_draw_elements(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply all state - not just a subset.
-			state_to_apply.apply_state(last_applied_state);
+			state_to_apply.apply_state(capabilities, last_applied_state);
 
 			glDrawElements(mode, count, type, GPLATES_OPENGL_BUFFER_OFFSET(indices_offset));
 		}
@@ -877,11 +887,12 @@ GPlatesOpenGL::GLRenderer::gl_draw_elements(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply all state - not just a subset.
-			state_to_apply.apply_state(last_applied_state);
+			state_to_apply.apply_state(capabilities, last_applied_state);
 
 			// The client memory indices pointer.
 			// NOTE: By getting the indices resource pointer here (at the OpenGL draw call) we allow
@@ -939,11 +950,12 @@ GPlatesOpenGL::GLRenderer::gl_draw_range_elements(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply all state - not just a subset.
-			state_to_apply.apply_state(last_applied_state);
+			state_to_apply.apply_state(capabilities, last_applied_state);
 
 			// NOTE: When using gDEBugger you'll need to change this to 'glDrawRangeElements' if you
 			// want to break on it since it doesn't allow you to break on 'glDrawRangeElementsEXT'.
@@ -1009,11 +1021,12 @@ GPlatesOpenGL::GLRenderer::gl_draw_range_elements(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply all state - not just a subset.
-			state_to_apply.apply_state(last_applied_state);
+			state_to_apply.apply_state(capabilities, last_applied_state);
 
 			// The client memory indices pointer.
 			// NOTE: By getting the indices resource pointer here (at the OpenGL draw call) we allow
@@ -1091,11 +1104,12 @@ GPlatesOpenGL::GLRenderer::gl_read_pixels(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply only the subset of state needed by 'glReadPixels'.
-			state_to_apply.apply_state_used_by_gl_read_pixels(last_applied_state);
+			state_to_apply.apply_state_used_by_gl_read_pixels(capabilities, last_applied_state);
 
 			glReadPixels(x, y, width, height, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
 		}
@@ -1155,11 +1169,12 @@ GPlatesOpenGL::GLRenderer::gl_read_pixels(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply only the subset of state needed by 'glReadPixels'.
-			state_to_apply.apply_state_used_by_gl_read_pixels(last_applied_state);
+			state_to_apply.apply_state_used_by_gl_read_pixels(capabilities, last_applied_state);
 
 			// The client memory pixel data pointer.
 			// NOTE: By getting the pixel data resource pointer here (at the OpenGL read pixels call)
@@ -1222,11 +1237,12 @@ GPlatesOpenGL::GLRenderer::gl_copy_tex_sub_image_1D(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply all state - not just a subset.
-			state_to_apply.apply_state(last_applied_state);
+			state_to_apply.apply_state(capabilities, last_applied_state);
 
 			glCopyTexSubImage1D(texture_target, level, xoffset, x, y, width);
 		}
@@ -1291,11 +1307,12 @@ GPlatesOpenGL::GLRenderer::gl_copy_tex_sub_image_2D(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply all state - not just a subset.
-			state_to_apply.apply_state(last_applied_state);
+			state_to_apply.apply_state(capabilities, last_applied_state);
 
 			glCopyTexSubImage2D(texture_target, level, xoffset, yoffset, x, y, width, height);
 		}
@@ -1365,11 +1382,12 @@ GPlatesOpenGL::GLRenderer::gl_copy_tex_sub_image_3D(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply all state - not just a subset.
-			state_to_apply.apply_state(last_applied_state);
+			state_to_apply.apply_state(capabilities, last_applied_state);
 
 			glCopyTexSubImage3D(texture_target, level, xoffset, yoffset, zoffset, x, y, width, height);
 		}
@@ -1439,7 +1457,7 @@ GPlatesOpenGL::GLRenderer::gl_get_viewport(
 {
 	// Get the current viewport at index 'viewport_index'.
 	const boost::optional<const GLViewport &> current_viewport =
-			get_current_state()->get_viewport(viewport_index);
+			get_current_state()->get_viewport(get_capabilities(), viewport_index);
 
 	// If we're between 'begin_render' and 'end_render' then should have a valid viewport.
 	GPlatesGlobal::Assert<GLRendererAPIError>(
@@ -1480,7 +1498,9 @@ GPlatesOpenGL::GLRenderer::gl_get_texture_matrix(
 void
 GPlatesOpenGL::GLRenderer::apply_current_state_to_opengl()
 {
-	get_current_state_block().get_state_to_apply()->apply_state(*d_last_applied_state);
+	get_current_state_block().get_state_to_apply()->apply_state(
+			get_capabilities(),
+			*d_last_applied_state);
 }
 
 
@@ -1525,6 +1545,7 @@ GPlatesOpenGL::GLRenderer::gl_bind_vertex_array_object_and_apply(
 
 	// Bind the native vertex array object resource.
 	get_current_state()->set_bind_vertex_array_object_and_apply(
+			get_capabilities(),
 			resource_handle,
 			current_resource_state,
 			target_resource_state,
@@ -1581,7 +1602,7 @@ GPlatesOpenGL::GLRenderer::draw(
 	// redundant state changes made between draw calls.
 	//
 	// Render the drawable.
-	render_operation.drawable->draw(*render_operation.state, *d_last_applied_state);
+	render_operation.drawable->draw(get_capabilities(), *render_operation.state, *d_last_applied_state);
 
 	// If the draw operation modifies the framebuffer then increment the draw count.
 	//
@@ -2000,29 +2021,14 @@ GPlatesOpenGL::GLRenderer::begin_rgba8_framebuffer_object_2D(
 			render_texture_target.level,
 			GL_COLOR_ATTACHMENT0_EXT);
 
-	// Checking the framebuffer status can sometimes be expensive even if called once per frame.
-	// One profile measured 142msec for a single check - not sure if that was due to the check
-	// or somehow the driver needed to wait for some reason and happened at that call.
-	// In any case we only enable checking for debug builds.
-#ifdef GPLATES_DEBUG
 	// Revert to using the main framebuffer as a render-target if the framebuffer object status is invalid.
-	if (!check_framebuffer_object_2D_completeness(render_texture_target))
+	if (!check_framebuffer_object_2D_completeness(render_texture_target.texture->get_internal_format().get()))
 	{
-		// Only emit one warning to avoid spamming the log.
-		static bool warning_emitted = false;
-		if (!warning_emitted)
-		{
-			qWarning() << "Unable to render using framebuffer object due to unsupported setup -"
-					" using main framebuffer instead";
-			warning_emitted = true;
-		}
-
 		// Detach the texture from the framebuffer object before we return it to the framebuffer object cache.
 		d_framebuffer_object.get()->gl_detach(*this, GL_COLOR_ATTACHMENT0_EXT);
 
 		return false;
 	}
-#endif
 
 	// Bind the framebuffer object to make it the active framebuffer.
 	gl_bind_frame_buffer(d_framebuffer_object.get());
@@ -2118,26 +2124,50 @@ GPlatesOpenGL::GLRenderer::end_rgba8_framebuffer_object_2D(
 
 bool
 GPlatesOpenGL::GLRenderer::check_framebuffer_object_2D_completeness(
-		const RenderTextureTarget &render_texture_target)
+		GLint render_texture_internal_format)
 {
 	//
 	// Now that we've attached the texture to the framebuffer object we need to check for
 	// framebuffer completeness.
 	//
-	const FrameBufferState frame_buffer_state(
-			render_texture_target.level,
-			render_texture_target.texture->get_width().get(),
-			render_texture_target.texture->get_height().get(),
-			render_texture_target.texture->get_internal_format().get());
 
-	// See if we've already cached the framebuffer completeness status for the current FBO configuration.
+	// Checking the framebuffer status can sometimes be expensive even if called once per frame.
+	// One profile measured 142msec for a single check - not sure if that was due to the check
+	// or somehow the driver needed to wait for some reason and happened at that call.
+	//
+	// In any case we cache the results in a static variable to ensure the same check is not
+	// repeated every frame (a new GLRenderer is created every frame).
+
+	//! Typedef for a mapping of render texture internal format to 'glCheckFramebufferStatus' result.
+	typedef std::map<GLint/*texture internal format*/, bool> frame_buffer_state_to_status_map_type;
+
+	// Cache results of 'glCheckFramebufferStatus' as an optimisation since it's expensive to call.
+	static frame_buffer_state_to_status_map_type framebuffer_object_status_map;
+
+	// See if we've already cached the framebuffer completeness status for the texture internal format.
 	frame_buffer_state_to_status_map_type::iterator framebuffer_status_iter =		
-			d_rgba8_framebuffer_object_status_map.find(frame_buffer_state);
-	if (framebuffer_status_iter == d_rgba8_framebuffer_object_status_map.end())
+			framebuffer_object_status_map.find(render_texture_internal_format);
+	if (framebuffer_status_iter == framebuffer_object_status_map.end())
 	{
 		const bool framebuffer_status = d_framebuffer_object.get()->gl_check_frame_buffer_status(*this);
 
-		d_rgba8_framebuffer_object_status_map[frame_buffer_state] = framebuffer_status;
+		if (!framebuffer_status)
+		{
+			// This only emits one warning (per texture internal format) since the status map is a static variable.
+			qWarning() << "Unable to render using framebuffer object due to its lack of support for "
+				"texture internal format: " << render_texture_internal_format;
+
+			// Also emit a warning if the texture is floating-point.
+			// This is because we will fallback to using the main framebuffer as a render target,
+			// but the main framebuffer is fixed-point.
+			if (GLTexture::is_format_floating_point(render_texture_internal_format))
+			{
+				qWarning() << "...incorrect results likely in floating-point render-texture since "
+					"falling back to using (fixed-point) main framebuffer as render-target.";
+			}
+		}
+
+		framebuffer_object_status_map[render_texture_internal_format] = framebuffer_status;
 
 		return framebuffer_status;
 	}

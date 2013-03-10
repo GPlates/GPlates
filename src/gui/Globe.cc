@@ -486,7 +486,7 @@ GPlatesGui::Globe::render_front_globe_hemisphere_surface_texture(
 	renderer.gl_depth_mask(GL_FALSE);
 
 	// Bind the texture and enable fixed-function texturing on texture unit 0.
-	const GLenum texture_unit_0 = GPlatesOpenGL::GLContext::get_parameters().texture.gl_TEXTURE0;
+	const GLenum texture_unit_0 = renderer.get_context().get_capabilities().texture.gl_TEXTURE0;
 	renderer.gl_bind_texture(front_globe_surface_texture, texture_unit_0, GL_TEXTURE_2D);
 	renderer.gl_enable_texture(texture_unit_0, GL_TEXTURE_2D);
 	renderer.gl_tex_env(texture_unit_0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);

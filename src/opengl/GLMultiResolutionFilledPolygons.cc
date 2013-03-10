@@ -158,6 +158,8 @@ void
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::initialise_polygon_stencil_texture_dimensions(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
+
 	//
 	// The texture dimensions of the single polygon stencil rendering texture.
 	//
@@ -181,22 +183,22 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::initialise_polygon_stencil_textu
 		d_polygon_stencil_texel_height = d_tile_texel_dimension;
 	}
 	// But it can't be larger than the maximum texture dimension for the current system.
-	if (d_polygon_stencil_texel_width > GLContext::get_parameters().texture.gl_max_texture_size)
+	if (d_polygon_stencil_texel_width > capabilities.texture.gl_max_texture_size)
 	{
-		d_polygon_stencil_texel_width = GLContext::get_parameters().texture.gl_max_texture_size;
+		d_polygon_stencil_texel_width = capabilities.texture.gl_max_texture_size;
 	}
-	if (d_polygon_stencil_texel_height > GLContext::get_parameters().texture.gl_max_texture_size)
+	if (d_polygon_stencil_texel_height > capabilities.texture.gl_max_texture_size)
 	{
-		d_polygon_stencil_texel_height = GLContext::get_parameters().texture.gl_max_texture_size;
+		d_polygon_stencil_texel_height = capabilities.texture.gl_max_texture_size;
 	}
 	// And it can't be larger than the maximum viewport dimensions for the current system.
-	if (d_polygon_stencil_texel_width > GLContext::get_parameters().viewport.gl_max_viewport_width)
+	if (d_polygon_stencil_texel_width > capabilities.viewport.gl_max_viewport_width)
 	{
-		d_polygon_stencil_texel_width = GLContext::get_parameters().viewport.gl_max_viewport_width;
+		d_polygon_stencil_texel_width = capabilities.viewport.gl_max_viewport_width;
 	}
-	if (d_polygon_stencil_texel_height > GLContext::get_parameters().viewport.gl_max_viewport_height)
+	if (d_polygon_stencil_texel_height > capabilities.viewport.gl_max_viewport_height)
 	{
-		d_polygon_stencil_texel_height = GLContext::get_parameters().viewport.gl_max_viewport_height;
+		d_polygon_stencil_texel_height = capabilities.viewport.gl_max_viewport_height;
 	}
 }
 
@@ -706,7 +708,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::set_tile_state(
 		// NOTE: If two texture units are not supported then just don't clip to the tile.
 		// It'll look worse but at least it'll still work mostly and will only be noticeable
 		// if they zoom in far enough (which is when this code gets activated).
-		if (GLContext::get_parameters().texture.gl_max_texture_units >= 2)
+		if (renderer.get_context().get_capabilities().texture.gl_max_texture_units >= 2)
 		{
 			// State for the clip texture.
 			//
@@ -803,7 +805,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::set_tile_state(
 		if (clip_to_tile_frustum)
 		{
 			// NOTE: If two texture units are not supported then just don't clip to the tile.
-			if (GLContext::get_parameters().texture.gl_max_texture_units >= 2)
+			if (renderer.get_context().get_capabilities().texture.gl_max_texture_units >= 2)
 			{
 				// Enable texturing and set the texture function on texture unit 1.
 				renderer.gl_enable_texture(GL_TEXTURE1, GL_TEXTURE_2D);
@@ -1491,7 +1493,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_tile_texture(
 	// the angle we are looking at them and anisotropic filtering will help here.
 	if (GLEW_EXT_texture_filter_anisotropic)
 	{
-		const GLfloat anisotropy = GLContext::get_parameters().texture.gl_texture_max_anisotropy;
+		const GLfloat anisotropy = renderer.get_context().get_capabilities().texture.gl_texture_max_anisotropy;
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
 

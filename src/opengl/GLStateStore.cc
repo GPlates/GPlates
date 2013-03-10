@@ -31,11 +31,12 @@
 
 
 GPlatesOpenGL::GLStateStore::GLStateStore(
+		const GLCapabilities &capabilities,
 		const GLStateSetStore::non_null_ptr_type &state_set_store,
 		const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys) :
 	d_state_set_store(state_set_store),
 	d_state_set_keys(state_set_keys),
-	d_state_shared_data(GLState::SharedData::create(*state_set_keys, GLState::shared_ptr_type())),
+	d_state_shared_data(GLState::SharedData::create(capabilities, *state_set_keys, GLState::shared_ptr_type())),
 	d_state_cache(state_cache_type::create())
 {
 	// The vertex array state for the default vertex array object (resource handle zero) is initially all clear.

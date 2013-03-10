@@ -1154,7 +1154,8 @@ GPlatesOpenGL::GLVisualLayers::MapRasterLayerUsage::get_multi_resolution_raster_
 			GLMultiResolutionCubeRasterInterface::non_null_ptr_type multi_resolution_cube_reconstructed_raster =
 					GLMultiResolutionCubeReconstructedRaster::create(
 							renderer,
-							d_reconstructed_raster.get());
+							d_reconstructed_raster.get(),
+							GLMultiResolutionCubeReconstructedRaster::get_default_tile_texel_dimension(renderer));
 
 			//qDebug() << "Rebuilding GLMultiResolutionRasterMapView for reconstructed raster.";
 

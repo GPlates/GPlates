@@ -35,6 +35,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GLContext;
+
 	/**
 	 * Manages allocation of derived @a GLStateSet classes using a separate object pool for each type.
 	 */

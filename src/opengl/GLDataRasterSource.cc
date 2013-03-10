@@ -35,6 +35,7 @@
 
 #include "GLDataRasterSource.h"
 #include "GLContext.h"
+#include "GLRenderer.h"
 #include "GLTextureUtils.h"
 #include "GLUtils.h"
 
@@ -60,6 +61,8 @@ GPlatesOpenGL::GLDataRasterSource::is_supported(
 	{
 		tested_for_support = true;
 
+		const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
+
 		// Need floating-point texture support.
 		// Also need vertex/fragment shader support in various other classes to render floating-point rasters.
 		//
@@ -72,9 +75,9 @@ GPlatesOpenGL::GLDataRasterSource::is_supported(
 		// 'GL_ARB_color_buffer_float' extension (which means we could use the fixed-function pipeline
 		// always) but that extension is not available on Mac OSX 10.5 (Leopard) on any hardware
 		// (rectified in 10.6) so instead we'll just use the programmable pipeline whenever it's available.
-		if (!GLContext::get_parameters().texture.gl_ARB_texture_float ||
-			!GLContext::get_parameters().shader.gl_ARB_vertex_shader ||
-			!GLContext::get_parameters().shader.gl_ARB_fragment_shader)
+		if (!capabilities.texture.gl_ARB_texture_float ||
+			!capabilities.shader.gl_ARB_vertex_shader ||
+			!capabilities.shader.gl_ARB_fragment_shader)
 		{
 			// Any system with floating-point textures will typically also have shaders so only
 			// need to mention lack of floating-point texture support.
@@ -129,9 +132,9 @@ GPlatesOpenGL::GLDataRasterSource::create(
 	const unsigned int raster_height = raster_dimensions->second;
 
 	// Make sure our tile size does not exceed the maximum texture size...
-	if (tile_texel_dimension > GLContext::get_parameters().texture.gl_max_texture_size)
+	if (tile_texel_dimension > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
 	{
-		tile_texel_dimension = GLContext::get_parameters().texture.gl_max_texture_size;
+		tile_texel_dimension = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
 	}
 
 	// Make sure tile_texel_dimension is a power-of-two.

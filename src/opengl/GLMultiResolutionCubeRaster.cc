@@ -79,9 +79,9 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::GLMultiResolutionCubeRaster(
 				GPlatesUtils::Base2::is_power_of_two(d_tile_texel_dimension),
 			GPLATES_ASSERTION_SOURCE);
 	// Make sure the, possibly adapted, tile dimension does not exceed the maximum texture size...
-	if (d_tile_texel_dimension > GLContext::get_parameters().texture.gl_max_texture_size)
+	if (d_tile_texel_dimension > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
 	{
-		d_tile_texel_dimension = GLContext::get_parameters().texture.gl_max_texture_size;
+		d_tile_texel_dimension = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
 	}
 
 	initialise_cube_quad_trees();
@@ -723,7 +723,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_tile_texture(
 			(d_fixed_point_texture_filter == FIXED_POINT_TEXTURE_FILTER_MAG_NEAREST_ANISOTROPIC ||
 				d_fixed_point_texture_filter == FIXED_POINT_TEXTURE_FILTER_MAG_LINEAR_ANISOTROPIC))
 		{
-			const GLfloat anisotropy = GLContext::get_parameters().texture.gl_texture_max_anisotropy;
+			const GLfloat anisotropy = renderer.get_context().get_capabilities().texture.gl_texture_max_anisotropy;
 			tile_texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 		}
 	}
@@ -763,7 +763,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::update_tile_texture(
 		const CubeQuadTreeNode &tile)
 {
 	// Use the same texture format as the source raster.
-	const boost::optional<GLenum> internal_format = tile_texture->get_internal_format();
+	const boost::optional<GLint> internal_format = tile_texture->get_internal_format();
 	// The texture should have been initialised.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			internal_format,

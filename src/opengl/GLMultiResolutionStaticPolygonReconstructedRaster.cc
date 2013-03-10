@@ -106,12 +106,14 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::is_supported(
 	{
 		tested_for_support = true;
 
+		const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
+
 		// We currently need four texture units and GL_ARB_texture_env_combine and GL_ARB_texture_env_dot3.
 		// For regular raster reconstruction - one for the raster and another for the clip texture.
 		// For age-grid enhanced raster reconstruction - another two for the age grid coverage/mask texture.
-		if (GLContext::get_parameters().texture.gl_max_texture_units < 4 ||
-			!GLContext::get_parameters().texture.gl_ARB_texture_env_combine ||
-			!GLContext::get_parameters().texture.gl_ARB_texture_env_dot3)
+		if (capabilities.texture.gl_max_texture_units < 4 ||
+			!capabilities.texture.gl_ARB_texture_env_combine ||
+			!capabilities.texture.gl_ARB_texture_env_dot3)
 		{
 			qWarning() <<
 					"RECONSTRUCTED rasters NOT supported by this OpenGL system - requires four texture units.\n"
@@ -141,11 +143,13 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_age_m
 	{
 		tested_for_support = true;
 
+		const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
+
 		// Need floating-point textures to support age grid in GLDataRasterSource format.
 		// Also need vertex/fragment shader support.
 		if (!GLDataRasterSource::is_supported(renderer) ||
-			!GLContext::get_parameters().shader.gl_ARB_vertex_shader ||
-			!GLContext::get_parameters().shader.gl_ARB_fragment_shader)
+			!capabilities.shader.gl_ARB_vertex_shader ||
+			!capabilities.shader.gl_ARB_fragment_shader)
 		{
 			return false;
 		}
@@ -212,11 +216,13 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_norma
 	{
 		tested_for_support = true;
 
+		const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
+
 		// Test input raster for normal map support.
 		// Also need vertex/fragment shader support.
 		if (!GLMultiResolutionRaster::supports_normal_map_source(renderer) ||
-			!GLContext::get_parameters().shader.gl_ARB_vertex_shader ||
-			!GLContext::get_parameters().shader.gl_ARB_fragment_shader)
+			!capabilities.shader.gl_ARB_vertex_shader ||
+			!capabilities.shader.gl_ARB_fragment_shader)
 		{
 			return false;
 		}
