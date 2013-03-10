@@ -158,7 +158,7 @@ void
 GPlatesOpenGL::GLMultiResolutionFilledPolygons::initialise_polygon_stencil_texture_dimensions(
 		GLRenderer &renderer)
 {
-	const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
+	const GLCapabilities &capabilities = renderer.get_capabilities();
 
 	//
 	// The texture dimensions of the single polygon stencil rendering texture.
@@ -708,7 +708,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::set_tile_state(
 		// NOTE: If two texture units are not supported then just don't clip to the tile.
 		// It'll look worse but at least it'll still work mostly and will only be noticeable
 		// if they zoom in far enough (which is when this code gets activated).
-		if (renderer.get_context().get_capabilities().texture.gl_max_texture_units >= 2)
+		if (renderer.get_capabilities().texture.gl_max_texture_units >= 2)
 		{
 			// State for the clip texture.
 			//
@@ -805,7 +805,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::set_tile_state(
 		if (clip_to_tile_frustum)
 		{
 			// NOTE: If two texture units are not supported then just don't clip to the tile.
-			if (renderer.get_context().get_capabilities().texture.gl_max_texture_units >= 2)
+			if (renderer.get_capabilities().texture.gl_max_texture_units >= 2)
 			{
 				// Enable texturing and set the texture function on texture unit 1.
 				renderer.gl_enable_texture(GL_TEXTURE1, GL_TEXTURE_2D);
@@ -923,7 +923,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 	++g_num_tiles_rendered;
 
 	// Begin a render target that will render the individual filled polygons to the tile texture.
-	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(
+	GLRenderer::RenderTarget2DScope render_target_scope(
 			renderer,
 			tile_texture,
 			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension));
@@ -985,7 +985,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 		// Ie, if we're limited to the current dimensions of the main framebuffer (the current window).
 		unsigned int render_target_width;
 		unsigned int render_target_height;
-		renderer.get_max_render_target_dimensions(render_target_width, render_target_height);
+		renderer.get_max_dimensions_render_target_2D(render_target_width, render_target_height);
 		if (render_target_width < d_tile_texel_dimension)
 		{
 			render_target_width = d_tile_texel_dimension;
@@ -1099,7 +1099,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_polygo
 
 	// Begin a render target that will render the individual filled polygons to the tile texture.
 	// This is also an implicit state block (saves/restores state).
-	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(
+	GLRenderer::RenderTarget2DScope render_target_scope(
 			renderer,
 			polygon_stencil_texture,
 			// Limit rendering to a part of the polygon stencil texture if it's too big for render-target...
@@ -1493,7 +1493,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_tile_texture(
 	// the angle we are looking at them and anisotropic filtering will help here.
 	if (GLEW_EXT_texture_filter_anisotropic)
 	{
-		const GLfloat anisotropy = renderer.get_context().get_capabilities().texture.gl_texture_max_anisotropy;
+		const GLfloat anisotropy = renderer.get_capabilities().texture.gl_texture_max_anisotropy;
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
 

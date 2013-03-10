@@ -324,7 +324,50 @@ GPlatesOpenGL::GLRenderer::supports_floating_point_render_target_2D() const
 
 
 void
-GPlatesOpenGL::GLRenderer::begin_rgba8_render_target_2D(
+GPlatesOpenGL::GLRenderer::get_max_dimensions_render_target_2D(
+		unsigned int &max_render_target_width,
+		unsigned int &max_render_target_height) const
+{
+	// If using framebuffer objects for render-targets...
+	if (d_framebuffer_object)
+	{
+		const GLCapabilities &capabilities = get_context().get_capabilities();
+
+		// The minimum of the maximum texture width and maximum viewport width.
+		max_render_target_width = capabilities.texture.gl_max_texture_size;
+		if (max_render_target_width > capabilities.viewport.gl_max_viewport_width)
+		{
+			max_render_target_width = capabilities.viewport.gl_max_viewport_width;
+		}
+		// Should already be a power-of-two - but just in case.
+		max_render_target_width = GPlatesUtils::Base2::previous_power_of_two(max_render_target_width);
+
+		// The minimum of the maximum texture height and maximum viewport height.
+		max_render_target_height = capabilities.texture.gl_max_texture_size;
+		if (max_render_target_height > capabilities.viewport.gl_max_viewport_height)
+		{
+			max_render_target_height = capabilities.viewport.gl_max_viewport_height;
+		}
+		// Should already be a power-of-two - but just in case.
+		max_render_target_height = GPlatesUtils::Base2::previous_power_of_two(max_render_target_height);
+	}
+	else // ...using main framebuffer as a render-target...
+	{
+		GPlatesGlobal::Assert<OpenGLException>(
+				d_default_viewport,
+				GPLATES_ASSERTION_SOURCE,
+				"Must call 'GLRenderer::get_max_dimensions_render_target_2D' between begin_render/end_render.");
+
+		// Round down to the nearest power-of-two.
+		// This is because the client will be using power-of-two texture dimensions.
+		max_render_target_width = GPlatesUtils::Base2::previous_power_of_two(d_default_viewport->width());
+		max_render_target_height = GPlatesUtils::Base2::previous_power_of_two(d_default_viewport->height());
+	}
+}
+
+
+void
+GPlatesOpenGL::GLRenderer::begin_render_target_2D(
 		const GLTexture::shared_ptr_to_const_type &texture,
 		boost::optional<GLViewport> render_texture_viewport,
 		const double &max_point_size_and_line_width,
@@ -372,7 +415,7 @@ GPlatesOpenGL::GLRenderer::begin_rgba8_render_target_2D(
 	{
 		// Use framebuffer object for rendering to texture unless the driver is not supporting
 		// the configuration for some reason.
-		if (!begin_rgba8_framebuffer_object_2D(render_texture_target))
+		if (!begin_framebuffer_object_2D(render_texture_target))
 		{
 			// Start using the main framebuffer instead (for rendering to texture).
 			begin_rgba8_main_framebuffer_2D(render_texture_target, max_point_size_and_line_width);
@@ -386,7 +429,7 @@ GPlatesOpenGL::GLRenderer::begin_rgba8_render_target_2D(
 
 
 GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
-GPlatesOpenGL::GLRenderer::begin_tile_rgba8_render_target_2D(
+GPlatesOpenGL::GLRenderer::begin_tile_render_target_2D(
 		GLViewport *tile_render_target_viewport)
 {
 	// The current render texture target.
@@ -405,13 +448,13 @@ GPlatesOpenGL::GLRenderer::begin_tile_rgba8_render_target_2D(
 	}
 	else
 	{
-		return begin_tile_rgba8_framebuffer_object_2D(render_texture_target.get(), tile_render_target_viewport);
+		return begin_tile_framebuffer_object_2D(render_texture_target.get(), tile_render_target_viewport);
 	}
 }
 
 
 bool
-GPlatesOpenGL::GLRenderer::end_tile_rgba8_render_target_2D()
+GPlatesOpenGL::GLRenderer::end_tile_render_target_2D()
 {
 	// The current render texture target.
 	boost::optional<RenderTextureTarget> &render_texture_target =
@@ -429,13 +472,13 @@ GPlatesOpenGL::GLRenderer::end_tile_rgba8_render_target_2D()
 	}
 	else
 	{
-		return end_tile_rgba8_framebuffer_object_2D(render_texture_target.get());
+		return end_tile_framebuffer_object_2D(render_texture_target.get());
 	}
 }
 
 
 void
-GPlatesOpenGL::GLRenderer::end_rgba8_render_target_2D()
+GPlatesOpenGL::GLRenderer::end_render_target_2D()
 {
 	//PROFILE_FUNC();
 
@@ -462,9 +505,9 @@ GPlatesOpenGL::GLRenderer::end_rgba8_render_target_2D()
 		// End the current render target block.
 		//
 		// FIXME: This is risky because we are implicitly ending a stack block here
-		// before calling 'end_rgba8_framebuffer_object_2D()' which could itself set some state.
+		// before calling 'end_framebuffer_object_2D()' which could itself set some state.
 		// We really want to end the render target block last so it restores all state.
-		// Right now we get away with it because 'end_rgba8_framebuffer_object_2D()' doesn't
+		// Right now we get away with it because 'end_framebuffer_object_2D()' doesn't
 		// set any global state (it only modifies the framebuffer object's state - ie, local state).
 		// To fix: change std::stack to something where can access second from top element (not just top).
 		end_render_target_block_internal();
@@ -473,50 +516,7 @@ GPlatesOpenGL::GLRenderer::end_rgba8_render_target_2D()
 		const boost::optional<RenderTextureTarget> &parent_render_texture_target =
 				get_current_render_target_block().render_texture_target;
 
-		end_rgba8_framebuffer_object_2D(parent_render_texture_target);
-	}
-}
-
-
-void
-GPlatesOpenGL::GLRenderer::get_max_render_target_dimensions(
-		unsigned int &max_render_target_width,
-		unsigned int &max_render_target_height) const
-{
-	// If using framebuffer objects for render-targets...
-	if (d_framebuffer_object)
-	{
-		const GLCapabilities &capabilities = get_context().get_capabilities();
-
-		// The minimum of the maximum texture width and maximum viewport width.
-		max_render_target_width = capabilities.texture.gl_max_texture_size;
-		if (max_render_target_width > capabilities.viewport.gl_max_viewport_width)
-		{
-			max_render_target_width = capabilities.viewport.gl_max_viewport_width;
-		}
-		// Should already be a power-of-two - but just in case.
-		max_render_target_width = GPlatesUtils::Base2::previous_power_of_two(max_render_target_width);
-
-		// The minimum of the maximum texture height and maximum viewport height.
-		max_render_target_height = capabilities.texture.gl_max_texture_size;
-		if (max_render_target_height > capabilities.viewport.gl_max_viewport_height)
-		{
-			max_render_target_height = capabilities.viewport.gl_max_viewport_height;
-		}
-		// Should already be a power-of-two - but just in case.
-		max_render_target_height = GPlatesUtils::Base2::previous_power_of_two(max_render_target_height);
-	}
-	else // ...using main framebuffer as a render-target...
-	{
-		GPlatesGlobal::Assert<OpenGLException>(
-				d_default_viewport,
-				GPLATES_ASSERTION_SOURCE,
-				"Must call 'GLRenderer::get_max_render_target_dimensions' between begin_render/end_render.");
-
-		// Round down to the nearest power-of-two.
-		// This is because the client will be using power-of-two texture dimensions.
-		max_render_target_width = GPlatesUtils::Base2::previous_power_of_two(d_default_viewport->width());
-		max_render_target_height = GPlatesUtils::Base2::previous_power_of_two(d_default_viewport->height());
+		end_framebuffer_object_2D(parent_render_texture_target);
 	}
 }
 
@@ -2010,7 +2010,7 @@ GPlatesOpenGL::GLRenderer::end_rgba8_main_framebuffer_2D(
 
 
 bool
-GPlatesOpenGL::GLRenderer::begin_rgba8_framebuffer_object_2D(
+GPlatesOpenGL::GLRenderer::begin_framebuffer_object_2D(
 		RenderTextureTarget &render_texture_target)
 {
 	// Attach the texture to the framebuffer object.
@@ -2038,7 +2038,7 @@ GPlatesOpenGL::GLRenderer::begin_rgba8_framebuffer_object_2D(
 
 
 GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
-GPlatesOpenGL::GLRenderer::begin_tile_rgba8_framebuffer_object_2D(
+GPlatesOpenGL::GLRenderer::begin_tile_framebuffer_object_2D(
 		RenderTextureTarget &render_texture_target,
 		GLViewport *tile_render_target_viewport)
 {
@@ -2076,7 +2076,7 @@ GPlatesOpenGL::GLRenderer::begin_tile_rgba8_framebuffer_object_2D(
 
 
 bool
-GPlatesOpenGL::GLRenderer::end_tile_rgba8_framebuffer_object_2D(
+GPlatesOpenGL::GLRenderer::end_tile_framebuffer_object_2D(
 		RenderTextureTarget &render_texture_target)
 {
 	GPlatesGlobal::Assert<GLRendererAPIError>(
@@ -2090,7 +2090,7 @@ GPlatesOpenGL::GLRenderer::end_tile_rgba8_framebuffer_object_2D(
 
 
 void
-GPlatesOpenGL::GLRenderer::end_rgba8_framebuffer_object_2D(
+GPlatesOpenGL::GLRenderer::end_framebuffer_object_2D(
 		const boost::optional<RenderTextureTarget> &parent_render_texture_target)
 {
 	// If there's no parent then we've returned to rendering to the *main* framebuffer.
@@ -2354,7 +2354,7 @@ GPlatesOpenGL::GLRenderer::RenderScope::end_render()
 }
 
 
-GPlatesOpenGL::GLRenderer::Rgba8RenderTarget2DScope::Rgba8RenderTarget2DScope(
+GPlatesOpenGL::GLRenderer::RenderTarget2DScope::RenderTarget2DScope(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_to_const_type &texture,
 		boost::optional<GLViewport> render_target_viewport,
@@ -2363,18 +2363,18 @@ GPlatesOpenGL::GLRenderer::Rgba8RenderTarget2DScope::Rgba8RenderTarget2DScope(
 		bool reset_to_default_state) :
 	d_renderer(renderer)
 {
-	d_renderer.begin_rgba8_render_target_2D(
+	d_renderer.begin_render_target_2D(
 			texture, render_target_viewport, max_point_size_and_line_width, level, reset_to_default_state);
 }
 
 
-GPlatesOpenGL::GLRenderer::Rgba8RenderTarget2DScope::~Rgba8RenderTarget2DScope()
+GPlatesOpenGL::GLRenderer::RenderTarget2DScope::~RenderTarget2DScope()
 {
 	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
 	// But we log the exception and the location it was emitted.
 	try
 	{
-		d_renderer.end_rgba8_render_target_2D();
+		d_renderer.end_render_target_2D();
 	}
 	catch (std::exception &exc)
 	{
@@ -2388,17 +2388,17 @@ GPlatesOpenGL::GLRenderer::Rgba8RenderTarget2DScope::~Rgba8RenderTarget2DScope()
 
 
 GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
-GPlatesOpenGL::GLRenderer::Rgba8RenderTarget2DScope::begin_tile(
+GPlatesOpenGL::GLRenderer::RenderTarget2DScope::begin_tile(
 		GLViewport *tile_render_target_viewport)
 {
-	return d_renderer.begin_tile_rgba8_render_target_2D(tile_render_target_viewport);
+	return d_renderer.begin_tile_render_target_2D(tile_render_target_viewport);
 }
 
 
 bool
-GPlatesOpenGL::GLRenderer::Rgba8RenderTarget2DScope::end_tile()
+GPlatesOpenGL::GLRenderer::RenderTarget2DScope::end_tile()
 {
-	return d_renderer.end_tile_rgba8_render_target_2D();
+	return d_renderer.end_tile_render_target_2D();
 }
 
 

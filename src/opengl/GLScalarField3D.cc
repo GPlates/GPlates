@@ -274,7 +274,7 @@ GPlatesOpenGL::GLScalarField3D::is_supported(
 	{
 		tested_for_support = true;
 
-		const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
+		const GLCapabilities &capabilities = renderer.get_capabilities();
 
 		// We essentially need graphics hardware supporting OpenGL 3.0.
 		//
@@ -474,7 +474,7 @@ GPlatesOpenGL::GLScalarField3D::GLScalarField3D(
 	// TODO: For now we'll just report an error but later we'll need to adapt somehow.
 	GPlatesGlobal::Assert<GPlatesGlobal::LogException>(
 			d_num_active_tiles * d_num_depth_layers <=
-				renderer.get_context().get_capabilities().texture.gl_max_texture_array_layers,
+				renderer.get_capabilities().texture.gl_max_texture_array_layers,
 			GPLATES_ASSERTION_SOURCE,
 			"GLScalarField3D: number texture layers in scalar field file exceeded GPU limit.");
 
@@ -2047,9 +2047,9 @@ GPlatesOpenGL::GLScalarField3D::initialise_surface_fill_mask_rendering(
 	d_surface_fill_mask_resolution = SURFACE_FILL_MASK_RESOLUTION;
 
 	// It can't be larger than the maximum texture dimension for the current system.
-	if (d_surface_fill_mask_resolution > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
+	if (d_surface_fill_mask_resolution > renderer.get_capabilities().texture.gl_max_texture_size)
 	{
-		d_surface_fill_mask_resolution = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
+		d_surface_fill_mask_resolution = renderer.get_capabilities().texture.gl_max_texture_size;
 	}
 
 	//
@@ -2606,9 +2606,9 @@ GPlatesOpenGL::GLScalarField3D::create_depth_radius_to_layer_texture(
 
 	unsigned int depth_radius_to_layer_resolution = DEPTH_RADIUS_TO_LAYER_RESOLUTION;
 	// Limit to max texture size if exceeds.
-	if (depth_radius_to_layer_resolution > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
+	if (depth_radius_to_layer_resolution > renderer.get_capabilities().texture.gl_max_texture_size)
 	{
-		depth_radius_to_layer_resolution = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
+		depth_radius_to_layer_resolution = renderer.get_capabilities().texture.gl_max_texture_size;
 	}
 
 	d_depth_radius_to_layer_texture->gl_tex_image_1D(
@@ -2651,9 +2651,9 @@ GPlatesOpenGL::GLScalarField3D::create_colour_palette_texture(
 
 	unsigned int colour_palette_resolution = COLOUR_PALETTE_RESOLUTION;
 	// Limit to max texture size if exceeds.
-	if (colour_palette_resolution > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
+	if (colour_palette_resolution > renderer.get_capabilities().texture.gl_max_texture_size)
 	{
-		colour_palette_resolution = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
+		colour_palette_resolution = renderer.get_capabilities().texture.gl_max_texture_size;
 	}
 
 	d_colour_palette_texture->gl_tex_image_1D(

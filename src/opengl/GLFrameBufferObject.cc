@@ -179,7 +179,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_1D(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
 				attachment < GL_COLOR_ATTACHMENT0_EXT +
-						renderer.get_context().get_capabilities().framebuffer.gl_max_color_attachments) ||
+						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
 			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
 			(attachment == GL_STENCIL_ATTACHMENT_EXT),
 			GPLATES_ASSERTION_SOURCE);
@@ -227,7 +227,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_2D(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
 				attachment < GL_COLOR_ATTACHMENT0_EXT +
-						renderer.get_context().get_capabilities().framebuffer.gl_max_color_attachments) ||
+						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
 			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
 			(attachment == GL_STENCIL_ATTACHMENT_EXT),
 			GPLATES_ASSERTION_SOURCE);
@@ -276,7 +276,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_3D(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
 				attachment < GL_COLOR_ATTACHMENT0_EXT +
-						renderer.get_context().get_capabilities().framebuffer.gl_max_color_attachments) ||
+						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
 			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
 			(attachment == GL_STENCIL_ATTACHMENT_EXT),
 			GPLATES_ASSERTION_SOURCE);
@@ -327,7 +327,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array_layer(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
 				attachment < GL_COLOR_ATTACHMENT0_EXT +
-						renderer.get_context().get_capabilities().framebuffer.gl_max_color_attachments) ||
+						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
 			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
 			(attachment == GL_STENCIL_ATTACHMENT_EXT),
 			GPLATES_ASSERTION_SOURCE);
@@ -379,7 +379,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
 				attachment < GL_COLOR_ATTACHMENT0_EXT +
-						renderer.get_context().get_capabilities().framebuffer.gl_max_color_attachments) ||
+						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
 			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
 			(attachment == GL_STENCIL_ATTACHMENT_EXT),
 			GPLATES_ASSERTION_SOURCE);
@@ -426,7 +426,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_render_buffer(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
 				attachment < GL_COLOR_ATTACHMENT0_EXT +
-						renderer.get_context().get_capabilities().framebuffer.gl_max_color_attachments) ||
+						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
 			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
 			(attachment == GL_STENCIL_ATTACHMENT_EXT),
 			GPLATES_ASSERTION_SOURCE);
@@ -459,7 +459,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_detach(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
 				attachment < GL_COLOR_ATTACHMENT0_EXT +
-						renderer.get_context().get_capabilities().framebuffer.gl_max_color_attachments) ||
+						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
 			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
 			(attachment == GL_STENCIL_ATTACHMENT_EXT),
 			GPLATES_ASSERTION_SOURCE);
@@ -589,7 +589,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_draw_buffers(
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			!bufs.empty() &&
-				bufs.size() <= renderer.get_context().get_capabilities().framebuffer.gl_max_draw_buffers,
+				bufs.size() <= renderer.get_capabilities().framebuffer.gl_max_draw_buffers,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Revert our framebuffer binding on return so we don't affect changes made by clients.

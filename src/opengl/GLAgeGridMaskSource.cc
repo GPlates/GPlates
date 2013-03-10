@@ -130,9 +130,9 @@ GPlatesOpenGL::GLAgeGridMaskSource::create(
 	}
 
 	// Make sure our tile size does not exceed the maximum texture size...
-	if (tile_texel_dimension > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
+	if (tile_texel_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
 	{
-		tile_texel_dimension = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
+		tile_texel_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
 	}
 
 	// Make sure tile_texel_dimension is a power-of-two.
@@ -634,7 +634,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_mask(
 	// grid raster) will not use the full tile.
 	// The extra texels will be garbage and what we calculate with them will be garbage but those
 	// texels won't be accessed when rendering *using* the age grid tile so it's ok.
-	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(
+	GLRenderer::RenderTarget2DScope render_target_scope(
 			renderer,
 			target_texture,
 			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension));
@@ -729,7 +729,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_intermediate_mask(
 	PROFILE_FUNC();
 
 	// Begin rendering to a 2D render target texture.
-	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(
+	GLRenderer::RenderTarget2DScope render_target_scope(
 			renderer,
 			intermediate_texture,
 			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension));

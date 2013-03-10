@@ -341,7 +341,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform1d)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			renderer.get_context().get_capabilities().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -376,7 +376,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform1dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			renderer.get_context().get_capabilities().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -572,7 +572,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform2d)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			renderer.get_context().get_capabilities().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -607,7 +607,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform2dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			renderer.get_context().get_capabilities().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -807,7 +807,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform3d)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			renderer.get_context().get_capabilities().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -842,7 +842,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform3dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			renderer.get_context().get_capabilities().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -1046,7 +1046,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform4d)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			renderer.get_context().get_capabilities().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -1081,7 +1081,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform4dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			renderer.get_context().get_capabilities().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -1210,7 +1210,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix2x2d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix2dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			renderer.get_context().get_capabilities().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -1271,7 +1271,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix3x3d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix3dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			renderer.get_context().get_capabilities().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -1332,7 +1332,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix4dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			renderer.get_context().get_capabilities().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -1399,7 +1399,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix4dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			renderer.get_context().get_capabilities().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -1474,7 +1474,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix4dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			renderer.get_context().get_capabilities().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.

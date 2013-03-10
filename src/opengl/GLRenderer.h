@@ -337,7 +337,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns true if @a begin_rgba8_render_target_2D / @a end_rgba8_render_target_2D
+		 * Returns true if @a begin_render_target_2D / @a end_render_target_2D
 		 * support rendering to floating-point textures.
 		 *
 		 * If false is returned then only the fixed-point format can be rendered to.
@@ -346,6 +346,29 @@ namespace GPlatesOpenGL
 		 */
 		bool
 		supports_floating_point_render_target_2D() const;
+
+
+		/**
+		 * Returns the maximum render target dimensions when using @a begin_render_target_2D /
+		 * @a end_render_target_2D (values returned as power-of-two dimensions).
+		 *
+		 * This is mainly in case the 'GL_EXT_framebuffer_object' extension is not available and
+		 * we fallback to the main framebuffer as a render-target. In which case the dimensions
+		 * of the main framebuffer become the limit (rounded down to the nearest power-of-two).
+		 *
+		 * If 'GL_EXT_framebuffer_object' is supported then this effectively becomes the minimum of
+		 * the maximum texture dimensions and maximum viewport dimensions.
+		 *
+		 * NOTE: Must be called between @a begin_render and @a end_render but not necessarily
+		 * between @a begin_render_target_2D and @a end_render_target_2D.
+		 *
+		 * NOTE: The dimensions can change from one render to the next (if main framebuffer used
+		 * as render target and the window is resized). So ideally this should be called every render.
+		 */
+		void
+		get_max_dimensions_render_target_2D(
+				unsigned int &max_render_target_width,
+				unsigned int &max_render_target_height) const;
 
 
 		/**
@@ -381,8 +404,8 @@ namespace GPlatesOpenGL
 		 * See @a begin_state_block / @a end_state_block (they are called internally by this render target block).
 		 *
 		 * If @a reset_to_default_state is true then this block starts off in the default OpenGL state.
-		 * However, when the matching @a end_rgba8_render_target_2D is called then the state will be
-		 * restored to what it was before @a begin_rgba8_render_target_2D was called.
+		 * However, when the matching @a end_render_target_2D is called then the state will be
+		 * restored to what it was before @a begin_render_target_2D was called.
 		 * Unlike state blocks, the default value for @a reset_to_default_state is to reset to the default state.
 		 * This is because the state required for render targets is usually fairly independent of the
 		 * state outside the render target scope.
@@ -402,7 +425,7 @@ namespace GPlatesOpenGL
 		 *  - @a depth or stencil testing is enabled.
 		 */
 		void
-		begin_rgba8_render_target_2D(
+		begin_render_target_2D(
 				const GLTexture::shared_ptr_to_const_type &texture,
 				boost::optional<GLViewport> render_texture_viewport = boost::none,
 				const double &max_point_size_and_line_width = 0,
@@ -422,7 +445,7 @@ namespace GPlatesOpenGL
 		 * A stencil rectangle is also specified internally for this viewport.
 		 * NOTE: You do not need to call @a gl_viewport or @a gl_scissor (they are done internally).
 		 *
-		 * NOTE: @a begin_tile_rgba8_render_target_2D and @a end_tile_rgba8_render_target_2D
+		 * NOTE: @a begin_tile_render_target_2D and @a end_tile_render_target_2D
 		 * do *not* save / restore the OpenGL state.
 		 *
 		 * Note: If the 'GL_EXT_framebuffer_object' extension is supported then only one tile is
@@ -430,33 +453,33 @@ namespace GPlatesOpenGL
 		 * used as a render target and more than one tile rendering might be needed if the framebuffer
 		 * is smaller than the render target texture. But this is all opaque in this interface.
 		 *
-		 * Must be called inside a @a begin_rgba8_render_target_2D / @a end_rgba8_render_target_2D pair.
+		 * Must be called inside a @a begin_render_target_2D / @a end_render_target_2D pair.
 		 */
 		GLTransform::non_null_ptr_to_const_type
-		begin_tile_rgba8_render_target_2D(
+		begin_tile_render_target_2D(
 				GLViewport *tile_render_target_viewport = NULL);
 
 		/**
 		 * Ends the current tile (sub-region) of the current 2D render target.
 		 *
 		 * Returns true if another tile needs to be rendered in which case another
-		 * @a begin_tile_rgba8_render_target_2D / @a end_tile_rgba8_render_target_2D pair must be rendered.
+		 * @a begin_tile_render_target_2D / @a end_tile_render_target_2D pair must be rendered.
 		 * For example:
-		 *    renderer.begin_rgba8_render_target_2D(...);
+		 *    renderer.begin_render_target_2D(...);
 		 *    do
 		 *    {
-		 *        renderer.begin_tile_rgba8_render_target_2D();
+		 *        renderer.begin_tile_render_target_2D();
 		 *        ... // Render scene.
-		 *    } while (!renderer.end_tile_rgba8_render_target_2D());
-		 *    renderer.end_rgba8_render_target_2D();
+		 *    } while (!renderer.end_tile_render_target_2D());
+		 *    renderer.end_render_target_2D();
 		 *
-		 * NOTE: @a begin_tile_rgba8_render_target_2D and @a end_tile_rgba8_render_target_2D
+		 * NOTE: @a begin_tile_render_target_2D and @a end_tile_render_target_2D
 		 * do *not* save / restore the OpenGL state.
 		 *
-		 * Must be called inside a @a begin_rgba8_render_target_2D / @a end_rgba8_render_target_2D pair.
+		 * Must be called inside a @a begin_render_target_2D / @a end_render_target_2D pair.
 		 */
 		bool
-		end_tile_rgba8_render_target_2D();
+		end_tile_render_target_2D();
 
 		/**
 		 * Ends the current 2D render target.
@@ -468,40 +491,17 @@ namespace GPlatesOpenGL
 		 *  - there are render-queue and state blocks that were not nested properly.
 		 */
 		void
-		end_rgba8_render_target_2D();
+		end_render_target_2D();
 
 
 		/**
-		 * Returns the maximum render target dimensions when using @a begin_rgba8_render_target_2D /
-		 * @a end_rgba8_render_target_2D (values returned as power-of-two dimensions).
-		 *
-		 * This is mainly in case the 'GL_EXT_framebuffer_object' extension is not available and
-		 * we fallback to the main framebuffer as a render-target. In which case the dimensions
-		 * of the main framebuffer become the limit (rounded down to the nearest power-of-two).
-		 *
-		 * If 'GL_EXT_framebuffer_object' is supported then this effectively becomes the minimum of
-		 * the maximum texture dimensions and maximum viewport dimensions.
-		 *
-		 * NOTE: Must be called between @a begin_render and @a end_render but not necessarily
-		 * between @a begin_rgba8_render_target_2D and @a end_rgba8_render_target_2D.
-		 *
-		 * NOTE: The dimensions can change from one render to the next (if main framebuffer used
-		 * as render target and the window is resized). So ideally this should be called every render.
+		 * RAII class to call @a begin_render_target_2D and @a end_render_target_2D over a scope.
 		 */
-		void
-		get_max_render_target_dimensions(
-				unsigned int &max_render_target_width,
-				unsigned int &max_render_target_height) const;
-
-
-		/**
-		 * RAII class to call @a begin_rgba8_render_target_2D and @a end_rgba8_render_target_2D over a scope.
-		 */
-		class Rgba8RenderTarget2DScope :
+		class RenderTarget2DScope :
 				private boost::noncopyable
 		{
 		public:
-			Rgba8RenderTarget2DScope(
+			RenderTarget2DScope(
 					GLRenderer &renderer,
 					const GLTexture::shared_ptr_to_const_type &texture,
 					boost::optional<GLViewport> render_target_viewport = boost::none,
@@ -509,17 +509,17 @@ namespace GPlatesOpenGL
 					GLint level = 0,
 					bool reset_to_default_state = true);
 
-			~Rgba8RenderTarget2DScope();
+			~RenderTarget2DScope();
 
 			/**
-			 * Begins a tile of the current 2D render target - see 'begin_tile_rgba8_render_target_2D()'.
+			 * Begins a tile of the current 2D render target - see 'begin_tile_render_target_2D()'.
 			 */
 			GLTransform::non_null_ptr_to_const_type
 			begin_tile(
 					GLViewport *tile_render_target_viewport = NULL);
 
 			/**
-			 * Ends the current tile of the current 2D render target - see 'end_tile_rgba8_render_target_2D()'.
+			 * Ends the current tile of the current 2D render target - see 'end_tile_render_target_2D()'.
 			 */
 			bool
 			end_tile();
@@ -598,15 +598,15 @@ namespace GPlatesOpenGL
 		 * 
 		 *   begin_render_queue_block
 		 *   
-		 *     begin_rgba8_render_target_2D A
+		 *     begin_render_target_2D A
 		 *       draw to render target (immediately)
-		 *     end_rgba8_render_target_2D
+		 *     end_render_target_2D
 		 *     
 		 *     draw X using render texture A (queued)
 		 *     
-		 *     begin_rgba8_render_target_2D B
+		 *     begin_render_target_2D B
 		 *       draw to render target (immediately)
-		 *     end_rgba8_render_target_2D
+		 *     end_render_target_2D
 		 *     
 		 *     draw Y using render texture B (queued)
 		 *     
@@ -1629,20 +1629,20 @@ namespace GPlatesOpenGL
 				const GLRendererImpl::RenderTextureTarget &render_texture_target);
 
 		bool
-		begin_rgba8_framebuffer_object_2D(
+		begin_framebuffer_object_2D(
 				GLRendererImpl::RenderTextureTarget &render_texture_target);
 
 		GLTransform::non_null_ptr_to_const_type
-		begin_tile_rgba8_framebuffer_object_2D(
+		begin_tile_framebuffer_object_2D(
 				GLRendererImpl::RenderTextureTarget &render_texture_target,
 				GLViewport *tile_render_target_viewport);
 
 		bool
-		end_tile_rgba8_framebuffer_object_2D(
+		end_tile_framebuffer_object_2D(
 				GLRendererImpl::RenderTextureTarget &render_texture_target);
 
 		void
-		end_rgba8_framebuffer_object_2D(
+		end_framebuffer_object_2D(
 				const boost::optional<GLRendererImpl::RenderTextureTarget> &parent_render_texture_target);
 
 		bool

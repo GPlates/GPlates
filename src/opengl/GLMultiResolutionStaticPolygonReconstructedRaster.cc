@@ -106,7 +106,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::is_supported(
 	{
 		tested_for_support = true;
 
-		const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
+		const GLCapabilities &capabilities = renderer.get_capabilities();
 
 		// We currently need four texture units and GL_ARB_texture_env_combine and GL_ARB_texture_env_dot3.
 		// For regular raster reconstruction - one for the raster and another for the clip texture.
@@ -132,6 +132,30 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::is_supported(
 
 
 bool
+GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_floating_point_source_raster(
+		GLRenderer &renderer)
+{
+	static bool supported = false;
+
+	// Only test for support the first time we're called.
+	static bool tested_for_support = false;
+	if (!tested_for_support)
+	{
+		tested_for_support = true;
+
+		// We use GLRenderer to render to render targets so it must support rendering to
+		// floating-point render targets.
+		supported =
+				renderer.supports_floating_point_render_target_2D() &&
+					// Don't really need to check for this but will anyway in case caller expects us to...
+					renderer.get_capabilities().texture.gl_ARB_texture_float;
+	}
+
+	return supported;
+}
+
+
+bool
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_age_mask_generation(
 		GLRenderer &renderer)
 {
@@ -143,11 +167,14 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_age_m
 	{
 		tested_for_support = true;
 
-		const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
+		const GLCapabilities &capabilities = renderer.get_capabilities();
 
-		// Need floating-point textures to support age grid in GLDataRasterSource format.
+		// Need floating-point textures to support age grid in GLDataRasterSource format and
+		// GLMultiResolutionCubeRaster (attached to the age-grid GLDataRasterSource) must
+		// support rendering to floating-point targets.
 		// Also need vertex/fragment shader support.
 		if (!GLDataRasterSource::is_supported(renderer) ||
+			!GLMultiResolutionCubeRaster::supports_floating_point_source_raster(renderer) ||
 			!capabilities.shader.gl_ARB_vertex_shader ||
 			!capabilities.shader.gl_ARB_fragment_shader)
 		{
@@ -216,7 +243,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_norma
 	{
 		tested_for_support = true;
 
-		const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
+		const GLCapabilities &capabilities = renderer.get_capabilities();
 
 		// Test input raster for normal map support.
 		// Also need vertex/fragment shader support.

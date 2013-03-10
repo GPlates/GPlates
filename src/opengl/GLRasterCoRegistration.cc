@@ -104,7 +104,7 @@ bool
 GPlatesOpenGL::GLRasterCoRegistration::is_supported(
 		GLRenderer &renderer)
 {
-	const GLCapabilities &context_parameters = renderer.get_context().get_capabilities();
+	const GLCapabilities &context_parameters = renderer.get_capabilities();
 
 	// Note that we don't specifically request GL_ARB_vertex_buffer_object and GL_ARB_pixel_buffer_object
 	// because we have fall back paths for vertex and pixel buffers (using client memory instead of buffers)

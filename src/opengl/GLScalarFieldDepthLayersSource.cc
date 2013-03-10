@@ -68,7 +68,7 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::is_supported(
 	{
 		tested_for_support = true;
 
-		const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
+		const GLCapabilities &capabilities = renderer.get_capabilities();
 
 		// Floating-point textures and non-power-of-two textures are required.
 		// Vertex/fragment shader programs are required.
@@ -159,9 +159,9 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::create(
 			boost::bind(&ProxiedDepthLayer::depth_radius, _2));
 
 	// Make sure our tile size does not exceed the maximum texture size...
-	if (tile_texel_dimension > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
+	if (tile_texel_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
 	{
-		tile_texel_dimension = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
+		tile_texel_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
 	}
 
 	// Make sure tile_texel_dimension is a power-of-two.

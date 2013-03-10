@@ -231,7 +231,7 @@ GPlatesGui::LayerPainter::end_painting(
 	//
 	// ...this then enables use to later use (1, 1 - src_alpha) for all RGBA channels when blending
 	// the render texture into the main framebuffer (if that's how we get rendered by clients).
-	if (renderer.get_context().get_capabilities().framebuffer.gl_EXT_blend_func_separate)
+	if (renderer.get_capabilities().framebuffer.gl_EXT_blend_func_separate)
 	{
 		renderer.gl_enable(GL_BLEND);
 		renderer.gl_blend_func_separate(

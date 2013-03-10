@@ -51,6 +51,31 @@
 #include "utils/Base2Utils.h"
 #include "utils/Profile.h"
 
+
+bool
+GPlatesOpenGL::GLMultiResolutionCubeRaster::supports_floating_point_source_raster(
+		GLRenderer &renderer)
+{
+	static bool supported = false;
+
+	// Only test for support the first time we're called.
+	static bool tested_for_support = false;
+	if (!tested_for_support)
+	{
+		tested_for_support = true;
+
+		// We use GLRenderer to render to render targets so it must support rendering to
+		// floating-point render targets.
+		supported =
+				renderer.supports_floating_point_render_target_2D() &&
+					// Don't really need to check for this but will anyway in case caller expects us to...
+					renderer.get_capabilities().texture.gl_ARB_texture_float;
+	}
+
+	return supported;
+}
+
+
 GPlatesOpenGL::GLMultiResolutionCubeRaster::GLMultiResolutionCubeRaster(
 		GLRenderer &renderer,
 		const GLMultiResolutionRaster::non_null_ptr_type &multi_resolution_raster,
@@ -79,9 +104,9 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::GLMultiResolutionCubeRaster(
 				GPlatesUtils::Base2::is_power_of_two(d_tile_texel_dimension),
 			GPLATES_ASSERTION_SOURCE);
 	// Make sure the, possibly adapted, tile dimension does not exceed the maximum texture size...
-	if (d_tile_texel_dimension > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
+	if (d_tile_texel_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
 	{
-		d_tile_texel_dimension = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
+		d_tile_texel_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
 	}
 
 	initialise_cube_quad_trees();
@@ -570,7 +595,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 			new std::vector<GLMultiResolutionRaster::cache_handle_type>());
 
 	// Begin rendering to a 2D render target texture.
-	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(
+	GLRenderer::RenderTarget2DScope render_target_scope(
 			renderer,
 			tile_texture.texture,
 			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension));
@@ -723,7 +748,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_tile_texture(
 			(d_fixed_point_texture_filter == FIXED_POINT_TEXTURE_FILTER_MAG_NEAREST_ANISOTROPIC ||
 				d_fixed_point_texture_filter == FIXED_POINT_TEXTURE_FILTER_MAG_LINEAR_ANISOTROPIC))
 		{
-			const GLfloat anisotropy = renderer.get_context().get_capabilities().texture.gl_texture_max_anisotropy;
+			const GLfloat anisotropy = renderer.get_capabilities().texture.gl_texture_max_anisotropy;
 			tile_texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 		}
 	}

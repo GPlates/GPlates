@@ -61,7 +61,7 @@ GPlatesOpenGL::GLDataRasterSource::is_supported(
 	{
 		tested_for_support = true;
 
-		const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
+		const GLCapabilities &capabilities = renderer.get_capabilities();
 
 		// Need floating-point texture support.
 		// Also need vertex/fragment shader support in various other classes to render floating-point rasters.
@@ -132,9 +132,9 @@ GPlatesOpenGL::GLDataRasterSource::create(
 	const unsigned int raster_height = raster_dimensions->second;
 
 	// Make sure our tile size does not exceed the maximum texture size...
-	if (tile_texel_dimension > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
+	if (tile_texel_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
 	{
-		tile_texel_dimension = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
+		tile_texel_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
 	}
 
 	// Make sure tile_texel_dimension is a power-of-two.

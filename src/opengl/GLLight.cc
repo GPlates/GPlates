@@ -77,7 +77,7 @@ GPlatesOpenGL::GLLight::is_supported(
 	{
 		tested_for_support = true;
 
-		const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
+		const GLCapabilities &capabilities = renderer.get_capabilities();
 
 		// Need cube map texture and vertex/fragment shader and framebuffer object support.
 		if (!capabilities.texture.gl_ARB_texture_cube_map ||

@@ -434,7 +434,7 @@ GPlatesOpenGL::GLContext::SharedState::get_unbound_vertex_array_compiled_draw_st
 		renderer.gl_enable_client_state(GL_COLOR_ARRAY, false);
 		renderer.gl_enable_client_state(GL_NORMAL_ARRAY, false);
 		// Iterate over the enable texture coordinate client state flags.
-		const unsigned int MAX_TEXTURE_COORDS = renderer.get_context().get_capabilities().texture.gl_max_texture_coords;
+		const unsigned int MAX_TEXTURE_COORDS = renderer.get_capabilities().texture.gl_max_texture_coords;
 		for (unsigned int texture_coord_index = 0; texture_coord_index < MAX_TEXTURE_COORDS; ++texture_coord_index)
 		{
 			renderer.gl_enable_client_texture_state(GL_TEXTURE0 + texture_coord_index, false);
@@ -476,7 +476,7 @@ GPlatesOpenGL::GLContext::SharedState::get_unbound_vertex_array_compiled_draw_st
 		//
 		// Disable all *generic* vertex attribute arrays.
 		//
-		const GLuint MAX_VERTEX_ATTRIBS = renderer.get_context().get_capabilities().shader.gl_max_vertex_attribs;
+		const GLuint MAX_VERTEX_ATTRIBS = renderer.get_capabilities().shader.gl_max_vertex_attribs;
 		// Iterate over the supported number of generic vertex attribute arrays.
 		for (GLuint attribute_index = 0; attribute_index < MAX_VERTEX_ATTRIBS; ++attribute_index)
 		{

@@ -57,7 +57,7 @@ GPlatesOpenGL::GLScreenRenderTarget::is_supported(
 		// By default unsupported unless we make it through the following tests.
 		supported[supported_key] = false;
 
-		const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
+		const GLCapabilities &capabilities = renderer.get_capabilities();
 
 		// Require support for framebuffer objects and non-power-of-two textures.
 		// The screen dimensions can change and are unlikely to be a power-of-two.

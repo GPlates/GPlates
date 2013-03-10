@@ -97,6 +97,18 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer);
 
 		/**
+		 * Returns true if floating-point source raster is supported.
+		 *
+		 * If false is returned then only a fixed-point format source texture can be used.
+		 *
+		 * This is effectively a test for support of the 'GL_EXT_framebuffer_object' extension.
+		 */
+		static
+		bool
+		supports_floating_point_source_raster(
+				GLRenderer &renderer);
+
+		/**
 		 * Returns true if age masks can be generated on the runtime system.
 		 *
 		 * This means a floating-point raster containing actual age values can be passed into
@@ -126,6 +138,9 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Creates a @a GLMultiResolutionStaticPolygonReconstructedRaster object.
+		 *
+		 * If @a source_raster is floating-point (which means this reconstructed raster will also be
+		 * floating-point) then @a supports_floating_point_source_raster *must* return true.
 		 *
 		 * NOTE: The following applies when using an age grid (ie, a non-null @a age_grid_raster)...
 		 * If @a supports_age_mask_generation returns true then @a age_grid_raster *must*

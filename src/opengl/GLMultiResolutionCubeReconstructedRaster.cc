@@ -68,9 +68,9 @@ namespace
 		}
 
 		// And the tile dimension should not be larger than the maximum texture dimension.
-		if (tile_texel_dimension > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
+		if (tile_texel_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
 		{
-			tile_texel_dimension = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
+			tile_texel_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
 		}
 
 		return tile_texel_dimension;
@@ -82,7 +82,7 @@ std::size_t
 GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_default_tile_texel_dimension(
 		GLRenderer &renderer)
 {
-	return renderer.get_context().get_capabilities().framebuffer.gl_EXT_framebuffer_object ? 512 : 256;
+	return renderer.get_capabilities().framebuffer.gl_EXT_framebuffer_object ? 512 : 256;
 }
 
 
@@ -220,7 +220,7 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::render_raster_data_into
 			new std::vector<GLMultiResolutionStaticPolygonReconstructedRaster::cache_handle_type>());
 
 	// Begin rendering to a 2D render target texture.
-	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(
+	GLRenderer::RenderTarget2DScope render_target_scope(
 			renderer,
 			tile_texture.texture,
 			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension));
@@ -427,7 +427,7 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::create_tile_texture(
 		// hardware (that supports floating-point textures) only supports nearest filtering.
 		if (GLEW_EXT_texture_filter_anisotropic)
 		{
-			const GLfloat anisotropy = renderer.get_context().get_capabilities().texture.gl_texture_max_anisotropy;
+			const GLfloat anisotropy = renderer.get_capabilities().texture.gl_texture_max_anisotropy;
 			tile_texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 		}
 	}

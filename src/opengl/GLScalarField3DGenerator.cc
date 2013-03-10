@@ -208,7 +208,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::is_supported(
 			return false;
 		}
 
-		const GLCapabilities &capabilities = renderer.get_context().get_capabilities();
+		const GLCapabilities &capabilities = renderer.get_capabilities();
 
 		// Test for OpenGL features used to generate scalar fields.
 		if (// Using floating-point textures...
@@ -911,9 +911,9 @@ GPlatesOpenGL::GLScalarField3DGenerator::initialise_cube_face_dimension(
 		d_cube_face_dimension = 128;
 	}
 	// Also limit to max texture size if exceeds.
-	if (d_cube_face_dimension > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
+	if (d_cube_face_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
 	{
-		d_cube_face_dimension = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
+		d_cube_face_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
 	}
 }
 

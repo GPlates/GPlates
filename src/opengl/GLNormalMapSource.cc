@@ -89,8 +89,8 @@ GPlatesOpenGL::GLNormalMapSource::is_supported(
 		// However vertex/fragment shader programs are required.
 		// Actually they're not required in this class since we can generate normals on the CPU
 		// but they are required when normals are used for lighting elsewhere.
-		if (!renderer.get_context().get_capabilities().shader.gl_ARB_vertex_shader ||
-			!renderer.get_context().get_capabilities().shader.gl_ARB_fragment_shader)
+		if (!renderer.get_capabilities().shader.gl_ARB_vertex_shader ||
+			!renderer.get_capabilities().shader.gl_ARB_fragment_shader)
 		{
 			//qDebug() <<
 			//		"GLNormalMapSource: Disabling normal map raster lighting in OpenGL - requires vertex/fragment shader programs.";
@@ -144,9 +144,9 @@ GPlatesOpenGL::GLNormalMapSource::create(
 	const unsigned int raster_height = raster_dimensions->second;
 
 	// Make sure our tile size does not exceed the maximum texture size...
-	if (tile_texel_dimension > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
+	if (tile_texel_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
 	{
-		tile_texel_dimension = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
+		tile_texel_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
 	}
 
 	// Make sure tile_texel_dimension is a power-of-two.
@@ -548,7 +548,7 @@ GPlatesOpenGL::GLNormalMapSource::gpu_convert_height_field_to_normal_map(
 	//
 	// Specify a viewport that matches the possibly partial tile dimensions and *not* necessarily always
 	// the full tile dimensions. This happens for tiles near the bottom or right edge of the raster.
-	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(
+	GLRenderer::RenderTarget2DScope render_target_scope(
 			renderer,
 			target_texture,
 			GLViewport(0, 0, normal_map_texel_width, normal_map_texel_height));

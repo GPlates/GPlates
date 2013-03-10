@@ -99,9 +99,9 @@ GPlatesOpenGL::GLVisualRasterSource::create(
 	const unsigned int raster_height = raster_dimensions->second;
 
 	// Make sure our tile size does not exceed the maximum texture size...
-	if (tile_texel_dimension > renderer.get_context().get_capabilities().texture.gl_max_texture_size)
+	if (tile_texel_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
 	{
-		tile_texel_dimension = renderer.get_context().get_capabilities().texture.gl_max_texture_size;
+		tile_texel_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
 	}
 
 	// Make sure tile_texel_dimension is a power-of-two.
@@ -577,7 +577,7 @@ GPlatesOpenGL::GLVisualRasterSource::write_raster_texture_into_tile_target_textu
 	//
 
 	// Begin rendering to a 2D render target texture.
-	GLRenderer::Rgba8RenderTarget2DScope render_target_scope(
+	GLRenderer::RenderTarget2DScope render_target_scope(
 			renderer,
 			target_texture,
 			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension));

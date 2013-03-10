@@ -178,6 +178,19 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Returns true if floating-point source raster is supported.
+		 *
+		 * If false is returned then only fixed-point format textures can be used.
+		 *
+		 * This is effectively a test for support of the 'GL_EXT_framebuffer_object' extension.
+		 */
+		static
+		bool
+		supports_floating_point_source_raster(
+				GLRenderer &renderer);
+
+
+		/**
 		 * Creates a @a GLMultiResolutionCubeRaster object.
 		 *
 		 * @a tile_texel_dimension is the (possibly unadapted) dimension of each square tile texture
@@ -190,6 +203,12 @@ namespace GPlatesOpenGL
 		 * capture the highest resolution of the source raster.
 		 * NOTE: The adapted tile texel dimension will never be larger than twice @a tile_texel_dimension.
 		 * If it is larger than the maximum supported texture dimension then it will be changed to the maximum.
+		 *
+		 * If @a source_multi_resolution_raster is floating-point (which means this cube raster
+		 * will also be floating-point) then @a supports_floating_point_source_raster *must* return true.
+		 *
+		 * @a fixed_point_texture_filter only applies if the texture internal format of
+		 * @a source_multi_resolution_raster is fixed-point.
 		 *
 		 * NOTE: If the 'GL_ARB_texture_non_power_of_two' extension is *not* supported then the
 		 * actual tile texel dimension will be rounded up to the next power-of-two dimension unless
