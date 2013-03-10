@@ -352,24 +352,19 @@ namespace GPlatesOpenGL
 		initialise();
 
 		void
-		initialise_viewport(
-				Viewport &viewport);
+		initialise_viewport();
 
 		void
-		initialise_framebuffer(
-				Framebuffer &framebuffer);
+		initialise_framebuffer();
 
 		void
-		initialise_shader(
-				Shader &shader);
+		initialise_shader();
 
 		void
-		initialise_texture(
-				Texture &texture);
+		initialise_texture();
 
 		void
-		initialise_buffer(
-				Buffer &buffer);
+		initialise_buffer();
 
 		/**
 		 * Only GLContext can create a GLCapabilities - this is to prevent clients

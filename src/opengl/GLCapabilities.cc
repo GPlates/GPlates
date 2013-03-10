@@ -34,6 +34,11 @@
 
 #include "GLCapabilities.h"
 
+#include "global/CompilerWarnings.h"
+
+// We use macros in <GL/glew.h> that contain old-style casts.
+DISABLE_GCC_WARNING("-Wold-style-cast")
+
 
 // Set the GL_COLOR_ATTACHMENT0_EXT constant.
 const GLenum GPlatesOpenGL::GLCapabilities::Framebuffer::gl_COLOR_ATTACHMENT0 = GL_COLOR_ATTACHMENT0_EXT;
@@ -47,19 +52,18 @@ GPlatesOpenGL::GLCapabilities::initialise()
 {
 	qDebug() << "On this system GPlates supports the following OpenGL extensions...";
 
-	initialise_viewport(viewport);
-	initialise_framebuffer(framebuffer);
-	initialise_shader(shader);
-	initialise_texture(texture);
-	initialise_buffer(buffer);
+	initialise_viewport();
+	initialise_framebuffer();
+	initialise_shader();
+	initialise_texture();
+	initialise_buffer();
 
 	qDebug() << "...end of OpenGL extension list.";
 }
 
 
 void
-GPlatesOpenGL::GLCapabilities::initialise_viewport(
-		Viewport &viewport)
+GPlatesOpenGL::GLCapabilities::initialise_viewport()
 {
 #ifdef GL_ARB_viewport_array // In case old 'glew.h' header (GL_ARB_viewport_array is fairly recent)
 	if (GLEW_ARB_viewport_array)
@@ -83,8 +87,7 @@ GPlatesOpenGL::GLCapabilities::initialise_viewport(
 
 
 void
-GPlatesOpenGL::GLCapabilities::initialise_framebuffer(
-		Framebuffer &framebuffer)
+GPlatesOpenGL::GLCapabilities::initialise_framebuffer()
 {
 	if (GLEW_EXT_framebuffer_object)
 	{
@@ -142,8 +145,7 @@ GPlatesOpenGL::GLCapabilities::initialise_framebuffer(
 
 
 void
-GPlatesOpenGL::GLCapabilities::initialise_shader(
-		Shader &shader)
+GPlatesOpenGL::GLCapabilities::initialise_shader()
 {
 	if (GLEW_ARB_shader_objects)
 	{
@@ -287,8 +289,7 @@ GPlatesOpenGL::GLCapabilities::initialise_shader(
 
 
 void
-GPlatesOpenGL::GLCapabilities::initialise_texture(
-		Texture &texture)
+GPlatesOpenGL::GLCapabilities::initialise_texture()
 {
 	// Get the maximum texture size (dimension).
 	GLint max_texture_size;
@@ -475,8 +476,7 @@ GPlatesOpenGL::GLCapabilities::initialise_texture(
 
 
 void
-GPlatesOpenGL::GLCapabilities::initialise_buffer(
-		Buffer &buffer)
+GPlatesOpenGL::GLCapabilities::initialise_buffer()
 {
 	if (GLEW_ARB_vertex_buffer_object)
 	{
