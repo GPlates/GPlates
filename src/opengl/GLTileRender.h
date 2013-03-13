@@ -55,8 +55,8 @@ namespace GPlatesOpenGL
 		 * @a destination_viewport is the destination of the final tile-composited image.
 		 *
 		 * @a border is the number of pixels around the actual tile size to prevent clipping of
-		 * wide lines and points. Points are only rendered if their centre is inside the view frustum
-		 * and hence points with size greater than one will pop into view unless the view frustum
+		 * wide lines and points. Fat points are only rendered if their centre is inside the view frustum
+		 * and hence points with size greater than one will suddently pop into view unless the view frustum
 		 * is expanded to include some border pixels around the tile. A similar problem happens with
 		 * wide lines (for pixels near a clipped line vertex). The size of the border required is the
 		 * maximum of all the point sizes and line widths divided by two (eg, diameter versus radius).
@@ -77,7 +77,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns the maximum render target tile dimensions across all tiles.
 		 *
-		 * This is the maximum dimensions of all calls to @a get_tile_render_target_viewport.
+		 * This is the maximum dimensions of all calls to @a get_tile_render_target_scissor_rectangle.
 		 */
 		void
 		get_max_tile_render_target_dimensions(
@@ -113,6 +113,10 @@ namespace GPlatesOpenGL
 		 *
 		 * This transform should be pre-multiplied with the actual projection transform used
 		 * to render the scene.
+		 *
+		 * This transform adjusts the regular scene's view frustum such that it covers only the
+		 * current tile portion of the scene. This transform also includes the adjustments for
+		 * the tile's border pixels (if any).
 		 */
 		GLTransform::non_null_ptr_to_const_type
 		get_tile_projection_transform() const;
@@ -122,11 +126,35 @@ namespace GPlatesOpenGL
 		 * The viewport that should be specified to 'GLRenderer::gl_viewport()' before rendering
 		 * to the current tile (this viewport includes the tile's border pixels).
 		 *
-		 * Note that, unlike the other viewports, the viewport x and y offsets are always zero here.
+		 * Note that if there are border pixels then the viewport is larger than the source tile.
+		 * This enables fat points and wide lines just outside the tile region to rasterize pixels
+		 * within the tile region.
+		 * Also note that the viewport can go outside the render target bounds (eg, has negative
+		 * viewport x and y offsets). The viewport does not clip (that's what the projection transform)
+		 * is for - the viewport is only a transformation of Normalised Device Coordinates
+		 * (in the range [-1,1]) to window coordinates. Also note that since the projection transform
+		 * includes the border it also does not clip away the border pixels. It is the scissor rectangle
+		 * that clips away the border pixels (if the tile region is actually smaller than the render target).
 		 */
 		void
 		get_tile_render_target_viewport(
 				GLViewport &tile_render_target_viewport) const;
+
+
+		/**
+		 * The scissor rectangle that should be specified to 'GLRenderer::gl_scissor()' before rendering
+		 * to the current tile (this rectangle excludes the tile's border pixels).
+		 *
+		 * NOTE: You *must* specify a scissor rectangle (see 'GLRenderer::gl_scissor()') otherwise
+		 * fat points and wide lines can render to pixels outside the tile (scissor) region.
+		 * This only really matters if the tile region is smaller than the render target.
+		 */
+		void
+		get_tile_render_target_scissor_rectangle(
+				GLViewport &tile_render_target_scissor_rect) const
+		{
+			get_tile_source_viewport(tile_render_target_scissor_rect);
+		}
 
 
 		/**
@@ -171,8 +199,7 @@ namespace GPlatesOpenGL
 
 		GLViewport d_destination_viewport;
 
-		unsigned int d_border_x;
-		unsigned int d_border_y;
+		unsigned int d_border;
 
 		unsigned int d_max_tile_width;
 		unsigned int d_max_tile_height;

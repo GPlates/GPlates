@@ -38,35 +38,21 @@ GPlatesOpenGL::GLTileRender::GLTileRender(
 		const GLViewport &destination_viewport,
 		unsigned int border) :
 	d_destination_viewport(destination_viewport),
-	d_border_x(border),
-	d_border_y(border),
+	d_border(border),
 	d_current_tile_index(0)
 {
-	// If the destination viewport fits within the render target then there's no need for a border
-	// since there's no tiling (only a single render is required to fill the destination).
-	// This prevents unnecessary tiling for the common case where the render target matches the
-	// destination viewport.
-	if (render_target_width >= boost::numeric_cast<unsigned int>(d_destination_viewport.width()))
-	{
-		d_border_x = 0;
-		// No point using up more of the render target than is needed.
-		render_target_width = d_destination_viewport.width();
-	}
-	if (render_target_height >= boost::numeric_cast<unsigned int>(d_destination_viewport.height()))
-	{
-		d_border_y = 0;
-		// No point using up more of the render target than is needed.
-		render_target_height = d_destination_viewport.height();
-	}
-
-	// We want a positive tile width and height.
+	// We want a non-zero tile width and height.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			render_target_width > 2 * d_border_x &&
-				render_target_height > 2 * d_border_y,
+			render_target_width > 0 && render_target_height > 0,
 			GPLATES_ASSERTION_SOURCE);
 
-	d_max_tile_width = render_target_width - 2 * d_border_x;
-	d_max_tile_height = render_target_height - 2 * d_border_y;
+	// The maximum tile dimensions are the smaller of the dimensions of the render target and destination viewport.
+	d_max_tile_width = (render_target_width >= boost::numeric_cast<unsigned int>(d_destination_viewport.width()))
+			? d_destination_viewport.width()
+			: render_target_width;
+	d_max_tile_height = (render_target_height >= boost::numeric_cast<unsigned int>(d_destination_viewport.height()))
+			? d_destination_viewport.height()
+			: render_target_height;
 
 	d_num_tile_columns = (d_destination_viewport.width() / d_max_tile_width) +
 			((d_destination_viewport.width() % d_max_tile_width) ? 1 : 0);
@@ -80,8 +66,8 @@ GPlatesOpenGL::GLTileRender::get_max_tile_render_target_dimensions(
 		unsigned int &max_tile_render_target_width,
 		unsigned int &max_tile_render_target_height) const
 {
-	max_tile_render_target_width = d_max_tile_width + 2 * d_border_x;
-	max_tile_render_target_height = d_max_tile_height + 2 * d_border_y;
+	max_tile_render_target_width = d_max_tile_width;
+	max_tile_render_target_height = d_max_tile_height;
 }
 
 
@@ -194,16 +180,19 @@ GPlatesOpenGL::GLTileRender::initialise_current_tile()
 	}
 
 	// The render target viewport includes the border pixels.
+	//
+	// NOTE: It's fine for the viewport to go outside the render target (eg, negative x and y offsets).
+	// The viewport is just a window coordinate transform - it doesn't clip.
 	const GLViewport current_tile_render_target_viewport(
-			0,
-			0,
-			current_tile_width + 2 * d_border_x,
-			current_tile_height + 2 * d_border_y);
+			-static_cast<int>(d_border),
+			-static_cast<int>(d_border),
+			current_tile_width + 2 * d_border,
+			current_tile_height + 2 * d_border);
 
 	// The source viewport is the centre section of the render target viewport (ie, minus the border).
 	const GLViewport current_tile_source_viewport(
-			d_border_x,
-			d_border_y,
+			0,
+			0,
 			current_tile_width,
 			current_tile_height);
 
@@ -224,8 +213,8 @@ GPlatesOpenGL::GLTileRender::initialise_current_tile()
 
 	// Factor the border into the scaling.
 	// The render target includes border pixels so adjust the projection transform accordingly.
-	tile_projection_scale_x *= double(current_tile_width) / (current_tile_width + 2 * d_border_x);
-	tile_projection_scale_y *= double(current_tile_height) / (current_tile_height + 2 * d_border_y);
+	tile_projection_scale_x *= double(current_tile_width) / (current_tile_width + 2 * d_border);
+	tile_projection_scale_y *= double(current_tile_height) / (current_tile_height + 2 * d_border);
 
 	const double tile_centre_x = current_tile_column * d_max_tile_width + 0.5 * current_tile_width;
 	const double tile_centre_y = current_tile_row * d_max_tile_height + 0.5 * current_tile_height;

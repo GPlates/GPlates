@@ -430,7 +430,8 @@ GPlatesOpenGL::GLRenderer::begin_render_target_2D(
 
 GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
 GPlatesOpenGL::GLRenderer::begin_tile_render_target_2D(
-		GLViewport *tile_render_target_viewport)
+		GLViewport *tile_render_target_viewport,
+		GLViewport *tile_render_target_scissor_rect)
 {
 	// The current render texture target.
 	boost::optional<RenderTextureTarget> &render_texture_target =
@@ -444,11 +445,17 @@ GPlatesOpenGL::GLRenderer::begin_tile_render_target_2D(
 
 	if (render_texture_target->main_frame_buffer)
 	{
-		return begin_tile_rgba8_main_framebuffer_2D(render_texture_target.get(), tile_render_target_viewport);
+		return begin_tile_rgba8_main_framebuffer_2D(
+				render_texture_target.get(),
+				tile_render_target_viewport,
+				tile_render_target_scissor_rect);
 	}
 	else
 	{
-		return begin_tile_framebuffer_object_2D(render_texture_target.get(), tile_render_target_viewport);
+		return begin_tile_framebuffer_object_2D(
+				render_texture_target.get(),
+				tile_render_target_viewport,
+				tile_render_target_scissor_rect);
 	}
 }
 
@@ -1852,7 +1859,8 @@ GPlatesOpenGL::GLRenderer::begin_rgba8_main_framebuffer_2D(
 GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
 GPlatesOpenGL::GLRenderer::begin_tile_rgba8_main_framebuffer_2D(
 		RenderTextureTarget &render_texture_target,
-		GLViewport *tile_render_target_viewport)
+		GLViewport *tile_render_target_viewport,
+		GLViewport *tile_render_target_scissor_rect)
 {
 	GPlatesGlobal::Assert<GLRendererAPIError>(
 			render_texture_target.main_frame_buffer,
@@ -1863,16 +1871,22 @@ GPlatesOpenGL::GLRenderer::begin_tile_rgba8_main_framebuffer_2D(
 	render_texture_target.main_frame_buffer->tile_render.get_tile_render_target_viewport(
 			current_tile_render_target_viewport);
 
-	// Mask off rendering outside the current tile render target viewport (eg, due to wide lines
-	// and fat points) in case the viewport specified is smaller than the render target.
+	GLViewport current_tile_render_target_scissor_rect;
+	render_texture_target.main_frame_buffer->tile_render.get_tile_render_target_scissor_rectangle(
+			current_tile_render_target_scissor_rect);
+
+	// Mask off rendering outside the current tile region in case the tile is smaller than the
+	// render target. Note that the tile's viewport is slightly larger than the tile itself
+	// (the scissor rectangle) in order that fat points and wide lines just outside the tile
+	// have pixels rasterised inside the tile (the projection transform has also been expanded slightly).
+	//
 	// This includes a 'gl_clear()' calls which clear the entire main framebuffer.
-	// So set the scissor rectangle to match the current tile render target viewport.
 	gl_enable(GL_SCISSOR_TEST);
 	gl_scissor(
-			current_tile_render_target_viewport.x(),
-			current_tile_render_target_viewport.y(),
-			current_tile_render_target_viewport.width(),
-			current_tile_render_target_viewport.height());
+			current_tile_render_target_scissor_rect.x(),
+			current_tile_render_target_scissor_rect.y(),
+			current_tile_render_target_scissor_rect.width(),
+			current_tile_render_target_scissor_rect.height());
 	gl_viewport(
 			current_tile_render_target_viewport.x(),
 			current_tile_render_target_viewport.y(),
@@ -1883,6 +1897,11 @@ GPlatesOpenGL::GLRenderer::begin_tile_rgba8_main_framebuffer_2D(
 	if (tile_render_target_viewport)
 	{
 		*tile_render_target_viewport = current_tile_render_target_viewport;
+	}
+	// If caller requested the tile render target scissor rectangle.
+	if (tile_render_target_scissor_rect)
+	{
+		*tile_render_target_scissor_rect = current_tile_render_target_scissor_rect;
 	}
 
 	// Return the projection transform for the current tile.
@@ -1981,7 +2000,7 @@ GPlatesOpenGL::GLRenderer::end_rgba8_main_framebuffer_2D(
 	texture_coord_scale.gl_scale(
 			double(max_tile_render_target_width) / save_restore_texture->get_width().get(),
 			double(max_tile_render_target_height) / save_restore_texture->get_height().get(),
-			0);
+			1);
 	gl_load_texture_matrix(GL_TEXTURE0, texture_coord_scale);
 
 	// We only want to draw the full-screen quad into the part of the main framebuffer that was saved.
@@ -2040,7 +2059,8 @@ GPlatesOpenGL::GLRenderer::begin_framebuffer_object_2D(
 GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
 GPlatesOpenGL::GLRenderer::begin_tile_framebuffer_object_2D(
 		RenderTextureTarget &render_texture_target,
-		GLViewport *tile_render_target_viewport)
+		GLViewport *tile_render_target_viewport,
+		GLViewport *tile_render_target_scissor_rect)
 {
 	GPlatesGlobal::Assert<GLRendererAPIError>(
 			!render_texture_target.main_frame_buffer,
@@ -2067,6 +2087,11 @@ GPlatesOpenGL::GLRenderer::begin_tile_framebuffer_object_2D(
 	if (tile_render_target_viewport)
 	{
 		*tile_render_target_viewport = render_texture_target.texture_viewport;
+	}
+	// If caller requested the tile render target scissor rectangle.
+	if (tile_render_target_scissor_rect)
+	{
+		*tile_render_target_scissor_rect = render_texture_target.texture_viewport;
 	}
 
 	// Return the identity projection transform.
@@ -2389,9 +2414,10 @@ GPlatesOpenGL::GLRenderer::RenderTarget2DScope::~RenderTarget2DScope()
 
 GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
 GPlatesOpenGL::GLRenderer::RenderTarget2DScope::begin_tile(
-		GLViewport *tile_render_target_viewport)
+		GLViewport *tile_render_target_viewport,
+		GLViewport *tile_render_target_scissor_rect)
 {
-	return d_renderer.begin_tile_render_target_2D(tile_render_target_viewport);
+	return d_renderer.begin_tile_render_target_2D(tile_render_target_viewport, tile_render_target_scissor_rect);
 }
 
 

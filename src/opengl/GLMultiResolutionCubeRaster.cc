@@ -604,10 +604,10 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 	do
 	{
 		// Begin the current render target tile - this also sets the viewport.
-		GLTransform::non_null_ptr_to_const_type tile_projection = render_target_scope.begin_tile();
+		GLTransform::non_null_ptr_to_const_type render_target_tile_projection = render_target_scope.begin_tile();
 
 		// Set up the projection transform adjustment for the current render target tile.
-		renderer.gl_load_matrix(GL_PROJECTION, tile_projection->get_matrix());
+		renderer.gl_load_matrix(GL_PROJECTION, render_target_tile_projection->get_matrix());
 		// Multiply in the projection matrix.
 		renderer.gl_mult_matrix(GL_PROJECTION, tile.d_projection_transform->get_matrix());
 

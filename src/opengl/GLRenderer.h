@@ -440,9 +440,10 @@ namespace GPlatesOpenGL
 		 * projection transform and the result used as the actual projection transform. This ensures
 		 * only the tile region of the view frustum is rendered to.
 		 *
-		 * @a tile_render_target_viewport is the viewport that is specified internally to @a gl_viewport.
-		 * It contains the tile border required to prevent clipping of wide lines and fat points.
-		 * A stencil rectangle is also specified internally for this viewport.
+		 * @a tile_render_target_viewport and @a tile_render_target_scissor_rect are the rectangles
+		 * specified internally to @a gl_viewport and @a gl_scissor, respectively.
+		 * The viewport contains the tile border required to prevent clipping of wide lines and fat points.
+		 * A stencil rectangle prevents rasterization of pixels outside the actual tile region.
 		 * NOTE: You do not need to call @a gl_viewport or @a gl_scissor (they are done internally).
 		 *
 		 * NOTE: @a begin_tile_render_target_2D and @a end_tile_render_target_2D
@@ -457,7 +458,8 @@ namespace GPlatesOpenGL
 		 */
 		GLTransform::non_null_ptr_to_const_type
 		begin_tile_render_target_2D(
-				GLViewport *tile_render_target_viewport = NULL);
+				GLViewport *tile_render_target_viewport = NULL,
+				GLViewport *tile_render_target_scissor_rect = NULL);
 
 		/**
 		 * Ends the current tile (sub-region) of the current 2D render target.
@@ -516,7 +518,8 @@ namespace GPlatesOpenGL
 			 */
 			GLTransform::non_null_ptr_to_const_type
 			begin_tile(
-					GLViewport *tile_render_target_viewport = NULL);
+					GLViewport *tile_render_target_viewport = NULL,
+					GLViewport *tile_render_target_scissor_rect = NULL);
 
 			/**
 			 * Ends the current tile of the current 2D render target - see 'end_tile_render_target_2D()'.
@@ -1618,7 +1621,8 @@ namespace GPlatesOpenGL
 		GLTransform::non_null_ptr_to_const_type
 		begin_tile_rgba8_main_framebuffer_2D(
 				GLRendererImpl::RenderTextureTarget &render_texture_target,
-				GLViewport *tile_render_target_viewport);
+				GLViewport *tile_render_target_viewport,
+				GLViewport *tile_render_target_scissor_rect);
 
 		bool
 		end_tile_rgba8_main_framebuffer_2D(
@@ -1635,7 +1639,8 @@ namespace GPlatesOpenGL
 		GLTransform::non_null_ptr_to_const_type
 		begin_tile_framebuffer_object_2D(
 				GLRendererImpl::RenderTextureTarget &render_texture_target,
-				GLViewport *tile_render_target_viewport);
+				GLViewport *tile_render_target_viewport,
+				GLViewport *tile_render_target_scissor_rect);
 
 		bool
 		end_tile_framebuffer_object_2D(
