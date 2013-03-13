@@ -104,10 +104,8 @@ GPlatesMaths::UnitQuaternion3D::get_rotation_params(
 	 * multiple of two PI, and the axis of rotation is clearly determined.
 	 */
 	real_t theta_on_2 = acos(scalar_part());  // not a multiple of PI
-	real_t sin_of_theta_on_2 = sin(theta_on_2);  // not zero
 
-	Vector3D axis_vector = (1 / sin_of_theta_on_2) * vector_part();
-	UnitVector3D axis_unit_vector = axis_vector.get_normalisation();
+	UnitVector3D axis_unit_vector = vector_part().get_normalisation();
 
 	// Now, let's use the axis hint (if provided) to determine whether our rotation axis is
 	// pointing in the expected direction (ie, in the direction the user originally specified).
