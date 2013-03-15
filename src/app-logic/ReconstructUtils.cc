@@ -445,7 +445,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_as_half_stage(
 }
 
 
-boost::optional<GPlatesMaths::FiniteRotation>
+GPlatesMaths::FiniteRotation
 GPlatesAppLogic::ReconstructUtils::get_half_stage_rotation(
 		const ReconstructionTree &reconstruction_tree,
 		GPlatesModel::integer_plate_id_type left_plate_id,
@@ -469,46 +469,32 @@ GPlatesAppLogic::ReconstructUtils::get_half_stage_rotation(
 	FiniteRotation left_rotation = reconstruction_tree.get_composed_absolute_rotation(left_plate_id).first;
 	FiniteRotation right_rotation = reconstruction_tree.get_composed_absolute_rotation(right_plate_id).first;
 
-	const UnitQuaternion3D &left_q = left_rotation.unit_quat();
-	const UnitQuaternion3D &right_q = right_rotation.unit_quat();
-
 	// NOTE: Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible
 	// that left_q and right_q could be separated by a longer path than are left_q and -right_q
 	// (or -left_q and right_q).
-	// So check if we're using the longer path and negate either quaternion in order to
-	// take the shorter path. It actually doesn't matter which one we negate.
+	// However we do *not* restrict ourselves to the shortest path (like 'FiniteRotation::interpolate()'
+	// does in its SLERP routine). This is because the user (who created the total poles in the
+	// rotation file) may want to take the longest path.
 	//
-	const UnitQuaternion3D left_to_right_q = dot(left_q, right_q).is_precisely_less_than(0)
-			? left_q.get_inverse() * -right_q
-			: left_q.get_inverse() * right_q;
+	const FiniteRotation left_to_right = compose(get_reverse(left_rotation), right_rotation);
 
-	if (!represents_identity_rotation(left_to_right_q))
+	if (represents_identity_rotation(left_to_right.unit_quat()))
 	{
-		// It's arbitrary which axis hint we use.
-		//
-		// NOTE: We must be careful due to the possible quaternion negation above.
-		// We use the left rotation's axis hint here because it never gets negated above.
-		// If we used the right rotation then we'd need to take the possible negation into account here.
-		const boost::optional<GPlatesMaths::UnitVector3D> &left_to_right_axis_hint = left_rotation.axis_hint();
-
-		UnitQuaternion3D::RotationParams left_to_right_params =
-				left_to_right_q.get_rotation_params(left_to_right_axis_hint);
-		const real_t half_angle = 0.5 * left_to_right_params.angle;
-
-		FiniteRotation half_rotation = 
-				FiniteRotation::create(
-						UnitQuaternion3D::create_rotation(
-								left_to_right_params.axis, 
-								half_angle),
-								left_to_right_axis_hint);
-
-		return compose(left_rotation, half_rotation);
-
+		return left_rotation;
 	}
-	else
-	{
-		return boost::none;
-	}
+
+	UnitQuaternion3D::RotationParams left_to_right_params =
+			left_to_right.unit_quat().get_rotation_params(left_to_right.axis_hint());
+	const real_t half_angle = 0.5 * left_to_right_params.angle;
+
+	FiniteRotation half_rotation = 
+			FiniteRotation::create(
+					UnitQuaternion3D::create_rotation(
+							left_to_right_params.axis, 
+							half_angle),
+							left_to_right.axis_hint());
+
+	return compose(left_rotation, half_rotation);
 
 	//
 	// NOTE: The above algorithm works only if there is no motion of the right plate relative to
@@ -609,57 +595,45 @@ GPlatesAppLogic::ReconstructUtils::get_stage_pole(
 	//    = inverse[R(0->t2,A->F)] * R(0->t2,A->M) * inverse[R(0->t1,A->M)] * R(0->t1,A->F)
 	//
 	// ...where 'A' is the anchor plate, 'F' is the fixed plate and 'M' is the moving plate.
+
+	// NOTE: Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible
+	// that left_q and right_q could be separated by a longer path than are left_q and -right_q
+	// (or -left_q and right_q).
+	// However we do *not* restrict ourselves to the shortest path (like 'FiniteRotation::interpolate()'
+	// does in its SLERP routine). This is because the user (who created the total poles in the
+	// rotation file) may want to take the longest path.
 	//
 
 	// For t1, get the rotation for plate M w.r.t. anchor	
-	GPlatesMaths::UnitQuaternion3D rot_0_to_t1_M = 
-		reconstruction_tree_1.get_composed_absolute_rotation(moving_plate_id).first.unit_quat();
+	GPlatesMaths::FiniteRotation rot_0_to_t1_M = 
+		reconstruction_tree_1.get_composed_absolute_rotation(moving_plate_id).first;
 
 	// For t1, get the rotation for plate F w.r.t. anchor	
-	GPlatesMaths::UnitQuaternion3D rot_0_to_t1_F = 
-		reconstruction_tree_1.get_composed_absolute_rotation(fixed_plate_id).first.unit_quat();	
+	GPlatesMaths::FiniteRotation rot_0_to_t1_F = 
+		reconstruction_tree_1.get_composed_absolute_rotation(fixed_plate_id).first;
 
 
 	// For t2, get the rotation for plate M w.r.t. anchor	
-	GPlatesMaths::UnitQuaternion3D rot_0_to_t2_M = 
-		reconstruction_tree_2.get_composed_absolute_rotation(moving_plate_id).first.unit_quat();
+	GPlatesMaths::FiniteRotation rot_0_to_t2_M = 
+		reconstruction_tree_2.get_composed_absolute_rotation(moving_plate_id).first;
 
 	// For t2, get the rotation for plate F w.r.t. anchor	
-	GPlatesMaths::UnitQuaternion3D rot_0_to_t2_F = 
-		reconstruction_tree_2.get_composed_absolute_rotation(fixed_plate_id).first.unit_quat();	
+	GPlatesMaths::FiniteRotation rot_0_to_t2_F = 
+		reconstruction_tree_2.get_composed_absolute_rotation(fixed_plate_id).first;
 
 	// Compose these rotations so that we get
 	// the stage pole from time t1 to time t2 for plate M w.r.t. plate F.
 
-	//
-	// NOTE: In the following quaternion compositions this description refers to a composition of...
-	//
-	//    final_q = q1.get_inverse() * q2
-	//
-	// ...or...
-	//
-	//    final_q = q1 * q2.get_inverse()
-	//
-	// Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible that
-	// q1 and q2 could be separated by a longer path than are q1 and -q2 (or -q1 and q2).
-	// So check if we're using the longer path and negate either quaternion in order to
-	// take the shorter path. It actually doesn't matter which one we negate.
-	//
+	GPlatesMaths::FiniteRotation rot_t1 = 
+		GPlatesMaths::compose(GPlatesMaths::get_reverse(rot_0_to_t1_F), rot_0_to_t1_M);
 
-	const GPlatesMaths::UnitQuaternion3D rot_t1 = dot(rot_0_to_t1_F, rot_0_to_t1_M).is_precisely_less_than(0)
-			? rot_0_to_t1_F.get_inverse() * -rot_0_to_t1_M
-			: rot_0_to_t1_F.get_inverse() * rot_0_to_t1_M;
+	GPlatesMaths::FiniteRotation rot_t2 = 
+		GPlatesMaths::compose(GPlatesMaths::get_reverse(rot_0_to_t2_F), rot_0_to_t2_M);	
 
-	const GPlatesMaths::UnitQuaternion3D rot_t2 = dot(rot_0_to_t2_F, rot_0_to_t2_M).is_precisely_less_than(0)
-			? rot_0_to_t2_F.get_inverse() * -rot_0_to_t2_M
-			: rot_0_to_t2_F.get_inverse() * rot_0_to_t2_M;
+	GPlatesMaths::FiniteRotation stage_pole = 
+		GPlatesMaths::compose(rot_t2,GPlatesMaths::get_reverse(rot_t1));	
 
-	const GPlatesMaths::UnitQuaternion3D stage_pole = dot(rot_t2, rot_t1).is_precisely_less_than(0)
-			? rot_t2 * (-rot_t1).get_inverse()
-			: rot_t2 * rot_t1.get_inverse();
-
-	return GPlatesMaths::FiniteRotation::create(stage_pole, boost::none);	
-
+	return stage_pole;	
 }
 
 void

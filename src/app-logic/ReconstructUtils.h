@@ -321,7 +321,15 @@ namespace GPlatesAppLogic
 				bool reverse_reconstruct = false);
 
 
-		boost::optional<GPlatesMaths::FiniteRotation>
+		/**
+		 * Returns the half-stage rotation between @a left_plate_id and @a right_plate_id at the
+		 * reconstruction time of the specified reconstruction tree.
+		 *
+		 * NOTE: Since this method does not know when sea-floor spreading begins it assumes that
+		 * the relative rotation between the left and right plates is the identity rotation when
+		 * seafloor spreading is *not* occurring.
+		 */
+		GPlatesMaths::FiniteRotation
 		get_half_stage_rotation(
 				const ReconstructionTree &reconstruction_tree,
 				GPlatesModel::integer_plate_id_type left_plate_id,
@@ -381,22 +389,17 @@ namespace GPlatesAppLogic
 		{
 			// Get the composed absolute rotation needed to bring a thing on that plate
 			// in the present day to this time.
-			boost::optional<GPlatesMaths::FiniteRotation> rotation =
+			GPlatesMaths::FiniteRotation rotation =
 				get_half_stage_rotation(reconstruction_tree,left_plate_id,right_plate_id);
-
-			if (!rotation)
-			{
-				return geometry;
-			}
 
 			// Are we reversing reconstruction back to present day ?
 			if (reverse_reconstruct)
 			{
-				*rotation = GPlatesMaths::get_reverse(*rotation);
+				rotation = GPlatesMaths::get_reverse(rotation);
 			}
 
 			// Apply the rotation.
-			return (*rotation) * geometry;
+			return rotation * geometry;
 		}
 
 	}

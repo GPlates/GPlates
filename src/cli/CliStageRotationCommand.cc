@@ -293,29 +293,12 @@ GPlatesCli::StageRotationCommand::run(
 		// See "ReconstructUtils::get_stage_pole()" for more details.
 		//
 
-		// For t1, get the rotation for plate L w.r.t. anchor	
-		GPlatesMaths::UnitQuaternion3D rot_0_to_t1_L = 
-				start_reconstruction_tree->get_composed_absolute_rotation(d_fixed_plate_id).first.unit_quat();
-
-		// For t2, get the rotation for plate L w.r.t. anchor	
-		GPlatesMaths::UnitQuaternion3D rot_0_to_t2_L = 
-				end_reconstruction_tree->get_composed_absolute_rotation(d_fixed_plate_id).first.unit_quat();
-
-		// NOTE: Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible
-		// that left_q and right_q could be separated by a longer path than are left_q and -right_q
-		// (or -left_q and right_q).
-		// So check if we're using the longer path and negate either quaternion in order to
-		// take the shorter path. It actually doesn't matter which one we negate.
-		//
-		if (dot(rot_0_to_t1_L, rot_0_to_t2_L).is_precisely_less_than(0))
-		{
-			rot_0_to_t2_L = -rot_0_to_t2_L;
-		}
-
 		asymmetric_stage_rotation =
-				GPlatesMaths::FiniteRotation::create(
-						rot_0_to_t2_L * asymmetric_stage_rotation.unit_quat() * rot_0_to_t1_L.get_inverse(),
-						boost::none/*axis_hint*/);
+				compose(
+						compose(
+								end_reconstruction_tree->get_composed_absolute_rotation(d_fixed_plate_id).first,
+								asymmetric_stage_rotation),
+						get_reverse(start_reconstruction_tree->get_composed_absolute_rotation(d_fixed_plate_id).first));
 	}
 
 	// Output the stage rotation relative to the anchor plate.

@@ -368,19 +368,16 @@ namespace GPlatesAppLogic
 							d_reconstruction_params.get_right_plate_id().get();
 
 					// Get the half-stage rotation.
-					boost::optional<GPlatesMaths::FiniteRotation> finite_rotation =
+					const GPlatesMaths::FiniteRotation finite_rotation =
 							ReconstructUtils::get_half_stage_rotation(
-										*d_reconstruction_tree,
-										left_plate_id,
-										right_plate_id);
-					if (finite_rotation)
-					{
-						d_reconstruction_rotation = Transform::create(
-								finite_rotation.get(), left_plate_id, right_plate_id);
+									*d_reconstruction_tree,
+									left_plate_id,
+									right_plate_id);
+					d_reconstruction_rotation = Transform::create(
+							finite_rotation, left_plate_id, right_plate_id);
 
-						// Now visit the feature to reconstruct any geometries we find.
-						return true;
-					}
+					// Now visit the feature to reconstruct any geometries we find.
+					return true;
 				}
 
 				// Create the identity transform.
