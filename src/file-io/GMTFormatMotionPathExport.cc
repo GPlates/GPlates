@@ -29,14 +29,20 @@
 #include <QStringList>
 #include <QTextStream>
 
+#include "GMTFormatMotionPathExport.h"
+
 #include "app-logic/MotionPathUtils.h"
 #include "app-logic/ReconstructedMotionPath.h"
+
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/GMTFormatHeader.h"
+
 #include "maths/LatLonPoint.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
+
 #include "model/FeatureVisitor.h"
+
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlTimeInstant.h"
@@ -44,8 +50,9 @@
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/XsString.h"
+
 #include "utils/StringFormattingUtils.h"
-#include "GMTFormatMotionPathExport.h"
+
 
 namespace
 {
@@ -153,28 +160,6 @@ namespace
 			print_gmt_coordinate_line(text_stream,llp.latitude(),llp.longitude(),time,false /* reverse_coordinate_ord */);
 		}
 
-	}
-
-	void
-	get_export_times(
-		std::vector<double> &export_times,
-		const std::vector<double> &times,
-		const double &reconstruction_time)
-	{
-		std::vector<double>::const_iterator 
-			it = times.begin(),
-			end = times.end();
-			
-		while ((it != end) && (*it <= reconstruction_time))
-		{
-			++it;
-		}	
-		export_times.push_back(reconstruction_time);
-		while (it != end)
-		{
-			export_times.push_back(*it);
-			++it;
-		}
 	}
 
 	
@@ -352,7 +337,7 @@ GPlatesFileIO::GMTFormatMotionPathsExport::export_motion_paths(
 		gmt_header_printer.print_feature_header_lines(output_stream,feature_header_lines);
 
 
-		get_export_times(export_times,feature_times,reconstruction_time);
+		GPlatesAppLogic::MotionPathUtils::fill_times_vector(export_times, reconstruction_time, feature_times);
 
 		reconstructed_motion_path_seq_type::const_iterator rf_iter;
 		for (rf_iter = motion_path_group.recon_geoms.begin();

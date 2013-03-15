@@ -28,6 +28,8 @@
 #ifndef GPLATES_APPLOGIC_MOTIONPATHUTILS_H
 #define GPLATES_APPLOGIC_MOTIONPATHUTILS_H
 
+#include <vector>
+
 #include "app-logic/ReconstructionTree.h"
 #include "maths/PolylineOnSphere.h"
 #include "model/FeatureCollectionHandle.h"
@@ -252,6 +254,12 @@ namespace GPlatesAppLogic
 			const MotionPathPropertyFinder	 &motion_track_parameters,
 			std::vector<GPlatesMaths::PointOnSphere> &motion_track,
 			const std::vector<GPlatesMaths::FiniteRotation> &rotations);
+
+		void
+		fill_times_vector(
+			std::vector<double> &times,
+			const double &reconstruction_time,
+			const std::vector<double> &time_samples);		
 
 	}
 

@@ -73,29 +73,6 @@ namespace
 		return output;
 	}
 
-	void
-	get_export_times(
-		std::vector<double> &export_times,
-		const std::vector<double> &times,
-		const double &reconstruction_time)
-	{
-		std::vector<double>::const_iterator 
-			it = times.begin(),
-			end = times.end();
-			
-		while ((it != end) && (*it <= reconstruction_time))
-		{
-			++it;
-		}	
-		export_times.push_back(reconstruction_time);
-		while (it != end)
-		{
-			export_times.push_back(*it);
-			++it;
-		}
-	}
-
-
 	
 	
 	/**

@@ -30,7 +30,6 @@
 
 #include "MotionPathGeometryPopulator.h"
 
-#include "FlowlineUtils.h"
 #include "MotionPathUtils.h"
 
 #include "Reconstruction.h"
@@ -96,7 +95,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::initialise_pre_feature_properties(
 		// the oldest time in the motion track.
 		std::vector<double> times;
 
-		FlowlineUtils::fill_times_vector(
+		MotionPathUtils::fill_times_vector(
 			times,
 			d_recon_time.value(),
 			d_motion_track_property_finder.get_times());
