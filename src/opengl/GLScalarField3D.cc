@@ -1215,7 +1215,8 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_depth_range(
 	const GLViewport &screen_viewport = renderer.gl_get_viewport();
 
 	// Begin rendering to the depth range render target.
-	volume_fill_depth_range_screen_render_target.get()->begin_render(
+	GLScreenRenderTarget::RenderScope volume_fill_depth_range_screen_render_target_scope(
+			*volume_fill_depth_range_screen_render_target.get(),
 			renderer,
 			screen_viewport.x() + screen_viewport.width(),
 			screen_viewport.y() + screen_viewport.height());
@@ -1297,7 +1298,7 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_depth_range(
 	volume_fill_boundary_visitor.end_rendering();
 
 	// Finished rendering to the screen render target.
-	volume_fill_depth_range_screen_render_target.get()->end_render(renderer);
+	volume_fill_depth_range_screen_render_target_scope.end_render();
 
 	return true;
 }
@@ -1376,7 +1377,8 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_walls(
 	const GLViewport &screen_viewport = renderer.gl_get_viewport();
 
 	// Begin rendering to the walls render target.
-	volume_fill_walls_screen_render_target.get()->begin_render(
+	GLScreenRenderTarget::RenderScope volume_fill_walls_screen_render_target_scope(
+			*volume_fill_walls_screen_render_target.get(),
 			renderer,
 			screen_viewport.x() + screen_viewport.width(),
 			screen_viewport.y() + screen_viewport.height());
@@ -1444,7 +1446,7 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_walls(
 	volume_fill_walls_visitor.end_rendering();
 
 	// Finished rendering to the screen render target.
-	volume_fill_walls_screen_render_target.get()->end_render(renderer);
+	volume_fill_walls_screen_render_target_scope.end_render();
 
 	return true;
 }

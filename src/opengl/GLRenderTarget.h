@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2012 The University of Sydney, Australia
+ * Copyright (C) 2013 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_OPENGL_GLSCREENRENDERTARGET_H
-#define GPLATES_OPENGL_GLSCREENRENDERTARGET_H
+#ifndef GPLATES_OPENGL_GLRENDERTARGET_H
+#define GPLATES_OPENGL_GLRENDERTARGET_H
 
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
@@ -39,17 +39,17 @@ namespace GPlatesOpenGL
 	class GLRenderer;
 
 	/**
-	 * Used to render to a screen-size texture (with optional associated hardware depth buffer).
+	 * Used to render to a fixed-dimension texture (with optional associated hardware depth buffer).
 	 *
 	 * Your rendering is done between @a begin_render and @a end_render.
 	 *
 	 * NOTE: While native framebuffer objects in OpenGL cannot be shared across contexts,
-	 * the @a GLScreenRenderTarget wrapper can (because internally it creates a framebuffer object
+	 * the @a GLRenderTarget wrapper can (because internally it creates a framebuffer object
 	 * for each context that it encounters - that uses it).
 	 * So you can freely use it in different OpenGL contexts.
 	 * This enables sharing of the associated texture and renderbuffer (which are shareable across contexts).
 	 */
-	class GLScreenRenderTarget
+	class GLRenderTarget
 	{
 	public:
 
@@ -58,30 +58,32 @@ namespace GPlatesOpenGL
 		// is so these objects can be used with GPlatesUtils::ObjectCache.
 		//
 
-		//! A convenience typedef for a shared pointer to a @a GLScreenRenderTarget.
-		typedef boost::shared_ptr<GLScreenRenderTarget> shared_ptr_type;
-		typedef boost::shared_ptr<const GLScreenRenderTarget> shared_ptr_to_const_type;
+		//! A convenience typedef for a shared pointer to a @a GLRenderTarget.
+		typedef boost::shared_ptr<GLRenderTarget> shared_ptr_type;
+		typedef boost::shared_ptr<const GLRenderTarget> shared_ptr_to_const_type;
 
 
 		/**
 		 * Returns true if the texture internal format and optional depth buffer combination are
 		 * supported by the runtime system (also requires support for GL_EXT_framebuffer_object).
 		 *
-		 * Also requires support for non-power-of-two textures since the screen dimensions can
-		 * change and are unlikely to be a power-of-two.
+		 * Also requires support for non-power-of-two textures if the render target dimensions
+		 * are not a power-of-two.
 		 */
 		static
 		bool
 		is_supported(
 				GLRenderer &renderer,
 				GLint texture_internalformat,
-				bool include_depth_buffer);
+				bool include_depth_buffer,
+				unsigned int render_target_width,
+				unsigned int render_target_height);
 
 
 		/**
-		 * Creates a shared pointer to a @a GLScreenRenderTarget object.
+		 * Creates a shared pointer to a @a GLRenderTarget object.
 		 *
-		 * Creates the texture and optional depth buffer resources but doesn't allocate them yet.
+		 * Creates the texture and optional depth buffer resources.
 		 *
 		 * @a texture_internalformat is the same parameter used for 'GLTexture::gl_tex_image_2D()'.
 		 */
@@ -90,41 +92,50 @@ namespace GPlatesOpenGL
 		create(
 				GLRenderer &renderer,
 				GLint texture_internalformat,
-				bool include_depth_buffer)
+				bool include_depth_buffer,
+				unsigned int render_target_width,
+				unsigned int render_target_height)
 		{
 			return shared_ptr_type(
-					new GLScreenRenderTarget(
-							renderer, texture_internalformat, include_depth_buffer));
+					new GLRenderTarget(
+							renderer,
+							texture_internalformat,
+							include_depth_buffer,
+							render_target_width,
+							render_target_height));
 		}
 
 		/**
 		 * Same as @a create but returns a std::auto_ptr - to guarantee only one owner.
 		 */
 		static
-		std::auto_ptr<GLScreenRenderTarget>
+		std::auto_ptr<GLRenderTarget>
 		create_as_auto_ptr(
 				GLRenderer &renderer,
 				GLint texture_internalformat,
-				bool include_depth_buffer)
+				bool include_depth_buffer,
+				unsigned int render_target_width,
+				unsigned int render_target_height)
 		{
-			return std::auto_ptr<GLScreenRenderTarget>(
-					new GLScreenRenderTarget(
-							renderer, texture_internalformat, include_depth_buffer));
+			return std::auto_ptr<GLRenderTarget>(
+					new GLRenderTarget(
+							renderer,
+							texture_internalformat,
+							include_depth_buffer,
+							render_target_width,
+							render_target_height));
 		}
 
 
 		/**
-		 * Ensures internal texture (and optional depth buffer) have a storage allocation of the
-		 * specified dimensions and binds the internal framebuffer object for rendering to them.
+		 * Binds the internal framebuffer object for rendering to the internal texture and optional depth buffer.
 		 *
 		 * NOTE: The framebuffer object (if any) that is currently bound will be re-bound when
 		 * @a end_render is called.
 		 */
 		void
 		begin_render(
-				GLRenderer &renderer,
-				unsigned int render_target_width,
-				unsigned int render_target_height);
+				GLRenderer &renderer);
 
 
 		/**
@@ -145,10 +156,8 @@ namespace GPlatesOpenGL
 		{
 		public:
 			RenderScope(
-					GLScreenRenderTarget &screen_render_target,
-					GLRenderer &renderer,
-					unsigned int render_target_width,
-					unsigned int render_target_height);
+					GLRenderTarget &screen_render_target,
+					GLRenderer &renderer);
 
 			~RenderScope();
 
@@ -157,7 +166,7 @@ namespace GPlatesOpenGL
 			end_render();
 
 		private:
-			GLScreenRenderTarget &d_screen_render_target;
+			GLRenderTarget &d_screen_render_target;
 			GLRenderer &d_renderer;
 			bool d_called_end_render;
 		};
@@ -181,12 +190,14 @@ namespace GPlatesOpenGL
 		 */
 		GLRenderTargetImpl d_impl;
 
-		GLScreenRenderTarget(
+		GLRenderTarget(
 				GLRenderer &renderer,
 				GLint texture_internalformat,
-				bool include_depth_buffer);
+				bool include_depth_buffer,
+				unsigned int render_target_width,
+				unsigned int render_target_height);
 
 	};
 }
 
-#endif // GPLATES_OPENGL_GLSCREENRENDERTARGET_H
+#endif // GPLATES_OPENGL_GLRENDERTARGET_H

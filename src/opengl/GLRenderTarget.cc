@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2012 The University of Sydney, Australia
+ * Copyright (C) 2013 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,46 +25,63 @@
 
 #include <QDebug>
 
-#include "GLScreenRenderTarget.h"
+#include "GLRenderTarget.h"
 
 #include "GLRenderer.h"
 
+#include "utils/Base2Utils.h"
+
 
 bool
-GPlatesOpenGL::GLScreenRenderTarget::is_supported(
+GPlatesOpenGL::GLRenderTarget::is_supported(
 		GLRenderer &renderer,
 		GLint texture_internalformat,
-		bool include_depth_buffer)
+		bool include_depth_buffer,
+		unsigned int render_target_width,
+		unsigned int render_target_height)
 {
-	return GLRenderTargetImpl::is_supported(renderer, texture_internalformat, include_depth_buffer)
-		// Require support for non-power-of-two textures - the screen dimensions can change and
-		// are unlikely to be a power-of-two.
-		&& renderer.get_capabilities().texture.gl_ARB_texture_non_power_of_two;
+	// Test support for the texture internal format.
+	if (!GLRenderTargetImpl::is_supported(renderer, texture_internalformat, include_depth_buffer))
+	{
+		return false;
+	}
+
+	// Require support for non-power-of-two textures if texture dimensions are not a power-of-two.
+	if (!GPlatesUtils::Base2::is_power_of_two(render_target_width) ||
+		!GPlatesUtils::Base2::is_power_of_two(render_target_height))
+	{
+		if (!renderer.get_capabilities().texture.gl_ARB_texture_non_power_of_two)
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 
-GPlatesOpenGL::GLScreenRenderTarget::GLScreenRenderTarget(
+GPlatesOpenGL::GLRenderTarget::GLRenderTarget(
 		GLRenderer &renderer,
 		GLint texture_internalformat,
-		bool include_depth_buffer) :
+		bool include_depth_buffer,
+		unsigned int render_target_width,
+		unsigned int render_target_height) :
 	d_impl(renderer, texture_internalformat, include_depth_buffer)
 {
+	d_impl.set_render_target_dimensions(renderer, render_target_width, render_target_height);
 }
 
 
 void
-GPlatesOpenGL::GLScreenRenderTarget::begin_render(
-		GLRenderer &renderer,
-		unsigned int render_target_width,
-		unsigned int render_target_height)
+GPlatesOpenGL::GLRenderTarget::begin_render(
+		GLRenderer &renderer)
 {
-	d_impl.set_render_target_dimensions(renderer, render_target_width, render_target_height);
 	d_impl.begin_render(renderer);
 }
 
 
 void
-GPlatesOpenGL::GLScreenRenderTarget::end_render(
+GPlatesOpenGL::GLRenderTarget::end_render(
 		GLRenderer &renderer)
 {
 	d_impl.end_render(renderer);
@@ -72,26 +89,24 @@ GPlatesOpenGL::GLScreenRenderTarget::end_render(
 
 
 GPlatesOpenGL::GLTexture::shared_ptr_to_const_type
-GPlatesOpenGL::GLScreenRenderTarget::get_texture() const
+GPlatesOpenGL::GLRenderTarget::get_texture() const
 {
 	return d_impl.get_texture();
 }
 
 
-GPlatesOpenGL::GLScreenRenderTarget::RenderScope::RenderScope(
-		GLScreenRenderTarget &screen_render_target,
-		GLRenderer &renderer,
-		unsigned int render_target_width,
-		unsigned int render_target_height) :
+GPlatesOpenGL::GLRenderTarget::RenderScope::RenderScope(
+		GLRenderTarget &screen_render_target,
+		GLRenderer &renderer) :
 	d_screen_render_target(screen_render_target),
 	d_renderer(renderer),
 	d_called_end_render(false)
 {
-	d_screen_render_target.begin_render(renderer, render_target_width, render_target_height);
+	d_screen_render_target.begin_render(renderer);
 }
 
 
-GPlatesOpenGL::GLScreenRenderTarget::RenderScope::~RenderScope()
+GPlatesOpenGL::GLRenderTarget::RenderScope::~RenderScope()
 {
 	if (!d_called_end_render)
 	{
@@ -103,18 +118,18 @@ GPlatesOpenGL::GLScreenRenderTarget::RenderScope::~RenderScope()
 		}
 		catch (std::exception &exc)
 		{
-			qWarning() << "GLScreenRenderTarget: exception thrown during render scope: " << exc.what();
+			qWarning() << "GLRenderTarget: exception thrown during render scope: " << exc.what();
 		}
 		catch (...)
 		{
-			qWarning() << "GLScreenRenderTarget: exception thrown during render scope: Unknown error";
+			qWarning() << "GLRenderTarget: exception thrown during render scope: Unknown error";
 		}
 	}
 }
 
 
 void
-GPlatesOpenGL::GLScreenRenderTarget::RenderScope::end_render()
+GPlatesOpenGL::GLRenderTarget::RenderScope::end_render()
 {
 	if (!d_called_end_render)
 	{

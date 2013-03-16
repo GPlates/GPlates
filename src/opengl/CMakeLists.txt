@@ -91,6 +91,10 @@ set(srcs
     GLRenderer.cc
     GLRenderer.h
     GLRendererImpl.h
+    GLRenderTarget.cc
+    GLRenderTarget.h
+    GLRenderTargetImpl.cc
+    GLRenderTargetImpl.h
     GLScalarField3D.cc
     GLScalarField3D.h
     GLScalarField3DGenerator.cc

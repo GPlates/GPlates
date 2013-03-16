@@ -26,9 +26,6 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
-
-#include "global/CompilerWarnings.h"
-
 #include <boost/cast.hpp>
 #include <boost/foreach.hpp>
 /*
@@ -51,6 +48,7 @@
 #include "GLVertex.h"
 
 #include "global/AssertionFailureException.h"
+#include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
 
 #include "gui/Colour.h"

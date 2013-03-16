@@ -243,7 +243,8 @@ GPlatesGui::Globe::paint(
 			// This will be used as a surface occlusion texture when rendering the globe sub-surface
 			// in order to early terminate occluded volume-tracing rays for efficient sub-surface rendering.
 			const GPlatesOpenGL::GLViewport &viewport = renderer.gl_get_viewport();
-			screen_render_target.get()->begin_render(
+			GPlatesOpenGL::GLScreenRenderTarget::RenderScope screen_render_target_scope(
+					*screen_render_target.get(),
 					renderer,
 					viewport.x() + viewport.width(),
 					viewport.y() + viewport.height());
@@ -262,7 +263,7 @@ GPlatesGui::Globe::paint(
 					true/*is_front_half_globe*/);
 
 			// Finished rendering surface occlusion texture.
-			screen_render_target.get()->end_render(renderer);
+			screen_render_target_scope.end_render();
 			// Get the texture just rendered to.
 			GPlatesOpenGL::GLTexture::shared_ptr_to_const_type front_globe_surface_texture =
 					screen_render_target.get()->get_texture();

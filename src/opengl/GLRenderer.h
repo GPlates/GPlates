@@ -446,6 +446,10 @@ namespace GPlatesOpenGL
 		 * A stencil rectangle prevents rasterization of pixels outside the actual tile region.
 		 * NOTE: You do not need to call @a gl_viewport or @a gl_scissor (they are done internally).
 		 *
+		 * If @a save_restore_state is true then this begin / end *tile* render target block is also
+		 * an implicit state block in which case all state set after @a begin_tile_render_target_2D
+		 * will be reverted when @a end_tile_render_target_2D is called.
+		 *
 		 * NOTE: @a begin_tile_render_target_2D and @a end_tile_render_target_2D
 		 * do *not* save / restore the OpenGL state.
 		 *
@@ -458,6 +462,7 @@ namespace GPlatesOpenGL
 		 */
 		GLTransform::non_null_ptr_to_const_type
 		begin_tile_render_target_2D(
+				bool save_restore_state = true,
 				GLViewport *tile_render_target_viewport = NULL,
 				GLViewport *tile_render_target_scissor_rect = NULL);
 
@@ -518,6 +523,7 @@ namespace GPlatesOpenGL
 			 */
 			GLTransform::non_null_ptr_to_const_type
 			begin_tile(
+					bool save_restore_state = true,
 					GLViewport *tile_render_target_viewport = NULL,
 					GLViewport *tile_render_target_scissor_rect = NULL);
 
@@ -1391,6 +1397,15 @@ namespace GPlatesOpenGL
 		const GLMatrix &
 		gl_get_texture_matrix(
 				GLenum texture_unit) const;
+
+		/**
+		 * Returns the current framebuffer object, or boost::none if main framebuffer is currently bound.
+		 */
+		boost::optional<GLFrameBufferObject::shared_ptr_to_const_type>
+		gl_get_bind_frame_buffer() const
+		{
+			return get_current_state()->get_bind_frame_buffer();
+		}
 
 	private:
 

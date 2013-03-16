@@ -430,6 +430,7 @@ GPlatesOpenGL::GLRenderer::begin_render_target_2D(
 
 GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
 GPlatesOpenGL::GLRenderer::begin_tile_render_target_2D(
+		bool save_restore_state,
 		GLViewport *tile_render_target_viewport,
 		GLViewport *tile_render_target_scissor_rect)
 {
@@ -442,6 +443,13 @@ GPlatesOpenGL::GLRenderer::begin_tile_render_target_2D(
 			render_texture_target,
 			GPLATES_ASSERTION_SOURCE,
 			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_TARGET);
+
+	// Save the current OpenGL state if requested.
+	if (save_restore_state)
+	{
+		begin_state_block(false/*reset_to_default_state*/);
+	}
+	render_texture_target->tile_save_restore_state = save_restore_state;
 
 	if (render_texture_target->main_frame_buffer)
 	{
@@ -473,14 +481,19 @@ GPlatesOpenGL::GLRenderer::end_tile_render_target_2D()
 			GPLATES_ASSERTION_SOURCE,
 			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_TARGET);
 
-	if (render_texture_target->main_frame_buffer)
+	// End the current tile.
+	const bool continue_to_next_tile = render_texture_target->main_frame_buffer
+			? end_tile_rgba8_main_framebuffer_2D(render_texture_target.get())
+			: end_tile_framebuffer_object_2D(render_texture_target.get());
+
+	// Restore the OpenGL state if requested.
+	if (render_texture_target->tile_save_restore_state)
 	{
-		return end_tile_rgba8_main_framebuffer_2D(render_texture_target.get());
+		end_state_block();
 	}
-	else
-	{
-		return end_tile_framebuffer_object_2D(render_texture_target.get());
-	}
+	render_texture_target->tile_save_restore_state = false;
+
+	return continue_to_next_tile;
 }
 
 
@@ -2005,7 +2018,7 @@ GPlatesOpenGL::GLRenderer::end_rgba8_main_framebuffer_2D(
 
 	// We only want to draw the full-screen quad into the part of the main framebuffer that was saved.
 	// The remaining area of the main framebuffer should not be touched.
-	// NOTE: The viewport does *not* always clip (eg, fat points whose centre is inside the viewport
+	// NOTE: The viewport does *not* clip (eg, fat points whose centres are inside the viewport
 	// can be rendered outside the viewport bounds due to the fatness) but in our case we're only
 	// copying a texture so we don't need to worry - if we did need to worry then we would specify
 	// a scissor rectangle also.
@@ -2414,10 +2427,14 @@ GPlatesOpenGL::GLRenderer::RenderTarget2DScope::~RenderTarget2DScope()
 
 GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
 GPlatesOpenGL::GLRenderer::RenderTarget2DScope::begin_tile(
+		bool save_restore_state,
 		GLViewport *tile_render_target_viewport,
 		GLViewport *tile_render_target_scissor_rect)
 {
-	return d_renderer.begin_tile_render_target_2D(tile_render_target_viewport, tile_render_target_scissor_rect);
+	return d_renderer.begin_tile_render_target_2D(
+			save_restore_state,
+			tile_render_target_viewport,
+			tile_render_target_scissor_rect);
 }
 
 

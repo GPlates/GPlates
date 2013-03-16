@@ -277,12 +277,16 @@ namespace GPlatesOpenGL
 					GLint level_) :
 				texture_viewport(texture_viewport_),
 				texture(texture_),
-				level(level_)
+				level(level_),
+				tile_save_restore_state(false)
 			{  }
 
 			GLViewport texture_viewport;
 			GLTexture::shared_ptr_to_const_type texture;
 			GLint level;
+
+			//! Is true if should save restore state within the current begin/end tile in render target.
+			bool tile_save_restore_state;
 
 			// The following parameters are not used if GL_EXT_framebuffer_object extension is available...
 
