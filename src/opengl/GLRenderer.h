@@ -533,8 +533,16 @@ namespace GPlatesOpenGL
 			bool
 			end_tile();
 
+			/**
+			 * Opportunity to end the current 2D render target before the scope exits (when destructor is called).
+			 */
+			void
+			end_render();
+
 		private:
 			GLRenderer &d_renderer;
+			bool d_called_end_tile;
+			bool d_called_end_render;
 		};
 
 
@@ -1645,7 +1653,7 @@ namespace GPlatesOpenGL
 
 		void
 		end_rgba8_main_framebuffer_2D(
-				const GLRendererImpl::RenderTextureTarget &render_texture_target);
+				GLRendererImpl::RenderTextureTarget &render_texture_target);
 
 		bool
 		begin_framebuffer_object_2D(
@@ -1663,7 +1671,7 @@ namespace GPlatesOpenGL
 
 		void
 		end_framebuffer_object_2D(
-				const boost::optional<GLRendererImpl::RenderTextureTarget> &parent_render_texture_target);
+				boost::optional<GLRendererImpl::RenderTextureTarget> &parent_render_texture_target);
 
 		bool
 		check_framebuffer_object_2D_completeness(

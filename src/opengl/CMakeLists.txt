@@ -95,6 +95,8 @@ set(srcs
     GLRenderTarget.h
     GLRenderTargetImpl.cc
     GLRenderTargetImpl.h
+    GLSaveRestoreFrameBuffer.cc
+    GLSaveRestoreFrameBuffer.h
     GLScalarField3D.cc
     GLScalarField3D.h
     GLScalarField3DGenerator.cc

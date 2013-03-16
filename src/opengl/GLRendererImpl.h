@@ -33,6 +33,7 @@
 #include <opengl/OpenGL.h>
 
 #include "GLCompiledDrawState.h"
+#include "GLSaveRestoreFrameBuffer.h"
 #include "GLState.h"
 #include "GLTexture.h"
 #include "GLTileRender.h"
@@ -293,15 +294,17 @@ namespace GPlatesOpenGL
 			//! Using main framebuffer as a render target.
 			struct MainFrameBuffer
 			{
+				explicit
 				MainFrameBuffer(
-						const GLTexture::shared_ptr_to_const_type save_restore_texture_,
+						unsigned int save_restore_width,
+						unsigned int save_restore_height,
 						const GLTileRender &tile_render_) :
-					save_restore_texture(save_restore_texture_),
+					save_restore_frame_buffer(save_restore_width, save_restore_height),
 					tile_render(tile_render_)
 				{  }
 
 				//! Used to save/restore the main framebuffer when it's used as a render target.
-				GLTexture::shared_ptr_to_const_type save_restore_texture;
+				GLSaveRestoreFrameBuffer save_restore_frame_buffer;
 
 				//! Used to tile rendering when the main framebuffer is smaller than the render target.
 				GLTileRender tile_render;

@@ -533,7 +533,7 @@ GPlatesOpenGL::GLRenderer::end_render_target_2D()
 		end_render_target_block_internal();
 
 		// Is there a parent render texture target (ie, not back to the main framebuffer yet).
-		const boost::optional<RenderTextureTarget> &parent_render_texture_target =
+		boost::optional<RenderTextureTarget> &parent_render_texture_target =
 				get_current_render_target_block().render_texture_target;
 
 		end_framebuffer_object_2D(parent_render_texture_target);
@@ -1800,69 +1800,12 @@ GPlatesOpenGL::GLRenderer::begin_rgba8_main_framebuffer_2D(
 			max_tile_render_target_width,
 			max_tile_render_target_height);
 
-	// Acquire a cached texture for saving the main framebuffer to.
-	// It'll get returned to its cache when we no longer reference it.
-	const GLTexture::shared_ptr_type save_restore_texture =
-			d_context->get_shared_state()->acquire_texture(
-					*this,
-					GL_TEXTURE_2D,
-					GL_RGBA8,
-					// The texture dimensions used to save restore the render target portion of the
-					// main framebuffer. The dimensions are expanded from the client-specified
-					// viewport width/height as necessary to match a power-of-two save/restore texture.
-					// We use power-of-two since non-power-of-two textures are probably not supported.
-					GPlatesUtils::Base2::next_power_of_two(max_tile_render_target_width),
-					GPlatesUtils::Base2::next_power_of_two(max_tile_render_target_height));
-
-	// 'acquire_texture' initialises the texture memory (to empty) but does not set the filtering
-	// state when it creates a new texture.
-	// Also even if the texture was cached it might have been used by another client that specified
-	// different filtering settings for it.
-	// So we set the filtering settings each time we acquire.
-	save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	// Turn off anisotropic filtering (don't need it).
-	if (GLEW_EXT_texture_filter_anisotropic)
-	{
-		save_restore_texture->gl_tex_parameterf(*this, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
-	}
-	// Clamp texture coordinates to centre of edge texels -
-	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
-	{
-		save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	}
-	else
-	{
-		save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	}
-
-	//
-	// Save the portion of the main framebuffer used as a render target so we can restore it later.
-	//
-
-	// We don't want any state changes made here to interfere with the client's state changes.
-	// So save the current state and revert back to it at the end of this scope.
-	// We don't need to reset to the default OpenGL state because very little state
-	// affects glCopyTexSubImage2D so it doesn't matter what the current OpenGL state is.
-	StateBlockScope save_restore_state(*this);
-
-	gl_bind_texture(save_restore_texture, GL_TEXTURE0, GL_TEXTURE_2D);
-
-	// Copy the portion of the main framebuffer used as a render target to the backup texture.
-	gl_copy_tex_sub_image_2D(
-			GL_TEXTURE0,
-			GL_TEXTURE_2D,
-			0/*level*/,
-			0, 0,
-			0, 0,
-			max_tile_render_target_width,
-			max_tile_render_target_height);
-
 	// Keep track of the save restore texture and tiling state.
-	render_texture_target.main_frame_buffer = boost::in_place(save_restore_texture, tile_render);
+	render_texture_target.main_frame_buffer =
+			boost::in_place(max_tile_render_target_width, max_tile_render_target_height, tile_render);
+
+	// Save the portion of the main framebuffer used as a render target so we can restore it later.
+	render_texture_target.main_frame_buffer->save_restore_frame_buffer.save(*this);
 
 	// Start at the first tile.
 	render_texture_target.main_frame_buffer->tile_render.first_tile();
@@ -1971,73 +1914,15 @@ GPlatesOpenGL::GLRenderer::end_tile_rgba8_main_framebuffer_2D(
 
 void
 GPlatesOpenGL::GLRenderer::end_rgba8_main_framebuffer_2D(
-		const RenderTextureTarget &render_texture_target)
+		RenderTextureTarget &render_texture_target)
 {
 	GPlatesGlobal::Assert<GLRendererAPIError>(
 			render_texture_target.main_frame_buffer,
 			GPLATES_ASSERTION_SOURCE,
 			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_MAIN_FRAME_BUFFER);
 
-	// Get the maximum render target dimensions needed for tiling.
-	unsigned int max_tile_render_target_width;
-	unsigned int max_tile_render_target_height;
-	render_texture_target.main_frame_buffer->tile_render.get_max_tile_render_target_dimensions(
-			max_tile_render_target_width,
-			max_tile_render_target_height);
-
-	// NOTE: We (temporarily) reset to the default OpenGL state since we need to draw a
-	// render-target size quad into the framebuffer with the save/restore texture applied.
-	// And we don't know what state has already been set.
-	StateBlockScope save_restore_state(*this, true/*reset_to_default_state*/);
-
-	// Disable depth writing for render targets otherwise the main framebuffer's depth buffer would get corrupted.
-	gl_depth_mask(GL_FALSE);
-
-	//
 	// Restore the portion of the main framebuffer used as a render target.
-	//
-
-	const GLTexture::shared_ptr_to_const_type save_restore_texture =
-			render_texture_target.main_frame_buffer->save_restore_texture;
-
-	// Bind the save restore texture to use for rendering.
-	gl_bind_texture(save_restore_texture, GL_TEXTURE0, GL_TEXTURE_2D);
-
-	// Set up to render using the texture.
-	gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
-	gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-
-	// Scale the texture coordinates to account for the fact that we're only writing part of the
-	// save/restore texture to the main framebuffer (only the part that was saved).
-	GLMatrix texture_coord_scale;
-	texture_coord_scale.gl_scale(
-			double(max_tile_render_target_width) / save_restore_texture->get_width().get(),
-			double(max_tile_render_target_height) / save_restore_texture->get_height().get(),
-			1);
-	gl_load_texture_matrix(GL_TEXTURE0, texture_coord_scale);
-
-	// We only want to draw the full-screen quad into the part of the main framebuffer that was saved.
-	// The remaining area of the main framebuffer should not be touched.
-	// NOTE: The viewport does *not* clip (eg, fat points whose centres are inside the viewport
-	// can be rendered outside the viewport bounds due to the fatness) but in our case we're only
-	// copying a texture so we don't need to worry - if we did need to worry then we would specify
-	// a scissor rectangle also.
-	gl_viewport(
-			0, 0,
-			max_tile_render_target_width,
-			max_tile_render_target_height);
-
-	//
-	// Draw a render-target sized quad into the (main) framebuffer.
-	// This restores that part of the framebuffer used to generate render-textures.
-	//
-
-	// Get the full-screen quad.
-	const GLCompiledDrawState::non_null_ptr_to_const_type full_screen_quad =
-			get_context().get_shared_state()->get_full_screen_2D_textured_quad(*this);
-
-	// Draw the full-screen quad into the render-texture sized viewport.
-	apply_compiled_draw_state(*full_screen_quad);
+	render_texture_target.main_frame_buffer->save_restore_frame_buffer.restore(*this);
 }
 
 
@@ -2129,7 +2014,7 @@ GPlatesOpenGL::GLRenderer::end_tile_framebuffer_object_2D(
 
 void
 GPlatesOpenGL::GLRenderer::end_framebuffer_object_2D(
-		const boost::optional<RenderTextureTarget> &parent_render_texture_target)
+		boost::optional<RenderTextureTarget> &parent_render_texture_target)
 {
 	// If there's no parent then we've returned to rendering to the *main* framebuffer.
 	if (!parent_render_texture_target)
@@ -2399,7 +2284,9 @@ GPlatesOpenGL::GLRenderer::RenderTarget2DScope::RenderTarget2DScope(
 		const double &max_point_size_and_line_width,
 		GLint level,
 		bool reset_to_default_state) :
-	d_renderer(renderer)
+	d_renderer(renderer),
+	d_called_end_tile(true),
+	d_called_end_render(false)
 {
 	d_renderer.begin_render_target_2D(
 			texture, render_target_viewport, max_point_size_and_line_width, level, reset_to_default_state);
@@ -2408,19 +2295,22 @@ GPlatesOpenGL::GLRenderer::RenderTarget2DScope::RenderTarget2DScope(
 
 GPlatesOpenGL::GLRenderer::RenderTarget2DScope::~RenderTarget2DScope()
 {
-	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
-	// But we log the exception and the location it was emitted.
-	try
+	if (!d_called_end_render)
 	{
-		d_renderer.end_render_target_2D();
-	}
-	catch (std::exception &exc)
-	{
-		qWarning() << "GLRenderer: exception thrown during render target scope: " << exc.what();
-	}
-	catch (...)
-	{
-		qWarning() << "GLRenderer: exception thrown during render target scope: Unknown error";
+		// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
+		// But we log the exception and the location it was emitted.
+		try
+		{
+			end_render();
+		}
+		catch (std::exception &exc)
+		{
+			qWarning() << "GLRenderer: exception thrown during render target scope: " << exc.what();
+		}
+		catch (...)
+		{
+			qWarning() << "GLRenderer: exception thrown during render target scope: Unknown error";
+		}
 	}
 }
 
@@ -2431,6 +2321,7 @@ GPlatesOpenGL::GLRenderer::RenderTarget2DScope::begin_tile(
 		GLViewport *tile_render_target_viewport,
 		GLViewport *tile_render_target_scissor_rect)
 {
+	d_called_end_tile = false;
 	return d_renderer.begin_tile_render_target_2D(
 			save_restore_state,
 			tile_render_target_viewport,
@@ -2441,7 +2332,21 @@ GPlatesOpenGL::GLRenderer::RenderTarget2DScope::begin_tile(
 bool
 GPlatesOpenGL::GLRenderer::RenderTarget2DScope::end_tile()
 {
+	d_called_end_tile = true;
 	return d_renderer.end_tile_render_target_2D();
+}
+
+
+void
+GPlatesOpenGL::GLRenderer::RenderTarget2DScope::end_render()
+{
+	if (!d_called_end_tile)
+	{
+		end_tile();
+	}
+
+	d_renderer.end_render_target_2D();
+	d_called_end_render = true;
 }
 
 

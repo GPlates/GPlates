@@ -42,6 +42,8 @@
 #include "GLViewport.h"
 #include "OpenGLException.h"
 
+#include "global/GPlatesAssert.h"
+
 
 bool
 GPlatesOpenGL::GLRenderTargetImpl::is_supported(
