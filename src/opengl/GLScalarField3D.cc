@@ -1212,14 +1212,22 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_depth_range(
 	d_volume_fill_boundary_vertex_array->gl_bind(renderer);
 
 	// The viewport of the screen we're rendering to.
-	const GLViewport &screen_viewport = renderer.gl_get_viewport();
+	const GLViewport screen_viewport = renderer.gl_get_viewport();
 
 	// Begin rendering to the depth range render target.
 	GLScreenRenderTarget::RenderScope volume_fill_depth_range_screen_render_target_scope(
 			*volume_fill_depth_range_screen_render_target.get(),
 			renderer,
-			screen_viewport.x() + screen_viewport.width(),
-			screen_viewport.y() + screen_viewport.height());
+			screen_viewport.width(),
+			screen_viewport.height());
+
+	// Set the new viewport in case the current viewport has non-zero x and y offsets which happens
+	// when the main scene is rendered as overlapping tiles (for rendering very large images).
+	// It's also important that, later when accessing the screen render texture, the NDC
+	// coordinates (-1,-1) and (1,1) map to the corners of the screen render texture.
+	renderer.gl_viewport(0, 0, screen_viewport.width(), screen_viewport.height());
+	// Also change the scissor rectangle in case scissoring is enabled.
+	renderer.gl_scissor(0, 0, screen_viewport.width(), screen_viewport.height());
 
 	// Enable alpha-blending and set the RGB blend equation to GL_MIN and Alpha to GL_MAX.
 	renderer.gl_enable(GL_BLEND, GL_TRUE);
@@ -1247,7 +1255,6 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_depth_range(
 	// Visitor to render the depth ranges of the volume fill region.
 	VolumeFillBoundaryGeometryOnSphereVisitor volume_fill_boundary_visitor(
 			renderer,
-			screen_viewport,
 			d_streaming_vertex_element_buffer,
 			d_streaming_vertex_buffer,
 			d_volume_fill_boundary_vertex_array,
@@ -1374,14 +1381,22 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_walls(
 	d_volume_fill_boundary_vertex_array->gl_bind(renderer);
 
 	// The viewport of the screen we're rendering to.
-	const GLViewport &screen_viewport = renderer.gl_get_viewport();
+	const GLViewport screen_viewport = renderer.gl_get_viewport();
 
 	// Begin rendering to the walls render target.
 	GLScreenRenderTarget::RenderScope volume_fill_walls_screen_render_target_scope(
 			*volume_fill_walls_screen_render_target.get(),
 			renderer,
-			screen_viewport.x() + screen_viewport.width(),
-			screen_viewport.y() + screen_viewport.height());
+			screen_viewport.width(),
+			screen_viewport.height());
+
+	// Set the new viewport in case the current viewport has non-zero x and y offsets which happens
+	// when the main scene is rendered as overlapping tiles (for rendering very large images).
+	// It's also important that, later when accessing the screen render texture, the NDC
+	// coordinates (-1,-1) and (1,1) map to the corners of the screen render texture.
+	renderer.gl_viewport(0, 0, screen_viewport.width(), screen_viewport.height());
+	// Also change the scissor rectangle in case scissoring is enabled.
+	renderer.gl_scissor(0, 0, screen_viewport.width(), screen_viewport.height());
 
 	// Disable alpha-blending/testing.
 	renderer.gl_enable(GL_BLEND, GL_FALSE);
@@ -1417,7 +1432,6 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_walls(
 	// Visitor to render the walls of the volume fill region.
 	VolumeFillBoundaryGeometryOnSphereVisitor volume_fill_walls_visitor(
 			renderer,
-			screen_viewport,
 			d_streaming_vertex_element_buffer,
 			d_streaming_vertex_buffer,
 			d_volume_fill_boundary_vertex_array,
@@ -3529,13 +3543,11 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::render_s
 
 GPlatesOpenGL::GLScalarField3D::VolumeFillBoundaryGeometryOnSphereVisitor::VolumeFillBoundaryGeometryOnSphereVisitor(
 		GLRenderer &renderer,
-		const GLViewport &screen_viewport,
 		const GLVertexElementBuffer::shared_ptr_type &streaming_vertex_element_buffer,
 		const GLVertexBuffer::shared_ptr_type &streaming_vertex_buffer,
 		const GLVertexArray::shared_ptr_type &vertex_array,
 		bool include_polylines) :
 	d_renderer(renderer),
-	d_screen_viewport(screen_viewport),
 	d_vertex_array(vertex_array),
 	d_map_vertex_element_buffer_scope(
 			renderer,

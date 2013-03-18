@@ -33,6 +33,9 @@
 #include <boost/shared_ptr.hpp>
 #include <QGLWidget>
 #include <QGraphicsScene>
+#include <QImage>
+#include <QPaintDevice>
+#include <QSize>
 #include <QTransform>
 
 #include "gui/ColourScheme.h"
@@ -48,6 +51,12 @@ namespace GPlatesGui
 {
 	class RenderSettings;
 	class ViewportZoom;
+}
+
+namespace GPlatesOpenGL
+{
+	class GLRenderer;
+	class GLTileRender;
 }
 
 namespace GPlatesPresentation
@@ -98,6 +107,17 @@ namespace GPlatesQtWidgets
 		}
 
 		/**
+		 * Renders the scene to a QImage of the dimensions specified by @a image_size.
+		 *
+		 * The paint device is the QGLWidget set as the viewport on MapView (on QGraphicsView).
+		 */
+		QImage
+		render_to_qimage(
+				QGLWidget *paint_device,
+				const QTransform &viewport_transform,
+				const QSize &image_size);
+
+		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
 		 *
 		 * @a viewport_transform is the view transform of the QGraphicsView initiating the rendering.
@@ -133,23 +153,8 @@ namespace GPlatesQtWidgets
 
 	private:
 
-		//! Do some OpenGL initialisation.
-		void 
-		initializeGL();
-
-		//! Render onto the canvas.
-		void
-		render_canvas(
-				QPainter &painter,
-				bool paint_device_is_framebuffer);
-
-		//! Calculate scaling for lines, points and text based on size of view
-		float
-		calculate_scale();
-
-
 		/**
-		 * Utility class to make the QGLWidget's OpenGL context current in @a MapCanvas constructor.
+		 * Utility class to make the OpenGL context current in @a MapCanvas constructor.
 		 *
 		 * This is so we can do OpenGL stuff in the @a MapCanvas constructor when normally
 		 * we'd have to wait until 'drawBackground()'.
@@ -175,7 +180,7 @@ namespace GPlatesQtWidgets
 
 		//! Mirrors an OpenGL context and provides a central place to manage low-level OpenGL objects.
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
-		//! Makes the QGLWidget's OpenGL context current in @a GlobeCanvas constructor so it can call OpenGL.
+		//! Makes the OpenGL context current in @a GlobeCanvas constructor so it can call OpenGL.
 		MakeGLContextCurrent d_make_context_current;
 
 		/**
@@ -191,13 +196,6 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * Renders text using the QPainter interface.
-		 *
-		 * Even though we're rendering to a QGLWidget we need a QPainter text renderer because
-		 * with Qt's *OpenGL2* paint engine we are not allowed to call QGLWidget::renderText while
-		 * a painter is active (regardless of whether inside beginNativePainting/endNativePainting
-		 * or not) so all text rendering should be done via the QPainter interface instead - which
-		 * will in turn use the OpenGL paint engine to render text onto the QGLWidget...
-		 * 
 		 */
 		GPlatesGui::TextRenderer::non_null_ptr_type d_text_renderer;
 
@@ -211,9 +209,33 @@ namespace GPlatesQtWidgets
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
 
 		bool d_disable_update;
+
+
+		//! Do some OpenGL initialisation.
+		void 
+		initializeGL();
+
+		/**
+		 * Render one tile of the scene (as specified by @a tile_render).
+		 *
+		 * The sub-rect of @a image to render into is determined by @a tile_renderer.
+		 */
+		cache_handle_type
+		render_scene_tile_into_image(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const GPlatesOpenGL::GLTileRender &tile_render,
+				QImage &image);
+
+		//! Render onto the canvas.
+		cache_handle_type
+		render_scene(
+				GPlatesOpenGL::GLRenderer &renderer);
+
+		//! Calculate scaling for lines, points and text based on size of view
+		float
+		calculate_scale();
+
 	};
-
 }
-
 
 #endif // GPLATES_QTWIDGETS_MAPCANVAS_H

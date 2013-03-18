@@ -42,6 +42,7 @@
 
 #include "GLContext.h"
 #include "GLFrustum.h"
+#include "GLImageUtils.h"
 #include "GLIntersect.h"
 #include "GLMatrix.h"
 #include "GLProjectionUtils.h"
@@ -96,7 +97,7 @@ namespace GPlatesOpenGL
 			const QString debug_text = QString("LOD %1").arg(level_of_detail);
 
 			// Draw text into an image.
-			const QImage debug_image = GLTextureUtils::draw_text_into_qimage(
+			const QImage debug_image = GLImageUtils::draw_text_into_qimage(
 					debug_text,
 					tile_texel_dimension, tile_texel_dimension,
 					3.0f/*text scale*/,

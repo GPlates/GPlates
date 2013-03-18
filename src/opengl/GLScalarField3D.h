@@ -597,7 +597,6 @@ namespace GPlatesOpenGL
 
 			VolumeFillBoundaryGeometryOnSphereVisitor(
 					GLRenderer &renderer,
-					const GLViewport &screen_viewport,
 					const GLVertexElementBuffer::shared_ptr_type &streaming_vertex_element_buffer,
 					const GLVertexBuffer::shared_ptr_type &streaming_vertex_buffer,
 					const GLVertexArray::shared_ptr_type &vertex_array,
@@ -638,7 +637,6 @@ namespace GPlatesOpenGL
 			render_stream();
 
 			GLRenderer &d_renderer;
-			GLViewport d_screen_viewport;
 			GLVertexArray::shared_ptr_type d_vertex_array;
 			GLBuffer::MapBufferScope d_map_vertex_element_buffer_scope;
 			GLBuffer::MapBufferScope d_map_vertex_buffer_scope;

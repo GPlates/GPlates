@@ -37,6 +37,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <opengl/OpenGL.h>
+#include <QImage>
 #include <QPainter>
 #include <QtOpenGL/qgl.h>
 
@@ -62,6 +63,12 @@
 namespace GPlatesGui
 {
 	class TextOverlay;
+}
+
+namespace GPlatesOpenGL
+{
+	class GLRenderer;
+	class GLTileRender;
 }
 
 namespace GPlatesPresentation
@@ -228,6 +235,15 @@ namespace GPlatesQtWidgets
 		get_viewport_size() const;
 
 		/**
+		 * Renders the scene to a QImage of the dimensions specified by @a image_size
+		 * (or dimensions @a get_viewport_size, if @a image_size is boost::none).
+		 */
+		virtual
+		QImage
+		render_to_qimage(
+				boost::optional<QSize> image_size = boost::none);
+
+		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
 		 */
 		virtual
@@ -259,9 +275,6 @@ namespace GPlatesQtWidgets
 		set_orientation(
 			const GPlatesMaths::Rotation &rotation
 			/*bool should_emit_external_signal = true */);
-
-		QImage
-		grab_frame_buffer();
 
 		/**
 		 * Returns the OpenGL context associated with this QGLWidget.
@@ -548,8 +561,8 @@ namespace GPlatesQtWidgets
 		//! Makes the QGLWidget's OpenGL context current in @a GlobeCanvas constructor so it can call OpenGL.
 		MakeGLContextCurrent d_make_context_current;
 
-		//! The OpenGL viewport used to render the main scene into this canvas.
-		GPlatesOpenGL::GLViewport d_gl_viewport;
+		//! Is true if OpenGL has been initialised for this canvas.
+		bool d_initialisedGL;
 
 		//! The current model-view transform for regular OpenGL rendering.
 		GPlatesOpenGL::GLMatrix d_gl_model_view_transform;
@@ -638,16 +651,35 @@ namespace GPlatesQtWidgets
 
 		boost::scoped_ptr<GPlatesGui::TextOverlay> d_text_overlay;
 
+
+		//! Calls 'initializeGL()' if it hasn't already been called.
+		void
+		initializeGL_if_necessary();
+
 		void
 		set_view();
 
 		/**
-		 * Render onto the canvas.
+		 * Render one tile of the scene (as specified by @a tile_render).
+		 *
+		 * The sub-rect of @a image to render into is determined by @a tile_renderer.
 		 */
-		void
-		render_canvas(
-				QPainter &painter,
-				bool paint_device_is_framebuffer);
+		cache_handle_type
+		render_scene_tile_into_image(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const GPlatesOpenGL::GLTileRender &tile_render,
+				QImage &image);
+
+		/**
+		 * Render the scene.
+		 */
+		cache_handle_type
+		render_scene(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
+				const GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
+				const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
+				const GPlatesOpenGL::GLMatrix &projection_transform_include_stars);
 
 		void
 		update_mouse_pointer_pos(

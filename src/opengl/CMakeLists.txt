@@ -37,6 +37,8 @@ set(srcs
     GLFrameBufferObject.h
     GLFrustum.cc
     GLFrustum.h
+    GLImageUtils.cc
+    GLImageUtils.h
     GLIntersect.cc
     GLIntersect.h
     GLIntersectPrimitives.cc

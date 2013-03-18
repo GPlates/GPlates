@@ -596,8 +596,15 @@ namespace GPlatesOpenGL
 
 			~StateBlockScope();
 
+			/**
+			 * Opportunity to end the current state block before the scope exits (when destructor is called).
+			 */
+			void
+			end_state_block();
+
 		private:
 			GLRenderer &d_renderer;
+			bool d_called_end_state_block;
 		};
 
 

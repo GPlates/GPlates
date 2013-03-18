@@ -40,6 +40,7 @@
 #include "GLStateStore.h"
 #include "GLTextureUtils.h"
 #include "GLUtils.h"
+#include "OpenGLException.h"
 
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
@@ -288,7 +289,17 @@ GPlatesOpenGL::GLContext::SharedState::acquire_texture(
 	boost::optional<GLTexture::shared_ptr_type> texture_object_opt = texture_cache->allocate_object();
 	if (texture_object_opt)
 	{
-		return texture_object_opt.get();
+		const GLTexture::shared_ptr_type texture_object = texture_object_opt.get();
+
+		// Make sure the previous client did not change the texture dimensions before recycling the texture.
+		GPlatesGlobal::Assert<OpenGLException>(
+				texture_object->get_width() == GLuint(width) &&
+					texture_object->get_height() == boost::optional<GLuint>(height_opt) &&
+					texture_object->get_depth() == boost::optional<GLuint>(depth_opt),
+				GPLATES_ASSERTION_SOURCE,
+				"GLContext::SharedState::acquire_texture: Dimensions of recycled texture were changed.");
+
+		return texture_object;
 	}
 
 	// Create a new object and add it to the cache.
@@ -329,6 +340,46 @@ GPlatesOpenGL::GLContext::SharedState::acquire_texture(
 }
 
 
+GPlatesOpenGL::GLPixelBuffer::shared_ptr_type
+GPlatesOpenGL::GLContext::SharedState::acquire_pixel_buffer(
+		GLRenderer &renderer,
+		GLBuffer::target_type target,
+		unsigned int size,
+		GLBuffer::usage_type usage)
+{
+	// Lookup the correct pixel buffer cache (matching the specified client parameters).
+	const pixel_buffer_key_type pixel_buffer_key(target, size, usage);
+
+	const pixel_buffer_cache_type::shared_ptr_type pixel_buffer_cache =
+			get_pixel_buffer_cache(pixel_buffer_key);
+
+	// Attempt to acquire a recycled object.
+	boost::optional<GLPixelBuffer::shared_ptr_type> pixel_buffer_opt = pixel_buffer_cache->allocate_object();
+	if (pixel_buffer_opt)
+	{
+		const GLPixelBuffer::shared_ptr_type pixel_buffer = pixel_buffer_opt.get();
+
+		// Make sure the previous client did not change the pixel buffer before recycling.
+		GPlatesGlobal::Assert<OpenGLException>(
+				pixel_buffer->get_buffer()->get_buffer_size() == size,
+				GPLATES_ASSERTION_SOURCE,
+				"GLContext::SharedState::acquire_pixel_buffer: Size of recycled pixel buffer was changed.");
+
+		return pixel_buffer;
+	}
+
+	// Create a new buffer with the specified parameters.
+	GLBuffer::shared_ptr_type buffer = GLBuffer::create(renderer);
+	buffer->gl_buffer_data(renderer, target, size, NULL/*Uninitialised memory*/, usage);
+
+	// Create a new object and add it to the cache.
+	const GLPixelBuffer::shared_ptr_type pixel_buffer = pixel_buffer_cache->allocate_object(
+			GLPixelBuffer::create_as_auto_ptr(renderer, buffer));
+
+	return pixel_buffer;
+}
+
+
 GPlatesOpenGL::GLVertexArray::shared_ptr_type
 GPlatesOpenGL::GLContext::SharedState::acquire_vertex_array(
 		GLRenderer &renderer)
@@ -348,6 +399,54 @@ GPlatesOpenGL::GLContext::SharedState::acquire_vertex_array(
 	vertex_array->clear(renderer);
 
 	return vertex_array;
+}
+
+
+boost::optional<GPlatesOpenGL::GLRenderTarget::shared_ptr_type>
+GPlatesOpenGL::GLContext::SharedState::acquire_render_target(
+		GLRenderer &renderer,
+		GLint texture_internalformat,
+		bool include_depth_buffer,
+		unsigned int render_target_width,
+		unsigned int render_target_height)
+{
+	// Render targets must be supported.
+	if (!GLRenderTarget::is_supported(
+		renderer,
+		texture_internalformat,
+		include_depth_buffer,
+		render_target_width,
+		render_target_height))
+	{
+		return boost::none;
+	}
+
+	// Lookup the correct render target cache (matching the specified client parameters).
+	const render_target_key_type render_target_key(
+			texture_internalformat, include_depth_buffer, render_target_width, render_target_height);
+
+	const render_target_cache_type::shared_ptr_type render_target_cache =
+			get_render_target_cache(render_target_key);
+
+	// Attempt to acquire a recycled object.
+	boost::optional<GLRenderTarget::shared_ptr_type> render_target_opt =
+			render_target_cache->allocate_object();
+	if (render_target_opt)
+	{
+		return render_target_opt.get();
+	}
+
+	// Create a new object and add it to the cache.
+	const GLRenderTarget::shared_ptr_type render_target =
+			render_target_cache->allocate_object(
+					GLRenderTarget::create_as_auto_ptr(
+							renderer,
+							texture_internalformat,
+							include_depth_buffer,
+							render_target_width,
+							render_target_height));
+
+	return render_target;
 }
 
 
@@ -543,6 +642,57 @@ GPlatesOpenGL::GLContext::SharedState::get_texture_cache(
 	}
 
 	return texture_cache_map_iter->second;
+}
+
+
+GPlatesOpenGL::GLContext::SharedState::pixel_buffer_cache_type::shared_ptr_type
+GPlatesOpenGL::GLContext::SharedState::get_pixel_buffer_cache(
+		const pixel_buffer_key_type &pixel_buffer_key)
+{
+	// Attempt to insert the pixel buffer key into the pixel buffer cache map.
+	const std::pair<pixel_buffer_cache_map_type::iterator, bool> insert_result =
+			d_pixel_buffer_cache_map.insert(
+					pixel_buffer_cache_map_type::value_type(
+							pixel_buffer_key,
+							// Dummy (NULL) pixel buffer cache...
+							pixel_buffer_cache_type::shared_ptr_type()));
+
+	pixel_buffer_cache_map_type::iterator pixel_buffer_cache_map_iter = insert_result.first;
+
+	// If the pixel buffer key was inserted into the map then create the corresponding pixel buffer cache.
+	if (insert_result.second)
+	{
+		// Start off with an initial cache size of 1 - it'll grow as needed...
+		pixel_buffer_cache_map_iter->second = pixel_buffer_cache_type::create();
+	}
+
+	return pixel_buffer_cache_map_iter->second;
+}
+
+
+GPlatesOpenGL::GLContext::SharedState::render_target_cache_type::shared_ptr_type
+GPlatesOpenGL::GLContext::SharedState::get_render_target_cache(
+		const render_target_key_type &render_target_key)
+{
+	// Attempt to insert the render target key into the render target cache map.
+	const std::pair<render_target_cache_map_type::iterator, bool> insert_result =
+			d_render_target_cache_map.insert(
+					render_target_cache_map_type::value_type(
+							render_target_key,
+							// Dummy (NULL) render target cache...
+							render_target_cache_type::shared_ptr_type()));
+
+	render_target_cache_map_type::iterator render_target_cache_map_iter = insert_result.first;
+
+	// If the render target key was inserted into the map then
+	// create the corresponding render target cache.
+	if (insert_result.second)
+	{
+		// Start off with an initial cache size of 1 - it'll grow as needed...
+		render_target_cache_map_iter->second = render_target_cache_type::create();
+	}
+
+	return render_target_cache_map_iter->second;
 }
 
 

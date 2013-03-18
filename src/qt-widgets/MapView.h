@@ -202,6 +202,15 @@ namespace GPlatesQtWidgets
 		get_viewport_size() const;
 
 		/**
+		 * Renders the scene to a QImage of the dimensions specified by @a image_size
+		 * (or dimensions @a get_viewport_size, if @a image_size is boost::none).
+		 */
+		virtual
+		QImage
+		render_to_qimage(
+				boost::optional<QSize> image_size = boost::none);
+
+		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
 		 */
 		virtual
@@ -232,9 +241,6 @@ namespace GPlatesQtWidgets
 		double
 		current_proximity_inclusion_threshold(
 				const GPlatesMaths::PointOnSphere &click_point) const;
-
-		QImage
-		grab_frame_buffer();
 
 		/**
 		 * Returns the OpenGL context associated with our QGLWidget viewport.
@@ -288,15 +294,10 @@ namespace GPlatesQtWidgets
 		keyPressEvent(
 				QKeyEvent *key_event);
 
-		void 
+		virtual
+		void
 		paintEvent(
-				QPaintEvent *paint_event)
-		{
-			if (d_disable_update)
-				return;
-
-			QGraphicsView::paintEvent(paint_event);
-		}
+				QPaintEvent *paint_event);
 
 	Q_SIGNALS:
 
@@ -362,6 +363,29 @@ namespace GPlatesQtWidgets
 	private:
 
 		/**
+		 * A QGLWidget used as the viewport widget and modified slightly to not automatically swap
+		 * OpenGL front and back buffers at 'QPainter::end()'.
+		 *
+		 * We need to inherit QGLWidget because 'setAutoBufferSwap()' is a protected method.
+		 */
+		class MapViewport :
+				public QGLWidget
+		{
+		public:
+
+			MapViewport(
+					const QGLFormat &format_,
+					QWidget *parent_ = 0,
+					const QGLWidget *shareWidget_ = 0,
+					Qt::WindowFlags flags_ = 0);
+
+			void
+			swap_buffers_if_necessary();
+
+		};
+
+
+		/**
 		 * Returns the llp of the mouse position, if the mouse is on the surface. 
 		 */ 
 		boost::optional<GPlatesMaths::LatLonPoint>
@@ -393,7 +417,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * The QGLWidget that we use for this widget's viewport
 		 */
-		QGLWidget *d_gl_widget_ptr;
+		MapViewport *d_gl_widget_ptr;
 
 		//! Mirrors an OpenGL context and provides a central place to manage low-level OpenGL objects.
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;

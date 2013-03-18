@@ -153,20 +153,9 @@ namespace GPlatesGui
 				GPlatesGui::ExportAnimationContext &export_animation_context,
 				const const_configuration_ptr &export_configuration);
 
-	private Q_SLOTS:
-		void
-		handle_repaint(bool)
-		{
-			d_repaint_flag = true;
-			d_image = d_main_widget.grab_frame_buffer();
-		}
-		
 	private:
 		//! Export configuration parameters.
 		const_configuration_ptr d_configuration;
-		GPlatesQtWidgets::GlobeAndMapWidget& d_main_widget;
-		QImage d_image;
-		bool d_repaint_flag;
 
 	};
 }

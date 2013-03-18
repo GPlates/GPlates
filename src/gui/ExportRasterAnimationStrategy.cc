@@ -22,41 +22,29 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <QLocale> 
-#include <QThread>
+
+#include <QDebug>
+#include <QImage>
 
 #include "ExportRasterAnimationStrategy.h"
+#include "AnimationController.h"
+#include "ExportAnimationContext.h"
 
-#include "app-logic/ApplicationState.h"
-#include "app-logic/FeatureCollectionFileState.h"
-#include "app-logic/ReconstructionTreeEdge.h"
-
-#include "gui/ExportAnimationContext.h"
-#include "gui/AnimationController.h"
-#include "gui/CsvExport.h"
-
-#include "maths/MathsUtils.h"
-
-#include "qt-widgets/GlobeCanvas.h"
-#include "qt-widgets/ReconstructionViewWidget.h"
-#include "qt-widgets/ViewportWindow.h"
+#include "global/GPlatesException.h"
 
 #include "presentation/ViewState.h"
+
+#include "qt-widgets/ReconstructionViewWidget.h"
+#include "qt-widgets/SceneView.h"
+#include "qt-widgets/ViewportWindow.h"
 
 
 GPlatesGui::ExportRasterAnimationStrategy::ExportRasterAnimationStrategy(
 		GPlatesGui::ExportAnimationContext &export_animation_context,
 		const const_configuration_ptr &configuration):
 	ExportAnimationStrategy(export_animation_context),
-	d_configuration(configuration),
-	d_main_widget(d_export_animation_context_ptr->viewport_window().reconstruction_view_widget().globe_and_map_widget())
+	d_configuration(configuration)
 {
-	QObject::connect(
-			&d_main_widget,
-			SIGNAL(repainted(bool)),
-			this,
-			SLOT(handle_repaint(bool)));
-
 	set_template_filename(d_configuration->get_filename_template());
 }
 
@@ -72,13 +60,36 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 	// Add the target dir to that to figure out the absolute path + name.
 	QString full_filename = d_export_animation_context_ptr->target_dir().absoluteFilePath(basename);
 
-	d_repaint_flag = false;
-	d_main_widget.update_canvas();
-	while(!d_repaint_flag)
-		QApplication::processEvents();
-	
-	d_image.save(full_filename);
+	// All that's really expected of us at this point is maybe updating
+	// the dialog status message, then calculating what we want to calculate,
+	// and writing whatever file we feel like writing.
+	d_export_animation_context_ptr->update_status_message(
+			QObject::tr("Writing raster at frame %2 to file \"%1\"...")
+			.arg(basename)
+			.arg(frame_index) );
 
+	// Here's where we do the actual work of exporting of the raster snapshots,
+	// given frame_index, filename, and target_dir.
+	GPlatesQtWidgets::SceneView &active_scene_view =
+			d_export_animation_context_ptr->view_state().get_other_view_state()
+				.reconstruction_view_widget().active_view();
+	const QSize raster_size = active_scene_view.get_viewport_size();
+	try
+	{
+		const QSize raster_size = active_scene_view.get_viewport_size();
+
+		// Render to the raster image file.
+		const QImage raster_image = active_scene_view.render_to_qimage(raster_size);
+
+		// Save the raster to file.
+		raster_image.save(full_filename);
+	}
+	catch (GPlatesGlobal::Exception &exc)
+	{
+		qWarning() << "Caught exception exporting to colour (RGBA) raster: " << exc;
+		return false;
+	}
+	
 	// Normal exit, all good, ask the Context process the next iteration please.
 	return true;
 }

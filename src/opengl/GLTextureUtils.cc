@@ -34,7 +34,6 @@
 #include <QGLWidget>
 #include <QImage>
 #include <QMatrix>
-#include <QPainter>
 
 #include "GLTextureUtils.h"
 
@@ -424,43 +423,6 @@ GPlatesOpenGL::GLTextureUtils::fill_float_texture_2D(
 			GL_FLOAT,
 			texel_width, texel_height,
 			texel_u_offset, texel_v_offset);
-}
-
-
-QImage
-GPlatesOpenGL::GLTextureUtils::draw_text_into_qimage(
-		const QString &text,
-		unsigned int image_width,
-		unsigned int image_height,
-		const float text_scale,
-		const QColor &text_colour,
-		const QColor &background_colour)
-{
-	PROFILE_FUNC();
-
-	// Start off with half-size dimensions - we'll scale to full-size later
-	// so that image is more visible (because image will map roughly one texel to one
-	// screen pixel which can be hard to read).
-
-	const int scaled_width = static_cast<int>(image_width / text_scale);
-	const int scaled_height = static_cast<int>(image_height / text_scale);
-
-	QImage scaled_image(scaled_width, scaled_height, QImage::Format_ARGB32);
-
-	QPainter painter(&scaled_image);
-	// Draw filled background
-	painter.fillRect(QRect(0, 0, scaled_width, scaled_height), background_colour);
-	painter.setPen(text_colour);
-	painter.drawText(
-			0, 0,
-			scaled_width, scaled_height,
-			(Qt::AlignCenter | Qt::TextWordWrap),
-			text);
-	painter.end();
-
-	// Scale the rendered text.
-	return scaled_image.scaled(
-			image_width, image_height, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 }
 
 

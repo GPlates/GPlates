@@ -104,6 +104,15 @@ namespace GPlatesQtWidgets
 		get_viewport_size() const = 0;
 
 		/**
+		 * Renders the scene to a QImage of the dimensions specified by @a image_size
+		 * (or dimensions @a get_viewport_size, if @a image_size is boost::none).
+		 */
+		virtual
+		QImage
+		render_to_qimage(
+				boost::optional<QSize> image_size = boost::none) = 0;
+
+		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
 		 *
 		 * Normally the scene is rendered directly to the viewport widget using OpenGL.
@@ -164,10 +173,6 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		reset_camera_orientation() = 0;
-
-		virtual
-		QImage
-		grab_frame_buffer() = 0;
 
 	private:
 		// Make copy and assignment private to prevent copying/assignment

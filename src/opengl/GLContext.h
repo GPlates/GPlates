@@ -37,12 +37,15 @@
 #include <QGLFormat>
 #include <QGLWidget>
 
+#include "GLBuffer.h"
 #include "GLBufferObject.h"
 #include "GLCapabilities.h"
 #include "GLCompiledDrawState.h"
 #include "GLFrameBufferObject.h"
+#include "GLPixelBuffer.h"
 #include "GLProgramObject.h"
 #include "GLRenderBufferObject.h"
+#include "GLRenderTarget.h"
 #include "GLScreenRenderTarget.h"
 #include "GLShaderObject.h"
 #include "GLStateSetKeys.h"
@@ -223,6 +226,11 @@ namespace GPlatesOpenGL
 			 * but the image data will be unspecified if it's the first time the texture object is returned.
 			 * If @a mipmapped is true then all mipmap levels will also be initialised.
 			 *
+			 * Note that, since the returned texture is non-const, it's possible to change its
+			 * dimensions, but don't do this as it will cause problems when the texture is recycled
+			 * and used by another client (in fact an exception is thrown when the next client
+			 * recycles the texture).
+			 *
 			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
 			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
 			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
@@ -237,6 +245,28 @@ namespace GPlatesOpenGL
 					boost::optional<GLsizei> depth = boost::none,  // Only used for 3D textures.
 					GLint border = 0,
 					bool mipmapped = false);
+
+			/**
+			 * Returns a pixel buffer, from an internal cache, that matches the specified parameters.
+			 *
+			 * Use this when you need a pixel buffer temporarily and want to promote
+			 * resource sharing by returning it for others to use.
+			 *
+			 * Note that, since the returned pixel buffer is non-const, it's possible to change its
+			 * size, but don't do this as it will cause problems when the pixel buffer is recycled
+			 * and used by another client (in fact an exception is thrown when the next client
+			 * recycles the pixel buffer).
+			 *
+			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
+			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
+			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
+			 */
+			GLPixelBuffer::shared_ptr_type
+			acquire_pixel_buffer(
+					GLRenderer &renderer,
+					GLBuffer::target_type target,
+					unsigned int size,
+					GLBuffer::usage_type usage);
 
 			/**
 			 * Returns a vertex array from an internal cache.
@@ -257,6 +287,27 @@ namespace GPlatesOpenGL
 			GLVertexArray::shared_ptr_type
 			acquire_vertex_array(
 					GLRenderer &renderer);
+
+			/**
+			 * Returns a convenience object for rendering to a fixed-size render texture with an
+			 * optional depth buffer, from an internal cache, that matches the specified parameters.
+			 *
+			 * Use this when you need to render to a fixed-size texture temporarily and want to promote
+			 * resource sharing by returning it for others to use.
+			 *
+			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
+			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
+			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
+			 *
+			 * Returns boost::none if 'GLRenderTarget::is_supported()' returns false.
+			 */
+			boost::optional<GLRenderTarget::shared_ptr_type>
+			acquire_render_target(
+					GLRenderer &renderer,
+					GLint texture_internalformat,
+					bool include_depth_buffer,
+					unsigned int render_target_width,
+					unsigned int render_target_height);
 
 			/**
 			 * Returns a convenience object for rendering to a screen-size render texture with an
@@ -328,6 +379,26 @@ namespace GPlatesOpenGL
 			typedef std::map<texture_key_type, texture_cache_type::shared_ptr_type> texture_cache_map_type;
 
 
+			//! Typedef for a key made up of the parameters of @a acquire_pixel_buffer.
+			typedef boost::tuple<GLBuffer::target_type, unsigned int, GLBuffer::usage_type> pixel_buffer_key_type;
+
+			//! Typedef for a pixel buffer cache.
+			typedef GPlatesUtils::ObjectCache<GLPixelBuffer> pixel_buffer_cache_type;
+
+			//! Typedef for a mapping of pixel buffer parameters (key) to pixel buffer caches.
+			typedef std::map<pixel_buffer_key_type, pixel_buffer_cache_type::shared_ptr_type> pixel_buffer_cache_map_type;
+
+
+			//! Typedef for a key made up of the parameters of @a acquire_render_target.
+			typedef boost::tuple<GLint, bool, unsigned int, unsigned int> render_target_key_type;
+
+			//! Typedef for a render target cache.
+			typedef GPlatesUtils::ObjectCache<GLRenderTarget> render_target_cache_type;
+
+			//! Typedef for a mapping of render target parameters (key) to render target caches.
+			typedef std::map<render_target_key_type, render_target_cache_type::shared_ptr_type>
+					render_target_cache_map_type;
+
 			//! Typedef for a key made up of the parameters of @a acquire_screen_render_target.
 			typedef boost::tuple<GLint, bool> screen_render_target_key_type;
 
@@ -352,6 +423,9 @@ namespace GPlatesOpenGL
 
 			texture_cache_map_type d_texture_cache_map;
 
+			pixel_buffer_cache_map_type d_pixel_buffer_cache_map;
+
+			render_target_cache_map_type d_render_target_cache_map;
 			screen_render_target_cache_map_type d_screen_render_target_cache_map;
 
 			/**
@@ -391,6 +465,14 @@ namespace GPlatesOpenGL
 			texture_cache_type::shared_ptr_type
 			get_texture_cache(
 					const texture_key_type &texture_key);
+
+			pixel_buffer_cache_type::shared_ptr_type
+			get_pixel_buffer_cache(
+					const pixel_buffer_key_type &pixel_buffer_key);
+
+			render_target_cache_type::shared_ptr_type
+			get_render_target_cache(
+					const render_target_key_type &render_target_key);
 
 			screen_render_target_cache_type::shared_ptr_type
 			get_screen_render_target_cache(

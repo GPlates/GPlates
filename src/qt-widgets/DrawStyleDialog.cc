@@ -366,7 +366,7 @@ GPlatesQtWidgets::DrawStyleDialog::handle_repaint(
 		bool mouse_down)
 {
 	d_repaint_flag = true;
-	d_image = d_globe_and_map_widget_ptr->grab_frame_buffer();
+	d_image = d_globe_and_map_widget_ptr->render_to_qimage();
 	return;
 }
 
@@ -493,7 +493,7 @@ GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 	blank_pixmap.load(":/preview_not_available.png","PNG");
 	//blank_pixmap.fill(*GPlatesGui::HTMLColourNames::instance().get_colour("slategray"));
 	d_blank_icon = QIcon(blank_pixmap);
-	d_image = d_globe_and_map_widget_ptr->grab_frame_buffer();
+	d_image = d_globe_and_map_widget_ptr->render_to_qimage();
 	d_style_mgr = GPlatesGui::DrawStyleManager::instance();
 	
 	//init_category_table();
@@ -633,7 +633,7 @@ GPlatesQtWidgets::DrawStyleDialog::handle_style_selection_changed(
 void
 GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 {
-	qDebug() << "show_preview_icon()";
+	//qDebug() << "show_preview_icon()";
 	{
 		//sync the camera point
 		GPlatesQtWidgets::ReconstructionViewWidget & view_widget = 

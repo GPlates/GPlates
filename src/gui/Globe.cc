@@ -236,18 +236,26 @@ GPlatesGui::Globe::paint(
 						true/*include_depth_buffer*/);
 		if (screen_render_target)
 		{
-			// Make sure we leave the OpenGL state the way it was.
-			GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state_scope(renderer);
-
 			// Prepare for rendering the front half of the globe into a viewport-size render texture.
 			// This will be used as a surface occlusion texture when rendering the globe sub-surface
 			// in order to early terminate occluded volume-tracing rays for efficient sub-surface rendering.
-			const GPlatesOpenGL::GLViewport &viewport = renderer.gl_get_viewport();
+			const GPlatesOpenGL::GLViewport screen_viewport = renderer.gl_get_viewport();
 			GPlatesOpenGL::GLScreenRenderTarget::RenderScope screen_render_target_scope(
 					*screen_render_target.get(),
 					renderer,
-					viewport.x() + viewport.width(),
-					viewport.y() + viewport.height());
+					screen_viewport.width(),
+					screen_viewport.height());
+
+			// Save/restore the OpenGL state changed over the scope of the screen render target.
+			GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_screen_render_target_scope(renderer);
+
+			// Set the new viewport in case the current viewport has non-zero x and y offsets which
+			// happens when the scene is rendered as overlapping tiles (for rendering very large images).
+			// It's also important that, later when accessing the screen render texture, the NDC
+			// coordinates (-1,-1) and (1,1) map to the corners of the screen render texture.
+			renderer.gl_viewport(0, 0, screen_viewport.width(), screen_viewport.height());
+			// Also change the scissor rectangle in case scissoring is enabled.
+			renderer.gl_scissor(0, 0, screen_viewport.width(), screen_viewport.height());
 
 			// Clear only the colour buffer.
 			// The depth buffer is cleared in 'render_globe_hemisphere_surface()'.
@@ -263,12 +271,14 @@ GPlatesGui::Globe::paint(
 					true/*is_front_half_globe*/);
 
 			// Finished rendering surface occlusion texture.
+			save_restore_screen_render_target_scope.end_state_block();
 			screen_render_target_scope.end_render();
 			// Get the texture just rendered to.
 			GPlatesOpenGL::GLTexture::shared_ptr_to_const_type front_globe_surface_texture =
 					screen_render_target.get()->get_texture();
 
 			// Render the globe sub-surface (using the surface occlusion texture) to the main framebuffer.
+			// Note that this must use the original viewport.
 			render_globe_sub_surface(
 					renderer,
 					*cache_handle,
@@ -277,7 +287,10 @@ GPlatesGui::Globe::paint(
 					front_globe_surface_texture);
 
 			// Blend the front half of the globe surface (the surface occlusion texture) in the main framebuffer.
-			render_front_globe_hemisphere_surface_texture(renderer, front_globe_surface_texture);
+			// Note that this must use the original viewport.
+			render_front_globe_hemisphere_surface_texture(
+					renderer,
+					front_globe_surface_texture);
 		}
 		else // surface occlusion not supported so render sub-surface followed by surface...
 		{

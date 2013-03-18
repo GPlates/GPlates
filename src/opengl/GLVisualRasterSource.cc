@@ -36,6 +36,7 @@
 #include "GLVisualRasterSource.h"
 
 #include "GLContext.h"
+#include "GLImageUtils.h"
 #include "GLRenderer.h"
 #include "GLTextureUtils.h"
 #include "GLUtils.h"
@@ -533,7 +534,7 @@ GPlatesOpenGL::GLVisualRasterSource::render_error_text_into_texture(
 	if (error_text_image.isNull())
 	{
 		// Draw error message text into image.
-		error_text_image = GLTextureUtils::draw_text_into_qimage(
+		error_text_image = GLImageUtils::draw_text_into_qimage(
 				error_text,
 				d_tile_texel_dimension, d_tile_texel_dimension,
 				3.0f/*text scale*/,

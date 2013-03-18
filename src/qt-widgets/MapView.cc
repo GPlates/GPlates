@@ -60,6 +60,44 @@ namespace
 
 		return sqrt(difference.x()*difference.x() + difference.y()*difference.y());
 	}
+
+
+	/**
+	 * Given the scene view's dimensions (eg, canvas dimensions) generate a world transform
+	 * needed to display the scene.
+	 */
+	QMatrix
+	calc_world_transform(
+			const GPlatesGui::MapTransform &map_transform,
+			unsigned int scene_view_width,
+			unsigned int scene_view_height)
+	{
+		static const double FRAMING_RATIO = 1.07;
+		const double scale_factor = map_transform.get_zoom_factor() * scene_view_width /
+			(GPlatesGui::MapTransform::MAX_CENTRE_OF_VIEWPORT_X -
+			 GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_X) / FRAMING_RATIO;
+
+		QMatrix m;
+		m.scale(scale_factor, -scale_factor);
+		m.rotate(map_transform.get_rotation());
+
+		// For the translation, we see where the centre of viewport (in scene
+		// coordinates) would have ended up (in window coordinates) if we hadn't done
+		// any translation. Then we apply a translation such that the centre of
+		// viewport will end up in the middle of the screen (in window coordinates).
+		// Note that QMatrix::translate() translates along the (already rotated) axes,
+		// so we do it manually, by modifying the dx and dy parameters of the matrix.
+		const GPlatesGui::MapTransform::point_type &centre = map_transform.get_centre_of_viewport();
+		double transformed_centre_x, transformed_centre_y;
+		m.map(centre.x(), centre.y(), &transformed_centre_x, &transformed_centre_y);
+		double offset_x = static_cast<double>(scene_view_width) / 2.0 - transformed_centre_x;
+		double offset_y = static_cast<double>(scene_view_height) / 2.0 - transformed_centre_y;
+
+		return QMatrix(
+				m.m11(), m.m12(), m.m21(), m.m22(),
+				m.dx() + offset_x,
+				m.dy() + offset_y);
+	}
 }
 
 
@@ -71,7 +109,7 @@ GPlatesQtWidgets::MapView::MapView(
 		const GPlatesOpenGL::GLContext::non_null_ptr_type &share_gl_context,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &share_gl_visual_layers) :
 	d_gl_widget_ptr(
-			new QGLWidget(
+			new MapViewport(
 				GPlatesOpenGL::GLContext::get_qgl_format(),
 				this,
 				// Share texture objects, vertex buffer objects, etc...
@@ -105,15 +143,6 @@ GPlatesQtWidgets::MapView::MapView(
 	d_map_transform(view_state.get_map_transform()),
 	d_disable_update(false)
 {
-	// QWidget::setMouseTracking:
-	//   If mouse tracking is disabled (the default), the widget only receives mouse move
-	//   events when at least one mouse button is pressed while the mouse is being moved.
-	//
-	//   If mouse tracking is enabled, the widget receives mouse move events even if no buttons
-	//   are pressed.
-	//    -- http://doc.trolltech.com/4.3/qwidget.html#mouseTracking-prop
-	d_gl_widget_ptr->setMouseTracking(true);
-
 	setViewport(d_gl_widget_ptr);
 	setScene(d_map_canvas_ptr.get());
 
@@ -166,31 +195,9 @@ void
 GPlatesQtWidgets::MapView::handle_transform_changed(
 		const GPlatesGui::MapTransform &map_transform)
 {
-	static const double FRAMING_RATIO = 1.07;
-	double scale_factor = map_transform.get_zoom_factor() * width() /
-		(GPlatesGui::MapTransform::MAX_CENTRE_OF_VIEWPORT_X -
-		 GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_X) / FRAMING_RATIO;
-
-	QMatrix m;
-	m.scale(scale_factor, -scale_factor);
-	m.rotate(map_transform.get_rotation());
-
-	// For the translation, we see where the centre of viewport (in scene
-	// coordinates) would have ended up (in window coordinates) if we hadn't done
-	// any translation. Then we apply a translation such that the centre of
-	// viewport will end up in the middle of the screen (in window coordinates).
-	// Note that QMatrix::translate() translates along the (already rotated) axes,
-	// so we do it manually, by modifying the dx and dy parameters of the matrix.
-	const GPlatesGui::MapTransform::point_type &centre = map_transform.get_centre_of_viewport();
-	double transformed_centre_x, transformed_centre_y;
-	m.map(centre.x(), centre.y(), &transformed_centre_x, &transformed_centre_y);
-	double offset_x = static_cast<double>(width()) / 2.0 - transformed_centre_x;
-	double offset_y = static_cast<double>(height()) / 2.0 - transformed_centre_y;
 	setTransformationAnchor(QGraphicsView::NoAnchor);
-	setMatrix(
-			QMatrix(m.m11(), m.m12(), m.m21(), m.m22(),
-				m.dx() + offset_x,
-				m.dy() + offset_y));
+
+	setMatrix(calc_world_transform(map_transform, width(), height()));
 
 	// Even though the scroll bars are hidden, the QGraphicsView is still
 	// scrollable, and it has a habit of scrolling around if you have panned to the
@@ -466,10 +473,39 @@ GPlatesQtWidgets::MapView::keyPressEvent(
 }
 
 
+void
+GPlatesQtWidgets::MapView::paintEvent(
+		QPaintEvent *paint_event)
+{
+	if (d_disable_update)
+		return;
+
+	QGraphicsView::paintEvent(paint_event);
+
+	// If the QGLWidget is double buffered and auto-swap-buffers is turned off then
+	// explicitly swap the OpenGL front and back buffers.
+	d_gl_widget_ptr->swap_buffers_if_necessary();
+}
+
+
 QSize
 GPlatesQtWidgets::MapView::get_viewport_size() const
 {
 	return QSize(width(), height());
+}
+
+
+QImage
+GPlatesQtWidgets::MapView::render_to_qimage(
+		boost::optional<QSize> image_size_opt)
+{
+	// Determine the image size if one was not specified...
+	const QSize image_size = image_size_opt ? image_size_opt.get() : get_viewport_size();
+
+	// Calculate the world matrix to position the scene appropriately according to the image dimensions.
+	const QMatrix world_matrix = calc_world_transform(d_map_transform, image_size.width(), image_size.height());
+
+	return map_canvas().render_to_qimage(d_gl_widget_ptr, QTransform(world_matrix), image_size);
 }
 
 
@@ -786,12 +822,6 @@ GPlatesQtWidgets::MapView::current_proximity_inclusion_threshold(
 }
 
 
-QImage
-GPlatesQtWidgets::MapView::grab_frame_buffer()
-{
-	return d_gl_widget_ptr->grabFrameBuffer();
-}
-
 int
 GPlatesQtWidgets::MapView::width() const
 {
@@ -837,4 +867,53 @@ GPlatesQtWidgets::MapView::set_orientation(
 		GPlatesGui::MapTransform::point_type(x_pos, y_pos)
 		/*should_emit_external_signal */);
 
+}
+
+
+GPlatesQtWidgets::MapView::MapViewport::MapViewport(
+		const QGLFormat &format_,
+		QWidget *parent_,
+		const QGLWidget *shareWidget_,
+		Qt::WindowFlags flags_) :
+	QGLWidget(format_, parent_, shareWidget_, flags_)
+{
+	// Since we're using a QPainter inside 'paintEvent()' or more specifically 'MapCanvas::drawBackground()'
+	// (which is called from 'paintEvent()') then we turn off automatic swapping of the OpenGL
+	// front and back buffers after each 'MapCanvas::drawBackground()' call. This is because QPainter::end(),
+	// or QPainter's destructor, automatically calls QGLWidget::swapBuffers() if auto buffer swap
+	// is enabled - and this results in two calls to QGLWidget::swapBuffers() - one from QPainter
+	// and one from 'paintEvent()'. So we disable auto buffer swapping and explicitly call it ourself.
+	//
+	// Also we don't want to swap buffers when we're just rendering to a QImage (using OpenGL)
+	// and not rendering to the QGLWidget itself, otherwise the widget will have the wrong content.
+	setAutoBufferSwap(false);
+
+	// Don't fill the background - we already clear the background using OpenGL in MapCanvas anyway.
+	//
+	// Also we don't want to clear the canvas when we're just rendering to a QImage (using OpenGL)
+	// and not rendering to the QGLWidget itself, otherwise the widget will appear to have no content.
+	setAutoFillBackground(false);
+
+	// QWidget::setMouseTracking:
+	//   If mouse tracking is disabled (the default), the widget only receives mouse move
+	//   events when at least one mouse button is pressed while the mouse is being moved.
+	//
+	//   If mouse tracking is enabled, the widget receives mouse move events even if no buttons
+	//   are pressed.
+	//    -- http://doc.trolltech.com/4.3/qwidget.html#mouseTracking-prop
+	setMouseTracking(true);
+}
+
+
+void
+GPlatesQtWidgets::MapView::MapViewport::swap_buffers_if_necessary()
+{
+	// Explicitly swap the OpenGL front and back buffers.
+	// Note that we have already disabled auto buffer swapping because otherwise both the QPainter
+	// above and 'paintEvent()' (which calls 'paintGL()') will call 'QGLWidget::swapBuffers()'
+	// essentially canceling each other out (or causing flickering).
+	if (doubleBuffer() && !autoBufferSwap())
+	{
+		swapBuffers();
+	}
 }

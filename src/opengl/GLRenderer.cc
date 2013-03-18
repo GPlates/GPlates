@@ -1836,7 +1836,7 @@ GPlatesOpenGL::GLRenderer::begin_tile_rgba8_main_framebuffer_2D(
 	// (the scissor rectangle) in order that fat points and wide lines just outside the tile
 	// have pixels rasterised inside the tile (the projection transform has also been expanded slightly).
 	//
-	// This includes a 'gl_clear()' calls which clear the entire main framebuffer.
+	// This includes 'gl_clear()' calls which clear the entire main framebuffer.
 	gl_enable(GL_SCISSOR_TEST);
 	gl_scissor(
 			current_tile_render_target_scissor_rect.x(),
@@ -1967,7 +1967,7 @@ GPlatesOpenGL::GLRenderer::begin_tile_framebuffer_object_2D(
 
 	// Mask off rendering outside the render target viewport (eg, due to wide lines and fat points)
 	// in case the viewport specified is smaller than the render target.
-	// This includes a 'gl_clear()' calls which clear the entire framebuffer.
+	// This includes 'gl_clear()' calls which clear the entire framebuffer.
 	// So set the scissor rectangle to match the render target viewport.
 	gl_enable(GL_SCISSOR_TEST);
 	gl_scissor(
@@ -2353,7 +2353,8 @@ GPlatesOpenGL::GLRenderer::RenderTarget2DScope::end_render()
 GPlatesOpenGL::GLRenderer::StateBlockScope::StateBlockScope(
 		GLRenderer &renderer,
 		bool reset_to_default_state) :
-	d_renderer(renderer)
+	d_renderer(renderer),
+	d_called_end_state_block(false)
 {
 	d_renderer.begin_state_block(reset_to_default_state);
 }
@@ -2361,19 +2362,33 @@ GPlatesOpenGL::GLRenderer::StateBlockScope::StateBlockScope(
 
 GPlatesOpenGL::GLRenderer::StateBlockScope::~StateBlockScope()
 {
-	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
-	// But we log the exception and the location it was emitted.
-	try
+	if (!d_called_end_state_block)
+	{
+		// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
+		// But we log the exception and the location it was emitted.
+		try
+		{
+			d_renderer.end_state_block();
+		}
+		catch (std::exception &exc)
+		{
+			qWarning() << "GLRenderer: exception thrown during state block scope: " << exc.what();
+		}
+		catch (...)
+		{
+			qWarning() << "GLRenderer: exception thrown during state block scope: Unknown error";
+		}
+	}
+}
+
+
+void
+GPlatesOpenGL::GLRenderer::StateBlockScope::end_state_block()
+{
+	if (!d_called_end_state_block)
 	{
 		d_renderer.end_state_block();
-	}
-	catch (std::exception &exc)
-	{
-		qWarning() << "GLRenderer: exception thrown during state block scope: " << exc.what();
-	}
-	catch (...)
-	{
-		qWarning() << "GLRenderer: exception thrown during state block scope: Unknown error";
+		d_called_end_state_block = true;
 	}
 }
 

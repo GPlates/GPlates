@@ -71,7 +71,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Note that is is possible to attach the same buffer object to a @a GLVertexBuffer.
 		 * This allows you to, for example, render vertices to the framebuffer (using a fragment
-		 * shader), then read the pixels to a pixel buffer ,then bind the buffer as a vertex buffer
+		 * shader), then read the pixels to a pixel buffer, then bind the buffer as a vertex buffer
 		 * then render the data as vertices.
 		 */
 		static
