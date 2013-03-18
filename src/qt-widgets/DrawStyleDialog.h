@@ -234,10 +234,6 @@ namespace GPlatesQtWidgets
 				QListWidgetItem* previous);
 
 		void
-		handle_repaint(
-				bool);
-
-		void
 		handle_main_repaint(
 				bool);
 
@@ -330,8 +326,6 @@ namespace GPlatesQtWidgets
 		GPlatesGui::DrawStyleManager* d_style_mgr;
 		bool d_show_thumbnails;
 		GlobeAndMapWidget *d_globe_and_map_widget_ptr;
-		bool d_repaint_flag;
-		QImage d_image;
 		QString d_last_open_directory;
 		std::vector<QWidget*> d_cfg_widgets;
 		GPlatesPresentation::ViewState& d_view_state;

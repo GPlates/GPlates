@@ -63,7 +63,6 @@ GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(
 		QWidget* parent_) :
 	GPlatesDialog(parent_),
 	d_show_thumbnails(true),
-	d_repaint_flag(true),
 	d_view_state(view_state),
 	d_combo_box(NULL),
 	d_style_of_all(NULL),
@@ -299,12 +298,6 @@ GPlatesQtWidgets::DrawStyleDialog::make_signal_slot_connections()
 			SLOT(handle_main_repaint(bool)));
 
 	QObject::connect(
-			d_globe_and_map_widget_ptr,
-			SIGNAL(repainted(bool)),
-			this,
-			SLOT(handle_repaint(bool)));
-
-	QObject::connect(
 			show_thumbnails_checkbox,
 			SIGNAL(stateChanged(int)),
 			this,
@@ -359,15 +352,6 @@ void
 GPlatesQtWidgets::DrawStyleDialog::handle_close_button_clicked()
 {
 	hide();
-}
-
-void
-GPlatesQtWidgets::DrawStyleDialog::handle_repaint(
-		bool mouse_down)
-{
-	d_repaint_flag = true;
-	d_image = d_globe_and_map_widget_ptr->render_to_qimage();
-	return;
 }
 
 
@@ -493,7 +477,6 @@ GPlatesQtWidgets::DrawStyleDialog::init_dlg()
 	blank_pixmap.load(":/preview_not_available.png","PNG");
 	//blank_pixmap.fill(*GPlatesGui::HTMLColourNames::instance().get_colour("slategray"));
 	d_blank_icon = QIcon(blank_pixmap);
-	d_image = d_globe_and_map_widget_ptr->render_to_qimage();
 	d_style_mgr = GPlatesGui::DrawStyleManager::instance();
 	
 	//init_category_table();
@@ -665,20 +648,14 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icon()
 			 if(!current_item)
 				 continue;
 
-			d_repaint_flag = false;
 			QVariant qv = current_item->data(Qt::UserRole);
 			GPlatesGui::StyleAdapter* sa = static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
 			set_style(sa);
-		#if defined(Q_OS_MAC)
-			d_globe_and_map_widget_ptr->update_canvas();
-			while(!d_repaint_flag)
-			{
-				QApplication::processEvents();
-			}
-		#else
-			d_globe_and_map_widget_ptr->repaint_canvas();
-		#endif
-			current_item->setIcon(QIcon(to_QPixmap(d_image)));
+
+			// Render the preview icon image.
+			QImage image = d_globe_and_map_widget_ptr->render_to_qimage();
+
+			current_item->setIcon(QIcon(to_QPixmap(image)));
 		}
 
 		d_globe_and_map_widget_ptr->hide();
@@ -699,19 +676,14 @@ GPlatesQtWidgets::DrawStyleDialog::refresh_current_icon()
 
 	if (d_show_thumbnails)
 	{
-		d_repaint_flag = false;
 		QVariant qv = current_item->data(Qt::UserRole);
 		GPlatesGui::StyleAdapter* sa = static_cast<GPlatesGui::StyleAdapter*>(qv.value<void*>());
 		set_style(sa);
 
-		d_globe_and_map_widget_ptr->update_canvas();
+		// Render the preview icon image.
+		QImage image = d_globe_and_map_widget_ptr->render_to_qimage();
 
-
-		while(!d_repaint_flag)
-			QApplication::processEvents();
-
-
-		current_item->setIcon(QIcon(to_QPixmap(d_image)));
+		current_item->setIcon(QIcon(to_QPixmap(image)));
 	}
 	d_globe_and_map_widget_ptr->hide();
 }
