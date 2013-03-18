@@ -73,7 +73,6 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 	GPlatesQtWidgets::SceneView &active_scene_view =
 			d_export_animation_context_ptr->view_state().get_other_view_state()
 				.reconstruction_view_widget().active_view();
-	const QSize raster_size = active_scene_view.get_viewport_size();
 	try
 	{
 		const QSize raster_size = active_scene_view.get_viewport_size();
