@@ -140,8 +140,7 @@ GPlatesQtWidgets::MapView::MapView(
 				view_state.get_viewport_zoom(),
 				colour_scheme,
 				this)),
-	d_map_transform(view_state.get_map_transform()),
-	d_disable_update(false)
+	d_map_transform(view_state.get_map_transform())
 {
 	setViewport(d_gl_widget_ptr);
 	setScene(d_map_canvas_ptr.get());
@@ -181,13 +180,6 @@ GPlatesQtWidgets::MapView::make_signal_slot_connections()
 			SIGNAL(transform_changed(const GPlatesGui::MapTransform &)),
 			this,
 			SLOT(handle_transform_changed(const GPlatesGui::MapTransform &)));
-
-	// Pass up repainted signals from MapCanvas.
-	QObject::connect(
-			d_map_canvas_ptr.get(),
-			SIGNAL(repainted()),
-			this,
-			SLOT(handle_map_canvas_repainted()));
 }
 
 
@@ -208,14 +200,6 @@ GPlatesQtWidgets::MapView::handle_transform_changed(
 	verticalScrollBar()->setValue(0);
 
 	handle_mouse_pointer_pos_change();
-}
-
-
-void
-GPlatesQtWidgets::MapView::handle_map_canvas_repainted()
-{
-	// If d_mouse_press_info is not boost::none, then mouse is down.
-	Q_EMIT repainted(d_mouse_press_info);
 }
 
 
@@ -477,14 +461,13 @@ void
 GPlatesQtWidgets::MapView::paintEvent(
 		QPaintEvent *paint_event)
 {
-	if (d_disable_update)
-		return;
-
 	QGraphicsView::paintEvent(paint_event);
 
 	// If the QGLWidget is double buffered and auto-swap-buffers is turned off then
 	// explicitly swap the OpenGL front and back buffers.
 	d_gl_widget_ptr->swap_buffers_if_necessary();
+
+	Q_EMIT repainted(d_mouse_press_info);
 }
 
 
@@ -646,25 +629,7 @@ GPlatesQtWidgets::MapView::mouse_pointer_is_on_surface()
 void
 GPlatesQtWidgets::MapView::update_canvas()
 {
-	map_canvas().update();
-}
-
-
-void
-GPlatesQtWidgets::MapView::repaint_canvas()
-{
-	QPaintEvent e(rect());
-	paintEvent(&e);
-	repaint();
-}
-
-
-void
-GPlatesQtWidgets::MapView::set_disable_update(
-		bool b)
-{
-	d_disable_update = b;
-	d_map_canvas_ptr->set_disable_update(b);
+	map_canvas().update_canvas();
 }
 
 
@@ -909,9 +874,6 @@ void
 GPlatesQtWidgets::MapView::MapViewport::swap_buffers_if_necessary()
 {
 	// Explicitly swap the OpenGL front and back buffers.
-	// Note that we have already disabled auto buffer swapping because otherwise both the QPainter
-	// above and 'paintEvent()' (which calls 'paintGL()') will call 'QGLWidget::swapBuffers()'
-	// essentially canceling each other out (or causing flickering).
 	if (doubleBuffer() && !autoBufferSwap())
 	{
 		swapBuffers();

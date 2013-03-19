@@ -144,10 +144,6 @@ namespace GPlatesQtWidgets
 
 		virtual
 		void
-		repaint_canvas() = 0;
-
-		virtual
-		void
 		move_camera_up() = 0;
 
 		virtual

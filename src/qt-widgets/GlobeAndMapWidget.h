@@ -150,9 +150,6 @@ namespace GPlatesQtWidgets
 		void
 		update_canvas();
 
-		void
-		repaint_canvas();
-
 		virtual
 		double
 		current_proximity_inclusion_threshold(
@@ -172,7 +169,8 @@ namespace GPlatesQtWidgets
 				int new_width, int new_height);
 
 		void
-		repainted(bool mouse_down);
+		repainted(
+				bool mouse_down);
 
 	protected:
 

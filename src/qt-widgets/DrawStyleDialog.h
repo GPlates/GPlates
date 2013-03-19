@@ -91,15 +91,11 @@ namespace GPlatesQtWidgets
 		insert_all();
 	};
 	
-	class PreviewGuard;
-
 	class DrawStyleDialog  : 
 			public GPlatesDialog, 
 			protected Ui_DrawStyleDialog
 	{
 		Q_OBJECT
-
-		friend class PreviewGuard;
 
 	public:
 		DrawStyleDialog(
@@ -119,6 +115,12 @@ namespace GPlatesQtWidgets
 				boost::weak_ptr<GPlatesPresentation::VisualLayer> layer);
 
 	protected:
+
+		virtual
+		void
+		showEvent(
+				QShowEvent *show_event);
+
 		void
 		make_signal_slot_connections();
 
@@ -126,13 +128,15 @@ namespace GPlatesQtWidgets
 		set_style();
 
 		void
-		set_style(GPlatesGui::StyleAdapter* style);
+		set_style(
+				GPlatesGui::StyleAdapter* style);
 
 		void
-		load_category(const GPlatesGui::StyleCategory& );
+		load_category(
+				const GPlatesGui::StyleCategory& );
 
 		void
-		show_preview_icon();
+		show_preview_icons();
 
 		GPlatesGui::StyleCategory*
 		get_catagory(
@@ -237,31 +241,6 @@ namespace GPlatesQtWidgets
 		handle_main_repaint(
 				bool);
 
-		
-		void
-		refresh_preview_icons()
-		{
-			if(isVisible() && d_dirty)
-			{
-				show_preview_icon();
-			}
-		}
-
-		bool
-		is_dirty();
-
-		void
-		handle_release_after_drag()
-		{
-			d_dirty = true;
-		}
-
-		void
-		handle_change_projection()
-		{
-			d_dirty = true;
-		}
-
 		void
 		focus_style();
 
@@ -297,59 +276,38 @@ namespace GPlatesQtWidgets
 		void
 		handle_layer_changed(
 				boost::weak_ptr<GPlatesPresentation::VisualLayer>);
-
-		void
-		handle_view_time_changed(
-				GPlatesAppLogic::ApplicationState &application_state)
-		{
-			d_dirty = true;
-		}
-
-		void
-		handle_zoom_change()
-		{
-			d_dirty = true;
-		}
 	
-	protected:
-		boost::optional<GPlatesMaths::LatLonPoint>
-		get_main_window_camera_point();
-
-
-		boost::optional<GPlatesMaths::Rotation>
-		get_main_orientation();
-
 	private:
+
+		class PreviewGuard
+		{
+		public:
+			PreviewGuard(
+					DrawStyleDialog &draw_style_dialog);
+
+			~PreviewGuard();
+
+		private:
+			DrawStyleDialog &d_draw_style_dialog;
+			int d_current_idx;
+		};
+
+
 		static const int ICON_SIZE = 145;
+
+
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_visual_layer;
 		QIcon d_blank_icon;
 		GPlatesGui::DrawStyleManager* d_style_mgr;
 		bool d_show_thumbnails;
+		bool d_ignore_next_main_repaint;
 		GlobeAndMapWidget *d_globe_and_map_widget_ptr;
 		QString d_last_open_directory;
 		std::vector<QWidget*> d_cfg_widgets;
 		GPlatesPresentation::ViewState& d_view_state;
 		LayerGroupComboBox* d_combo_box;
 		GPlatesGui::StyleAdapter* d_style_of_all;
-		bool d_dirty;
-		boost::optional<GPlatesMaths::LatLonPoint> d_previous_camera_point;
 	};
-
-
-	class PreviewGuard
-	{
-	public:
-		PreviewGuard(
-				DrawStyleDialog& dlg) ;
-
-		~PreviewGuard();
-
-	private:
-		DrawStyleDialog& d_dlg;
-		int d_current_idx;
-	};
-
-
 }
 
 

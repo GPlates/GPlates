@@ -135,10 +135,6 @@ namespace GPlatesQtWidgets
 
 		~GlobeCanvas();
 
-		void
-		set_disable_update(
-				bool b);
-
 	private:
 
 		//! Private constructor for use by clone()
@@ -251,12 +247,6 @@ namespace GPlatesQtWidgets
 		render_opengl_feedback_to_paint_device(
 				QPaintDevice &paint_device);
 
-		void
-		repaint_canvas()
-		{
-			repaint();
-		}
-
 		virtual
 		boost::optional<GPlatesMaths::LatLonPoint>
 		camera_llp() const;
@@ -365,6 +355,11 @@ namespace GPlatesQtWidgets
 		void
 		paintGL();
 
+		virtual
+		void
+		paintEvent(
+				QPaintEvent *paint_event);
+
 		/**
 		 * This is a virtual override of the function in QWidget.
 		 *
@@ -452,13 +447,6 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		reset_camera_orientation();
-
-#if 0
-		virtual
-		void
-		paintEvent(
-			QPaintEvent *paint_event);
-#endif
 
 	Q_SIGNALS:
 

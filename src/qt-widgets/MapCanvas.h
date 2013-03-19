@@ -127,15 +127,6 @@ namespace GPlatesQtWidgets
 				QPaintDevice &paint_device,
 				const QTransform &viewport_transform);
 
-		void
-		set_disable_update(
-				bool b);
-
-	Q_SIGNALS:
-
-		void
-		repainted();
-
 	public Q_SLOTS:
 		
 		void
@@ -207,8 +198,6 @@ namespace GPlatesQtWidgets
 
 		//! A pointer to the state's RenderedGeometryCollection
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
-
-		bool d_disable_update;
 
 
 		//! Do some OpenGL initialisation.

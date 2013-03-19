@@ -477,52 +477,6 @@ GPlatesQtWidgets::GlobeCanvas::init()
 	setAttribute(Qt::WA_NoSystemBackground);
 }
 
-void
-GPlatesQtWidgets::GlobeCanvas::set_disable_update(
-		bool b)
-{
-	if(b)
-	{
-		QObject::disconnect(
-				&(d_view_state.get_rendered_geometry_collection()),
-				SIGNAL(collection_was_updated(
-						GPlatesViewOperations::RenderedGeometryCollection &,
-						GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
-				this,
-				SLOT(update_canvas()));
-		QObject::disconnect(
-				&(d_globe.orientation()), 
-				SIGNAL(orientation_changed()),
-				this, 
-				SLOT(notify_of_orientation_change()));
-		QObject::disconnect(
-				&(d_globe.orientation()), 
-				SIGNAL(orientation_changed()),
-				this, 
-				SLOT(force_mouse_pointer_pos_change()));
-	}
-	else
-	{
-		QObject::connect(
-				&(d_view_state.get_rendered_geometry_collection()),
-				SIGNAL(collection_was_updated(
-						GPlatesViewOperations::RenderedGeometryCollection &,
-						GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
-				this,
-				SLOT(update_canvas()));
-		QObject::connect(
-				&(d_globe.orientation()), 
-				SIGNAL(orientation_changed()),
-				this, 
-				SLOT(notify_of_orientation_change()));
-		QObject::connect(
-				&(d_globe.orientation()), 
-				SIGNAL(orientation_changed()),
-				this, 
-				SLOT(force_mouse_pointer_pos_change()));
-	}
-}
-
 GPlatesQtWidgets::GlobeCanvas *
 GPlatesQtWidgets::GlobeCanvas::clone(
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
@@ -631,7 +585,7 @@ GPlatesQtWidgets::GlobeCanvas::update_canvas()
 void
 GPlatesQtWidgets::GlobeCanvas::notify_of_orientation_change() 
 {
-	update();
+	update_canvas();
 }
 
 
@@ -782,24 +736,6 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 			d_gl_projection_transform_include_rear_half_globe,
 			d_gl_projection_transform_include_full_globe,
 			d_gl_projection_transform_include_stars);
-
-	// End the render scope so that the OpenGL state is now back to the default state
-	// before we emit the repainted signal.
-	render_scope.end_render();
-
-	painter.end();
-
-	// Explicitly swap the OpenGL front and back buffers.
-	// Note that we have already disabled auto buffer swapping because otherwise both the QPainter
-	// above and 'paintEvent()' (which calls 'paintGL()') will call 'QGLWidget::swapBuffers()'
-	// essentially canceling each other out (or causing flickering).
-	if (doubleBuffer() && !autoBufferSwap())
-	{
-		swapBuffers();
-	}
-
-	// If d_mouse_press_info is not boost::none, then mouse is down.
-	Q_EMIT repainted(d_mouse_press_info);
 }
 
 
@@ -1133,6 +1069,29 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 
 
 void
+GPlatesQtWidgets::GlobeCanvas::paintEvent(
+		QPaintEvent *paint_event)
+{
+// This paintEvent() method should be enabled, and the paintGL method disabled, when we wish to use Qt overpainting
+//  ( http://doc.trolltech.com/4.3/opengl-overpainting.html )
+
+	QGLWidget::paintEvent(paint_event);
+
+	// Explicitly swap the OpenGL front and back buffers.
+	// Note that we have already disabled auto buffer swapping because otherwise both the QPainter
+	// in 'paintGL()' and 'QGLWidget::paintEvent()' will call 'QGLWidget::swapBuffers()'
+	// essentially canceling each other out (or causing flickering).
+	if (doubleBuffer() && !autoBufferSwap())
+	{
+		swapBuffers();
+	}
+
+	// If d_mouse_press_info is not boost::none, then mouse is down.
+	Q_EMIT repainted(d_mouse_press_info);
+}
+
+
+void
 GPlatesQtWidgets::GlobeCanvas::mousePressEvent(
 		QMouseEvent *press_event) 
 {
@@ -1308,7 +1267,7 @@ GPlatesQtWidgets::GlobeCanvas::handle_zoom_change()
 	//   This function does not cause an immediate repaint; instead it schedules a paint event
 	//   for processing when Qt returns to the main event loop.
 	//    -- http://doc.trolltech.com/4.3/qwidget.html#update
-	update();
+	update_canvas();
 
 	handle_mouse_pointer_pos_change();
 }
@@ -1388,25 +1347,6 @@ GPlatesQtWidgets::GlobeCanvas::get_universe_coord_z(
 	return (z_pos * FRAMING_RATIO / d_view_state.get_viewport_zoom().zoom_factor());
 }
 
-
-#if 0
-void
-GPlatesQtWidgets::GlobeCanvas::paintEvent(QPaintEvent *paint_event)
-{
-// This paintEvent() method should be enabled, and the paintGL method disabled, when we wish to use Qt overpainting
-//  ( http://doc.trolltech.com/4.3/opengl-overpainting.html )
-
-	qglClearColor(Qt::black);
-
-	QPainter painter;
-	painter.begin(this);
-
-	painter.setRenderHint(QPainter::Antialiasing);
-
-	painter.end();
-
-}
-#endif
 
 #if 0
 void

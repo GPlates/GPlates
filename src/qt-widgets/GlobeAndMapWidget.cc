@@ -412,13 +412,6 @@ GPlatesQtWidgets::GlobeAndMapWidget::update_canvas()
 }
 
 
-void
-GPlatesQtWidgets::GlobeAndMapWidget::repaint_canvas()
-{
-	d_active_view_ptr->repaint_canvas();
-}
-
-
 double
 GPlatesQtWidgets::GlobeAndMapWidget::current_proximity_inclusion_threshold(
 		const GPlatesMaths::PointOnSphere &click_pos_on_globe) const

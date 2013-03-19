@@ -83,8 +83,7 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 			viewport_zoom,
 			colour_scheme,
 			d_text_renderer),
-	d_rendered_geometry_collection(&rendered_geometry_collection),
-	d_disable_update(false)
+	d_rendered_geometry_collection(&rendered_geometry_collection)
 {
 	// Do some OpenGL initialisation.
 	// Because of 'd_make_context_current' we know the OpenGL context is currently active.
@@ -120,13 +119,6 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 
 GPlatesQtWidgets::MapCanvas::~MapCanvas()
 {  }
-
-void
-GPlatesQtWidgets::MapCanvas::set_disable_update(
-		bool b)
-{
-	d_disable_update = b;
-}
 
 void 
 GPlatesQtWidgets::MapCanvas::initializeGL() 
@@ -213,21 +205,12 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
 	d_gl_frame_cache_handle = render_scene(*renderer);
-
-	// End the render scope so that the OpenGL state is now back to the default state
-	// before we emit the repainted signal.
-	render_scope.end_render();
-
-	Q_EMIT repainted();
 }
 
 void
 GPlatesQtWidgets::MapCanvas::update_canvas()
 {
-	if (!d_disable_update)
-	{
-		update();
-	}
+	update();
 }
 
 QImage
@@ -463,4 +446,3 @@ GPlatesQtWidgets::MapCanvas::calculate_scale()
 	return static_cast<float>(min_dimension) /
 		static_cast<float>(d_view_state.get_main_viewport_min_dimension());
 }
-
