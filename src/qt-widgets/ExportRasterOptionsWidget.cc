@@ -104,7 +104,7 @@ GPlatesQtWidgets::ExportRasterOptionsWidget::make_signal_slot_connections()
 
 void
 GPlatesQtWidgets::ExportRasterOptionsWidget::react_width_spin_box_value_changed(
-		int width)
+		int width_value)
 {
 	// We should have ensured the image size is not none in the constructor.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -115,13 +115,13 @@ GPlatesQtWidgets::ExportRasterOptionsWidget::react_width_spin_box_value_changed(
 	if (d_constrained_aspect_ratio)
 	{
 		// Scale the height according to the current aspect ratio.
-		const int height = static_cast<int>(width / d_constrained_aspect_ratio.get() + 0.5);
+		const int height_value = static_cast<int>(width_value / d_constrained_aspect_ratio.get() + 0.5);
 
-		height_spin_box->setValue(height);
+		height_spin_box->setValue(height_value);
 	}
 
 	// Change the width (over-writing the old value) now that we've (potentially) constrained the height.
-	d_export_configuration.image_size->setWidth(width);
+	d_export_configuration.image_size->setWidth(width_value);
 }
 
 
