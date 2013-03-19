@@ -209,6 +209,9 @@ set(srcs
     ExportFlowlineOptionsWidget.h
     ExportMotionPathOptionsWidget.h
     ExportOptionsWidget.h
+    ExportRasterOptionsWidget.cc
+    ExportRasterOptionsWidget.h
+    ExportRasterOptionsWidgetUi.ui
     ExportReconstructedGeometryOptionsWidget.h
     ExportResolvedTopologyOptionsWidget.cc
     ExportResolvedTopologyOptionsWidget.h

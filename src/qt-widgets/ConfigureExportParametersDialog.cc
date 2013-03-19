@@ -443,7 +443,7 @@ GPlatesQtWidgets::ConfigureExportParametersDialog::set_export_options_widget(
 	}
 
 	d_current_export_options_widget = export_animation_registry.create_export_options_widget(
-			export_id, this);
+			export_id, this, *d_export_animation_context_ptr);
 
 	if (d_current_export_options_widget)
 	{

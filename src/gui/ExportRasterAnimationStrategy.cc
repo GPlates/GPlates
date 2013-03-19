@@ -75,10 +75,8 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 				.reconstruction_view_widget().active_view();
 	try
 	{
-		const QSize raster_size = active_scene_view.get_viewport_size();
-
 		// Render to the raster image file.
-		const QImage raster_image = active_scene_view.render_to_qimage(raster_size);
+		const QImage raster_image = active_scene_view.render_to_qimage(d_configuration->image_size);
 
 		// Save the raster to file.
 		raster_image.save(full_filename);

@@ -94,6 +94,7 @@ namespace GPlatesGui
 		typedef GPlatesQtWidgets::ExportOptionsWidget *
 				create_export_options_widget_function_signature_type(
 						QWidget *,
+						ExportAnimationContext &,
 						const ExportAnimationStrategy::const_configuration_base_ptr &);
 
 		//! The boost::function typedef that creates a @a ExportOptionsWidget.
@@ -201,6 +202,7 @@ namespace GPlatesGui
 		create_export_options_widget(
 				ExportAnimationType::ExportID export_id,
 				QWidget *parent,
+				ExportAnimationContext &export_animation_context,
 				boost::optional<ExportAnimationStrategy::const_configuration_base_ptr> export_configuration = boost::none) const;
 
 		/**

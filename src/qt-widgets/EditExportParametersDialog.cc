@@ -228,6 +228,7 @@ GPlatesQtWidgets::EditExportParametersDialog::set_export_options_widget(
 	d_export_options_widget = export_animation_registry.create_export_options_widget(
 			d_export_id.get(),
 			this,
+			*d_export_animation_context_ptr,
 			export_configuration);
 
 	if (d_export_options_widget)

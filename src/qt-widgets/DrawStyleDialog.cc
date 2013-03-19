@@ -1,9 +1,9 @@
-/* $Id: ColouringDialog.cc 10521 2010-12-11 06:33:37Z elau $ */
+/* $Id$ */
 
 /**
  * \file 
- * $Revision: 10521 $
- * $Date: 2010-12-11 17:33:37 +1100 (Sat, 11 Dec 2010) $ 
+ * $Revision$
+ * $Date$ 
  * 
  * Copyright (C) 2010 The University of Sydney, Australia
  *
