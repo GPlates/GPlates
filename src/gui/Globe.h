@@ -38,7 +38,6 @@
 #include "SphericalGrid.h"
 #include "SimpleGlobeOrientation.h"
 #include "Stars.h"
-#include "TextRenderer.h"
 #include "RenderSettings.h"
 
 #include "maths/UnitVector3D.h"
@@ -89,7 +88,6 @@ namespace GPlatesGui
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,
-				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme);
 
@@ -97,7 +95,6 @@ namespace GPlatesGui
 		Globe(
 				Globe &existing_globe,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
-				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme);
 

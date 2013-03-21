@@ -36,7 +36,6 @@
 #include "Colour.h"
 #include "ColourScheme.h"
 #include "LayerPainter.h"
-#include "TextRenderer.h"
 #include "RenderSettings.h"
 
 #include "maths/DateLineWrapper.h"
@@ -87,7 +86,6 @@ namespace GPlatesGui
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const double &inverse_viewport_zoom_factor,
 				GPlatesGui::RenderSettings &render_settings,
-				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 				ColourScheme::non_null_ptr_type colour_scheme);
 
 
@@ -225,9 +223,6 @@ namespace GPlatesGui
 
 		//! Rendering flags for determining what gets shown
 		RenderSettings &d_render_settings;
-
-		//! For rendering text
-		TextRenderer::non_null_ptr_to_const_type d_text_renderer_ptr;
 
 		//! For assigning colours to RenderedGeometry
 		ColourScheme::non_null_ptr_type d_colour_scheme;

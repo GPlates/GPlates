@@ -182,10 +182,6 @@ set(srcs
     PythonConsoleHistory.h
     PythonManager.cc
     PythonManager.h
-    QGLWidgetTextRenderer.cc
-    QGLWidgetTextRenderer.h
-    QPainterTextRenderer.cc
-    QPainterTextRenderer.h
     RasterColourPalette.cc
     RasterColourPalette.h
     ReconstructionGeometrySequence.h
@@ -209,8 +205,6 @@ set(srcs
     TextOverlay.h
     TextOverlaySettings.cc
     TextOverlaySettings.h
-    TextRenderer.cc
-    TextRenderer.h
     TopologyCanvasToolWorkflow.cc
     TopologyCanvasToolWorkflow.h
     TopologySectionsContainer.cc

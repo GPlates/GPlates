@@ -46,14 +46,12 @@ GPlatesGui::MapRenderedGeometryCollectionPainter::MapRenderedGeometryCollectionP
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const GPlatesPresentation::VisualLayers &visual_layers,
 		RenderSettings &render_settings,
-		const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_map_projection(map_projection),
 	d_rendered_geometry_collection(rendered_geometry_collection),
 	d_gl_visual_layers(gl_visual_layers),
 	d_visual_layers(visual_layers),
 	d_render_settings(render_settings),
-	d_text_renderer_ptr(text_renderer_ptr),
 	d_layer_painter(gl_visual_layers, map_projection),
 	d_colour_scheme(colour_scheme),
 	d_scale(1.0f)
@@ -114,7 +112,6 @@ GPlatesGui::MapRenderedGeometryCollectionPainter::visit_rendered_geometry_layer(
 			d_gl_visual_layers,
 			d_paint_params->d_inverse_viewport_zoom_factor,
 			d_render_settings,
-			d_text_renderer_ptr,
 			d_colour_scheme);
 	rendered_geom_layer_painter.set_scale(d_scale);
 

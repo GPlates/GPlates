@@ -135,7 +135,6 @@ GPlatesGui::LayerPainter::begin_painting(
 GPlatesGui::LayerPainter::cache_handle_type
 GPlatesGui::LayerPainter::end_painting(
 		GPlatesOpenGL::GLRenderer &renderer,
-		const TextRenderer &text_renderer,
 		float scale,
 		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture)
 {
@@ -308,7 +307,7 @@ GPlatesGui::LayerPainter::end_painting(
 			d_render_point_line_polygon_lighting_program_object);
 
 	// Render any 2D text last (text specified at 2D viewport positions).
-	paint_text_drawables_2D(renderer, text_renderer, scale);
+	paint_text_drawables_2D(renderer, scale);
 
 	// Render any 3D text last (text specified at 3D world positions).
 	// This is because the text is converted from 3D space to 2D window coordinates and hence is
@@ -323,7 +322,7 @@ GPlatesGui::LayerPainter::end_painting(
 	// such as rendered arrows (should it be on top or interleave depending on depth).
 	// FIXME: We might be able to draw text as 3D and turn depth writes on (however the
 	// alpha-blending could cause some visual artifacts as described above).
-	paint_text_drawables_3D(renderer, text_renderer, scale);
+	paint_text_drawables_3D(renderer, scale);
 
 	// Only used for the duration of painting.
 	d_renderer = boost::none;
@@ -428,7 +427,6 @@ GPlatesGui::LayerPainter::paint_rasters(
 void
 GPlatesGui::LayerPainter::paint_text_drawables_2D(
 		GPlatesOpenGL::GLRenderer &renderer,
-		const TextRenderer &text_renderer,
 		float scale)
 {
 	BOOST_FOREACH(const TextDrawable2D &text_drawable, text_drawables_2D)
@@ -438,7 +436,6 @@ GPlatesGui::LayerPainter::paint_text_drawables_2D(
 		{
 			GPlatesOpenGL::GLText::render_text_2D(
 					renderer,
-					text_renderer,
 					text_drawable.world_x,
 					text_drawable.world_y,
 					text_drawable.text,
@@ -455,7 +452,6 @@ GPlatesGui::LayerPainter::paint_text_drawables_2D(
 		{
 			GPlatesOpenGL::GLText::render_text_2D(
 					renderer,
-					text_renderer,
 					text_drawable.world_x,
 					text_drawable.world_y,
 					text_drawable.text,
@@ -475,7 +471,6 @@ GPlatesGui::LayerPainter::paint_text_drawables_2D(
 void
 GPlatesGui::LayerPainter::paint_text_drawables_3D(
 		GPlatesOpenGL::GLRenderer &renderer,
-		const TextRenderer &text_renderer,
 		float scale)
 {
 	BOOST_FOREACH(const TextDrawable3D &text_drawable, text_drawables_3D)
@@ -485,7 +480,6 @@ GPlatesGui::LayerPainter::paint_text_drawables_3D(
 		{
 			GPlatesOpenGL::GLText::render_text_3D(
 					renderer,
-					text_renderer,
 					text_drawable.world_position.x().dval(),
 					text_drawable.world_position.y().dval(),
 					text_drawable.world_position.z().dval(),
@@ -503,7 +497,6 @@ GPlatesGui::LayerPainter::paint_text_drawables_3D(
 		{
 			GPlatesOpenGL::GLText::render_text_3D(
 					renderer,
-					text_renderer,
 					text_drawable.world_position.x().dval(),
 					text_drawable.world_position.y().dval(),
 					text_drawable.world_position.z().dval(),

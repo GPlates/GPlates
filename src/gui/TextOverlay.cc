@@ -33,20 +33,21 @@
 
 #include "app-logic/ApplicationState.h"
 
+#include "opengl/GLText.h"
+
 
 GPlatesGui::TextOverlay::TextOverlay(
-		const GPlatesAppLogic::ApplicationState &application_state,
-		const TextRenderer::non_null_ptr_to_const_type &text_renderer) :
-	d_application_state(application_state),
-	d_text_renderer(text_renderer)
+		const GPlatesAppLogic::ApplicationState &application_state) :
+	d_application_state(application_state)
 {  }
 
 
 void
 GPlatesGui::TextOverlay::paint(
+		GPlatesOpenGL::GLRenderer &renderer,
 		const TextOverlaySettings &settings,
-		int canvas_width,
-		int canvas_height,
+		int paint_device_width,
+		int paint_device_height,
 		float scale)
 {
 	if (!settings.is_enabled())
@@ -66,28 +67,28 @@ GPlatesGui::TextOverlay::paint(
 
 	// Work out position of text.
 	QFontMetrics fm(settings.get_font());
-	int x;
+	float x;
 	if (settings.get_anchor() == GPlatesGui::TextOverlaySettings::TOP_LEFT ||
 		settings.get_anchor() == GPlatesGui::TextOverlaySettings::BOTTOM_LEFT)
 	{
-		x = static_cast<int>(x_offset);
+		x = x_offset;
 	}
 	else // TOP_RIGHT, BOTTOM_RIGHT
 	{
 		float text_width = fm.width(substituted) * scale;
-		x = static_cast<int>(canvas_width - x_offset - text_width);
+		x = paint_device_width - x_offset - text_width;
 	}
 
-	int y;
+	float y;
 	if (settings.get_anchor() == GPlatesGui::TextOverlaySettings::TOP_LEFT ||
 		settings.get_anchor() == GPlatesGui::TextOverlaySettings::TOP_RIGHT)
 	{
 		float text_height = fm.height() * scale;
-		y = static_cast<int>(y_offset + text_height);
+		y = paint_device_height - y_offset - text_height;
 	}
 	else // BOTTOM_LEFT, BOTTOM_RIGHT
 	{
-		y = static_cast<int>(canvas_height - y_offset);
+		y = y_offset;
 	}
 
 	if (settings.has_shadow())
@@ -96,21 +97,27 @@ GPlatesGui::TextOverlay::paint(
 		Colour shadow_colour = GPlatesGui::Colour::get_black();
 		shadow_colour.alpha() = settings.get_colour().alpha();
 
-		d_text_renderer->render_text(
-				x + 1,
-				y + 1,
+		GPlatesOpenGL::GLText::render_text_2D(
+				renderer,
+				x,
+				y,
 				substituted,
 				shadow_colour,
+				1,
+				// OpenGL viewport 'y' coord goes from bottom to top...
+				-1, // down 1px
 				settings.get_font(),
 				scale);
 	}
 
-	d_text_renderer->render_text(
+	GPlatesOpenGL::GLText::render_text_2D(
+			renderer,
 			x,
 			y,
 			substituted,
 			settings.get_colour(),
+			0,
+			0,
 			settings.get_font(),
 			scale);
 }
-

@@ -36,7 +36,6 @@
 #include "MapGrid.h"
 #include "MapProjection.h"
 #include "MapRenderedGeometryCollectionPainter.h"
-#include "TextRenderer.h"
 
 #include "gui/ViewportZoom.h"
 
@@ -76,8 +75,7 @@ namespace GPlatesGui
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,
 				ViewportZoom &viewport_zoom,
-				const ColourScheme::non_null_ptr_type &colour_scheme,
-				const TextRenderer::non_null_ptr_to_const_type &text_renderer);
+				const ColourScheme::non_null_ptr_type &colour_scheme);
 
 		/**
 		 * Initialise any OpenGL state.
@@ -144,9 +142,6 @@ namespace GPlatesGui
 		
 		//! For giving colour to RenderedGeometry
 		GPlatesGui::ColourScheme::non_null_ptr_type d_colour_scheme;
-
-		//! Used for rendering text
-		TextRenderer::non_null_ptr_to_const_type d_text_renderer_ptr;
 
 		/**
 		 * Lines of lat and lon on the map.

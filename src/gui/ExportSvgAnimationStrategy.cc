@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <exception>
 #include <QDebug>
 #include <QSvgGenerator>
 
@@ -109,14 +110,18 @@ GPlatesGui::ExportSvgAnimationStrategy::do_export_iteration(
 	}
 	catch (std::exception &exc)
 	{
-		qWarning() << "Caught exception creating SVG output: " << exc.what();
+		d_export_animation_context_ptr->update_status_message(
+			QObject::tr("Error creating SVG file \"%1\": %2")
+					.arg(full_filename)
+					.arg(exc.what()));
 		return false;
 	}
 	// FIXME: Should we really be ignoring an unknown exception ?
 	// Perhaps can let it close GPlates via unhandled exception handler in GPlatesQApplication...
 	catch (...)
 	{
-		qWarning() << "Caught exception creating SVG output: unknown error";
+		d_export_animation_context_ptr->update_status_message(
+			QObject::tr("Error writing creating SVG file \"%1\": unknown error!").arg(full_filename));
 		return false;
     }
 	

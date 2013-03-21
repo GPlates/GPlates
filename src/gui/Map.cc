@@ -53,8 +53,7 @@ GPlatesGui::Map::Map(
 		const GPlatesPresentation::VisualLayers &visual_layers,
 		RenderSettings &render_settings,
 		ViewportZoom &viewport_zoom,
-		const ColourScheme::non_null_ptr_type &colour_scheme,
-		const TextRenderer::non_null_ptr_to_const_type &text_renderer) :
+		const ColourScheme::non_null_ptr_type &colour_scheme) :
 	d_map_projection(MapProjection::create()),
 	d_view_state(view_state),
 	d_gl_visual_layers(gl_visual_layers),
@@ -63,14 +62,12 @@ GPlatesGui::Map::Map(
 	d_render_settings(render_settings),
 	d_viewport_zoom(viewport_zoom),
 	d_colour_scheme(colour_scheme),
-	d_text_renderer_ptr(text_renderer),
 	d_rendered_geom_collection_painter(
 			d_map_projection,
 			rendered_geometry_collection,
 			gl_visual_layers,
 			visual_layers,
 			d_render_settings,
-			text_renderer,
 			colour_scheme)
 {  }
 

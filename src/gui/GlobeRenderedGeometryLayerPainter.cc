@@ -110,7 +110,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter
 		const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 		const double &inverse_viewport_zoom_factor,
 		RenderSettings &render_settings,
-		const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme,
 		PaintRegionType paint_region,
@@ -118,7 +117,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter
 	d_rendered_geometry_layer(rendered_geometry_layer),
 	d_inverse_zoom_factor(inverse_viewport_zoom_factor),
 	d_render_settings(render_settings),
-	d_text_renderer_ptr(text_renderer_ptr),
 	d_visibility_tester(visibility_tester),
 	d_colour_scheme(colour_scheme),
 	d_scale(1.0f),
@@ -153,7 +151,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint(
 	const cache_handle_type layer_cache =
 			layer_painter.end_painting(
 					renderer,
-					*d_text_renderer_ptr,
 					d_scale,
 					d_surface_occlusion_texture);
 

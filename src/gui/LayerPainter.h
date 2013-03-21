@@ -35,7 +35,6 @@
 #include "MapProjection.h"
 #include "RasterColourPalette.h"
 #include "SceneLightingParameters.h"
-#include "TextRenderer.h"
 
 #include "app-logic/ResolvedRaster.h"
 #include "app-logic/ResolvedScalarField3D.h"
@@ -388,7 +387,6 @@ namespace GPlatesGui
 		cache_handle_type
 		end_painting(
 				GPlatesOpenGL::GLRenderer &renderer,
-				const TextRenderer &text_renderer,
 				float scale,
 				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture = boost::none);
 
@@ -427,13 +425,11 @@ namespace GPlatesGui
 		void
 		paint_text_drawables_2D(
 				GPlatesOpenGL::GLRenderer &renderer,
-				const TextRenderer &text_renderer,
 				float scale);
 
 		void
 		paint_text_drawables_3D(
 				GPlatesOpenGL::GLRenderer &renderer,
-				const TextRenderer &text_renderer,
 				float scale);
 
 

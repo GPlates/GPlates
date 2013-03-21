@@ -35,7 +35,6 @@
 #include "GlobeVisibilityTester.h"
 #include "LayerPainter.h"
 #include "RenderSettings.h"
-#include "TextRenderer.h"
 
 #include "opengl/GLContext.h"
 #include "opengl/GLTexture.h"
@@ -80,7 +79,6 @@ namespace GPlatesGui
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				RenderSettings &render_settings,
-				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme);
 
@@ -181,9 +179,6 @@ namespace GPlatesGui
 
 		//! Rendering flags to determine what gets shown
 		RenderSettings &d_render_settings;
-
-		//! Used for rendering text on an OpenGL canvas
-		TextRenderer::non_null_ptr_to_const_type d_text_renderer_ptr;
 
 		//! Used to paint the layers.
 		LayerPainter d_layer_painter;

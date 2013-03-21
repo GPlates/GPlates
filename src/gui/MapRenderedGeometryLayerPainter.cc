@@ -206,14 +206,12 @@ GPlatesGui::MapRenderedGeometryLayerPainter::MapRenderedGeometryLayerPainter(
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const double &inverse_viewport_zoom_factor,
 		RenderSettings &render_settings,
-		const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_map_projection(map_projection),
 	d_rendered_geometry_layer(rendered_geometry_layer),
 	d_gl_visual_layers(gl_visual_layers),
 	d_inverse_zoom_factor(inverse_viewport_zoom_factor),
 	d_render_settings(render_settings),
-	d_text_renderer_ptr(text_renderer_ptr),
 	d_colour_scheme(colour_scheme),
 	d_scale(1.0f),
 	d_dateline_wrapper(GPlatesMaths::DateLineWrapper::create()),
@@ -249,8 +247,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::paint(
 	visit_rendered_geometries(renderer);
 
 	// Do the actual painting.
-	const cache_handle_type layer_cache =
-			layer_painter.end_painting(renderer, *d_text_renderer_ptr, d_scale);
+	const cache_handle_type layer_cache = layer_painter.end_painting(renderer, d_scale);
 
 	// We no longer have a layer painter.
 	d_layer_painter = boost::none;
@@ -466,22 +463,19 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_string(
 		return;
 	}
 
-	if (d_text_renderer_ptr)
-	{
-		// Get the projected text position.
-		const QPointF proj_pos = get_projected_unwrapped_position(rendered_string.get_point_on_sphere());
+	// Get the projected text position.
+	const QPointF proj_pos = get_projected_unwrapped_position(rendered_string.get_point_on_sphere());
 
-		d_layer_painter->text_drawables_2D.push_back(
-				LayerPainter::TextDrawable2D(
-						rendered_string.get_string(),
-						rendered_string.get_font(),
-						proj_pos.x(),
-						proj_pos.y(),
-						rendered_string.get_x_offset(),
-						rendered_string.get_y_offset(),
-						get_colour_of_rendered_geometry(rendered_string),
-						rendered_string.get_shadow_colour().get_colour(d_colour_scheme)));
-	}
+	d_layer_painter->text_drawables_2D.push_back(
+			LayerPainter::TextDrawable2D(
+					rendered_string.get_string(),
+					rendered_string.get_font(),
+					proj_pos.x(),
+					proj_pos.y(),
+					rendered_string.get_x_offset(),
+					rendered_string.get_y_offset(),
+					get_colour_of_rendered_geometry(rendered_string),
+					rendered_string.get_shadow_colour().get_colour(d_colour_scheme)));
 }
 
 void
