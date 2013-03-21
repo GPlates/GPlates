@@ -176,7 +176,8 @@ namespace GPlatesQtWidgets
 
 		GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLRenderer>::non_null_ptr_type
 		create_gl_renderer(
-				GPlatesOpenGL::GLViewport &viewport) const;
+				int &viewport_width,
+				int &viewport_height) const;
 
 		bool
 		is_scalar_field_import_supported() const;

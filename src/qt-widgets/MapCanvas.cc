@@ -30,12 +30,15 @@
 #include <QGLWidget>
 #include <QGraphicsView>
 #include <QPaintEngine>
+#include <QPaintDevice>
 #include <QPainter>
 #include <opengl/OpenGL.h>
 
 #include "MapCanvas.h"
 #include "MapView.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 #include "global/GPlatesException.h"
 
 #include "gui/Map.h"
@@ -57,6 +60,55 @@
 #include "utils/Profile.h"
 
 
+namespace GPlatesQtWidgets
+{
+	namespace
+	{
+		/**
+		 * Gets the equivalent OpenGL model-view matrix from the 2D world transform.
+		 */
+		void
+		get_model_view_matrix_from_2D_world_transform(
+				GPlatesOpenGL::GLMatrix &model_view_matrix,
+				const QTransform &world_transform)
+		{
+			// Get the model-view matrix from the QPainter.
+			const GLdouble model_view_matrix_array[16] =
+			{
+				world_transform.m11(), world_transform.m12(),        0, world_transform.m13(),
+				world_transform.m21(), world_transform.m22(),        0, world_transform.m23(),
+				                    0,                     0,        1,                     0,
+				 world_transform.dx(),  world_transform.dy(),        0, world_transform.m33()
+			};
+			model_view_matrix.gl_load_matrix(model_view_matrix_array);
+		}
+
+
+		/**
+		 * Gets the orthographic OpenGL projection matrix from the specified dimensions.
+		 */
+		void
+		get_ortho_projection_matrices_from_dimensions(
+				GPlatesOpenGL::GLMatrix &projection_matrix_scene,
+				GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay,
+				int width,
+				int height)
+		{
+			projection_matrix_scene.gl_load_identity();
+			projection_matrix_text_overlay.gl_load_identity();
+
+			// NOTE: Use bottom=height instead of top=height inverts the y-axis which
+			// converts from Qt coordinate system to OpenGL coordinate system.
+			projection_matrix_scene.gl_ortho(0, width, height, 0, -999999, 999999);
+
+			// However the text overlay doesn't need this y-inversion.
+			// TODO: Sort out the need for a y-inversion above by fixing the world transform in MapView.
+			projection_matrix_text_overlay.gl_ortho(0, width, 0, height, -999999, 999999);
+		}
+	}
+}
+
+
 GPlatesQtWidgets::MapCanvas::MapCanvas(
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
@@ -72,8 +124,7 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 	d_map_view_ptr(map_view_ptr),
 	d_gl_context(gl_context),
 	d_make_context_current(*d_gl_context),
-	d_text_renderer(GPlatesGui::QPainterTextRenderer::create()),
-	d_text_overlay(new GPlatesGui::TextOverlay(view_state.get_application_state(), d_text_renderer)),
+	d_text_overlay(new GPlatesGui::TextOverlay(view_state.get_application_state())),
 	d_map(
 			view_state,
 			gl_visual_layers,
@@ -81,8 +132,7 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 			view_state.get_visual_layers(),
 			render_settings,
 			viewport_zoom,
-			colour_scheme,
-			d_text_renderer),
+			colour_scheme),
 	d_rendered_geometry_collection(&rendered_geometry_collection)
 {
 	// Do some OpenGL initialisation.
@@ -137,7 +187,8 @@ GPlatesQtWidgets::MapCanvas::initializeGL()
 	GPlatesOpenGL::GLRenderer::RenderScope render_scope(
 			*renderer,
 			// Pass in the viewport currently set by QGraphicsView...
-			GPlatesOpenGL::GLViewport(0, 0, d_map_view_ptr->width(), d_map_view_ptr->height()));
+			d_map_view_ptr->width(),
+			d_map_view_ptr->height());
 
 	// Initialise those parts of map that require a valid OpenGL context to be bound.
 	d_map.initialiseGL(*renderer);
@@ -146,14 +197,16 @@ GPlatesQtWidgets::MapCanvas::initializeGL()
 
 GPlatesQtWidgets::MapCanvas::cache_handle_type
 GPlatesQtWidgets::MapCanvas::render_scene(
-		GPlatesOpenGL::GLRenderer &renderer)
+		GPlatesOpenGL::GLRenderer &renderer,
+		const GPlatesOpenGL::GLMatrix &projection_matrix_scene,
+		const GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay,
+		int paint_device_width,
+		int paint_device_height)
 {
 	PROFILE_FUNC();
 
-	// Let the text renderer know of the QPainter object (indirectly via GLRenderer) so it can use
-	// it to render text with.
-	// We need to do this before any text rendering can occur (and it can inside 'Map::paint').
-	GPlatesGui::TextRenderer::RenderScope text_render_scope(*d_text_renderer, &renderer);
+	// Set the projection matrix for the scene.
+	renderer.gl_load_matrix(GL_PROJECTION, projection_matrix_scene);
 
 	// Render the map.
 	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
@@ -170,15 +223,20 @@ GPlatesQtWidgets::MapCanvas::render_scene(
 	//
 	const cache_handle_type frame_cache_handle = d_map.paint(renderer, viewport_zoom_factor, scale);
 
-	// Draw the optional text overlay.
-	d_text_overlay->paint(
-			d_view_state.get_text_overlay_settings(),
-			d_map_view_ptr->width(),
-			d_map_view_ptr->height(),
-			scale);
+	// The text overlay is rendered in screen window coordinates (ie, no model-view transform needed).
+	renderer.gl_load_matrix(GL_MODELVIEW, GPlatesOpenGL::GLMatrix::IDENTITY);
+	// Set the projection matrix for the text overlay (it's inverted compared to the scene transform).
+	renderer.gl_load_matrix(GL_PROJECTION, projection_matrix_text_overlay);
 
-	// Finished text rendering.
-	text_render_scope.end_render();
+	// Draw the optional text overlay.
+	// We use the paint device dimensions (and not the canvas dimensions) in case the paint device
+	// is not the canvas (eg, when rendering to a larger dimension SVG paint device).
+	d_text_overlay->paint(
+			renderer,
+			d_view_state.get_text_overlay_settings(),
+			paint_device_width,
+			paint_device_height,
+			scale);
 
 	return frame_cache_handle;
 }
@@ -189,6 +247,11 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 		QPainter *painter,
 		const QRectF &/*exposed_rect*/)
 {
+	// We use the QPainter's world transform to set our OpenGL model-view and projection matrices.
+	// And we restore the QPainter's transform after our rendering because we use it for text
+	// rendering which sets its transform to identity.
+	const QTransform qpainter_world_transform = painter->worldTransform();
+
 	// Create a render for all our OpenGL rendering work.
 	// Note that nothing will happen until we enter a rendering scope.
 	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
@@ -200,11 +263,43 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 	//
 	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
-	// This also let's GLRenderer know of the modelview/projection transforms set by the QPainter.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, *painter, true/*paint_device_is_framebuffer*/);
+	// This also sets the main frame buffer dimensions to the paint device dimensions.
+	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, *painter);
+
+	// Get the model-view matrix from the QPainter's 2D world transform.
+	GPlatesOpenGL::GLMatrix model_view_matrix;
+	get_model_view_matrix_from_2D_world_transform(
+			model_view_matrix,
+			qpainter_world_transform);
+
+	// Set the model-view matrix on the renderer.
+	renderer->gl_load_matrix(GL_MODELVIEW, model_view_matrix);
+
+	// The QPainter's paint device.
+	const QPaintDevice *qpaint_device = painter->device();
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			qpaint_device,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Get the projection matrix for the QPainter's paint device.
+	GPlatesOpenGL::GLMatrix projection_matrix_scene;
+	GPlatesOpenGL::GLMatrix projection_matrix_text_overlay;
+	get_ortho_projection_matrices_from_dimensions(
+			projection_matrix_scene,
+			projection_matrix_text_overlay,
+			qpaint_device->width(),
+			qpaint_device->height());
 
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
-	d_gl_frame_cache_handle = render_scene(*renderer);
+	d_gl_frame_cache_handle = render_scene(
+			*renderer,
+			projection_matrix_scene,
+			projection_matrix_text_overlay,
+			qpaint_device->width(),
+			qpaint_device->height());
+
+	// Restore the QPainter's original world transform in case we modified it during rendering.
+	painter->setWorldTransform(qpainter_world_transform);
 }
 
 void
@@ -215,19 +310,15 @@ GPlatesQtWidgets::MapCanvas::update_canvas()
 
 QImage
 GPlatesQtWidgets::MapCanvas::render_to_qimage(
-		QGLWidget *paint_device,
+		QGLWidget *map_canvas_paint_device,
 		const QTransform &viewport_transform,
 		const QSize &image_size)
 {
 	// Make sure our OpenGL context is the currently active context.
 	d_gl_context->make_current();
 
-	// By default the QPainter will set up the OpenGL projection matrix to fit the canvas using
-	// an orthographic projection.
-	QPainter painter(paint_device);
-
-	// Set the painter transform to match the current view.
-	painter.setWorldTransform(viewport_transform);
+	// Set up a QPainter to help us with OpenGL text rendering.
+	QPainter painter(map_canvas_paint_device);
 
 	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
 
@@ -238,32 +329,34 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 	//
 	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
-	// This also let's GLRenderer know of the modelview/projection transforms set by the QPainter.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(
-			*renderer,
-			painter,
-			true/*paint_device_is_framebuffer*/);
+	// This also sets the main frame buffer dimensions to the paint device dimensions.
+	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, painter);
 
-	// Determine the tile render target dimensions.
-	// Use power-of-two tile render-target dimensions to enhance re-use of render-target...
-	unsigned int tile_render_target_width = 1024;
-	unsigned int tile_render_target_height = 1024;
+	// Get the model-view matrix from the 2D world transform.
+	GPlatesOpenGL::GLMatrix model_view_matrix;
+	get_model_view_matrix_from_2D_world_transform(
+			model_view_matrix,
+			viewport_transform);
 
-	// Acquire a render target to use for rendering the scene into tiles.
-	boost::optional<GPlatesOpenGL::GLRenderTarget::shared_ptr_type> tile_render_target =
-			d_gl_context->get_shared_state()->acquire_render_target(
-					*renderer,
-					GL_RGBA8,
-					// We don't need a depth buffer for 2D map rendering...
-					false/*include_depth_buffer*/,
-					tile_render_target_width,
-					tile_render_target_height);
-	// If a render target is not supported then use the main framebuffer as a render target...
-	if (!tile_render_target)
-	{
-		tile_render_target_width = d_map_view_ptr->width();
-		tile_render_target_height = d_map_view_ptr->height();
-	}
+	// Set the model-view matrix on the renderer.
+	renderer->gl_load_matrix(GL_MODELVIEW, model_view_matrix);
+
+	// Get the projection matrix for the image dimensions.
+	// It'll get adjusted per tile (that the scene is rendered to).
+	GPlatesOpenGL::GLMatrix projection_matrix_scene;
+	GPlatesOpenGL::GLMatrix projection_matrix_text_overlay;
+	get_ortho_projection_matrices_from_dimensions(
+			projection_matrix_scene,
+			projection_matrix_text_overlay,
+			image_size.width(),
+			image_size.height());
+
+	// The tile render target dimensions match the paint device (canvas) dimensions.
+	// We render into the main frame buffer of the canvas instead of using frame buffer objects
+	// because we use our OpenGL QPainter to render text and it expects its paint device when
+	// rendering (expects dimensions of paint device).
+	const unsigned int tile_render_target_width = d_map_view_ptr->width();
+	const unsigned int tile_render_target_height = d_map_view_ptr->height();
 
 	// The border is half the point size or line width, rounded up to nearest pixel.
 	// TODO: Use the actual maximum point size or line width to calculate this.
@@ -281,6 +374,11 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 
 	// The image to render the scene into.
 	QImage image(image_size, QImage::Format_ARGB32);
+	if (image.isNull())
+	{
+		// Most likely a memory allocation failure - return the null image.
+		return image;
+	}
 
 	// Fill the image with transparent black in case there's an exception during rendering
 	// of one of the tiles and the image is incomplete.
@@ -293,25 +391,19 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 	// Render the scene tile-by-tile.
 	for (tile_render.first_tile(); !tile_render.finished(); tile_render.next_tile())
 	{
-		// If we have a render target then render to it, otherwise use the main framebuffer.
-		if (tile_render_target)
-		{
-			// Render to render target instead of main framebuffer.
-			GPlatesOpenGL::GLRenderTarget::RenderScope tile_render_target_scope(
-					*tile_render_target.get(),
-					*renderer);
-
-			cache_handle_type tile_cache_handle = render_scene_tile_into_image(*renderer, tile_render, image);
-			frame_cache_handle->push_back(tile_cache_handle);
-		}
-		else if (paint_device->doubleBuffer())
+		if (map_canvas_paint_device->doubleBuffer())
 		{
 			// We have a double buffer main framebuffer and we are rendering to the back buffer.
 			// So the front buffer (which is being displayed) won't get disturbed. And when this
 			// widget paints itself it will clear and re-draw the back buffer and then swap it so
 			// it becomes the front buffer.
 			// So for these reasons we do not need to save and restore the main framebuffer.
-			cache_handle_type tile_cache_handle = render_scene_tile_into_image(*renderer, tile_render, image);
+			cache_handle_type tile_cache_handle = render_scene_tile_into_image(
+					*renderer,
+					tile_render,
+					image,
+					projection_matrix_scene,
+					projection_matrix_text_overlay);
 			frame_cache_handle->push_back(tile_cache_handle);
 		}
 		else
@@ -323,7 +415,12 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 					tile_render_target_height);
 
 			save_restore_main_framebuffer.save(*renderer);
-			cache_handle_type tile_cache_handle = render_scene_tile_into_image(*renderer, tile_render, image);
+			cache_handle_type tile_cache_handle = render_scene_tile_into_image(
+					*renderer,
+					tile_render,
+					image,
+					projection_matrix_scene,
+					projection_matrix_text_overlay);
 			frame_cache_handle->push_back(tile_cache_handle);
 			save_restore_main_framebuffer.restore(*renderer);
 		}
@@ -339,7 +436,9 @@ GPlatesQtWidgets::MapCanvas::cache_handle_type
 GPlatesQtWidgets::MapCanvas::render_scene_tile_into_image(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const GPlatesOpenGL::GLTileRender &tile_render,
-		QImage &image)
+		QImage &image,
+		const GPlatesOpenGL::GLMatrix &projection_matrix_scene,
+		const GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay)
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
@@ -375,16 +474,23 @@ GPlatesQtWidgets::MapCanvas::render_scene_tile_into_image(
 	const GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type tile_projection_transform =
 			tile_render.get_tile_projection_transform();
 
-	// The projection matrix adjusted for the current tile.
-	GPlatesOpenGL::GLMatrix projection_matrix(tile_projection_transform->get_matrix());
-	projection_matrix.gl_ortho(0, image.width(), image.height(), 0, -999999, 999999);
+	// The scene projection matrix adjusted for the current tile.
+	GPlatesOpenGL::GLMatrix tile_projection_matrix_scene(tile_projection_transform->get_matrix());
+	tile_projection_matrix_scene.gl_mult_matrix(projection_matrix_scene);
 
-	renderer.gl_load_matrix(GL_PROJECTION, projection_matrix);
+	// The text overlay projection matrix adjusted for the current tile.
+	GPlatesOpenGL::GLMatrix tile_projection_matrix_text_overlay(tile_projection_transform->get_matrix());
+	tile_projection_matrix_text_overlay.gl_mult_matrix(projection_matrix_text_overlay);
 
 	//
 	// Render the scene.
 	//
-	const cache_handle_type tile_cache_handle = render_scene(renderer);
+	const cache_handle_type tile_cache_handle = render_scene(
+			renderer,
+			tile_projection_matrix_scene,
+			tile_projection_matrix_text_overlay,
+			image.width(),
+			image.height());
 
 	//
 	// Copy the rendered tile into the appropriate sub-rect of the image.
@@ -407,19 +513,16 @@ GPlatesQtWidgets::MapCanvas::render_scene_tile_into_image(
 
 void
 GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
-		QPaintDevice &paint_device,
-		const QTransform &viewport_transform)
+		QGLWidget *map_canvas_paint_device,
+		const QTransform &viewport_transform,
+		QPaintDevice &feedback_paint_device)
 {
 	// Make sure our OpenGL context is the currently active context.
 	d_gl_context->make_current();
 
-	// Note that we're not rendering to the OpenGL canvas here.
-	// The OpenGL rendering gets redirected into the QPainter (using OpenGL feedback) and
-	// ends up in the specified paint device.
-	QPainter painter(&paint_device);
-
-	// Set the painter transform to match the current view.
-	painter.setWorldTransform(viewport_transform);
+	// Note that the OpenGL rendering gets redirected into the QPainter (using OpenGL feedback) and
+	// ends up in the feedback paint device.
+	QPainter feedback_painter(&feedback_paint_device);
 
 	// Create a render for all our OpenGL rendering work.
 	// Note that nothing will happen until we enter a rendering scope.
@@ -427,16 +530,51 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 
 	// Start a begin_render/end_render scope.
 	//
-	// By default the current render target of 'renderer' is the main frame buffer (of the window).
+	// By default the current render target of 'renderer' is the main frame buffer (of the map canvas window).
 	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 	//
 	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
-	// This also let's GLRenderer know of the modelview/projection transforms set by the QPainter.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, painter, false/*paint_device_is_framebuffer*/);
+	GPlatesOpenGL::GLRenderer::RenderScope render_scope(
+			*renderer,
+			feedback_painter,
+			// The map canvas is not necessarily the same size as the feedback paint device...
+			std::make_pair(
+					static_cast<unsigned int>(map_canvas_paint_device->width()),
+					static_cast<unsigned int>(map_canvas_paint_device->height())));
+
+	// Set the viewport (and scissor rectangle) to the size of the feedback paint device instead
+	// of the map canvas because OpenGL feedback uses the viewport to generate projected vertices.
+	// Also text rendering uses the viewport.
+	// And we want all this to be positioned correctly within the feedback paint device.
+	renderer->gl_viewport(0, 0, feedback_paint_device.width(), feedback_paint_device.height());
+	renderer->gl_scissor(0, 0, feedback_paint_device.width(), feedback_paint_device.height());
+
+	// Get the model-view matrix from the 2D world transform.
+	GPlatesOpenGL::GLMatrix model_view_matrix;
+	get_model_view_matrix_from_2D_world_transform(
+			model_view_matrix,
+			viewport_transform);
+
+	// Set the model-view matrix on the renderer.
+	renderer->gl_load_matrix(GL_MODELVIEW, model_view_matrix);
+
+	// Get the projection matrix for the feedback paint device.
+	GPlatesOpenGL::GLMatrix projection_matrix_scene;
+	GPlatesOpenGL::GLMatrix projection_matrix_text_overlay;
+	get_ortho_projection_matrices_from_dimensions(
+			projection_matrix_scene,
+			projection_matrix_text_overlay,
+			feedback_paint_device.width(),
+			feedback_paint_device.height());
 
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
-	d_gl_frame_cache_handle = render_scene(*renderer);
+	d_gl_frame_cache_handle = render_scene(
+			*renderer,
+			projection_matrix_scene,
+			projection_matrix_text_overlay,
+			feedback_paint_device.width(),
+			feedback_paint_device.height());
 }
 
 float

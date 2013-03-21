@@ -533,9 +533,6 @@ GPlatesGui::FeedbackOpenGLToQPainter::end_render_vector_geometry(
 			qpainter,
 			GPLATES_ASSERTION_SOURCE);
 
-	// Get the current painter transform.
-	const QTransform prev_world_transform = qpainter->worldTransform();
-
 	// Set the identity world transform since our feedback geometry data is in *window* coordinates
 	// and we don't want it transformed by the current world transform.
 	qpainter->setWorldTransform(QTransform()/*identity*/);
@@ -545,9 +542,6 @@ GPlatesGui::FeedbackOpenGLToQPainter::end_render_vector_geometry(
 			qpainter.get(),
 			d_feedback_buffer.get(),
 			num_feedback_items);
-
-	// Restore the previous world transform in the QPainter.
-	qpainter->setWorldTransform(prev_world_transform);
 }
 
 

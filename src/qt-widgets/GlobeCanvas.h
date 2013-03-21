@@ -43,7 +43,6 @@
 
 #include "gui/ColourScheme.h"
 #include "gui/Globe.h"
-#include "gui/TextRenderer.h"
 #include "gui/ViewportZoom.h"
 
 #include "maths/MultiPointOnSphere.h"
@@ -245,7 +244,7 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		render_opengl_feedback_to_paint_device(
-				QPaintDevice &paint_device);
+				QPaintDevice &feedback_paint_device);
 
 		virtual
 		boost::optional<GPlatesMaths::LatLonPoint>
@@ -587,6 +586,11 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesOpenGL::GLMatrix d_gl_projection_transform_include_stars;
 
+		/**
+		 * The current projection transform for the screen text overlay.
+		 */
+		GPlatesOpenGL::GLMatrix d_gl_projection_transform_text_overlay;
+
 		//! Keeps track of OpenGL objects that persist from one render to another.
 		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
 
@@ -619,12 +623,6 @@ namespace GPlatesQtWidgets
 		//! The y-coord of the mouse pointer position on the screen.
 		int d_mouse_pointer_screen_pos_y;
 
-		//! The width of the canvas in integer screen coordinates.
-		int d_canvas_screen_width;
-
-		//! The height of the canvas in integer screen coordinates.
-		int d_canvas_screen_height;
-
 		//! The smaller of the dimensions (width/height) of the screen.
 		double d_smaller_dim;
 
@@ -632,8 +630,6 @@ namespace GPlatesQtWidgets
 		double d_larger_dim;
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
-
-		GPlatesGui::TextRenderer::non_null_ptr_type d_text_renderer;
 
 		GPlatesGui::Globe d_globe;
 
@@ -667,7 +663,10 @@ namespace GPlatesQtWidgets
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
-				const GPlatesOpenGL::GLMatrix &projection_transform_include_stars);
+				const GPlatesOpenGL::GLMatrix &projection_transform_include_stars,
+				const GPlatesOpenGL::GLMatrix &projection_transform_text_overlay,
+				int paint_device_width,
+				int paint_device_height);
 
 		void
 		update_mouse_pointer_pos(

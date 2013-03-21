@@ -28,6 +28,7 @@
 #define GPLATES_OPENGL_GLRENDERER_H
 
 #include <stack>
+#include <utility>
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/operators.hpp>
@@ -95,6 +96,7 @@ namespace GPlatesOpenGL
 			{
 				SHOULD_HAVE_NO_ACTIVE_QPAINTER,
 				SHOULD_HAVE_ACTIVE_QPAINTER,
+				CANNOT_ENTER_QPAINTER_BLOCK_WITH_A_BOUND_FRAME_BUFFER_OBJECT,
 				SHOULD_HAVE_NO_STATE_BLOCKS,
 				SHOULD_HAVE_A_STATE_BLOCK,
 				SHOULD_HAVE_NO_RENDER_TARGET_BLOCKS,
@@ -176,17 +178,20 @@ namespace GPlatesOpenGL
 		 * NOTE: This should only be called when you know the full OpenGL state is set to the default OpenGL state.
 		 * This is the assumption that this renderer is making.
 		 *
-		 * @a default_viewport represents the viewport of the window currently attached to the OpenGL context.
+		 * @a main_frame_buffer_width and @a main_frame_buffer_height represent the dimensions of
+		 * the window currently attached to the OpenGL context. These are also the dimensions of the
+		 * main frame buffer and so the default viewport is set to the entire main frame buffer.
 		 *
 		 * It's possible for one or more windows to share an OpenGL context.
 		 * However the window dimensions will differ and so, in a sense, the default viewport
 		 * is not really the default OpenGL state (like other default states) but is the default
 		 * for the current @a begin_render / @a end_render pair in which all rendering, in that scope,
-		 * is direct at *one* of the windows.
+		 * is directed at *one* of the windows.
 		 */
 		void
 		begin_render(
-				const GLViewport &default_viewport);
+				unsigned int main_frame_buffer_width,
+				unsigned int main_frame_buffer_height);
 
 
 		/**
@@ -195,31 +200,39 @@ namespace GPlatesOpenGL
 		 * NOTE: The QPainter must currently be active and must exist until @a end_render is called.
 		 *
 		 * The QPainter is useful for rendering things like text to the framebuffer (or render target).
-		 * As such the QPainter is typically attached to the *same* framebuffer (viewport widget) as this
-		 * GLRenderer so that they both interleave drawing to the same target. In this case the QPainter
-		 * will be using an OpenGL paint engine (ie, QPaintEngine::OpenGL or QPaintEngine::OpenGL2).
+		 * In this case set @a main_frame_buffer_dimensions to boost::none since the main frame buffer
+		 * dimensions will then be obtained from the dimensions of the QPainter's paint device.
+		 * In this case subsequent calls to @a rendering_to_context_framebuffer will return true.
+		 * In this case the QPainter is typically attached to the *same* framebuffer (viewport widget)
+		 * as this GLRenderer so that they both interleave drawing to the same target. In this case the
+		 * QPainter will be using an OpenGL paint engine (ie, QPaintEngine::OpenGL or QPaintEngine::OpenGL2).
 		 * An example is a QGraphicsView that has a QGLWidget viewport - here the method
 		 * QGraphicsScene::drawBackground, that you override, passes an active QPainter that uses OpenGL.
-		 * In this case this method assumes the Qt paint engine is in the default OpenGL state (aside from the
-		 * modelview and projection matrices which it sets according to the QPainter's current transform state).
+		 * In this case this method assumes the Qt paint engine is in the default OpenGL state
+		 * (aside from the modelview and projection matrices).
 		 *
 		 * However it is possible for the QPainter to target a paint device that is not the OpenGL
-		 * framebuffer. In this case @a paint_device_is_framebuffer should be set to false because
-		 * any rendering done using the QPainter will not end up in the OpenGL framebuffer.
+		 * framebuffer. In this case @a main_frame_buffer_dimensions should be set to the actual
+		 * dimensions of the main frame buffer used for OpenGL rendering.
+		 * In this case subsequent calls to @a rendering_to_context_framebuffer will return false.
 		 * An example of this is rendering to SVG where the client also uses OpenGL feedback to
-		 * collect projected vector primitives to write them to SVG.
+		 * collect projected vector primitives (and embedded raster images) to write them to SVG.
+		 * In this case the main frame buffer should not be rendered to (because the final target
+		 * is the paint device), but the main frame buffer could still be used as a render target
+		 * to help render rasters to an image (which then gets drawn to the QPainter).
 		 *
-		 * Upon returning, the OpenGL state will be the default state except for the modelview and
-		 * projection transforms which will be set to the transform state of @a qpainter and
-		 * orthographic projection.
+		 * Upon returning, the OpenGL state will be the default state.
 		 *
-		 * The default viewport is also obtained from @a qpainter.
+		 * NOTE: No state (such as world transform) in the QPainter is converted into internal render state.
+		 * If this is needed then it should be done explicitly by the caller.
+		 *
+		 * The default viewport is set to the main frame buffer dimensions.
 		 */
 		void
 		begin_render(
 				QPainter &qpainter,
 				// Does the QPainter render to the framebuffer or some other paint device ? ...
-				bool paint_device_is_framebuffer = true);
+				boost::optional< std::pair<unsigned int, unsigned int> > main_frame_buffer_dimensions = boost::none);
 
 		/**
 		 * Call this method after using 'this' renderer and before it is destroyed.
@@ -246,12 +259,13 @@ namespace GPlatesOpenGL
 		public:
 			RenderScope(
 					GLRenderer &renderer,
-					const GLViewport &default_viewport);
+					unsigned int main_frame_buffer_width,
+					unsigned int main_frame_buffer_height);
 
 			RenderScope(
 					GLRenderer &renderer,
 					QPainter &qpainter,
-					bool paint_device_is_framebuffer = true);
+					boost::optional< std::pair<unsigned int, unsigned int> > main_frame_buffer_dimensions = boost::none);
 
 			~RenderScope();
 
@@ -263,6 +277,23 @@ namespace GPlatesOpenGL
 			GLRenderer &d_renderer;
 			bool d_called_end_render;
 		};
+
+
+		/**
+		 * Returns the dimensions of the main framebuffer, or the currently bound framebuffer object
+		 * (GLFrameBufferObject - see @a gl_get_bind_frame_buffer) if any are currently bound.
+		 *
+		 * This applies to @a begin_render_target_2D if framebuffer objects are used to implement
+		 * render targets in this GLRenderer interface (otherwise render targets are emulated using
+		 * the main framebuffer and this method will return the main framebuffer's dimensions).
+		 *
+		 * If a frame buffer object (GLFrameBufferObject) is currently bound then it should be
+		 * set up properly (eg, 'gl_check_frame_buffer_status()') before calling this method.
+		 *
+		 * This method is typically used to help convert viewports from OpenGL to Qt (inverted y-axis).
+		 */
+		std::pair<unsigned int/*width*/, unsigned int/*height*/>
+		get_current_frame_buffer_dimensions() const;
 
 
 		/**
@@ -283,7 +314,17 @@ namespace GPlatesOpenGL
 		 * The QPainter returned is the one passed into @a begin_render, or boost::none if none passed.
 		 * It can be used to make QPainter calls.
 		 *
-		 * @throws @a GLRendererAPIError if @a begin_render not yet called.
+		 * NOTE: The main frame buffer must be the currently bound frame buffer when this method is called.
+		 * This is because the QPainter targets a paint device which is either the main frame buffer
+		 * or a non-OpenGL device. An exception is thrown if a frame buffer object is currently bound.
+		 * This could be changed in the future but currently it is difficult to convince the QPainter
+		 * that it's device dimensions have changed (to the frame buffer object dimensions) so that
+		 * it renders properly into the frame buffer object.
+		 *
+		 * NOTE: The OpenGL state is set to the default OpenGL state before resuming the QPainter.
+		 *
+		 * @throws @a GLRendererAPIError if @a begin_render not yet called or if a frame buffer object
+		 * is currently bound.
 		 */
 		boost::optional<QPainter &>
 		begin_qpainter_block();
@@ -293,15 +334,12 @@ namespace GPlatesOpenGL
 		 *
 		 * Upon returning no further QPainter calls can be made.
 		 *
-		 * If @a restore_model_view_projection_transforms is true then the modelview and projection
-		 * matrices are restored using the current transform state of the QPainter.
-		 * This is useful if the transform state of the QPainter was altered during usage.
+		 * NOTE: The OpenGL state is set to what it was just before @a begin_qpainter_block was called.
 		 *
 		 * @throws @a GLRendererAPIError if there is no current QPainter block.
 		 */
 		void
-		end_qpainter_block(
-				bool restore_model_view_projection_transforms = false);
+		end_qpainter_block();
 
 		/**
 		 * RAII class to call @a begin_qpainter_block and @a end_qpainter_block over a scope.
@@ -312,8 +350,7 @@ namespace GPlatesOpenGL
 		public:
 			explicit
 			QPainterBlockScope(
-					GLRenderer &renderer,
-					bool restore_model_view_projection_transforms = false);
+					GLRenderer &renderer);
 
 			~QPainterBlockScope();
 
@@ -327,7 +364,6 @@ namespace GPlatesOpenGL
 		private:
 			GLRenderer &d_renderer;
 			boost::optional<QPainter &> d_qpainter;
-			bool d_restore_model_view_projection_transforms;
 		};
 
 
@@ -1135,7 +1171,6 @@ namespace GPlatesOpenGL
 		 * NOTE: For enabling/disabling texturing use @a gl_enable_texture instead.
 		 *
 		 * NOTE: All capabilities are disabled by default except two (GL_DITHER and GL_MULTISAMPLE).
-
 		 *
 		 * Also note that only a subset of the capabilities are currently supported in the
 		 * implementation although it is easy to add more as needed (see 'GLStateSetKeys::get_enable_key').
@@ -1383,6 +1418,17 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Returns whether the specified capability is enabled or disabled (see @a gl_enable).
+		 */
+		bool
+		gl_get_enable(
+				GLenum cap)
+		{
+			return get_current_state()->get_enable(cap);
+		}
+
+
+		/**
 		 * Returns the current viewport at index @a viewport_index (default index is zero).
 		 *
 		 * If there's only one viewport set (via @a gl_viewport) then use the default index of zero.
@@ -1392,6 +1438,19 @@ namespace GPlatesOpenGL
 		 */
 		const GLViewport &
 		gl_get_viewport(
+				unsigned int viewport_index = 0) const;
+
+
+		/**
+		 * Returns the current scissor rectangle at index @a viewport_index (default index is zero).
+		 *
+		 * If there's only one scissor set (via @a gl_scissor) then use the default index of zero.
+		 *
+		 * NOTE: @a viewport_index must be less than 'context.get_capabilities().viewport.gl_max_viewports'.
+		 * NOTE: And must be called between @a begin_render and @a end_render as usual.
+		 */
+		const GLViewport &
+		gl_get_scissor(
 				unsigned int viewport_index = 0) const;
 
 
@@ -1462,6 +1521,11 @@ namespace GPlatesOpenGL
 		 * Used to begin/end rendering and manage framebuffer objects.
 		 */
 		GLContext::non_null_ptr_type d_context;
+
+		/**
+		 * The dimensions of the main frame buffer.
+		 */
+		std::pair<unsigned int/*width*/, unsigned int/*height*/> d_frame_buffer_dimensions;
 
 		/**
 		 * The viewport of the window currently attached to the OpenGL context.
@@ -1634,10 +1698,7 @@ namespace GPlatesOpenGL
 				const GLRendererImpl::RenderOperation &render_operation);
 
 		void
-		suspend_qpainter(
-				GLViewport &qpainter_viewport,
-				GLMatrix &qpainter_model_view_matrix,
-				GLMatrix &qpainter_projection_matrix);
+		suspend_qpainter();
 
 		//! NOTE: OpenGL must be in the default state before this is called.
 		void

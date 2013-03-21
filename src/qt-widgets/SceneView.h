@@ -106,6 +106,8 @@ namespace GPlatesQtWidgets
 		/**
 		 * Renders the scene to a QImage of the dimensions specified by @a image_size
 		 * (or dimensions @a get_viewport_size, if @a image_size is boost::none).
+		 *
+		 * Returns a null QImage if unable to allocate enough memory for the image data.
 		 */
 		virtual
 		QImage
@@ -129,14 +131,11 @@ namespace GPlatesQtWidgets
 		 *
 		 * NOTE: This renders all RenderedGeometryCollection layers (not just RECONSTRUCTION_LAYER).
 		 * If you only want only RECONSTRUCTION_LAYER then you need to disable all other layers.
-		 *
-		 * @throws PreconditionViolationError if the dimensions of @a paint_device do not match
-		 * the dimensions of this viewport (see @a get_viewport_size).
 		 */
 		virtual
 		void
 		render_opengl_feedback_to_paint_device(
-				QPaintDevice &paint_device) = 0;
+				QPaintDevice &feedback_paint_device) = 0;
 
 		virtual
 		void

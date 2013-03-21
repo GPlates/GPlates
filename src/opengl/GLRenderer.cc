@@ -26,6 +26,7 @@
 #include <exception>
 #include <iostream>
 #include <map>
+#include <boost/cast.hpp>
 #include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 /*
@@ -62,6 +63,7 @@ GPlatesOpenGL::GLRenderer::GLRenderer(
 		const GLContext::non_null_ptr_type &context,
 		const GLStateStore::shared_ptr_type &state_store) :
 	d_context(context),
+	d_frame_buffer_dimensions(0, 0),
 	d_state_store(state_store),
 	d_default_state(d_state_store->allocate_state()),
 	d_last_applied_state(d_state_store->allocate_state()),
@@ -72,7 +74,8 @@ GPlatesOpenGL::GLRenderer::GLRenderer(
 
 void
 GPlatesOpenGL::GLRenderer::begin_render(
-		const GLViewport &default_viewport)
+		unsigned int main_frame_buffer_width,
+		unsigned int main_frame_buffer_height)
 {
 	// Start a rendering frame.
 	d_context->begin_render();
@@ -83,10 +86,13 @@ GPlatesOpenGL::GLRenderer::begin_render(
 			GPLATES_ASSERTION_SOURCE,
 			GLRendererAPIError::SHOULD_HAVE_NO_RENDER_TARGET_BLOCKS);
 
+	// Record the main frame buffer dimensions.
+	d_frame_buffer_dimensions = std::make_pair(main_frame_buffer_width, main_frame_buffer_height);
+
 	// The viewport of the window currently attached to the OpenGL context.
-	d_default_viewport = default_viewport;
-	d_default_state->set_viewport(get_context().get_capabilities(), default_viewport, default_viewport);
-	d_default_state->set_scissor(get_context().get_capabilities(), default_viewport, default_viewport);
+	d_default_viewport = GLViewport(0, 0, main_frame_buffer_width, main_frame_buffer_height);
+	d_default_state->set_viewport(get_context().get_capabilities(), d_default_viewport.get(), d_default_viewport.get());
+	d_default_state->set_scissor(get_context().get_capabilities(), d_default_viewport.get(), d_default_viewport.get());
 
 	// Start a new render target block with its first state block set to the default state.
 	// This render target block represents the main framebuffer.
@@ -101,8 +107,8 @@ GPlatesOpenGL::GLRenderer::begin_render(
 	// filter out a subsequent viewport setting if the viewport rectangle is the same.
 	// If we didn't call 'glViewport' here then OpenGL would be left with the viewport of the last
 	// window that the current OpenGL context was attached to (which is different than the current window).
-	glViewport(default_viewport.x(), default_viewport.y(), default_viewport.width(), default_viewport.height());
-	glScissor(default_viewport.x(), default_viewport.y(), default_viewport.width(), default_viewport.height());
+	glViewport(d_default_viewport->x(), d_default_viewport->y(), d_default_viewport->width(), d_default_viewport->height());
+	glScissor(d_default_viewport->x(), d_default_viewport->y(), d_default_viewport->width(), d_default_viewport->height());
 
 	// Use the GL_EXT_framebuffer_object extension for render targets if it's available.
 	if (get_context().get_capabilities().framebuffer.gl_EXT_framebuffer_object)
@@ -126,13 +132,16 @@ GPlatesOpenGL::GLRenderer::begin_render(
 void
 GPlatesOpenGL::GLRenderer::begin_render(
 		QPainter &qpainter,
-		bool paint_device_is_framebuffer)
+		boost::optional< std::pair<unsigned int, unsigned int> > main_frame_buffer_dimensions)
 {
 	GPlatesGlobal::Assert<GLRendererAPIError>(
 			!d_qpainter_info,
 			GPLATES_ASSERTION_SOURCE,
 			GLRendererAPIError::SHOULD_HAVE_NO_ACTIVE_QPAINTER);
 
+	// If the main frame buffer dimensions were not specified then the QPainter's paint device is
+	// the main frame buffer.
+	const bool paint_device_is_framebuffer = !main_frame_buffer_dimensions;
 	d_qpainter_info = boost::in_place(boost::ref(qpainter), paint_device_is_framebuffer);
 
 	// The QPainter should currently be active.
@@ -141,22 +150,35 @@ GPlatesOpenGL::GLRenderer::begin_render(
 			GPLATES_ASSERTION_SOURCE,
 			GLRendererAPIError::SHOULD_HAVE_ACTIVE_QPAINTER);
 
-	// The viewport and modelview/projection matrices set by QPainter.
-	GLViewport qpainter_viewport;
-	GLMatrix qpainter_model_view_matrix;
-	GLMatrix qpainter_projection_matrix;
+	// Get the dimensions of the main frame buffer.
+	unsigned int main_frame_buffer_width;
+	unsigned int main_frame_buffer_height;
+	if (paint_device_is_framebuffer)
+	{
+		// The QPainter's paint device.
+		QPaintDevice *qpaint_device = d_qpainter_info->qpainter.device();
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				qpaint_device,
+				GPLATES_ASSERTION_SOURCE);
+
+		main_frame_buffer_width = boost::numeric_cast<unsigned int>(qpaint_device->width());
+		main_frame_buffer_height = boost::numeric_cast<unsigned int>(qpaint_device->height());
+	}
+	else // paint device can have different dimensions than the main frame buffer...
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				main_frame_buffer_dimensions,
+				GPLATES_ASSERTION_SOURCE);
+
+		main_frame_buffer_width = main_frame_buffer_dimensions->first;
+		main_frame_buffer_height = main_frame_buffer_dimensions->second;
+	}
 
 	// Suspend the QPainter so we can start making calls directly to OpenGL without interfering with
 	// the QPainter's OpenGL state (if it uses an OpenGL paint engine).
-	suspend_qpainter(qpainter_viewport, qpainter_model_view_matrix, qpainter_projection_matrix);
+	suspend_qpainter();
 
-	begin_render(qpainter_viewport);
-
-	// We're not really in the default OpenGL state so we need to track the current
-	// modelview and projection matrices set by QPainter.
-	// Easiest way to do that is simply to load them.
-	gl_load_matrix(GL_MODELVIEW, qpainter_model_view_matrix);
-	gl_load_matrix(GL_PROJECTION, qpainter_projection_matrix);
+	begin_render(main_frame_buffer_width, main_frame_buffer_height);
 
 	// This is one of the rare cases where we need to apply the OpenGL state encapsulated in
 	// GLRenderer directly to OpenGL - in this case we need to make sure our last applied state
@@ -189,6 +211,9 @@ GPlatesOpenGL::GLRenderer::end_render()
 	// This is because we're finished rendering and should leave OpenGL in the default state.
 	d_default_state->apply_state(get_capabilities(), *d_last_applied_state);
 
+	// Set main frame buffer dimensions to zero.
+	d_frame_buffer_dimensions = std::make_pair(0, 0);
+
 	// End a rendering frame.
 	d_context->end_render();
 
@@ -213,6 +238,37 @@ GPlatesOpenGL::GLRenderer::end_render()
 }
 
 
+std::pair<unsigned int/*width*/, unsigned int/*height*/>
+GPlatesOpenGL::GLRenderer::get_current_frame_buffer_dimensions() const
+{
+	// Should be between 'begin_render()' and 'end_render()' - should have a render target block.
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			!d_render_target_block_stack.empty(),
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TARGET_BLOCK);
+
+	// First see if we have a bound frame buffer object.
+	const boost::optional<GLFrameBufferObject::shared_ptr_to_const_type> frame_buffer_object =
+			gl_get_bind_frame_buffer();
+	if (frame_buffer_object)
+	{
+		const boost::optional< std::pair<GLuint, GLuint> > frame_buffer_object_dimensions =
+				frame_buffer_object.get()->get_frame_buffer_dimensions();
+
+		// The frame buffer object should have been set up properly with allocated texture
+		// or render buffer storage.
+		GPlatesGlobal::Assert<OpenGLException>(
+				frame_buffer_object_dimensions,
+				GPLATES_ASSERTION_SOURCE,
+				"GLRenderer::get_current_frame_buffer_dimensions: unable to retrieve frame buffer object dimensions.");
+
+		return frame_buffer_object_dimensions.get();
+	}
+
+	return d_frame_buffer_dimensions;
+}
+
+
 bool
 GPlatesOpenGL::GLRenderer::rendering_to_context_framebuffer() const
 {
@@ -231,6 +287,11 @@ GPlatesOpenGL::GLRenderer::begin_qpainter_block()
 {
 	if (d_qpainter_info)
 	{
+		GPlatesGlobal::Assert<GLRendererAPIError>(
+				!gl_get_bind_frame_buffer(),
+				GPLATES_ASSERTION_SOURCE,
+				GLRendererAPIError::CANNOT_ENTER_QPAINTER_BLOCK_WITH_A_BOUND_FRAME_BUFFER_OBJECT);
+
 		// Reset to the default OpenGL state as that's what QPainter expects when it resumes painting
 		// (if it uses an OpenGL paint engine).
 		begin_state_block(true/*reset_to_default_state*/);
@@ -250,31 +311,16 @@ GPlatesOpenGL::GLRenderer::begin_qpainter_block()
 
 
 void
-GPlatesOpenGL::GLRenderer::end_qpainter_block(
-		bool restore_model_view_projection_transforms)
+GPlatesOpenGL::GLRenderer::end_qpainter_block()
 {
 	if (d_qpainter_info)
 	{
-		// The viewport and modelview/projection matrices set by QPainter.
-		GLViewport qpainter_viewport;
-		GLMatrix qpainter_model_view_matrix;
-		GLMatrix qpainter_projection_matrix;
-
 		// Suspend the QPainter so we can start making calls directly to OpenGL without
 		// interfering with the QPainter's OpenGL state (if it uses an OpenGL paint engine).
-		suspend_qpainter(qpainter_viewport, qpainter_model_view_matrix, qpainter_projection_matrix);
+		suspend_qpainter();
 
 		// Restore the OpenGL state to what it was before 'begin_qpainter_block' was called.
 		end_state_block();
-
-		if (restore_model_view_projection_transforms)
-		{
-			// While the QPainter was used it may have altered its transform so we should update
-			// the modelview and projection matrices set by QPainter.
-			// Easiest way to do that is simply to load them.
-			gl_load_matrix(GL_MODELVIEW, qpainter_model_view_matrix);
-			gl_load_matrix(GL_PROJECTION, qpainter_projection_matrix);
-		}
 
 		// This is one of the rare cases where we need to apply the OpenGL state encapsulated in
 		// GLRenderer directly to OpenGL - in this case we need to make sure our last applied state
@@ -286,11 +332,9 @@ GPlatesOpenGL::GLRenderer::end_qpainter_block(
 
 
 GPlatesOpenGL::GLRenderer::QPainterBlockScope::QPainterBlockScope(
-		GLRenderer &renderer,
-		bool restore_model_view_projection_transforms) :
+		GLRenderer &renderer) :
 	d_renderer(renderer),
-	d_qpainter(renderer.begin_qpainter_block()),
-	d_restore_model_view_projection_transforms(restore_model_view_projection_transforms)
+	d_qpainter(renderer.begin_qpainter_block())
 {
 }
 
@@ -301,7 +345,7 @@ GPlatesOpenGL::GLRenderer::QPainterBlockScope::~QPainterBlockScope()
 	// But we log the exception and the location it was emitted.
 	try
 	{
-		d_renderer.end_qpainter_block(d_restore_model_view_projection_transforms);
+		d_renderer.end_qpainter_block();
 	}
 	catch (std::exception &exc)
 	{
@@ -1489,6 +1533,24 @@ GPlatesOpenGL::GLRenderer::gl_get_viewport(
 }
 
 
+const GPlatesOpenGL::GLViewport &
+GPlatesOpenGL::GLRenderer::gl_get_scissor(
+		unsigned int viewport_index) const
+{
+	// Get the current scissor rectangle at index 'viewport_index'.
+	const boost::optional<const GLViewport &> current_scissor =
+			get_current_state()->get_scissor(get_capabilities(), viewport_index);
+
+	// If we're between 'begin_render' and 'end_render' then should have a valid viewport.
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			current_scissor,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TARGET_BLOCK);
+
+	return current_scissor.get();
+}
+
+
 const GPlatesOpenGL::GLMatrix &
 GPlatesOpenGL::GLRenderer::gl_get_matrix(
 		GLenum mode) const
@@ -1636,10 +1698,7 @@ GPlatesOpenGL::GLRenderer::draw(
 
 
 void
-GPlatesOpenGL::GLRenderer::suspend_qpainter(
-		GLViewport &qpainter_viewport,
-		GLMatrix &qpainter_model_view_matrix,
-		GLMatrix &qpainter_projection_matrix)
+GPlatesOpenGL::GLRenderer::suspend_qpainter()
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_qpainter_info,
@@ -1649,14 +1708,19 @@ GPlatesOpenGL::GLRenderer::suspend_qpainter(
 	// From Qt 4.6, the default OpenGL paint engine is QPaintEngine::OpenGL2.
 	// And it needs protection if we're mixing painter calls with our own native OpenGL calls.
 	//
-	// Get the paint engine to reset to the default OpenGL state.
-	// Actually it still sets the modelview and projection matrices as if you were using
-	// the 1.x paint engine (so it's not exactly the default OpenGL state).
-	//
 	// NOTE: This is a no-operation if the paint engine does not use OpenGL.
 	d_qpainter_info->qpainter.beginNativePainting();
-#else
-	if (d_qpainter_info->qpainter.paintEngine()->type() == QPaintEngine::OpenGL)
+#endif
+
+	const QPaintEngine::Type paint_engine_type = d_qpainter_info->qpainter.paintEngine()->type();
+	if (paint_engine_type == QPaintEngine::OpenGL
+#if QT_VERSION >= 0x040600
+		// Actually the OpenGL2 engine still sets the modelview and projection matrices as if you
+		// were using the 1.x paint engine (so it's not exactly the default OpenGL state).
+		// So we make it the default by pushing identity matrices...
+		|| paint_engine_type == QPaintEngine::OpenGL2
+#endif
+		)
 	{
 		// Our GLRenderer assumes it's entered in the default OpenGL state and when it exits it leaves
 		// OpenGL in the default state.
@@ -1670,72 +1734,6 @@ GPlatesOpenGL::GLRenderer::suspend_qpainter(
 		glPushMatrix();
 		glMatrixMode(GL_MODELVIEW); // The default matrix mode.
 	}
-#endif
-
-	//
-	// Retrieve the viewport, set by QPainter, from OpenGL.
-	//
-	// NOTE: It is *not* a good idea to retrieve state *from* OpenGL because, in the worst case,
-	// this has the potential to stall the graphics pipeline - and in general it's not recommended.
-	//
-	// UPDATE: We can't get the viewport via OpenGL anyway because the QPainter
-	// might not be using an OpenGL paint engine.
-	//
-#if 0
-	GLint viewport[4];
-	glGetIntegerv(GL_VIEWPORT, viewport);
-#endif
-
-	// The QPainter's paint device.
-	QPaintDevice *qpaint_device = d_qpainter_info->qpainter.device();
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			qpaint_device,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Get the viewport from the QPainter.
-	const QRect viewport = d_qpainter_info->qpainter.viewport();
-	// Return to the caller.
-	qpainter_viewport.set_viewport(
-			viewport.x(),
-			// Qt and OpenGL have inverted 'y' viewport components relative to each other...
-			qpaint_device->height() - viewport.y() - viewport.height(),
-			viewport.width(),
-			viewport.height());
-
-	//
-	// Retrieve the current modelview/projection matrices from QPainter.
-	//
-	// NOTE: It is *not* a good idea to retrieve state *from* OpenGL because, in the worst case,
-	// this has the potential to stall the graphics pipeline - and in general it's not recommended.
-	// Profiling revealed 300msec (ie, huge!) for "glGetDoublev(GL_MODELVIEW_MATRIX, ...)" when
-	// rendering rasters with age grid smoothing (ie, a deep GPU pipeline to stall).
-	//
-	// UPDATE: We can't get the modelview/projection matrices via OpenGL anyway because the QPainter
-	// might not be using an OpenGL paint engine.
-	//
-#if 0
-	GLMatrix mvm, pm;
-	glGetDoublev(GL_MODELVIEW_MATRIX, mvm.get_matrix());
-	glGetDoublev(GL_PROJECTION_MATRIX, pm.get_matrix());
-#endif
-
-	// The reason for retrieving this is we track the OpenGL state and we normally assume it starts
-	// out in the default state (which is the case if QPainter isn't used) but is not the case here.
-
-	// The model-view matrix.
-    const QTransform &model_view_transform = d_qpainter_info->qpainter.worldTransform();
-	const GLdouble model_view_matrix[16] =
-	{
-        model_view_transform.m11(), model_view_transform.m12(),         0, model_view_transform.m13(),
-        model_view_transform.m21(), model_view_transform.m22(),         0, model_view_transform.m23(),
-		                         0,                          0,         1,                          0,
-         model_view_transform.dx(),  model_view_transform.dy(),         0, model_view_transform.m33()
-    };
-	qpainter_model_view_matrix.gl_load_matrix(model_view_matrix);
-
-	// The projection matrix.
-	qpainter_projection_matrix.gl_load_identity();
-	qpainter_projection_matrix.gl_ortho(0, qpaint_device->width(), qpaint_device->height(), 0, -999999, 999999);
 }
 
 
@@ -1746,20 +1744,15 @@ GPlatesOpenGL::GLRenderer::resume_qpainter()
 			d_qpainter_info,
 			GPLATES_ASSERTION_SOURCE);
 
+	const QPaintEngine::Type paint_engine_type = d_qpainter_info->qpainter.paintEngine()->type();
+	if (paint_engine_type == QPaintEngine::OpenGL
 #if QT_VERSION >= 0x040600
-	// From Qt 4.6, the default OpenGL paint engine is QPaintEngine::OpenGL2.
-	// And it needs protection if we're mixing painter calls with our own native OpenGL calls.
-	//
-	// NOTE: At this point we must have restored the OpenGL state to the default state !
-	// Otherwise we will stuff up the painter's OpenGL state - this is because the painter only
-	// restores the state that it sets - any other state it assumes is in the default state.
-	//
-	// Get the paint engine to restore its OpenGL state (to what it was before 'beginNativePainting').
-	//
-	// NOTE: This is a no-operation if the paint engine does not use OpenGL.
-	d_qpainter_info->qpainter.endNativePainting();
-#else
-	if (d_qpainter_info->qpainter.paintEngine()->type() == QPaintEngine::OpenGL)
+		// Actually the OpenGL2 engine still sets the modelview and projection matrices as if you
+		// were using the 1.x paint engine (so it's not exactly the default OpenGL state).
+		// So we make it the default by pushing identity matrices...
+		|| paint_engine_type == QPaintEngine::OpenGL2
+#endif
+		)
 	{
 		// We are now in the default OpenGL state but we need to return the QPainter to the state it was in.
 		// For the QPainter OpenGL2 paint engine this is not necessary but it is for the OpenGL1 paint engine.
@@ -1770,7 +1763,21 @@ GPlatesOpenGL::GLRenderer::resume_qpainter()
 		glPopMatrix();
 		glMatrixMode(GL_MODELVIEW); // The default matrix mode.
 	}
+
+#if QT_VERSION >= 0x040600
+	// From Qt 4.6, the default OpenGL paint engine is QPaintEngine::OpenGL2.
+	// And it needs protection if we're mixing painter calls with our own native OpenGL calls.
+	//
+	// Get the paint engine to restore its OpenGL state (to what it was before 'beginNativePainting').
+	//
+	// NOTE: This is a no-operation if the paint engine does not use OpenGL.
+	d_qpainter_info->qpainter.endNativePainting();
 #endif
+
+	//
+	// NOTE: At this point we must have restored the OpenGL state to the default state !
+	// Otherwise we will stuff up the painter's OpenGL state - this is because the painter only
+	// restores the state that it sets - any other state it assumes is in the default state.
 }
 
 
@@ -2225,22 +2232,23 @@ GPlatesOpenGL::GLRenderer::end_render_queue_block_internal()
 
 GPlatesOpenGL::GLRenderer::RenderScope::RenderScope(
 		GLRenderer &renderer,
-		const GLViewport &default_viewport) :
+		unsigned int main_frame_buffer_width,
+		unsigned int main_frame_buffer_height) :
 	d_renderer(renderer),
 	d_called_end_render(false)
 {
-	d_renderer.begin_render(default_viewport);
+	d_renderer.begin_render(main_frame_buffer_width, main_frame_buffer_height);
 }
 
 
 GPlatesOpenGL::GLRenderer::RenderScope::RenderScope(
 		GLRenderer &renderer,
 		QPainter &qpainter,
-		bool paint_device_is_framebuffer) :
+		boost::optional< std::pair<unsigned int, unsigned int> > main_frame_buffer_dimensions) :
 	d_renderer(renderer),
 	d_called_end_render(false)
 {
-	d_renderer.begin_render(qpainter, paint_device_is_framebuffer);
+	d_renderer.begin_render(qpainter, main_frame_buffer_dimensions);
 }
 
 
@@ -2490,6 +2498,9 @@ GPlatesOpenGL::GLRenderer::GLRendererAPIError::write_message(
 		break;
 	case SHOULD_HAVE_ACTIVE_QPAINTER:
 		os << "expected an active QPainter";
+		break;
+	case CANNOT_ENTER_QPAINTER_BLOCK_WITH_A_BOUND_FRAME_BUFFER_OBJECT:
+		os << "cannot enter a QPainter block when a frame buffer object is bound";
 		break;
 	case SHOULD_HAVE_NO_STATE_BLOCKS:
 		os << "expected no state blocks";

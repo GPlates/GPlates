@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <exception>
 #include <QDebug>
 #include <QImage>
 
@@ -30,13 +31,13 @@
 #include "AnimationController.h"
 #include "ExportAnimationContext.h"
 
-#include "global/GPlatesException.h"
-
 #include "presentation/ViewState.h"
 
 #include "qt-widgets/ReconstructionViewWidget.h"
 #include "qt-widgets/SceneView.h"
 #include "qt-widgets/ViewportWindow.h"
+
+#include "view-operations/RenderedGeometryCollection.h"
 
 
 GPlatesGui::ExportRasterAnimationStrategy::ExportRasterAnimationStrategy(
@@ -73,17 +74,52 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 	GPlatesQtWidgets::SceneView &active_scene_view =
 			d_export_animation_context_ptr->view_state().get_other_view_state()
 				.reconstruction_view_widget().active_view();
+	GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection =
+			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection();
 	try
 	{
+		// Get current rendered layer active state so we can restore later.
+		const GPlatesViewOperations::RenderedGeometryCollection::MainLayerActiveState
+				prev_rendered_layer_active_state =
+						rendered_geometry_collection.capture_main_layer_active_state();
+
+		// Turn off rendering of all layers except the reconstruction layer.
+		for (unsigned int layer_index = 0;
+			layer_index < GPlatesViewOperations::RenderedGeometryCollection::NUM_LAYERS;
+			++layer_index)
+		{
+			const GPlatesViewOperations::RenderedGeometryCollection::MainLayerType layer =
+					static_cast<GPlatesViewOperations::RenderedGeometryCollection::MainLayerType>(layer_index);
+
+			if (layer != GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)
+			{
+				rendered_geometry_collection.set_main_layer_active(layer, false);
+			}
+		}
+
 		// Render to the raster image file.
 		const QImage raster_image = active_scene_view.render_to_qimage(d_configuration->image_size);
+		if (raster_image.isNull())
+		{
+			// Most likely a memory allocation failure.
+			d_export_animation_context_ptr->update_status_message(
+				QObject::tr("Error exporting to colour (RGBA) raster file \"%1\" due to insufficient memory")
+						.arg(full_filename));
+			return false;
+		}
 
 		// Save the raster to file.
 		raster_image.save(full_filename);
+
+		// Restore previous rendered layer active state.
+		rendered_geometry_collection.restore_main_layer_active_state(prev_rendered_layer_active_state);
 	}
-	catch (GPlatesGlobal::Exception &exc)
+	catch (std::exception &exc)
 	{
-		qWarning() << "Caught exception exporting to colour (RGBA) raster: " << exc;
+		d_export_animation_context_ptr->update_status_message(
+			QObject::tr("Error exporting to colour (RGBA) raster file \"%1\": %2")
+					.arg(full_filename)
+					.arg(exc.what()));
 		return false;
 	}
 	

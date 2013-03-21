@@ -40,10 +40,10 @@
 
 #include "gui/ColourScheme.h"
 #include "gui/Map.h"
-#include "gui/QPainterTextRenderer.h"
 #include "gui/TextOverlay.h"
 
 #include "opengl/GLContext.h"
+#include "opengl/GLMatrix.h"
 #include "opengl/GLVisualLayers.h"
 
 
@@ -113,19 +113,23 @@ namespace GPlatesQtWidgets
 		 */
 		QImage
 		render_to_qimage(
-				QGLWidget *paint_device,
+				QGLWidget *map_canvas_paint_device,
 				const QTransform &viewport_transform,
 				const QSize &image_size);
 
 		/**
-		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
+		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the
+		 * feedback paint device @a feedback_paint_device.
+		 *
+		 * @a map_canvas_paint_device is the map canvas's OpenGL paint device used for OpenGL rendering.
 		 *
 		 * @a viewport_transform is the view transform of the QGraphicsView initiating the rendering.
 		 */
 		void
 		render_opengl_feedback_to_paint_device(
-				QPaintDevice &paint_device,
-				const QTransform &viewport_transform);
+				QGLWidget *map_canvas_paint_device,
+				const QTransform &viewport_transform,
+				QPaintDevice &feedback_paint_device);
 
 	public Q_SLOTS:
 		
@@ -185,11 +189,6 @@ namespace GPlatesQtWidgets
 		 */
 		cache_handle_type d_gl_frame_cache_handle;
 
-		/**
-		 * Renders text using the QPainter interface.
-		 */
-		GPlatesGui::TextRenderer::non_null_ptr_type d_text_renderer;
-
 		//! Paints an optional text overlay onto the map.
 		boost::scoped_ptr<GPlatesGui::TextOverlay> d_text_overlay;
 
@@ -213,12 +212,18 @@ namespace GPlatesQtWidgets
 		render_scene_tile_into_image(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const GPlatesOpenGL::GLTileRender &tile_render,
-				QImage &image);
+				QImage &image,
+				const GPlatesOpenGL::GLMatrix &projection_matrix_scene,
+				const GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay);
 
 		//! Render onto the canvas.
 		cache_handle_type
 		render_scene(
-				GPlatesOpenGL::GLRenderer &renderer);
+				GPlatesOpenGL::GLRenderer &renderer,
+				const GPlatesOpenGL::GLMatrix &projection_matrix_scene,
+				const GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay,
+				int paint_device_width,
+				int paint_device_height);
 
 		//! Calculate scaling for lines, points and text based on size of view
 		float

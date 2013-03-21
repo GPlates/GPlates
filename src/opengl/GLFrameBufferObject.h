@@ -27,6 +27,7 @@
 #define GPLATES_OPENGL_GLFRAMEBUFFEROBJECT_H
 
 #include <memory> // For std::auto_ptr
+#include <utility>
 #include <vector>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/optional.hpp>
@@ -355,6 +356,20 @@ namespace GPlatesOpenGL
 		bool
 		gl_check_frame_buffer_status(
 				GLRenderer &renderer) const;
+
+
+		/**
+		 * Returns the framebuffer dimensions, or boost::none if no attachments have been specified or
+		 * if an attachment has not had its storage specified.
+		 *
+		 * NOTE: Since we're using GL_EXT_framebuffer_object (and not GL_ARB_framebuffer_object) the
+		 * dimensions of all attachment points must be the same (hence no need for client to specify
+		 * a specific attachment point for this method).
+		 *
+		 * NOTE: This is a lower-level function used to help implement the OpenGL framework.
+		 */
+		boost::optional< std::pair<GLuint/*width*/, GLuint/*height*/> >
+		get_frame_buffer_dimensions() const;
 
 
 		/**

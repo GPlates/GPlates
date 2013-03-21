@@ -793,6 +793,20 @@ namespace GPlatesOpenGL
 					boost::in_place(boost::cref(capabilities), all_scissor_rectangles, default_viewport));
 		}
 
+		//! Returns the scissor rectangle for the specified viewport index.
+		boost::optional<const GLViewport &>
+		get_scissor(
+				const GLCapabilities &capabilities,
+				unsigned int viewport_index) const
+		{
+			const boost::optional<const GLViewport &> scissor =
+					get_state_set_query<const GLViewport &, GLScissorStateSet>(
+							GLStateSetKeys::KEY_SCISSOR,
+							boost::bind(&GLScissorStateSet::get_scissor,
+									_1, boost::cref(capabilities), viewport_index));
+			return scissor;
+		}
+
 		/**
 		 * Sets all viewports to the same parameters.
 		 *

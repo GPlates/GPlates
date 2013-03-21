@@ -494,14 +494,19 @@ GPlatesQtWidgets::MapView::render_to_qimage(
 
 void
 GPlatesQtWidgets::MapView::render_opengl_feedback_to_paint_device(
-		QPaintDevice &paint_device)
+		QPaintDevice &feedback_paint_device)
 {
-	// Ensure the paint device dimensions match our viewport.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			QSize(paint_device.width(), paint_device.height()) == get_viewport_size(),
-			GPLATES_ASSERTION_SOURCE);
+	// Calculate the world matrix to position the scene appropriately according to the dimensions
+	// of the feedback paint device.
+	const QMatrix world_matrix = calc_world_transform(
+			d_map_transform,
+			feedback_paint_device.width(),
+			feedback_paint_device.height());
 
-	map_canvas().render_opengl_feedback_to_paint_device(paint_device, transform());
+	map_canvas().render_opengl_feedback_to_paint_device(
+			d_gl_widget_ptr,
+			QTransform(world_matrix),
+			feedback_paint_device);
 }
 
 

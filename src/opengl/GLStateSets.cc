@@ -2788,6 +2788,18 @@ GPlatesOpenGL::GLScissorStateSet::apply_to_default_state(
 	glScissor(d_default_viewport.x(), d_default_viewport.y(), d_default_viewport.width(), d_default_viewport.height());
 }
 
+const GPlatesOpenGL::GLViewport &
+GPlatesOpenGL::GLScissorStateSet::get_scissor(
+		const GLCapabilities &capabilities,
+		unsigned int viewport_index) const
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			viewport_index < capabilities.viewport.gl_max_viewports,
+			GPLATES_ASSERTION_SOURCE);
+
+	return d_scissor_rectangles[viewport_index];
+}
+
 void
 GPlatesOpenGL::GLScissorStateSet::apply_state() const
 {

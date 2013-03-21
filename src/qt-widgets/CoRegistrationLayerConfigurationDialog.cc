@@ -183,11 +183,12 @@ bool
 GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::is_raster_co_registration_supported() const
 {
 	// We need an OpenGL renderer before we can query support.
-	GPlatesOpenGL::GLViewport viewport;
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = create_gl_renderer(viewport);
+	int viewport_width;
+	int viewport_height;
+	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = create_gl_renderer(viewport_width, viewport_height);
 
 	// Start a begin_render/end_render scope.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, viewport);
+	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, viewport_width, viewport_height);
 
 	return GPlatesOpenGL::GLRasterCoRegistration::is_supported(*renderer);
 }
@@ -326,7 +327,8 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::does_raster_layer_cont
 
 GPlatesOpenGL::GLRenderer::non_null_ptr_type
 GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::create_gl_renderer(
-		GPlatesOpenGL::GLViewport &viewport) const
+		int &viewport_width,
+		int &viewport_height) const
 {
 	// Get an OpenGL context since the (raster) co-registration is accelerated with OpenGL.
 	GPlatesOpenGL::GLContext::non_null_ptr_type gl_context =
@@ -336,10 +338,8 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::create_gl_renderer(
 	gl_context->make_current();
 
 	// Pass in the viewport of the window currently attached to the OpenGL context.
-	viewport.set_viewport(
-			0, 0,
-			d_view_state.get_main_viewport_dimensions().first/*width*/,
-			d_view_state.get_main_viewport_dimensions().second/*height*/);
+	viewport_width = d_view_state.get_main_viewport_dimensions().first/*width*/;
+	viewport_height = d_view_state.get_main_viewport_dimensions().second/*height*/;
 
 	// Start a begin_render/end_render scope.
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
@@ -930,11 +930,12 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::setup_raster_level_of_
 	}
 
 	// We need an OpenGL renderer before we can query multi-resolution rasters.
-	GPlatesOpenGL::GLViewport viewport;
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = create_gl_renderer(viewport);
+	int viewport_width;
+	int viewport_height;
+	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = create_gl_renderer(viewport_width, viewport_height);
 
 	// Start a begin_render/end_render scope.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, viewport);
+	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, viewport_width, viewport_height);
 
 	// Get the multi-resolution raster from the layer proxy.
 	// The number of levels of detail should be independent of time since a time-dependent raster

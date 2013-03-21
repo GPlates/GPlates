@@ -162,15 +162,13 @@ GPlatesQtWidgets::CoRegistrationResultTableDialog::update()
 	gl_context->make_current();
 
 	// Pass in the viewport of the window currently attached to the OpenGL context.
-	const GPlatesOpenGL::GLViewport viewport(
-			0, 0,
-			d_view_state.get_main_viewport_dimensions().first/*width*/,
-			d_view_state.get_main_viewport_dimensions().second/*height*/);
+	const unsigned int viewport_width = d_view_state.get_main_viewport_dimensions().first/*width*/;
+	const unsigned int viewport_height = d_view_state.get_main_viewport_dimensions().second/*height*/;
 
 	// Start a begin_render/end_render scope.
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = gl_context->create_renderer();
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, viewport);
+	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, viewport_width, viewport_height);
 
 	//
 	// Get the co-registration results (perform the co-registration).

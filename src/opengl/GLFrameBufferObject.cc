@@ -658,6 +658,51 @@ GPlatesOpenGL::GLFrameBufferObject::gl_check_frame_buffer_status(
 }
 
 
+boost::optional< std::pair<GLuint/*width*/, GLuint/*height*/> >
+GPlatesOpenGL::GLFrameBufferObject::get_frame_buffer_dimensions() const
+{
+	// Iterate over the attachment points until we find one that has something attached.
+	for (unsigned int attachment_index = 0;
+		attachment_index < d_attachment_points.size();
+		++attachment_index)
+	{
+		const boost::optional<AttachmentPoint> &attachment_point_opt = d_attachment_points[attachment_index];
+		if (!attachment_point_opt)
+		{
+			// Look at the next attachment point.
+			continue;
+		}
+		const AttachmentPoint &attachment_point = attachment_point_opt.get();
+
+		if (attachment_point.texture)
+		{
+			const boost::optional<GLuint> texture_width = attachment_point.texture.get()->get_width();
+			if (!texture_width)
+			{
+				// The attached texture has not allocated storage yet.
+				return boost::none;
+			}
+
+			const boost::optional<GLuint> texture_height = attachment_point.texture.get()->get_height();
+			return std::make_pair(
+					texture_width.get(),
+					// If no height specified then texture is 1D...
+					texture_height ? texture_height.get() : 1);
+		}
+
+		// Attachment point must either be a texture or a render buffer.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				attachment_point.render_buffer,
+				GPLATES_ASSERTION_SOURCE);
+
+		return attachment_point.render_buffer.get()->get_dimensions();
+	}
+
+	// Nothing attached to any attachment points.
+	return boost::none;
+}
+
+
 GPlatesOpenGL::GLFrameBufferObject::AttachmentPoint::AttachmentPoint(
 		GLenum attachment_,
 		AttachmentType attachment_type_,

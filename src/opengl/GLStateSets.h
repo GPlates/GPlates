@@ -1645,6 +1645,19 @@ namespace GPlatesOpenGL
 				GLState &last_applied_state) const;
 
 
+		/**
+		 * Returns scissor rectangle at index @a viewport_index (default index is zero).
+		 *
+		 * If there's only one scissor rectangle set (see constructor) then all scissor rectangles
+		 * are the same and it doesn't matter which index is chosen.
+		 *
+		 * NOTE: @a viewport_index must be less than 'context.get_capabilities().viewport.gl_max_viewports'.
+		 */
+		const GLViewport &
+		get_scissor(
+				const GLCapabilities &capabilities,
+				unsigned int viewport_index = 0) const;
+
 	private:
 		//! Contains 'GLCapabilities::Viewport::gl_max_viewports' scissor rectangles.
 		scissor_rectangle_seq_type d_scissor_rectangles;

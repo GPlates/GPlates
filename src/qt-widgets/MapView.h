@@ -216,7 +216,7 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		render_opengl_feedback_to_paint_device(
-				QPaintDevice &paint_device);
+				QPaintDevice &feedback_paint_device);
 
 		const MapCanvas &
 		map_canvas() const;

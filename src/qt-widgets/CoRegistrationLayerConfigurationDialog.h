@@ -291,7 +291,8 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLRenderer>::non_null_ptr_type
 		create_gl_renderer(
-				GPlatesOpenGL::GLViewport &viewport) const;
+				int &viewport_width,
+				int &viewport_height) const;
 
 		void
 		get_unique_attribute_names(
