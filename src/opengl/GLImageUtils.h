@@ -46,8 +46,8 @@ namespace GPlatesOpenGL
 		 * Copies the specified source rectangle of the currently bound frame buffer into
 		 * the specified destination rectangle of the QImage.
 		 *
-		 * NOTE: The currently bound frame buffer is expected to be fixed-point RGBA8 format and
-		 * the image format is expected to be QImage::Format_ARGB32.
+		 * NOTE: The currently bound frame buffer is expected to be fixed-point RGBA8 format.
+		 * The image format is expected to be QImage::Format_ARGB32 or QImage::Format_ARGB32_Premultiplied.
 		 *
 		 * Note that OpenGL and Qt y-axes are the reverse of each other and both viewports are
 		 * specified in the OpenGL coordinate frame.

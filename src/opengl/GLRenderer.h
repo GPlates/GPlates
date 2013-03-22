@@ -280,6 +280,18 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Returns true if we are rendering to the framebuffer of the OpenGL context.
+		 *
+		 * This is true unless @a begin_render was called with a QPainter whose paint device is not
+		 * the framebuffer (eg, if rendering to SVG).
+		 *
+		 * Note that this should be called between @a begin_render and @a end_render.
+		 */
+		bool
+		rendering_to_context_framebuffer() const;
+
+
+		/**
 		 * Returns the dimensions of the main framebuffer, or the currently bound framebuffer object
 		 * (GLFrameBufferObject - see @a gl_get_bind_frame_buffer) if any are currently bound.
 		 *
@@ -297,15 +309,11 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns true if we are rendering to the framebuffer of the OpenGL context.
-		 *
-		 * This is true unless @a begin_render was called with a QPainter whose paint device is not
-		 * the framebuffer (eg, if rendering to SVG).
-		 *
-		 * Note that this should be called between @a begin_render and @a end_render.
+		 * Returns the dimensions of the paint device of the QPainter attached in @a begin_render,
+		 * or boost::none if none attached.
 		 */
-		bool
-		rendering_to_context_framebuffer() const;
+		boost::optional< std::pair<unsigned int/*width*/, unsigned int/*height*/> >
+		get_qpainter_device_dimensions() const;
 
 
 		/**
@@ -354,7 +362,7 @@ namespace GPlatesOpenGL
 
 			~QPainterBlockScope();
 
-			//! Returns the QPainter passed into GLRenderer::begin_render or boost::none if none passed in.
+			//! Returns the QPainter attached to GLRenderer or boost::none if none attached.
 			boost::optional<QPainter &>
 			get_qpainter() const
 			{
@@ -486,9 +494,6 @@ namespace GPlatesOpenGL
 		 * an implicit state block in which case all state set after @a begin_tile_render_target_2D
 		 * will be reverted when @a end_tile_render_target_2D is called.
 		 *
-		 * NOTE: @a begin_tile_render_target_2D and @a end_tile_render_target_2D
-		 * do *not* save / restore the OpenGL state.
-		 *
 		 * Note: If the 'GL_EXT_framebuffer_object' extension is supported then only one tile is
 		 * needed and it covers the entire render target. Otherwise the main framebuffer is being
 		 * used as a render target and more than one tile rendering might be needed if the framebuffer
@@ -515,9 +520,6 @@ namespace GPlatesOpenGL
 		 *        ... // Render scene.
 		 *    } while (!renderer.end_tile_render_target_2D());
 		 *    renderer.end_render_target_2D();
-		 *
-		 * NOTE: @a begin_tile_render_target_2D and @a end_tile_render_target_2D
-		 * do *not* save / restore the OpenGL state.
 		 *
 		 * Must be called inside a @a begin_render_target_2D / @a end_render_target_2D pair.
 		 */

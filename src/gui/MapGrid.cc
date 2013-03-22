@@ -373,9 +373,10 @@ GPlatesGui::MapGrid::paint(
 	else
 	{
 		// Create an OpenGL feedback buffer large enough to capture the primitives we're about to render.
-		FeedbackOpenGLToQPainter feedback_opengl(0, LINE_OF_LATITUDE_NUM_SEGMENTS * LINE_OF_LONGITUDE_NUM_SEGMENTS, 0);
-		// We are rendering to the QPainter passed into GLRenderer::begin_render().
-		FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(feedback_opengl, renderer);
+		// We are rendering to the QPainter attached to GLRenderer.
+		FeedbackOpenGLToQPainter feedback_opengl;
+		FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(
+				feedback_opengl, renderer, 0, LINE_OF_LATITUDE_NUM_SEGMENTS * LINE_OF_LONGITUDE_NUM_SEGMENTS, 0);
 
 		renderer.apply_compiled_draw_state(*d_grid_compiled_draw_state.get());
 	}

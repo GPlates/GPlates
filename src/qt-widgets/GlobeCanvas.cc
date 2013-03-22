@@ -987,6 +987,23 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 			projection_transform_include_stars,
 			projection_transform_text_overlay);
 
+	// In case we need to preserve the main frame buffer.
+	GPlatesOpenGL::GLSaveRestoreFrameBuffer save_restore_main_framebuffer(width(), height());
+
+	// We have a double buffer main framebuffer and we are rendering to the back buffer.
+	// So the front buffer (which is being displayed) won't get disturbed. And when this
+	// widget paints itself it will clear and re-draw the back buffer and then swap it so
+	// it becomes the front buffer.
+	// So for these reasons we do not need to save and restore the main framebuffer with double-buffering.
+	if (!doubleBuffer())
+	{
+		// We only have a front buffer so we need to save and restore the main (colour)
+		// framebuffer in order not to disturb the display of the globe canvas painted widget.
+		save_restore_main_framebuffer.save(*renderer);
+	}
+
+	// Render the scene to the feedback paint device.
+	// This will use the main framebuffer for intermediate rendering in some cases.
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
 	d_gl_frame_cache_handle = render_scene(
 			*renderer,
@@ -997,6 +1014,11 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 			projection_transform_text_overlay,
 			feedback_paint_device.width(),
 			feedback_paint_device.height());
+
+	if (!doubleBuffer())
+	{
+		save_restore_main_framebuffer.restore(*renderer);
+	}
 }
 
 

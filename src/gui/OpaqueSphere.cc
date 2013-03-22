@@ -32,6 +32,8 @@
 
 #include "OpaqueSphere.h"
 
+#include "FeedbackOpenGLToQPainter.h"
+
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
@@ -342,5 +344,44 @@ GPlatesGui::OpaqueSphere::paint(
 	undo_rotation(transform, axis, angle_in_deg);
 
 	renderer.gl_mult_matrix(GL_MODELVIEW, transform);
-	renderer.apply_compiled_draw_state(*d_compiled_draw_state);
+
+	// Either render directly to the framebuffer, or render to a QImage and draw that to the
+	// feedback paint device using a QPainter.
+	//
+	// NOTE: For feedback to a QPainter we render to an image instead of rendering vector geometries.
+	// This is because, for SVG output, we don't want a large number of vector geometries due to this
+	// opaque sphere - we really only want actual geological data and grid lines as SVG vector data.
+	if (renderer.rendering_to_context_framebuffer())
+	{
+		renderer.apply_compiled_draw_state(*d_compiled_draw_state);
+	}
+	else
+	{
+		FeedbackOpenGLToQPainter feedback_opengl;
+		FeedbackOpenGLToQPainter::ImageScope image_scope(feedback_opengl, renderer);
+
+		// The feedback image tiling loop...
+		do
+		{
+			GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type tile_projection =
+					image_scope.begin_render_tile();
+
+			// Adjust the current projection transform - it'll get restored before the next tile though.
+			GPlatesOpenGL::GLMatrix projection_matrix(tile_projection->get_matrix());
+			projection_matrix.gl_mult_matrix(renderer.gl_get_matrix(GL_PROJECTION));
+			renderer.gl_load_matrix(GL_PROJECTION, projection_matrix);
+
+			// Clear the main framebuffer (colour and depth) before rendering the image.
+			renderer.gl_clear_color();
+			renderer.gl_clear_depth();
+			renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			// Render the actual opaque sphere.
+			renderer.apply_compiled_draw_state(*d_compiled_draw_state);
+		}
+		while (image_scope.end_render_tile());
+
+		// Draw final raster QImage to feedback QPainter.
+		image_scope.end_render();
+	}
 }

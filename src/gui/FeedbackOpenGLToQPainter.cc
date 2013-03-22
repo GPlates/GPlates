@@ -27,13 +27,19 @@
  */
 
 #include <exception>
-
+#include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
+#include <QImage>
 #include <QPainter>
+#include <QSize>
 #include <QString>
 
 #include "FeedbackOpenGLToQPainter.h"
 
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
+
+#include "opengl/GLImageUtils.h"
 #include "opengl/GLRenderer.h"
 #include "opengl/GLUtils.h"
 #include "opengl/OpenGLException.h"
@@ -443,12 +449,17 @@ namespace
 }
 
 
-GPlatesGui::FeedbackOpenGLToQPainter::FeedbackOpenGLToQPainter(
+void
+GPlatesGui::FeedbackOpenGLToQPainter::begin_render_vector_geometry(
+		GPlatesOpenGL::GLRenderer &renderer,
 		unsigned int max_num_points,
 		unsigned int max_num_lines,
-		unsigned int max_num_triangles) :
-	d_feedback_buffer_size(0)
+		unsigned int max_num_triangles)
 {
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!d_vector_render && !d_image_render,
+			GPLATES_ASSERTION_SOURCE);
+
 	// The '1' for each point/line/triangle is for the feedback token.
 	const int feedback_buffer_size =
 			// Each point has at most one vertex...
@@ -458,15 +469,9 @@ GPlatesGui::FeedbackOpenGLToQPainter::FeedbackOpenGLToQPainter(
 			// Each triangle produces at most 4 clipped triangles (each with 3 vertices)...
 			(1 + 3 * 4 * VERTEX_SIZE) * max_num_triangles;
 
-	d_feedback_buffer.reset(new GLfloat[feedback_buffer_size]);
-	d_feedback_buffer_size = feedback_buffer_size;
-}
+	// Start a new vector render begin/end block.
+	d_vector_render = boost::in_place(feedback_buffer_size);
 
-
-void
-GPlatesGui::FeedbackOpenGLToQPainter::begin_render_vector_geometry(
-		GPlatesOpenGL::GLRenderer &renderer)
-{
 	// Since we're about to directly call OpenGL functions (instead of using GLRenderer) we
 	// need to make sure the GLRenderer state is flushed to OpenGL.
 	renderer.apply_current_state_to_opengl();
@@ -482,7 +487,10 @@ GPlatesGui::FeedbackOpenGLToQPainter::begin_render_vector_geometry(
 	// http://www.glprogramming.com/red/chapter13.html
 	//
 	// TODO: Move this function to 'GLRenderer'.
-	glFeedbackBuffer(d_feedback_buffer_size, GL_3D_COLOR, d_feedback_buffer.get());
+	glFeedbackBuffer(
+			d_vector_render->feedback_buffer_size,
+			GL_3D_COLOR,
+			d_vector_render->feedback_buffer.get());
 
 	// Specify OpenGL feedback mode.
 	//
@@ -506,6 +514,10 @@ void
 GPlatesGui::FeedbackOpenGLToQPainter::end_render_vector_geometry(
 		GPlatesOpenGL::GLRenderer &renderer)
 {
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_vector_render && !d_image_render,
+			GPLATES_ASSERTION_SOURCE);
+
 	// Since we're about to directly call OpenGL functions (instead of using GLRenderer) we
 	// need to make sure the GLRenderer state is flushed to OpenGL.
 	renderer.apply_current_state_to_opengl();
@@ -540,19 +552,216 @@ GPlatesGui::FeedbackOpenGLToQPainter::end_render_vector_geometry(
 	// Draw the feedback primitives to the QPainter.
 	draw_feedback_primitives_to_qpainter(
 			qpainter.get(),
-			d_feedback_buffer.get(),
+			d_vector_render->feedback_buffer.get(),
 			num_feedback_items);
+
+	// Finish begin/end vector block.
+	d_vector_render = boost::none;
+}
+
+
+void
+GPlatesGui::FeedbackOpenGLToQPainter::begin_render_image(
+		GPlatesOpenGL::GLRenderer &renderer,
+		const double &max_point_size_and_line_width)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!d_vector_render && !d_image_render,
+			GPLATES_ASSERTION_SOURCE);
+
+	// The QPainter device dimensions represent the size of the final image to be rendered.
+	boost::optional< std::pair<unsigned int/*width*/, unsigned int/*height*/> > qpaint_device_dimensions =
+			renderer.get_qpainter_device_dimensions();
+	// QPainter must have been attached to the GLRenderer.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			qpaint_device_dimensions,
+			GPLATES_ASSERTION_SOURCE);
+
+	// The image dimensions.
+	const QSize image_size(qpaint_device_dimensions->first, qpaint_device_dimensions->second);
+
+	// The final image to render to (to copy rendered tiles into).
+	// We use pre-multiplied alpha format because our rendering is typically done as
+	// pre-multiplied alpha to avoid double-blending, etc (see GLVisualRasterSource for details).
+	QImage image(image_size, QImage::Format_ARGB32_Premultiplied);
+	if (image.isNull())
+	{
+		// Most likely a memory allocation failure.
+		throw std::bad_alloc();
+	}
+
+	// Fill the image with transparent black in case there's an exception during rendering
+	// of one of the tiles and the image is incomplete.
+	image.fill(QColor(0,0,0,0).rgba());
+
+	// We use the currently bound frame buffer to render tiles into.
+	const std::pair<unsigned int/*width*/, unsigned int/*height*/> frame_buffer_dimensions =
+			renderer.get_current_frame_buffer_dimensions();
+
+	// Set up for tiling into the final image.
+	const GPlatesOpenGL::GLTileRender tile_render(
+			frame_buffer_dimensions.first/*render_target_width*/,
+			frame_buffer_dimensions.second/*render_target_height*/,
+			GPlatesOpenGL::GLViewport(0, 0, image_size.width(), image_size.height())/*destination_viewport*/,
+			// The border is half the point size or line width, rounded up to nearest pixel.
+			// NOTE: It is important that 'max_point_size_and_line_width = 0' maps to 'border = 0'...
+			static_cast<unsigned int>(0.5 * max_point_size_and_line_width + 1-1e-5));
+
+	// Start a new image render begin/end block.
+	d_image_render = boost::in_place(image, tile_render);
+
+	// Start at the first tile.
+	d_image_render->tile_render.first_tile();
+}
+
+
+GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
+GPlatesGui::FeedbackOpenGLToQPainter::begin_render_image_tile(
+		GPlatesOpenGL::GLRenderer &renderer,
+		bool save_restore_state,
+		GPlatesOpenGL::GLViewport *image_tile_viewport,
+		GPlatesOpenGL::GLViewport *image_tile_scissor_rect)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!d_vector_render && d_image_render,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Save the current OpenGL state if requested.
+	if (save_restore_state)
+	{
+		renderer.begin_state_block();
+	}
+	d_image_render->save_restore_tile_state = save_restore_state;
+
+	GPlatesOpenGL::GLViewport current_image_tile_viewport;
+	d_image_render->tile_render.get_tile_render_target_viewport(
+			current_image_tile_viewport);
+
+	GPlatesOpenGL::GLViewport current_image_tile_scissor_rect;
+	d_image_render->tile_render.get_tile_render_target_scissor_rectangle(
+			current_image_tile_scissor_rect);
+
+	// Mask off rendering outside the current tile region in case the tile is smaller than the
+	// main frame buffer. Note that the tile's viewport is slightly larger than the tile itself
+	// (the scissor rectangle) in order that fat points and wide lines just outside the tile
+	// have pixels rasterised inside the tile (the projection transform has also been expanded slightly).
+	//
+	// This includes 'gl_clear()' calls which clear the entire main framebuffer.
+	renderer.gl_enable(GL_SCISSOR_TEST);
+	renderer.gl_scissor(
+			current_image_tile_scissor_rect.x(),
+			current_image_tile_scissor_rect.y(),
+			current_image_tile_scissor_rect.width(),
+			current_image_tile_scissor_rect.height());
+	renderer.gl_viewport(
+			current_image_tile_viewport.x(),
+			current_image_tile_viewport.y(),
+			current_image_tile_viewport.width(),
+			current_image_tile_viewport.height());
+
+	// If caller requested the image tile viewport.
+	if (image_tile_viewport)
+	{
+		*image_tile_viewport = current_image_tile_viewport;
+	}
+	// If caller requested the image tile scissor rectangle.
+	if (image_tile_scissor_rect)
+	{
+		*image_tile_scissor_rect = current_image_tile_scissor_rect;
+	}
+
+	// Return the projection transform for the current tile.
+	return d_image_render->tile_render.get_tile_projection_transform();
+}
+
+
+bool
+GPlatesGui::FeedbackOpenGLToQPainter::end_render_image_tile(
+		GPlatesOpenGL::GLRenderer &renderer)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!d_vector_render && d_image_render,
+			GPLATES_ASSERTION_SOURCE);
+
+	//
+	// Copy the rendered tile into the appropriate sub-rect of the image.
+	//
+
+	GPlatesOpenGL::GLViewport current_tile_source_viewport;
+	d_image_render->tile_render.get_tile_source_viewport(current_tile_source_viewport);
+
+	GPlatesOpenGL::GLViewport current_tile_destination_viewport;
+	d_image_render->tile_render.get_tile_destination_viewport(current_tile_destination_viewport);
+
+	GPlatesOpenGL::GLImageUtils::copy_rgba8_frame_buffer_into_argb32_qimage(
+			renderer,
+			d_image_render->image,
+			current_tile_source_viewport,
+			current_tile_destination_viewport);
+
+	// Proceed to the next tile (if any).
+	d_image_render->tile_render.next_tile();
+	const bool continue_to_next_tile = !d_image_render->tile_render.finished();
+
+	// Restore the OpenGL state if requested.
+	if (d_image_render->save_restore_tile_state)
+	{
+		renderer.end_state_block();
+	}
+	d_image_render->save_restore_tile_state = false;
+
+	return continue_to_next_tile;
+}
+
+
+void
+GPlatesGui::FeedbackOpenGLToQPainter::end_render_image(
+		GPlatesOpenGL::GLRenderer &renderer)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!d_vector_render && d_image_render,
+			GPLATES_ASSERTION_SOURCE);
+
+	//
+	// Now that we've rendered and copied all tiles into the final image we can draw the image
+	// to the QPainter attached to the GLRenderer.
+	//
+
+	// Suspend rendering with 'GLRenderer' so we can resume painting with 'QPainter'.
+	// At scope exit we can resume rendering with 'GLRenderer'.
+	GPlatesOpenGL::GLRenderer::QPainterBlockScope qpainter_block_scope(renderer);
+	boost::optional<QPainter &> qpainter = qpainter_block_scope.get_qpainter();
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			qpainter,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Set the identity world transform since our image was rendered to *window* coordinates
+	// and we don't want the image transformed by the current world transform.
+	qpainter->setWorldTransform(QTransform()/*identity*/);
+
+	// Draw the image.
+	qpainter->drawImage(0, 0, d_image_render->image);
+
+	// Finish begin/end image block.
+	d_image_render = boost::none;
 }
 
 
 GPlatesGui::FeedbackOpenGLToQPainter::VectorGeometryScope::VectorGeometryScope(
 		FeedbackOpenGLToQPainter &feedback_opengl_to_qpainter,
-		GPlatesOpenGL::GLRenderer &renderer) :
+		GPlatesOpenGL::GLRenderer &renderer,
+		unsigned int max_num_points,
+		unsigned int max_num_lines,
+		unsigned int max_num_triangles) :
 	d_feedback_opengl_to_qpainter(feedback_opengl_to_qpainter),
 	d_renderer(renderer),
 	d_called_end_render(false)
 {
-	d_feedback_opengl_to_qpainter.begin_render_vector_geometry(renderer);
+	d_feedback_opengl_to_qpainter.begin_render_vector_geometry(
+			renderer,
+			max_num_points,
+			max_num_lines,
+			max_num_triangles);
 }
 
 
@@ -586,4 +795,75 @@ GPlatesGui::FeedbackOpenGLToQPainter::VectorGeometryScope::end_render()
 		d_feedback_opengl_to_qpainter.end_render_vector_geometry(d_renderer);
 		d_called_end_render = true;
 	}
+}
+
+
+GPlatesGui::FeedbackOpenGLToQPainter::ImageScope::ImageScope(
+		FeedbackOpenGLToQPainter &feedback_opengl_to_qpainter,
+		GPlatesOpenGL::GLRenderer &renderer,
+		const double &max_point_size_and_line_width) :
+	d_feedback_opengl_to_qpainter(feedback_opengl_to_qpainter),
+	d_renderer(renderer),
+	d_called_end_render_tile(true),
+	d_called_end_render(false)
+{
+	d_feedback_opengl_to_qpainter.begin_render_image(d_renderer, max_point_size_and_line_width);
+}
+
+
+GPlatesGui::FeedbackOpenGLToQPainter::ImageScope::~ImageScope()
+{
+	if (!d_called_end_render)
+	{
+		// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
+		// But we log the exception and the location it was emitted.
+		try
+		{
+			end_render();
+		}
+		catch (std::exception &exc)
+		{
+			qWarning() << "FeedbackOpenGLToQPainter: exception thrown during image scope: " << exc.what();
+		}
+		catch (...)
+		{
+			qWarning() << "FeedbackOpenGLToQPainter: exception thrown during image scope: Unknown error";
+		}
+	}
+}
+
+
+GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
+GPlatesGui::FeedbackOpenGLToQPainter::ImageScope::begin_render_tile(
+		bool save_restore_state,
+		GPlatesOpenGL::GLViewport *image_tile_viewport,
+		GPlatesOpenGL::GLViewport *image_tile_scissor_rect)
+{
+	d_called_end_render_tile = false;
+	return d_feedback_opengl_to_qpainter.begin_render_image_tile(
+			d_renderer,
+			save_restore_state,
+			image_tile_viewport,
+			image_tile_scissor_rect);
+}
+
+
+bool
+GPlatesGui::FeedbackOpenGLToQPainter::ImageScope::end_render_tile()
+{
+	d_called_end_render_tile = true;
+	return d_feedback_opengl_to_qpainter.end_render_image_tile(d_renderer);
+}
+
+
+void
+GPlatesGui::FeedbackOpenGLToQPainter::ImageScope::end_render()
+{
+	if (!d_called_end_render_tile)
+	{
+		end_render_tile();
+	}
+
+	d_feedback_opengl_to_qpainter.end_render_image(d_renderer);
+	d_called_end_render = true;
 }

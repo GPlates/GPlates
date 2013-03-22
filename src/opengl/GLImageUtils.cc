@@ -51,9 +51,12 @@ GPlatesOpenGL::GLImageUtils::copy_rgba8_frame_buffer_into_argb32_qimage(
 		const GLViewport &source_viewport,
 		const GLViewport &destination_viewport)
 {
-	// Make sure image is the format we're expecting.
+	// Make sure image is a format we're expecting.
+	// Restrict to Format_ARGB32 and Format_ARGB32_Premultiplied since only those two are supported
+	// when rendering to a QImage using a QPainter.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			image.format() == QImage::Format_ARGB32,
+			image.format() == QImage::Format_ARGB32 ||
+				image.format() == QImage::Format_ARGB32_Premultiplied,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Acquire a pixel buffer to read the framebuffer pixels into.

@@ -360,20 +360,67 @@ GPlatesGui::LayerPainter::paint_scalar_fields(
 
 	// No need for alpha-testing - transparent rays are culled in shader program by discarding pixel.
 
+	// The cached view is a sequence of raster caches for the caller to keep alive until the next frame.
+	boost::shared_ptr<std::vector<GPlatesOpenGL::GLVisualLayers::cache_handle_type> > cache_handle(
+			new std::vector<GPlatesOpenGL::GLVisualLayers::cache_handle_type>());
+	cache_handle->reserve(scalar_fields.size());
+
 	BOOST_FOREACH(const ScalarField3DDrawable &scalar_field_drawable, scalar_fields)
 	{
-		d_gl_visual_layers->render_scalar_field_3d(
-				renderer,
-				scalar_field_drawable.source_resolved_scalar_field,
-				scalar_field_drawable.render_parameters,
-				surface_occlusion_texture);
+		// We don't want to rebuild the OpenGL structures that render the scalar field each frame
+		// so those structures need to persist from one render to the next.
+		cache_handle_type scalar_field_cache_handle;
+
+		// Either render directly to the framebuffer, or render to a QImage and draw that to the
+		// feedback paint device using a QPainter.
+		if (renderer.rendering_to_context_framebuffer())
+		{
+			scalar_field_cache_handle = d_gl_visual_layers->render_scalar_field_3d(
+					renderer,
+					scalar_field_drawable.source_resolved_scalar_field,
+					scalar_field_drawable.render_parameters,
+					surface_occlusion_texture);
+			cache_handle->push_back(scalar_field_cache_handle);
+		}
+		else
+		{
+			FeedbackOpenGLToQPainter feedback_opengl;
+			FeedbackOpenGLToQPainter::ImageScope image_scope(feedback_opengl, renderer);
+
+			// The feedback image tiling loop...
+			do
+			{
+				GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type tile_projection =
+						image_scope.begin_render_tile();
+
+				// Adjust the current projection transform - it'll get restored before the next tile though.
+				GPlatesOpenGL::GLMatrix projection_matrix(tile_projection->get_matrix());
+				projection_matrix.gl_mult_matrix(renderer.gl_get_matrix(GL_PROJECTION));
+				renderer.gl_load_matrix(GL_PROJECTION, projection_matrix);
+
+				// Clear the main framebuffer (colour and depth) before rendering each scalar field.
+				renderer.gl_clear_color();
+				renderer.gl_clear_depth();
+				renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+				scalar_field_cache_handle = d_gl_visual_layers->render_scalar_field_3d(
+						renderer,
+						scalar_field_drawable.source_resolved_scalar_field,
+						scalar_field_drawable.render_parameters,
+						surface_occlusion_texture);
+				cache_handle->push_back(scalar_field_cache_handle);
+			}
+			while (image_scope.end_render_tile());
+
+			// Draw final scalar field QImage to feedback QPainter.
+			image_scope.end_render();
+		}
 	}
 
 	// Now that the scalar fields have been rendered we should clear the drawables list for the next render call.
 	scalar_fields.clear();
 
-	// No caching just yet.
-	return cache_handle_type();
+	return cache_handle;
 }
 
 
@@ -407,14 +454,54 @@ GPlatesGui::LayerPainter::paint_rasters(
 	{
 		// We don't want to rebuild the OpenGL structures that render the raster each frame
 		// so those structures need to persist from one render to the next.
-		const cache_handle_type raster_cache_handle = d_gl_visual_layers->render_raster(
-				renderer,
-				raster_drawable.source_resolved_raster,
-				raster_drawable.source_raster_colour_palette,
-				raster_drawable.source_raster_modulate_colour,
-				d_map_projection);
+		cache_handle_type raster_cache_handle;
 
-		cache_handle->push_back(raster_cache_handle);
+		// Either render directly to the framebuffer, or render to a QImage and draw that to the
+		// feedback paint device using a QPainter.
+		if (renderer.rendering_to_context_framebuffer())
+		{
+			raster_cache_handle = d_gl_visual_layers->render_raster(
+					renderer,
+					raster_drawable.source_resolved_raster,
+					raster_drawable.source_raster_colour_palette,
+					raster_drawable.source_raster_modulate_colour,
+					d_map_projection);
+			cache_handle->push_back(raster_cache_handle);
+		}
+		else
+		{
+			FeedbackOpenGLToQPainter feedback_opengl;
+			FeedbackOpenGLToQPainter::ImageScope image_scope(feedback_opengl, renderer);
+
+			// The feedback image tiling loop...
+			do
+			{
+				GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type tile_projection =
+						image_scope.begin_render_tile();
+
+				// Adjust the current projection transform - it'll get restored before the next tile though.
+				GPlatesOpenGL::GLMatrix projection_matrix(tile_projection->get_matrix());
+				projection_matrix.gl_mult_matrix(renderer.gl_get_matrix(GL_PROJECTION));
+				renderer.gl_load_matrix(GL_PROJECTION, projection_matrix);
+
+				// Clear the main framebuffer (colour and depth) before rendering each raster.
+				renderer.gl_clear_color();
+				renderer.gl_clear_depth();
+				renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+				raster_cache_handle = d_gl_visual_layers->render_raster(
+						renderer,
+						raster_drawable.source_resolved_raster,
+						raster_drawable.source_raster_colour_palette,
+						raster_drawable.source_raster_modulate_colour,
+						d_map_projection);
+				cache_handle->push_back(raster_cache_handle);
+			}
+			while (image_scope.end_render_tile());
+
+			// Draw final raster QImage to feedback QPainter.
+			image_scope.end_render();
+		}
 	}
 
 	// Now that the rasters have been rendered we should clear the drawables list for the next render call.
@@ -840,10 +927,14 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::draw_feedback_pr
 	}
 
 	// Create an OpenGL feedback buffer large enough to capture the primitives we're about to render.
-	FeedbackOpenGLToQPainter feedback_opengl(max_num_points, max_num_lines, max_num_triangles);
-
-	// We are rendering to the QPainter passed into GLRenderer::begin_render().
-	FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(feedback_opengl, renderer);
+	// We are rendering to the QPainter attached to GLRenderer.
+	FeedbackOpenGLToQPainter feedback_opengl;
+	FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(
+			feedback_opengl,
+			renderer,
+			max_num_points,
+			max_num_lines,
+			max_num_triangles);
 
 	draw_primitives(renderer, vertex_element_buffer_data, vertex_buffer_data, vertex_array, mode);
 }

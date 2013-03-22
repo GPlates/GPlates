@@ -36,6 +36,7 @@
  */
 #include <GL/glew.h>
 #include <QDebug>
+#include <QPaintDevice>
 #include <QPaintEngine>
 
 #include "GLRenderer.h"
@@ -238,6 +239,19 @@ GPlatesOpenGL::GLRenderer::end_render()
 }
 
 
+bool
+GPlatesOpenGL::GLRenderer::rendering_to_context_framebuffer() const
+{
+	// Should be between 'begin_render()' and 'end_render()' - should have a render target block.
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			!d_render_target_block_stack.empty(),
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TARGET_BLOCK);
+
+	return d_qpainter_info ? d_qpainter_info->paint_device_is_framebuffer : true;
+}
+
+
 std::pair<unsigned int/*width*/, unsigned int/*height*/>
 GPlatesOpenGL::GLRenderer::get_current_frame_buffer_dimensions() const
 {
@@ -269,8 +283,8 @@ GPlatesOpenGL::GLRenderer::get_current_frame_buffer_dimensions() const
 }
 
 
-bool
-GPlatesOpenGL::GLRenderer::rendering_to_context_framebuffer() const
+boost::optional< std::pair<unsigned int/*width*/, unsigned int/*height*/> >
+GPlatesOpenGL::GLRenderer::get_qpainter_device_dimensions() const
 {
 	// Should be between 'begin_render()' and 'end_render()' - should have a render target block.
 	GPlatesGlobal::Assert<GLRendererAPIError>(
@@ -278,7 +292,21 @@ GPlatesOpenGL::GLRenderer::rendering_to_context_framebuffer() const
 			GPLATES_ASSERTION_SOURCE,
 			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TARGET_BLOCK);
 
-	return d_qpainter_info ? d_qpainter_info->paint_device_is_framebuffer : true;
+	// If there's no QPainter attached to this renderer.
+	if (!d_qpainter_info)
+	{
+		return boost::none;
+	}
+
+	// The QPainter's paint device.
+	QPaintDevice *qpaint_device = d_qpainter_info->qpainter.device();
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			qpaint_device,
+			GPLATES_ASSERTION_SOURCE);
+
+	return std::make_pair(
+			boost::numeric_cast<unsigned int>(qpaint_device->width()),
+			boost::numeric_cast<unsigned int>(qpaint_device->height()));
 }
 
 

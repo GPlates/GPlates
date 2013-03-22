@@ -230,7 +230,12 @@ GPlatesGui::Globe::paint(
 						renderer,
 						GL_RGBA8/*texture_internalformat*/,
 						true/*include_depth_buffer*/);
-		if (screen_render_target)
+
+		if (screen_render_target &&
+			// If we're not rendering directly to the framebuffer (because we're rendering to a feedback
+			// QPainter device) then just render normally because we want the sub-surface data to be
+			// completely rendered (instead of only rendered where it's not occluded by surface data)...
+			renderer.rendering_to_context_framebuffer())
 		{
 			// Prepare for rendering the front half of the globe into a viewport-size render texture.
 			// This will be used as a surface occlusion texture when rendering the globe sub-surface

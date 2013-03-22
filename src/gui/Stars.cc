@@ -282,9 +282,10 @@ GPlatesGui::Stars::paint(
 			else
 			{
 				// Create an OpenGL feedback buffer large enough to capture the primitives we're about to render.
-				FeedbackOpenGLToQPainter feedback_opengl(d_num_points, 0, 0);
-				// We are rendering to the QPainter passed into GLRenderer::begin_render().
-				FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(feedback_opengl, renderer);
+				// We are rendering to the QPainter attached to GLRenderer.
+				FeedbackOpenGLToQPainter feedback_opengl;
+				FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(
+						feedback_opengl, renderer, d_num_points, 0, 0);
 
 				renderer.apply_compiled_draw_state(*d_compiled_draw_state.get());
 			}

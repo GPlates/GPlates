@@ -306,7 +306,7 @@ namespace GPlatesOpenGL
 				//! Used to save/restore the main framebuffer when it's used as a render target.
 				GLSaveRestoreFrameBuffer save_restore_frame_buffer;
 
-				//! Used to tile rendering when the main framebuffer is smaller than the render target.
+				//! Used to tile render when the main framebuffer is smaller than the render target.
 				GLTileRender tile_render;
 			};
 
