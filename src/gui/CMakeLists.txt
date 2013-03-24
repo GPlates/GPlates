@@ -151,6 +151,8 @@ set(srcs
     LogFilterModel.h
     Map.cc
     Map.h
+    MapBackground.cc
+    MapBackground.h
     MapCanvasTool.cc
     MapCanvasTool.h
     MapCanvasToolAdapter.cc

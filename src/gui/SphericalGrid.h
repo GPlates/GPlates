@@ -69,7 +69,7 @@ namespace GPlatesGui
 				GPlatesOpenGL::GLRenderer &renderer);
 
 		/**
-		 * Paints the circumference for vector output.
+		 * Paints the circumference.
 		 */
 		void
 		paint_circumference(

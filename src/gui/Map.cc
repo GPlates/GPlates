@@ -83,6 +83,7 @@ GPlatesGui::Map::initialiseGL(
 
 	// Create these objects in place (some as non-copy-constructable).
 	d_grid = boost::in_place(boost::ref(renderer), *d_map_projection, d_view_state.get_graticule_settings());
+	d_background = boost::in_place(boost::ref(renderer), *d_map_projection, boost::ref(d_view_state));
 
 	// Initialise the rendered geometry collection painter.
 	d_rendered_geom_collection_painter.initialise(renderer);
@@ -153,20 +154,21 @@ GPlatesGui::Map::paint(
 			gl_light.get()->set_scene_lighting(renderer, d_view_state.get_scene_lighting_parameters());
 		}
 
-		// Draw the background colour and clear the depth buffer of the main framebuffer.
-		// TODO: Only draw the map area in the background colour (not the entire viewport).
+		// Clear the colour and depth buffers of the main framebuffer.
 		//
-		// NOTE: We don't use the depth buffer in the map view but clear it anyway because
-		// so we can use common code with the 3D globe rendering that enables depth testing.
-		// In our case the depth testing will always return true - depth testing is very faster
+		// NOTE: We don't use the depth buffer in the map view but clear it anyway so that we can
+		// use common layer painting code with the 3D globe rendering that enables depth testing.
+		// In our case the depth testing will always return true - depth testing is very fast
 		// in modern graphics hardware so we don't need to optimise it away.
-		const GPlatesGui::Colour &colour = d_view_state.get_background_colour();
-		renderer.gl_clear_color(colour.red(), colour.green(), colour.blue(), 1.0f);
+		renderer.gl_clear_color(); // Clear colour to transparent black
 		renderer.gl_clear_depth(); // Clear depth to 1.0
 		renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Set the scale factor.
 		d_rendered_geom_collection_painter.set_scale(scale);
+
+		// Render the background of the map.
+		d_background->paint(renderer);
 
 		// Render the rendered geometry layers onto the map.
 		cache_handle = d_rendered_geom_collection_painter.paint(renderer, viewport_zoom_factor);

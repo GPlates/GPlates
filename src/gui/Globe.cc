@@ -234,7 +234,9 @@ GPlatesGui::Globe::paint(
 		if (screen_render_target &&
 			// If we're not rendering directly to the framebuffer (because we're rendering to a feedback
 			// QPainter device) then just render normally because we want the sub-surface data to be
-			// completely rendered (instead of only rendered where it's not occluded by surface data)...
+			// completely rendered (instead of only rendered where it's not occluded by surface data).
+			// We also want things rendered in correct back-to-front depth order so that they are then
+			// drawn correctly by an external SVG renderer for example (ie, sub-surface then surface)...
 			renderer.rendering_to_context_framebuffer())
 		{
 			// Prepare for rendering the front half of the globe into a viewport-size render texture.

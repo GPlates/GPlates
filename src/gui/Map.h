@@ -33,11 +33,11 @@
 #include <boost/shared_ptr.hpp>
 
 #include "ColourScheme.h"
+#include "MapBackground.h"
 #include "MapGrid.h"
 #include "MapProjection.h"
 #include "MapRenderedGeometryCollectionPainter.h"
-
-#include "gui/ViewportZoom.h"
+#include "ViewportZoom.h"
 
 #include "opengl/GLVisualLayers.h"
 
@@ -142,6 +142,13 @@ namespace GPlatesGui
 		
 		//! For giving colour to RenderedGeometry
 		GPlatesGui::ColourScheme::non_null_ptr_type d_colour_scheme;
+
+		/**
+		 * The coloured map background (behind the grid and rendered geometry data).
+		 *
+		 * It's optional since it can't be constructed until @a initialiseGL is called (valid OpenGL context).
+		 */
+		boost::optional<MapBackground> d_background;
 
 		/**
 		 * Lines of lat and lon on the map.

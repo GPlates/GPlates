@@ -388,42 +388,40 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 	boost::shared_ptr< std::vector<cache_handle_type> > frame_cache_handle(
 			new std::vector<cache_handle_type>());
 
+	// In case we need to preserve the main frame buffer.
+	GPlatesOpenGL::GLSaveRestoreFrameBuffer save_restore_main_framebuffer(
+			tile_render_target_width,
+			tile_render_target_height);
+
+	// We have a double buffer main framebuffer and we are rendering to the back buffer.
+	// So the front buffer (which is being displayed) won't get disturbed. And when this
+	// widget paints itself it will clear and re-draw the back buffer and then swap it so
+	// it becomes the front buffer.
+	// So for these reasons we do not need to save and restore the main framebuffer with double-buffering.
+	if (!map_canvas_paint_device->doubleBuffer())
+	{
+		// We only have a front buffer so we need to save and restore the main (colour)
+		// framebuffer in order not to disturb the display of the globe canvas painted widget.
+		save_restore_main_framebuffer.save(*renderer);
+	}
+
 	// Render the scene tile-by-tile.
 	for (tile_render.first_tile(); !tile_render.finished(); tile_render.next_tile())
 	{
-		if (map_canvas_paint_device->doubleBuffer())
-		{
-			// We have a double buffer main framebuffer and we are rendering to the back buffer.
-			// So the front buffer (which is being displayed) won't get disturbed. And when this
-			// widget paints itself it will clear and re-draw the back buffer and then swap it so
-			// it becomes the front buffer.
-			// So for these reasons we do not need to save and restore the main framebuffer.
-			cache_handle_type tile_cache_handle = render_scene_tile_into_image(
-					*renderer,
-					tile_render,
-					image,
-					projection_matrix_scene,
-					projection_matrix_text_overlay);
-			frame_cache_handle->push_back(tile_cache_handle);
-		}
-		else
-		{
-			// We only have a front buffer so we need to save and restore the main (colour)
-			// framebuffer in order not to disturb the display of the globe canvas painted widget.
-			GPlatesOpenGL::GLSaveRestoreFrameBuffer save_restore_main_framebuffer(
-					tile_render_target_width,
-					tile_render_target_height);
+		// Render the scene to the current tile.
+		// Hold onto the previous frame's cached resources *while* generating the current frame.
+		const cache_handle_type tile_cache_handle = render_scene_tile_into_image(
+				*renderer,
+				tile_render,
+				image,
+				projection_matrix_scene,
+				projection_matrix_text_overlay);
+		frame_cache_handle->push_back(tile_cache_handle);
+	}
 
-			save_restore_main_framebuffer.save(*renderer);
-			cache_handle_type tile_cache_handle = render_scene_tile_into_image(
-					*renderer,
-					tile_render,
-					image,
-					projection_matrix_scene,
-					projection_matrix_text_overlay);
-			frame_cache_handle->push_back(tile_cache_handle);
-			save_restore_main_framebuffer.restore(*renderer);
-		}
+	if (!map_canvas_paint_device->doubleBuffer())
+	{
+		save_restore_main_framebuffer.restore(*renderer);
 	}
 
 	// Hold onto the previous frame's cached resources *while* generating the current frame.

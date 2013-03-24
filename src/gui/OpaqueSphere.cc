@@ -334,7 +334,8 @@ GPlatesGui::OpaqueSphere::paint(
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
 
 	// Check whether the view state's background colour has changed.
-	if (d_view_state && d_view_state->get_background_colour() != d_colour)
+	if (d_view_state &&
+		d_view_state->get_background_colour() != d_colour)
 	{
 		d_colour = d_view_state->get_background_colour();
 		d_compiled_draw_state = compile_sphere_draw_state(renderer, *d_vertex_array, Colour::to_rgba8(d_colour));

@@ -1,13 +1,11 @@
 /* $Id$ */
 
 /**
- * @file 
- * File specific comments.
- *
- * Most recent change:
- *   $Date$
+ * \file 
+ * $Revision$
+ * $Date$
  * 
- * Copyright (C) 2004, 2005, 2006, 2010 The University of Sydney, Australia
+ * Copyright (C) 2013 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,15 +23,13 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_OPAQUESPHERE_H
-#define GPLATES_GUI_OPAQUESPHERE_H
+#ifndef GPLATES_GUI_MAPBACKGROUND_H
+#define GPLATES_GUI_MAPBACKGROUND_H
 
 #include <boost/noncopyable.hpp>
-#include <opengl/OpenGL.h>
+#include <boost/optional.hpp>
 
-#include "Colour.h"
-
-#include "maths/UnitVector3D.h"
+#include "MapProjection.h"
 
 #include "opengl/GLCompiledDrawState.h"
 #include "opengl/GLVertexArray.h"
@@ -51,44 +47,52 @@ namespace GPlatesPresentation
 
 namespace GPlatesGui
 {
-	class OpaqueSphere :
-			public boost::noncopyable
+	/**
+	 * Renders a coloured background map in the map view.
+	 */
+	class MapBackground :
+			private boost::noncopyable
 	{
 	public:
 
 		/**
-		 * Constructs an OpaqueSphere with a fixed @a colour.
+		 * Constructs a background with a fixed @a colour.
 		 */
 		explicit
-		OpaqueSphere(
+		MapBackground(
 				GPlatesOpenGL::GLRenderer &renderer,
+				const MapProjection &map_projection,
 				const Colour &colour);
 
 		/**
-		 * Constructs an OpaqueSphere that uses the background colour of @a view_state,
+		 * Constructs a background that uses the background colour of @a view_state,
 		 * as it changes from time to time.
 		 */
 		explicit
-		OpaqueSphere(
+		MapBackground(
 				GPlatesOpenGL::GLRenderer &renderer,
+				const MapProjection &map_projection,
 				const GPlatesPresentation::ViewState &view_state);
 
 		/**
-		 * Paints sphere.
+		 * Paints the map background.
 		 */
 		void
 		paint(
-				GPlatesOpenGL::GLRenderer &renderer,
-				const GPlatesMaths::UnitVector3D &axis,
-				double angle_in_deg);
+				GPlatesOpenGL::GLRenderer &renderer);
 
 	private:
+
 		const GPlatesPresentation::ViewState *d_view_state;
+		const MapProjection &d_map_projection;
+
 		Colour d_colour;
+	
+		boost::optional<MapProjectionSettings> d_last_seen_map_projection_settings;
 
 		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_vertex_array;
 		GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type d_compiled_draw_state;
 	};
 }
 
-#endif  // GPLATES_GUI_OPAQUESPHERE_H
+#endif // GPLATES_GUI_MAPBACKGROUND_H
