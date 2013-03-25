@@ -264,6 +264,15 @@ namespace GPlatesOpenGL
 			}
 
 			/**
+			 * Returns true if any filled polygons have been added.
+			 */
+			bool
+			empty() const
+			{
+				return d_filled_polygons_spatial_partition->empty();
+			}
+
+			/**
 			 * Clears the filled polygons accumulated so far.
 			 *
 			 * This is more efficient than creating a new @a FilledPolygons each render since it

@@ -628,14 +628,13 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 	//
 	// If any rendered polygons (or polylines) are 'filled' then render them first.
 	// This way any vector geometry in this layer gets rendered on top and hence is visible.
-	//
-	// Filled polygons are rendered as rasters (textures) and hence the state set here
-	// is similar (in fact identical) to the state set for rasters.
-	//
+	if (!d_filled_polygons.empty())
+	{
+		paint_filled_polygons(renderer, gl_visual_layers);
 
-	gl_visual_layers.render_filled_polygons(renderer, d_filled_polygons);
-	// Now that the filled polygons have been rendered we should clear them for the next render call.
-	d_filled_polygons.clear();
+		// Now that the filled polygons have been rendered we should clear them for the next render call.
+		d_filled_polygons.clear();
+	}
 
 	//
 	// Set up for rendering points, lines and polygons.
@@ -805,6 +804,55 @@ GPlatesGui::LayerPainter::stream_primitives_type &
 GPlatesGui::LayerPainter::PointLinePolygonDrawables::get_triangles_stream()
 {
 	return d_triangle_drawables.get_stream();
+}
+
+
+void
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::paint_filled_polygons(
+		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GLVisualLayers &gl_visual_layers)
+{
+	// Filled polygons are rendered as rasters (textures) and hence the state set here
+	// is similar (in fact identical) to the state set for rasters.
+	//
+	// Either render directly to the framebuffer, or render to a QImage and draw that to the
+	// feedback paint device using a QPainter. We render filled polygons to an image instead of
+	// as vector geometries because filled polygons are actually rendered as a raster.
+	if (renderer.rendering_to_context_framebuffer())
+	{
+		gl_visual_layers.render_filled_polygons(renderer, d_filled_polygons);
+	}
+	else
+	{
+		FeedbackOpenGLToQPainter feedback_opengl;
+		FeedbackOpenGLToQPainter::ImageScope image_scope(feedback_opengl, renderer);
+
+		// The feedback image tiling loop...
+		do
+		{
+			GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type tile_projection =
+					image_scope.begin_render_tile();
+
+			// Adjust the current projection transform - it'll get restored before the next tile though.
+			GPlatesOpenGL::GLMatrix projection_matrix(tile_projection->get_matrix());
+			projection_matrix.gl_mult_matrix(renderer.gl_get_matrix(GL_PROJECTION));
+			renderer.gl_load_matrix(GL_PROJECTION, projection_matrix);
+
+			// Clear the main framebuffer (colour and depth) before rendering each raster.
+			renderer.gl_clear_color();
+			renderer.gl_clear_depth();
+			renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			gl_visual_layers.render_filled_polygons(renderer, d_filled_polygons);
+		}
+		while (image_scope.end_render_tile());
+
+		// Draw final raster QImage to feedback QPainter.
+		image_scope.end_render();
+	}
+
+	// Now that the filled polygons have been rendered we should clear them for the next render call.
+	d_filled_polygons.clear();
 }
 
 

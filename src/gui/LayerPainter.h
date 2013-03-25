@@ -154,6 +154,7 @@ namespace GPlatesGui
 			}
 
 		private:
+
 			/**
 			 * Information to render a group of primitives (point, line or triangle primitives).
 			 */
@@ -237,6 +238,12 @@ namespace GPlatesGui
 
 			//! For collecting filled polygons during a render call.
 			GPlatesOpenGL::GLMultiResolutionFilledPolygons::filled_polygons_type d_filled_polygons;
+
+
+			void
+			paint_filled_polygons(
+					GPlatesOpenGL::GLRenderer &renderer,
+					GPlatesOpenGL::GLVisualLayers &gl_visual_layers);
 		};
 
 
