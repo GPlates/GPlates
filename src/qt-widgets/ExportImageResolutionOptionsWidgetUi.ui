@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ExportRasterOptionsWidget</class>
- <widget class="QWidget" name="ExportRasterOptionsWidget">
+ <class>ExportImageResolutionOptionsWidget</class>
+ <widget class="QWidget" name="ExportImageResolutionOptionsWidget">
   <property name="geometry">
    <rect>
     <x>0</x>

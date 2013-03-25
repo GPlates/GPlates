@@ -26,15 +26,15 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
-#include "ExportRasterOptionsWidget.h"
+#include "ExportSvgOptionsWidget.h"
 
 #include "QtWidgetUtils.h"
 
 
-GPlatesQtWidgets::ExportRasterOptionsWidget::ExportRasterOptionsWidget(
+GPlatesQtWidgets::ExportSvgOptionsWidget::ExportSvgOptionsWidget(
 		QWidget *parent_,
 		GPlatesGui::ExportAnimationContext &export_animation_context,
-		const GPlatesGui::ExportRasterAnimationStrategy::const_configuration_ptr &export_configuration) :
+		const GPlatesGui::ExportSvgAnimationStrategy::const_configuration_ptr &export_configuration) :
 	ExportOptionsWidget(parent_),
 	d_export_image_resolution_options_widget(NULL),
 	d_export_configuration(*export_configuration)
@@ -53,7 +53,7 @@ GPlatesQtWidgets::ExportRasterOptionsWidget::ExportRasterOptionsWidget(
 
 
 GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr
-GPlatesQtWidgets::ExportRasterOptionsWidget::create_export_animation_strategy_configuration(
+GPlatesQtWidgets::ExportSvgOptionsWidget::create_export_animation_strategy_configuration(
 		const QString &filename_template)
 {
 	d_export_configuration.set_filename_template(filename_template);
@@ -62,7 +62,7 @@ GPlatesQtWidgets::ExportRasterOptionsWidget::create_export_animation_strategy_co
 	d_export_configuration.image_resolution_options =
 			d_export_image_resolution_options_widget->get_export_image_resolution_options();
 
-	return GPlatesGui::ExportRasterAnimationStrategy::const_configuration_ptr(
-			new GPlatesGui::ExportRasterAnimationStrategy::Configuration(
+	return GPlatesGui::ExportSvgAnimationStrategy::const_configuration_ptr(
+			new GPlatesGui::ExportSvgAnimationStrategy::Configuration(
 					d_export_configuration));
 }

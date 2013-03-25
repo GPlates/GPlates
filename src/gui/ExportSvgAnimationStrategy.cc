@@ -80,7 +80,11 @@ GPlatesGui::ExportSvgAnimationStrategy::do_export_iteration(
 	try
 	{
 		QSvgGenerator svg_generator;
-		svg_generator.setSize(active_scene_view.get_viewport_size());
+		// Use the current globe or map view dimensions if no dimensions have been specified by user.
+		svg_generator.setSize(
+				d_configuration->image_resolution_options.image_size
+						? d_configuration->image_resolution_options.image_size.get()
+						: active_scene_view.get_viewport_size());
 		svg_generator.setFileName(full_filename);
 
 		// Get current rendered layer active state so we can restore later.

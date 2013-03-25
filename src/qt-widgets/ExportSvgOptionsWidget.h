@@ -23,23 +23,23 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_QT_WIDGETS_EXPORTRASTEROPTIONSWIDGET_H
-#define GPLATES_QT_WIDGETS_EXPORTRASTEROPTIONSWIDGET_H
+#ifndef GPLATES_QT_WIDGETS_EXPORTSVGOPTIONSWIDGET_H
+#define GPLATES_QT_WIDGETS_EXPORTSVGOPTIONSWIDGET_H
 
 #include <QObject>
 
 #include "ExportOptionsWidget.h"
 #include "ExportImageResolutionOptionsWidget.h"
 
-#include "gui/ExportRasterAnimationStrategy.h"
+#include "gui/ExportSvgAnimationStrategy.h"
 
 
 namespace GPlatesQtWidgets
 {
 	/**
-	 * ExportRasterOptionsWidget is used to show export options for exporting screen shots of the globe/map view.
+	 * ExportSvgOptionsWidget is used to show export options for exporting the globe/map view to SVG.
 	 */
-	class ExportRasterOptionsWidget :
+	class ExportSvgOptionsWidget :
 			public ExportOptionsWidget
 	{
 		Q_OBJECT
@@ -47,16 +47,16 @@ namespace GPlatesQtWidgets
 	public:
 
 		/**
-		 * Creates a @a ExportRasterOptionsWidget containing default export options.
+		 * Creates a @a ExportSvgOptionsWidget containing default export options.
 		 */
 		static
 		ExportOptionsWidget *
 		create(
 				QWidget *parent,
 				GPlatesGui::ExportAnimationContext &export_animation_context,
-				const GPlatesGui::ExportRasterAnimationStrategy::const_configuration_ptr &export_configuration)
+				const GPlatesGui::ExportSvgAnimationStrategy::const_configuration_ptr &export_configuration)
 		{
-			return new ExportRasterOptionsWidget(parent, export_animation_context, export_configuration);
+			return new ExportSvgOptionsWidget(parent, export_animation_context, export_configuration);
 		}
 
 
@@ -72,16 +72,16 @@ namespace GPlatesQtWidgets
 	private:
 
 		ExportImageResolutionOptionsWidget *d_export_image_resolution_options_widget;
-		GPlatesGui::ExportRasterAnimationStrategy::Configuration d_export_configuration;
+		GPlatesGui::ExportSvgAnimationStrategy::Configuration d_export_configuration;
 
 
 		explicit
-		ExportRasterOptionsWidget(
+		ExportSvgOptionsWidget(
 				QWidget *parent_,
 				GPlatesGui::ExportAnimationContext &export_animation_context,
-				const GPlatesGui::ExportRasterAnimationStrategy::const_configuration_ptr &export_configuration);
+				const GPlatesGui::ExportSvgAnimationStrategy::const_configuration_ptr &export_configuration);
 
 	};
 }
 
-#endif // GPLATES_QT_WIDGETS_EXPORTRASTEROPTIONSWIDGET_H
+#endif // GPLATES_QT_WIDGETS_EXPORTSVGOPTIONSWIDGET_H

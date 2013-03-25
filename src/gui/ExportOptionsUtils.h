@@ -26,6 +26,9 @@
 #ifndef GPLATES_GUI_EXPORTOPTIONSUTILS_H
 #define GPLATES_GUI_EXPORTOPTIONSUTILS_H
 
+#include <boost/optional.hpp>
+#include <QSize>
+
 
 namespace GPlatesGui
 {
@@ -72,6 +75,31 @@ namespace GPlatesGui
 			 * NOTE: This option only applies if @a export_to_multiple_files is true.
 			 */
 			bool separate_output_directory_per_file;
+		};
+
+
+		/**
+		 * Common image resolution options useful when exporting either screenshots or to SVG.
+		 */
+		struct ExportImageResolutionOptions
+		{
+			explicit
+			ExportImageResolutionOptions(
+					bool constrain_aspect_ratio_,
+					boost::optional<QSize> image_size_ = boost::none) :
+				image_size(image_size_),
+				constrain_aspect_ratio(constrain_aspect_ratio_)
+			{  }
+
+			/**
+			 * Image size - boost::none means use the current globe/map viewport dimensions.
+			 */
+			boost::optional<QSize> image_size;
+
+			/**
+			 * Whether to keep the ratio of width to height constant.
+			 */
+			bool constrain_aspect_ratio;
 		};
 
 

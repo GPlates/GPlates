@@ -54,6 +54,7 @@
 #include "qt-widgets/ExportReconstructedGeometryOptionsWidget.h"
 #include "qt-widgets/ExportResolvedTopologyOptionsWidget.h"
 #include "qt-widgets/ExportStageRotationOptionsWidget.h"
+#include "qt-widgets/ExportSvgOptionsWidget.h"
 #include "qt-widgets/ExportTotalRotationOptionsWidget.h"
 #include "qt-widgets/ExportVelocityOptionsWidget.h"
 
@@ -429,15 +430,27 @@ GPlatesGui::register_default_export_animation_types(
 	// Export projected geometries
 	//
 
+	// By default output SVG images the same size as main viewport window (and don't constrain aspect ratio).
+	const ExportOptionsUtils::ExportImageResolutionOptions default_svg_image_resolution_export_options(
+			false/*constrain_aspect_ratio*/);
+
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
 					ExportAnimationType::PROJECTED_GEOMETRIES,
 					ExportAnimationType::SVG),
 			ExportSvgAnimationStrategy::const_configuration_ptr(
 					new ExportSvgAnimationStrategy::Configuration(
-							add_export_filename_extension("snapshot_%0.2fMa", ExportAnimationType::SVG))),
+							add_export_filename_extension("snapshot_%0.2fMa", ExportAnimationType::SVG),
+							default_svg_image_resolution_export_options)),
 			&create_animation_strategy<ExportSvgAnimationStrategy>,
-			&create_null_export_options_widget,
+			boost::bind(
+					// 'static_cast' is because some compilers have trouble determining
+					// which overload of 'create_export_options_widget()' to use...
+					static_cast<create_export_options_widget_function_pointer_type>(
+							&create_export_options_widget<
+									GPlatesQtWidgets::ExportSvgOptionsWidget,
+									ExportSvgAnimationStrategy>),
+					_1, _2, _3),
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	//
@@ -1041,6 +1054,10 @@ GPlatesGui::register_default_export_animation_types(
 	// Export rasters
 	//
 
+	// By default output image the same size as main viewport window (and don't constrain aspect ratio).
+	const ExportOptionsUtils::ExportImageResolutionOptions default_raster_image_resolution_export_options(
+			false/*constrain_aspect_ratio*/);
+
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
 					ExportAnimationType::RASTER,
@@ -1048,7 +1065,8 @@ GPlatesGui::register_default_export_animation_types(
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
 							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::BMP),
-							ExportRasterAnimationStrategy::Configuration::BMP)),
+							ExportRasterAnimationStrategy::Configuration::BMP,
+							default_raster_image_resolution_export_options)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
 			boost::bind(
 					// 'static_cast' is because some compilers have trouble determining
@@ -1067,7 +1085,8 @@ GPlatesGui::register_default_export_animation_types(
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
 							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::JPG),
-							ExportRasterAnimationStrategy::Configuration::JPG)),
+							ExportRasterAnimationStrategy::Configuration::JPG,
+							default_raster_image_resolution_export_options)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
 			boost::bind(
 					// 'static_cast' is because some compilers have trouble determining
@@ -1086,7 +1105,8 @@ GPlatesGui::register_default_export_animation_types(
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
 							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::JPEG),
-							ExportRasterAnimationStrategy::Configuration::JPEG)),
+							ExportRasterAnimationStrategy::Configuration::JPEG,
+							default_raster_image_resolution_export_options)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
 			boost::bind(
 					// 'static_cast' is because some compilers have trouble determining
@@ -1105,7 +1125,8 @@ GPlatesGui::register_default_export_animation_types(
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
 							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::PNG),
-							ExportRasterAnimationStrategy::Configuration::PNG)),
+							ExportRasterAnimationStrategy::Configuration::PNG,
+							default_raster_image_resolution_export_options)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
 			boost::bind(
 					// 'static_cast' is because some compilers have trouble determining
@@ -1124,7 +1145,8 @@ GPlatesGui::register_default_export_animation_types(
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
 							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::PPM),
-							ExportRasterAnimationStrategy::Configuration::PPM)),
+							ExportRasterAnimationStrategy::Configuration::PPM,
+							default_raster_image_resolution_export_options)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
 			boost::bind(
 					// 'static_cast' is because some compilers have trouble determining
@@ -1143,7 +1165,8 @@ GPlatesGui::register_default_export_animation_types(
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
 							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::TIFF),
-							ExportRasterAnimationStrategy::Configuration::TIFF)),
+							ExportRasterAnimationStrategy::Configuration::TIFF,
+							default_raster_image_resolution_export_options)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
 			boost::bind(
 					// 'static_cast' is because some compilers have trouble determining
@@ -1162,7 +1185,8 @@ GPlatesGui::register_default_export_animation_types(
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
 							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::XBM),
-							ExportRasterAnimationStrategy::Configuration::XBM)),
+							ExportRasterAnimationStrategy::Configuration::XBM,
+							default_raster_image_resolution_export_options)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
 			boost::bind(
 					// 'static_cast' is because some compilers have trouble determining
@@ -1181,7 +1205,8 @@ GPlatesGui::register_default_export_animation_types(
 			ExportRasterAnimationStrategy::const_configuration_ptr(
 					new ExportRasterAnimationStrategy::Configuration(
 							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::XPM),
-							ExportRasterAnimationStrategy::Configuration::XPM)),
+							ExportRasterAnimationStrategy::Configuration::XPM,
+							default_raster_image_resolution_export_options)),
 			&create_animation_strategy<ExportRasterAnimationStrategy>,
 			boost::bind(
 					// 'static_cast' is because some compilers have trouble determining

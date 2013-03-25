@@ -27,15 +27,15 @@
 #define GPLATES_GUI_EXPORTSVGANIMATIONSTRATEGY_H
 
 #include <boost/optional.hpp>
-#include <boost/none.hpp>
 
 #include <QString>
 
 #include "ExportAnimationStrategy.h"
 
-#include "utils/non_null_intrusive_ptr.h"
-#include "utils/NullIntrusivePointerHandler.h"
+#include "gui/ExportOptionsUtils.h"
+
 #include "utils/ReferenceCount.h"
+
 
 namespace GPlatesGui
 {
@@ -68,8 +68,10 @@ namespace GPlatesGui
 		public:
 			explicit
 			Configuration(
-					const QString& filename_template_) :
-				ConfigurationBase(filename_template_)
+					const QString& filename_template_,
+					const ExportOptionsUtils::ExportImageResolutionOptions &image_resolution_options_) :
+				ConfigurationBase(filename_template_),
+				image_resolution_options(image_resolution_options_)
 			{  }
 
 			virtual
@@ -78,6 +80,9 @@ namespace GPlatesGui
 			{
 				return configuration_base_ptr(new Configuration(*this));
 			}
+
+
+			ExportOptionsUtils::ExportImageResolutionOptions image_resolution_options;
 		};
 
 		//! Typedef for a shared pointer to const @a Configuration.

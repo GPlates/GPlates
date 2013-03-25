@@ -207,11 +207,13 @@ set(srcs
     ExportFileOptionsWidget.h
     ExportFileOptionsWidgetUi.ui
     ExportFlowlineOptionsWidget.h
+    ExportImageResolutionOptionsWidget.cc
+    ExportImageResolutionOptionsWidget.h
+    ExportImageResolutionOptionsWidgetUi.ui
     ExportMotionPathOptionsWidget.h
     ExportOptionsWidget.h
     ExportRasterOptionsWidget.cc
     ExportRasterOptionsWidget.h
-    ExportRasterOptionsWidgetUi.ui
     ExportReconstructedGeometryOptionsWidget.h
     ExportResolvedTopologyOptionsWidget.cc
     ExportResolvedTopologyOptionsWidget.h
@@ -221,6 +223,8 @@ set(srcs
     ExportStageRotationOnlyOptionsWidget.h
     ExportStageRotationOnlyOptionsWidgetUi.ui
     ExportStageRotationOptionsWidget.h
+    ExportSvgOptionsWidget.cc
+    ExportSvgOptionsWidget.h
     ExportTotalRotationOptionsWidget.h
     ExportVelocityOptionsWidget.cc
     ExportVelocityOptionsWidget.h

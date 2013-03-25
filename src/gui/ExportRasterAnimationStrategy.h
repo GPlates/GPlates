@@ -27,16 +27,17 @@
 #define GPLATES_GUI_EXPORTRASTERSTRATEGY_H
 
 #include <boost/optional.hpp>
-#include <boost/none.hpp>
 
 #include <QImage>
 #include <QSize>
 #include <QString>
+
 #include "ExportAnimationStrategy.h"
 
+#include "gui/ExportOptionsUtils.h"
+
 #include "qt-widgets/GlobeAndMapWidget.h"
-#include "utils/non_null_intrusive_ptr.h"
-#include "utils/NullIntrusivePointerHandler.h"
+
 #include "utils/ReferenceCount.h"
 
 
@@ -102,12 +103,10 @@ namespace GPlatesGui
 			Configuration(
 					const QString& filename_template_,
 					ImageType image_type_,
-					boost::optional<QSize> image_size_ = boost::none,
-					bool constrain_aspect_ratio_ = false) :
+					const ExportOptionsUtils::ExportImageResolutionOptions &image_resolution_options_) :
 				ConfigurationBase(filename_template_),
 				image_type(image_type_),
-				image_size(image_size_),
-				constrain_aspect_ratio(constrain_aspect_ratio_)
+				image_resolution_options(image_resolution_options_)
 			{  }
 
 			virtual
@@ -118,16 +117,7 @@ namespace GPlatesGui
 			}
 
 			ImageType image_type;
-
-			/**
-			 * Image size - boost::none means use the current globe/map viewport dimensions.
-			 */
-			boost::optional<QSize> image_size;
-
-			/**
-			 * Whether to keep the ratio of width to height constant.
-			 */
-			bool constrain_aspect_ratio;
+			ExportOptionsUtils::ExportImageResolutionOptions image_resolution_options;
 		};
 
 		//! Typedef for a shared pointer to const @a Configuration.

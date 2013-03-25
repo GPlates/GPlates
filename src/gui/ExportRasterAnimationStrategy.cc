@@ -98,7 +98,8 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 		}
 
 		// Render to the raster image file.
-		const QImage raster_image = active_scene_view.render_to_qimage(d_configuration->image_size);
+		const QImage raster_image = active_scene_view.render_to_qimage(
+				d_configuration->image_resolution_options.image_size);
 		if (raster_image.isNull())
 		{
 			// Most likely a memory allocation failure.
