@@ -222,22 +222,19 @@ GPlatesAppLogic::FeatureCollectionFileState::file_reference
 GPlatesAppLogic::FeatureCollectionFileIO::create_empty_file()
 {
 	// Create a file with an empty feature collection and no filename.
-	GPlatesFileIO::File::non_null_ptr_type file = GPlatesFileIO::File::create_file();
-
-	return d_file_state.add_file(file);
+	return create_file(GPlatesFileIO::File::create_file(), false/*save*/);
 }
 
 
 GPlatesAppLogic::FeatureCollectionFileState::file_reference
 GPlatesAppLogic::FeatureCollectionFileIO::create_file(
-		const GPlatesFileIO::FileInfo &file_info,
-		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
-		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration)
+		const GPlatesFileIO::File::non_null_ptr_type &file,
+		bool save)
 {
-	const GPlatesFileIO::File::non_null_ptr_type file =
-			GPlatesFileIO::File::create_file(file_info, feature_collection, file_configuration);
-
-	save_file(file->get_reference());
+	if (save)
+	{
+		save_file(file->get_reference());
+	}
 
 	return d_file_state.add_file(file);
 }

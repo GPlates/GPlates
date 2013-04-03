@@ -159,7 +159,7 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Creates a file named @a file_info, saves @a feature_collection to the file and
+		 * Optionally saves the feature collection in @a file to the filename in @a file, and
 		 * registers the file with FeatureCollectionFileState.
 		 *
 		 * This method is useful when you want to save a feature collection that was not
@@ -168,10 +168,8 @@ namespace GPlatesAppLogic
 		 */
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference
 		create_file(
-				const GPlatesFileIO::FileInfo &file_info,
-				const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection,
-				boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type>
-						file_configuration = boost::none);
+				const GPlatesFileIO::File::non_null_ptr_type &file,
+				bool save = true);
 
 
 		/**

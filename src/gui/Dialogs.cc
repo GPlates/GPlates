@@ -768,7 +768,7 @@ GPlatesGui::Dialogs::velocity_domain_citcoms_dialog()
 
 	if (d_dialogs[dialog_type].isNull())
 	{
-		d_dialogs[dialog_type] = new dialog_typename(view_state(), &viewport_window());
+		d_dialogs[dialog_type] = new dialog_typename(viewport_window(), &viewport_window());
 	}
 
 	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
@@ -790,7 +790,7 @@ GPlatesGui::Dialogs::velocity_domain_lat_lon_dialog()
 
 	if (d_dialogs[dialog_type].isNull())
 	{
-		d_dialogs[dialog_type] = new dialog_typename(view_state(), &viewport_window());
+		d_dialogs[dialog_type] = new dialog_typename(viewport_window(), &viewport_window());
 	}
 
 	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
@@ -812,7 +812,7 @@ GPlatesGui::Dialogs::velocity_domain_terra_dialog()
 
 	if (d_dialogs[dialog_type].isNull())
 	{
-		d_dialogs[dialog_type] = new dialog_typename(view_state(), &viewport_window());
+		d_dialogs[dialog_type] = new dialog_typename(viewport_window(), &viewport_window());
 	}
 
 	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);

@@ -37,13 +37,10 @@
 #include "maths/MultiPointOnSphere.h"
 
 
-namespace GPlatesPresentation
-{
-	class ViewState;
-}
-
 namespace GPlatesQtWidgets
 {
+	class ViewportWindow;
+
 	class GenerateVelocityDomainTerraDialog: 
 			public GPlatesDialog,
 			protected Ui_GenerateVelocityDomainTerraDialog 
@@ -53,7 +50,7 @@ namespace GPlatesQtWidgets
 	public:
 
 		GenerateVelocityDomainTerraDialog(
-				GPlatesPresentation::ViewState &view_state_,
+				ViewportWindow &main_window_,
 				QWidget *parent_ = NULL);
 		
 	private Q_SLOTS:
@@ -84,7 +81,7 @@ namespace GPlatesQtWidgets
 		
 	private:
 
-		GPlatesPresentation::ViewState &d_view_state;
+		ViewportWindow &d_main_window;
 
 		int d_mt; //!< Terra 'mt' parameter.
 		int d_nt; //!< Terra 'nt' parameter.
@@ -106,7 +103,7 @@ namespace GPlatesQtWidgets
 		void
 		set_num_processors();
 
-		void
+		bool
 		save_velocity_domain_file(
 				const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type &velocity_sub_domain,
 				int processor_number);

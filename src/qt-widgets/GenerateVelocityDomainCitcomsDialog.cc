@@ -33,6 +33,7 @@
 
 #include "ProgressDialog.h"
 #include "QtWidgetUtils.h"
+#include "ViewportWindow.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
@@ -41,6 +42,7 @@
 
 #include "feature-visitors/GeometryFinder.h"
 
+#include "gui/FileIOFeedback.h"
 #include "gui/FeatureFocus.h"
 
 #include "maths/MultiPointOnSphere.h"
@@ -53,8 +55,11 @@
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
 
+#include "presentation/ViewState.h"
+
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GpmlPlateId.h"
+
 
 namespace
 {
@@ -86,7 +91,7 @@ namespace
 
 
 GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::GenerateVelocityDomainCitcomsDialog(
-		GPlatesPresentation::ViewState &view_state,
+		ViewportWindow &main_window_,
 		QWidget *parent_ ) :
 	GPlatesDialog(
 			parent_, 
@@ -95,8 +100,7 @@ GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::GenerateVelocityDomainCit
 			Qt::WindowSystemMenuHint | 
 			Qt::MSWindowsFixedSizeDialogHint),
 	d_node_x(1),
-	d_view_state(
-			view_state),
+	d_main_window(main_window_),
 	d_help_dialog_resolution(
 			new InformationDialog(
 					tr(HELP_DIALOG_TEXT_RESOLUTION), 
@@ -112,7 +116,7 @@ GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::GenerateVelocityDomainCit
 	d_open_directory_dialog(
 			this,
 			tr("Select Path"),
-			view_state)
+			main_window_.get_view_state())
 {
 	setupUi(this);
 	
@@ -269,7 +273,7 @@ GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::gen_mesh()
 		{
 			progress_dlg->close();
 			main_buttonbox->setDisabled(false);
-			this->close();
+			close();
 			return;
 		}
 	}
@@ -284,7 +288,7 @@ GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::gen_mesh()
 	std::string res_str = resolution.str();
 
 	GPlatesModel::ModelInterface model =
-			d_view_state.get_application_state().get_model_interface();
+			d_main_window.get_application_state().get_model_interface();
 
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many as we incrementally modify the feature below.
@@ -294,7 +298,7 @@ GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::gen_mesh()
 	// As an optimisation (ie, not required), put all layer additions in a single add layers group.
 	// It dramatically improves the speed of the Visual Layers dialog when there's many layers.
 	GPlatesAppLogic::ReconstructGraph::AddOrRemoveLayersGroup add_layers_group(
-			d_view_state.get_application_state().get_reconstruct_graph());
+			d_main_window.get_application_state().get_reconstruct_graph());
 	add_layers_group.begin_add_or_remove_layers();
 
 	for(int i=geometries.size()-1; i>=0; i--)
@@ -350,12 +354,19 @@ GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::gen_mesh()
 		file_name=d_path.toStdString()+file_name;
 
 		GPlatesFileIO::FileInfo new_fileinfo(file_name.c_str());
+		GPlatesFileIO::File::non_null_ptr_type new_file =
+				GPlatesFileIO::File::create_file(new_fileinfo, feature_collection);
 
 		// Save the feature collection to a file that is registered with
 		// FeatureCollectionFileState (maintains list of all loaded files).
-		d_view_state.get_application_state().get_feature_collection_file_io().create_file(
-				new_fileinfo, feature_collection);
-
+		// This will pop up an error dialog if there's an error.
+		if (!d_main_window.file_io_feedback().create_file(new_file))
+		{
+			progress_dlg->close();
+			main_buttonbox->setDisabled(false);
+			close();
+			return;
+		}
 	}
 
 	add_layers_group.end_add_or_remove_layers();

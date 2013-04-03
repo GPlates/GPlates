@@ -29,6 +29,7 @@
 
 #include "ProgressDialog.h"
 #include "QtWidgetUtils.h"
+#include "ViewportWindow.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
@@ -36,6 +37,8 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+
+#include "gui/FileIOFeedback.h"
 
 #include "maths/LatLonPoint.h"
 #include "maths/MultiPointOnSphere.h"
@@ -106,7 +109,7 @@ namespace
 
 
 GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::GenerateVelocityDomainLatLonDialog(
-		GPlatesPresentation::ViewState &view_state,
+		ViewportWindow &main_window_,
 		QWidget *parent_ ) :
 	GPlatesDialog(
 			parent_,
@@ -114,7 +117,7 @@ GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::GenerateVelocityDomainLatL
 			Qt::WindowTitleHint |
 			Qt::WindowSystemMenuHint |
 			Qt::MSWindowsFixedSizeDialogHint),
-	d_view_state(view_state),
+	d_main_window(main_window_),
 	d_num_latitude_grid_intervals(6),
 	d_file_name_template("lat_lon_velocity_domain_%n"),
 	d_help_dialog_configuration(
@@ -130,7 +133,7 @@ GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::GenerateVelocityDomainLatL
 	d_open_directory_dialog(
 			this,
 			tr("Select Path"),
-			view_state)
+			main_window_.get_view_state())
 {
 	setupUi(this);
 
@@ -278,7 +281,7 @@ GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::set_file_name_template()
 void
 GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::generate_velocity_domain()
 {
-	GPlatesModel::ModelInterface model = d_view_state.get_application_state().get_model_interface();
+	GPlatesModel::ModelInterface model = d_main_window.get_application_state().get_model_interface();
 
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many as we incrementally modify the feature below.
@@ -291,7 +294,7 @@ GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::generate_velocity_domain()
 	// NOTE: Actually this is not necessary since we're only adding a single file.
 	// But we'll keep it in case that changes.
 	GPlatesAppLogic::ReconstructGraph::AddOrRemoveLayersGroup add_layers_group(
-			d_view_state.get_application_state().get_reconstruct_graph());
+			d_main_window.get_application_state().get_reconstruct_graph());
 	add_layers_group.begin_add_or_remove_layers();
 
 	main_buttonbox->setDisabled(true);
@@ -303,7 +306,12 @@ GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::generate_velocity_domain()
 			generate_lat_lon_domain();
 
 	// Save to a new file.
-	save_velocity_domain_file(velocity_domain);
+	if (!save_velocity_domain_file(velocity_domain))
+	{
+		main_buttonbox->setDisabled(false);
+		close();
+		return;
+	}
 
 	add_layers_group.end_add_or_remove_layers();
 
@@ -340,7 +348,7 @@ GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::generate_lat_lon_domain()
 }
 
 
-void
+bool
 GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::save_velocity_domain_file(
 		const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type &velocity_sub_domain)
 {
@@ -400,9 +408,11 @@ GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::save_velocity_domain_file(
 	// Make a new FileInfo object for saving to a new file.
 	// This also copies any other info stored in the FileInfo.
 	GPlatesFileIO::FileInfo new_fileinfo(file_name.c_str());
+	GPlatesFileIO::File::non_null_ptr_type new_file =
+			GPlatesFileIO::File::create_file(new_fileinfo, feature_collection);
 
 	// Save the feature collection to a file that is registered with
 	// FeatureCollectionFileState (maintains list of all loaded files).
-	d_view_state.get_application_state().get_feature_collection_file_io().create_file(
-			new_fileinfo, feature_collection);
+	// This will pop up an error dialog if there's an error.
+	return d_main_window.file_io_feedback().create_file(new_file);
 }

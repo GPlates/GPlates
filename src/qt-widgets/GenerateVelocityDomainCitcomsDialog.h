@@ -35,11 +35,11 @@
 #include "InformationDialog.h"
 #include "OpenDirectoryDialog.h"
 
-#include "presentation/ViewState.h"
-
 
 namespace GPlatesQtWidgets
 {
+	class ViewportWindow;
+
 	class GenerateVelocityDomainCitcomsDialog: 
 		public GPlatesDialog,
 		protected Ui_GenerateVelocityDomainCitcomsDialog 
@@ -48,7 +48,7 @@ namespace GPlatesQtWidgets
 
 	public:
 		GenerateVelocityDomainCitcomsDialog(
-				GPlatesPresentation::ViewState &,
+				ViewportWindow &main_window_,
 				QWidget *parent_ = NULL);
 		
 		virtual
@@ -77,7 +77,7 @@ namespace GPlatesQtWidgets
 	private:
 		int d_node_x;
 		QString d_path;
-		GPlatesPresentation::ViewState &d_view_state;
+		ViewportWindow &d_main_window;
 		InformationDialog *d_help_dialog_resolution;
 		InformationDialog *d_help_dialog_output;
 		std::string d_file_name_template;
