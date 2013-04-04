@@ -89,6 +89,23 @@ GPlatesOpenGL::GLPixelBufferObject::gl_bind_pack(
 
 
 void
+GPlatesOpenGL::GLPixelBufferObject::gl_draw_pixels(
+		GLRenderer &renderer,
+		GLint x,
+		GLint y,
+		GLsizei width,
+		GLsizei height,
+		GLenum format,
+		GLenum type,
+		GLint offset)
+{
+	// Use the overload that doesn't require a client memory pointer since we're using
+	// the bound buffer object and *not* client memory.
+	renderer.gl_draw_pixels(x, y, width, height, format, type, offset);
+}
+
+
+void
 GPlatesOpenGL::GLPixelBufferObject::gl_read_pixels(
 		GLRenderer &renderer,
 		GLint x,

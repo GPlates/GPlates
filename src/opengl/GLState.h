@@ -168,9 +168,9 @@ namespace GPlatesOpenGL
 			state_set_slot_flags_type gl_clear_state_set_slots;
 
 			/**
-			 * These slots represent states needed by 'glReadPixels'.
+			 * These slots represent states needed by 'glReadPixels' and 'glDrawPixels'.
 			 */
-			state_set_slot_flags_type gl_read_pixels_state_set_slots;
+			state_set_slot_flags_type gl_read_or_draw_pixels_state_set_slots;
 
 			/**
 			 * The majority of GLStateSet's are immutable, however a special few are effectively
@@ -219,9 +219,9 @@ namespace GPlatesOpenGL
 					const GLCapabilities &capabilities,
 					const GLStateSetKeys &state_set_keys);
 
-			//! Initialise state set slots representing states needed by 'glReadPixels'.
+			//! Initialise state set slots representing states needed by 'glReadPixels' or 'glDrawPixels'.
 			void
-			initialise_gl_read_pixels_state_set_slots(
+			initialise_gl_read_or_draw_pixels_state_set_slots(
 					const GLCapabilities &capabilities,
 					const GLStateSetKeys &state_set_keys);
 
@@ -315,10 +315,11 @@ namespace GPlatesOpenGL
 				GLState &last_applied_state) const;
 
 		/**
-		 * The same as @a apply_state except only those GLStateSet's needed by 'glReadPixels' are applied.
+		 * The same as @a apply_state except only those GLStateSet's needed by 'glReadPixels'
+		 * or 'glDrawPixels' are applied.
 		 */
 		void
-		apply_state_used_by_gl_read_pixels(
+		apply_state_used_by_gl_read_or_draw_pixels(
 				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 

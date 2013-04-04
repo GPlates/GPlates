@@ -440,7 +440,6 @@ namespace GPlatesOpenGL
 		 * NOTE: A depth/stencil buffer is not provided and so depth and stencil test must be turned off.
 		 * This is because if a framebuffer object is used internally it won't have a depth/stencil buffer.
 		 * And if the main framebuffer is used then we don't want to overwrite its depth/stencil buffer.
-		 * In general GPlates surface layer rendering does not need a depth buffer.
 		 * If you want an off-screen render target with a depth buffer then use @a GLFrameBufferObject.
 		 * And you can use @a gl_bind_frame_buffer to make it active.
 		 *
@@ -1878,6 +1877,43 @@ namespace GPlatesOpenGL
 		 */
 		void
 		gl_read_pixels(
+				GLint x,
+				GLint y,
+				GLsizei width,
+				GLsizei height,
+				GLenum format,
+				GLenum type,
+				GLint offset,
+				const GLBufferImpl::shared_ptr_type &pixel_buffer_impl);
+
+
+		/**
+		 * Performs the equivalent of the OpenGL command 'glDrawPixels' with the exception that,
+		 * to mirror 'glReadPixels', the x and y pixel offsets are also specified (internally
+		 * 'glWindowPos2i(x, y)' is called since 'glDrawPixels' does not accept x and y).
+		 *
+		 * This overload uses the bound pixel buffer object (on the *unpack* target) to write pixel data to.
+		 */
+		void
+		gl_draw_pixels(
+				GLint x,
+				GLint y,
+				GLsizei width,
+				GLsizei height,
+				GLenum format,
+				GLenum type,
+				GLint offset);
+
+
+		/**
+		 * Performs the equivalent of the OpenGL command 'glDrawPixels' with the exception that,
+		 * to mirror 'glReadPixels', the x and y pixel offsets are also specified (internally
+		 * 'glWindowPos2i(x, y)' is called since 'glDrawPixels' does not accept x and y).
+		 *
+		 * This overload uses client memory (no bound objects) to write pixel data to.
+		 */
+		void
+		gl_draw_pixels(
 				GLint x,
 				GLint y,
 				GLsizei width,

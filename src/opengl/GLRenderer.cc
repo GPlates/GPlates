@@ -1201,7 +1201,7 @@ GPlatesOpenGL::GLRenderer::gl_read_pixels(
 				GLState &last_applied_state) const
 		{
 			// Apply only the subset of state needed by 'glReadPixels'.
-			state_to_apply.apply_state_used_by_gl_read_pixels(capabilities, last_applied_state);
+			state_to_apply.apply_state_used_by_gl_read_or_draw_pixels(capabilities, last_applied_state);
 
 			glReadPixels(x, y, width, height, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
 		}
@@ -1266,7 +1266,7 @@ GPlatesOpenGL::GLRenderer::gl_read_pixels(
 				GLState &last_applied_state) const
 		{
 			// Apply only the subset of state needed by 'glReadPixels'.
-			state_to_apply.apply_state_used_by_gl_read_pixels(capabilities, last_applied_state);
+			state_to_apply.apply_state_used_by_gl_read_or_draw_pixels(capabilities, last_applied_state);
 
 			// The client memory pixel data pointer.
 			// NOTE: By getting the pixel data resource pointer here (at the OpenGL read pixels call)
@@ -1294,6 +1294,220 @@ GPlatesOpenGL::GLRenderer::gl_read_pixels(
 	// NOTE: The cloning of the current state is necessary so that when we render the drawable
 	// later it doesn't apply state that's been modified between now and then.
 	draw(RenderOperation(clone_current_state(), drawable));
+}
+
+
+void
+GPlatesOpenGL::GLRenderer::gl_draw_pixels(
+		GLint x,
+		GLint y,
+		GLsizei width,
+		GLsizei height,
+		GLenum format,
+		GLenum type,
+		GLint offset)
+{
+	// We're using pixel buffers objects in this version of 'gl_draw_pixels'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			GPLATES_OPENGL_BOOL(GLEW_ARB_pixel_buffer_object),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Wrap up the draw pixels call in case it gets added to a render queue.
+	struct DrawPixelsDrawable :
+			public Drawable
+	{
+		DrawPixelsDrawable(
+				GLint x_,
+				GLint y_,
+				GLsizei width_,
+				GLsizei height_,
+				GLenum format_,
+				GLenum type_,
+				GLint offset_) :
+			x(x_),
+			y(y_),
+			width(width_),
+			height(height_),
+			format(format_),
+			type(type_),
+			offset(offset_)
+		{  }
+
+		virtual
+		void
+		draw(
+				const GLCapabilities &capabilities,
+				const GLState &state_to_apply,
+				GLState &last_applied_state) const
+		{
+			if (GLEW_VERSION_1_4) // 'glWindowPos2i' only available in 1.4 or above
+			{
+				// Apply only the subset of state needed by 'glDrawPixels'.
+				state_to_apply.apply_state_used_by_gl_read_or_draw_pixels(capabilities, last_applied_state);
+
+				// Set the raster position directly in window coordinates (bypassing the
+				// model-view/projection transforms and the viewport-to-window transform).
+				glWindowPos2i(x, y);
+			}
+			else // using 'glRasterPos2i' ...
+			{
+				// Apply all state - not just a subset - because we need to apply the changes
+				// to model-view and projection matrices so that 'glRasterPos2i' generates the
+				// correct x and y pixel offset in the frame buffer.
+				state_to_apply.apply_state(capabilities, last_applied_state);
+
+				// Set the raster position - the final window coordinates depend on the current
+				// model-view/projection transforms and the viewport-to-window transform applied above.
+				glRasterPos2i(x, y);
+			}
+
+			glDrawPixels(width, height, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
+		}
+
+		GLint x;
+		GLint y;
+		GLsizei width;
+		GLsizei height;
+		GLenum format;
+		GLenum type;
+		GLint offset;
+	};
+
+	const Drawable::non_null_ptr_to_const_type drawable(
+			new DrawPixelsDrawable(x, y, width, height, format, type, offset));
+
+	// NOTE: The cloning of the current state is necessary so that when we render the drawable
+	// later it doesn't apply state that's been modified between now and then.
+	if (GLEW_VERSION_1_4) // 'glWindowPos2i' only available in 1.4 or above
+	{
+		draw(RenderOperation(clone_current_state(), drawable));
+	}
+	else // using 'glRasterPos2i' ...
+	{
+		// Temporarily change the OpenGL state for the draw command and restore afterwards.
+		GLRenderer::StateBlockScope save_restore_state(*this);
+
+		// Set up model-view/projection transforms and viewport-to-window transform for 2D rendering.
+		// This ensures 'glRasterPos2i' will set the correct x and y pixel offset in frame buffer.
+		GLMatrix projection_matrix;
+		projection_matrix.glu_ortho_2D(0, width, 0, height);
+		gl_load_matrix(GL_PROJECTION, projection_matrix);
+		gl_load_matrix(GL_MODELVIEW, GLMatrix::IDENTITY);
+		gl_viewport(0, 0, width, height);
+		gl_scissor(0, 0, width, height);
+
+		draw(RenderOperation(clone_current_state(), drawable));
+	}
+}
+
+
+void
+GPlatesOpenGL::GLRenderer::gl_draw_pixels(
+		GLint x,
+		GLint y,
+		GLsizei width,
+		GLsizei height,
+		GLenum format,
+		GLenum type,
+		GLint offset,
+		const GLBufferImpl::shared_ptr_type &pixel_buffer_impl)
+{
+	// Wrap up the draw pixels call in case it gets added to a render queue.
+	struct DrawPixelsDrawable :
+			public Drawable
+	{
+		DrawPixelsDrawable(
+				GLint x_,
+				GLint y_,
+				GLsizei width_,
+				GLsizei height_,
+				GLenum format_,
+				GLenum type_,
+				GLint offset_,
+				const GLBufferImpl::shared_ptr_type &pixel_buffer_impl_) :
+			x(x_),
+			y(y_),
+			width(width_),
+			height(height_),
+			format(format_),
+			type(type_),
+			offset(offset_),
+			pixel_buffer_impl(pixel_buffer_impl_)
+		{  }
+
+		virtual
+		void
+		draw(
+				const GLCapabilities &capabilities,
+				const GLState &state_to_apply,
+				GLState &last_applied_state) const
+		{
+			if (GLEW_VERSION_1_4) // 'glWindowPos2i' only available in 1.4 or above
+			{
+				// Apply only the subset of state needed by 'glDrawPixels'.
+				state_to_apply.apply_state_used_by_gl_read_or_draw_pixels(capabilities, last_applied_state);
+
+				// Set the raster position directly in window coordinates (bypassing the
+				// model-view/projection transforms and the viewport-to-window transform).
+				glWindowPos2i(x, y);
+			}
+			else // using 'glRasterPos2i' ...
+			{
+				// Apply all state - not just a subset - because we need to apply the changes
+				// to model-view and projection matrices so that 'glRasterPos2i' generates the
+				// correct x and y pixel offset in the frame buffer.
+				state_to_apply.apply_state(capabilities, last_applied_state);
+
+				// Set the raster position - the final window coordinates depend on the current
+				// model-view/projection transforms and the viewport-to-window transform applied above.
+				glRasterPos2i(x, y);
+			}
+
+			// The client memory pixel data pointer.
+			// NOTE: By getting the pixel data resource pointer here (at the OpenGL draw pixels call)
+			// we allow the buffer to be updated *after* the draw pixels call is submitted
+			// (eg, a compiled draw state).
+			// This emulates how buffer objects work.
+			GLvoid *pixels = pixel_buffer_impl->get_buffer_resource() + offset;
+
+			glDrawPixels(width, height, format, type, pixels);
+		}
+
+		GLint x;
+		GLint y;
+		GLsizei width;
+		GLsizei height;
+		GLenum format;
+		GLenum type;
+		GLint offset;
+		GLBufferImpl::shared_ptr_type pixel_buffer_impl;
+	};
+
+	const Drawable::non_null_ptr_to_const_type drawable(
+			new DrawPixelsDrawable(x, y, width, height, format, type, offset, pixel_buffer_impl));
+
+	// NOTE: The cloning of the current state is necessary so that when we render the drawable
+	// later it doesn't apply state that's been modified between now and then.
+	if (GLEW_VERSION_1_4) // 'glWindowPos2i' only available in 1.4 or above
+	{
+		draw(RenderOperation(clone_current_state(), drawable));
+	}
+	else // using 'glRasterPos2i' ...
+	{
+		// Temporarily change the OpenGL state for the draw command and restore afterwards.
+		GLRenderer::StateBlockScope save_restore_state(*this);
+
+		// Set up model-view/projection transforms and viewport-to-window transform for 2D rendering.
+		// This ensures 'glRasterPos2i' will set the correct x and y pixel offset in frame buffer.
+		GLMatrix projection_matrix;
+		projection_matrix.glu_ortho_2D(0, width, 0, height);
+		gl_load_matrix(GL_PROJECTION, projection_matrix);
+		gl_load_matrix(GL_MODELVIEW, GLMatrix::IDENTITY);
+		gl_viewport(0, 0, width, height);
+		gl_scissor(0, 0, width, height);
+
+		draw(RenderOperation(clone_current_state(), drawable));
+	}
 }
 
 

@@ -84,6 +84,21 @@ GPlatesOpenGL::GLPixelBufferImpl::gl_bind_pack(
 
 
 void
+GPlatesOpenGL::GLPixelBufferImpl::gl_draw_pixels(
+		GLRenderer &renderer,
+		GLint x,
+		GLint y,
+		GLsizei width,
+		GLsizei height,
+		GLenum format,
+		GLenum type,
+		GLint offset)
+{
+	renderer.gl_draw_pixels(x, y, width, height, format, type, offset, d_buffer);
+}
+
+
+void
 GPlatesOpenGL::GLPixelBufferImpl::gl_read_pixels(
 		GLRenderer &renderer,
 		GLint x,
