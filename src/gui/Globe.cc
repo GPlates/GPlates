@@ -229,7 +229,9 @@ GPlatesGui::Globe::paint(
 				renderer.get_context().get_shared_state()->acquire_screen_render_target(
 						renderer,
 						GL_RGBA8/*texture_internalformat*/,
-						true/*include_depth_buffer*/);
+						true/*include_depth_buffer*/,
+						// Enable stencil buffer for filled surface polygons...
+						true/*include_stencil_buffer*/);
 
 		if (screen_render_target &&
 			// If we're not rendering directly to the framebuffer (because we're rendering to a feedback
@@ -437,10 +439,13 @@ GPlatesGui::Globe::render_globe_hemisphere_surface(
 
 	// NOTE: Because we are using a different projection transform and the depth buffer values depend
 	// on the projection transform then each projection transform needs its own depth buffer clear.
+	// We also clear the stencil buffer in case it is used.
 	renderer.gl_clear_depth(); // Clear depth to 1.0
-	// NOTE: Depth writes must be enabled for depth clears to work.
+	renderer.gl_clear_stencil(); // Clear stencil to 0
+	// NOTE: Depth/stencil writes must be enabled for depth/stencil clears to work.
 	renderer.gl_depth_mask(GL_TRUE);
-	renderer.gl_clear(GL_DEPTH_BUFFER_BIT);
+	renderer.gl_stencil_mask(~GLuint(0)/*all ones*/);
+	renderer.gl_clear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	// Enable depth testing but disable depth writes (for the grid lines).
 	renderer.gl_enable(GL_DEPTH_TEST, GL_TRUE);
@@ -528,10 +533,13 @@ GPlatesGui::Globe::render_globe_sub_surface(
 
 	// NOTE: Because we are using a different projection transform and the depth buffer values depend
 	// on the projection transform then each projection transform needs its own depth buffer clear.
+	// We also clear the stencil buffer in case it is used.
 	renderer.gl_clear_depth(); // Clear depth to 1.0
-	// NOTE: Depth writes must be enabled for depth clears to work.
+	renderer.gl_clear_stencil(); // Clear stencil to 0
+	// NOTE: Depth/stencil writes must be enabled for depth/stencil clears to work.
 	renderer.gl_depth_mask(GL_TRUE);
-	renderer.gl_clear(GL_DEPTH_BUFFER_BIT);
+	renderer.gl_stencil_mask(~GLuint(0)/*all ones*/);
+	renderer.gl_clear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	// Draw the sub-surface geometries.
 	// Draw in normal layer order.

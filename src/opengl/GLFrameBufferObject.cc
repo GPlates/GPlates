@@ -703,6 +703,97 @@ GPlatesOpenGL::GLFrameBufferObject::get_frame_buffer_dimensions() const
 }
 
 
+GPlatesOpenGL::GLFrameBufferObject::Classification::Classification() :
+	d_width(0),
+	d_height(0),
+	d_texture_internal_format(-1),
+	d_depth_buffer_internal_format(-1),
+	d_stencil_buffer_internal_format(-1)
+{
+}
+
+
+void
+GPlatesOpenGL::GLFrameBufferObject::Classification::set_dimensions(
+		GLuint width,
+		GLuint height)
+{
+	d_width = width;
+	d_height = height;
+}
+
+
+void
+GPlatesOpenGL::GLFrameBufferObject::Classification::set_texture_internal_format(
+		GLint texture_internal_format)
+{
+	d_texture_internal_format = texture_internal_format;
+}
+
+
+void
+GPlatesOpenGL::GLFrameBufferObject::Classification::set_depth_buffer_internal_format(
+		GLint depth_buffer_internal_format)
+{
+	d_depth_buffer_internal_format = depth_buffer_internal_format;
+}
+
+
+void
+GPlatesOpenGL::GLFrameBufferObject::Classification::set_stencil_buffer_internal_format(
+		GLint stencil_buffer_internal_format)
+{
+	d_stencil_buffer_internal_format = stencil_buffer_internal_format;
+}
+
+
+GPlatesOpenGL::GLFrameBufferObject::Classification::tuple_type
+GPlatesOpenGL::GLFrameBufferObject::Classification::get_tuple() const
+{
+	return tuple_type(
+			d_width,
+			d_height,
+			d_texture_internal_format,
+			d_depth_buffer_internal_format,
+			d_stencil_buffer_internal_format);
+}
+
+
+GLuint
+GPlatesOpenGL::GLFrameBufferObject::Classification::get_width() const
+{
+	return d_width;
+}
+
+
+GLuint
+GPlatesOpenGL::GLFrameBufferObject::Classification::get_height() const
+{
+	return d_height;
+}
+
+
+GLint
+GPlatesOpenGL::GLFrameBufferObject::Classification::get_texture_internal_format() const
+{
+	return d_texture_internal_format;
+}
+
+
+GLint
+GPlatesOpenGL::GLFrameBufferObject::Classification::get_depth_buffer_internal_format() const
+{
+	return d_depth_buffer_internal_format;
+}
+
+
+GLint
+GPlatesOpenGL::GLFrameBufferObject::Classification::get_stencil_buffer_internal_format() const
+{
+	return d_stencil_buffer_internal_format;
+}
+
+
 GPlatesOpenGL::GLFrameBufferObject::AttachmentPoint::AttachmentPoint(
 		GLenum attachment_,
 		AttachmentType attachment_type_,

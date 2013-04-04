@@ -34,9 +34,14 @@ bool
 GPlatesOpenGL::GLScreenRenderTarget::is_supported(
 		GLRenderer &renderer,
 		GLint texture_internalformat,
-		bool include_depth_buffer)
+		bool include_depth_buffer,
+		bool include_stencil_buffer)
 {
-	return GLRenderTargetImpl::is_supported(renderer, texture_internalformat, include_depth_buffer)
+	return GLRenderTargetImpl::is_supported(
+			renderer,
+			texture_internalformat,
+			include_depth_buffer,
+			include_stencil_buffer)
 		// Require support for non-power-of-two textures - the screen dimensions can change and
 		// are unlikely to be a power-of-two.
 		&& renderer.get_capabilities().texture.gl_ARB_texture_non_power_of_two;
@@ -46,8 +51,9 @@ GPlatesOpenGL::GLScreenRenderTarget::is_supported(
 GPlatesOpenGL::GLScreenRenderTarget::GLScreenRenderTarget(
 		GLRenderer &renderer,
 		GLint texture_internalformat,
-		bool include_depth_buffer) :
-	d_impl(renderer, texture_internalformat, include_depth_buffer)
+		bool include_depth_buffer,
+		bool include_stencil_buffer) :
+	d_impl(renderer, texture_internalformat, include_depth_buffer, include_stencil_buffer)
 {
 }
 

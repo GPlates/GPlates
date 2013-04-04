@@ -168,9 +168,9 @@ namespace GPlatesOpenGL
 			state_set_slot_flags_type gl_clear_state_set_slots;
 
 			/**
-			 * These slots represent states needed by 'glReadPixels' and 'glDrawPixels'.
+			 * These slots represent states needed by 'glReadPixels'.
 			 */
-			state_set_slot_flags_type gl_read_or_draw_pixels_state_set_slots;
+			state_set_slot_flags_type gl_read_pixels_state_set_slots;
 
 			/**
 			 * The majority of GLStateSet's are immutable, however a special few are effectively
@@ -219,9 +219,9 @@ namespace GPlatesOpenGL
 					const GLCapabilities &capabilities,
 					const GLStateSetKeys &state_set_keys);
 
-			//! Initialise state set slots representing states needed by 'glReadPixels' or 'glDrawPixels'.
+			//! Initialise state set slots representing states needed by 'glReadPixels'.
 			void
-			initialise_gl_read_or_draw_pixels_state_set_slots(
+			initialise_gl_read_pixels_state_set_slots(
 					const GLCapabilities &capabilities,
 					const GLStateSetKeys &state_set_keys);
 
@@ -315,11 +315,14 @@ namespace GPlatesOpenGL
 				GLState &last_applied_state) const;
 
 		/**
-		 * The same as @a apply_state except only those GLStateSet's needed by 'glReadPixels'
-		 * or 'glDrawPixels' are applied.
+		 * The same as @a apply_state except only those GLStateSet's needed by 'glReadPixels' are applied.
+		 *
+		 * We don't have a corresponding special case for 'glDrawPixels' because colour and depth data
+		 * (but maybe not stencil) passes through texture mapping and all fragment operations so
+		 * (unlike 'glReadPixels') there's a lot of state that affects 'glDrawPixels'.
 		 */
 		void
-		apply_state_used_by_gl_read_or_draw_pixels(
+		apply_state_used_by_gl_read_pixels(
 				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
@@ -404,6 +407,17 @@ namespace GPlatesOpenGL
 					d_state_set_store->stencil_mask_state_sets,
 					GLStateSetKeys::KEY_STENCIL_MASK,
 					boost::in_place(stencil));
+		}
+
+		//! Returns the current stencil mask.
+		GLuint
+		get_stencil_mask() const
+		{
+			const boost::optional<GLuint> stencil_mask =
+					get_state_set_query<GLuint>(
+							GLStateSetKeys::KEY_STENCIL_MASK,
+							&GLStencilMaskStateSet::d_stencil);
+			return stencil_mask ? stencil_mask.get() : ~GLuint(0)/*all ones is the default*/;
 		}
 
 		//! Sets the OpenGL clear colour.

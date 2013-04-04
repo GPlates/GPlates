@@ -109,6 +109,9 @@ namespace GPlatesOpenGL
 			 */
 			GLuint gl_max_draw_buffers;
 
+			//! Is GL_EXT_packed_depth_stencil supported?
+			bool gl_EXT_packed_depth_stencil;
+
 			//! Is GL_EXT_blend_equation_separate supported?
 			bool gl_EXT_blend_equation_separate;
 

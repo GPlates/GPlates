@@ -373,9 +373,12 @@ GPlatesGui::OpaqueSphere::paint(
 			renderer.gl_load_matrix(GL_PROJECTION, projection_matrix);
 
 			// Clear the main framebuffer (colour and depth) before rendering the image.
+			// We also clear the stencil buffer in case it is used - also it's usually interleaved
+			// with depth so it's more efficient to clear both depth and stencil.
 			renderer.gl_clear_color();
 			renderer.gl_clear_depth();
-			renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			renderer.gl_clear_stencil();
+			renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 			// Render the actual opaque sphere.
 			renderer.apply_compiled_draw_state(*d_compiled_draw_state);

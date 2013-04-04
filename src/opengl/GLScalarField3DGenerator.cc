@@ -416,9 +416,20 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field(
 	// Create a texture for rendering the cube map tiles to.
 	GLTexture::shared_ptr_type cube_tile_texture = create_cube_tile_texture(renderer, tile_resolution);
 
+	// Classify our frame buffer object according to texture format/dimensions.
+	GLFrameBufferObject::Classification framebuffer_object_classification;
+	framebuffer_object_classification.set_dimensions(
+			cube_tile_texture->get_width().get(),
+			cube_tile_texture->get_height().get());
+	framebuffer_object_classification.set_texture_internal_format(
+			cube_tile_texture->get_internal_format().get());
+
+	// Acquire and bind a frame buffer object.
 	// Framebuffer used to render to cube tile texture.
 	GLFrameBufferObject::shared_ptr_type framebuffer_object =
-			renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(renderer);
+			renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(
+					renderer,
+					framebuffer_object_classification);
 	renderer.gl_bind_frame_buffer(framebuffer_object);
 
 	// All rendering is directed to the cube tile texture.

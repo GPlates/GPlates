@@ -80,13 +80,17 @@ GPlatesOpenGL::GLSaveRestoreFrameBuffer::GLSaveRestoreFrameBuffer(
 		const GLCapabilities &capabilities,
 		unsigned int save_restore_width,
 		unsigned int save_restore_height,
-		GLint save_restore_texture_internalformat) :
+		GLint save_restore_colour_texture_internalformat,
+		bool save_restore_depth_buffer,
+		bool save_restore_stencil_buffer) :
+	d_save_restore_frame_buffer_width(save_restore_width),
+	d_save_restore_frame_buffer_height(save_restore_height),
 	d_save_restore_texture_width(
 			get_power_of_two_save_restore_dimension(capabilities, save_restore_width)),
 	d_save_restore_texture_height(
 			get_power_of_two_save_restore_dimension(capabilities, save_restore_height)),
-	d_save_restore_texture_internal_format(save_restore_texture_internalformat),
-	d_save_restore_tile_render(
+	d_save_restore_colour_texture_internal_format(save_restore_colour_texture_internalformat),
+	d_save_restore_texture_tile_render(
 			// This could be less than 'save_restore_width'...
 			d_save_restore_texture_width,
 			// This could be less than 'save_restore_height'...
@@ -94,6 +98,22 @@ GPlatesOpenGL::GLSaveRestoreFrameBuffer::GLSaveRestoreFrameBuffer(
 			// The part of the framebuffer we are saving/restoring...
 			GLViewport(0, 0, save_restore_width, save_restore_height))
 {
+	if (save_restore_depth_buffer)
+	{
+		d_save_restore_depth_pixel_buffer_size = sizeof(GLfloat)
+				// We use power-of-two dimensions since (due to the finite number of
+				// power-of-two dimensions) we have more chance of re-using a pixel buffer...
+				* GPlatesUtils::Base2::next_power_of_two(save_restore_width)
+				* GPlatesUtils::Base2::next_power_of_two(save_restore_height);
+	}
+	if (save_restore_stencil_buffer)
+	{
+		d_save_restore_stencil_pixel_buffer_size = sizeof(GLubyte)
+				// We use power-of-two dimensions since (due to the finite number of
+				// power-of-two dimensions) we have more chance of re-using a pixel buffer...
+				* GPlatesUtils::Base2::next_power_of_two(save_restore_width)
+				* GPlatesUtils::Base2::next_power_of_two(save_restore_height);
+	}
 }
 
 
@@ -106,8 +126,8 @@ GPlatesOpenGL::GLSaveRestoreFrameBuffer::save(
 			GPLATES_ASSERTION_SOURCE,
 			"GLSaveRestoreFrameBuffer: 'save()' called between 'save()' and 'restore()'.");
 
-	// Sequence of save/restore textures.
-	d_save_restore_textures = std::vector<GLTexture::shared_ptr_type>();
+	// Sequence of save/restore textures/buffers.
+	d_save_restore = SaveRestore();
 
 	//
 	// Save the portion of the framebuffer used as a render target so we can restore it later.
@@ -115,24 +135,27 @@ GPlatesOpenGL::GLSaveRestoreFrameBuffer::save(
 
 	// We don't want any state changes made here to interfere with the client's state changes.
 	// So save the current state and revert back to it at the end of this scope.
-	// We don't need to reset to the default OpenGL state because very little state
-	// affects glCopyTexSubImage2D so it doesn't matter what the current OpenGL state is.
+	// We don't need to reset to the default OpenGL state because very little state affects
+	// glCopyTexSubImage2D and glReadPixels so it doesn't matter what the current OpenGL state is.
 	GLRenderer::StateBlockScope save_restore_state(renderer);
 
-	// Save the framebuffer tile-by-tile.
-	for (d_save_restore_tile_render.first_tile();
-		!d_save_restore_tile_render.finished();
-		d_save_restore_tile_render.next_tile())
+	//
+	// Save the (colour) framebuffer tile-by-tile into textures.
+	//
+
+	for (d_save_restore_texture_tile_render.first_tile();
+		!d_save_restore_texture_tile_render.finished();
+		d_save_restore_texture_tile_render.next_tile())
 	{
 		GLViewport tile_save_restore_texture_viewport;
-		d_save_restore_tile_render.get_tile_source_viewport(tile_save_restore_texture_viewport);
+		d_save_restore_texture_tile_render.get_tile_source_viewport(tile_save_restore_texture_viewport);
 
 		GLViewport tile_save_restore_frame_buffer_viewport;
-		d_save_restore_tile_render.get_tile_destination_viewport(tile_save_restore_frame_buffer_viewport);
+		d_save_restore_texture_tile_render.get_tile_destination_viewport(tile_save_restore_frame_buffer_viewport);
 
 		// Acquire a save/restore texture for the current tile.
-		GLTexture::shared_ptr_type save_restore_texture = acquire_save_restore_texture(renderer);
-		d_save_restore_textures->push_back(save_restore_texture);
+		GLTexture::shared_ptr_type save_restore_texture = acquire_save_restore_colour_texture(renderer);
+		d_save_restore->colour_textures.push_back(save_restore_texture);
 
 		renderer.gl_bind_texture(save_restore_texture, GL_TEXTURE0, GL_TEXTURE_2D);
 
@@ -147,6 +170,73 @@ GPlatesOpenGL::GLSaveRestoreFrameBuffer::save(
 				tile_save_restore_frame_buffer_viewport.y(),
 				tile_save_restore_frame_buffer_viewport.width(),
 				tile_save_restore_frame_buffer_viewport.height());
+	}
+
+	// If saving depth or stencil buffer...
+	if (d_save_restore_depth_pixel_buffer_size ||
+		d_save_restore_stencil_pixel_buffer_size)
+	{
+		glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
+		//
+		// Save the depth framebuffer into a pixel buffer.
+		//
+
+		if (d_save_restore_depth_pixel_buffer_size)
+		{
+			// Acquire a cached pixel buffer for saving the depth framebuffer to.
+			// It'll get returned to its cache when we no longer reference it.
+			d_save_restore->depth_pixel_buffer =
+					renderer.get_context().get_shared_state()->acquire_pixel_buffer(
+							renderer,
+							d_save_restore_depth_pixel_buffer_size.get(),
+							// Copying from frame buffer to pixel buffer and back again...
+							GLBuffer::USAGE_STREAM_COPY);
+
+			// Pack depth frame buffer into pixel buffer.
+			d_save_restore->depth_pixel_buffer->gl_bind_pack(renderer);
+			d_save_restore->depth_pixel_buffer->gl_read_pixels(
+					renderer,
+					0/*x*/,
+					0/*y*/,
+					d_save_restore_frame_buffer_width,
+					d_save_restore_frame_buffer_height,
+					GL_DEPTH_COMPONENT,
+					GL_FLOAT,
+					0/*offset*/);
+		}
+
+		//
+		// Save the stencil framebuffer into a pixel buffer.
+		//
+
+		if (d_save_restore_stencil_pixel_buffer_size)
+		{
+			// Acquire a cached pixel buffer for saving the stencil framebuffer to.
+			// It'll get returned to its cache when we no longer reference it.
+			d_save_restore->stencil_pixel_buffer =
+					renderer.get_context().get_shared_state()->acquire_pixel_buffer(
+							renderer,
+							d_save_restore_stencil_pixel_buffer_size.get(),
+							// Copying from frame buffer to pixel buffer and back again...
+							GLBuffer::USAGE_STREAM_COPY);
+
+			// Pack stencil frame buffer into pixel buffer.
+			d_save_restore->stencil_pixel_buffer->gl_bind_pack(renderer);
+			d_save_restore->stencil_pixel_buffer->gl_read_pixels(
+					renderer,
+					0/*x*/,
+					0/*y*/,
+					d_save_restore_frame_buffer_width,
+					d_save_restore_frame_buffer_height,
+					GL_STENCIL_INDEX,
+					GL_UNSIGNED_BYTE,
+					0/*offset*/);
+		}
+
+		// Restore to default value since calling OpenGL directly instead of using GLRenderer.
+		// FIXME: Shouldn't really be making direct calls to OpenGL - transfer to GLRenderer.
+		glPixelStorei(GL_PACK_ALIGNMENT, 4);
 	}
 }
 
@@ -163,10 +253,89 @@ GPlatesOpenGL::GLSaveRestoreFrameBuffer::restore(
 	// NOTE: We (temporarily) reset to the default OpenGL state since we need to draw a
 	// save/restore size quad into the framebuffer with the save/restore texture applied.
 	// And we don't know what state has already been set.
+	// Also, if we save/restore depth or stencil, then we use 'glDrawPixels' which uses texturing
+	// and all fragment operations and we don't know what the current state is.
 	GLRenderer::StateBlockScope save_restore_state(renderer, true/*reset_to_default_state*/);
 
-	// Disable depth writing for render targets otherwise the frame buffer's depth buffer would get corrupted.
+	// If restoring depth or stencil buffer.
+	// We do this before restoring colour buffer since it's easier to manage OpenGL state.
+	if (d_save_restore_depth_pixel_buffer_size ||
+		d_save_restore_stencil_pixel_buffer_size)
+	{
+		// Avoid drawing to the colour buffer and avoid depth testing when writing to depth buffer.
+		renderer.gl_color_mask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+		renderer.gl_enable(GL_DEPTH_TEST, false);
+
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+		//
+		// Save the depth framebuffer into a pixel buffer.
+		//
+
+		if (d_save_restore_depth_pixel_buffer_size)
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					d_save_restore->depth_pixel_buffer,
+					GPLATES_ASSERTION_SOURCE);
+
+			// Disable stencil writes and enable depth writes.
+			renderer.gl_stencil_mask(0);
+			renderer.gl_depth_mask(GL_TRUE);
+
+			// Unpack depth pixel buffer into frame buffer.
+			d_save_restore->depth_pixel_buffer->gl_bind_unpack(renderer);
+			d_save_restore->depth_pixel_buffer->gl_draw_pixels(
+					renderer,
+					0/*x*/,
+					0/*y*/,
+					d_save_restore_frame_buffer_width,
+					d_save_restore_frame_buffer_height,
+					GL_DEPTH_COMPONENT,
+					GL_FLOAT,
+					0/*offset*/);
+		}
+
+		//
+		// Save the stencil framebuffer into a pixel buffer.
+		//
+
+		if (d_save_restore_stencil_pixel_buffer_size)
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					d_save_restore->stencil_pixel_buffer,
+					GPLATES_ASSERTION_SOURCE);
+
+			// Disable depth writes and enable stencil writes.
+			renderer.gl_depth_mask(GL_FALSE);
+			renderer.gl_stencil_mask(~GLuint(0)/*all ones*/);
+
+			// Unpack stencil pixel buffer into frame buffer.
+			d_save_restore->stencil_pixel_buffer->gl_bind_unpack(renderer);
+			d_save_restore->stencil_pixel_buffer->gl_draw_pixels(
+					renderer,
+					0/*x*/,
+					0/*y*/,
+					d_save_restore_frame_buffer_width,
+					d_save_restore_frame_buffer_height,
+					GL_STENCIL_INDEX,
+					GL_UNSIGNED_BYTE,
+					0/*offset*/);
+		}
+
+		// Restore to default value since calling OpenGL directly instead of using GLRenderer.
+		// FIXME: Shouldn't really be making direct calls to OpenGL - transfer to GLRenderer.
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	}
+
+	// Re-enable colour writes.
+	renderer.gl_color_mask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+	// Disable depth and stencil writes to avoid overwriting restored depth and stencil buffers.
 	renderer.gl_depth_mask(GL_FALSE);
+	renderer.gl_stencil_mask(0);
+
+	// Avoid avoid depth testing when writing to colour buffer.
+	renderer.gl_enable(GL_DEPTH_TEST, false);
 
 	//
 	// Restore the portion of the framebuffer that was saved.
@@ -174,22 +343,22 @@ GPlatesOpenGL::GLSaveRestoreFrameBuffer::restore(
 
 	// Save the framebuffer tile-by-tile.
 	unsigned int tile_index = 0;
-	for (d_save_restore_tile_render.first_tile();
-		!d_save_restore_tile_render.finished();
-		d_save_restore_tile_render.next_tile(), ++tile_index)
+	for (d_save_restore_texture_tile_render.first_tile();
+		!d_save_restore_texture_tile_render.finished();
+		d_save_restore_texture_tile_render.next_tile(), ++tile_index)
 	{
 
 		GLViewport tile_save_restore_texture_viewport;
-		d_save_restore_tile_render.get_tile_source_viewport(tile_save_restore_texture_viewport);
+		d_save_restore_texture_tile_render.get_tile_source_viewport(tile_save_restore_texture_viewport);
 
 		GLViewport tile_save_restore_frame_buffer_viewport;
-		d_save_restore_tile_render.get_tile_destination_viewport(tile_save_restore_frame_buffer_viewport);
+		d_save_restore_texture_tile_render.get_tile_destination_viewport(tile_save_restore_frame_buffer_viewport);
 
 		// Get the save/restore texture for the current tile.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				tile_index < d_save_restore_textures->size(),
+				tile_index < d_save_restore->colour_textures.size(),
 				GPLATES_ASSERTION_SOURCE);
-		GLTexture::shared_ptr_type save_restore_texture = d_save_restore_textures->at(tile_index);
+		GLTexture::shared_ptr_type save_restore_texture = d_save_restore->colour_textures[tile_index];
 
 		// Bind the save restore texture to use for rendering.
 		renderer.gl_bind_texture(save_restore_texture, GL_TEXTURE0, GL_TEXTURE_2D);
@@ -232,13 +401,13 @@ GPlatesOpenGL::GLSaveRestoreFrameBuffer::restore(
 		renderer.apply_compiled_draw_state(*full_screen_quad);
 	}
 
-	// Release the save/restore textures.
-	d_save_restore_textures = boost::none;
+	// Release the save/restore textures/buffers.
+	d_save_restore = boost::none;
 }
 
 
 GPlatesOpenGL::GLTexture::shared_ptr_type
-GPlatesOpenGL::GLSaveRestoreFrameBuffer::acquire_save_restore_texture(
+GPlatesOpenGL::GLSaveRestoreFrameBuffer::acquire_save_restore_colour_texture(
 		GLRenderer &renderer)
 {
 	// Acquire a cached texture for saving (part or all of) the framebuffer to.
@@ -247,7 +416,7 @@ GPlatesOpenGL::GLSaveRestoreFrameBuffer::acquire_save_restore_texture(
 			renderer.get_context().get_shared_state()->acquire_texture(
 					renderer,
 					GL_TEXTURE_2D,
-					d_save_restore_texture_internal_format,
+					d_save_restore_colour_texture_internal_format,
 					d_save_restore_texture_width,
 					d_save_restore_texture_height);
 

@@ -39,7 +39,7 @@ namespace GPlatesOpenGL
 	class GLRenderer;
 
 	/**
-	 * Used to render to a fixed-dimension texture (with optional associated hardware depth buffer).
+	 * Used to render to a fixed-dimension texture (with optional associated hardware depth/stencil buffer).
 	 *
 	 * Your rendering is done between @a begin_render and @a end_render.
 	 *
@@ -64,12 +64,16 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns true if the texture internal format and optional depth buffer combination are
+		 * Returns true if the texture internal format and optional depth/stencil buffer combination are
 		 * supported by the runtime system (also requires support for GL_EXT_framebuffer_object).
 		 *
 		 * Also requires support for non-power-of-two textures if the render target dimensions
 		 * are not a power-of-two.
 		 * Also requires render target dimensions to not exceed maximum texture dimensions.
+		 *
+		 * If @a include_stencil_buffer is true then GL_EXT_packed_depth_stencil is also required
+		 * because, for the most part, consumer hardware only supports stencil for FBOs if it's
+		 * packed in with depth.
 		 */
 		static
 		bool
@@ -77,6 +81,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				GLint texture_internalformat,
 				bool include_depth_buffer,
+				bool include_stencil_buffer,
 				unsigned int render_target_width,
 				unsigned int render_target_height);
 
@@ -84,7 +89,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Creates a shared pointer to a @a GLRenderTarget object.
 		 *
-		 * Creates the texture and optional depth buffer resources.
+		 * Creates the texture and optional depth/stencil buffer resources.
 		 *
 		 * @a texture_internalformat is the same parameter used for 'GLTexture::gl_tex_image_2D()'.
 		 */
@@ -94,6 +99,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				GLint texture_internalformat,
 				bool include_depth_buffer,
+				bool include_stencil_buffer,
 				unsigned int render_target_width,
 				unsigned int render_target_height)
 		{
@@ -102,6 +108,7 @@ namespace GPlatesOpenGL
 							renderer,
 							texture_internalformat,
 							include_depth_buffer,
+							include_stencil_buffer,
 							render_target_width,
 							render_target_height));
 		}
@@ -115,6 +122,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				GLint texture_internalformat,
 				bool include_depth_buffer,
+				bool include_stencil_buffer,
 				unsigned int render_target_width,
 				unsigned int render_target_height)
 		{
@@ -123,6 +131,7 @@ namespace GPlatesOpenGL
 							renderer,
 							texture_internalformat,
 							include_depth_buffer,
+							include_stencil_buffer,
 							render_target_width,
 							render_target_height));
 		}
@@ -195,6 +204,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				GLint texture_internalformat,
 				bool include_depth_buffer,
+				bool include_stencil_buffer,
 				unsigned int render_target_width,
 				unsigned int render_target_height);
 

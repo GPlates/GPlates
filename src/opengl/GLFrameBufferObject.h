@@ -32,6 +32,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/tuple/tuple.hpp>
 #include <boost/weak_ptr.hpp>
 #include <opengl/OpenGL.h>
 
@@ -98,6 +99,101 @@ namespace GPlatesOpenGL
 
 		//! Typedef for a resource manager.
 		typedef GLObjectResourceManager<resource_handle_type, Allocator> resource_manager_type;
+
+
+		/**
+		 * Classifies a frame buffer object to assist with frame buffer switching efficiency.
+		 *
+		 * According to Nvidia in "The OpenGL Framebuffer Object Extension" at
+		 * http://http.download.nvidia.com/developer/presentations/2005/GDC/OpenGL_Day/OpenGL_FrameBuffer_Object.pdf
+		 * ...
+		 *
+		 *   In order of increasing performance:
+		 *
+		 *	   Multiple FBOs
+		 *		   create a separate FBO for each texture you want to render to
+		 *		   switch using BindFramebuffer()
+		 *		   can be 2x faster than wglMakeCurrent() in beta NVIDIA drivers
+		 *	   Single FBO, multiple texture attachments
+		 *		   textures should have same format and dimensions
+		 *		   use FramebufferTexture() to switch between textures
+		 *	   Single FBO, multiple texture attachments
+		 *		   attach textures to different color attachments
+		 *		   use glDrawBuffer() to switch rendering to different color attachments
+		 *
+		 * ...so we can optimize for the second case above having multiple render targets with
+		 * the same texture format and dimensions share a single frame buffer object.
+		 * These parameters are specified in this class (@a Classification).
+		 *
+		 */
+		class Classification
+		{
+		public:
+
+			//! Classification as a boost tuple (so can be used as a key in maps).
+			typedef boost::tuple<GLuint, GLuint, GLint, GLint, GLint> tuple_type;
+
+
+			//! Default classification represents empty (un-attached) frame buffer.
+			Classification();
+
+			//! Set dimensions of frame buffer attachable textures/render-buffers.
+			void
+			set_dimensions(
+					GLuint width,
+					GLuint height);
+
+			/**
+			 * Set texture internal format if one or more textures are to be attached.
+			 *
+			 * Note that GL_EXT_framebuffer_object requires all textures attached to colour attachments
+			 * to have the same internal format so there's no need to specify the attachment point(s).
+			 */
+			void
+			set_texture_internal_format(
+					GLint texture_internal_format);
+
+			//! Set depth buffer internal format if a depth buffer is to be attached.
+			void
+			set_depth_buffer_internal_format(
+					GLint depth_buffer_internal_format);
+
+			//! Set stencil buffer internal format if a stencil buffer is to be attached.
+			void
+			set_stencil_buffer_internal_format(
+					GLint stencil_buffer_internal_format);
+
+			//! Return this classification object as a tuple.
+			tuple_type
+			get_tuple() const;
+
+			//
+			// Queries parameters...
+			//
+
+			GLuint
+			get_width() const;
+
+			GLuint
+			get_height() const;
+
+			GLint
+			get_texture_internal_format() const;
+
+			GLint
+			get_depth_buffer_internal_format() const;
+
+			GLint
+			get_stencil_buffer_internal_format() const;
+
+		private:
+
+			GLuint d_width;
+			GLuint d_height;
+			GLint d_texture_internal_format;
+			GLint d_depth_buffer_internal_format;
+			GLint d_stencil_buffer_internal_format;
+		};
 
 
 		/**

@@ -37,13 +37,18 @@ GPlatesOpenGL::GLRenderTarget::is_supported(
 		GLRenderer &renderer,
 		GLint texture_internalformat,
 		bool include_depth_buffer,
+		bool include_stencil_buffer,
 		unsigned int render_target_width,
 		unsigned int render_target_height)
 {
 	const GLCapabilities &capabilities = renderer.get_capabilities();
 
 	// Test support for the texture internal format.
-	if (!GLRenderTargetImpl::is_supported(renderer, texture_internalformat, include_depth_buffer))
+	if (!GLRenderTargetImpl::is_supported(
+			renderer,
+			texture_internalformat,
+			include_depth_buffer,
+			include_stencil_buffer))
 	{
 		return false;
 	}
@@ -73,9 +78,10 @@ GPlatesOpenGL::GLRenderTarget::GLRenderTarget(
 		GLRenderer &renderer,
 		GLint texture_internalformat,
 		bool include_depth_buffer,
+		bool include_stencil_buffer,
 		unsigned int render_target_width,
 		unsigned int render_target_height) :
-	d_impl(renderer, texture_internalformat, include_depth_buffer)
+	d_impl(renderer, texture_internalformat, include_depth_buffer, include_stencil_buffer)
 {
 	d_impl.set_render_target_dimensions(renderer, render_target_width, render_target_height);
 }

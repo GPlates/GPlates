@@ -64,24 +64,29 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns true if the texture internal format and optional depth buffer combination are
+		 * Returns true if the texture internal format and optional depth/stencil buffer combination are
 		 * supported by the runtime system (also requires support for GL_EXT_framebuffer_object).
 		 *
 		 * Also requires support for non-power-of-two textures since the screen dimensions can
 		 * change and are unlikely to be a power-of-two.
+		 *
+		 * If @a include_stencil_buffer is true then GL_EXT_packed_depth_stencil is also required
+		 * because, for the most part, consumer hardware only supports stencil for FBOs if it's
+		 * packed in with depth.
 		 */
 		static
 		bool
 		is_supported(
 				GLRenderer &renderer,
 				GLint texture_internalformat,
-				bool include_depth_buffer);
+				bool include_depth_buffer,
+				bool include_stencil_buffer);
 
 
 		/**
 		 * Creates a shared pointer to a @a GLScreenRenderTarget object.
 		 *
-		 * Creates the texture and optional depth buffer resources but doesn't allocate them yet.
+		 * Creates the texture and optional depth/stencil buffer resources but doesn't allocate them yet.
 		 *
 		 * @a texture_internalformat is the same parameter used for 'GLTexture::gl_tex_image_2D()'.
 		 */
@@ -90,11 +95,12 @@ namespace GPlatesOpenGL
 		create(
 				GLRenderer &renderer,
 				GLint texture_internalformat,
-				bool include_depth_buffer)
+				bool include_depth_buffer,
+				bool include_stencil_buffer)
 		{
 			return shared_ptr_type(
 					new GLScreenRenderTarget(
-							renderer, texture_internalformat, include_depth_buffer));
+							renderer, texture_internalformat, include_depth_buffer, include_stencil_buffer));
 		}
 
 		/**
@@ -105,11 +111,12 @@ namespace GPlatesOpenGL
 		create_as_auto_ptr(
 				GLRenderer &renderer,
 				GLint texture_internalformat,
-				bool include_depth_buffer)
+				bool include_depth_buffer,
+				bool include_stencil_buffer)
 		{
 			return std::auto_ptr<GLScreenRenderTarget>(
 					new GLScreenRenderTarget(
-							renderer, texture_internalformat, include_depth_buffer));
+							renderer, texture_internalformat, include_depth_buffer, include_stencil_buffer));
 		}
 
 
@@ -184,7 +191,8 @@ namespace GPlatesOpenGL
 		GLScreenRenderTarget(
 				GLRenderer &renderer,
 				GLint texture_internalformat,
-				bool include_depth_buffer);
+				bool include_depth_buffer,
+				bool include_stencil_buffer);
 
 	};
 }

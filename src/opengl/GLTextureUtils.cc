@@ -162,6 +162,11 @@ GPlatesOpenGL::GLTextureUtils::load_image_into_texture_2D(
 			texel_u_offset, texel_v_offset, image_width, image_height,
 			format, type, image);
 
+	// Restore to default value since calling OpenGL directly instead of using GLRenderer.
+	//
+	// FIXME: Shouldn't really be making direct calls to OpenGL - transfer to GLRenderer.
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+
 #if 0 // No need to check this so frequently.
 	// Check there are no OpenGL errors.
 	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
@@ -194,6 +199,11 @@ GPlatesOpenGL::GLTextureUtils::load_image_into_texture_2D(
 	texture->gl_tex_sub_image_2D(renderer, GL_TEXTURE_2D, 0,
 			texel_u_offset, texel_v_offset, image_width, image_height,
 			format, type, pixels, pixels_offset);
+
+	// Restore to default value since calling OpenGL directly instead of using GLRenderer.
+	//
+	// FIXME: Shouldn't really be making direct calls to OpenGL - transfer to GLRenderer.
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
 #if 0 // No need to check this so frequently.
 	// Check there are no OpenGL errors.

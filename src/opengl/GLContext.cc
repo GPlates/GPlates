@@ -58,8 +58,9 @@ QGLFormat
 GPlatesOpenGL::GLContext::get_qgl_format()
 {
 	// We turn *off* multisampling because lines actually look better without it...
-	// We need an alpha channel in case falling back to main frame buffer for render textures...
-	QGLFormat format(/*QGL::SampleBuffers |*/ QGL::AlphaChannel);
+	// We need a stencil buffer for filling polygons.
+	// We need an alpha channel in case falling back to main frame buffer for render textures.
+	QGLFormat format(/*QGL::SampleBuffers |*/ QGL::StencilBuffer | QGL::AlphaChannel);
 
 #if QT_VERSION >= 0x040700 // Functions introduced in Qt 4.7...
 	// We use features deprecated in OpenGL 3 so use compatibility profile and allowed deprecated functions.
@@ -310,9 +311,10 @@ GPlatesOpenGL::GLContext::SharedState::acquire_texture(
 		GPlatesGlobal::Assert<OpenGLException>(
 				texture_object->get_width() == GLuint(width) &&
 					texture_object->get_height() == boost::optional<GLuint>(height_opt) &&
-					texture_object->get_depth() == boost::optional<GLuint>(depth_opt),
+					texture_object->get_depth() == boost::optional<GLuint>(depth_opt) &&
+					texture_object->get_internal_format() == internalformat,
 				GPLATES_ASSERTION_SOURCE,
-				"GLContext::SharedState::acquire_texture: Dimensions of recycled texture were changed.");
+				"GLContext::SharedState::acquire_texture: Dimensions/format of recycled texture were changed.");
 
 		return texture_object;
 	}
@@ -358,12 +360,11 @@ GPlatesOpenGL::GLContext::SharedState::acquire_texture(
 GPlatesOpenGL::GLPixelBuffer::shared_ptr_type
 GPlatesOpenGL::GLContext::SharedState::acquire_pixel_buffer(
 		GLRenderer &renderer,
-		GLBuffer::target_type target,
 		unsigned int size,
 		GLBuffer::usage_type usage)
 {
 	// Lookup the correct pixel buffer cache (matching the specified client parameters).
-	const pixel_buffer_key_type pixel_buffer_key(target, size, usage);
+	const pixel_buffer_key_type pixel_buffer_key(size, usage);
 
 	const pixel_buffer_cache_type::shared_ptr_type pixel_buffer_cache =
 			get_pixel_buffer_cache(pixel_buffer_key);
@@ -385,7 +386,14 @@ GPlatesOpenGL::GLContext::SharedState::acquire_pixel_buffer(
 
 	// Create a new buffer with the specified parameters.
 	GLBuffer::shared_ptr_type buffer = GLBuffer::create(renderer);
-	buffer->gl_buffer_data(renderer, target, size, NULL/*Uninitialised memory*/, usage);
+	buffer->gl_buffer_data(
+			renderer,
+			// Could be 'TARGET_PIXEL_UNPACK_BUFFER' or 'TARGET_PIXEL_PACK_BUFFER'.
+			// Doesn't really matter because only used internally as a temporary bind target...
+			GLBuffer::TARGET_PIXEL_PACK_BUFFER,
+			size,
+			NULL/*Uninitialised memory*/,
+			usage);
 
 	// Create a new object and add it to the cache.
 	const GLPixelBuffer::shared_ptr_type pixel_buffer = pixel_buffer_cache->allocate_object(
@@ -417,11 +425,60 @@ GPlatesOpenGL::GLContext::SharedState::acquire_vertex_array(
 }
 
 
+GPlatesOpenGL::GLRenderBufferObject::shared_ptr_type
+GPlatesOpenGL::GLContext::SharedState::acquire_render_buffer_object(
+		GLRenderer &renderer,
+		GLint internalformat,
+		GLsizei width,
+		GLsizei height)
+{
+	// Must support GL_EXT_framebuffer_object.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			renderer.get_capabilities().framebuffer.gl_EXT_framebuffer_object,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Lookup the correct render buffer object cache (matching the specified client parameters).
+	const render_buffer_object_key_type render_buffer_object_key(internalformat, width, height);
+
+	const render_buffer_object_cache_type::shared_ptr_type render_buffer_object_cache =
+			get_render_buffer_object_cache(render_buffer_object_key);
+
+	// Attempt to acquire a recycled object.
+	boost::optional<GLRenderBufferObject::shared_ptr_type> render_buffer_object_opt =
+			render_buffer_object_cache->allocate_object();
+	if (render_buffer_object_opt)
+	{
+		const GLRenderBufferObject::shared_ptr_type render_buffer_object = render_buffer_object_opt.get();
+
+		// Make sure the previous client did not change the render buffer dimensions before
+		// recycling the render buffer.
+		GPlatesGlobal::Assert<OpenGLException>(
+				render_buffer_object->get_dimensions() == std::pair<GLuint,GLuint>(width, height) &&
+					render_buffer_object->get_internal_format() == internalformat,
+				GPLATES_ASSERTION_SOURCE,
+				"GLContext::SharedState::acquire_render_buffer_object: Dimensions/format of "
+					"recycled render buffer were changed.");
+
+		return render_buffer_object;
+	}
+
+	// Create a new object and add it to the cache.
+	const GLRenderBufferObject::shared_ptr_type render_buffer_object = render_buffer_object_cache->allocate_object(
+			GLRenderBufferObject::create_as_auto_ptr(renderer));
+
+	// Initialise the newly created render buffer object.
+	render_buffer_object->gl_render_buffer_storage(renderer, internalformat, width, height);
+
+	return render_buffer_object;
+}
+
+
 boost::optional<GPlatesOpenGL::GLRenderTarget::shared_ptr_type>
 GPlatesOpenGL::GLContext::SharedState::acquire_render_target(
 		GLRenderer &renderer,
 		GLint texture_internalformat,
 		bool include_depth_buffer,
+		bool include_stencil_buffer,
 		unsigned int render_target_width,
 		unsigned int render_target_height)
 {
@@ -430,6 +487,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_render_target(
 		renderer,
 		texture_internalformat,
 		include_depth_buffer,
+		include_stencil_buffer,
 		render_target_width,
 		render_target_height))
 	{
@@ -438,7 +496,11 @@ GPlatesOpenGL::GLContext::SharedState::acquire_render_target(
 
 	// Lookup the correct render target cache (matching the specified client parameters).
 	const render_target_key_type render_target_key(
-			texture_internalformat, include_depth_buffer, render_target_width, render_target_height);
+			texture_internalformat,
+			include_depth_buffer,
+			include_stencil_buffer,
+			render_target_width,
+			render_target_height);
 
 	const render_target_cache_type::shared_ptr_type render_target_cache =
 			get_render_target_cache(render_target_key);
@@ -458,6 +520,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_render_target(
 							renderer,
 							texture_internalformat,
 							include_depth_buffer,
+							include_stencil_buffer,
 							render_target_width,
 							render_target_height));
 
@@ -469,16 +532,24 @@ boost::optional<GPlatesOpenGL::GLScreenRenderTarget::shared_ptr_type>
 GPlatesOpenGL::GLContext::SharedState::acquire_screen_render_target(
 		GLRenderer &renderer,
 		GLint texture_internalformat,
-		bool include_depth_buffer)
+		bool include_depth_buffer,
+		bool include_stencil_buffer)
 {
 	// Screen render targets must be supported.
-	if (!GLScreenRenderTarget::is_supported(renderer, texture_internalformat, include_depth_buffer))
+	if (!GLScreenRenderTarget::is_supported(
+			renderer,
+			texture_internalformat,
+			include_depth_buffer,
+			include_stencil_buffer))
 	{
 		return boost::none;
 	}
 
 	// Lookup the correct screen render target cache (matching the specified client parameters).
-	const screen_render_target_key_type screen_render_target_key(texture_internalformat, include_depth_buffer);
+	const screen_render_target_key_type screen_render_target_key(
+			texture_internalformat,
+			include_depth_buffer,
+			include_stencil_buffer);
 
 	const screen_render_target_cache_type::shared_ptr_type screen_render_target_cache =
 			get_screen_render_target_cache(screen_render_target_key);
@@ -497,7 +568,8 @@ GPlatesOpenGL::GLContext::SharedState::acquire_screen_render_target(
 					GLScreenRenderTarget::create_as_auto_ptr(
 							renderer,
 							texture_internalformat,
-							include_depth_buffer));
+							include_depth_buffer,
+							include_stencil_buffer));
 
 	return screen_render_target;
 }
@@ -685,6 +757,31 @@ GPlatesOpenGL::GLContext::SharedState::get_pixel_buffer_cache(
 }
 
 
+GPlatesOpenGL::GLContext::SharedState::render_buffer_object_cache_type::shared_ptr_type
+GPlatesOpenGL::GLContext::SharedState::get_render_buffer_object_cache(
+		const render_buffer_object_key_type &render_buffer_object_key)
+{
+	// Attempt to insert the pixel buffer key into the pixel buffer cache map.
+	const std::pair<render_buffer_object_cache_map_type::iterator, bool> insert_result =
+			d_render_buffer_object_cache_map.insert(
+					render_buffer_object_cache_map_type::value_type(
+							render_buffer_object_key,
+							// Dummy (NULL) pixel buffer cache...
+							render_buffer_object_cache_type::shared_ptr_type()));
+
+	render_buffer_object_cache_map_type::iterator render_buffer_object_cache_map_iter = insert_result.first;
+
+	// If the pixel buffer key was inserted into the map then create the corresponding pixel buffer cache.
+	if (insert_result.second)
+	{
+		// Start off with an initial cache size of 1 - it'll grow as needed...
+		render_buffer_object_cache_map_iter->second = render_buffer_object_cache_type::create();
+	}
+
+	return render_buffer_object_cache_map_iter->second;
+}
+
+
 GPlatesOpenGL::GLContext::SharedState::render_target_cache_type::shared_ptr_type
 GPlatesOpenGL::GLContext::SharedState::get_render_target_cache(
 		const render_target_key_type &render_target_key)
@@ -756,7 +853,6 @@ GPlatesOpenGL::GLContext::SharedState::get_state_store(
 GPlatesOpenGL::GLContext::NonSharedState::NonSharedState() :
 	d_frame_buffer_object_resource_manager(GLFrameBufferObject::resource_manager_type::create()),
 	// Start off with an initial cache size of 1 - it'll grow as needed...
-	d_frame_buffer_object_cache(GPlatesUtils::ObjectCache<GLFrameBufferObject>::create()),
 	d_render_buffer_object_resource_manager(GLRenderBufferObject::resource_manager_type::create()),
 	d_vertex_array_object_resource_manager(GLVertexArrayObject::resource_manager_type::create())
 {
@@ -765,26 +861,107 @@ GPlatesOpenGL::GLContext::NonSharedState::NonSharedState() :
 
 GPlatesOpenGL::GLFrameBufferObject::shared_ptr_type
 GPlatesOpenGL::GLContext::NonSharedState::acquire_frame_buffer_object(
-		GLRenderer &renderer)
+		GLRenderer &renderer,
+		const GLFrameBufferObject::Classification &classification)
 {
+	// Must support GL_EXT_framebuffer_object.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			renderer.get_capabilities().framebuffer.gl_EXT_framebuffer_object,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Lookup the correct framebuffer object cache (matching the specified classification).
+	const frame_buffer_object_key_type frame_buffer_object_key = classification.get_tuple();
+
+	const frame_buffer_object_cache_type::shared_ptr_type frame_buffer_object_cache =
+			get_frame_buffer_object_cache(frame_buffer_object_key);
+
 	// Attempt to acquire a recycled object.
 	boost::optional<GLFrameBufferObject::shared_ptr_type> frame_buffer_object_opt =
-			d_frame_buffer_object_cache->allocate_object();
-	if (!frame_buffer_object_opt)
+			frame_buffer_object_cache->allocate_object();
+	if (frame_buffer_object_opt)
 	{
-		// Create a new object and add it to the cache.
-		frame_buffer_object_opt = d_frame_buffer_object_cache->allocate_object(
-				GLFrameBufferObject::create_as_auto_ptr(renderer));
+		const GLFrameBufferObject::shared_ptr_type frame_buffer_object = frame_buffer_object_opt.get();
+
+		// First clear the framebuffer attachments before returning to the client.
+		frame_buffer_object->gl_detach_all(renderer);
+
+		// Also reset the glDrawBuffer(s)/glReadBuffer state to the default state for
+		// a non-default, application-created framebuffer object.
+		frame_buffer_object->gl_draw_buffers(renderer);
+		frame_buffer_object->gl_read_buffer(renderer);
+
+		return frame_buffer_object;
 	}
-	const GLFrameBufferObject::shared_ptr_type &frame_buffer_object = frame_buffer_object_opt.get();
 
-	// First clear the framebuffer attachments before returning to the client.
-	frame_buffer_object->gl_detach_all(renderer);
-
-	// Also reset the glDrawBuffer(s)/glReadBuffer state to the default state for
-	// a non-default, application-created framebuffer object.
-	frame_buffer_object->gl_draw_buffers(renderer);
-	frame_buffer_object->gl_read_buffer(renderer);
+	// Create a new object and add it to the cache.
+	const GLFrameBufferObject::shared_ptr_type frame_buffer_object =
+			frame_buffer_object_cache->allocate_object(
+					GLFrameBufferObject::create_as_auto_ptr(renderer));
 
 	return frame_buffer_object;
+}
+
+
+bool
+GPlatesOpenGL::GLContext::NonSharedState::check_framebuffer_object_completeness(
+		GLRenderer &renderer,
+		const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object,
+		const GLFrameBufferObject::Classification &frame_buffer_object_classification) const
+{
+	// See if we've already cached the framebuffer completeness status for the specified
+	// frame buffer object classification.
+	frame_buffer_state_to_status_map_type::iterator framebuffer_status_iter =		
+			d_frame_buffer_state_to_status_map.find(frame_buffer_object_classification.get_tuple());
+	if (framebuffer_status_iter == d_frame_buffer_state_to_status_map.end())
+	{
+		const bool framebuffer_status = frame_buffer_object->gl_check_frame_buffer_status(renderer);
+
+		if (!framebuffer_status)
+		{
+			// This only emits one warning (per classification) since the result is cached.
+			qWarning() << "Texture internal format '"
+				<< frame_buffer_object_classification.get_texture_internal_format()
+				<< "' failed frame buffer object completeness check.";
+
+			// Also emit a warning if the texture is floating-point.
+			// This is because the caller might fall back to using the main framebuffer as a
+			// render target, but the main framebuffer is fixed-point (not floating-point).
+			if (GLTexture::is_format_floating_point(frame_buffer_object_classification.get_texture_internal_format()))
+			{
+				qWarning() << "...incorrect results likely if floating-point render-texture "
+					"is emulated with (fixed-point) main framebuffer.";
+			}
+		}
+
+		d_frame_buffer_state_to_status_map[frame_buffer_object_classification.get_tuple()] = framebuffer_status;
+
+		return framebuffer_status;
+	}
+
+	return framebuffer_status_iter->second;
+}
+
+
+GPlatesOpenGL::GLContext::NonSharedState::frame_buffer_object_cache_type::shared_ptr_type
+GPlatesOpenGL::GLContext::NonSharedState::get_frame_buffer_object_cache(
+		const frame_buffer_object_key_type &frame_buffer_object_key)
+{
+	// Attempt to insert the frame buffer object key into the frame buffer object cache map.
+	const std::pair<frame_buffer_object_cache_map_type::iterator, bool> insert_result =
+			d_frame_buffer_object_cache_map.insert(
+					frame_buffer_object_cache_map_type::value_type(
+							frame_buffer_object_key,
+							// Dummy (NULL) frame buffer object cache...
+							frame_buffer_object_cache_type::shared_ptr_type()));
+
+	frame_buffer_object_cache_map_type::iterator frame_buffer_object_cache_map_iter = insert_result.first;
+
+	// If the frame buffer object key was inserted into the map then create the corresponding frame buffer object cache.
+	if (insert_result.second)
+	{
+		// Start off with an initial cache size of 1 - it'll grow as needed...
+		frame_buffer_object_cache_map_iter->second = frame_buffer_object_cache_type::create();
+	}
+
+	return frame_buffer_object_cache_map_iter->second;
 }

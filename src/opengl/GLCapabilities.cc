@@ -121,6 +121,13 @@ GPlatesOpenGL::GLCapabilities::initialise_framebuffer()
 		qDebug() << "  GL_ARB_draw_buffers";
 	}
 
+	if (GLEW_EXT_packed_depth_stencil)
+	{
+		framebuffer.gl_EXT_packed_depth_stencil = true;
+
+		qDebug() << "  GL_EXT_packed_depth_stencil";
+	}
+
 	if (GLEW_EXT_blend_equation_separate)
 	{
 		framebuffer.gl_EXT_blend_equation_separate = true;
@@ -531,6 +538,7 @@ GPlatesOpenGL::GLCapabilities::Framebuffer::Framebuffer() :
 	gl_max_renderbuffer_size(0),
 	gl_ARB_draw_buffers(false),
 	gl_max_draw_buffers(1),
+	gl_EXT_packed_depth_stencil(false),
 	gl_EXT_blend_equation_separate(false),
 	gl_EXT_blend_func_separate(false),
 	gl_EXT_blend_minmax(false)

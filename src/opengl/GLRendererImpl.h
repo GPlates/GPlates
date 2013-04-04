@@ -33,6 +33,7 @@
 #include <opengl/OpenGL.h>
 
 #include "GLCompiledDrawState.h"
+#include "GLRenderBufferObject.h"
 #include "GLSaveRestoreFrameBuffer.h"
 #include "GLState.h"
 #include "GLTexture.h"
@@ -275,10 +276,14 @@ namespace GPlatesOpenGL
 			RenderTextureTarget(
 					const GLViewport &texture_viewport_,
 					const GLTexture::shared_ptr_to_const_type &texture_,
-					GLint level_) :
+					GLint level_,
+					bool depth_buffer_,
+					bool stencil_buffer_) :
 				texture_viewport(texture_viewport_),
 				texture(texture_),
 				level(level_),
+				depth_buffer(depth_buffer_),
+				stencil_buffer(stencil_buffer_),
 				tile_save_restore_state(false)
 			{  }
 
@@ -286,23 +291,47 @@ namespace GPlatesOpenGL
 			GLTexture::shared_ptr_to_const_type texture;
 			GLint level;
 
-			//! Is true if should save restore state within the current begin/end tile in render target.
+			bool depth_buffer;
+			bool stencil_buffer;
+
+			//! Is true if should save/restore state within the current begin/end tile in render target.
 			bool tile_save_restore_state;
 
-			// The following parameters are not used if GL_EXT_framebuffer_object extension is available...
+			//! When using framebuffer object as a render target (when GL_EXT_framebuffer_object is supported).
+			struct FrameBufferObject
+			{
+				explicit
+				FrameBufferObject(
+						const GLFrameBufferObject::shared_ptr_type &frame_buffer_object_,
+						boost::optional<GLRenderBufferObject::shared_ptr_type> depth_buffer_,
+						boost::optional<GLRenderBufferObject::shared_ptr_type> stencil_buffer_) :
+					frame_buffer_object(frame_buffer_object_),
+					depth_buffer(depth_buffer_),
+					stencil_buffer(stencil_buffer_)
+				{  }
 
-			//! Using main framebuffer as a render target.
+				GLFrameBufferObject::shared_ptr_type frame_buffer_object;
+				boost::optional<GLRenderBufferObject::shared_ptr_type> depth_buffer;
+				boost::optional<GLRenderBufferObject::shared_ptr_type> stencil_buffer;
+			};
+
+			//! When using main framebuffer as a render target (when GL_EXT_framebuffer_object is not supported).
 			struct MainFrameBuffer
 			{
 				explicit
 				MainFrameBuffer(
 						const GLCapabilities &capabilities_,
-						const GLTileRender &tile_render_) :
+						const GLTileRender &tile_render_,
+						bool save_restore_depth_buffer_,
+						bool save_restore_stencil_buffer_) :
 					tile_render(tile_render_),
 					save_restore_frame_buffer(
 							capabilities_,
 							tile_render_.get_max_tile_render_target_width(),
-							tile_render_.get_max_tile_render_target_height())
+							tile_render_.get_max_tile_render_target_height(),
+							GL_RGBA8,
+							save_restore_depth_buffer_,
+							save_restore_stencil_buffer_)
 				{  }
 
 				//! Used to tile render when the main framebuffer is smaller than the render target.
@@ -312,7 +341,11 @@ namespace GPlatesOpenGL
 				GLSaveRestoreFrameBuffer save_restore_frame_buffer;
 			};
 
+			//! When using main framebuffer as a render target (when GL_EXT_framebuffer_object is not supported).
 			boost::optional<MainFrameBuffer> main_frame_buffer;
+
+			//! The framebuffer object to use for render targets (when GL_EXT_framebuff_object is supported).
+			boost::optional<FrameBufferObject> frame_buffer_object;
 		};
 
 		/**

@@ -105,11 +105,14 @@ namespace GPlatesOpenGL
 				SHOULD_HAVE_A_RENDER_TEXTURE_TARGET,
 				SHOULD_HAVE_NO_RENDER_TEXTURE_MAIN_FRAME_BUFFERS,
 				SHOULD_HAVE_A_RENDER_TEXTURE_MAIN_FRAME_BUFFER,
+				SHOULD_HAVE_NO_RENDER_TEXTURE_FRAME_BUFFER_OBJECTS,
+				SHOULD_HAVE_A_RENDER_TEXTURE_FRAME_BUFFER_OBJECT,
 				SHOULD_HAVE_NO_RENDER_QUEUE_BLOCKS,
 				SHOULD_HAVE_A_RENDER_QUEUE_BLOCK,
 				SHOULD_HAVE_NO_COMPILE_DRAW_STATE_BLOCKS,
 				SHOULD_HAVE_A_COMPILE_DRAW_STATE_BLOCK,
-				CANNOT_ENABLE_DEPTH_STENCIL_TEST_IN_RGBA8_RENDER_TARGETS
+				CANNOT_ENABLE_DEPTH_TEST_OR_WRITES_IN_RENDER_TARGET_WITHOUT_DEPTH_BUFFER,
+				CANNOT_ENABLE_STENCIL_TEST_OR_WRITES_IN_RENDER_TARGET_WITHOUT_STENCIL_BUFFER
 			};
 
 			GLRendererAPIError(
@@ -393,8 +396,11 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the maximum render target dimensions when using @a begin_render_target_2D /
+		 * Returns the maximum (untiled) render target dimensions when using @a begin_render_target_2D /
 		 * @a end_render_target_2D (values returned as power-of-two dimensions).
+		 *
+		 * Render target dimensions can exceed these dimensions but in this case the render target
+		 * will be tiled (ie, more than one tile render required per render target).
 		 *
 		 * This is mainly in case the 'GL_EXT_framebuffer_object' extension is not available and
 		 * we fallback to the main framebuffer as a render-target. In which case the dimensions
@@ -410,13 +416,13 @@ namespace GPlatesOpenGL
 		 * as render target and the window is resized). So ideally this should be called every render.
 		 */
 		void
-		get_max_dimensions_render_target_2D(
-				unsigned int &max_render_target_width,
-				unsigned int &max_render_target_height) const;
+		get_max_dimensions_untiled_render_target_2D(
+				unsigned int &max_untiled_render_target_width,
+				unsigned int &max_untiled_render_target_height) const;
 
 
 		/**
-		 * Begin a new 2D render target to render into a texture (without using a depth/stencil buffer).
+		 * Begin a new 2D render target to render into a texture.
 		 *
 		 * If @a supports_floating_point_render_target_2D returns true then the target texture can
 		 * be either fixed-point or floating-point. Otherwise it must be fixed-point because then
@@ -437,11 +443,13 @@ namespace GPlatesOpenGL
 		 * This uses the texture target GL_TEXTURE_2D. If you want other texture targets then use
 		 * @a GLFrameBufferObject instead (along with @a gl_bind_frame_buffer to make it active).
 		 *
-		 * NOTE: A depth/stencil buffer is not provided and so depth and stencil test must be turned off.
-		 * This is because if a framebuffer object is used internally it won't have a depth/stencil buffer.
-		 * And if the main framebuffer is used then we don't want to overwrite its depth/stencil buffer.
-		 * If you want an off-screen render target with a depth buffer then use @a GLFrameBufferObject.
-		 * And you can use @a gl_bind_frame_buffer to make it active.
+		 * NOTE: An optional depth/stencil buffer is provided if either or both @a depth_buffer and
+		 * @a stencil_buffer are specified. If depth/stencil buffering is 'false' then depth/stencil
+		 * testing and writes are turned off internally for the duration of the render target block.
+		 * If framebuffer objects are used internally then a depth/stencil buffer matching the size
+		 * of the render texture will be acquired for the duration of the render target block.
+		 * If the main framebuffer is used internally then its depth/stencil buffer is saved at the
+		 * beginning of the render target block and then restored at the end of the render target block.
 		 *
 		 * This begin / end render target block is also an implicit state block.
 		 * See @a begin_state_block / @a end_state_block (they are called internally by this render target block).
@@ -473,7 +481,9 @@ namespace GPlatesOpenGL
 				boost::optional<GLViewport> render_texture_viewport = boost::none,
 				const double &max_point_size_and_line_width = 0,
 				GLint level = 0,
-				bool reset_to_default_state = true);
+				bool reset_to_default_state = true,
+				bool depth_buffer = false,
+				bool stencil_buffer = false);
 
 		/**
 		 * Begins a tile (sub-region) of the current 2D render target.
@@ -551,7 +561,9 @@ namespace GPlatesOpenGL
 					boost::optional<GLViewport> render_target_viewport = boost::none,
 					const double &max_point_size_and_line_width = 0,
 					GLint level = 0,
-					bool reset_to_default_state = true);
+					bool reset_to_default_state = true,
+					bool depth_buffer = false,
+					bool stencil_buffer = false);
 
 			~RenderTarget2DScope();
 
@@ -1565,11 +1577,6 @@ namespace GPlatesOpenGL
 		GLRendererImpl::frame_buffer_draw_count_type d_current_frame_buffer_draw_count;
 
 		/**
-		 * The framebuffer object to use for render targets (if GL_EXT_framebuff_object supported).
-		 */
-		boost::optional<GLFrameBufferObject::shared_ptr_type> d_framebuffer_object;
-
-		/**
 		 * Stack of currently render target blocks.
 		 *
 		 * The first block pushed always represents the main framebuffer.
@@ -1740,11 +1747,7 @@ namespace GPlatesOpenGL
 
 		void
 		end_framebuffer_object_2D(
-				boost::optional<GLRendererImpl::RenderTextureTarget> &parent_render_texture_target);
-
-		bool
-		check_framebuffer_object_2D_completeness(
-				GLint render_texture_internal_format);
+				GLRendererImpl::RenderTextureTarget &render_texture_target);
 
 		void
 		begin_render_target_block_internal(
@@ -1893,6 +1896,9 @@ namespace GPlatesOpenGL
 		 * 'glWindowPos2i(x, y)' is called since 'glDrawPixels' does not accept x and y).
 		 *
 		 * This overload uses the bound pixel buffer object (on the *unpack* target) to write pixel data to.
+		 *
+		 * NOTE: Internally, the model-view/projection matrices and viewport might be temporarily
+		 * modified to achieve the proper @a x and @a y offsets (but scissor rectangle is left unchanged).
 		 */
 		void
 		gl_draw_pixels(
@@ -1911,6 +1917,9 @@ namespace GPlatesOpenGL
 		 * 'glWindowPos2i(x, y)' is called since 'glDrawPixels' does not accept x and y).
 		 *
 		 * This overload uses client memory (no bound objects) to write pixel data to.
+		 *
+		 * NOTE: Internally, the model-view/projection matrices and viewport might be temporarily
+		 * modified to achieve the proper @a x and @a y offsets (but scissor rectangle is left unchanged).
 		 */
 		void
 		gl_draw_pixels(

@@ -24,6 +24,7 @@
  */
 
 #include <exception>
+#include <map>
 #include <boost/utility/in_place_factory.hpp>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
@@ -36,6 +37,7 @@
 
 #include "GLRenderTargetImpl.h"
 
+#include "GLCapabilities.h"
 #include "GLContext.h"
 #include "GLRenderer.h"
 #include "GLUtils.h"
@@ -43,32 +45,69 @@
 #include "OpenGLException.h"
 
 #include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 
 bool
 GPlatesOpenGL::GLRenderTargetImpl::is_supported(
 		GLRenderer &renderer,
 		GLint texture_internalformat,
-		bool include_depth_buffer)
+		bool include_depth_buffer,
+		bool include_stencil_buffer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
+	// Require support for framebuffer objects.
+	if (!capabilities.framebuffer.gl_EXT_framebuffer_object)
+	{
+		return false;
+	}
+
+	const GLuint render_target_test_dimension = 64;
+
+	// Classify our frame buffer object according to texture format/dimensions, etc.
+	GLFrameBufferObject::Classification frame_buffer_object_classification;
+	frame_buffer_object_classification.set_dimensions(render_target_test_dimension, render_target_test_dimension);
+	frame_buffer_object_classification.set_texture_internal_format(texture_internalformat);
+	if (include_stencil_buffer)
+	{
+		// We need support for GL_EXT_packed_depth_stencil because, for the most part, consumer
+		// hardware only supports stencil for FBOs if it's packed in with depth.
+		if (!capabilities.framebuffer.gl_EXT_packed_depth_stencil)
+		{
+			return false;
+		}
+
+		frame_buffer_object_classification.set_stencil_buffer_internal_format(GL_DEPTH_STENCIL_EXT);
+
+		// With GL_EXT_packed_depth_stencil both depth and stencil share the same render buffer.
+		if (include_depth_buffer)
+		{
+			frame_buffer_object_classification.set_depth_buffer_internal_format(GL_DEPTH_STENCIL_EXT);
+		}
+	}
+	else if (include_depth_buffer)
+	{
+		frame_buffer_object_classification.set_depth_buffer_internal_format(
+				// To improve render buffer re-use we use packed depth/stencil (if supported)
+				// even if only depth is requested...
+				capabilities.framebuffer.gl_EXT_packed_depth_stencil ? GL_DEPTH_STENCIL_EXT : GL_DEPTH_COMPONENT);
+	}
+
+	//! Typedef for a mapping of supported parameters (key) to boolean flag indicating supported.
+	typedef std::map<GLFrameBufferObject::Classification::tuple_type, bool> supported_map_type;
+
 	static supported_map_type supported;
 
 	// Parameters to lookup supported map.
-	const supported_key_type supported_key(texture_internalformat, include_depth_buffer);
+	const GLFrameBufferObject::Classification::tuple_type supported_key =
+			frame_buffer_object_classification.get_tuple();
 
 	// Only test for support the first time we're called with these parameters.
 	if (supported.find(supported_key) == supported.end())
 	{
 		// By default unsupported unless we make it through the following tests.
 		supported[supported_key] = false;
-
-		const GLCapabilities &capabilities = renderer.get_capabilities();
-
-		// Require support for framebuffer objects.
-		if (!capabilities.framebuffer.gl_EXT_framebuffer_object)
-		{
-			return false;
-		}
 
 		// Make sure we leave the OpenGL state the way it was.
 		GLRenderer::StateBlockScope save_restore_state_scope(renderer);
@@ -77,15 +116,27 @@ GPlatesOpenGL::GLRenderTargetImpl::is_supported(
 		// the internal formats of texture and depth buffer are compatible.
 		// GL_EXT_framebuffer_object is fairly strict there (GL_ARB_framebuffer_object is better
 		// but not supported on as much hardware).
-		GLRenderTargetImpl render_target(renderer, texture_internalformat, include_depth_buffer);
+		GLRenderTargetImpl render_target(
+				renderer,
+				texture_internalformat,
+				include_depth_buffer,
+				include_stencil_buffer);
 
 		// Make sure we allocate storage first.
-		render_target.set_render_target_dimensions(renderer, 64, 64);
+		render_target.set_render_target_dimensions(
+				renderer,
+				render_target_test_dimension,
+				render_target_test_dimension);
 		render_target.begin_render(renderer);
 		render_target.end_render(renderer);
 
-		// Get access to the internal framebuffer object associated with the current OpenGL context.
-		if (!render_target.get_frame_buffer_object(renderer)->gl_check_frame_buffer_status(renderer))
+		// Now that we've attached the texture (and optional depth/stencil buffer) to the framebuffer
+		// object we need to check for framebuffer completeness.
+		if (!renderer.get_context().get_non_shared_state()->check_framebuffer_object_completeness(
+				renderer,
+				// Get access to the internal framebuffer object associated with the current OpenGL context...
+				render_target.get_frame_buffer_object(renderer),
+				frame_buffer_object_classification))
 		{
 			return false;
 		}
@@ -101,14 +152,37 @@ GPlatesOpenGL::GLRenderTargetImpl::is_supported(
 GPlatesOpenGL::GLRenderTargetImpl::GLRenderTargetImpl(
 		GLRenderer &renderer,
 		GLint texture_internalformat,
-		bool include_depth_buffer) :
+		bool include_depth_buffer,
+		bool include_stencil_buffer) :
 	d_texture(GLTexture::create(renderer)),
 	d_texture_internalformat(texture_internalformat),
 	d_allocated_storage(false)
 {
-	if (include_depth_buffer)
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
+	// Create the depth/stencil buffers if requested.
+	if (include_stencil_buffer)
 	{
-		d_depth_buffer = GLRenderBufferObject::create(renderer);
+		// This should have been tested in 'is_supported()'.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				capabilities.framebuffer.gl_EXT_packed_depth_stencil,
+				GPLATES_ASSERTION_SOURCE);
+
+		d_stencil_buffer = boost::in_place(GLRenderBufferObject::create(renderer), GL_DEPTH_STENCIL_EXT);
+
+		// With GL_EXT_packed_depth_stencil both depth and stencil share the same render buffer.
+		if (include_depth_buffer)
+		{
+			d_depth_buffer = boost::in_place(d_stencil_buffer->render_buffer, GL_DEPTH_STENCIL_EXT);
+		}
+	}
+	else if (include_depth_buffer)
+	{
+		d_depth_buffer = boost::in_place(
+				GLRenderBufferObject::create(renderer),
+				// To improve render buffer re-use we use packed depth/stencil (if supported)
+				// even if only depth is requested...
+				capabilities.framebuffer.gl_EXT_packed_depth_stencil ? GL_DEPTH_STENCIL_EXT : GL_DEPTH_COMPONENT);
 	}
 
 	//
@@ -181,11 +255,22 @@ GPlatesOpenGL::GLRenderTargetImpl::set_render_target_dimensions(
 				render_target_width, render_target_height,
 				0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
+		// Allocate the stencil buffer storage of the requested dimensions.
+		if (d_stencil_buffer)
+		{
+			d_stencil_buffer->render_buffer->gl_render_buffer_storage(
+					renderer, d_stencil_buffer->internalformat, render_target_width, render_target_height);
+		}
 		// Allocate the depth buffer storage of the requested dimensions.
 		if (d_depth_buffer)
 		{
-			d_depth_buffer.get()->gl_render_buffer_storage(
-					renderer, GL_DEPTH_COMPONENT, render_target_width, render_target_height);
+			// If the stencil and depth buffer share the same buffer then no need to allocate storage again.
+			if (!d_stencil_buffer ||
+				d_stencil_buffer->render_buffer != d_depth_buffer->render_buffer)
+			{
+				d_depth_buffer->render_buffer->gl_render_buffer_storage(
+						renderer, d_depth_buffer->internalformat, render_target_width, render_target_height);
+			}
 		}
 	}
 
@@ -228,7 +313,13 @@ GPlatesOpenGL::GLRenderTargetImpl::begin_render(
 		if (d_depth_buffer)
 		{
 			context_object_state.framebuffer->gl_attach_render_buffer(
-					renderer, d_depth_buffer.get(), GL_DEPTH_ATTACHMENT_EXT);
+					renderer, d_depth_buffer->render_buffer, GL_DEPTH_ATTACHMENT_EXT);
+		}
+		// Attach the stencil buffer to the framebuffer object.
+		if (d_stencil_buffer)
+		{
+			context_object_state.framebuffer->gl_attach_render_buffer(
+					renderer, d_stencil_buffer->render_buffer, GL_STENCIL_ATTACHMENT_EXT);
 		}
 
 		context_object_state.attached_to_framebuffer = true;

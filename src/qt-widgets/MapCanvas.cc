@@ -386,6 +386,7 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 			new std::vector<cache_handle_type>());
 
 	// In case we need to preserve the main frame buffer.
+	// We never need to preserve the depth/stencil buffer though.
 	GPlatesOpenGL::GLSaveRestoreFrameBuffer save_restore_main_framebuffer(
 			renderer->get_capabilities(),
 			tile_render.get_max_tile_render_target_width(),
@@ -565,6 +566,7 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 			feedback_paint_device.height());
 
 	// In case we need to preserve the main frame buffer.
+	// We never need to preserve the depth/stencil buffer though.
 	GPlatesOpenGL::GLSaveRestoreFrameBuffer save_restore_main_framebuffer(
 			renderer->get_capabilities(),
 			map_canvas_paint_device->width(),

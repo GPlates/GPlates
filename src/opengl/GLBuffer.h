@@ -75,8 +75,8 @@ namespace GPlatesOpenGL
 		//
 		static const target_type TARGET_ARRAY_BUFFER;          // When reading/writing vertex attribute data (vertices).
 		static const target_type TARGET_ELEMENT_ARRAY_BUFFER;  // When reading/writing vertex element data (indices).
-		static const target_type TARGET_PIXEL_UNPACK_BUFFER;   // When reading pixel data.
-		static const target_type TARGET_PIXEL_PACK_BUFFER;     // When writing pixel data.
+		static const target_type TARGET_PIXEL_UNPACK_BUFFER;   // When writing pixel data.
+		static const target_type TARGET_PIXEL_PACK_BUFFER;     // When reading pixel data.
 
 
 		//! Typedef for the usage of the buffer.

@@ -309,13 +309,13 @@ GPlatesOpenGL::GLState::apply_state_used_by_gl_clear(
 
 
 void
-GPlatesOpenGL::GLState::apply_state_used_by_gl_read_or_draw_pixels(
+GPlatesOpenGL::GLState::apply_state_used_by_gl_read_pixels(
 		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// NOTE: There are no bind vertex array object state-sets or dependent state-sets to worry about here.
-	// Simple application of the 'glReadPixel' or 'glDrawPixels' state set slots is all that is required.
-	apply_state(capabilities, last_applied_state, d_shared_data->gl_read_or_draw_pixels_state_set_slots);
+	// Simple application of the 'glReadPixels' state set slots is all that is required.
+	apply_state(capabilities, last_applied_state, d_shared_data->gl_read_pixels_state_set_slots);
 }
 
 
@@ -823,13 +823,13 @@ GPlatesOpenGL::GLState::SharedData::SharedData(
 	vertex_array_state_set_slots(get_num_state_set_slot_flag32s(state_set_keys)),
 	inverse_vertex_array_state_set_slots(get_num_state_set_slot_flag32s(state_set_keys)),
 	gl_clear_state_set_slots(get_num_state_set_slot_flag32s(state_set_keys)),
-	gl_read_or_draw_pixels_state_set_slots(get_num_state_set_slot_flag32s(state_set_keys)),
+	gl_read_pixels_state_set_slots(get_num_state_set_slot_flag32s(state_set_keys)),
 	default_vertex_array_object_current_context_state(default_vertex_array_object_current_context_state_)
 {
 	initialise_dependent_state_set_slots(capabilities, state_set_keys);
 	initialise_vertex_array_state_set_slots(capabilities, state_set_keys);
 	initialise_gl_clear_state_set_slots(capabilities, state_set_keys);
-	initialise_gl_read_or_draw_pixels_state_set_slots(capabilities, state_set_keys);
+	initialise_gl_read_pixels_state_set_slots(capabilities, state_set_keys);
 	initialise_mutable_state_set_slots(capabilities, state_set_keys);
 }
 
@@ -990,13 +990,13 @@ GPlatesOpenGL::GLState::SharedData::initialise_gl_clear_state_set_slots(
 
 
 void
-GPlatesOpenGL::GLState::SharedData::initialise_gl_read_or_draw_pixels_state_set_slots(
+GPlatesOpenGL::GLState::SharedData::initialise_gl_read_pixels_state_set_slots(
 		const GLCapabilities &capabilities,
 		const GLStateSetKeys &state_set_keys)
 {
-	// Specify the state set keys representing states needed by 'glReadPixels' or 'glDrawPixels'.
-	set_state_set_slot_flag(gl_read_or_draw_pixels_state_set_slots, GLStateSetKeys::KEY_BIND_FRAME_BUFFER);
-	set_state_set_slot_flag(gl_read_or_draw_pixels_state_set_slots, GLStateSetKeys::KEY_BIND_PIXEL_PACK_BUFFER_OBJECT);
+	// Specify the state set keys representing states needed by 'glReadPixels'.
+	set_state_set_slot_flag(gl_read_pixels_state_set_slots, GLStateSetKeys::KEY_BIND_FRAME_BUFFER);
+	set_state_set_slot_flag(gl_read_pixels_state_set_slots, GLStateSetKeys::KEY_BIND_PIXEL_PACK_BUFFER_OBJECT);
 }
 
 

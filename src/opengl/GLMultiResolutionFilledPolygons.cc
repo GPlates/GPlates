@@ -983,7 +983,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 		// Ie, if we're limited to the current dimensions of the main framebuffer (the current window).
 		unsigned int render_target_width;
 		unsigned int render_target_height;
-		renderer.get_max_dimensions_render_target_2D(render_target_width, render_target_height);
+		renderer.get_max_dimensions_untiled_render_target_2D(render_target_width, render_target_height);
 		if (render_target_width < d_tile_texel_dimension)
 		{
 			render_target_width = d_tile_texel_dimension;

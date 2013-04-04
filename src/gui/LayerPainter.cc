@@ -399,9 +399,12 @@ GPlatesGui::LayerPainter::paint_scalar_fields(
 				renderer.gl_load_matrix(GL_PROJECTION, projection_matrix);
 
 				// Clear the main framebuffer (colour and depth) before rendering each scalar field.
+				// We also clear the stencil buffer in case it is used - also it's usually
+				// interleaved with depth so it's more efficient to clear both depth and stencil.
 				renderer.gl_clear_color();
 				renderer.gl_clear_depth();
-				renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				renderer.gl_clear_stencil();
+				renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 				scalar_field_cache_handle = d_gl_visual_layers->render_scalar_field_3d(
 						renderer,
@@ -485,9 +488,12 @@ GPlatesGui::LayerPainter::paint_rasters(
 				renderer.gl_load_matrix(GL_PROJECTION, projection_matrix);
 
 				// Clear the main framebuffer (colour and depth) before rendering each raster.
+				// We also clear the stencil buffer in case it is used - also it's usually
+				// interleaved with depth so it's more efficient to clear both depth and stencil.
 				renderer.gl_clear_color();
 				renderer.gl_clear_depth();
-				renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				renderer.gl_clear_stencil();
+				renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 				raster_cache_handle = d_gl_visual_layers->render_raster(
 						renderer,
@@ -838,10 +844,13 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::paint_filled_polygons(
 			projection_matrix.gl_mult_matrix(renderer.gl_get_matrix(GL_PROJECTION));
 			renderer.gl_load_matrix(GL_PROJECTION, projection_matrix);
 
-			// Clear the main framebuffer (colour and depth) before rendering each raster.
+			// Clear the main framebuffer (colour and depth) before rendering the filled polygons.
+			// We also clear the stencil buffer since it is used when filling polygons - also it's
+			// usually interleaved with depth so it's more efficient to clear both depth and stencil.
 			renderer.gl_clear_color();
 			renderer.gl_clear_depth();
-			renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			renderer.gl_clear_stencil();
+			renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 			gl_visual_layers.render_filled_polygons(renderer, d_filled_polygons);
 		}

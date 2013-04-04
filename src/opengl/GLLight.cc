@@ -245,8 +245,19 @@ GPlatesOpenGL::GLLight::update_map_view(
 	const GLCompiledDrawState::non_null_ptr_to_const_type full_screen_quad_drawable =
 			renderer.get_context().get_shared_state()->get_full_screen_2D_textured_quad(renderer);
 
+	// Classify our frame buffer object according to texture format/dimensions.
+	GLFrameBufferObject::Classification framebuffer_object_classification;
+	framebuffer_object_classification.set_dimensions(
+			d_map_view_light_direction_cube_texture->get_width().get(),
+			d_map_view_light_direction_cube_texture->get_height().get());
+	framebuffer_object_classification.set_texture_internal_format(
+			d_map_view_light_direction_cube_texture->get_internal_format().get());
+
+	// Acquire and bind a frame buffer object.
 	GLFrameBufferObject::shared_ptr_type framebuffer_object =
-			renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(renderer);
+			renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(
+					renderer,
+					framebuffer_object_classification);
 	renderer.gl_bind_frame_buffer(framebuffer_object);
 
 	// Bind the shader program for rendering light direction for the 2D map views.
@@ -285,6 +296,9 @@ GPlatesOpenGL::GLLight::update_map_view(
 		// Render the lat/lon mesh.
 		renderer.apply_compiled_draw_state(*full_screen_quad_drawable);
 	}
+
+	// Detach from the framebuffer object before we return it to the framebuffer object cache.
+	framebuffer_object->gl_detach_all(renderer);
 }
 
 

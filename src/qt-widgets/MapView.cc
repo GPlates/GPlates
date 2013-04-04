@@ -872,6 +872,8 @@ GPlatesQtWidgets::MapView::MapViewport::MapViewport(
 	//   are pressed.
 	//    -- http://doc.trolltech.com/4.3/qwidget.html#mouseTracking-prop
 	setMouseTracking(true);
+
+	setAttribute(Qt::WA_NoSystemBackground);
 }
 
 

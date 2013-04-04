@@ -160,9 +160,12 @@ GPlatesGui::Map::paint(
 		// use common layer painting code with the 3D globe rendering that enables depth testing.
 		// In our case the depth testing will always return true - depth testing is very fast
 		// in modern graphics hardware so we don't need to optimise it away.
+		// We also clear the stencil buffer in case it is used - also it's usually interleaved
+		// with depth so it's more efficient to clear both depth and stencil.
 		renderer.gl_clear_color(); // Clear colour to transparent black
 		renderer.gl_clear_depth(); // Clear depth to 1.0
-		renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		renderer.gl_clear_stencil();
+		renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 		// Set the scale factor.
 		d_rendered_geom_collection_painter.set_scale(scale);

@@ -161,8 +161,19 @@ namespace GPlatesOpenGL
 			// Make sure we leave the OpenGL state the way it was.
 			GLRenderer::StateBlockScope save_restore_state(renderer);
 
+			// Classify our frame buffer object according to texture format/dimensions.
+			GLFrameBufferObject::Classification framebuffer_object_classification;
+			framebuffer_object_classification.set_dimensions(
+					texture->get_width().get(),
+					texture->get_height().get());
+			framebuffer_object_classification.set_texture_internal_format(
+					texture->get_internal_format().get());
+
+			// Acquire and bind a frame buffer object.
 			GLFrameBufferObject::shared_ptr_type framebuffer_object =
-					renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(renderer);
+					renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(
+							renderer,
+							framebuffer_object_classification);
 			renderer.gl_bind_frame_buffer(framebuffer_object);
 
 			// Buffer size needed for a texture array layer.
@@ -257,6 +268,9 @@ namespace GPlatesOpenGL
 				QString image_filename = QString("%1%2.png").arg(image_file_basename).arg(layer);
 				qimage.save(image_filename, "PNG");
 			}
+
+			// Detach from the framebuffer object before we return it to the framebuffer object cache.
+			framebuffer_object->gl_detach_all(renderer);
 		}
 	}
 }
@@ -329,8 +343,8 @@ GPlatesOpenGL::GLScalarField3D::is_supported(
 		}
 
 		// Need to be able to render using a framebuffer object with an attached depth buffer.
-		if (!GLScreenRenderTarget::is_supported(renderer, GL_RGBA32F_ARB, true) ||
-			!GLScreenRenderTarget::is_supported(renderer, GL_RGBA8, true))
+		if (!GLScreenRenderTarget::is_supported(renderer, GL_RGBA32F_ARB, true, false) ||
+			!GLScreenRenderTarget::is_supported(renderer, GL_RGBA8, true, false))
 		{
 			qWarning() << "3D scalar fields NOT supported by this OpenGL system - unsupported FBO/depth-buffer combination.";
 			return false;
@@ -1072,8 +1086,19 @@ GPlatesOpenGL::GLScalarField3D::render_surface_fill_mask(
 	// Temporarily acquire a texture array to render the surface fill mask into.
 	surface_fill_mask_texture = acquire_surface_fill_mask_texture(renderer);
 
+	// Classify our frame buffer object according to texture format/dimensions.
+	GLFrameBufferObject::Classification framebuffer_object_classification;
+	framebuffer_object_classification.set_dimensions(
+			surface_fill_mask_texture->get_width().get(),
+			surface_fill_mask_texture->get_height().get());
+	framebuffer_object_classification.set_texture_internal_format(
+			surface_fill_mask_texture->get_internal_format().get());
+
+	// Acquire and bind a frame buffer object.
 	GLFrameBufferObject::shared_ptr_type framebuffer_object =
-			renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(renderer);
+			renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(
+					renderer,
+					framebuffer_object_classification);
 	renderer.gl_bind_frame_buffer(framebuffer_object);
 
 	// Begin rendering to the entire texture array (layered texture rendering).
@@ -1128,6 +1153,9 @@ GPlatesOpenGL::GLScalarField3D::render_surface_fill_mask(
 
 		surface_geometry->accept_visitor(surface_fill_mask_visitor);
 	}
+
+	// Detach from the framebuffer object before we return it to the framebuffer object cache.
+	framebuffer_object->gl_detach_all(renderer);
 
 	return true;
 }
@@ -1199,7 +1227,8 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_depth_range(
 			renderer.get_context().get_shared_state()->acquire_screen_render_target(
 					renderer,
 					GL_RGBA32F_ARB/*texture_internalformat*/,
-					false/*include_depth_buffer*/);
+					false/*include_depth_buffer*/,
+					false/*include_stencil_buffer*/);
 
 	// We've already checked for screen render target support in 'is_supported()' so this shouldn't fail.
 	// If it does then return false to ignore request to render boundary of volume fill region.
@@ -1368,7 +1397,8 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_walls(
 			renderer.get_context().get_shared_state()->acquire_screen_render_target(
 					renderer,
 					GL_RGBA32F_ARB/*texture_internalformat*/,
-					true/*include_depth_buffer*/);
+					true/*include_depth_buffer*/,
+					false/*include_stencil_buffer*/);
 
 	// We've already checked for screen render target support in 'is_supported()' so this shouldn't fail.
 	// If it does then return false to ignore request to render walls of volume fill region.
@@ -1408,6 +1438,10 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_walls(
 	renderer.gl_depth_mask(GL_TRUE);
 
 	// Clear colour and depth buffers in render target.
+	//
+	// We also clear the stencil buffer in case it is used - also it's usually interleaved
+	// with depth so it's more efficient to clear both depth and stencil.
+	//
 	// Note that this clears the depth render buffer attached to the framebuffer object
 	// in the GLScreenRenderTarget (not the main framebuffer).
 	// The colour buffer stores normals as (signed) floating-point.
@@ -1416,7 +1450,8 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_walls(
 	// in the range [-1, 1] and 1 corresponds to the far clip plane.
 	renderer.gl_clear_color(0.0f, 0.0f, 0.0f, 1.0f);
 	renderer.gl_clear_depth(); // Clear depth to 1.0
-	renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Colour buffer and depth buffer.
+	renderer.gl_clear_stencil();
+	renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	// Disable colour writes of the inner white sphere.
 	// We just want to write the inner sphere depth values into the depth buffer so that

@@ -26,7 +26,6 @@
 #ifndef GPLATES_OPENGL_GLRENDERTARGETIMPL_H
 #define GPLATES_OPENGL_GLRENDERTARGETIMPL_H
 
-#include <map>
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -45,7 +44,7 @@ namespace GPlatesOpenGL
 
 	/**
 	 * Implementation used to render to both fixed-size and screen-size textures
-	 * (with optional associated hardware depth buffer).
+	 * (with optional associated hardware depth/stencil buffer).
 	 *
 	 * NOTE: While native framebuffer objects in OpenGL cannot be shared across contexts,
 	 * the @a GLRenderTargetImpl wrapper can (because internally it creates a framebuffer object
@@ -58,26 +57,32 @@ namespace GPlatesOpenGL
 	public:
 
 		/**
-		 * Returns true if the texture internal format and optional depth buffer combination are
+		 * Returns true if the texture internal format and optional depth/stencil buffer combination are
 		 * supported by the runtime system (also requires support for GL_EXT_framebuffer_object).
+		 *
+		 * If @a include_stencil_buffer is true then GL_EXT_packed_depth_stencil is also required
+		 * because, for the most part, consumer hardware only supports stencil for FBOs if it's
+		 * packed in with depth.
 		 */
 		static
 		bool
 		is_supported(
 				GLRenderer &renderer,
 				GLint texture_internalformat,
-				bool include_depth_buffer);
+				bool include_depth_buffer,
+				bool include_stencil_buffer);
 
 
 		GLRenderTargetImpl(
 				GLRenderer &renderer,
 				GLint texture_internalformat,
-				bool include_depth_buffer);
+				bool include_depth_buffer,
+				bool include_stencil_buffer);
 
 
 		/**
-		 * Ensures internal texture (and optional depth buffer) have a storage allocation of the
-		 * specified dimensions.
+		 * Ensures internal texture (and optional depth/stencil buffer) have a storage allocation
+		 * of the specified dimensions.
 		 *
 		 * This must be called at least once before the first call to @a begin_render.
 		 * It can be called anytime to change the render target dimensions except it cannot be
@@ -124,12 +129,6 @@ namespace GPlatesOpenGL
 		get_texture() const;
 
 	private:
-
-		//! Typedef for a key made up of the parameters of parameters to @a is_supported.
-		typedef boost::tuple<GLint, bool> supported_key_type;
-
-		//! Typedef for a mapping of supported parameters (key) to boolean flag indicating supported.
-		typedef std::map<supported_key_type, bool> supported_map_type;
 
 		/**
 		 * The framebuffer object state as currently set in each OpenGL context.
@@ -184,6 +183,23 @@ namespace GPlatesOpenGL
 			boost::optional<GLFrameBufferObject::shared_ptr_to_const_type> previous_framebuffer;
 		};
 
+		/**
+		 * Information for a depth/stencil render buffer.
+		 */
+		struct RenderBuffer
+		{
+			explicit
+			RenderBuffer(
+					const GLRenderBufferObject::shared_ptr_type &render_buffer_,
+					GLint internalformat_) :
+				render_buffer(render_buffer_),
+				internalformat(internalformat_)
+			{  }
+
+			GLRenderBufferObject::shared_ptr_type render_buffer;
+			GLint internalformat;
+		};
+
 
 		/**
 		 * The vertex array object state for each context that we've encountered.
@@ -192,7 +208,8 @@ namespace GPlatesOpenGL
 
 		GLTexture::shared_ptr_type d_texture;
 		GLint d_texture_internalformat;
-		boost::optional<GLRenderBufferObject::shared_ptr_type> d_depth_buffer;
+		boost::optional<RenderBuffer> d_depth_buffer;
+		boost::optional<RenderBuffer> d_stencil_buffer;
 
 		/**
 		 * Is false if we've not yet allocated storage for the texture and depth buffer.

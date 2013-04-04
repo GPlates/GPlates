@@ -63,7 +63,6 @@ GPlatesOpenGL::GLImageUtils::copy_rgba8_frame_buffer_into_argb32_qimage(
 	GLPixelBuffer::shared_ptr_type pixel_buffer =
 			renderer.get_context().get_shared_state()->acquire_pixel_buffer(
 					renderer,
-					GLBuffer::TARGET_PIXEL_PACK_BUFFER,
 					4/*RGBA8*/
 							// We use power-of-two dimensions since (due to the finite number of
 							// power-of-two dimensions) we have more chance of re-using a pixel buffer...

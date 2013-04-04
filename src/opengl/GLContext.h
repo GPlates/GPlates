@@ -264,7 +264,6 @@ namespace GPlatesOpenGL
 			GLPixelBuffer::shared_ptr_type
 			acquire_pixel_buffer(
 					GLRenderer &renderer,
-					GLBuffer::target_type target,
 					unsigned int size,
 					GLBuffer::usage_type usage);
 
@@ -289,8 +288,34 @@ namespace GPlatesOpenGL
 					GLRenderer &renderer);
 
 			/**
+			 * Returns a render buffer, from an internal cache, that matches the specified parameters.
+			 *
+			 * Use this when you need a render buffer object temporarily and want to promote
+			 * resource sharing by returning it for others to use.
+			 *
+			 * NOTE: The returned render buffer will have its storage allocated.
+			 *
+			 * Note that, since the returned render buffer is non-const, it's possible to change its
+			 * dimensions, but don't do this as it will cause problems when the render buffer is
+			 * recycled and used by another client (in fact an exception is thrown when the next
+			 * client recycles the render buffer).
+			 *
+			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
+			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
+			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
+			 *
+			 * @throws PreconditionViolationError if GL_EXT_framebuffer_object not supported.
+			 */
+			GLRenderBufferObject::shared_ptr_type
+			acquire_render_buffer_object(
+					GLRenderer &renderer,
+					GLint internalformat,
+					GLsizei width,
+					GLsizei height);
+
+			/**
 			 * Returns a convenience object for rendering to a fixed-size render texture with an
-			 * optional depth buffer, from an internal cache, that matches the specified parameters.
+			 * optional depth/stencil buffer, from an internal cache, that matches the specified parameters.
 			 *
 			 * Use this when you need to render to a fixed-size texture temporarily and want to promote
 			 * resource sharing by returning it for others to use.
@@ -306,19 +331,20 @@ namespace GPlatesOpenGL
 					GLRenderer &renderer,
 					GLint texture_internalformat,
 					bool include_depth_buffer,
+					bool include_stencil_buffer,
 					unsigned int render_target_width,
 					unsigned int render_target_height);
 
 			/**
 			 * Returns a convenience object for rendering to a screen-size render texture with an
-			 * optional depth buffer, from an internal cache, that matches the specified parameters.
+			 * optional depth/stencil buffer, from an internal cache, that matches the specified parameters.
 			 *
 			 * Use this when you need to render to screen-size texture temporarily and want to promote
 			 * resource sharing by returning it for others to use. This is useful when multiple clients
 			 * need to independently render to the same window (with same viewport dimensions).
 			 *
-			 * NOTE: GLScreenRenderTarget resizes its internal texture (and depth buffer) when clients
-			 * specify the viewport dimensions they are rendering to.
+			 * NOTE: GLScreenRenderTarget resizes its internal texture (and depth/stencil buffer)
+			 * when clients specify the viewport dimensions they are rendering to.
 			 * So re-use is only useful when all clients render to the same viewport.
 			 * This is not currently always the case (colouring preview window uses a different size
 			 * viewport than the main window).
@@ -333,7 +359,8 @@ namespace GPlatesOpenGL
 			acquire_screen_render_target(
 					GLRenderer &renderer,
 					GLint texture_internalformat,
-					bool include_depth_buffer);
+					bool include_depth_buffer,
+					bool include_stencil_buffer);
 
 			/**
 			 * Creates a compiled draw state that can render a full-screen textured quad.
@@ -380,7 +407,7 @@ namespace GPlatesOpenGL
 
 
 			//! Typedef for a key made up of the parameters of @a acquire_pixel_buffer.
-			typedef boost::tuple<GLBuffer::target_type, unsigned int, GLBuffer::usage_type> pixel_buffer_key_type;
+			typedef boost::tuple<unsigned int, GLBuffer::usage_type> pixel_buffer_key_type;
 
 			//! Typedef for a pixel buffer cache.
 			typedef GPlatesUtils::ObjectCache<GLPixelBuffer> pixel_buffer_cache_type;
@@ -389,8 +416,19 @@ namespace GPlatesOpenGL
 			typedef std::map<pixel_buffer_key_type, pixel_buffer_cache_type::shared_ptr_type> pixel_buffer_cache_map_type;
 
 
+			//! Typedef for a key made up of the parameters of @a acquire_render_buffer_object.
+			typedef boost::tuple<GLint, GLsizei, GLsizei> render_buffer_object_key_type;
+
+			//! Typedef for a render buffer object cache.
+			typedef GPlatesUtils::ObjectCache<GLRenderBufferObject> render_buffer_object_cache_type;
+
+			//! Typedef for a mapping of render buffer object parameters (key) to render buffer object caches.
+			typedef std::map<render_buffer_object_key_type, render_buffer_object_cache_type::shared_ptr_type>
+					render_buffer_object_cache_map_type;
+
+
 			//! Typedef for a key made up of the parameters of @a acquire_render_target.
-			typedef boost::tuple<GLint, bool, unsigned int, unsigned int> render_target_key_type;
+			typedef boost::tuple<GLint, bool, bool, unsigned int, unsigned int> render_target_key_type;
 
 			//! Typedef for a render target cache.
 			typedef GPlatesUtils::ObjectCache<GLRenderTarget> render_target_cache_type;
@@ -400,7 +438,7 @@ namespace GPlatesOpenGL
 					render_target_cache_map_type;
 
 			//! Typedef for a key made up of the parameters of @a acquire_screen_render_target.
-			typedef boost::tuple<GLint, bool> screen_render_target_key_type;
+			typedef boost::tuple<GLint, bool, bool> screen_render_target_key_type;
 
 			//! Typedef for a screen render target cache.
 			typedef GPlatesUtils::ObjectCache<GLScreenRenderTarget> screen_render_target_cache_type;
@@ -424,6 +462,8 @@ namespace GPlatesOpenGL
 			texture_cache_map_type d_texture_cache_map;
 
 			pixel_buffer_cache_map_type d_pixel_buffer_cache_map;
+
+			render_buffer_object_cache_map_type d_render_buffer_object_cache_map;
 
 			render_target_cache_map_type d_render_target_cache_map;
 			screen_render_target_cache_map_type d_screen_render_target_cache_map;
@@ -470,6 +510,10 @@ namespace GPlatesOpenGL
 			get_pixel_buffer_cache(
 					const pixel_buffer_key_type &pixel_buffer_key);
 
+			render_buffer_object_cache_type::shared_ptr_type
+			get_render_buffer_object_cache(
+					const render_buffer_object_key_type &render_buffer_object_key);
+
 			render_target_cache_type::shared_ptr_type
 			get_render_target_cache(
 					const render_target_key_type &render_target_key);
@@ -512,21 +556,66 @@ namespace GPlatesOpenGL
 			}
 
 			/**
-			 * Returns a framebuffer object from an internal cache.
+			 * Returns a framebuffer object from an internal cache (GL_EXT_framebuffer_object must be supported).
 			 *
 			 * Use this when you need a framebuffer object temporarily and want to promote
 			 * resource sharing by returning it for others to use.
 			 *
+			 * According to Nvidia in "The OpenGL Framebuffer Object Extension" at
+			 * http://http.download.nvidia.com/developer/presentations/2005/GDC/OpenGL_Day/OpenGL_FrameBuffer_Object.pdf
+			 * ...
+			 *
+			 *   In order of increasing performance:
+			 *
+			 *	   Multiple FBOs
+			 *		   create a separate FBO for each texture you want to render to
+			 *		   switch using BindFramebuffer()
+			 *		   can be 2x faster than wglMakeCurrent() in beta NVIDIA drivers
+			 *	   Single FBO, multiple texture attachments
+			 *		   textures should have same format and dimensions
+			 *		   use FramebufferTexture() to switch between textures
+			 *	   Single FBO, multiple texture attachments
+			 *		   attach textures to different color attachments
+			 *		   use glDrawBuffer() to switch rendering to different color attachments
+			 *
+			 * ...so we optimize for the second case above by requesting the texture internal format
+			 * and dimensions. This enables the same frame buffer object to be shared by
+			 * render targets with the same texture format and dimensions. This request is provided
+			 * by the @a classification parameter. If the default is provided then render targets with
+			 * different texture formats and dimensions could end up sharing the same framebuffer
+			 * object which is less efficient.
+			 *
 			 * NOTE: 'gl_detach_all()' is called on the returned framebuffer object (just before returning)
 			 * since the attachments made by other clients are unknown.
+			 * The default read/draw buffers are also set on the returned framebuffer object.
 			 *
 			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
 			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
 			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
+			 *
+			 * @throws PreconditionViolationError if GL_EXT_framebuffer_object not supported.
 			 */
 			GLFrameBufferObject::shared_ptr_type
 			acquire_frame_buffer_object(
-					GLRenderer &renderer);
+					GLRenderer &renderer,
+					const GLFrameBufferObject::Classification &classification = GLFrameBufferObject::Classification());
+
+
+			/**
+			 * Checks the specified frame buffer object for completeness (using 'glCheckFramebufferStatus').
+			 *
+			 * Checking the framebuffer status can sometimes be expensive even if called once per frame.
+			 * One profile measured 142msec for a single check - not sure if that was due to the check
+			 * or somehow the driver needed to wait for some reason and happened at that call.
+			 *
+			 * In any case we cache the results to ensure the same check is not repeated more than
+			 * once for this context and for a particular frame buffer object classification.
+			 */
+			bool
+			check_framebuffer_object_completeness(
+					GLRenderer &renderer,
+					const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object,
+					const GLFrameBufferObject::Classification &frame_buffer_object_classification) const;
 
 
 			/**
@@ -560,12 +649,35 @@ namespace GPlatesOpenGL
 			}
 
 		private:
+
+			//! Typedef for a key made up of the parameters of @a acquire_frame_buffer_object.
+			typedef GLFrameBufferObject::Classification::tuple_type frame_buffer_object_key_type;
+
+			//! Typedef for a frame buffer object cache.
+			typedef GPlatesUtils::ObjectCache<GLFrameBufferObject> frame_buffer_object_cache_type;
+
+			//! Typedef for a mapping of frame buffer object parameters (key) to frame buffer object caches.
+			typedef std::map<frame_buffer_object_key_type, frame_buffer_object_cache_type::shared_ptr_type>
+					frame_buffer_object_cache_map_type;
+
+			//! Typedef for a mapping of frame buffer object classfication to 'glCheckFramebufferStatus' result.
+			typedef std::map<GLFrameBufferObject::Classification::tuple_type, bool> frame_buffer_state_to_status_map_type;
+
+
 			boost::shared_ptr<GLFrameBufferObject::resource_manager_type> d_frame_buffer_object_resource_manager;
-			GPlatesUtils::ObjectCache<GLFrameBufferObject>::shared_ptr_type d_frame_buffer_object_cache;
+			frame_buffer_object_cache_map_type d_frame_buffer_object_cache_map;
+
+			//! Cache results of 'glCheckFramebufferStatus' as an optimisation since it's expensive to call.
+			mutable frame_buffer_state_to_status_map_type d_frame_buffer_state_to_status_map;
 
 			boost::shared_ptr<GLRenderBufferObject::resource_manager_type> d_render_buffer_object_resource_manager;
 
 			boost::shared_ptr<GLVertexArrayObject::resource_manager_type> d_vertex_array_object_resource_manager;
+
+
+			frame_buffer_object_cache_type::shared_ptr_type
+			get_frame_buffer_object_cache(
+					const frame_buffer_object_key_type &frame_buffer_object_key);
 		};
 
 
