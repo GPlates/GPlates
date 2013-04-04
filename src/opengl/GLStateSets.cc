@@ -2865,7 +2865,7 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_func == GL_ALWAYS &&
 		d_ref == 0 &&
-		d_mask == ~0)
+		d_mask == ~GLuint(0))
 	{
 		return;
 	}
@@ -2881,12 +2881,12 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_func == GL_ALWAYS &&
 		d_ref == 0 &&
-		d_mask == ~0)
+		d_mask == ~GLuint(0))
 	{
 		return;
 	}
 
-	glStencilFunc(GL_ALWAYS, 0, ~0);
+	glStencilFunc(GL_ALWAYS, 0, ~GLuint(0));
 }
 
 
@@ -2914,7 +2914,7 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_from_default_state(
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
-	if (d_stencil == ~0/*all ones*/)
+	if (d_stencil == ~GLuint(0)/*all ones*/)
 	{
 		return;
 	}
@@ -2928,12 +2928,12 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_to_default_state(
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
-	if (d_stencil == ~0/*all ones*/)
+	if (d_stencil == ~GLuint(0)/*all ones*/)
 	{
 		return;
 	}
 
-	glStencilMask(~0/*all ones*/);
+	glStencilMask(~GLuint(0)/*all ones*/);
 }
 
 
