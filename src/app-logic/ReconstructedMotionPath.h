@@ -1,10 +1,10 @@
-/* $Id: ReconstructedVirtualGeomagneticPole.h 9024 2010-07-30 10:47:35Z elau $ */
+/* $Id$ */
 
 
 /**
  * \file 
- * $Revision: 9024 $
- * $Date: 2010-07-30 12:47:35 +0200 (fr, 30 jul 2010) $
+ * $Revision$
+ * $Date$
  * 
  * Copyright (C) 2010, 2011 Geological Survey of Norway
  *

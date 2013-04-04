@@ -150,6 +150,22 @@ GPlatesOpenGL::GLRenderTargetImpl::set_render_target_dimensions(
 			GPLATES_ASSERTION_SOURCE,
 			"GLRenderTargetImpl: 'set_render_target_dimensions()' called between 'begin_render()' and 'end_render()'.");
 
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
+	// Truncate render target dimensions if exceeds maximum texture size.
+	// We emit a warning if this happens because this is not tested in 'is_supported()' since
+	// GLScreenRenderTarget uses us and varies the dimensions as the screen is resized.
+	if (render_target_width > capabilities.texture.gl_max_texture_size)
+	{
+		qWarning() << "Render target width exceeds maximum texture size: truncating width.";
+		render_target_width = capabilities.texture.gl_max_texture_size;
+	}
+	if (render_target_height > capabilities.texture.gl_max_texture_size)
+	{
+		qWarning() << "Render target height exceeds maximum texture size: truncating height.";
+		render_target_height = capabilities.texture.gl_max_texture_size;
+	}
+
 	// Ensure the texture and render buffer have been allocated and
 	// their dimensions match the client's dimensions.
 	if (!d_allocated_storage ||

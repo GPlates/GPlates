@@ -69,6 +69,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Also requires support for non-power-of-two textures if the render target dimensions
 		 * are not a power-of-two.
+		 * Also requires render target dimensions to not exceed maximum texture dimensions.
 		 */
 		static
 		bool

@@ -40,6 +40,8 @@ GPlatesOpenGL::GLRenderTarget::is_supported(
 		unsigned int render_target_width,
 		unsigned int render_target_height)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Test support for the texture internal format.
 	if (!GLRenderTargetImpl::is_supported(renderer, texture_internalformat, include_depth_buffer))
 	{
@@ -50,10 +52,17 @@ GPlatesOpenGL::GLRenderTarget::is_supported(
 	if (!GPlatesUtils::Base2::is_power_of_two(render_target_width) ||
 		!GPlatesUtils::Base2::is_power_of_two(render_target_height))
 	{
-		if (!renderer.get_capabilities().texture.gl_ARB_texture_non_power_of_two)
+		if (!capabilities.texture.gl_ARB_texture_non_power_of_two)
 		{
 			return false;
 		}
+	}
+
+	// Must not exceed maximum texture dimensions.
+	if (render_target_width > capabilities.texture.gl_max_texture_size ||
+		render_target_height > capabilities.texture.gl_max_texture_size)
+	{
+		return false;
 	}
 
 	return true;

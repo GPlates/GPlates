@@ -351,20 +351,17 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 			image_size.width(),
 			image_size.height());
 
-	// The tile render target dimensions match the paint device (canvas) dimensions.
-	// We render into the main frame buffer of the canvas instead of using frame buffer objects
-	// because we use our OpenGL QPainter to render text and it expects its paint device when
-	// rendering (expects dimensions of paint device).
-	const unsigned int tile_render_target_width = d_map_view_ptr->width();
-	const unsigned int tile_render_target_height = d_map_view_ptr->height();
-
 	// The border is half the point size or line width, rounded up to nearest pixel.
 	// TODO: Use the actual maximum point size or line width to calculate this.
 	const unsigned int tile_border = 10;
 	// Set up for rendering the scene into tiles.
+	// The tile render target dimensions match the paint device (canvas) dimensions.
+	// We render into the main frame buffer of the canvas instead of using frame buffer objects
+	// because we use our OpenGL QPainter to render text and it expects its paint device when
+	// rendering (expects dimensions of paint device not frame buffer object).
 	GPlatesOpenGL::GLTileRender tile_render(
-			tile_render_target_width,
-			tile_render_target_height,
+			d_map_view_ptr->width()/*tile_render_target_width*/,
+			d_map_view_ptr->height()/*tile_render_target_height*/,
 			GPlatesOpenGL::GLViewport(
 					0,
 					0,
@@ -390,8 +387,9 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 
 	// In case we need to preserve the main frame buffer.
 	GPlatesOpenGL::GLSaveRestoreFrameBuffer save_restore_main_framebuffer(
-			tile_render_target_width,
-			tile_render_target_height);
+			renderer->get_capabilities(),
+			tile_render.get_max_tile_render_target_width(),
+			tile_render.get_max_tile_render_target_height());
 
 	// We have a double buffer main framebuffer and we are rendering to the back buffer.
 	// So the front buffer (which is being displayed) won't get disturbed. And when this
@@ -568,6 +566,7 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 
 	// In case we need to preserve the main frame buffer.
 	GPlatesOpenGL::GLSaveRestoreFrameBuffer save_restore_main_framebuffer(
+			renderer->get_capabilities(),
 			map_canvas_paint_device->width(),
 			map_canvas_paint_device->height());
 

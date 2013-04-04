@@ -62,16 +62,6 @@ GPlatesOpenGL::GLTileRender::GLTileRender(
 
 
 void
-GPlatesOpenGL::GLTileRender::get_max_tile_render_target_dimensions(
-		unsigned int &max_tile_render_target_width,
-		unsigned int &max_tile_render_target_height) const
-{
-	max_tile_render_target_width = d_max_tile_width;
-	max_tile_render_target_height = d_max_tile_height;
-}
-
-
-void
 GPlatesOpenGL::GLTileRender::first_tile()
 {
 	d_current_tile_index = 0;

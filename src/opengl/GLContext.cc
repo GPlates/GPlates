@@ -61,15 +61,30 @@ GPlatesOpenGL::GLContext::get_qgl_format()
 	// We need an alpha channel in case falling back to main frame buffer for render textures...
 	QGLFormat format(/*QGL::SampleBuffers |*/ QGL::AlphaChannel);
 
-	// We use features deprecated in OpenGL 3 so use compatibility profile.
 #if QT_VERSION >= 0x040700 // Functions introduced in Qt 4.7...
+	// We use features deprecated in OpenGL 3 so use compatibility profile and allowed deprecated functions.
 	format.setProfile(QGLFormat::CompatibilityProfile);
+	format.setOption(QGL::DeprecatedFunctions);
 
 	const QGLFormat::OpenGLVersionFlags opengl_version_flags = QGLFormat::openGLVersionFlags();
 
 	// We use OpenGL extensions in GPlates and hence don't rely on a particular OpenGL core version.
 	// So we just set the version to OpenGL 1.1 which is supported by everything and is the
 	// only version supported by the Microsoft software renderer (fallback from hardware).
+	//
+	// NOTE: If GL_EXT_framebuffer_object is not supported (but the newer GL_ARB_framebuffer_object is)
+	// then a possible reason for this could be...
+	//
+	// From http://stackoverflow.com/questions/15017911/oes-ext-arb-framebuffer-object:
+	//  Issues with GL_EXT_framebuffer_object a) GL_EXT_framebuffer_object might not be listed in
+	//  GL 3.x contexts because FBO's are core. b) also, if have a GL 2.x context with newer hardware,
+	//  possible that GL_EXT_framebuffer_object is not listed but GL_ARB_framebuffer_object is.
+	//
+	// ...so this is another reason to set the OpenGL version to 1.1 (instead of 2.x, or 3.x) below.
+	// But it's possible (according to the above comment) that it may not be enough.
+	// Note that we use GL_EXT_framebuffer_object only, and not GL_ARB_framebuffer_object, due to
+	// widespread hardware support of the (less flexible) GL_EXT_framebuffer_object.
+	//
 	if (opengl_version_flags.testFlag(QGLFormat::OpenGL_Version_1_1))
 	{
 		format.setVersion(1, 1);

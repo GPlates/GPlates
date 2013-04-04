@@ -26,14 +26,17 @@
 #ifndef GPLATES_OPENGL_GLSAVERESTOREFRAMEBUFFER_H
 #define GPLATES_OPENGL_GLSAVERESTOREFRAMEBUFFER_H
 
+#include <vector>
 #include <boost/optional.hpp>
 #include <opengl/OpenGL.h>
 
 #include "GLTexture.h"
+#include "GLTileRender.h"
 
 
 namespace GPlatesOpenGL
 {
+	class GLCapabilities;
 	class GLRenderer;
 
 	/**
@@ -59,6 +62,7 @@ namespace GPlatesOpenGL
 		 * scissor rectangle with these dimensions.
 		 */
 		GLSaveRestoreFrameBuffer(
+				const GLCapabilities &capabilities,
 				unsigned int save_restore_width,
 				unsigned int save_restore_height,
 				GLint save_restore_texture_internalformat = GL_RGBA8);
@@ -85,11 +89,25 @@ namespace GPlatesOpenGL
 
 	private:
 
-		unsigned int d_save_restore_width;
-		unsigned int d_save_restore_height;
+		unsigned int d_save_restore_texture_width;
+		unsigned int d_save_restore_texture_height;
 		GLint d_save_restore_texture_internal_format;
 
-		boost::optional<GLTexture::shared_ptr_type> d_save_restore_texture;
+		/**
+		 * We use a tile render in case the save/restore dimensions are larger than the
+		 * maximum texture dimensions - in which case multiple save/restore textures are needed -.
+		 * this should never happen though (but it might for really old hardware with tiny maximum
+		 * texture dimensions.
+		 */
+		GLTileRender d_save_restore_tile_render;
+
+		/**
+		 * One (or more) save/restore textures that span the framebuffer.
+		 *
+		 * More than one texture is only needed if the maximum texture dimensions are not enough
+		 * to cover the current framebuffer dimensions.
+		 */
+		boost::optional< std::vector<GLTexture::shared_ptr_type> > d_save_restore_textures;
 
 
 		/**
@@ -98,8 +116,15 @@ namespace GPlatesOpenGL
 		bool
 		between_save_and_restore() const
 		{
-			return d_save_restore_texture;
+			return d_save_restore_textures;
 		}
+
+		/**
+		 * Acquire one save/restore texture.
+		 */
+		GLTexture::shared_ptr_type
+		acquire_save_restore_texture(
+				GLRenderer &renderer);
 	};
 }
 

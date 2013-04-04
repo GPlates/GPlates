@@ -772,20 +772,17 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 	// This also sets the main frame buffer dimensions to the paint device dimensions.
 	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, painter);
 
-	// The tile render target dimensions match the paint device (canvas) dimensions.
-	// We render into the main frame buffer of the canvas instead of using frame buffer objects
-	// because we use our OpenGL QPainter to render text and it expects its paint device when
-	// rendering (expects dimensions of paint device).
-	const unsigned int tile_render_target_width = width();
-	const unsigned int tile_render_target_height = height();
-
 	// The border is half the point size or line width, rounded up to nearest pixel.
 	// TODO: Use the actual maximum point size or line width to calculate this.
 	const unsigned int tile_border = 10;
 	// Set up for rendering the scene into tiles.
+	// The tile render target dimensions match the paint device (canvas) dimensions.
+	// We render into the main frame buffer of the canvas instead of using frame buffer objects
+	// because we use our OpenGL QPainter to render text and it expects its paint device when
+	// rendering (expects dimensions of paint device not frame buffer object).
 	GPlatesOpenGL::GLTileRender tile_render(
-			tile_render_target_width,
-			tile_render_target_height,
+			width()/*tile_render_target_width*/,
+			height()/*tile_render_target_height*/,
 			GPlatesOpenGL::GLViewport(
 					0,
 					0,
@@ -811,8 +808,9 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 
 	// In case we need to preserve the main frame buffer.
 	GPlatesOpenGL::GLSaveRestoreFrameBuffer save_restore_main_framebuffer(
-			tile_render_target_width,
-			tile_render_target_height);
+			renderer->get_capabilities(),
+			tile_render.get_max_tile_render_target_width(),
+			tile_render.get_max_tile_render_target_height());
 
 	// We have a double buffer main framebuffer and we are rendering to the back buffer.
 	// So the front buffer (which is being displayed) won't get disturbed. And when this
@@ -993,7 +991,10 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 			projection_transform_text_overlay);
 
 	// In case we need to preserve the main frame buffer.
-	GPlatesOpenGL::GLSaveRestoreFrameBuffer save_restore_main_framebuffer(width(), height());
+	GPlatesOpenGL::GLSaveRestoreFrameBuffer save_restore_main_framebuffer(
+			renderer->get_capabilities(),
+			width(),
+			height());
 
 	// We have a double buffer main framebuffer and we are rendering to the back buffer.
 	// So the front buffer (which is being displayed) won't get disturbed. And when this

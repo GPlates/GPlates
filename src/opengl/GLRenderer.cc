@@ -1828,16 +1828,8 @@ GPlatesOpenGL::GLRenderer::begin_rgba8_main_framebuffer_2D(
 			// NOTE: It is important that 'max_point_size_and_line_width = 0' maps to 'border = 0'...
 			static_cast<unsigned int>(0.5 * max_point_size_and_line_width + 1-1e-5));
 
-	// Get the maximum render target dimensions needed for tiling.
-	unsigned int max_tile_render_target_width;
-	unsigned int max_tile_render_target_height;
-	tile_render.get_max_tile_render_target_dimensions(
-			max_tile_render_target_width,
-			max_tile_render_target_height);
-
 	// Keep track of the save restore texture and tiling state.
-	render_texture_target.main_frame_buffer =
-			boost::in_place(max_tile_render_target_width, max_tile_render_target_height, tile_render);
+	render_texture_target.main_frame_buffer = boost::in_place(get_capabilities(), tile_render);
 
 	// Save the portion of the main framebuffer used as a render target so we can restore it later.
 	render_texture_target.main_frame_buffer->save_restore_frame_buffer.save(*this);

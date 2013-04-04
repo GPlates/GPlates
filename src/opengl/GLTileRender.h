@@ -75,14 +75,26 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the maximum render target tile dimensions across all tiles.
+		 * Returns the maximum render target tile width across all tiles.
 		 *
-		 * This is the maximum dimensions of all calls to @a get_tile_render_target_scissor_rectangle.
+		 * This is the maximum of all calls to @a get_tile_render_target_scissor_rectangle.
 		 */
-		void
-		get_max_tile_render_target_dimensions(
-				unsigned int &max_tile_render_target_width,
-				unsigned int &max_tile_render_target_height) const;
+		unsigned int
+		get_max_tile_render_target_width() const
+		{
+			return d_max_tile_width;
+		}
+
+		/**
+		 * Returns the maximum render target tile height across all tiles.
+		 *
+		 * This is the maximum of all calls to @a get_tile_render_target_scissor_rectangle.
+		 */
+		unsigned int
+		get_max_tile_render_target_height() const
+		{
+			return d_max_tile_height;
+		}
 
 
 		/**
@@ -168,8 +180,8 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The viewport in the larger destintation viewport where the current tile's source data
-		 * should be copied or tranferred to.
+		 * The viewport in the larger destination viewport where the current tile's source data
+		 * should be copied or transferred to.
 		 *
 		 * This is useful when copying or transferring the data in the render target to the destination.
 		 */

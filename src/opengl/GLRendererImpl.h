@@ -296,18 +296,20 @@ namespace GPlatesOpenGL
 			{
 				explicit
 				MainFrameBuffer(
-						unsigned int save_restore_width,
-						unsigned int save_restore_height,
+						const GLCapabilities &capabilities_,
 						const GLTileRender &tile_render_) :
-					save_restore_frame_buffer(save_restore_width, save_restore_height),
-					tile_render(tile_render_)
+					tile_render(tile_render_),
+					save_restore_frame_buffer(
+							capabilities_,
+							tile_render_.get_max_tile_render_target_width(),
+							tile_render_.get_max_tile_render_target_height())
 				{  }
-
-				//! Used to save/restore the main framebuffer when it's used as a render target.
-				GLSaveRestoreFrameBuffer save_restore_frame_buffer;
 
 				//! Used to tile render when the main framebuffer is smaller than the render target.
 				GLTileRender tile_render;
+
+				//! Used to save/restore the main framebuffer when it's used as a render target.
+				GLSaveRestoreFrameBuffer save_restore_frame_buffer;
 			};
 
 			boost::optional<MainFrameBuffer> main_frame_buffer;
