@@ -6,8 +6,6 @@
     <file>opengl/light/render_map_view_light_direction_vertex_shader.glsl</file>
     <file>opengl/multi_resolution_filled_polygons/render_tile_to_scene_fragment_shader.glsl</file>
     <file>opengl/multi_resolution_filled_polygons/render_tile_to_scene_vertex_shader.glsl</file>
-    <file>opengl/multi_resolution_filled_polygons/render_to_polygon_stencil_texture_fragment_shader.glsl</file>
-    <file>opengl/multi_resolution_filled_polygons/render_to_polygon_stencil_texture_vertex_shader.glsl</file>
     <file>opengl/multi_resolution_raster/render_raster_fragment_shader.glsl</file>
     <file>opengl/multi_resolution_raster_map_view/render_tile_to_scene_fragment_shader.glsl</file>
     <file>opengl/multi_resolution_raster_map_view/render_tile_to_scene_vertex_shader.glsl</file>

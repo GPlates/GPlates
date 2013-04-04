@@ -1673,6 +1673,47 @@ namespace GPlatesOpenGL
 	};
 
 	/**
+	 * Used to set the stencil function.
+	 */
+	struct GLStencilFuncStateSet :
+			public GLStateSet
+	{
+		explicit
+		GLStencilFuncStateSet(
+				GLenum func,
+				GLint ref,
+				GLuint mask) :
+			d_func(func),
+			d_ref(ref),
+			d_mask(mask)
+		{  }
+
+		virtual
+		void
+		apply_state(
+				const GLCapabilities &capabilities,
+				const GLStateSet &last_applied_state_set,
+				GLState &last_applied_state) const;
+
+		virtual
+		void
+		apply_from_default_state(
+				const GLCapabilities &capabilities,
+				GLState &last_applied_state) const;
+
+		virtual
+		void
+		apply_to_default_state(
+				const GLCapabilities &capabilities,
+				GLState &last_applied_state) const;
+
+
+		GLenum d_func;
+		GLint d_ref;
+		GLuint d_mask;
+	};
+
+	/**
 	 * Used to set the stencil mask.
 	 */
 	struct GLStencilMaskStateSet :
@@ -1705,6 +1746,47 @@ namespace GPlatesOpenGL
 
 
 		GLuint d_stencil;
+	};
+
+	/**
+	 * Used to set the stencil operation.
+	 */
+	struct GLStencilOpStateSet :
+			public GLStateSet
+	{
+		explicit
+		GLStencilOpStateSet(
+				GLenum fail,
+				GLenum zfail,
+				GLenum zpass) :
+			d_fail(fail),
+			d_zfail(zfail),
+			d_zpass(zpass)
+		{  }
+
+		virtual
+		void
+		apply_state(
+				const GLCapabilities &capabilities,
+				const GLStateSet &last_applied_state_set,
+				GLState &last_applied_state) const;
+
+		virtual
+		void
+		apply_from_default_state(
+				const GLCapabilities &capabilities,
+				GLState &last_applied_state) const;
+
+		virtual
+		void
+		apply_to_default_state(
+				const GLCapabilities &capabilities,
+				GLState &last_applied_state) const;
+
+
+		GLenum d_fail;
+		GLenum d_zfail;
+		GLenum d_zpass;
 	};
 
 	/**

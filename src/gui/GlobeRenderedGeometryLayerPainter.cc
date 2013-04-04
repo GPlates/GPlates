@@ -344,8 +344,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 		// Add the filled polygon at the current location (if any) in the rendered geometries spatial partition.
 		filled_polygons.add_filled_polygon(
 				*polygon_on_sphere,
-				Colour::to_rgba8(colour.get()),
-				boost::none/*transform*/,
+				colour.get(),
 				d_current_cube_quad_tree_location);
 
 		return;

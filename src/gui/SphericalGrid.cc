@@ -98,7 +98,7 @@ namespace
 		else // otherwise resort to normal blending...
 		{
 			renderer.gl_enable(GL_BLEND);
-			renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+			renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		}
 	}
 

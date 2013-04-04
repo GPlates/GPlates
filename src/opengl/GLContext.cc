@@ -209,6 +209,7 @@ GPlatesOpenGL::GLContext::disable_opengl_extensions()
 	//
 	//__GLEW_ARB_vertex_buffer_object = 0;
 	//__GLEW_EXT_framebuffer_object = 0;
+	//__GLEW_EXT_packed_depth_stencil = 0;
 	//__GLEW_ARB_vertex_shader = 0;
 	//__GLEW_ARB_multitexture = 0;
 	//__GLEW_ARB_texture_non_power_of_two = 0;

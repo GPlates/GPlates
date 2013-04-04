@@ -417,7 +417,7 @@ namespace GPlatesOpenGL
 					get_state_set_query<GLuint>(
 							GLStateSetKeys::KEY_STENCIL_MASK,
 							&GLStencilMaskStateSet::d_stencil);
-			return stencil_mask ? stencil_mask.get() : ~GLuint(0)/*all ones is the default*/;
+			return stencil_mask ? stencil_mask.get() : ~0/*all ones is the default*/;
 		}
 
 		//! Sets the OpenGL clear colour.
@@ -897,6 +897,38 @@ namespace GPlatesOpenGL
 					d_state_set_store->depth_range_state_sets,
 					GLStateSetKeys::KEY_DEPTH_RANGE,
 					boost::in_place(boost::cref(capabilities), all_depth_ranges));
+		}
+
+
+		/**
+		 * Sets the stencil function.
+		 */
+		void
+		set_stencil_func(
+				GLenum func,
+				GLint ref,
+				GLuint mask)
+		{
+			set_state_set(
+					d_state_set_store->stencil_func_state_sets,
+					GLStateSetKeys::KEY_STENCIL_FUNC,
+					boost::in_place(func, ref, mask));
+		}
+
+
+		/**
+		 * Sets the stencil operation.
+		 */
+		void
+		set_stencil_op(
+				GLenum fail,
+				GLenum zfail,
+				GLenum zpass)
+		{
+			set_state_set(
+					d_state_set_store->stencil_op_state_sets,
+					GLStateSetKeys::KEY_STENCIL_OP,
+					boost::in_place(fail, zfail, zpass));
 		}
 
 

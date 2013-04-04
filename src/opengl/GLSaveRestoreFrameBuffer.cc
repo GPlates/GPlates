@@ -307,7 +307,7 @@ GPlatesOpenGL::GLSaveRestoreFrameBuffer::restore(
 
 			// Disable depth writes and enable stencil writes.
 			renderer.gl_depth_mask(GL_FALSE);
-			renderer.gl_stencil_mask(~GLuint(0)/*all ones*/);
+			renderer.gl_stencil_mask(~0/*all ones*/);
 
 			// Unpack stencil pixel buffer into frame buffer.
 			d_save_restore->stencil_pixel_buffer->gl_bind_unpack(renderer);

@@ -444,7 +444,7 @@ GPlatesGui::Globe::render_globe_hemisphere_surface(
 	renderer.gl_clear_stencil(); // Clear stencil to 0
 	// NOTE: Depth/stencil writes must be enabled for depth/stencil clears to work.
 	renderer.gl_depth_mask(GL_TRUE);
-	renderer.gl_stencil_mask(~GLuint(0)/*all ones*/);
+	renderer.gl_stencil_mask(~0/*all ones*/);
 	renderer.gl_clear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	// Enable depth testing but disable depth writes (for the grid lines).
@@ -538,7 +538,7 @@ GPlatesGui::Globe::render_globe_sub_surface(
 	renderer.gl_clear_stencil(); // Clear stencil to 0
 	// NOTE: Depth/stencil writes must be enabled for depth/stencil clears to work.
 	renderer.gl_depth_mask(GL_TRUE);
-	renderer.gl_stencil_mask(~GLuint(0)/*all ones*/);
+	renderer.gl_stencil_mask(~0/*all ones*/);
 	renderer.gl_clear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	// Draw the sub-surface geometries.

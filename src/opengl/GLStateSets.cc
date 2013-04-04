@@ -2838,6 +2838,59 @@ GPlatesOpenGL::GLScissorStateSet::apply_state() const
 
 
 void
+GPlatesOpenGL::GLStencilFuncStateSet::apply_state(
+		const GLCapabilities &capabilities,
+		const GLStateSet &last_applied_state_set,
+		GLState &last_applied_state) const
+{
+	// Throws exception if downcast fails...
+	const GLStencilFuncStateSet &last_applied = dynamic_cast<const GLStencilFuncStateSet &>(last_applied_state_set);
+
+	// Return early if no state change...
+	if (d_func == last_applied.d_func &&
+		d_ref == last_applied.d_ref &&
+		d_mask == last_applied.d_mask)
+	{
+		return;
+	}
+
+	glStencilFunc(d_func, d_ref, d_mask);
+}
+
+void
+GPlatesOpenGL::GLStencilFuncStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
+		GLState &last_applied_state) const
+{
+	// Return early if no state change...
+	if (d_func == GL_ALWAYS &&
+		d_ref == 0 &&
+		d_mask == ~0)
+	{
+		return;
+	}
+
+	glStencilFunc(d_func, d_ref, d_mask);
+}
+
+void
+GPlatesOpenGL::GLStencilFuncStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
+		GLState &last_applied_state) const
+{
+	// Return early if no state change...
+	if (d_func == GL_ALWAYS &&
+		d_ref == 0 &&
+		d_mask == ~0)
+	{
+		return;
+	}
+
+	glStencilFunc(GL_ALWAYS, 0, ~0);
+}
+
+
+void
 GPlatesOpenGL::GLStencilMaskStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
@@ -2861,7 +2914,7 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_from_default_state(
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
-	if (d_stencil == ~GLuint(0)/*all ones*/)
+	if (d_stencil == ~0/*all ones*/)
 	{
 		return;
 	}
@@ -2875,12 +2928,65 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_to_default_state(
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
-	if (d_stencil == ~GLuint(0)/*all ones*/)
+	if (d_stencil == ~0/*all ones*/)
 	{
 		return;
 	}
 
-	glStencilMask(~GLuint(0)/*all ones*/);
+	glStencilMask(~0/*all ones*/);
+}
+
+
+void
+GPlatesOpenGL::GLStencilOpStateSet::apply_state(
+		const GLCapabilities &capabilities,
+		const GLStateSet &last_applied_state_set,
+		GLState &last_applied_state) const
+{
+	// Throws exception if downcast fails...
+	const GLStencilOpStateSet &last_applied = dynamic_cast<const GLStencilOpStateSet &>(last_applied_state_set);
+
+	// Return early if no state change...
+	if (d_fail == last_applied.d_fail &&
+		d_zfail == last_applied.d_zfail &&
+		d_zpass == last_applied.d_zpass)
+	{
+		return;
+	}
+
+	glStencilOp(d_fail, d_zfail, d_zpass);
+}
+
+void
+GPlatesOpenGL::GLStencilOpStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
+		GLState &last_applied_state) const
+{
+	// Return early if no state change...
+	if (d_fail == GL_KEEP &&
+		d_zfail == GL_KEEP &&
+		d_zpass == GL_KEEP)
+	{
+		return;
+	}
+
+	glStencilOp(d_fail, d_zfail, d_zpass);
+}
+
+void
+GPlatesOpenGL::GLStencilOpStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
+		GLState &last_applied_state) const
+{
+	// Return early if no state change...
+	if (d_fail == GL_KEEP &&
+		d_zfail == GL_KEEP &&
+		d_zpass == GL_KEEP)
+	{
+		return;
+	}
+
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 }
 
 

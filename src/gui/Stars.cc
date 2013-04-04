@@ -196,8 +196,27 @@ namespace
 		GPlatesOpenGL::GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer);
 
 		// Set the alpha-blend state.
-		renderer.gl_enable(GL_BLEND);
-		renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		// Set up alpha blending for pre-multiplied alpha.
+		// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
+		// This is where the RGB channels have already been multiplied by the alpha channel.
+		// See class GLVisualRasterSource for why this is done.
+		//
+		// To generate pre-multiplied alpha we'll use separate alpha-blend (src,dst) factors for the alpha channel...
+		//
+		//   RGB uses (src_alpha, 1 - src_alpha)  ->  (R,G,B) = (Rs*As,Gs*As,Bs*As) + (1-As) * (Rd,Gd,Bd)
+		//     A uses (1, 1 - src_alpha)          ->        A = As + (1-As) * Ad
+		if (renderer.get_capabilities().framebuffer.gl_EXT_blend_func_separate)
+		{
+			renderer.gl_enable(GL_BLEND);
+			renderer.gl_blend_func_separate(
+					GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+					GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		}
+		else // otherwise resort to normal blending...
+		{
+			renderer.gl_enable(GL_BLEND);
+			renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		}
 
 		// Set the anti-aliased point state.
 		renderer.gl_enable(GL_POINT_SMOOTH);

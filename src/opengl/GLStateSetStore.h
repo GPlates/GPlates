@@ -98,7 +98,9 @@ namespace GPlatesOpenGL
 		GPlatesUtils::ObjectPool<GLPolygonOffsetStateSet> polygon_offset_state_sets;
 		GPlatesUtils::ObjectPool<GLNormalPointerStateSet> normal_pointer_state_sets;
 		GPlatesUtils::ObjectPool<GLScissorStateSet> scissor_state_sets;
+		GPlatesUtils::ObjectPool<GLStencilFuncStateSet> stencil_func_state_sets;
 		GPlatesUtils::ObjectPool<GLStencilMaskStateSet> stencil_mask_state_sets;
+		GPlatesUtils::ObjectPool<GLStencilOpStateSet> stencil_op_state_sets;
 		GPlatesUtils::ObjectPool<GLTexCoordPointerStateSet> tex_coord_pointer_state_sets;
 		GPlatesUtils::ObjectPool<GLTexGenStateSet> tex_gen_state_sets;
 		GPlatesUtils::ObjectPool<GLTexEnvStateSet> tex_env_state_sets;

@@ -1039,7 +1039,7 @@ namespace GPlatesOpenGL
 		//! Sets the OpenGL stencil mask.
 		void
 		gl_stencil_mask(
-				GLuint stencil = ~GLuint(0)/*all ones*/)
+				GLuint stencil = ~0/*all ones*/)
 		{
 			get_current_state()->set_stencil_mask(stencil);
 		}
@@ -1176,6 +1176,30 @@ namespace GPlatesOpenGL
 				const std::vector<GLDepthRange> &all_depth_ranges)
 		{
 			get_current_state()->set_depth_range_array(get_capabilities(), all_depth_ranges);
+		}
+
+		/**
+		 * Sets the stencil function (GL_STENCIL_TEST also needs to be enabled).
+		 */
+		void
+		gl_stencil_func(
+				GLenum func,
+				GLint ref,
+				GLuint mask)
+		{
+			get_current_state()->set_stencil_func(func, ref, mask);
+		}
+
+		/**
+		 * Sets the stencil operation (GL_STENCIL_TEST also needs to be enabled).
+		 */
+		void
+		gl_stencil_op(
+				GLenum fail,
+				GLenum zfail,
+				GLenum zpass)
+		{
+			get_current_state()->set_stencil_op(fail, zfail, zpass);
 		}
 
 		/**
