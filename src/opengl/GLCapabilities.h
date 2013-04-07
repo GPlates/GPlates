@@ -49,6 +49,9 @@ namespace GPlatesOpenGL
 		{
 			Viewport();
 
+			//! Is GL_ARB_viewport_array supported ?
+			bool gl_ARB_viewport_array;
+
 			//! GL_MAX_VIEWPORTS query result - defaults to one.
 			GLuint gl_max_viewports;
 
@@ -206,6 +209,9 @@ namespace GPlatesOpenGL
 			//! Is GL_ARB_texture_non_power_of_two supported?
 			bool gl_ARB_texture_non_power_of_two;
 
+			//! Is GL_ARB_multitexture supported?
+			bool gl_ARB_multitexture;
+
 			/**
 			 * The maximum number of texture units supported by the
 			 * GL_ARB_multitexture extension (or one if it's not supported).
@@ -243,6 +249,9 @@ namespace GPlatesOpenGL
 			 * but it's less than or equal to @a gl_max_texture_coords).
 			 */
 			GLuint gl_max_texture_coords; // GL_MAX_TEXTURE_COORDS query result
+
+			//! Is GL_EXT_texture_filter_anisotropic supported?
+			bool gl_EXT_texture_filter_anisotropic;
 
 			/**
 			 * The maximum texture filtering anisotropy supported by the
@@ -319,6 +328,15 @@ namespace GPlatesOpenGL
 			bool gl_supports_floating_point_filtering_and_blending;
 		};
 
+		//! Parameters related to geometry data.
+		struct Vertex
+		{
+			Vertex();
+
+			//! Is GL_EXT_draw_range_elements supported ?
+			bool gl_EXT_draw_range_elements;
+		};
+
 		//! Parameters related to buffer objects.
 		struct Buffer
 		{
@@ -340,15 +358,34 @@ namespace GPlatesOpenGL
 			bool gl_APPLE_flush_buffer_range;
 		};
 
+
+		//
+		// Specific OpenGL versions of interest.
+		// Mostly we use OpenGL extensions though.
+		//
+
+		//! Is OpenGL version 1.2 supported ?
+		bool gl_version_1_2;
+		//! Is OpenGL version 1.4 supported ?
+		bool gl_version_1_4;
+
+
+		//
+		// OpenGL extension queries.
+		//
+
 		Viewport viewport;
 		Framebuffer framebuffer;
 		Shader shader;
 		Texture texture;
+		Vertex vertex;
 		Buffer buffer;
 
 	private:
 
-		GLCapabilities()
+		GLCapabilities() :
+			gl_version_1_2(false),
+			gl_version_1_4(false)
 		{  }
 
 		void
@@ -365,6 +402,9 @@ namespace GPlatesOpenGL
 
 		void
 		initialise_texture();
+
+		void
+		initialise_vertex();
 
 		void
 		initialise_buffer();

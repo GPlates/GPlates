@@ -96,7 +96,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const GLBufferObject::shared_ptr_type &buffer)
 		{
-			return std::auto_ptr<GLPixelBufferObject>(new GLPixelBufferObject(buffer));
+			return std::auto_ptr<GLPixelBufferObject>(new GLPixelBufferObject(renderer, buffer));
 		}
 
 
@@ -317,6 +317,7 @@ namespace GPlatesOpenGL
 
 		//! Constructor.
 		GLPixelBufferObject(
+				GLRenderer &renderer,
 				const GLBufferObject::shared_ptr_type &buffer);
 	};
 }

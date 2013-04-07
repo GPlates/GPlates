@@ -213,7 +213,7 @@ GPlatesOpenGL::GLState::set_bind_buffer_object_and_apply(
 	{
 		begin_bind_vertex_array_object(capabilities, last_applied_state);
 		apply_state(capabilities, last_applied_state, state_set_key);
-		end_bind_vertex_array_object(last_applied_state);
+		end_bind_vertex_array_object(capabilities, last_applied_state);
 	}
 	else
 	{
@@ -242,7 +242,7 @@ GPlatesOpenGL::GLState::set_unbind_buffer_object_and_apply(
 	{
 		begin_bind_vertex_array_object(capabilities, last_applied_state);
 		apply_state(capabilities, last_applied_state, state_set_key);
-		end_bind_vertex_array_object(last_applied_state);
+		end_bind_vertex_array_object(capabilities, last_applied_state);
 	}
 	else
 	{
@@ -293,7 +293,7 @@ GPlatesOpenGL::GLState::apply_state(
 	// it be in a certain state and we are always targeting that state (in case, for example, a
 	// vertex element buffer gets bound, which gets recorded in the vertex array object, and we want
 	// to remove that recording when the same vertex element buffer gets unbound).
-	end_bind_vertex_array_object(last_applied_state);
+	end_bind_vertex_array_object(capabilities, last_applied_state);
 }
 
 
@@ -725,7 +725,7 @@ GPlatesOpenGL::GLState::begin_bind_vertex_array_object(
 		GLState &last_applied_state) const
 {
  #ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
-	if (GLEW_ARB_vertex_array_object)
+	if (capabilities.buffer.gl_ARB_vertex_array_object)
 	{
 		apply_state(capabilities, last_applied_state, GLStateSetKeys::KEY_BIND_VERTEX_ARRAY_OBJECT);
 	}
@@ -735,11 +735,12 @@ GPlatesOpenGL::GLState::begin_bind_vertex_array_object(
 
 void
 GPlatesOpenGL::GLState::end_bind_vertex_array_object(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 #ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
 	// If vertex array objects are not supported by the runtime system then nothing to do.
- 	if (GLEW_ARB_vertex_array_object)
+ 	if (capabilities.buffer.gl_ARB_vertex_array_object)
 	{
 		// Get the bind vertex array object state-set.
 		// Note that we get this from the last applied state as that is the state that OpenGL currently sees.

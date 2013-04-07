@@ -41,11 +41,12 @@
 
 
 GPlatesOpenGL::GLRenderBufferObject::resource_handle_type
-GPlatesOpenGL::GLRenderBufferObject::Allocator::allocate()
+GPlatesOpenGL::GLRenderBufferObject::Allocator::allocate(
+		const GLCapabilities &capabilities)
 {
 	// We should only get here if the framebuffer object extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
+			capabilities.framebuffer.gl_EXT_framebuffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	GLuint render_buffer;
@@ -58,11 +59,6 @@ void
 GPlatesOpenGL::GLRenderBufferObject::Allocator::deallocate(
 		GLuint render_buffer)
 {
-	// We should only get here if the framebuffer object extension is supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
-			GPLATES_ASSERTION_SOURCE);
-
 	glDeleteRenderbuffersEXT(1, &render_buffer);
 }
 
@@ -71,11 +67,14 @@ GPlatesOpenGL::GLRenderBufferObject::GLRenderBufferObject(
 		GLRenderer &renderer) :
 	d_resource(
 			resource_type::create(
+					renderer.get_capabilities(),
 					renderer.get_context().get_non_shared_state()->get_render_buffer_object_resource_manager()))
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// We should only get here if the framebuffer object extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
+			capabilities.framebuffer.gl_EXT_framebuffer_object,
 			GPLATES_ASSERTION_SOURCE);
 }
 

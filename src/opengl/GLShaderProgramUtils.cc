@@ -247,16 +247,19 @@ GPlatesOpenGL::GLShaderProgramUtils::link_vertex_geometry_fragment_program(
 
 	// Specify the input primitive types to the geometry shader.
 	shader_program->gl_program_parameteri(
+			renderer,
 			GL_GEOMETRY_INPUT_TYPE_EXT,
 			geometry_shader_program_parameters.gl_geometry_input_type);
 
 	// Specify the output primitive types of the geometry shader.
 	shader_program->gl_program_parameteri(
+			renderer,
 			GL_GEOMETRY_OUTPUT_TYPE_EXT,
 			geometry_shader_program_parameters.gl_geometry_output_type);
 
 	// Specify the maximum number of vertices output by the geometry shader.
 	shader_program->gl_program_parameteri(
+			renderer,
 			GL_GEOMETRY_VERTICES_OUT_EXT,
 			geometry_shader_program_parameters.gl_max_vertices_out);
 

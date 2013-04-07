@@ -1050,8 +1050,10 @@ GPlatesOpenGL::GLRenderer::gl_draw_range_elements(
 		GLint indices_offset;
 	};
 
+	const GLCapabilities &capabilities = get_capabilities();
+
 	// Requires GL_EXT_draw_range_elements extension.
-	if (!GLEW_EXT_draw_range_elements)
+	if (!capabilities.vertex.gl_EXT_draw_range_elements)
 	{
 		// Revert to glDrawElements if extension not present.
 		gl_draw_elements(mode, count, type, indices_offset);
@@ -1128,8 +1130,10 @@ GPlatesOpenGL::GLRenderer::gl_draw_range_elements(
 		GLBufferImpl::shared_ptr_to_const_type vertex_element_buffer_impl;
 	};
 
+	const GLCapabilities &capabilities = get_capabilities();
+
 	// Requires GL_EXT_draw_range_elements extension.
-	if (!GLEW_EXT_draw_range_elements)
+	if (!capabilities.vertex.gl_EXT_draw_range_elements)
 	{
 		// Revert to glDrawElements if extension not present.
 		gl_draw_elements(mode, count, type, indices_offset, vertex_element_buffer_impl);
@@ -1155,9 +1159,11 @@ GPlatesOpenGL::GLRenderer::gl_read_pixels(
 		GLenum type,
 		GLint offset)
 {
+	const GLCapabilities &capabilities = get_capabilities();
+
 	// We're using pixel buffers objects in this version of 'gl_read_pixels'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_pixel_buffer_object),
+			capabilities.buffer.gl_ARB_pixel_buffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Wrap up the read pixels call in case it gets added to a render queue.
@@ -1295,9 +1301,11 @@ GPlatesOpenGL::GLRenderer::gl_draw_pixels(
 		GLenum type,
 		GLint offset)
 {
+	const GLCapabilities &capabilities = get_capabilities();
+
 	// We're using pixel buffers objects in this version of 'gl_draw_pixels'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_pixel_buffer_object),
+			capabilities.buffer.gl_ARB_pixel_buffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Wrap up the draw pixels call in case it gets added to a render queue.
@@ -1335,7 +1343,7 @@ GPlatesOpenGL::GLRenderer::gl_draw_pixels(
 			// pixel offset in the frame buffer.
 			state_to_apply.apply_state(capabilities, last_applied_state);
 
-			if (GLEW_VERSION_1_4) // 'glWindowPos2i' only available in 1.4 or above
+			if (capabilities.gl_version_1_4) // 'glWindowPos2i' only available in 1.4 or above
 			{
 				// Set the raster position directly in window coordinates (bypassing the
 				// model-view/projection transforms and the viewport-to-window transform).
@@ -1353,7 +1361,7 @@ GPlatesOpenGL::GLRenderer::gl_draw_pixels(
 			// Restore raster position to default value since calling OpenGL directly instead of using GLRenderer state.
 			//
 			// FIXME: Shouldn't really be making direct calls to OpenGL - transfer to GLRenderer.
-			if (GLEW_VERSION_1_4) // 'glWindowPos2i' only available in 1.4 or above
+			if (capabilities.gl_version_1_4) // 'glWindowPos2i' only available in 1.4 or above
 			{
 				glWindowPos2i(0, 0);
 			}
@@ -1377,7 +1385,7 @@ GPlatesOpenGL::GLRenderer::gl_draw_pixels(
 
 	// NOTE: The cloning of the current state is necessary so that when we render the drawable
 	// later it doesn't apply state that's been modified between now and then.
-	if (GLEW_VERSION_1_4) // 'glWindowPos2i' only available in 1.4 or above
+	if (capabilities.gl_version_1_4) // 'glWindowPos2i' only available in 1.4 or above
 	{
 		draw(RenderOperation(clone_current_state(), drawable));
 	}
@@ -1447,7 +1455,7 @@ GPlatesOpenGL::GLRenderer::gl_draw_pixels(
 			// pixel offset in the frame buffer.
 			state_to_apply.apply_state(capabilities, last_applied_state);
 
-			if (GLEW_VERSION_1_4) // 'glWindowPos2i' only available in 1.4 or above
+			if (capabilities.gl_version_1_4) // 'glWindowPos2i' only available in 1.4 or above
 			{
 				// Set the raster position directly in window coordinates (bypassing the
 				// model-view/projection transforms and the viewport-to-window transform).
@@ -1472,7 +1480,7 @@ GPlatesOpenGL::GLRenderer::gl_draw_pixels(
 			// Restore raster position to default value since calling OpenGL directly instead of using GLRenderer state.
 			//
 			// FIXME: Shouldn't really be making direct calls to OpenGL - transfer to GLRenderer.
-			if (GLEW_VERSION_1_4) // 'glWindowPos2i' only available in 1.4 or above
+			if (capabilities.gl_version_1_4) // 'glWindowPos2i' only available in 1.4 or above
 			{
 				glWindowPos2i(0, 0);
 			}
@@ -1492,12 +1500,14 @@ GPlatesOpenGL::GLRenderer::gl_draw_pixels(
 		GLBufferImpl::shared_ptr_type pixel_buffer_impl;
 	};
 
+	const GLCapabilities &capabilities = get_capabilities();
+
 	const Drawable::non_null_ptr_to_const_type drawable(
 			new DrawPixelsDrawable(x, y, width, height, format, type, offset, pixel_buffer_impl));
 
 	// NOTE: The cloning of the current state is necessary so that when we render the drawable
 	// later it doesn't apply state that's been modified between now and then.
-	if (GLEW_VERSION_1_4) // 'glWindowPos2i' only available in 1.4 or above
+	if (capabilities.gl_version_1_4) // 'glWindowPos2i' only available in 1.4 or above
 	{
 		draw(RenderOperation(clone_current_state(), drawable));
 	}
@@ -1717,10 +1727,12 @@ GPlatesOpenGL::GLRenderer::gl_copy_tex_sub_image_3D(
 		GLsizei height;
 	};
 
+	const GLCapabilities &capabilities = get_capabilities();
+
 	// Previously we checked for the GL_EXT_copy_texture extension but on MacOS this is not exposed
 	// so we use the core OpenGL 1.2 function instead.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_VERSION_1_2),
+			capabilities.gl_version_1_2,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Set the active texture unit - glCopyTexSubImage2D targets the texture bound to it.

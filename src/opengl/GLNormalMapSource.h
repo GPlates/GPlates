@@ -321,7 +321,8 @@ namespace GPlatesOpenGL
 				unsigned int src_texel_width,
 				unsigned int src_texel_height,
 				unsigned int dst_texel_width,
-				unsigned int dst_texel_height);
+				unsigned int dst_texel_height,
+				GLRenderer &renderer);
 
 
 		/**
@@ -337,7 +338,8 @@ namespace GPlatesOpenGL
 				unsigned int src_texel_width,
 				unsigned int src_texel_height,
 				unsigned int dst_texel_width,
-				unsigned int dst_texel_height);
+				unsigned int dst_texel_height,
+				GLRenderer &renderer);
 
 
 		bool

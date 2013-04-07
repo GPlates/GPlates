@@ -289,9 +289,11 @@ GPlatesOpenGL::GLTextureUtils::load_colour_into_rgba32f_texture_2D(
 		unsigned int texel_u_offset,
 		unsigned int texel_v_offset)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Floating-point textures must be supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_texture_float),
+			capabilities.texture.gl_ARB_texture_float,
 			GPLATES_ASSERTION_SOURCE);
 
 	const unsigned num_texels_to_load = texel_width * texel_height;
@@ -327,9 +329,11 @@ GPlatesOpenGL::GLTextureUtils::fill_float_texture_2D(
 		unsigned int texel_u_offset,
 		unsigned int texel_v_offset)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Floating-point textures must be supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_texture_float),
+			capabilities.texture.gl_ARB_texture_float,
 			GPLATES_ASSERTION_SOURCE);
 
 	const unsigned num_texels_to_load = texel_width * texel_height;
@@ -366,9 +370,11 @@ GPlatesOpenGL::GLTextureUtils::fill_float_texture_2D(
 		unsigned int texel_u_offset,
 		unsigned int texel_v_offset)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Floating-point textures must be supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_texture_float),
+			capabilities.texture.gl_ARB_texture_float,
 			GPLATES_ASSERTION_SOURCE);
 
 	const unsigned num_texels_to_load = texel_width * texel_height;
@@ -407,9 +413,11 @@ GPlatesOpenGL::GLTextureUtils::fill_float_texture_2D(
 		unsigned int texel_u_offset,
 		unsigned int texel_v_offset)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Floating-point textures must be supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_texture_float),
+			capabilities.texture.gl_ARB_texture_float,
 			GPLATES_ASSERTION_SOURCE);
 
 	const unsigned num_texels_to_load = texel_width * texel_height;
@@ -440,6 +448,8 @@ GPlatesOpenGL::GLTexture::shared_ptr_type
 GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture_2D(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	GLTexture::shared_ptr_type xy_clip_texture = GLTexture::create(renderer);
 
 	//
@@ -451,7 +461,8 @@ GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture_2D(
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		xy_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		xy_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -491,6 +502,8 @@ GPlatesOpenGL::GLTexture::shared_ptr_type
 GPlatesOpenGL::GLTextureUtils::create_z_clip_texture_2D(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	GLTexture::shared_ptr_type z_clip_texture = GLTexture::create(renderer);
 
 	//
@@ -502,7 +515,8 @@ GPlatesOpenGL::GLTextureUtils::create_z_clip_texture_2D(
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		z_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		z_clip_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);

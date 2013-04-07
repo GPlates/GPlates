@@ -1077,24 +1077,26 @@ namespace GPlatesOpenGL
 		//! Sets the alpha-blend equation (glBlendEquation).
 		void
 		set_blend_equation(
+				const GLCapabilities &capabilities,
 				GLenum mode)
 		{
 			set_state_set(
 					d_state_set_store->blend_equation_state_sets,
 					GLStateSetKeys::KEY_BLEND_EQUATION,
-					boost::in_place(mode));
+					boost::in_place(boost::cref(capabilities), mode));
 		}
 
 		//! Sets the alpha-blend equation (glBlendEquationSeparate).
 		void
 		set_blend_equation_separate(
+				const GLCapabilities &capabilities,
 				GLenum modeRGB,
 				GLenum modeAlpha)
 		{
 			set_state_set(
 					d_state_set_store->blend_equation_state_sets,
 					GLStateSetKeys::KEY_BLEND_EQUATION,
-					boost::in_place(modeRGB, modeAlpha));
+					boost::in_place(boost::cref(capabilities), modeRGB, modeAlpha));
 		}
 
 		//! Sets the alpha-blend function (glBlendFunc).
@@ -1112,6 +1114,7 @@ namespace GPlatesOpenGL
 		//! Sets the alpha-blend function (glBlendFuncSeparate).
 		void
 		set_blend_func_separate(
+				const GLCapabilities &capabilities,
 				GLenum sfactorRGB,
 				GLenum dfactorRGB,
 				GLenum sfactorAlpha,
@@ -1120,7 +1123,7 @@ namespace GPlatesOpenGL
 			set_state_set(
 					d_state_set_store->blend_func_state_sets,
 					GLStateSetKeys::KEY_BLEND_FUNC,
-					boost::in_place(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha));
+					boost::in_place(boost::cref(capabilities), sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha));
 		}
 
 		//! Set the depth function.
@@ -1389,6 +1392,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_vertex_attrib_pointer(
+				const GLCapabilities &capabilities,
 				GLuint attribute_index,
 				GLint size,
 				GLenum type,
@@ -1401,6 +1405,7 @@ namespace GPlatesOpenGL
 					d_state_set_store->vertex_attrib_array_state_sets,
 					d_state_set_keys->get_vertex_attrib_array_key(attribute_index),
 					boost::in_place(
+							boost::cref(capabilities),
 							attribute_index,
 							GLVertexAttribPointerStateSet::VERTEX_ATTRIB_POINTER,
 							size,
@@ -1419,6 +1424,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_vertex_attrib_pointer(
+				const GLCapabilities &capabilities,
 				GLuint attribute_index,
 				GLint size,
 				GLenum type,
@@ -1431,6 +1437,7 @@ namespace GPlatesOpenGL
 					d_state_set_store->vertex_attrib_array_state_sets,
 					d_state_set_keys->get_vertex_attrib_array_key(attribute_index),
 					boost::in_place(
+							boost::cref(capabilities),
 							attribute_index,
 							GLVertexAttribPointerStateSet::VERTEX_ATTRIB_POINTER,
 							size,
@@ -1446,6 +1453,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_vertex_attrib_i_pointer(
+				const GLCapabilities &capabilities,
 				GLuint attribute_index,
 				GLint size,
 				GLenum type,
@@ -1457,6 +1465,7 @@ namespace GPlatesOpenGL
 					d_state_set_store->vertex_attrib_array_state_sets,
 					d_state_set_keys->get_vertex_attrib_array_key(attribute_index),
 					boost::in_place(
+							boost::cref(capabilities),
 							attribute_index,
 							GLVertexAttribPointerStateSet::VERTEX_ATTRIB_I_POINTER,
 							size,
@@ -1472,6 +1481,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_vertex_attrib_i_pointer(
+				const GLCapabilities &capabilities,
 				GLuint attribute_index,
 				GLint size,
 				GLenum type,
@@ -1483,6 +1493,7 @@ namespace GPlatesOpenGL
 					d_state_set_store->vertex_attrib_array_state_sets,
 					d_state_set_keys->get_vertex_attrib_array_key(attribute_index),
 					boost::in_place(
+							boost::cref(capabilities),
 							attribute_index,
 							GLVertexAttribPointerStateSet::VERTEX_ATTRIB_I_POINTER,
 							size,
@@ -1498,6 +1509,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_vertex_attrib_l_pointer(
+				const GLCapabilities &capabilities,
 				GLuint attribute_index,
 				GLint size,
 				GLenum type,
@@ -1509,6 +1521,7 @@ namespace GPlatesOpenGL
 					d_state_set_store->vertex_attrib_array_state_sets,
 					d_state_set_keys->get_vertex_attrib_array_key(attribute_index),
 					boost::in_place(
+							boost::cref(capabilities),
 							attribute_index,
 							GLVertexAttribPointerStateSet::VERTEX_ATTRIB_L_POINTER,
 							size,
@@ -1524,6 +1537,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_vertex_attrib_l_pointer(
+				const GLCapabilities &capabilities,
 				GLuint attribute_index,
 				GLint size,
 				GLenum type,
@@ -1535,6 +1549,7 @@ namespace GPlatesOpenGL
 					d_state_set_store->vertex_attrib_array_state_sets,
 					d_state_set_keys->get_vertex_attrib_array_key(attribute_index),
 					boost::in_place(
+							boost::cref(capabilities),
 							attribute_index,
 							GLVertexAttribPointerStateSet::VERTEX_ATTRIB_L_POINTER,
 							size,
@@ -1801,6 +1816,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		end_bind_vertex_array_object(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		/**

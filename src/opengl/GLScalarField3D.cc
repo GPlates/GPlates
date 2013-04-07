@@ -2091,6 +2091,8 @@ void
 GPlatesOpenGL::GLScalarField3D::initialise_surface_fill_mask_rendering(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	//
 	// Initialise the surface fill mask texture resolution.
 	//
@@ -2098,9 +2100,9 @@ GPlatesOpenGL::GLScalarField3D::initialise_surface_fill_mask_rendering(
 	d_surface_fill_mask_resolution = SURFACE_FILL_MASK_RESOLUTION;
 
 	// It can't be larger than the maximum texture dimension for the current system.
-	if (d_surface_fill_mask_resolution > renderer.get_capabilities().texture.gl_max_texture_size)
+	if (d_surface_fill_mask_resolution > capabilities.texture.gl_max_texture_size)
 	{
-		d_surface_fill_mask_resolution = renderer.get_capabilities().texture.gl_max_texture_size;
+		d_surface_fill_mask_resolution = capabilities.texture.gl_max_texture_size;
 	}
 
 	//
@@ -2499,6 +2501,8 @@ void
 GPlatesOpenGL::GLScalarField3D::create_tile_meta_data_texture_array(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Using nearest-neighbour filtering since don't want to filter pixel metadata.
 	d_tile_meta_data_texture_array->gl_tex_parameteri(
 			renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -2507,7 +2511,8 @@ GPlatesOpenGL::GLScalarField3D::create_tile_meta_data_texture_array(
 
 	// Clamp texture coordinates to centre of edge texels.
 	// Not strictly necessary for nearest-neighbour filtering.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		d_tile_meta_data_texture_array->gl_tex_parameteri(
 				renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -2543,6 +2548,8 @@ void
 GPlatesOpenGL::GLScalarField3D::create_field_data_texture_array(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Using linear filtering.
 	// We've tested for support for filtering of floating-point textures in 'is_supported()'.
 	d_field_data_texture_array->gl_tex_parameteri(
@@ -2551,7 +2558,8 @@ GPlatesOpenGL::GLScalarField3D::create_field_data_texture_array(
 			renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Clamp texture coordinates to centre of edge texels.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		d_field_data_texture_array->gl_tex_parameteri(
 				renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -2587,6 +2595,8 @@ void
 GPlatesOpenGL::GLScalarField3D::create_mask_data_texture_array(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Using linear filtering.
 	// We've tested for support for filtering of floating-point textures in 'is_supported()'.
 	d_mask_data_texture_array->gl_tex_parameteri(
@@ -2595,7 +2605,8 @@ GPlatesOpenGL::GLScalarField3D::create_mask_data_texture_array(
 			renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Clamp texture coordinates to centre of edge texels.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		d_mask_data_texture_array->gl_tex_parameteri(
 				renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -2631,6 +2642,8 @@ void
 GPlatesOpenGL::GLScalarField3D::create_depth_radius_to_layer_texture(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Using linear filtering.
 	// We've tested for support for filtering of floating-point textures in 'is_supported()'.
 	d_depth_radius_to_layer_texture->gl_tex_parameteri(
@@ -2639,7 +2652,8 @@ GPlatesOpenGL::GLScalarField3D::create_depth_radius_to_layer_texture(
 			renderer, GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Clamp texture coordinates to centre of edge texels.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		d_depth_radius_to_layer_texture->gl_tex_parameteri(
 				renderer, GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -2657,9 +2671,9 @@ GPlatesOpenGL::GLScalarField3D::create_depth_radius_to_layer_texture(
 
 	unsigned int depth_radius_to_layer_resolution = DEPTH_RADIUS_TO_LAYER_RESOLUTION;
 	// Limit to max texture size if exceeds.
-	if (depth_radius_to_layer_resolution > renderer.get_capabilities().texture.gl_max_texture_size)
+	if (depth_radius_to_layer_resolution > capabilities.texture.gl_max_texture_size)
 	{
-		depth_radius_to_layer_resolution = renderer.get_capabilities().texture.gl_max_texture_size;
+		depth_radius_to_layer_resolution = capabilities.texture.gl_max_texture_size;
 	}
 
 	d_depth_radius_to_layer_texture->gl_tex_image_1D(
@@ -2676,6 +2690,8 @@ void
 GPlatesOpenGL::GLScalarField3D::create_colour_palette_texture(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Using linear filtering.
 	// We've tested for support for filtering of floating-point textures in 'is_supported()'.
 	d_colour_palette_texture->gl_tex_parameteri(
@@ -2684,7 +2700,8 @@ GPlatesOpenGL::GLScalarField3D::create_colour_palette_texture(
 			renderer, GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Clamp texture coordinates to centre of edge texels.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		d_colour_palette_texture->gl_tex_parameteri(
 				renderer, GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -2702,9 +2719,9 @@ GPlatesOpenGL::GLScalarField3D::create_colour_palette_texture(
 
 	unsigned int colour_palette_resolution = COLOUR_PALETTE_RESOLUTION;
 	// Limit to max texture size if exceeds.
-	if (colour_palette_resolution > renderer.get_capabilities().texture.gl_max_texture_size)
+	if (colour_palette_resolution > capabilities.texture.gl_max_texture_size)
 	{
-		colour_palette_resolution = renderer.get_capabilities().texture.gl_max_texture_size;
+		colour_palette_resolution = capabilities.texture.gl_max_texture_size;
 	}
 
 	d_colour_palette_texture->gl_tex_image_1D(
@@ -2721,6 +2738,8 @@ GPlatesOpenGL::GLTexture::shared_ptr_to_const_type
 GPlatesOpenGL::GLScalarField3D::acquire_surface_fill_mask_texture(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	const unsigned int texture_depth = 6;
 
 	// Acquire an RGBA8 texture.
@@ -2744,7 +2763,8 @@ GPlatesOpenGL::GLScalarField3D::acquire_surface_fill_mask_texture(
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		surface_fill_mask_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		surface_fill_mask_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);

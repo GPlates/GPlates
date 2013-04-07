@@ -633,14 +633,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
 }
 
 
-// We use macros in <GL/glew.h> that contain old-style casts.
-DISABLE_GCC_WARNING("-Wold-style-cast")
-
 void
 GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &texture)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	const GLint internal_format = d_raster_source->get_target_texture_internal_format();
 
 #if 0
@@ -661,7 +660,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	// we have our own mipmapped raster tiles via proxied rasters. Also we turn on anisotropic
 	// filtering which will reduce any aliasing near the horizon of the globe.
 	// Turning off auto-mipmap-generation will also give us a small speed boost.
-	if (GLEW_SGIS_generate_mipmap)
+	if (capabilities.texture.gl_SGIS_generate_mipmap)
 	{
 		// Mipmaps will be generated automatically when the level 0 image is modified.
 		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
@@ -686,16 +685,17 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	// NOTE: We don't enable anisotropic filtering for floating-point textures since earlier
 	// hardware (that supports floating-point textures) only supports nearest filtering.
 	if (!GLTexture::is_format_floating_point(internal_format) &&
-		GLEW_EXT_texture_filter_anisotropic &&
+		capabilities.texture.gl_EXT_texture_filter_anisotropic &&
 		d_fixed_point_texture_filter == FIXED_POINT_TEXTURE_FILTER_ANISOTROPIC)
 	{
-		const GLfloat anisotropy = renderer.get_capabilities().texture.gl_texture_max_anisotropy;
+		const GLfloat anisotropy = capabilities.texture.gl_texture_max_anisotropy;
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -720,8 +720,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	// Check there are no OpenGL errors.
 	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
-
-ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
 GPlatesOpenGL::GLMultiResolutionRaster::tile_vertices_cache_type::object_shared_ptr_type

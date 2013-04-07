@@ -410,6 +410,8 @@ GPlatesOpenGL::GLTexture::shared_ptr_type
 GPlatesOpenGL::GLSaveRestoreFrameBuffer::acquire_save_restore_colour_texture(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Acquire a cached texture for saving (part or all of) the framebuffer to.
 	// It'll get returned to its cache when we no longer reference it.
 	const GLTexture::shared_ptr_type save_restore_texture =
@@ -428,13 +430,14 @@ GPlatesOpenGL::GLSaveRestoreFrameBuffer::acquire_save_restore_colour_texture(
 	save_restore_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	save_restore_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	// Turn off anisotropic filtering (don't need it).
-	if (GLEW_EXT_texture_filter_anisotropic)
+	if (capabilities.texture.gl_EXT_texture_filter_anisotropic)
 	{
 		save_restore_texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
 	}
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		save_restore_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		save_restore_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);

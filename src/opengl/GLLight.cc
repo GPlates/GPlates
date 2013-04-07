@@ -363,6 +363,8 @@ void
 GPlatesOpenGL::GLLight::create_map_view_light_direction_cube_texture(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Using nearest-neighbour filtering since the 'pixelation' of the light direction is not
 	// noticeable once it goes through the dot product with the surface normals.
 	// Also it enables us to have distinctly different light directions on either side of the
@@ -376,7 +378,8 @@ GPlatesOpenGL::GLLight::create_map_view_light_direction_cube_texture(
 	// Clamp texture coordinates to centre of edge texels.
 	// Not strictly necessary for nearest-neighbour filtering but it is if later we change to use
 	// linear filtering to avoid seams.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		d_map_view_light_direction_cube_texture->gl_tex_parameteri(
 				renderer, GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

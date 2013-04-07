@@ -55,7 +55,7 @@ GPlatesOpenGL::GLCapabilities GPlatesOpenGL::GLContext::s_capabilities;
 
 
 QGLFormat
-GPlatesOpenGL::GLContext::get_qgl_format()
+GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with()
 {
 	// We turn *off* multisampling because lines actually look better without it...
 	// We need a stencil buffer for filling polygons.
@@ -114,7 +114,7 @@ GPlatesOpenGL::GLContext::initialise()
 			// glewInit failed.
 			//
 			// We'll assume all calls to test whether an extension is available
-			// (such as "if (GLEW_ARB_multitexture) ..." will fail since they just
+			// (such as "if (get_capabilities().gl_ARB_multitexture) ..." will fail since they just
 			// test boolean variables which are assumed to be initialised by GLEW to zero.
 			// This just means we will be forced to fall back to OpenGL version 1.1.
 			qWarning() << "Error: " << reinterpret_cast<const char *>(glewGetErrorString(err));
@@ -133,7 +133,7 @@ GPlatesOpenGL::GLContext::initialise()
 		s_capabilities.initialise();
 
 		// Provide information about lack of framebuffer object support.
-		if (!GLEW_EXT_framebuffer_object)
+		if (!s_capabilities.framebuffer.gl_EXT_framebuffer_object)
 		{
 			qDebug() << "Falling back to main frame buffer for render targets.";
 
@@ -242,26 +242,29 @@ GPlatesOpenGL::GLContext::SharedState::SharedState() :
 
 const boost::shared_ptr<GPlatesOpenGL::GLShaderObject::resource_manager_type> &
 GPlatesOpenGL::GLContext::SharedState::get_shader_object_resource_manager(
+		GLRenderer &renderer,
 		GLenum shader_type) const
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	switch (shader_type)
 	{
 	case GL_VERTEX_SHADER_ARB:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_shader),
+				capabilities.shader.gl_ARB_vertex_shader,
 				GPLATES_ASSERTION_SOURCE);
 		return d_vertex_shader_object_resource_manager;
 
 	case GL_FRAGMENT_SHADER_ARB:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GPLATES_OPENGL_BOOL(GLEW_ARB_fragment_shader),
+				capabilities.shader.gl_ARB_fragment_shader,
 				GPLATES_ASSERTION_SOURCE);
 		return d_fragment_shader_object_resource_manager;
 
 #ifdef GL_EXT_geometry_shader4 // In case old 'glew.h' (since extension added relatively recently in OpenGL 3.2).
 	case GL_GEOMETRY_SHADER_EXT:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GPLATES_OPENGL_BOOL(GLEW_EXT_geometry_shader4),
+				capabilities.shader.gl_EXT_geometry_shader4,
 				GPLATES_ASSERTION_SOURCE);
 		return d_geometry_shader_object_resource_manager.get();
 #endif
@@ -276,10 +279,13 @@ GPlatesOpenGL::GLContext::SharedState::get_shader_object_resource_manager(
 
 
 const boost::shared_ptr<GPlatesOpenGL::GLProgramObject::resource_manager_type> &
-GPlatesOpenGL::GLContext::SharedState::get_program_object_resource_manager() const
+GPlatesOpenGL::GLContext::SharedState::get_program_object_resource_manager(
+		GLRenderer &renderer) const
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_shader_objects),
+			capabilities.shader.gl_ARB_shader_objects,
 			GPLATES_ASSERTION_SOURCE);
 
 	return d_program_object_resource_manager;

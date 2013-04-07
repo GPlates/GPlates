@@ -52,11 +52,12 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 
 
 GPlatesOpenGL::GLBufferObject::resource_handle_type
-GPlatesOpenGL::GLBufferObject::Allocator::allocate()
+GPlatesOpenGL::GLBufferObject::Allocator::allocate(
+		const GLCapabilities &capabilities)
 {
 	// We should only get here if the vertex buffer object extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_buffer_object),
+			capabilities.buffer.gl_ARB_vertex_buffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	resource_handle_type buffer_object;
@@ -69,11 +70,6 @@ void
 GPlatesOpenGL::GLBufferObject::Allocator::deallocate(
 		resource_handle_type buffer_object)
 {
-	// We should only get here if the vertex buffer object extension is supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_buffer_object),
-			GPLATES_ASSERTION_SOURCE);
-
 	glDeleteBuffersARB(1, &buffer_object);
 }
 
@@ -82,13 +78,16 @@ GPlatesOpenGL::GLBufferObject::GLBufferObject(
 		GLRenderer &renderer) :
 	d_resource(
 			resource_type::create(
+					renderer.get_capabilities(),
 					renderer.get_context().get_shared_state()->get_buffer_object_resource_manager())),
 	d_size(0),
 	d_uninitialised_offset(0)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// We should only get here if the vertex buffer object extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_buffer_object),
+			capabilities.buffer.gl_ARB_vertex_buffer_object,
 			GPLATES_ASSERTION_SOURCE);
 }
 
@@ -230,7 +229,10 @@ bool
 GPlatesOpenGL::GLBufferObject::asynchronous_map_buffer_dynamic_supported(
 		GLRenderer &renderer) const
 {
-	return GLEW_ARB_map_buffer_range || GLEW_APPLE_flush_buffer_range;
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
+	return capabilities.buffer.gl_ARB_map_buffer_range ||
+		capabilities.buffer.gl_APPLE_flush_buffer_range;
 }
 
 
@@ -239,6 +241,8 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_dynamic(
 		GLRenderer &renderer,
 		target_type target)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Bind this buffer object.
 	// Revert our buffer binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
@@ -249,7 +253,7 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_dynamic(
 
 	GLvoid *mapped_data = NULL;
 
-	if (GLEW_ARB_map_buffer_range)
+	if (capabilities.buffer.gl_ARB_map_buffer_range)
 	{
 		// We always map the entire buffer.
 		// Only used for write access - otherwise caller should be using 'gl_map_buffer_static'.
@@ -258,7 +262,7 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_dynamic(
 		mapped_data = glMapBufferRange(target, 0, d_size, (GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT));
 	}
 	// Apple use a different (although similar) API.
-	else if (GLEW_APPLE_flush_buffer_range)
+	else if (capabilities.buffer.gl_APPLE_flush_buffer_range)
 	{
 		// Prevent OpenGL from flushing the entire buffer.
 		// One or more ranges of the buffer will need to be explicitly flushed
@@ -319,6 +323,8 @@ GPlatesOpenGL::GLBufferObject::gl_flush_buffer_dynamic(
 		unsigned int offset,
 		unsigned int length/*in bytes*/)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Range must fit within existing buffer.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			offset + length <= d_size,
@@ -332,13 +338,13 @@ GPlatesOpenGL::GLBufferObject::gl_flush_buffer_dynamic(
 			boost::dynamic_pointer_cast<const GLBufferObject>(shared_from_this()),
 			target);
 
-	if (GLEW_ARB_map_buffer_range)
+	if (capabilities.buffer.gl_ARB_map_buffer_range)
 	{
 		// Only flush the requested range.
 		glFlushMappedBufferRange(target, offset, length);
 	}
 	// Apple use a different (although similar) API.
-	else if (GLEW_APPLE_flush_buffer_range)
+	else if (capabilities.buffer.gl_APPLE_flush_buffer_range)
 	{
 		// Only flush the requested range.
 		glFlushMappedBufferRangeAPPLE(target, offset, length);
@@ -365,7 +371,10 @@ bool
 GPlatesOpenGL::GLBufferObject::asynchronous_map_buffer_stream_supported(
 		GLRenderer &renderer) const
 {
-	return GLEW_ARB_map_buffer_range || GLEW_APPLE_flush_buffer_range;
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
+	return capabilities.buffer.gl_ARB_map_buffer_range ||
+		capabilities.buffer.gl_APPLE_flush_buffer_range;
 }
 
 
@@ -379,6 +388,8 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_stream(
 		unsigned int &stream_bytes_available)
 {
 	//PROFILE_FUNC();
+
+	const GLCapabilities &capabilities = renderer.get_capabilities();
 
 	// 'minimum_bytes_to_stream' must be in the half-open range (0, d_size].
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -411,7 +422,7 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_stream(
 
 	GLvoid *mapped_data = NULL;
 
-	if (GLEW_ARB_map_buffer_range)
+	if (capabilities.buffer.gl_ARB_map_buffer_range)
 	{
 		// Only used for write access - otherwise caller should be using 'gl_map_buffer_static'.
 		// 'GL_MAP_FLUSH_EXPLICIT_BIT' means the buffer will need to be explicitly flushed
@@ -448,7 +459,7 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_stream(
 		mapped_data = glMapBufferRange(target, d_uninitialised_offset, d_size - d_uninitialised_offset, range_access);
 	}
 	// Apple use a different (although similar) API.
-	else if (GLEW_APPLE_flush_buffer_range)
+	else if (capabilities.buffer.gl_APPLE_flush_buffer_range)
 	{
 		if (discard)
 		{
@@ -564,6 +575,8 @@ GPlatesOpenGL::GLBufferObject::gl_flush_buffer_stream(
 {
 	//PROFILE_FUNC();
 
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// If no data was written then return early.
 	if (bytes_written == 0)
 	{
@@ -583,7 +596,7 @@ GPlatesOpenGL::GLBufferObject::gl_flush_buffer_stream(
 			boost::dynamic_pointer_cast<const GLBufferObject>(shared_from_this()),
 			target);
 
-	if (GLEW_ARB_map_buffer_range)
+	if (capabilities.buffer.gl_ARB_map_buffer_range)
 	{
 		// Only flush the requested range.
 		//
@@ -592,7 +605,7 @@ GPlatesOpenGL::GLBufferObject::gl_flush_buffer_stream(
 		glFlushMappedBufferRange(target, 0, bytes_written);
 	}
 	// Apple use a different (although similar) API.
-	else if (GLEW_APPLE_flush_buffer_range)
+	else if (capabilities.buffer.gl_APPLE_flush_buffer_range)
 	{
 		// Only flush the requested range.
 		//
@@ -619,6 +632,8 @@ GPlatesOpenGL::GLBufferObject::gl_unmap_buffer(
 {
 	//PROFILE_FUNC();
 
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Bind this buffer object.
 	// Revert our buffer binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
@@ -629,13 +644,13 @@ GPlatesOpenGL::GLBufferObject::gl_unmap_buffer(
 
 	const GLboolean unmap_result = glUnmapBufferARB(target);
 
-	if (GLEW_ARB_map_buffer_range)
+	if (capabilities.buffer.gl_ARB_map_buffer_range)
 	{
 		// Nothing to do.
 	}
 	// Reset to the default flushing behaviour in case 'gl_map_buffer_dynamic' or 'gl_map_buffer_stream'
 	// were called (and we're using the 'GL_APPLE_flush_buffer_range' extension).
-	else if (GLEW_APPLE_flush_buffer_range)
+	else if (capabilities.buffer.gl_APPLE_flush_buffer_range)
 	{
 		// Restore default flushing behaviour - which is to flush the entire buffer.
 		// NOTE: This is buffer object state (not global state) so it applies to the currently bound buffer object.

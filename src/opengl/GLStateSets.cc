@@ -41,9 +41,6 @@
 #include "global/PreconditionViolationError.h"
 
 
-// We use macros in <GL/glew.h> that contain old-style casts.
-DISABLE_GCC_WARNING("-Wold-style-cast")
-
 namespace GPlatesOpenGL
 {
 	namespace
@@ -81,7 +78,7 @@ namespace GPlatesOpenGL
 			if (last_applied_state.get_active_texture() != texture_unit)
 			{
 				// GL_ARB_multitexture not required if texture_unit is zero (so we test instead of assert)...
-				if (GLEW_ARB_multitexture)
+				if (capabilities.texture.gl_ARB_multitexture)
 				{
 					// Apply the change to OpenGL.
 					glActiveTextureARB(texture_unit);
@@ -106,7 +103,7 @@ namespace GPlatesOpenGL
 			if (last_applied_state.get_client_active_texture() != texture_unit)
 			{
 				// GL_ARB_multitexture not required if texture_unit is zero (so we test instead of assert)...
-				if (GLEW_ARB_multitexture)
+				if (capabilities.texture.gl_ARB_multitexture)
 				{
 					// Apply the change to OpenGL.
 					glClientActiveTextureARB(texture_unit);
@@ -123,6 +120,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		bind_buffer_object(
+				const GLCapabilities &capabilities,
 				GLBufferObject::resource_handle_type buffer_object_resource,
 				const GLBufferObject::shared_ptr_to_const_type &buffer_object,
 				GLenum target,
@@ -132,7 +130,7 @@ namespace GPlatesOpenGL
 			if (last_applied_state.get_bind_buffer_object_resource(target) != buffer_object_resource)
 			{
 				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_buffer_object),
+						capabilities.buffer.gl_ARB_vertex_buffer_object,
 						GPLATES_ASSERTION_SOURCE);
 
 				// Bind the buffer object.
@@ -149,6 +147,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		unbind_buffer_object(
+				const GLCapabilities &capabilities,
 				GLenum target,
 				GLState &last_applied_state)
 		{
@@ -156,7 +155,7 @@ namespace GPlatesOpenGL
 			if (last_applied_state.get_bind_buffer_object_resource(target))
 			{
 				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_buffer_object),
+						capabilities.buffer.gl_ARB_vertex_buffer_object,
 						GPLATES_ASSERTION_SOURCE);
 
 				// No buffer object - back to client memory arrays.
@@ -523,6 +522,7 @@ GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::has_changed_to_default_s
 
 void
 GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::bind_buffer(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Determine if we're using a vertex buffer object or client memory.
@@ -532,7 +532,10 @@ GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::bind_buffer(
 	if (buffer_impl) // using client memory...
 	{
 		// Make sure we're using client memory by unbinding any currently bound buffer object.
-		unbind_buffer_object(GLVertexBufferObject::get_target_type(), last_applied_state);
+		unbind_buffer_object(
+				capabilities,
+				GLVertexBufferObject::get_target_type(),
+				last_applied_state);
 	}
 	else // using buffer object...
 	{
@@ -541,6 +544,7 @@ GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::bind_buffer(
 
 		// Bind the buffer object.
 		bind_buffer_object(
+				capabilities,
 				buffer_object->get_buffer_resource_handle(),
 				buffer_object,
 				GLVertexBufferObject::get_target_type(),
@@ -551,10 +555,14 @@ GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::bind_buffer(
 
 void
 GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::unbind_buffer(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Make sure we're using client memory by unbinding any currently bound buffer object.
-	unbind_buffer_object(GLVertexBufferObject::get_target_type(), last_applied_state);
+	unbind_buffer_object(
+			capabilities,
+			GLVertexBufferObject::get_target_type(),
+			last_applied_state);
 }
 
 
@@ -584,7 +592,7 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_state(
 		return;
 	}
 
-	if (GLEW_ARB_multitexture)
+	if (capabilities.texture.gl_ARB_multitexture)
 	{
 		glActiveTextureARB(d_active_texture);
 	}
@@ -602,7 +610,7 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_from_default_state(
 		return;
 	}
 
-	if (GLEW_ARB_multitexture)
+	if (capabilities.texture.gl_ARB_multitexture)
 	{
 		glActiveTextureARB(d_active_texture);
 	}
@@ -620,7 +628,7 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_to_default_state(
 		return;
 	}
 
-	if (GLEW_ARB_multitexture)
+	if (capabilities.texture.gl_ARB_multitexture)
 	{
 		// Texture unit 0.
 		glActiveTextureARB(GL_TEXTURE0);
@@ -694,7 +702,7 @@ GPlatesOpenGL::GLBindBufferObjectStateSet::apply_state(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_buffer_object),
+			capabilities.buffer.gl_ARB_vertex_buffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	if (d_buffer_object_resource)
@@ -721,7 +729,7 @@ GPlatesOpenGL::GLBindBufferObjectStateSet::apply_from_default_state(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_buffer_object),
+			capabilities.buffer.gl_ARB_vertex_buffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind the buffer object.
@@ -740,7 +748,7 @@ GPlatesOpenGL::GLBindBufferObjectStateSet::apply_to_default_state(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_buffer_object),
+			capabilities.buffer.gl_ARB_vertex_buffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// The default is zero (no buffer object - back to client memory arrays).
@@ -763,7 +771,7 @@ GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_state(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
+			capabilities.framebuffer.gl_EXT_framebuffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	if (d_frame_buffer_object)
@@ -790,7 +798,7 @@ GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_from_default_state(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
+			capabilities.framebuffer.gl_EXT_framebuffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind the frame buffer object.
@@ -809,7 +817,7 @@ GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_to_default_state(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
+			capabilities.framebuffer.gl_EXT_framebuffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// The default is zero (the main framebuffer).
@@ -832,7 +840,7 @@ GPlatesOpenGL::GLBindProgramObjectStateSet::apply_state(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_shader_objects),
+			capabilities.shader.gl_ARB_shader_objects,
 			GPLATES_ASSERTION_SOURCE);
 
 	if (d_program_object)
@@ -859,7 +867,7 @@ GPlatesOpenGL::GLBindProgramObjectStateSet::apply_from_default_state(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_shader_objects),
+			capabilities.shader.gl_ARB_shader_objects,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind the shader program object.
@@ -878,7 +886,7 @@ GPlatesOpenGL::GLBindProgramObjectStateSet::apply_to_default_state(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_shader_objects),
+			capabilities.shader.gl_ARB_shader_objects,
 			GPLATES_ASSERTION_SOURCE);
 
 	// The default is zero (the fixed-function pipeline).
@@ -1000,7 +1008,7 @@ GPlatesOpenGL::GLBindVertexArrayObjectStateSet::apply_state(
 
 #ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_array_object),
+			capabilities.buffer.gl_ARB_vertex_array_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	if (d_resource_handle)
@@ -1041,7 +1049,7 @@ GPlatesOpenGL::GLBindVertexArrayObjectStateSet::apply_from_default_state(
 
 #ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_array_object),
+			capabilities.buffer.gl_ARB_vertex_array_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind the vertex array object.
@@ -1074,7 +1082,7 @@ GPlatesOpenGL::GLBindVertexArrayObjectStateSet::apply_to_default_state(
 
 #ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_array_object),
+			capabilities.buffer.gl_ARB_vertex_array_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// The default is zero (no vertex array object - back to managing individual vertex attribute arrays).
@@ -1089,6 +1097,7 @@ GPlatesOpenGL::GLBindVertexArrayObjectStateSet::apply_to_default_state(
 
 
 GPlatesOpenGL::GLBlendEquationStateSet::GLBlendEquationStateSet(
+		const GLCapabilities &capabilities,
 		GLenum mode) :
 	d_mode_RGB(mode),
 	d_mode_A(mode),
@@ -1096,12 +1105,13 @@ GPlatesOpenGL::GLBlendEquationStateSet::GLBlendEquationStateSet(
 {
 	//! The GL_EXT_blend_minmax extension exposes 'glBlendEquationEXT()'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_blend_minmax),
+			capabilities.framebuffer.gl_EXT_blend_minmax,
 			GPLATES_ASSERTION_SOURCE);
 }
 
 
 GPlatesOpenGL::GLBlendEquationStateSet::GLBlendEquationStateSet(
+		const GLCapabilities &capabilities,
 		GLenum modeRGB,
 		GLenum modeAlpha) :
 	d_mode_RGB(modeRGB),
@@ -1109,7 +1119,7 @@ GPlatesOpenGL::GLBlendEquationStateSet::GLBlendEquationStateSet(
 	d_separate_equations(true)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_blend_equation_separate),
+			capabilities.framebuffer.gl_EXT_blend_equation_separate,
 			GPLATES_ASSERTION_SOURCE);
 }
 
@@ -1182,6 +1192,7 @@ GPlatesOpenGL::GLBlendEquationStateSet::apply_to_default_state(
 
 
 GPlatesOpenGL::GLBlendFuncStateSet::GLBlendFuncStateSet(
+		const GLCapabilities &capabilities,
 		GLenum sfactorRGB,
 		GLenum dfactorRGB,
 		GLenum sfactorAlpha,
@@ -1193,7 +1204,7 @@ GPlatesOpenGL::GLBlendFuncStateSet::GLBlendFuncStateSet(
 	d_separate_factors(true)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_blend_func_separate),
+			capabilities.framebuffer.gl_EXT_blend_func_separate,
 			GPLATES_ASSERTION_SOURCE);
 }
 
@@ -1458,7 +1469,7 @@ GPlatesOpenGL::GLClientActiveTextureStateSet::apply_state(
 		return;
 	}
 
-	if (GLEW_ARB_multitexture)
+	if (capabilities.texture.gl_ARB_multitexture)
 	{
 		glClientActiveTextureARB(d_client_active_texture);
 	}
@@ -1476,7 +1487,7 @@ GPlatesOpenGL::GLClientActiveTextureStateSet::apply_from_default_state(
 		return;
 	}
 
-	if (GLEW_ARB_multitexture)
+	if (capabilities.texture.gl_ARB_multitexture)
 	{
 		glClientActiveTextureARB(d_client_active_texture);
 	}
@@ -1494,7 +1505,7 @@ GPlatesOpenGL::GLClientActiveTextureStateSet::apply_to_default_state(
 		return;
 	}
 
-	if (GLEW_ARB_multitexture)
+	if (capabilities.texture.gl_ARB_multitexture)
 	{
 		// Texture unit 0.
 		glClientActiveTextureARB(GL_TEXTURE0);
@@ -1572,7 +1583,7 @@ GPlatesOpenGL::GLColorPointerStateSet::apply_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// GL_COLOR_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
 	glColorPointer(d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
@@ -1594,7 +1605,7 @@ GPlatesOpenGL::GLColorPointerStateSet::apply_from_default_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// GL_COLOR_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
 	glColorPointer(d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
@@ -1616,7 +1627,7 @@ GPlatesOpenGL::GLColorPointerStateSet::apply_to_default_state(
 	}
 
 	// Ensure the buffer is unbound.
-	d_buffer.unbind_buffer(last_applied_state);
+	d_buffer.unbind_buffer(capabilities, last_applied_state);
 
 	// These are the default parameters.
 	glColorPointer(4, GL_FLOAT, 0, NULL);
@@ -1807,7 +1818,7 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_state(
 		}
 	}
 
-	apply_state();
+	apply_state(capabilities);
 }
 
 void
@@ -1825,7 +1836,7 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_from_default_state(
 		}
 	}
 
-	apply_state();
+	apply_state(capabilities);
 }
 
 void
@@ -1848,7 +1859,8 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_to_default_state(
 }
 
 void
-GPlatesOpenGL::GLDepthRangeStateSet::apply_state() const
+GPlatesOpenGL::GLDepthRangeStateSet::apply_state(
+		const GLCapabilities &capabilities) const
 {
 	if (d_all_depth_ranges_are_the_same || (d_depth_ranges.size() == 1))
 	{
@@ -1861,7 +1873,7 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_state() const
 	}
 
 #ifdef GL_ARB_viewport_array // In case old 'glew.h' header
-	if (GLEW_ARB_viewport_array)
+	if (capabilities.viewport.gl_ARB_viewport_array)
 	{
 		// Put the depth range parameters into one array so can call 'glDepthRangeArrayv' once
 		// rather than call 'glDepthRangeIndexed' multiple times.
@@ -2509,7 +2521,7 @@ GPlatesOpenGL::GLNormalPointerStateSet::apply_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// GL_NORMAL_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
 	glNormalPointer(d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
@@ -2530,7 +2542,7 @@ GPlatesOpenGL::GLNormalPointerStateSet::apply_from_default_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// GL_NORMAL_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
 	glNormalPointer(d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
@@ -2551,7 +2563,7 @@ GPlatesOpenGL::GLNormalPointerStateSet::apply_to_default_state(
 	}
 
 	// Ensure the buffer is unbound.
-	d_buffer.unbind_buffer(last_applied_state);
+	d_buffer.unbind_buffer(capabilities, last_applied_state);
 
 	// These are the default parameters.
 	glNormalPointer(GL_FLOAT, 0, NULL);
@@ -2748,7 +2760,7 @@ GPlatesOpenGL::GLScissorStateSet::apply_state(
 		}
 	}
 
-	apply_state();
+	apply_state(capabilities);
 }
 
 void
@@ -2766,7 +2778,7 @@ GPlatesOpenGL::GLScissorStateSet::apply_from_default_state(
 		}
 	}
 
-	apply_state();
+	apply_state(capabilities);
 }
 
 void
@@ -2801,7 +2813,8 @@ GPlatesOpenGL::GLScissorStateSet::get_scissor(
 }
 
 void
-GPlatesOpenGL::GLScissorStateSet::apply_state() const
+GPlatesOpenGL::GLScissorStateSet::apply_state(
+		const GLCapabilities &capabilities) const
 {
 	if (d_all_scissor_rectangles_are_the_same || (d_scissor_rectangles.size() == 1))
 	{
@@ -2814,7 +2827,7 @@ GPlatesOpenGL::GLScissorStateSet::apply_state() const
 	}
 
 #ifdef GL_ARB_viewport_array // In case old 'glew.h' header
-	if (GLEW_ARB_viewport_array)
+	if (capabilities.viewport.gl_ARB_viewport_array)
 	{
 		// Put the scissor rectangle parameters into one array so can call 'glScissorArrayv' once
 		// rather than call 'glScissorIndexed' multiple times.
@@ -3010,7 +3023,7 @@ GPlatesOpenGL::GLTexCoordPointerStateSet::apply_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// Make sure the correct texture unit is currently active.
 	set_client_active_texture(capabilities, d_texture_unit, last_applied_state);
@@ -3036,7 +3049,7 @@ GPlatesOpenGL::GLTexCoordPointerStateSet::apply_from_default_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// Make sure the correct texture unit is currently active.
 	set_client_active_texture(capabilities, d_texture_unit, last_applied_state);
@@ -3062,7 +3075,7 @@ GPlatesOpenGL::GLTexCoordPointerStateSet::apply_to_default_state(
 	}
 
 	// Ensure the buffer is unbound.
-	d_buffer.unbind_buffer(last_applied_state);
+	d_buffer.unbind_buffer(capabilities, last_applied_state);
 
 	// Make sure the correct texture unit is currently active.
 	set_client_active_texture(capabilities, d_texture_unit, last_applied_state);
@@ -3337,6 +3350,7 @@ GPlatesOpenGL::GLTexEnvStateSet::get_default_param() const
 
 
 GPlatesOpenGL::GLVertexAttribPointerStateSet::GLVertexAttribPointerStateSet(
+		const GLCapabilities &capabilities,
 		GLuint attribute_index,
 		VertexAttribAPIType vertex_attrib_api,
 		GLint size,
@@ -3358,30 +3372,22 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::GLVertexAttribPointerStateSet(
 	{
 	case VERTEX_ATTRIB_POINTER:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_shader) && normalized,
+				capabilities.shader.gl_ARB_vertex_shader && normalized,
 				GPLATES_ASSERTION_SOURCE);
 		break;
 
 	case VERTEX_ATTRIB_I_POINTER:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GLEW_ARB_vertex_shader &&
-#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
-					GLEW_EXT_gpu_shader4 &&
-#else
-					false &&
-#endif
+				capabilities.shader.gl_ARB_vertex_shader &&
+					capabilities.shader.gl_EXT_gpu_shader4 &&
 					!normalized,
 				GPLATES_ASSERTION_SOURCE);
 		break;
 
 	case VERTEX_ATTRIB_L_POINTER:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GLEW_ARB_vertex_shader &&
-#ifdef GL_ARB_vertex_attrib_64bit // In case old 'glew.h' (since extension added relatively recently).
-					GLEW_ARB_vertex_attrib_64bit &&
-#else
-					false &&
-#endif
+				capabilities.shader.gl_ARB_vertex_shader &&
+					capabilities.shader.gl_ARB_vertex_attrib_64bit &&
 					!normalized,
 				GPLATES_ASSERTION_SOURCE);
 		break;
@@ -3393,6 +3399,7 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::GLVertexAttribPointerStateSet(
 }
 
 GPlatesOpenGL::GLVertexAttribPointerStateSet::GLVertexAttribPointerStateSet(
+		const GLCapabilities &capabilities,
 		GLuint attribute_index,
 		VertexAttribAPIType vertex_attrib_api,
 		GLint size,
@@ -3414,30 +3421,22 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::GLVertexAttribPointerStateSet(
 	{
 	case VERTEX_ATTRIB_POINTER:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_shader) && normalized,
+				capabilities.shader.gl_ARB_vertex_shader && normalized,
 				GPLATES_ASSERTION_SOURCE);
 		break;
 
 	case VERTEX_ATTRIB_I_POINTER:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GLEW_ARB_vertex_shader &&
-#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
-					GLEW_EXT_gpu_shader4 &&
-#else
-					false &&
-#endif
+				capabilities.shader.gl_ARB_vertex_shader &&
+					capabilities.shader.gl_EXT_gpu_shader4 &&
 					!normalized,
 				GPLATES_ASSERTION_SOURCE);
 		break;
 
 	case VERTEX_ATTRIB_L_POINTER:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GLEW_ARB_vertex_shader &&
-#ifdef GL_ARB_vertex_attrib_64bit // In case old 'glew.h' (since extension added relatively recently).
-					GLEW_ARB_vertex_attrib_64bit &&
-#else
-					false &&
-#endif
+				capabilities.shader.gl_ARB_vertex_shader &&
+					capabilities.shader.gl_ARB_vertex_attrib_64bit &&
 					!normalized,
 				GPLATES_ASSERTION_SOURCE);
 		break;
@@ -3471,7 +3470,7 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
 	switch (d_vertex_attrib_api)
@@ -3518,7 +3517,7 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_from_default_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
 	switch (d_vertex_attrib_api)
@@ -3565,7 +3564,7 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_to_default_state(
 	}
 
 	// Ensure the buffer is unbound.
-	d_buffer.unbind_buffer(last_applied_state);
+	d_buffer.unbind_buffer(capabilities, last_applied_state);
 
 	// These are the default parameters.
 	// Note that for the default state we arbitrarily chose the 'glVertexAttribPointer' API.
@@ -3595,7 +3594,7 @@ GPlatesOpenGL::GLVertexPointerStateSet::apply_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// GL_VERTEX_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
 	glVertexPointer(d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
@@ -3617,7 +3616,7 @@ GPlatesOpenGL::GLVertexPointerStateSet::apply_from_default_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// GL_VERTEX_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
 	glVertexPointer(d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
@@ -3639,7 +3638,7 @@ GPlatesOpenGL::GLVertexPointerStateSet::apply_to_default_state(
 	}
 
 	// Ensure the buffer is unbound.
-	d_buffer.unbind_buffer(last_applied_state);
+	d_buffer.unbind_buffer(capabilities, last_applied_state);
 
 	// These are the default parameters.
 	glVertexPointer(4, GL_FLOAT, 0, NULL);
@@ -3692,7 +3691,7 @@ GPlatesOpenGL::GLViewportStateSet::apply_state(
 		}
 	}
 
-	apply_state();
+	apply_state(capabilities);
 }
 
 void
@@ -3710,7 +3709,7 @@ GPlatesOpenGL::GLViewportStateSet::apply_from_default_state(
 		}
 	}
 
-	apply_state();
+	apply_state(capabilities);
 }
 
 void
@@ -3733,7 +3732,8 @@ GPlatesOpenGL::GLViewportStateSet::apply_to_default_state(
 }
 
 void
-GPlatesOpenGL::GLViewportStateSet::apply_state() const
+GPlatesOpenGL::GLViewportStateSet::apply_state(
+		const GLCapabilities &capabilities) const
 {
 	if (d_all_viewports_are_the_same || (d_viewports.size() == 1))
 	{
@@ -3746,7 +3746,7 @@ GPlatesOpenGL::GLViewportStateSet::apply_state() const
 	}
 
 #ifdef GL_ARB_viewport_array // In case old 'glew.h' header
-	if (GLEW_ARB_viewport_array)
+	if (capabilities.viewport.gl_ARB_viewport_array)
 	{
 		// Put the viewport parameters into one array so can call 'glViewportArrayv' once
 		// rather than call 'glViewportIndexedf' multiple times.
@@ -3781,5 +3781,3 @@ GPlatesOpenGL::GLViewportStateSet::get_viewport(
 
 	return d_viewports[viewport_index];
 }
-
-ENABLE_GCC_WARNING("-Wold-style-cast")

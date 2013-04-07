@@ -83,7 +83,8 @@ namespace GPlatesOpenGL
 		{
 		public:
 			resource_handle_type
-			allocate()
+			allocate(
+					const GLCapabilities &capabilities)
 			{
 				resource_handle_type texture;
 				glGenTextures(1, &texture);

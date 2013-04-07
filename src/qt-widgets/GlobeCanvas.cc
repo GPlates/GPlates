@@ -323,7 +323,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_):
 	QGLWidget(
-			GPlatesOpenGL::GLContext::get_qgl_format(),
+			GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with(),
 			parent_),
 	d_view_state(view_state),
 	d_gl_context(
@@ -364,7 +364,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
 		QWidget *parent_) :
 	QGLWidget(
-			GPlatesOpenGL::GLContext::get_qgl_format(),
+			GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with(),
 			parent_,
 			// Share texture objects, vertex buffer objects, etc...
 			existing_globe_canvas),

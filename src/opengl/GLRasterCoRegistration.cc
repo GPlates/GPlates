@@ -4852,6 +4852,8 @@ GPlatesOpenGL::GLTexture::shared_ptr_type
 GPlatesOpenGL::GLRasterCoRegistration::acquire_rgba_float_texture(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Acquire a cached floating-point texture.
 	// It'll get returned to its cache when we no longer reference it.
 	const GLTexture::shared_ptr_type texture =
@@ -4872,14 +4874,15 @@ GPlatesOpenGL::GLRasterCoRegistration::acquire_rgba_float_texture(
 	// texture hardware does not support it).
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	if (GLEW_EXT_texture_filter_anisotropic)
+	if (capabilities.texture.gl_EXT_texture_filter_anisotropic)
 	{
 		texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -4898,6 +4901,8 @@ GPlatesOpenGL::GLTexture::shared_ptr_type
 GPlatesOpenGL::GLRasterCoRegistration::acquire_rgba_fixed_texture(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Acquire a cached fixed-point texture.
 	// It'll get returned to its cache when we no longer reference it.
 	const GLTexture::shared_ptr_type texture =
@@ -4917,14 +4922,15 @@ GPlatesOpenGL::GLRasterCoRegistration::acquire_rgba_fixed_texture(
 	// Turn off any linear/anisotropic filtering - we're using one-to-one texel-to-pixel mapping.
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	if (GLEW_EXT_texture_filter_anisotropic)
+	if (capabilities.texture.gl_EXT_texture_filter_anisotropic)
 	{
 		texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);

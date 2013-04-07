@@ -95,6 +95,11 @@ namespace GPlatesOpenGL
 			void
 			make_current() = 0;
 
+			//! Return the QGLFormat of the QGLContext OpenGL context.
+			virtual
+			const QGLFormat
+			get_qgl_format() const = 0;
+
 			//! The width of the window currently attached to the OpenGL context.
 			virtual
 			unsigned int
@@ -124,6 +129,13 @@ namespace GPlatesOpenGL
 			make_current()
 			{
 				d_qgl_widget.makeCurrent();
+			}
+
+			virtual
+			const QGLFormat
+			get_qgl_format() const
+			{
+				return d_qgl_widget.context()->format();
 			}
 
 			virtual
@@ -199,6 +211,7 @@ namespace GPlatesOpenGL
 			 */
 			const boost::shared_ptr<GLShaderObject::resource_manager_type> &
 			get_shader_object_resource_manager(
+					GLRenderer &renderer,
 					GLenum shader_type) const;
 
 			/**
@@ -207,7 +220,8 @@ namespace GPlatesOpenGL
 			 * Note that the 'GL_ARB_shader_objects' extension must be supported.
 			 */
 			const boost::shared_ptr<GLProgramObject::resource_manager_type> &
-			get_program_object_resource_manager() const;
+			get_program_object_resource_manager(
+					GLRenderer &renderer) const;
 
 			/**
 			 * Returns a texture, from an internal cache, that matches the specified parameters.
@@ -689,7 +703,7 @@ namespace GPlatesOpenGL
 		 */
 		static
 		QGLFormat
-		get_qgl_format();
+		get_qgl_format_to_create_context_with();
 
 
 		/**
@@ -733,6 +747,18 @@ namespace GPlatesOpenGL
 		make_current()
 		{
 			d_context_impl->make_current();
+		}
+
+
+		/**
+		 * Returns the QGLFormat of the QGLContext OpenGL context.
+		 *
+		 * This can be used to determine the number of colour/depth/stencil bits in the frame buffer.
+		 */
+		const QGLFormat &
+		get_qgl_format() const
+		{
+			return d_qgl_format;
 		}
 
 
@@ -828,6 +854,11 @@ namespace GPlatesOpenGL
 		boost::shared_ptr<Impl> d_context_impl;
 
 		/**
+		 * The format of the OpenGL context.
+		 */
+		QGLFormat d_qgl_format;
+
+		/**
 		 * OpenGL state that can be shared with another context.
 		 */
 		boost::shared_ptr<SharedState> d_shared_state;
@@ -853,6 +884,7 @@ namespace GPlatesOpenGL
 		GLContext(
 				const boost::shared_ptr<Impl> &context_impl) :
 			d_context_impl(context_impl),
+			d_qgl_format(context_impl->get_qgl_format()),
 			d_shared_state(new SharedState()),
 			d_non_shared_state(new NonSharedState())
 		{  }
@@ -862,6 +894,7 @@ namespace GPlatesOpenGL
 				const boost::shared_ptr<Impl> &context_impl,
 				const boost::shared_ptr<SharedState> &shared_state) :
 			d_context_impl(context_impl),
+			d_qgl_format(context_impl->get_qgl_format()),
 			d_shared_state(shared_state),
 			d_non_shared_state(new NonSharedState())
 		{  }

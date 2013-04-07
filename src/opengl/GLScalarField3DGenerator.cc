@@ -765,6 +765,8 @@ GPlatesOpenGL::GLScalarField3DGenerator::create_cube_tile_texture(
 		GLRenderer &renderer,
 		unsigned int tile_resolution)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Create a texture for rendering the cube map tiles to.
 	GLTexture::shared_ptr_type cube_tile_texture = GLTexture::create(renderer);
 
@@ -775,7 +777,8 @@ GPlatesOpenGL::GLScalarField3DGenerator::create_cube_tile_texture(
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		cube_tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		cube_tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);

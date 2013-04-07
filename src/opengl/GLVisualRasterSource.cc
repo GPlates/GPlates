@@ -79,6 +79,8 @@ GPlatesOpenGL::GLVisualRasterSource::create(
 		const GPlatesGui::Colour &raster_modulate_colour,
 		unsigned int tile_texel_dimension)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxy_resolver_opt =
 			GPlatesPropertyValues::ProxiedRasterResolver::create(raster);
 	if (!proxy_resolver_opt)
@@ -100,9 +102,9 @@ GPlatesOpenGL::GLVisualRasterSource::create(
 	const unsigned int raster_height = raster_dimensions->second;
 
 	// Make sure our tile size does not exceed the maximum texture size...
-	if (tile_texel_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
+	if (tile_texel_dimension > capabilities.texture.gl_max_texture_size)
 	{
-		tile_texel_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
+		tile_texel_dimension = capabilities.texture.gl_max_texture_size;
 	}
 
 	// Make sure tile_texel_dimension is a power-of-two.
@@ -586,6 +588,8 @@ GPlatesOpenGL::GLVisualRasterSource::write_raster_texture_into_tile_target_textu
 	// The render target tiling loop...
 	do
 	{
+		const GLCapabilities &capabilities = renderer.get_capabilities();
+
 		// Begin the current render target tile - this also sets the viewport.
 		GLTransform::non_null_ptr_to_const_type tile_projection = render_target_scope.begin_tile();
 
@@ -633,7 +637,7 @@ GPlatesOpenGL::GLVisualRasterSource::write_raster_texture_into_tile_target_textu
 		// Pretty much all hardware has GL_ARB_texture_env_combine so this should work - if not then
 		// alpha won't get pre-multiplied and semi-transparent textures will have incorrect blending
 		// (but opaque textures will still be fine).
-		if (GLEW_ARB_texture_env_combine)
+		if (capabilities.texture.gl_ARB_texture_env_combine)
 		{
 			// Bind the raster texture again to texture unit 1 - although we won't access it.
 			renderer.gl_bind_texture(raster_texture, GL_TEXTURE1, GL_TEXTURE_2D);
@@ -665,13 +669,16 @@ GPlatesOpenGL::GLVisualRasterSource::create_tile_texture(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &texture) const
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// No mipmaps needed or anisotropic filtering required.
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);

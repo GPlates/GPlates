@@ -92,21 +92,23 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::GLMultiResolutionCubeRaster(
 	d_cube_quad_tree(cube_quad_tree_type::create()),
 	d_num_source_levels_of_detail_used(1)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Adjust the tile dimension to the source raster resolution if non-power-of-two textures are supported.
 	// The number of levels of detail returned might not be all levels of the source raster -
 	// just the ones used by this cube map raster (the lowest resolutions might get left off).
-	adjust_tile_texel_dimension(adapt_tile_dimension_to_source_resolution);
+	adjust_tile_texel_dimension(adapt_tile_dimension_to_source_resolution, capabilities);
 
 	// The, possibly adapted, tile dimension should be a power-of-two *if*
 	// 'GL_ARB_texture_non_power_of_two' is *not* supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_texture_non_power_of_two) ||
+			capabilities.texture.gl_ARB_texture_non_power_of_two ||
 				GPlatesUtils::Base2::is_power_of_two(d_tile_texel_dimension),
 			GPLATES_ASSERTION_SOURCE);
 	// Make sure the, possibly adapted, tile dimension does not exceed the maximum texture size...
-	if (d_tile_texel_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
+	if (d_tile_texel_dimension > capabilities.texture.gl_max_texture_size)
 	{
-		d_tile_texel_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
+		d_tile_texel_dimension = capabilities.texture.gl_max_texture_size;
 	}
 
 	initialise_cube_quad_trees();
@@ -121,12 +123,10 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::GLMultiResolutionCubeRaster(
 }
 
 
-// We use macros in <GL/glew.h> that contain old-style casts.
-DISABLE_GCC_WARNING("-Wold-style-cast")
-
 void
 GPlatesOpenGL::GLMultiResolutionCubeRaster::adjust_tile_texel_dimension(
-		bool adapt_tile_dimension_to_source_resolution)
+		bool adapt_tile_dimension_to_source_resolution,
+		const GLCapabilities &capabilities)
 {
 	// We don't worry about half-texel expansion of the projection frustums here because
 	// we just need to determine viewport dimensions. There will be a slight error by neglecting
@@ -181,7 +181,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::adjust_tile_texel_dimension(
 	// to the next power-of-two if it isn't already a power-of-two.
 	//
 	// NOTE: We do this even if the client did *not* request the tile texel dimension be adapted.
-	if (!GLEW_ARB_texture_non_power_of_two)
+	if (!capabilities.texture.gl_ARB_texture_non_power_of_two)
 	{
 		// Round up to the next power-of-two.
 		// If it's already a power-of-two then it won't change.
@@ -270,8 +270,6 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::adjust_tile_texel_dimension(
 	// The '+1' converts from integer level-of-detail to number of levels of detail.
 	d_num_source_levels_of_detail_used = static_cast<int>(log2_viewport_dimension_scale_int + 0.5) + 1;
 }
-
-ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
 void
@@ -702,9 +700,6 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::get_child_node(
 }
 
 
-// We use macros in <GL/glew.h> that contain old-style casts.
-DISABLE_GCC_WARNING("-Wold-style-cast")
-
 void
 GPlatesOpenGL::GLMultiResolutionCubeRaster::create_tile_texture(
 		GLRenderer &renderer,
@@ -712,6 +707,8 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_tile_texture(
 		const CubeQuadTreeNode &tile)
 {
 	//PROFILE_FUNC();
+
+	const GLCapabilities &capabilities = renderer.get_capabilities();
 
 	// Use the same texture format as the source raster.
 	const GLint internal_format = d_multi_resolution_raster->get_target_texture_internal_format();
@@ -744,18 +741,19 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_tile_texture(
 		//
 		// NOTE: We don't enable anisotropic filtering for floating-point textures since earlier
 		// hardware (that supports floating-point textures) only supports nearest filtering.
-		if (GLEW_EXT_texture_filter_anisotropic &&
+		if (capabilities.texture.gl_EXT_texture_filter_anisotropic &&
 			(d_fixed_point_texture_filter == FIXED_POINT_TEXTURE_FILTER_MAG_NEAREST_ANISOTROPIC ||
 				d_fixed_point_texture_filter == FIXED_POINT_TEXTURE_FILTER_MAG_LINEAR_ANISOTROPIC))
 		{
-			const GLfloat anisotropy = renderer.get_capabilities().texture.gl_texture_max_anisotropy;
+			const GLfloat anisotropy = capabilities.texture.gl_texture_max_anisotropy;
 			tile_texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 		}
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -838,5 +836,3 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::update_fixed_point_tile_texture_mag_
 		break;
 	}
 }
-
-ENABLE_GCC_WARNING("-Wold-style-cast")

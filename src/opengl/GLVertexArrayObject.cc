@@ -50,12 +50,13 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 
 
 GPlatesOpenGL::GLVertexArrayObject::resource_handle_type
-GPlatesOpenGL::GLVertexArrayObject::Allocator::allocate()
+GPlatesOpenGL::GLVertexArrayObject::Allocator::allocate(
+		const GLCapabilities &capabilities)
 {
 #ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
 	// We should only get here if the vertex array object extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_array_object),
+			capabilities.buffer.gl_ARB_vertex_array_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	resource_handle_type vertex_array_object;
@@ -72,11 +73,6 @@ GPlatesOpenGL::GLVertexArrayObject::Allocator::deallocate(
 		resource_handle_type vertex_array_object)
 {
 #ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
-	// We should only get here if the vertex array object extension is supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_array_object),
-			GPLATES_ASSERTION_SOURCE);
-
 	glDeleteVertexArrays(1, &vertex_array_object);
 #else
 	throw OpenGLException(GPLATES_EXCEPTION_SOURCE, "Internal Error: GL_ARB_vertex_array_object not supported");
@@ -88,10 +84,12 @@ GPlatesOpenGL::GLVertexArrayObject::GLVertexArrayObject(
 		GLRenderer &renderer) :
 	d_object_state(GLVertexArrayImpl::create(renderer))
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 #ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
 	// We should only get here if the vertex array object extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_array_object),
+			capabilities.buffer.gl_ARB_vertex_array_object,
 			GPLATES_ASSERTION_SOURCE);
 #else
 	throw OpenGLException(GPLATES_EXCEPTION_SOURCE, "Internal Error: GL_ARB_vertex_array_object not supported");
@@ -322,7 +320,10 @@ GPlatesOpenGL::GLVertexArrayObject::ContextObjectState::ContextObjectState(
 		GLRenderer &renderer_) :
 	context(&context_),
 	// Create a vertex array object resource using the resource manager associated with the context...
-	resource(resource_type::create(context_.get_non_shared_state()->get_vertex_array_object_resource_manager())),
+	resource(
+			resource_type::create(
+					context_.get_capabilities(),
+					context_.get_non_shared_state()->get_vertex_array_object_resource_manager())),
 	// Get the default vertex array state.
 	// This is the state that the newly created vertex array resource starts out in...
 	resource_state(create_unbound_vertex_array_compiled_draw_state(renderer_)->get_state()->clone())

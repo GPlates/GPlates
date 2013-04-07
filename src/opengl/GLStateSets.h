@@ -130,6 +130,7 @@ namespace GPlatesOpenGL
 			 */
 			void
 			bind_buffer(
+					const GLCapabilities &capabilities,
 					GLState &last_applied_state) const;
 
 			/**
@@ -140,6 +141,7 @@ namespace GPlatesOpenGL
 			 */
 			void
 			unbind_buffer(
+					const GLCapabilities &capabilities,
 					GLState &last_applied_state) const;
 
 			/**
@@ -537,9 +539,11 @@ namespace GPlatesOpenGL
 	{
 		explicit
 		GLBlendEquationStateSet(
+				const GLCapabilities &capabilities,
 				GLenum mode);
 
 		GLBlendEquationStateSet(
+				const GLCapabilities &capabilities,
 				GLenum modeRGB,
 				GLenum modeAlpha);
 
@@ -587,6 +591,7 @@ namespace GPlatesOpenGL
 		{  }
 
 		GLBlendFuncStateSet(
+				const GLCapabilities &capabilities,
 				GLenum sfactorRGB,
 				GLenum dfactorRGB,
 				GLenum sfactorAlpha,
@@ -1027,7 +1032,8 @@ namespace GPlatesOpenGL
 		static GLDepthRange DEFAULT_DEPTH_RANGE;
 
 		void
-		apply_state() const;
+		apply_state(
+				const GLCapabilities &capabilities) const;
 	};
 
 	/**
@@ -1669,7 +1675,8 @@ namespace GPlatesOpenGL
 		GLViewport d_default_viewport;
 
 		void
-		apply_state() const;
+		apply_state(
+				const GLCapabilities &capabilities) const;
 	};
 
 	/**
@@ -2001,6 +2008,7 @@ namespace GPlatesOpenGL
 
 		//! Binds to a vertex buffer object.
 		GLVertexAttribPointerStateSet(
+				const GLCapabilities &capabilities,
 				GLuint attribute_index,
 				VertexAttribAPIType vertex_attrib_api,
 				GLint size,
@@ -2013,6 +2021,7 @@ namespace GPlatesOpenGL
 
 		//! No binding to a vertex buffer object (using client memory array).
 		GLVertexAttribPointerStateSet(
+				const GLCapabilities &capabilities,
 				GLuint attribute_index,
 				VertexAttribAPIType vertex_attrib_api,
 				GLint size,
@@ -2178,7 +2187,8 @@ namespace GPlatesOpenGL
 		GLViewport d_default_viewport;
 
 		void
-		apply_state() const;
+		apply_state(
+				const GLCapabilities &capabilities) const;
 	};
 }
 

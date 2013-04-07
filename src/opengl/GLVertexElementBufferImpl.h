@@ -73,7 +73,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const GLBufferImpl::shared_ptr_type &buffer)
 		{
-			return std::auto_ptr<GLVertexElementBufferImpl>(new GLVertexElementBufferImpl(buffer));
+			return std::auto_ptr<GLVertexElementBufferImpl>(new GLVertexElementBufferImpl(renderer, buffer));
 		}
 
 
@@ -117,6 +117,7 @@ namespace GPlatesOpenGL
 		//! Constructor.
 		explicit
 		GLVertexElementBufferImpl(
+				GLRenderer &renderer,
 				const GLBufferImpl::shared_ptr_type &buffer);
 	};
 }

@@ -1320,7 +1320,7 @@ namespace GPlatesOpenGL
 		gl_blend_equation(
 				GLenum mode = DEFAULT_BLEND_EQUATION)
 		{
-			get_current_state()->set_blend_equation(mode);
+			get_current_state()->set_blend_equation(get_capabilities(), mode);
 		}
 
 		/**
@@ -1333,7 +1333,8 @@ namespace GPlatesOpenGL
 				GLenum modeRGB = DEFAULT_BLEND_EQUATION,
 				GLenum modeAlpha = DEFAULT_BLEND_EQUATION)
 		{
-			get_current_state()->set_blend_equation_separate(modeRGB, modeAlpha);
+			get_current_state()->set_blend_equation_separate(
+					get_capabilities(), modeRGB, modeAlpha);
 		}
 
 		//! Sets the alpha-blend function (NOTE: you'll also want to enable blending).
@@ -1357,7 +1358,8 @@ namespace GPlatesOpenGL
 				GLenum sfactorAlpha = GL_ONE,
 				GLenum dfactorAlpha = GL_ZERO)
 		{
-			get_current_state()->set_blend_func_separate(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
+			get_current_state()->set_blend_func_separate(
+					get_capabilities(), sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
 		}
 
 		/**
@@ -2671,7 +2673,7 @@ namespace GPlatesOpenGL
 				GLBufferObject::shared_ptr_to_const_type vertex_buffer_object)
 		{
 			get_current_state()->set_vertex_attrib_pointer(
-					attribute_index, size, type, normalized, stride, offset, vertex_buffer_object);
+					get_capabilities(), attribute_index, size, type, normalized, stride, offset, vertex_buffer_object);
 		}
 
 		/**
@@ -2690,7 +2692,7 @@ namespace GPlatesOpenGL
 				GLBufferImpl::shared_ptr_to_const_type vertex_buffer_impl)
 		{
 			get_current_state()->set_vertex_attrib_pointer(
-					attribute_index, size, type, normalized, stride, offset, vertex_buffer_impl);
+					get_capabilities(), attribute_index, size, type, normalized, stride, offset, vertex_buffer_impl);
 		}
 
 		/**
@@ -2708,7 +2710,7 @@ namespace GPlatesOpenGL
 				GLBufferObject::shared_ptr_to_const_type vertex_buffer_object)
 		{
 			get_current_state()->set_vertex_attrib_i_pointer(
-					attribute_index, size, type, stride, offset, vertex_buffer_object);
+					get_capabilities(), attribute_index, size, type, stride, offset, vertex_buffer_object);
 		}
 
 		/**
@@ -2726,7 +2728,7 @@ namespace GPlatesOpenGL
 				GLBufferImpl::shared_ptr_to_const_type vertex_buffer_impl)
 		{
 			get_current_state()->set_vertex_attrib_i_pointer(
-					attribute_index, size, type, stride, offset, vertex_buffer_impl);
+					get_capabilities(), attribute_index, size, type, stride, offset, vertex_buffer_impl);
 		}
 
 		/**
@@ -2744,7 +2746,7 @@ namespace GPlatesOpenGL
 				GLBufferObject::shared_ptr_to_const_type vertex_buffer_object)
 		{
 			get_current_state()->set_vertex_attrib_l_pointer(
-					attribute_index, size, type, stride, offset, vertex_buffer_object);
+					get_capabilities(), attribute_index, size, type, stride, offset, vertex_buffer_object);
 		}
 
 		/**
@@ -2762,7 +2764,7 @@ namespace GPlatesOpenGL
 				GLBufferImpl::shared_ptr_to_const_type vertex_buffer_impl)
 		{
 			get_current_state()->set_vertex_attrib_l_pointer(
-					attribute_index, size, type, stride, offset, vertex_buffer_impl);
+					get_capabilities(), attribute_index, size, type, stride, offset, vertex_buffer_impl);
 		}
 	};
 

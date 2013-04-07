@@ -84,7 +84,8 @@ namespace GPlatesOpenGL
 		{
 		public:
 			GLint
-			allocate();
+			allocate(
+					const GLCapabilities &capabilities);
 
 			void
 			deallocate(

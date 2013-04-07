@@ -51,6 +51,7 @@
 
 namespace GPlatesOpenGL
 {
+	class GLCapabilities;
 	class GLRenderer;
 	class GLViewport;
 
@@ -126,7 +127,7 @@ namespace GPlatesOpenGL
 		 * the maximum resolution has been reached and magnification starts to happen.
 		 * 
 		 * If anisotropic filtering is specified it will be ignored if the
-		 * 'GLEW_EXT_texture_filter_anisotropic' extension is not supported.
+		 * 'GL_EXT_texture_filter_anisotropic' extension is not supported.
 		 */
 		enum FixedPointTextureFilterType
 		{
@@ -604,7 +605,8 @@ namespace GPlatesOpenGL
 		 */
 		void
 		adjust_tile_texel_dimension(
-				bool adapt_tile_dimension_to_source_resolution);
+				bool adapt_tile_dimension_to_source_resolution,
+				const GLCapabilities &capabilities);
 
 		void
 		initialise_cube_quad_trees();

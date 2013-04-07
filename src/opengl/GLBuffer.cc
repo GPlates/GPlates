@@ -34,6 +34,7 @@
 
 #include "GLBufferImpl.h"
 #include "GLContext.h"
+#include "GLRenderer.h"
 
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
@@ -65,8 +66,10 @@ std::auto_ptr<GPlatesOpenGL::GLBuffer>
 GPlatesOpenGL::GLBuffer::create_as_auto_ptr(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Create an OpenGL buffer object if we can.
-	if (GLEW_ARB_vertex_buffer_object)
+	if (capabilities.buffer.gl_ARB_vertex_buffer_object)
 	{
 		return std::auto_ptr<GPlatesOpenGL::GLBuffer>(
 				GLBufferObject::create_as_auto_ptr(renderer));

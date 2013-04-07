@@ -50,12 +50,22 @@ const GLenum GPlatesOpenGL::GLCapabilities::Texture::gl_TEXTURE0 = GL_TEXTURE0;
 void
 GPlatesOpenGL::GLCapabilities::initialise()
 {
+	if (GLEW_VERSION_1_2)
+	{
+		gl_version_1_2 = true;
+	}
+	if (GLEW_VERSION_1_4)
+	{
+		gl_version_1_4 = true;
+	}
+
 	qDebug() << "On this system GPlates supports the following OpenGL extensions...";
 
 	initialise_viewport();
 	initialise_framebuffer();
 	initialise_shader();
 	initialise_texture();
+	initialise_vertex();
 	initialise_buffer();
 
 	qDebug() << "...end of OpenGL extension list.";
@@ -68,6 +78,8 @@ GPlatesOpenGL::GLCapabilities::initialise_viewport()
 #ifdef GL_ARB_viewport_array // In case old 'glew.h' header (GL_ARB_viewport_array is fairly recent)
 	if (GLEW_ARB_viewport_array)
 	{
+		viewport.gl_ARB_viewport_array = true;
+
 		// Get the maximum number of viewports.
 		GLint max_viewports;
 		glGetIntegerv(GL_MAX_VIEWPORTS, &max_viewports);
@@ -327,6 +339,8 @@ GPlatesOpenGL::GLCapabilities::initialise_texture()
 	// Get the maximum number of texture units supported.
 	if (GLEW_ARB_multitexture)
 	{
+		texture.gl_ARB_multitexture = true;
+
 		GLint max_texture_units;
 		glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &max_texture_units);
 		// Store as unsigned since it avoids unsigned/signed comparison compiler warnings.
@@ -381,6 +395,8 @@ GPlatesOpenGL::GLCapabilities::initialise_texture()
 	// Get the maximum texture anisotropy supported.
 	if (GLEW_EXT_texture_filter_anisotropic)
 	{
+		texture.gl_EXT_texture_filter_anisotropic = true;
+
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &texture.gl_texture_max_anisotropy);
 
 		qDebug() << "  GL_EXT_texture_filter_anisotropic";
@@ -483,6 +499,18 @@ GPlatesOpenGL::GLCapabilities::initialise_texture()
 
 
 void
+GPlatesOpenGL::GLCapabilities::initialise_vertex()
+{
+	if (GLEW_EXT_draw_range_elements)
+	{
+		vertex.gl_EXT_draw_range_elements = true;
+
+		qDebug() << "  GL_EXT_draw_range_elements";
+	}
+}
+
+
+void
 GPlatesOpenGL::GLCapabilities::initialise_buffer()
 {
 	if (GLEW_ARB_vertex_buffer_object)
@@ -525,6 +553,7 @@ GPlatesOpenGL::GLCapabilities::initialise_buffer()
 
 
 GPlatesOpenGL::GLCapabilities::Viewport::Viewport() :
+	gl_ARB_viewport_array(false),
 	gl_max_viewports(1),
 	gl_max_viewport_width(0),
 	gl_max_viewport_height(0)
@@ -566,14 +595,22 @@ GPlatesOpenGL::GLCapabilities::Shader::Shader() :
 }
 
 
+GPlatesOpenGL::GLCapabilities::Vertex::Vertex() :
+	gl_EXT_draw_range_elements(false)
+{
+}
+
+
 GPlatesOpenGL::GLCapabilities::Texture::Texture() :
 	gl_max_texture_size(gl_MIN_TEXTURE_SIZE),
 	gl_max_cube_map_texture_size(16/*OpenGL minimum value*/),
 	gl_ARB_texture_cube_map(false),
 	gl_ARB_texture_non_power_of_two(false),
+	gl_ARB_multitexture(false),
 	gl_max_texture_units(1),
 	gl_max_texture_image_units(1),
 	gl_max_texture_coords(1),
+	gl_EXT_texture_filter_anisotropic(false),
 	gl_texture_max_anisotropy(1.0f),
 	gl_EXT_texture_edge_clamp(false),
 	gl_SGIS_texture_edge_clamp(false),

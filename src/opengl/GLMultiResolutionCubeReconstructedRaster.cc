@@ -61,16 +61,18 @@ namespace
 			GPlatesOpenGL::GLRenderer &renderer,
 			std::size_t tile_texel_dimension)
 	{
+		const GPlatesOpenGL::GLCapabilities &capabilities = renderer.get_capabilities();
+
 		// The tile dimension should be a power-of-two *if* 'GL_ARB_texture_non_power_of_two' is *not* supported.
-		if (!GLEW_ARB_texture_non_power_of_two)
+		if (!capabilities.texture.gl_ARB_texture_non_power_of_two)
 		{
 			tile_texel_dimension = GPlatesUtils::Base2::next_power_of_two(tile_texel_dimension);
 		}
 
 		// And the tile dimension should not be larger than the maximum texture dimension.
-		if (tile_texel_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
+		if (tile_texel_dimension > capabilities.texture.gl_max_texture_size)
 		{
-			tile_texel_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
+			tile_texel_dimension = capabilities.texture.gl_max_texture_size;
 		}
 
 		return tile_texel_dimension;
@@ -392,14 +394,13 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_child_node(
 }
 
 
-// We use macros in <GL/glew.h> that contain old-style casts.
-DISABLE_GCC_WARNING("-Wold-style-cast")
-
 void
 GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::create_tile_texture(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &tile_texture)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	const GLint internal_format = d_reconstructed_raster->get_target_texture_internal_format();
 	//
 	// No mipmaps needed so we specify no mipmap filtering.
@@ -425,16 +426,17 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::create_tile_texture(
 		//
 		// NOTE: We don't enable anisotropic filtering for floating-point textures since earlier
 		// hardware (that supports floating-point textures) only supports nearest filtering.
-		if (GLEW_EXT_texture_filter_anisotropic)
+		if (capabilities.texture.gl_EXT_texture_filter_anisotropic)
 		{
-			const GLfloat anisotropy = renderer.get_capabilities().texture.gl_texture_max_anisotropy;
+			const GLfloat anisotropy = capabilities.texture.gl_texture_max_anisotropy;
 			tile_texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 		}
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -458,5 +460,3 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::create_tile_texture(
 	// Check there are no OpenGL errors.
 	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
-
-ENABLE_GCC_WARNING("-Wold-style-cast")

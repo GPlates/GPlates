@@ -110,7 +110,7 @@ GPlatesQtWidgets::MapView::MapView(
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &share_gl_visual_layers) :
 	d_gl_widget_ptr(
 			new MapViewport(
-				GPlatesOpenGL::GLContext::get_qgl_format(),
+				GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with(),
 				this,
 				// Share texture objects, vertex buffer objects, etc...
 				share_gl_widget)),

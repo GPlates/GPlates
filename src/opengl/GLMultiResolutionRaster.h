@@ -114,7 +114,7 @@ namespace GPlatesOpenGL
 		 * NOTE: Currently all filtering is 'neareset' instead of 'bilinear' but this will probably change soon.
 		 * 
 		 * If anisotropic filtering is specified it will be ignored if the
-		 * 'GLEW_EXT_texture_filter_anisotropic' extension is not supported.
+		 * 'GL_EXT_texture_filter_anisotropic' extension is not supported.
 		 */
 		enum FixedPointTextureFilterType
 		{

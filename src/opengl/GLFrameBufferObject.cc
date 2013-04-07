@@ -75,16 +75,14 @@ namespace GPlatesOpenGL
 	}
 }
 
-// We use macros in <GL/glew.h> that contain old-style casts.
-DISABLE_GCC_WARNING("-Wold-style-cast")
-
 
 GLint
-GPlatesOpenGL::GLFrameBufferObject::Allocator::allocate()
+GPlatesOpenGL::GLFrameBufferObject::Allocator::allocate(
+		const GLCapabilities &capabilities)
 {
 	// We should only get here if the framebuffer object extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
+			capabilities.framebuffer.gl_EXT_framebuffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	GLuint fbo;
@@ -97,11 +95,6 @@ void
 GPlatesOpenGL::GLFrameBufferObject::Allocator::deallocate(
 		GLuint fbo)
 {
-	// We should only get here if the framebuffer object extension is supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
-			GPLATES_ASSERTION_SOURCE);
-
 	glDeleteFramebuffersEXT(1, &fbo);
 }
 
@@ -115,9 +108,11 @@ GPlatesOpenGL::GLFrameBufferObject::gl_generate_mipmap(
 		GLenum texture_target,
 		const GLTexture::shared_ptr_to_const_type &texture)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// We should only get here if the framebuffer object extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
+			capabilities.framebuffer.gl_EXT_framebuffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	//
@@ -141,11 +136,14 @@ GPlatesOpenGL::GLFrameBufferObject::GLFrameBufferObject(
 		GLRenderer &renderer) :
 	d_resource(
 			resource_type::create(
+					renderer.get_capabilities(),
 					renderer.get_context().get_non_shared_state()->get_frame_buffer_object_resource_manager()))
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// We should only get here if the framebuffer object extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
+			capabilities.framebuffer.gl_EXT_framebuffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Resize to the maximum number of colour attachments supported by GL_EXT_framebuffer_object.
@@ -312,6 +310,8 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array_layer(
 {
 	//PROFILE_FUNC();
 
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// The texture must be initialised with a width and a height minimum.
 	// This is for 1D array textures. 2D array textures also require depth but we don't check
 	// because we don't know the texture target (not needed for glFramebufferTextureLayerEXT).
@@ -334,7 +334,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array_layer(
 
 	// The GL_EXT_texture_array extension is required for this call.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_texture_array),
+			capabilities.texture.gl_EXT_texture_array,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Attach to the texture.
@@ -364,6 +364,8 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array(
 {
 	//PROFILE_FUNC();
 
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// The texture must be initialised with a width and a height minimum.
 	// This is for 1D array textures. 2D array textures also require depth but we don't check
 	// because we don't know the texture target (not needed for glFramebufferTextureEXT).
@@ -386,7 +388,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array(
 
 	// The GL_EXT_geometry_shader4 extension is required for this call.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_geometry_shader4),
+			capabilities.shader.gl_EXT_geometry_shader4,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Attach to the texture.
@@ -587,6 +589,8 @@ GPlatesOpenGL::GLFrameBufferObject::gl_draw_buffers(
 		GLRenderer &renderer,
 		const std::vector<GLenum> &bufs)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			!bufs.empty() &&
 				bufs.size() <= renderer.get_capabilities().framebuffer.gl_max_draw_buffers,
@@ -604,7 +608,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_draw_buffers(
 	}
 	// Otherwise use the GL_ARB_draw_buffers extension for multiple buffers.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_draw_buffers),
+			capabilities.framebuffer.gl_ARB_draw_buffers,
 			GPLATES_ASSERTION_SOURCE);
 
 	glDrawBuffersARB(bufs.size(), &bufs[0]);
@@ -846,6 +850,3 @@ GPlatesOpenGL::GLFrameBufferObject::AttachmentPoint::AttachmentPoint(
 	render_buffer(render_buffer_)
 {
 }
-
-// We use macros in <GL/glew.h> that contain old-style casts.
-ENABLE_GCC_WARNING("-Wold-style-cast")
