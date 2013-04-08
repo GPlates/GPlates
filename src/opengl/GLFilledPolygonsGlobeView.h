@@ -367,7 +367,6 @@ namespace GPlatesOpenGL
 		/**
 		 * Renders the specified filled polygons (spatial partition).
 		 */
-		virtual
 		void
 		render(
 				GLRenderer &renderer,

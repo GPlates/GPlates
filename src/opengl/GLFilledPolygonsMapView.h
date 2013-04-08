@@ -204,7 +204,6 @@ namespace GPlatesOpenGL
 		/**
 		 * Renders the specified filled polygons.
 		 */
-		virtual
 		void
 		render(
 				GLRenderer &renderer,
