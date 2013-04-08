@@ -631,16 +631,9 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
 
-	//
 	// If any rendered polygons (or polylines) are 'filled' then render them first.
 	// This way any vector geometry in this layer gets rendered on top and hence is visible.
-	if (!d_filled_polygons.empty())
-	{
-		paint_filled_polygons(renderer, gl_visual_layers);
-
-		// Now that the filled polygons have been rendered we should clear them for the next render call.
-		d_filled_polygons.clear();
-	}
+	paint_filled_polygons(renderer, gl_visual_layers, map_projection);
 
 	//
 	// Set up for rendering points, lines and polygons.
@@ -816,8 +809,25 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::get_triangles_stream()
 void
 GPlatesGui::LayerPainter::PointLinePolygonDrawables::paint_filled_polygons(
 		GPlatesOpenGL::GLRenderer &renderer,
-		GPlatesOpenGL::GLVisualLayers &gl_visual_layers)
+		GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
+		boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection)
 {
+	// Return early if nothing to render.
+	if (map_projection) // Rendering to a 2D map view...
+	{
+		if (d_filled_polygons_map_view.empty())
+		{
+			return;
+		}
+	}
+	else // Rendering to the 3D globe view...
+	{
+		if (d_filled_polygons_globe_view.empty())
+		{
+			return;
+		}
+	}
+
 	// Filled polygons are rendered as rasters (textures) and hence the state set here
 	// is similar (in fact identical) to the state set for rasters.
 	//
@@ -826,7 +836,14 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::paint_filled_polygons(
 	// as vector geometries because filled polygons are actually rendered as a raster.
 	if (renderer.rendering_to_context_framebuffer())
 	{
-		gl_visual_layers.render_filled_polygons(renderer, d_filled_polygons);
+		if (map_projection) // Rendering to a 2D map view...
+		{
+			gl_visual_layers.render_filled_polygons(renderer, d_filled_polygons_map_view);
+		}
+		else // Rendering to the 3D globe view...
+		{
+			gl_visual_layers.render_filled_polygons(renderer, d_filled_polygons_globe_view);
+		}
 	}
 	else
 	{
@@ -852,7 +869,14 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::paint_filled_polygons(
 			renderer.gl_clear_stencil();
 			renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-			gl_visual_layers.render_filled_polygons(renderer, d_filled_polygons);
+			if (map_projection) // Rendering to a 2D map view...
+			{
+				gl_visual_layers.render_filled_polygons(renderer, d_filled_polygons_map_view);
+			}
+			else // Rendering to the 3D globe view...
+			{
+				gl_visual_layers.render_filled_polygons(renderer, d_filled_polygons_globe_view);
+			}
 		}
 		while (image_scope.end_render_tile());
 
@@ -861,7 +885,14 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::paint_filled_polygons(
 	}
 
 	// Now that the filled polygons have been rendered we should clear them for the next render call.
-	d_filled_polygons.clear();
+	if (map_projection) // Rendering to a 2D map view...
+	{
+		d_filled_polygons_map_view.clear();
+	}
+	else // Rendering to the 3D globe view...
+	{
+		d_filled_polygons_globe_view.clear();
+	}
 }
 
 

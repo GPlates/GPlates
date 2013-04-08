@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_OPENGL_GLMULTIRESOLUTIONFILLEDPOLYGONS_H
-#define GPLATES_OPENGL_GLMULTIRESOLUTIONFILLEDPOLYGONS_H
+#ifndef GPLATES_OPENGL_GLFILLEDPOLYGONSGLOBEVIEW_H
+#define GPLATES_OPENGL_GLFILLEDPOLYGONSGLOBEVIEW_H
 
 #include <utility> // For std::distance.
 #include <vector>
@@ -73,10 +73,11 @@ namespace GPlatesOpenGL
 	 * The reason for not using polygon meshes is they are expensive to compute (ie, not interactive)
 	 * and hence cannot be used for dynamic topological polygons.
 	 */
-	class GLMultiResolutionFilledPolygons :
-			public GPlatesUtils::ReferenceCount<GLMultiResolutionFilledPolygons>
+	class GLFilledPolygonsGlobeView :
+			public GPlatesUtils::ReferenceCount<GLFilledPolygonsGlobeView>
 	{
 	private:
+
 		//! Typedef for a vertex element (vertex index) of a polygon.
 		typedef GLuint polygon_vertex_element_type;
 
@@ -133,11 +134,11 @@ namespace GPlatesOpenGL
 
 	public:
 
-		//! A convenience typedef for a shared pointer to a non-const @a GLMultiResolutionFilledPolygons.
-		typedef GPlatesUtils::non_null_intrusive_ptr<GLMultiResolutionFilledPolygons> non_null_ptr_type;
+		//! A convenience typedef for a shared pointer to a non-const @a GLFilledPolygonsGlobeView.
+		typedef GPlatesUtils::non_null_intrusive_ptr<GLFilledPolygonsGlobeView> non_null_ptr_type;
 
-		//! A convenience typedef for a shared pointer to a const @a GLMultiResolutionFilledPolygons.
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GLMultiResolutionFilledPolygons> non_null_ptr_to_const_type;
+		//! A convenience typedef for a shared pointer to a const @a GLFilledPolygonsGlobeView.
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GLFilledPolygonsGlobeView> non_null_ptr_to_const_type;
 
 		/**
 		 * Used to accumulate filled polygons (optionally as a spatial partition) for rendering.
@@ -264,7 +265,7 @@ namespace GPlatesOpenGL
 			std::vector<polygon_vertex_element_type> d_polygon_vertex_elements;
 
 			// So can access accumulated vertices/indices and spatial partition of filled polygons.
-			friend class GLMultiResolutionFilledPolygons;
+			friend class GLFilledPolygonsGlobeView;
 
 
 			//! Adds the filled polygon to the spatial partition.
@@ -344,7 +345,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Creates a @a GLMultiResolutionFilledPolygons object.
+		 * Creates a @a GLFilledPolygonsGlobeView object.
 		 *
 		 * NOTE: If @a light is specified but lighting is not supported on the run-time system
 		 * (eg, due to exceeding shader instructions limit) then filled polygons will not be rendered
@@ -358,7 +359,7 @@ namespace GPlatesOpenGL
 				boost::optional<GLLight::non_null_ptr_type> light = boost::none)
 		{
 			return non_null_ptr_type(
-					new GLMultiResolutionFilledPolygons(
+					new GLFilledPolygonsGlobeView(
 							renderer, multi_resolution_cube_mesh, light));
 		}
 
@@ -366,6 +367,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Renders the specified filled polygons (spatial partition).
 		 */
+		virtual
 		void
 		render(
 				GLRenderer &renderer,
@@ -378,7 +380,7 @@ namespace GPlatesOpenGL
 		 *
 		 * The bigger this is the fewer times the filled polygons needed to be drawn.
 		 * But too big and starts to consume too much memory.
-		 * Each pixel is 8 bytes (4 bytes for colour and 4 bytes for combined depth/stencil buffer.
+		 * Each pixel is 8 bytes (4 bytes for colour and 4 bytes for combined depth/stencil buffer).
 		 */
 		static const unsigned int MAX_TILE_TEXEL_DIMENSION = 1024;
 
@@ -510,7 +512,7 @@ namespace GPlatesOpenGL
 
 
 		//! Constructor.
-		GLMultiResolutionFilledPolygons(
+		GLFilledPolygonsGlobeView(
 				GLRenderer &renderer,
 				const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh,
 				boost::optional<GLLight::non_null_ptr_type> light);
@@ -618,4 +620,4 @@ namespace GPlatesOpenGL
 	};
 }
 
-#endif // GPLATES_OPENGL_GLMULTIRESOLUTIONFILLEDPOLYGONS_H
+#endif // GPLATES_OPENGL_GLFILLEDPOLYGONSGLOBEVIEW_H

@@ -40,7 +40,8 @@
 #include "GLMultiResolutionCubeMesh.h"
 #include "GLMultiResolutionCubeRaster.h"
 #include "GLMultiResolutionCubeRasterInterface.h"
-#include "GLMultiResolutionFilledPolygons.h"
+#include "GLFilledPolygonsGlobeView.h"
+#include "GLFilledPolygonsMapView.h"
 #include "GLMultiResolutionMapCubeMesh.h"
 #include "GLMultiResolutionRaster.h"
 #include "GLMultiResolutionRasterMapView.h"
@@ -110,9 +111,6 @@ namespace GPlatesOpenGL
 		//! A convenience typedef for a shared pointer to a const @a GLVisualLayers.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GLVisualLayers> non_null_ptr_to_const_type;
 
-		
-		//! Typedef for a collection of filled polygons.
-		typedef GLMultiResolutionFilledPolygons::filled_polygons_type filled_polygons_type;
 
 		/**
 		 * Typedef for an opaque object that caches a particular render (eg, raster or filled polygons).
@@ -210,7 +208,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Renders filled polygons.
+		 * Renders filled polygons to the 3D globe view.
 		 *
 		 * These correspond to @a RenderedGeometry objects that have had their 'fill' option
 		 * turned on and can be polygons or polylines - the latter geometry type is treated as an
@@ -226,7 +224,15 @@ namespace GPlatesOpenGL
 		void
 		render_filled_polygons(
 				GLRenderer &renderer,
-				const filled_polygons_type &filled_polygons);
+				const GLFilledPolygonsGlobeView::filled_polygons_type &filled_polygons);
+
+		/**
+		 * An overload of @a render_filled_polygons that renders filled polygons to a 2D map view.
+		 */
+		void
+		render_filled_polygons(
+				GLRenderer &renderer,
+				const GLFilledPolygonsMapView::filled_polygons_type &filled_polygons);
 
 	public Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -805,12 +811,21 @@ namespace GPlatesOpenGL
 					const GPlatesGui::MapProjection &map_projection) const;
 
 			/**
-			 * Returns the multi-resolution filled polygons renderer.
+			 * Returns the 3D globe view filled polygons renderer.
 			 *
 			 * NOTE: This must be called when an OpenGL context is currently active.
 			 */
-			GLMultiResolutionFilledPolygons::non_null_ptr_type
-			get_multi_resolution_filled_polygons(
+			GLFilledPolygonsGlobeView::non_null_ptr_type
+			get_filled_polygons_globe_view(
+					GLRenderer &renderer) const;
+
+			/**
+			 * Returns the 2D map view filled polygons renderer.
+			 *
+			 * NOTE: This must be called when an OpenGL context is currently active.
+			 */
+			GLFilledPolygonsMapView::non_null_ptr_type
+			get_filled_polygons_map_view(
 					GLRenderer &renderer) const;
 
 			/**
@@ -844,7 +859,9 @@ namespace GPlatesOpenGL
 					d_multi_resolution_map_cube_mesh;
 
 			/**
-			 * Used to render coloured filled polygons as raster masks (instead of polygon meshes).
+			 * Used to render filled polygons in the 3D globe view.
+			 *
+			 * Render coloured filled polygons as raster masks (instead of polygon meshes).
 			 *
 			 * NOTE: This can be shared by all layers since it contains no state specific
 			 * to anything a layer will draw with it. The filled polygons specific state is
@@ -852,8 +869,12 @@ namespace GPlatesOpenGL
 			 *
 			 * NOTE: Must be defined after @a d_multi_resolution_cube_mesh since it's a dependency.
 			 */
-			mutable boost::optional<GLMultiResolutionFilledPolygons::non_null_ptr_type>
-					d_multi_resolution_filled_polygons;
+			mutable boost::optional<GLFilledPolygonsGlobeView::non_null_ptr_type> d_filled_polygons_globe_view;
+
+			/**
+			 * Used to render filled polygons in a 2D map view.
+			 */
+			mutable boost::optional<GLFilledPolygonsMapView::non_null_ptr_type> d_filled_polygons_map_view;
 
 			/**
 			 * Used for surface lighting in 3D globe and 2D map views.

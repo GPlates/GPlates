@@ -35,8 +35,9 @@
  */
 #include <GL/glew.h>
 #include <opengl/OpenGL.h>
+#include <QDebug>
 
-#include "GLMultiResolutionFilledPolygons.h"
+#include "GLFilledPolygonsGlobeView.h"
 
 #include "GLContext.h"
 #include "GLIntersect.h"
@@ -76,7 +77,7 @@ namespace GPlatesOpenGL
 }
 
 
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::GLMultiResolutionFilledPolygons(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::GLFilledPolygonsGlobeView(
 		GLRenderer &renderer,
 		const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh,
 		boost::optional<GLLight::non_null_ptr_type> light) :
@@ -117,7 +118,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::GLMultiResolutionFilledPolygons(
 
 
 unsigned int
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::get_level_of_detail(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::get_level_of_detail(
 		unsigned int &tile_texel_dimension,
 		const GLViewport &viewport,
 		const GLMatrix &model_view_transform,
@@ -181,7 +182,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::get_level_of_detail(
 
 
 void
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::render(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::render(
 		GLRenderer &renderer,
 		const filled_polygons_type &filled_polygons)
 {
@@ -193,6 +194,27 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render(
 	// If there are no filled polygons to render then return early.
 	if (filled_polygons.d_polygon_vertex_elements.empty())
 	{
+		return;
+	}
+
+	// We need a stencil buffer so return early if there's not one - well, we actually use stencil
+	// buffer of a frame buffer object (FBO) and not main frame buffer but won't have the former
+	// if don't have the latter anyway.
+	//
+	// Note that we don't have an 'is_supported()' method that tests for this because pretty much all
+	// hardware should support a stencil buffer (and software implementations should also support).
+	if (!renderer.get_context().get_qgl_format().stencil())
+	{
+		// Only emit warning message once.
+		static bool emitted_warning = false;
+		if (!emitted_warning)
+		{
+			qWarning() <<
+					"Filled polygons NOT supported by this OpenGL system - \n"
+					"  requires stencil buffer - Most graphics hardware for over a decade supports this.";
+			emitted_warning = true;
+		}
+
 		return;
 	}
 
@@ -287,7 +309,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render(
 
 
 void
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_quad_tree(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::render_quad_tree(
 		GLRenderer &renderer,
 		unsigned int tile_texel_dimension,
 		const mesh_quad_tree_node_type &mesh_quad_tree_node,
@@ -451,7 +473,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_quad_tree(
 
 
 void
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_quad_tree_node(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::render_quad_tree_node(
 		GLRenderer &renderer,
 		unsigned int tile_texel_dimension,
 		const mesh_quad_tree_node_type &mesh_quad_tree_node,
@@ -528,7 +550,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_quad_tree_node(
 
 
 void
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::get_filled_polygons_intersecting_nodes(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::get_filled_polygons_intersecting_nodes(
 		const GPlatesMaths::CubeQuadTreeLocation &tile_location,
 		const GPlatesMaths::CubeQuadTreeLocation &intersecting_node_location,
 		filled_polygons_spatial_partition_type::const_node_reference_type intersecting_node_reference,
@@ -583,7 +605,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::get_filled_polygons_intersecting
 
 
 void
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::set_tile_state(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::set_tile_state(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_to_const_type &tile_texture,
 		const GLTransform &projection_transform,
@@ -735,7 +757,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::set_tile_state(
 
 
 void
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_tile_to_scene(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::render_tile_to_scene(
 		GLRenderer &renderer,
 		unsigned int tile_texel_dimension,
 		const mesh_quad_tree_node_type &mesh_quad_tree_node,
@@ -746,7 +768,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_tile_to_scene(
 		clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
 		const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node)
 {
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
 
 	// Make sure we leave the OpenGL state the way it was.
 	GLRenderer::StateBlockScope save_restore_state(renderer);
@@ -814,14 +836,14 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_tile_to_scene(
 
 
 void
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_texture(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::render_filled_polygons_to_tile_texture(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_to_const_type &tile_texture,
 		const filled_polygon_seq_type &filled_drawables,
 		const GLTransform &projection_transform,
 		const GLTransform &view_transform)
 {
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
 
 	// Begin a render target that will render the individual filled polygons to the tile texture.
 	// Enable stencil buffering since we use it to fill each polygon.
@@ -952,13 +974,13 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::render_filled_polygons_to_tile_t
 
 
 void
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::get_filled_polygons(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::get_filled_polygons(
 		filled_polygon_seq_type &filled_drawables,
 		filled_polygons_spatial_partition_type::element_const_iterator begin_root_filled_polygons,
 		filled_polygons_spatial_partition_type::element_const_iterator end_root_filled_polygons,
 		const filled_polygons_spatial_partition_node_list_type &filled_polygons_intersecting_node_list)
 {
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
 
 	// Add the reconstructed polygon meshes in the root of the spatial partition.
 	// These are the meshes that were too large to insert in any face of the cube quad tree partition.
@@ -986,14 +1008,14 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::get_filled_polygons(
 	}
 }
 
-DISABLE_GCC_WARNING("-Wold-style-cast")
-
 GPlatesOpenGL::GLTexture::shared_ptr_type
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::acquire_tile_texture(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::acquire_tile_texture(
 		GLRenderer &renderer,
 		unsigned int tile_texel_dimension)
 {
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
+
+	const GLCapabilities &capabilities = renderer.get_capabilities();
 
 	// Acquire a cached texture for rendering a tile to.
 	// It'll get returned to its cache when we no longer reference it.
@@ -1022,15 +1044,16 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::acquire_tile_texture(
 	// Specify anisotropic filtering if it's supported since we are not using mipmaps
 	// and any textures rendered near the edge of the globe will get squashed a bit due to
 	// the angle we are looking at them and anisotropic filtering will help here.
-	if (GLEW_EXT_texture_filter_anisotropic)
+	if (capabilities.texture.gl_EXT_texture_filter_anisotropic)
 	{
-		const GLfloat anisotropy = renderer.get_capabilities().texture.gl_texture_max_anisotropy;
+		const GLfloat anisotropy = capabilities.texture.gl_texture_max_anisotropy;
 		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -1044,11 +1067,9 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::acquire_tile_texture(
 	return tile_texture;
 }
 
-ENABLE_GCC_WARNING("-Wold-style-cast")
-
 
 void
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_polygons_vertex_array(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::create_polygons_vertex_array(
 		GLRenderer &renderer)
 {
 	d_polygons_vertex_array = GLVertexArray::create(renderer);
@@ -1075,11 +1096,11 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_polygons_vertex_array(
 
 
 void
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::write_filled_polygon_meshes_to_vertex_array(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::write_filled_polygon_meshes_to_vertex_array(
 		GLRenderer &renderer,
 		const filled_polygons_type &filled_polygons)
 {
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
 
 	// It's not 'stream' because the same filled polygons are accessed many times.
 	// It's not 'dynamic' because we allocate a new buffer (ie, glBufferData does not modify existing buffer).
@@ -1106,7 +1127,7 @@ GPlatesOpenGL::GLMultiResolutionFilledPolygons::write_filled_polygon_meshes_to_v
 
 
 void
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::create_shader_programs(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::create_shader_programs(
 		GLRenderer &renderer)
 {
 	//

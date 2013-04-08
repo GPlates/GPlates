@@ -338,8 +338,8 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 
 	if (rendered_polygon_on_sphere.get_is_filled())
 	{
-		GPlatesOpenGL::GLMultiResolutionFilledPolygons::filled_polygons_type &filled_polygons =
-				d_layer_painter->translucent_drawables_on_the_sphere.get_filled_polygons();
+		GPlatesOpenGL::GLFilledPolygonsGlobeView::filled_polygons_type &filled_polygons =
+				d_layer_painter->translucent_drawables_on_the_sphere.get_filled_polygons_globe_view();
 
 		// Add the filled polygon at the current location (if any) in the rendered geometries spatial partition.
 		filled_polygons.add_filled_polygon(

@@ -355,9 +355,18 @@ GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
 void
 GPlatesOpenGL::GLVisualLayers::render_filled_polygons(
 		GLRenderer &renderer,
-		const filled_polygons_type &filled_polygons)
+		const GLFilledPolygonsGlobeView::filled_polygons_type &filled_polygons)
 {
-	d_list_objects->get_multi_resolution_filled_polygons(renderer)->render(renderer, filled_polygons);
+	d_list_objects->get_filled_polygons_globe_view(renderer)->render(renderer, filled_polygons);
+}
+
+
+void
+GPlatesOpenGL::GLVisualLayers::render_filled_polygons(
+		GLRenderer &renderer,
+		const GLFilledPolygonsMapView::filled_polygons_type &filled_polygons)
+{
+	d_list_objects->get_filled_polygons_map_view(renderer)->render(renderer, filled_polygons);
 }
 
 
@@ -1552,20 +1561,33 @@ GPlatesOpenGL::GLVisualLayers::ListObjects::get_multi_resolution_map_cube_mesh(
 }
 
 
-GPlatesOpenGL::GLMultiResolutionFilledPolygons::non_null_ptr_type
-GPlatesOpenGL::GLVisualLayers::ListObjects::get_multi_resolution_filled_polygons(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::non_null_ptr_type
+GPlatesOpenGL::GLVisualLayers::ListObjects::get_filled_polygons_globe_view(
 		GLRenderer &renderer) const
 {
-	if (!d_multi_resolution_filled_polygons)
+	if (!d_filled_polygons_globe_view)
 	{
-		d_multi_resolution_filled_polygons =
-				GLMultiResolutionFilledPolygons::create(
+		d_filled_polygons_globe_view =
+				GLFilledPolygonsGlobeView::create(
 						renderer,
 						get_multi_resolution_cube_mesh(renderer),
 						get_light(renderer));
 	}
 
-	return d_multi_resolution_filled_polygons.get();
+	return d_filled_polygons_globe_view.get();
+}
+
+
+GPlatesOpenGL::GLFilledPolygonsMapView::non_null_ptr_type
+GPlatesOpenGL::GLVisualLayers::ListObjects::get_filled_polygons_map_view(
+		GLRenderer &renderer) const
+{
+	if (!d_filled_polygons_map_view)
+	{
+		d_filled_polygons_map_view = GLFilledPolygonsMapView::create(renderer);
+	}
+
+	return d_filled_polygons_map_view.get();
 }
 
 

@@ -33,6 +33,10 @@ set(srcs
     GLDataRasterSource.cc
     GLDataRasterSource.h
     GLDepthRange.h
+    GLFilledPolygonsGlobeView.cc
+    GLFilledPolygonsGlobeView.h
+    GLFilledPolygonsMapView.cc
+    GLFilledPolygonsMapView.h
     GLFrameBufferObject.cc
     GLFrameBufferObject.h
     GLFrustum.cc
@@ -56,8 +60,6 @@ set(srcs
     GLMultiResolutionCubeRasterInterface.h
     GLMultiResolutionCubeReconstructedRaster.cc
     GLMultiResolutionCubeReconstructedRaster.h
-    GLMultiResolutionFilledPolygons.cc
-    GLMultiResolutionFilledPolygons.h
     GLMultiResolutionMapCubeMesh.cc
     GLMultiResolutionMapCubeMesh.h
     GLMultiResolutionRaster.cc

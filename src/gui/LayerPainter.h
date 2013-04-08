@@ -42,7 +42,8 @@
 #include "maths/UnitQuaternion3D.h"
 
 #include "opengl/GLLight.h"
-#include "opengl/GLMultiResolutionFilledPolygons.h"
+#include "opengl/GLFilledPolygonsGlobeView.h"
+#include "opengl/GLFilledPolygonsMapView.h"
 #include "opengl/GLProgramObject.h"
 #include "opengl/GLStreamPrimitives.h"
 #include "opengl/GLTexture.h"
@@ -142,15 +143,24 @@ namespace GPlatesGui
 			get_triangles_stream();
 
 			/**
-			 * Drawables that get filled in their interior.
+			 * Drawables that get filled in their interior (for rendering to the 3D globe view).
 			 *
 			 * For 'filled' to make any sense these drawables should have a sequence of points that
 			 * defines some kind of outline (the outline can be concave or convex).
 			 */
-			GPlatesOpenGL::GLMultiResolutionFilledPolygons::filled_polygons_type &
-			get_filled_polygons()
+			GPlatesOpenGL::GLFilledPolygonsGlobeView::filled_polygons_type &
+			get_filled_polygons_globe_view()
 			{
-				return d_filled_polygons;
+				return d_filled_polygons_globe_view;
+			}
+
+			/**
+			 * Drawables that get filled in their interior (for rendering to a 2D map view).
+			 */
+			GPlatesOpenGL::GLFilledPolygonsMapView::filled_polygons_type &
+			get_filled_polygons_map_view()
+			{
+				return d_filled_polygons_map_view;
 			}
 
 		private:
@@ -236,14 +246,18 @@ namespace GPlatesGui
 			 */
 			Drawables d_triangle_drawables;
 
-			//! For collecting filled polygons during a render call.
-			GPlatesOpenGL::GLMultiResolutionFilledPolygons::filled_polygons_type d_filled_polygons;
+			//! For collecting filled polygons during a render call to render to the 3D globe view.
+			GPlatesOpenGL::GLFilledPolygonsGlobeView::filled_polygons_type d_filled_polygons_globe_view;
+
+			//! For collecting filled polygons during a render call to render to a 2D map view.
+			GPlatesOpenGL::GLFilledPolygonsMapView::filled_polygons_type d_filled_polygons_map_view;
 
 
 			void
 			paint_filled_polygons(
 					GPlatesOpenGL::GLRenderer &renderer,
-					GPlatesOpenGL::GLVisualLayers &gl_visual_layers);
+					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
+					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection);
 		};
 
 
