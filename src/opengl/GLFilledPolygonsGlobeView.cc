@@ -83,12 +83,14 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::GLFilledPolygonsGlobeView(
 		boost::optional<GLLight::non_null_ptr_type> light) :
 	d_max_tile_texel_dimension(
 			// Make sure tile dimensions does not exceed maximum texture dimensions...
-			(MAX_TILE_TEXEL_DIMENSION > renderer.get_capabilities().texture.gl_max_texture_size)
+			(boost::numeric_cast<GLuint>(MAX_TILE_TEXEL_DIMENSION) >
+				renderer.get_capabilities().texture.gl_max_texture_size)
 					? renderer.get_capabilities().texture.gl_max_texture_size
 					: MAX_TILE_TEXEL_DIMENSION),
 	d_min_tile_texel_dimension(
 			// Make sure tile dimensions does not exceed maximum texture dimensions...
-			(MIN_TILE_TEXEL_DIMENSION > renderer.get_capabilities().texture.gl_max_texture_size)
+			(boost::numeric_cast<GLuint>(MIN_TILE_TEXEL_DIMENSION) >
+				renderer.get_capabilities().texture.gl_max_texture_size)
 					? renderer.get_capabilities().texture.gl_max_texture_size
 					: MIN_TILE_TEXEL_DIMENSION),
 	d_multi_resolution_cube_mesh(multi_resolution_cube_mesh),

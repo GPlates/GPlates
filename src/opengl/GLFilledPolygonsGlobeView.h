@@ -380,13 +380,17 @@ namespace GPlatesOpenGL
 		 * The bigger this is the fewer times the filled polygons needed to be drawn.
 		 * But too big and starts to consume too much memory.
 		 * Each pixel is 8 bytes (4 bytes for colour and 4 bytes for combined depth/stencil buffer).
+		 *
+		 * NOTE: Using *signed* integer to avoid compiler error on 64-bit Mac (not sure why it's happening).
 		 */
-		static const unsigned int MAX_TILE_TEXEL_DIMENSION = 1024;
+		static const int MAX_TILE_TEXEL_DIMENSION = 1024;
 
 		/**
 		 * The minimum tile size for rendering filled polygons.
+		 *
+		 * NOTE: Using *signed* integer to avoid compiler error on 64-bit Mac (not sure why it's happening).
 		 */
-		static const unsigned int MIN_TILE_TEXEL_DIMENSION = 256;
+		static const int MIN_TILE_TEXEL_DIMENSION = 256;
 
 
 		/**
