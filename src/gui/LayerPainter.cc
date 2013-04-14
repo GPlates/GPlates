@@ -687,30 +687,26 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 	// Paint the point, line and polygon drawables with the appropriate state
 	// (such as point size, line width).
 	//
+	// Draw polygons first then lines then points so that points appear on top of lines which
+	// appear on top of polygons.
+	//
 
 	//
-	// Paint the drawables representing all point primitives (if any).
+	// Paint the drawable representing all triangle primitives (if any).
 	//
 
-	// Iterate over the point size groups and paint them.
-	BOOST_FOREACH(point_size_to_drawables_map_type::value_type &point_size_entry, d_point_drawables_map)
-	{
-		const float point_size = point_size_entry.first.dval();
-		Drawables &points_drawable = point_size_entry.second;
+#if 0 // NOTE: This causes transparent edges between adjacent triangles in a mesh so we don't enable it...
+	// Set the anti-aliased polygon state.
+ 	renderer.gl_enable(GL_POLYGON_SMOOTH);
+ 	renderer.gl_hint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+#endif
 
-		// Set the point size for the current group of points.
-		renderer.gl_point_size(point_size);
-
-		points_drawable.end_painting(
-				renderer,
-				vertex_element_buffer_data,
-				vertex_buffer_data,
-				vertex_array,
-				GL_POINTS);
-	}
-
-	// Clear the points drawables because the next render may have a different collection of point sizes.
-	d_point_drawables_map.clear();
+	d_triangle_drawables.end_painting(
+			renderer,
+			vertex_element_buffer_data,
+			vertex_buffer_data,
+			vertex_array,
+			GL_TRIANGLES);
 
 	//
 	// Paint the drawables representing all line primitives (if any).
@@ -737,21 +733,28 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 	d_line_drawables_map.clear();
 
 	//
-	// Paint the drawable representing all triangle primitives (if any).
+	// Paint the drawables representing all point primitives (if any).
 	//
 
-#if 0 // NOTE: This causes transparent edges between adjacent triangles in a mesh so we don't enable it...
-	// Set the anti-aliased polygon state.
- 	renderer.gl_enable(GL_POLYGON_SMOOTH);
- 	renderer.gl_hint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-#endif
+	// Iterate over the point size groups and paint them.
+	BOOST_FOREACH(point_size_to_drawables_map_type::value_type &point_size_entry, d_point_drawables_map)
+	{
+		const float point_size = point_size_entry.first.dval();
+		Drawables &points_drawable = point_size_entry.second;
 
-	d_triangle_drawables.end_painting(
-			renderer,
-			vertex_element_buffer_data,
-			vertex_buffer_data,
-			vertex_array,
-			GL_TRIANGLES);
+		// Set the point size for the current group of points.
+		renderer.gl_point_size(point_size);
+
+		points_drawable.end_painting(
+				renderer,
+				vertex_element_buffer_data,
+				vertex_buffer_data,
+				vertex_array,
+				GL_POINTS);
+	}
+
+	// Clear the points drawables because the next render may have a different collection of point sizes.
+	d_point_drawables_map.clear();
 }
 
 

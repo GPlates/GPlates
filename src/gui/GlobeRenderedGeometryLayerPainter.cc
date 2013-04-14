@@ -34,6 +34,9 @@
 #include "LayerPainter.h"
 #include "SceneLightingParameters.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
 #include "maths/EllipseGenerator.h"
 #include "maths/Real.h"
 #include "maths/Rotation.h"
@@ -345,7 +348,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 		filled_polygons.add_filled_polygon(
 				*polygon_on_sphere,
 				colour.get(),
-				d_current_cube_quad_tree_location);
+				d_current_spatial_partition_location.get());
 
 		return;
 	}
@@ -1068,45 +1071,79 @@ void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_geometries(
 		GPlatesOpenGL::GLRenderer &renderer)
 {
-	d_current_cube_quad_tree_location = boost::none;
+	// Get the spatial partition of rendered geometries.
+	rendered_geometries_spatial_partition_type::non_null_ptr_to_const_type
+			rendered_geometries_spatial_partition = d_rendered_geometry_layer.get_rendered_geometries();
 
-	// See if there's a spatial partition of rendered geometries.
-	boost::optional<const rendered_geometries_spatial_partition_type &>
-			rendered_geometries_spatial_partition_opt = d_rendered_geometry_layer.get_rendered_geometries();
-	// If not then just render all rendered geometries without view-frustum culling.
-	if (!rendered_geometries_spatial_partition_opt)
+	// Get rendered geometries and associated information.
+	// The information is separated into two vectors in order to minimise copying during sorting.
+	std::vector<RenderedGeometryInfo> rendered_geometry_infos;
+	rendered_geometry_infos.reserve(rendered_geometries_spatial_partition->size());
+	std::vector<RenderedGeometryOrder> rendered_geometry_orders;
+	rendered_geometry_orders.reserve(rendered_geometries_spatial_partition->size());
+
+	// Visit the spatial partition to do view-frustum culling and collect the visible rendered geometries
+	// (the geometries completely outside the view frustum are not rendered).
+	get_visible_rendered_geometries(
+			renderer,
+			rendered_geometry_infos,
+			rendered_geometry_orders,
+			*rendered_geometries_spatial_partition);
+
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			rendered_geometry_infos.size() == rendered_geometry_orders.size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// We need to visit (and hence render) the rendered geometries in their render order.
+	std::sort(
+			rendered_geometry_orders.begin(),
+			rendered_geometry_orders.end(),
+			RenderedGeometryOrder::SortRenderOrder());
+
+	// Visit the rendered geometries in render order.
+	const unsigned int num_visible_rendered_geoms = rendered_geometry_infos.size();
+	for (unsigned int visible_rendered_geom_index = 0;
+		visible_rendered_geom_index < num_visible_rendered_geoms;
+		++visible_rendered_geom_index)
 	{
-		// Visit each RenderedGeometry.
-		std::for_each(
-			d_rendered_geometry_layer.rendered_geometry_begin(),
-			d_rendered_geometry_layer.rendered_geometry_end(),
-			boost::bind(&GPlatesViewOperations::RenderedGeometry::accept_visitor, _1, boost::ref(*this)));
+		const unsigned int rendered_geometry_info_index =
+				rendered_geometry_orders[visible_rendered_geom_index].rendered_geometry_info_index;
+		const RenderedGeometryInfo &rendered_geom_info =
+				rendered_geometry_infos[rendered_geometry_info_index];
 
-		return;
+		// Visit the rendered geometry and let it know its location in the spatial partition.
+		d_current_spatial_partition_location = rendered_geom_info.spatial_partition_location;
+		rendered_geom_info.rendered_geometry.accept_visitor(*this);
+		d_current_spatial_partition_location = boost::none;
 	}
-
-	// Render using the spatial partition to do view-frustum culling (the geometries completely
-	// outside the view frustum are not rendered).
-	const rendered_geometries_spatial_partition_type &rendered_geometries_spatial_partition =
-			rendered_geometries_spatial_partition_opt.get();
-	render_spatial_partition(renderer, rendered_geometries_spatial_partition);
 }
 
 
 void
-GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition(
+GPlatesGui::GlobeRenderedGeometryLayerPainter::get_visible_rendered_geometries(
 		GPlatesOpenGL::GLRenderer &renderer,
+		std::vector<RenderedGeometryInfo> &rendered_geometry_infos,
+		std::vector<RenderedGeometryOrder> &rendered_geometry_orders,
 		const rendered_geometries_spatial_partition_type &rendered_geometries_spatial_partition)
 {
-
 	// Visit the rendered geometries in the root of the cube quad tree.
 	// These are unpartitioned and hence must be rendered regardless of the view frustum.
 	// Start out at the root of the cube quad tree.
-	d_current_cube_quad_tree_location = boost::none;
-	std::for_each(
-		rendered_geometries_spatial_partition.begin_root_elements(),
-		rendered_geometries_spatial_partition.end_root_elements(),
-		boost::bind(&GPlatesViewOperations::RenderedGeometry::accept_visitor, _1, boost::ref(*this)));
+	rendered_geometries_spatial_partition_type::element_const_iterator root_elements_iter =
+			rendered_geometries_spatial_partition.begin_root_elements();
+	rendered_geometries_spatial_partition_type::element_const_iterator root_elements_end =
+			rendered_geometries_spatial_partition.end_root_elements();
+	for ( ; root_elements_iter != root_elements_end; ++root_elements_iter)
+	{
+		const GPlatesViewOperations::RenderedGeometryLayer::PartitionedRenderedGeometry &
+				root_rendered_geom = *root_elements_iter;
+
+		// Associate rendered geometry with its spatial partition location and render order.
+		rendered_geometry_orders.push_back(
+				RenderedGeometryOrder(rendered_geometry_infos.size(), root_rendered_geom.render_order));
+		rendered_geometry_infos.push_back(
+				RenderedGeometryInfo(root_rendered_geom.rendered_geometry));
+	}
 
 	// Create a loose oriented-bounding-box cube quad tree cache so we can do view-frustum culling
 	// as we traverse the spatial partition of rendered geometries.
@@ -1145,6 +1182,8 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition(
 		const GPlatesMaths::CubeQuadTreeLocation root_cube_quad_tree_node_location(cube_face);
 
 		render_spatial_partition_quad_tree(
+				rendered_geometry_infos,
+				rendered_geometry_orders,
 				root_cube_quad_tree_node_location,
 				loose_quad_tree_root_node,
 				*cube_subdivision_cache,
@@ -1158,6 +1197,8 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition(
 
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition_quad_tree(
+		std::vector<RenderedGeometryInfo> &rendered_geometry_infos,
+		std::vector<RenderedGeometryOrder> &rendered_geometry_orders,
 		const GPlatesMaths::CubeQuadTreeLocation &cube_quad_tree_node_location,
 		rendered_geometries_spatial_partition_type::const_node_reference_type rendered_geometries_quad_tree_node,
 		cube_subdivision_cache_type &cube_subdivision_cache,
@@ -1190,11 +1231,21 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition_quad_tre
 	}
 
 	// Visit the rendered geometries in the current quad tree node.
-	d_current_cube_quad_tree_location = cube_quad_tree_node_location;
-	std::for_each(
-		rendered_geometries_quad_tree_node.begin(),
-		rendered_geometries_quad_tree_node.end(),
-		boost::bind(&GPlatesViewOperations::RenderedGeometry::accept_visitor, _1, boost::ref(*this)));
+	rendered_geometries_spatial_partition_type::const_node_reference_type::element_iterator_type
+			node_elements_iter = rendered_geometries_quad_tree_node.begin();
+	rendered_geometries_spatial_partition_type::const_node_reference_type::element_iterator_type
+			node_elements_end = rendered_geometries_quad_tree_node.end();
+	for ( ; node_elements_iter != node_elements_end; ++node_elements_iter)
+	{
+		const GPlatesViewOperations::RenderedGeometryLayer::PartitionedRenderedGeometry &
+				node_rendered_geom = *node_elements_iter;
+
+		// Associate rendered geometry with its spatial partition location and render order.
+		rendered_geometry_orders.push_back(
+				RenderedGeometryOrder(rendered_geometry_infos.size(), node_rendered_geom.render_order));
+		rendered_geometry_infos.push_back(
+				RenderedGeometryInfo(node_rendered_geom.rendered_geometry, cube_quad_tree_node_location));
+	}
 
 
 	//
@@ -1227,6 +1278,8 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition_quad_tre
 							child_v_offset);
 
 			render_spatial_partition_quad_tree(
+					rendered_geometry_infos,
+					rendered_geometry_orders,
 					child_cube_quad_tree_node_location,
 					child_rendered_geometries_quad_tree_node,
 					cube_subdivision_cache,

@@ -791,6 +791,14 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_tile_to_scene(
 		return;
 	}
 
+	// Sort the drawables by their original render order.
+	// This is necessary because we visited the spatial partition of drawables which is not
+	// the same as the original draw order.
+	std::sort(
+			filled_drawables.begin(),
+			filled_drawables.end(),
+			filled_polygon_type::SortRenderOrder());
+
 	// The view transform never changes within a cube face so it's the same across
 	// an entire cube face quad tree (each cube face has its own quad tree).
 	const GLTransform::non_null_ptr_to_const_type view_transform =

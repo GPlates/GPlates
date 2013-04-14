@@ -24,6 +24,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <vector>
 #include <boost/bind.hpp>
 #include <boost/none.hpp>
@@ -49,7 +50,7 @@
 #include "utils/LatLonAreaSampling.h"
 #include "utils/ReferenceCount.h"
 
-//#include "utils/Profile.h"
+#include "utils/Profile.h"
 
 
 namespace GPlatesViewOperations
@@ -64,9 +65,18 @@ namespace GPlatesViewOperations
 		//! Convenience typedef for rendered geometry index.
 		typedef RenderedGeometryLayer::rendered_geometry_index_type rendered_geometry_index_type;
 
+		//! Convenience typedef for a rendered geometry stored in a spatial partition.
+		typedef RenderedGeometryLayer::PartitionedRenderedGeometry partitioned_rendered_geometry_type;
+
 		//! Convenience typedef for rendered geometries spatial partition.
 		typedef RenderedGeometryLayer::rendered_geometries_spatial_partition_type
 				rendered_geometries_spatial_partition_type;
+
+		/**
+		 * The default depth of the rendered geometries spatial partition (the quad trees in each cube face).
+		 */
+		static const unsigned int DEFAULT_SPATIAL_PARTITION_DEPTH = 7;
+
 
 		virtual
 		~RenderedGeometryLayerImpl()
@@ -100,18 +110,14 @@ namespace GPlatesViewOperations
 				rendered_geometry_index_type) const = 0;
 
 		virtual
-		boost::optional<const rendered_geometries_spatial_partition_type &>
+		rendered_geometries_spatial_partition_type::non_null_ptr_to_const_type
 		get_rendered_geometries() const = 0;
 
 		virtual
 		void
 		add_rendered_geometry(
-				RenderedGeometry) = 0;
-
-		virtual
-		void
-		add_rendered_geometries(
-				const rendered_geometries_spatial_partition_type::non_null_ptr_type &rendered_geometries_spatial_partition) = 0;
+				RenderedGeometry,
+				boost::optional<const GPlatesMaths::CubeQuadTreeLocation &> cube_quad_tree_location) = 0;
 
 		virtual
 		void
@@ -132,7 +138,9 @@ namespace GPlatesViewOperations
 			explicit
 			ZoomIndependentLayerImpl(
 					const double &viewport_zoom_factor) :
-				d_is_rendered_geom_seq_valid(true),
+				d_rendered_geom_spatial_partition(
+						rendered_geometries_spatial_partition_type::create(
+								DEFAULT_SPATIAL_PARTITION_DEPTH)),
 				d_current_viewport_zoom_factor(viewport_zoom_factor)
 			{  }
 
@@ -164,14 +172,8 @@ namespace GPlatesViewOperations
 			bool
 			is_empty() const
 			{
-				if (d_is_rendered_geom_seq_valid)
-				{
-					// All rendered geoms are in the sequence.
-					return d_rendered_geom_seq.empty();
-				}
-
-				// All rendered geoms are in the spatial partition.
-				return d_spatial_partition.get()->empty();
+				// Rendered geoms added to both the sequence and spatial partition so just pick one.
+				return d_rendered_geom_seq.empty();
 			}
 
 
@@ -179,14 +181,8 @@ namespace GPlatesViewOperations
 			unsigned int
 			get_num_rendered_geometries() const
 			{
-				if (d_is_rendered_geom_seq_valid)
-				{
-					// All rendered geoms are in the sequence.
-					return d_rendered_geom_seq.size();
-				}
-
-				// All rendered geoms are in the spatial partition.
-				return d_spatial_partition.get()->size();
+				// Rendered geoms added to both the sequence and spatial partition so just pick one.
+				return d_rendered_geom_seq.size();
 			}
 
 			virtual
@@ -194,98 +190,48 @@ namespace GPlatesViewOperations
 			get_rendered_geometry(
 					rendered_geometry_index_type rendered_geom_index) const
 			{
-				if (d_is_rendered_geom_seq_valid)
-				{
-					// All rendered geoms are in the sequence.
-					return d_rendered_geom_seq[rendered_geom_index];
-				}
-
-				// Copy from spatial partition to our internal sequence.
-				copy_spatial_partition_to_rendered_geometries_sequence();
-
-				// All rendered geoms are now in the sequence.
+				// Rendered geoms added to both the sequence and spatial partition,
+				// but only the sequence is ordered.
 				return d_rendered_geom_seq[rendered_geom_index];
 			}
 
 
 			virtual
-			boost::optional<const rendered_geometries_spatial_partition_type &>
+			rendered_geometries_spatial_partition_type::non_null_ptr_to_const_type
 			get_rendered_geometries() const
 			{
-				if (!d_spatial_partition)
-				{
-					return boost::none;
-				}
-
-				return *d_spatial_partition.get();
+				return d_rendered_geom_spatial_partition;
 			}
 
 
 			virtual
 			void
 			add_rendered_geometry(
-					RenderedGeometry rendered_geom)
+					RenderedGeometry rendered_geom,
+					boost::optional<const GPlatesMaths::CubeQuadTreeLocation &> cube_quad_tree_location)
 			{
-				if (d_spatial_partition)
-				{
-					// We don't have any spatial extents for the rendered geometry so just add it
-					// to the root of the entire spatial partition.
-					d_spatial_partition.get()->add_unpartitioned(rendered_geom);
+				// Rendered geometries are to be rendered in the order they are added.
+				const rendered_geometry_index_type render_order = d_rendered_geom_seq.size();
 
-					// Now that we're adding to the spatial partition we're invalidating
-					// the render geometries sequence.
-					d_is_rendered_geom_seq_valid = false;
-
-					return;
-				}
-
-				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-						d_is_rendered_geom_seq_valid,
-						GPLATES_ASSERTION_SOURCE);
-
+				// Add to the sequence of rendered geometries.
 				d_rendered_geom_seq.push_back(rendered_geom);
-			}
 
+				// Keep track of draw order when storing in a spatial partition.
+				const partitioned_rendered_geometry_type partitioned_rendered_geom(
+						rendered_geom,
+						render_order);
 
-			virtual
-			void
-			add_rendered_geometries(
-					const rendered_geometries_spatial_partition_type::non_null_ptr_type &spatial_partition)
-			{
-				// If first time we've added a spatial partition then add all the
-				// rendered geometries in the sequence to the new spatial partition.
-				if (!d_spatial_partition)
+				// Also add to the spatial partition.
+				// If the caller has specified a destination node in the spatial partition then add to that.
+				if (cube_quad_tree_location)
 				{
-					// Iterate over the rendered geometries in our sequence.
-					rendered_geom_seq_type::const_iterator rendered_geoms_iter =
-							d_rendered_geom_seq.begin();
-					const rendered_geom_seq_type::const_iterator rendered_geoms_end =
-							d_rendered_geom_seq.end();
-					for ( ; rendered_geoms_iter != rendered_geoms_end; ++rendered_geoms_iter)
-					{
-						const RenderedGeometry &rendered_geometry = *rendered_geoms_iter;
-
-						// Add to the root of the spatial partition (since have no spatial extent info).
-						spatial_partition->add_unpartitioned(rendered_geometry);
-					}
-
-					// Set our partition to the new one - we are now the owner.
-					d_spatial_partition = spatial_partition;
-
-					// Delay iterating over the spatial partition and adding its rendered geometries
-					// to our std::vector - clients may never need it in which case it would've
-					// been wasted effort. This is fairly common when a layer is rendered by visiting
-					// its spatial tree instead of retrieving the rendered geometries sequentially.
-					d_is_rendered_geom_seq_valid = false;
+					d_rendered_geom_spatial_partition->add(
+							partitioned_rendered_geom,
+							cube_quad_tree_location.get());
 				}
-				else // Not the first time we've added a spatial partition since the last clear...
+				else // otherwise just add to the root of the spatial partition...
 				{
-					// Merge the new spatial partition into the current one.
-					GPlatesMaths::CubeQuadTreePartitionUtils::merge(
-							*d_spatial_partition.get(),
-							*spatial_partition);
-
-					d_is_rendered_geom_seq_valid = false;
+					d_rendered_geom_spatial_partition->add_unpartitioned(partitioned_rendered_geom);
 				}
 			}
 
@@ -295,40 +241,18 @@ namespace GPlatesViewOperations
 			clear_rendered_geometries()
 			{
 				d_rendered_geom_seq.clear();
-				d_spatial_partition = boost::none;
-				d_is_rendered_geom_seq_valid = true;
+				d_rendered_geom_spatial_partition->clear();
 			}
 
 		private:
+
 			//! Typedef for sequence of @a RenderedGeometry objects.
 			typedef std::vector<RenderedGeometry> rendered_geom_seq_type;
 
-			mutable rendered_geom_seq_type d_rendered_geom_seq;
-			boost::optional<rendered_geometries_spatial_partition_type::non_null_ptr_type> d_spatial_partition;
-			mutable bool d_is_rendered_geom_seq_valid;
+			rendered_geom_seq_type d_rendered_geom_seq;
+			rendered_geometries_spatial_partition_type::non_null_ptr_type d_rendered_geom_spatial_partition;
 			double d_current_viewport_zoom_factor;
 
-
-			void
-			copy_spatial_partition_to_rendered_geometries_sequence() const
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-						!d_is_rendered_geom_seq_valid && d_spatial_partition,
-						GPLATES_ASSERTION_SOURCE);
-
-				// Iterate over the cube quad tree and add the rendered geometries to our
-				// internal std::vector sequence.
-				d_rendered_geom_seq.clear();
-				d_rendered_geom_seq.reserve(d_spatial_partition.get()->size());
-				rendered_geometries_spatial_partition_type::const_iterator rendered_geoms_iter =
-						d_spatial_partition.get()->get_iterator();
-				for ( ; !rendered_geoms_iter.finished(); rendered_geoms_iter.next())
-				{
-					d_rendered_geom_seq.push_back(rendered_geoms_iter.get_element());
-				}
-
-				d_is_rendered_geom_seq_valid = true;
-			}
 		};
 
 
@@ -404,6 +328,9 @@ namespace GPlatesViewOperations
 				d_current_ratio_zoom_dependent_bin_dimension_to_globe_radius(
 						ratio_zoom_dependent_bin_dimension_to_globe_radius),
 				d_current_viewport_zoom_factor(viewport_zoom_factor),
+				d_zoom_independent_rendered_geom_spatial_partition(
+						rendered_geometries_spatial_partition_type::create(
+								DEFAULT_SPATIAL_PARTITION_DEPTH)),
 				d_zoom_dependent_seq(
 						get_zoom_dependent_sample_spacing(
 							ratio_zoom_dependent_bin_dimension_to_globe_radius,
@@ -458,8 +385,7 @@ namespace GPlatesViewOperations
 			bool
 			is_empty() const
 			{
-				return d_zoom_independent_seq.empty() &&
-						(d_zoom_dependent_seq.get_num_sampled_elements() == 0);
+				return d_zoom_independent_seq.empty() && d_zoom_dependent_seq.empty();
 			}
 
 
@@ -467,8 +393,7 @@ namespace GPlatesViewOperations
 			unsigned int
 			get_num_rendered_geometries() const
 			{
-				return d_zoom_independent_seq.size() +
-						d_zoom_dependent_seq.get_num_sampled_elements();
+				return d_zoom_independent_seq.size() + d_zoom_dependent_seq.get_num_sampled_elements();
 			}
 
 
@@ -484,7 +409,7 @@ namespace GPlatesViewOperations
 					return d_zoom_independent_seq[rendered_geom_index];
 				}
 
-				// The second range of indices index into the view-dependent
+				// The second range of indices index into the view-dependent 
 				// rendered geometries.
 				const unsigned int zoom_dependent_index =
 						rendered_geom_index - d_zoom_independent_seq.size();
@@ -496,7 +421,8 @@ namespace GPlatesViewOperations
 			virtual
 			void
 			add_rendered_geometry(
-					RenderedGeometry rendered_geom)
+					RenderedGeometry rendered_geom,
+					boost::optional<const GPlatesMaths::CubeQuadTreeLocation &> cube_quad_tree_location)
 			{
 				boost::optional<GPlatesMaths::PointOnSphere> zoom_dependent =
 						is_zoom_dependent(rendered_geom);
@@ -504,15 +430,40 @@ namespace GPlatesViewOperations
 				// Add to the appropriate sequence (zoom-dependent or zoom-independent).
 				if (zoom_dependent)
 				{
+					// We can't make use of the zoom-dependent spatial partition since we're discarding
+					// some rendered geometries (only keeping one per zoom-dependent sampling bin).
+
 					const GPlatesMaths::PointOnSphere &point_on_sphere_location = *zoom_dependent;
 
 					// Add to the lat/lon area sampling.
-					d_zoom_dependent_seq.add_element(
-							rendered_geom, point_on_sphere_location);
+					d_zoom_dependent_seq.add_element(rendered_geom, point_on_sphere_location);
 				}
-				else
+				else // zoom-independent...
 				{
+					// Zoom-independent rendered geometries are to be rendered in the order they are added.
+					// And zoom-independent geometries are rendered before zoom-dependent geometries.
+					const rendered_geometry_index_type render_order = d_zoom_independent_seq.size();
+
 					d_zoom_independent_seq.push_back(rendered_geom);
+
+					// Keep track of draw order when storing in a spatial partition.
+					const partitioned_rendered_geometry_type partitioned_rendered_geom(
+							rendered_geom,
+							render_order);
+
+					// Also add to the zoom-independent spatial partition.
+					// If the caller has specified a destination node in the spatial partition then add to that.
+					if (cube_quad_tree_location)
+					{
+						d_zoom_independent_rendered_geom_spatial_partition->add(
+								partitioned_rendered_geom,
+								cube_quad_tree_location.get());
+					}
+					else // otherwise just add to the root of the spatial partition...
+					{
+						d_zoom_independent_rendered_geom_spatial_partition->add_unpartitioned(
+								partitioned_rendered_geom);
+					}
 				}
 			}
 
@@ -522,38 +473,59 @@ namespace GPlatesViewOperations
 			clear_rendered_geometries()
 			{
 				d_zoom_independent_seq.clear();
+				d_zoom_independent_rendered_geom_spatial_partition->clear();
 				d_zoom_dependent_seq.clear_elements();
 			}
 
 
 			virtual
-			boost::optional<const rendered_geometries_spatial_partition_type &>
+			rendered_geometries_spatial_partition_type::non_null_ptr_to_const_type
 			get_rendered_geometries() const
 			{
-				return boost::none;
-			}
-
-
-			virtual
-			void
-			add_rendered_geometries(
-					const rendered_geometries_spatial_partition_type::non_null_ptr_type &rendered_geometries_spatial_partition)
-			{
-				// We can't make use of the spatial partition since we're discarding some
-				// rendered geometries (only keeping one per zoom-dependent sampling bin).
-				// So we iterate over the rendered geometries in the spatial partition and
-				// add using our 'add_rendered_geometry' interface.
-
-				rendered_geometries_spatial_partition_type::const_iterator rendered_geoms_iter =
-						rendered_geometries_spatial_partition->get_iterator();
-				for ( ; !rendered_geoms_iter.finished(); rendered_geoms_iter.next())
+				if (d_zoom_dependent_seq.empty())
 				{
-					add_rendered_geometry(rendered_geoms_iter.get_element());
+					return d_zoom_independent_rendered_geom_spatial_partition;
 				}
-			}
 
+				// Copy the zoom-independent spatial partition and add the zoom-dependent
+				// rendered geometries only to the root of the spatial partition.
+
+				rendered_geometries_spatial_partition_type::non_null_ptr_type spatial_partition =
+						rendered_geometries_spatial_partition_type::create(
+								DEFAULT_SPATIAL_PARTITION_DEPTH);
+
+				GPlatesMaths::CubeQuadTreePartitionUtils::merge(
+						*spatial_partition,
+						*d_zoom_independent_rendered_geom_spatial_partition);
+
+				// Iterate over the zoom-dependent rendered geometries.
+				const unsigned int num_zoom_dependent_geoms = d_zoom_dependent_seq.get_num_sampled_elements();
+				for (unsigned int zoom_dependent_geom_index = 0;
+					zoom_dependent_geom_index < num_zoom_dependent_geoms;
+					++zoom_dependent_geom_index)
+				{
+					const RenderedGeometry &rendered_geom =
+							d_zoom_dependent_seq.get_sampled_element(zoom_dependent_geom_index);
+
+					// Zoom-dependent rendered geometries are to be rendered *after* the
+					// zoom-independent ones.
+					const rendered_geometry_index_type render_order =
+							d_zoom_independent_seq.size() + zoom_dependent_geom_index;
+
+					// Keep track of draw order when storing in a spatial partition.
+					const partitioned_rendered_geometry_type partitioned_rendered_geom(
+							rendered_geom,
+							render_order);
+
+					// Add to the root of the spatial partition (since have no spatial extent info).
+					spatial_partition->add_unpartitioned(partitioned_rendered_geom);
+				}
+
+				return spatial_partition;
+			}
 
 		private:
+
 			//! Typedef for sequence of zoom-independent @a RenderedGeometry objects.
 			typedef std::vector<RenderedGeometry> zoom_independent_seq_type;
 
@@ -565,6 +537,9 @@ namespace GPlatesViewOperations
 			GPlatesMaths::real_t d_current_viewport_zoom_factor;
 
 			zoom_independent_seq_type d_zoom_independent_seq;
+			rendered_geometries_spatial_partition_type::non_null_ptr_type
+					d_zoom_independent_rendered_geom_spatial_partition;
+
 			zoom_dependent_seq_type d_zoom_dependent_seq;
 
 
@@ -598,6 +573,83 @@ namespace GPlatesViewOperations
 				d_zoom_dependent_seq.reset_sample_spacing(sample_bin_angle_spacing_degrees);
 			}
 		};
+
+
+		/**
+		 * Helper structure when copying between render layer impl's in render order.
+		 */
+		struct PartitionedLocatedRenderedGeometry
+		{
+			PartitionedLocatedRenderedGeometry(
+					const RenderedGeometryLayer::PartitionedRenderedGeometry &parititioned_rendered_geometry_,
+					const GPlatesMaths::CubeQuadTreeLocation &cube_quad_tree_location_) :
+				parititioned_rendered_geometry(parititioned_rendered_geometry_),
+				cube_quad_tree_location(cube_quad_tree_location_)
+			{  }
+
+			RenderedGeometryLayer::PartitionedRenderedGeometry parititioned_rendered_geometry;
+			GPlatesMaths::CubeQuadTreeLocation cube_quad_tree_location;
+
+			//! Used to sort by render order.
+			struct SortRenderOrder
+			{
+				bool
+				operator()(
+						const PartitionedLocatedRenderedGeometry &lhs,
+						const PartitionedLocatedRenderedGeometry &rhs) const
+				{
+					return lhs.parititioned_rendered_geometry.render_order <
+							rhs.parititioned_rendered_geometry.render_order;
+				}
+			};
+		};
+
+
+		/**
+		 * Copy the src rendered layer's rendered geometries and over to the dst layer in rendered order.
+		 */
+		void
+		copy_rendered_geometries_in_render_order(
+				RenderedGeometryLayerImpl &dst_rendered_geometry_layer_impl,
+				const RenderedGeometryLayerImpl &src_rendered_geometry_layer_impl)
+		{
+			if (src_rendered_geometry_layer_impl.is_empty())
+			{
+				return;
+			}
+
+			std::vector<PartitionedLocatedRenderedGeometry> src_rendered_geoms;
+			src_rendered_geoms.reserve(src_rendered_geometry_layer_impl.get_num_rendered_geometries());
+
+			// Iterate over the src layer's rendered geometries spatial partition so that we can
+			// obtain the cube quad tree location information for each rendered geometry.
+			RenderedGeometryLayer::rendered_geometries_spatial_partition_type::non_null_ptr_to_const_type
+					src_spatial_partition = src_rendered_geometry_layer_impl.get_rendered_geometries();
+			RenderedGeometryLayer::rendered_geometries_spatial_partition_type::const_iterator
+					src_rendered_geoms_iter = src_spatial_partition->get_iterator();
+			for ( ; !src_rendered_geoms_iter.finished(); src_rendered_geoms_iter.next())
+			{
+				src_rendered_geoms.push_back(
+						PartitionedLocatedRenderedGeometry(
+								src_rendered_geoms_iter.get_element(),
+								src_rendered_geoms_iter.get_location()));
+			}
+
+			// We need to add to the destination rendered layer in render order.
+			std::sort(
+					src_rendered_geoms.begin(),
+					src_rendered_geoms.end(),
+					PartitionedLocatedRenderedGeometry::SortRenderOrder());
+
+			// Add to the destination rendered layer in render order.
+			const unsigned int num_src_rendered_geoms = src_rendered_geoms.size();
+			for (unsigned int n = 0; n < num_src_rendered_geoms; ++n)
+			{
+				dst_rendered_geometry_layer_impl.add_rendered_geometry(
+						src_rendered_geoms[n].parititioned_rendered_geometry.rendered_geometry,
+						src_rendered_geoms[n].cube_quad_tree_location);
+			}
+		}
 	}
 }
 
@@ -644,15 +696,8 @@ GPlatesViewOperations::RenderedGeometryLayer::set_ratio_zoom_dependent_bin_dimen
 			rendered_geometry_layer_impl_ptr_type new_impl(
 					new ZoomIndependentLayerImpl(d_impl->get_viewport_zoom_factor()));
 
-			// Iterate over the old impl's rendered geometries and add them to the new impl.
-			const unsigned int num_rendered_geoms = d_impl->get_num_rendered_geometries();
-			for (rendered_geometry_index_type rendered_geom_index = 0;
-				rendered_geom_index < num_rendered_geoms;
-				++rendered_geom_index)
-			{
-				const RenderedGeometry &rendered_geom = d_impl->get_rendered_geometry(rendered_geom_index);
-				new_impl->add_rendered_geometry(rendered_geom);
-			}
+			// Copy the old impl's rendered geometries and over to the new impl.
+			copy_rendered_geometries_in_render_order(*new_impl, *d_impl);
 
 			// Replace the old impl with the new impl.
 			d_impl = new_impl;
@@ -672,17 +717,8 @@ GPlatesViewOperations::RenderedGeometryLayer::set_ratio_zoom_dependent_bin_dimen
 							ratio_zoom_dependent_bin_dimension_to_globe_radius,
 							d_impl->get_viewport_zoom_factor()));
 
-			// Iterate over the old impl's rendered geometries and add them to the new impl.
-			// NOTE: This can remove the benefits of the spatial partition inside the
-			// zoom *independent* spatial partition but not much can be done about that.
-			const unsigned int num_rendered_geoms = d_impl->get_num_rendered_geometries();
-			for (rendered_geometry_index_type rendered_geom_index = 0;
-				rendered_geom_index < num_rendered_geoms;
-				++rendered_geom_index)
-			{
-				const RenderedGeometry &rendered_geom = d_impl->get_rendered_geometry(rendered_geom_index);
-				new_impl->add_rendered_geometry(rendered_geom);
-			}
+			// Copy the old impl's rendered geometries and over to the new impl.
+			copy_rendered_geometries_in_render_order(*new_impl, *d_impl);
 
 			// Replace the old impl with the new impl.
 			d_impl = new_impl;
@@ -755,9 +791,10 @@ GPlatesViewOperations::RenderedGeometryLayer::rendered_geometry_end() const
 
 void
 GPlatesViewOperations::RenderedGeometryLayer::add_rendered_geometry(
-		RenderedGeometry rendered_geom)
+		RenderedGeometry rendered_geom,
+		boost::optional<const GPlatesMaths::CubeQuadTreeLocation &> cube_quad_tree_location)
 {
-	d_impl->add_rendered_geometry(rendered_geom);
+	d_impl->add_rendered_geometry(rendered_geom, cube_quad_tree_location);
 
 	Q_EMIT layer_was_updated(*this, d_user_data);
 }
@@ -781,18 +818,10 @@ GPlatesViewOperations::RenderedGeometryLayer::clear_rendered_geometries()
 }
 
 
-boost::optional<const GPlatesViewOperations::RenderedGeometryLayer::rendered_geometries_spatial_partition_type &>
+GPlatesViewOperations::RenderedGeometryLayer::rendered_geometries_spatial_partition_type::non_null_ptr_to_const_type
 GPlatesViewOperations::RenderedGeometryLayer::get_rendered_geometries() const
 {
 	return d_impl->get_rendered_geometries();
-}
-
-
-void
-GPlatesViewOperations::RenderedGeometryLayer::add_rendered_geometries(
-		const rendered_geometries_spatial_partition_type::non_null_ptr_type &rendered_geometries_spatial_partition)
-{
-	d_impl->add_rendered_geometries(rendered_geometries_spatial_partition);
 }
 
 

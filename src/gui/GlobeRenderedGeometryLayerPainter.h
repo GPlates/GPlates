@@ -28,6 +28,7 @@
 #ifndef GPLATES_GUI_GLOBERENDEREDGEOMETRYLAYERPAINTER_H
 #define GPLATES_GUI_GLOBERENDEREDGEOMETRYLAYERPAINTER_H
 
+#include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
@@ -51,6 +52,7 @@
 #include "presentation/VisualLayers.h"
 
 #include "view-operations/RenderedGeometry.h"
+#include "view-operations/RenderedGeometryLayer.h"
 #include "view-operations/RenderedGeometryVisitor.h"
 
 
@@ -205,6 +207,7 @@ namespace GPlatesGui
 		visit_rendered_triangle_symbol(
 				 const GPlatesViewOperations::RenderedTriangleSymbol &rendered_triangle_symbol);
 
+	private:
 
 		//! Typedef for a vertex element (index).
 		typedef LayerPainter::vertex_element_type vertex_element_type;
@@ -223,7 +226,7 @@ namespace GPlatesGui
 
 
 		//! Typedef for a rendered geometries spatial partition.
-		typedef GPlatesMaths::CubeQuadTreePartition<GPlatesViewOperations::RenderedGeometry>
+		typedef GPlatesViewOperations::RenderedGeometryLayer::rendered_geometries_spatial_partition_type
 				rendered_geometries_spatial_partition_type;
 
 		/**
@@ -235,6 +238,52 @@ namespace GPlatesGui
 				false/*CacheBoundingPolygon*/, false/*CacheLooseBoundingPolygon*/,
 				false/*CacheBounds*/, true/*CacheLooseBounds*/>
 						cube_subdivision_cache_type;
+
+
+		/**
+		 * Information associated with a rendered geometry.
+		 */
+		struct RenderedGeometryInfo
+		{
+			RenderedGeometryInfo(
+					const GPlatesViewOperations::RenderedGeometry &rendered_geometry_,
+					const rendered_geometries_spatial_partition_type::location_type &spatial_partition_location_ =
+							rendered_geometries_spatial_partition_type::location_type()) :
+				rendered_geometry(rendered_geometry_),
+				spatial_partition_location(spatial_partition_location_)
+			{  }
+
+			GPlatesViewOperations::RenderedGeometry rendered_geometry;
+			rendered_geometries_spatial_partition_type::location_type spatial_partition_location;
+		};
+
+		/**
+		 * Helper structure to sort rendered geometries in their render order.
+		 */
+		struct RenderedGeometryOrder
+		{
+			RenderedGeometryOrder(
+					unsigned int rendered_geometry_info_index_,
+					GPlatesViewOperations::RenderedGeometryLayer::rendered_geometry_index_type render_order_) :
+				rendered_geometry_info_index(rendered_geometry_info_index_),
+				render_order(render_order_)
+			{  }
+
+			unsigned int rendered_geometry_info_index;
+			GPlatesViewOperations::RenderedGeometryLayer::rendered_geometry_index_type render_order;
+
+			//! Used to sort by render order.
+			struct SortRenderOrder
+			{
+				bool
+				operator()(
+						const RenderedGeometryOrder &lhs,
+						const RenderedGeometryOrder &rhs) const
+				{
+					return lhs.render_order < rhs.render_order;
+				}
+			};
+		};
 
 
 		const GPlatesViewOperations::RenderedGeometryLayer &d_rendered_geometry_layer;
@@ -271,13 +320,12 @@ namespace GPlatesGui
 		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> d_surface_occlusion_texture;
 
 		/**
-		 * Optional location in cube quad tree (spatial partition) when/if traversing a
-		 * rendered geometries spatial partition.
+		 * Location in cube quad tree (spatial partition) when traversing a rendered geometries spatial partition.
 		 *
-		 * If it's boost::none then the location is the root of the spatial partition.
-		 * This is the default if the rendered geometries being visited are not in a spatial partition.
+		 * Is only valid during @a paint (and when a rendered geometry is visited).
 		 */
-		boost::optional<GPlatesMaths::CubeQuadTreeLocation> d_current_cube_quad_tree_location;
+		boost::optional<const rendered_geometries_spatial_partition_type::location_type &>
+				d_current_spatial_partition_location;
 
 
 		//! Multiplying factor to get point size of 1.0f to look like one screen-space pixel.
@@ -295,12 +343,16 @@ namespace GPlatesGui
 				GPlatesOpenGL::GLRenderer &renderer);
 
 		void
-		render_spatial_partition(
+		get_visible_rendered_geometries(
 				GPlatesOpenGL::GLRenderer &renderer,
+				std::vector<RenderedGeometryInfo> &rendered_geometry_infos,
+				std::vector<RenderedGeometryOrder> &rendered_geometry_orders,
 				const rendered_geometries_spatial_partition_type &rendered_geometries_spatial_partition);
 
 		void
 		render_spatial_partition_quad_tree(
+				std::vector<RenderedGeometryInfo> &rendered_geometry_infos,
+				std::vector<RenderedGeometryOrder> &rendered_geometry_orders,
 				const GPlatesMaths::CubeQuadTreeLocation &cube_quad_tree_node_location,
 				rendered_geometries_spatial_partition_type::const_node_reference_type rendered_geometries_quad_tree_node,
 				cube_subdivision_cache_type &cube_subdivision_cache,

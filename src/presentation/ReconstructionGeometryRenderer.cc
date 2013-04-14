@@ -68,8 +68,8 @@
 #include "maths/CalculateVelocity.h"
 #include "maths/MathsUtils.h"
 
-#include "utils/Profile.h"
 #include "utils/ComponentManager.h"
+#include "utils/Profile.h"
 
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
@@ -120,7 +120,6 @@ namespace
 			const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map = boost::none,
 			const GPlatesGui::DrawStyle style = GPlatesGui::DrawStyle())
 	{
-
 		boost::optional<GPlatesGui::Symbol> symbol = get_symbol(
 				feature_type_symbol_map, reconstruction_geometry);
 		//symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, 10, true);
@@ -291,7 +290,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::begin_render(
 		GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			!d_rendered_geometry_layer && !d_rendered_geometries_spatial_partition,
+			!d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
 	// We've started targeting a rendered geometry layer.
@@ -301,10 +300,6 @@ GPlatesPresentation::ReconstructionGeometryRenderer::begin_render(
 	// A value of zero will set no limits.
 	d_rendered_geometry_layer->set_ratio_zoom_dependent_bin_dimension_to_globe_radius(
 			d_render_params.ratio_zoom_dependent_bin_dimension_to_globe_radius);
-
-	// Create a new rendered geometries spatial partition.
-	d_rendered_geometries_spatial_partition =
-			rendered_geometries_spatial_partition_type::create(DEFAULT_SPATIAL_PARTITION_DEPTH);
 }
 
 
@@ -312,19 +307,8 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::end_render()
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometry_layer && d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
-
-	// Now transfer ownership of the rendered geometries spatial partition to
-	// the rendered geometry layer.
-	//
-	// NOTE: It's important to add rendered geometries as a spatial partition because it gives
-	// spatial locality to each geometry which makes some types of rendering faster such as
-	// filled polygons (which are actually rendered as multi-resolution cube rasters).
-	d_rendered_geometry_layer->add_rendered_geometries(d_rendered_geometries_spatial_partition.get());
-
-	// Release our shared reference to the spatial partition.
-	d_rendered_geometries_spatial_partition = boost::none;
 
 	// We're not targeting a rendered geometry layer anymore.
 	d_rendered_geometry_layer = boost::none;
@@ -337,7 +321,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
 	GPlatesMaths::MultiPointOnSphere::const_iterator domain_iter = mpvf->multi_point()->begin();
@@ -419,7 +403,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 	
 	GPlatesGui::DrawStyle ds = d_style_adapter ? 
@@ -447,7 +431,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Create a RenderedGeometry for drawing the resolved raster.
@@ -476,7 +460,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Create a RenderedGeometry for drawing the scalar field.
@@ -503,7 +487,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 	
 	GPlatesGui::DrawStyle ds = d_style_adapter ? 
@@ -595,7 +579,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
 	GPlatesGui::DrawStyle ds = d_style_adapter ? 
@@ -623,7 +607,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
 	GPlatesGui::DrawStyle ds = d_style_adapter ? 
@@ -730,7 +714,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
 	GPlatesGui::DefaultPlateIdColourPalette::non_null_ptr_to_const_type palette =
@@ -789,7 +773,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Create a RenderedGeometry for drawing the reconstructed geometry.
@@ -816,7 +800,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-		d_rendered_geometries_spatial_partition,
+		d_rendered_geometry_layer,
 		GPLATES_ASSERTION_SOURCE);
 
 	GPlatesGui::DrawStyle ds = d_style_adapter ? 
@@ -854,7 +838,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
 	//TODO: 

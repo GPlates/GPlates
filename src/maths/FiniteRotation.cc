@@ -356,10 +356,10 @@ GPlatesMaths::compose(
 const GPlatesMaths::PointOnSphere
 GPlatesMaths::operator*(
 		const FiniteRotation &r,
-		const PointOnSphere &p) {
+		const PointOnSphere &p)
+{
 
-	UnitVector3D rotated_position_vector = r * p.position_vector();
-	return PointOnSphere(rotated_position_vector);
+	return PointOnSphere(r * p.position_vector());
 }
 
 
@@ -368,8 +368,7 @@ GPlatesMaths::operator*(
 		const FiniteRotation &r,
 		const GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> &p)
 {
-	UnitVector3D rotated_position_vector = r * p->position_vector();
-	return PointOnSphere::create_on_heap(rotated_position_vector);
+	return PointOnSphere::create_on_heap(r * p->position_vector());
 }
 
 
@@ -383,8 +382,9 @@ GPlatesMaths::operator*(
 
 	MultiPointOnSphere::const_iterator iter = mp->begin();
 	MultiPointOnSphere::const_iterator end = mp->end();
-	for ( ; iter != end; ++iter) {
-		rotated_points.push_back(r * (*iter));
+	for ( ; iter != end; ++iter)
+	{
+		rotated_points.push_back(PointOnSphere(r * iter->position_vector()));
 	}
 
 	return MultiPointOnSphere::create_on_heap(rotated_points);
@@ -402,7 +402,7 @@ GPlatesMaths::operator*(
 	PolylineOnSphere::vertex_const_iterator iter = p->vertex_begin();
 	PolylineOnSphere::vertex_const_iterator end = p->vertex_end();
 	for ( ; iter != end; ++iter) {
-		rotated_points.push_back(r * (*iter));
+		rotated_points.push_back(PointOnSphere(r * iter->position_vector()));
 	}
 
 	return PolylineOnSphere::create_on_heap(rotated_points);
@@ -420,7 +420,7 @@ GPlatesMaths::operator*(
 	PolygonOnSphere::vertex_const_iterator iter = p->vertex_begin();
 	PolygonOnSphere::vertex_const_iterator end = p->vertex_end();
 	for ( ; iter != end; ++iter) {
-		rotated_points.push_back(r * (*iter));
+		rotated_points.push_back(PointOnSphere(r * iter->position_vector()));
 	}
 
 	return PolygonOnSphere::create_on_heap(rotated_points);

@@ -115,8 +115,10 @@ namespace GPlatesOpenGL
 			//! Create a filled polygon from a polygon (fan) mesh drawable.
 			explicit
 			FilledPolygon(
-					const Drawable &polygon_mesh_drawable) :
-				d_polygon_mesh_drawable(polygon_mesh_drawable)
+					const Drawable &polygon_mesh_drawable,
+					unsigned int render_order) :
+				d_polygon_mesh_drawable(polygon_mesh_drawable),
+				d_render_order(render_order)
 			{  }
 
 
@@ -124,6 +126,23 @@ namespace GPlatesOpenGL
 			 * The filled polygon's (fan) mesh.
 			 */
 			Drawable d_polygon_mesh_drawable;
+
+			/**
+			 * The order in which this drawable should be rendered relative to other drawables.
+			 */
+			unsigned int d_render_order;
+
+			//! Used to sort by render order.
+			struct SortRenderOrder
+			{
+				bool
+				operator()(
+						const FilledPolygon &lhs,
+						const FilledPolygon &rhs) const
+				{
+					return lhs.d_render_order < rhs.d_render_order;
+				}
+			};
 		};
 
 		//! Typedef for a filled polygon.
@@ -161,8 +180,6 @@ namespace GPlatesOpenGL
 					const GPlatesGui::Colour &colour,
 					const boost::optional<GPlatesMaths::CubeQuadTreeLocation> &cube_quad_tree_location = boost::none)
 			{
-				PROFILE_FUNC();
-
 				// Alpha blending will be set up for pre-multiplied alpha.
 				const GPlatesGui::Colour pre_multiplied_alpha_colour(
 						colour.red() * colour.alpha(),
@@ -294,8 +311,6 @@ namespace GPlatesOpenGL
 					const GPlatesMaths::UnitVector3D &centroid,
 					const GPlatesGui::rgba8_t &colour)
 			{
-				PROFILE_FUNC();
-
 				// Need at least three points for a polygon.
 				if (num_points < 3)
 				{
@@ -336,7 +351,12 @@ namespace GPlatesOpenGL
 						d_polygon_vertex_elements.size() - base_vertex_element_index /*count*/,
 						base_vertex_element_index * sizeof(polygon_vertex_element_type)/*indices_offset*/);
 
-				return filled_polygon_type(polygon_mesh_drawable);
+				// Keep track of the order to render the drawables (order in which we're called)
+				// because drawables are rendered by visiting the spatial partition which is not
+				// the same as the original draw order.
+				const unsigned int render_order = d_filled_polygons_spatial_partition->size();
+
+				return filled_polygon_type(polygon_mesh_drawable, render_order);
 			}
 		};
 

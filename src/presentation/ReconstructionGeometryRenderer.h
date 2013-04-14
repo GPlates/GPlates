@@ -221,10 +221,7 @@ namespace GPlatesPresentation
 		/**
 		 * Begins rendering into the specified @a rendered_geometry_layer.
 		 *
-		 * This must be called before any rendering including visiting any reconstruction geometries.
-		 *
-		 * Internally creates a rendered geometries spatial partition that all rendered
-		 * geometries are added to.
+		 * This must be called before any calls to @a render.
 		 *
 		 * NOTE: @a begin_render and @a end_render calls *cannot* be nested.
 		 *
@@ -244,11 +241,7 @@ namespace GPlatesPresentation
 		 * Renders all created rendered geometries since the last call to @a begin_render
 		 * into the rendered geometry layer specified in @a begin_render.
 		 *
-		 * Rendering, including visiting any reconstruction geometries, should be done
-		 * between a @a begin_render / @a end_render pair.
-		 *
-		 * Internally transfers the rendered geometries spatial partition to the
-		 * rendered geometries layer specified in @a begin_render.
+		 * All calls to @a render should be done between a @a begin_render / @a end_render pair.
 		 *
 		 * NOTE: Multiple @a begin_render / @a end_render pairs to the *same*
 		 * rendered geometry layer will accumulate rendered geometries as expected.
@@ -262,8 +255,7 @@ namespace GPlatesPresentation
 
 
 		/**
-		 * Creates rendered geometries from reconstruction geometries (a derived type) and
-		 * adds them to an internal spatial partition of rendered geometries.
+		 * Creates rendered geometry(s) from the specified reconstruction geometry (a derived type).
 		 *
 		 * NOTE: Only those rendered geometries that represent the *geometry* of the reconstruction
 		 * geometry are added to the quad trees of the spatial partition (of the rendered geometry layer).
@@ -279,9 +271,10 @@ namespace GPlatesPresentation
 		template <class ReconstructionGeometryDerivedType>
 		void
 		render(
-				const GPlatesMaths::CubeQuadTreePartition<
-						GPlatesUtils::non_null_intrusive_ptr<ReconstructionGeometryDerivedType>
-								> &reconstruction_geometries_spatial_partition);
+				const GPlatesUtils::non_null_intrusive_ptr<ReconstructionGeometryDerivedType> &reconstruction_geometry,
+				boost::optional<const GPlatesMaths::CubeQuadTreeLocation &> spatial_partition_location = boost::none);
+
+	private:
 
 		//
 		// The following methods are for visiting derived @a ReconstructionGeometry objects.
@@ -344,15 +337,9 @@ namespace GPlatesPresentation
 				const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crr);
 
 	private:
+
 		/**
 		 * The default depth of the rendered geometries spatial partition (the quad trees in each cube face).
-		 *
-		 * NOTE: This is actually unnecessary because we always build the spatial partition by
-		 * mirroring a reconstruction geometries spatial partition (or we add to the root of
-		 * the spatial partition).
-		 * However we'll keep a default reasonable depth just in case this changes - for now
-		 * it won't have any effect on the speed, memory usage or functioning of the rendered
-		 * geometries spatial partition.
 		 */
 		static const unsigned int DEFAULT_SPATIAL_PARTITION_DEPTH = 7;
 
@@ -369,66 +356,12 @@ namespace GPlatesPresentation
 		boost::optional<GPlatesViewOperations::RenderedGeometryLayer &> d_rendered_geometry_layer;
 
 		/**
-		 * All rendered geometries are added to this spatial partition.
+		 * Location in the rendered geometries spatial partition to add rendered geometries to.
 		 *
-		 * Those rendered geometries that have no spatial information are simply added to the root
-		 * of the spatial partition (which effectively treats them like a linear sequence).
-		 *
-		 * This spatial partition is only initialised inside a @a begin_render / @a end_render pair.
+		 * It is only valid during @a render.
 		 */
-		boost::optional<rendered_geometries_spatial_partition_type::non_null_ptr_type>
-				d_rendered_geometries_spatial_partition;
-
-		/**
-		 * Optional destination in the rendered geometries spatial partition to
-		 * add rendered geometries to.
-		 *
-		 * If it's boost::none then rendered geometries are added to the root of the spatial partition.
-		 * This is the default when visiting reconstruction geometries that are not in
-		 * a reconstruction geometries spatial partition.
-		 */
-		boost::optional<rendered_geometries_spatial_partition_type::node_reference_type>
-				d_rendered_geometries_spatial_partition_node;
-
-
-		/**
-		 * Converts a @a ReconstructionGeometry object, from a spatial partition, into
-		 * rendered geometries and adds them to the root of the rendered geometries spatial partition.
-		 *
-		 * This is the equivalent of just visiting a reconstruction geometry directly
-		 * (ie, where the reconstruction geometry is not in a spatial partition).
-		 */
-		template <class ReconstructionGeometryDerivedType>
-		void
-		render_to_spatial_partition_root(
-				const GPlatesUtils::non_null_intrusive_ptr<ReconstructionGeometryDerivedType> &reconstruction_geometry)
-		{
-			// NOTE: We need full visitor dispatch because some derived types derive from
-			// other derived types (eg, flowlines derive from RFG).
-			reconstruction_geometry->accept_visitor(*this);
-		}
-
-
-		/**
-		 * Convert a @a ReconstructionGeometry object, from a spatial partition, into
-		 * rendered geometries and adds them to the rendered geometries spatial partition.
-		 */
-		template <class ReconstructionGeometryDerivedType>
-		void
-		render_to_spatial_partition_quad_tree_node(
-				const GPlatesUtils::non_null_intrusive_ptr<ReconstructionGeometryDerivedType> &reconstruction_geometry,
-				rendered_geometries_spatial_partition_type::node_reference_type
-						rendered_geometries_spatial_partition_node)
-		{
-			// Specify the destination in the rendered geometries spatial partition before visiting.
-			d_rendered_geometries_spatial_partition_node = rendered_geometries_spatial_partition_node;
-
-			// NOTE: We need full visitor dispatch because some derived types derive from
-			// other derived types (eg, flowlines derive from RFG).
-			reconstruction_geometry->accept_visitor(*this);
-
-			d_rendered_geometries_spatial_partition_node = boost::none;
-		}
+		boost::optional<const rendered_geometries_spatial_partition_type::location_type &>
+				d_rendered_geometries_spatial_partition_location;
 
 
 		/**
@@ -439,9 +372,9 @@ namespace GPlatesPresentation
 		render(
 				const GPlatesViewOperations::RenderedGeometry &rendered_geometry)
 		{
-			// Ignore the destination node in the spatial partition and
+			// Ignore the location in the rendered geometry layer's spatial partition and
 			// just add to the root of the spatial partition.
-			d_rendered_geometries_spatial_partition.get()->add_unpartitioned(rendered_geometry);
+			d_rendered_geometry_layer->add_rendered_geometry(rendered_geometry);
 		}
 
 
@@ -450,7 +383,7 @@ namespace GPlatesPresentation
 		 * in the @a ReconstructionGeometry being visited - for example, for RFGs this is
 		 * the geometry returned by 'ReconstructedFeatureGeometry::reconstructed_geometry()'.
 		 *
-		 * Internally if a destination node in the rendered geometries spatial partition has
+		 * Internally if a destination location in the rendered geometries spatial partition has
 		 * been set up then the rendered geometry is added to that, otherwise it is added
 		 * to the root of the spatial partition.
 		 *
@@ -461,16 +394,16 @@ namespace GPlatesPresentation
 		render_reconstruction_geometry_on_sphere(
 				const GPlatesViewOperations::RenderedGeometry &rendered_geometry)
 		{
-			// If there's a destination node in the spatial partition then add to that.
-			if (d_rendered_geometries_spatial_partition_node)
+			// If a spatial partition location has been specified then use it.
+			if (d_rendered_geometries_spatial_partition_location)
 			{
-				d_rendered_geometries_spatial_partition.get()->add(
+				d_rendered_geometry_layer->add_rendered_geometry(
 						rendered_geometry,
-						d_rendered_geometries_spatial_partition_node.get());
+						d_rendered_geometries_spatial_partition_location.get());
 			}
-			else // otherwise just add to the root of the spatial partition...
+			else
 			{
-				d_rendered_geometries_spatial_partition.get()->add_unpartitioned(rendered_geometry);
+				d_rendered_geometry_layer->add_rendered_geometry(rendered_geometry);
 			}
 		}
 
@@ -495,30 +428,21 @@ namespace GPlatesPresentation
 	template <class ReconstructionGeometryDerivedType>
 	void
 	ReconstructionGeometryRenderer::render(
-			const GPlatesMaths::CubeQuadTreePartition<
-					GPlatesUtils::non_null_intrusive_ptr<ReconstructionGeometryDerivedType>
-							> &reconstruction_geometries_spatial_partition)
+			const GPlatesUtils::non_null_intrusive_ptr<ReconstructionGeometryDerivedType> &reconstruction_geometry,
+			boost::optional<const GPlatesMaths::CubeQuadTreeLocation &> spatial_partition_location)
 	{
 		// Must be between 'begin_render' and 'end_render'.
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				d_rendered_geometries_spatial_partition,
+				d_rendered_geometry_layer,
 				GPLATES_ASSERTION_SOURCE);
 
-		// For each reconstruction geometry in the spatial partition generate a rendered geometry
-		// in the rendered geometries spatial partition using methods
-		// 'render_to_spatial_partition_root' and 'render_to_spatial_partition_quad_tree_node'
-		// to do the transformations.
-		GPlatesMaths::CubeQuadTreePartitionUtils::mirror(
-				*d_rendered_geometries_spatial_partition.get(),
-				reconstruction_geometries_spatial_partition,
-				boost::bind(
-						&ReconstructionGeometryRenderer::render_to_spatial_partition_root<ReconstructionGeometryDerivedType>,
-						this,
-						_2),
-				boost::bind(
-						&ReconstructionGeometryRenderer::render_to_spatial_partition_quad_tree_node<ReconstructionGeometryDerivedType>,
-						this,
-						_3, _2));
+		d_rendered_geometries_spatial_partition_location = spatial_partition_location;
+
+		// NOTE: We need full visitor dispatch because some derived types derive from
+		// other derived types (eg, flowlines derive from RFG).
+		reconstruction_geometry->accept_visitor(*this);
+
+		d_rendered_geometries_spatial_partition_location = boost::none;
 	}
 }
 

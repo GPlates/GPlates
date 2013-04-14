@@ -37,6 +37,7 @@
 
 #include "RenderedGeometry.h"
 
+#include "maths/CubeQuadTreeLocation.h"
 #include "maths/MathsFwd.h"
 
 
@@ -67,8 +68,27 @@ namespace GPlatesViewOperations
 		//! Typedef for pointer to rendered geometry layer implementation.
 		typedef boost::intrusive_ptr<RenderedGeometryLayerImpl> rendered_geometry_layer_impl_ptr_type;
 
+
+		/**
+		 * Rendered geometries stored in a spatial partition are sorted spatially rather than by
+		 * render (draw) order - so this structure associated each rendered geometry with its render order.
+		 */
+		struct PartitionedRenderedGeometry
+		{
+			PartitionedRenderedGeometry(
+					const RenderedGeometry &rendered_geometry_,
+					rendered_geometry_index_type render_order_) :
+				rendered_geometry(rendered_geometry_),
+				render_order(render_order_)
+			{  }
+
+			RenderedGeometry rendered_geometry;
+			rendered_geometry_index_type render_order;
+		};
+
 		//! Typedef for a spatial partition of rendered geometries.
-		typedef GPlatesMaths::CubeQuadTreePartition<RenderedGeometry> rendered_geometries_spatial_partition_type;
+		typedef GPlatesMaths::CubeQuadTreePartition<PartitionedRenderedGeometry>
+				rendered_geometries_spatial_partition_type;
 
 
 		/**
@@ -182,8 +202,10 @@ namespace GPlatesViewOperations
 
 		/**
 		 * Sets the viewport zoom factor.
+		 *
 		 * Note: this does nothing unless 'this' @a RenderedGeometryLayer
-		 * was created using the zoom-dependent version of constructor.
+		 * was created using the zoom-dependent version of constructor, or
+		 * @a set_ratio_zoom_dependent_bin_dimension_to_globe_radius was called with a non-zero value.
 		 */
 		void
 		set_viewport_zoom_factor(
@@ -214,11 +236,14 @@ namespace GPlatesViewOperations
 		 * Returns the 'rendered_geom_index'th rendered geometry added via
 		 * @a add_rendered_geometry.
 		 *
-		 * NOTE: Using @a add_rendered_geometries will break this guarantee.
-		 *
-		 * NOTE: Once/if @a add_rendered_geometries is called after @a clear_rendered_geometries
-		 * then calls to this method, interleaved with adding more rendered geometries, will
-		 * cause this method to be slow.
+		 * The only exception to the ordering is when this layer is acting as a zoom-dependent
+		 * rendered geometry layer *and* there's a mixture of zoom-dependent rendered geometries
+		 * (currently points and arrows) and zoom-independent rendered geometries (currently
+		 * multipoints, polylines and polygons). In this case the zoom-independent rendered geometries
+		 * are ordered before the zoom-independent rendered geometries. And while the zoom-independent
+		 * rendered geometries retain their ordering relative to each other, the zoom-dependent
+		 * rendered geometries do not (since some rendered geometries can be rejected when they are
+		 * added due to the fact that there can only be one per surface area bin).
 		 */
 		RenderedGeometry
 		get_rendered_geometry(
@@ -226,18 +251,19 @@ namespace GPlatesViewOperations
 
 
 		/**
-		 * Returns the rendered geometries in a spatial partition - however
-		 * @a add_rendered_geometries must have been called at least once.
+		 * Returns the rendered geometries in a spatial partition.
 		 *
 		 * This is an alternative way to traverse the rendered geometries -
 		 * an alternative to @a get_rendered_geometry or iterating over the range
 		 * @a rendered_geometry_begin to @a rendered_geometry_end.
 		 *
-		 * Note that boost::none is returned if the implementation behind this
-		 * rendered geometry layer is zoom-dependent or if @a add_rendered_geometries
-		 * was never called after @a clear_rendered_geometries.
+		 * NOTE: The returned spatial partitioned could be modified if rendered geometries are
+		 * subsequently cleared or added.
+		 *
+		 * Note that if this layer is acting as a zoom-dependent rendered layer then some rendered
+		 * geometries will exist in the root of the partition (ie, less efficient partitioning).
 		 */
-		boost::optional<const rendered_geometries_spatial_partition_type &>
+		GPlatesUtils::non_null_intrusive_ptr<const rendered_geometries_spatial_partition_type>
 		get_rendered_geometries() const;
 
 
@@ -266,35 +292,16 @@ namespace GPlatesViewOperations
 		/**
 		 * Adds a rendered geometry to the list.
 		 *
-		 * The order added will be the order returned by @a get_rendered_geometry, or by
-		 * the iteration range @a rendered_geometry_begin and @a rendered_geometry_end,
-		 * *only* if @a clear_rendered_geometries is called after a call to
-		 * @a add_rendered_geometries and before this call.
-		 * In other words mixing @a add_rendered_geometry and @a add_rendered_geometries
-		 * in the same group of rendered geometries will cause undefined iteration order.
+		 * The order added will be the same order returned by @a get_rendered_geometry, or by
+		 * the iteration range @a rendered_geometry_begin and @a rendered_geometry_end.
+		 *
+		 * Specify @a cube_quad_tree_location if you the rendered geometry has been partitioned
+		 * into a cube quad tree spatial partition.
 		 */
 		void
 		add_rendered_geometry(
-				RenderedGeometry);
-
-
-		/**
-		 * Adds rendered geometries and passes ownership of the spatial partition into the layer.
-		 *
-		 * If the implementation behind this layer is zoom-independent then the spatial partition
-		 * is used as is, otherwise the spatial partition is simply traversed to get the
-		 * rendered geometries and then discarded.
-		 *
-		 * NOTE: Calling this will not guarantee that the order of rendered geometries added
-		 * will be the same as the order returned by @a get_rendered_geometry.
-		 *
-		 * NOTE: Caller should ideally give up ownership of the spatial partition or at least
-		 * not modify it after this call.
-		 */
-		void
-		add_rendered_geometries(
-				const GPlatesGlobal::PointerTraits<rendered_geometries_spatial_partition_type>::non_null_ptr_type &
-						rendered_geometries_spatial_partition);
+				RenderedGeometry,
+				boost::optional<const GPlatesMaths::CubeQuadTreeLocation &> cube_quad_tree_location = boost::none);
 
 
 		void

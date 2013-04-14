@@ -84,6 +84,16 @@ namespace GPlatesUtils
 
 
 		/**
+		 * Returns true if there are no sampled elements.
+		 */
+		bool
+		empty() const
+		{
+			return get_num_sampled_elements() == 0;
+		}
+
+
+		/**
 		 * Returns the number of sampled elements.
 		 *
 		 * There is only one sampled element per lat/lon area bin
