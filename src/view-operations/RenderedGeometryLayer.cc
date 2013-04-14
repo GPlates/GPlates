@@ -552,10 +552,19 @@ namespace GPlatesViewOperations
 					float ratio_zoom_dependent_bin_dimension_to_globe_radius,
 					const double &viewport_zoom_factor)
 			{
-				const double sample_spacing_degrees =
+				double sample_spacing_degrees =
 						ratio_zoom_dependent_bin_dimension_to_globe_radius /
 						viewport_zoom_factor *
 						(180.0 / GPlatesMaths::PI);
+
+				// Clamp sample spacing to a minimum value otherwise we can run out of memory
+				// due to a large number of sample bins - this is particularly noticeable when
+				// zooming in to very high levels.
+				static const double MIN_SAMPLE_SPACING_DEGREES = 0.25;
+				if (sample_spacing_degrees < MIN_SAMPLE_SPACING_DEGREES)
+				{
+					sample_spacing_degrees = MIN_SAMPLE_SPACING_DEGREES;
+				}
 
 				return sample_spacing_degrees;
 			}
