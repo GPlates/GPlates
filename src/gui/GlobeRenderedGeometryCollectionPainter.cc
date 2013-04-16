@@ -33,6 +33,7 @@
 
 #include "GlobeRenderedGeometryLayerPainter.h"
 
+#include "opengl/GLScalarField3D.h"
 #include "opengl/GLRenderer.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
@@ -46,21 +47,24 @@ namespace GPlatesGui
 	{
 		/**
 		 * Visits a @a RenderedGeometryCollection and determines if any of its rendered layers contain
-		 * sub-surface geometries.
+		 * sub-surface geometries that can be rendered.
 		 */
-		class HasSubSurfaceLayers :
+		class HasRenderableSubSurfaceLayers :
 				public GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<>
 		{
 		public:
 
-			HasSubSurfaceLayers() :
-				d_has_sub_surface_layers(false)
+			explicit
+			HasRenderableSubSurfaceLayers(
+					GPlatesOpenGL::GLRenderer &renderer) :
+				d_renderer(renderer),
+				d_has_renderable_sub_surface_layers(false)
 			{  }
 
 			bool
-			has_sub_surface_layers() const
+			has_renderable_sub_surface_layers() const
 			{
-				return d_has_sub_surface_layers;
+				return d_has_renderable_sub_surface_layers;
 			}
 
 			virtual
@@ -69,7 +73,7 @@ namespace GPlatesGui
 					const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer)
 			{
 				// Only visit if layer is active and we haven't found a sub-surface geometry yet.
-				return rendered_geometry_layer.is_active() && !d_has_sub_surface_layers;
+				return rendered_geometry_layer.is_active() && !d_has_renderable_sub_surface_layers;
 			}
 
 			virtual
@@ -77,12 +81,17 @@ namespace GPlatesGui
 			visit_resolved_scalar_field_3d(
 					const GPlatesViewOperations::RenderedResolvedScalarField3D &rrsf)
 			{
-				d_has_sub_surface_layers = true;
+				// See if we can render a 3D scalar field.
+				if (GPlatesOpenGL::GLScalarField3D::is_supported(d_renderer))
+				{
+					d_has_renderable_sub_surface_layers = true;
+				}
 			}
 
 		private:
 
-			bool d_has_sub_surface_layers;
+			GPlatesOpenGL::GLRenderer &d_renderer;
+			bool d_has_renderable_sub_surface_layers;
 		};
 	}
 }
@@ -116,12 +125,13 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::initialise(
 
 
 bool
-GPlatesGui::GlobeRenderedGeometryCollectionPainter::has_sub_surface_geometries() const
+GPlatesGui::GlobeRenderedGeometryCollectionPainter::has_renderable_sub_surface_geometries(
+		GPlatesOpenGL::GLRenderer &renderer) const
 {
-	HasSubSurfaceLayers visitor;
+	HasRenderableSubSurfaceLayers visitor(renderer);
 	d_rendered_geometry_collection.accept_visitor(visitor);
 
-	return visitor.has_sub_surface_layers();
+	return visitor.has_renderable_sub_surface_layers();
 }
 
 

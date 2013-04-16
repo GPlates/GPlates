@@ -90,12 +90,16 @@ namespace GPlatesGui
 				GPlatesOpenGL::GLRenderer &renderer);
 
 		/**
-		 * Returns true if any rendered layer has sub-surface geometries.
+		 * Returns true if any rendered layer has sub-surface geometries that can be rendered.
+		 *
+		 * It's possible that a sub-surface geometry cannot be rendered, for example, if
+		 * the runtime system does not support OpenGL 3 (for 3D scalar fields).
 		 *
 		 * These are painted using @a paint_sub_surface.
 		 */
 		bool
-		has_sub_surface_geometries() const;
+		has_renderable_sub_surface_geometries(
+				GPlatesOpenGL::GLRenderer &renderer) const;
 
 		/**
 		 * Draw the rendered geometries on the surface of the globe.

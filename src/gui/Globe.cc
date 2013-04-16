@@ -179,7 +179,8 @@ GPlatesGui::Globe::paint(
 			!GPlatesMaths::are_almost_exactly_equal(original_background_colour.alpha(), 1.0);
 
 	// See if there's any sub-surface geometries (below globe's surface) to render.
-	const bool render_sub_surface_geometries = d_rendered_geom_collection_painter.has_sub_surface_geometries();
+	const bool render_sub_surface_geometries =
+			d_rendered_geom_collection_painter.has_renderable_sub_surface_geometries(renderer);
 	// When rendering sub-surface geometries the sphere needs to be transparent so that the
 	// rear of the globe is visible (to provide visual clues when rendering sub-surface geometries).
 	if (render_sub_surface_geometries)

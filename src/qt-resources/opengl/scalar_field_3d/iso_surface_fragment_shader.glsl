@@ -389,8 +389,8 @@ get_blended_crossing_colour(
 	}
 
 	// Depth to colour mapping
-	// Mapping: [radius=0,radius=1] -> [red,yellow] for window surface isovalue + deviation
-	//			[radius=0,radius=1] -> [blue,cyan] for window surface isovalue - deviation
+	// Mapping: [radius=0,radius=1] -> [blue,cyan] for window surface isovalue + deviation
+	//			[radius=0,radius=1] -> [red,yellow] for window surface isovalue - deviation
 	//			Isosurface is white.
 	if (colour_mode_depth)
 	{
@@ -405,7 +405,7 @@ get_blended_crossing_colour(
 			// Colour order of surfaces in one deviation window zone in ray direction
 			// MacOS (Snow Leopard) GLSL compiler crashes if this is mat3x4 so
 			// just adding an unused column to keep compiler happy.
-			colour_matrix = mat4(vec4(1,depth_relative,0,alpha),vec4(1,1,1,1),vec4(0,depth_relative,1,alpha),vec4(1)); 
+			colour_matrix = mat4(vec4(0,depth_relative,1,alpha),vec4(1,1,1,1),vec4(1,depth_relative,0,alpha),vec4(1)); 
 			
 			// Flip order of crossing level IDs
 			crossing_level_back = 6-crossing_level_back;
@@ -418,7 +418,7 @@ get_blended_crossing_colour(
 			// Colour order of surfaces in one deviation window zone in ray direction
 			// MacOS (Snow Leopard) GLSL compiler crashes if this is mat3x4 so
 			// just adding an unused column to keep compiler happy.
-			colour_matrix = mat4(vec4(0,depth_relative,1,alpha),vec4(1,1,1,1),vec4(1,depth_relative,0,alpha),vec4(1)); 
+			colour_matrix = mat4(vec4(1,depth_relative,0,alpha),vec4(1,1,1,1),vec4(0,depth_relative,1,alpha),vec4(1)); 
 		}
 
 		// Blending of colours of surfaces in the deviation window zones for isovalue1 and isovalue2
@@ -515,9 +515,9 @@ get_volume_colour(
 			colour_volume = look_up_table_1D(
 								colour_palette_sampler,
 								colour_palette_resolution,
-                        -min_max_gradient_magnitude.y,
-                        min_max_gradient_magnitude.y,
-                        length(field_gradient));
+								-min_max_gradient_magnitude.y,
+								min_max_gradient_magnitude.y,
+								length(field_gradient));
 		}
 		else
 		{
@@ -526,20 +526,23 @@ get_volume_colour(
 			colour_volume = look_up_table_1D(
 								colour_palette_sampler,
 								colour_palette_resolution,
-                        -min_max_gradient_magnitude.y,
-                        min_max_gradient_magnitude.y,
-                        -length(field_gradient));
+								-min_max_gradient_magnitude.y,
+								min_max_gradient_magnitude.y,
+								-length(field_gradient));
 		}
 
 		return colour_volume;
 	}
 
 	// Depth to colour mapping
-	// Mapping: [radius=0,radius=1] -> [red,yellow] for zone [isovalue,isovalue + deviation]
-	//			[radius=0,radius=1] -> [blue,cyan] for zone [isovalue - deviation,isovalue]
+	// Mapping: [radius=0,radius=1] -> [blue,cyan] for zone [isovalue,isovalue + deviation]
+	//			[radius=0,radius=1] -> [red,yellow] for zone [isovalue - deviation,isovalue]
 	if (colour_mode_depth)
 	{
-		colour_volume.rgb = vec3(int(crossing_level_front_mod==2),(ray_sample_depth_radius-render_min_max_depth_radius_restriction.x)/(render_min_max_depth_radius_restriction.y-render_min_max_depth_radius_restriction.x),int(crossing_level_front_mod==1));
+		colour_volume.rgb = vec3(
+			int(crossing_level_front_mod==1),
+			(ray_sample_depth_radius-render_min_max_depth_radius_restriction.x)/(render_min_max_depth_radius_restriction.y-render_min_max_depth_radius_restriction.x),
+			int(crossing_level_front_mod==2));
 	
 		return colour_volume;
 	}
@@ -578,9 +581,9 @@ get_surface_entry_colour(
 			colour_surface = look_up_table_1D(
 								colour_palette_sampler,
 								colour_palette_resolution,
-                        -min_max_gradient_magnitude.y,
-                        min_max_gradient_magnitude.y,
-                        length(field_gradient));
+								-min_max_gradient_magnitude.y,
+								min_max_gradient_magnitude.y,
+								length(field_gradient));
 		}
 		else
 		{
@@ -589,27 +592,27 @@ get_surface_entry_colour(
 			colour_surface = look_up_table_1D(
 								colour_palette_sampler,
 								colour_palette_resolution,
-                        -min_max_gradient_magnitude.y,
-                        min_max_gradient_magnitude.y,
-                        -length(field_gradient));
+								-min_max_gradient_magnitude.y,
+								min_max_gradient_magnitude.y,
+								-length(field_gradient));
 		}
 
 		return colour_surface;
 	}
 	
 	// Depth to colour mapping
-	// Mapping: (field_scalar-iso_value)/deviation -> [-1,1] -> [cyan -> green -> yellow]
+	// Mapping: (field_scalar-iso_value)/deviation -> [-1,1] -> [yellow -> green -> cyan]
 	if (colour_mode_depth)
 	{
 		float deviation_relative = (field_scalar-iso_value)/deviation;
 
 		if (deviation_relative < 0)
-		{	
-			colour_surface = vec4(0,1,-deviation_relative,0);
+		{
+			colour_surface = vec4(-deviation_relative,1,0,0);
 		}
 		else
 		{
-			colour_surface = vec4(deviation_relative,1,0,0);
+			colour_surface = vec4(0,1,deviation_relative,0);
 		}
 		
 		return colour_surface;
@@ -650,9 +653,9 @@ get_wall_entry_colour(
 			colour_wall = look_up_table_1D(
 								colour_palette_sampler,
 								colour_palette_resolution,
-                        -min_max_gradient_magnitude.y,
-                        min_max_gradient_magnitude.y,
-                        length(field_gradient));
+								-min_max_gradient_magnitude.y,
+								min_max_gradient_magnitude.y,
+								length(field_gradient));
 		}
 		else
 		{
@@ -661,9 +664,9 @@ get_wall_entry_colour(
 			colour_wall = look_up_table_1D(
 								colour_palette_sampler,
 								colour_palette_resolution,
-                        -min_max_gradient_magnitude.y,
-                        min_max_gradient_magnitude.y,
-                        -length(field_gradient));
+								-min_max_gradient_magnitude.y,
+								min_max_gradient_magnitude.y,
+								-length(field_gradient));
 		}
 
 		return colour_wall;
@@ -671,7 +674,7 @@ get_wall_entry_colour(
 	
 	// Depth to colour mapping
 	// Mapping: (field_scalar-iso_value)/deviation -> [-1,1] -> COLOUR_RANGE
-	// Mapping COLOUR_RANGE: depth_relative -> [0,1] -> [[red -> green -> blue],[cyan -> green -> yellow]]
+	// Mapping COLOUR_RANGE: depth_relative -> [0,1] -> [[red -> green -> blue],[yellow -> green -> cyan]]
 	if (colour_mode_depth)
 	{
 		float deviation_relative = (field_scalar-iso_value)/deviation;
@@ -682,22 +685,22 @@ get_wall_entry_colour(
 		{
 			if (colour_index <= 0.25)
 			{
-				colour_wall = vec4(0,colour_index*4,1,0);
+				colour_wall = vec4(1,colour_index*4,0,0);
 			}
 			else
 			{
-				colour_wall = vec4(0,1,2-colour_index*4,0);
+				colour_wall = vec4(2-colour_index*4,1,0,0);
 			}
 		}
 		else
 		{
 			if (colour_index <= 0.75)
 			{
-				colour_wall = vec4(colour_index*4-2,1,0,0);
+				colour_wall = vec4(0,1,colour_index*4-2,0);
 			}
 			else
 			{
-				colour_wall = vec4(1,4-colour_index*4,0,0);
+				colour_wall = vec4(0,4-colour_index*4,1,0);
 			}
 		}
 
@@ -812,7 +815,7 @@ raycasting(
 	 // Start distance between sampling point and ray origin.
 	float min_lambda = outer_depth_sphere_interval.from;
 
-   
+
 	// This branches on a uniform variable and hence is efficient since all pixels follow same path.
 	if (read_from_depth_texture)
 	{
