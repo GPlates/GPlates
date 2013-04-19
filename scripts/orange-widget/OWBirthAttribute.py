@@ -31,6 +31,9 @@ class OWBirthAttribute(OWWidget):
         self.controlArea.layout().addWidget(self.ui)
         self.resize(250,120)
         
+        self.RETRY_NUM = 5
+        self.TIMEOUT = 30
+        
         QtCore.QObject.connect(
             self.ui.commit_button,
             QtCore.SIGNAL('clicked()'),
@@ -41,7 +44,7 @@ class OWBirthAttribute(OWWidget):
             self.refresh)
       
         try:
-            c = gplates.Client('localhost', 9777)
+            c = gplates.Client('localhost', 9777, self.TIMEOUT)
             self.coreg_layer = c.get_coregistration_layer()
       
             associations = self.coreg_layer.get_coreg_associations()
@@ -70,22 +73,32 @@ class OWBirthAttribute(OWWidget):
         birth_time_vec=[]
         seeds = self.coreg_layer.get_coreg_seeds()
         
+        pb = OWGUI.ProgressBar(self,iterations=len(seeds))
         for seed in seeds:
-            table = []
-            bt_time = self.coreg_layer.get_begin_time(seed)
-            birth_time_vec.append(str(bt_time))
-            if bt_time == float('inf'):
-                bt_time = 9999;
+            pb.advance()
+            count=0
+            while(count < self.RETRY_NUM):
+                try:
+                    table = []
+                    bt_time = self.coreg_layer.get_begin_time(seed)
+                    birth_time_vec.append(str(bt_time))
+                    if bt_time == float('inf'):
+                        bt_time, e_time, inc = self.coreg_layer.get_time_setting()
 
-            if str(bt_time)=='nan':
-                vec.append('NaN')
-                continue
-            
-            if bt_time not in cache:        
-                table = self.coreg_layer.get_coreg_data(bt_time)
-                cache[bt_time]=table
-            else:
-                table = cache[bt_time]
+                    if str(bt_time)=='nan':
+                        vec.append('NaN')
+                        continue
+                    
+                    if bt_time not in cache:        
+                        table = self.coreg_layer.get_coreg_data(bt_time)
+                        cache[bt_time]=table
+                    else:
+                        table = cache[bt_time]
+                    break
+                except Exception, e:
+                    count +=1
+                    print 'Failed to get coregistration data for seed: ' + seed
+                    print 'retrying... ' + str(count)
 
             for row in table:
                 if row[0] == seed:
@@ -128,7 +141,7 @@ class OWBirthAttribute(OWWidget):
     def refresh(self):
         if not self.coreg_layer:
             try:
-                c = gplates.Client('localhost', 9777)
+                c = gplates.Client('localhost', 9777, self.TIMEOUT)
                 self.coreg_layer = c.get_coregistration_layer()
             except Exception, e:
                 print e
