@@ -96,7 +96,7 @@ namespace GPlatesOpenGL
 			{
 				SHOULD_HAVE_NO_ACTIVE_QPAINTER,
 				SHOULD_HAVE_ACTIVE_QPAINTER,
-				CANNOT_ENTER_QPAINTER_BLOCK_WITH_A_BOUND_FRAME_BUFFER_OBJECT,
+				FRAME_BUFFER_DIMENSIONS_DO_NOT_MATCH_QPAINTER_DEVICE_TARGETING_MAIN_FRAME_BUFFER,
 				SHOULD_HAVE_NO_STATE_BLOCKS,
 				SHOULD_HAVE_A_STATE_BLOCK,
 				SHOULD_HAVE_NO_RENDER_TARGET_BLOCKS,
@@ -332,7 +332,12 @@ namespace GPlatesOpenGL
 		 * that it's device dimensions have changed (to the frame buffer object dimensions) so that
 		 * it renders properly into the frame buffer object.
 		 *
-		 * NOTE: The OpenGL state is set to the default OpenGL state before resuming the QPainter.
+		 * NOTE: The OpenGL state is set to the default OpenGL state, before resuming the QPainter,
+		 * with the exception of the currently bound frame buffer object, if any. If a frame buffer
+		 * object is currently bound then it will also be bound when the QPainter resumes - this
+		 * enables QPainter text rendering to be directed to an off-screen render target - in this
+		 * case (if the QPainter targets the main frame buffer - see @a rendering_to_context_framebuffer)
+		 * then the frame buffer object dimensions must match those of the main framebuffer.
 		 *
 		 * @throws @a GLRendererAPIError if @a begin_render not yet called or if a frame buffer object
 		 * is currently bound.
@@ -1564,7 +1569,7 @@ namespace GPlatesOpenGL
 		/**
 		 * The dimensions of the main frame buffer.
 		 */
-		std::pair<unsigned int/*width*/, unsigned int/*height*/> d_frame_buffer_dimensions;
+		std::pair<unsigned int/*width*/, unsigned int/*height*/> d_main_frame_buffer_dimensions;
 
 		/**
 		 * The viewport of the window currently attached to the OpenGL context.

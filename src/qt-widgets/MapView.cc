@@ -46,6 +46,8 @@
 
 #include "maths/InvalidLatLonException.h"
 
+#include "opengl/GLContextImpl.h"
+
 #include "presentation/ViewState.h"
 
 
@@ -117,11 +119,11 @@ GPlatesQtWidgets::MapView::MapView(
 	d_gl_context(d_gl_widget_ptr->isSharing() // Mirror the sharing of OpenGL context state (if sharing)...
 			? GPlatesOpenGL::GLContext::create(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
-							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*d_gl_widget_ptr)),
+							new GPlatesOpenGL::GLContextImpl::QGLWidgetImpl(*d_gl_widget_ptr)),
 					*share_gl_context)
 			: GPlatesOpenGL::GLContext::create(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
-							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*d_gl_widget_ptr)))),
+							new GPlatesOpenGL::GLContextImpl::QGLWidgetImpl(*d_gl_widget_ptr)))),
 	d_gl_visual_layers(
 			// Attempt to share OpenGL resources across contexts.
 			// This will depend on whether the two 'GLContext's share any state.

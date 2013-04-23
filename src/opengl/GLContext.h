@@ -35,7 +35,6 @@
 #include <boost/tuple/tuple_comparison.hpp>
 #include <opengl/OpenGL.h>
 #include <QGLFormat>
-#include <QGLWidget>
 
 #include "GLBuffer.h"
 #include "GLBufferObject.h"
@@ -100,61 +99,15 @@ namespace GPlatesOpenGL
 			const QGLFormat
 			get_qgl_format() const = 0;
 
-			//! The width of the window currently attached to the OpenGL context.
+			//! The width of the frame buffer currently attached to the OpenGL context.
 			virtual
 			unsigned int
-			get_window_width() const = 0;
+			get_width() const = 0;
 
-			//! The height of the window currently attached to the OpenGL context.
+			//! The height of the frame buffer currently attached to the OpenGL context.
 			virtual
 			unsigned int
-			get_window_height() const = 0;
-		};
-
-		/**
-		 * A derivation of @a Impl for QGLWidget.
-		 */
-		class QGLWidgetImpl :
-				public Impl
-		{
-		public:
-			explicit
-			QGLWidgetImpl(
-					QGLWidget &qgl_widget) :
-				d_qgl_widget(qgl_widget)
-			{  }
-
-			virtual
-			void
-			make_current()
-			{
-				d_qgl_widget.makeCurrent();
-			}
-
-			virtual
-			const QGLFormat
-			get_qgl_format() const
-			{
-				return d_qgl_widget.context()->format();
-			}
-
-			virtual
-			unsigned int
-			get_window_width() const
-			{
-				return d_qgl_widget.width();
-			}
-
-			virtual
-			unsigned int
-			get_window_height() const
-			{
-				return d_qgl_widget.height();
-			}
-
-		private:
-			QGLWidget &d_qgl_widget;
-			friend class GLContext;
+			get_height() const = 0;
 		};
 
 
@@ -696,7 +649,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the QGLFormat to use when creating a QGLWidget.
+		 * Returns the QGLFormat to use when creating a Qt OpenGL context (eg, QGLWidget).
 		 *
 		 * This sets various parameters required for OpenGL rendering in GPlates.
 		 * Such as specifying an alpha-channel.

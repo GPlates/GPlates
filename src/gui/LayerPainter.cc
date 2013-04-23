@@ -398,7 +398,7 @@ GPlatesGui::LayerPainter::paint_scalar_fields(
 				projection_matrix.gl_mult_matrix(renderer.gl_get_matrix(GL_PROJECTION));
 				renderer.gl_load_matrix(GL_PROJECTION, projection_matrix);
 
-				// Clear the main framebuffer (colour and depth) before rendering each scalar field.
+				// Clear the framebuffer (colour and depth) before rendering each scalar field.
 				// We also clear the stencil buffer in case it is used - also it's usually
 				// interleaved with depth so it's more efficient to clear both depth and stencil.
 				renderer.gl_clear_color();
@@ -487,7 +487,7 @@ GPlatesGui::LayerPainter::paint_rasters(
 				projection_matrix.gl_mult_matrix(renderer.gl_get_matrix(GL_PROJECTION));
 				renderer.gl_load_matrix(GL_PROJECTION, projection_matrix);
 
-				// Clear the main framebuffer (colour and depth) before rendering each raster.
+				// Clear the framebuffer (colour and depth) before rendering each raster.
 				// We also clear the stencil buffer in case it is used - also it's usually
 				// interleaved with depth so it's more efficient to clear both depth and stencil.
 				renderer.gl_clear_color();
@@ -864,7 +864,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::paint_filled_polygons(
 			projection_matrix.gl_mult_matrix(renderer.gl_get_matrix(GL_PROJECTION));
 			renderer.gl_load_matrix(GL_PROJECTION, projection_matrix);
 
-			// Clear the main framebuffer (colour and depth) before rendering the filled polygons.
+			// Clear the framebuffer (colour and depth) before rendering the filled polygons.
 			// We also clear the stencil buffer since it is used when filling polygons - also it's
 			// usually interleaved with depth so it's more efficient to clear both depth and stencil.
 			renderer.gl_clear_color();

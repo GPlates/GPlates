@@ -25,6 +25,7 @@ set(srcs
     GLCompiledDrawState.h
     GLContext.cc
     GLContext.h
+    GLContextImpl.h
     GLCubeMeshGenerator.cc
     GLCubeMeshGenerator.h
     GLCubeSubdivision.cc

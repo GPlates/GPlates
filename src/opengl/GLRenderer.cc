@@ -64,7 +64,7 @@ GPlatesOpenGL::GLRenderer::GLRenderer(
 		const GLContext::non_null_ptr_type &context,
 		const GLStateStore::shared_ptr_type &state_store) :
 	d_context(context),
-	d_frame_buffer_dimensions(0, 0),
+	d_main_frame_buffer_dimensions(0, 0),
 	d_state_store(state_store),
 	d_default_state(d_state_store->allocate_state()),
 	d_last_applied_state(d_state_store->allocate_state()),
@@ -88,7 +88,7 @@ GPlatesOpenGL::GLRenderer::begin_render(
 			GLRendererAPIError::SHOULD_HAVE_NO_RENDER_TARGET_BLOCKS);
 
 	// Record the main frame buffer dimensions.
-	d_frame_buffer_dimensions = std::make_pair(main_frame_buffer_width, main_frame_buffer_height);
+	d_main_frame_buffer_dimensions = std::make_pair(main_frame_buffer_width, main_frame_buffer_height);
 
 	// The viewport of the window currently attached to the OpenGL context.
 	d_default_viewport = GLViewport(0, 0, main_frame_buffer_width, main_frame_buffer_height);
@@ -204,7 +204,7 @@ GPlatesOpenGL::GLRenderer::end_render()
 	d_default_state->apply_state(get_capabilities(), *d_last_applied_state);
 
 	// Set main frame buffer dimensions to zero.
-	d_frame_buffer_dimensions = std::make_pair(0, 0);
+	d_main_frame_buffer_dimensions = std::make_pair(0, 0);
 
 	// End a rendering frame.
 	d_context->end_render();
@@ -270,7 +270,7 @@ GPlatesOpenGL::GLRenderer::get_current_frame_buffer_dimensions() const
 		return frame_buffer_object_dimensions.get();
 	}
 
-	return d_frame_buffer_dimensions;
+	return d_main_frame_buffer_dimensions;
 }
 
 
@@ -300,16 +300,30 @@ GPlatesOpenGL::GLRenderer::get_qpainter_device_dimensions() const
 			boost::numeric_cast<unsigned int>(qpaint_device->height()));
 }
 
+namespace
+{
+	boost::optional<GPlatesOpenGL::GLFrameBufferObject::shared_ptr_to_const_type> s_previous_frame_buffer_object;
+}
 
 boost::optional<QPainter &>
 GPlatesOpenGL::GLRenderer::begin_qpainter_block()
 {
 	if (d_qpainter_info)
 	{
-		GPlatesGlobal::Assert<GLRendererAPIError>(
-				!gl_get_bind_frame_buffer(),
-				GPLATES_ASSERTION_SOURCE,
-				GLRendererAPIError::CANNOT_ENTER_QPAINTER_BLOCK_WITH_A_BOUND_FRAME_BUFFER_OBJECT);
+		s_previous_frame_buffer_object = gl_get_bind_frame_buffer();
+
+		// If a frame buffer object is currently bound and the QPainter targets the main framebuffer
+		// then the frame buffer object dimensions must match those of the main frame buffer.
+		// This ensures that QPainter text rendering works properly (QPainter sets up text rendering
+		// based on the main frame buffer dimensions).
+		if (s_previous_frame_buffer_object &&
+			d_qpainter_info->paint_device_is_framebuffer)
+		{
+			GPlatesGlobal::Assert<GLRendererAPIError>(
+					d_main_frame_buffer_dimensions == get_current_frame_buffer_dimensions(),
+					GPLATES_ASSERTION_SOURCE,
+					GLRendererAPIError::FRAME_BUFFER_DIMENSIONS_DO_NOT_MATCH_QPAINTER_DEVICE_TARGETING_MAIN_FRAME_BUFFER);
+		}
 
 		// Reset to the default OpenGL state as that's what QPainter expects when it resumes painting
 		// (if it uses an OpenGL paint engine).
@@ -321,6 +335,12 @@ GPlatesOpenGL::GLRenderer::begin_qpainter_block()
 		apply_current_state_to_opengl();
 
 		resume_qpainter();
+
+		if (s_previous_frame_buffer_object)
+		{
+			gl_bind_frame_buffer(s_previous_frame_buffer_object.get());
+			apply_current_state_to_opengl();
+		}
 
 		return d_qpainter_info->qpainter;
 	}
@@ -334,6 +354,13 @@ GPlatesOpenGL::GLRenderer::end_qpainter_block()
 {
 	if (d_qpainter_info)
 	{
+		if (s_previous_frame_buffer_object)
+		{
+			gl_unbind_frame_buffer();
+			apply_current_state_to_opengl();
+			s_previous_frame_buffer_object = boost::none;
+		}
+
 		// Suspend the QPainter so we can start making calls directly to OpenGL without
 		// interfering with the QPainter's OpenGL state (if it uses an OpenGL paint engine).
 		suspend_qpainter();
@@ -2809,8 +2836,8 @@ GPlatesOpenGL::GLRenderer::GLRendererAPIError::write_message(
 	case SHOULD_HAVE_ACTIVE_QPAINTER:
 		os << "expected an active QPainter";
 		break;
-	case CANNOT_ENTER_QPAINTER_BLOCK_WITH_A_BOUND_FRAME_BUFFER_OBJECT:
-		os << "cannot enter a QPainter block when a frame buffer object is bound";
+	case FRAME_BUFFER_DIMENSIONS_DO_NOT_MATCH_QPAINTER_DEVICE_TARGETING_MAIN_FRAME_BUFFER:
+		os << "frame buffer dimensions must match QPainter device if device targets main frame buffer";
 		break;
 	case SHOULD_HAVE_NO_STATE_BLOCKS:
 		os << "expected no state blocks";

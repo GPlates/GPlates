@@ -29,9 +29,10 @@
 #include <QDebug>
 #include <QGLWidget>
 #include <QGraphicsView>
-#include <QPaintEngine>
 #include <QPaintDevice>
+#include <QPaintEngine>
 #include <QPainter>
+#include <QGLPixelBuffer>
 #include <opengl/OpenGL.h>
 
 #include "MapCanvas.h"
@@ -40,6 +41,7 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/GPlatesException.h"
+#include "global/PreconditionViolationError.h"
 
 #include "gui/Map.h"
 #include "gui/MapProjection.h"
@@ -47,11 +49,13 @@
 #include "gui/RenderSettings.h"
 
 #include "opengl/GLContext.h"
+#include "opengl/GLContextImpl.h"
 #include "opengl/GLImageUtils.h"
 #include "opengl/GLMatrix.h"
 #include "opengl/GLRenderer.h"
 #include "opengl/GLRenderTarget.h"
 #include "opengl/GLSaveRestoreFrameBuffer.h"
+#include "opengl/GLScreenRenderTarget.h"
 #include "opengl/GLTileRender.h"
 #include "opengl/GLViewport.h"
 
@@ -314,13 +318,48 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 		const QTransform &viewport_transform,
 		const QSize &image_size)
 {
-	// Make sure our OpenGL context is the currently active context.
-	d_gl_context->make_current();
+	// The image to render the scene into.
+	QImage image(image_size, QImage::Format_ARGB32);
+	if (image.isNull())
+	{
+		// Most likely a memory allocation failure - return the null image.
+		return QImage();
+	}
+
+	// Fill the image with transparent black in case there's an exception during rendering
+	// of one of the tiles and the image is incomplete.
+	image.fill(QColor(0,0,0,0).rgba());
+
+	//
+	// Rendering.
+	//
+
+	const QSize frame_buffer_dimensions(
+			map_canvas_paint_device->width(),
+			map_canvas_paint_device->height());
+
+	// The border is half the point size or line width, rounded up to nearest pixel.
+	// TODO: Use the actual maximum point size or line width to calculate this.
+	const unsigned int tile_border = 10;
+	// Set up for rendering the scene into tiles.
+	// The tile render target dimensions match the frame buffer dimensions.
+	GPlatesOpenGL::GLTileRender tile_render(
+			frame_buffer_dimensions.width()/*tile_render_target_width*/,
+			frame_buffer_dimensions.height()/*tile_render_target_height*/,
+			GPlatesOpenGL::GLViewport(
+					0,
+					0,
+					image_size.width(),
+					image_size.height())/*destination_viewport*/,
+			tile_border);
+
+	GPlatesOpenGL::GLContext::non_null_ptr_type render_context = d_gl_context;
+	render_context->make_current();
 
 	// Set up a QPainter to help us with OpenGL text rendering.
 	QPainter painter(map_canvas_paint_device);
 
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
+	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = render_context->create_renderer();
 
 	// Start a begin_render/end_render scope.
 	//
@@ -330,7 +369,78 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 	//
 	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
 	// This also sets the main frame buffer dimensions to the paint device dimensions.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, painter);
+	renderer->begin_render(painter);
+
+	// In case we need to preserve the main frame buffer (if not using frame buffer object or pbuffer).
+	// We never need to preserve the depth/stencil buffer though (they get cleared before every render).
+	GPlatesOpenGL::GLSaveRestoreFrameBuffer save_restore_main_framebuffer(
+			renderer->get_capabilities(),
+			tile_render.get_max_tile_render_target_width(),
+			tile_render.get_max_tile_render_target_height());
+
+	// Where possible, force drawing to an off-screen render target.
+	// It seems making the OpenGL context current is not enough to prevent Snow Leopard systems
+	// with ATI graphics from hanging/crashing - this appears to be due to modifying/accessing the
+	// main/default framebuffer (which is intimately tied to the windowing system).
+	// Using an off-screen render target appears to avoid this issue.
+	boost::optional<GPlatesOpenGL::GLScreenRenderTarget::shared_ptr_type> screen_render_target =
+			render_context->get_shared_state()->acquire_screen_render_target(
+					*renderer,
+					GL_RGBA8/*texture_internalformat*/,
+					true/*include_depth_buffer*/,
+					true/*include_stencil_buffer*/);
+
+	// Begin rendering to the off-screen target.
+	boost::optional<QGLPixelBuffer> qgl_pixel_buffer;
+	if (screen_render_target)
+	{
+		// Begin rendering to the screen render target.
+		//
+		// Set the off-screen render target to the size of the main framebuffer.
+		// This is because we use QPainter to render text and it sets itself up using the dimensions
+		// of the main framebuffer - if we change the dimensions then the text is rendered incorrectly.
+		screen_render_target.get()->begin_render(
+				*renderer,
+				frame_buffer_dimensions.width(),
+				frame_buffer_dimensions.height());
+	}
+	// If we can't get a screen render target (GL_EXT_framebuffer_object) then attempt to
+	// obtain a pbuffer off-screen OpenGL context. We normally use either a frame buffer object or
+	// the main frame buffer - however in this situation, as mentioned above, we need to avoid
+	// the main frame buffer if possible.
+	else if (QGLPixelBuffer::hasOpenGLPbuffers())
+	{
+		// Create a QGLPixelBuffer.
+		qgl_pixel_buffer = boost::in_place(
+				frame_buffer_dimensions.width(),
+				frame_buffer_dimensions.height(),
+				// Use the same format as the current rendering context...
+				render_context->get_qgl_format(),
+				// It's important to share textures, etc, with our regular OpenGL context...
+				map_canvas_paint_device/*shareWidget*/);
+
+		// Switch rendering contexts to the QGLPixelBuffer.
+		renderer->end_render();
+		render_context = GPlatesOpenGL::GLContext::create(
+				boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
+						new GPlatesOpenGL::GLContextImpl::QGLPixelBufferImpl(qgl_pixel_buffer.get())),
+				// Share textures, etc, with the current render context...
+				*render_context);
+		render_context->make_current();
+		renderer = render_context->create_renderer();
+		renderer->begin_render(painter);
+	}
+	else if (!map_canvas_paint_device->doubleBuffer())
+	{
+		// We only have a front buffer so we need to save and restore the main (colour)
+		// framebuffer in order not to disturb the display of the globe canvas painted widget.
+		save_restore_main_framebuffer.save(*renderer);
+	}
+	// ...else we have a double buffer main framebuffer and we are rendering to the back buffer.
+	// So the front buffer (which is being displayed) won't get disturbed. And when this
+	// widget paints itself it will clear and re-draw the back buffer and then swap it so
+	// it becomes the front buffer.
+	// So for these reasons we do not need to save and restore the main framebuffer with double-buffering.
 
 	// Get the model-view matrix from the 2D world transform.
 	GPlatesOpenGL::GLMatrix model_view_matrix;
@@ -351,58 +461,9 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 			image_size.width(),
 			image_size.height());
 
-	// The border is half the point size or line width, rounded up to nearest pixel.
-	// TODO: Use the actual maximum point size or line width to calculate this.
-	const unsigned int tile_border = 10;
-	// Set up for rendering the scene into tiles.
-	// The tile render target dimensions match the paint device (canvas) dimensions.
-	// We render into the main frame buffer of the canvas instead of using frame buffer objects
-	// because we use our OpenGL QPainter to render text and it expects its paint device when
-	// rendering (expects dimensions of paint device not frame buffer object).
-	GPlatesOpenGL::GLTileRender tile_render(
-			d_map_view_ptr->width()/*tile_render_target_width*/,
-			d_map_view_ptr->height()/*tile_render_target_height*/,
-			GPlatesOpenGL::GLViewport(
-					0,
-					0,
-					image_size.width(),
-					image_size.height())/*destination_viewport*/,
-			tile_border);
-
-	// The image to render the scene into.
-	QImage image(image_size, QImage::Format_ARGB32);
-	if (image.isNull())
-	{
-		// Most likely a memory allocation failure - return the null image.
-		return image;
-	}
-
-	// Fill the image with transparent black in case there's an exception during rendering
-	// of one of the tiles and the image is incomplete.
-	image.fill(QColor(0,0,0,0).rgba());
-
 	// Keep track of the cache handles of all rendered tiles.
 	boost::shared_ptr< std::vector<cache_handle_type> > frame_cache_handle(
 			new std::vector<cache_handle_type>());
-
-	// In case we need to preserve the main frame buffer.
-	// We never need to preserve the depth/stencil buffer though.
-	GPlatesOpenGL::GLSaveRestoreFrameBuffer save_restore_main_framebuffer(
-			renderer->get_capabilities(),
-			tile_render.get_max_tile_render_target_width(),
-			tile_render.get_max_tile_render_target_height());
-
-	// We have a double buffer main framebuffer and we are rendering to the back buffer.
-	// So the front buffer (which is being displayed) won't get disturbed. And when this
-	// widget paints itself it will clear and re-draw the back buffer and then swap it so
-	// it becomes the front buffer.
-	// So for these reasons we do not need to save and restore the main framebuffer with double-buffering.
-	if (!map_canvas_paint_device->doubleBuffer())
-	{
-		// We only have a front buffer so we need to save and restore the main (colour)
-		// framebuffer in order not to disturb the display of the globe canvas painted widget.
-		save_restore_main_framebuffer.save(*renderer);
-	}
 
 	// Render the scene tile-by-tile.
 	for (tile_render.first_tile(); !tile_render.finished(); tile_render.next_tile())
@@ -418,13 +479,18 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 		frame_cache_handle->push_back(tile_cache_handle);
 	}
 
-	if (!map_canvas_paint_device->doubleBuffer())
+	// Hold onto the previous frame's cached resources *while* generating the current frame.
+	d_gl_frame_cache_handle = frame_cache_handle;
+
+	// End rendering to the off-screen target.
+	if (screen_render_target)
+	{
+		screen_render_target.get()->end_render(*renderer);
+	}
+	else if (!map_canvas_paint_device->doubleBuffer())
 	{
 		save_restore_main_framebuffer.restore(*renderer);
 	}
-
-	// Hold onto the previous frame's cached resources *while* generating the current frame.
-	d_gl_frame_cache_handle = frame_cache_handle;
 
 	return image;
 }
@@ -540,6 +606,10 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 					static_cast<unsigned int>(map_canvas_paint_device->width()),
 					static_cast<unsigned int>(map_canvas_paint_device->height())));
 
+	// This should be the same as 'map_canvas_paint_device->width()' and 'map_canvas_paint_device->height()'.
+	const std::pair<unsigned int/*width*/, unsigned int/*height*/> frame_buffer_dimensions =
+			renderer->get_current_frame_buffer_dimensions();
+
 	// Set the viewport (and scissor rectangle) to the size of the feedback paint device instead
 	// of the map canvas because OpenGL feedback uses the viewport to generate projected vertices.
 	// Also text rendering uses the viewport.
@@ -565,19 +635,47 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 			feedback_paint_device.width(),
 			feedback_paint_device.height());
 
-	// In case we need to preserve the main frame buffer.
+	// In case we need to preserve the main frame buffer (if not using frame buffer object or pbuffer).
 	// We never need to preserve the depth/stencil buffer though.
 	GPlatesOpenGL::GLSaveRestoreFrameBuffer save_restore_main_framebuffer(
 			renderer->get_capabilities(),
-			map_canvas_paint_device->width(),
-			map_canvas_paint_device->height());
+			frame_buffer_dimensions.first/*width*/,
+			frame_buffer_dimensions.second/*height*/);
 
+	// Where possible, force drawing to an off-screen render target.
+	// It seems making the OpenGL context current is not enough to prevent Snow Leopard systems
+	// with ATI graphics from hanging/crashing - this appears to be due to modifying/accessing the
+	// main/default framebuffer (which is intimately tied to the windowing system).
+	// Using an off-screen render target appears to avoid this issue.
+	boost::optional<GPlatesOpenGL::GLScreenRenderTarget::shared_ptr_type> screen_render_target =
+			renderer->get_context().get_shared_state()->acquire_screen_render_target(
+					*renderer,
+					GL_RGBA8/*texture_internalformat*/,
+					true/*include_depth_buffer*/,
+					true/*include_stencil_buffer*/);
+
+	// Begin rendering to the off-screen target.
+	if (screen_render_target)
+	{
+		// Begin rendering to the screen render target.
+		//
+		// Set the off-screen render target to the size of the main framebuffer.
+		// This is because we use QPainter to render text and it sets itself up using the dimensions
+		// of the main framebuffer - actually that doesn't apply when painting to a device other than
+		// the main framebuffer (in our case the feedback paint device, eg, SVG) - but we'll leave the
+		// restriction in for now.
+		// TODO: change to a larger size render target for more efficient rendering.
+		screen_render_target.get()->begin_render(
+				*renderer,
+				frame_buffer_dimensions.first/*width*/,
+				frame_buffer_dimensions.second/*height*/);
+	}
 	// We have a double buffer main framebuffer and we are rendering to the back buffer.
 	// So the front buffer (which is being displayed) won't get disturbed. And when this
 	// widget paints itself it will clear and re-draw the back buffer and then swap it so
 	// it becomes the front buffer.
 	// So for these reasons we do not need to save and restore the main framebuffer with double-buffering.
-	if (!map_canvas_paint_device->doubleBuffer())
+	else if (!map_canvas_paint_device->doubleBuffer())
 	{
 		// We only have a front buffer so we need to save and restore the main (colour)
 		// framebuffer in order not to disturb the display of the globe canvas painted widget.
@@ -594,7 +692,12 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 			feedback_paint_device.width(),
 			feedback_paint_device.height());
 
-	if (!map_canvas_paint_device->doubleBuffer())
+	// End rendering to the off-screen target.
+	if (screen_render_target)
+	{
+		screen_render_target.get()->end_render(*renderer);
+	}
+	else if (!map_canvas_paint_device->doubleBuffer())
 	{
 		save_restore_main_framebuffer.restore(*renderer);
 	}

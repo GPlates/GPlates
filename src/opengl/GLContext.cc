@@ -136,16 +136,28 @@ GPlatesOpenGL::GLContext::initialise()
 		if (!s_capabilities.framebuffer.gl_EXT_framebuffer_object)
 		{
 			qDebug() << "Falling back to main frame buffer for render targets.";
-
-			// A lot of render-target rendering uses an alpha channel so emit a warning if
-			// the frame buffer doesn't have an alpha channel.
-			if (!static_cast<QGLWidgetImpl *>(d_context_impl.get())->d_qgl_widget.format().alpha())
-			{
-				qWarning(
-						"Could not get alpha channel on main frame buffer; "
-						"render-target results will be suboptimal");
-			}
 		}
+	}
+
+	// A lot of main frame buffer and render-target rendering uses an alpha channel so emit
+	// a warning if the frame buffer doesn't have an alpha channel.
+	if (!get_qgl_format().alpha())
+	{
+		qWarning("Could not get alpha channel on main frame buffer.");
+
+		// If there's no framebuffer object support then the main framebuffer will be used
+		// to emulate render targets and lack of an alpha channel will affects the results.
+		if (!get_capabilities().framebuffer.gl_EXT_framebuffer_object)
+		{
+			qDebug("Render-target results will be suboptimal.");
+		}
+	}
+
+	// A lot of main frame buffer and render-target rendering uses a stencil buffer so emit
+	// a warning if the frame buffer doesn't have a stencil buffer.
+	if (!get_qgl_format().stencil())
+	{
+		qWarning("Could not get a stencil buffer on the main frame buffer.");
 	}
 }
 
