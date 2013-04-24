@@ -27,6 +27,7 @@
 #define GPLATES_OPENGL_GLRENDERTARGETIMPL_H
 
 #include <vector>
+#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
@@ -52,7 +53,9 @@ namespace GPlatesOpenGL
 	 * So you can freely use it in different OpenGL contexts.
 	 * This enables sharing of the associated texture and renderbuffer (which are shareable across contexts).
 	 */
-	class GLRenderTargetImpl
+	class GLRenderTargetImpl :
+			private boost::noncopyable
+
 	{
 	public:
 

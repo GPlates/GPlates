@@ -136,6 +136,7 @@ GPlatesQtWidgets::MapView::MapView(
 				view_state,
 				view_state.get_rendered_geometry_collection(),
 				this,
+				d_gl_widget_ptr,
 				d_gl_context,
 				d_gl_visual_layers,
 				view_state.get_render_settings(),

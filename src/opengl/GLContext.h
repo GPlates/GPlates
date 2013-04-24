@@ -303,33 +303,6 @@ namespace GPlatesOpenGL
 					unsigned int render_target_height);
 
 			/**
-			 * Returns a convenience object for rendering to a screen-size render texture with an
-			 * optional depth/stencil buffer, from an internal cache, that matches the specified parameters.
-			 *
-			 * Use this when you need to render to screen-size texture temporarily and want to promote
-			 * resource sharing by returning it for others to use. This is useful when multiple clients
-			 * need to independently render to the same window (with same viewport dimensions).
-			 *
-			 * NOTE: GLScreenRenderTarget resizes its internal texture (and depth/stencil buffer)
-			 * when clients specify the viewport dimensions they are rendering to.
-			 * So re-use is only useful when all clients render to the same viewport.
-			 * This is not currently always the case (colouring preview window uses a different size
-			 * viewport than the main window).
-			 *
-			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
-			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
-			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
-			 *
-			 * Returns boost::none if 'GLScreenRenderTarget::is_supported()' returns false.
-			 */
-			boost::optional<GLScreenRenderTarget::shared_ptr_type>
-			acquire_screen_render_target(
-					GLRenderer &renderer,
-					GLint texture_internalformat,
-					bool include_depth_buffer,
-					bool include_stencil_buffer);
-
-			/**
 			 * Creates a compiled draw state that can render a full-screen textured quad.
 			 *
 			 * The vertex colours are white - RGBA(1.0, 1.0, 1.0, 1.0).
@@ -404,16 +377,6 @@ namespace GPlatesOpenGL
 			typedef std::map<render_target_key_type, render_target_cache_type::shared_ptr_type>
 					render_target_cache_map_type;
 
-			//! Typedef for a key made up of the parameters of @a acquire_screen_render_target.
-			typedef boost::tuple<GLint, bool, bool> screen_render_target_key_type;
-
-			//! Typedef for a screen render target cache.
-			typedef GPlatesUtils::ObjectCache<GLScreenRenderTarget> screen_render_target_cache_type;
-
-			//! Typedef for a mapping of screen render target parameters (key) to screen render target caches.
-			typedef std::map<screen_render_target_key_type, screen_render_target_cache_type::shared_ptr_type>
-					screen_render_target_cache_map_type;
-
 
 			boost::shared_ptr<GLTexture::resource_manager_type> d_texture_object_resource_manager;
 			boost::shared_ptr<GLBufferObject::resource_manager_type> d_buffer_object_resource_manager;
@@ -433,7 +396,6 @@ namespace GPlatesOpenGL
 			render_buffer_object_cache_map_type d_render_buffer_object_cache_map;
 
 			render_target_cache_map_type d_render_target_cache_map;
-			screen_render_target_cache_map_type d_screen_render_target_cache_map;
 
 			/**
 			 * Even though vertex arrays cannot be shared across OpenGL contexts, the @a GLVertexArray
@@ -484,10 +446,6 @@ namespace GPlatesOpenGL
 			render_target_cache_type::shared_ptr_type
 			get_render_target_cache(
 					const render_target_key_type &render_target_key);
-
-			screen_render_target_cache_type::shared_ptr_type
-			get_screen_render_target_cache(
-					const screen_render_target_key_type &screen_render_target_key);
 
 			//! Create state store if not yet done - an OpenGL context must be valid.
 			boost::shared_ptr<GLStateStore>
@@ -584,6 +542,35 @@ namespace GPlatesOpenGL
 					const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object,
 					const GLFrameBufferObject::Classification &frame_buffer_object_classification) const;
 
+			/**
+			 * Returns a convenience object for rendering to a screen-size render texture with an
+			 * optional depth/stencil buffer, from an internal cache, that matches the specified parameters.
+			 *
+			 * Use this when you need to render to screen-size texture temporarily and want to promote
+			 * resource sharing by returning it for others to use. This is useful when multiple clients
+			 * need to independently render to the same window (with same viewport dimensions).
+			 *
+			 * NOTE: GLScreenRenderTarget resizes its internal texture (and depth/stencil buffer)
+			 * when clients specify the viewport dimensions they are rendering to.
+			 * So re-use is only useful when all clients render to the same viewport.
+			 * This is the reason why this method is in NonSharedState instead of SharedState
+			 * (where it could go) - so that each GLContext has its own cache which means
+			 * it's more likely there will be re-use of the same dimension GLScreenRenderTarget's
+			 * due to having the same viewport.
+			 *
+			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
+			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
+			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
+			 *
+			 * Returns boost::none if 'GLScreenRenderTarget::is_supported()' returns false.
+			 */
+			boost::optional<GLScreenRenderTarget::shared_ptr_type>
+			acquire_screen_render_target(
+					GLRenderer &renderer,
+					GLint texture_internalformat,
+					bool include_depth_buffer,
+					bool include_stencil_buffer);
+
 
 			/**
 			 * Returns the render buffer object resource manager.
@@ -631,16 +618,33 @@ namespace GPlatesOpenGL
 			typedef std::map<GLFrameBufferObject::Classification::tuple_type, bool> frame_buffer_state_to_status_map_type;
 
 
+			//! Typedef for a key made up of the parameters of @a acquire_screen_render_target.
+			typedef boost::tuple<GLint, bool, bool> screen_render_target_key_type;
+
+			//! Typedef for a screen render target cache.
+			typedef GPlatesUtils::ObjectCache<GLScreenRenderTarget> screen_render_target_cache_type;
+
+			//! Typedef for a mapping of screen render target parameters (key) to screen render target caches.
+			typedef std::map<screen_render_target_key_type, screen_render_target_cache_type::shared_ptr_type>
+					screen_render_target_cache_map_type;
+
+
 			boost::shared_ptr<GLFrameBufferObject::resource_manager_type> d_frame_buffer_object_resource_manager;
 			frame_buffer_object_cache_map_type d_frame_buffer_object_cache_map;
 
 			//! Cache results of 'glCheckFramebufferStatus' as an optimisation since it's expensive to call.
 			mutable frame_buffer_state_to_status_map_type d_frame_buffer_state_to_status_map;
 
+			screen_render_target_cache_map_type d_screen_render_target_cache_map;
+
 			boost::shared_ptr<GLRenderBufferObject::resource_manager_type> d_render_buffer_object_resource_manager;
 
 			boost::shared_ptr<GLVertexArrayObject::resource_manager_type> d_vertex_array_object_resource_manager;
 
+
+			screen_render_target_cache_type::shared_ptr_type
+			get_screen_render_target_cache(
+					const screen_render_target_key_type &screen_render_target_key);
 
 			frame_buffer_object_cache_type::shared_ptr_type
 			get_frame_buffer_object_cache(
@@ -712,6 +716,26 @@ namespace GPlatesOpenGL
 		get_qgl_format() const
 		{
 			return d_qgl_format;
+		}
+
+
+		/**
+		 * The width of the frame buffer currently attached to the OpenGL context.
+		 */
+		unsigned int
+		get_width() const
+		{
+			return d_context_impl->get_width();
+		}
+
+
+		/**
+		 * The height of the frame buffer currently attached to the OpenGL context.
+		 */
+		unsigned int
+		get_height() const
+		{
+			return d_context_impl->get_height();
 		}
 
 

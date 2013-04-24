@@ -51,6 +51,7 @@
 
 #include "opengl/GLContext.h"
 #include "opengl/GLMatrix.h"
+#include "opengl/GLOffScreenContext.h"
 #include "opengl/GLViewport.h"
 #include "opengl/GLVisualLayers.h"
 
@@ -547,6 +548,13 @@ namespace GPlatesQtWidgets
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
 		//! Makes the QGLWidget's OpenGL context current in @a GlobeCanvas constructor so it can call OpenGL.
 		MakeGLContextCurrent d_make_context_current;
+
+		/**
+		 * Used to render to an off-screen frame buffer when outside paint event.
+		 *
+		 * It's a boost::optional since we don't create it until @a initializeGL is called.
+		 */
+		boost::optional<GPlatesOpenGL::GLOffScreenContext::non_null_ptr_type> d_gl_off_screen_context;
 
 		//! Is true if OpenGL has been initialised for this canvas.
 		bool d_initialisedGL;

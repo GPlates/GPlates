@@ -227,7 +227,7 @@ GPlatesGui::Globe::paint(
 		// This reduces the workload of rendering sub-surface data that is occluded by surface data.
 		//
 		boost::optional<GPlatesOpenGL::GLScreenRenderTarget::shared_ptr_type> screen_render_target =
-				renderer.get_context().get_shared_state()->acquire_screen_render_target(
+				renderer.get_context().get_non_shared_state()->acquire_screen_render_target(
 						renderer,
 						GL_RGBA8/*texture_internalformat*/,
 						true/*include_depth_buffer*/,

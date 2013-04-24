@@ -74,9 +74,7 @@ GPlatesOpenGL::GLRenderer::GLRenderer(
 
 
 void
-GPlatesOpenGL::GLRenderer::begin_render(
-		unsigned int main_frame_buffer_width,
-		unsigned int main_frame_buffer_height)
+GPlatesOpenGL::GLRenderer::begin_render()
 {
 	// Start a rendering frame.
 	d_context->begin_render();
@@ -88,10 +86,10 @@ GPlatesOpenGL::GLRenderer::begin_render(
 			GLRendererAPIError::SHOULD_HAVE_NO_RENDER_TARGET_BLOCKS);
 
 	// Record the main frame buffer dimensions.
-	d_main_frame_buffer_dimensions = std::make_pair(main_frame_buffer_width, main_frame_buffer_height);
+	d_main_frame_buffer_dimensions = std::make_pair(d_context->get_width(), d_context->get_height());
 
 	// The viewport of the window currently attached to the OpenGL context.
-	d_default_viewport = GLViewport(0, 0, main_frame_buffer_width, main_frame_buffer_height);
+	d_default_viewport = GLViewport(0, 0, d_main_frame_buffer_dimensions.first, d_main_frame_buffer_dimensions.second);
 	d_default_state->set_viewport(get_capabilities(), d_default_viewport.get(), d_default_viewport.get());
 	d_default_state->set_scissor(get_capabilities(), d_default_viewport.get(), d_default_viewport.get());
 
@@ -127,16 +125,13 @@ GPlatesOpenGL::GLRenderer::begin_render(
 void
 GPlatesOpenGL::GLRenderer::begin_render(
 		QPainter &qpainter,
-		boost::optional< std::pair<unsigned int, unsigned int> > main_frame_buffer_dimensions)
+		bool paint_device_is_framebuffer)
 {
 	GPlatesGlobal::Assert<GLRendererAPIError>(
 			!d_qpainter_info,
 			GPLATES_ASSERTION_SOURCE,
 			GLRendererAPIError::SHOULD_HAVE_NO_ACTIVE_QPAINTER);
 
-	// If the main frame buffer dimensions were not specified then the QPainter's paint device is
-	// the main frame buffer.
-	const bool paint_device_is_framebuffer = !main_frame_buffer_dimensions;
 	d_qpainter_info = boost::in_place(boost::ref(qpainter), paint_device_is_framebuffer);
 
 	// The QPainter should currently be active.
@@ -145,35 +140,11 @@ GPlatesOpenGL::GLRenderer::begin_render(
 			GPLATES_ASSERTION_SOURCE,
 			GLRendererAPIError::SHOULD_HAVE_ACTIVE_QPAINTER);
 
-	// Get the dimensions of the main frame buffer.
-	unsigned int main_frame_buffer_width;
-	unsigned int main_frame_buffer_height;
-	if (paint_device_is_framebuffer)
-	{
-		// The QPainter's paint device.
-		QPaintDevice *qpaint_device = d_qpainter_info->qpainter.device();
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				qpaint_device,
-				GPLATES_ASSERTION_SOURCE);
-
-		main_frame_buffer_width = boost::numeric_cast<unsigned int>(qpaint_device->width());
-		main_frame_buffer_height = boost::numeric_cast<unsigned int>(qpaint_device->height());
-	}
-	else // paint device can have different dimensions than the main frame buffer...
-	{
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				main_frame_buffer_dimensions,
-				GPLATES_ASSERTION_SOURCE);
-
-		main_frame_buffer_width = main_frame_buffer_dimensions->first;
-		main_frame_buffer_height = main_frame_buffer_dimensions->second;
-	}
-
 	// Suspend the QPainter so we can start making calls directly to OpenGL without interfering with
 	// the QPainter's OpenGL state (if it uses an OpenGL paint engine).
 	suspend_qpainter();
 
-	begin_render(main_frame_buffer_width, main_frame_buffer_height);
+	begin_render();
 
 	// This is one of the rare cases where we need to apply the OpenGL state encapsulated in
 	// GLRenderer directly to OpenGL - in this case we need to make sure our last applied state
@@ -300,23 +271,20 @@ GPlatesOpenGL::GLRenderer::get_qpainter_device_dimensions() const
 			boost::numeric_cast<unsigned int>(qpaint_device->height()));
 }
 
-namespace
-{
-	boost::optional<GPlatesOpenGL::GLFrameBufferObject::shared_ptr_to_const_type> s_previous_frame_buffer_object;
-}
 
 boost::optional<QPainter &>
 GPlatesOpenGL::GLRenderer::begin_qpainter_block()
 {
 	if (d_qpainter_info)
 	{
-		s_previous_frame_buffer_object = gl_get_bind_frame_buffer();
+		// Get the currently active frame buffer.
+		d_qpainter_info->frame_buffer = gl_get_bind_frame_buffer();
 
 		// If a frame buffer object is currently bound and the QPainter targets the main framebuffer
 		// then the frame buffer object dimensions must match those of the main frame buffer.
 		// This ensures that QPainter text rendering works properly (QPainter sets up text rendering
 		// based on the main frame buffer dimensions).
-		if (s_previous_frame_buffer_object &&
+		if (d_qpainter_info->frame_buffer &&
 			d_qpainter_info->paint_device_is_framebuffer)
 		{
 			GPlatesGlobal::Assert<GLRendererAPIError>(
@@ -336,9 +304,13 @@ GPlatesOpenGL::GLRenderer::begin_qpainter_block()
 
 		resume_qpainter();
 
-		if (s_previous_frame_buffer_object)
+		// If a frame buffer object was active when we entered the QPainter scope then
+		// keep it active during the scope (the state was reset to default OpenGL state above).
+		if (d_qpainter_info->frame_buffer)
 		{
-			gl_bind_frame_buffer(s_previous_frame_buffer_object.get());
+			gl_bind_frame_buffer(d_qpainter_info->frame_buffer.get());
+
+			// Need to apply the state directly to OpenGL so the QPainter rendering is affected by it.
 			apply_current_state_to_opengl();
 		}
 
@@ -354,11 +326,18 @@ GPlatesOpenGL::GLRenderer::end_qpainter_block()
 {
 	if (d_qpainter_info)
 	{
-		if (s_previous_frame_buffer_object)
+		// If a frame buffer object was active during the QPainter scope then return to the
+		// default OpenGL state (the state just before 'resume_qpainter()' was called).
+		// For the frame buffer object this means unbinding (returning to the main frame buffer).
+		if (d_qpainter_info->frame_buffer)
 		{
 			gl_unbind_frame_buffer();
+
+			// Apply the state directly to OpenGL so sees the default OpenGL state before it saves
+			// its state (in 'suspend_qpainter()') in preparation for our native OpenGL painting.
 			apply_current_state_to_opengl();
-			s_previous_frame_buffer_object = boost::none;
+
+			d_qpainter_info->frame_buffer = boost::none;
 		}
 
 		// Suspend the QPainter so we can start making calls directly to OpenGL without
@@ -2560,24 +2539,22 @@ GPlatesOpenGL::GLRenderer::end_render_queue_block_internal()
 
 
 GPlatesOpenGL::GLRenderer::RenderScope::RenderScope(
-		GLRenderer &renderer,
-		unsigned int main_frame_buffer_width,
-		unsigned int main_frame_buffer_height) :
+		GLRenderer &renderer) :
 	d_renderer(renderer),
 	d_called_end_render(false)
 {
-	d_renderer.begin_render(main_frame_buffer_width, main_frame_buffer_height);
+	d_renderer.begin_render();
 }
 
 
 GPlatesOpenGL::GLRenderer::RenderScope::RenderScope(
 		GLRenderer &renderer,
 		QPainter &qpainter,
-		boost::optional< std::pair<unsigned int, unsigned int> > main_frame_buffer_dimensions) :
+		bool paint_device_is_framebuffer) :
 	d_renderer(renderer),
 	d_called_end_render(false)
 {
-	d_renderer.begin_render(qpainter, main_frame_buffer_dimensions);
+	d_renderer.begin_render(qpainter, paint_device_is_framebuffer);
 }
 
 

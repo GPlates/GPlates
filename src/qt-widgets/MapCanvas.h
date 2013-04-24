@@ -29,6 +29,7 @@
 #define GPLATES_QTWIDGETS_MAPCANVAS_H
 
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QGLWidget>
@@ -44,6 +45,7 @@
 
 #include "opengl/GLContext.h"
 #include "opengl/GLMatrix.h"
+#include "opengl/GLOffScreenContext.h"
 #include "opengl/GLVisualLayers.h"
 
 
@@ -85,6 +87,7 @@ namespace GPlatesQtWidgets
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				MapView *map_view_ptr,
+				QGLWidget *gl_widget,
 				const GPlatesOpenGL::GLContext::non_null_ptr_type &gl_context,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				GPlatesGui::RenderSettings &render_settings,
@@ -179,6 +182,13 @@ namespace GPlatesQtWidgets
 		MakeGLContextCurrent d_make_context_current;
 
 		/**
+		 * Used to render to an off-screen frame buffer when outside paint event.
+		 *
+		 * It's a boost::optional since we don't create it until @a initializeGL is called.
+		 */
+		boost::optional<GPlatesOpenGL::GLOffScreenContext::non_null_ptr_type> d_gl_off_screen_context;
+
+		/**
 		 * Enables frame-to-frame caching of persistent OpenGL resources.
 		 *
 		 * There is a certain amount of caching without this already.
@@ -201,7 +211,8 @@ namespace GPlatesQtWidgets
 
 		//! Do some OpenGL initialisation.
 		void 
-		initializeGL();
+		initializeGL(
+				QGLWidget *gl_widget);
 
 		/**
 		 * Render one tile of the scene (as specified by @a tile_render).

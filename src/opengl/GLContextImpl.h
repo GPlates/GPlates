@@ -92,39 +92,52 @@ namespace GPlatesOpenGL
 			explicit
 			QGLPixelBufferImpl(
 					QGLPixelBuffer &qgl_pixel_buffer) :
-				d_qgl_pixel_buffer(qgl_pixel_buffer)
+				d_qgl_pixel_buffer(&qgl_pixel_buffer)
 			{  }
+
+			void
+			set_pixel_buffer(
+					QGLPixelBuffer &qgl_pixel_buffer)
+			{
+				d_qgl_pixel_buffer = &qgl_pixel_buffer;
+			}
+
+			QGLPixelBuffer &
+			get_pixel_buffer() const
+			{
+				return *d_qgl_pixel_buffer;
+			}
 
 			virtual
 			void
 			make_current()
 			{
-				d_qgl_pixel_buffer.makeCurrent();
+				d_qgl_pixel_buffer->makeCurrent();
 			}
 
 			virtual
 			const QGLFormat
 			get_qgl_format() const
 			{
-				return d_qgl_pixel_buffer.format();
+				return d_qgl_pixel_buffer->format();
 			}
 
 			virtual
 			unsigned int
 			get_width() const
 			{
-				return d_qgl_pixel_buffer.width();
+				return d_qgl_pixel_buffer->width();
 			}
 
 			virtual
 			unsigned int
 			get_height() const
 			{
-				return d_qgl_pixel_buffer.height();
+				return d_qgl_pixel_buffer->height();
 			}
 
 		private:
-			QGLPixelBuffer &d_qgl_pixel_buffer;
+			QGLPixelBuffer *d_qgl_pixel_buffer;
 		};
 	}
 }

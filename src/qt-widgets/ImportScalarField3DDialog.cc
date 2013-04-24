@@ -321,9 +321,7 @@ GPlatesQtWidgets::ImportScalarField3DDialog::display(
 
 
 GPlatesOpenGL::GLRenderer::non_null_ptr_type
-GPlatesQtWidgets::ImportScalarField3DDialog::create_gl_renderer(
-		int &viewport_width,
-		int &viewport_height) const
+GPlatesQtWidgets::ImportScalarField3DDialog::create_gl_renderer() const
 {
 	// Get an OpenGL context.
 	GPlatesOpenGL::GLContext::non_null_ptr_type gl_context =
@@ -331,10 +329,6 @@ GPlatesQtWidgets::ImportScalarField3DDialog::create_gl_renderer(
 
 	// Make sure the context is currently active.
 	gl_context->make_current();
-
-	// Pass in the viewport of the window currently attached to the OpenGL context.
-	viewport_width = d_view_state.get_main_viewport_dimensions().first/*width*/;
-	viewport_height = d_view_state.get_main_viewport_dimensions().second/*height*/;
 
 	// Start a begin_render/end_render scope.
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
@@ -350,12 +344,10 @@ GPlatesQtWidgets::ImportScalarField3DDialog::is_scalar_field_import_supported() 
 	//
 
 	// We need an OpenGL renderer before we can query support.
-	int viewport_width;
-	int viewport_height;
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = create_gl_renderer(viewport_width, viewport_height);
+	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = create_gl_renderer();
 
 	// Start a begin_render/end_render scope.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, viewport_width, viewport_height);
+	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
 
 	//
 	// Now see if we can generate a 3D scalar field from depth layers.
@@ -377,12 +369,10 @@ GPlatesQtWidgets::ImportScalarField3DDialog::generate_scalar_field(
 	//
 
 	// We need an OpenGL renderer before we can query support.
-	int viewport_width;
-	int viewport_height;
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = create_gl_renderer(viewport_width, viewport_height);
+	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = create_gl_renderer();
 
 	// Start a begin_render/end_render scope.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, viewport_width, viewport_height);
+	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
 
 	//
 	// Now generate the 3D scalar field file from the depth layers.

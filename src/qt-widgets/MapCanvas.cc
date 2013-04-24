@@ -32,7 +32,6 @@
 #include <QPaintDevice>
 #include <QPaintEngine>
 #include <QPainter>
-#include <QGLPixelBuffer>
 #include <opengl/OpenGL.h>
 
 #include "MapCanvas.h"
@@ -54,8 +53,6 @@
 #include "opengl/GLMatrix.h"
 #include "opengl/GLRenderer.h"
 #include "opengl/GLRenderTarget.h"
-#include "opengl/GLSaveRestoreFrameBuffer.h"
-#include "opengl/GLScreenRenderTarget.h"
 #include "opengl/GLTileRender.h"
 #include "opengl/GLViewport.h"
 
@@ -117,6 +114,7 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		MapView *map_view_ptr,
+		QGLWidget *gl_widget,
 		const GPlatesOpenGL::GLContext::non_null_ptr_type &gl_context,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		GPlatesGui::RenderSettings &render_settings,
@@ -141,7 +139,7 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 {
 	// Do some OpenGL initialisation.
 	// Because of 'd_make_context_current' we know the OpenGL context is currently active.
-	initializeGL();
+	initializeGL(gl_widget);
 
 	// Give the scene a rectangle that's big enough to guarantee that the map view,
 	// even after rotations and translations, won't go outside these boundaries.
@@ -175,24 +173,30 @@ GPlatesQtWidgets::MapCanvas::~MapCanvas()
 {  }
 
 void 
-GPlatesQtWidgets::MapCanvas::initializeGL() 
+GPlatesQtWidgets::MapCanvas::initializeGL(
+		QGLWidget *gl_widget) 
 {
 	// Initialise our context-like object first.
 	d_gl_context->initialise();
 
-	// Beginning rendering so we can clear the framebuffer.
-	// By default the current render target of 'renderer' is the main frame buffer (of the window).
-	//
+	// Create the off-screen context that's used when rendering OpenGL outside the paint event.
+	d_gl_off_screen_context =
+			GPlatesOpenGL::GLOffScreenContext::create(
+					GPlatesOpenGL::GLOffScreenContext::QGLWidgetContext(gl_widget, d_gl_context));
+
+	// Get a renderer - it'll be used to initialise some OpenGL objects.
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
 
 	// Start a begin_render/end_render scope.
 	// Pass in the viewport of the window currently attached to the OpenGL context.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(
-			*renderer,
-			// Pass in the viewport currently set by QGraphicsView...
-			d_map_view_ptr->width(),
-			d_map_view_ptr->height());
+	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
+
+	// NOTE: We don't actually 'glClear()' the framebuffer because:
+	//  1) It's not necessary to do this before calling Map::initialiseGL(), and
+	//  2) It appears to generate an OpenGL error when GPlatesOpenGL::GLUtils::assert_no_gl_errors()
+	//     is next called ("invalid framebuffer operation") on a Mac-mini system (all other systems
+	//     seem fine) - it's possibly due to the main framebuffer not set up correctly yet.
 
 	// Initialise those parts of map that require a valid OpenGL context to be bound.
 	d_map.initialiseGL(*renderer);
@@ -267,7 +271,6 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 	//
 	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
-	// This also sets the main frame buffer dimensions to the paint device dimensions.
 	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, *painter);
 
 	// Get the model-view matrix from the QPainter's 2D world transform.
@@ -318,6 +321,32 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 		const QTransform &viewport_transform,
 		const QSize &image_size)
 {
+	// Set up a QPainter to help us with OpenGL text rendering.
+	QPainter painter(map_canvas_paint_device);
+
+	// Start a render scope.
+	//
+	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+	//
+	// Where possible, force drawing to an off-screen render target.
+	// It seems making the OpenGL context current is not enough to prevent Snow Leopard systems
+	// with ATI graphics from hanging/crashing - this appears to be due to modifying/accessing the
+	// main/default framebuffer (which is intimately tied to the windowing system).
+	// Using an off-screen render target appears to avoid this issue.
+	//
+	// Set the off-screen render target to the size of the QGLWidget main framebuffer.
+	// This is because we use QPainter to render text and it sets itself up using the dimensions
+	// of the main framebuffer - if we change the dimensions then the text is rendered incorrectly.
+	//
+	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
+	GPlatesOpenGL::GLOffScreenContext::RenderScope off_screen_render_scope(
+			*d_gl_off_screen_context.get(),
+			map_canvas_paint_device->width(),
+			map_canvas_paint_device->height(),
+			painter);
+
+	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = off_screen_render_scope.get_renderer();
+
 	// The image to render the scene into.
 	QImage image(image_size, QImage::Format_ARGB32);
 	if (image.isNull())
@@ -330,13 +359,9 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 	// of one of the tiles and the image is incomplete.
 	image.fill(QColor(0,0,0,0).rgba());
 
-	//
-	// Rendering.
-	//
-
-	const QSize frame_buffer_dimensions(
-			map_canvas_paint_device->width(),
-			map_canvas_paint_device->height());
+	// Get the frame buffer dimensions.
+	const std::pair<unsigned int/*width*/, unsigned int/*height*/> frame_buffer_dimensions =
+			renderer->get_current_frame_buffer_dimensions();
 
 	// The border is half the point size or line width, rounded up to nearest pixel.
 	// TODO: Use the actual maximum point size or line width to calculate this.
@@ -344,103 +369,14 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 	// Set up for rendering the scene into tiles.
 	// The tile render target dimensions match the frame buffer dimensions.
 	GPlatesOpenGL::GLTileRender tile_render(
-			frame_buffer_dimensions.width()/*tile_render_target_width*/,
-			frame_buffer_dimensions.height()/*tile_render_target_height*/,
+			frame_buffer_dimensions.first/*tile_render_target_width*/,
+			frame_buffer_dimensions.second/*tile_render_target_height*/,
 			GPlatesOpenGL::GLViewport(
 					0,
 					0,
 					image_size.width(),
 					image_size.height())/*destination_viewport*/,
 			tile_border);
-
-	GPlatesOpenGL::GLContext::non_null_ptr_type render_context = d_gl_context;
-	render_context->make_current();
-
-	// Set up a QPainter to help us with OpenGL text rendering.
-	QPainter painter(map_canvas_paint_device);
-
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = render_context->create_renderer();
-
-	// Start a begin_render/end_render scope.
-	//
-	// By default the current render target of 'renderer' is the main frame buffer (of the window).
-	//
-	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	//
-	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
-	// This also sets the main frame buffer dimensions to the paint device dimensions.
-	renderer->begin_render(painter);
-
-	// In case we need to preserve the main frame buffer (if not using frame buffer object or pbuffer).
-	// We never need to preserve the depth/stencil buffer though (they get cleared before every render).
-	GPlatesOpenGL::GLSaveRestoreFrameBuffer save_restore_main_framebuffer(
-			renderer->get_capabilities(),
-			tile_render.get_max_tile_render_target_width(),
-			tile_render.get_max_tile_render_target_height());
-
-	// Where possible, force drawing to an off-screen render target.
-	// It seems making the OpenGL context current is not enough to prevent Snow Leopard systems
-	// with ATI graphics from hanging/crashing - this appears to be due to modifying/accessing the
-	// main/default framebuffer (which is intimately tied to the windowing system).
-	// Using an off-screen render target appears to avoid this issue.
-	boost::optional<GPlatesOpenGL::GLScreenRenderTarget::shared_ptr_type> screen_render_target =
-			render_context->get_shared_state()->acquire_screen_render_target(
-					*renderer,
-					GL_RGBA8/*texture_internalformat*/,
-					true/*include_depth_buffer*/,
-					true/*include_stencil_buffer*/);
-
-	// Begin rendering to the off-screen target.
-	boost::optional<QGLPixelBuffer> qgl_pixel_buffer;
-	if (screen_render_target)
-	{
-		// Begin rendering to the screen render target.
-		//
-		// Set the off-screen render target to the size of the main framebuffer.
-		// This is because we use QPainter to render text and it sets itself up using the dimensions
-		// of the main framebuffer - if we change the dimensions then the text is rendered incorrectly.
-		screen_render_target.get()->begin_render(
-				*renderer,
-				frame_buffer_dimensions.width(),
-				frame_buffer_dimensions.height());
-	}
-	// If we can't get a screen render target (GL_EXT_framebuffer_object) then attempt to
-	// obtain a pbuffer off-screen OpenGL context. We normally use either a frame buffer object or
-	// the main frame buffer - however in this situation, as mentioned above, we need to avoid
-	// the main frame buffer if possible.
-	else if (QGLPixelBuffer::hasOpenGLPbuffers())
-	{
-		// Create a QGLPixelBuffer.
-		qgl_pixel_buffer = boost::in_place(
-				frame_buffer_dimensions.width(),
-				frame_buffer_dimensions.height(),
-				// Use the same format as the current rendering context...
-				render_context->get_qgl_format(),
-				// It's important to share textures, etc, with our regular OpenGL context...
-				map_canvas_paint_device/*shareWidget*/);
-
-		// Switch rendering contexts to the QGLPixelBuffer.
-		renderer->end_render();
-		render_context = GPlatesOpenGL::GLContext::create(
-				boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
-						new GPlatesOpenGL::GLContextImpl::QGLPixelBufferImpl(qgl_pixel_buffer.get())),
-				// Share textures, etc, with the current render context...
-				*render_context);
-		render_context->make_current();
-		renderer = render_context->create_renderer();
-		renderer->begin_render(painter);
-	}
-	else if (!map_canvas_paint_device->doubleBuffer())
-	{
-		// We only have a front buffer so we need to save and restore the main (colour)
-		// framebuffer in order not to disturb the display of the globe canvas painted widget.
-		save_restore_main_framebuffer.save(*renderer);
-	}
-	// ...else we have a double buffer main framebuffer and we are rendering to the back buffer.
-	// So the front buffer (which is being displayed) won't get disturbed. And when this
-	// widget paints itself it will clear and re-draw the back buffer and then swap it so
-	// it becomes the front buffer.
-	// So for these reasons we do not need to save and restore the main framebuffer with double-buffering.
 
 	// Get the model-view matrix from the 2D world transform.
 	GPlatesOpenGL::GLMatrix model_view_matrix;
@@ -481,16 +417,6 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
 	d_gl_frame_cache_handle = frame_cache_handle;
-
-	// End rendering to the off-screen target.
-	if (screen_render_target)
-	{
-		screen_render_target.get()->end_render(*renderer);
-	}
-	else if (!map_canvas_paint_device->doubleBuffer())
-	{
-		save_restore_main_framebuffer.restore(*renderer);
-	}
 
 	return image;
 }
@@ -580,35 +506,36 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 		const QTransform &viewport_transform,
 		QPaintDevice &feedback_paint_device)
 {
-	// Make sure our OpenGL context is the currently active context.
-	d_gl_context->make_current();
-
 	// Note that the OpenGL rendering gets redirected into the QPainter (using OpenGL feedback) and
 	// ends up in the feedback paint device.
 	QPainter feedback_painter(&feedback_paint_device);
 
-	// Create a render for all our OpenGL rendering work.
-	// Note that nothing will happen until we enter a rendering scope.
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
-
-	// Start a begin_render/end_render scope.
-	//
-	// By default the current render target of 'renderer' is the main frame buffer (of the map canvas window).
+	// Start a render scope.
 	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 	//
+	// Where possible, force drawing to an off-screen render target.
+	// It seems making the OpenGL context current is not enough to prevent Snow Leopard systems
+	// with ATI graphics from hanging/crashing - this appears to be due to modifying/accessing the
+	// main/default framebuffer (which is intimately tied to the windowing system).
+	// Using an off-screen render target appears to avoid this issue.
+	//
+	// Set the off-screen render target to the size of the QGLWidget main framebuffer.
+	// This is because we use QPainter to render text and it sets itself up using the dimensions
+	// of the main framebuffer - actually that doesn't apply when painting to a device other than
+	// the main framebuffer (in our case the feedback paint device, eg, SVG) - but we'll leave the
+	// restriction in for now.
+	// TODO: change to a larger size render target for more efficient rendering.
+	//
 	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(
-			*renderer,
+	GPlatesOpenGL::GLOffScreenContext::RenderScope off_screen_render_scope(
+			*d_gl_off_screen_context.get(),
+			map_canvas_paint_device->width(),
+			map_canvas_paint_device->height(),
 			feedback_painter,
-			// The map canvas is not necessarily the same size as the feedback paint device...
-			std::make_pair(
-					static_cast<unsigned int>(map_canvas_paint_device->width()),
-					static_cast<unsigned int>(map_canvas_paint_device->height())));
+			false/*paint_device_is_framebuffer*/);
 
-	// This should be the same as 'map_canvas_paint_device->width()' and 'map_canvas_paint_device->height()'.
-	const std::pair<unsigned int/*width*/, unsigned int/*height*/> frame_buffer_dimensions =
-			renderer->get_current_frame_buffer_dimensions();
+	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = off_screen_render_scope.get_renderer();
 
 	// Set the viewport (and scissor rectangle) to the size of the feedback paint device instead
 	// of the map canvas because OpenGL feedback uses the viewport to generate projected vertices.
@@ -635,53 +562,6 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 			feedback_paint_device.width(),
 			feedback_paint_device.height());
 
-	// In case we need to preserve the main frame buffer (if not using frame buffer object or pbuffer).
-	// We never need to preserve the depth/stencil buffer though.
-	GPlatesOpenGL::GLSaveRestoreFrameBuffer save_restore_main_framebuffer(
-			renderer->get_capabilities(),
-			frame_buffer_dimensions.first/*width*/,
-			frame_buffer_dimensions.second/*height*/);
-
-	// Where possible, force drawing to an off-screen render target.
-	// It seems making the OpenGL context current is not enough to prevent Snow Leopard systems
-	// with ATI graphics from hanging/crashing - this appears to be due to modifying/accessing the
-	// main/default framebuffer (which is intimately tied to the windowing system).
-	// Using an off-screen render target appears to avoid this issue.
-	boost::optional<GPlatesOpenGL::GLScreenRenderTarget::shared_ptr_type> screen_render_target =
-			renderer->get_context().get_shared_state()->acquire_screen_render_target(
-					*renderer,
-					GL_RGBA8/*texture_internalformat*/,
-					true/*include_depth_buffer*/,
-					true/*include_stencil_buffer*/);
-
-	// Begin rendering to the off-screen target.
-	if (screen_render_target)
-	{
-		// Begin rendering to the screen render target.
-		//
-		// Set the off-screen render target to the size of the main framebuffer.
-		// This is because we use QPainter to render text and it sets itself up using the dimensions
-		// of the main framebuffer - actually that doesn't apply when painting to a device other than
-		// the main framebuffer (in our case the feedback paint device, eg, SVG) - but we'll leave the
-		// restriction in for now.
-		// TODO: change to a larger size render target for more efficient rendering.
-		screen_render_target.get()->begin_render(
-				*renderer,
-				frame_buffer_dimensions.first/*width*/,
-				frame_buffer_dimensions.second/*height*/);
-	}
-	// We have a double buffer main framebuffer and we are rendering to the back buffer.
-	// So the front buffer (which is being displayed) won't get disturbed. And when this
-	// widget paints itself it will clear and re-draw the back buffer and then swap it so
-	// it becomes the front buffer.
-	// So for these reasons we do not need to save and restore the main framebuffer with double-buffering.
-	else if (!map_canvas_paint_device->doubleBuffer())
-	{
-		// We only have a front buffer so we need to save and restore the main (colour)
-		// framebuffer in order not to disturb the display of the globe canvas painted widget.
-		save_restore_main_framebuffer.save(*renderer);
-	}
-
 	// Render the scene to the feedback paint device.
 	// This will use the main framebuffer for intermediate rendering in some cases.
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
@@ -691,16 +571,6 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 			projection_matrix_text_overlay,
 			feedback_paint_device.width(),
 			feedback_paint_device.height());
-
-	// End rendering to the off-screen target.
-	if (screen_render_target)
-	{
-		screen_render_target.get()->end_render(*renderer);
-	}
-	else if (!map_canvas_paint_device->doubleBuffer())
-	{
-		save_restore_main_framebuffer.restore(*renderer);
-	}
 }
 
 float

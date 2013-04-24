@@ -547,53 +547,6 @@ GPlatesOpenGL::GLContext::SharedState::acquire_render_target(
 }
 
 
-boost::optional<GPlatesOpenGL::GLScreenRenderTarget::shared_ptr_type>
-GPlatesOpenGL::GLContext::SharedState::acquire_screen_render_target(
-		GLRenderer &renderer,
-		GLint texture_internalformat,
-		bool include_depth_buffer,
-		bool include_stencil_buffer)
-{
-	// Screen render targets must be supported.
-	if (!GLScreenRenderTarget::is_supported(
-			renderer,
-			texture_internalformat,
-			include_depth_buffer,
-			include_stencil_buffer))
-	{
-		return boost::none;
-	}
-
-	// Lookup the correct screen render target cache (matching the specified client parameters).
-	const screen_render_target_key_type screen_render_target_key(
-			texture_internalformat,
-			include_depth_buffer,
-			include_stencil_buffer);
-
-	const screen_render_target_cache_type::shared_ptr_type screen_render_target_cache =
-			get_screen_render_target_cache(screen_render_target_key);
-
-	// Attempt to acquire a recycled object.
-	boost::optional<GLScreenRenderTarget::shared_ptr_type> screen_render_target_opt =
-			screen_render_target_cache->allocate_object();
-	if (screen_render_target_opt)
-	{
-		return screen_render_target_opt.get();
-	}
-
-	// Create a new object and add it to the cache.
-	const GLScreenRenderTarget::shared_ptr_type screen_render_target =
-			screen_render_target_cache->allocate_object(
-					GLScreenRenderTarget::create_as_auto_ptr(
-							renderer,
-							texture_internalformat,
-							include_depth_buffer,
-							include_stencil_buffer));
-
-	return screen_render_target;
-}
-
-
 GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type
 GPlatesOpenGL::GLContext::SharedState::get_full_screen_2D_textured_quad(
 		GLRenderer &renderer)
@@ -827,32 +780,6 @@ GPlatesOpenGL::GLContext::SharedState::get_render_target_cache(
 }
 
 
-GPlatesOpenGL::GLContext::SharedState::screen_render_target_cache_type::shared_ptr_type
-GPlatesOpenGL::GLContext::SharedState::get_screen_render_target_cache(
-		const screen_render_target_key_type &screen_render_target_key)
-{
-	// Attempt to insert the screen render target key into the screen render target cache map.
-	const std::pair<screen_render_target_cache_map_type::iterator, bool> insert_result =
-			d_screen_render_target_cache_map.insert(
-					screen_render_target_cache_map_type::value_type(
-							screen_render_target_key,
-							// Dummy (NULL) screen render target cache...
-							screen_render_target_cache_type::shared_ptr_type()));
-
-	screen_render_target_cache_map_type::iterator screen_render_target_cache_map_iter = insert_result.first;
-
-	// If the screen render target key was inserted into the map then
-	// create the corresponding screen render target cache.
-	if (insert_result.second)
-	{
-		// Start off with an initial cache size of 1 - it'll grow as needed...
-		screen_render_target_cache_map_iter->second = screen_render_target_cache_type::create();
-	}
-
-	return screen_render_target_cache_map_iter->second;
-}
-
-
 GPlatesOpenGL::GLStateStore::shared_ptr_type
 GPlatesOpenGL::GLContext::SharedState::get_state_store(
 		const GLCapabilities &capabilities)
@@ -958,6 +885,79 @@ GPlatesOpenGL::GLContext::NonSharedState::check_framebuffer_object_completeness(
 	}
 
 	return framebuffer_status_iter->second;
+}
+
+
+boost::optional<GPlatesOpenGL::GLScreenRenderTarget::shared_ptr_type>
+GPlatesOpenGL::GLContext::NonSharedState::acquire_screen_render_target(
+		GLRenderer &renderer,
+		GLint texture_internalformat,
+		bool include_depth_buffer,
+		bool include_stencil_buffer)
+{
+	// Screen render targets must be supported.
+	if (!GLScreenRenderTarget::is_supported(
+			renderer,
+			texture_internalformat,
+			include_depth_buffer,
+			include_stencil_buffer))
+	{
+		return boost::none;
+	}
+
+	// Lookup the correct screen render target cache (matching the specified client parameters).
+	const screen_render_target_key_type screen_render_target_key(
+			texture_internalformat,
+			include_depth_buffer,
+			include_stencil_buffer);
+
+	const screen_render_target_cache_type::shared_ptr_type screen_render_target_cache =
+			get_screen_render_target_cache(screen_render_target_key);
+
+	// Attempt to acquire a recycled object.
+	boost::optional<GLScreenRenderTarget::shared_ptr_type> screen_render_target_opt =
+			screen_render_target_cache->allocate_object();
+	if (screen_render_target_opt)
+	{
+		return screen_render_target_opt.get();
+	}
+
+	// Create a new object and add it to the cache.
+	const GLScreenRenderTarget::shared_ptr_type screen_render_target =
+			screen_render_target_cache->allocate_object(
+					GLScreenRenderTarget::create_as_auto_ptr(
+							renderer,
+							texture_internalformat,
+							include_depth_buffer,
+							include_stencil_buffer));
+
+	return screen_render_target;
+}
+
+
+GPlatesOpenGL::GLContext::NonSharedState::screen_render_target_cache_type::shared_ptr_type
+GPlatesOpenGL::GLContext::NonSharedState::get_screen_render_target_cache(
+		const screen_render_target_key_type &screen_render_target_key)
+{
+	// Attempt to insert the screen render target key into the screen render target cache map.
+	const std::pair<screen_render_target_cache_map_type::iterator, bool> insert_result =
+			d_screen_render_target_cache_map.insert(
+					screen_render_target_cache_map_type::value_type(
+							screen_render_target_key,
+							// Dummy (NULL) screen render target cache...
+							screen_render_target_cache_type::shared_ptr_type()));
+
+	screen_render_target_cache_map_type::iterator screen_render_target_cache_map_iter = insert_result.first;
+
+	// If the screen render target key was inserted into the map then
+	// create the corresponding screen render target cache.
+	if (insert_result.second)
+	{
+		// Start off with an initial cache size of 1 - it'll grow as needed...
+		screen_render_target_cache_map_iter->second = screen_render_target_cache_type::create();
+	}
+
+	return screen_render_target_cache_map_iter->second;
 }
 
 

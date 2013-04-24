@@ -1224,7 +1224,7 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_depth_range(
 	// blend equations for RGB and Alpha (not R and G).
 	// Two channels contain min/max depth and one channel contains flag indicating volume intersection.
 	volume_fill_depth_range_screen_render_target =
-			renderer.get_context().get_shared_state()->acquire_screen_render_target(
+			renderer.get_context().get_non_shared_state()->acquire_screen_render_target(
 					renderer,
 					GL_RGBA32F_ARB/*texture_internalformat*/,
 					false/*include_depth_buffer*/,
@@ -1394,7 +1394,7 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_walls(
 	// However we're also storing screen-space depth in the alpha channel and that requires
 	// more precision so we'll make the entire RGBA floating-point.
 	volume_fill_walls_screen_render_target =
-			renderer.get_context().get_shared_state()->acquire_screen_render_target(
+			renderer.get_context().get_non_shared_state()->acquire_screen_render_target(
 					renderer,
 					GL_RGBA32F_ARB/*texture_internalformat*/,
 					true/*include_depth_buffer*/,

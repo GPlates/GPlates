@@ -49,7 +49,8 @@ namespace GPlatesOpenGL
 	 * So you can freely use it in different OpenGL contexts.
 	 * This enables sharing of the associated texture and renderbuffer (which are shareable across contexts).
 	 */
-	class GLScreenRenderTarget
+	class GLScreenRenderTarget :
+			private boost::noncopyable
 	{
 	public:
 

@@ -126,16 +126,10 @@ GPlatesGui::ExportCoRegistrationAnimationStrategy::do_export_iteration(
 			// Make sure the context is currently active.
 			gl_context->make_current();
 
-			// Pass in the viewport of the window currently attached to the OpenGL context.
-			const unsigned int viewport_width =
-					d_export_animation_context_ptr->view_state().get_main_viewport_dimensions().first/*width*/;
-			const unsigned int viewport_height =
-					d_export_animation_context_ptr->view_state().get_main_viewport_dimensions().second/*height*/;
-
 			// Start a begin_render/end_render scope.
 			// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 			GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = gl_context->create_renderer();
-			GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, viewport_width, viewport_height);
+			GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
 
 			//
 			// Get the co-registration results (perform the co-registration).
