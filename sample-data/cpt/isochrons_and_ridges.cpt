@@ -9,10 +9,13 @@
 #
 # In GPlates, categorical CPT files that assign colours to non-numerical values
 # are interpreted as follows:
-#  - First column (key): not significant, but should be in increasing order.
+#  - First column (key): not significant; description of this cpt entry;
 #  - Second column (fill): the colour to be assigned.
 #  - Third column (label): the value to be assigned that colour.
 #
-10 255/10/10	gpml:MidOceanRidge
-20 200/150/150	gpml:Isochron
-N	128	128	128
+# Final line gives default colour
+#
+MidOceanRidge 255/10/10 gpml:MidOceanRidge
+Isochron 200/150/150    gpml:Isochron
+N       128     128     128
+#
