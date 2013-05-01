@@ -276,7 +276,7 @@ GPlatesApi::Feature::plate_id()
 		return 0;
 
 	boost::optional<unsigned long> pid =
-		GPlatesUtils::get_int_plate_id(d_handle.handle_ptr());
+		GPlatesUtils::get_recon_plate_id_as_int(d_handle.handle_ptr());
 	return pid ? *pid : 0;
 }
 
