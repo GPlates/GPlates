@@ -1165,11 +1165,11 @@ GPlatesOpenGL::GLRenderer::gl_read_pixels(
 		GLenum type,
 		GLint offset)
 {
-	const GLCapabilities &capabilities = get_capabilities();
+	const GLCapabilities &gl_capabilities = get_capabilities();
 
 	// We're using pixel buffers objects in this version of 'gl_read_pixels'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.buffer.gl_ARB_pixel_buffer_object,
+			gl_capabilities.buffer.gl_ARB_pixel_buffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Wrap up the read pixels call in case it gets added to a render queue.
@@ -1307,11 +1307,11 @@ GPlatesOpenGL::GLRenderer::gl_draw_pixels(
 		GLenum type,
 		GLint offset)
 {
-	const GLCapabilities &capabilities = get_capabilities();
+	const GLCapabilities &gl_capabilities = get_capabilities();
 
 	// We're using pixel buffers objects in this version of 'gl_draw_pixels'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.buffer.gl_ARB_pixel_buffer_object,
+			gl_capabilities.buffer.gl_ARB_pixel_buffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Wrap up the draw pixels call in case it gets added to a render queue.
@@ -1391,7 +1391,7 @@ GPlatesOpenGL::GLRenderer::gl_draw_pixels(
 
 	// NOTE: The cloning of the current state is necessary so that when we render the drawable
 	// later it doesn't apply state that's been modified between now and then.
-	if (capabilities.gl_version_1_4) // 'glWindowPos2i' only available in 1.4 or above
+	if (gl_capabilities.gl_version_1_4) // 'glWindowPos2i' only available in 1.4 or above
 	{
 		draw(RenderOperation(clone_current_state(), drawable));
 	}
@@ -1506,14 +1506,14 @@ GPlatesOpenGL::GLRenderer::gl_draw_pixels(
 		GLBufferImpl::shared_ptr_type pixel_buffer_impl;
 	};
 
-	const GLCapabilities &capabilities = get_capabilities();
+	const GLCapabilities &gl_capabilities = get_capabilities();
 
 	const Drawable::non_null_ptr_to_const_type drawable(
 			new DrawPixelsDrawable(x, y, width, height, format, type, offset, pixel_buffer_impl));
 
 	// NOTE: The cloning of the current state is necessary so that when we render the drawable
 	// later it doesn't apply state that's been modified between now and then.
-	if (capabilities.gl_version_1_4) // 'glWindowPos2i' only available in 1.4 or above
+	if (gl_capabilities.gl_version_1_4) // 'glWindowPos2i' only available in 1.4 or above
 	{
 		draw(RenderOperation(clone_current_state(), drawable));
 	}
@@ -1733,12 +1733,12 @@ GPlatesOpenGL::GLRenderer::gl_copy_tex_sub_image_3D(
 		GLsizei height;
 	};
 
-	const GLCapabilities &capabilities = get_capabilities();
+	const GLCapabilities &gl_capabilities = get_capabilities();
 
 	// Previously we checked for the GL_EXT_copy_texture extension but on MacOS this is not exposed
 	// so we use the core OpenGL 1.2 function instead.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			capabilities.gl_version_1_2,
+			gl_capabilities.gl_version_1_2,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Set the active texture unit - glCopyTexSubImage2D targets the texture bound to it.
