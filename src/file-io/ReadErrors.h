@@ -117,6 +117,7 @@ namespace GPlatesFileIO
 			InvalidOgrMultiPoint,
 			InvalidOgrPolyline,
 			InvalidOgrPolygon,
+			InvalidShapefileReconstructionMethod,
 			
 			// The following relate to raster files in general.
 			InsufficientMemoryToLoadRaster,
@@ -229,9 +230,13 @@ namespace GPlatesFileIO
 			GeometryFlattenedTo2D,
 			GeometryIgnored,
 			OnlyExteriorRingRead,
+			// TODO: I think we can remove NoPlateIdLoadedForFile,
+			// and its corresponding messages.
 			NoPlateIdLoadedForFile,
-			NoPlateIdLoadedForFeature,
-			NoConjugatePlateIdLoadedForFeature,
+			NoPlateIdCreatedForFeature,
+			NoConjugatePlateIdCreatedForFeature,
+			NoLeftPlateIdCreatedForFeature,
+			NoRightPlateIdCreatedForFeature,
 			AttributeIgnored,
 			UnclassifiedOgrFeatureCreated,
 

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  *
- * Copyright (C) 2009, 2010, 2011, 2012 Geological Survey of Norway
+ * Copyright (C) 2009, 2010, 2011, 2012, 2013 Geological Survey of Norway
  * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -73,6 +73,8 @@
 
 namespace
 {
+
+
 	bool
 	is_shapefile_format(
 			const QFileInfo &qfileinfo)
@@ -274,11 +276,30 @@ namespace
 			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
 			const QMap< QString, QString > &model_to_shapefile_map)
 	{
+		// We add the GPGIM_TYPE to the kvd in all cases.
+		add_field_to_kvd("GPGIM_TYPE",
+						 GPlatesPropertyValues::XsString::create(""),
+						 GPlatesPropertyValues::StructuralType::create_xsi("string"),
+						 dictionary);
 
+		// Now we also add the 2-letter code field. First check if the mapped field name is
+		// GPGIM_TYPE, in which case we'll use TYPE for the 2-letter code. If the mapped field
+		// isn't GPGIM_TYPE, we assume the user has defined their own field name and that they
+		// are using this to map the 2-letter code type.
 		GPlatesPropertyValues::XsString::non_null_ptr_type value =
 				GPlatesPropertyValues::XsString::create("");
 
-		add_field_to_kvd(get_key_string(model_to_shapefile_map, ShapefileAttributes::FEATURE_TYPE),
+		QString key_string;
+		if (GPlatesFileIO::OgrUtils::feature_type_field_is_gpgim_type(model_to_shapefile_map))
+		{
+			key_string = get_key_string(model_to_shapefile_map, ShapefileAttributes::FEATURE_TYPE);
+		}
+		else
+		{
+			key_string = "TYPE";
+		}
+
+		add_field_to_kvd(key_string,
 						 value,
 						 GPlatesPropertyValues::StructuralType::create_xsi("string"),
 						 dictionary);
@@ -312,7 +333,48 @@ namespace
 						 GPlatesPropertyValues::StructuralType::create_xsi("integer"),
 						 dictionary);
 	}
+
+	void
+	add_left_plate_key_to_kvd_if_missing(
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
+			const QMap< QString, QString > &model_to_shapefile_map)
+	{
+		GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
+				GPlatesPropertyValues::XsInteger::create(0);
+
+		add_field_to_kvd(get_key_string(model_to_shapefile_map, ShapefileAttributes::LEFT_PLATE),
+						 value,
+						 GPlatesPropertyValues::StructuralType::create_xsi("integer"),
+						 dictionary);
+	}
+
+	void
+	add_right_plate_key_to_kvd_if_missing(
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
+			const QMap< QString, QString > &model_to_shapefile_map)
+	{
+		GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
+				GPlatesPropertyValues::XsInteger::create(0);
+
+		add_field_to_kvd(get_key_string(model_to_shapefile_map, ShapefileAttributes::RIGHT_PLATE),
+						 value,
+						 GPlatesPropertyValues::StructuralType::create_xsi("integer"),
+						 dictionary);
+	}
 	
+	void
+	add_reconstruction_method_key_to_kvd_if_missing(
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
+			const QMap< QString, QString > &model_to_shapefile_map)
+	{
+		GPlatesPropertyValues::XsString::non_null_ptr_type value =
+				GPlatesPropertyValues::XsString::create("");
+
+		add_field_to_kvd(get_key_string(model_to_shapefile_map, ShapefileAttributes::RECONSTRUCTION_METHOD),
+						 value,
+						 GPlatesPropertyValues::StructuralType::create_xsi("string"),
+						 dictionary);
+	}
 
 	void
 	add_region_to_kvd(
@@ -502,7 +564,9 @@ namespace
 		add_conjugate_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
 		add_feature_type_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
 		add_feature_id_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
-
+		add_reconstruction_method_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
+		add_left_plate_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
+		add_right_plate_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
 	}
 
 
@@ -721,6 +785,121 @@ namespace
 	}
 
 	void
+	fill_kvd_with_left_plate_id(
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
+			const QMap< QString,QString > &model_to_shapefile_map,
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+	{
+		static const GPlatesModel::PropertyName left_plate_id_property_name =
+				GPlatesModel::PropertyName::create_gpml("leftPlate");
+
+		const GPlatesPropertyValues::GpmlPlateId *left_plate_id;
+
+		if (GPlatesFeatureVisitors::get_property_value(feature,left_plate_id_property_name,left_plate_id))
+		{
+			// The feature has a left plate ID
+			GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
+					GPlatesPropertyValues::XsInteger::create(left_plate_id->value());
+
+			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
+						ShapefileAttributes::model_properties[ShapefileAttributes::LEFT_PLATE]);
+
+			if (it != model_to_shapefile_map.end())
+			{
+				QString key_string = it.value();
+
+				GPlatesPropertyValues::XsString::non_null_ptr_type key =
+						GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(key_string));
+
+				GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
+							key,
+							value,
+							GPlatesPropertyValues::StructuralType::create_xsi("integer"));
+
+				add_or_replace_kvd_element(new_element,key_string,dictionary);
+
+			}
+		}
+	}
+	void
+	fill_kvd_with_right_plate_id(
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
+			const QMap< QString,QString > &model_to_shapefile_map,
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+	{
+		static const GPlatesModel::PropertyName right_plate_id_property_name =
+				GPlatesModel::PropertyName::create_gpml("rightPlate");
+
+		const GPlatesPropertyValues::GpmlPlateId *right_plate_id;
+
+		if (GPlatesFeatureVisitors::get_property_value(feature,right_plate_id_property_name,right_plate_id))
+		{
+			// The feature has a right plate ID
+			GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
+					GPlatesPropertyValues::XsInteger::create(right_plate_id->value());
+
+			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
+						ShapefileAttributes::model_properties[ShapefileAttributes::RIGHT_PLATE]);
+
+			if (it != model_to_shapefile_map.end())
+			{
+				QString key_string = it.value();
+
+				GPlatesPropertyValues::XsString::non_null_ptr_type key =
+						GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(key_string));
+
+				GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
+							key,
+							value,
+							GPlatesPropertyValues::StructuralType::create_xsi("integer"));
+
+				add_or_replace_kvd_element(new_element,key_string,dictionary);
+
+			}
+		}
+	}
+
+	void
+	fill_kvd_with_recon_method(
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
+			const QMap< QString,QString > &model_to_shapefile_map,
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+	{
+
+		static const GPlatesModel::PropertyName recon_method_property_name =
+				GPlatesModel::PropertyName::create_gpml("reconstructionMethod");
+
+		const GPlatesPropertyValues::Enumeration *recon_method;
+
+		if (GPlatesFeatureVisitors::get_property_value(
+					feature,recon_method_property_name,recon_method)) {
+
+			GPlatesModel::PropertyValue::non_null_ptr_type value =
+					recon_method->clone();
+
+			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
+						ShapefileAttributes::model_properties[ShapefileAttributes::RECONSTRUCTION_METHOD]);
+
+			if (it != model_to_shapefile_map.end())
+			{
+
+				QString key_string = it.value();
+
+				GPlatesPropertyValues::XsString::non_null_ptr_type key =
+						GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(key_string));
+
+				GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
+							key,
+							value,
+							GPlatesPropertyValues::StructuralType::create_xsi("string"));
+
+				add_or_replace_kvd_element(new_element,key_string,dictionary);
+			}
+		}
+
+	}
+
+	void
 	fill_kvd_with_feature_type(
 			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
 			const QMap< QString,QString > &model_to_shapefile_map,
@@ -733,32 +912,56 @@ namespace
 			return;
 		}
 
+		// Export the gpgim form to GPGIM_TYPE field.
+		QString gpgim_feature_type = convert_qualified_xml_name_to_qstring(
+					feature->feature_type());
+		GPlatesPropertyValues::XsString::non_null_ptr_type gpgim_key =
+				GPlatesPropertyValues::XsString::create("GPGIM_TYPE");
+		GPlatesModel::PropertyValue::non_null_ptr_type gpgim_value =
+			GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(gpgim_feature_type));
+
+		GPlatesPropertyValues::GpmlKeyValueDictionaryElement gpgim_element(
+					gpgim_key,
+					gpgim_value,
+					GPlatesPropertyValues::StructuralType::create_xsi("string"));
+
+		add_or_replace_kvd_element(gpgim_element,QString("GPGIM_TYPE"),dictionary);
+
+		// Export the two-letter form to either the mapped field name, or to TYPE if the
+		// mapped field name is GPGIM_TYPE
+
 		QString feature_type_model_qstring = GPlatesUtils::make_qstring_from_icu_string(
 					feature->feature_type().get_name());
 
+		QString two_letter_feature_type;
 
-		QString feature_type_key;
 		if (feature_type_model_qstring == "UnclassifiedFeature")
 		{
-			feature_type_key = "";
+			two_letter_feature_type = "";
 		}
 		else
 		{
-			feature_type_key = feature_map.key(feature_type_model_qstring);
+			two_letter_feature_type = feature_map.key(feature_type_model_qstring);
 		}
-
 
 		GPlatesModel::PropertyValue::non_null_ptr_type value =
 				GPlatesPropertyValues::XsString::create(
-					GPlatesUtils::make_icu_string_from_qstring(feature_type_key));
+					GPlatesUtils::make_icu_string_from_qstring(two_letter_feature_type));
 
 		QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 					ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_TYPE]);
 
 		if (it != model_to_shapefile_map.end())
 		{
-
-			QString key_string = it.value();
+			QString key_string;
+			if (GPlatesFileIO::OgrUtils::feature_type_field_is_gpgim_type(model_to_shapefile_map))
+			{
+					key_string = "TYPE";
+			}
+			else
+			{
+					key_string = it.value();
+			}
 
 			GPlatesPropertyValues::XsString::non_null_ptr_type key =
 					GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(key_string));
@@ -986,9 +1189,27 @@ namespace
 		elements.push_back(plate_id_element);
 
 		// Add a feature type entry.
-		it = model_to_shapefile_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_TYPE]);
+		GPlatesPropertyValues::GpmlKeyValueDictionaryElement gpgim_type_element(
+					GPlatesPropertyValues::XsString::create(GPlatesUtils::UnicodeString("GPGIM_TYPE")),
+					GPlatesPropertyValues::XsString::create(GPlatesUtils::UnicodeString()),
+					GPlatesPropertyValues::StructuralType::create_xsi("string"));
+		elements.push_back(gpgim_type_element);
+
+		QString type_key;
+		if (GPlatesFileIO::OgrUtils::feature_type_field_is_gpgim_type(model_to_shapefile_map))
+		{
+			type_key = "TYPE";
+		}
+		else
+		{
+			it = model_to_shapefile_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_TYPE]);
+
+			type_key = *it;
+		}
+
 		key = GPlatesPropertyValues::XsString::create(
-					GPlatesUtils::make_icu_string_from_qstring(*it));
+					GPlatesUtils::make_icu_string_from_qstring(type_key));
+
 		GPlatesPropertyValues::XsString::non_null_ptr_type type_value =
 				GPlatesPropertyValues::XsString::create(GPlatesUtils::UnicodeString());
 
@@ -1077,7 +1298,48 @@ namespace
 					conjugate_plate_id_value,
 					GPlatesPropertyValues::StructuralType::create_xsi("integer"));
 		elements.push_back(conjugate_plate_id_element);
-		
+
+		// Add a left plate id entry.
+		it = model_to_shapefile_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::LEFT_PLATE]);
+		key = GPlatesPropertyValues::XsString::create(
+					GPlatesUtils::make_icu_string_from_qstring(*it));
+
+		GPlatesPropertyValues::XsInteger::non_null_ptr_type left_plate_id_value =
+				GPlatesPropertyValues::XsInteger::create(0);
+
+		GPlatesPropertyValues::GpmlKeyValueDictionaryElement left_plate_id_element(
+					key,
+					left_plate_id_value,
+					GPlatesPropertyValues::StructuralType::create_xsi("integer"));
+		elements.push_back(left_plate_id_element);
+
+		// Add a right plate id entry.
+		it = model_to_shapefile_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::RIGHT_PLATE]);
+		key = GPlatesPropertyValues::XsString::create(
+					GPlatesUtils::make_icu_string_from_qstring(*it));
+
+		GPlatesPropertyValues::XsInteger::non_null_ptr_type right_plate_id_value =
+				GPlatesPropertyValues::XsInteger::create(0);
+
+		GPlatesPropertyValues::GpmlKeyValueDictionaryElement right_plate_id_element(
+					key,
+					right_plate_id_value,
+					GPlatesPropertyValues::StructuralType::create_xsi("integer"));
+		elements.push_back(right_plate_id_element);
+
+		// Add a reconstruction method entry
+		it = model_to_shapefile_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::RECONSTRUCTION_METHOD]);
+		key = GPlatesPropertyValues::XsString::create(
+					GPlatesUtils::make_icu_string_from_qstring(*it));
+
+		GPlatesPropertyValues::XsString::non_null_ptr_type recon_method_value =
+				GPlatesPropertyValues::XsString::create(GPlatesUtils::UnicodeString());
+
+		GPlatesPropertyValues::GpmlKeyValueDictionaryElement recon_method_element(
+					key,
+					recon_method_value,
+					GPlatesPropertyValues::StructuralType::create_xsi("string"));
+		elements.push_back(recon_method_element);
 
 		// Add them all to the default kvd.
 		default_key_value_dictionary.reset(GPlatesPropertyValues::GpmlKeyValueDictionary::create(elements));
@@ -1098,6 +1360,9 @@ namespace
 		fill_kvd_with_name(dictionary,model_to_shapefile_map,feature);
 		fill_kvd_with_description(dictionary,model_to_shapefile_map,feature);
 		fill_kvd_with_conjugate_plate_id(dictionary,model_to_shapefile_map,feature);
+		fill_kvd_with_recon_method(dictionary,model_to_shapefile_map,feature);
+		fill_kvd_with_left_plate_id(dictionary,model_to_shapefile_map,feature);
+		fill_kvd_with_right_plate_id(dictionary,model_to_shapefile_map,feature);
 	}
 	
 	void
@@ -1211,7 +1476,7 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 	 *			* the filename
 	 *			* whether or not we have multiple geometry types (e.g. points AND polylines)
 	 *			* whether or not we want to perform dateline wrapping.
-	 *		* build an property-to-attribute-map, using one obtained from the feature collection configuration as
+	 *		* build a property-to-attribute-map, using one obtained from the feature collection configuration as
 	 *		  a starting point, and adding any missing required fields to it.  We will use this property-to-attribute
 	 *		  map in finalise_post_feature_properties when we actually write out the feature.
 	 *		* build a kvd, using a kvd found in the feature collection as a starting point, and adding any missing

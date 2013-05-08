@@ -9,7 +9,7 @@
  * 
  * Copyright (C) 2007, 2008, 2009 Geological Survey of Norway (under the name "ShapefileReader.h")
  * Copyright (C) 2010 The University of Sydney, Australia (under the name "ShapefileReader.h")
- * Copyright (C) 2012 Geological Survey of Norway
+ * Copyright (C) 2012, 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -98,6 +98,29 @@ namespace
 		return GPlatesPropertyValues::GeoTimeInstant(time);
 	}
 #endif
+
+	/**
+	 * @brief recon_method_is_valid returns true if @a recon_method is either "HalfStageRotation"
+	 * or "ByPlateID".
+	 *
+	 * Note that currently (May 2013) only HalfStageRotation gets exported by any part of GPlates. ByPlateID
+	 * is considered as the default and is not explicitly exported in any of GPlates' export functionality, and
+	 * features will not normally contain a gpml:reconstructionMethod property. In this case shapefile export
+	 * will write an empty string as the reconstructionMethod. As this returns false from this function,
+	 * no reconstructionMethod will be added to the feature, and so the normal by-plate-id reconstruction method
+	 * will be used.
+	 */
+	bool
+	recon_method_is_valid(
+			const QString &recon_method)
+	{
+		if ((recon_method == "HalfStageRotation") ||
+				(recon_method == "ByPlateID"))
+		{
+			return true;
+		}
+		return false;
+	}
 
 
 	const GPlatesPropertyValues::GeoTimeInstant
@@ -205,26 +228,33 @@ namespace
 	create_feature(
 		GPlatesModel::ModelInterface &model,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-		QString &feature_type_qstring,
+		const QString &feature_type_qstring,
 		boost::optional<GPlatesUtils::UnicodeString> &feature_id)
 	{
 
+		// FIXME: check should we be using convert_qstring_to_qualified_xml_name here?
+		// Will this make any difference?
+		boost::optional<GPlatesModel::FeatureType> feature_type =
+			//GPlatesModel::FeatureType::create_gpml(feature_type_qstring);
+				GPlatesModel::convert_qstring_to_qualified_xml_name<GPlatesModel::FeatureType>(feature_type_qstring);
 
-		GPlatesModel::FeatureType feature_type = 
-			GPlatesModel::FeatureType::create_gpml(feature_type_qstring);
-
+		if (!feature_type)
+		{
+			feature_type = GPlatesModel::convert_qstring_to_qualified_xml_name<GPlatesModel::FeatureType>
+					("UnclassifiedFeature");
+		}
 		if (feature_id)
 		{
 			return GPlatesModel::FeatureHandle::create(
 					collection,
-					feature_type,
+					*feature_type,
 					GPlatesModel::FeatureId(*feature_id));
 		}
 		else
 		{
 			return GPlatesModel::FeatureHandle::create(
 					collection,
-					feature_type);
+					*feature_type);
 		}
 	}
 
@@ -267,6 +297,49 @@ namespace
 					conjugate_plate_id));
 	}
 
+	void
+	append_left_plate_id_to_feature(
+			const GPlatesModel::FeatureHandle::weak_ref &feature,
+			int left_plate_id_as_int)
+	{
+		GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type left_plate_id =
+				GPlatesPropertyValues::GpmlPlateId::create(left_plate_id_as_int);
+
+		feature->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+						GPlatesModel::PropertyName::create_gpml("leftPlate"),
+						left_plate_id));
+	}
+
+	void
+	append_right_plate_id_to_feature(
+			const GPlatesModel::FeatureHandle::weak_ref &feature,
+			int right_plate_id_as_int)
+	{
+		GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type right_plate_id =
+				GPlatesPropertyValues::GpmlPlateId::create(right_plate_id_as_int);
+
+		feature->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+						GPlatesModel::PropertyName::create_gpml("rightPlate"),
+						right_plate_id));
+	}
+
+	void
+	append_recon_method_to_feature(
+			const GPlatesModel::FeatureHandle::weak_ref &feature,
+			const QString &recon_method)
+	{
+		GPlatesPropertyValues::Enumeration::non_null_ptr_type recon_method_property_value =
+				GPlatesPropertyValues::Enumeration::create(
+						GPlatesPropertyValues::EnumerationType::create_gpml("ReconstructionMethodEnumeration"),
+						GPlatesUtils::make_icu_string_from_qstring(recon_method));
+
+		feature->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+						GPlatesModel::PropertyName::create_gpml("reconstructionMethod"),
+						recon_method_property_value));
+	}
 
 	void
 	append_plate_id_to_feature(
@@ -333,8 +406,11 @@ namespace
 	 *		reconstructionPlateId,
 	 *		validTime,
 	 *		description
-	 *		name and
+	 *		name
 	 *		conjugatePlateId
+	 *		reconstructionMethod
+	 *		leftPlate
+	 *		rightPlate
 	 *	from the feature given by @a feature_handle.
 	 *
 	 * This is used when re-mapping model properties from shapefile attributes.
@@ -350,6 +426,9 @@ namespace
 		property_name_list << QString("description"); 
 		property_name_list << QString("name"); 
 		property_name_list << QString("conjugatePlateId");
+		property_name_list << QString("reconstructionMethod");
+		property_name_list << QString("leftPlate");
+		property_name_list << QString("rightPlate");
 
 		GPlatesModel::FeatureHandle::iterator p_iter = feature->begin();
 		GPlatesModel::FeatureHandle::iterator p_iter_end = feature->end();
@@ -399,7 +478,7 @@ namespace
 					source,
 					location,
 					GPlatesFileIO::ReadErrors::InvalidShapefilePlateIdNumber,
-					GPlatesFileIO::ReadErrors::NoPlateIdLoadedForFeature));
+					GPlatesFileIO::ReadErrors::NoPlateIdCreatedForFeature));
 
 			}
 
@@ -490,11 +569,83 @@ namespace
 					source,
 					location,
 					GPlatesFileIO::ReadErrors::InvalidShapefilePlateIdNumber,
-					GPlatesFileIO::ReadErrors::NoConjugatePlateIdLoadedForFeature));
+					GPlatesFileIO::ReadErrors::NoConjugatePlateIdCreatedForFeature));
 			}
 
 		}		
-		
+
+		it = model_to_attribute_map.find(
+				ShapefileAttributes::model_properties[ShapefileAttributes::RECONSTRUCTION_METHOD]);
+
+		if (it != model_to_attribute_map.constEnd())
+		{
+			attribute = get_qvariant_from_finder(it.value(),feature);
+
+			QString recon_method = attribute.toString();
+
+			if ( recon_method_is_valid(recon_method)){
+				append_recon_method_to_feature(feature,recon_method);
+			}
+			else{
+				if (!recon_method.isEmpty()) // suppress warning messages for empty strings.
+				{
+					read_errors.d_warnings.push_back(
+								GPlatesFileIO::ReadErrorOccurrence(
+									source,
+									location,
+									GPlatesFileIO::ReadErrors::InvalidShapefileReconstructionMethod,
+									GPlatesFileIO::ReadErrors::AttributeIgnored));
+				}
+			}
+
+		}
+
+		it = model_to_attribute_map.find(
+				ShapefileAttributes::model_properties[ShapefileAttributes::LEFT_PLATE]);
+
+		if (it != model_to_attribute_map.constEnd())
+		{
+			attribute = get_qvariant_from_finder(it.value(),feature);
+			bool ok;
+			int left_plate_id_as_int = attribute.toInt(&ok);
+			if (ok){
+				append_left_plate_id_to_feature(feature,left_plate_id_as_int);
+			}
+			else{
+				read_errors.d_warnings.push_back(
+					GPlatesFileIO::ReadErrorOccurrence(
+					source,
+					location,
+					GPlatesFileIO::ReadErrors::InvalidShapefilePlateIdNumber,
+					GPlatesFileIO::ReadErrors::NoLeftPlateIdCreatedForFeature));
+			}
+
+		}
+
+
+		it = model_to_attribute_map.find(
+			ShapefileAttributes::model_properties[ShapefileAttributes::RIGHT_PLATE]);
+
+		if (it != model_to_attribute_map.constEnd())
+		{
+			attribute = get_qvariant_from_finder(it.value(),feature);
+			bool ok;
+			int right_plate_id_as_int = attribute.toInt(&ok);
+			if (ok){
+				append_right_plate_id_to_feature(feature,right_plate_id_as_int);
+			}
+			else{
+				read_errors.d_warnings.push_back(
+							GPlatesFileIO::ReadErrorOccurrence(
+								source,
+								location,
+								GPlatesFileIO::ReadErrors::InvalidShapefilePlateIdNumber,
+								GPlatesFileIO::ReadErrors::NoRightPlateIdCreatedForFeature));
+			}
+
+		}
+
+
 		
 	}
 
@@ -812,11 +963,9 @@ GPlatesFileIO::OgrReader::read_features(
 
 	static const OgrUtils::feature_map_type &feature_map = OgrUtils::build_feature_map();
 
+	// A default type in case we don't recognise a valid feature type.
 	d_feature_type = "UnclassifiedFeature";
-#if 0
-	d_feature_creation_pair = std::make_pair("UnclassifiedFeature",
-			"unclassifiedGeometry");
-#endif
+
 	while ((d_feature_ptr = d_layer_ptr->GetNextFeature()) != NULL){
 	
 		boost::shared_ptr<GPlatesFileIO::LocationInDataSource> e_location(
@@ -835,9 +984,11 @@ GPlatesFileIO::OgrReader::read_features(
 
 		get_attributes();
 
+
 		// Check if we have a shapefile attribute corresponding to the Feature Type.
 		QMap<QString,QString>::const_iterator it = 
 			d_model_to_attribute_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::FEATURE_TYPE]);
+
 
 		if ((it != d_model_to_attribute_map.constEnd()) && d_field_names.contains(it.value())) {
 		
@@ -850,15 +1001,22 @@ GPlatesFileIO::OgrReader::read_features(
 			{
 
 				QString feature_string = d_attributes[index].toString();
-
-				OgrUtils::feature_map_const_iterator result = feature_map.find(feature_string);
-				if (result != feature_map.end()) {
-				//	d_feature_creation_pair = result->second;
-					d_feature_type = *result;
-				} else {
-					read_errors.d_warnings.push_back(GPlatesFileIO::ReadErrorOccurrence(e_source, e_location, 
-					GPlatesFileIO::ReadErrors::UnrecognisedOgrFeatureType,
-					GPlatesFileIO::ReadErrors::UnclassifiedOgrFeatureCreated));
+				boost::optional<GPlatesModel::FeatureType> optional_feature_type;
+				if (GPlatesFileIO::OgrUtils::feature_type_field_is_gpgim_type(d_model_to_attribute_map))
+				{
+					// FIXME: We should check for a valid feature type here.
+					d_feature_type = feature_string;
+				}
+				else
+				{
+					OgrUtils::feature_map_const_iterator result = feature_map.find(feature_string);
+					if (result != feature_map.end()) {
+						d_feature_type = *result;
+					} else {
+						read_errors.d_warnings.push_back(GPlatesFileIO::ReadErrorOccurrence(e_source, e_location,
+						GPlatesFileIO::ReadErrors::UnrecognisedOgrFeatureType,
+						GPlatesFileIO::ReadErrors::UnclassifiedOgrFeatureCreated));
+					}
 				}
 			}
 		}
