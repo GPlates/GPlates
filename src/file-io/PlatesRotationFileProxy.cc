@@ -1744,8 +1744,7 @@ GPlatesFileIO::PlatesRotationFileProxy::remove_dangling_mprs_header()
 	RotationFileSegmentContainer& segments = get_segments();
 	RotationFileSegmentContainer::iterator 
 		it = segments.begin(),
-		end = segments.end(),
-		begin_of_mprs = segments.end();
+		end = segments.end();
 	bool inside_rotation_sequence = false;
 	bool found_pole_line = false;
 	for(; it != end; it++)
