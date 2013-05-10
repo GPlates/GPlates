@@ -1155,7 +1155,7 @@ GPlatesFileIO::PlatesRotationFileProxy::update_header_metadata(
 			{
 				RotationFileSegmentContainer::iterator 
 					it = segments.begin(), end = segments.end(), 
-					pos_to_insert = end, last_same_attr = end, last_header_attr = end;
+					pos_to_insert = end, last_same_attr = end, last_header_attr = segments.begin();
 				// first, try to find the attributes with the same name.
 				for(; it!=end; it++) 
 				{
@@ -1189,7 +1189,7 @@ GPlatesFileIO::PlatesRotationFileProxy::update_header_metadata(
 					//put it at the end of header entries.
 					pos_to_insert = last_header_attr;
 				}
-				while(pos_to_insert != end)
+				while(pos_to_insert != end && pos_to_insert != segments.begin())
 				{
 					pos_to_insert++;
 					if(!(*pos_to_insert)->to_qstring().simplified().isEmpty())
