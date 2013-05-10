@@ -145,28 +145,18 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceDialog::handle_apply()
 	GPlatesModel::TopLevelProperty::non_null_ptr_type trs =
 		d_edit_widget_ptr->get_irregular_sampling_property_value_from_table_widget();
 
-	// Replace the irregular sampling property of the TRS feature with the TRS we've just created. 
-	if (d_irregular_sampling_property_iterator)
-	{
-		**d_irregular_sampling_property_iterator = trs;
-	}
-
 	// Update the plate-id properties.
-
 	GPlatesModel::TopLevelProperty::non_null_ptr_type moving_prop = 
 		GPlatesModel::TopLevelPropertyInline::create(
 		GPlatesModel::PropertyName::create_gpml("movingReferenceFrame"),
 		GPlatesPropertyValues::GpmlPlateId::create(d_edit_widget_ptr->moving_plate_id()));
-
-	**d_moving_ref_frame_iterator = moving_prop;
 
 	GPlatesModel::TopLevelProperty::non_null_ptr_type fixed_prop = 
 		GPlatesModel::TopLevelPropertyInline::create(
 		GPlatesModel::PropertyName::create_gpml("fixedReferenceFrame"),
 		GPlatesPropertyValues::GpmlPlateId::create(d_edit_widget_ptr->fixed_plate_id()));
 
-	**d_fixed_ref_frame_iterator = fixed_prop;
-
+	d_trs_dialog.update_current_sequence(moving_prop,fixed_prop,trs);
 	d_trs_dialog.update_edited_feature();
 
 	buttonbox->button(QDialogButtonBox::Apply)->setEnabled(false);

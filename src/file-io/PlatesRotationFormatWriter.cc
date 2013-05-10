@@ -30,6 +30,7 @@
 #include <ostream>
 #include <vector>
 #include <boost/none.hpp>
+#include <boost/foreach.hpp>
 
 #include "global/unicode.h"
 
@@ -56,6 +57,7 @@
 
 namespace
 {
+	using namespace GPlatesModel;
 	void
 	print_rotation_line_details(
 			std::ostream *os,
@@ -65,9 +67,38 @@ namespace
 			const double &longitude,
 			const double &angle,
 			int fixed_plate_id,
-			const GPlatesUtils::UnicodeString &comment)
+			const GPlatesUtils::UnicodeString &comment,
+			const std::vector<Metadata::shared_const_ptr_type> &metadata)
 	{
 		using namespace GPlatesUtils;
+		std::vector<Metadata::shared_const_ptr_type> multi_line_attr, single_line_attr;
+		BOOST_FOREACH(const Metadata::shared_const_ptr_type& data, metadata)
+		{
+			if(data->get_content().contains("\n"))
+			{
+				multi_line_attr.push_back(data);
+			}
+			else
+			{
+				single_line_attr.push_back(data);
+			}
+		}
+
+		BOOST_FOREACH(const Metadata::shared_const_ptr_type& data, multi_line_attr)
+		{
+			QString content = data->get_content(), sep ="\"";
+			QStringList l = content.split("\n");
+			for(int i =0; i<(l.size()-1); i++)
+			{
+				if(!l[i].simplified().endsWith("\\"))
+				{
+					sep ="\"\"\"";
+					break;
+				}
+			}
+			(*os)<< " @" << data->get_name().toUtf8().data() << sep.toUtf8().data() 
+				<< data->get_content().toUtf8().data()<< sep.toUtf8().data() <<"\n";
+		}
 
 		(*os) << formatted_int_to_string(moving_plate_id, 3, '0')
 			<< " "
@@ -79,10 +110,24 @@ namespace
 			<< " "
 			<< formatted_double_to_string(angle, 7, 2, true)
 			<< "  "
-			<< formatted_int_to_string(fixed_plate_id, 3, '0')
-			<< " !"
-			<< comment
-			<< std::endl;
+			<< formatted_int_to_string(fixed_plate_id, 3, '0');
+			if(metadata.empty())	
+			{
+				if(!comment.isEmpty())
+				{
+					(*os)<< " !"<< comment;
+				}
+			}
+			else
+			{
+				BOOST_FOREACH(const Metadata::shared_const_ptr_type& data, single_line_attr)
+				{
+					(*os)<< " @" << data->get_name().toUtf8().data() << "\"" 
+						<< data->get_content().toUtf8().data()<< "\"";
+				}
+			}
+
+			(*os) << std::endl;
 	}
 }
 
@@ -132,7 +177,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::prin
 		if (GPlatesMaths::represents_identity_rotation(quat)) 
 		{
 			print_rotation_line_details(os, moving_plate_id_or_comment, *(iter->time), 0.0, 0.0, 0.0, 
-					*fixed_plate_id, str_comment);
+					*fixed_plate_id, str_comment, iter->metadata);
 		} 
 		else 
 		{
@@ -144,7 +189,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::prin
 
 			print_rotation_line_details(os, moving_plate_id_or_comment, *(iter->time),
 					pole.latitude(), pole.longitude(), GPlatesMaths::convert_rad_to_deg(rot_params.angle.dval()),
-					*fixed_plate_id, str_comment);
+					*fixed_plate_id, str_comment, iter->metadata);
 		}
 	}
 }
@@ -235,6 +280,14 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_finite_rotation(
 		const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
 {
 	d_accum.current_pole().finite_rotation = gpml_finite_rotation.finite_rotation();
+}
+
+
+void
+GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_total_reconstruction_pole(
+		const GPlatesPropertyValues::GpmlTotalReconstructionPole &trp)
+{
+	visit_gpml_finite_rotation(trp);
 }
 
 

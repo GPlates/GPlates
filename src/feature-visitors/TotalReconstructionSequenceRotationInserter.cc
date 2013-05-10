@@ -29,17 +29,27 @@
 
 #include <boost/none.hpp>  // boost::none
 
+#include "TotalReconstructionSequencePlateIdFinder.h"
+
+#include "app-logic/ApplicationState.h"
+#include "app-logic/FeatureCollectionFileState.h"
+
+#include "file-io/PlatesRotationFileProxy.h"
+
 #include "TotalReconstructionSequenceRotationInserter.h"
 
 #include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
 #include "model/ModelUtils.h"
 
+#include "presentation/Application.h"
+
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
+#include "property-values/GpmlTotalReconstructionPole.h"
 
 /*
 namespace
@@ -66,7 +76,10 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::TotalRecons
 	d_rotation_to_apply(rotation_to_apply),
 	d_is_expecting_a_finite_rotation(false),
 	d_trp_time_matches_exactly(false),
-	d_comment(comment)
+	d_comment(comment),
+	d_grot_proxy(NULL),
+	d_moving_plate_id(0),
+	d_fixed_plate_id(0)
 {  }
 
 
@@ -74,9 +87,64 @@ bool
 GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::initialise_pre_feature_properties(
 		GPlatesModel::FeatureHandle &feature_handle)
 {
+	using namespace GPlatesAppLogic;
+	using namespace GPlatesModel;
+	using namespace GPlatesFileIO;
 	d_is_expecting_a_finite_rotation = false;
 	d_trp_time_matches_exactly = false;
 	d_finite_rotation = boost::none;
+
+	TotalReconstructionSequencePlateIdFinder id_finder;
+	id_finder.visit_feature(feature_handle.reference());
+	boost::optional<GPlatesModel::integer_plate_id_type> 
+		moving_plate_id = id_finder.moving_ref_frame_plate_id(),
+		fixed_plate_id = id_finder.fixed_ref_frame_plate_id();
+	if(moving_plate_id)
+	{
+		d_moving_plate_id = *moving_plate_id;
+
+	}
+	if(fixed_plate_id)
+	{
+		d_fixed_plate_id = *fixed_plate_id;
+	}
+
+	FeatureCollectionFileState &file_state = 
+		GPlatesPresentation::Application::instance().get_application_state().get_feature_collection_file_state();
+	std::vector<FeatureCollectionFileState::file_reference> loaded_files =
+		file_state.get_loaded_files();
+
+	std::vector<FeatureCollectionFileState::file_reference>::iterator 
+		iter = loaded_files.begin(),
+		end = loaded_files.end();
+	for ( ; iter != end; ++iter) 
+	{
+		GPlatesModel::FeatureCollectionHandle::weak_ref fc = iter->get_file().get_feature_collection();
+		GPlatesModel::FeatureCollectionHandle::iterator 
+			fc_it = fc->begin(),
+			fc_end = fc->end();
+		for(; fc_it != fc_end; fc_it++)
+		{
+			if((*fc_it).get() == &feature_handle)
+			{
+				const boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> cfg = 
+					iter->get_file().get_file_configuration();
+				if(cfg)
+				{
+					boost::shared_ptr<const FeatureCollectionFileFormat::RotationFileConfiguration> rotation_cfg_const =
+						boost::dynamic_pointer_cast<const FeatureCollectionFileFormat::RotationFileConfiguration>(*cfg);
+					boost::shared_ptr<FeatureCollectionFileFormat::RotationFileConfiguration> rotation_cfg =
+						boost::const_pointer_cast< FeatureCollectionFileFormat::RotationFileConfiguration>(rotation_cfg_const);
+					if(rotation_cfg)
+					{
+						d_grot_proxy = &rotation_cfg->get_rotation_file_proxy();
+						return true;
+					}
+
+				}
+			}
+		}
+	}
 	return true;
 }
 
@@ -96,6 +164,18 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 					GPlatesMaths::compose(d_rotation_to_apply,
 							gpml_finite_rotation.finite_rotation());
 			gpml_finite_rotation.set_finite_rotation(updated_finite_rotation);
+			GPlatesFileIO::RotationPoleData 
+				new_pole(
+						updated_finite_rotation,
+						d_moving_plate_id,
+						d_fixed_plate_id,
+						d_recon_time.value()),
+				old_pole(
+						gpml_finite_rotation.finite_rotation(),
+						d_moving_plate_id,
+						d_fixed_plate_id,
+						d_recon_time.value());
+			d_grot_proxy->update_pole(old_pole, new_pole);
 		} else {
 			// The finite rotation needs to be interpolated and a new time-sample needs
 			// to be inserted.  That means this function will be called twice by
@@ -288,8 +368,19 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 					GPlatesMaths::compose(d_rotation_to_apply, interpolated_finite_rotation);
 
 			// Create the new time-sample.
-			PropertyValue::non_null_ptr_type value =
-					GpmlFiniteRotation::create(updated_finite_rotation);
+			boost::optional<PropertyValue::non_null_ptr_type> value_opt;
+			if(dynamic_cast<GpmlTotalReconstructionPole*>(iter->value().get()))
+			{
+				//if the rotation feature is from a .grot file, 
+				//we need to create GpmlTotalReconstructionPole instead of GpmlFiniteRotation.
+				value_opt = GpmlTotalReconstructionPole::non_null_ptr_type(
+					new GpmlTotalReconstructionPole(updated_finite_rotation));
+			}
+			else
+			{
+				value_opt = GpmlFiniteRotation::create(updated_finite_rotation);
+			}
+			PropertyValue::non_null_ptr_type value = *value_opt;
 			GmlTimeInstant::non_null_ptr_type valid_time =
 					ModelUtils::create_gml_time_instant(d_recon_time);
 			boost::intrusive_ptr<XsString> description =
@@ -300,7 +391,15 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 
 			// Now insert the time-sample at the appropriate position.
 			gpml_irregular_sampling.time_samples().insert(iter, new_time_sample);
-
+			GPlatesFileIO::RotationPoleData data(
+					updated_finite_rotation,
+					d_moving_plate_id,
+					d_fixed_plate_id,
+					d_recon_time.value());
+			if(d_grot_proxy)
+			{
+				d_grot_proxy->insert_pole(data);
+			}
 			// OK, our task is complete.  Hence, we're going to exit from this loop by
 			// returning out of this function.  Hence, we won't be iterating through
 			// the vector of time-samples any more.  Hence, there's no need to correct

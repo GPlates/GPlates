@@ -36,6 +36,8 @@
 #include "GpgimProperty.h"
 #include "Model.h"
 
+#include "global/LogException.h"
+
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
@@ -204,6 +206,27 @@ GPlatesModel::ModelUtils::get_property_value(
 	const PropertyValue::non_null_ptr_to_const_type property_value = *tlpi->begin();
 
 	return property_value;
+}
+
+
+std::vector<GPlatesModel::FeatureHandle::iterator>
+GPlatesModel::ModelUtils::get_top_level_property_ref(
+		const PropertyName& name,
+		GPlatesModel::FeatureHandle::weak_ref feature)
+{
+	std::vector<FeatureHandle::iterator> ret;
+	if(feature.is_valid())
+	{
+		FeatureHandle::iterator it = feature->begin();
+		for(;it != feature->end(); it++)
+		{
+			if((*it)->property_name() == name)
+			{
+				ret.push_back(it);
+			}
+		}
+	}
+	return ret;
 }
 
 
@@ -870,4 +893,50 @@ GPlatesModel::ModelUtils::create_total_recon_seq(
 
 	return feature;
 }
+
+
+GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type
+GPlatesModel::ModelUtils::get_mprs_attributes(
+		GPlatesModel::FeatureHandle::const_weak_ref f)
+{
+
+	static const  PropertyName mprs_attrs = PropertyName::create_gpml(QString("mprsAttributes"));
+	if(f.is_valid())
+	{
+		const GPlatesPropertyValues::GpmlKeyValueDictionary* const_dictionary = NULL;
+		FeatureHandle::const_iterator	it = f->begin();
+		for(;it != f->end(); it++)
+		{
+			if((*it)->property_name() == mprs_attrs)
+			{
+				const TopLevelPropertyInline *p_inline = dynamic_cast<const TopLevelPropertyInline*>((*it).get());
+				if(p_inline && p_inline->size() >= 1)
+				{
+					const_dictionary = 
+						dynamic_cast<const GPlatesPropertyValues::GpmlKeyValueDictionary*>((*p_inline->begin()).get());
+				}
+			}
+		}
+		
+		if(const_dictionary)
+		{
+			GPlatesPropertyValues::GpmlKeyValueDictionary* dictionary = 
+				const_cast<GPlatesPropertyValues::GpmlKeyValueDictionary*>(const_dictionary);
+			return GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type(dictionary);
+		}
+		
+	}
+	throw GPlatesGlobal::LogException(
+		GPLATES_EXCEPTION_SOURCE,
+		"Cannot find MPRS attributes.");
+}
+
+
+
+
+
+
+
+
+
 

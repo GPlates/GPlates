@@ -19,6 +19,9 @@ set(srcs
     AbstractEditWidget.h
     ActionButtonBox.cc
     ActionButtonBox.h
+    AddContributorWidgetUi.ui
+    AddCreatorWidgetUi.ui
+    AddGTSWidgetUi.ui
     AddNewLayerDialog.cc
     AddNewLayerDialog.h
     AddNewLayerDialogUi.ui
@@ -308,6 +311,9 @@ set(srcs
     MeasureDistanceWidget.cc
     MeasureDistanceWidget.h
     MeasureDistanceWidgetUi.ui
+    MetadataDialog.cc
+    MetadataDialog.h
+    MetadataDialogUi.ui
     ModifyGeometryWidget.cc
     ModifyGeometryWidget.h
     ModifyGeometryWidgetUi.ui

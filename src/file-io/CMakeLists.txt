@@ -157,6 +157,8 @@ set(srcs
     PlatesLineFormatReader.h
     PlatesLineFormatWriter.cc
     PlatesLineFormatWriter.h
+    PlatesRotationFileProxy.cc
+    PlatesRotationFileProxy.h
     PlatesRotationFormatReader.cc
     PlatesRotationFormatReader.h
     PlatesRotationFormatWriter.cc
@@ -192,6 +194,8 @@ set(srcs
     ResolvedTopologicalGeometryExport.h
     RgbaRasterReader.cc
     RgbaRasterReader.h
+    RotationAttributesRegistry.cc
+    RotationAttributesRegistry.h
     ScalarField3DFileFormat.cc
     ScalarField3DFileFormat.h
     ScalarField3DFileFormatReader.cc

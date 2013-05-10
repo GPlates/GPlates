@@ -46,6 +46,7 @@
 #include "GpmlPropertyStructuralTypeReader.h"
 #include "PlatesLineFormatReader.h"
 #include "PlatesLineFormatWriter.h"
+#include "PlatesRotationFileProxy.h"
 #include "PlatesRotationFormatReader.h"
 #include "PlatesRotationFormatWriter.h"
 #include "OgrReader.h"
@@ -125,6 +126,7 @@ namespace GPlatesFileIO
 			const QString FILE_FORMAT_EXT_PLATES4_LINE = "dat";
 			const QString FILE_FORMAT_EXT_PLATES4_LINE_ALTERNATIVE = "pla";
 			const QString FILE_FORMAT_EXT_PLATES4_ROTATION = "rot";
+			const QString FILE_FORMAT_EXT_GPLATES_ROTATION = "grot";
 			const QString FILE_FORMAT_EXT_SHAPEFILE = "shp";
 			const QString FILE_FORMAT_EXT_OGRGMT = "gmt";
 			const QString FILE_FORMAT_EXT_WRITE_ONLY_XY_GMT = "xy";
@@ -227,6 +229,18 @@ namespace GPlatesFileIO
 			}
 
 
+			void
+			gplates_rotation_read_feature_collection(
+					File::Reference &file_ref,
+					const Registry &file_format_registry,
+					GPlatesModel::ModelInterface &model,
+					ReadErrorAccumulation &read_errors)
+			{
+				file_ref.set_file_info(file_ref.get_file_info(), file_format_registry.get_default_configuration(GPLATES_ROTATION));
+				RotationFileReader::read_file(file_ref, model, read_errors);
+			}
+
+
 			/**
 			 * Reads a GSML feature collection.
 			 */
@@ -300,6 +314,39 @@ namespace GPlatesFileIO
 				return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
 						new PlatesRotationFormatWriter(file_ref.get_file_info(), gpgim));
 			}
+
+
+			/**
+			 * Creates a .grot file writer.
+			 */
+			boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>
+			create_grot_feature_collection_writer(
+					File::Reference &file_ref,
+					const GPlatesModel::Gpgim &gpgim)
+			{
+				const boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> cfg = 
+					file_ref.get_file_configuration();
+				if(cfg)
+				{
+					boost::shared_ptr<const RotationFileConfiguration> rotation_cfg_const =
+						boost::dynamic_pointer_cast<const RotationFileConfiguration>(*cfg);
+					boost::shared_ptr<RotationFileConfiguration> rotation_cfg = 
+						boost::const_pointer_cast<RotationFileConfiguration>(rotation_cfg_const);
+					if(rotation_cfg)
+					{
+						boost::shared_ptr<GrotWriterWithCfg> writer = 
+							rotation_cfg->get_rotation_file_proxy().create_file_writer(file_ref,gpgim);
+						if(writer)
+						{
+							return boost::dynamic_pointer_cast<GPlatesModel::ConstFeatureVisitor>(writer);
+						}
+					}
+				}
+				
+				return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
+						new GrotWriterWithoutCfg(file_ref, gpgim));
+			}
+
 
 			/**
 			 * Creates a feature visitor writer for the SHAPEFILE and OGRGMT file formats.
@@ -694,6 +741,22 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 					boost::bind(&create_plates_line_feature_collection_writer, _1, boost::cref(gpgim))),
 			// No configuration options yet for this file format...
 			boost::none);
+
+	classifications_type gplates_rotation_classification;
+	Configuration::shared_ptr_to_const_type grot_default_configuration(new RotationFileConfiguration());
+	gplates_rotation_classification.set(RECONSTRUCTION);
+	registry.register_file_format(
+			GPLATES_ROTATION,
+			"GPlates rotation",
+			std::vector<QString>(1, FILE_FORMAT_EXT_GPLATES_ROTATION),
+			gplates_rotation_classification,
+			&file_name_ends_with,
+			Registry::read_feature_collection_function_type(
+					boost::bind(&gplates_rotation_read_feature_collection,
+							_1, boost::cref(registry), boost::ref(model), _2)),
+			Registry::create_feature_collection_writer_function_type(
+					boost::bind(&create_grot_feature_collection_writer, _1, boost::cref(gpgim))), //TODO: the writer
+			grot_default_configuration);
 
 	classifications_type plate4_rotation_classification;
 	plate4_rotation_classification.set(RECONSTRUCTION);

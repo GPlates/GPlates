@@ -52,6 +52,7 @@
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlMeasure.h"
+#include "property-values/GpmlMetadata.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
@@ -379,6 +380,17 @@ namespace GPlatesFileIO
 				const GPlatesModel::GpgimVersion &gpml_version,
 				ReadErrorAccumulation &read_errors);
 
+		GPlatesPropertyValues::GpmlMetadata::non_null_ptr_type
+		create_gpml_metadata(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+				const GPlatesModel::GpgimVersion &gpml_version,
+				ReadErrorAccumulation &read_errors);
+
+		const GPlatesMaths::FiniteRotation
+		create_finite_rotation(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+				const GPlatesModel::GpgimVersion &gpml_version,
+				GPlatesFileIO::ReadErrorAccumulation &read_errors);
 	}
 }
 

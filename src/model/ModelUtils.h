@@ -44,6 +44,7 @@
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/StructuralType.h"
+#include "property-values/GpmlKeyValueDictionary.h"
 
 #include "global/InvalidFeatureCollectionException.h"
 #include "global/InvalidParametersException.h"
@@ -245,6 +246,14 @@ namespace GPlatesModel
 				const TopLevelProperty &top_level_property,
 				TopLevelPropertyError::Type *error_code = NULL);
 
+		/**
+		 * Returns the TopLevelPropertyRef(s) of the given name in a feature.
+		 */
+		std::vector<FeatureHandle::iterator>
+		get_top_level_property_ref(
+				const PropertyName& name,
+				GPlatesModel::FeatureHandle::weak_ref feature);
+
 
 		/**
 		 * Creates a TopLevelPropertyInline from the specified property value.
@@ -342,6 +351,15 @@ namespace GPlatesModel
 		}
 
 
+		/*
+		* Given the feature reference, 
+		* return the MPRS(Moving Plate Rotation Sequence) metadata as a GpmlKeyValueDictionary.
+		*/
+		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type
+		get_mprs_attributes(
+				FeatureHandle::const_weak_ref f);
+
+
 		/**
 		 * Renames all properties of @a feature, with property name matching @a old_property_name,
 		 * to property name @a new_property_name.
@@ -396,3 +414,8 @@ namespace GPlatesModel
 }
 
 #endif  // GPLATES_MODEL_MODELUTILS_H
+
+
+
+
+

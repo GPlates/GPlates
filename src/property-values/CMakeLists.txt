@@ -66,6 +66,7 @@ set(srcs
     GpmlKeyValueDictionaryElement.h
     GpmlMeasure.cc
     GpmlMeasure.h
+    GpmlMetadata.h
     GpmlOldPlatesHeader.cc
     GpmlOldPlatesHeader.h
     GpmlPiecewiseAggregation.cc
@@ -100,6 +101,7 @@ set(srcs
     GpmlTopologicalPolygon.h
     GpmlTopologicalSection.cc
     GpmlTopologicalSection.h
+    GpmlTotalReconstructionPole.h
     OldVersionPropertyValue.cc
     OldVersionPropertyValue.h
     PropertyValues.cc

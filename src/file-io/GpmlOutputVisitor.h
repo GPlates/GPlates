@@ -218,6 +218,11 @@ namespace GPlatesFileIO
 
 		virtual
 		void
+		visit_gpml_total_reconstruction_pole(
+				const GPlatesPropertyValues::GpmlTotalReconstructionPole &pole);
+
+		virtual
+		void
 		visit_gpml_finite_rotation_slerp(
 				const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
 
@@ -240,6 +245,11 @@ namespace GPlatesFileIO
 		void
 		visit_gpml_measure(
 				const GPlatesPropertyValues::GpmlMeasure &gpml_measure);
+
+		virtual
+		void
+		visit_gpml_metadata(
+				const GPlatesPropertyValues::GpmlMetadata &gpml_metadata);
 
 		virtual
 		void

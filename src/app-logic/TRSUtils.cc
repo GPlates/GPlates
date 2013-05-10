@@ -54,6 +54,8 @@ GPlatesAppLogic::TRSUtils::TRSFinder::TRSFinder()
 	d_property_names_to_allow.push_back(
 		GPlatesModel::PropertyName::create_gpml("movingReferenceFrame"));
 	d_property_names_to_allow.push_back(
+		GPlatesModel::PropertyName::create_gpml("mprsAttributes"));
+	d_property_names_to_allow.push_back(
 		GPlatesModel::PropertyName::create_gpml("totalReconstructionPole"));
 }
 

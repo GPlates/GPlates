@@ -287,6 +287,10 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReader::add_native_structural_types()
 	d_structural_type_reader_map[StructuralType::create_gpml("TopologicalPolygon")] = 
 			boost::bind<GPlatesModel::PropertyValue::non_null_ptr_type>(
 					&GpmlPropertyStructuralTypeReaderUtils::create_gpml_topological_polygon, _1, _2, _3);
+	
+	d_structural_type_reader_map[StructuralType::create_gpml("GpmlMetadata")] = 
+			boost::bind<GPlatesModel::PropertyValue::non_null_ptr_type>(
+					&GpmlPropertyStructuralTypeReaderUtils::create_gpml_metadata, _1, _2, _3);
 }
 
 
