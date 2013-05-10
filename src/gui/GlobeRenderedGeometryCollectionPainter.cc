@@ -78,7 +78,7 @@ namespace GPlatesGui
 
 			virtual
 			void
-			visit_resolved_scalar_field_3d(
+			visit_rendered_resolved_scalar_field_3d(
 					const GPlatesViewOperations::RenderedResolvedScalarField3D &rrsf)
 			{
 				// See if we can render a 3D scalar field.

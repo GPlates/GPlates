@@ -49,12 +49,14 @@ namespace GPlatesPresentation
 			return new ReconstructVisualLayerParams(layer_task_params);
 		}
 
+
 		bool
 		get_vgp_draw_circular_error() const;
 
 		void
 		set_vgp_draw_circular_error(
-				bool draw);
+				
+		bool draw);
 
 		void
 		set_fill_polygons(
@@ -62,6 +64,37 @@ namespace GPlatesPresentation
 
 		bool
 		get_fill_polygons() const;
+
+
+		/**
+		 * Whether to show deformed feature geometries.
+		 */
+		void
+		set_show_deformed_feature_geometries(
+				bool show_deformed_feature_geometries);
+
+		bool 
+		get_show_deformed_feature_geometries() const;
+
+
+		/**
+		 * Whether to show strain accumulation at the points of deformed feature geometries.
+		 */
+		void
+		set_show_strain_accumulation(
+				bool show_strain_accumulation);
+
+		bool 
+		get_show_strain_accumulation() const;
+
+
+		void
+		set_strain_accumulation_scale(
+				const double &strain_accumulation_scale);
+
+		double
+		get_strain_accumulation_scale() const;
+
 
 		/**
 		 * Override of virtual method in VirtualLayerParams base.
@@ -95,6 +128,10 @@ namespace GPlatesPresentation
 
 		bool d_vgp_draw_circular_error;
 		bool d_fill_polygons;
+
+		bool d_show_deformed_feature_geometries;
+		bool d_show_show_strain_accumulation;
+		double d_strain_accumulation_scale;
 	};
 }
 

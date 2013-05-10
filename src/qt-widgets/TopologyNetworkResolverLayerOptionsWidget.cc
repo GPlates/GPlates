@@ -23,18 +23,33 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/shared_ptr.hpp>
+#include <QFileInfo>
+#include <QDir>
+#include <QPalette>
+
 #include "TopologyNetworkResolverLayerOptionsWidget.h"
 
-#include "LinkWidget.h"
-#include "TotalReconstructionPolesDialog.h"
+#include "ColourScaleWidget.h"
+#include "FriendlyLineEdit.h"
 #include "QtWidgetUtils.h"
+#include "ReadErrorAccumulationDialog.h"
 #include "ViewportWindow.h"
 
+#include "file-io/CptReader.h"
+#include "file-io/ReadErrorAccumulation.h"
+
+#include "gui/Colour.h"
+#include "gui/ColourPaletteAdapter.h"
+#include "gui/ColourSpectrum.h"
+#include "gui/CptColourPalette.h"
 #include "gui/Dialogs.h"
 
 #include "presentation/TopologyNetworkVisualLayerParams.h"
+#include "presentation/VisualLayer.h"
 
 #include "utils/ComponentManager.h"
+#include "property-values/XsString.h"
 
 
 GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkResolverLayerOptionsWidget(
@@ -46,20 +61,49 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 	d_application_state(application_state),
 	d_view_state(view_state),
 	d_viewport_window(viewport_window),
-	d_draw_style_dialog_ptr(&viewport_window->dialogs().draw_style_dialog())
+	d_palette_filename_lineedit(
+		new FriendlyLineEdit( 
+			QString(), 
+			tr("Default Palette"), 
+			this)),
+	d_open_file_dialog( 
+		this, 
+		tr("Open CPT File"), 
+		tr("Regular CPT file (*.cpt);;All files (*)"), 
+		view_state),
+	d_colour_scale_widget(
+			new ColourScaleWidget(
+				view_state, 
+				viewport_window, 
+				this))
 {
 	setupUi(this);
-
+	select_palette_filename_button->setCursor(QCursor(Qt::ArrowCursor));
+	use_default_palette_button->setCursor(QCursor(Qt::ArrowCursor));
 	mesh_checkbox->setCursor(QCursor(Qt::ArrowCursor));
 	constrained_checkbox->setCursor(QCursor(Qt::ArrowCursor));
 	triangulation_checkbox->setCursor(QCursor(Qt::ArrowCursor));
-	segment_velocity_checkbox->setCursor(QCursor(Qt::ArrowCursor));
+	total_triangulation_checkbox->setCursor(QCursor(Qt::ArrowCursor));
+	fill_checkbox->setCursor(QCursor(Qt::ArrowCursor));
+	segment_velocity_checkbox->setCursor(QCursor(Qt::ArrowCursor));	d_palette_filename_lineedit->setReadOnly(true);
+	QtWidgetUtils::add_widget_to_placeholder(
+		d_palette_filename_lineedit,
+		palette_filename_placeholder_widget);
 
+	// set up scale1
+	QtWidgetUtils::add_widget_to_placeholder(
+			d_colour_scale_widget,
+			colour_scale_placeholder_widget);
+	QPalette colour_scale_palette = d_colour_scale_widget->palette();
+	colour_scale_palette.setColor(QPalette::Window, Qt::white);
+	d_colour_scale_widget->setPalette(colour_scale_palette);
+
+	// set up signals and slots
 	QObject::connect(
-			mesh_checkbox,
+			triangulation_checkbox,
 			SIGNAL(clicked()),
 			this,
-			SLOT(handle_mesh_clicked()));
+			SLOT(handle_triangulation_clicked()));
 
 	QObject::connect(
 			constrained_checkbox,
@@ -68,10 +112,16 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 			SLOT(handle_constrained_clicked()));
 
 	QObject::connect(
-			triangulation_checkbox,
+			mesh_checkbox,
 			SIGNAL(clicked()),
 			this,
-			SLOT(handle_triangulation_clicked()));
+			SLOT(handle_mesh_clicked()));
+
+	QObject::connect(
+			total_triangulation_checkbox,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_total_triangulation_clicked()));
 
 	QObject::connect(
 			segment_velocity_checkbox,
@@ -79,6 +129,45 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 			this,
 			SLOT(handle_segment_velocity_clicked()));
 
+	QObject::connect(
+			fill_checkbox,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_fill_clicked()));
+
+	QObject::connect(
+			color_index_combobox,
+			SIGNAL(activated(int)),
+			this,
+			SLOT(handle_color_index_combobox_activated()));
+
+	QObject::connect(
+			color_index_combobox,
+			SIGNAL(currentIndexChanged(int)),
+			this,
+			SLOT(handle_color_index_combobox_activated()));
+
+	// update button
+	QObject::connect(
+			update_button,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_update_button_clicked()));
+
+	QObject::connect(
+			select_palette_filename_button,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_select_palette_filename_button_clicked()));
+
+	QObject::connect(
+			use_default_palette_button,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_use_default_palette_button_clicked()));
+
+
+#if 0
 	LinkWidget *draw_style_link = new LinkWidget(
 			tr("Draw Style Setting..."), this);
 
@@ -94,6 +183,8 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::TopologyNetworkReso
 	{
 		draw_style_link->setVisible(false);
 	}
+#endif
+
 }
 
 
@@ -119,7 +210,8 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 	d_current_visual_layer = visual_layer;
 
 	// Set the state of the checkboxes.
-	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = 
+			d_current_visual_layer.lock())
 	{
 		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
 			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
@@ -127,10 +219,71 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::set_data(
 
 		if (params)
 		{
+			// Check boxes
 			mesh_checkbox->setChecked(params->show_mesh_triangulation());
 			constrained_checkbox->setChecked(params->show_constrained_triangulation());
 			triangulation_checkbox->setChecked(params->show_delaunay_triangulation());
+			total_triangulation_checkbox->setChecked(params->show_total_triangulation());
+			fill_checkbox->setChecked(params->show_fill());
 			segment_velocity_checkbox->setChecked(params->show_segment_velocity());
+
+			// Colour Index
+			//
+			// Changing the current index will emit signals which can lead to an infinitely recursive decent.
+			// To avoid this we temporarily disconnect their signals.
+			QObject::disconnect(
+					color_index_combobox, SIGNAL(currentIndexChanged(int)), this,
+					SLOT(handle_color_index_combobox_activated()));
+			color_index_combobox->setCurrentIndex( params->color_index() );
+			QObject::connect(
+					color_index_combobox, SIGNAL(currentIndexChanged(int)), this,
+					SLOT(handle_color_index_combobox_activated()));
+
+			// Populate the palette filename.
+			d_palette_filename_lineedit->setText(params->get_colour_palette_filename());
+
+			// Set the range values
+			range1_max->setValue( params->get_range1_max() );
+			range1_min->setValue( params->get_range1_min() );
+
+			range2_max->setValue( params->get_range2_max() );
+			range2_min->setValue( params->get_range2_min() );
+
+			// Set the max colour spinbox
+			int max_index = 0;
+			if ( 	  params->get_max_colour() == GPlatesGui::Colour::get_red() ) 	{max_index = 0;}
+			else if ( params->get_max_colour() == GPlatesGui::Colour::get_yellow() ){max_index = 1;}
+			else if ( params->get_max_colour() == GPlatesGui::Colour::get_green() ) {max_index = 2;}
+			else if ( params->get_max_colour() == GPlatesGui::Colour::get_blue() ) 	{max_index = 3;}
+			else if ( params->get_max_colour() == GPlatesGui::Colour::get_white() ) {max_index = 4;}
+			else if ( params->get_max_colour() == GPlatesGui::Colour::get_grey() ) 	{max_index = 5;}
+			else if ( params->get_max_colour() == GPlatesGui::Colour::get_black() )	{max_index = 6;}
+			max_colour_combobox->setCurrentIndex( max_index );
+
+			// Set the mid colour spinbox
+			int mid_index = 0;
+			if ( 	  params->get_mid_colour() == GPlatesGui::Colour::get_red() ) 	{mid_index = 0;}
+			else if ( params->get_mid_colour() == GPlatesGui::Colour::get_yellow() ){mid_index = 1;}
+			else if ( params->get_mid_colour() == GPlatesGui::Colour::get_green() ) {mid_index = 2;}
+			else if ( params->get_mid_colour() == GPlatesGui::Colour::get_blue() ) 	{mid_index = 3;}
+			else if ( params->get_mid_colour() == GPlatesGui::Colour::get_white() ) {mid_index = 4;}
+			else if ( params->get_mid_colour() == GPlatesGui::Colour::get_grey() ) 	{mid_index = 5;}
+			else if ( params->get_mid_colour() == GPlatesGui::Colour::get_black() )	{mid_index = 6;}
+			mid_colour_combobox->setCurrentIndex( mid_index );
+
+			// Set the min colour spinbox
+			int min_index = 0;
+			if ( 	  params->get_min_colour() == GPlatesGui::Colour::get_red() ) 	{min_index = 0;}
+			else if ( params->get_min_colour() == GPlatesGui::Colour::get_yellow() ){min_index = 1;}
+			else if ( params->get_min_colour() == GPlatesGui::Colour::get_green() ) {min_index = 2;}
+			else if ( params->get_min_colour() == GPlatesGui::Colour::get_blue() ) 	{min_index = 3;}
+			else if ( params->get_min_colour() == GPlatesGui::Colour::get_white() ) {min_index = 4;}
+			else if ( params->get_min_colour() == GPlatesGui::Colour::get_grey() ) 	{min_index = 5;}
+			else if ( params->get_min_colour() == GPlatesGui::Colour::get_black() )	{min_index = 6;}
+			min_colour_combobox->setCurrentIndex( min_index );
+
+			d_colour_scale_widget->populate(params->get_colour_palette());
+			colour_scale_placeholder_widget->setVisible(true);
 		}
 	}
 }
@@ -190,6 +343,21 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_triangulatio
 }
 
 void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_total_triangulation_clicked()
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			params->set_show_total_triangulation(total_triangulation_checkbox->isChecked());
+		}
+	}
+}
+
+void
 GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_segment_velocity_clicked()
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
@@ -205,9 +373,222 @@ GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_segment_velo
 }
 
 void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_fill_clicked()
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			params->set_show_fill(fill_checkbox->isChecked());
+		}
+	}
+}
+
+void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_color_index_combobox_activated()
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			params->set_color_index( color_index_combobox->currentIndex() );
+		}
+	}
+}
+
+
+
+void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_update_button_clicked()
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (!params)
+		{
+			return;
+		}
+
+		// Set the values
+		params->set_range1_max( range1_max->value() );
+		params->set_range1_min( range1_min->value() );
+
+		params->set_range2_max( range2_max->value() );
+		params->set_range2_min( range2_min->value() );
+
+		// Get the max colour from the combobox index	
+		int max_index = max_colour_combobox->currentIndex();
+		GPlatesGui::Colour max_colour;
+		if 		( max_index == 0 ) { max_colour = GPlatesGui::Colour::get_red(); }
+		else if ( max_index == 1 ) { max_colour = GPlatesGui::Colour::get_yellow(); }
+		else if ( max_index == 2 ) { max_colour = GPlatesGui::Colour::get_green(); }
+		else if ( max_index == 3 ) { max_colour = GPlatesGui::Colour::get_blue(); }
+		else if ( max_index == 4 ) { max_colour = GPlatesGui::Colour::get_white(); }
+		else if ( max_index == 5 ) { max_colour = GPlatesGui::Colour::get_grey(); }
+		else if ( max_index == 6 ) { max_colour = GPlatesGui::Colour::get_black(); }
+		else		               { max_colour = GPlatesGui::Colour::get_white(); }
+		// Set the colour
+		params->set_max_colour( max_colour );
+
+		// Get the mid colour from the combobox index	
+		int mid_index = mid_colour_combobox->currentIndex();
+		GPlatesGui::Colour mid_colour;
+		if 		( mid_index == 0 ) { mid_colour = GPlatesGui::Colour::get_red(); }
+		else if ( mid_index == 1 ) { mid_colour = GPlatesGui::Colour::get_yellow(); }
+		else if ( mid_index == 2 ) { mid_colour = GPlatesGui::Colour::get_green(); }
+		else if ( mid_index == 3 ) { mid_colour = GPlatesGui::Colour::get_blue(); }
+		else if ( mid_index == 4 ) { mid_colour = GPlatesGui::Colour::get_white(); }
+		else if ( mid_index == 5 ) { mid_colour = GPlatesGui::Colour::get_grey(); }
+		else if ( mid_index == 6 ) { mid_colour = GPlatesGui::Colour::get_black(); }
+		else					   { mid_colour = GPlatesGui::Colour::get_grey(); }
+		// Set the colour
+		params->set_mid_colour( mid_colour );
+
+		// Get the min colour from the combobox index	
+		int min_index = min_colour_combobox->currentIndex();
+		GPlatesGui::Colour min_colour;
+		if 		( min_index == 0 ) { min_colour = GPlatesGui::Colour::get_red(); }
+		else if ( min_index == 1 ) { min_colour = GPlatesGui::Colour::get_yellow(); }
+		else if ( min_index == 2 ) { min_colour = GPlatesGui::Colour::get_green(); }
+		else if ( min_index == 3 ) { min_colour = GPlatesGui::Colour::get_blue(); }
+		else if ( min_index == 4 ) { min_colour = GPlatesGui::Colour::get_white(); }
+		else if ( min_index == 5 ) { min_colour = GPlatesGui::Colour::get_grey(); }
+		else if ( min_index == 6 ) { min_colour = GPlatesGui::Colour::get_black(); }
+		else					   { min_colour = GPlatesGui::Colour::get_black(); }
+		// Set the colour
+		params->set_min_colour( min_colour );
+
+		// Create the palette
+		params->user_generated_colour_palette();
+	}
+}
+
+
+void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_select_palette_filename_button_clicked()
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (!params)
+		{
+			return;
+		}
+
+		QString palette_file_name = d_open_file_dialog.get_open_file_name();
+		if (palette_file_name.isEmpty())
+		{
+			return;
+		}
+
+		ReadErrorAccumulationDialog &read_errors_dialog = d_viewport_window->dialogs().read_error_accumulation_dialog();
+		GPlatesFileIO::ReadErrorAccumulation &read_errors = read_errors_dialog.read_errors();
+		GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
+
+		GPlatesFileIO::RegularCptReader regular_cpt_reader;
+		GPlatesFileIO::ReadErrorAccumulation regular_errors;
+		GPlatesGui::RegularCptColourPalette::maybe_null_ptr_type regular_colour_palette_opt =
+			regular_cpt_reader.read_file(palette_file_name, regular_errors);
+
+		// There is a slight complication in the detection of whether a
+		// CPT file is regular or categorical. For the most part, a line
+		// in a categorical CPT file looks nothing like a line in a
+		// regular CPT file and will not be successfully parsed; the
+		// exception to the rule are the "BFN" lines, the format of
+		// which is common to both regular and categorical CPT files.
+		// For that reason, we also check if the regular_palette has any
+		// ColourSlices.
+		//
+		// Note: this flow of code is very similar to that in class IntegerCptReader.
+		if (regular_colour_palette_opt && regular_colour_palette_opt->size())
+		{
+			// Add all the errors reported to read_errors.
+			read_errors.accumulate(regular_errors);
+
+			GPlatesGui::ColourPalette<double>::non_null_ptr_type colour_palette =
+				GPlatesGui::convert_colour_palette<
+					GPlatesMaths::Real,
+					double
+				>(regular_colour_palette_opt.get(), GPlatesGui::RealToBuiltInConverter<double>());
+
+			params->set_colour_palette(
+					palette_file_name,
+					GPlatesGui::RasterColourPalette::create<double>(colour_palette));
+
+			d_palette_filename_lineedit->setText(QDir::toNativeSeparators(palette_file_name));
+		}
+		else
+		{
+			// Attempt to read the file as a regular CPT file has failed.
+			// Now, let's try to parse it as a categorical CPT file.
+			GPlatesFileIO::CategoricalCptReader<boost::int32_t>::Type categorical_cpt_reader;
+			GPlatesFileIO::ReadErrorAccumulation categorical_errors;
+			GPlatesGui::CategoricalCptColourPalette<boost::int32_t>::maybe_null_ptr_type categorical_colour_palette_opt =
+				categorical_cpt_reader.read_file(palette_file_name, categorical_errors);
+
+			if (categorical_colour_palette_opt)
+			{
+				// This time, we return the colour palette even if it just
+				// contains "BFN" lines and no ColourEntrys.
+
+				// Add all the errors reported to errors.
+				read_errors.accumulate(categorical_errors);
+
+				const GPlatesGui::ColourPalette<boost::int32_t>::non_null_ptr_type colour_palette(
+						categorical_colour_palette_opt.get());
+
+				params->set_colour_palette(
+						palette_file_name,
+						GPlatesGui::RasterColourPalette::create<boost::int32_t>(colour_palette));
+
+				d_palette_filename_lineedit->setText(QDir::toNativeSeparators(palette_file_name));
+			}
+		}
+
+		read_errors_dialog.update();
+		GPlatesFileIO::ReadErrorAccumulation::size_type num_final_errors = read_errors.size();
+		if (num_initial_errors != num_final_errors)
+		{
+			read_errors_dialog.show();
+		}
+
+		d_view_state.get_last_open_directory() = QFileInfo(palette_file_name).path();
+	}
+}
+
+void
+GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::handle_use_default_palette_button_clicked()
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesPresentation::TopologyNetworkVisualLayerParams *params =
+			dynamic_cast<GPlatesPresentation::TopologyNetworkVisualLayerParams *>(
+					locked_visual_layer->get_visual_layer_params().get());
+		if (params)
+		{
+			handle_update_button_clicked();
+		}
+	}
+}
+
+
+
+void
 GPlatesQtWidgets::TopologyNetworkResolverLayerOptionsWidget::open_draw_style_setting_dlg()
 {
-	//qDebug() << "popup draw style dialog...";
 	QtWidgetUtils::pop_up_dialog(d_draw_style_dialog_ptr);
 	d_draw_style_dialog_ptr->reset(d_current_visual_layer);
 }

@@ -45,22 +45,22 @@ namespace
 	const QString HELP_SOLVE_VELOCITIES_METHOD_DIALOG_TEXT = QObject::tr(
 			"<html><body>\n"
 			"<h3>Select the method used to calculate velocities</h3>"
-			"A velocity is calculated at each point in <i>velocity domain</i> features using a plate id.\n"
-			"The <i>velocity domain</i> features can contain point, multi-point, polyline or polygon geometries.\n"
-			"<p>The options for obtaining the plate id at each point in these geometries are:</p>"
-			"<h4>Calculate velocities on surfaces:</h4>"
+			"A velocity is calculated at each point in the <i>velocity domains</i>.\n"
+			"The <i>velocity domains</i> can contain point, multi-point, polyline and polygon geometries.\n"
+			"<p>The options for the calculating velocity at each point in these domain geometries are:</p>"
+			"<h4>Calculate velocities of surfaces:</h4>"
 			"<ul>"
-			"<li>At each time step the static/dynamic polygons/networks connected to "
-			"<i>velocity surfaces</i> are used to get plate ids for the points in the "
-			"<i>velocity domain</i> features based on which surfaces they intersect.<li>"
+			"<li>At each time step the points in the <i>velocity domains</i> are intersected with "
+			"the static/dynamic polygons/networks in the <i>velocity surfaces</i>. The velocities of "
+			"the surfaces are then calculated at those intersecting domain points.<li>"
 			"<li>The <i>velocity surfaces</i> can be static polygons or topological plate polygons/networks.</li>"
-			"<li>This option <b>ignores</b> plate ids in the <i>velocity domain</i> features.<li>"
-			"<li>To use this option, layers containing the surfaces should be connected to the <i>velocity surfaces</i> layer input.<li>"
+			"<li>To use this option, layers containing the surfaces should be connected to the "
+			"<i>velocity surfaces</i> layer input.<li>"
 			"</ul>"
-			"<h4>Calculate velocities by plate id:</h4>\n"
+			"<h4>Calculate velocities of domain points:</h4>\n"
 			"<ul>"
-			"<li>The plate id stored in each <i>velocity domain</i> feature is used.<li>"
 			"<li>Any layers currently connected to the <i>velocity surfaces</i> layer input are <b>ignored</b>.<li>"
+			"<li>The velocities of the domain points are then calculated as they reconstruct through time.<li>"
 			"</ul>"
 			"</body></html>\n");
 
@@ -116,7 +116,6 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::VelocityFieldCalcul
 					viewport_window))
 {
 	setupUi(this);
-	triangulation_checkbox->setCursor(QCursor(Qt::ArrowCursor));
 	solve_velocities_method_combobox->setCursor(QCursor(Qt::ArrowCursor));
 	push_button_help_solve_velocities_method->setCursor(QCursor(Qt::ArrowCursor));
 	arrow_spacing_spinbox->setCursor(QCursor(Qt::ArrowCursor));
@@ -126,17 +125,6 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::VelocityFieldCalcul
 	arrowhead_scale_spinbox->setCursor(QCursor(Qt::ArrowCursor));
 	push_button_help_arrow_scale->setCursor(QCursor(Qt::ArrowCursor));
 
-#if 0
-	QObject::connect(
-			constrained_checkbox,
-			SIGNAL(clicked()),
-			this,
-			SLOT(handle_constrained_clicked()));
-#endif
-
-	QObject::connect(
-			triangulation_checkbox, SIGNAL(clicked()),
-			this, SLOT(handle_triangulation_clicked()));
 	QObject::connect(
 			solve_velocities_method_combobox, SIGNAL(activated(int)),
 			this, SLOT(handle_solve_velocity_method_combobox_activated(int)));
@@ -210,11 +198,11 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::set_data(
 				// "Calculate velocities "....
 				switch (solve_velocities_method)
 				{
-				case layer_task_params_type::SOLVE_VELOCITIES_ON_SURFACES:
-					solve_velocities_method_combobox->addItem("on surfaces");
+				case layer_task_params_type::SOLVE_VELOCITIES_OF_SURFACES_AT_DOMAIN_POINTS:
+					solve_velocities_method_combobox->addItem("of surfaces");
 					break;
-				case layer_task_params_type::SOLVE_VELOCITIES_BY_PLATE_ID:
-					solve_velocities_method_combobox->addItem("by plate id");
+				case layer_task_params_type::SOLVE_VELOCITIES_OF_DOMAIN_POINTS:
+					solve_velocities_method_combobox->addItem("of domain points");
 					break;
 				default:
 					GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -230,9 +218,6 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::set_data(
 					locked_visual_layer->get_visual_layer_params().get());
 		if (visual_layer_params)
 		{
-			//constrained_checkbox->setChecked(visual_layer_params->show_constrained_vectors());
-			triangulation_checkbox->setChecked(visual_layer_params->show_delaunay_vectors());
-
 			// Setting values in a spin box will emit signals if the value changes
 			// which can lead to an infinitely recursive decent.
 			// To avoid this we temporarily disconnect the signals.
@@ -272,38 +257,6 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::get_title()
 {
 	static const QString TITLE = tr("Velocity & Interpolation options");
 	return TITLE;
-}
-
-
-
-void
-GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_constrained_clicked()
-{
-	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
-	{
-		GPlatesPresentation::VelocityFieldCalculatorVisualLayerParams *params =
-			dynamic_cast<GPlatesPresentation::VelocityFieldCalculatorVisualLayerParams *>(
-					locked_visual_layer->get_visual_layer_params().get());
-		if (params)
-		{
-			//params->set_show_constrained_vectors(constrained_checkbox->isChecked());
-		}
-	}
-}
-
-void
-GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_triangulation_clicked()
-{
-	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_current_visual_layer.lock())
-	{
-		GPlatesPresentation::VelocityFieldCalculatorVisualLayerParams *params =
-			dynamic_cast<GPlatesPresentation::VelocityFieldCalculatorVisualLayerParams *>(
-					locked_visual_layer->get_visual_layer_params().get());
-		if (params)
-		{
-			params->set_show_delaunay_vectors(triangulation_checkbox->isChecked());
-		}
-	}
 }
 
 

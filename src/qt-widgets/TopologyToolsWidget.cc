@@ -211,19 +211,39 @@ GPlatesQtWidgets::TopologyToolsWidget::setup_widgets()
 	// add the Feature Summary Widget 
 	layout_section->addWidget( d_feature_summary_widget_ptr );
 
-	// Create a QAction for the shortcut used to add a topological section (the "Add" button).
-	QAction *add_topological_section_shortcut_action = new QAction(this);
-	add_topological_section_shortcut_action->setShortcut(QKeySequence(Qt::Key_A));
+	// Create a QAction for the shortcut used to add a topological section (the "Add to Boundary" button).
+	QAction *add_to_boundary_shortcut_action = new QAction(this);
+	add_to_boundary_shortcut_action->setShortcut(QKeySequence(Qt::Key_A));
 	// Set the shortcut to be active when any top-level window is active. This makes it easier to
 	// add topological sections if, for example, the layers dialog is currently in focus.
-	add_topological_section_shortcut_action->setShortcutContext(Qt::ApplicationShortcut);
+	add_to_boundary_shortcut_action->setShortcutContext(Qt::ApplicationShortcut);
 	// Add the QAction to the topology tools tab widget so it becomes active when the topology
 	// tools tab widget is visible.
-	tabwidget_main->addAction(add_topological_section_shortcut_action);
+	tabwidget_main->addAction(add_to_boundary_shortcut_action);
 	// Call handler when action is triggered.
 	QObject::connect(
-			add_topological_section_shortcut_action, SIGNAL(triggered()),
-			this, SLOT(handle_add_section_shortcut_triggered()));
+			add_to_boundary_shortcut_action, SIGNAL(triggered()),
+			this, SLOT(handle_add_to_boundary_shortcut_triggered()));
+
+	// Create a QAction for the shortcut used to add a topological section (the "Remove" button).
+	QAction *remove_shortcut_action = new QAction(this);
+	remove_shortcut_action->setShortcut(QKeySequence(Qt::Key_R));
+	// Set the shortcut to be active when any top-level window is active. This makes it easier to
+	// add topological sections if, for example, the layers dialog is currently in focus.
+	remove_shortcut_action->setShortcutContext(Qt::ApplicationShortcut);
+	// Add the QAction to the topology tools tab widget so it becomes active when the topology
+	// tools tab widget is visible.
+	tabwidget_main->addAction(remove_shortcut_action);
+	// Call handler when action is triggered.
+	QObject::connect(
+			remove_shortcut_action, SIGNAL(triggered()),
+			this, SLOT(handle_remove_shortcut_triggered()));
+
+	// We don't currently have a shortcut for the "Add to Interior" button.
+	// These are application shortcuts and hence the keyboard shortcut must not be used elsewhere
+	// in GPlates such as in the canvas toolbar (otherwise get ambiguous shortcut error).
+	// So the "I" key shortcut is already used by a canvas tool - we could choose a different key though.
+	// For now we'll just leave it out.
 }
 
 void
@@ -243,13 +263,13 @@ GPlatesQtWidgets::TopologyToolsWidget::setup_connections()
  		this, SLOT(handle_apply()));
 
 	QObject::connect( button_add_section, SIGNAL(clicked()),
- 		this, SLOT(handle_add_section()));
+ 		this, SLOT(handle_add_to_boundary()));
 
 	QObject::connect( button_add_interior, SIGNAL(clicked()),
- 		this, SLOT(handle_add_interior()));
+ 		this, SLOT(handle_add_to_interior()));
 
     QObject::connect( button_remove_section, SIGNAL(clicked()),
-        this, SLOT(handle_remove_section()));
+        this, SLOT(handle_remove()));
 
 	// Connect to the topological sections containers so we see if it's possible to clear them or not.
 	QObject::connect(
@@ -602,7 +622,7 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_apply()
 }
 
 void
-GPlatesQtWidgets::TopologyToolsWidget::handle_add_section()
+GPlatesQtWidgets::TopologyToolsWidget::handle_add_to_boundary()
 {
 	// simple short cut for no op
 	if ( ! d_feature_focus_ptr->is_valid() )
@@ -618,13 +638,13 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_add_section()
 }
 
 void
-GPlatesQtWidgets::TopologyToolsWidget::handle_add_section_shortcut_triggered()
+GPlatesQtWidgets::TopologyToolsWidget::handle_add_to_boundary_shortcut_triggered()
 {
-	handle_add_section();
+	handle_add_to_boundary();
 }
 
 void
-GPlatesQtWidgets::TopologyToolsWidget::handle_add_interior()
+GPlatesQtWidgets::TopologyToolsWidget::handle_add_to_interior()
 {
 	// simple short cut for no op
 	if ( ! d_feature_focus_ptr->is_valid() )
@@ -640,7 +660,7 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_add_interior()
 }
 
 void
-GPlatesQtWidgets::TopologyToolsWidget::handle_remove_section()
+GPlatesQtWidgets::TopologyToolsWidget::handle_remove()
 {
 	// simple short cut for no op
 	if ( ! d_feature_focus_ptr->is_valid() )
@@ -653,6 +673,12 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_remove_section()
 
 	// Flip tab to topoology
 	tabwidget_main->setCurrentWidget( tab_topology );
+}
+
+void
+GPlatesQtWidgets::TopologyToolsWidget::handle_remove_shortcut_triggered()
+{
+	handle_remove();
 }
 
 void

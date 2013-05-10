@@ -148,11 +148,18 @@ namespace GPlatesAppLogic
 				VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType solve_velocities_method);
 
 		/**
-		 * Set the reconstruction layer proxy.
+		 * Add a velocity domain layer proxy.
 		 */
 		void
-		set_current_reconstruction_layer_proxy(
-				const ReconstructionLayerProxy::non_null_ptr_type &reconstruction_layer_proxy);
+		add_velocity_domain_layer_proxy(
+				const ReconstructLayerProxy::non_null_ptr_type &velocity_domain_layer_proxy);
+
+		/**
+		 * Remove a velocity domain layer proxy.
+		 */
+		void
+		remove_velocity_domain_layer_proxy(
+				const ReconstructLayerProxy::non_null_ptr_type &velocity_domain_layer_proxy);
 
 		/**
 		 * Add a reconstructed static polygons layer proxy.
@@ -196,46 +203,7 @@ namespace GPlatesAppLogic
 		remove_topological_network_resolver_layer_proxy(
 				const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy);
 
-		/**
-		 * Add to the list of feature collections containing (multi-point) geometries.
-		 *
-		 * NOTE: Originally the geometries were expected to be multi-point geometries but now any
-		 * geometry type can be used (the points in the geometry are treated as a collection of points).
-		 */
-		void
-		add_velocity_domain_feature_collection(
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
-
-		/**
-		 * Remove from the list of feature collections containing (multi-point) geometries.
-		 *
-		 * NOTE: Originally the geometries were expected to be multi-point geometries but now any
-		 * geometry type can be used (the points in the geometry are treated as a collection of points).
-		 */
-		void
-		remove_velocity_domain_feature_collection(
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
-
-		/**
-		 * A feature collection containing (multi-point) geometries was modified.
-		 *
-		 * NOTE: Originally the geometries were expected to be multi-point geometries but now any
-		 * geometry type can be used (the points in the geometry are treated as a collection of points).
-		 */
-		void
-		modified_velocity_domain_feature_collection(
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
-
 	private:
-		/**
-		 * The input feature collections containing the points at which to calculate velocities.
-		 */
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_velocity_domain_feature_collections;
-
-		/**
-		 * Used to get reconstruction trees at desired reconstruction times.
-		 */
-		LayerProxyUtils::InputLayerProxy<ReconstructionLayerProxy> d_current_reconstruction_layer_proxy;
 
 		/**
 		 * Used to get reconstructed static polygon surfaces to calculate velocities on.
@@ -254,6 +222,12 @@ namespace GPlatesAppLogic
 		 */
 		LayerProxyUtils::InputLayerProxySequence<TopologyNetworkResolverLayerProxy>
 				d_current_topological_network_resolver_layer_proxies;
+
+		/**
+		 * Used to get velocity domain geometries to calculate velocities at.
+		 */
+		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy>
+				d_current_velocity_domain_layer_proxies;
 
 		/**
 		 * The current reconstruction time as set by the layer system.

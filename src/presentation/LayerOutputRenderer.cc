@@ -28,6 +28,7 @@
 
 #include "LayerOutputRenderer.h"
 
+#include "app-logic/AppLogicFwd.h"
 #include "app-logic/MultiPointVectorField.h"
 #include "app-logic/RasterLayerProxy.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"

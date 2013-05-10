@@ -105,9 +105,8 @@ GPlatesQtWidgets::FlowlinePropertiesWidget::do_geometry_tasks(
 	// A function to get reconstruction trees with.
 	GPlatesAppLogic::ReconstructionTreeCreator
 			reconstruction_tree_creator =
-					GPlatesAppLogic::get_cached_reconstruction_tree_creator(
+					GPlatesAppLogic::create_cached_reconstruction_tree_creator(
 							default_reconstruction_tree->get_reconstruction_features(),
-							default_reconstruction_tree->get_reconstruction_time(),
 							default_reconstruction_tree->get_anchor_plate_id());
 
 

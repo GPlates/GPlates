@@ -321,7 +321,7 @@ GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometri
 		reconstruction_geom_seq_type &reconstruction_geometries_observing_feature,
 		const RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry,
-		boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree,
+		boost::optional<const std::vector<GPlatesAppLogic::ReconstructHandle::type> &> reconstruct_handles,
 		bool only_if_reconstruction_layer_active)
 {
 	// Get all reconstruction geometries from the rendered geometry collection RECONSTRUCTION layer.
@@ -339,7 +339,7 @@ GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometri
 			reconstruction_geometries_observing_feature,
 			all_reconstruction_geoms_in_reconstruction_layer,
 			reconstruction_geometry,
-			reconstruction_tree);
+			reconstruct_handles);
 }
 
 
@@ -348,7 +348,7 @@ GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometri
 		reconstruction_geom_seq_type &reconstruction_geometries_observing_feature,
 		const RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-		boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree,
+		boost::optional<const std::vector<GPlatesAppLogic::ReconstructHandle::type> &> reconstruct_handles,
 		bool only_if_reconstruction_layer_active)
 {
 	// Get all reconstruction geometries from the rendered geometry collection RECONSTRUCTION layer.
@@ -366,7 +366,7 @@ GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometri
 			reconstruction_geometries_observing_feature,
 			all_reconstruction_geoms_in_reconstruction_layer,
 			feature_ref,
-			reconstruction_tree);
+			reconstruct_handles);
 }
 
 
@@ -376,7 +376,7 @@ GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometri
 		const RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 		const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator,
-		boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree,
+		boost::optional<const std::vector<GPlatesAppLogic::ReconstructHandle::type> &> reconstruct_handles,
 		bool only_if_reconstruction_layer_active)
 {
 	// Get all reconstruction geometries from the rendered geometry collection RECONSTRUCTION layer.
@@ -395,7 +395,7 @@ GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometri
 			all_reconstruction_geoms_in_reconstruction_layer,
 			feature_ref,
 			geometry_property_iterator,
-			reconstruction_tree);
+			reconstruct_handles);
 }
 
 

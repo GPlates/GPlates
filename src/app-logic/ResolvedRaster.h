@@ -72,7 +72,6 @@ namespace GPlatesAppLogic
 		create(
 				GPlatesModel::FeatureHandle &feature_handle,
 				const double &reconstruction_time,
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const raster_layer_proxy_non_null_ptr_type &raster_layer_proxy,
 				const boost::optional<reconstruct_layer_proxy_non_null_ptr_type> &reconstructed_polygons_layer_proxy,
 				const boost::optional<raster_layer_proxy_non_null_ptr_type> &age_grid_raster_layer_proxy,
@@ -82,7 +81,6 @@ namespace GPlatesAppLogic
 					new ResolvedRaster(
 							feature_handle,
 							reconstruction_time,
-							reconstruction_tree_,
 							raster_layer_proxy,
 							reconstructed_polygons_layer_proxy,
 							age_grid_raster_layer_proxy,
@@ -172,7 +170,6 @@ namespace GPlatesAppLogic
 		ResolvedRaster(
 				GPlatesModel::FeatureHandle &feature_handle,
 				const double &reconstruction_time,
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const raster_layer_proxy_non_null_ptr_type &raster_layer_proxy,
 				const boost::optional<reconstruct_layer_proxy_non_null_ptr_type> &reconstructed_polygons_layer_proxy,
 				const boost::optional<raster_layer_proxy_non_null_ptr_type> &age_grid_raster_layer_proxy,

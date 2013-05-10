@@ -34,7 +34,10 @@ GPlatesPresentation::ReconstructVisualLayerParams::ReconstructVisualLayerParams(
 			layer_task_params,
 			GPlatesGui::DrawStyleManager::instance()->default_style()),
 	d_vgp_draw_circular_error(true),
-	d_fill_polygons(false)
+	d_fill_polygons(false),
+	d_show_deformed_feature_geometries(true),
+	d_show_show_strain_accumulation(false),
+	d_strain_accumulation_scale(1)
 {
 }
 
@@ -68,4 +71,52 @@ bool
 GPlatesPresentation::ReconstructVisualLayerParams::get_fill_polygons() const
 {
 	return d_fill_polygons;
+}
+
+
+void
+GPlatesPresentation::ReconstructVisualLayerParams::set_show_deformed_feature_geometries(
+		bool show_deformed_feature_geometries)
+{
+	d_show_deformed_feature_geometries = show_deformed_feature_geometries;
+	emit_modified();
+}
+
+
+bool 
+GPlatesPresentation::ReconstructVisualLayerParams::get_show_deformed_feature_geometries() const
+{
+	return d_show_deformed_feature_geometries;
+}
+
+
+void
+GPlatesPresentation::ReconstructVisualLayerParams::set_show_strain_accumulation(
+		bool show_strain_accumulation)
+{
+	d_show_show_strain_accumulation = show_strain_accumulation;
+	emit_modified();
+}
+
+
+bool 
+GPlatesPresentation::ReconstructVisualLayerParams::get_show_strain_accumulation() const
+{
+	return d_show_show_strain_accumulation;
+}
+
+
+void
+GPlatesPresentation::ReconstructVisualLayerParams::set_strain_accumulation_scale(
+		const double &strain_accumulation_scale)
+{
+	d_strain_accumulation_scale = strain_accumulation_scale;
+	emit_modified();
+}
+
+
+double
+GPlatesPresentation::ReconstructVisualLayerParams::get_strain_accumulation_scale() const
+{
+	return d_strain_accumulation_scale;
 }

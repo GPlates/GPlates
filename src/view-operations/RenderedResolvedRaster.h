@@ -64,7 +64,7 @@ namespace GPlatesViewOperations
 		accept_visitor(
 				ConstRenderedGeometryVisitor& visitor)
 		{
-			visitor.visit_resolved_raster(*this);
+			visitor.visit_rendered_resolved_raster(*this);
 		}
 
 		virtual

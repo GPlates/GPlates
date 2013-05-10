@@ -355,7 +355,7 @@ GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
 void
 GPlatesOpenGL::GLVisualLayers::render_filled_polygons(
 		GLRenderer &renderer,
-		const GLFilledPolygonsGlobeView::filled_polygons_type &filled_polygons)
+		const GLFilledPolygonsGlobeView::filled_drawables_type &filled_polygons)
 {
 	d_list_objects->get_filled_polygons_globe_view(renderer)->render(renderer, filled_polygons);
 }
@@ -364,7 +364,7 @@ GPlatesOpenGL::GLVisualLayers::render_filled_polygons(
 void
 GPlatesOpenGL::GLVisualLayers::render_filled_polygons(
 		GLRenderer &renderer,
-		const GLFilledPolygonsMapView::filled_polygons_type &filled_polygons)
+		const GLFilledPolygonsMapView::filled_drawables_type &filled_polygons)
 {
 	d_list_objects->get_filled_polygons_map_view(renderer)->render(renderer, filled_polygons);
 }

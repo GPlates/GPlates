@@ -34,14 +34,19 @@
 #include "GeometryBuilder.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
+
 #include "gui/FeatureFocus.h"
+
 #include "maths/GeometryOnSphere.h"
+
 #include "model/types.h"
 
 
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
+	class ReconstructionTree;
+	class ReconstructParams;
 }
 
 namespace GPlatesPresentation
@@ -204,6 +209,8 @@ namespace GPlatesViewOperations
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		reconstruct(
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere,
+				const GPlatesAppLogic::ReconstructionTree &reconstruction_tree,
+				const GPlatesAppLogic::ReconstructParams &reconstruct_params,
 				bool reverse_reconstruct);
 
 		/**

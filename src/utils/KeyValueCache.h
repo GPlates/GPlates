@@ -88,6 +88,17 @@ namespace GPlatesUtils
 
 
 		/**
+		 * Sets the maximum number of values in the cache.
+		 *
+		 * If the current number of values exceeds the maximum then the least-recently used
+		 * values are removed and destroyed.
+		 */
+		void
+		set_maximum_num_values_in_cache(
+				unsigned int maximum_num_values_in_cache);
+
+
+		/**
 		 * Clears the cache by removing all cached value objects.
 		 */
 		void
@@ -99,6 +110,13 @@ namespace GPlatesUtils
 		 *
 		 * Creates a new value object from the specified key if the object is not cached
 		 * (either because never previously requested from cache or because it was evicted).
+		 *
+		 * NOTE: If the least-recently used value is evicted (due to exceeding maximum number of
+		 * cached value objects) then it will be evicted *after* the new value is created.
+		 * This is beneficial for a few use cases where the new value depends (indirectly)
+		 * on the old value (an example is where maximum cache size is one and the old value contains
+		 * some shared data - when the new value is created it can access the shared data if
+		 * the old value still exists at the time).
 		 *
 		 * WARNING: The returned reference can be invalidated by a subsequent call to @a get_value
 		 * since a subsequent call might evict the value object returned by this call.
@@ -149,6 +167,10 @@ namespace GPlatesUtils
 		key_value_map_type d_key_value_map;
 		key_value_order_seq_type d_key_value_order_seq;
 		unsigned int d_num_value_objects_in_cache;
+
+
+		void
+		remove_least_recently_used_value();
 	};
 
 
@@ -179,6 +201,26 @@ namespace GPlatesUtils
 		d_key_value_map.clear();
 		d_value_objects.clear();
 		d_num_value_objects_in_cache = 0;
+	}
+
+
+	template <typename KeyType, typename ValueType>
+	void
+	KeyValueCache<KeyType,ValueType>::set_maximum_num_values_in_cache(
+			unsigned int maximum_num_values_in_cache)
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				maximum_num_values_in_cache > 0,
+				GPLATES_ASSERTION_SOURCE);
+
+		d_maximum_num_value_objects_in_cache = maximum_num_values_in_cache;
+
+		// If the current number of values exceeds the maximum then the least-recently used
+		// values are removed and destroyed.
+		while (d_num_value_objects_in_cache > d_maximum_num_value_objects_in_cache)
+		{
+			remove_least_recently_used_value();
+		}
 	}
 
 	
@@ -215,29 +257,6 @@ namespace GPlatesUtils
 			--value_object_iter->value_order_seq_iter;
 
 			return value_object_iter->value_object;
-		}
-
-		// If we already have the maximum number of value objects cached then
-		// release the least-recently cached one to free a slot.
-		if (d_num_value_objects_in_cache == d_maximum_num_value_objects_in_cache)
-		{
-			// Pop off the front of the list where the least-recent requests are.
-			typename key_value_map_type::iterator lru_key_value_map_iter = d_key_value_order_seq.front();
-			typename value_object_seq_type::iterator lru_value_object_iter = lru_key_value_map_iter->second;
-
-			// The key/value order iterator stored with the value object should refer to the
-			// beginning of the key/order sequence since that's what we are removing.
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					lru_value_object_iter->value_order_seq_iter == d_key_value_order_seq.begin(),
-					GPLATES_ASSERTION_SOURCE);
-
-			// Remove the least-recently cached value object.
-			d_value_objects.erase(lru_value_object_iter);
-			// Remove the key/value mapping entry.
-			d_key_value_map.erase(lru_key_value_map_iter);
-			// Remove from the ordering list.
-			d_key_value_order_seq.pop_front();
-			--d_num_value_objects_in_cache;
 		}
 
 		// The insert was successful which means the key was *not* in the cache.
@@ -300,7 +319,45 @@ namespace GPlatesUtils
 		guard_key_value_order_insert.Dismiss();
 		guard_value_object_seq_insert.Dismiss(); 
 
+		// If we already have the maximum number of value objects cached then
+		// release the least-recently cached one to free a slot.
+		//
+		// NOTE: We do this *after* adding the new value in case the new value depends (indirectly)
+		// on the old value (an example is where maximum cache size is one and the old value contains
+		// some shared data - when the new value is created above it can access the shared data if
+		// the old value still exists).
+		if (d_num_value_objects_in_cache > d_maximum_num_value_objects_in_cache)
+		{
+			// Since we're using std::list and std::map and we're removing the *least* recently used
+			// then it should not invalidate the new value iterator which is *most* recently used.
+			remove_least_recently_used_value();
+		}
+
 		return new_value_object_iter->value_object;
+	}
+
+
+	template <typename KeyType, typename ValueType>
+	void
+	KeyValueCache<KeyType,ValueType>::remove_least_recently_used_value()
+	{
+		// Pop off the front of the list where the least-recent requests are.
+		typename key_value_map_type::iterator lru_key_value_map_iter = d_key_value_order_seq.front();
+		typename value_object_seq_type::iterator lru_value_object_iter = lru_key_value_map_iter->second;
+
+		// The key/value order iterator stored with the value object should refer to the
+		// beginning of the key/order sequence since that's what we are removing.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				lru_value_object_iter->value_order_seq_iter == d_key_value_order_seq.begin(),
+				GPLATES_ASSERTION_SOURCE);
+
+		// Remove the least-recently cached value object.
+		d_value_objects.erase(lru_value_object_iter);
+		// Remove the key/value mapping entry.
+		d_key_value_map.erase(lru_key_value_map_iter);
+		// Remove from the ordering list.
+		d_key_value_order_seq.pop_front();
+		--d_num_value_objects_in_cache;
 	}
 }
 

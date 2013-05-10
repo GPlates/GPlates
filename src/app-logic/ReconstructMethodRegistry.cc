@@ -35,8 +35,9 @@
 #include "ReconstructMethodSmallCircle.h"
 #include "ReconstructMethodVirtualGeomagneticPole.h"
 
-#include "global/PreconditionViolationError.h"
 #include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
+
 
 void
 GPlatesAppLogic::ReconstructMethodRegistry::register_reconstruct_method(
@@ -118,7 +119,7 @@ GPlatesAppLogic::ReconstructMethodRegistry::can_reconstruct_feature(
 
 boost::optional<GPlatesAppLogic::ReconstructMethod::Type>
 GPlatesAppLogic::ReconstructMethodRegistry::get_reconstruct_method_type(
-		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref) const
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref) const
 {
 	// Iterate over the registered layer tasks.
 	// NOTE: We are iterating in reverse order so that we query the reconstruct methods
@@ -128,10 +129,12 @@ GPlatesAppLogic::ReconstructMethodRegistry::get_reconstruct_method_type(
 	const reconstruct_method_info_map_type::const_reverse_iterator rend = d_reconstruct_method_info_map.rend();
 	for ( ; riter != rend; ++riter)
 	{
-		const ReconstructMethod::Type reconstruct_method_type = riter->first;
+		const ReconstructMethodInfo &reconstruct_method_info = riter->second;
 
-		if (can_reconstruct_feature(reconstruct_method_type, feature_ref))
+		if (reconstruct_method_info.can_reconstruct_feature_function(feature_ref))
 		{
+			const ReconstructMethod::Type reconstruct_method_type = riter->first;
+
 			return reconstruct_method_type;
 		}
 	}
@@ -141,15 +144,43 @@ GPlatesAppLogic::ReconstructMethodRegistry::get_reconstruct_method_type(
 }
 
 
-GPlatesAppLogic::ReconstructMethod::Type
-GPlatesAppLogic::ReconstructMethodRegistry::get_reconstruct_method_type_or_default(
-		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref) const
+boost::optional<GPlatesAppLogic::ReconstructMethodInterface::non_null_ptr_type>
+GPlatesAppLogic::ReconstructMethodRegistry::create_reconstruct_method(
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+		const ReconstructMethodInterface::Context &reconstruct_method_context) const
 {
-	const boost::optional<ReconstructMethod::Type> reconstruct_method_type_opt =
-			get_reconstruct_method_type(feature_ref);
-	if (reconstruct_method_type_opt)
+	// Iterate over the registered layer tasks.
+	// NOTE: We are iterating in reverse order so that we query the reconstruct methods
+	// with the larger enumeration values for ReconstructMethod::Type before smaller values.
+	// This has the effect of querying more specialised methods before more generalised methods.
+	reconstruct_method_info_map_type::const_reverse_iterator riter = d_reconstruct_method_info_map.rbegin();
+	const reconstruct_method_info_map_type::const_reverse_iterator rend = d_reconstruct_method_info_map.rend();
+	for ( ; riter != rend; ++riter)
 	{
-		return reconstruct_method_type_opt.get();
+		const ReconstructMethodInfo &reconstruct_method_info = riter->second;
+
+		if (reconstruct_method_info.can_reconstruct_feature_function(feature_ref))
+		{
+			return reconstruct_method_info.create_reconstruct_method_function(
+					feature_ref,
+					reconstruct_method_context);
+		}
+	}
+
+	// No suitable reconstruct methods were found.
+	return boost::none;
+}
+
+
+GPlatesAppLogic::ReconstructMethod::Type
+GPlatesAppLogic::ReconstructMethodRegistry::get_reconstruct_method_or_default_type(
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref) const
+{
+	const boost::optional<ReconstructMethod::Type> reconstruct_method_type =
+			get_reconstruct_method_type(feature_ref);
+	if (reconstruct_method_type)
+	{
+		return reconstruct_method_type.get();
 	}
 
 	return ReconstructMethod::BY_PLATE_ID;
@@ -157,38 +188,74 @@ GPlatesAppLogic::ReconstructMethodRegistry::get_reconstruct_method_type_or_defau
 
 
 GPlatesAppLogic::ReconstructMethodInterface::non_null_ptr_type
-GPlatesAppLogic::ReconstructMethodRegistry::get_reconstruct_method(
-		ReconstructMethod::Type reconstruct_method_type) const
+GPlatesAppLogic::ReconstructMethodRegistry::create_reconstruct_method_or_default(
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+		const ReconstructMethodInterface::Context &reconstruct_method_context) const
 {
-	reconstruct_method_info_map_type::const_iterator iter =
-			d_reconstruct_method_info_map.find(reconstruct_method_type);
+	const boost::optional<ReconstructMethodInterface::non_null_ptr_type> reconstruct_method =
+			create_reconstruct_method(feature_ref, reconstruct_method_context);
+	if (reconstruct_method)
+	{
+		return reconstruct_method.get();
+	}
 
-	// Throw exception if reconstruct method type has not been registered.
+	// Find the 'ReconstructMethod::BY_PLATE_ID' reconstruct method entry.
+	reconstruct_method_info_map_type::const_iterator by_plate_id_iter =
+			d_reconstruct_method_info_map.find(ReconstructMethod::BY_PLATE_ID);
+
+	// Throw exception if not registered.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			iter != d_reconstruct_method_info_map.end(),
+			by_plate_id_iter != d_reconstruct_method_info_map.end(),
 			GPLATES_ASSERTION_SOURCE);
 
-	const ReconstructMethodInfo &reconstruct_method_info = iter->second;
+	const ReconstructMethodInfo &by_plate_id_reconstruct_method_info = by_plate_id_iter->second;
 
-	return reconstruct_method_info.shared_reconstruct_method;
+	return by_plate_id_reconstruct_method_info.create_reconstruct_method_function(
+			feature_ref,
+			reconstruct_method_context);
 }
 
 
 GPlatesAppLogic::ReconstructMethodInterface::non_null_ptr_type
 GPlatesAppLogic::ReconstructMethodRegistry::create_reconstruct_method(
-		ReconstructMethod::Type reconstruct_method_type) const
+		const ReconstructMethodInterface &reconstruct_method,
+		const ReconstructMethodInterface::Context &reconstruct_method_context) const
 {
-	reconstruct_method_info_map_type::const_iterator iter =
+	reconstruct_method_info_map_type::const_iterator reconstruct_method_info_iter =
+			d_reconstruct_method_info_map.find(reconstruct_method.get_reconstruction_method_type());
+
+	// Throw exception if reconstruct method type has not been registered.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			reconstruct_method_info_iter != d_reconstruct_method_info_map.end(),
+			GPLATES_ASSERTION_SOURCE);
+
+	const ReconstructMethodInfo &reconstruct_method_info = reconstruct_method_info_iter->second;
+
+	return reconstruct_method_info.create_reconstruct_method_function(
+			reconstruct_method.get_feature_ref(),
+			reconstruct_method_context);
+}
+
+
+GPlatesAppLogic::ReconstructMethodInterface::non_null_ptr_type
+GPlatesAppLogic::ReconstructMethodRegistry::create_reconstruct_method(
+		ReconstructMethod::Type reconstruct_method_type,
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+		const ReconstructMethodInterface::Context &reconstruct_method_context) const
+{
+	reconstruct_method_info_map_type::const_iterator reconstruct_method_info_iter =
 			d_reconstruct_method_info_map.find(reconstruct_method_type);
 
 	// Throw exception if reconstruct method type has not been registered.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			iter != d_reconstruct_method_info_map.end(),
+			reconstruct_method_info_iter != d_reconstruct_method_info_map.end(),
 			GPLATES_ASSERTION_SOURCE);
 
-	const ReconstructMethodInfo &reconstruct_method_info = iter->second;
+	const ReconstructMethodInfo &reconstruct_method_info = reconstruct_method_info_iter->second;
 
-	return reconstruct_method_info.create_reconstruct_method_function();
+	return reconstruct_method_info.create_reconstruct_method_function(
+			feature_ref,
+			reconstruct_method_context);
 }
 
 

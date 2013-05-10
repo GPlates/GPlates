@@ -62,9 +62,54 @@ namespace
 			return GPlatesGui::RasterColourPaletteType::DOUBLE;
 		}
 	};
+
+
+	// A visitor to actually get a colour out of the palette
+	class RasterColourPaletteGetColourVisitor :
+			public boost::static_visitor<boost::optional<GPlatesGui::Colour> >
+	{
+	public:
+		RasterColourPaletteGetColourVisitor(
+				const double &value) :
+			d_value( value )
+		{	
+		}
+
+		boost::optional<GPlatesGui::Colour>
+		operator()(
+				const GPlatesGui::RasterColourPalette::empty &palette) const
+		{
+			return boost::none;
+		}
+
+		boost::optional<GPlatesGui::Colour>
+		operator()(
+				const GPlatesGui::ColourPalette<boost::int32_t>::non_null_ptr_type &palette) const
+		{
+			return boost::none;
+		}
+
+		boost::optional<GPlatesGui::Colour>
+		operator()(
+				const GPlatesGui::ColourPalette<boost::uint32_t>::non_null_ptr_type &palette) const
+		{
+			return boost::none;
+		}
+
+		boost::optional<GPlatesGui::Colour>
+		operator()(
+				const GPlatesGui::ColourPalette<double>::non_null_ptr_type &palette) const
+		{
+			return palette->get_colour( d_value );
+			//return boost::none;
+		}
+		// The value to look up a colour for 
+		const double d_value;
+	};
 }
 
 
+// Get the Type of the palette
 GPlatesGui::RasterColourPaletteType::Type
 GPlatesGui::RasterColourPaletteType::get_type(
 		const RasterColourPalette &colour_palette)
@@ -72,6 +117,14 @@ GPlatesGui::RasterColourPaletteType::get_type(
 	return boost::apply_visitor(RasterColourPaletteTypeVisitor(), colour_palette);
 }
 
+// Get a colour out of the palette for the value 
+boost::optional<GPlatesGui::Colour>
+GPlatesGui::RasterColourPaletteColour::get_colour(
+		const RasterColourPalette &colour_palette,
+		const double &value)
+{
+	return boost::apply_visitor(RasterColourPaletteGetColourVisitor(value), colour_palette);
+}
 
 namespace
 {
@@ -89,7 +142,21 @@ namespace
 
 	const unsigned int NUM_DEFAULT_RASTER_COLOURS =
 		sizeof(DEFAULT_RASTER_COLOURS) / sizeof(Colour);
+
+	// These colours are arbitrary - maybe replace them with colours appropriate
+	// for the type of raster that we have.
+	const Colour USER_RASTER_COLOURS[] = {
+		Colour(0, 0, 1) /* blue - low */,
+		Colour(1, 1, 1) /* white - middle */,
+		Colour(1, 0, 0) /* red - high */
+	};
+
+	const unsigned int NUM_USER_RASTER_COLOURS =
+		sizeof(USER_RASTER_COLOURS) / sizeof(Colour);
 }
+
+
+
 
 
 GPlatesGui::DefaultRasterColourPalette::DefaultRasterColourPalette(
@@ -153,6 +220,121 @@ double
 GPlatesGui::DefaultRasterColourPalette::get_upper_bound() const
 {
 	return d_mean + NUM_STD_DEV_AWAY_FROM_MEAN * d_std_dev;
+}
+
+
+//
+// User controled palette
+//
+GPlatesGui::UserColourPalette::UserColourPalette(
+		double range1_max,
+		double range1_min,
+		double range2_max,
+		double range2_min,
+		GPlatesGui::Colour max_c,
+		GPlatesGui::Colour mid_c,
+		GPlatesGui::Colour min_c) :
+	d_inner_palette(
+			RegularCptColourPalette::create()),
+	d_range1_max(range1_max),
+	d_range1_min(range1_min),
+	d_range2_max(range2_max),
+	d_range2_min(range2_min),
+	d_max_colour(max_c),
+	d_mid_colour(mid_c),
+	d_min_colour(min_c) 
+{
+	// Background colour, for values before min value.
+	d_inner_palette->set_background_colour(d_min_colour);
+
+	// Note Add the lowest values first, that is, from Range2:
+
+	// Add the slice from range2_min to range2_max
+	ColourSlice colour_slice_range2(
+			d_range2_min,
+			d_min_colour,
+			d_range2_max,
+			d_mid_colour);
+	d_inner_palette->add_entry(colour_slice_range2);
+
+	// Add the middle to the spectrum
+	ColourSlice colour_slice_mid(
+			d_range2_max,
+			d_mid_colour,
+			d_range1_min,
+			d_mid_colour);
+	d_inner_palette->add_entry(colour_slice_mid);
+
+	// Add the slice from range1_min to range1_max
+	ColourSlice colour_slice_range1(
+			d_range1_min,
+			d_mid_colour,
+			d_range1_max,
+			d_max_colour);
+	d_inner_palette->add_entry(colour_slice_range1);
+
+	// Foreground colour, for values after max value.
+	d_inner_palette->set_foreground_colour(d_max_colour);
+
+	// Set nan colour
+	d_inner_palette->set_nan_colour( Colour(0.5, 0.5, 0.5) );
+}
+
+GPlatesGui::UserColourPalette::non_null_ptr_type
+GPlatesGui::UserColourPalette::create()
+{
+	return new UserColourPalette(
+		1.0,
+		0.0,
+		0.0,
+		-1.0,
+		GPlatesGui::Colour(1, 0, 0) /* red - high */,
+		GPlatesGui::Colour(1, 1, 1) /* white - middle */,
+		GPlatesGui::Colour(0, 0, 1) /* blue - low */
+	);
+}
+
+
+GPlatesGui::UserColourPalette::non_null_ptr_type
+GPlatesGui::UserColourPalette::create(
+		double range_1max,
+		double range_1min,
+		double range_2max,
+		double range_2min,
+		GPlatesGui::Colour max_c,
+		GPlatesGui::Colour mid_c,
+		GPlatesGui::Colour min_c)
+{
+	return new UserColourPalette(
+		range_1max, 
+		range_1min, 
+		range_2max, 
+		range_2min, 
+		max_c, 
+		mid_c, 
+		min_c);
+}
+
+
+boost::optional<GPlatesGui::Colour>
+GPlatesGui::UserColourPalette::get_colour(
+		double value) const
+{
+	return d_inner_palette->get_colour(value);
+}
+
+
+double
+GPlatesGui::UserColourPalette::get_lower_bound() const
+{
+	return d_range2_min;
+}
+
+
+double
+GPlatesGui::UserColourPalette::get_upper_bound() const
+{
+	return d_range1_max;
 }
 
 

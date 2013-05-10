@@ -83,28 +83,30 @@ namespace GPlatesAppLogic
 		static
 		const non_null_ptr_type
 		create(
-			const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
-			const seed_point_geom_ptr_type &present_day_seed_point_geometry_ptr,
-			const feature_geom_ptr_type &feature_geometry_ptr,
-			const flowline_geom_ptr_type &left_flowline_points,
-			const flowline_geom_ptr_type &right_flowline_points,
-			const GPlatesModel::integer_plate_id_type &left_plate_id,
-			const GPlatesModel::integer_plate_id_type &right_plate_id,
-			GPlatesModel::FeatureHandle &feature_handle,
-			GPlatesModel::FeatureHandle::iterator property_iterator)
+				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const seed_point_geom_ptr_type &present_day_seed_point_geometry_ptr,
+				const feature_geom_ptr_type &feature_geometry_ptr,
+				const flowline_geom_ptr_type &left_flowline_points,
+				const flowline_geom_ptr_type &right_flowline_points,
+				const GPlatesModel::integer_plate_id_type &left_plate_id,
+				const GPlatesModel::integer_plate_id_type &right_plate_id,
+				GPlatesModel::FeatureHandle &feature_handle,
+				GPlatesModel::FeatureHandle::iterator property_iterator)
 		{
 			return non_null_ptr_type(
-				new ReconstructedFlowline(
-				reconstruction_tree,
-				present_day_seed_point_geometry_ptr,
-				feature_geometry_ptr,
-				left_flowline_points,
-				right_flowline_points,
-				left_plate_id,
-				right_plate_id,
-				feature_handle,
-				property_iterator),
-				GPlatesUtils::NullIntrusivePointerHandler());
+					new ReconstructedFlowline(
+							reconstruction_tree,
+							reconstruction_tree_creator,
+							present_day_seed_point_geometry_ptr,
+							feature_geometry_ptr,
+							left_flowline_points,
+							right_flowline_points,
+							left_plate_id,
+							right_plate_id,
+							feature_handle,
+							property_iterator),
+							GPlatesUtils::NullIntrusivePointerHandler());
 		}
 
 
@@ -178,6 +180,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructedFlowline(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const seed_point_geom_ptr_type &present_day_seed_point,
 				const feature_geom_ptr_type &feature_geometry_ptr,
 				const flowline_geom_ptr_type &left_flowline_points_,
@@ -188,9 +191,11 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle::iterator property_iterator):
 			ReconstructedFeatureGeometry(
 				reconstruction_tree_,
+				reconstruction_tree_creator,
 				feature_handle,
 				property_iterator,
 				feature_geometry_ptr,
+				ReconstructMethod::FLOWLINE,
 				boost::none,
 				boost::none,
 				boost::none),

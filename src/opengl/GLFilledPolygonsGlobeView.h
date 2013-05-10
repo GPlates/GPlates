@@ -31,6 +31,7 @@
 #include <boost/pool/object_pool.hpp>
 #include <boost/optional.hpp>
 #include <boost/ref.hpp>
+#include <boost/utility/in_place_factory.hpp>
 #include <opengl/OpenGL.h>
 
 #include "GLBuffer.h"
@@ -46,6 +47,9 @@
 #include "GLVertexBuffer.h"
 #include "GLVertexElementBuffer.h"
 #include "GLViewport.h"
+
+#include "global/GPlatesAssert.h"
+#include "global/AssertionFailureException.h"
 
 #include "gui/Colour.h"
 
@@ -78,16 +82,16 @@ namespace GPlatesOpenGL
 	{
 	private:
 
-		//! Typedef for a vertex element (vertex index) of a polygon.
-		typedef GLuint polygon_vertex_element_type;
+		//! Typedef for a vertex element (vertex index) of a drawable.
+		typedef GLuint drawable_vertex_element_type;
 
-		//! Typedef for a coloured vertex of a polygon.
-		typedef GLColourVertex polygon_vertex_type;
+		//! Typedef for a coloured vertex of a drawable.
+		typedef GLColourVertex drawable_vertex_type;
 
 		/**
-		 * Contains information to render a filled polygon.
+		 * Contains information to render a filled drawable.
 		 */
-		struct FilledPolygon
+		struct FilledDrawable
 		{
 			/**
 			 * Contains 'gl_draw_range_elements' parameters that locate a geometry inside a vertex array.
@@ -112,20 +116,20 @@ namespace GPlatesOpenGL
 			};
 
 
-			//! Create a filled polygon from a polygon (fan) mesh drawable.
+			//! Create a filled drawable.
 			explicit
-			FilledPolygon(
-					const Drawable &polygon_mesh_drawable,
+			FilledDrawable(
+					const Drawable &drawable,
 					unsigned int render_order) :
-				d_polygon_mesh_drawable(polygon_mesh_drawable),
+				d_drawable(drawable),
 				d_render_order(render_order)
 			{  }
 
 
 			/**
-			 * The filled polygon's (fan) mesh.
+			 * The filled drawable's mesh.
 			 */
-			Drawable d_polygon_mesh_drawable;
+			Drawable d_drawable;
 
 			/**
 			 * The order in which this drawable should be rendered relative to other drawables.
@@ -137,19 +141,19 @@ namespace GPlatesOpenGL
 			{
 				bool
 				operator()(
-						const FilledPolygon &lhs,
-						const FilledPolygon &rhs) const
+						const FilledDrawable &lhs,
+						const FilledDrawable &rhs) const
 				{
 					return lhs.d_render_order < rhs.d_render_order;
 				}
 			};
 		};
 
-		//! Typedef for a filled polygon.
-		typedef FilledPolygon filled_polygon_type;
+		//! Typedef for a filled drawable.
+		typedef FilledDrawable filled_drawable_type;
 
-		//! Typedef for a spatial partition of filled polygons.
-		typedef GPlatesMaths::CubeQuadTreePartition<filled_polygon_type> filled_polygons_spatial_partition_type;
+		//! Typedef for a spatial partition of filled drawables.
+		typedef GPlatesMaths::CubeQuadTreePartition<filled_drawable_type> filled_drawables_spatial_partition_type;
 
 	public:
 
@@ -160,16 +164,40 @@ namespace GPlatesOpenGL
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GLFilledPolygonsGlobeView> non_null_ptr_to_const_type;
 
 		/**
-		 * Used to accumulate filled polygons (optionally as a spatial partition) for rendering.
+		 * Used to accumulate filled drawables (optionally as a spatial partition) for rendering.
 		 */
-		class FilledPolygons
+		class FilledDrawables
 		{
 		public:
 			//! Default constructor.
-			FilledPolygons() :
-				d_filled_polygons_spatial_partition(
-						filled_polygons_spatial_partition_type::create(MAX_SPATIAL_PARTITION_DEPTH))
+			FilledDrawables() :
+				d_filled_drawables_spatial_partition(
+						filled_drawables_spatial_partition_type::create(MAX_SPATIAL_PARTITION_DEPTH))
 			{  }
+
+			/**
+			 * Returns true if any filled drawables have been added.
+			 */
+			bool
+			empty() const
+			{
+				return d_filled_drawables_spatial_partition->empty();
+			}
+
+			/**
+			 * Clears the filled drawables accumulated so far.
+			 *
+			 * This is more efficient than creating a new @a FilledDrawables each render since it
+			 * minimises re-allocations.
+			 */
+			void
+			clear()
+			{
+				d_filled_drawables_spatial_partition->clear();
+				d_drawable_vertices.clear();
+				d_drawable_vertex_elements.clear();
+				d_current_drawable = boost::none;
+			}
 
 			/**
 			 * Create a filled polygon from a @a PolygonOnSphere.
@@ -178,26 +206,7 @@ namespace GPlatesOpenGL
 			add_filled_polygon(
 					const GPlatesMaths::PolygonOnSphere &polygon,
 					const GPlatesGui::Colour &colour,
-					const boost::optional<GPlatesMaths::CubeQuadTreeLocation> &cube_quad_tree_location = boost::none)
-			{
-				// Alpha blending will be set up for pre-multiplied alpha.
-				const GPlatesGui::Colour pre_multiplied_alpha_colour(
-						colour.red() * colour.alpha(),
-						colour.green() * colour.alpha(),
-						colour.blue() * colour.alpha(),
-						colour.alpha());
-
-				const boost::optional<filled_polygon_type> filled_polygon =
-						add_filled_polygon_mesh(
-								polygon.vertex_begin(),
-								polygon.number_of_vertices(),
-								polygon.get_centroid(),
-								GPlatesGui::Colour::to_rgba8(pre_multiplied_alpha_colour));
-				if (filled_polygon)
-				{
-					add_filled_polygon(filled_polygon.get(), cube_quad_tree_location);
-				}
-			}
+					const boost::optional<GPlatesMaths::CubeQuadTreeLocation> &cube_quad_tree_location = boost::none);
 
 			/**
 			 * Create a filled polygon from a @a PolylineOnSphere.
@@ -209,49 +218,38 @@ namespace GPlatesOpenGL
 			add_filled_polygon(
 					const GPlatesMaths::PolylineOnSphere &polyline,
 					const GPlatesGui::Colour &colour,
-					const boost::optional<GPlatesMaths::CubeQuadTreeLocation> &cube_quad_tree_location = boost::none)
-			{
-				// Alpha blending will be set up for pre-multiplied alpha.
-				const GPlatesGui::Colour pre_multiplied_alpha_colour(
-						colour.red() * colour.alpha(),
-						colour.green() * colour.alpha(),
-						colour.blue() * colour.alpha(),
-						colour.alpha());
-
-				const boost::optional<filled_polygon_type> filled_polygon =
-						add_filled_polygon_mesh(
-								polyline.vertex_begin(),
-								polyline.number_of_vertices(),
-								polyline.get_centroid(),
-								GPlatesGui::Colour::to_rgba8(pre_multiplied_alpha_colour));
-				if (filled_polygon)
-				{
-					add_filled_polygon(filled_polygon.get(), cube_quad_tree_location);
-				}
-			}
+					const boost::optional<GPlatesMaths::CubeQuadTreeLocation> &cube_quad_tree_location = boost::none);
 
 			/**
-			 * Returns true if any filled polygons have been added.
-			 */
-			bool
-			empty() const
-			{
-				return d_filled_polygons_spatial_partition->empty();
-			}
-
-			/**
-			 * Clears the filled polygons accumulated so far.
-			 *
-			 * This is more efficient than creating a new @a FilledPolygons each render since it
-			 * minimises re-allocations.
+			 * Begins a single drawable for a filled mesh composed of individually added triangles.
 			 */
 			void
-			clear()
+			begin_filled_triangle_mesh()
 			{
-				d_filled_polygons_spatial_partition->clear();
-				d_polygon_vertices.clear();
-				d_polygon_vertex_elements.clear();
+				begin_filled_drawable();
 			}
+
+			/**
+			 * Ends the current filled triangle mesh drawable (started by @a begin_filled_triangle_mesh).
+			 */
+			void
+			end_filled_triangle_mesh(
+					const boost::optional<GPlatesMaths::CubeQuadTreeLocation> &cube_quad_tree_location = boost::none)
+			{
+				end_filled_drawable(cube_quad_tree_location);
+			}
+
+			/**
+			 * Adds a coloured triangle to the current filled triangle mesh drawable.
+			 *
+			 * This must be called between @a begin_filled_triangle_mesh and @a end_filled_triangle_mesh.
+			 */
+			void
+			add_filled_triangle_to_mesh(
+					const GPlatesMaths::PointOnSphere &vertex1,
+					const GPlatesMaths::PointOnSphere &vertex2,
+					const GPlatesMaths::PointOnSphere &vertex3,
+					const GPlatesGui::Colour &colour);
 
 		private:
 			/**
@@ -261,114 +259,112 @@ namespace GPlatesOpenGL
 
 
 			/**
-			 * The spatial partition of filled polygons.
+			 * The spatial partition of filled drawables.
 			 */
-			filled_polygons_spatial_partition_type::non_null_ptr_type d_filled_polygons_spatial_partition;
+			filled_drawables_spatial_partition_type::non_null_ptr_type d_filled_drawables_spatial_partition;
 
 			/**
-			 * The vertices of all polygons of the current @a render call.
+			 * The vertices of all drawables of the current @a render call.
 			 *
 			 * NOTE: This is only 'clear'ed at each render call in order to avoid excessive re-allocations
 			 * at each @a render call (std::vector::clear shouldn't deallocate).
 			 */
-			std::vector<polygon_vertex_type> d_polygon_vertices;
+			std::vector<drawable_vertex_type> d_drawable_vertices;
 
 			/**
-			 * The vertex elements (indices) of all polygons of the current @a render call.
+			 * The vertex elements (indices) of all drawables of the current @a render call.
 			 *
 			 * NOTE: This is only 'clear'ed at each render call in order to avoid excessive re-allocations
 			 * at each @a render call (std::vector::clear shouldn't deallocate).
 			 */
-			std::vector<polygon_vertex_element_type> d_polygon_vertex_elements;
+			std::vector<drawable_vertex_element_type> d_drawable_vertex_elements;
 
-			// So can access accumulated vertices/indices and spatial partition of filled polygons.
+			/**
+			 * The current drawable.
+			 *
+			 * Is only valid between @a begin_filled_drawable and @a end_filled_drawable.
+			 */
+			boost::optional<FilledDrawable::Drawable> d_current_drawable;
+
+
+			// So can access accumulated vertices/indices and spatial partition of filled drawables.
 			friend class GLFilledPolygonsGlobeView;
 
 
-			//! Adds the filled polygon to the spatial partition.
+			/**
+			 * Begin a new drawable.
+			 *
+			 * Everything in a drawable is rendered in one draw call and stenciled as a unit.
+			 */
 			void
-			add_filled_polygon(
-					const filled_polygon_type &filled_polygon,
-					const boost::optional<GPlatesMaths::CubeQuadTreeLocation> &cube_quad_tree_location)
-			{
-				if (cube_quad_tree_location)
-				{
-					d_filled_polygons_spatial_partition->add(filled_polygon, cube_quad_tree_location.get());
-				}
-				else
-				{
-					d_filled_polygons_spatial_partition->add_unpartitioned(filled_polygon);
-				}
-			}
+			begin_filled_drawable();
 
+			/**
+			 * End the current drawable.
+			 */
+			void
+			end_filled_drawable(
+					const boost::optional<GPlatesMaths::CubeQuadTreeLocation> &cube_quad_tree_location = boost::none);
 
-			//! Adds a sequence of @a PointOnSphere points as vertices/indices in global vertex array.
+			/**
+			 * Adds a polygon as a fan mesh (with the polygon centroid as the fan apex).
+			 *
+			 * Adds a sequence of @a PointOnSphere points as vertices/indices in global vertex array.
+			 */
 			template <typename PointOnSphereForwardIter>
-			boost::optional<filled_polygon_type>
-			add_filled_polygon_mesh(
+			void
+			add_polygon_mesh_to_current_filled_drawable(
 					const PointOnSphereForwardIter begin_points,
 					const unsigned int num_points,
 					const GPlatesMaths::UnitVector3D &centroid,
 					const GPlatesGui::rgba8_t &colour)
 			{
-				// Need at least three points for a polygon.
-				if (num_points < 3)
-				{
-					return boost::none;
-				}
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						d_current_drawable,
+						GPLATES_ASSERTION_SOURCE);
 
 				//
 				// Create the OpenGL coloured vertices for the filled polygon (fan) mesh.
 				//
 
-				const GLsizei base_vertex_element_index = d_polygon_vertex_elements.size();
-				const polygon_vertex_element_type base_vertex_index = d_polygon_vertices.size();
-				polygon_vertex_element_type vertex_index = base_vertex_index;
+				const GLsizei initial_vertex_elements_size = d_drawable_vertex_elements.size();
+				const drawable_vertex_element_type base_vertex_index = d_drawable_vertices.size();
+				drawable_vertex_element_type vertex_index = base_vertex_index;
 
 				// First vertex is the centroid.
-				d_polygon_vertices.push_back(polygon_vertex_type(centroid, colour));
+				d_drawable_vertices.push_back(drawable_vertex_type(centroid, colour));
 				++vertex_index;
 
 				// The remaining vertices form the boundary.
 				PointOnSphereForwardIter points_iter = begin_points;
 				for (unsigned int n = 0; n < num_points; ++n, ++vertex_index, ++points_iter)
 				{
-					d_polygon_vertices.push_back(polygon_vertex_type(points_iter->position_vector(), colour));
+					d_drawable_vertices.push_back(drawable_vertex_type(points_iter->position_vector(), colour));
 
-					d_polygon_vertex_elements.push_back(base_vertex_index); // Centroid.
-					d_polygon_vertex_elements.push_back(vertex_index); // Current boundary point.
-					d_polygon_vertex_elements.push_back(vertex_index + 1); // Next boundary point.
+					d_drawable_vertex_elements.push_back(base_vertex_index); // Centroid.
+					d_drawable_vertex_elements.push_back(vertex_index); // Current boundary point.
+					d_drawable_vertex_elements.push_back(vertex_index + 1); // Next boundary point.
 				}
 
 				// Wraparound back to the first boundary vertex to close off the polygon.
-				d_polygon_vertices.push_back(
-						polygon_vertex_type(begin_points->position_vector(), colour));
+				d_drawable_vertices.push_back(
+						drawable_vertex_type(begin_points->position_vector(), colour));
 
-				// Create the filled polygon (fan) mesh drawable.
-				const filled_polygon_type::Drawable polygon_mesh_drawable(
-						base_vertex_index/*start*/,
-						vertex_index/*end*/, // ...the last vertex index
-						d_polygon_vertex_elements.size() - base_vertex_element_index /*count*/,
-						base_vertex_element_index * sizeof(polygon_vertex_element_type)/*indices_offset*/);
-
-				// Keep track of the order to render the drawables (order in which we're called)
-				// because drawables are rendered by visiting the spatial partition which is not
-				// the same as the original draw order.
-				const unsigned int render_order = d_filled_polygons_spatial_partition->size();
-
-				return filled_polygon_type(polygon_mesh_drawable, render_order);
+				// Update the current filled drawable.
+				d_current_drawable->end = vertex_index;
+				d_current_drawable->count += d_drawable_vertex_elements.size() - initial_vertex_elements_size;
 			}
 		};
 
-		//! Typedef for a group of filled polygons.
-		typedef FilledPolygons filled_polygons_type;
+		//! Typedef for a group of filled drawables.
+		typedef FilledDrawables filled_drawables_type;
 
 
 		/**
 		 * Creates a @a GLFilledPolygonsGlobeView object.
 		 *
 		 * NOTE: If @a light is specified but lighting is not supported on the run-time system
-		 * (eg, due to exceeding shader instructions limit) then filled polygons will not be rendered
+		 * (eg, due to exceeding shader instructions limit) then filled drawables will not be rendered
 		 * with surface lighting.
 		 */
 		static
@@ -385,19 +381,19 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Renders the specified filled polygons (spatial partition).
+		 * Renders the specified filled drawables (spatial partition).
 		 */
 		void
 		render(
 				GLRenderer &renderer,
-				const filled_polygons_type &filled_polygons);
+				const filled_drawables_type &filled_drawables);
 
 	private:
 
 		/**
-		 * The maximum tile size for rendering filled polygons.
+		 * The maximum tile size for rendering filled drawables.
 		 *
-		 * The bigger this is the fewer times the filled polygons needed to be drawn.
+		 * The bigger this is the fewer times the filled drawables needed to be drawn.
 		 * But too big and starts to consume too much memory.
 		 * Each pixel is 8 bytes (4 bytes for colour and 4 bytes for combined depth/stencil buffer).
 		 *
@@ -406,7 +402,7 @@ namespace GPlatesOpenGL
 		static const int MAX_TILE_TEXEL_DIMENSION = 1024;
 
 		/**
-		 * The minimum tile size for rendering filled polygons.
+		 * The minimum tile size for rendering filled drawables.
 		 *
 		 * NOTE: Using *signed* integer to avoid compiler error on 64-bit Mac (not sure why it's happening).
 		 */
@@ -438,32 +434,32 @@ namespace GPlatesOpenGL
 		typedef GLMultiResolutionCubeMesh::quad_tree_node_type mesh_quad_tree_node_type;
 
 		//! Typedef for a structure that determines which nodes of a spatial partition intersect a regular cube quad tree.
-		typedef GPlatesMaths::CubeQuadTreePartitionUtils::CubeQuadTreeIntersectingNodes<filled_polygon_type>
-				filled_polygons_intersecting_nodes_type;
+		typedef GPlatesMaths::CubeQuadTreePartitionUtils::CubeQuadTreeIntersectingNodes<filled_drawable_type>
+				filled_drawables_intersecting_nodes_type;
 
-		//! A linked list node that references a spatial partition node of reconstructed polygon mesh drawables.
-		struct FilledPolygonsListNode :
-				public GPlatesUtils::IntrusiveSinglyLinkedList<FilledPolygonsListNode>::Node
+		//! A linked list node that references a spatial partition node of filled drawables.
+		struct FilledDrawablesListNode :
+				public GPlatesUtils::IntrusiveSinglyLinkedList<FilledDrawablesListNode>::Node
 		{
 			//! Default constructor.
-			FilledPolygonsListNode()
+			FilledDrawablesListNode()
 			{  }
 
 			explicit
-			FilledPolygonsListNode(
-					filled_polygons_spatial_partition_type::const_node_reference_type node_reference_) :
+			FilledDrawablesListNode(
+					filled_drawables_spatial_partition_type::const_node_reference_type node_reference_) :
 				node_reference(node_reference_)
 			{  }
 
-			filled_polygons_spatial_partition_type::const_node_reference_type node_reference;
+			filled_drawables_spatial_partition_type::const_node_reference_type node_reference;
 		};
 
-		//! Typedef for a list of spatial partition nodes referencing reconstructed polygon meshes.
-		typedef GPlatesUtils::IntrusiveSinglyLinkedList<FilledPolygonsListNode> 
-				filled_polygons_spatial_partition_node_list_type;
+		//! Typedef for a list of spatial partition nodes referencing reconstructed filled drawables.
+		typedef GPlatesUtils::IntrusiveSinglyLinkedList<FilledDrawablesListNode> 
+				filled_drawables_spatial_partition_node_list_type;
 
-		//! Typedef for a sequence of filled polygons.
-		typedef std::vector<filled_polygon_type> filled_polygon_seq_type;
+		//! Typedef for a sequence of filled drawables.
+		typedef std::vector<filled_drawable_type> filled_drawable_seq_type;
 
 
 		/**
@@ -477,22 +473,22 @@ namespace GPlatesOpenGL
 		unsigned int d_min_tile_texel_dimension;
 
 		/**
-		 * The vertex buffer containing the vertices of all polygons of the current @a render call.
+		 * The vertex buffer containing the vertices of all drawables of the current @a render call.
 		 */
-		GLVertexBuffer::shared_ptr_type d_polygons_vertex_buffer;
+		GLVertexBuffer::shared_ptr_type d_drawables_vertex_buffer;
 
 		/**
-		 * The vertex buffer containing the vertex elements (indices) of all polygons of the current @a render call.
+		 * The vertex buffer containing the vertex elements (indices) of all drawables of the current @a render call.
 		 */
-		GLVertexElementBuffer::shared_ptr_type d_polygons_vertex_element_buffer;
+		GLVertexElementBuffer::shared_ptr_type d_drawables_vertex_element_buffer;
 
 		/**
-		 * The vertex array containing all polygons of the current @a render call.
+		 * The vertex array containing all drawables of the current @a render call.
 		 *
-		 * All polygons for the current @a render call are stored here.
+		 * All drawables for the current @a render call are stored here.
 		 * They'll get flushed/replaced when the next render call is made.
 		 */
-		GLVertexArray::shared_ptr_type d_polygons_vertex_array;
+		GLVertexArray::shared_ptr_type d_drawables_vertex_array;
 
 		/**
 		 * Contains meshes for each cube quad tree node.
@@ -552,9 +548,9 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				unsigned int tile_texel_dimension,
 				const mesh_quad_tree_node_type &mesh_quad_tree_node,
-				const filled_polygons_type &filled_polygons,
-				const filled_polygons_spatial_partition_node_list_type &parent_filled_polygons_intersecting_node_list,
-				const filled_polygons_intersecting_nodes_type &filled_polygons_intersecting_nodes,
+				const filled_drawables_type &filled_drawables,
+				const filled_drawables_spatial_partition_node_list_type &parent_filled_drawables_intersecting_node_list,
+				const filled_drawables_intersecting_nodes_type &filled_drawables_intersecting_nodes,
 				cube_subdivision_cache_type &cube_subdivision_cache,
 				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
 				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
@@ -569,23 +565,23 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				unsigned int tile_texel_dimension,
 				const mesh_quad_tree_node_type &mesh_quad_tree_node,
-				const filled_polygons_type &filled_polygons,
-				const filled_polygons_spatial_partition_node_list_type &
-						parent_reconstructed_polygon_meshes_intersecting_node_list,
-				const filled_polygons_intersecting_nodes_type &
-						reconstructed_polygon_meshes_intersecting_nodes,
+				const filled_drawables_type &filled_drawables,
+				const filled_drawables_spatial_partition_node_list_type &
+						parent_reconstructed_drawable_meshes_intersecting_node_list,
+				const filled_drawables_intersecting_nodes_type &
+						reconstructed_drawable_meshes_intersecting_nodes,
 				cube_subdivision_cache_type &cube_subdivision_cache,
 				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
 				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
 				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node);
 
 		void
-		get_filled_polygons_intersecting_nodes(
+		get_filled_drawables_intersecting_nodes(
 				const GPlatesMaths::CubeQuadTreeLocation &source_raster_tile_location,
 				const GPlatesMaths::CubeQuadTreeLocation &intersecting_node_location,
-				filled_polygons_spatial_partition_type::const_node_reference_type intersecting_node_reference,
-				filled_polygons_spatial_partition_node_list_type &intersecting_node_list,
-				boost::object_pool<FilledPolygonsListNode> &intersecting_list_node_pool);
+				filled_drawables_spatial_partition_type::const_node_reference_type intersecting_node_reference,
+				filled_drawables_spatial_partition_node_list_type &intersecting_node_list,
+				boost::object_pool<FilledDrawablesListNode> &intersecting_list_node_pool);
 
 		void
 		set_tile_state(
@@ -601,27 +597,27 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				unsigned int tile_texel_dimension,
 				const mesh_quad_tree_node_type &mesh_quad_tree_node,
-				const filled_polygons_type &filled_polygons,
-				const filled_polygons_spatial_partition_node_list_type &filled_polygons_intersecting_node_list,
+				const filled_drawables_type &filled_drawables,
+				const filled_drawables_spatial_partition_node_list_type &filled_drawables_intersecting_node_list,
 				cube_subdivision_cache_type &cube_subdivision_cache,
 				const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
 				clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
 				const clip_cube_subdivision_cache_type::node_reference_type &clip_cube_subdivision_cache_node);
 
 		void
-		render_filled_polygons_to_tile_texture(
+		render_filled_drawables_to_tile_texture(
 				GLRenderer &renderer,
 				const GLTexture::shared_ptr_to_const_type &tile_texture,
-				const filled_polygon_seq_type &transformed_sorted_filled_drawables,
+				const filled_drawable_seq_type &transformed_sorted_filled_drawables,
 				const GLTransform &projection_transform,
 				const GLTransform &view_transform);
 
 		void
-		get_filled_polygons(
-				filled_polygon_seq_type &filled_drawables,
-				filled_polygons_spatial_partition_type::element_const_iterator begin_root_filled_polygons,
-				filled_polygons_spatial_partition_type::element_const_iterator end_root_filled_polygons,
-				const filled_polygons_spatial_partition_node_list_type &filled_polygons_intersecting_node_list);
+		get_filled_drawables(
+				filled_drawable_seq_type &filled_drawables,
+				filled_drawables_spatial_partition_type::element_const_iterator begin_root_filled_drawables,
+				filled_drawables_spatial_partition_type::element_const_iterator end_root_filled_drawables,
+				const filled_drawables_spatial_partition_node_list_type &filled_drawables_intersecting_node_list);
 
 		GLTexture::shared_ptr_type
 		acquire_tile_texture(
@@ -629,13 +625,13 @@ namespace GPlatesOpenGL
 				unsigned int tile_texel_dimension);
 
 		void
-		create_polygons_vertex_array(
+		create_drawables_vertex_array(
 				GLRenderer &renderer);
 
 		void
-		write_filled_polygon_meshes_to_vertex_array(
+		write_filled_drawables_to_vertex_array(
 				GLRenderer &renderer,
-				const filled_polygons_type &filled_polygons);
+				const filled_drawables_type &filled_drawables);
 
 		void
 		create_shader_programs(

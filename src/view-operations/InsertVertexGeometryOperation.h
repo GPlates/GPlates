@@ -271,7 +271,7 @@ namespace GPlatesViewOperations
 		void
 		add_rendered_lines(
 				GeometryBuilder::GeometryIndex geom_index,
-				const GeometryType::Value actual_geom_type);
+				const GPlatesMaths::GeometryType::Value actual_geom_type);
 
 		void
 		update_highlight_rendered_layer(

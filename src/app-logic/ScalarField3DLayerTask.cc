@@ -71,6 +71,8 @@ GPlatesAppLogic::ScalarField3DLayerTask::get_input_channel_types() const
 {
 	std::vector<LayerInputChannelType> input_channel_types;
 
+	// NOTE: There's no channel definition for a reconstruction tree - a rotation layer is not needed.
+
 	// Channel definition for the raster feature.
 	input_channel_types.push_back(
 			LayerInputChannelType(
@@ -219,7 +221,7 @@ GPlatesAppLogic::ScalarField3DLayerTask::add_input_layer_proxy_connection(
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct,
-		// - topological boundary resolver,
+		// - topological geometry resolver,
 		// - topological network resolver.
 
 		boost::optional<ReconstructLayerProxy *> reconstruct_layer_proxy =
@@ -258,7 +260,7 @@ GPlatesAppLogic::ScalarField3DLayerTask::remove_input_layer_proxy_connection(
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct,
-		// - topological boundary resolver,
+		// - topological geometry resolver,
 		// - topological network resolver.
 
 		boost::optional<ReconstructLayerProxy *> reconstruct_layer_proxy =

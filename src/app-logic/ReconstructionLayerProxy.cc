@@ -74,49 +74,6 @@ namespace GPlatesAppLogic
 				return d_reconstruction_layer_proxy->get_reconstruction_tree(reconstruction_time);
 			}
 
-
-			//! Returns the reconstruction tree for the specified anchored plate id and the *default* time.
-			virtual
-			ReconstructionTree::non_null_ptr_to_const_type
-			get_reconstruction_tree_default_reconstruction_time(
-					GPlatesModel::integer_plate_id_type anchor_plate_id)
-			{
-				return d_reconstruction_layer_proxy->get_reconstruction_tree(anchor_plate_id);
-			}
-
-
-			//! Returns the reconstruction tree for the *default* time and the *default* anchored plate id.
-			virtual
-			ReconstructionTree::non_null_ptr_to_const_type
-			get_reconstruction_tree_default_reconstruction_time_and_anchored_plate_id()
-			{
-				return d_reconstruction_layer_proxy->get_reconstruction_tree();
-			}
-
-
-			//! Changes the default reconstruction time.
-			virtual
-			void
-			set_default_reconstruction_time(
-					const double &reconstruction_time)
-			{
-				// This method shouldn't be called because we're delegating to a
-				// ReconstructionLayerProxy and the default should be set directly on that instead.
-				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-			}
-
-
-			//! Changes the default anchor plate id.
-			virtual
-			void
-			set_default_anchor_plate_id(
-					GPlatesModel::integer_plate_id_type anchor_plate_id)
-			{
-				// This method shouldn't be called because we're delegating to a
-				// ReconstructionLayerProxy and the default should be set directly on that instead.
-				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-			}
-
 		private:
 			ReconstructionLayerProxy::non_null_ptr_type d_reconstruction_layer_proxy;
 		};
@@ -146,26 +103,55 @@ GPlatesAppLogic::ReconstructionLayerProxy::get_reconstruction_tree(
 {
 	if (!d_cached_reconstruction_trees)
 	{
-		d_cached_reconstruction_trees = get_cached_reconstruction_tree_creator(
+		d_cached_reconstruction_trees = create_cached_reconstruction_tree_creator_impl(
 				d_current_reconstruction_feature_collections,
-				d_current_reconstruction_time.dval()/*default_reconstruction_time*/,
 				d_current_anchor_plate_id/*default_anchor_plate_id*/,
-				d_max_num_reconstruction_trees_in_cache);
+				d_current_max_num_reconstruction_trees_in_cache);
 	}
 
 	// See if there's a reconstruction tree cached for the specified reconstruction time.
 	// If not then a new one will get created using the specified reconstruction time and anchor plate id.
-	return d_cached_reconstruction_trees->get_reconstruction_tree(
+	return d_cached_reconstruction_trees.get()->get_reconstruction_tree(
 			reconstruction_time,
 			anchor_plate_id);
 }
 
 
 GPlatesAppLogic::ReconstructionTreeCreator
-GPlatesAppLogic::ReconstructionLayerProxy::get_reconstruction_tree_creator()
+GPlatesAppLogic::ReconstructionLayerProxy::get_reconstruction_tree_creator(
+		boost::optional<unsigned int> max_num_reconstruction_trees_in_cache_hint)
 {
-	// Note that 'set_default_reconstruction_time()' and 'set_default_anchor_plate_id()'
-	// should not be called on this 
+	// Use the cache size hint (if provided) to update the current maximum cache size,
+	// otherwise leave it at whatever it currently is.
+	if (max_num_reconstruction_trees_in_cache_hint)
+	{
+		// We can increase the cache size above the default cache size but we won't reduce it
+		// below the default since that would reduce efficiency for other clients (an example is
+		// flowlines which expect a reasonable cache size in order to operate efficiently).
+		if (max_num_reconstruction_trees_in_cache_hint.get() > d_default_max_num_reconstruction_trees_in_cache)
+		{
+			d_current_max_num_reconstruction_trees_in_cache = max_num_reconstruction_trees_in_cache_hint.get();
+		}
+		else
+		{
+			d_current_max_num_reconstruction_trees_in_cache = d_default_max_num_reconstruction_trees_in_cache;
+		}
+
+		// If we currently have cached reconstruction trees then set the max cache size now,
+		// otherwise set it later when the reconstruction tree creator is created.
+		if (d_cached_reconstruction_trees)
+		{
+			d_cached_reconstruction_trees.get()->set_maximum_cache_size(
+					d_current_max_num_reconstruction_trees_in_cache);
+		}
+	}
+
+	// We always return a delegate that defers to 'this' layer proxy interface instead of
+	// deferring directly to our internal cached reconstruction tree creator.
+	// This way any changes to the current reconstruction time or anchor plate id will be visible to the
+	// client (via the returned delegate) even if those changes are made *after* the delegate is returned.
+	// And any changes to the cache size will also be visible by all clients (not just the client
+	// that called us) regardless of whether they request a reconstruction tree creator object or not.
 	return get_delegate_reconstruction_tree_creator(GPlatesUtils::get_non_null_pointer(this));
 }
 
@@ -180,14 +166,6 @@ GPlatesAppLogic::ReconstructionLayerProxy::set_current_reconstruction_time(
 		return;
 	}
 	d_current_reconstruction_time = reconstruction_time;
-
-	// If 'd_cached_reconstruction_trees' is currently valid then set the new
-	// default reconstruction time. This is not strictly necessary since we always call it
-	// with an explicit reconstruction time argument but it's better to be safe.
-	if (d_cached_reconstruction_trees)
-	{
-		d_cached_reconstruction_trees->set_default_reconstruction_time(d_current_reconstruction_time.dval());
-	}
 
 	// Note that we don't invalidate our cache because if a reconstruction tree is
 	// not cached for a requested reconstruction time then a new tree is created.
@@ -215,18 +193,9 @@ GPlatesAppLogic::ReconstructionLayerProxy::set_current_anchor_plate_id(
 	}
 	d_current_anchor_plate_id = anchor_plate_id;
 
-	// If 'd_cached_reconstruction_trees' is currently valid then set the new
-	// default anchor plate id. This is not strictly necessary since we always call it
-	// with an explicit anchor plate id argument but it's better to be safe.
-	if (d_cached_reconstruction_trees)
-	{
-		d_cached_reconstruction_trees->set_default_anchor_plate_id(d_current_anchor_plate_id);
-	}
-
-	// Note that we don't invalidate our cache because if a reconstruction tree is
-	// not cached for a requested anchor plate id then a new tree is created.
-	// But observers need to be aware that the default anchor plate id has changed.
-	d_subject_token.invalidate();
+	// The default anchor plate id (stored in the cached reconstruction tree creator) has changed
+	// so we need to invalidate the reconstruction tree cache.
+	invalidate();
 }
 
 
@@ -271,6 +240,12 @@ GPlatesAppLogic::ReconstructionLayerProxy::invalidate()
 {
 	// Clear any cached reconstruction trees.
 	d_cached_reconstruction_trees = boost::none;
+
+	// Set the maximum reconstruction tree cache size back to the default.
+	// We don't want client requests for very large caches to continue indefinitely.
+	// In any case, due to this invalidation, the client will need to update itself by requesting
+	// another reconstruction tree creator and it will again specify its desired cache size.
+	d_current_max_num_reconstruction_trees_in_cache = d_default_max_num_reconstruction_trees_in_cache;
 
 	// Polling observers need to update themselves.
 	d_subject_token.invalidate();

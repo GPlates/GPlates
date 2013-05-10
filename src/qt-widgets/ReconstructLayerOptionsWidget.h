@@ -45,6 +45,7 @@ namespace GPlatesQtWidgets
 {
 	// Forward declaration.
 	class SetVGPVisibilityDialog;
+	class SetDeformationParametersDialog;
 	class DrawStyleDialog;
 	class ViewportWindow;
 
@@ -85,6 +86,9 @@ namespace GPlatesQtWidgets
 		open_vgp_visibility_dialog();
 
 		void
+		open_deformation_parameters_dialog();
+
+		void
 		open_draw_style_setting_dlg();
 		
 		void
@@ -101,7 +105,8 @@ namespace GPlatesQtWidgets
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		ViewportWindow *d_viewport_window;
 		SetVGPVisibilityDialog *d_set_vgp_visibility_dialog;
-		DrawStyleDialog		   *d_draw_style_dialog_ptr;
+		SetDeformationParametersDialog *d_set_deformation_parameters_dialog;
+		DrawStyleDialog *d_draw_style_dialog_ptr;
 
 		/**
 		 * The visual layer for which we are currently displaying options.

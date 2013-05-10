@@ -36,9 +36,14 @@
 #include <QDir>
 #include <QDebug>
 
+#include "ManageFeatureCollectionsDialog.h"
+
+#include "ManageFeatureCollectionsActionWidget.h"
+#include "ManageFeatureCollectionsEditConfigurations.h"
+
 #include "app-logic/ApplicationState.h"
-#include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
+#include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/ReconstructGraph.h"
 
 #include "file-io/ErrorOpeningFileForWritingException.h"
@@ -63,10 +68,9 @@
 
 #include "presentation/ViewState.h"
 
-#include "ManageFeatureCollectionsActionWidget.h"
-#include "ManageFeatureCollectionsEditConfigurations.h"
+#include "utils/Profile.h"
 
-#include "ManageFeatureCollectionsDialog.h"
+
 namespace
 {
 	// The colours to be used for row backgrounds and icon colours.
@@ -420,10 +424,18 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::unload_file(
 		ManageFeatureCollectionsActionWidget *action_widget_ptr)
 {
+	// Block any calls to 'ApplicationState::reconstruct()' because we're going to
+	// call it at the end of this method.
+	GPlatesAppLogic::ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(
+			d_view_state.get_application_state());
+
 	GPlatesAppLogic::FeatureCollectionFileState::file_reference file_it =
 			action_widget_ptr->get_file_reference();
 	
 	d_feature_collection_file_io->unload_file(file_it);
+
+	// Make sure 'ApplicationState::reconstruct()' gets called when all scopes exit.
+	scoped_reconstruct_guard.call_reconstruct_on_scope_exit();
 }
 
 
@@ -843,6 +855,11 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::save_selected()
 void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::reload_selected()
 {
+	// Block any calls to 'ApplicationState::reconstruct()' because we're going to
+	// call it at the end of this method.
+	GPlatesAppLogic::ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(
+			d_view_state.get_application_state());
+
 	// Reloading files can, under certain circumstances, trigger layer additions.
 	// This is only when the type of features in the reloaded files has changed such that
 	// new types of layers are required.
@@ -876,12 +893,20 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::reload_selected()
 	table_feature_collections->setFocus();
 
 	add_layers_group.end_add_or_remove_layers();
+
+	// Make sure 'ApplicationState::reconstruct()' gets called when all scopes exit.
+	scoped_reconstruct_guard.call_reconstruct_on_scope_exit();
 }
 
 
 void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::unload_selected()
 {
+	// Block any calls to 'ApplicationState::reconstruct()' because we're going to
+	// call it at the end of this method.
+	GPlatesAppLogic::ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(
+			d_view_state.get_application_state());
+
 	// Unloading files can trigger layer removals.
 	// As an optimisation, put all layer removals in a single remove layers group.
 	GPlatesAppLogic::ReconstructGraph::AddOrRemoveLayersGroup remove_layers_group(d_reconstruct_graph);
@@ -903,6 +928,9 @@ GPlatesQtWidgets::ManageFeatureCollectionsDialog::unload_selected()
 	}
 
 	remove_layers_group.end_add_or_remove_layers();
+
+	// Make sure 'ApplicationState::reconstruct()' gets called when all scopes exit.
+	scoped_reconstruct_guard.call_reconstruct_on_scope_exit();
 }
 
 

@@ -27,6 +27,9 @@
 
 #include "CoRegistrationData.h"
 
+#include "ReconstructionGeometryVisitor.h"
+
+
 void
 GPlatesAppLogic::CoRegistrationData::accept_visitor(
 		ConstReconstructionGeometryVisitor &visitor) const

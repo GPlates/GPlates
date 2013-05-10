@@ -76,7 +76,7 @@ namespace GPlatesQtWidgets
 		void
 		change_actual_geometry_type(
 				GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index,
-				GPlatesViewOperations::GeometryType::Value geometry_type);
+				GPlatesMaths::GeometryType::Value geometry_type);
 
 		void
 		insert_geometry(

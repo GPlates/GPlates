@@ -104,8 +104,6 @@ GPlatesAppLogic::RasterLayerProxy::get_resolved_raster(
 	return ResolvedRaster::create(
 			*d_current_raster_feature.get().handle_ptr(),
 			reconstruction_time,
-			// FIXME: Dodgy - need to remove requirement of providing a reconstruction tree...
-			create_reconstruction_tree(reconstruction_time, 0),
 			GPlatesUtils::get_non_null_pointer(this),
 			d_current_reconstructed_polygons_layer_proxy.get_optional_input_layer_proxy(),
 			d_current_age_grid_raster_layer_proxy.get_optional_input_layer_proxy(),

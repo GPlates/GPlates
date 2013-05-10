@@ -158,7 +158,7 @@ GPlatesAppLogic::MotionPathUtils::fill_times_vector(
 
 	// Add the reconstruction time if it lies between the end points of the times vector.
 	if (!time_samples.empty() &&
-		time_samples.front() < GPlatesMaths::real_t(reconstruction_time) &&
+		time_samples.front() <= GPlatesMaths::real_t(reconstruction_time) &&
 		time_samples.back() > GPlatesMaths::real_t(reconstruction_time))
 	{
 		times.push_back(reconstruction_time);

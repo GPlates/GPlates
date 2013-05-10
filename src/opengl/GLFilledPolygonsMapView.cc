@@ -37,28 +37,32 @@
 #include "GLContext.h"
 #include "GLRenderer.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
+
 #include "utils/Profile.h"
 
 
 GPlatesOpenGL::GLFilledPolygonsMapView::GLFilledPolygonsMapView(
 		GLRenderer &renderer)
 {
-	create_polygons_vertex_array(renderer);
+	create_drawables_vertex_array(renderer);
 }
 
 
 void
 GPlatesOpenGL::GLFilledPolygonsMapView::render(
 		GLRenderer &renderer,
-		const filled_polygons_type &filled_polygons)
+		const filled_drawables_type &filled_drawables)
 {
 	PROFILE_FUNC();
 
 	// Make sure we leave the OpenGL state the way it was.
 	GLRenderer::StateBlockScope save_restore_state(renderer);
 
-	// If there are no filled polygons to render then return early.
-	if (filled_polygons.d_polygon_vertex_elements.empty())
+	// If there are no filled drawables to render then return early.
+	if (filled_drawables.d_drawable_vertex_elements.empty())
 	{
 		return;
 	}
@@ -82,15 +86,15 @@ GPlatesOpenGL::GLFilledPolygonsMapView::render(
 		return;
 	}
 
-	// Write the vertices/indices of all filled polygons (gathered by the client) into our
+	// Write the vertices/indices of all filled drawables (gathered by the client) into our
 	// vertex buffer and vertex element buffer.
-	write_filled_polygon_meshes_to_vertex_array(renderer, filled_polygons);
+	write_filled_drawables_to_vertex_array(renderer, filled_drawables);
 
 	// Clear the stencil buffer.
 	renderer.gl_clear_stencil();
 	renderer.gl_clear(GL_STENCIL_BUFFER_BIT);
 
-	// Set the alpha-blend state since filled polygon could have a transparent colour.
+	// Set the alpha-blend state since filled drawable could have a transparent colour.
 	// Set up alpha blending for pre-multiplied alpha.
 	// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
 	// This is where the RGB channels have already been multiplied by the alpha channel.
@@ -104,16 +108,16 @@ GPlatesOpenGL::GLFilledPolygonsMapView::render(
 	renderer.gl_enable(GL_STENCIL_TEST);
 
 	// Bind the vertex array before using it to draw.
-	d_polygons_vertex_array->gl_bind(renderer);
+	d_drawables_vertex_array->gl_bind(renderer);
 
 	// Iterate over the filled drawables and render each one into the scene.
-	filled_polygon_seq_type::const_iterator filled_drawables_iter =
-			filled_polygons.d_polygon_filled_drawables.begin();
-	filled_polygon_seq_type::const_iterator filled_drawables_end =
-			filled_polygons.d_polygon_filled_drawables.end();
+	filled_drawable_seq_type::const_iterator filled_drawables_iter =
+			filled_drawables.d_filled_drawables.begin();
+	filled_drawable_seq_type::const_iterator filled_drawables_end =
+			filled_drawables.d_filled_drawables.end();
 	for ( ; filled_drawables_iter != filled_drawables_end; ++filled_drawables_iter)
 	{
-		const filled_polygon_type &filled_drawable = *filled_drawables_iter;
+		const filled_drawable_type &filled_drawable = *filled_drawables_iter;
 
 		// Set the stencil function to always pass.
 		renderer.gl_stencil_func(GL_ALWAYS, 0, ~0);
@@ -127,21 +131,21 @@ GPlatesOpenGL::GLFilledPolygonsMapView::render(
 		renderer.gl_color_mask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		renderer.gl_enable(GL_BLEND, false);
 
-		// Render the current filled polygon as a polygon (fan) mesh.
-		d_polygons_vertex_array->gl_draw_range_elements(
+		// Render the current filled drawable.
+		d_drawables_vertex_array->gl_draw_range_elements(
 				renderer,
 				GL_TRIANGLES,
-				filled_drawable.d_polygon_mesh_drawable.start,
-				filled_drawable.d_polygon_mesh_drawable.end,
-				filled_drawable.d_polygon_mesh_drawable.count,
-				GLVertexElementTraits<polygon_vertex_element_type>::type,
-				filled_drawable.d_polygon_mesh_drawable.indices_offset);
+				filled_drawable.d_drawable.start,
+				filled_drawable.d_drawable.end,
+				filled_drawable.d_drawable.count,
+				GLVertexElementTraits<drawable_vertex_element_type>::type,
+				filled_drawable.d_drawable.indices_offset);
 
 		// Set the stencil function to pass only if the stencil buffer value is non-zero.
-		// This means we only draw into the tile texture for pixels 'interior' to the filled polygon.
+		// This means we only draw into the tile texture for pixels 'interior' to the filled drawable.
 		renderer.gl_stencil_func(GL_NOTEQUAL, 0, ~0);
 		// Set the stencil operation to set the stencil buffer to zero in preparation
-		// for the next polygon (also avoids multiple alpha-blending due to overlapping fan
+		// for the next drawable (also avoids multiple alpha-blending due to overlapping fan
 		// triangles as mentioned below).
 		renderer.gl_stencil_op(GL_KEEP, GL_KEEP, GL_ZERO);
 
@@ -149,83 +153,83 @@ GPlatesOpenGL::GLFilledPolygonsMapView::render(
 		renderer.gl_color_mask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		renderer.gl_enable(GL_BLEND, true);
 
-		// Render the current filled polygon as a polygon (fan) mesh again.
-		// This drawable covers at least all interior pixels of the filled polygon.
-		// It also can covers exterior pixels of the filled polygon.
+		// Render the current filled drawable.
+		// This drawable covers at least all interior pixels of the filled drawable.
+		// It also can covers exterior pixels of the filled drawable.
 		// However only the interior pixels (where stencil buffer is non-zero) will
 		// pass the stencil test and get written into the tile (colour) texture.
 		// The drawable also can render pixels multiple times due to overlapping fan triangles.
 		// To avoid alpha blending each pixel more than once, the above stencil operation zeros
 		// the stencil buffer value of each pixel that passes the stencil test such that the next
 		// overlapping pixel will then fail the stencil test (avoiding multiple-alpha-blending).
-		d_polygons_vertex_array->gl_draw_range_elements(
+		d_drawables_vertex_array->gl_draw_range_elements(
 				renderer,
 				GL_TRIANGLES,
-				filled_drawable.d_polygon_mesh_drawable.start,
-				filled_drawable.d_polygon_mesh_drawable.end,
-				filled_drawable.d_polygon_mesh_drawable.count,
-				GLVertexElementTraits<polygon_vertex_element_type>::type,
-				filled_drawable.d_polygon_mesh_drawable.indices_offset);
+				filled_drawable.d_drawable.start,
+				filled_drawable.d_drawable.end,
+				filled_drawable.d_drawable.count,
+				GLVertexElementTraits<drawable_vertex_element_type>::type,
+				filled_drawable.d_drawable.indices_offset);
 	}
 }
 
 
 void
-GPlatesOpenGL::GLFilledPolygonsMapView::create_polygons_vertex_array(
+GPlatesOpenGL::GLFilledPolygonsMapView::create_drawables_vertex_array(
 		GLRenderer &renderer)
 {
-	d_polygons_vertex_array = GLVertexArray::create(renderer);
+	d_drawables_vertex_array = GLVertexArray::create(renderer);
 
 	// Set up the vertex element buffer.
 	GLBuffer::shared_ptr_type vertex_element_buffer_data = GLBuffer::create(renderer);
-	d_polygons_vertex_element_buffer = GLVertexElementBuffer::create(renderer, vertex_element_buffer_data);
+	d_drawables_vertex_element_buffer = GLVertexElementBuffer::create(renderer, vertex_element_buffer_data);
 	// Attach vertex element buffer to the vertex array.
-	d_polygons_vertex_array->set_vertex_element_buffer(renderer, d_polygons_vertex_element_buffer);
+	d_drawables_vertex_array->set_vertex_element_buffer(renderer, d_drawables_vertex_element_buffer);
 
 	// Set up the vertex buffer.
 	GLBuffer::shared_ptr_type vertex_buffer_data = GLBuffer::create(renderer);
-	d_polygons_vertex_buffer = GLVertexBuffer::create(renderer, vertex_buffer_data);
+	d_drawables_vertex_buffer = GLVertexBuffer::create(renderer, vertex_buffer_data);
 
-	// Attach polygons vertex buffer to the vertex array.
+	// Attach drawables vertex buffer to the vertex array.
 	//
-	// Later we'll be allocating a vertex buffer large enough to contain all polygons and
-	// rendering each polygon with its own OpenGL draw call.
-	bind_vertex_buffer_to_vertex_array<polygon_vertex_type>(
+	// Later we'll be allocating a vertex buffer large enough to contain all drawables and
+	// rendering each drawable with its own OpenGL draw call.
+	bind_vertex_buffer_to_vertex_array<drawable_vertex_type>(
 			renderer,
-			*d_polygons_vertex_array,
-			d_polygons_vertex_buffer);
+			*d_drawables_vertex_array,
+			d_drawables_vertex_buffer);
 }
 
 
 void
-GPlatesOpenGL::GLFilledPolygonsMapView::write_filled_polygon_meshes_to_vertex_array(
+GPlatesOpenGL::GLFilledPolygonsMapView::write_filled_drawables_to_vertex_array(
 		GLRenderer &renderer,
-		const filled_polygons_type &filled_polygons)
+		const filled_drawables_type &filled_drawables)
 {
-	// Use 'stream' since each filled polygon is accessed only twice...
+	// Use 'stream' since each filled drawable is accessed only twice...
 
-	GLBuffer::shared_ptr_type vertex_element_buffer_data = d_polygons_vertex_element_buffer->get_buffer();
+	GLBuffer::shared_ptr_type vertex_element_buffer_data = d_drawables_vertex_element_buffer->get_buffer();
 	vertex_element_buffer_data->gl_buffer_data(
 			renderer,
 			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
-			filled_polygons.d_polygon_vertex_elements,
-			// Use 'stream' since each filled polygon is accessed only twice...
+			filled_drawables.d_drawable_vertex_elements,
+			// Use 'stream' since each filled drawable is accessed only twice...
 			GLBuffer::USAGE_STREAM_DRAW);
 
-	GLBuffer::shared_ptr_type vertex_buffer_data = d_polygons_vertex_buffer->get_buffer();
+	GLBuffer::shared_ptr_type vertex_buffer_data = d_drawables_vertex_buffer->get_buffer();
 	vertex_buffer_data->gl_buffer_data(
 			renderer,
 			GLBuffer::TARGET_ARRAY_BUFFER,
-			filled_polygons.d_polygon_vertices,
-			// Use 'stream' since each filled polygon is accessed only twice...
+			filled_drawables.d_drawable_vertices,
+			// Use 'stream' since each filled drawable is accessed only twice...
 			GLBuffer::USAGE_STREAM_DRAW);
 
-	//qDebug() << "Writing triangles: " << filled_polygons.d_polygon_vertex_elements.size() / 3;
+	//qDebug() << "Writing triangles: " << filled_drawables.d_drawable_vertex_elements.size() / 3;
 }
 
 
 void
-GPlatesOpenGL::GLFilledPolygonsMapView::FilledPolygons::add_filled_polygon(
+GPlatesOpenGL::GLFilledPolygonsMapView::FilledDrawables::add_filled_polygon(
 		const std::vector<QPointF> &line_geometry,
 		const GPlatesGui::Colour &colour)
 {
@@ -238,6 +242,8 @@ GPlatesOpenGL::GLFilledPolygonsMapView::FilledPolygons::add_filled_polygon(
 	{
 		return;
 	}
+
+	begin_filled_drawable();
 
 	unsigned int n;
 
@@ -262,13 +268,13 @@ GPlatesOpenGL::GLFilledPolygonsMapView::FilledPolygons::add_filled_polygon(
 	// Create the OpenGL coloured vertices for the filled polygon (fan) mesh.
 	//
 
-	const GLsizei base_vertex_element_index = d_polygon_vertex_elements.size();
-	const polygon_vertex_element_type base_vertex_index = d_polygon_vertices.size();
-	polygon_vertex_element_type vertex_index = base_vertex_index;
+	const GLsizei initial_vertex_elements_size = d_drawable_vertex_elements.size();
+	const drawable_vertex_element_type base_vertex_index = d_drawable_vertices.size();
+	drawable_vertex_element_type vertex_index = base_vertex_index;
 
 	// First vertex is the centroid.
-	d_polygon_vertices.push_back(
-			polygon_vertex_type(
+	d_drawable_vertices.push_back(
+			drawable_vertex_type(
 					centroid.x(),
 					centroid.y(),
 					0/*z*/,
@@ -278,32 +284,105 @@ GPlatesOpenGL::GLFilledPolygonsMapView::FilledPolygons::add_filled_polygon(
 	// The remaining vertices form the boundary.
 	for (n = 0; n < num_points; ++n, ++vertex_index)
 	{
-		d_polygon_vertices.push_back(
-				polygon_vertex_type(
+		d_drawable_vertices.push_back(
+				drawable_vertex_type(
 						line_geometry[n].x(),
 						line_geometry[n].y(),
 						0/*z*/,
 						pre_multiplied_alpha_colour));
 
-		d_polygon_vertex_elements.push_back(base_vertex_index); // Centroid.
-		d_polygon_vertex_elements.push_back(vertex_index); // Current boundary point.
-		d_polygon_vertex_elements.push_back(vertex_index + 1); // Next boundary point.
+		d_drawable_vertex_elements.push_back(base_vertex_index); // Centroid.
+		d_drawable_vertex_elements.push_back(vertex_index); // Current boundary point.
+		d_drawable_vertex_elements.push_back(vertex_index + 1); // Next boundary point.
 	}
 
 	// Wraparound back to the first boundary vertex to close off the polygon (in case it's a polyline).
-	d_polygon_vertices.push_back(
-			polygon_vertex_type(
+	d_drawable_vertices.push_back(
+			drawable_vertex_type(
 					line_geometry[0].x(),
 					line_geometry[0].y(),
 					0/*z*/,
 					pre_multiplied_alpha_colour));
 
-	// Create the filled polygon (fan) mesh drawable.
-	const filled_polygon_type::Drawable polygon_mesh_drawable(
-			base_vertex_index/*start*/,
-			vertex_index/*end*/, // ...the last vertex index
-			d_polygon_vertex_elements.size() - base_vertex_element_index /*count*/,
-			base_vertex_element_index * sizeof(polygon_vertex_element_type)/*indices_offset*/);
+	// Update the current filled drawable.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_current_drawable,
+			GPLATES_ASSERTION_SOURCE);
+	d_current_drawable->end = vertex_index;
+	d_current_drawable->count += d_drawable_vertex_elements.size() - initial_vertex_elements_size;
 
-	d_polygon_filled_drawables.push_back(filled_polygon_type(polygon_mesh_drawable));
+	end_filled_drawable();
+}
+
+
+void
+GPlatesOpenGL::GLFilledPolygonsMapView::FilledDrawables::add_filled_triangle_to_mesh(
+		const QPointF &vertex1,
+		const QPointF &vertex2,
+		const QPointF &vertex3,
+		const GPlatesGui::Colour &colour)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_current_drawable,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Alpha blending will be set up for pre-multiplied alpha.
+	const GPlatesGui::rgba8_t rgba_colour =
+			GPlatesGui::Colour::to_rgba8(
+					GPlatesGui::Colour(
+							colour.red() * colour.alpha(),
+							colour.green() * colour.alpha(),
+							colour.blue() * colour.alpha(),
+							colour.alpha()));
+
+	const drawable_vertex_element_type base_vertex_index = d_drawable_vertices.size();
+
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex1.x(), vertex1.y(), 0/*z*/, rgba_colour));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex2.x(), vertex2.y(), 0/*z*/, rgba_colour));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex3.x(), vertex3.y(), 0/*z*/, rgba_colour));
+
+	d_drawable_vertex_elements.push_back(base_vertex_index);
+	d_drawable_vertex_elements.push_back(base_vertex_index + 1);
+	d_drawable_vertex_elements.push_back(base_vertex_index + 2);
+
+	// Update the current filled drawable.
+	d_current_drawable->end += 3;
+	d_current_drawable->count += 3;
+}
+
+
+void
+GPlatesOpenGL::GLFilledPolygonsMapView::FilledDrawables::begin_filled_drawable()
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!d_current_drawable,
+			GPLATES_ASSERTION_SOURCE);
+
+	const GLsizei base_vertex_element_index = d_drawable_vertex_elements.size();
+	const drawable_vertex_element_type base_vertex_index = d_drawable_vertices.size();
+
+	d_current_drawable = boost::in_place(
+			base_vertex_index/*start*/,
+			base_vertex_index/*end*/, // This will get updated.
+			0/*count*/, // This will get updated.
+			base_vertex_element_index * sizeof(drawable_vertex_element_type)/*indices_offset*/);
+}
+
+
+void
+GPlatesOpenGL::GLFilledPolygonsMapView::FilledDrawables::end_filled_drawable()
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_current_drawable,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Add the filled drawable if it's not empty.
+	if (d_current_drawable->count > 0)
+	{
+		const filled_drawable_type filled_drawable(d_current_drawable.get());
+		d_filled_drawables.push_back(filled_drawable);
+	}
+
+	// Finished with the current filled drawable.
+	d_current_drawable = boost::none;
 }

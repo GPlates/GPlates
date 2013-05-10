@@ -35,6 +35,8 @@
 #include <boost/optional.hpp>
 
 #include "ReconstructionGeometry.h"
+#include "ReconstructionTree.h"
+#include "ReconstructionTreeCreator.h"
 #include "ResolvedTopologicalGeometrySubSegment.h"
 
 #include "maths/GeometryOnSphere.h"
@@ -79,9 +81,6 @@ namespace GPlatesAppLogic
 		//! A convenience typedef for a resolved topological polyline geometry.
 		typedef GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type resolved_topology_line_ptr_type;
 
-		//! A convenience typedef for the geometry of subsegments of this RTG.
-		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type sub_segment_geometry_ptr_type;
-
 
 		/**
 		 * Create a resolved topological *boundary* with an optional plate ID and an optional time of formation.
@@ -95,6 +94,7 @@ namespace GPlatesAppLogic
 		const non_null_ptr_type
 		create(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const resolved_topology_boundary_ptr_type &resolved_topology_geometry_ptr,
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
@@ -107,6 +107,7 @@ namespace GPlatesAppLogic
 			return non_null_ptr_type(
 					new ResolvedTopologicalGeometry(
 							reconstruction_tree,
+							reconstruction_tree_creator,
 							resolved_topology_geometry_ptr,
 							feature_handle,
 							property_iterator_,
@@ -130,6 +131,7 @@ namespace GPlatesAppLogic
 		const non_null_ptr_type
 		create(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const resolved_topology_line_ptr_type &resolved_topology_line_ptr,
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
@@ -142,6 +144,7 @@ namespace GPlatesAppLogic
 			return non_null_ptr_type(
 					new ResolvedTopologicalGeometry(
 							reconstruction_tree,
+							reconstruction_tree_creator,
 							resolved_topology_line_ptr,
 							feature_handle,
 							property_iterator_,
@@ -182,6 +185,25 @@ namespace GPlatesAppLogic
 		get_non_null_pointer()
 		{
 			return GPlatesUtils::get_non_null_pointer(this);
+		}
+
+		/**
+		 * Access the ReconstructionTree that was used to reconstruct this ReconstructionGeometry.
+		 */
+		ReconstructionTree::non_null_ptr_to_const_type
+		get_reconstruction_tree() const
+		{
+			return d_reconstruction_tree;
+		}
+
+		/**
+		 * Gets the reconstruction tree creator that uses the same anchor plate and reconstruction
+		 * features as used to create the tree returned by @a get_reconstruction_tree.
+		 */
+		ReconstructionTreeCreator
+		get_reconstruction_tree_creator() const
+		{
+			return d_reconstruction_tree_creator;
 		}
 
 		/**
@@ -323,6 +345,18 @@ namespace GPlatesAppLogic
 				GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor);
 
 	private:
+
+		/**
+		 * The reconstruction tree used to reconstruct us.
+		 */
+		ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;
+
+		/**
+		 * Used to create reconstruction trees similar that the tree used to reconstruction 'this'
+		 * reconstruction geometry (the only difference being the reconstruction time).
+		 */
+		ReconstructionTreeCreator d_reconstruction_tree_creator;
+
 		/**
 		 * The resolved topology geometry.
 		 */
@@ -374,6 +408,7 @@ namespace GPlatesAppLogic
 		template<typename SubSegmentForwardIter>
 		ResolvedTopologicalGeometry(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				resolved_topology_geometry_ptr_type resolved_topology_geometry_ptr,
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
@@ -382,8 +417,10 @@ namespace GPlatesAppLogic
 				boost::optional<GPlatesModel::integer_plate_id_type> plate_id_,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_,
 				boost::optional<ReconstructHandle::type> reconstruct_handle_):
-			ReconstructionGeometry(reconstruction_tree_, reconstruct_handle_),
+			ReconstructionGeometry(reconstruction_tree_->get_reconstruction_time(), reconstruct_handle_),
 			WeakObserverType(feature_handle),
+			d_reconstruction_tree(reconstruction_tree_),
+			d_reconstruction_tree_creator(reconstruction_tree_creator),
 			d_resolved_topology_geometry_ptr(resolved_topology_geometry_ptr),
 			d_property_iterator(property_iterator_),
 			d_plate_id(plate_id_),

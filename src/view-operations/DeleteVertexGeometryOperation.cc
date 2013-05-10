@@ -191,7 +191,7 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::allow_delete_vertex() cons
 	const unsigned int num_points_in_geom =
 			d_geometry_builder.get_num_points_in_geometry(0/*geom_index*/);
 
-	const GeometryType::Value geometry_type = d_geometry_builder.get_geometry_build_type();
+	const GPlatesMaths::GeometryType::Value geometry_type = d_geometry_builder.get_geometry_build_type();
 
 	// If there is zero or one point in geometry then don't allow user to delete it.
 	// This is to ensure that we don't get a feature that contains a geometry property
@@ -199,18 +199,18 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::allow_delete_vertex() cons
 	// deleting the geometry property (or even deleting the feature).
 	switch (geometry_type)
 	{
-	case GPlatesViewOperations::GeometryType::NONE:
-	case GPlatesViewOperations::GeometryType::POINT:
+	case GPlatesMaths::GeometryType::NONE:
+	case GPlatesMaths::GeometryType::POINT:
 		return false;
 
-	case GPlatesViewOperations::GeometryType::MULTIPOINT:
+	case GPlatesMaths::GeometryType::MULTIPOINT:
 		return num_points_in_geom > 1;
 		break;
 
-	case GPlatesViewOperations::GeometryType::POLYLINE:
+	case GPlatesMaths::GeometryType::POLYLINE:
 		return num_points_in_geom > 2;
 
-	case GPlatesViewOperations::GeometryType::POLYGON:
+	case GPlatesMaths::GeometryType::POLYGON:
 		return num_points_in_geom > 3;
 
 	default:
@@ -353,16 +353,16 @@ GPlatesViewOperations::DeleteVertexGeometryOperation::update_rendered_geometry(
 	// All types of geometry have the points drawn the same.
 	add_rendered_points(geom_index);
 
-	const GeometryType::Value actual_geom_type =
+	const GPlatesMaths::GeometryType::Value actual_geom_type =
 		d_geometry_builder.get_actual_type_of_geometry(geom_index);
 
 	switch (actual_geom_type)
 	{
-	case GeometryType::POLYLINE:
+	case GPlatesMaths::GeometryType::POLYLINE:
 		add_rendered_lines_for_polyline_on_sphere(geom_index);
 		break;
 
-	case GeometryType::POLYGON:
+	case GPlatesMaths::GeometryType::POLYGON:
 		add_rendered_lines_for_polygon_on_sphere(geom_index);
 		break;
 

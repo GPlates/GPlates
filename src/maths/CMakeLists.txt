@@ -36,6 +36,7 @@ set(srcs
     GenericVectorOps3D.h
     GeometryForwardDeclarations.h
     GeometryOnSphere.h
+    GeometryType.h
     GreatCircle.cc
     GreatCircle.h
     GreatCircleArc.cc
@@ -86,6 +87,8 @@ set(srcs
     PolylineOnSphere.cc
     PolylineOnSphere.h
     PolylineProximityHitDetail.h
+    ProjectionUtils.cc
+    ProjectionUtils.h
     ProximityCriteria.cc
     ProximityCriteria.h
     ProximityHitDetail.cc

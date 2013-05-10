@@ -39,9 +39,6 @@
 #include "LayerPainter.h"
 #include "RenderSettings.h"
 
-#include "global/AssertionFailureException.h"
-#include "global/GPlatesAssert.h"
-
 #include "maths/DateLineWrapper.h"
 #include "maths/LatLonPoint.h"
 
@@ -161,7 +158,17 @@ namespace GPlatesGui
 
 		virtual
 		void
-		visit_resolved_raster(
+		visit_rendered_coloured_edge_surface_mesh(
+			const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh &rendered_coloured_edge_surface_mesh);
+
+		virtual
+		void
+		visit_rendered_coloured_triangle_surface_mesh(
+				const GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh &rendered_coloured_triangle_surface_mesh);
+
+		virtual
+		void
+		visit_rendered_resolved_raster(
 				const GPlatesViewOperations::RenderedResolvedRaster &rendered_resolved_raster);
 
 		virtual
@@ -382,7 +389,7 @@ namespace GPlatesGui
 		template <typename LineGeometryType>
 		void
 		paint_fill_geometry(
-				GPlatesOpenGL::GLFilledPolygonsMapView::filled_polygons_type &filled_polygons,
+				GPlatesOpenGL::GLFilledPolygonsMapView::filled_drawables_type &filled_polygons,
 				const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry,
 				const Colour &colour);
 

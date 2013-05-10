@@ -6,13 +6,16 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>284</width>
-    <height>73</height>
+    <width>320</width>
+    <height>278</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QWidget" name="set_vgp_visibility_placeholder_widget" native="true"/>
+   </item>
+   <item>
+    <widget class="QWidget" name="set_deformation_placeholder_widget" native="true"/>
    </item>
    <item>
     <widget class="QWidget" name="draw_style_placeholder_widget" native="true"/>

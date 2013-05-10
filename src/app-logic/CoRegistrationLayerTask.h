@@ -35,7 +35,6 @@
 #include "CoRegistrationLayerProxy.h"
 #include "LayerTask.h"
 #include "LayerTaskParams.h"
-#include "ReconstructionLayerProxy.h"
 
 #include "data-mining/CoRegConfigurationTable.h"
 #include "data-mining/DataTable.h"
@@ -200,14 +199,6 @@ namespace GPlatesAppLogic
 		Params d_layer_task_params;
 
 		/**
-		 * Keep track of the default reconstruction layer proxy.
-		 */
-		ReconstructionLayerProxy::non_null_ptr_type d_default_reconstruction_layer_proxy;
-
-		//! Are we using the default reconstruction layer proxy.
-		bool d_using_default_reconstruction_layer_proxy;
-
-		/**
 		 * Does the co-registration.
 		 */
 		CoRegistrationLayerProxy::non_null_ptr_type d_coregistration_layer_proxy;
@@ -215,8 +206,6 @@ namespace GPlatesAppLogic
 
 		//! Constructor.
 		CoRegistrationLayerTask() :
-				d_default_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
-				d_using_default_reconstruction_layer_proxy(true),
 				d_coregistration_layer_proxy(CoRegistrationLayerProxy::create())
 		{  }
 	};

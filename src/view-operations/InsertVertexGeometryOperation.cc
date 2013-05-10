@@ -236,10 +236,10 @@ GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex_off_line_seg
 	}
 	else if (num_points_in_geom > 1)
 	{
-		const GeometryType::Value geom_build_type = d_geometry_builder.get_geometry_build_type();
+		const GPlatesMaths::GeometryType::Value geom_build_type = d_geometry_builder.get_geometry_build_type();
 
-		if (geom_build_type == GeometryType::POLYLINE ||
-			geom_build_type == GeometryType::POLYGON)
+		if (geom_build_type == GPlatesMaths::GeometryType::POLYLINE ||
+			geom_build_type == GPlatesMaths::GeometryType::POLYGON)
 		{
 			// Get index of closest point to mouse position.
 			const ClosestEndPoint closest_geom_end_point =
@@ -249,7 +249,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex_off_line_seg
 					(closest_geom_end_point == START_POINT) ? 0 : num_points_in_geom,
 					oriented_pos_on_sphere);
 		}
-		else // GeometryType::POINT or GeometryType::MULTIPOINT
+		else // GPlatesMaths::GeometryType::POINT or GPlatesMaths::GeometryType::MULTIPOINT
 		{
 			// Insert vertex at end of POINT or MULTIPOINT.
 			insert_vertex(num_points_in_geom, oriented_pos_on_sphere);
@@ -335,13 +335,13 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_highlight_off
 	// there's no danger of inserting a vertex on top of an existing one so we don't
 	// need to check for this.
 
-	const GeometryType::Value geom_build_type = d_geometry_builder.get_geometry_build_type();
+	const GPlatesMaths::GeometryType::Value geom_build_type = d_geometry_builder.get_geometry_build_type();
 
 	// If geometry we're trying to build is not a polyline or polygon then no
 	// highlighting is needed. Highlighting is only done on line segments -
 	// which only polylines and polygons have.
-	if (geom_build_type != GeometryType::POLYLINE &&
-		geom_build_type != GeometryType::POLYGON)
+	if (geom_build_type != GPlatesMaths::GeometryType::POLYLINE &&
+		geom_build_type != GPlatesMaths::GeometryType::POLYGON)
 	{
 		return;
 	}
@@ -377,7 +377,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_highlight_off
 		const GPlatesMaths::PointOnSphere &last_point =
 				d_geometry_builder.get_geometry_point(geom_index, num_points_in_geom - 1);
 
-		if (geom_build_type == GeometryType::POLYLINE)
+		if (geom_build_type == GPlatesMaths::GeometryType::POLYLINE)
 		{
 			// Get index of closest point to mouse position.
 			const ClosestEndPoint closest_geom_end_point =
@@ -388,7 +388,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_highlight_off
 					(closest_geom_end_point == START_POINT) ? first_point : last_point,
 					oriented_pos_on_sphere);
 		}
-		else // GeometryType::POLYGON
+		else // GPlatesMaths::GeometryType::POLYGON
 		{
 			// Add two highlight line segments from mouse position to both ends of polygon.
 			add_rendered_highlight_line_segment(first_point, oriented_pos_on_sphere);
@@ -673,11 +673,11 @@ GPlatesViewOperations::InsertVertexGeometryOperation::update_rendered_geometry(
 	// All types of geometry have the points drawn the same.
 	add_rendered_points(geom_index);
 
-	const GeometryType::Value actual_geom_type =
+	const GPlatesMaths::GeometryType::Value actual_geom_type =
 		d_geometry_builder.get_actual_type_of_geometry(geom_index);
 
-	if (actual_geom_type == GeometryType::POLYLINE ||
-		actual_geom_type == GeometryType::POLYGON)
+	if (actual_geom_type == GPlatesMaths::GeometryType::POLYLINE ||
+		actual_geom_type == GPlatesMaths::GeometryType::POLYGON)
 	{
 		add_rendered_lines(geom_index, actual_geom_type);
 	}
@@ -686,7 +686,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::update_rendered_geometry(
 void
 GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_lines(
 		GeometryBuilder::GeometryIndex geom_index,
-		const GeometryType::Value actual_geom_type)
+		const GPlatesMaths::GeometryType::Value actual_geom_type)
 {
 	const unsigned int num_points_in_geom = d_geometry_builder.get_num_points_in_geometry(geom_index);
 	d_line_to_point_mapping.clear();
@@ -742,7 +742,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::add_rendered_lines(
 
 	// If actual geometry type is a polygon then also add the line segment between
 	// start and end vertex.
-	if (actual_geom_type == GeometryType::POLYGON)
+	if (actual_geom_type == GPlatesMaths::GeometryType::POLYGON)
 	{
 		// Copy the start and end points of the polygon so we can create a line segment from them.
 		GPlatesMaths::PointOnSphere start_end_points[2] =

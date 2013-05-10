@@ -172,7 +172,7 @@ namespace GPlatesViewOperations
 		 */
 		GeometryBuilderSetGeometryTypeUndoCommand(
 				GeometryBuilder &geometry_builder,
-				GeometryType::Value geom_type_to_build,
+				GPlatesMaths::GeometryType::Value geom_type_to_build,
 				UndoRedo::CommandId commandId = UndoRedo::CommandId(),
 				QUndoCommand *parent = 0) :
 			QUndoCommand(parent),
@@ -205,7 +205,7 @@ namespace GPlatesViewOperations
 
 	private:
 		GeometryBuilder &d_geometry_builder;
-		GeometryType::Value d_geom_type_to_build;
+		GPlatesMaths::GeometryType::Value d_geom_type_to_build;
 		GeometryBuilder::UndoOperation d_undo_operation;
 		UndoRedo::CommandId d_commandId;
 	};

@@ -59,21 +59,24 @@ namespace GPlatesAppLogic
 		/**
 		 * The maximum number of reconstruction trees to cache for different reconstruction times.
 		 */
-		static const unsigned int MAX_NUM_RECONSTRUCTION_TREES_IN_CACHE = 64;
+		static const unsigned int DEFAULT_MAX_NUM_RECONSTRUCTION_TREES_IN_CACHE = 64;
 
 
 		/**
 		 * Creates a @a ReconstructionLayerProxy object.
+		 *
+		 * @a default_max_num_reconstruction_trees_in_cache specifies the default cache size to use
+		 * unless a cache size hint is requested via @a get_reconstruction_tree_creator.
 		 */
 		static
 		non_null_ptr_type
 		create(
-				unsigned int max_num_reconstruction_trees_in_cache = MAX_NUM_RECONSTRUCTION_TREES_IN_CACHE,
+				unsigned int default_max_num_reconstruction_trees_in_cache = DEFAULT_MAX_NUM_RECONSTRUCTION_TREES_IN_CACHE,
 				GPlatesModel::integer_plate_id_type initial_anchored_plate_id = 0)
 		{
 			return non_null_ptr_type(
 					new ReconstructionLayerProxy(
-							max_num_reconstruction_trees_in_cache,
+							default_max_num_reconstruction_trees_in_cache,
 							initial_anchored_plate_id));
 		}
 
@@ -130,10 +133,32 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * An alternative to the four overloaded versions of @a get_reconstruction_tree.
+		 * An alternative to two overloaded versions of @a get_reconstruction_tree - provides
+		 * an easy to pass them to other code sections that shouldn't know about layers.
+		 *
+		 * Note that any updates to 'this' layer proxy will be available when querying the returned
+		 * reconstruction tree creator object - this is because it defers queries to 'this' layer proxy.
+		 * Modifications include things such as modified rotation feature collections (and hence
+		 * modified reconstruction trees) and changes to the current reconstruction time and anchor plate.
+		 *
+		 * If a cache size hint is specified then the maximum number of internally cached
+		 * reconstruction trees is set to this value (or the default passed into constructor,
+		 * whichever is larger). If a cache size hint is not specified then the cache size is
+		 * left at whatever it currently is.
 		 */
 		ReconstructionTreeCreator
-		get_reconstruction_tree_creator();
+		get_reconstruction_tree_creator(
+				boost::optional<unsigned int> max_num_reconstruction_trees_in_cache_hint = boost::none);
+
+
+		/**
+		 * Gets the current anchor plate id.
+		 */
+		GPlatesModel::integer_plate_id_type
+		get_current_anchor_plate_id() const
+		{
+			return d_current_anchor_plate_id;
+		}
 
 
 		/**
@@ -231,7 +256,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Manages cached reconstruction trees for the most-recently requested reconstruction time/anchors.
 		 */
-		boost::optional<ReconstructionTreeCreator> d_cached_reconstruction_trees;
+		boost::optional<CachedReconstructionTreeCreatorImpl::non_null_ptr_type> d_cached_reconstruction_trees;
 
 		/**
 		 * Used to notify polling observers that we've been updated.
@@ -239,18 +264,24 @@ namespace GPlatesAppLogic
 		mutable GPlatesUtils::SubjectToken d_subject_token;
 
 		/**
-		 * The maximum number of reconstruction trees in the cache before we start evicting.
+		 * The default value for the maximum number of reconstruction trees in the cache.
 		 */
-		unsigned int d_max_num_reconstruction_trees_in_cache;
+		unsigned int d_default_max_num_reconstruction_trees_in_cache;
+
+		/**
+		 * The current maximum number of reconstruction trees in the cache before we start evicting.
+		 */
+		unsigned int d_current_max_num_reconstruction_trees_in_cache;
 
 
 		explicit
 		ReconstructionLayerProxy(
-				unsigned int max_num_reconstruction_trees_in_cache,
+				unsigned int default_max_num_reconstruction_trees_in_cache,
 				GPlatesModel::integer_plate_id_type initial_anchored_plate_id) :
 			d_current_reconstruction_time(0),
 			d_current_anchor_plate_id(initial_anchored_plate_id),
-			d_max_num_reconstruction_trees_in_cache(max_num_reconstruction_trees_in_cache)
+			d_default_max_num_reconstruction_trees_in_cache(default_max_num_reconstruction_trees_in_cache),
+			d_current_max_num_reconstruction_trees_in_cache(default_max_num_reconstruction_trees_in_cache)
 		{  }
 
 

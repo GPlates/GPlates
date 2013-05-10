@@ -52,7 +52,7 @@ GPlatesViewOperations::CloneOperation::clone_focused_geometry()
 		return;
 	}
 
-	const GPlatesViewOperations::GeometryType::Value geometry_type = 
+	const GPlatesMaths::GeometryType::Value geometry_type = 
 		d_focused_feature_geometry_builder.get_actual_type_of_current_geometry();
 
 	// NOTE: We access the focused feature geometry builder *before* we switch to the
@@ -65,17 +65,17 @@ GPlatesViewOperations::CloneOperation::clone_focused_geometry()
 
 	switch (geometry_type)
 	{
-	case GPlatesViewOperations::GeometryType::POLYLINE:
+	case GPlatesMaths::GeometryType::POLYLINE:
 		d_canvas_tool_workflows.choose_canvas_tool(
 				GPlatesGui::CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYLINE);
 		break;
 
-	case GPlatesViewOperations::GeometryType::MULTIPOINT:
+	case GPlatesMaths::GeometryType::MULTIPOINT:
 		d_canvas_tool_workflows.choose_canvas_tool(
 				GPlatesGui::CanvasToolWorkflows::TOOL_DIGITISE_NEW_MULTIPOINT);
 		break;
 
-	case GPlatesViewOperations::GeometryType::POLYGON:
+	case GPlatesMaths::GeometryType::POLYGON:
 		d_canvas_tool_workflows.choose_canvas_tool(
 				GPlatesGui::CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYGON);
 		break;

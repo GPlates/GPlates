@@ -44,9 +44,11 @@
 #include "maths/CubeQuadTreeLocation.h"
 #include "maths/CubeQuadTreePartition.h"
 #include "maths/types.h"
+#include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
 
 #include "opengl/GLCubeSubdivisionCache.h"
+#include "opengl/GLFrustum.h"
 #include "opengl/GLTexture.h"
 
 #include "presentation/VisualLayers.h"
@@ -131,6 +133,10 @@ namespace GPlatesGui
 		visit_rendered_arrowed_polyline(
 			const GPlatesViewOperations::RenderedArrowedPolyline &rendered_arrowed_polyline);
 
+		virtual
+		void
+		visit_rendered_strain_marker_symbol(
+			const GPlatesViewOperations::RenderedStrainMarkerSymbol &);
 
 		virtual
 		void
@@ -164,12 +170,22 @@ namespace GPlatesGui
 
 		virtual
 		void
-		visit_resolved_raster(
+		visit_rendered_coloured_edge_surface_mesh(
+			const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh &rendered_coloured_edge_surface_mesh);
+
+		virtual
+		void
+		visit_rendered_coloured_triangle_surface_mesh(
+			const GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh &rendered_coloured_triangle_surface_mesh);
+
+		virtual
+		void
+		visit_rendered_resolved_raster(
 				const GPlatesViewOperations::RenderedResolvedRaster &rendered_resolved_raster);
 
 		virtual
 		void
-		visit_resolved_scalar_field_3d(
+		visit_rendered_resolved_scalar_field_3d(
 				const GPlatesViewOperations::RenderedResolvedScalarField3D &rendered_resolved_scalar_field);
 
 		virtual
@@ -313,6 +329,13 @@ namespace GPlatesGui
 		boost::optional<LayerPainter &> d_layer_painter;
 
 		/**
+		 * Used for frustum culling when the @a paint method is called.
+		 *
+		 * Is only valid during @a paint.
+		 */
+		boost::optional<GPlatesOpenGL::GLFrustum> d_frustum_planes;
+
+		/**
 		 * A viewport-size 2D texture containing the RGBA rendering
 		 * of the surface geometries/rasters on the *front* of the globe.
 		 * It is only used when rendering sub-surface geometries.
@@ -333,6 +356,7 @@ namespace GPlatesGui
 
 		//! Multiplying factor to get line width of 1.0f to look like one screen-space pixel.
 		static const float LINE_WIDTH_ADJUSTMENT;
+		static const float STRAIN_LINE_WIDTH_ADJUSTMENT;
 
 
 		/**
@@ -350,7 +374,7 @@ namespace GPlatesGui
 				const rendered_geometries_spatial_partition_type &rendered_geometries_spatial_partition);
 
 		void
-		render_spatial_partition_quad_tree(
+		get_visible_rendered_geometries_from_spatial_partition_quad_tree(
 				std::vector<RenderedGeometryInfo> &rendered_geometry_infos,
 				std::vector<RenderedGeometryOrder> &rendered_geometry_orders,
 				const GPlatesMaths::CubeQuadTreeLocation &cube_quad_tree_node_location,
@@ -375,8 +399,8 @@ namespace GPlatesGui
 		template <typename GreatCircleArcForwardIter>
 		void
 		paint_great_circle_arcs(
-				const GreatCircleArcForwardIter &begin_arcs,
-				const GreatCircleArcForwardIter &end_arcs,
+				GreatCircleArcForwardIter begin_arcs,
+				GreatCircleArcForwardIter end_arcs,
 				const Colour &colour,
 				stream_primitives_type &lines_stream);
 
@@ -395,7 +419,8 @@ namespace GPlatesGui
 		void
 		paint_cone(
 				const GPlatesMaths::Vector3D &apex,
-				const GPlatesMaths::Vector3D &cone_axis,
+				const GPlatesMaths::UnitVector3D &cone_axis_unit_vector,
+				const GPlatesMaths::real_t &cone_axis_mag,
 				rgba8_t rgba8_color,
 				stream_primitives_type &triangles_stream);
 	};

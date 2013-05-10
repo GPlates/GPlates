@@ -6,6 +6,7 @@
  * $Date$
  * 
  * Copyright (C) 2009 The University of Sydney, Australia
+ * Copyright (C) 2012, 2013 California Institute of Technology
  *
  * This file is part of GPlates.
  *
@@ -23,20 +24,37 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+
+// NOTE: use with caution: this can cause the Log window to lag during resize events.
+//#define DEBUG_FILE
+
+
 #include <QDebug>
+#include <QFile>
+#include <QString>
+#include <QTextStream>
 
 #include "ResolvedTopologicalNetwork.h"
 
+#include "ApplicationState.h"
 #include "ReconstructionGeometryVisitor.h"
+
+#include "feature-visitors/PropertyValueFinder.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/IntrusivePointerZeroRefCountException.h"
 #include "global/NotYetImplementedException.h"
 
+#include "maths/ProjectionUtils.h"
+
+#include "model/PropertyName.h"
 #include "model/WeakObserverVisitor.h"
 
+#include "property-values/XsString.h"
+
 #include "utils/GeometryCreationUtils.h"
+#include "utils/UnicodeStringUtils.h"
 
 
 const GPlatesModel::FeatureHandle::weak_ref
@@ -50,278 +68,86 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::get_feature_ref() const
 }
 
 
-const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type>
-GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_triangulation_2(bool clip_to_mesh) const
+void
+GPlatesAppLogic::ResolvedTopologicalNetwork::report_deformation_to_file() const
 {
-	std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type> ret;
-
-	// 
-	// 2D 
-	//
+#ifdef DEBUG_FILE
+	// Get the current reconstruction time 
+	const double t = get_reconstruction_time();
 
 	// Compute the centroid of the boundary polygon and get lat lon for projection
-	const GPlatesMaths::LatLonPoint proj_center =
-			GPlatesMaths::make_lat_lon_point(
-					GPlatesMaths::PointOnSphere(
-							d_boundary_polygon_ptr->get_centroid()));
+	const GPlatesMaths::ProjectionUtils::AzimuthalEqualArea &projection =
+			get_delaunay_triangulation_2().get_projection();
 
-	// Iterate over the individual faces of the constrained triangulation and create a
-	// ResolvedTopologicalNetwork for each one.
-	CgalUtils::cgal_finite_faces_2_iterator finite_faces_2_iter = 
-		d_delaunay_triangulation_2->finite_faces_begin();
-	CgalUtils::cgal_finite_faces_2_iterator finite_faces_2_end = 
-		d_delaunay_triangulation_2->finite_faces_end();
+	// create and open a file and set up a Q text stream to write 
+	QString debug_file_name = "LOG_Network_";
+	static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
+	const GPlatesPropertyValues::XsString *name;
+	QString feature_name = "unknown_name";
+	if ( GPlatesFeatureVisitors::get_property_value( *feature_handle_ptr(), prop, name) ) {
+		QString n = GPlatesUtils::make_qstring( name->value() );
+		feature_name = n.replace(" ", "-");
+	} 
+	debug_file_name += feature_name;
+	debug_file_name += "_at_";
+	debug_file_name += QString::number(t);
+	debug_file_name += "Ma";
+	debug_file_name += ".xy";
+	qDebug() << "debug_file_name = " << debug_file_name;
+	QFile debug_qfile(debug_file_name);
+	debug_qfile.open(QIODevice::WriteOnly | QIODevice::Text);
+	QTextStream debug_qts(&debug_qfile);
+	// write the header data 
+	debug_qts << "# reconstuction age = " << t << "\n";
+	debug_qts << "# proj_center lat = " << projection.get_center_of_projection().latitude() << "\n";
+	debug_qts << "# proj_center lon = " << projection.get_center_of_projection().longitude() << "\n";
 
+	// Iterate over the individual faces of the triangulation.
+	ResolvedTriangulation::Delaunay_2::Finite_faces_iterator finite_faces_2_iter =
+			get_delaunay_triangulation_2().finite_faces_begin();
+	ResolvedTriangulation::Delaunay_2::Finite_faces_iterator finite_faces_2_end =
+			get_delaunay_triangulation_2().finite_faces_end();
 	for ( ; finite_faces_2_iter != finite_faces_2_end; ++finite_faces_2_iter)
 	{
-		std::vector<GPlatesMaths::PointOnSphere> network_triangle_points;
-		network_triangle_points.reserve(3);
+		debug_qts << "# face_index = " << finite_faces_2_iter->get_face_index() << "\n";
 
-		std::vector<CgalUtils::cgal_point_2_type> centroid_points_2;
-		centroid_points_2.reserve(3);
+		debug_qts << "# ux1 = "
+			<< finite_faces_2_iter->vertex(0)->get_velocity_colat_lon().get_vector_longitude().dval()
+			<< "(cm/yr)\n";
+		debug_qts << "# uy1 = "
+			<< finite_faces_2_iter->vertex(0)->get_velocity_colat_lon().get_vector_colatitude().dval()
+			<< "(cm/yr)\n";
 
-		// save for example on bary centric calcs:
-		// std::vector<std::pair<CgalUtils::cgal_point_2_type, CgalUtils::cgal_coord_type> > bary_points_2;
-		// bary_points_2.reserve(3);
+		debug_qts << "# ux1 = "
+			<< finite_faces_2_iter->vertex(1)->get_velocity_colat_lon().get_vector_longitude().dval()
+			<< "(cm/yr)\n";
+		debug_qts << "# uy1 = "
+			<< finite_faces_2_iter->vertex(1)->get_velocity_colat_lon().get_vector_colatitude().dval()
+			<< "(cm/yr)\n";
 
-		for (int index = 0; index != 3 ; ++index)
-		{
-			const CgalUtils::cgal_point_2_type cgal_triangle_point =
-					finite_faces_2_iter->vertex( index )->point();
+		debug_qts << "# ux1 = "
+			<< finite_faces_2_iter->vertex(2)->get_velocity_colat_lon().get_vector_longitude().dval()
+			<< "(cm/yr)\n";
+		debug_qts << "# uy1 = "
+			<< finite_faces_2_iter->vertex(2)->get_velocity_colat_lon().get_vector_colatitude().dval()
+			<< "(cm/yr)\n";
 
-			centroid_points_2.push_back( cgal_triangle_point );
-			// bary_points_2.push_back( std::make_pair(cgal_triangle_point, 1.0) ); 
+		const ResolvedTriangulation::Delaunay_2::Face::DeformationInfo &deformation_info =
+				finite_faces_2_iter->get_deformation_info();
 
-			// convert coordinates
-			network_triangle_points.push_back(
-					CgalUtils::project_azimuthal_equal_area_to_point_on_sphere(
-							cgal_triangle_point, proj_center));
-		}
-
-		if ( clip_to_mesh )
-		{ // only create face polygon if its centroid is in mesh area
-
-			// compute centroid of face
-			const CgalUtils::cgal_point_2_type c2 = 
-				CGAL::centroid(centroid_points_2.begin(), centroid_points_2.end(),CGAL::Dimension_tag<0>());
-			//std::cout << c2 << std::endl;
-
-			#if 0
-			// compute barry center with equal weighting 
-			const CgalUtils::cgal_point_2_type bc2 = 
-				CGAL::barycenter(bary_points_2.begin(), bary_points_2.end());
-			std::cout << bc2 << std::endl;
-			#endif
-
-			bool in_mesh = true;
-			in_mesh = CgalUtils::is_point_in_mesh(
-				c2,
-				get_delaunay_triangulation_2(), 
-				get_constrained_delaunay_triangulation_2() ); 
-
-			if (in_mesh) 
-			{ 
-				try 
-				{
-					// create a PolygonOnSphere
-					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_network_triangle = 
-						GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
-					ret.push_back(resolved_topology_network_triangle);
-				}
-				catch (std::exception &exc)
-				{
-					qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: " << exc.what();
-				}
-				catch(...)
-				{
-					qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: Unknown error";
-				}
-			}
-		}
-		else
-		{ 
-			// create all triangles
-			try 
-			{
-				// create a PolygonOnSphere
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_network_triangle = 
-					GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
-				ret.push_back(resolved_topology_network_triangle);
-			}
-			catch (std::exception &exc)
-			{
-				qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: " << exc.what();
-			}
-			catch(...)
-			{
-				qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: Unknown error";
-			}
-		}
+		debug_qts << "# SR22 = " << deformation_info.SR22 << "(1/s)\n";
+		debug_qts << "# SR33 = " << deformation_info.SR33 << "(1/s)\n";
+		debug_qts << "# SR23 = " << deformation_info.SR23 << "(1/s)\n";
+		debug_qts << "# SR23 = " << deformation_info.SR23 << "(1/s)\n";
+		debug_qts << "# dil  = " << deformation_info.dilitation << "(1/s) [[ SR22 + SR33 ]]\n";
+		debug_qts << "# 2ndI = " << deformation_info.second_invariant
+			<< "(1/s) [[ std::sqrt(SR22 * SR22 + SR33 * SR33 + 2.0 * SR23 * SR23) ]]\n";
+		// write the actual data line 
+		debug_qts << " " << deformation_info.dilitation; // NOTE: no eol character
+		debug_qts << "\n";
 	}
-
-	return ret;
+#endif
 }
-
-const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type>
-GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_constrained(bool clip_to_mesh) const
-{
-	std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type> ret;
-
-	// 
-	// 2D + Constraints
-	//
-
-	// Compute the centroid of the boundary polygon and get lat lon for projection
-	const GPlatesMaths::LatLonPoint proj_center =
-			GPlatesMaths::make_lat_lon_point(
-					GPlatesMaths::PointOnSphere(
-							d_boundary_polygon_ptr->get_centroid()));
-
-	// Iterate over the individual faces of the constrained triangulation and create a
-	// ResolvedTopologicalNetwork for each one.
-	CgalUtils::cgal_constrained_finite_faces_2_iterator constrained_finite_faces_2_iter = 
-		d_constrained_delaunay_triangulation_2->finite_faces_begin();
-	CgalUtils::cgal_constrained_finite_faces_2_iterator constrained_finite_faces_2_end = 
-		d_constrained_delaunay_triangulation_2->finite_faces_end();
-
-	for ( ; constrained_finite_faces_2_iter != constrained_finite_faces_2_end; ++constrained_finite_faces_2_iter)
-	{
-		std::vector<GPlatesMaths::PointOnSphere> network_triangle_points;
-		std::vector<CgalUtils::cgal_point_2_type> points_2;
-		network_triangle_points.reserve(3);
-
-		for (int index = 0; index != 3 ; ++index)
-		{
-			const CgalUtils::cgal_point_2_type cgal_triangle_point =
-					constrained_finite_faces_2_iter->vertex( index )->point();
-
-			points_2.push_back( cgal_triangle_point );
-
-			// convert coordinates
-			network_triangle_points.push_back(
-					CgalUtils::project_azimuthal_equal_area_to_point_on_sphere(
-							cgal_triangle_point, proj_center));
-		}
-		
-		if ( clip_to_mesh )
-		{
-			// compute centoid of face
-			const CgalUtils::cgal_point_2_type c2 = 
-				CGAL::centroid(points_2.begin(), points_2.end(),CGAL::Dimension_tag<0>());
-
-			// test if centroid of face is in mesh zone
-			bool in_mesh = true;
-			in_mesh = CgalUtils::is_point_in_mesh(
-				c2,
-				get_delaunay_triangulation_2(), // d_delaunay_triangulation_2,
-				get_constrained_delaunay_triangulation_2() ); // d_constrained_delaunay_triangulation_2
-
-			if (in_mesh) 
-			{ 
-				try 
-				{
-					// create a PolygonOnSphere
-					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_network_triangle = 
-						GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
-					ret.push_back(resolved_topology_network_triangle);
-				}
-				catch (std::exception &exc)
-				{
-					qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: " << exc.what();
-				}
-				catch(...)
-				{
-					qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: Unknown error";
-				}
-			}
-		}
-		else
-		{ 
-			// create all face polygons
-			try 
-			{
-				// create a PolygonOnSphere
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_network_triangle = 
-					GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
-				ret.push_back(resolved_topology_network_triangle);
-			}
-			catch (std::exception &exc)
-			{
-				qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: " << exc.what();
-			}
-			catch(...)
-			{
-				qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: Unknown error";
-			}
-		} 
-	}
-	return ret;
-}
-
-const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type>
-GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometries_from_mesh() const
-{
-	std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::resolved_topology_geometry_ptr_type> ret;
-
-	// 
-	// 2D + C + Mesh 
-	//
-
-	// Compute the centroid of the boundary polygon and get lat lon for projection
-	const GPlatesMaths::LatLonPoint proj_center =
-			GPlatesMaths::make_lat_lon_point(
-					GPlatesMaths::PointOnSphere(
-							d_boundary_polygon_ptr->get_centroid()));
-
-	// Iterate over the individual faces of the constrained triangulation and create a
-	// ResolvedTopologicalNetwork for each one.
-	CgalUtils::cgal_constrained_finite_faces_2_iterator constrained_finite_faces_2_iter = 
-		d_constrained_delaunay_triangulation_2->finite_faces_begin();
-	CgalUtils::cgal_constrained_finite_faces_2_iterator constrained_finite_faces_2_end = 
-		d_constrained_delaunay_triangulation_2->finite_faces_end();
-
-	for ( ; constrained_finite_faces_2_iter != constrained_finite_faces_2_end; ++constrained_finite_faces_2_iter)
-	{
-		// Only draw those triangles in the interior of the meshed region
-		// This excludes areas with seed points (also called micro blocks) 
-		// and excludes regions outside the envelope of the bounded area 
-		if ( constrained_finite_faces_2_iter->is_in_domain() )
-		{
-			std::vector<GPlatesMaths::PointOnSphere> network_triangle_points;
-			network_triangle_points.reserve(3);
-
-			for (int index = 0; index != 3 ; ++index)
-			{
-				const CgalUtils::cgal_point_2_type cgal_triangle_point =
-						constrained_finite_faces_2_iter->vertex( index )->point();
-	
-				// convert coordinates
-				network_triangle_points.push_back(
-						CgalUtils::project_azimuthal_equal_area_to_point_on_sphere(
-								cgal_triangle_point, proj_center));
-			}
-		
-			try 
-			{
-				// create a PolygonOnSphere
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_network_triangle = 
-					GPlatesMaths::PolygonOnSphere::create_on_heap(network_triangle_points);
-				ret.push_back(resolved_topology_network_triangle);
-			}
-			catch (std::exception &exc)
-			{
-				qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: " << exc.what();
-			}
-			catch(...)
-			{
-				qWarning() << "Cannot create polygon on sphere from d_constrained_delaunay_triangulation_2: Unknown error";
-			}
-		} 
-	}
-	return ret;
-}
-
-
 
 
 void
@@ -339,10 +165,10 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::accept_visitor(
 	visitor.visit(this->get_non_null_pointer());
 }
 
-
 void
 GPlatesAppLogic::ResolvedTopologicalNetwork::accept_weak_observer_visitor(
 		GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor)
 {
 	visitor.visit_resolved_topological_network(*this);
 }
+

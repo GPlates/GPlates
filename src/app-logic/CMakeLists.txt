@@ -18,14 +18,14 @@ set(srcs
     AppLogicUtils.h
     AssignPlateIds.cc
     AssignPlateIds.h
-    CgalUtils.cc
-    CgalUtils.h
     CoRegistrationData.cc
     CoRegistrationData.h
     CoRegistrationLayerProxy.cc
     CoRegistrationLayerProxy.h
     CoRegistrationLayerTask.cc
     CoRegistrationLayerTask.h
+    DeformedFeatureGeometry.cc
+    DeformedFeatureGeometry.h
     ExtractRasterFeatureProperties.cc
     ExtractRasterFeatureProperties.h
     ExtractScalarField3DFeatureProperties.cc
@@ -46,6 +46,8 @@ set(srcs
     GenericPartitionFeatureTask.h
     GeometryCookieCutter.cc
     GeometryCookieCutter.h
+    GeometryDeformation.cc
+    GeometryDeformation.h
     GeometryUtils.cc
     GeometryUtils.h
     GPlatesQtMsgHandler.cc
@@ -141,6 +143,7 @@ set(srcs
     ReconstructMethodFlowline.h
     ReconstructMethodHalfStageRotation.cc
     ReconstructMethodHalfStageRotation.h
+    ReconstructMethodInterface.cc
     ReconstructMethodInterface.h
     ReconstructMethodMotionPath.cc
     ReconstructMethodMotionPath.h
@@ -165,6 +168,15 @@ set(srcs
     ResolvedTopologicalGeometrySubSegment.h
     ResolvedTopologicalNetwork.cc
     ResolvedTopologicalNetwork.h
+    ResolvedTriangulationConstrainedDelaunay2.cc
+    ResolvedTriangulationConstrainedDelaunay2.h
+    ResolvedTriangulationDelaunay2.cc
+    ResolvedTriangulationDelaunay2.h
+    ResolvedTriangulationDelaunay3.cc
+    ResolvedTriangulationDelaunay3.h
+    ResolvedTriangulationNetwork.cc
+    ResolvedTriangulationNetwork.h
+    ResolvedTriangulationUtils.h
     ScalarField3DLayerProxy.cc
     ScalarField3DLayerProxy.h
     ScalarField3DLayerTask.cc
@@ -207,9 +219,6 @@ set(srcs
     VgpPartitionFeatureTask.cc
     VgpPartitionFeatureTask.h
 )
-
-
-
 
 
 set(target_name app-logic)

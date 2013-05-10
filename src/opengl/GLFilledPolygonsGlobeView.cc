@@ -48,9 +48,9 @@
 #include "GLUtils.h"
 #include "GLVertex.h"
 
-#include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 #include "gui/Colour.h"
 
@@ -112,7 +112,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::GLFilledPolygonsGlobeView(
 		d_min_tile_texel_dimension = GPlatesUtils::Base2::previous_power_of_two(d_min_tile_texel_dimension);
 	}
 
-	create_polygons_vertex_array(renderer);
+	create_drawables_vertex_array(renderer);
 
 	// If there's support for shader programs then create them.
 	create_shader_programs(renderer);
@@ -186,15 +186,15 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::get_level_of_detail(
 void
 GPlatesOpenGL::GLFilledPolygonsGlobeView::render(
 		GLRenderer &renderer,
-		const filled_polygons_type &filled_polygons)
+		const filled_drawables_type &filled_drawables)
 {
 	PROFILE_FUNC();
 
 	// Make sure we leave the OpenGL state the way it was.
 	GLRenderer::StateBlockScope save_restore_state(renderer);
 
-	// If there are no filled polygons to render then return early.
-	if (filled_polygons.d_polygon_vertex_elements.empty())
+	// If there are no filled drawables to render then return early.
+	if (filled_drawables.d_drawable_vertex_elements.empty())
 	{
 		return;
 	}
@@ -220,9 +220,9 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render(
 		return;
 	}
 
-	// Write the vertices/indices of all filled polygons (gathered by the client) into our
+	// Write the vertices/indices of all filled drawables (gathered by the client) into our
 	// vertex buffer and vertex element buffer.
-	write_filled_polygon_meshes_to_vertex_array(renderer, filled_polygons);
+	write_filled_drawables_to_vertex_array(renderer, filled_drawables);
 
 	// Get the level-of-detail based on the size of viewport pixels projected onto the globe.
 	unsigned int tile_texel_dimension;
@@ -257,7 +257,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render(
 							GPlatesOpenGL::GLCubeSubdivision::create());
 
 	//
-	// Traverse the source raster cube quad tree and the spatial partition of reconstructed polygon meshes.
+	// Traverse the source raster cube quad tree and the spatial partition of filled drawables.
 	//
 
 	// Traverse the quad trees of the cube faces.
@@ -270,12 +270,12 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render(
 		const mesh_quad_tree_node_type mesh_quad_tree_root_node =
 				d_multi_resolution_cube_mesh->get_quad_tree_root_node(cube_face);
 
-		// This is used to find those nodes of the reconstructed polygon meshes spatial partition
+		// This is used to find those nodes of the filled drawables spatial partition
 		// that intersect the source raster cube quad tree.
-		// This is so we know which polygon meshes to draw for each source raster tile.
-		filled_polygons_intersecting_nodes_type
-				filled_polygons_intersecting_nodes(
-						*filled_polygons.d_filled_polygons_spatial_partition,
+		// This is so we know which filled drawables to draw for each source raster tile.
+		filled_drawables_intersecting_nodes_type
+				filled_drawable_intersecting_nodes(
+						*filled_drawables.d_filled_drawables_spatial_partition,
 						cube_face);
 
 		// Get the cube subdivision root node.
@@ -288,15 +288,15 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render(
 						clip_cube_subdivision_cache->get_quad_tree_root_node(cube_face);
 
 		// Initially there are no intersecting nodes...
-		filled_polygons_spatial_partition_node_list_type filled_polygons_spatial_partition_node_list;
+		filled_drawables_spatial_partition_node_list_type filled_drawables_spatial_partition_node_list;
 
 		render_quad_tree(
 				renderer,
 				tile_texel_dimension,
 				mesh_quad_tree_root_node,
-				filled_polygons,
-				filled_polygons_spatial_partition_node_list,
-				filled_polygons_intersecting_nodes,
+				filled_drawables,
+				filled_drawables_spatial_partition_node_list,
+				filled_drawable_intersecting_nodes,
 				*cube_subdivision_cache,
 				cube_subdivision_cache_root_node,
 				*clip_cube_subdivision_cache,
@@ -315,9 +315,9 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_quad_tree(
 		GLRenderer &renderer,
 		unsigned int tile_texel_dimension,
 		const mesh_quad_tree_node_type &mesh_quad_tree_node,
-		const filled_polygons_type &filled_polygons,
-		const filled_polygons_spatial_partition_node_list_type &parent_filled_polygons_intersecting_node_list,
-		const filled_polygons_intersecting_nodes_type &filled_polygons_intersecting_nodes,
+		const filled_drawables_type &filled_drawables,
+		const filled_drawables_spatial_partition_node_list_type &parent_filled_drawables_intersecting_node_list,
+		const filled_drawables_intersecting_nodes_type &filled_drawables_intersecting_nodes,
 		cube_subdivision_cache_type &cube_subdivision_cache,
 		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
 		clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
@@ -355,18 +355,18 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_quad_tree(
 		frustum_plane_mask = out_frustum_plane_mask.get();
 	}
 
-	// If either we're at the correct level of detail for rendering then draw the filled polygons.
+	// If either we're at the correct level of detail for rendering then draw the filled drawables.
 	if (level_of_detail == render_level_of_detail)
 	{
-		// Continue to recurse into the filled polygons spatial partition to continue to find
-		// those polygons that intersect the current quad tree node.
+		// Continue to recurse into the filled drawables spatial partition to continue to find
+		// those drawables that intersect the current quad tree node.
 		render_quad_tree_node(
 				renderer,
 				tile_texel_dimension,
 				mesh_quad_tree_node,
-				filled_polygons,
-				parent_filled_polygons_intersecting_node_list,
-				filled_polygons_intersecting_nodes,
+				filled_drawables,
+				parent_filled_drawables_intersecting_node_list,
+				filled_drawables_intersecting_nodes,
 				cube_subdivision_cache,
 				cube_subdivision_cache_node,
 				clip_cube_subdivision_cache,
@@ -390,10 +390,10 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_quad_tree(
 							child_u_offset,
 							child_v_offset);
 
-			// Used to determine which filled polygons intersect the child quad tree node.
-			filled_polygons_intersecting_nodes_type
-					child_filled_polygons_intersecting_nodes(
-							filled_polygons_intersecting_nodes,
+			// Used to determine which filled drawables intersect the child quad tree node.
+			filled_drawables_intersecting_nodes_type
+					child_filled_drawables_intersecting_nodes(
+							filled_drawables_intersecting_nodes,
 							child_u_offset,
 							child_v_offset);
 
@@ -401,41 +401,41 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_quad_tree(
 			// When the stack unwinds, the list(s) referencing these nodes, as well as the nodes themselves,
 			// will disappear together (leaving any lists higher up in the stack still intact) - this happens
 			// because this list implementation supports tail-sharing.
-			FilledPolygonsListNode child_filled_polygons_list_nodes[
-					filled_polygons_intersecting_nodes_type::parent_intersecting_nodes_type::MAX_NUM_NODES];
+			FilledDrawablesListNode child_filled_drawables_list_nodes[
+					filled_drawables_intersecting_nodes_type::parent_intersecting_nodes_type::MAX_NUM_NODES];
 
-			// A tail-shared list to contain the filled polygon nodes that intersect the
+			// A tail-shared list to contain the filled drawable nodes that intersect the
 			// current node. The parent list contains the nodes we've been
 			// accumulating so far during our quad tree traversal.
-			filled_polygons_spatial_partition_node_list_type
-					child_filled_polygons_intersecting_node_list(
-							parent_filled_polygons_intersecting_node_list);
+			filled_drawables_spatial_partition_node_list_type
+					child_filled_drawables_intersecting_node_list(
+							parent_filled_drawables_intersecting_node_list);
 
-			// Add any new intersecting nodes from the filled polygons spatial partition.
+			// Add any new intersecting nodes from the filled drawables spatial partition.
 			// These new nodes are the nodes that intersect the tile at the current quad tree depth.
-			const filled_polygons_intersecting_nodes_type::parent_intersecting_nodes_type &
+			const filled_drawables_intersecting_nodes_type::parent_intersecting_nodes_type &
 					parent_intersecting_nodes =
-							child_filled_polygons_intersecting_nodes.get_parent_intersecting_nodes();
+							child_filled_drawables_intersecting_nodes.get_parent_intersecting_nodes();
 
 			// Now add those neighbours nodes that exist (not all areas of the spatial partition will be
-			// populated with filled polygons).
+			// populated with filled drawables).
 			const unsigned int num_parent_nodes = parent_intersecting_nodes.get_num_nodes();
 			for (unsigned int parent_node_index = 0; parent_node_index < num_parent_nodes; ++parent_node_index)
 			{
-				const filled_polygons_spatial_partition_type::const_node_reference_type &
+				const filled_drawables_spatial_partition_type::const_node_reference_type &
 						intersecting_parent_node_reference = parent_intersecting_nodes.get_node(parent_node_index);
-				// Only need to add nodes that actually contain filled polygons.
+				// Only need to add nodes that actually contain filled drawables.
 				// NOTE: We still recurse into child nodes though - an empty internal node does not
 				// mean the child nodes are necessarily empty.
 				if (!intersecting_parent_node_reference.empty())
 				{
-					child_filled_polygons_list_nodes[parent_node_index].node_reference =
+					child_filled_drawables_list_nodes[parent_node_index].node_reference =
 							intersecting_parent_node_reference;
 
-					// Add to the list of filled polygon spatial partition nodes that
+					// Add to the list of filled drawable spatial partition nodes that
 					// intersect the current tile.
-					child_filled_polygons_intersecting_node_list.push_front(
-							&child_filled_polygons_list_nodes[parent_node_index]);
+					child_filled_drawables_intersecting_node_list.push_front(
+							&child_filled_drawables_list_nodes[parent_node_index]);
 				}
 			}
 
@@ -458,9 +458,9 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_quad_tree(
 					renderer,
 					tile_texel_dimension,
 					child_mesh_quad_tree_node,
-					filled_polygons,
-					child_filled_polygons_intersecting_node_list,
-					child_filled_polygons_intersecting_nodes,
+					filled_drawables,
+					child_filled_drawables_intersecting_node_list,
+					child_filled_drawables_intersecting_nodes,
 					cube_subdivision_cache,
 					child_cube_subdivision_cache_node,
 					clip_cube_subdivision_cache,
@@ -479,9 +479,9 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_quad_tree_node(
 		GLRenderer &renderer,
 		unsigned int tile_texel_dimension,
 		const mesh_quad_tree_node_type &mesh_quad_tree_node,
-		const filled_polygons_type &filled_polygons,
-		const filled_polygons_spatial_partition_node_list_type &parent_filled_polygons_intersecting_node_list,
-		const filled_polygons_intersecting_nodes_type &filled_polygons_intersecting_nodes,
+		const filled_drawables_type &filled_drawables,
+		const filled_drawables_spatial_partition_node_list_type &parent_filled_drawables_intersecting_node_list,
+		const filled_drawables_intersecting_nodes_type &filled_drawables_intersecting_nodes,
 		cube_subdivision_cache_type &cube_subdivision_cache,
 		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
 		clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
@@ -489,52 +489,52 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_quad_tree_node(
 {
 	// From here on we can't allocate the list nodes on the runtime stack because we need to access
 	// the list after we return from traversing the spatial partition. So use an object pool instead.
-	boost::object_pool<FilledPolygonsListNode> filled_polygons_list_node_pool;
+	boost::object_pool<FilledDrawablesListNode> filled_drawables_list_node_pool;
 
-	// A tail-shared list to contain the reconstructed polygon meshes nodes that intersect the
+	// A tail-shared list to contain the reconstructed drawable meshes nodes that intersect the
 	// current source raster node. The parent list contains the nodes we've been
 	// accumulating so far during our quad tree traversal.
-	filled_polygons_spatial_partition_node_list_type
-			filled_polygons_intersecting_node_list(
-					parent_filled_polygons_intersecting_node_list);
+	filled_drawables_spatial_partition_node_list_type
+			filled_drawables_intersecting_node_list(
+					parent_filled_drawables_intersecting_node_list);
 
-	// Add any new intersecting nodes from the reconstructed polygon meshes spatial partition.
+	// Add any new intersecting nodes from the filled drawables spatial partition.
 	// These new nodes are the nodes that intersect the source raster tile at the current quad tree depth.
-	const filled_polygons_intersecting_nodes_type::intersecting_nodes_type &intersecting_nodes =
-			filled_polygons_intersecting_nodes.get_intersecting_nodes();
+	const filled_drawables_intersecting_nodes_type::intersecting_nodes_type &intersecting_nodes =
+			filled_drawables_intersecting_nodes.get_intersecting_nodes();
 
 	const GPlatesMaths::CubeQuadTreeLocation &tile_location =
-			filled_polygons_intersecting_nodes.get_node_location();
+			filled_drawables_intersecting_nodes.get_node_location();
 
 	// Now add those intersecting nodes that exist (not all areas of the spatial partition will be
-	// populated with reconstructed polygon meshes).
+	// populated with filled drawables).
 	const unsigned int num_intersecting_nodes = intersecting_nodes.get_num_nodes();
 	for (unsigned int list_node_index = 0; list_node_index < num_intersecting_nodes; ++list_node_index)
 	{
-		const filled_polygons_spatial_partition_type::const_node_reference_type &
+		const filled_drawables_spatial_partition_type::const_node_reference_type &
 				intersecting_node_reference = intersecting_nodes.get_node(list_node_index);
 
-		// Only need to add nodes that actually contain reconstructed polygon meshes.
+		// Only need to add nodes that actually contain filled drawables.
 		// NOTE: We still recurse into child nodes though - an empty internal node does not
 		// mean the child nodes are necessarily empty.
 		if (!intersecting_node_reference.empty())
 		{
 			// Add the node to the list.
-			filled_polygons_intersecting_node_list.push_front(
-					filled_polygons_list_node_pool.construct(intersecting_node_reference));
+			filled_drawables_intersecting_node_list.push_front(
+					filled_drawables_list_node_pool.construct(intersecting_node_reference));
 		}
 
-		// Continue to recurse into the spatial partition of reconstructed polygon meshes.
-		get_filled_polygons_intersecting_nodes(
+		// Continue to recurse into the spatial partition of filled drawables.
+		get_filled_drawables_intersecting_nodes(
 				tile_location,
 				intersecting_nodes.get_node_location(list_node_index),
 				intersecting_node_reference,
-				filled_polygons_intersecting_node_list,
-				filled_polygons_list_node_pool);
+				filled_drawables_intersecting_node_list,
+				filled_drawables_list_node_pool);
 	}
 
 	//
-	// Now traverse the list of intersecting reconstructed polygon meshes and render them.
+	// Now traverse the list of intersecting filled drawables and render them.
 	//
 
 	// Render the source raster tile to the scene.
@@ -542,8 +542,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_quad_tree_node(
 			renderer,
 			tile_texel_dimension,
 			mesh_quad_tree_node,
-			filled_polygons,
-			filled_polygons_intersecting_node_list,
+			filled_drawables,
+			filled_drawables_intersecting_node_list,
 			cube_subdivision_cache,
 			cube_subdivision_cache_node,
 			clip_cube_subdivision_cache,
@@ -552,19 +552,19 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_quad_tree_node(
 
 
 void
-GPlatesOpenGL::GLFilledPolygonsGlobeView::get_filled_polygons_intersecting_nodes(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::get_filled_drawables_intersecting_nodes(
 		const GPlatesMaths::CubeQuadTreeLocation &tile_location,
 		const GPlatesMaths::CubeQuadTreeLocation &intersecting_node_location,
-		filled_polygons_spatial_partition_type::const_node_reference_type intersecting_node_reference,
-		filled_polygons_spatial_partition_node_list_type &intersecting_node_list,
-		boost::object_pool<FilledPolygonsListNode> &intersecting_list_node_pool)
+		filled_drawables_spatial_partition_type::const_node_reference_type intersecting_node_reference,
+		filled_drawables_spatial_partition_node_list_type &intersecting_node_list,
+		boost::object_pool<FilledDrawablesListNode> &intersecting_list_node_pool)
 {
 	// Iterate over the four child nodes of the current parent node.
 	for (unsigned int child_y_offset = 0; child_y_offset < 2; ++child_y_offset)
 	{
 		for (unsigned int child_x_offset = 0; child_x_offset < 2; ++child_x_offset)
 		{
-			filled_polygons_spatial_partition_type::const_node_reference_type
+			filled_drawables_spatial_partition_type::const_node_reference_type
 					child_intersecting_node_reference =
 							intersecting_node_reference.get_child_node(
 									child_x_offset, child_y_offset);
@@ -583,7 +583,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::get_filled_polygons_intersecting_nodes
 			if (intersect_loose_cube_quad_tree_location_with_regular_cube_quad_tree_location(
 					child_intersecting_node_location, tile_location))
 			{
-				// Only need to add nodes that actually contain reconstructed polygon meshes.
+				// Only need to add nodes that actually contain filled drawables.
 				// NOTE: We still recurse into child nodes though - an empty internal node does not
 				// mean the child nodes are necessarily empty.
 				if (!child_intersecting_node_reference.empty())
@@ -594,7 +594,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::get_filled_polygons_intersecting_nodes
 				}
 
 				// Recurse into the current child.
-				get_filled_polygons_intersecting_nodes(
+				get_filled_drawables_intersecting_nodes(
 						tile_location,
 						child_intersecting_node_location,
 						child_intersecting_node_reference,
@@ -745,7 +745,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::set_tile_state(
 		// Alpha-test state.
 		// This enables alpha texture clipping when tile frustum is smaller than the multi-resolution
 		// cube mesh drawable. It's also a small optimisation for those areas of the tile that are
-		// not covered by any polygons (alpha-testing those pixels away avoids the alpha-blending stage).
+		// not covered by any drawables (alpha-testing those pixels away avoids the alpha-blending stage).
 		renderer.gl_enable(GL_ALPHA_TEST);
 		renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
 	}
@@ -763,8 +763,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_tile_to_scene(
 		GLRenderer &renderer,
 		unsigned int tile_texel_dimension,
 		const mesh_quad_tree_node_type &mesh_quad_tree_node,
-		const filled_polygons_type &filled_polygons,
-		const filled_polygons_spatial_partition_node_list_type &filled_polygons_intersecting_node_list,
+		const filled_drawables_type &filled_drawables,
+		const filled_drawables_spatial_partition_node_list_type &filled_drawables_intersecting_node_list,
 		cube_subdivision_cache_type &cube_subdivision_cache,
 		const cube_subdivision_cache_type::node_reference_type &cube_subdivision_cache_node,
 		clip_cube_subdivision_cache_type &clip_cube_subdivision_cache,
@@ -775,18 +775,18 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_tile_to_scene(
 	// Make sure we leave the OpenGL state the way it was.
 	GLRenderer::StateBlockScope save_restore_state(renderer);
 
-	const filled_polygons_spatial_partition_type &filled_polygons_spatial_partition =
-			*filled_polygons.d_filled_polygons_spatial_partition;
+	const filled_drawables_spatial_partition_type &filled_drawables_spatial_partition =
+			*filled_drawables.d_filled_drawables_spatial_partition;
 
-	// Get the reconstructed polygon meshes.
-	filled_polygon_seq_type filled_drawables;
-	get_filled_polygons(
-			filled_drawables,
-			filled_polygons_spatial_partition.begin_root_elements(),
-			filled_polygons_spatial_partition.end_root_elements(),
-			filled_polygons_intersecting_node_list);
+	// Get the filled drawables.
+	filled_drawable_seq_type filled_drawable_seq;
+	get_filled_drawables(
+			filled_drawable_seq,
+			filled_drawables_spatial_partition.begin_root_elements(),
+			filled_drawables_spatial_partition.end_root_elements(),
+			filled_drawables_intersecting_node_list);
 
-	if (filled_drawables.empty())
+	if (filled_drawable_seq.empty())
 	{
 		return;
 	}
@@ -795,9 +795,9 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_tile_to_scene(
 	// This is necessary because we visited the spatial partition of drawables which is not
 	// the same as the original draw order.
 	std::sort(
-			filled_drawables.begin(),
-			filled_drawables.end(),
-			filled_polygon_type::SortRenderOrder());
+			filled_drawable_seq.begin(),
+			filled_drawable_seq.end(),
+			filled_drawable_type::SortRenderOrder());
 
 	// The view transform never changes within a cube face so it's the same across
 	// an entire cube face quad tree (each cube face has its own quad tree).
@@ -819,11 +819,11 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_tile_to_scene(
 	const GLTexture::shared_ptr_to_const_type tile_texture =
 			acquire_tile_texture(renderer, tile_texel_dimension);
 
-	// Render the filled polygons to the tile texture.
-	render_filled_polygons_to_tile_texture(
+	// Render the filled drawables to the tile texture.
+	render_filled_drawables_to_tile_texture(
 			renderer,
 			tile_texture,
-			filled_drawables,
+			filled_drawable_seq,
 			*projection_transform,
 			*view_transform);
 
@@ -846,17 +846,17 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_tile_to_scene(
 
 
 void
-GPlatesOpenGL::GLFilledPolygonsGlobeView::render_filled_polygons_to_tile_texture(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::render_filled_drawables_to_tile_texture(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_to_const_type &tile_texture,
-		const filled_polygon_seq_type &filled_drawables,
+		const filled_drawable_seq_type &filled_drawables,
 		const GLTransform &projection_transform,
 		const GLTransform &view_transform)
 {
 	//PROFILE_FUNC();
 
-	// Begin a render target that will render the individual filled polygons to the tile texture.
-	// Enable stencil buffering since we use it to fill each polygon.
+	// Begin a render target that will render the individual filled drawables to the tile texture.
+	// Enable stencil buffering since we use it to fill each drawable.
 	GLRenderer::RenderTarget2DScope render_target_scope(
 			renderer,
 			tile_texture,
@@ -891,7 +891,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_filled_polygons_to_tile_texture
 		renderer.gl_clear_stencil();
 		renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-		// Set the alpha-blend state since filled polygon could have a transparent colour.
+		// Set the alpha-blend state since filled drawable could have a transparent colour.
 		// Set up alpha blending for pre-multiplied alpha.
 		// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
 		// This is where the RGB channels have already been multiplied by the alpha channel.
@@ -917,14 +917,14 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_filled_polygons_to_tile_texture
 #endif
 
 		// Bind the vertex array before using it to draw.
-		d_polygons_vertex_array->gl_bind(renderer);
+		d_drawables_vertex_array->gl_bind(renderer);
 
 		// Iterate over the filled drawables and render each one into the tile texture.
-		filled_polygon_seq_type::const_iterator filled_drawables_iter = filled_drawables.begin();
-		filled_polygon_seq_type::const_iterator filled_drawables_end = filled_drawables.end();
+		filled_drawable_seq_type::const_iterator filled_drawables_iter = filled_drawables.begin();
+		filled_drawable_seq_type::const_iterator filled_drawables_end = filled_drawables.end();
 		for ( ; filled_drawables_iter != filled_drawables_end; ++filled_drawables_iter)
 		{
-			const filled_polygon_type &filled_drawable = *filled_drawables_iter;
+			const filled_drawable_type &filled_drawable = *filled_drawables_iter;
 
 			// Set the stencil function to always pass.
 			renderer.gl_stencil_func(GL_ALWAYS, 0, ~0);
@@ -938,21 +938,21 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_filled_polygons_to_tile_texture
 			renderer.gl_color_mask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 			renderer.gl_enable(GL_BLEND, false);
 
-			// Render the current filled polygon as a polygon (fan) mesh.
-			d_polygons_vertex_array->gl_draw_range_elements(
+			// Render the current filled drawable.
+			d_drawables_vertex_array->gl_draw_range_elements(
 					renderer,
 					GL_TRIANGLES,
-					filled_drawable.d_polygon_mesh_drawable.start,
-					filled_drawable.d_polygon_mesh_drawable.end,
-					filled_drawable.d_polygon_mesh_drawable.count,
-					GLVertexElementTraits<polygon_vertex_element_type>::type,
-					filled_drawable.d_polygon_mesh_drawable.indices_offset);
+					filled_drawable.d_drawable.start,
+					filled_drawable.d_drawable.end,
+					filled_drawable.d_drawable.count,
+					GLVertexElementTraits<drawable_vertex_element_type>::type,
+					filled_drawable.d_drawable.indices_offset);
 
 			// Set the stencil function to pass only if the stencil buffer value is non-zero.
-			// This means we only draw into the tile texture for pixels 'interior' to the filled polygon.
+			// This means we only draw into the tile texture for pixels 'interior' to the filled drawable.
 			renderer.gl_stencil_func(GL_NOTEQUAL, 0, ~0);
 			// Set the stencil operation to set the stencil buffer to zero in preparation
-			// for the next polygon (also avoids multiple alpha-blending due to overlapping fan
+			// for the next drawable (also avoids multiple alpha-blending due to overlapping fan
 			// triangles as mentioned below).
 			renderer.gl_stencil_op(GL_KEEP, GL_KEEP, GL_ZERO);
 
@@ -960,23 +960,23 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_filled_polygons_to_tile_texture
 			renderer.gl_color_mask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 			renderer.gl_enable(GL_BLEND, true);
 
-			// Render the current filled polygon as a polygon (fan) mesh again.
-			// This drawable covers at least all interior pixels of the filled polygon.
-			// It also can covers exterior pixels of the filled polygon.
+			// Render the current filled drawable.
+			// This drawable covers at least all interior pixels of the filled drawable.
+			// It also can covers exterior pixels of the filled drawable.
 			// However only the interior pixels (where stencil buffer is non-zero) will
 			// pass the stencil test and get written into the tile (colour) texture.
 			// The drawable also can render pixels multiple times due to overlapping fan triangles.
 			// To avoid alpha blending each pixel more than once, the above stencil operation zeros
 			// the stencil buffer value of each pixel that passes the stencil test such that the next
 			// overlapping pixel will then fail the stencil test (avoiding multiple-alpha-blending).
-			d_polygons_vertex_array->gl_draw_range_elements(
+			d_drawables_vertex_array->gl_draw_range_elements(
 					renderer,
 					GL_TRIANGLES,
-					filled_drawable.d_polygon_mesh_drawable.start,
-					filled_drawable.d_polygon_mesh_drawable.end,
-					filled_drawable.d_polygon_mesh_drawable.count,
-					GLVertexElementTraits<polygon_vertex_element_type>::type,
-					filled_drawable.d_polygon_mesh_drawable.indices_offset);
+					filled_drawable.d_drawable.start,
+					filled_drawable.d_drawable.end,
+					filled_drawable.d_drawable.count,
+					GLVertexElementTraits<drawable_vertex_element_type>::type,
+					filled_drawable.d_drawable.indices_offset);
 		}
 	}
 	while (render_target_scope.end_tile());
@@ -984,33 +984,33 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_filled_polygons_to_tile_texture
 
 
 void
-GPlatesOpenGL::GLFilledPolygonsGlobeView::get_filled_polygons(
-		filled_polygon_seq_type &filled_drawables,
-		filled_polygons_spatial_partition_type::element_const_iterator begin_root_filled_polygons,
-		filled_polygons_spatial_partition_type::element_const_iterator end_root_filled_polygons,
-		const filled_polygons_spatial_partition_node_list_type &filled_polygons_intersecting_node_list)
+GPlatesOpenGL::GLFilledPolygonsGlobeView::get_filled_drawables(
+		filled_drawable_seq_type &filled_drawables,
+		filled_drawables_spatial_partition_type::element_const_iterator begin_root_filled_drawables,
+		filled_drawables_spatial_partition_type::element_const_iterator end_root_filled_drawables,
+		const filled_drawables_spatial_partition_node_list_type &filled_drawables_intersecting_node_list)
 {
 	//PROFILE_FUNC();
 
-	// Add the reconstructed polygon meshes in the root of the spatial partition.
+	// Add the filled drawables in the root of the spatial partition.
 	// These are the meshes that were too large to insert in any face of the cube quad tree partition.
-	// Add the reconstructed polygon meshes of the current node.
+	// Add the filled drawable of the current node.
 	filled_drawables.insert(
 			filled_drawables.end(),
-			begin_root_filled_polygons,
-			end_root_filled_polygons);
+			begin_root_filled_drawables,
+			end_root_filled_drawables);
 
-	// Iterate over the nodes in the spatial partition that contain the reconstructed polygon meshes we are interested in.
-	filled_polygons_spatial_partition_node_list_type::const_iterator filled_polygons_node_iter =
-			filled_polygons_intersecting_node_list.begin();
-	filled_polygons_spatial_partition_node_list_type::const_iterator filled_polygons_node_end =
-			filled_polygons_intersecting_node_list.end();
-	for ( ; filled_polygons_node_iter != filled_polygons_node_end; ++filled_polygons_node_iter)
+	// Iterate over the nodes in the spatial partition that contain the filled drawables we are interested in.
+	filled_drawables_spatial_partition_node_list_type::const_iterator filled_drawables_node_iter =
+			filled_drawables_intersecting_node_list.begin();
+	filled_drawables_spatial_partition_node_list_type::const_iterator filled_drawables_node_end =
+			filled_drawables_intersecting_node_list.end();
+	for ( ; filled_drawables_node_iter != filled_drawables_node_end; ++filled_drawables_node_iter)
 	{
-		const filled_polygons_spatial_partition_type::const_node_reference_type &node_reference =
-				filled_polygons_node_iter->node_reference;
+		const filled_drawables_spatial_partition_type::const_node_reference_type &node_reference =
+				filled_drawables_node_iter->node_reference;
 
-		// Add the reconstructed polygon meshes of the current node.
+		// Add the filled drawables of the current node.
 		filled_drawables.insert(
 				filled_drawables.end(),
 				node_reference.begin(),
@@ -1079,60 +1079,60 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::acquire_tile_texture(
 
 
 void
-GPlatesOpenGL::GLFilledPolygonsGlobeView::create_polygons_vertex_array(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::create_drawables_vertex_array(
 		GLRenderer &renderer)
 {
-	d_polygons_vertex_array = GLVertexArray::create(renderer);
+	d_drawables_vertex_array = GLVertexArray::create(renderer);
 
 	// Set up the vertex element buffer.
 	GLBuffer::shared_ptr_type vertex_element_buffer_data = GLBuffer::create(renderer);
-	d_polygons_vertex_element_buffer = GLVertexElementBuffer::create(renderer, vertex_element_buffer_data);
+	d_drawables_vertex_element_buffer = GLVertexElementBuffer::create(renderer, vertex_element_buffer_data);
 	// Attach vertex element buffer to the vertex array.
-	d_polygons_vertex_array->set_vertex_element_buffer(renderer, d_polygons_vertex_element_buffer);
+	d_drawables_vertex_array->set_vertex_element_buffer(renderer, d_drawables_vertex_element_buffer);
 
 	// Set up the vertex buffer.
 	GLBuffer::shared_ptr_type vertex_buffer_data = GLBuffer::create(renderer);
-	d_polygons_vertex_buffer = GLVertexBuffer::create(renderer, vertex_buffer_data);
+	d_drawables_vertex_buffer = GLVertexBuffer::create(renderer, vertex_buffer_data);
 
-	// Attach polygons vertex buffer to the vertex array.
+	// Attach drawables vertex buffer to the vertex array.
 	//
-	// Later we'll be allocating a vertex buffer large enough to contain all polygons and
-	// rendering each polygon with its own OpenGL draw call.
-	bind_vertex_buffer_to_vertex_array<polygon_vertex_type>(
+	// Later we'll be allocating a vertex buffer large enough to contain all drawables and
+	// rendering each drawable with its own OpenGL draw call.
+	bind_vertex_buffer_to_vertex_array<drawable_vertex_type>(
 			renderer,
-			*d_polygons_vertex_array,
-			d_polygons_vertex_buffer);
+			*d_drawables_vertex_array,
+			d_drawables_vertex_buffer);
 }
 
 
 void
-GPlatesOpenGL::GLFilledPolygonsGlobeView::write_filled_polygon_meshes_to_vertex_array(
+GPlatesOpenGL::GLFilledPolygonsGlobeView::write_filled_drawables_to_vertex_array(
 		GLRenderer &renderer,
-		const filled_polygons_type &filled_polygons)
+		const filled_drawables_type &filled_drawables)
 {
 	//PROFILE_FUNC();
 
-	// It's not 'stream' because the same filled polygons are accessed many times.
+	// It's not 'stream' because the same filled drawables are accessed many times.
 	// It's not 'dynamic' because we allocate a new buffer (ie, glBufferData does not modify existing buffer).
 	// We really want to encourage this to be in video memory (even though it's only going to live
 	// there for a single rendering frame) because there are many accesses to this buffer as the same
-	// polygons are rendered into multiple tiles (otherwise the PCI bus bandwidth becomes the limiting factor).
+	// drawables are rendered into multiple tiles (otherwise the PCI bus bandwidth becomes the limiting factor).
 
-	GLBuffer::shared_ptr_type vertex_element_buffer_data = d_polygons_vertex_element_buffer->get_buffer();
+	GLBuffer::shared_ptr_type vertex_element_buffer_data = d_drawables_vertex_element_buffer->get_buffer();
 	vertex_element_buffer_data->gl_buffer_data(
 			renderer,
 			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
-			filled_polygons.d_polygon_vertex_elements,
+			filled_drawables.d_drawable_vertex_elements,
 			GLBuffer::USAGE_STATIC_DRAW);
 
-	GLBuffer::shared_ptr_type vertex_buffer_data = d_polygons_vertex_buffer->get_buffer();
+	GLBuffer::shared_ptr_type vertex_buffer_data = d_drawables_vertex_buffer->get_buffer();
 	vertex_buffer_data->gl_buffer_data(
 			renderer,
 			GLBuffer::TARGET_ARRAY_BUFFER,
-			filled_polygons.d_polygon_vertices,
+			filled_drawables.d_drawable_vertices,
 			GLBuffer::USAGE_STATIC_DRAW);
 
-	//qDebug() << "Writing triangles: " << filled_polygons.d_polygon_vertex_elements.size() / 3;
+	//qDebug() << "Writing triangles: " << filled_drawables.d_drawable_vertex_elements.size() / 3;
 }
 
 
@@ -1142,7 +1142,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_shader_programs(
 {
 	//
 	// Shader programs for the final stage of rendering a tile to the scene.
-	// To enhance (or remove effect of) anti-aliasing of polygons edges.
+	// To enhance (or remove effect of) anti-aliasing of drawables edges.
 	//
 
 	// A version without clipping or lighting.
@@ -1214,4 +1214,152 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_shader_programs(
 					renderer,
 					render_tile_to_scene_with_clipping_and_lighting_vertex_shader_source,
 					render_tile_to_scene_with_clipping_and_lighting_fragment_shader_source);
+}
+
+
+void
+GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::add_filled_polygon(
+		const GPlatesMaths::PolygonOnSphere &polygon,
+		const GPlatesGui::Colour &colour,
+		const boost::optional<GPlatesMaths::CubeQuadTreeLocation> &cube_quad_tree_location)
+{
+	// Need at least three points for a polygon.
+	if (polygon.number_of_vertices() < 3)
+	{
+		return;
+	}
+
+	// Alpha blending will be set up for pre-multiplied alpha.
+	const GPlatesGui::Colour pre_multiplied_alpha_colour(
+			colour.red() * colour.alpha(),
+			colour.green() * colour.alpha(),
+			colour.blue() * colour.alpha(),
+			colour.alpha());
+
+	begin_filled_drawable();
+
+	add_polygon_mesh_to_current_filled_drawable(
+			polygon.vertex_begin(),
+			polygon.number_of_vertices(),
+			polygon.get_centroid(),
+			GPlatesGui::Colour::to_rgba8(pre_multiplied_alpha_colour));
+
+	end_filled_drawable(cube_quad_tree_location);
+}
+
+
+void
+GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::add_filled_polygon(
+		const GPlatesMaths::PolylineOnSphere &polyline,
+		const GPlatesGui::Colour &colour,
+		const boost::optional<GPlatesMaths::CubeQuadTreeLocation> &cube_quad_tree_location)
+{
+	// Need at least three points for a polygon.
+	if (polyline.number_of_vertices() < 3)
+	{
+		return;
+	}
+
+	// Alpha blending will be set up for pre-multiplied alpha.
+	const GPlatesGui::Colour pre_multiplied_alpha_colour(
+			colour.red() * colour.alpha(),
+			colour.green() * colour.alpha(),
+			colour.blue() * colour.alpha(),
+			colour.alpha());
+
+	begin_filled_drawable();
+
+	add_polygon_mesh_to_current_filled_drawable(
+			polyline.vertex_begin(),
+			polyline.number_of_vertices(),
+			polyline.get_centroid(),
+			GPlatesGui::Colour::to_rgba8(pre_multiplied_alpha_colour));
+
+	end_filled_drawable(cube_quad_tree_location);
+}
+
+
+void
+GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::add_filled_triangle_to_mesh(
+		const GPlatesMaths::PointOnSphere &vertex1,
+		const GPlatesMaths::PointOnSphere &vertex2,
+		const GPlatesMaths::PointOnSphere &vertex3,
+		const GPlatesGui::Colour &colour)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_current_drawable,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Alpha blending will be set up for pre-multiplied alpha.
+	const GPlatesGui::rgba8_t rgba_colour =
+			GPlatesGui::Colour::to_rgba8(
+					GPlatesGui::Colour(
+							colour.red() * colour.alpha(),
+							colour.green() * colour.alpha(),
+							colour.blue() * colour.alpha(),
+							colour.alpha()));
+
+	const drawable_vertex_element_type base_vertex_index = d_drawable_vertices.size();
+
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex1.position_vector(), rgba_colour));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex2.position_vector(), rgba_colour));
+	d_drawable_vertices.push_back(drawable_vertex_type(vertex3.position_vector(), rgba_colour));
+
+	d_drawable_vertex_elements.push_back(base_vertex_index);
+	d_drawable_vertex_elements.push_back(base_vertex_index + 1);
+	d_drawable_vertex_elements.push_back(base_vertex_index + 2);
+
+	// Update the current filled drawable.
+	d_current_drawable->end += 3;
+	d_current_drawable->count += 3;
+}
+
+
+void
+GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::begin_filled_drawable()
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!d_current_drawable,
+			GPLATES_ASSERTION_SOURCE);
+
+	const GLsizei base_vertex_element_index = d_drawable_vertex_elements.size();
+	const drawable_vertex_element_type base_vertex_index = d_drawable_vertices.size();
+
+	d_current_drawable = boost::in_place(
+			base_vertex_index/*start*/,
+			base_vertex_index/*end*/, // This will get updated.
+			0/*count*/, // This will get updated.
+			base_vertex_element_index * sizeof(drawable_vertex_element_type)/*indices_offset*/);
+}
+
+
+void
+GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::end_filled_drawable(
+		const boost::optional<GPlatesMaths::CubeQuadTreeLocation> &cube_quad_tree_location)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_current_drawable,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Add the filled drawable if it's not empty.
+	if (d_current_drawable->count > 0)
+	{
+		// Keep track of the order to render the drawables (order in which we're called)
+		// because drawables are rendered by visiting the spatial partition which is not
+		// the same as the original draw order.
+		const unsigned int render_order = d_filled_drawables_spatial_partition->size();
+		const filled_drawable_type filled_drawable(d_current_drawable.get(), render_order);
+
+		if (cube_quad_tree_location)
+		{
+			d_filled_drawables_spatial_partition->add(filled_drawable, cube_quad_tree_location.get());
+		}
+		else
+		{
+			d_filled_drawables_spatial_partition->add_unpartitioned(filled_drawable);
+		}
+	}
+
+	// Finished with the current filled drawable.
+	d_current_drawable = boost::none;
 }

@@ -226,7 +226,7 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time);
 
 		/**
-		 * Set the reconstruction layer proxy used to rotate feature geometries.
+		 * Set the reconstruction layer proxy that defines velocities inside rigid topological boundaries.
 		 */
 		void
 		set_current_reconstruction_layer_proxy(

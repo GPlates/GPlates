@@ -148,7 +148,7 @@ namespace GPlatesGui
 			 * For 'filled' to make any sense these drawables should have a sequence of points that
 			 * defines some kind of outline (the outline can be concave or convex).
 			 */
-			GPlatesOpenGL::GLFilledPolygonsGlobeView::filled_polygons_type &
+			GPlatesOpenGL::GLFilledPolygonsGlobeView::filled_drawables_type &
 			get_filled_polygons_globe_view()
 			{
 				return d_filled_polygons_globe_view;
@@ -157,7 +157,7 @@ namespace GPlatesGui
 			/**
 			 * Drawables that get filled in their interior (for rendering to a 2D map view).
 			 */
-			GPlatesOpenGL::GLFilledPolygonsMapView::filled_polygons_type &
+			GPlatesOpenGL::GLFilledPolygonsMapView::filled_drawables_type &
 			get_filled_polygons_map_view()
 			{
 				return d_filled_polygons_map_view;
@@ -247,10 +247,10 @@ namespace GPlatesGui
 			Drawables d_triangle_drawables;
 
 			//! For collecting filled polygons during a render call to render to the 3D globe view.
-			GPlatesOpenGL::GLFilledPolygonsGlobeView::filled_polygons_type d_filled_polygons_globe_view;
+			GPlatesOpenGL::GLFilledPolygonsGlobeView::filled_drawables_type d_filled_polygons_globe_view;
 
 			//! For collecting filled polygons during a render call to render to a 2D map view.
-			GPlatesOpenGL::GLFilledPolygonsMapView::filled_polygons_type d_filled_polygons_map_view;
+			GPlatesOpenGL::GLFilledPolygonsMapView::filled_drawables_type d_filled_polygons_map_view;
 
 
 			void

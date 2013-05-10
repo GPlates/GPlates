@@ -38,8 +38,6 @@
 #include "opengl/GLRasterCoRegistration.h"
 
 GPlatesAppLogic::CoRegistrationLayerProxy::CoRegistrationLayerProxy() :
-	// Start off with a reconstruction layer proxy that does identity rotations.
-	d_current_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
 	d_current_reconstruction_time(0)
 {
 	// Defined in ".cc" file because...
@@ -109,12 +107,7 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_coregistration_data(
 			target_layer_proxies.push_back(target_layer_proxy.get_input_layer_proxy());
 		}
 
-		// Get the reconstruction tree for the requested reconstruction time.
-		ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-				d_current_reconstruction_layer_proxy.get_input_layer_proxy()
-						->get_reconstruction_tree(reconstruction_time);
-
-		d_cached_coregistration_data = CoRegistrationData::create(reconstruction_tree);
+		d_cached_coregistration_data = CoRegistrationData::create(reconstruction_time);
 
 		// Does the actual co-registration work.
 		boost::shared_ptr<GPlatesDataMining::DataSelector> selector =
@@ -165,20 +158,6 @@ GPlatesAppLogic::CoRegistrationLayerProxy::set_current_reconstruction_time(
 
 	// Note that we don't reset our caches because we only do that when the client
 	// requests a reconstruction time that differs from the cached reconstruction time.
-}
-
-
-void
-GPlatesAppLogic::CoRegistrationLayerProxy::set_current_reconstruction_layer_proxy(
-		const ReconstructionLayerProxy::non_null_ptr_type &reconstruction_layer_proxy)
-{
-	d_current_reconstruction_layer_proxy.set_input_layer_proxy(reconstruction_layer_proxy);
-
-	// The co-registration data is now invalid.
-	reset_cache();
-
-	// Polling observers need to update themselves with respect to us.
-	d_subject_token.invalidate();
 }
 
 
@@ -317,9 +296,6 @@ GPlatesAppLogic::CoRegistrationLayerProxy::check_input_layer_proxy(
 void
 GPlatesAppLogic::CoRegistrationLayerProxy::check_input_layer_proxies()
 {
-	// See if the reconstruction layer proxy has changed.
-	check_input_layer_proxy(d_current_reconstruction_layer_proxy);
-
 	// See if any reconstructed seed layer proxies have changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &seed_layer_proxy,

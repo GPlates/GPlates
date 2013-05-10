@@ -7,7 +7,7 @@
  *   $Date: 2008-08-15 02:13:48 -0700 (Fri, 15 Aug 2008) $
  * 
  * Copyright (C) 2008, 2010 The University of Sydney, Australia
- * Copyright (C) 2008, 2009 California Institute of Technology 
+ * Copyright (C) 2008, 2009, 2013 California Institute of Technology 
  *
  * This file is part of GPlates.
  *
@@ -32,11 +32,14 @@
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
+#include <boost/random.hpp>
+#include <boost/generator_iterator.hpp>
 
 #include "AppLogicFwd.h"
 #include "ReconstructHandle.h"
 #include "ReconstructionFeatureProperties.h"
 #include "ReconstructionGeometry.h"
+#include "ResolvedTriangulationNetwork.h"
 #include "TopologyIntersections.h"
 
 #include "maths/GeometryOnSphere.h"
@@ -85,8 +88,8 @@ namespace GPlatesAppLogic
 		 */
 		TopologyNetworkResolver(
 				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
+				const double &reconstruction_time,
 				ReconstructHandle::type reconstruct_handle,
-				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles);
 
 		virtual
@@ -139,6 +142,8 @@ namespace GPlatesAppLogic
 			reset()
 			{
 				d_boundary_sections.clear();
+				d_interior_geometries.clear();
+				d_seed_geometries.clear();
 			}
 
 			//! Keeps track of topological boundary section information when visiting topological sections.
@@ -183,9 +188,6 @@ namespace GPlatesAppLogic
 				 * with its neighbours.
 				 */
 				TopologicalIntersections d_intersection_results;
-
-				//! The segment geometry.
-				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry;
 			};
 
 			//! Keeps track of interior geometry information when visiting topological interiors.
@@ -252,14 +254,14 @@ namespace GPlatesAppLogic
 		std::vector<resolved_topological_network_non_null_ptr_type> &d_resolved_topological_networks;
 
 		/**
+		 * The time at which topologies are being resolved.
+		 */
+		double d_reconstruction_time;
+
+		/**
 		 * The reconstruction identifier placed in all resolved topological networks.
 		 */
 		ReconstructHandle::type d_reconstruct_handle;
-
-		/**
-		 * The reconstruction tree associated with the resolved topological boundaries begin generated.
-		 */
-		reconstruction_tree_non_null_ptr_to_const_type d_reconstruction_tree;
 
 		/**
 		 * The reconstructed topological boundary sections and/or interior geometries we're using to
@@ -285,13 +287,6 @@ namespace GPlatesAppLogic
 		//! controls on the triangulation
 		double d_max_edge;
 
-		/**
-		 * Create a @a ResolvedTopologicalNetwork from information gathered
-		 * from the most recently visited topological polygon
-		 * (stored in @a d_resolved_network) and add it to the @a Reconstruction.
-		 */
-		void
-		create_resolved_topology_network();
 
 		boost::optional<ReconstructionGeometry::non_null_ptr_type>
 		find_topological_reconstruction_geometry(
@@ -339,6 +334,68 @@ namespace GPlatesAppLogic
 		void
 		assign_boundary_segment_boundary(
 				const std::size_t section_index);
+
+
+		/**
+		 * Create a @a ResolvedTopologicalNetwork from information gathered
+		 * from the most recently visited topological polygon
+		 * (stored in @a d_resolved_network) and add it to the @a Reconstruction.
+		 */
+		void
+		create_resolved_topology_network();
+
+		/**
+		 * Add boundary points for delaunay triangulation from a reconstructed feature geometry.
+		 */
+		void
+		add_boundary_delaunay_points_from_reconstructed_feature_geometry(
+				const reconstructed_feature_geometry_non_null_ptr_type &boundary_section_rfg,
+				const GPlatesMaths::GeometryOnSphere &boundary_section_geometry,
+				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &all_delaunay_points);
+
+		/**
+		 * Add boundary points for delaunay triangulation from a resolved topological *line*.
+		 */
+		void
+		add_boundary_delaunay_points_from_resolved_topological_line(
+				const resolved_topological_geometry_non_null_ptr_type &boundary_section_rtg,
+				const GPlatesMaths::GeometryOnSphere &boundary_section_geometry,
+				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &all_delaunay_points);
+
+		/**
+		 * Add a boundary section's points to the final list of boundary points.
+		 */
+		void
+		add_boundary_points(
+				const ResolvedNetwork::BoundarySection &boundary_section,
+				std::vector<GPlatesMaths::PointOnSphere> &boundary_points);
+
+		/**
+		 * Add interior points for delaunay triangulation from a reconstructed feature geometry.
+		 */
+		void
+		add_interior_delaunay_points_from_reconstructed_feature_geometry(
+				const reconstructed_feature_geometry_non_null_ptr_type &interior_rfg,
+				const GPlatesMaths::GeometryOnSphere &interior_geometry,
+				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &all_delaunay_points,
+				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &all_interior_polygons);
+
+		/**
+		 * Add interior points for delaunay triangulation from a resolved topological *line*.
+		 */
+		void
+		add_interior_delaunay_points_from_resolved_topological_line(
+				const resolved_topological_geometry_non_null_ptr_type &interior_rtg,
+				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &all_delaunay_points);
+
+		/**
+		 * Add interior points for constrained delaunay triangulation.
+		 */
+		void
+		add_interior_constrained_delaunay_points(
+				const ResolvedNetwork::InteriorGeometry &interior_geometry,
+				std::vector<ResolvedTriangulation::Network::ConstrainedDelaunayGeometry> &all_constrained_delaunay_geometries,
+				std::vector<GPlatesMaths::PointOnSphere> &all_scattered_points);
 
 
 		void

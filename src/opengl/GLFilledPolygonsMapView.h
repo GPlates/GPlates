@@ -27,6 +27,7 @@
 #define GPLATES_OPENGL_GLFILLEDPOLYGONSMAPVIEW_H
 
 #include <vector>
+#include <boost/optional.hpp>
 #include <opengl/OpenGL.h>
 #include <QPointF>
 
@@ -54,16 +55,16 @@ namespace GPlatesOpenGL
 	{
 	private:
 
-		//! Typedef for a vertex element (vertex index) of a polygon.
-		typedef GLuint polygon_vertex_element_type;
+		//! Typedef for a vertex element (vertex index) of a drawable.
+		typedef GLuint drawable_vertex_element_type;
 
-		//! Typedef for a coloured vertex of a polygon.
-		typedef GLColourVertex polygon_vertex_type;
+		//! Typedef for a coloured vertex of a drawable.
+		typedef GLColourVertex drawable_vertex_type;
 
 		/**
-		 * Contains information to render a filled polygon.
+		 * Contains information to render a filled drawable.
 		 */
-		struct FilledPolygon
+		struct FilledDrawable
 		{
 			/**
 			 * Contains 'gl_draw_range_elements' parameters that locate a geometry inside a vertex array.
@@ -88,25 +89,25 @@ namespace GPlatesOpenGL
 			};
 
 
-			//! Create a filled polygon from a polygon (fan) mesh drawable.
+			//! Create a filled drawable.
 			explicit
-			FilledPolygon(
-					const Drawable &polygon_mesh_drawable) :
-				d_polygon_mesh_drawable(polygon_mesh_drawable)
+			FilledDrawable(
+					const Drawable &drawable) :
+				d_drawable(drawable)
 			{  }
 
 
 			/**
-			 * The filled polygon's (fan) mesh.
+			 * The filled drawable.
 			 */
-			Drawable d_polygon_mesh_drawable;
+			Drawable d_drawable;
 		};
 
-		//! Typedef for a filled polygon.
-		typedef FilledPolygon filled_polygon_type;
+		//! Typedef for a filled drawable.
+		typedef FilledDrawable filled_drawable_type;
 
-		//! Typedef for a sequence of filled polygons.
-		typedef std::vector<filled_polygon_type> filled_polygon_seq_type;
+		//! Typedef for a sequence of filled drawables.
+		typedef std::vector<filled_drawable_type> filled_drawable_seq_type;
 
 	public:
 
@@ -117,18 +118,42 @@ namespace GPlatesOpenGL
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GLFilledPolygonsMapView> non_null_ptr_to_const_type;
 
 		/**
-		 * Used to accumulate filled polygons for rendering.
+		 * Used to accumulate filled drawables for rendering.
 		 */
-		class FilledPolygons
+		class FilledDrawables
 		{
 		public:
 
 			/**
-			 * Create a filled polygon from a 2D polyline or polygon @a line_geometry.
+			 * Returns true if any filled drawables have been added.
+			 */
+			bool
+			empty() const
+			{
+				return d_filled_drawables.empty();
+			}
+
+			/**
+			 * Clears the filled drawables accumulated so far.
+			 *
+			 * This is more efficient than creating a new @a FilledDrawables each render since it
+			 * minimises re-allocations.
+			 */
+			void
+			clear()
+			{
+				d_filled_drawables.clear();
+				d_drawable_vertices.clear();
+				d_drawable_vertex_elements.clear();
+				d_current_drawable = boost::none;
+			}
+
+			/**
+			 * Create a filled drawable from a 2D polyline or polygon @a line_geometry.
 			 *
 			 * A polygon is formed by closing the first and last points if the geometry is a polyline.
 			 * If the geometry is already a polygon then this extra point doesn't affect the filled result.
-			 * Note that if the geometry has too few points then it simply won't be used to render the filled polygon.
+			 * Note that if the geometry has too few points then it simply won't be used to render the filled drawable.
 			 */
 			void
 			add_filled_polygon(
@@ -136,57 +161,87 @@ namespace GPlatesOpenGL
 					const GPlatesGui::Colour &colour);
 
 			/**
-			 * Returns true if any filled polygons have been added.
+			 * Begins a single drawable for a filled mesh composed of individually added triangles.
 			 */
-			bool
-			empty() const
+			void
+			begin_filled_triangle_mesh()
 			{
-				return d_polygon_filled_drawables.empty();
+				begin_filled_drawable();
 			}
 
 			/**
-			 * Clears the filled polygons accumulated so far.
-			 *
-			 * This is more efficient than creating a new @a FilledPolygons each render since it
-			 * minimises re-allocations.
+			 * Ends the current filled triangle mesh drawable (started by @a begin_filled_triangle_mesh).
 			 */
 			void
-			clear()
+			end_filled_triangle_mesh()
 			{
-				d_polygon_filled_drawables.clear();
-				d_polygon_vertices.clear();
-				d_polygon_vertex_elements.clear();
+				end_filled_drawable();
 			}
+
+			/**
+			 * Adds a coloured triangle to the current filled triangle mesh drawable.
+			 *
+			 * This must be called between @a begin_filled_triangle_mesh and @a end_filled_triangle_mesh.
+			 */
+			void
+			add_filled_triangle_to_mesh(
+					const QPointF &vertex1,
+					const QPointF &vertex2,
+					const QPointF &vertex3,
+					const GPlatesGui::Colour &colour);
 
 		private:
 
 			/**
-			 * The vertices of all polygons of the current @a render call.
+			 * The vertices of all drawables of the current @a render call.
 			 *
 			 * NOTE: This is only 'clear'ed at each render call in order to avoid excessive re-allocations
 			 * at each @a render call (std::vector::clear shouldn't deallocate).
 			 */
-			std::vector<polygon_vertex_type> d_polygon_vertices;
+			std::vector<drawable_vertex_type> d_drawable_vertices;
 
 			/**
-			 * The vertex elements (indices) of all polygons of the current @a render call.
+			 * The vertex elements (indices) of all drawables of the current @a render call.
 			 *
 			 * NOTE: This is only 'clear'ed at each render call in order to avoid excessive re-allocations
 			 * at each @a render call (std::vector::clear shouldn't deallocate).
 			 */
-			std::vector<polygon_vertex_element_type> d_polygon_vertex_elements;
+			std::vector<drawable_vertex_element_type> d_drawable_vertex_elements;
 
 			/**
-			 * The filled polygon drawables.
+			 * The filled drawables.
 			 */
-			std::vector<filled_polygon_type> d_polygon_filled_drawables;
+			std::vector<filled_drawable_type> d_filled_drawables;
 
-			// So can access accumulated vertices/indices/drawables of filled polygons.
+			/**
+			 * The current drawable.
+			 *
+			 * Is only valid between @a begin_filled_drawable and @a end_filled_drawable.
+			 */
+			boost::optional<FilledDrawable::Drawable> d_current_drawable;
+
+
+			// So can access accumulated vertices/indices/drawables of filled drawables.
 			friend class GLFilledPolygonsMapView;
+
+
+			/**
+			 * Begin a new drawable.
+			 *
+			 * Everything in a drawable is rendered in one draw call and stenciled as a unit.
+			 */
+			void
+			begin_filled_drawable();
+
+			/**
+			 * End the current drawable.
+			 */
+			void
+			end_filled_drawable();
 		};
 
-		//! Typedef for a group of filled polygons.
-		typedef FilledPolygons filled_polygons_type;
+		//! Typedef for a group of filled drawables.
+		typedef FilledDrawables filled_drawables_type;
 
 
 		/**
@@ -202,32 +257,32 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Renders the specified filled polygons.
+		 * Renders the specified filled drawables.
 		 */
 		void
 		render(
 				GLRenderer &renderer,
-				const filled_polygons_type &filled_polygons);
+				const filled_drawables_type &filled_drawables);
 
 	private:
 
 		/**
-		 * The vertex buffer containing the vertices of all polygons of the current @a render call.
+		 * The vertex buffer containing the vertices of all drawables of the current @a render call.
 		 */
-		GLVertexBuffer::shared_ptr_type d_polygons_vertex_buffer;
+		GLVertexBuffer::shared_ptr_type d_drawables_vertex_buffer;
 
 		/**
-		 * The vertex buffer containing the vertex elements (indices) of all polygons of the current @a render call.
+		 * The vertex buffer containing the vertex elements (indices) of all drawables of the current @a render call.
 		 */
-		GLVertexElementBuffer::shared_ptr_type d_polygons_vertex_element_buffer;
+		GLVertexElementBuffer::shared_ptr_type d_drawables_vertex_element_buffer;
 
 		/**
-		 * The vertex array containing all polygons of the current @a render call.
+		 * The vertex array containing all drawables of the current @a render call.
 		 *
-		 * All polygons for the current @a render call are stored here.
+		 * All drawables for the current @a render call are stored here.
 		 * They'll get flushed/replaced when the next render call is made.
 		 */
-		GLVertexArray::shared_ptr_type d_polygons_vertex_array;
+		GLVertexArray::shared_ptr_type d_drawables_vertex_array;
 
 
 		//! Constructor.
@@ -235,13 +290,13 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer);
 
 		void
-		create_polygons_vertex_array(
+		create_drawables_vertex_array(
 				GLRenderer &renderer);
 
 		void
-		write_filled_polygon_meshes_to_vertex_array(
+		write_filled_drawables_to_vertex_array(
 				GLRenderer &renderer,
-				const filled_polygons_type &filled_polygons);
+				const filled_drawables_type &filled_drawables);
 	};
 }
 

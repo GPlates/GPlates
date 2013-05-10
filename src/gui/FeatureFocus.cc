@@ -37,6 +37,7 @@
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/ReconstructionGeometryFinder.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/ReconstructionGeometryVisitor.h"
 #include "app-logic/GeometryUtils.h"
 
 #include "feature-visitors/GeometryFinder.h"
@@ -84,6 +85,72 @@ namespace
 	private:
 
 		GPlatesGui::FeatureFocus &d_feature_focus;
+	};
+
+
+	class ReconstructionGeometryLocator :
+			public GPlatesAppLogic::ConstReconstructionGeometryVisitor
+	{
+	public:
+
+		boost::optional<GPlatesMaths::LatLonPoint>
+		get_location() const
+		{
+			return d_location;
+		}
+
+	private:
+
+		// Bring base class visit methods into scope of current class.
+		using GPlatesAppLogic::ConstReconstructionGeometryVisitor::visit;
+
+
+		// Derivations of ReconstructedFeatureGeometry default to its implementation...
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
+		{
+			std::vector<GPlatesMaths::PointOnSphere> points;
+			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rfg->reconstructed_geometry(), points);
+			if (!points.empty())
+			{
+				d_location = GPlatesMaths::make_lat_lon_point(points.front());
+			}
+		}
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
+		{
+			// We want the first vertex.
+			std::vector<GPlatesMaths::PointOnSphere> points;
+			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rtg->resolved_topology_geometry(), points);
+
+			if (!points.empty())
+			{
+				d_location = GPlatesMaths::make_lat_lon_point(points.front());
+			}
+		}
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+		{
+			std::vector<GPlatesMaths::PointOnSphere> points;
+			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rtn->boundary_polygon(), points);
+
+			if (!points.empty())
+			{
+				d_location = GPlatesMaths::make_lat_lon_point(points.front());
+			}
+		}
+
+	private:
+		boost::optional<GPlatesMaths::LatLonPoint> d_location;
 	};
 }
 
@@ -264,7 +331,7 @@ GPlatesGui::FeatureFocus::find_new_associated_reconstruction_geometry()
 		return;
 	}
 
-	// Actually we don't want to generate a debug message because it'll get output for every
+	// NOTE: We don't want to generate a debug message because it'll get output for every
 	// reconstruction time change while the current feature is focused.
 #if 0
 	if (reconstruction_geometries_observing_feature.size() > 1)
@@ -276,6 +343,11 @@ GPlatesGui::FeatureFocus::find_new_associated_reconstruction_geometry()
 #endif
 
 	// Assign the new associated reconstruction geometry.
+	//
+	// NOTE: We can get more than one match if the same (focused) feature is reconstructed in two
+	// different layers - each layer will produce a different RG. Since we're arbitrarily picking
+	// the first match we might not pick the one associated with the originally selected RG.
+	// To fix this will require a way to identify which layer the original RG came from.
 	d_associated_reconstruction_geometry = reconstruction_geometries_observing_feature.front().get();
 }
 
@@ -327,85 +399,8 @@ GPlatesGui::FeatureFocus::handle_rendered_geometry_collection_update()
 	}
 }
 
-class ReconstructionGeometryLocator :
-	public GPlatesAppLogic::ConstReconstructionGeometryVisitor
-{
-public:
-	boost::optional<const GPlatesMaths::LatLonPoint>
-	location()
-	{
-		return *d_location;
-	}
 
-protected:
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
-		{ }
-
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
-		{
-			std::vector<GPlatesMaths::PointOnSphere> points;
-			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rfg->reconstructed_geometry(),points);
-			if(points.size())
-				d_location =  GPlatesMaths::make_lat_lon_point(points[0]);
-		}
-
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
-		{ }
-
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
-		{ }
-
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
-		{ }
-
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<resolved_raster_type> &rr)
-		{ }
-
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<resolved_scalar_field_3d_type> &rsf)
-		{ }
-
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
-		{
-			// We want the first vertex.
-			std::vector<GPlatesMaths::PointOnSphere> points;
-			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rtg->resolved_topology_geometry(), points);
-
-			d_location = GPlatesMaths::make_lat_lon_point(points.front());
-		}
-
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
-		{
-			std::vector<GPlatesMaths::PointOnSphere> points;
-			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rtn->nodes_begin()->get_geometry(),points);
-			if(points.size())
-			{
-				d_location =  GPlatesMaths::make_lat_lon_point(points[0]);
-			}
-		}
-
-		void
-		visit(const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crr)
-		{ }
-
-        void
-        visit(const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
-        { }
-
-private:
-	boost::optional<GPlatesMaths::LatLonPoint> d_location;
-};
-
-
-boost::optional<const GPlatesMaths::LatLonPoint>
+boost::optional<GPlatesMaths::LatLonPoint>
 GPlatesGui::locate_focus()
 {
 	GPlatesPresentation::Application &app = GPlatesPresentation::Application::instance();
@@ -413,10 +408,10 @@ GPlatesGui::locate_focus()
 			
 	ReconstructionGeometryLocator locator;
 	GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type geo = focus.associated_reconstruction_geometry();
-	if(geo)
+	if (geo)
 	{
 		geo->accept_visitor(locator);
-		return locator.location();
+		return locator.get_location();
 	}
 	else
 	{

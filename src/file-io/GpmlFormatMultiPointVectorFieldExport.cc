@@ -62,7 +62,9 @@ namespace
 	void
 	insert_velocity_field_into_feature_collection(
 			GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-			const GPlatesAppLogic::MultiPointVectorField *velocity_field)
+			const GPlatesAppLogic::MultiPointVectorField *velocity_field,
+			const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+			const double &reconstruction_time)
 	{
 		// The domain feature used when generating the velocity field.
 		const GPlatesModel::FeatureHandle::weak_ref domain_feature_ref =
@@ -83,8 +85,7 @@ namespace
 		static const GPlatesModel::PropertyName RECONSTRUCTED_TIME_PROPERTY_NAME =
 				GPlatesModel::PropertyName::create_gpml("reconstructedTime");
 
-		GPlatesPropertyValues::GeoTimeInstant reconstructed_geo_time_instant(
-				velocity_field->reconstruction_tree()->get_reconstruction_time());
+		GPlatesPropertyValues::GeoTimeInstant reconstructed_geo_time_instant(reconstruction_time);
 		GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type reconstructed_gml_time_instant =
 			GPlatesModel::ModelUtils::create_gml_time_instant(reconstructed_geo_time_instant);
 
@@ -100,10 +101,8 @@ namespace
 		static const GPlatesModel::PropertyName ANCHORED_PLATE_ID_PROPERTY_NAME =
 				GPlatesModel::PropertyName::create_gpml("anchoredPlateId");
 
-		const GPlatesModel::integer_plate_id_type anchored_plate_id =
-				velocity_field->reconstruction_tree()->get_anchor_plate_id();
 		GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type anchored_gpml_plate_id =
-				GPlatesPropertyValues::GpmlPlateId::create(anchored_plate_id);
+				GPlatesPropertyValues::GpmlPlateId::create(reconstruction_anchor_plate_id);
 
 		feature->add(
 				GPlatesModel::TopLevelPropertyInline::create(
@@ -343,7 +342,11 @@ GPlatesFileIO::GpmlFormatMultiPointVectorFieldExport::export_velocity_vector_fie
 		{
 			const GPlatesAppLogic::MultiPointVectorField *mpvf = *mpvf_iter;
 
-			insert_velocity_field_into_feature_collection(feature_collection_ref, mpvf);
+			insert_velocity_field_into_feature_collection(
+					feature_collection_ref,
+					mpvf,
+					reconstruction_anchor_plate_id,
+					reconstruction_time);
 		}
 	}
 

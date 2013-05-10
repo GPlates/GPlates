@@ -39,16 +39,6 @@
 
 namespace
 {
-	inline
-	bool
-	reconstruction_tree_matches(
-			const GPlatesAppLogic::ReconstructionGeometry &rg,
-			const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_to_match)
-	{
-		return (rg.reconstruction_tree() == reconstruction_tree_to_match);
-	}
-
-
 	template <class ReconstructionGeometryDerivedType>
 	inline
 	bool
@@ -168,14 +158,6 @@ void
 GPlatesAppLogic::ReconstructionGeometryFinder::visit_reconstruction_geometry_derived_type(
 		ReconstructionGeometryDerivedType &rg)
 {
-	// If a ReconstructionTree-to-match was supplied then limit the results to those RGs which
-	// reference that ReconstructionTree.
-	if (d_reconstruction_tree_to_match &&
-		!reconstruction_tree_matches(rg, d_reconstruction_tree_to_match.get()))
-	{
-		return;
-	}
-
 	// If a property-name-to-match was supplied then limit the results to those RGs which
 	// were reconstructed from a geometry with that property name.
 	if (d_property_name_to_match &&

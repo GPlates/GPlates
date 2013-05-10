@@ -13,7 +13,6 @@ include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
     ArbitraryNodeProcessor.h
-    ArbitraryXmlProfile.cc
     ArbitraryXmlProfile.h
     ArbitraryXmlReader.cc
     ArbitraryXmlReader.h

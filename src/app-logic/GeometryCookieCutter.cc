@@ -29,39 +29,12 @@
 
 #include "GeometryCookieCutter.h"
 
+#include "GeometryUtils.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ResolvedTopologicalGeometry.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
-
-namespace
-{
-	/**
-	 * Gets a @a PolygonOnSphere from a @a GeometryOnSphere if it is one.
-	 */
-	class PolygonGeometryFinder :
-			public GPlatesMaths::ConstGeometryOnSphereVisitor
-	{
-	public:
-		const boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> &
-		get_polygon_on_sphere() const
-		{
-			return d_polygon_on_sphere;
-		}
-
-		virtual
-		void
-		visit_polygon_on_sphere(
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
-		{
-			d_polygon_on_sphere = polygon_on_sphere;
-		}
-
-	private:
-		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> d_polygon_on_sphere;
-	};
-}
 
 
 GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
@@ -79,7 +52,7 @@ GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
 
 		add_partitioning_resolved_topological_network_interior_polygons(resolved_topological_networks.get());
 
-		// Sort the parititioning geometries just added by plate id.
+		// Sort the partitioning geometries just added by plate id.
 		std::sort(
 				d_partitioning_geometries.begin() + num_partitioning_geometries,
 				d_partitioning_geometries.end(),
@@ -92,7 +65,7 @@ GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
 
 		add_partitioning_resolved_topological_networks(resolved_topological_networks.get());
 
-		// Sort the parititioning geometries just added by plate id.
+		// Sort the partitioning geometries just added by plate id.
 		std::sort(
 				d_partitioning_geometries.begin() + num_partitioning_geometries,
 				d_partitioning_geometries.end(),
@@ -105,7 +78,7 @@ GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
 
 		add_partitioning_resolved_topological_boundaries(resolved_topological_boundaries.get());
 
-		// Sort the parititioning geometries just added by plate id.
+		// Sort the partitioning geometries just added by plate id.
 		std::sort(
 				d_partitioning_geometries.begin() + num_partitioning_geometries,
 				d_partitioning_geometries.end(),
@@ -118,7 +91,7 @@ GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
 
 		add_partitioning_reconstructed_feature_polygons(reconstructed_static_polygons.get());
 
-		// Sort the parititioning geometries just added by plate id.
+		// Sort the partitioning geometries just added by plate id.
 		std::sort(
 				d_partitioning_geometries.begin() + num_partitioning_geometries,
 				d_partitioning_geometries.end(),
@@ -286,7 +259,7 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_net
 	BOOST_FOREACH(const ResolvedTopologicalNetwork::non_null_ptr_type &rtn, resolved_topological_networks)
 	{
 		d_partitioning_geometries.push_back(
-				PartitioningGeometry(rtn, rtn->boundary_polygon()));
+				PartitioningGeometry(rtn, rtn->get_triangulation_network().get_boundary_polygon()));
 	}
 }
 
@@ -298,28 +271,27 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_net
 	// Create the partitioned geometries.
 	BOOST_FOREACH(const ResolvedTopologicalNetwork::non_null_ptr_type &rtn, resolved_topological_networks)
 	{
-		// Iterate over the interior polygons, if any, of the current topological network.
-		ResolvedTopologicalNetwork::interior_polygon_const_iterator interior_poly_iter = rtn->interior_polygons_begin();
-		ResolvedTopologicalNetwork::interior_polygon_const_iterator interior_poly_end = rtn->interior_polygons_end();
-		for ( ; interior_poly_iter != interior_poly_end; ++interior_poly_iter)
+		// Iterate over the interior rigid blocks, if any, of the current topological network.
+		const ResolvedTriangulation::Network::rigid_block_seq_type &rigid_blocks =
+				rtn->get_triangulation_network().get_rigid_blocks();
+		ResolvedTriangulation::Network::rigid_block_seq_type::const_iterator rigid_blocks_iter = rigid_blocks.begin();
+		ResolvedTriangulation::Network::rigid_block_seq_type::const_iterator rigid_blocks_end = rigid_blocks.end();
+		for ( ; rigid_blocks_iter != rigid_blocks_end; ++rigid_blocks_iter)
 		{
-			const ResolvedTopologicalNetwork::InteriorPolygon &interior_poly = *interior_poly_iter;
-			const ReconstructedFeatureGeometry::non_null_ptr_type interior_poly_rfg =
-					interior_poly.get_reconstructed_feature_geometry();
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type interior_poly_geom_on_sphere =
-					interior_poly_rfg->reconstructed_geometry();
+			const ResolvedTriangulation::Network::RigidBlock &rigid_block = *rigid_blocks_iter;
+
+			const ReconstructedFeatureGeometry::non_null_ptr_type rigid_block_rfg =
+					rigid_block.get_reconstructed_feature_geometry();
 
 			// Get the polygon geometry.
-			PolygonGeometryFinder polygon_geom_finder;
-			interior_poly_geom_on_sphere->accept_visitor(polygon_geom_finder);
+			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon =
+					GeometryUtils::get_polygon_on_sphere(*rigid_block_rfg->reconstructed_geometry());
 
 			// Add it as a partitioning geometry.
-			if (polygon_geom_finder.get_polygon_on_sphere())
+			if (polygon)
 			{
 				d_partitioning_geometries.push_back(
-						PartitioningGeometry(
-								interior_poly_rfg,
-								polygon_geom_finder.get_polygon_on_sphere().get()));
+						PartitioningGeometry(rigid_block_rfg, polygon.get()));
 			}
 		}
 	}
@@ -338,20 +310,16 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_reconstructed_feature_po
 	for ( ; rfg_iter != rfg_end; ++rfg_iter)
 	{
 		const ReconstructedFeatureGeometry::non_null_ptr_type &rfg = *rfg_iter;
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type rfg_geom_on_sphere =
-				rfg->reconstructed_geometry();
 
-		// See if it's a polygon.
-		PolygonGeometryFinder polygon_geom_finder;
-		rfg_geom_on_sphere->accept_visitor(polygon_geom_finder);
+		// Get the polygon geometry.
+		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon =
+				GeometryUtils::get_polygon_on_sphere(*rfg->reconstructed_geometry());
 
-		// Add it as a partitioning geometry if it's a polygon.
-		if (polygon_geom_finder.get_polygon_on_sphere())
+		// Add it as a partitioning geometry.
+		if (polygon)
 		{
 			d_partitioning_geometries.push_back(
-					PartitioningGeometry(
-							rfg,
-							polygon_geom_finder.get_polygon_on_sphere().get()));
+					PartitioningGeometry(rfg, polygon.get()));
 		}
 	}
 }

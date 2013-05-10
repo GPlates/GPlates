@@ -224,7 +224,7 @@ namespace GPlatesOpenGL
 		void
 		render_filled_polygons(
 				GLRenderer &renderer,
-				const GLFilledPolygonsGlobeView::filled_polygons_type &filled_polygons);
+				const GLFilledPolygonsGlobeView::filled_drawables_type &filled_polygons);
 
 		/**
 		 * An overload of @a render_filled_polygons that renders filled polygons to a 2D map view.
@@ -232,7 +232,7 @@ namespace GPlatesOpenGL
 		void
 		render_filled_polygons(
 				GLRenderer &renderer,
-				const GLFilledPolygonsMapView::filled_polygons_type &filled_polygons);
+				const GLFilledPolygonsMapView::filled_drawables_type &filled_polygons);
 
 	public Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments

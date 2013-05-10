@@ -59,7 +59,43 @@ namespace GPlatesOpenGL
 		intersect_ray_sphere(
 				const Ray &ray,
 				const Sphere &sphere);
-	
+
+
+		/**
+		 * Intersects a @a Sphere with the planes of a frustum.
+		 *
+		 * The frustum is defined by the intersection of the *positive* half-spaces
+		 * of the specified planes. In other words, the plane normals point towards
+		 * the inside of the frustum.
+		 *
+		 * NOTE: This frustum region should *not* be concave. The intersection of the
+		 * positive half-spaces of the planes should define a convex volume (although you
+		 * are allowed to have a non-closed volume, for example, you could have just two planes).
+		 *
+		 * @param frustum_plane_mask specifies which frustum planes are active (max 31 planes) -
+		 *        it also indirectly determines how many planes are expected to be present
+		 *        in @a frustum_planes - for example, if you have six frustum planes then
+		 *        you start out with a mask with 6 bits set (0x3f which is 111111 in binary).
+		 *
+		 * If @a sphere was not completely outside any frustum plane then true is returned
+		 * to indicate a possible intersection - in this case a new plane mask is also returned
+		 * that defines which planes intersected @a sphere. This is useful so that objects
+		 * bounded by @a sphere can be intersection tested only against those planes. Bits in
+		 * the returned plane mask that are zero mean the entire @a sphere was inside the plane
+		 * represented by that bit flag and hence objects bounded by @a sphere do not need to
+		 * be tested against that plane.
+		 * Also 'true' is returned if 'frustum_plane_mask' is zero.
+		 *
+		 * Only if the entire @a sphere is outside *any* frustum plane will false be returned.
+		 *
+		 * @throws PreconditionViolationError if 32 planes are specified (maximum is 31).
+		 */
+		boost::optional<boost::uint32_t>
+		intersect_sphere_frustum(
+				const Sphere &sphere,
+				const Plane frustum_planes[],
+				boost::uint32_t frustum_plane_mask);
+
 
 		/**
 		 * Intersects an @a OrientedBoundingBox with the planes of a frustum.
@@ -92,7 +128,7 @@ namespace GPlatesOpenGL
 		 */
 		boost::optional<boost::uint32_t>
 		intersect_OBB_frustum(
-				const OrientedBoundingBox& obb,
+				const OrientedBoundingBox &obb,
 				const Plane frustum_planes[],
 				boost::uint32_t frustum_plane_mask);
 	}

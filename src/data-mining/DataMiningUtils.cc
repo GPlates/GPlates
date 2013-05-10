@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <fstream>
+#include <utility>
 #include <boost/foreach.hpp>
 
 #include "app-logic/AppLogicFwd.h"
@@ -60,7 +61,7 @@ GPlatesDataMining::DataMiningUtils::minimum(
 	boost::optional<double> ret=boost::none;
 	for(; it != it_end;	it++)
 	{
-		ret = ret ?  std::min(*ret, *it) :  *it;
+		ret = ret ?  (std::min)(*ret, *it) :  *it;
 	}
 	return ret;
 }

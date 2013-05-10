@@ -521,20 +521,20 @@ namespace
 	create_geometry_on_sphere(
 			const std::vector<GPlatesMaths::PointOnSphere> &points,
 			GPlatesUtils::GeometryConstruction::GeometryConstructionValidity &validity,
-			GPlatesViewOperations::GeometryType::Value geometry_type)
+			GPlatesMaths::GeometryType::Value geometry_type)
 	{
 		switch(geometry_type)
 		{
-		case GPlatesViewOperations::GeometryType::POLYLINE:
+		case GPlatesMaths::GeometryType::POLYLINE:
 			return geometry_opt_ptr_type(GPlatesUtils::create_polyline_on_sphere(points, validity));
 
-		case GPlatesViewOperations::GeometryType::MULTIPOINT:
+		case GPlatesMaths::GeometryType::MULTIPOINT:
 			return geometry_opt_ptr_type(GPlatesUtils::create_multipoint_on_sphere(points, validity));
 
-		case GPlatesViewOperations::GeometryType::POINT:
+		case GPlatesMaths::GeometryType::POINT:
 			return geometry_opt_ptr_type(GPlatesUtils::create_point_on_sphere(points, validity));
 
-		case GPlatesViewOperations::GeometryType::POLYGON:
+		case GPlatesMaths::GeometryType::POLYGON:
 			return geometry_opt_ptr_type(GPlatesUtils::create_polygon_on_sphere(points, validity));
 
 		default:
@@ -601,7 +601,7 @@ namespace
 GPlatesQtWidgets::EditGeometryWidget::EditGeometryWidget(
 		QWidget *parent_):
 	AbstractEditWidget(parent_),
-	d_geometry_type(GPlatesViewOperations::GeometryType::NONE)
+	d_geometry_type(GPlatesMaths::GeometryType::NONE)
 {
 	setupUi(this);
 	// Set column widths and resizabilty.
@@ -649,7 +649,7 @@ GPlatesQtWidgets::EditGeometryWidget::reset_widget_to_default_values()
 	test_geometry_validity();
 
 	// Reset widgets.
-	d_geometry_type = GPlatesViewOperations::GeometryType::POLYLINE;
+	d_geometry_type = GPlatesMaths::GeometryType::POLYLINE;
 	spinbox_lat->setValue(0.0);
 	spinbox_lon->setValue(0.0);
 	
@@ -672,23 +672,23 @@ GPlatesQtWidgets::EditGeometryWidget::configure_for_property_value_type(
 
 	if (property_value_type == LINE_STRING_PROPERTY_TYPE)
 	{
-		d_geometry_type = GPlatesViewOperations::GeometryType::POLYLINE;
+		d_geometry_type = GPlatesMaths::GeometryType::POLYLINE;
 	}
 	else if (property_value_type == MULTI_POINT_PROPERTY_TYPE)
 	{
-		d_geometry_type = GPlatesViewOperations::GeometryType::MULTIPOINT;
+		d_geometry_type = GPlatesMaths::GeometryType::MULTIPOINT;
 	}
 	else if (property_value_type == POINT_PROPERTY_TYPE)
 	{
-		d_geometry_type = GPlatesViewOperations::GeometryType::POINT;
+		d_geometry_type = GPlatesMaths::GeometryType::POINT;
 	}
 	else if (property_value_type == POLYGON_PROPERTY_TYPE)
 	{
-		d_geometry_type = GPlatesViewOperations::GeometryType::POLYGON;
+		d_geometry_type = GPlatesMaths::GeometryType::POLYGON;
 	}
 	else
 	{
-		d_geometry_type = GPlatesViewOperations::GeometryType::NONE;
+		d_geometry_type = GPlatesMaths::GeometryType::NONE;
 		throw PropertyValueNotSupportedException(GPLATES_EXCEPTION_SOURCE);
 	}
 }
@@ -704,7 +704,7 @@ GPlatesQtWidgets::EditGeometryWidget::update_widget_from_line_string(
 	table_points->setRowCount(0);
 	populate_table_rows_from_polyline(*this, *table_points, 0, gml_line_string.polyline());
 
-	d_geometry_type = GPlatesViewOperations::GeometryType::POLYLINE;
+	d_geometry_type = GPlatesMaths::GeometryType::POLYLINE;
 
 	// Reset error feedback.
 	test_geometry_validity();
@@ -725,7 +725,7 @@ GPlatesQtWidgets::EditGeometryWidget::update_widget_from_multi_point(
 	table_points->setRowCount(0);
 	populate_table_rows_from_multi_point(*this, *table_points, 0, gml_multi_point.multipoint());
 	
-	d_geometry_type = GPlatesViewOperations::GeometryType::MULTIPOINT;
+	d_geometry_type = GPlatesMaths::GeometryType::MULTIPOINT;
 
 	// Reset error feedback.
 	test_geometry_validity();
@@ -746,7 +746,7 @@ GPlatesQtWidgets::EditGeometryWidget::update_widget_from_point(
 	table_points->setRowCount(0);
 	populate_table_rows_from_point(*this, *table_points, 0, gml_point.point());
 	
-	d_geometry_type = GPlatesViewOperations::GeometryType::POINT;
+	d_geometry_type = GPlatesMaths::GeometryType::POINT;
 
 	// Reset error feedback.
 	test_geometry_validity();
@@ -767,7 +767,7 @@ GPlatesQtWidgets::EditGeometryWidget::update_widget_from_polygon(
 	table_points->setRowCount(0);
 	populate_table_rows_from_polygon(*this, *table_points, 0, gml_polygon.exterior());
 	
-	d_geometry_type = GPlatesViewOperations::GeometryType::POLYGON;
+	d_geometry_type = GPlatesMaths::GeometryType::POLYGON;
 
 	// Reset error feedback.
 	test_geometry_validity();

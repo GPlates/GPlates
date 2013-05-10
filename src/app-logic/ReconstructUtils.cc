@@ -300,15 +300,20 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 {
 	// Create a reconstruct context - it will determine which reconstruct method each
 	// reconstructable feature requires.
-	ReconstructContext reconstruct_context(
-			reconstruct_method_registry,
-			reconstructable_features_collection);
+	ReconstructContext reconstruct_context(reconstruct_method_registry);
+	reconstruct_context.set_features(reconstructable_features_collection);
+
+	// Create the context state in which to reconstruct.
+	const ReconstructMethodInterface::Context reconstruct_method_context(
+			reconstruct_params,
+			reconstruction_tree_creator);
+	const ReconstructContext::context_state_reference_type context_state =
+			reconstruct_context.create_context_state(reconstruct_method_context);
 
 	// Reconstruct the reconstructable features.
-	return reconstruct_context.reconstruct(
+	return reconstruct_context.reconstruct_feature_geometries(
 			reconstructed_feature_geometries,
-			reconstruct_params,
-			reconstruction_tree_creator,
+			context_state,
 			reconstruction_time);
 }
 
@@ -327,9 +332,8 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 	register_default_reconstruct_method_types(reconstruct_method_registry);
 
 	ReconstructionTreeCreator reconstruction_tree_creator =
-			get_cached_reconstruction_tree_creator(
+			create_cached_reconstruction_tree_creator(
 					reconstruction_features_collection,
-					reconstruction_time,
 					anchor_plate_id,
 					reconstruction_tree_cache_size);
 
@@ -350,21 +354,24 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 		const ReconstructMethodRegistry &reconstruct_method_registry,
 		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const ReconstructParams &reconstruct_params,
 		const double &reconstruction_time,
 		bool reverse_reconstruct)
 {
-	// Find out how to reconstruct the geometry based on the feature containing the reconstruction properties.
-	const ReconstructMethod::Type reconstruct_method_type =
-			reconstruct_method_registry.get_reconstruct_method_type_or_default(reconstruction_properties);
+	// Create the context in which to reconstruct.
+	const ReconstructMethodInterface::Context reconstruct_method_context(
+			reconstruct_params,
+			reconstruction_tree_creator);
 
-	// Get the reconstruct method so we can reconstruct (or reverse reconstruct) the geometry.
+	// Find out how to reconstruct the geometry based on the feature containing the reconstruction properties.
 	ReconstructMethodInterface::non_null_ptr_type reconstruct_method =
-			reconstruct_method_registry.get_reconstruct_method(reconstruct_method_type);
+			reconstruct_method_registry.create_reconstruct_method_or_default(
+					reconstruction_properties,
+					reconstruct_method_context);
 
 	return reconstruct_method->reconstruct_geometry(
 			geometry,
-			reconstruction_properties,
-			reconstruction_tree_creator,
+			reconstruct_method_context,
 			reconstruction_time,
 			reverse_reconstruct);
 }
@@ -377,13 +384,13 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchor_plate_id,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+		const ReconstructParams &reconstruct_params,
 		bool reverse_reconstruct,
 		unsigned int reconstruction_tree_cache_size)
 {
 	ReconstructionTreeCreator reconstruction_tree_creator =
-			get_cached_reconstruction_tree_creator(
+			create_cached_reconstruction_tree_creator(
 					reconstruction_features_collection,
-					reconstruction_time,
 					anchor_plate_id,
 					reconstruction_tree_cache_size);
 
@@ -395,6 +402,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 			reconstruct_method_registry,
 			reconstruction_properties,
 			reconstruction_tree_creator,
+			reconstruct_params,
 			reconstruction_time,
 			reverse_reconstruct);
 }
@@ -405,6 +413,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
 		const ReconstructionTree &reconstruction_tree,
+		const ReconstructParams &reconstruct_params,
 		bool reverse_reconstruct)
 {
 	return reconstruct_geometry(
@@ -413,6 +422,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 			reconstruction_tree.get_reconstruction_time(),
 			reconstruction_tree.get_anchor_plate_id(),
 			reconstruction_tree.get_reconstruction_features(),
+			reconstruct_params,
 			reverse_reconstruct);
 }
 

@@ -34,14 +34,14 @@
 #include "EditGeometryWidgetUi.h"
 #include "EditTableWidget.h"
 
+#include "maths/GeometryType.h"
+
 #include "model/types.h"
 
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
-
-#include "view-operations/GeometryType.h"
 
 
 namespace GPlatesQtWidgets
@@ -191,7 +191,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * The type of geometry being edited.
 		 */
-		GPlatesViewOperations::GeometryType::Value d_geometry_type;
+		GPlatesMaths::GeometryType::Value d_geometry_type;
 		
 		/**
 		 * This boost::intrusive_ptr is used to remember the property value which

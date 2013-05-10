@@ -125,15 +125,22 @@ GPlatesPresentation::VisualLayer::create_rendered_geometries(
 		return;
 	}
 
+	// Get the draw style adapter if there is one.
+	boost::optional<const GPlatesGui::StyleAdapter &> draw_style_adapter;
+	if (d_visual_layer_params->style_adapter())
+	{
+		draw_style_adapter = *d_visual_layer_params->style_adapter();
+	}
+
 	// This creates the RenderedGeometry's from the ReconstructionGeometry's.
 	ReconstructionGeometryRenderer::RenderParamsPopulator render_params_populator;
 	d_visual_layer_params->accept_visitor(render_params_populator);
 	ReconstructionGeometryRenderer reconstruction_geometry_renderer(
 			render_params_populator.get_render_params(),
-			boost::none,
-            boost::none,
+			boost::none, // colour 
+            boost::none, // rotation adjustment
 			feature_type_symbol_map,
-			d_visual_layer_params->style_adapter());
+			draw_style_adapter);
 
 	// Visit the layer output in order to render it.
 	// We wrap the ReconstructionGeometryRenderer with a LayerOutputRenderer.

@@ -52,6 +52,16 @@ namespace GPlatesMaths {
 			public GPlatesUtils::QtStreamable<Vector3D>
 	{
 	public:
+
+		/**
+		 * Zero vector.
+		 */
+		Vector3D() :
+			d_x(0.0),
+			d_y(0.0),
+			d_z(0.0)
+		{  }
+
 		/**
 		 * Create a 3D vector from the specified
 		 * x, y and z components.
@@ -70,7 +80,8 @@ namespace GPlatesMaths {
 
 
 		explicit
-		Vector3D(const UnitVector3D &u);
+		Vector3D(
+				const UnitVector3D &u);
 
 
 		~Vector3D() {  }

@@ -798,6 +798,8 @@ GPlatesFileIO::GMTHeaderPrinter::print_feature_header_lines(
 	// we don't have a '>' marker from the previous feature's list of points.
 	if (d_is_first_feature_header_in_file)
 	{
+		// FIXME: standardized header; sometimes this header line is used; 
+		// but see also "file-io/GMTFormatGeometryExporter.cc export_geometry()" for commnets on a bug fix
 		output_stream << '>';
 		d_is_first_feature_header_in_file = false;
 	}

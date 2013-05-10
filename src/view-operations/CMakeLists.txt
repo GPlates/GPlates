@@ -29,7 +29,6 @@ set(srcs
     GeometryOperation.h
     GeometryOperationUndo.cc
     GeometryOperationUndo.h
-    GeometryType.h
     InsertVertexGeometryOperation.cc
     InsertVertexGeometryOperation.h
     InternalGeometryBuilder.cc
@@ -39,6 +38,8 @@ set(srcs
     QueryProximityThreshold.h
     RenderedArrowedPolyline.h
     RenderedCircleSymbol.h
+    RenderedColouredEdgeSurfaceMesh.h
+    RenderedColouredTriangleSurfaceMesh.h
     RenderedCrossSymbol.h
     RenderedDirectionArrow.h
     RenderedEllipse.h
@@ -69,6 +70,7 @@ set(srcs
     RenderedSmallCircle.h
     RenderedSmallCircleArc.h
     RenderedSquareSymbol.h
+    RenderedStrainMarkerSymbol.h
     RenderedString.h
     RenderedTriangleSymbol.h
     ScalarField3DRenderParameters.cc

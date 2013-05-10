@@ -41,6 +41,7 @@
 #include "app-logic/Layer.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/Reconstruction.h"
+#include "app-logic/ReconstructionLayerProxy.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/TopologyUtils.h"
 
@@ -370,6 +371,13 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::create_plate_id_assigner()
 		break;
 	}
 
+	// The default reconstruction tree will be used to reverse reconstruct any partitioned
+	// geometries (if necessary).
+	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type default_reconstruction_tree =
+			d_application_state.get_current_reconstruction()
+					.get_default_reconstruction_layer_output()
+							->get_reconstruction_tree(reconstruction_time);
+
 	// Determine which feature property types to copy from partitioning polygon.
 	GPlatesAppLogic::AssignPlateIds::feature_property_flags_type feature_property_types_to_assign;
 	if (d_assign_plate_ids)
@@ -384,7 +392,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::create_plate_id_assigner()
 	return GPlatesAppLogic::AssignPlateIds::create(
 			d_assign_plate_id_method,
 			partitioning_layer_proxies,
-			reconstruction_time,
+			default_reconstruction_tree,
 			feature_property_types_to_assign,
 			d_respect_feature_time_period);
 }

@@ -37,7 +37,7 @@
 
 #include "canvas-tools/CanvasTool.h"
 
-#include "view-operations/GeometryType.h"
+#include "maths/GeometryType.h"
 
 
 namespace GPlatesCanvasTools
@@ -165,7 +165,7 @@ namespace GPlatesGui
 		void
 		update_enable_state();
 
-		std::pair<unsigned int, GPlatesViewOperations::GeometryType::Value>
+		std::pair<unsigned int, GPlatesMaths::GeometryType::Value>
 		get_geometry_builder_parameters() const;
 	};
 }

@@ -26,10 +26,14 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTCONTEXT_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTCONTEXT_H
 
-#include <map>
 #include <vector>
+#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/weak_ptr.hpp>
 
+#include "GeometryDeformation.h"
+#include "MultiPointVectorField.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructHandle.h"
 #include "ReconstructionTree.h"
@@ -74,7 +78,7 @@ namespace GPlatesAppLogic
 		 * It's referred to as 'resolved' instead of present day because it could be a
 		 * time-dependent property. In either case it is *not* the reconstructed geometry.
 		 *
-		 * This property handle, along with methods @a get_present_day and @a reconstruct,
+		 * This property handle, along with methods @a get_present_day and @a reconstruct_feature_geometries,
 		 * can be used by clients to efficiently map any reconstructed feature geometry, across
 		 * all features, to its present day, or even resolved, geometry. This is useful when
 		 * the client needs to associate an object with each present day geometry such as
@@ -171,39 +175,105 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Constructor.
+		 * Extrinsic reconstruction state that features are reconstructed with.
 		 *
-		 * Effectively the same as @a reassign_reconstruct_methods_to_features.
-		 * See @a reassign_reconstruct_methods_to_features for details.
+		 * The intrinsic state is the properties of the features being reconstructed.
+		 *
+		 * Both types of state are needed to reconstruct features.
+		 * Keeping the reconstruct context state extrinsic allows us to use a single
+		 * @a ReconstructContext instance with multiple context states and hence re-use the
+		 * common feature-to-reconstruct-method-type mapping across all context states.
+		 */
+		class ContextState :
+				private boost::noncopyable
+		{
+		public:
+
+			//
+			// Limited public interface - does not return internal reconstruct methods.
+			// This is essentially the Memento pattern.
+			//
+
+			const ReconstructMethodInterface::Context &
+			get_reconstruction_method_context() const
+			{
+				return d_reconstruct_method_context;
+			}
+
+		private:
+
+			//! Typedef for a sequence of reconstruct methods.
+			typedef std::vector<ReconstructMethodInterface::non_null_ptr_type> reconstruct_method_seq_type;
+
+			ReconstructMethodInterface::Context d_reconstruct_method_context;
+			reconstruct_method_seq_type d_reconstruct_methods;
+
+			explicit
+			ContextState(
+					const ReconstructMethodInterface::Context &reconstruct_method_context) :
+				d_reconstruct_method_context(reconstruct_method_context)
+			{  }
+
+			//! Only parent class can access.
+			friend class ReconstructContext;
+		};
+
+		//! Typedef for a reference to a context state.
+		typedef boost::shared_ptr<ContextState> context_state_reference_type;
+
+		//! Typedef for a weak reference to a context state.
+		typedef boost::weak_ptr<ContextState> context_state_weak_reference_type;
+
+
+		/**
+		 * Constructor defaults to no features.
+		 *
+		 * Features can be subsequently added using @a set_features.
+		 *
+		 * Note that @a reconstruct_method_registry must exist for this life of 'this' instance.
 		 */
 		explicit
 		ReconstructContext(
-				const ReconstructMethodRegistry &reconstruct_method_registry,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-						reconstructable_feature_collections =
-								std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>());
+				const ReconstructMethodRegistry &reconstruct_method_registry);
 
 
 		/**
-		 * Removes any features added in a previous call to @a reassign_reconstruct_methods_to_features,
-		 * or constructor, and for each feature in each feature collection determines
-		 * which reconstruct method to use.
+		 * Adds the specified features after removing any features added in a previous call to
+		 * @a set_features and for each feature in each feature collection determines which
+		 * reconstruct method to use.
 		 *
-		 * Calls to @a reconstruct will then use that mapping of features to reconstruct methods
-		 * when carrying out reconstructions.
+		 * Calls to @a reconstruct_feature_geometries will then use that mapping of features to
+		 * reconstruct methods (and the context state passed in) when carrying out reconstructions.
 		 *
-		 * Note: If the features change you should @a reassign_reconstruct_methods_to_features again.
+		 * Note: If the features change you should call @a set_features again.
 		 * This is because each feature might now require a different reconstruct method.
 		 */
 		void
-		reassign_reconstruct_methods_to_features(
-				const ReconstructMethodRegistry &reconstruct_method_registry,
+		set_features(
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 						reconstructable_feature_collections);
 
+		/**
+		 * Overload accepting a sequence of features instead of feature collections.
+		 */
+		void
+		set_features(
+				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &reconstructable_features);
+
 
 		/**
-		 * The same as @a get_resolved_geometries with a reconstruction time of zero
+		 * Creates a context state associated with the specified reconstruct context state.
+		 *
+		 * The returned shared reference can be passed to @a reconstruct_feature_geometries in order
+		 * to reconstruct the features with a particular reconstruct context state.
+		 */
+		context_state_reference_type
+		create_context_state(
+				const ReconstructMethodInterface::Context &reconstruct_method_context);
+
+
+		/**
+		 * The same as @a get_resolved_feature_geometries with a reconstruction time of zero
 		 * except the returned sequence contains geometries instead of optional geometries -
 		 * this is because the value of the geometry property (at time zero) is obtained
 		 * regardless of whether its active at present day or not - in the majority of cases
@@ -213,16 +283,16 @@ namespace GPlatesAppLogic
 		 *
 		 * The returned sequence can be indexed using @a geometry_property_handle_type.
 		 *
-		 * The returned reference is valid until @a reassign_reconstruct_methods_to_features is called.
+		 * The returned reference is valid until @a set_features is called.
 		 */
 		const std::vector<geometry_type> &
-		get_present_day_geometries();
+		get_present_day_feature_geometries();
 
 
 #if 0
 		/**
 		 * Returns the resolved geometries for the geometry properties of the features specified
-		 * in the constructor, or the most recent call to @a reassign_reconstruct_methods_to_features,
+		 * in the constructor, or the most recent call to @a set_features,
 		 * at the specified reconstruction time.
 		 *
 		 * The returned sequence can be indexed using @a geometry_property_handle_type.
@@ -231,66 +301,82 @@ namespace GPlatesAppLogic
 		 * then the corresponding resolved geometry will be boost::none.
 		 */
 		std::vector<boost::optional<geometry_type> >
-		get_resolved_geometries(
+		get_resolved_feature_geometries(
 				const double &reconstruction_time);
 #endif
 
 
 		/**
 		 * Reconstructs the features specified in the constructor, or the most recent call
-		 * to @a reassign_reconstruct_methods_to_features, to the specified reconstruction time.
+		 * to @a set_features, to the specified reconstruction time
+		 * using the specified reconstruct context state.
 		 *
 		 * This method will get the next (incremented) global reconstruct handle and store it
 		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
 		 */
 		ReconstructHandle::type
-		reconstruct(
+		reconstruct_feature_geometries(
 				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
-				const ReconstructParams &reconstruct_params,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const context_state_reference_type &context_state_ref,
 				const double &reconstruction_time);
 
 
 		/**
 		 * Reconstructs the features specified in the constructor, or the most recent call
-		 * to @a reassign_reconstruct_methods_to_features, to the specified reconstruction time.
+		 * to @a set_features, to the specified reconstruction time
+		 * using the specified reconstruct context state.
 		 *
 		 * This method will get the next (incremented) global reconstruct handle and store it
 		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
 		 *
-		 * This differs from the other overloads of @a reconstruct in that this method also
+		 * This differs from the other overloads of @a reconstruct_feature_geometries in that this method also
 		 * associates each reconstructed feature geometry with the feature geometry property
 		 * it was reconstructed from.
 		 */
 		ReconstructHandle::type
-		reconstruct(
+		reconstruct_feature_geometries(
 				std::vector<Reconstruction> &reconstructed_feature_geometries,
-				const ReconstructParams &reconstruct_params,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const context_state_reference_type &context_state_ref,
 				const double &reconstruction_time);
 
 
 		/**
 		 * Reconstructs the features specified in the constructor, or the most recent call
-		 * to @a reassign_reconstruct_methods_to_features, to the specified reconstruction time.
+		 * to @a set_features, to the specified reconstruction time
+		 * using the specified reconstruct context state.
 		 *
 		 * This method will get the next (incremented) global reconstruct handle and store it
 		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
 		 *
-		 * This differs from the other overloads of @a reconstruct in that this method returns
+		 * This differs from the other overloads of @a reconstruct_feature_geometries in that this method returns
 		 * reconstructions grouped by *feature*.
 		 * Note that even if a feature is not active (or generates no reconstructions for some reason)
 		 * it will still be returned (it just won't have any reconstructions in it) - this is useful
 		 * for co-registration, for example, which correlates by feature over several frames (times).
 		 */
 		ReconstructHandle::type
-		reconstruct(
+		reconstruct_feature_geometries(
 				std::vector<ReconstructedFeature> &reconstructed_features,
-				const ReconstructParams &reconstruct_params,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const context_state_reference_type &context_state_ref,
+				const double &reconstruction_time);
+
+
+		/**
+		 * Calculate velocities at the geometry reconstruction positions of the features specified
+		 * in the constructor, or the most recent call to @a set_features, at the specified
+		 * reconstruction time using the specified reconstruct context state.
+		 *
+		 * This method will get the next (incremented) global reconstruct handle and store it
+		 * in the @a MultiPointVectorField velocity objects.
+		 */
+		ReconstructHandle::type
+		reconstruct_feature_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
+				const context_state_reference_type &context_state_ref,
 				const double &reconstruction_time);
 
 	private:
+
 		/**
 		 * Groups a feature with its geometry properties.
 		 */
@@ -306,40 +392,49 @@ namespace GPlatesAppLogic
 			typedef std::vector<GeometryPropertyToHandle> geometry_property_to_handle_seq_type;
 
 
-			explicit
 			ReconstructMethodFeature(
-					const GPlatesModel::FeatureHandle::weak_ref &feature_) :
-				feature(feature_)
+					const GPlatesModel::FeatureHandle::weak_ref &feature_ref_,
+					ReconstructMethod::Type reconstruction_method_type_) :
+				feature_ref(feature_ref_),
+				reconstruction_method_type(reconstruction_method_type_)
 			{  }
 
 
-			GPlatesModel::FeatureHandle::weak_ref feature;
+			GPlatesModel::FeatureHandle::weak_ref feature_ref;
+
+			/**
+			 * The default reconstruct method associated with the feature.
+			 */
+			ReconstructMethod::Type reconstruction_method_type;
 
 			//! Each reconstructable geometry property in the feature maps to a geometry property handle.
 			geometry_property_to_handle_seq_type geometry_property_to_handle_seq;
 		};
 
+		//! Typedef for a sequence of reconstruct methods and their associated features.
+		typedef std::vector<ReconstructMethodFeature> reconstruct_method_feature_seq_type;
+
+
+		//! Typedef for a sequence of context states.
+		typedef std::vector<context_state_weak_reference_type> context_state_weak_ref_seq_type;
+
+
 		/**
-		 * Groups features with their reconstruct method.
+		 * Used to assign reconstruct methods to features.
 		 */
-		struct ReconstructMethodFeatures
-		{
-			explicit
-			ReconstructMethodFeatures(
-					const ReconstructMethodInterface::non_null_ptr_type &reconstruct_method_) :
-				reconstruct_method(reconstruct_method_)
-			{  }
+		const ReconstructMethodRegistry &d_reconstruct_method_registry;
 
-			ReconstructMethodInterface::non_null_ptr_type reconstruct_method;
-			std::vector<ReconstructMethodFeature> features;
-		};
+		//! A sequence of features associated with their reconstruct method.
+		reconstruct_method_feature_seq_type d_reconstruct_method_feature_seq;
 
-		//! Typedef or a sequence of reconstruct methods and their associated features.
-		typedef std::vector<ReconstructMethodFeatures> reconstruct_method_features_seq_type;
-
-
-		//! Grouping of features with their reconstruct method.
-		reconstruct_method_features_seq_type d_reconstruct_method_features_seq;
+		/**
+		 * The context states that the client has created.
+		 *
+		 * These contain *weak* references which expire when the referenced context states
+		 * (owned by the client) are destroyed.
+		 * When they expire we can re-use their slots when the client creates new context states.
+		 */
+		context_state_weak_ref_seq_type d_context_states;
 
 		/**
 		 * The present day geometries of all reconstructable geometry properties of all features.
@@ -353,7 +448,7 @@ namespace GPlatesAppLogic
 		void
 		get_feature_reconstructions(
 				std::vector<Reconstruction> &reconstructions,
-				const ReconstructMethodFeature &reconstruct_method_feature,
+				const ReconstructMethodFeature::geometry_property_to_handle_seq_type &feature_geometry_property_handles,
 				const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries);
 
 		/**
@@ -371,6 +466,9 @@ namespace GPlatesAppLogic
 		 */
 		void
 		assign_geometry_property_handles();
+
+		void
+		initialise_context_states();
 	};
 }
 

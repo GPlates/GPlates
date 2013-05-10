@@ -27,7 +27,6 @@
 
 #include "Reconstruction.h"
 #include "ReconstructionGeometryFinder.h"
-#include "ReconstructionTree.h"
 
 
 namespace GPlatesAppLogic
@@ -79,7 +78,7 @@ GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometries_obs
 		reconstruction_geom_seq_type &reconstruction_geometries_observing_feature,
 		const reconstruction_geom_seq_type &reconstruction_geometries_subset,
 		const ReconstructionGeometry &reconstruction_geometry,
-		boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree)
+		boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles)
 {
 	// Get the feature referenced by the old reconstruction geometry.
 	boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
@@ -102,7 +101,7 @@ GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometries_obs
 			reconstruction_geometries_subset,
 			feature_ref.get(),
 			geometry_property.get(),
-			reconstruction_tree);
+			reconstruct_handles);
 }
 
 
@@ -111,7 +110,7 @@ GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometries_obs
 		reconstruction_geom_seq_type &reconstruction_geometries_observing_feature,
 		const reconstruction_geom_seq_type &reconstruction_geometries_subset,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
-		boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree)
+		boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles)
 {
 	if ( !feature_ref.is_valid())
 	{
@@ -127,7 +126,7 @@ GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometries_obs
 
 	// Iterate over the ReconstructionGeometries that observe 'feature_ref' and were optionally
 	// reconstructed from the reconstruction tree.
-	ReconstructionGeometryFinder rg_finder(reconstruction_tree);
+	ReconstructionGeometryFinder rg_finder(reconstruct_handles);
 	rg_finder.find_rgs_of_feature(feature_ref);
 
 	return get_reconstruction_geometries_subset(
@@ -141,7 +140,7 @@ GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometries_obs
 		const reconstruction_geom_seq_type &reconstruction_geometries_subset,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 		const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator,
-		boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree)
+		boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles)
 {
 	if ( !feature_ref.is_valid() || !geometry_property_iterator.is_still_valid())
 	{
@@ -158,7 +157,7 @@ GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometries_obs
 
 	// Iterate over the ReconstructionGeometries that observe 'feature_ref' and were reconstructed
 	// from its 'geometry_property_iterator' feature property and optionally from the reconstruction tree.
-	ReconstructionGeometryFinder rg_finder(geometry_property_iterator, reconstruction_tree);
+	ReconstructionGeometryFinder rg_finder(geometry_property_iterator, reconstruct_handles);
 	rg_finder.find_rgs_of_feature(feature_ref);
 
 	return get_reconstruction_geometries_subset(

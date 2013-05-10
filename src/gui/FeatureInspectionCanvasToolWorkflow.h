@@ -40,9 +40,9 @@
 
 #include "gui/Symbol.h"
 
-#include "model/FeatureHandle.h"
+#include "maths/GeometryType.h"
 
-#include "view-operations/GeometryType.h"
+#include "model/FeatureHandle.h"
 
 
 namespace GPlatesCanvasTools
@@ -180,7 +180,7 @@ namespace GPlatesGui
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesQtWidgets::ViewportWindow &viewport_window);
 
-		std::pair<unsigned int, GPlatesViewOperations::GeometryType::Value>
+		std::pair<unsigned int, GPlatesMaths::GeometryType::Value>
 		get_geometry_builder_parameters() const;
 	};
 }

@@ -183,7 +183,7 @@ namespace GPlatesViewOperations
 		{
 		public:
 			SetGeometryTypeUndoImpl(
-					GeometryType::Value prev_geom_type) :
+					GPlatesMaths::GeometryType::Value prev_geom_type) :
 			d_prev_geom_type(prev_geom_type)
 			{  }
 
@@ -195,7 +195,7 @@ namespace GPlatesViewOperations
 				geometry_builder->visit_undo_operation(*this);
 			}
 
-			GeometryType::Value d_prev_geom_type;
+			GPlatesMaths::GeometryType::Value d_prev_geom_type;
 		};
 
 		class ClearAllGeometriesUndoImpl :
@@ -282,7 +282,7 @@ namespace GPlatesViewOperations
 }
 
 GPlatesViewOperations::GeometryBuilder::GeometryBuilder() :
-d_geometry_build_type(GeometryType::NONE),
+d_geometry_build_type(GPlatesMaths::GeometryType::NONE),
 d_current_geometry_index(DEFAULT_GEOMETRY_INDEX),
 d_update_geometry_depth(0)
 {
@@ -332,13 +332,13 @@ GPlatesViewOperations::GeometryBuilder::clear_all_geometries()
 
 GPlatesViewOperations::GeometryBuilder::UndoOperation
 GPlatesViewOperations::GeometryBuilder::set_geometry_type_to_build(
-		GeometryType::Value geom_type)
+		GPlatesMaths::GeometryType::Value geom_type)
 {
 	// This gets put in all public methods that modify geometry state.
 	// It checks for geometry type changes and emits begin_update/end_update signals.
 	UpdateGuard update_guard(*this);
 
-	const GeometryType::Value prev_geom_build_type = d_geometry_build_type;
+	const GPlatesMaths::GeometryType::Value prev_geom_build_type = d_geometry_build_type;
 
 	d_geometry_build_type = geom_type;
 
@@ -615,7 +615,7 @@ void
 GPlatesViewOperations::GeometryBuilder::visit_undo_operation(
 		GeometryBuilderInternal::SetGeometryTypeUndoImpl &set_geom_type_undo)
 {
-	const GeometryType::Value prev_geom_type = set_geom_type_undo.d_prev_geom_type;
+	const GPlatesMaths::GeometryType::Value prev_geom_type = set_geom_type_undo.d_prev_geom_type;
 
 	// Ignore returned UndoOperation.
 	set_geometry_type_to_build(prev_geom_type);
@@ -667,7 +667,7 @@ GPlatesViewOperations::GeometryBuilder::get_num_geometries() const
 	return d_geometry_builder_seq.size();
 }
 
-GPlatesViewOperations::GeometryType::Value
+GPlatesMaths::GeometryType::Value
 GPlatesViewOperations::GeometryBuilder::get_actual_type_of_current_geometry() const
 {
 	const GeometryIndex current_geom_index = get_current_geometry_index();
@@ -675,7 +675,7 @@ GPlatesViewOperations::GeometryBuilder::get_actual_type_of_current_geometry() co
 	return get_actual_type_of_geometry(current_geom_index);
 }
 
-GPlatesViewOperations::GeometryType::Value
+GPlatesMaths::GeometryType::Value
 GPlatesViewOperations::GeometryBuilder::get_actual_type_of_geometry(
 		GeometryIndex geom_index) const
 {
@@ -822,14 +822,14 @@ GPlatesViewOperations::GeometryBuilder::end_update_geometry(
 		geometry_builder_ptr_type geom_builder_ptr = d_geometry_builder_seq[geometry_index];
 
 		// Get initial geometry type.
-		const GeometryType::Value initial_geom_type =
+		const GPlatesMaths::GeometryType::Value initial_geom_type =
 			geom_builder_ptr->get_actual_geometry_type();
 
 		// Update geometry if it needs to be.
 		geom_builder_ptr->update();
 
 		// Get final geometry type.
-		const GeometryType::Value final_geom_type =
+		const GPlatesMaths::GeometryType::Value final_geom_type =
 			geom_builder_ptr->get_actual_geometry_type();
 
 		// Emit a signal if they differ.

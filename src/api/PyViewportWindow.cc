@@ -189,7 +189,7 @@ namespace GPlatesApi
 			//set focus
 			app.get_view_state().get_feature_focus().set_focus(GPlatesModel::FeatureHandle::weak_ref(feature));
 
-			boost::optional<const GPlatesMaths::LatLonPoint> point = GPlatesGui::locate_focus();
+			boost::optional<GPlatesMaths::LatLonPoint> point = GPlatesGui::locate_focus();
 			if(point)
 				d_scene_view.set_camera_viewpoint(*point);
 		}

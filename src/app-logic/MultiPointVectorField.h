@@ -125,8 +125,8 @@ namespace GPlatesAppLogic
 				NotInAnyBoundaryOrNetwork,  // Static domain point was not found in any boundary or network
 				InStaticPolygon,            // Static domain point was found in a reconstructed static boundary
 				InPlateBoundary,            // Static domain point was found in a resolved topological boundary
-				InDeformationNetwork,       // Static domain point was found in a resolved topological network
-				InDeformationNetworkConstrainedInterpolation,
+				InNetworkDeformingRegion,   // Static domain point was found in a deforming region of resolved topological network
+				InNetworkRigidBlock         // Static domain point was found in a rigid block of a resolved topological network
 			};
 
 			/**
@@ -206,8 +206,7 @@ namespace GPlatesAppLogic
 		typedef std::vector< boost::optional<CodomainElement> > codomain_type;
 
 		/**
-		 * Create a MultiPointVectorField instance which is sampled over the supplied
-		 * multi-point domain.
+		 * Create a MultiPointVectorField instance which is sampled over the supplied multi-point domain.
 		 *
 		 * The vector field will be pre-sized to the correct size, but will be empty
 		 * (full of "null" elements, represented by boost::none).
@@ -215,18 +214,19 @@ namespace GPlatesAppLogic
 		static
 		const non_null_ptr_type
 		create_empty(
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+				const double &reconstruction_time_,
 				const multi_point_ptr_type &multi_point_ptr,
 				GPlatesModel::FeatureHandle &feature_handle,
-				GPlatesModel::FeatureHandle::iterator property_iterator_)
+				GPlatesModel::FeatureHandle::iterator property_iterator_,
+				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none)
 		{
 			return non_null_ptr_type(
 					new MultiPointVectorField(
-							reconstruction_tree,
+							reconstruction_time_,
 							multi_point_ptr,
 							feature_handle,
-							property_iterator_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+							property_iterator_,
+							reconstruct_handle_));
 		}
 
 
@@ -424,11 +424,12 @@ namespace GPlatesAppLogic
 		 * instantiation of this type on the stack.
 		 */
 		MultiPointVectorField(
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
+				const double &reconstruction_time_,
 				const multi_point_ptr_type &multi_point_ptr,
 				GPlatesModel::FeatureHandle &feature_handle,
-				GPlatesModel::FeatureHandle::iterator property_iterator_):
-			ReconstructionGeometry(reconstruction_tree_),
+				GPlatesModel::FeatureHandle::iterator property_iterator_,
+				boost::optional<ReconstructHandle::type> reconstruct_handle_):
+			ReconstructionGeometry(reconstruction_time_, reconstruct_handle_),
 			WeakObserverType(feature_handle),
 			d_multi_point_ptr(multi_point_ptr),
 			d_property_iterator(property_iterator_),

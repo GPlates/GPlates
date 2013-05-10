@@ -24,10 +24,7 @@
  */
 
 #include "global/CompilerWarnings.h"
-PUSH_MSVC_WARNINGS
-DISABLE_MSVC_WARNING(4503)
 #include <map>
-POP_MSVC_WARNINGS
 
 #include <boost/cast.hpp>
 
@@ -64,6 +61,45 @@ POP_MSVC_WARNINGS
 
 namespace GPlatesMaths
 {
+	//
+	// CGAL typedefs.
+	//
+	// NOTE: Not putting these in an anonymous namespace because some compilers complain
+	// about lack of external linkage when compiling CGAL.
+	//
+
+	typedef CGAL::Exact_predicates_inexact_constructions_kernel polygon_mesh_kernel_type;
+	typedef CGAL::Triangulation_vertex_base_2<polygon_mesh_kernel_type> polygon_mesh_vertex_type;
+	typedef CGAL::Delaunay_mesh_face_base_2<polygon_mesh_kernel_type> polygon_mesh_face_type;
+	typedef CGAL::Triangulation_data_structure_2<polygon_mesh_vertex_type, polygon_mesh_face_type>
+			polygon_mesh_triangulation_data_structure_type;
+	// NOTE: The CGAL::Exact_predicates_tag enables meshing of *self-intersecting* polygons since
+	// it enables triangulation constraints to intersect each other.
+	// 
+	// NOTE: Avoid compiler warning 4503 'decorated name length exceeded' in Visual Studio 2008.
+	// Seems we get the warning, which gets (correctly) treated as error due to /WX switch,
+	// even if we disable the 4503 warning. So prevent warning by reducing name length of
+	// identifier - which we do by inheritance instead of using a typedef.
+#if 0
+	typedef CGAL::Constrained_Delaunay_triangulation_2<
+			polygon_mesh_kernel_type,
+			polygon_mesh_triangulation_data_structure_type,
+			CGAL::Exact_predicates_tag>
+					CDT;
+#else
+	struct polygon_mesh_constrained_triangulation_type :
+			public CGAL::Constrained_Delaunay_triangulation_2<
+					polygon_mesh_kernel_type,
+					polygon_mesh_triangulation_data_structure_type,
+					CGAL::Exact_predicates_tag> { };
+#endif
+	typedef CGAL::Delaunay_mesh_size_criteria_2<polygon_mesh_constrained_triangulation_type>
+			polygon_mesh_criteria_type;
+	typedef CGAL::Cartesian<double> polygon_mesh_polygon_traits_type;
+	typedef polygon_mesh_polygon_traits_type::Point_2 polygon_mesh_point_type;
+	typedef CGAL::Polygon_2<polygon_mesh_polygon_traits_type> polygon_mesh_polygon_type;
+
+
 	namespace
 	{
 		/**
@@ -124,7 +160,7 @@ namespace GPlatesMaths
 		 * Projects a unit vector point onto the plane whose normal is @a plane_normal and
 		 * returns normalised version of projected point.
 		 */
-		GPlatesMaths::UnitVector3D
+		UnitVector3D
 		get_orthonormal_vector(
 				const UnitVector3D &point,
 				const UnitVector3D &plane_normal)
@@ -150,23 +186,20 @@ GPlatesMaths::PolygonMesh::initialise(
 {
 	//PROFILE_FUNC();
 
-	typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
-	typedef CGAL::Triangulation_vertex_base_2<K> Vb;
-	typedef CGAL::Delaunay_mesh_face_base_2<K> Fb;
-	typedef CGAL::Triangulation_data_structure_2<Vb, Fb> Tds;
-	typedef CGAL::Constrained_Delaunay_triangulation_2<K, Tds> CDT;
-	typedef CGAL::Delaunay_mesh_size_criteria_2<CDT> Criteria;
-
-	typedef CGAL::Cartesian<double> KP;
-	typedef KP::Point_2 Point;
-	typedef CGAL::Polygon_2<KP> Polygon_2;
-
 	if (polygon_points_begin == polygon_points_end)
 	{
 		// There are no vertices.
 		qWarning() << "PolygonMesh::initialise: no vertices specified.";
 		return false;
 	}
+
+	//
+	// NOTE: We use a 2D planar projection to ensure that great circle arcs (the polygon edges)
+	// project onto straight lines in the 2D projection - this ensures that the re-projection
+	// of the resulting triangulation (with tessellated 2D lines) will have the extra triangulation
+	// vertices lie on the great circle arcs. With a non-planar projection such as azimuthal
+	// equal area projection this is not the case.
+	//
 
 	// Clip each polygon to the current cube face.
 	//
@@ -190,28 +223,29 @@ GPlatesMaths::PolygonMesh::initialise(
 	}
 
 	// Calculate a unit vector from the sum to use as our plane normal.
-	const GPlatesMaths::UnitVector3D proj_plane_normal =
-			summed_vertex_position.get_normalisation();
+	const UnitVector3D proj_plane_normal = summed_vertex_position.get_normalisation();
 
 	// First try starting with the global x axis - if it's too close to the plane normal
 	// then choose the global y axis.
-	GPlatesMaths::UnitVector3D proj_plane_x_axis_test_point(0, 0, 1); // global x-axis
+	UnitVector3D proj_plane_x_axis_test_point(0, 0, 1); // global x-axis
 	if (abs(dot(proj_plane_x_axis_test_point, proj_plane_normal)) > 1 - 1e-2)
 	{
-		proj_plane_x_axis_test_point = GPlatesMaths::UnitVector3D(0, 1, 0); // global y-axis
+		proj_plane_x_axis_test_point = UnitVector3D(0, 1, 0); // global y-axis
 	}
-	const GPlatesMaths::UnitVector3D proj_plane_axis_x = get_orthonormal_vector(
+	const UnitVector3D proj_plane_axis_x = get_orthonormal_vector(
 			proj_plane_x_axis_test_point, proj_plane_normal);
 
 	// Determine the y axis of the plane.
-	const GPlatesMaths::UnitVector3D proj_plane_axis_y(
-			cross(proj_plane_normal, proj_plane_axis_x));
+	const UnitVector3D proj_plane_axis_y(cross(proj_plane_normal, proj_plane_axis_x));
 
-	Polygon_2 polygon_2;
+	polygon_mesh_polygon_type polygon_2;
 
 	// If the first vertex of the polygon is the same as (or extremely close to) the
 	// last vertex then CGAL will complain that the polygon is not a simple polygon.
 	// We avoid this by skipping the last vertex in this case.
+	//
+	// UPDATE: Since we now support *self-intersecting* polygons (due to use of CGAL::Exact_predicates_tag)
+	// we probably don't need this any longer, but we'll keep it anyway.
 	PointOnSphereForwardIter last_polygon_points_iter = polygon_points_end;
 	--last_polygon_points_iter;
 	if (*polygon_points_begin == *last_polygon_points_iter)
@@ -224,53 +258,47 @@ GPlatesMaths::PolygonMesh::initialise(
 		vertex_iter != polygon_points_end;
 		++vertex_iter)
 	{
-		const GPlatesMaths::PointOnSphere &vertex = *vertex_iter;
-		const GPlatesMaths::UnitVector3D &point = vertex.position_vector();
+		const PointOnSphere &vertex = *vertex_iter;
+		const UnitVector3D &point = vertex.position_vector();
 
-		const GPlatesMaths::real_t proj_point_z = dot(proj_plane_normal, point);
+		const real_t proj_point_z = dot(proj_plane_normal, point);
 		// For now, if any point isn't localised on the plane then discard polygon.
 		if (proj_point_z < 0.15)
 		{
 			qWarning() << "PolygonMesh::initialise: Unable to project polygon - it's too big.";
 			return false;
 		}
-		const GPlatesMaths::real_t inv_proj_point_z = 1.0 / proj_point_z;
+		const real_t inv_proj_point_z = 1.0 / proj_point_z;
 
-		const GPlatesMaths::real_t proj_point_x = inv_proj_point_z * dot(proj_plane_axis_x, point);
-		const GPlatesMaths::real_t proj_point_y = inv_proj_point_z * dot(proj_plane_axis_y, point);
+		const real_t proj_point_x = inv_proj_point_z * dot(proj_plane_axis_x, point);
+		const real_t proj_point_y = inv_proj_point_z * dot(proj_plane_axis_y, point);
 
-		polygon_2.push_back(Point(proj_point_x.dval(), proj_point_y.dval()));
-	}
-
-	// For now, if the polygon is not simple (ie, it's self-intersecting) then discard polygon.
-	if (!polygon_2.is_simple())
-	{
-		qWarning() << "PolygonMesh::initialise: Unable to mesh polygon - it's self-intersecting.";
-		return false;
+		polygon_2.push_back(polygon_mesh_point_type(proj_point_x.dval(), proj_point_y.dval()));
 	}
 
 	// Use a set in case CGAL merges any vertices.
-	std::map<CDT::Vertex_handle, unsigned int/*vertex index*/> unique_vertex_handles;
-	std::vector<CDT::Vertex_handle> vertex_handles;
-	CDT cdt;
-	for (Polygon_2::Vertex_iterator vert_iter = polygon_2.vertices_begin();
+	std::map<polygon_mesh_constrained_triangulation_type::Vertex_handle, unsigned int/*vertex index*/> unique_vertex_handles;
+	std::vector<polygon_mesh_constrained_triangulation_type::Vertex_handle> vertex_handles;
+	polygon_mesh_constrained_triangulation_type cdt;
+	for (polygon_mesh_polygon_type::Vertex_iterator vert_iter = polygon_2.vertices_begin();
 		vert_iter != polygon_2.vertices_end();
 		++vert_iter)
 	{
-		CDT::Vertex_handle vertex_handle = cdt.insert(CDT::Point(vert_iter->x(), vert_iter->y()));
+		polygon_mesh_constrained_triangulation_type::Vertex_handle vertex_handle =
+				cdt.insert(polygon_mesh_constrained_triangulation_type::Point(vert_iter->x(), vert_iter->y()));
 		if (unique_vertex_handles.insert(
-				std::map<CDT::Vertex_handle, unsigned int>::value_type(
+				std::map<polygon_mesh_constrained_triangulation_type::Vertex_handle, unsigned int>::value_type(
 						vertex_handle, vertex_handles.size())).second)
 		{
 			vertex_handles.push_back(vertex_handle);
 		}
 	}
 
-	// For now, if the polygon has less than three vertices then discard it.
+	// For now, if the polygon has less than three unique vertices then discard it.
 	// This can happen if CGAL determines two points are close enough to be merged.
 	if (vertex_handles.size() < 3)
 	{
-		qWarning() << "PolygonMesh::initialise: Polygon has less than 3 vertices after triangulation.";
+		qWarning() << "PolygonMesh::initialise: Polygon has less than 3 unique vertices after triangulation.";
 		return false;
 	}
 
@@ -283,13 +311,26 @@ GPlatesMaths::PolygonMesh::initialise(
 
 	// Mesh the domain of the triangulation - the area bounded by constraints.
 	//PROFILE_BEGIN(cgal_refine_triangulation, "CGAL::refine_Delaunay_mesh_2");
-	CGAL::refine_Delaunay_mesh_2(cdt, Criteria(0.125, 0.25));
+	try 
+	{
+		CGAL::refine_Delaunay_mesh_2(cdt, polygon_mesh_criteria_type(0.125, 0.25));
+	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "PolygonMesh::initialise: Unable to mesh polygon: " << exc.what() << ".";
+		return false;
+	}
+	catch ( ... )
+	{
+		qWarning() << "PolygonMesh::initialise: Unable to mesh polygon : unknown exception.";
+		return false;
+	}
 	//PROFILE_END(cgal_refine_triangulation);
 
 	// Iterate over the mesh triangles and collect the triangles belonging to the domain.
-	typedef std::map<CDT::Vertex_handle, std::size_t/*vertex index*/> mesh_map_type;
+	typedef std::map<polygon_mesh_constrained_triangulation_type::Vertex_handle, std::size_t/*vertex index*/> mesh_map_type;
 	mesh_map_type mesh_vertex_handles;
-	for (CDT::Finite_faces_iterator triangle_iter = cdt.finite_faces_begin();
+	for (polygon_mesh_constrained_triangulation_type::Finite_faces_iterator triangle_iter = cdt.finite_faces_begin();
 		triangle_iter != cdt.finite_faces_end();
 		++triangle_iter)
 	{
@@ -302,7 +343,8 @@ GPlatesMaths::PolygonMesh::initialise(
 
 		for (unsigned int tri_vert_index = 0; tri_vert_index < 3; ++tri_vert_index)
 		{
-			CDT::Vertex_handle vertex_handle = triangle_iter->vertex(tri_vert_index);
+			polygon_mesh_constrained_triangulation_type::Vertex_handle vertex_handle =
+					triangle_iter->vertex(tri_vert_index);
 
 			std::pair<mesh_map_type::iterator, bool> p = mesh_vertex_handles.insert(
 					mesh_map_type::value_type(
@@ -312,9 +354,10 @@ GPlatesMaths::PolygonMesh::initialise(
 			if (p.second)
 			{
 				// Unproject the mesh point back onto the sphere.
-				const CDT::Point &point2d = vertex_handle->point();
-				const GPlatesMaths::UnitVector3D point3d =
-					(GPlatesMaths::Vector3D(proj_plane_normal) +
+				const polygon_mesh_constrained_triangulation_type::Point &point2d =
+						vertex_handle->point();
+				const UnitVector3D point3d =
+					(Vector3D(proj_plane_normal) +
 					point2d.x() * proj_plane_axis_x +
 					point2d.y() * proj_plane_axis_y).get_normalisation();
 

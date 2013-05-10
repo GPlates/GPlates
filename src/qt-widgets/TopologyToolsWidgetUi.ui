@@ -315,7 +315,7 @@
        <item>
         <widget class="QPushButton" name="button_add_section">
          <property name="toolTip">
-          <string>Add Topological Section A</string>
+          <string>Add To Boundary A</string>
          </property>
          <property name="text">
           <string>Add to Boundary</string>
@@ -335,7 +335,7 @@
        <item>
         <widget class="QPushButton" name="button_remove_section">
          <property name="toolTip">
-          <string/>
+          <string>Remove R</string>
          </property>
          <property name="text">
           <string>Remove</string>

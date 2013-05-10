@@ -74,6 +74,8 @@ GPlatesAppLogic::RasterLayerTask::get_input_channel_types() const
 {
 	std::vector<LayerInputChannelType> input_channel_types;
 
+	// NOTE: There's no channel definition for a reconstruction tree - a rotation layer is not needed.
+
 	// Channel definition for the raster feature.
 	input_channel_types.push_back(
 			LayerInputChannelType(

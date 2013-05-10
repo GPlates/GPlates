@@ -48,6 +48,7 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 
 namespace {
@@ -318,6 +319,31 @@ GPlatesMaths::interpolate(
 	return FiniteRotation::create(res_uq, axis_hint);
 }
 
+
+const GPlatesMaths::FiniteRotation
+GPlatesMaths::interpolate(
+		const FiniteRotation &r1,
+		const FiniteRotation &r2,
+		const FiniteRotation &r3,
+		const real_t &w1,
+		const real_t &w2,
+		const real_t &w3)
+{
+	const real_t w2_plus_w3 = w2 + w3;
+
+	// The weights must sum to 1.0.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			w1 + w2_plus_w3 == 1,
+			GPLATES_ASSERTION_SOURCE);
+
+	const UnitQuaternion3D res_uq = 
+		::slerp(
+			::slerp(r1.unit_quat(), r2.unit_quat(), w2_plus_w3),
+			::slerp(r1.unit_quat(), r3.unit_quat(), w2_plus_w3),
+			w3 / w2_plus_w3);
+
+	return FiniteRotation::create(res_uq, boost::none);
+}
 
 const GPlatesMaths::FiniteRotation
 GPlatesMaths::compose(

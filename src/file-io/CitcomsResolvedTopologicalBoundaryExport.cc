@@ -282,6 +282,7 @@ namespace GPlatesFileIO
 									// out of all the merged deforming points, as the feature
 									// for the merged deforming polyline. This is quite dodgy
 									// which is why this whole thing is a big hack.
+									prev_sub_segment->get_reconstruction_geometry(),
 									prev_sub_segment->get_feature_ref(),
 									false/*use_reverse*/));
 					return;
@@ -358,6 +359,7 @@ namespace GPlatesFileIO
 											// out of all the merged deforming points, as the feature
 											// for the merged deforming polyline. This is quite dodgy
 											// which is why this whole thing is a big hack.
+											prev_sub_segment->get_reconstruction_geometry(),
 											prev_sub_segment->get_feature_ref(),
 											false/*use_reverse*/));
 

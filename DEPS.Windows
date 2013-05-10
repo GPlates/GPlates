@@ -85,15 +85,24 @@ GLEW
 
 Boost
 
-  1. Get and install boost_1_34_1_setup.exe from:
-     http://www.boostpro.com/download
+  1. Download and extract the source code for boost 1.39 or higher from http://www.boost.org/users/download/
+     NOTE: You can no longer get pre-compiled binaries from http://www.boostpro.com/download
 	 * Under 'Select Default Variants' select your compiler (eg, 'Visual C++ 8.0'),
 	   and select all 'Variants'.
      * In addition to the default packages, also install "Program Options",
 	    "Test (unit test framework)" and "Thread".
-  2. Add the \boost\boost_1_xx directory to the CMAKE_INCLUDE_PATH environment
+  2. Follow the instructions in the Getting Started guide at http://www.boost.org/doc/libs/1_53_0/more/getting_started/windows.html
+     Essentially (for Visual Studio 2005) this involves:
+	 * Starting a dos command-line window (preferably Visual Studio Command Prompt).
+	 * Running '.\bootstrap vc8' (where vc8 is for Visual Studio 8.0 or 2005).
+	 * Running '.\bjam install --prefix=C:\SDK\boost\boost_1_39' or whichever path you choose to install.
+	   These shared libraries are used by GPlates.
+	 * Running '.\bjam link=shared threading=multi install --prefix=C:\SDK\boost\boost_1_39' which
+	   installs the static library versions (library files with the 'lib' prefix).
+	   These static libraries are used by CGAL.
+  2. Add the C:\SDK\boost\boost_1_xx\include\boost_1_xx directory to the CMAKE_INCLUDE_PATH environment
      variable.
-  3. Add the \boost\boost_1_xx\lib directory to the CMAKE_LIBRARY_PATH
+  3. Add the C:\SDK\boost\boost_1_xx\lib directory to the CMAKE_LIBRARY_PATH
      environment variable.
 
 Proj4
@@ -143,19 +152,22 @@ GDAL
   
 CGAL
 
-  1. Get and install the CGAL 3.5 source code from http://www.cgal.org/:
-     * Download and run 'CGAL-3.5-Setup.exe'.
+  1. Get and install the CGAL 3.8 source code from http://www.cgal.org/:
+     * Download and run 'CGAL-3.8-Setup.exe'.
 	 * Under 'Select Default Variants' leave everything unticked (except for 'Platforms').
 	 * Under 'Choose Components' untick everything ('Main CGAL' cannot be unticked).
-	 * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-3.5'.
+	 * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-3.8'.
 	     * In particular, do not install under Program Files on Windows Vista and
 	       above because you will likely run into permissions issues later.
 	 * Tick 'CGAL_DIR' environment variable - note: this is necessary for GPlates to be able to find CGAL.
   2. Prepare CGAL for building by running 'cmake-gui.exe' (this requires CMAKE to have already been installed):
      * Specify the CGAL installation location as the source and build directories.
      * Click the 'Configure' button.
+	     * If an error dialog pops up and there's red text that complains it cannot find the boost library
+		   boost_thread then (if it's not a path issue) it could be that you don't have the 'static' library
+		   versions of the boost libraries (the ones with the 'lib' prefix in the library filenames).
 	 * Untick all 'WITH_*' options.
-	 * Change 'CMAKE_INSTALL_PREFIX' to the installation location (eg, 'C:/SDK/cgal/CGAL-3.5').
+	 * Change 'CMAKE_INSTALL_PREFIX' to the installation location (eg, 'C:/SDK/cgal/CGAL-3.8').
 	 * Click the 'Configure' button again.
 	 * Click the 'Generate' button.
 	 * If this is successful then a Visual Studio solution file 'CGAL.sln'.

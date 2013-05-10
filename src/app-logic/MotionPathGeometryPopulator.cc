@@ -155,9 +155,11 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_multi_point(
 		GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type seed_point_rfg =
 			ReconstructedFeatureGeometry::create(
 				reconstruction_tree,
+				d_reconstruction_tree_creator,
 				*(current_top_level_propiter()->handle_weak_ref()),
 				*(current_top_level_propiter()),
 				reconstructed_seed_geometry,
+				ReconstructMethod::MOTION_PATH,
 				d_motion_track_property_finder.get_reconstruction_plate_id());
 
 		d_reconstructed_feature_geometries.push_back(seed_point_rfg);
@@ -220,11 +222,13 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_point(
 
 		GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type seed_point_rfg =
 			ReconstructedFeatureGeometry::create(
-			reconstruction_tree,
-			*(current_top_level_propiter()->handle_weak_ref()),
-			*(current_top_level_propiter()),
-			reconstructed_seed_geometry,
-			d_motion_track_property_finder.get_reconstruction_plate_id());
+				reconstruction_tree,
+				d_reconstruction_tree_creator,
+				*(current_top_level_propiter()->handle_weak_ref()),
+				*(current_top_level_propiter()),
+				reconstructed_seed_geometry,
+				ReconstructMethod::MOTION_PATH,
+				d_motion_track_property_finder.get_reconstruction_plate_id());
 
 		d_reconstructed_feature_geometries.push_back(seed_point_rfg);
 
@@ -290,6 +294,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::create_motion_path_geometry(
 		GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type mtrg_ptr =
 			ReconstructedMotionPath::create(
 			reconstruction_tree,
+			d_reconstruction_tree_creator,
 			present_day_seed_point_geometry,
 			reconstructed_seed_geometry,
 			motion_track_points,

@@ -90,6 +90,72 @@ namespace
 
 
 	/**
+	 * The layer is a velocity field calculator layer so look for a reconstruct layer with the
+	 * same main channel input filename and connect its output to the velocity layer's domain input.
+	 *
+	 * This is because velocity layers now connect the domain input to reconstruct layers instead
+	 * of input files.
+	 */
+	template <typename LayerForwardIter>
+	void
+	connect_velocity_field_calculator_layer_input_to_domain_reconstruct_layer_output(
+			GPlatesAppLogic::Layer& velocity_layer,
+			LayerForwardIter layers_begin,
+			LayerForwardIter layers_end)
+	{
+		for (LayerForwardIter layer_iter = layers_begin; layer_iter != layers_end; layer_iter++)
+		{
+			if (layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::RECONSTRUCT)
+			{
+				continue;
+			}
+
+			// FIXME: This relies on the velocity layer having the same name input file as its
+			// associated domain layer. But the velocity layer no longer needs to connect to
+			// input files (connects to domain 'layer' instead).
+			// So this is somewhat flakey and likely to break in the future.
+
+			// See if the layer is connected to the same input file as the velocity layer.
+			const std::vector<GPlatesAppLogic::Layer::InputConnection> layer_input_connections =
+					layer_iter->get_channel_inputs(
+							layer_iter->get_main_input_feature_collection_channel());
+			const std::vector<GPlatesAppLogic::Layer::InputConnection> velocity_layer_input_connections =
+					velocity_layer.get_channel_inputs(
+							velocity_layer.get_main_input_feature_collection_channel());
+			// We're expecting only one input file connection.
+			if (layer_input_connections.size() != 1 ||
+				velocity_layer_input_connections.size() != 1)
+			{
+				continue;
+			}
+			// Make sure the input connects to a file rather than the output of another layer.
+			boost::optional<GPlatesAppLogic::Layer::InputFile> layer_main_channel_input_file =
+					layer_input_connections[0].get_input_file();
+			boost::optional<GPlatesAppLogic::Layer::InputFile> velocity_layer_main_channel_input_file =
+					velocity_layer_input_connections[0].get_input_file();
+			if (!layer_main_channel_input_file ||
+				!velocity_layer_main_channel_input_file)
+			{
+				continue;
+			}
+
+			if (layer_main_channel_input_file->get_file() !=
+				velocity_layer_main_channel_input_file->get_file())
+			{
+				continue;
+			}
+
+			GPlatesAppLogic::Layer domain_reconstruct_layer = *layer_iter;
+
+			connect_layer_input_to_layer_output(velocity_layer, domain_reconstruct_layer);
+
+			// There should only be one domain layer satifying the above conditions.
+			break;
+		}
+	}
+
+
+	/**
 	 * The layer is a velocity field calculator layer so look for any topology resolver layers
 	 * and connect their outputs to the velocity layer input.
 	 */
@@ -100,7 +166,7 @@ namespace
 			LayerForwardIter layers_begin,
 			LayerForwardIter layers_end)
 	{
-		for (LayerForwardIter layer_iter = layers_begin ; layer_iter != layers_end; layer_iter++)
+		for (LayerForwardIter layer_iter = layers_begin; layer_iter != layers_end; layer_iter++)
 		{
 			if (layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER &&
 			   layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER)
@@ -125,7 +191,7 @@ namespace
 			LayerForwardIter layers_begin,
 			LayerForwardIter layers_end)
 	{
-		for (LayerForwardIter layer_iter = layers_begin ; layer_iter != layers_end; layer_iter++)
+		for (LayerForwardIter layer_iter = layers_begin; layer_iter != layers_end; layer_iter++)
 		{
 			if (layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR)
 			{
@@ -638,6 +704,12 @@ GPlatesAppLogic::ReconstructGraph::auto_connect_layer(
 			layer.get_main_input_feature_collection_channel();
 
 	// Connect the input file to the main input channel of the new layer.
+	//
+	// FIXME: This actually gives velocity (visual) layers the name of the input file that caused
+	// their auto-creation even though velocity layers no longer have input files (only input layers).
+	// This is because the input file connection is still there - just unused and undisplayed
+	// in the visual layer - but yet still used to determine the visual layer name.
+	// It's somewhat flakey and likely to break in the future.
 	layer.connect_input_to_file(
 			main_input_channel_input_file,
 			main_input_feature_collection_channel);
@@ -651,8 +723,11 @@ GPlatesAppLogic::ReconstructGraph::auto_connect_layer(
 
 	// If the layer is a velocity field calculator then look for any topology resolver layers
 	// and connect their outputs to the velocity layer input.
+	// Also look for a topology resolver layers
+	// and connect their outputs to the velocity layer input.
 	if (layer.get_type() == GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR)
 	{
+		connect_velocity_field_calculator_layer_input_to_domain_reconstruct_layer_output(layer, begin(), end());
 		connect_velocity_field_calculator_layer_input_to_topology_resolver_layer_outputs(layer, begin(), end());
 	}
 

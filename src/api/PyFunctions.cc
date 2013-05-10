@@ -203,10 +203,14 @@ namespace
 		register_default_reconstruct_method_types(reconstruct_method_registry);
 
 		const GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
-				GPlatesAppLogic::get_cached_reconstruction_tree_creator(
+				GPlatesAppLogic::create_cached_reconstruction_tree_creator(
 						reconstruction_feature_collections,
-						time/*default_reconstruction_time*/,
 						anchor_plate_id/*default_anchor_plate_id*/);
+
+		// Create the context in which to reconstruct.
+		const GPlatesAppLogic::ReconstructMethodInterface::Context reconstruct_method_context(
+				GPlatesAppLogic::ReconstructParams(),
+				reconstruction_tree_creator);
 
 		// Iterate over the reconstructable files.
 		for (unsigned int reconstructable_file_index = 0;
@@ -227,12 +231,11 @@ namespace
 						(*reconstructable_features_iter)->reference();
 
 				// Find out how to reconstruct each geometry in a feature based on the feature's other properties.
-				const GPlatesAppLogic::ReconstructMethod::Type reconstruct_method_type =
-						reconstruct_method_registry.get_reconstruct_method_type_or_default(reconstructable_feature_ref);
-
 				// Get the reconstruct method so we can reverse reconstruct the geometry.
 				GPlatesAppLogic::ReconstructMethodInterface::non_null_ptr_type reconstruct_method =
-						reconstruct_method_registry.get_reconstruct_method(reconstruct_method_type);
+						reconstruct_method_registry.create_reconstruct_method_or_default(
+								reconstructable_feature_ref,
+								reconstruct_method_context);
 
 				// Get the (reconstructed - not present day) geometries for the current feature.
 				//
@@ -241,9 +244,7 @@ namespace
 				// the present day geometries.
 				// Note: There should be one geometry for each geometry property that can be reconstructed.
 				std::vector<GPlatesAppLogic::ReconstructMethodInterface::Geometry> feature_reconstructed_geometries;
-				reconstruct_method->get_present_day_geometries(
-						feature_reconstructed_geometries,
-						reconstructable_feature_ref);
+				reconstruct_method->get_present_day_feature_geometries(feature_reconstructed_geometries);
 
 				// Iterate over the reconstructed geometries for the current feature.
 				BOOST_FOREACH(
@@ -254,8 +255,7 @@ namespace
 					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type present_day_geometry =
 							reconstruct_method->reconstruct_geometry(
 									feature_reconstructed_geometry.geometry,
-									reconstructable_feature_ref,
-									reconstruction_tree_creator,
+									reconstruct_method_context,
 									time/*reconstruction_time*/, // The time of the reconstructed feature geometry.
 									true/*reverse_reconstruct*/);
 

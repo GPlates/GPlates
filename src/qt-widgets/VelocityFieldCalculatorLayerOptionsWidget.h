@@ -79,12 +79,6 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
-		handle_constrained_clicked();
-
-		void
-		handle_triangulation_clicked();
-
-		void
 		handle_solve_velocity_method_combobox_activated(
 				int index);
 

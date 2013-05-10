@@ -503,7 +503,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns true if @a recon_geom can be used as a topological section for a resolved line.
 		 *
-		 * Returns true if @a recon_geom is a @a ReconstructedFeatureGeometry.
+		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry.
 		 */
 		bool
 		can_use_as_resolved_line_topological_section(
@@ -513,7 +513,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns true if @a recon_geom can be used as a topological section for a resolved boundary.
 		 *
-		 * Returns true if @a recon_geom is a @a ReconstructedFeatureGeometry or a
+		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry or a
 		 * resolved topological line (@a ResolvedTopologicalGeometry with a *polyline* geometry).
 		 */
 		bool
@@ -524,7 +524,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns true if @a recon_geom can be used as a topological section for a resolved network.
 		 *
-		 * Returns true if @a recon_geom is a @a ReconstructedFeatureGeometry or a
+		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry or a
 		 * resolved topological line (@a ResolvedTopologicalGeometry with a *polyline* geometry).
 		 */
 		bool

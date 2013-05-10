@@ -367,7 +367,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::add_reconstructed_polygon_mes
 		// We're expecting a finite rotation - if we don't get one then we don't do anything
 		// because reconstructing rasters with static polygons is relying on the fact that
 		// static polygons don't change over time and hence we can create a present-day mesh
-		// of the polygons and simply rotate it on the graphics hardware.
+		// of the polygons and simply rotate them on the graphics hardware.
 		if (!finite_rotation_reconstruction)
 		{
 			continue;
@@ -544,7 +544,8 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 		{
 			//
 			// We do *not* have a polygon mesh containing triangles *only* within the interior region of the polygon.
-			// This was most likely due to the polygon being self-intersecting.
+			// This was either due to too few vertices in a polyline (treated as a polygon) or
+			// there was an error meshing the polygon.
 			// Instead polygon stenciling will be used with a polygon fan mesh (ie, a mesh that
 			// contains triangles that are *not* exclusively within the interior of the polygon).
 			//
@@ -821,9 +822,12 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 
 			// If all vertices of the triangle are outside a single plane then
 			// the triangle is outside the frustum.
-			if (plane.signed_distance(polygon_mesh_vertices[triangle.get_mesh_vertex_index(0)].get_vertex()) < 0 &&
-				plane.signed_distance(polygon_mesh_vertices[triangle.get_mesh_vertex_index(1)].get_vertex()) < 0 &&
-				plane.signed_distance(polygon_mesh_vertices[triangle.get_mesh_vertex_index(2)].get_vertex()) < 0)
+			if (plane.signed_distance_unnormalised(
+					polygon_mesh_vertices[triangle.get_mesh_vertex_index(0)].get_vertex()) < 0 &&
+				plane.signed_distance_unnormalised(
+					polygon_mesh_vertices[triangle.get_mesh_vertex_index(1)].get_vertex()) < 0 &&
+				plane.signed_distance_unnormalised(
+					polygon_mesh_vertices[triangle.get_mesh_vertex_index(2)].get_vertex()) < 0)
 			{
 				is_triangle_outside_frustum = true;
 				break;

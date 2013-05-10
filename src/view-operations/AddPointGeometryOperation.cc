@@ -47,7 +47,7 @@
 
 
 GPlatesViewOperations::AddPointGeometryOperation::AddPointGeometryOperation(
-		GeometryType::Value build_geom_type,
+		GPlatesMaths::GeometryType::Value build_geom_type,
 		GeometryBuilder &geometry_builder,
 		GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
 		RenderedGeometryCollection &rendered_geometry_collection,
@@ -218,24 +218,24 @@ void
 GPlatesViewOperations::AddPointGeometryOperation::update_rendered_geometry(
 		GeometryBuilder::GeometryIndex geom_index)
 {
-	const GeometryType::Value geom_build_type =
+	const GPlatesMaths::GeometryType::Value geom_build_type =
 		d_geometry_builder.get_geometry_build_type();
 
 	switch (geom_build_type)
 	{
-	case GeometryType::POINT:
+	case GPlatesMaths::GeometryType::POINT:
 		update_rendered_point_on_sphere(geom_index);
 		break;
 
-	case GeometryType::MULTIPOINT:
+	case GPlatesMaths::GeometryType::MULTIPOINT:
 		update_rendered_multipoint_on_sphere(geom_index);
 		break;
 
-	case GeometryType::POLYLINE:
+	case GPlatesMaths::GeometryType::POLYLINE:
 		update_rendered_polyline_on_sphere(geom_index);
 		break;
 
-	case GeometryType::POLYGON:
+	case GPlatesMaths::GeometryType::POLYGON:
 		update_rendered_polygon_on_sphere(geom_index);
 		break;
 

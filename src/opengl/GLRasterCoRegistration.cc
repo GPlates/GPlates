@@ -1387,11 +1387,14 @@ GPlatesOpenGL::GLRasterCoRegistration::create_reconstructed_seed_geometries_spat
 				reconstructed_feature.get_reconstructions();
 		BOOST_FOREACH(const GPlatesAppLogic::ReconstructContext::Reconstruction &reconstruction, reconstructions)
 		{
-			// NOTE: To avoid reconstructing geometries (it's faster if we transform using GPU) we
-			// add the *unreconstructed* geometry (and a finite rotation) to the spatial partition.
+			// NOTE: To avoid reconstructing geometries when it might not be needed we add the
+			// *unreconstructed* geometry (and a finite rotation) to the spatial partition.
 			// The spatial partition will rotate only the centroid of the *unreconstructed*
 			// geometry (instead of reconstructing the entire geometry) and then use that as the
 			// insertion location (along with the *unreconstructed* geometry's bounding circle extents).
+			// An example where transforming might not be needed is data mining co-registration
+			// where might not need to transform all geometries to determine if seed and target
+			// features are close enough within a region of interest.
 
 			const GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type &rfg =
 					reconstruction.get_reconstructed_feature_geometry();
@@ -1432,7 +1435,7 @@ GPlatesOpenGL::GLRasterCoRegistration::create_reconstructed_seed_geometries_spat
 				const GPlatesMaths::GeometryOnSphere &reconstructed_geometry = *rfg->reconstructed_geometry();
 
 				// It's not a finite rotation so we can't assume the geometry has rigidly rotated.
-				// Hence we can't assume it's shape is the same and hence can't assume the
+				// Hence we can't assume its shape is the same and hence can't assume the
 				// small circle bounding radius is the same.
 				// So just get the reconstructed geometry and insert it into the spatial partition.
 				// The appropriate bounding small circle will be generated for it when it's added.

@@ -31,6 +31,7 @@
 #include <boost/cstdint.hpp>
 #include <boost/variant.hpp>
 
+#include "Colour.h"
 #include "ColourPalette.h"
 #include "ColourPaletteVisitor.h"
 #include "CptColourPalette.h"
@@ -132,14 +133,16 @@ namespace GPlatesGui
 		explicit
 		RasterColourPalette() :
 			d_colour_palette(empty())
-		{  }
+		{  
+		}
 
 		template<class ColourPalettePointerType>
 		explicit
 		RasterColourPalette(
 				const ColourPalettePointerType &colour_palette) :
 			d_colour_palette(colour_palette)
-		{  }
+		{ 
+		}
 
 		variant_type d_colour_palette;
 	};
@@ -169,6 +172,16 @@ namespace GPlatesGui
 				const RasterColourPalette &colour_palette);
 	}
 
+	/** 
+	 * A function to get a colour out of the palette 
+	 */
+	namespace RasterColourPaletteColour
+	{
+		boost::optional<GPlatesGui::Colour>
+		get_colour(
+				const RasterColourPalette &colour_palette,
+				const double &value);
+	}
 
 	/**
 	 * The default colour palette used to colour non-RGBA rasters upon file loading.
@@ -242,6 +255,99 @@ namespace GPlatesGui
 		static const int NUM_STD_DEV_AWAY_FROM_MEAN = 2;
 	};
 
+	/**
+	 * The default colour palette used to colour non-RGBA rasters upon file loading.
+	 * The colour palette covers a range of values up to two standard deviations
+	 * away from the mean.
+	 */
+	class UserColourPalette :
+			public ColourPalette<double>
+	{
+	public:
+
+		typedef GPlatesUtils::non_null_intrusive_ptr<UserColourPalette> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const UserColourPalette> non_null_ptr_to_const_type;
+
+		/**
+		 * Constructs a UserColourPalette, given the max and the
+		 * standard deviation of the values in the raster.
+		 */
+		static
+		non_null_ptr_type
+		create();
+
+		static
+		non_null_ptr_type
+		create(
+				double range1_max,
+				double range1_min,
+				double range2_max,
+				double range2_min,
+				GPlatesGui::Colour max_colour,
+				GPlatesGui::Colour mid_colour,
+				GPlatesGui::Colour min_colour);
+
+		virtual
+		boost::optional<Colour>
+		get_colour(
+				double value) const;
+
+		virtual
+		void
+		accept_visitor(
+				ConstColourPaletteVisitor &visitor) const
+		{
+			visitor.visit_user_colour_palette(*this);
+		}
+
+		virtual
+		void
+		accept_visitor(
+				ColourPaletteVisitor &visitor)
+		{
+			visitor.visit_user_colour_palette(*this);
+		}
+
+		double
+		get_max() const
+		{
+			return d_range1_max;
+		}
+
+		double
+		get_min() const
+		{
+			return d_range2_min;
+		}
+
+		double
+		get_lower_bound() const;
+
+		double
+		get_upper_bound() const;
+
+	private:
+
+		UserColourPalette(
+				double range1_max,
+				double range1_min,
+				double range2_max,
+				double range2_min,
+				GPlatesGui::Colour max_colour,
+				GPlatesGui::Colour mid_colour,
+				GPlatesGui::Colour min_colour);
+
+		RegularCptColourPalette::non_null_ptr_type d_inner_palette;
+
+		double d_range1_max;
+		double d_range1_min;
+		double d_range2_max;
+		double d_range2_min;
+		GPlatesGui::Colour d_max_colour;
+		GPlatesGui::Colour d_mid_colour;
+		GPlatesGui::Colour d_min_colour;
+	};
+
 
 	/**
 	 * The default normalised colour palette (despite 'raster' in the name it's currently used for 3D scalar fields).
@@ -302,5 +408,6 @@ namespace GPlatesGui
 		RegularCptColourPalette::non_null_ptr_type d_inner_palette;
 	};
 }
+
 
 #endif  /* GPLATES_GUI_RASTERCOLOURPALETTE_H */

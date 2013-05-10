@@ -420,10 +420,10 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::update_enable_state()
 	}
 	// ...if we get here then the focused feature is valid and non-topological.
 
-	const std::pair<unsigned int, GPlatesViewOperations::GeometryType::Value> geometry_builder_parameters =
+	const std::pair<unsigned int, GPlatesMaths::GeometryType::Value> geometry_builder_parameters =
 			get_geometry_builder_parameters();
 	const unsigned int num_vertices = geometry_builder_parameters.first;
-	const GPlatesViewOperations::GeometryType::Value geometry_type = geometry_builder_parameters.second;
+	const GPlatesMaths::GeometryType::Value geometry_type = geometry_builder_parameters.second;
 
 	// Enable the move vertex tool if there's at least one vertex regardless of the geometry type.
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_MOVE_VERTEX, num_vertices > 0);
@@ -435,9 +435,9 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::update_enable_state()
 	// Note that upon insertion of a new vertex a polyline stays a polyline and
 	// a polygon stays a polygon.
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_INSERT_VERTEX,
-			(geometry_type == GPlatesViewOperations::GeometryType::MULTIPOINT ||
-			geometry_type == GPlatesViewOperations::GeometryType::POLYLINE ||
-			geometry_type == GPlatesViewOperations::GeometryType::POLYGON) &&
+			(geometry_type == GPlatesMaths::GeometryType::MULTIPOINT ||
+			geometry_type == GPlatesMaths::GeometryType::POLYLINE ||
+			geometry_type == GPlatesMaths::GeometryType::POLYGON) &&
 			(num_vertices > 0));
 
 	// Enable the delete vertex tool if deleting a vertex won't change the type of
@@ -446,30 +446,30 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::update_enable_state()
 	//   * Geometry is a polyline with two vertices.
 	//   * Geometry is a polygon with three vertices.
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_DELETE_VERTEX,
-			(geometry_type == GPlatesViewOperations::GeometryType::MULTIPOINT && num_vertices > 1) ||
-			(geometry_type == GPlatesViewOperations::GeometryType::POLYLINE && num_vertices > 2) ||
-			(geometry_type == GPlatesViewOperations::GeometryType::POLYGON && num_vertices > 3));
+			(geometry_type == GPlatesMaths::GeometryType::MULTIPOINT && num_vertices > 1) ||
+			(geometry_type == GPlatesMaths::GeometryType::POLYLINE && num_vertices > 2) ||
+			(geometry_type == GPlatesMaths::GeometryType::POLYGON && num_vertices > 3));
 
 	// Only enable splitting of a polyline.
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_SPLIT_FEATURE,
-			geometry_type == GPlatesViewOperations::GeometryType::POLYLINE && num_vertices > 1);
+			geometry_type == GPlatesMaths::GeometryType::POLYLINE && num_vertices > 1);
 }
 
 
-std::pair<unsigned int, GPlatesViewOperations::GeometryType::Value>
+std::pair<unsigned int, GPlatesMaths::GeometryType::Value>
 GPlatesGui::FeatureInspectionCanvasToolWorkflow::get_geometry_builder_parameters() const
 {
 	// See if the geometry builder has more than one vertex.
 	if (d_focused_feature_geometry_builder.get_num_geometries() == 0)
 	{
-		return std::make_pair(0, GPlatesViewOperations::GeometryType::NONE);
+		return std::make_pair(0, GPlatesMaths::GeometryType::NONE);
 	}
 
 	// We currently only support a single internal geometry so set geom index to zero.
 	const unsigned int num_vertices =
 			d_focused_feature_geometry_builder.get_num_points_in_geometry(0/*geom_index*/);
 
-	const GPlatesViewOperations::GeometryType::Value geometry_type =
+	const GPlatesMaths::GeometryType::Value geometry_type =
 			d_focused_feature_geometry_builder.get_geometry_build_type();
 
 	return std::make_pair(num_vertices, geometry_type);

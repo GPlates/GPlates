@@ -415,6 +415,9 @@ set(srcs
     SetCameraViewpointDialog.cc
     SetCameraViewpointDialog.h
     SetCameraViewpointDialogUi.ui
+    SetDeformationParametersDialog.cc
+    SetDeformationParametersDialog.h
+    SetDeformationParametersDialogUi.ui
     SetProjectionDialog.cc
     SetProjectionDialog.h
     SetProjectionDialogUi.ui

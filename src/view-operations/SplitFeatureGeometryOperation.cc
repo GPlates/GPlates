@@ -515,11 +515,11 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::update_rendered_geometry(
 	// All types of geometry have the points drawn the same.
 	add_rendered_points(geom_index);
 
-	const GeometryType::Value actual_geom_type =
+	const GPlatesMaths::GeometryType::Value actual_geom_type =
 		d_geometry_builder.get_actual_type_of_geometry(geom_index);
 
-	if (actual_geom_type == GeometryType::POLYLINE ||
-		actual_geom_type == GeometryType::POLYGON)
+	if (actual_geom_type == GPlatesMaths::GeometryType::POLYLINE ||
+		actual_geom_type == GPlatesMaths::GeometryType::POLYGON)
 	{
 		add_rendered_lines(geom_index, actual_geom_type);
 	}
@@ -528,7 +528,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::update_rendered_geometry(
 void
 GPlatesViewOperations::SplitFeatureGeometryOperation::add_rendered_lines(
 		GeometryBuilder::GeometryIndex geom_index,
-		const GeometryType::Value actual_geom_type)
+		const GPlatesMaths::GeometryType::Value actual_geom_type)
 {
 	const unsigned int num_points_in_geom = d_geometry_builder.get_num_points_in_geometry(geom_index);
 	d_line_to_point_mapping.clear();
@@ -584,7 +584,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::add_rendered_lines(
 
 	// If actual geometry type is a polygon then also add the line segment between
 	// start and end vertex.
-	if (actual_geom_type == GeometryType::POLYGON)
+	if (actual_geom_type == GPlatesMaths::GeometryType::POLYGON)
 	{
 		// Copy the start and end points of the polygon so we can create a line segment from them.
 		GPlatesMaths::PointOnSphere start_end_points[2] =

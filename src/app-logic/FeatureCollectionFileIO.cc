@@ -177,6 +177,10 @@ void
 GPlatesAppLogic::FeatureCollectionFileIO::unload_file(
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference loaded_file)
 {
+	// We want to merge model events across this scope so that only one model event
+	// is generated instead of many in case we incrementally modify the features below.
+	GPlatesModel::NotificationGuard model_notification_guard(d_model.access_model());
+
 	// Remove the loaded file from the file state - also removes it from the model.
 	d_file_state.remove_file(loaded_file);
 }

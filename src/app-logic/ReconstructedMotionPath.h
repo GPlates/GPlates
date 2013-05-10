@@ -92,6 +92,7 @@ namespace GPlatesAppLogic
 		const non_null_ptr_type
 		create(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const seed_point_geom_ptr_type &present_day_seed_point_geometry_ptr,
 				const feature_geom_ptr_type &feature_geometry_ptr,
 				const motion_path_geom_ptr_type &motion_path_points,
@@ -102,13 +103,13 @@ namespace GPlatesAppLogic
 			return non_null_ptr_type(
 					new ReconstructedMotionPath(
 							reconstruction_tree,
+							reconstruction_tree_creator,
 							present_day_seed_point_geometry_ptr,
 							feature_geometry_ptr,
 							motion_path_points,
 							reconstruction_plate_id,
 							feature_handle,
-							property_iterator),
-					GPlatesUtils::NullIntrusivePointerHandler());
+							property_iterator));
 		}
 
 		/**
@@ -154,12 +155,6 @@ namespace GPlatesAppLogic
 			return d_feature_geometry;
 		}
 
-		GPlatesModel::integer_plate_id_type
-		plate_id () const
-		{
-			return d_reconstruction_plate_id;
-		}
-
 	private:
 		/**
 		 * Instantiate a reconstructed motion path.
@@ -169,6 +164,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructedMotionPath(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const seed_point_geom_ptr_type &present_day_seed_point,
 				const feature_geom_ptr_type &feature_geometry_ptr,
 				const motion_path_geom_ptr_type &motion_path_points_,
@@ -177,25 +173,22 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle::iterator property_iterator):
 			ReconstructedFeatureGeometry(
 				reconstruction_tree_,
+				reconstruction_tree_creator,
 				feature_handle,
 				property_iterator,
 				feature_geometry_ptr,
+				ReconstructMethod::MOTION_PATH,
 				reconstruction_plate_id_,
 				boost::none),
 			d_feature_geometry(feature_geometry_ptr),
 			d_present_day_seed_point(present_day_seed_point),
-			d_motion_path_points(motion_path_points_),
-			d_reconstruction_plate_id(reconstruction_plate_id_)
+			d_motion_path_points(motion_path_points_)
 		{  }
 
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_feature_geometry;
 		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type d_present_day_seed_point;
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_motion_path_points;
 
-		// For colouring. 
-		GPlatesModel::integer_plate_id_type d_reconstruction_plate_id;
-
-	
 	};
 }
 

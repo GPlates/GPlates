@@ -164,16 +164,19 @@ namespace GPlatesQtWidgets
 		handle_apply();
 
 		void
-		handle_add_section();
+		handle_add_to_boundary();
 
 		void
-		handle_add_section_shortcut_triggered();
+		handle_add_to_boundary_shortcut_triggered();
 
 		void
-		handle_add_interior();
+		handle_add_to_interior();
 
 		void
-		handle_remove_section();
+		handle_remove();
+
+		void
+		handle_remove_shortcut_triggered();
 
 		void
 		choose_topology_tab()

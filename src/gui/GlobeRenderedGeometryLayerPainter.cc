@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
+#include <boost/utility/in_place_factory.hpp>
 #include <opengl/OpenGL.h>
 
 #include "ColourScheme.h"
@@ -44,6 +45,7 @@
 #include "maths/MathsUtils.h"
 
 #include "opengl/GLIntersect.h"
+#include "opengl/GLIntersectPrimitives.h"
 #include "opengl/GLRenderer.h"
 
 #include "property-values/RawRaster.h"
@@ -53,6 +55,8 @@
 #include "utils/Profile.h"
 
 #include "view-operations/RenderedArrowedPolyline.h"
+#include "view-operations/RenderedColouredEdgeSurfaceMesh.h"
+#include "view-operations/RenderedColouredTriangleSurfaceMesh.h"
 #include "view-operations/RenderedCrossSymbol.h"
 #include "view-operations/RenderedDirectionArrow.h"
 #include "view-operations/RenderedEllipse.h"
@@ -65,6 +69,7 @@
 #include "view-operations/RenderedResolvedRaster.h"
 #include "view-operations/RenderedResolvedScalarField3D.h"
 #include "view-operations/RenderedSquareSymbol.h"
+#include "view-operations/RenderedStrainMarkerSymbol.h"
 #include "view-operations/RenderedCircleSymbol.h"
 #include "view-operations/RenderedString.h"
 #include "view-operations/RenderedSmallCircle.h"
@@ -107,6 +112,7 @@ namespace
 
 const float GPlatesGui::GlobeRenderedGeometryLayerPainter::POINT_SIZE_ADJUSTMENT = 1.0f;
 const float GPlatesGui::GlobeRenderedGeometryLayerPainter::LINE_WIDTH_ADJUSTMENT = 1.0f;
+const float GPlatesGui::GlobeRenderedGeometryLayerPainter::STRAIN_LINE_WIDTH_ADJUSTMENT = 1.0f;
 
 
 GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter(
@@ -142,6 +148,11 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint(
 	// We have a layer painter for the duration of this method.
 	d_layer_painter = layer_painter;
 
+	// Get the view frustum planes.
+	d_frustum_planes = boost::in_place(
+			renderer.gl_get_matrix(GL_MODELVIEW),
+			renderer.gl_get_matrix(GL_PROJECTION));
+
 	// Begin painting so our visit methods can start painting.
 	layer_painter.begin_painting(renderer);
 
@@ -159,6 +170,9 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint(
 
 	// We no longer have a layer painter.
 	d_layer_painter = boost::none;
+
+	// Frustum planes are no longer relevant.
+	d_frustum_planes = boost::none;
 
 	return layer_cache;
 }
@@ -341,7 +355,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 
 	if (rendered_polygon_on_sphere.get_is_filled())
 	{
-		GPlatesOpenGL::GLFilledPolygonsGlobeView::filled_polygons_type &filled_polygons =
+		GPlatesOpenGL::GLFilledPolygonsGlobeView::filled_drawables_type &filled_polygons =
 				d_layer_painter->translucent_drawables_on_the_sphere.get_filled_polygons_globe_view();
 
 		// Add the filled polygon at the current location (if any) in the rendered geometries spatial partition.
@@ -369,7 +383,103 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 
 
 void
-GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_resolved_raster(
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_edge_surface_mesh(
+	const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh &rendered_coloured_edge_surface_mesh)
+{
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
+	const float line_width =
+			rendered_coloured_edge_surface_mesh.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+	// Get the stream for lines of the current line width.
+	stream_primitives_type &stream =
+			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+
+	typedef GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh mesh_type;
+
+	const mesh_type::edge_seq_type &mesh_edges =
+			rendered_coloured_edge_surface_mesh.get_mesh_edges();
+	const mesh_type::vertex_seq_type &mesh_vertices =
+			rendered_coloured_edge_surface_mesh.get_mesh_vertices();
+
+	// Iterate over the mesh edges.
+	mesh_type::edge_seq_type::const_iterator mesh_edges_iter = mesh_edges.begin();
+	mesh_type::edge_seq_type::const_iterator mesh_edges_end = mesh_edges.end();
+	for ( ; mesh_edges_iter != mesh_edges_end; ++mesh_edges_iter)
+	{
+		const mesh_type::Edge &mesh_edge = *mesh_edges_iter;
+
+		boost::optional<Colour> colour = mesh_edge.colour.get_colour(d_colour_scheme);
+		if (!colour)
+		{
+			continue;
+		}
+
+		const GPlatesMaths::GreatCircleArc edge[1] =
+		{
+				GPlatesMaths::GreatCircleArc::create(
+						mesh_vertices[mesh_edge.vertex_indices[0]],
+						mesh_vertices[mesh_edge.vertex_indices[1]])
+		};
+
+		// Paint the current single great circle arc edge (it might get tessellated into smaller arcs).
+		paint_great_circle_arcs(edge, edge + 1, colour.get(), stream);
+	}
+}
+
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_coloured_triangle_surface_mesh(
+		const GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh &rendered_coloured_triangle_surface_mesh)
+{
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
+	GPlatesOpenGL::GLFilledPolygonsGlobeView::filled_drawables_type &filled_polygons =
+			d_layer_painter->translucent_drawables_on_the_sphere.get_filled_polygons_globe_view();
+
+	filled_polygons.begin_filled_triangle_mesh();
+
+	typedef GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh mesh_type;
+
+	const mesh_type::triangle_seq_type &mesh_triangles =
+			rendered_coloured_triangle_surface_mesh.get_mesh_triangles();
+	const mesh_type::vertex_seq_type &mesh_vertices =
+			rendered_coloured_triangle_surface_mesh.get_mesh_vertices();
+
+	// Iterate over the mesh triangles.
+	mesh_type::triangle_seq_type::const_iterator mesh_triangles_iter = mesh_triangles.begin();
+	mesh_type::triangle_seq_type::const_iterator mesh_triangles_end = mesh_triangles.end();
+	for ( ; mesh_triangles_iter != mesh_triangles_end; ++mesh_triangles_iter)
+	{
+		const mesh_type::Triangle &mesh_triangle = *mesh_triangles_iter;
+
+		boost::optional<Colour> colour = mesh_triangle.colour.get_colour(d_colour_scheme);
+		if (!colour)
+		{
+			continue;
+		}
+
+		// Add the current filled triangle.
+		filled_polygons.add_filled_triangle_to_mesh(
+				mesh_vertices[mesh_triangle.vertex_indices[0]],
+				mesh_vertices[mesh_triangle.vertex_indices[1]],
+				mesh_vertices[mesh_triangle.vertex_indices[2]],
+				colour.get());
+	}
+
+	// Add the filled mesh at the current location (if any) in the rendered geometries spatial partition.
+	filled_polygons.end_filled_triangle_mesh(d_current_spatial_partition_location.get());
+}
+
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_resolved_raster(
 		const GPlatesViewOperations::RenderedResolvedRaster &rendered_resolved_raster)
 {
 	if (d_paint_region != PAINT_SURFACE)
@@ -387,7 +497,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_resolved_raster(
 
 
 void
-GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_resolved_scalar_field_3d(
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_resolved_scalar_field_3d(
 		const GPlatesViewOperations::RenderedResolvedScalarField3D &rendered_resolved_scalar_field)
 {
 	if (d_paint_region != PAINT_SUB_SURFACE)
@@ -417,15 +527,6 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_direction_arrow(
 		return;
 	}
 
-	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_direction_arrow);
-	if (!colour)
-	{
-		return;
-	}
-
-	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_color = Colour::to_rgba8(*colour);
-
 	const GPlatesMaths::Vector3D start(
 			rendered_direction_arrow.get_start_position().position_vector());
 
@@ -443,7 +544,42 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_direction_arrow(
 	{
 		return;
 	}
-	const GPlatesMaths::Vector3D arrowline_unit_vector = (1.0 / arrowline_length) * arrowline;
+
+	// Cull the rendered direction arrow if it's outside the view frustum.
+	// This helps a lot for high zoom levels where the zoom-dependent binning of rendered arrows
+	// creates a large number of arrow bins to such an extent that CPU profiling shows the drawing
+	// of each arrow (setting up the arrow geometry) to consume most of the rendering time.
+	// Note that the zoom-dependent binning cannot take advantage of the rendered geometries
+	// spatial partition (because arrows are off the sphere and also arrow length is not known
+	// ahead of time so bounds cannot be determined for placement in spatial partition) and hence
+	// is not affected by our hierarchical view frustum culling in 'get_visible_rendered_geometries()'.
+	//
+	// Use a bounding sphere around the arrow - we also know that the arrowhead will always fit
+	// within this bounding sphere because it's axis is never longer than the arrow line and
+	// the angle of its cone (relative to the arrow line) is 45 degrees.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_frustum_planes,
+			GPLATES_ASSERTION_SOURCE);
+	if (!GPlatesOpenGL::GLIntersect::intersect_sphere_frustum(
+		GPlatesOpenGL::GLIntersect::Sphere(
+				start + 0.5 * arrowline/*arrow midpoint*/,
+				0.5 * arrowline_length/*arrow radius*/),
+		d_frustum_planes->get_planes(),
+		GPlatesOpenGL::GLFrustum::ALL_PLANES_ACTIVE_MASK))
+	{
+		return;
+	}
+
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_direction_arrow);
+	if (!colour)
+	{
+		return;
+	}
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_color = Colour::to_rgba8(*colour);
+
+	const GPlatesMaths::UnitVector3D arrowline_unit_vector((1.0 / arrowline_length) * arrowline);
 
 	GPlatesMaths::real_t arrowhead_size =
 			d_inverse_zoom_factor * rendered_direction_arrow.get_arrowhead_projected_size();
@@ -465,7 +601,8 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_direction_arrow(
 	// Specify end of arrowhead and direction of arrow.
 	paint_cone(
 			end,
-			arrowhead_size * arrowline_unit_vector,
+			arrowline_unit_vector,
+			arrowhead_size,
 			rgba8_color,
 			d_layer_painter->drawables_off_the_sphere.get_triangles_stream());
 
@@ -680,7 +817,8 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_arrowed_polyline(
 
 			paint_cone(
 					GPlatesMaths::Vector3D(gca.end_point().position_vector()),
-					arrowhead_size * arrowline_unit_vector,
+					arrowline_unit_vector,
+					arrowhead_size,
 					rgba8_colour,
 					d_layer_painter->drawables_off_the_sphere.get_triangles_stream());
 		}
@@ -989,6 +1127,8 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_circle_symbol(
 }
 
 
+
+
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_cross_symbol(
 	const GPlatesViewOperations::RenderedCrossSymbol &rendered_cross_symbol)
@@ -1066,6 +1206,119 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_cross_symbol(
 
 }
 
+
+void
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_strain_marker_symbol(
+	const GPlatesViewOperations::RenderedStrainMarkerSymbol &rendered_strain_marker_symbol)
+{
+	if (d_paint_region != PAINT_SURFACE)
+	{
+		return;
+	}
+
+    boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_strain_marker_symbol);
+    if (!colour)
+    {
+	    return;
+    }
+
+    // Define the square in the tangent plane at the north pole,
+    // then rotate down to required latitude, and
+    // then east/west to required longitude.
+    //
+    // (Two rotations are required to maintain the north-alignment).
+    //
+    // Can I use a new render node to do this rotation more efficiently?
+    //
+    // Reminder about coordinate system:
+    // x is out of the screen as we look at the globe on startup.
+    // y is towards right (east) as we look at the globe on startup.
+    // z is up...
+
+    // Get the point position.
+    const GPlatesMaths::PointOnSphere &pos =
+		    rendered_strain_marker_symbol.get_centre();
+
+    GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos);
+
+
+	// rotations to locate the symbol
+    static const GPlatesMaths::UnitVector3D axis1 = GPlatesMaths::UnitVector3D(0.,1.,0.);
+    GPlatesMaths::Rotation r1 =
+		GPlatesMaths::Rotation::create(axis1,GPlatesMaths::HALF_PI - GPlatesMaths::convert_deg_to_rad(llp.latitude()));
+
+    static const GPlatesMaths::UnitVector3D axis2 = GPlatesMaths::UnitVector3D(0.,0.,1.);
+    GPlatesMaths::Rotation r2 =
+	    GPlatesMaths::Rotation::create(axis2,GPlatesMaths::convert_deg_to_rad(llp.longitude()));
+
+    GPlatesMaths::Rotation r3 = r2*r1;
+
+
+	// a rotation to orient relative to projected tanget x,y plane
+	GPlatesMaths::Real angle( rendered_strain_marker_symbol.get_angle() );
+//qDebug() << "visit_rendered_strain_marker_symbol: angle = " << angle; 
+
+    static const GPlatesMaths::UnitVector3D axis_z = GPlatesMaths::UnitVector3D(0.,0.,1.);
+    GPlatesMaths::Rotation r_orient =
+	    GPlatesMaths::Rotation::create(axis_z,angle);
+
+	// fairly arbitrary initial half-altitude for testing.
+    double d = 0.1 * d_inverse_zoom_factor * rendered_strain_marker_symbol.get_size(); 
+
+    // Set up the vertices of a cross with centre (0,0,1).
+   	double x = rendered_strain_marker_symbol.get_scale_x();
+   	double y = rendered_strain_marker_symbol.get_scale_y();
+	
+//qDebug() << "BEFOR: x = " << x << "; y =" << y; 
+
+	// scale the lenght of the cross
+	x = x * d;
+	y = y * d;
+
+//qDebug() << "AFTER: x = " << x << "; y =" << y; 
+
+	// Define a scaled cross symbol at the north pole
+    GPlatesMaths::Vector3D v3d_a(0.,y,1.);
+    GPlatesMaths::Vector3D v3d_b(0,-y,1.);
+    GPlatesMaths::Vector3D v3d_c(-x,0.,1.);
+    GPlatesMaths::Vector3D v3d_d(x,0.,1.);
+
+	// First rotate the strain marker cross to the correct angle
+    v3d_a = r_orient * v3d_a;
+    v3d_b = r_orient * v3d_b;
+    v3d_c = r_orient * v3d_c;
+    v3d_d = r_orient * v3d_d;
+
+    // Rotate to desired location.
+    v3d_a = r3 * v3d_a;
+    v3d_b = r3 * v3d_b;
+    v3d_c = r3 * v3d_c;
+    v3d_d = r3 * v3d_d;
+
+
+    coloured_vertex_type va(v3d_a.x().dval(), v3d_a.y().dval(),v3d_a.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type vb(v3d_b.x().dval(), v3d_b.y().dval(),v3d_b.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type vc(v3d_c.x().dval(), v3d_c.y().dval(),v3d_c.z().dval(),Colour::to_rgba8(*colour));
+    coloured_vertex_type vd(v3d_d.x().dval(), v3d_d.y().dval(),v3d_d.z().dval(),Colour::to_rgba8(*colour));
+
+    const float line_width = rendered_strain_marker_symbol.get_line_width_hint() * STRAIN_LINE_WIDTH_ADJUSTMENT * d_scale;
+
+    stream_primitives_type &stream =
+	    d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+
+    stream_primitives_type::LineStrips stream_line_strips(stream);
+
+    stream_line_strips.begin_line_strip();
+    stream_line_strips.add_vertex(va);
+    stream_line_strips.add_vertex(vb);
+    stream_line_strips.end_line_strip();
+
+    stream_line_strips.begin_line_strip();
+    stream_line_strips.add_vertex(vc);
+    stream_line_strips.add_vertex(vd);
+    stream_line_strips.end_line_strip();
+
+}
 
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_geometries(
@@ -1152,10 +1405,9 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::get_visible_rendered_geometries(
 			cube_subdivision_cache_type::create(
 					GPlatesOpenGL::GLCubeSubdivision::create());
 
-	// Get the view frustum planes.
-	const GPlatesOpenGL::GLFrustum frustum_planes(
-			renderer.gl_get_matrix(GL_MODELVIEW),
-			renderer.gl_get_matrix(GL_PROJECTION));
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_frustum_planes,
+			GPLATES_ASSERTION_SOURCE);
 
 	// Traverse the quad trees of the cube faces.
 	for (unsigned int face = 0; face < 6; ++face)
@@ -1181,14 +1433,14 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::get_visible_rendered_geometries(
 		// We're at the root node of the quad tree of the current cube face.
 		const GPlatesMaths::CubeQuadTreeLocation root_cube_quad_tree_node_location(cube_face);
 
-		render_spatial_partition_quad_tree(
+		get_visible_rendered_geometries_from_spatial_partition_quad_tree(
 				rendered_geometry_infos,
 				rendered_geometry_orders,
 				root_cube_quad_tree_node_location,
 				loose_quad_tree_root_node,
 				*cube_subdivision_cache,
 				cube_subdivision_cache_root_node,
-				frustum_planes,
+				d_frustum_planes.get(),
 				// There are six frustum planes initially active
 				GPlatesOpenGL::GLFrustum::ALL_PLANES_ACTIVE_MASK);
 	}
@@ -1196,7 +1448,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::get_visible_rendered_geometries(
 
 
 void
-GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition_quad_tree(
+GPlatesGui::GlobeRenderedGeometryLayerPainter::get_visible_rendered_geometries_from_spatial_partition_quad_tree(
 		std::vector<RenderedGeometryInfo> &rendered_geometry_infos,
 		std::vector<RenderedGeometryOrder> &rendered_geometry_orders,
 		const GPlatesMaths::CubeQuadTreeLocation &cube_quad_tree_node_location,
@@ -1277,7 +1529,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::render_spatial_partition_quad_tre
 							child_u_offset,
 							child_v_offset);
 
-			render_spatial_partition_quad_tree(
+			get_visible_rendered_geometries_from_spatial_partition_quad_tree(
 					rendered_geometry_infos,
 					rendered_geometry_orders,
 					child_cube_quad_tree_node_location,
@@ -1303,8 +1555,8 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::get_colour_of_rendered_geometry(
 template <typename GreatCircleArcForwardIter>
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_great_circle_arcs(
-		const GreatCircleArcForwardIter &begin_arcs,
-		const GreatCircleArcForwardIter &end_arcs,
+		GreatCircleArcForwardIter begin_arcs,
+		GreatCircleArcForwardIter end_arcs,
 		const Colour &colour,
 		stream_primitives_type &lines_stream)
 {
@@ -1416,13 +1668,13 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_ellipse(
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_cone(
 		const GPlatesMaths::Vector3D &apex,
-		const GPlatesMaths::Vector3D &cone_axis,
+		const GPlatesMaths::UnitVector3D &cone_axis_unit_vector,
+		const GPlatesMaths::real_t &cone_axis_mag,
 		rgba8_t rgba8_color,
 		stream_primitives_type &triangles_stream)
 {
+	const GPlatesMaths::Vector3D cone_axis = cone_axis_mag * cone_axis_unit_vector;
 	const GPlatesMaths::Vector3D centre_base_circle = apex - cone_axis;
-
-	const GPlatesMaths::real_t cone_axis_mag = cone_axis.magnitude();
 
 	// Avoid divide-by-zero - and if cone length is near zero it won't be visible.
 	if (cone_axis_mag == 0)
@@ -1430,7 +1682,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_cone(
 		return;
 	}
 
-	const GPlatesMaths::UnitVector3D cone_zaxis( (1 / cone_axis_mag) * cone_axis );
+	const GPlatesMaths::UnitVector3D &cone_zaxis = cone_axis_unit_vector;
 
 	// Find an orthonormal basis using 'cone_axis'.
 	const GPlatesMaths::UnitVector3D cone_yaxis = generate_perpendicular(cone_zaxis);

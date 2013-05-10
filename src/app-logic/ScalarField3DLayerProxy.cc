@@ -75,8 +75,6 @@ GPlatesAppLogic::ScalarField3DLayerProxy::get_resolved_scalar_field_3d(
 	return ResolvedScalarField3D::create(
 			*d_current_scalar_field_feature.get().handle_ptr(),
 			reconstruction_time,
-			// FIXME: Dodgy - need to remove requirement of providing a reconstruction tree...
-			create_reconstruction_tree(reconstruction_time, 0),
 			GPlatesUtils::get_non_null_pointer(this));
 }
 

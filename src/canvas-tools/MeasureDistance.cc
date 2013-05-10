@@ -36,6 +36,7 @@
 #include "gui/Colour.h"
 #include "gui/ColourProxy.h"
 
+#include "maths/GeometryType.h"
 #include "maths/GreatCircleArc.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolylineOnSphere.h"
@@ -43,7 +44,6 @@
 
 #include "utils/GeometryCreationUtils.h"
 
-#include "view-operations/GeometryType.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryProximity.h"
@@ -212,8 +212,8 @@ GPlatesCanvasTools::MeasureDistance::paint_feature_measure()
 	if (geometry_builder &&
 			geometry_builder->get_num_geometries() &&
 			geometry_builder->get_num_points_in_current_geometry() > 1 &&
-			(geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYLINE ||
-			 geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYGON))
+			(geometry_builder->get_geometry_build_type() == GPlatesMaths::GeometryType::POLYLINE ||
+			 geometry_builder->get_geometry_build_type() == GPlatesMaths::GeometryType::POLYGON))
 				// Feature Measure tool does not apply to multipoints
 	{
 		GPlatesViewOperations::GeometryBuilder::GeometryIndex current_index =
@@ -225,7 +225,7 @@ GPlatesCanvasTools::MeasureDistance::paint_feature_measure()
 		iterator_type end = geometry_builder->get_geometry_point_end(current_index);
 
 		// draw lines
-		bool is_polygon = geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYGON;
+		bool is_polygon = geometry_builder->get_geometry_build_type() == GPlatesMaths::GeometryType::POLYGON;
 		render_multiple_line_segments(begin, end, FEATURE_MEASURE_LINE_COLOUR, is_polygon, d_geometry_layer_ptr);
 	}
 }
@@ -342,7 +342,7 @@ GPlatesCanvasTools::MeasureDistance::handle_move_without_drag(
 					d_measure_distance_state_ptr->get_current_geometry_builder_ptr();
 				if (geometry_builder)
 				{
-					bool is_polygon = geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYGON;
+					bool is_polygon = geometry_builder->get_geometry_build_type() == GPlatesMaths::GeometryType::POLYGON;
 					GPlatesViewOperations::GeometryBuilder::GeometryIndex geom_index =
 						geometry_builder->get_current_geometry_index();
 					GPlatesViewOperations::GeometryBuilder::PointIndex start_point_index =

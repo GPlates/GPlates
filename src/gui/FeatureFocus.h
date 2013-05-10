@@ -31,7 +31,10 @@
 
 #include "app-logic/ReconstructionGeometry.h"
 
+#include "maths/LatLonPoint.h"
+
 #include "model/FeatureHandle.h"
+
 
 namespace GPlatesPresentation
 {
@@ -296,7 +299,7 @@ namespace GPlatesGui
 		find_new_associated_reconstruction_geometry();
 	};
 
-	boost::optional<const GPlatesMaths::LatLonPoint>
+	boost::optional<GPlatesMaths::LatLonPoint>
 	locate_focus();
 }
 

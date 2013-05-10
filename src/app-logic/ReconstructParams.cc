@@ -30,13 +30,20 @@
 const double
 GPlatesAppLogic::ReconstructParams::INITIAL_VGP_DELTA_T = 5.;
 
+// Interpolate settings
+const double GPlatesAppLogic::ReconstructParams::INITIAL_INTERPOLATE_START_T =  0.0;
+const double GPlatesAppLogic::ReconstructParams::INITIAL_INTERPOLATE_FINAL_T =  20.0; 
+const double GPlatesAppLogic::ReconstructParams::INITIAL_INTERPOLATE_DELTA_T =  1.0; 
 
 GPlatesAppLogic::ReconstructParams::ReconstructParams() :
 	d_reconstruct_by_plate_id_outside_active_time_period(false),
 	d_vgp_visibility_setting(DELTA_T_AROUND_AGE),
 	d_vgp_earliest_time(GPlatesPropertyValues::GeoTimeInstant::create_distant_past()),
 	d_vgp_latest_time(GPlatesPropertyValues::GeoTimeInstant::create_distant_future()),
-	d_vgp_delta_t(INITIAL_VGP_DELTA_T)
+	d_vgp_delta_t(INITIAL_VGP_DELTA_T),
+	d_deformation_end_time( INITIAL_INTERPOLATE_START_T ),
+	d_deformation_begin_time( INITIAL_INTERPOLATE_FINAL_T ),
+	d_deformation_time_increment( INITIAL_INTERPOLATE_DELTA_T )
 {
 }
 
@@ -92,7 +99,10 @@ GPlatesAppLogic::ReconstructParams::operator==(
 		d_vgp_visibility_setting == rhs.d_vgp_visibility_setting &&
 		d_vgp_earliest_time == rhs.d_vgp_earliest_time &&
 		d_vgp_latest_time == rhs.d_vgp_latest_time &&
-		d_vgp_delta_t == rhs.d_vgp_delta_t;
+		d_vgp_delta_t == rhs.d_vgp_delta_t &&
+		d_deformation_end_time == rhs.d_deformation_end_time &&
+		d_deformation_begin_time == rhs.d_deformation_begin_time &&
+		d_deformation_time_increment == rhs.d_deformation_time_increment;
 }
 
 
@@ -141,6 +151,33 @@ GPlatesAppLogic::ReconstructParams::operator<(
 		return true;
 	}
 	if (d_vgp_delta_t > rhs.d_vgp_delta_t)
+	{
+		return false;
+	}
+
+	if (d_deformation_end_time < rhs.d_deformation_end_time)
+	{
+		return true;
+	}
+	if (d_deformation_end_time > rhs.d_deformation_end_time)
+	{
+		return false;
+	}
+
+	if (d_deformation_begin_time < rhs.d_deformation_begin_time)
+	{
+		return true;
+	}
+	if (d_deformation_begin_time > rhs.d_deformation_begin_time)
+	{
+		return false;
+	}
+
+	if (d_deformation_time_increment < rhs.d_deformation_time_increment)
+	{
+		return true;
+	}
+	if (d_deformation_time_increment > rhs.d_deformation_time_increment)
 	{
 		return false;
 	}

@@ -37,7 +37,7 @@
 
 #include "canvas-tools/CanvasTool.h"
 
-#include "view-operations/GeometryType.h"
+#include "maths/GeometryType.h"
 
 
 namespace GPlatesCanvasTools

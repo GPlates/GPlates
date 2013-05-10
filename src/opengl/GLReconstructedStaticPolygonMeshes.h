@@ -94,7 +94,7 @@ namespace GPlatesOpenGL
 
 		/**
 		 * A polygon mesh consisting of triangles within the interior region of the polygon if the
-		 * polygon is not self-intersecting, otherwise simply a triangle fan mesh (with centroid as apex).
+		 * polygon was successfully meshed, otherwise simply a triangle fan mesh (with centroid as apex).
 		 */
 		struct PolygonMeshDrawable
 		{

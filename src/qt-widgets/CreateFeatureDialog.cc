@@ -1318,6 +1318,10 @@ GPlatesQtWidgets::CreateFeatureDialog::reverse_reconstruct_geometry_property(
 					reconstructed_geometry.get(),
 					feature,
 					*default_reconstruction_tree,
+					// FIXME: Using default reconstruct parameters, but will probably need to
+					// get this from the layer that the created feature is being assigned to.
+					// For example a layer the deforms might need to deform geometry to present day...
+					GPlatesAppLogic::ReconstructParams(),
 					true/*reverse_reconstruct*/);
 
 	// Store the geometry property value back into the geometry property (in the feature).
@@ -1534,7 +1538,10 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 					present_day_geometry.get(),
 					isochron_feature,
-					*default_reconstruction_tree);
+					*default_reconstruction_tree,
+					// FIXME: Using default reconstruct parameters, but will probably need to
+					// get this from the layer that the created feature is being assigned to...
+					GPlatesAppLogic::ReconstructParams());
 
 	// Reverse reconstruct, using the *conjugate* plate id, back to present-day.
 	// Note that we're reversing the plate-id and conjugate-plate-ids, so we use the conjugate here.

@@ -31,11 +31,9 @@
 
 GPlatesMaths::ProximityCriteria::ProximityCriteria(
 		const PointOnSphere &test_point_,
-		const double &closeness_inclusion_threshold_,
-		bool consider_polygon_interior_):
+		const double &closeness_inclusion_threshold_):
 	d_test_point(test_point_),
-	d_closeness_inclusion_threshold(closeness_inclusion_threshold_),
-	d_consider_polygon_interior(consider_polygon_interior_)
+	d_closeness_inclusion_threshold(closeness_inclusion_threshold_)
 {
 	// We assume that (d_proximity_inclusion_threshold < 1.0).
 	d_latitude_exclusion_threshold = std::sqrt(1.0 -

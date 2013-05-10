@@ -199,6 +199,20 @@ namespace GPlatesMaths
 			const real_t &t_target,
 			const boost::optional<UnitVector3D> &axis_hint);
 
+	/**
+	 * Calculate a spatial interpolated rotation between three finite rotations r1, r2 and r3,
+	 * using associated barycentric coordinate weights w1, w2 and w3.
+	 *
+	 * Note that the weights must sum to 1.0.
+	 */ 
+	const FiniteRotation
+	interpolate(
+			const FiniteRotation &r1,
+			const FiniteRotation &r2,
+			const FiniteRotation &r3,
+			const real_t &w1,
+			const real_t &w2,
+			const real_t &w3);
 
 	/**
 	 * Compose two FiniteRotations.

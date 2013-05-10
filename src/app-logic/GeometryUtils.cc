@@ -27,6 +27,7 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
 
 #include "GeometryUtils.h"
@@ -76,11 +77,11 @@ namespace
 	{
 	public:
 		GetGeometryOnSphereType() :
-			d_geometry_on_sphere_type(GPlatesViewOperations::GeometryType::NONE)
+			d_geometry_on_sphere_type(GPlatesMaths::GeometryType::NONE)
 		{  }
 
 
-		GPlatesViewOperations::GeometryType::Value
+		GPlatesMaths::GeometryType::Value
 		get_geometry_on_sphere_type() const
 		{
 			return d_geometry_on_sphere_type;
@@ -92,7 +93,7 @@ namespace
 		visit_point_on_sphere(
 				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
 		{
-			d_geometry_on_sphere_type = GPlatesViewOperations::GeometryType::POINT;
+			d_geometry_on_sphere_type = GPlatesMaths::GeometryType::POINT;
 		}
 
 
@@ -101,7 +102,7 @@ namespace
 		visit_multi_point_on_sphere(
 				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type /*multi_point_on_sphere*/)
 		{
-			d_geometry_on_sphere_type = GPlatesViewOperations::GeometryType::MULTIPOINT;
+			d_geometry_on_sphere_type = GPlatesMaths::GeometryType::MULTIPOINT;
 		}
 
 
@@ -110,7 +111,7 @@ namespace
 		visit_polygon_on_sphere(
 				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type /*polygon_on_sphere*/)
 		{
-			d_geometry_on_sphere_type = GPlatesViewOperations::GeometryType::POLYGON;
+			d_geometry_on_sphere_type = GPlatesMaths::GeometryType::POLYGON;
 		}
 
 
@@ -119,12 +120,12 @@ namespace
 		visit_polyline_on_sphere(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type /*polyline_on_sphere*/)
 		{
-			d_geometry_on_sphere_type = GPlatesViewOperations::GeometryType::POLYLINE;
+			d_geometry_on_sphere_type = GPlatesMaths::GeometryType::POLYLINE;
 		}
 
 	private:
 
-		GPlatesViewOperations::GeometryType::Value d_geometry_on_sphere_type;
+		GPlatesMaths::GeometryType::Value d_geometry_on_sphere_type;
 	};
 
 
@@ -142,8 +143,16 @@ namespace
 				std::vector<GPlatesMaths::PointOnSphere> &points,
 				bool reverse_points) :
 			d_point_seq(points),
-			d_reverse_points(reverse_points)
+			d_reverse_points(reverse_points),
+			d_geometry_type(GPlatesMaths::GeometryType::NONE)
 		{  }
+
+
+		GPlatesMaths::GeometryType::Value
+		get_geometry_type() const
+		{
+			return d_geometry_type;
+		}
 
 
 		virtual
@@ -151,6 +160,8 @@ namespace
 		visit_point_on_sphere(
 				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 		{
+			d_geometry_type = GPlatesMaths::GeometryType::POINT;
+
 			d_point_seq.push_back(*point_on_sphere);
 		}
 
@@ -160,6 +171,8 @@ namespace
 		visit_multi_point_on_sphere(
 				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
 		{
+			d_geometry_type = GPlatesMaths::GeometryType::MULTIPOINT;
+
 			// Avoid excessive re-allocations when the number of points is large.
 			d_point_seq.reserve(multi_point_on_sphere->number_of_points());
 
@@ -185,6 +198,8 @@ namespace
 		visit_polygon_on_sphere(
 				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 		{
+			d_geometry_type = GPlatesMaths::GeometryType::POLYGON;
+
 			// Avoid excessive re-allocations when the number of points is large.
 			d_point_seq.reserve(polygon_on_sphere->number_of_vertices());
 
@@ -211,6 +226,8 @@ namespace
 		visit_polyline_on_sphere(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 		{
+			d_geometry_type = GPlatesMaths::GeometryType::POLYLINE;
+
 			// Avoid excessive re-allocations when the number of points is large.
 			d_point_seq.reserve(polyline_on_sphere->number_of_vertices());
 
@@ -236,6 +253,8 @@ namespace
 
 		//! Whether to reverse the visiting geometry points before appending.
 		bool d_reverse_points;
+
+		GPlatesMaths::GeometryType::Value d_geometry_type;
 	};
 
 
@@ -397,6 +416,74 @@ namespace
 
 
 	/**
+	 * Uses the points in a derived @a GeometryOnSphere object to create a multi-point.
+	 */
+	class ConvertGeometryToMultiPoint :
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+
+		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
+		get_multi_point() const
+		{
+			// Assert if we failed to visit and convert all geometry types.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					d_multi_point,
+					GPLATES_ASSERTION_SOURCE);
+
+			return d_multi_point.get();
+		}
+
+
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+			const GPlatesMaths::PointOnSphere point_on_sphere_array[1] =
+			{
+				GPlatesMaths::PointOnSphere(*point_on_sphere)
+			};
+
+			d_multi_point = GPlatesMaths::MultiPointOnSphere::create_on_heap(
+					point_on_sphere_array,
+					point_on_sphere_array + 1);
+		}
+
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+			d_multi_point = multi_point_on_sphere;
+		}
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			d_multi_point = GPlatesMaths::MultiPointOnSphere::create_on_heap(
+					polygon_on_sphere->vertex_begin(),
+					polygon_on_sphere->vertex_end());
+		}
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			d_multi_point = GPlatesMaths::MultiPointOnSphere::create_on_heap(
+					polyline_on_sphere->vertex_begin(),
+					polyline_on_sphere->vertex_end());
+		}
+
+	private:
+		boost::optional<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> d_multi_point;
+	};
+
+
+	/**
 	 * Uses the points in a derived @a GeometryOnSphere object to create a polygon.
 	 */
 	class ConvertGeometryToPolygon :
@@ -464,6 +551,19 @@ namespace
 			public GPlatesModel::ConstFeatureVisitor
 	{
 	public:
+
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+		get_geometry_from_property(
+				const GPlatesModel::FeatureHandle::iterator &property,
+				const double &reconstruction_time)
+		{
+			d_reconstruction_time = GPlatesPropertyValues::GeoTimeInstant(reconstruction_time);
+			d_geometry = boost::none;
+
+			(*property)->accept_visitor(*this);
+
+			return d_geometry;
+		}
 
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 		get_geometry_from_property_value(
@@ -620,7 +720,8 @@ namespace
 	};
 }
 
-GPlatesViewOperations::GeometryType::Value
+
+GPlatesMaths::GeometryType::Value
 GPlatesAppLogic::GeometryUtils::get_geometry_type(
 		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
 {
@@ -630,7 +731,73 @@ GPlatesAppLogic::GeometryUtils::get_geometry_type(
 	return visitor.get_geometry_on_sphere_type();
 }
 
-void
+
+boost::optional<const GPlatesMaths::PointOnSphere &>
+GPlatesAppLogic::GeometryUtils::get_point_on_sphere(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
+{
+	boost::optional<const GPlatesMaths::PointOnSphere &> point_on_sphere;
+
+	const GPlatesMaths::PointOnSphere *point_on_sphere_ptr =
+			dynamic_cast<const GPlatesMaths::PointOnSphere *>(&geometry_on_sphere);
+	if (point_on_sphere_ptr)
+	{
+		point_on_sphere = *point_on_sphere_ptr;
+	}
+
+	return point_on_sphere;
+}
+
+boost::optional<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type>
+GPlatesAppLogic::GeometryUtils::get_multi_point_on_sphere(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
+{
+	boost::optional<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> multi_point_on_sphere;
+
+	const GPlatesMaths::MultiPointOnSphere *multi_point_on_sphere_ptr =
+			dynamic_cast<const GPlatesMaths::MultiPointOnSphere *>(&geometry_on_sphere);
+	if (multi_point_on_sphere_ptr)
+	{
+		multi_point_on_sphere = boost::in_place(multi_point_on_sphere_ptr);
+	}
+
+	return multi_point_on_sphere;
+}
+
+boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
+GPlatesAppLogic::GeometryUtils::get_polyline_on_sphere(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
+{
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> polyline_on_sphere;
+
+	const GPlatesMaths::PolylineOnSphere *polyline_on_sphere_ptr =
+			dynamic_cast<const GPlatesMaths::PolylineOnSphere *>(&geometry_on_sphere);
+	if (polyline_on_sphere_ptr)
+	{
+		polyline_on_sphere = boost::in_place(polyline_on_sphere_ptr);
+	}
+
+	return polyline_on_sphere;
+}
+
+boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+GPlatesAppLogic::GeometryUtils::get_polygon_on_sphere(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
+{
+	boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon_on_sphere;
+
+	const GPlatesMaths::PolygonOnSphere *polygon_on_sphere_ptr =
+			dynamic_cast<const GPlatesMaths::PolygonOnSphere *>(&geometry_on_sphere);
+	if (polygon_on_sphere_ptr)
+	{
+		polygon_on_sphere = boost::in_place(polygon_on_sphere_ptr);
+	}
+
+	return polygon_on_sphere;
+}
+
+
+GPlatesMaths::GeometryType::Value
 GPlatesAppLogic::GeometryUtils::get_geometry_points(
 		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
 		std::vector<GPlatesMaths::PointOnSphere> &points,
@@ -639,6 +806,8 @@ GPlatesAppLogic::GeometryUtils::get_geometry_points(
 	GetGeometryOnSpherePoints get_geometry_on_sphere_points(points, reverse_points);
 
 	geometry_on_sphere.accept_visitor(get_geometry_on_sphere_points);
+
+	return get_geometry_on_sphere_points.get_geometry_type();
 }
 
 std::pair<
@@ -668,6 +837,18 @@ GPlatesAppLogic::GeometryUtils::get_geometry_bounding_small_circle(
 }
 
 
+GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::GeometryUtils::convert_geometry_to_multi_point(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
+{
+	ConvertGeometryToMultiPoint visitor;
+
+	geometry_on_sphere.accept_visitor(visitor);
+
+	return visitor.get_multi_point();
+}
+
+
 boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
 GPlatesAppLogic::GeometryUtils::convert_geometry_to_polygon(
 		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
@@ -677,6 +858,16 @@ GPlatesAppLogic::GeometryUtils::convert_geometry_to_polygon(
 	geometry_on_sphere.accept_visitor(visitor);
 
 	return visitor.get_polygon();
+}
+
+
+boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+GPlatesAppLogic::GeometryUtils::get_geometry_from_property(
+		const GPlatesModel::FeatureHandle::iterator &property,
+		const double &reconstruction_time)
+{
+	GetGeometryFromPropertyVisitor visitor;
+	return visitor.get_geometry_from_property(property, reconstruction_time);
 }
 
 

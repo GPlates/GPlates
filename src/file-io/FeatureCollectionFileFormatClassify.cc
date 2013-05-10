@@ -80,7 +80,7 @@ namespace GPlatesFileIO
 				{
 					if (!classifications.test(reconstruct_method)) // Only test if not classified already...
 					{
-						// Check if the feature is can be reconstructed with the current reconstruct method type.
+						// Check if the feature can be reconstructed with the current reconstruct method type.
 						if (reconstruct_method_registry.can_reconstruct_feature(reconstruct_method, feature))
 						{
 							classifications.set(reconstruct_method);
