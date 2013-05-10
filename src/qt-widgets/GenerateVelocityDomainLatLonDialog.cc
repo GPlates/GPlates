@@ -287,6 +287,10 @@ GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::generate_velocity_domain()
 	// is generated instead of many as we incrementally modify the feature below.
 	GPlatesModel::NotificationGuard model_notification_guard(model.access_model());
 
+	// Block any signaled calls to 'ApplicationState::reconstruct' until we exit this scope.
+	GPlatesAppLogic::ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(
+			d_main_window.get_application_state(), true/*reconstruct_on_scope_exit*/);
+
 	// Loading files will trigger layer additions.
 	// As an optimisation (ie, not required), put all layer additions in a single add layers group.
 	// It dramatically improves the speed of the Visual Layers dialog when there's many layers.
