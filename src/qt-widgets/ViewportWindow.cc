@@ -849,6 +849,9 @@ GPlatesQtWidgets::ViewportWindow::connect_help_menu_actions()
 	// ----
 	QObject::connect(action_About, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_about_dialog()));
+
+	QObject::connect(action_About_GPlates_Dataset, SIGNAL(triggered()),
+			this, SLOT(open_dataset_webpage()));
 }
 
 
@@ -1624,6 +1627,13 @@ void
 GPlatesQtWidgets::ViewportWindow::pop_up_python_console()
 {
 	d_view_state.get_python_manager().pop_up_python_console();
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::open_dataset_webpage()
+{
+	QDesktopServices::openUrl(QUrl("http://www.earthbyte.org/Resources/earthbyte_gplates_datasources.html"));
 }
 
 

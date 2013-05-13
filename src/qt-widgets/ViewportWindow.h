@@ -429,6 +429,9 @@ namespace GPlatesQtWidgets
 
 		void
 		pop_up_python_console();
+
+		void
+		open_dataset_webpage();
 		
 	private:
 

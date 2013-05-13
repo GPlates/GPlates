@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>780</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -43,6 +43,7 @@
     <addaction name="action_View_Online_Documentation"/>
     <addaction name="separator"/>
     <addaction name="action_About"/>
+    <addaction name="action_About_GPlates_Dataset"/>
    </widget>
    <widget class="QMenu" name="menu_File">
     <property name="title">
@@ -1102,6 +1103,15 @@
   <action name="action_Generate_LatitudeLongitude_Velocity_Domain">
    <property name="text">
     <string>&amp;Latitude Longitude...</string>
+   </property>
+  </action>
+  <action name="action_About_GPlates_Dataset">
+   <property name="icon">
+    <iconset resource="../qt-resources/qt_widgets.qrc">
+     <normaloff>:/human_gtk_about_16.png</normaloff>:/human_gtk_about_16.png</iconset>
+   </property>
+   <property name="text">
+    <string>About GPlates Dataset</string>
    </property>
   </action>
  </widget>
