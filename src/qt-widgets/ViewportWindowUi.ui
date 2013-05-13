@@ -1111,7 +1111,10 @@
      <normaloff>:/human_gtk_about_16.png</normaloff>:/human_gtk_about_16.png</iconset>
    </property>
    <property name="text">
-    <string>About GPlates Dataset</string>
+    <string>About Data Sources</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::ApplicationSpecificRole</enum>
    </property>
   </action>
  </widget>
