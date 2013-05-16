@@ -197,7 +197,16 @@ GPlatesQtWidgets::ShapefileAttributeWidget::setup()
 		combo_plateID->setCurrentIndex(index + 1);
 	}
 
+	// For feature type, the default attribute name is GPGIM_TYPE. If we don't find this,
+	// we will look for TYPE. This is a hard-coded hack. I don't currently have any kind of
+	// "backup" default names to check through. We could do this by having the default_attribute_field_names
+	// defined in PropertyMapper.h contain QStringLists instead of QStrings, where additional members
+	// in each QStringList would represent fallback default names.
 	if ( (index = d_field_names.indexOf(d_default_fields[ShapefileAttributes::FEATURE_TYPE])) != -1) {	
+		combo_feature_type->setCurrentIndex(index + 1);
+	}
+	else if (( index = d_field_names.indexOf("TYPE")) != -1)
+	{
 		combo_feature_type->setCurrentIndex(index + 1);
 	}
 
