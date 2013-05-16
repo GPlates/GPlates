@@ -71,12 +71,16 @@ namespace GPlatesViewOperations
 					float point_size_hint,
 					float line_width_hint,
 					bool fill_polygon,
+					bool fill_polyline,
+					const GPlatesGui::Colour &fill_modulate_colour,
 					const boost::optional<GPlatesGui::Symbol> &symbol_ = boost::none) :
 				d_geom_on_sphere(geom_on_sphere),
 				d_colour(colour),
 				d_point_size_hint(point_size_hint),
 				d_line_width_hint(line_width_hint),
 				d_fill_polygon(fill_polygon),
+				d_fill_polyline(fill_polyline),
+				d_fill_modulate_colour(fill_modulate_colour),
 				d_symbol(symbol_)
 				{  }
 
@@ -160,7 +164,11 @@ namespace GPlatesViewOperations
 						GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 				{
 					d_rendered_geom = create_rendered_polygon_on_sphere(
-							polygon_on_sphere, d_colour, d_line_width_hint, d_fill_polygon);
+							polygon_on_sphere,
+							d_colour,
+							d_line_width_hint,
+							d_fill_polygon,
+							d_fill_modulate_colour);
 				}
 
 				virtual
@@ -169,7 +177,11 @@ namespace GPlatesViewOperations
 						GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 				{
 					d_rendered_geom = create_rendered_polyline_on_sphere(
-							polyline_on_sphere, d_colour, d_line_width_hint);
+							polyline_on_sphere,
+							d_colour,
+							d_line_width_hint,
+							d_fill_polyline,
+							d_fill_modulate_colour);
 				}
 
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_geom_on_sphere;
@@ -177,6 +189,8 @@ namespace GPlatesViewOperations
 				float d_point_size_hint;
 				float d_line_width_hint;
 				bool d_fill_polygon;
+				bool d_fill_polyline;
+				GPlatesGui::Colour d_fill_modulate_colour;
 				const boost::optional<GPlatesGui::Symbol> &d_symbol;
 				RenderedGeometry d_rendered_geom;
 			};
@@ -192,12 +206,21 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphe
 		float point_size_hint,
 		float line_width_hint,
 		bool fill_polygon,
+		bool fill_polyline,
+		const GPlatesGui::Colour &fill_modulate_colour,
 		const boost::optional<GPlatesGui::Symbol> &symbol)
 {
 	// This is used to determine the derived type of 'geom_on_sphere'
 	// and create a RenderedGeometryImpl for it.
 	CreateRenderedGeometryFromGeometryOnSphere create_rendered_geom(
-			geom_on_sphere, colour, point_size_hint, line_width_hint, fill_polygon, symbol);
+			geom_on_sphere,
+			colour,
+			point_size_hint,
+			line_width_hint,
+			fill_polygon,
+			fill_polyline,
+			fill_modulate_colour,
+			symbol);
 
 	return create_rendered_geom.create_rendered_geometry();
 }
@@ -230,10 +253,17 @@ GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polyline_on_sphere(
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere,
 		const GPlatesGui::ColourProxy &colour,
-		float line_width_hint)
+		float line_width_hint,
+		bool filled,
+		const GPlatesGui::Colour &fill_modulate_colour)
 {
-	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedPolylineOnSphere(
-			polyline_on_sphere, colour, line_width_hint));
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(
+			new RenderedPolylineOnSphere(
+					polyline_on_sphere,
+					colour,
+					line_width_hint,
+					filled,
+					fill_modulate_colour));
 
 	return RenderedGeometry(rendered_geom_impl);
 }
@@ -243,10 +273,16 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polygon_on_spher
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
 		const GPlatesGui::ColourProxy &colour,
 		float line_width_hint,
-		bool filled)
+		bool filled,
+		const GPlatesGui::Colour &fill_modulate_colour)
 {
-	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedPolygonOnSphere(
-			polygon_on_sphere, colour, line_width_hint, filled));
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(
+			new RenderedPolygonOnSphere(
+					polygon_on_sphere,
+					colour,
+					line_width_hint,
+					filled,
+					fill_modulate_colour));
 
 	return RenderedGeometry(rendered_geom_impl);
 }
@@ -286,13 +322,15 @@ GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
 		const GPlatesAppLogic::resolved_raster_non_null_ptr_to_const_type &resolved_raster,
 		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
-		const GPlatesGui::Colour &raster_modulate_colour)
+		const GPlatesGui::Colour &raster_modulate_colour,
+		float normal_map_height_field_scale_factor)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(
 			new RenderedResolvedRaster(
 					resolved_raster,
 					raster_colour_palette,
-					raster_modulate_colour));
+					raster_modulate_colour,
+					normal_map_height_field_scale_factor));
 
 	return RenderedGeometry(rendered_geom_impl);
 }

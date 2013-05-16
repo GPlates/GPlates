@@ -526,7 +526,9 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_create()
 	// Now that we're finished building the topology, switch to the
 	// tool used to choose a feature - this will allow the user to select
 	// another topology for building/editing or do something else altogether.
-	d_canvas_tool_workflows->choose_canvas_tool(GPlatesGui::CanvasToolWorkflows::TOOL_CLICK_GEOMETRY);
+	d_canvas_tool_workflows->choose_canvas_tool(
+			GPlatesGui::CanvasToolWorkflows::WORKFLOW_TOPOLOGY,
+			GPlatesGui::CanvasToolWorkflows::TOOL_CLICK_GEOMETRY);
 }
 
 void
@@ -618,7 +620,9 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_apply()
 	// Now that we're finished editing the topology, switch to the
 	// tool used to choose a feature - this will allow the user to select
 	// another topology for building/editing or do something else altogether.
-	d_canvas_tool_workflows->choose_canvas_tool(GPlatesGui::CanvasToolWorkflows::TOOL_CLICK_GEOMETRY);
+	d_canvas_tool_workflows->choose_canvas_tool(
+			GPlatesGui::CanvasToolWorkflows::WORKFLOW_TOPOLOGY,
+			GPlatesGui::CanvasToolWorkflows::TOOL_CLICK_GEOMETRY);
 }
 
 void

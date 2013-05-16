@@ -35,6 +35,9 @@ GPlatesPresentation::ReconstructVisualLayerParams::ReconstructVisualLayerParams(
 			GPlatesGui::DrawStyleManager::instance()->default_style()),
 	d_vgp_draw_circular_error(true),
 	d_fill_polygons(false),
+	d_fill_polylines(false),
+	d_fill_opacity(1.0),
+	d_fill_intensity(1.0),
 	d_show_deformed_feature_geometries(true),
 	d_show_show_strain_accumulation(false),
 	d_strain_accumulation_scale(1)
@@ -71,6 +74,47 @@ bool
 GPlatesPresentation::ReconstructVisualLayerParams::get_fill_polygons() const
 {
 	return d_fill_polygons;
+}
+
+
+void
+GPlatesPresentation::ReconstructVisualLayerParams::set_fill_polylines(
+		bool fill)
+{
+	d_fill_polylines = fill;
+	emit_modified();
+}
+
+
+bool
+GPlatesPresentation::ReconstructVisualLayerParams::get_fill_polylines() const
+{
+	return d_fill_polylines;
+}
+
+
+void
+GPlatesPresentation::ReconstructVisualLayerParams::set_fill_opacity(
+		const double &opacity)
+{
+	d_fill_opacity = opacity;
+	emit_modified();
+}
+
+
+void
+GPlatesPresentation::ReconstructVisualLayerParams::set_fill_intensity(
+		const double &intensity)
+{
+	d_fill_intensity = intensity;
+	emit_modified();
+}
+
+
+GPlatesGui::Colour
+GPlatesPresentation::ReconstructVisualLayerParams::get_fill_modulate_colour() const
+{
+	return GPlatesGui::Colour(d_fill_intensity, d_fill_intensity, d_fill_intensity, d_fill_opacity);
 }
 
 

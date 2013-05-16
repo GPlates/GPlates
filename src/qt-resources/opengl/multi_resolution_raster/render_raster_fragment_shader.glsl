@@ -12,12 +12,12 @@ void main (void)
 {
 #ifdef SOURCE_RASTER_IS_FLOATING_POINT
 	// Just return the source raster.
-   gl_FragColor = texture2D(raster_texture_sampler, gl_TexCoord[0].st);
+	gl_FragColor = texture2D(raster_texture_sampler, gl_TexCoord[0].st);
 #endif
 
 #ifdef SURFACE_NORMALS
 	// Sample the tangent-space normal in the source raster.
-   vec3 tangent_space_normal = texture2D(raster_texture_sampler, gl_TexCoord[0].st).xyz;
+	vec3 tangent_space_normal = texture2D(raster_texture_sampler, gl_TexCoord[0].st).xyz;
 	// Need to convert the x and y components from unsigned to signed ([0,1] -> [-1,1]).
 	// The z component is always positive (in range [0,1]) so does not need conversion.
 	tangent_space_normal.xy = 2 * tangent_space_normal.xy - 1;

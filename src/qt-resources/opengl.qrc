@@ -7,6 +7,7 @@
     <file>opengl/multi_resolution_filled_polygons/render_tile_to_scene_fragment_shader.glsl</file>
     <file>opengl/multi_resolution_filled_polygons/render_tile_to_scene_vertex_shader.glsl</file>
     <file>opengl/multi_resolution_raster/render_raster_fragment_shader.glsl</file>
+	<file>opengl/multi_resolution_raster/render_sphere_normals_fragment_shader.glsl</file>
     <file>opengl/multi_resolution_raster_map_view/render_tile_to_scene_fragment_shader.glsl</file>
     <file>opengl/multi_resolution_raster_map_view/render_tile_to_scene_vertex_shader.glsl</file>
     <file>opengl/multi_resolution_static_polygon_reconstructed_raster/render_tile_to_scene_fragment_shader.glsl</file>

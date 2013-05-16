@@ -26,6 +26,7 @@
 #ifndef GPLATES_GUI_SCENELIGHTINGPARAMETERS_H
 #define GPLATES_GUI_SCENELIGHTINGPARAMETERS_H
 
+#include <bitset>
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 
@@ -47,35 +48,56 @@ namespace GPlatesGui
 	public:
 
 		/**
-		 * Initial light direction is along x-axis which is latitude/longitude (0,0) which is initially
-		 * facing the user when GPlates starts.
+		 * The types of primitives that lighting can be individually enabled/disabled for.
+		 */
+		enum LightingPrimitiveType
+		{
+			LIGHTING_POINT_POLYLINE_POLYGON,
+			LIGHTING_FILLED_POLYGON,
+			LIGHTING_RASTER,
+			LIGHTING_SCALAR_FIELD,
+
+			NUM_LIGHTING_PRIMITIVE_TYPES // Must be the last enum.
+		};
+
+
+		/**
+		 * The initial light direction in the 3D globe views is along x-axis which is
+		 * latitude/longitude (0,0) which is initially facing the user when GPlates starts.
+		 *
+		 * The initial light direction in the 2D map views is perpendicular to the map plane
+		 * which is towards the viewer and hence along the z-axis.
 		 *
 		 * Default to 40% ambient (non-lit) and 60% diffuse lighting since
 		 * it gives good visual contrast/results for the user to start off with.
 		 */
 		SceneLightingParameters() :
-			// Disable lighting for now - until the lighting canvas tool is in place - since it will
-			// have controls to individually enable/disable lighting for vector geometries, filled
-			// geometries, rasters, scalar fields, etc...
-			d_lighting_enabled(false),
 			d_light_direction_attached_to_view_frame(true),
 			d_ambient_light_contribution(0.4),
-			d_light_direction(1, 0, 0)
-		{  }
-
-		//! Enables (or disables) scene lighting.
-		void
-		enable_lighting(
-				bool enable = true)
+			d_globe_view_light_direction(1, 0, 0),
+			d_map_view_light_direction(0, 0, 1)
 		{
-			d_lighting_enabled = enable;
+			// Disable all lighting (except scalar fields) for now by default - until the lighting
+			// canvas tool is in place - since it will have controls to individually enable/disable
+			// lighting for vector geometries, filled geometries, rasters, scalar fields, etc...
+			d_lighting_primitives_enable_state.set(LIGHTING_SCALAR_FIELD);
 		}
 
-		//! Returns true if scene lighting is enabled.
-		bool
-		is_lighting_enabled() const
+		//! Enables (or disables) scene lighting for the specified lighting primitive.
+		void
+		enable_lighting(
+				LightingPrimitiveType lighting_primitive_type,
+				bool enable = true)
 		{
-			return d_lighting_enabled;
+			d_lighting_primitives_enable_state.set(lighting_primitive_type, enable);
+		}
+
+		//! Returns true if scene lighting is enabled for the specified lighting primitive.
+		bool
+		is_lighting_enabled(
+				LightingPrimitiveType lighting_primitive_type) const
+		{
+			return d_lighting_primitives_enable_state.test(lighting_primitive_type);
 		}
 
 		/**
@@ -103,19 +125,34 @@ namespace GPlatesGui
 			d_ambient_light_contribution = ambient_light_contribution;
 		}
 
-		//! Sets the light direction.
+		//! Sets the globe view light direction.
 		void
-		set_light_direction(
+		set_globe_view_light_direction(
 				const GPlatesMaths::UnitVector3D &light_direction)
 		{
-			d_light_direction = light_direction;
+			d_globe_view_light_direction = light_direction;
 		}
 
-		//! Gets the light direction.
+		//! Gets the globe view light direction.
 		const GPlatesMaths::UnitVector3D &
-		get_light_direction() const
+		get_globe_view_light_direction() const
 		{
-			return d_light_direction;
+			return d_globe_view_light_direction;
+		}
+
+		//! Sets the map view light direction.
+		void
+		set_map_view_light_direction(
+				const GPlatesMaths::UnitVector3D &map_view_light_direction)
+		{
+			d_map_view_light_direction = map_view_light_direction;
+		}
+
+		//! Gets the map view light direction.
+		const GPlatesMaths::UnitVector3D &
+		get_map_view_light_direction() const
+		{
+			return d_map_view_light_direction;
 		}
 
 		//! Enables (or disables) scene lighting.
@@ -144,19 +181,39 @@ namespace GPlatesGui
 				const SceneLightingParameters &rhs) const
 		{
 			return
-				d_lighting_enabled == rhs.d_lighting_enabled &&
+				d_lighting_primitives_enable_state == rhs.d_lighting_primitives_enable_state &&
 				d_light_direction_attached_to_view_frame == rhs.d_light_direction_attached_to_view_frame &&
 				GPlatesMaths::are_almost_exactly_equal(d_ambient_light_contribution, rhs.d_ambient_light_contribution) &&
-				d_light_direction == rhs.d_light_direction;
+				d_globe_view_light_direction == rhs.d_globe_view_light_direction &&
+				d_map_view_light_direction == rhs.d_map_view_light_direction;
 		}
 
 	private:
 
-		bool d_lighting_enabled;
+		/**
+		 * Type contains lighting enabled state.
+		 */
+		typedef std::bitset<NUM_LIGHTING_PRIMITIVE_TYPES> lighting_primitives_enable_state_type;
+
+
+		/**
+		 * Determines what lighting is enabled for.
+		 */
+		lighting_primitives_enable_state_type d_lighting_primitives_enable_state;
+
 		bool d_light_direction_attached_to_view_frame;
 
 		double d_ambient_light_contribution;
-		GPlatesMaths::UnitVector3D d_light_direction;
+
+		/**
+		 * The light direction for the 3D globe views.
+		 */
+		GPlatesMaths::UnitVector3D d_globe_view_light_direction;
+
+		/**
+		 * The light direction for the 2D map views.
+		 */
+		GPlatesMaths::UnitVector3D d_map_view_light_direction;
 	};
 }
 

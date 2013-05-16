@@ -30,6 +30,7 @@
 #include <map>
 #include <utility>
 #include <vector>
+#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -172,6 +173,8 @@ namespace GPlatesOpenGL
 		 * @a source_raster_modulate_colour can be used to modulate the raster by the specified
 		 * colour (eg, to enable semi-transparent rasters).
 		 *
+		 * @a normal_map_height_field_scale_factor alters the surface lighting if a normal map is used.
+		 *
 		 * The raster is rendered with lighting (if supported and currently enabled) using @a get_light
 		 * (and it's current lighting parameters).
 		 *
@@ -184,6 +187,7 @@ namespace GPlatesOpenGL
 				const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type &source_resolved_raster,
 				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &source_raster_colour_palette,
 				const GPlatesGui::Colour &source_raster_modulate_colour = GPlatesGui::Colour::get_white(),
+				float normal_map_height_field_scale_factor = 1,
 				boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection = boost::none);
 
 
@@ -477,18 +481,78 @@ namespace GPlatesOpenGL
 				public LayerUsage
 		{
 		public:
+
+			/**
+			 * A normal map raster associated with a specific height field scale factor.
+			 */
+			class NormalRaster :
+					private boost::noncopyable
+			{
+			public:
+
+				//! Typedef for a strong reference.
+				typedef boost::shared_ptr<NormalRaster> shared_ptr_type;
+
+				//! Typedef for a weak reference.
+				typedef boost::weak_ptr<NormalRaster> weak_ptr_type;
+
+
+				/**
+				 * Creates a @a NormalRaster.
+				 */
+				static
+				shared_ptr_type
+				create(
+						const GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type &raster_layer_proxy,
+						float height_field_scale_factor)
+				{
+					return shared_ptr_type(new NormalRaster(raster_layer_proxy, height_field_scale_factor));
+				}
+
+
+				/**
+				 * Returns the normal map cube raster.
+				 *
+				 * Rebuilds if out-of-date with respect to its dependencies.
+				 */
+				boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type>
+				get_normal_map(
+						GLRenderer &renderer);
+
+			private:
+				GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type d_raster_layer_proxy;
+				GPlatesUtils::ObserverToken d_proxied_raster_observer_token;
+				GPlatesUtils::ObserverToken d_raster_feature_observer_token;
+
+				float d_height_field_scale_factor;
+
+				boost::optional<GLNormalMapSource::non_null_ptr_type> d_normal_map_raster_source;
+				boost::optional<GLMultiResolutionRaster::non_null_ptr_type> d_multi_resolution_raster;
+				boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> d_multi_resolution_cube_raster;
+
+
+				NormalRaster(
+						const GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type &raster_layer_proxy,
+						float height_field_scale_factor) :
+					d_raster_layer_proxy(raster_layer_proxy),
+					d_height_field_scale_factor(height_field_scale_factor)
+				{  }
+			};
+
+
 			explicit
 			NormalMapLayerUsage(
 					const GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type &normal_map_raster_layer_proxy);
 
 			/**
-			 * Returns the normal map raster.
+			 * Returns a (shared) normal map raster for the specified height field scale factor.
 			 *
 			 * Rebuilds if out-of-date with respect to its dependencies.
 			 */
-			boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type>
+			NormalRaster::shared_ptr_type
 			get_normal_map(
-					GLRenderer &renderer);
+					GLRenderer &renderer,
+					float height_field_scale_factor);
 
 			virtual
 			bool
@@ -496,13 +560,13 @@ namespace GPlatesOpenGL
 					const GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type &layer_proxy) const;
 
 		private:
-			GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type d_raster_layer_proxy;
-			GPlatesUtils::ObserverToken d_proxied_raster_observer_token;
-			GPlatesUtils::ObserverToken d_raster_feature_observer_token;
 
-			boost::optional<GLNormalMapSource::non_null_ptr_type> d_normal_map_raster_source;
-			boost::optional<GLMultiResolutionRaster::non_null_ptr_type> d_multi_resolution_raster;
-			boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> d_multi_resolution_cube_raster;
+			//! Typedef for a mapping from height field scale factor to normal raster.
+			typedef std::map<GPlatesMaths::real_t, NormalRaster::weak_ptr_type> normal_raster_map_type;
+
+
+			GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type d_raster_layer_proxy;
+			normal_raster_map_type d_normal_raster_map;
 		};
 
 
@@ -552,16 +616,34 @@ namespace GPlatesOpenGL
 					const GPlatesUtils::non_null_intrusive_ptr<CubeRasterLayerUsage> &cube_raster_layer_usage);
 
 			/**
-			 * Set/update the layer usages that come from other layers (and the global light input).
+			 * Set the layer inputs when raster is reconstructed (regardless of whether using age grid or normal map).
 			 *
+			 * Set/update the layer usages that come from other layers (and the global light input).
 			 * This is done in case the user connects to new layers or disconnects.
 			 */
 			void
-			set_layer_inputs(
-					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> > &
+			set_reconstructing_layer_inputs(
+					GLRenderer &renderer,
+					const GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> &
 							reconstructed_polygon_meshes_layer_usage,
 					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > &age_grid_layer_usage,
 					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<NormalMapLayerUsage> > &normal_map_layer_usage,
+					float height_field_scale_factor,
+					boost::optional<GLLight::non_null_ptr_type> light);
+
+			/**
+			 * Set the layer inputs when raster is *not* reconstructed but still uses age grid and/or normal map.
+			 *
+			 * Set/update the layer usages that come from other layers (and the global light input).
+			 * This is done in case the user connects to new layers or disconnects.
+			 */
+			void
+			set_non_reconstructing_layer_inputs(
+					GLRenderer &renderer,
+					const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh,
+					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > &age_grid_layer_usage,
+					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<NormalMapLayerUsage> > &normal_map_layer_usage,
+					float height_field_scale_factor,
 					boost::optional<GLLight::non_null_ptr_type> light);
 
 			/**
@@ -589,21 +671,36 @@ namespace GPlatesOpenGL
 			boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> d_multi_resolution_cube_raster;
 			GPlatesUtils::non_null_intrusive_ptr<CubeRasterLayerUsage> d_cube_raster_layer_usage;
 
+			// Used when reconstructing raster.
 			boost::optional<GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
 					d_reconstructed_polygon_meshes;
 			boost::optional<GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> >
 					d_reconstructed_polygon_meshes_layer_usage;
 
+			// Used when *not* reconstructing raster.
+			boost::optional<GLMultiResolutionCubeMesh::non_null_ptr_to_const_type>
+					d_multi_resolution_cube_mesh;
+
 			boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> d_age_grid_mask_cube_raster;
 			boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > d_age_grid_layer_usage;
 
 			boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> d_normal_map_cube_raster;
+			boost::optional<NormalMapLayerUsage::NormalRaster::shared_ptr_type> d_normal_map_normal_raster;
 			boost::optional<GPlatesUtils::non_null_intrusive_ptr<NormalMapLayerUsage> > d_normal_map_layer_usage;
 
 			boost::optional<GLLight::non_null_ptr_type> d_light;
 
 			boost::optional<GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
 					d_reconstructed_raster;
+
+
+			void
+			set_other_inputs(
+					GLRenderer &renderer,
+					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > &age_grid_layer_usage,
+					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<NormalMapLayerUsage> > &normal_map_layer_usage,
+					float height_field_scale_factor,
+					boost::optional<GLLight::non_null_ptr_type> light);
 		};
 
 

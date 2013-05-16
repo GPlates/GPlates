@@ -94,7 +94,7 @@ namespace GPlatesOpenGL
 		 * the exact level-of-detail that would be required to fulfill the resolution needs of a
 		 * render target (as defined by the specified viewport and view/projection matrices).
 		 *
-		 * Since tiles are only at integer level-of-detail factors an unclamped floating-point number
+		 * Since tiles are only at integer level-of-detail factors, an unclamped floating-point number
 		 * is only useful to determine if the current render target is big enough or if it's too big,
 		 * ie, if it's less than zero.
 		 *

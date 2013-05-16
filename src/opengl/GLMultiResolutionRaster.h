@@ -34,6 +34,7 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "GLCompiledDrawState.h"
 #include "GLIntersectPrimitives.h"
 #include "GLMatrix.h"
 #include "GLMultiResolutionRasterInterface.h"
@@ -407,6 +408,18 @@ namespace GPlatesOpenGL
 			// Delegate to our source raster input.
 			return d_raster_source->get_target_texture_internal_format();
 		}
+
+
+		/**
+		 * Clears the currently bound framebuffer as appropriate for the raster type.
+		 *
+		 * This is useful when rendering *regional* (non-global) normal maps to a target texture
+		 * because @a render only renders within the regional raster and the normals outside the
+		 * region must be normal to the globe's surface.
+		 */
+		void
+		clear_frame_buffer(
+				GLRenderer &renderer);
 
 	private:
 		/**
@@ -844,6 +857,31 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Used to render sphere normals.
+		 *
+		 * This is useful when rendering *regional* (non-global) normal maps to a target texture
+		 * because @a render only renders within the regional raster and the normals outside the
+		 * region must be normal to the globe's surface.
+		 */
+		class RenderSphereNormals
+		{
+		public:
+			explicit
+			RenderSphereNormals(
+					GLRenderer &renderer);
+
+			void
+			render(
+					GLRenderer &renderer);
+
+		private:
+			GLVertexArray::shared_ptr_type d_vertex_array;
+			boost::optional<GLProgramObject::shared_ptr_type> d_program_object;
+			boost::optional<GLCompiledDrawState::non_null_ptr_to_const_type> d_draw_vertex_array;
+		};
+
+
+		/**
 		 * Georeferencing information to position the raster onto the globe.
 		 */
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type d_georeferencing;
@@ -935,6 +973,15 @@ namespace GPlatesOpenGL
 		 * Otherwise is boost::none (only the fixed-function pipeline is needed).
 		 */
 		boost::optional<GLProgramObject::shared_ptr_type> d_render_raster_program_object;
+
+		/**
+		 * Used to render sphere normals.
+		 *
+		 * This is useful when rendering *regional* (non-global) normal maps to a target texture
+		 * because @a render only renders within the regional raster and the normals outside the
+		 * region must be normal to the globe's surface.
+		 */
+		boost::optional<RenderSphereNormals> d_render_sphere_normals;
 
 
 		/**

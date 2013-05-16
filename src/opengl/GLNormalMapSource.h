@@ -104,6 +104,9 @@ namespace GPlatesOpenGL
 		 * If @a tile_texel_dimension is greater than the maximum texture size supported
 		 * by the run-time system then it will be reduced to the maximum texture size.
 		 *
+		 * @a height_field_scale_factor is an adjustment to the internally determined height field
+		 * scale based on the raster statistics (among other things).
+		 *
 		 * Returns false if @a raster is not a proxy raster or if it's uninitialised or if it doesn't
 		 * contain numerical floating-point or integer data (ie, contains colour RGBA pixels) or
 		 * if @a is_supported returns false.
@@ -114,11 +117,15 @@ namespace GPlatesOpenGL
 		create(
 				GLRenderer &renderer,
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &height_field_raster,
-				unsigned int tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION);
+				unsigned int tile_texel_dimension = DEFAULT_TILE_TEXEL_DIMENSION,
+				float height_field_scale_factor = 1);
 
 
 		/**
 		 * Change to a new (height) raster of the same dimensions as the current internal raster.
+		 *
+		 * @a height_field_scale_factor is an adjustment to the internally determined height field
+		 * scale based on the raster statistics (among other things).
 		 *
 		 * This method is useful for time-dependent rasters sharing the same georeferencing
 		 * and raster dimensions.
@@ -132,7 +139,8 @@ namespace GPlatesOpenGL
 		bool
 		change_raster(
 				GLRenderer &renderer,
-				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &height_raster);
+				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &height_raster,
+				float height_field_scale_factor = 1);
 
 
 		virtual
@@ -186,7 +194,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_max_highest_resolution_texel_size_on_unit_sphere(
-				const double &texel_size);
+				const double &max_highest_resolution_texel_size_on_unit_sphere);
 
 	private:
 		/**
@@ -207,9 +215,25 @@ namespace GPlatesOpenGL
 		unsigned int d_tile_texel_dimension;
 
 		/**
-		 * Used to vertically exaggerate the height field to make the surface normals more pronounced.
+		 * The empirically determined constant height field scale factor that gives reasonable
+		 * results for some test rasters.
 		 */
-		float d_height_field_scale;
+		float d_constant_height_field_scale_factor;
+
+		/**
+		 * Height field scale factor based on the heightfield raster statistics (min/max).
+		 */
+		float d_raster_statistics_height_field_scale_factor;
+
+		/**
+		 * Height field scale factor based on the heightfield raster resolution (on the sphere).
+		 */
+		float d_raster_resolution_height_field_scale_factor;
+
+		/**
+		 * Height field scale factor provided by the caller/client.
+		 */
+		float d_client_height_field_scale_factor;
 
 		/**
 		 * If true then normals are generated on the GPU instead of CPU.
@@ -263,7 +287,8 @@ namespace GPlatesOpenGL
 				unsigned int raster_width,
 				unsigned int raster_height,
 				unsigned int tile_texel_dimension,
-				const GPlatesPropertyValues::RasterStatistics &raster_statistics);
+				const GPlatesPropertyValues::RasterStatistics &raster_statistics,
+				float height_field_scale_factor);
 
 
 		void
@@ -271,8 +296,17 @@ namespace GPlatesOpenGL
 
 
 		void
-		initialise_height_field_scale(
+		initialise_raster_statistics_height_field_scale_factor(
 				const GPlatesPropertyValues::RasterStatistics &raster_statistics);
+
+
+		/**
+		 * Returns the height combined field scale combined from all the contributing scale factors.
+		 *
+		 * Used to vertically exaggerate the height field to make the surface normals more pronounced.
+		 */
+		float
+		get_height_field_scale() const;
 
 
 		void

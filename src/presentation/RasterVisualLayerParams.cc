@@ -105,7 +105,8 @@ GPlatesPresentation::RasterVisualLayerParams::RasterVisualLayerParams(
 	d_colour_palette(GPlatesGui::RasterColourPalette::create()),
 	d_raster_type(GPlatesPropertyValues::RasterType::UNKNOWN),
 	d_opacity(1.0),
-	d_intensity(1.0)
+	d_intensity(1.0),
+	d_surface_relief_scale(1)
 {
 }
 
@@ -302,4 +303,13 @@ GPlatesGui::Colour
 GPlatesPresentation::RasterVisualLayerParams::get_modulate_colour() const
 {
 	return GPlatesGui::Colour(d_intensity, d_intensity, d_intensity, d_opacity);
+}
+
+
+void
+GPlatesPresentation::RasterVisualLayerParams::set_surface_relief_scale(
+		float surface_relief_scale)
+{
+	d_surface_relief_scale = surface_relief_scale;
+	emit_modified();
 }

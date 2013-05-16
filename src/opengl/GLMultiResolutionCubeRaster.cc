@@ -614,8 +614,13 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 		// Multiply in the requested world transform.
 		renderer.gl_mult_matrix(GL_MODELVIEW, d_world_transform);
 
-		renderer.gl_clear_color(); // Clear colour to all zeros.
-		renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
+		// Clear the frame buffer as appropriate for the source raster type.
+		//
+		// For example, for a *regional* normal map raster the normals outside the region must be
+		// normal to the globe's surface - so the frame buffer pixels must represent this.
+		//
+		// Other raster types simply clear the colour buffer to a constant colour - usually RGBA(0,0,0,0).
+		d_multi_resolution_raster->clear_frame_buffer(renderer);
 
 		// If the render target is floating-point...
 		if (tile_texture.texture->is_floating_point())

@@ -397,11 +397,16 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 		GPlatesOpenGL::GLFilledPolygonsMapView::filled_drawables_type &filled_polygons =
 				d_layer_painter->translucent_drawables_on_the_sphere.get_filled_polygons_map_view();
 
+		// Modulate with the fill modulate colour.
+		const Colour fill_colour = Colour::modulate(
+				colour.get(),
+				rendered_polygon_on_sphere.get_fill_modulate_colour());
+
 		// Dateline wrap and project the polygon and render each wrapped polygon as a filled polygon.
 		paint_fill_geometry<GPlatesMaths::PolygonOnSphere>(
 				filled_polygons,
 				polygon_on_sphere,
-				colour.get());
+				fill_colour);
 
 		return;
 	}
@@ -431,15 +436,34 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere(
 		return;
 	}
 
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
+			rendered_polyline_on_sphere.get_polyline_on_sphere();
+
+	if (rendered_polyline_on_sphere.get_is_filled())
+	{
+		GPlatesOpenGL::GLFilledPolygonsMapView::filled_drawables_type &filled_polygons =
+				d_layer_painter->translucent_drawables_on_the_sphere.get_filled_polygons_map_view();
+
+		// Modulate with the fill modulate colour.
+		const Colour fill_colour = Colour::modulate(
+				colour.get(),
+				rendered_polyline_on_sphere.get_fill_modulate_colour());
+
+		// Dateline wrap and project the polygon and render each wrapped polygon as a filled polygon.
+		paint_fill_geometry<GPlatesMaths::PolylineOnSphere>(
+				filled_polygons,
+				polyline_on_sphere,
+				fill_colour);
+
+		return;
+	}
+
 	const float line_width =
 			rendered_polyline_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
 	// Get the stream for lines of the current line width.
 	stream_primitives_type &stream =
 			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
-
-	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
-			rendered_polyline_on_sphere.get_polyline_on_sphere();
 
 	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(polyline_on_sphere, colour.get(), stream);
 }
@@ -617,7 +641,8 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_resolved_raster(
 			LayerPainter::RasterDrawable(
 					rendered_resolved_raster.get_resolved_raster(),
 					rendered_resolved_raster.get_raster_colour_palette(),
-					rendered_resolved_raster.get_raster_modulate_colour()));
+					rendered_resolved_raster.get_raster_modulate_colour(),
+					rendered_resolved_raster.get_normal_map_height_field_scale_factor()));
 }
 
 void

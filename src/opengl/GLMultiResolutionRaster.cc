@@ -26,6 +26,7 @@
 #include <cmath>
 #include <limits>
 #include <new> // For placement new.
+#include <vector>
 #include <boost/bind.hpp>
 #include <boost/cast.hpp>
 #include <boost/cstdint.hpp>
@@ -74,6 +75,16 @@ namespace GPlatesOpenGL
 		 */
 		const QString RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME =
 				":/opengl/multi_resolution_raster/render_raster_fragment_shader.glsl";
+
+		/**
+		 * Fragment shader source code to render sphere normals as part of clearing a render target
+		 * before rendering a normal-map raster.
+		 *
+		 * For example, for a *regional* normal map raster the normals outside the region are not rendered by
+		 * the normal map raster itself and so must be initialised to be normal to the globe's surface.
+		 */
+		const QString RENDER_SPHERE_NORMALS_FRAGMENT_SHADER_SOURCE_FILE_NAME =
+				":/opengl/multi_resolution_raster/render_sphere_normals_fragment_shader.glsl";
 	}
 }
 
@@ -100,8 +111,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::supports_normal_map_source(
 		if (!renderer.get_capabilities().shader.gl_ARB_vertex_shader ||
 			!renderer.get_capabilities().shader.gl_ARB_fragment_shader)
 		{
-			//qDebug() <<
-			//		"GLMultiResolutionRaster: Disabling normal map raster lighting in OpenGL - requires vertex/fragment shader programs.";
+			qWarning() <<
+					"Normal map raster lighting NOT supported by this OpenGL system.\n"
+					"  Requires vertex/fragment shader programs.";
 			return false;
 		}
 
@@ -121,8 +133,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::supports_normal_map_source(
 		if (!GLShaderProgramUtils::compile_and_link_fragment_program(
 				renderer, fragment_shader_source))
 		{
-			//qDebug() <<
-			//		"GLMultiResolutionRaster: Disabling normal map raster lighting in OpenGL - unable to compile and link shader program.";
+			qWarning() <<
+					"Normal map raster lighting NOT supported by this OpenGL system.\n"
+					"  Unable to compile and link shader program.";
 			return false;
 		}
 
@@ -417,6 +430,34 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
 			lod,
 			lod.get_obb_tree_node(obb_tree_node.child_node_indices[1]),
 			visible_tiles);
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionRaster::clear_frame_buffer(
+		GLRenderer &renderer)
+{
+	// If not a normal map then just clear the colour buffer.
+	if (dynamic_cast<GLNormalMapSource *>(d_raster_source.get()) == NULL)
+	{
+		renderer.gl_clear_color(); // Clear colour to all zeros.
+		renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
+
+		return;
+	}
+
+	//
+	// We have a normal map raster source.
+	//
+
+	// If we've not yet created the ability to render sphere normals then do so now.
+	if (!d_render_sphere_normals)
+	{
+		d_render_sphere_normals = boost::in_place(boost::ref(renderer));
+	}
+
+	// Render the sphere normals.
+	d_render_sphere_normals->render(renderer);
 }
 
 
@@ -2399,4 +2440,75 @@ GPlatesOpenGL::GLMultiResolutionRaster::LevelOfDetail::get_obb_tree_node(
 			GPLATES_ASSERTION_SOURCE);
 
 	return obb_tree_nodes[node_index];
+}
+
+
+GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::RenderSphereNormals(
+		GLRenderer &renderer) :
+	d_vertex_array(GLVertexArray::create(renderer))
+{
+	GLShaderProgramUtils::ShaderSource fragment_shader_source;
+	fragment_shader_source.add_shader_source_from_file(RENDER_SPHERE_NORMALS_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+
+	d_program_object =
+			GLShaderProgramUtils::compile_and_link_fragment_program(
+					renderer,
+					fragment_shader_source);
+
+	// We should be able to compile/link the shader program since we can only get here if we
+	// have a normal map source and the client should have called 'supports_normal_map_source()'
+	// which does a test compile/link.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_program_object,
+			GPLATES_ASSERTION_SOURCE);
+
+	//
+	// Create a cube - this is one of the simplest primitives that covers the globe.
+	// The per-pixel cube position (texture coordinate) gets normalised to unit normal in fragment shader.
+	//
+
+	std::vector<GLTexture3DVertex> vertices;
+	std::vector<GLushort> vertex_elements;
+
+	// Add the eight cube corner vertices.
+	vertices.push_back(GLTexture3DVertex(-1,-1,-1, -1,-1,-1)); // 0
+	vertices.push_back(GLTexture3DVertex(+1,-1,-1, +1,-1,-1)); // 1
+	vertices.push_back(GLTexture3DVertex(-1,+1,-1, -1,+1,-1)); // 2
+	vertices.push_back(GLTexture3DVertex(+1,+1,-1, +1,+1,-1)); // 3
+	vertices.push_back(GLTexture3DVertex(-1,-1,+1, -1,-1,+1)); // 4
+	vertices.push_back(GLTexture3DVertex(+1,-1,+1, +1,-1,+1)); // 5
+	vertices.push_back(GLTexture3DVertex(-1,+1,+1, -1,+1,+1)); // 6
+	vertices.push_back(GLTexture3DVertex(+1,+1,+1, +1,+1,+1)); // 7
+
+	// Add the twelve cube faces (two triangles per cube face).
+	vertex_elements.push_back(0); vertex_elements.push_back(1); vertex_elements.push_back(3);
+	vertex_elements.push_back(0); vertex_elements.push_back(3); vertex_elements.push_back(2);
+	vertex_elements.push_back(0); vertex_elements.push_back(5); vertex_elements.push_back(1);
+	vertex_elements.push_back(0); vertex_elements.push_back(4); vertex_elements.push_back(5);
+	vertex_elements.push_back(1); vertex_elements.push_back(7); vertex_elements.push_back(3);
+	vertex_elements.push_back(1); vertex_elements.push_back(5); vertex_elements.push_back(7);
+	vertex_elements.push_back(0); vertex_elements.push_back(2); vertex_elements.push_back(6);
+	vertex_elements.push_back(0); vertex_elements.push_back(6); vertex_elements.push_back(4);
+	vertex_elements.push_back(2); vertex_elements.push_back(3); vertex_elements.push_back(7);
+	vertex_elements.push_back(2); vertex_elements.push_back(7); vertex_elements.push_back(6);
+	vertex_elements.push_back(4); vertex_elements.push_back(7); vertex_elements.push_back(5);
+	vertex_elements.push_back(4); vertex_elements.push_back(6); vertex_elements.push_back(7);
+
+	d_draw_vertex_array = compile_vertex_array_draw_state(
+			renderer, *d_vertex_array, vertices, vertex_elements, GL_TRIANGLES);
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::render(
+		GLRenderer &renderer)
+{
+	// Make sure we leave the OpenGL state the way it was.
+	GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	// Bind the shader program.
+	renderer.gl_bind_program_object(d_program_object.get());
+
+	// Render the cube.
+	renderer.apply_compiled_draw_state(*d_draw_vertex_array.get());
 }

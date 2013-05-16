@@ -83,6 +83,7 @@ namespace GPlatesPresentation
 					float reconstruction_point_size_hint_ =
 							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_POINT_SIZE_HINT,
 					bool fill_polygons_ = false,
+					bool fill_polylines_ = false,
 					float ratio_zoom_dependent_bin_dimension_to_globe_radius_ = 0,
 					float ratio_arrow_unit_vector_direction_to_globe_radius_ =
 							GPlatesViewOperations::RenderedLayerParameters::RECONSTRUCTION_RATIO_ARROW_UNIT_VECTOR_DIRECTION_TO_GLOBE_RADIUS,
@@ -110,6 +111,7 @@ namespace GPlatesPresentation
 			float reconstruction_line_width_hint;
 			float reconstruction_point_size_hint;
 			bool fill_polygons;
+			bool fill_polylines;
 
 			/**
 			 * Used to control density of points/arrows in rendered geometry layer
@@ -131,11 +133,18 @@ namespace GPlatesPresentation
 			//! Raster colour palette.
 			GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette;
 			/**
-			 * Raster modulate colour (eg, to control raster opacity/intensity).
+			 * Modulate colour (eg, to control opacity/intensity).
 			 *
-			 * TODO: This could be used for general layer transparency.
+			 * This is currently used both for rasters and filled polygons/polylines.
 			 */
-			GPlatesGui::Colour raster_modulate_colour;
+			GPlatesGui::Colour fill_modulate_colour;
+			/**
+			 * Scales the heights used to calculate normals in a normal map raster.
+			 *
+			 * Note that the normal map raster can be from another layer, but this scale factor
+			 * is specific to the current layer.
+			 */
+			float normal_map_height_field_scale_factor;
 
 			// VGP-specific parameters.
 			bool vgp_draw_circular_error;

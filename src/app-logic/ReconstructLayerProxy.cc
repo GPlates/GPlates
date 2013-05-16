@@ -947,9 +947,7 @@ GPlatesAppLogic::ReconstructLayerProxy::create_reconstruction_info(
 	// This is to prevent the accumulation of expired entries over time.
 	reconstruct_context_state_map_type::iterator context_state_iter =
 			d_reconstruct_context_state_map.begin();
-	reconstruct_context_state_map_type::iterator context_state_end =
-			d_reconstruct_context_state_map.end();
-	while (context_state_iter != context_state_end)
+	while (context_state_iter != d_reconstruct_context_state_map.end())
 	{
 		reconstruct_context_state_map_type::iterator current_context_state_iter = context_state_iter;
 		++context_state_iter;

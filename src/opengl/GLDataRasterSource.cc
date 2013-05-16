@@ -81,8 +81,8 @@ GPlatesOpenGL::GLDataRasterSource::is_supported(
 		{
 			// Any system with floating-point textures will typically also have shaders so only
 			// need to mention lack of floating-point texture support.
-			qDebug() <<
-					"GLDataRasterSource: Disabling floating-point texture support in OpenGL - requires 'GL_ARB_texture_float'.";
+			qWarning() <<
+					"GLDataRasterSource: Floating-point OpenGL texture support 'GL_ARB_texture_float' is required.\n";
 			return false;
 		}
 

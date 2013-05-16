@@ -69,6 +69,8 @@ namespace GPlatesQtWidgets
 				ViewportWindow *viewport_window,
 				QWidget *parent_);
 
+		~ReconstructLayerOptionsWidget();
+
 		virtual
 		void
 		set_data(
@@ -77,8 +79,6 @@ namespace GPlatesQtWidgets
 		virtual
 		const QString &
 		get_title();
-
-		~ReconstructLayerOptionsWidget();
 
 	private Q_SLOTS:
 
@@ -90,9 +90,20 @@ namespace GPlatesQtWidgets
 
 		void
 		open_draw_style_setting_dlg();
-		
+
 		void
 		handle_fill_polygons_clicked();
+
+		void
+		handle_fill_polylines_clicked();
+
+		void
+		handle_fill_opacity_spinbox_changed(
+				double value);
+
+		void
+		handle_fill_intensity_spinbox_changed(
+				double value);
 
 	private:
 

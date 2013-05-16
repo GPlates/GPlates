@@ -96,22 +96,56 @@ GPlatesGui::LayerPainter::initialise(
 			renderer, *d_vertex_array, d_vertex_buffer);
 
 	//
-	// Create the shader program to render lighting for points, lines and polygons.
+	// Create the shader program to render lighting for points, lines and polygons in a 3D *globe* view.
 	//
 
-	GPlatesOpenGL::GLShaderProgramUtils::ShaderSource vertex_shader_source;
-	vertex_shader_source.add_shader_source_from_file(GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
-	vertex_shader_source.add_shader_source_from_file(RENDER_POINT_LINE_POLYGON_LIGHTING_VERTEX_SHADER);
+	const char *globe_view_shader_defines = "";
 
-	GPlatesOpenGL::GLShaderProgramUtils::ShaderSource fragment_shader_source;
-	fragment_shader_source.add_shader_source_from_file(GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
-	fragment_shader_source.add_shader_source_from_file(RENDER_POINT_LINE_POLYGON_LIGHTING_FRAGMENT_SHADER);
+	GPlatesOpenGL::GLShaderProgramUtils::ShaderSource globe_view_vertex_shader_source;
+	globe_view_vertex_shader_source.add_shader_source(globe_view_shader_defines);
+	globe_view_vertex_shader_source.add_shader_source_from_file(
+			GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	globe_view_vertex_shader_source.add_shader_source_from_file(
+			RENDER_POINT_LINE_POLYGON_LIGHTING_VERTEX_SHADER);
 
-	d_render_point_line_polygon_lighting_program_object =
+	GPlatesOpenGL::GLShaderProgramUtils::ShaderSource globe_view_fragment_shader_source;
+	globe_view_fragment_shader_source.add_shader_source(globe_view_shader_defines);
+	globe_view_fragment_shader_source.add_shader_source_from_file(
+			GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	globe_view_fragment_shader_source.add_shader_source_from_file(
+			RENDER_POINT_LINE_POLYGON_LIGHTING_FRAGMENT_SHADER);
+
+	d_render_point_line_polygon_lighting_in_globe_view_program_object =
 			GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
-					vertex_shader_source,
-					fragment_shader_source);
+					globe_view_vertex_shader_source,
+					globe_view_fragment_shader_source);
+
+	//
+	// Create the shader program to render lighting for points, lines and polygons in a 2D *map* view.
+	//
+
+	const char *map_view_shader_defines = "#define MAP_VIEW\n";
+
+	GPlatesOpenGL::GLShaderProgramUtils::ShaderSource map_view_vertex_shader_source;
+	map_view_vertex_shader_source.add_shader_source(map_view_shader_defines);
+	map_view_vertex_shader_source.add_shader_source_from_file(
+			GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	map_view_vertex_shader_source.add_shader_source_from_file(
+			RENDER_POINT_LINE_POLYGON_LIGHTING_VERTEX_SHADER);
+
+	GPlatesOpenGL::GLShaderProgramUtils::ShaderSource map_view_fragment_shader_source;
+	map_view_fragment_shader_source.add_shader_source(map_view_shader_defines);
+	map_view_fragment_shader_source.add_shader_source_from_file(
+			GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	map_view_fragment_shader_source.add_shader_source_from_file(
+			RENDER_POINT_LINE_POLYGON_LIGHTING_FRAGMENT_SHADER);
+
+	d_render_point_line_polygon_lighting_in_map_view_program_object =
+			GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
+					renderer,
+					map_view_vertex_shader_source,
+					map_view_fragment_shader_source);
 }
 
 
@@ -268,7 +302,8 @@ GPlatesGui::LayerPainter::end_painting(
 			*d_vertex_array,
 			*d_gl_visual_layers,
 			d_map_projection,
-			d_render_point_line_polygon_lighting_program_object);
+			d_render_point_line_polygon_lighting_in_globe_view_program_object,
+			d_render_point_line_polygon_lighting_in_map_view_program_object);
 
 	translucent_drawables_on_the_sphere.end_painting(
 			renderer,
@@ -277,7 +312,9 @@ GPlatesGui::LayerPainter::end_painting(
 			*d_vertex_array,
 			*d_gl_visual_layers,
 			d_map_projection,
-			d_render_point_line_polygon_lighting_program_object);
+			d_render_point_line_polygon_lighting_in_globe_view_program_object,
+			d_render_point_line_polygon_lighting_in_map_view_program_object);
+
 
 	// We rendered off-the-sphere drawables after on-the-sphere drawables because, for the 2D map views,
 	// there are no depth-writes (like there are for the 3D globe view) and hence nothing to make
@@ -309,7 +346,8 @@ GPlatesGui::LayerPainter::end_painting(
 				*d_vertex_array,
 				*d_gl_visual_layers,
 				d_map_projection,
-				d_render_point_line_polygon_lighting_program_object);
+				d_render_point_line_polygon_lighting_in_globe_view_program_object,
+				d_render_point_line_polygon_lighting_in_map_view_program_object);
 	}
 
 	// Render any 2D text last (text specified at 2D viewport positions).
@@ -474,6 +512,7 @@ GPlatesGui::LayerPainter::paint_rasters(
 					raster_drawable.source_resolved_raster,
 					raster_drawable.source_raster_colour_palette,
 					raster_drawable.source_raster_modulate_colour,
+					raster_drawable.normal_map_height_field_scale_factor,
 					d_map_projection);
 			cache_handle->push_back(raster_cache_handle);
 		}
@@ -506,6 +545,7 @@ GPlatesGui::LayerPainter::paint_rasters(
 						raster_drawable.source_resolved_raster,
 						raster_drawable.source_raster_colour_palette,
 						raster_drawable.source_raster_modulate_colour,
+						raster_drawable.normal_map_height_field_scale_factor,
 						d_map_projection);
 				cache_handle->push_back(raster_cache_handle);
 			}
@@ -619,7 +659,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::begin_painting()
 	d_triangle_drawables.begin_painting();
 
 	// There are multiple point and line categories depending on point sizes and line widths so
-	// we only beging painting on those when we encounter a new point size or line width.
+	// we only begin painting on those when we encounter a new point size or line width.
 }
 
 
@@ -632,7 +672,9 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 		GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 		boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection,
 		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
-				render_point_line_polygon_lighting_program_object)
+				render_point_line_polygon_lighting_in_globe_view_program_object,
+		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
+				render_point_line_polygon_lighting_in_map_view_program_object)
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
@@ -645,13 +687,19 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 	// Set up for rendering points, lines and polygons.
 	//
 
+	// All painting below uses the one vertex array so we only need to bind it once (here).
+	// Note that the filled polygons above uses it own vertex array(s).
+	vertex_array.gl_bind(renderer);
+
+	//
+	// Apply lighting if it's enabled and the runtime system supports it.
+	//
+
 	// If we are not rendering to the framebuffer then we need to use OpenGL feedback in order to
 	// render to the QPainter's paint device. Currently we're using base OpenGL feedback which only
 	// works with the fixed-function pipeline - so we turn off shaders.
 	// TODO: Implement OpenGL 2/3 feedback extensions to enable feedback from vertex shaders.
-	if (renderer.rendering_to_context_framebuffer() &&
-		// TODO: Currently only applying lighting to the 3D globe view (add to the 2D map views also)...
-		!map_projection)
+	if (renderer.rendering_to_context_framebuffer())
 	{
 		// Get the OpenGL light if the runtime system supports it.
 		boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type> gl_light =
@@ -660,34 +708,47 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 		// Use shader program (if supported) if lighting is enabled, otherwise the fixed-function pipeline (default).
 		// The shader program enables lighting of the point/polyline/polygon geometries.
 		if (gl_light &&
-			gl_light.get()->get_scene_lighting_parameters().is_lighting_enabled() &&
-			render_point_line_polygon_lighting_program_object)
+			gl_light.get()->get_scene_lighting_parameters().is_lighting_enabled(
+					GPlatesGui::SceneLightingParameters::LIGHTING_POINT_POLYLINE_POLYGON))
 		{
-			// Bind the shader program.
-			renderer.gl_bind_program_object(render_point_line_polygon_lighting_program_object.get());
+			if (map_projection)
+			{
+				if (render_point_line_polygon_lighting_in_map_view_program_object)
+				{
+					// Bind the shader program.
+					renderer.gl_bind_program_object(render_point_line_polygon_lighting_in_map_view_program_object.get());
 
-			// Set the world-space light direction.
-			render_point_line_polygon_lighting_program_object.get()->gl_uniform3f(
-					renderer,
-					"world_space_light_direction",
-					gl_light.get()->get_globe_view_light_direction(renderer));
+					// Set the (ambient+diffuse) lighting.
+					// For the 2D map views this is constant across the map since the surface normal is
+					// constant (it's a flat surface unlike the globe).
+					render_point_line_polygon_lighting_in_map_view_program_object.get()->gl_uniform1f(
+							renderer,
+							"ambient_and_diffuse_lighting",
+							gl_light.get()->get_map_view_constant_lighting(renderer));
+				}
+			}
+			else // globe view ...
+			{
+				if (render_point_line_polygon_lighting_in_globe_view_program_object)
+				{
+					// Bind the shader program.
+					renderer.gl_bind_program_object(render_point_line_polygon_lighting_in_globe_view_program_object.get());
 
-			// Set the light ambient contribution.
-			render_point_line_polygon_lighting_program_object.get()->gl_uniform1f(
-					renderer,
-					"light_ambient_contribution",
-					gl_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution());
+					// Set the world-space light direction.
+					render_point_line_polygon_lighting_in_globe_view_program_object.get()->gl_uniform3f(
+							renderer,
+							"world_space_light_direction",
+							gl_light.get()->get_globe_view_light_direction(renderer));
 
-			// Disable alpha-testing - pixels are discarded in the shader instead
-			// (if desired - it's not necessary - it's an optimisation but probably not worth it
-			// for points, lines and unfilled polygons anyway).
-			renderer.gl_enable(GL_ALPHA_TEST, false);
+					// Set the light ambient contribution.
+					render_point_line_polygon_lighting_in_globe_view_program_object.get()->gl_uniform1f(
+							renderer,
+							"light_ambient_contribution",
+							gl_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution());
+				}
+			}
 		}
 	}
-
-	// All painting below uses the one vertex array so we only need to bind it once (here).
-	// Note that the filled polygons above uses it own vertex array(s).
-	vertex_array.gl_bind(renderer);
 
 	//
 	// Paint the point, line and polygon drawables with the appropriate state

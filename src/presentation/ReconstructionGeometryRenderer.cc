@@ -181,6 +181,8 @@ namespace
 						render_params.reconstruction_point_size_hint,
 						render_params.reconstruction_line_width_hint,
 						render_params.fill_polygons,
+						render_params.fill_polylines,
+						render_params.fill_modulate_colour,
 						symbol);
 
 		// Create a RenderedGeometry for storing the ReconstructionGeometry and
@@ -197,6 +199,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 		float reconstruction_line_width_hint_,
 		float reconstruction_point_size_hint_,
 		bool fill_polygons_,
+		bool fill_polylines_,
 		float ratio_zoom_dependent_bin_dimension_to_globe_radius_,
 		float ratio_arrow_unit_vector_direction_to_globe_radius_,
 		float ratio_arrowhead_size_to_globe_radius_,
@@ -212,10 +215,13 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 	reconstruction_line_width_hint(reconstruction_line_width_hint_),
 	reconstruction_point_size_hint(reconstruction_point_size_hint_),
 	fill_polygons(fill_polygons_),
+	fill_polylines(fill_polylines_),
 	ratio_zoom_dependent_bin_dimension_to_globe_radius(ratio_zoom_dependent_bin_dimension_to_globe_radius_),
 	ratio_arrow_unit_vector_direction_to_globe_radius(ratio_arrow_unit_vector_direction_to_globe_radius_),
 	ratio_arrowhead_size_to_globe_radius(ratio_arrowhead_size_to_globe_radius_),
 	raster_colour_palette(GPlatesGui::RasterColourPalette::create()),
+	fill_modulate_colour(1, 1, 1, 1),
+	normal_map_height_field_scale_factor(1),
 	vgp_draw_circular_error(true),
 	show_deformed_feature_geometries(show_deformed_feature_geometries_),
 	show_strain_accumulation(show_strain_accumulation_),
@@ -236,7 +242,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 		const RasterVisualLayerParams &params)
 {
 	d_render_params.raster_colour_palette = params.get_colour_palette();
-	d_render_params.raster_modulate_colour = params.get_modulate_colour();
+	d_render_params.fill_modulate_colour = params.get_modulate_colour();
+	d_render_params.normal_map_height_field_scale_factor = params.get_surface_relief_scale();
 }
 
 
@@ -246,6 +253,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 {
 	d_render_params.vgp_draw_circular_error = params.get_vgp_draw_circular_error();
 	d_render_params.fill_polygons = params.get_fill_polygons();
+	d_render_params.fill_polylines = params.get_fill_polylines();
+	d_render_params.fill_modulate_colour = params.get_fill_modulate_colour();
 	d_render_params.show_deformed_feature_geometries = params.get_show_deformed_feature_geometries();
 	d_render_params.show_strain_accumulation = params.get_show_strain_accumulation();
 	d_render_params.strain_accumulation_scale = params.get_strain_accumulation_scale();
@@ -556,6 +565,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 							d_render_params.reconstruction_point_size_hint,
 							d_render_params.reconstruction_line_width_hint,
 							d_render_params.fill_polygons,
+							d_render_params.fill_polylines,
+							d_render_params.fill_modulate_colour,
 							strain_accumulation_symbol);
 
 			// Create a RenderedGeometry for storing the ReconstructionGeometry and
@@ -609,7 +620,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
 					rr,
 					d_render_params.raster_colour_palette,
-					d_render_params.raster_modulate_colour);
+					d_render_params.fill_modulate_colour,
+					d_render_params.normal_map_height_field_scale_factor);
 
 
 	// Create a RenderedGeometry for storing the ReconstructionGeometry and

@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <limits>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
  * Must be included before the OpenGL headers (which also means before Qt headers).
@@ -144,9 +145,10 @@ GPlatesOpenGL::GLLight::GLLight(
 		boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection) :
 	d_scene_lighting_params(scene_lighting_params),
 	d_view_orientation(view_orientation),
-	d_globe_view_light_direction(scene_lighting_params.get_light_direction()/*not necessarily in world-space yet!*/),
+	d_globe_view_light_direction(scene_lighting_params.get_globe_view_light_direction()/*not necessarily in world-space yet!*/),
+	d_map_view_constant_lighting(0),
 	d_map_projection(map_projection),
-	d_light_direction_cube_texture_dimension(256),
+	d_map_view_light_direction_cube_texture_dimension(256),
 	d_map_view_light_direction_cube_texture(GLTexture::create(renderer))
 {
 	create_shader_programs(renderer);
@@ -231,8 +233,70 @@ GPlatesOpenGL::GLLight::update_map_view(
 	}
 
 	//
+	// Calculate the ambient+diffuse lighting when the surface normal is constant across the map
+	// (and also perpendicular to the map plane).
+	//
+	// This is used when there is *no* surface normal mapping (ie, surface normal, and hence lighting,
+	// is constant across the map and can be pre-calculated).
+	//
+
+	GPlatesMaths::UnitVector3D map_view_light_direction =
+			d_scene_lighting_params.get_map_view_light_direction();
+
+	// FIXME: The map view orientation (3x3 subpart of matrix) contains (x,y) scaling factors
+	// and hence is not purely an orthogonal rotation like we need.
+	// Currently we don't need to transform the map view light direction from view space to
+	// world space because the map surface normal is always (0,0,1) which is perpendicular to
+	// the map plane so any rotation of the light direction in the (x,y) plane will not
+	// affect the diffuse lighting lambert dot product - so we can ignore the inverse transformation
+	// and just use the view-space light direction as if it was in world-space.
+	// This will change if we ever allow tilting in the map view which would no longer confine
+	// view rotation to the (x,y) plane.
+#if 0
+	if (d_scene_lighting_params.is_light_direction_attached_to_view_frame())
+	{
+		// The light direction is in view-space.
+		const GPlatesMaths::UnitVector3D &view_space_light_direction =
+				d_scene_lighting_params.get_map_view_light_direction();
+		const double light_x = view_space_light_direction.x().dval();
+		const double light_y = view_space_light_direction.y().dval();
+		const double light_z = view_space_light_direction.z().dval();
+
+		// Need to reverse rotate back to world-space.
+		// We'll assume the view orientation matrix stores only a 3x3 rotation.
+		// In which case the inverse matrix is the transpose.
+		const GLMatrix &view = d_view_orientation;
+
+		// Multiply the view-space light direction by the transpose of the 3x3 view orientation.
+		map_view_light_direction = GPlatesMaths::Vector3D(
+				view.get_element(0,0) * light_x + view.get_element(1,0) * light_y + view.get_element(2,0) * light_z,
+				view.get_element(0,1) * light_x + view.get_element(1,1) * light_y + view.get_element(2,1) * light_z,
+				view.get_element(0,2) * light_x + view.get_element(1,2) * light_y + view.get_element(2,2) * light_z)
+						.get_normalisation();
+	}
+	// else light direction is attached to world-space.
+#endif
+
+	// The constant surface normal direction.
+	const GPlatesMaths::UnitVector3D surface_normal(0, 0, 1);
+
+	// Pre-calculate the constant lighting across map for a surface normal perpendicular to the
+	// map plane (ie, when no normal map is used and hence surface normal is constant across map).
+	const double map_view_lambert_diffuse_lighting = (std::max)(
+			0.0,
+			dot(surface_normal, map_view_light_direction).dval());
+
+	// Mix in ambient with diffuse lighting.
+	d_map_view_constant_lighting =
+			d_scene_lighting_params.get_ambient_light_contribution() +
+			map_view_lambert_diffuse_lighting * (1 - d_scene_lighting_params.get_ambient_light_contribution());
+
+	//
 	// The light direction is constant in 2D map view but varies across the globe.
 	// So we capture the variation in a hardware cube map texture.
+	//
+	// The hardware cube map is used when normal mapping is needed (ie, surface normals vary across the map),
+	// otherwise the lighting is constant across the map and can be pre-calculated.
 	//
 
 	// Make sure we leave the OpenGL state the way it was.
@@ -263,6 +327,16 @@ GPlatesOpenGL::GLLight::update_map_view(
 	// Bind the shader program for rendering light direction for the 2D map views.
 	renderer.gl_bind_program_object(d_render_map_view_light_direction_program_object.get());
 
+		// FIXME: The map view orientation (3x3 subpart of matrix) contains (x,y) scaling factors
+		// and hence is not purely an orthogonal rotation like we need.
+		// Currently we don't need to transform the map view light direction from view space to
+		// world space because the map surface normal is always (0,0,1) which is perpendicular to
+		// the map plane so any rotation of the light direction in the (x,y) plane will not
+		// affect the diffuse lighting lambert dot product - so we can ignore the inverse transformation
+		// and just use the view-space light direction as if it was in world-space.
+		// This will change if we ever allow tilting in the map view which would no longer confine
+		// view rotation to the (x,y) plane.
+#if 0
 	// If the light direction is attached to the view frame then specify a non-identity view transform.
 	if (d_scene_lighting_params.is_light_direction_attached_to_view_frame())
 	{
@@ -270,16 +344,17 @@ GPlatesOpenGL::GLLight::update_map_view(
 		// OpenGL to calculate the matrix inverse for us. This is not the normal usage for GL_MODELVIEW.
 		renderer.gl_load_matrix(GL_MODELVIEW, d_view_orientation);
 	}
+#endif
 
 	// Set the view-space light direction (which is world-space if light not attached to view-space).
 	// The shader program will transform it to world-space.
 	d_render_map_view_light_direction_program_object.get()->gl_uniform3f(
 			renderer,
 			"view_space_light_direction",
-			d_scene_lighting_params.get_light_direction());
+			d_scene_lighting_params.get_map_view_light_direction());
 
 	// Render to the entire texture of each cube face.
-	renderer.gl_viewport(0, 0, d_light_direction_cube_texture_dimension, d_light_direction_cube_texture_dimension);
+	renderer.gl_viewport(0, 0, d_map_view_light_direction_cube_texture_dimension, d_map_view_light_direction_cube_texture_dimension);
 
 	// Render to all six faces of the cube texture.
 	for (unsigned int face = 0; face < 6; ++face)
@@ -315,7 +390,7 @@ GPlatesOpenGL::GLLight::update_globe_view(
 	{
 		// The light direction is in view-space.
 		const GPlatesMaths::UnitVector3D &view_space_light_direction =
-				d_scene_lighting_params.get_light_direction();
+				d_scene_lighting_params.get_globe_view_light_direction();
 		const double light_x = view_space_light_direction.x().dval();
 		const double light_y = view_space_light_direction.y().dval();
 		const double light_z = view_space_light_direction.z().dval();
@@ -334,7 +409,7 @@ GPlatesOpenGL::GLLight::update_globe_view(
 	}
 	else // light direction is attached to world-space...
 	{
-		d_globe_view_light_direction = d_scene_lighting_params.get_light_direction();
+		d_globe_view_light_direction = d_scene_lighting_params.get_globe_view_light_direction();
 	}
 }
 
@@ -407,7 +482,7 @@ GPlatesOpenGL::GLLight::create_map_view_light_direction_cube_texture(
 
 		d_map_view_light_direction_cube_texture->gl_tex_image_2D(
 				renderer, face_target, 0, GL_RGBA8,
-				d_light_direction_cube_texture_dimension, d_light_direction_cube_texture_dimension,
+				d_map_view_light_direction_cube_texture_dimension, d_map_view_light_direction_cube_texture_dimension,
 				0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	}
 

@@ -41,6 +41,7 @@
 
 #include "opengl/GLAgeGridMaskSource.h"
 #include "opengl/GLDataRasterSource.h"
+#include "opengl/GLMultiResolutionCubeMesh.h"
 #include "opengl/GLMultiResolutionCubeRaster.h"
 #include "opengl/GLMultiResolutionRaster.h"
 #include "opengl/GLMultiResolutionRasterInterface.h"
@@ -540,6 +541,14 @@ namespace GPlatesAppLogic
 			 */
 			boost::optional<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
 					cached_reconstructed_polygon_meshes;
+
+			/**
+			 * Mesh that used when *not* reconstructing raster (but still using age grid).
+			 *
+			 * This is constant so could be shared by multiple layers if uses a lot of memory.
+			 */
+			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeMesh::non_null_ptr_to_const_type>
+					cached_multi_resolution_cube_mesh;
 
 			/**
 			 * Cached OpenGL age grid mask (from another layer) for reconstructing the raster.

@@ -116,8 +116,8 @@ namespace GPlatesOpenGL
 		/**
 		 * Updates internal state due to changes in these parameters.
 		 *
-		 * @a view_orientation is the orientation of the view direction relative to the globe.
-		 * This only really makes sense in the 3D globe view (not 2D map views).
+		 * @a view_orientation is the orientation of the view direction relative to the globe
+		 * (in 3D globe views) or relative to the unrotated map (in 2D map views).
 		 */
 		void
 		set_scene_lighting(
@@ -178,13 +178,34 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the hardware cube map texture containing the world-space light direction(s) for
+		 * Returns the ambient and diffuse lighting for the 2D map views when no surface normal mapping
+		 * is used (ie, when the surface normal is constant across the map and perpendicular to the map).
+		 *
+		 * When the surface is normal mapped (ie, the surface normals vary across the map) then use
+		 * @a get_map_view_light_direction_cube_map_texture to obtain the varying light direction
+		 * in spherical globe space (the light.
+		 */
+		float
+		get_map_view_constant_lighting(
+				GLRenderer &renderer) const
+		{
+			return d_map_view_constant_lighting;
+		}
+
+
+		/**
+		 * Returns the hardware cube map texture containing the *world-space* light direction(s) for
 		 * the current 2D map view (with map projection specified in @a set_scene_lighting).
 		 *
 		 * The returned texture format is 8-bit RGBA with RGB containing the light direction(s)
 		 * with components in the range [0,1] - which clients need to convert to [-1,1] before use.
 		 *
 		 * @a renderer is used if the cube map needs to be updated such as an updated light direction.
+		 *
+		 * NOTE: This is only really needed when surface normal maps are used because the surface
+		 * normal (in the map view) is then no longer constant across the map.
+		 * When it is constant across the map (ie, surface normal is perpendicular to the map) the
+		 * lighting is constant across the map and can be calculated using @a get_map_view_constant_lighting.
 		 *
 		 * NOTE: You should use GL_TEXTURE_CUBE_MAP_ARB instead of GL_TEXTURE_2D when binding the
 		 * returned texture for read access.
@@ -209,7 +230,8 @@ namespace GPlatesOpenGL
 		GPlatesGui::SceneLightingParameters d_scene_lighting_params;
 
 		/**
-		 * This is the orientation of the view direction relative to the globe.
+		 * This is the orientation of the view direction relative to the globe (in 3D globe views)
+		 * or relative to the unrotated map (in 2D map views).
 		 *
 		 * The reverse of this transform is used to convert light direction from view-space to world-space.
 		 */
@@ -221,14 +243,20 @@ namespace GPlatesOpenGL
 		GPlatesMaths::UnitVector3D d_globe_view_light_direction;
 
 		/**
+		 * The ambient+diffuse lighting for the 2D map views (includes conversion from view-space) when
+		 * the normal mapping is *not* used (ie, surface is constant across map and perpendicular to map).
+		 */
+		float d_map_view_constant_lighting;
+
+		/**
 		 * The map projection if the light direction is (constant) in 2D map-space.
 		 */
 		boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> d_map_projection;
 
 		/**
-		 * The dimension of the square faces of the light direction cube texture.
+		 * The dimension of the square faces of the light direction cube texture (for the 2D map views).
 		 */
-		unsigned int d_light_direction_cube_texture_dimension;
+		unsigned int d_map_view_light_direction_cube_texture_dimension;
 
 		/**
 		 * The hardware cube map encoding the light direction(s) for a 2D map view.

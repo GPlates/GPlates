@@ -476,6 +476,15 @@ namespace GPlatesGui
 				const double &position);
 
 		/**
+		 * Modulate/multiply two colours (including alpha channel).
+		 */
+		static
+		Colour
+		modulate(
+				const Colour &first,
+				const Colour &second);
+
+		/**
 		 * Converts a CMYK colour to a Colour (which is RGBA). The cyan,
 		 * magenta, yellow and black components of the colour must be in the range
 		 * 0.0-1.0 inclusive. Alpha value of colour is set to 1.0.

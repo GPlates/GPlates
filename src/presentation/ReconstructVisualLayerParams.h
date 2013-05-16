@@ -30,6 +30,8 @@
 
 #include "VisualLayerParams.h"
 
+#include "gui/Colour.h"
+
 
 namespace GPlatesPresentation
 {
@@ -64,6 +66,54 @@ namespace GPlatesPresentation
 
 		bool
 		get_fill_polygons() const;
+
+		void
+		set_fill_polylines(
+				bool fill);
+
+		bool
+		get_fill_polylines() const;
+
+		/**
+		 * Sets the opacity of filled primitives.
+		 */
+		void
+		set_fill_opacity(
+				const double &opacity);
+
+		/**
+		 * Gets the opacity of filled primitives.
+		 */
+		double
+		get_fill_opacity() const
+		{
+			return d_fill_opacity;
+		}
+
+		/**
+		 * Sets the intensity of filled primitives.
+		 */
+		void
+		set_fill_intensity(
+				const double &intensity);
+
+		/**
+		 * Gets the intensity of filled primitives.
+		 */
+		double
+		get_fill_intensity() const
+		{
+			return d_fill_intensity;
+		}
+
+		/**
+		 * Returns the filled primitives modulate colour.
+		 *
+		 * This is a combination of the opacity and intensity as (I, I, I, O) where
+		 * 'I' is intensity and 'O' is opacity.
+		 */
+		GPlatesGui::Colour
+		get_fill_modulate_colour() const;
 
 
 		/**
@@ -128,6 +178,12 @@ namespace GPlatesPresentation
 
 		bool d_vgp_draw_circular_error;
 		bool d_fill_polygons;
+		bool d_fill_polylines;
+
+		//! The opacity of filled primitives in the range [0,1].
+		double d_fill_opacity;
+		//! The intensity of the raster in the range [0,1].
+		double d_fill_intensity;
 
 		bool d_show_deformed_feature_geometries;
 		bool d_show_show_strain_accumulation;

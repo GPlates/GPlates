@@ -151,7 +151,11 @@ GPlatesGui::Map::paint(
 		// Set the scene lighting parameters on the light.
 		if (gl_light)
 		{
-			gl_light.get()->set_scene_lighting(renderer, d_view_state.get_scene_lighting_parameters());
+			gl_light.get()->set_scene_lighting(
+					renderer,
+					d_view_state.get_scene_lighting_parameters(),
+					renderer.gl_get_matrix(GL_MODELVIEW)/*view_orientation*/,
+					MapProjection::non_null_ptr_to_const_type(d_map_projection));
 		}
 
 		// Clear the colour and depth buffers of the main framebuffer.

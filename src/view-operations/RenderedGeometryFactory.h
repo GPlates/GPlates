@@ -131,6 +131,8 @@ namespace GPlatesViewOperations
 				float point_size_hint = DEFAULT_POINT_SIZE_HINT,
 				float line_width_hint = DEFAULT_LINE_WIDTH_HINT,
 				bool fill_polygon = false,
+				bool fill_polyline = false,
+				const GPlatesGui::Colour &fill_modulate_colour = DEFAULT_COLOUR,
 				const boost::optional<GPlatesGui::Symbol> &symbol = boost::none);
 
 		/**
@@ -167,12 +169,16 @@ namespace GPlatesViewOperations
 
 		/**
 		 * Creates a @a RenderedGeometry for a @a PolylineOnSphere.
+		 *
+		 * If @a filled is true then the polyline is treated like a polygon when filling.
 		 */
 		RenderedGeometry
 		create_rendered_polyline_on_sphere(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
 				const GPlatesGui::ColourProxy &colour = DEFAULT_COLOUR,
-				float line_width_hint = DEFAULT_LINE_WIDTH_HINT);
+				float line_width_hint = DEFAULT_LINE_WIDTH_HINT,
+				bool filled = false,
+				const GPlatesGui::Colour &fill_modulate_colour = DEFAULT_COLOUR);
 
 		/**
 		 * Creates a @a RenderedGeometry for a @a PolygonOnSphere.
@@ -182,7 +188,8 @@ namespace GPlatesViewOperations
 				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type,
 				const GPlatesGui::ColourProxy &colour = DEFAULT_COLOUR,
 				float line_width_hint = DEFAULT_LINE_WIDTH_HINT,
-				bool filled = false);
+				bool filled = false,
+				const GPlatesGui::Colour &fill_modulate_colour = DEFAULT_COLOUR);
 
 		/**
 		 * Creates a @a RenderedGeometry for a coloured edge surface mesh.
@@ -208,7 +215,8 @@ namespace GPlatesViewOperations
 		create_rendered_resolved_raster(
 				const GPlatesAppLogic::resolved_raster_non_null_ptr_to_const_type &resolved_raster,
 				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
-				const GPlatesGui::Colour &raster_modulate_colour = GPlatesGui::Colour::get_white());
+				const GPlatesGui::Colour &raster_modulate_colour = GPlatesGui::Colour::get_white(),
+				float normal_map_height_field_scale_factor = 1);
 
 		/**
 		 * Creates a @a RenderedGeometry for a resolved 3D scalar field.

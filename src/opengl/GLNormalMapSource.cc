@@ -92,8 +92,9 @@ GPlatesOpenGL::GLNormalMapSource::is_supported(
 		if (!renderer.get_capabilities().shader.gl_ARB_vertex_shader ||
 			!renderer.get_capabilities().shader.gl_ARB_fragment_shader)
 		{
-			//qDebug() <<
-			//		"GLNormalMapSource: Disabling normal map raster lighting in OpenGL - requires vertex/fragment shader programs.";
+			qWarning() <<
+					"Normal map raster lighting NOT supported by this OpenGL system.\n"
+					"  Requires vertex/fragment shader programs.";
 
 			return false;
 		}
@@ -110,7 +111,8 @@ boost::optional<GPlatesOpenGL::GLNormalMapSource::non_null_ptr_type>
 GPlatesOpenGL::GLNormalMapSource::create(
 		GLRenderer &renderer,
 		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &height_field_raster,
-		unsigned int tile_texel_dimension)
+		unsigned int tile_texel_dimension,
+		float height_field_scale_factor)
 {
 	if (!is_supported(renderer))
 	{
@@ -168,7 +170,8 @@ GPlatesOpenGL::GLNormalMapSource::create(
 			raster_width,
 			raster_height,
 			tile_texel_dimension,
-			raster_statistics));
+			raster_statistics,
+			height_field_scale_factor));
 }
 
 
@@ -179,12 +182,18 @@ GPlatesOpenGL::GLNormalMapSource::GLNormalMapSource(
 		unsigned int raster_width,
 		unsigned int raster_height,
 		unsigned int tile_texel_dimension,
-		const GPlatesPropertyValues::RasterStatistics &raster_statistics) :
+		const GPlatesPropertyValues::RasterStatistics &raster_statistics,
+		float height_field_scale_factor) :
 	d_proxied_raster_resolver(proxy_raster_resolver),
 	d_raster_width(raster_width),
 	d_raster_height(raster_height),
 	d_tile_texel_dimension(tile_texel_dimension),
-	d_height_field_scale(1), // Default scale
+	// The constant is arbitrary and empirically determined to work with some test rasters.
+	// The user can adjust the final scale value so this just needs to provide a reasonably OK starting point...
+	d_constant_height_field_scale_factor(GPlatesMaths::PI / 18),
+	d_raster_statistics_height_field_scale_factor(1), // Default scale
+	d_raster_resolution_height_field_scale_factor(1), // Default scale
+	d_client_height_field_scale_factor(height_field_scale_factor),
 	// Generating normals on GPU requires uploading height field as a floating-point texture with
 	// non-power-of-two dimension (tile_texel_dimension + 2) x (tile_texel_dimension + 2) ...
 	d_generate_normal_map_on_gpu(
@@ -201,8 +210,8 @@ GPlatesOpenGL::GLNormalMapSource::GLNormalMapSource(
 
 	initialise_level_of_detail_dimensions();
 
-	// Adjust the height field scale based on the raster statistics.
-	initialise_height_field_scale(raster_statistics);
+	// Adjust the height field scale factor that's based on the raster statistics.
+	initialise_raster_statistics_height_field_scale_factor(raster_statistics);
 
 	if (d_generate_normal_map_on_gpu)
 	{
@@ -286,38 +295,53 @@ GPlatesOpenGL::GLNormalMapSource::initialise_level_of_detail_dimensions()
 
 
 void
-GPlatesOpenGL::GLNormalMapSource::initialise_height_field_scale(
+GPlatesOpenGL::GLNormalMapSource::initialise_raster_statistics_height_field_scale_factor(
 		const GPlatesPropertyValues::RasterStatistics &raster_statistics)
 {
 	if (!raster_statistics.minimum || !raster_statistics.maximum)
 	{
 		// Leave height field scale as default value.
+		d_raster_statistics_height_field_scale_factor = 1;
 		return;
 	}
 
 	// Base the scale off the range of raster values.
 	// The constant is arbitrary and empirically determined to work with some test rasters.
 	// The user can adjust this value so it just needs to be a reasonably OK starting point.
-	d_height_field_scale = 100.0 / (raster_statistics.maximum.get() - raster_statistics.minimum.get());
+	if (!GPlatesMaths::are_almost_exactly_equal(raster_statistics.maximum.get(), raster_statistics.minimum.get()))
+	{
+		d_raster_statistics_height_field_scale_factor = 1.0 / (raster_statistics.maximum.get() - raster_statistics.minimum.get());
+	}
+}
+
+
+float
+GPlatesOpenGL::GLNormalMapSource::get_height_field_scale() const
+{
+	// Multiple all the height field scale factors together.
+	return d_constant_height_field_scale_factor *
+		d_raster_statistics_height_field_scale_factor *
+		d_raster_resolution_height_field_scale_factor *
+		d_client_height_field_scale_factor;
 }
 
 
 void
 GPlatesOpenGL::GLNormalMapSource::set_max_highest_resolution_texel_size_on_unit_sphere(
-		const double &texel_size)
+		const double &max_highest_resolution_texel_size_on_unit_sphere)
 {
 	// The smaller the texel size on the unit-sphere the larger the scale we need to apply to the heights
 	// in order to keep the normals (slopes) the same as an equivalent lower (or higher) resolution raster.
-	// The constant is arbitrary and empirically determined to work with some test rasters.
-	// The user can adjust this value so it just needs to be a reasonably OK starting point.
-	d_height_field_scale *= (GPlatesMaths::PI / 1800) / texel_size;
+	d_raster_resolution_height_field_scale_factor =
+			1.0 / max_highest_resolution_texel_size_on_unit_sphere;
 }
 
 
 bool
 GPlatesOpenGL::GLNormalMapSource::change_raster(
 		GLRenderer &renderer,
-		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &new_height_raster)
+		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &new_height_raster,
+		float height_field_scale_factor)
 {
 	// Get the raster dimensions.
 	boost::optional<std::pair<unsigned int, unsigned int> > new_raster_dimensions =
@@ -336,14 +360,33 @@ GPlatesOpenGL::GLNormalMapSource::change_raster(
 		return false;
 	}
 
-	// Create a new proxied raster resolver to perform region queries for the new raster data.
+	// The raster type is expected to contain numerical (height) data, not colour RGBA data.
+	if (!GPlatesPropertyValues::RawRasterUtils::does_raster_contain_numerical_data(*new_height_raster))
+	{
+		return false;
+	}
+
 	boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxy_resolver_opt =
 			GPlatesPropertyValues::ProxiedRasterResolver::create(new_height_raster);
 	if (!proxy_resolver_opt)
 	{
 		return false;
 	}
+
 	d_proxied_raster_resolver = proxy_resolver_opt.get();
+
+	// Get the raster statistics (if any).
+	GPlatesPropertyValues::RasterStatistics raster_statistics;
+	if (GPlatesPropertyValues::RasterStatistics *raster_statistics_ptr =
+			GPlatesPropertyValues::RawRasterUtils::get_raster_statistics(*new_height_raster))
+	{
+		raster_statistics = *raster_statistics_ptr;
+	}
+
+	// Adjust the heightfield scale based on raster statistics.
+	initialise_raster_statistics_height_field_scale_factor(raster_statistics);
+
+	d_client_height_field_scale_factor = height_field_scale_factor;
 
 	// Invalidate any raster data that clients may have cached.
 	invalidate();
@@ -480,7 +523,7 @@ GPlatesOpenGL::GLNormalMapSource::load_tile(
 	// when transitioning between levels).
 	// The division by 6 accounts for the 3 slope calculations per u or v direction and the distance
 	// of two pixels covered by each.
-	const float lod_height_scale = (1.0f / 6) * d_height_field_scale / (1 << level);
+	const float lod_height_scale = (1.0f / 6) * get_height_field_scale() / (1 << level);
 
 	// If we can offload the normal map generation to the GPU then do so.
 	// This really requires floating-point textures to get sufficient precision for the height field values.

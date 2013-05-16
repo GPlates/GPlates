@@ -37,6 +37,8 @@
 
 #include "canvas-tools/CanvasTool.h"
 
+#include "gui/Symbol.h"
+
 
 namespace GPlatesQtWidgets
 {
@@ -89,12 +91,12 @@ namespace GPlatesGui
 
 	private Q_SLOTS:
 
-		/**
-		 * Changed which reconstruction geometry is currently focused.
-		 */
 		void
-		feature_focus_changed(
+		draw_feature_focus(
 				GPlatesGui::FeatureFocus &feature_focus);
+
+		void
+		update_enable_state();
 
 	private:
 
@@ -105,6 +107,13 @@ namespace GPlatesGui
 
 		//! For rendering purposes
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
+
+		const GPlatesGui::symbol_map_type &d_symbol_map;
+
+		//! For clicking geometries in the 3D globe view.
+		boost::scoped_ptr<GlobeCanvasTool> d_globe_click_geometry_tool;
+		//! For clicking geometries in the 2D map view.
+		boost::scoped_ptr<MapCanvasTool> d_map_click_geometry_tool;
 
 		//! For manipulating poles in the 3D globe view.
 		boost::scoped_ptr<GlobeCanvasTool> d_globe_manipulate_pole_tool;
@@ -118,9 +127,6 @@ namespace GPlatesGui
 				const GPlatesCanvasTools::CanvasTool::status_bar_callback_type &status_bar_callback,
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesQtWidgets::ViewportWindow &viewport_window);
-
-		void
-		update_enable_state();
 
 		void
 		update_manipulate_pole_tool();

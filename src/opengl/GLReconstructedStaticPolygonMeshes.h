@@ -637,16 +637,6 @@ namespace GPlatesOpenGL
 		get_reconstructed_polygon_meshes(
 				GLRenderer &renderer);
 
-
-		/**
-		 * Returns the current reconstruction time last set by @a update.
-		 */
-		const double &
-		get_reconstruction_time() const
-		{
-			return d_reconstruction_time;
-		}
-
 	private:
 		/**
 		 * Typedef for a @a GLCubeSubvision cache.

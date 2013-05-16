@@ -117,7 +117,9 @@ namespace GPlatesGui
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection,
 					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
-							render_point_line_polygon_lighting_program_object);
+							render_point_line_polygon_lighting_in_globe_view_program_object,
+					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
+							render_point_line_polygon_lighting_in_map_view_program_object);
 
 			/**
 			 * Returns the stream for points of size @a point_size.
@@ -344,15 +346,18 @@ namespace GPlatesGui
 			RasterDrawable(
 					const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type source_resolved_raster_,
 					const RasterColourPalette::non_null_ptr_to_const_type source_raster_colour_palette_,
-					const Colour &source_raster_modulate_colour_) :
+					const Colour &source_raster_modulate_colour_,
+					float normal_map_height_field_scale_factor_) :
 				source_resolved_raster(source_resolved_raster_),
 				source_raster_colour_palette(source_raster_colour_palette_),
-				source_raster_modulate_colour(source_raster_modulate_colour_)
+				source_raster_modulate_colour(source_raster_modulate_colour_),
+				normal_map_height_field_scale_factor(normal_map_height_field_scale_factor_)
 			{  }
 
 			GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type source_resolved_raster;
 			RasterColourPalette::non_null_ptr_to_const_type source_raster_colour_palette;
 			Colour source_raster_modulate_colour;
+			float normal_map_height_field_scale_factor;
 		};
 
 
@@ -475,13 +480,22 @@ namespace GPlatesGui
 		boost::optional<MapProjection::non_null_ptr_to_const_type> d_map_projection;
 
 		/**
-		 * Shader program to render points/lines/polygons with lighting.
+		 * Shader program to render points/lines/polygons with lighting in a 3D *globe* view.
 		 *
 		 * Is boost::none if not supported by the runtime system -
 		 * the fixed-function pipeline is then used (with no lighting).
 		 */
 		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
-				d_render_point_line_polygon_lighting_program_object;
+				d_render_point_line_polygon_lighting_in_globe_view_program_object;
+
+		/**
+		 * Shader program to render points/lines/polygons with lighting in a 2D *map* view.
+		 *
+		 * Is boost::none if not supported by the runtime system -
+		 * the fixed-function pipeline is then used (with no lighting).
+		 */
+		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
+				d_render_point_line_polygon_lighting_in_map_view_program_object;
 	};
 }
 

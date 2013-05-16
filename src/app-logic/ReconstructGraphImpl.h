@@ -212,6 +212,12 @@ namespace GPlatesAppLogic
 			/**
 			 * NOTE: this will effectively destroy 'this' since our parent layer has the only
 			 * owning reference to 'this'.
+			 *
+			 * A situation where it does not get disconnected is when 'this' layer connection
+			 * connects a layer's input to the output of that same layer *and* that layer is
+			 * currently in the process of being destroyed (ie, in layer's destructor).
+			 * In this case the connection will get destroyed soon anyway when the layer's
+			 * destruction process completes.
 			 */
 			void
 			disconnect_from_parent_layer();
@@ -229,16 +235,6 @@ namespace GPlatesAppLogic
 			void
 			input_layer_activated(
 					bool active);
-
-
-			//
-			// Implementation: Only to be used by class @a Layer.
-			//
-			// The layer receiving input is being destroyed so we shouldn't reference it
-			// or try to notify its layer task that a connection is being removed.
-			//
-			void
-			layer_receiving_input_is_being_destroyed();
 			
 		private:
 			/**
@@ -274,7 +270,6 @@ namespace GPlatesAppLogic
 			boost::weak_ptr<Layer> d_layer_receiving_input;
 			QString d_layer_input_channel_name;
 			bool d_is_input_layer_active;
-			bool d_can_access_layer_receiving_input;
 
 			/**
 			 * Keep a reference to the input feature collection just for our callback - if the

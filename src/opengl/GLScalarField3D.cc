@@ -1704,10 +1704,8 @@ GPlatesOpenGL::GLScalarField3D::render_white_inner_sphere(
 	d_render_white_inner_sphere_program_object.get()->gl_uniform1i(
 			renderer,
 			"lighting_enabled",
-			// Always enable lighting for now - until the lighting canvas tool is in place -
-			// since it will have controls to individually enable/disable lighting for
-			// vector geometries, filled geometries, rasters, scalar fields, etc...
-			true/*d_light->get_scene_lighting_parameters().is_lighting_enabled()*/);
+			d_light->get_scene_lighting_parameters().is_lighting_enabled(
+					GPlatesGui::SceneLightingParameters::LIGHTING_SCALAR_FIELD));
 
 	// Set the world-space light direction.
 	d_render_white_inner_sphere_program_object.get()->gl_uniform3f(
@@ -1908,10 +1906,8 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 	program_object->gl_uniform1i(
 			renderer,
 			"lighting_enabled",
-			// Always enable lighting for now - until the lighting canvas tool is in place -
-			// since it will have controls to individually enable/disable lighting for
-			// vector geometries, filled geometries, rasters, scalar fields, etc...
-			true/*d_light->get_scene_lighting_parameters().is_lighting_enabled()*/);
+			d_light->get_scene_lighting_parameters().is_lighting_enabled(
+					GPlatesGui::SceneLightingParameters::LIGHTING_SCALAR_FIELD));
 
 	// Set the world-space light direction.
 	program_object->gl_uniform3f(

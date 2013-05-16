@@ -109,20 +109,6 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::FeatureInspectionCanvasToolWork
 				GPlatesGui::FeatureFocus &)),
 		this,
 		SLOT(update_enable_state()));
-	QObject::connect(
-		&d_feature_focus,
-		SIGNAL(focus_changed(
-				GPlatesGui::FeatureFocus &)),
-		this,
-		SLOT(draw_feature_focus(
-				GPlatesGui::FeatureFocus &)));
-	QObject::connect(
-			&d_feature_focus,
-			SIGNAL(focused_feature_modified(
-					GPlatesGui::FeatureFocus &)),
-			this,
-			SLOT(draw_feature_focus(
-					GPlatesGui::FeatureFocus &)));
 
 	// Listen for focused feature geometry changes.
 	// We use this to determine if a geometry, that's being operated on or will potentially
@@ -344,6 +330,21 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::activate_workflow()
 
 	// Activate the main rendered layer.
 	d_rendered_geom_collection.set_main_layer_active(WORKFLOW_RENDER_LAYER, true/*active*/);
+
+	// Draw the focused feature when it changes feature or is modified.
+	QObject::connect(
+			&d_feature_focus,
+			SIGNAL(focus_changed(GPlatesGui::FeatureFocus &)),
+			this,
+			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+	QObject::connect(
+			&d_feature_focus,
+			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
+			this,
+			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+
+	// Draw the focused feature (or draw nothing) in case the focused feature changed while we were inactive.
+	draw_feature_focus(d_feature_focus);
 }
 
 
@@ -355,6 +356,18 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::deactivate_workflow()
 
 	// Deactivate the main rendered layer.
 	d_rendered_geom_collection.set_main_layer_active(WORKFLOW_RENDER_LAYER, false/*active*/);
+
+	// Don't draw the focused feature anymore.
+	QObject::disconnect(
+			&d_feature_focus,
+			SIGNAL(focus_changed(GPlatesGui::FeatureFocus &)),
+			this,
+			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+	QObject::disconnect(
+			&d_feature_focus,
+			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
+			this,
+			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
 }
 
 

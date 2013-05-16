@@ -22,6 +22,7 @@ set(srcs
     AddContributorWidgetUi.ui
     AddCreatorWidgetUi.ui
     AddGTSWidgetUi.ui
+    AddHellWidgetUi.ui
     AddNewLayerDialog.cc
     AddNewLayerDialog.h
     AddNewLayerDialogUi.ui

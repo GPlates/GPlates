@@ -41,10 +41,14 @@ namespace GPlatesViewOperations
 		RenderedPolylineOnSphere(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere,
 				const GPlatesGui::ColourProxy &colour,
-				float line_width_hint) :
+				float line_width_hint,
+				bool filled,
+				const GPlatesGui::Colour &fill_modulate_colour) :
 		d_polyline_on_sphere(polyline_on_sphere),
 		d_colour(colour),
-		d_line_width_hint(line_width_hint)
+		d_line_width_hint(line_width_hint),
+		d_is_filled(filled),
+		d_fill_modulate_colour(fill_modulate_colour)
 		{  }
 
 		virtual
@@ -89,10 +93,24 @@ namespace GPlatesViewOperations
 			return d_line_width_hint;
 		}
 
+		bool
+		get_is_filled() const
+		{
+			return d_is_filled;
+		}
+
+		const GPlatesGui::Colour &
+		get_fill_modulate_colour() const
+		{
+			return d_fill_modulate_colour;
+		}
+
 	private:
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_polyline_on_sphere;
 		GPlatesGui::ColourProxy d_colour;
 		float d_line_width_hint;
+		bool d_is_filled;
+		GPlatesGui::Colour d_fill_modulate_colour;
 	};
 }
 
