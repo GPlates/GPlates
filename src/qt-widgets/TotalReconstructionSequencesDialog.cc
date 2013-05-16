@@ -994,37 +994,42 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::handle_current_item_change
     {
         return;
     }
-
     button_Edit_Sequence->setEnabled(false);
     button_Delete_Sequence->setEnabled(false);
-    
-    QString file_name;
-	if(has_metadata(get_current_file_ref().get_feature_collection()))
+	try
 	{
-		show_metadata_button->setEnabled(true);
-	}
-	else
-	{
-		show_metadata_button->setEnabled(false);
-	}
+		if(has_metadata(get_current_file_ref().get_feature_collection()))
+		{
+			show_metadata_button->setEnabled(true);
+		}
+		else
+		{
+			show_metadata_button->setEnabled(false);
+		}
     
-    if(d_metadata_dlg && d_metadata_dlg->isVisible())
-    {
-        if(show_metadata_button->isEnabled())
-        {
-            show_metadata();
-        }
-        else
-        {
-            d_metadata_dlg->clear_data();
-            d_metadata_dlg->setVisible(false);
-            QMessageBox::warning(this,
-                    QObject::tr("Not Support Metadata"),
-                    QObject::tr((QString("The %1 doesn't support metadata.").arg(file_name) + 
-                            QString("The metadata dialog therefore is closed.")).toUtf8().data()),
-                    QMessageBox::Ok);
-        }
-    }
+		if(d_metadata_dlg && d_metadata_dlg->isVisible())
+		{
+			if(show_metadata_button->isEnabled())
+			{
+				show_metadata();
+			}
+			else
+			{
+				d_metadata_dlg->clear_data();
+				d_metadata_dlg->setVisible(false);
+				QMessageBox::warning(this,
+						QObject::tr("Not Support Metadata"),
+						QObject::tr((QString("The feature collection does not support metadata.") + 
+								QString("The metadata dialog is closed. Click OK to continue.")).toUtf8().data()),
+						QMessageBox::Ok);
+			}
+		}
+	}catch(GPlatesGlobal::LogException& e)
+	{
+		std::ostringstream ostr;
+		e.write(ostr);
+		qWarning() << ostr.str().c_str();
+	}
 
     QTreeWidgetItem *current_item = current;
     if(current_item->type() == UserItemTypes::FILE_ITEM_TYPE)
