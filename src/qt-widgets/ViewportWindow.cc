@@ -761,6 +761,9 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 {
 	QObject::connect(action_Calculate_Reconstruction_Pole, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_calculate_reconstruction_pole_dialog()));
+
+	QObject::connect(action_Open_Hellinger_Fitting_Tool, SIGNAL(triggered()),
+			&dialogs(), SLOT(pop_up_hellinger_dialog()));
 	
 	if(GPlatesUtils::ComponentManager::instance().is_enabled(
 			GPlatesUtils::ComponentManager::Component::python()))
