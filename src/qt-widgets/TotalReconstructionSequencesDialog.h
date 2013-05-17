@@ -31,6 +31,7 @@
 
 #include <QDialog>
 #include <boost/shared_ptr.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include "TotalReconstructionSequencesDialogUi.h"
 
@@ -261,6 +262,12 @@ namespace GPlatesQtWidgets
 				GPlatesModel::TopLevelProperty::non_null_ptr_type old_sample,
 				GPlatesModel::TopLevelProperty::non_null_ptr_type new_sample);
 
+		boost::tuple<
+				bool, 
+				GPlatesFileIO::File::Reference*>
+		get_file_ref(
+				GPlatesModel::FeatureCollectionHandle *) const;
+
 	private:
 		/**
 		 * The loaded feature collection files.
@@ -278,7 +285,6 @@ namespace GPlatesQtWidgets
 		 * part of the model when we select a TRS tree item.
 		 */
 		tree_item_to_feature_map_type d_tree_item_to_feature_map;
-		tree_item_to_feature_collection_map_type d_tree_item_to_feature_collection_map;
 		/**
 		 * The currently selected item in the tree.
 		 *

@@ -34,6 +34,7 @@
 #include <QTableWidget>
 #include <QMap>
 #include <QMessageBox>
+#include <QMetaType>
 #include <QDebug>
 
 #include "CreateTotalReconstructionSequenceDialog.h"
@@ -57,6 +58,8 @@
 #include "utils/ReferenceCount.h"
 #include "maths/MathsUtils.h"
 #include "model/ModelUtils.h"
+
+Q_DECLARE_METATYPE( GPlatesModel::FeatureCollectionHandle * )
 
 namespace
 {
@@ -917,10 +920,9 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::update()
             // Add a top-level QTreeWidgetItem for the filename.
             
             QTreeWidgetItem *item = new QTreeWidgetItem(treewidget_seqs, UserItemTypes::FILE_ITEM_TYPE);
-            d_tree_item_to_feature_collection_map.insert(
-                std::pair<
-                        tree_item_to_feature_collection_map_type::key_type,
-                        tree_item_to_feature_collection_map_type::mapped_type>(item,fc));
+			QVariant qv;
+			qv.setValue(fc.handle_ptr());
+			item->setData(0,Qt::UserRole,qv);
             item->setFirstColumnSpanned(true);
             QString filename = iter->get_file().get_file_info().get_display_name(false);
             item->setText(ColumnNames::COLSPAN, filename);
@@ -1157,30 +1159,41 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_current_file_ref()
             "Unexpected tree item found!");
     }
 
-    tree_item_to_feature_collection_map_type::iterator
-        iter_fc = d_tree_item_to_feature_collection_map.find(file_item);
-    if(iter_fc != d_tree_item_to_feature_collection_map.end())
+	GPlatesModel::FeatureCollectionHandle* fc = 
+		file_item->data(0,Qt::UserRole).value<GPlatesModel::FeatureCollectionHandle*>();
+	bool valid_flag;
+	GPlatesFileIO::File::Reference *file_ref;
+	boost::tie(valid_flag, file_ref) = get_file_ref(fc);
+    if(valid_flag)
     {
-        GPlatesModel::FeatureCollectionHandle::weak_ref fc = iter_fc->second;
-        if(fc.is_valid())
-        {
-            std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
-                d_file_state_ptr->get_loaded_files();
-            std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>::iterator 
-                iter = loaded_files.begin(),
-                end = loaded_files.end();
-            for ( ; iter != end; ++iter) 
-            {
-                if(fc.handle_ptr()  == iter->get_file().get_feature_collection().handle_ptr())
-                {
-                    return iter->get_file();
-                }
-            }
-        }
+        return *file_ref;
     }
     throw GPlatesGlobal::LogException(
         GPLATES_EXCEPTION_SOURCE,
         "Cannot get current file reference.");
+}
+
+
+boost::tuple<
+		bool,
+		GPlatesFileIO::File::Reference* >
+GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_file_ref(
+		GPlatesModel::FeatureCollectionHandle *fc) const
+{
+	std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
+		d_file_state_ptr->get_loaded_files();
+	std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>::iterator 
+		iter = loaded_files.begin(),
+		end = loaded_files.end();
+	for ( ; iter != end; ++iter) 
+	{
+		if(fc == iter->get_file().get_feature_collection().handle_ptr())
+		{
+			return boost::make_tuple(true, &iter->get_file());
+		}
+	}
+	GPlatesFileIO::File::Reference *tmp=NULL;
+	return  boost::make_tuple(false,tmp);;
 }
 
 
@@ -1436,6 +1449,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::update_edited_feature()
     treewidget_seqs->scrollToItem(d_current_item);
 }
 
+
 void
 GPlatesQtWidgets::TotalReconstructionSequencesDialog::create_new_sequence()
 {
@@ -1462,6 +1476,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::create_new_sequence()
         }
     }
 }
+
 
 void
 GPlatesQtWidgets::TotalReconstructionSequencesDialog::delete_sequence()
@@ -1937,63 +1952,33 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_current_metadata_prope
 {
     using namespace GPlatesModel;
     GPlatesModel::FeatureHandle::iterator ret;
-    QTreeWidgetItem *current_item = treewidget_seqs->currentItem(), *file_item = NULL;
-
-    if(!current_item)
+	GPlatesFileIO::File::Reference &file_ref = get_current_file_ref();
+    FeatureCollectionHandle::weak_ref fc = file_ref.get_feature_collection();
+    if(fc.is_valid())
     {
-        qWarning() << "Invalid tree widget item in TotalReconstructionSequencesDialog.";
-        return ret;
-    }
-
-    int user_item_type = current_item->type();
-    tree_item_to_feature_collection_map_type::iterator iter_fc;
-    
-    switch(user_item_type)
-    {
-    case UserItemTypes::SEQUENCE_ITEM_TYPE:
-        file_item = current_item->parent();
-        break;
-    case UserItemTypes::POLE_ITEM_TYPE:
-        file_item = current_item->parent()->parent();
-        break;
-    case UserItemTypes::FILE_ITEM_TYPE:
-        file_item = current_item;
-        break;
-    default:
-        qWarning() << "Unrecognized tree item in total reconstruction sequences dialog.";
-        return ret;
-    }
-
-    iter_fc = d_tree_item_to_feature_collection_map.find(file_item);
-    if(iter_fc != d_tree_item_to_feature_collection_map.end())
-    {
-        FeatureCollectionHandle::weak_ref fc = iter_fc->second;
-        if(fc.is_valid())
+        std::vector<FeatureHandle::iterator> prop_vec;
+        BOOST_FOREACH(FeatureHandle::non_null_ptr_type feature, *fc)
         {
-            std::vector<FeatureHandle::iterator> prop_vec;
-            BOOST_FOREACH(FeatureHandle::non_null_ptr_type feature, *fc)
+            prop_vec = ModelUtils::get_top_level_property_ref(
+                    PropertyName::create_gpml(QString("metadata")),
+                    WeakReference<FeatureHandle>(*feature));
+            if(prop_vec.size()>0)
             {
-                prop_vec = ModelUtils::get_top_level_property_ref(
-                        PropertyName::create_gpml(QString("metadata")),
-                        WeakReference<FeatureHandle>(*feature));
-                if(prop_vec.size()>0)
-                {
-                    break; // We found it. break out.
-                }
+                break; // We found it. break out.
             }
-            if(prop_vec.size()<1)
+        }
+        if(prop_vec.size()<1)
+        {
+			throw GPlatesGlobal::LogException(
+					GPLATES_EXCEPTION_SOURCE,
+					("Cannot find metadata for the feature collection."));
+        }
+        else
+        {
+            ret = prop_vec[0];
+            if(prop_vec.size()>1)
             {
-				throw GPlatesGlobal::LogException(
-						GPLATES_EXCEPTION_SOURCE,
-						("Cannot find metadata for the feature collection."));
-            }
-            else
-            {
-                ret = prop_vec[0];
-                if(prop_vec.size()>1)
-                {
-                    qWarning() << "More than one metadata found for the feature collection, only use the first one.";
-                }
+                qWarning() << "More than one metadata found for the feature collection, only use the first one.";
             }
         }
     }
