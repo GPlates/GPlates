@@ -757,6 +757,9 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 {
 	QObject::connect(action_Calculate_Reconstruction_Pole, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_calculate_reconstruction_pole_dialog()));
+
+	QObject::connect(action_Finite_Rotation_Calculator, SIGNAL(triggered()),
+		&dialogs(), SLOT(pop_up_finite_rotation_calculator_dialog()));
 	
 	if(GPlatesUtils::ComponentManager::instance().is_enabled(
 			GPlatesUtils::ComponentManager::Component::python()))

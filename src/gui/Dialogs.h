@@ -65,12 +65,13 @@ namespace GPlatesQtWidgets
 	class DrawStyleDialog;
 	class ExportAnimationDialog;
 	class FeaturePropertiesDialog;
-	class LicenseDialog;
-	class LogDialog;
-	class ManageFeatureCollectionsDialog;
+	class FiniteRotationCalculatorDialog;
 	class GenerateVelocityDomainCitcomsDialog;
 	class GenerateVelocityDomainLatLonDialog;
 	class GenerateVelocityDomainTerraDialog;
+	class LicenseDialog;
+	class LogDialog;
+	class ManageFeatureCollectionsDialog;
 	class PreferencesDialog;
 	class ReadErrorAccumulationDialog;
 	class SetCameraViewpointDialog;
@@ -166,6 +167,9 @@ namespace GPlatesGui
 
 		GPlatesQtWidgets::FeaturePropertiesDialog &
 		feature_properties_dialog();
+
+		GPlatesQtWidgets::FiniteRotationCalculatorDialog &
+		finite_rotation_calculator_dialog();
 
 		GPlatesQtWidgets::LicenseDialog &
 		license_dialog();
@@ -275,6 +279,9 @@ namespace GPlatesGui
 		pop_up_feature_properties_dialog();
 
 		void
+		pop_up_finite_rotation_calculator_dialog();
+
+		void
 		pop_up_license_dialog();
 
 		void
@@ -355,12 +362,10 @@ namespace GPlatesGui
 			DIALOG_DRAW_STYLE,
 			DIALOG_EXPORT_ANIMATION,
 			DIALOG_FEATURE_PROPERTIES,
+			DIALOG_FINITE_ROTATION_CALCULATOR_DIALOG,
 			DIALOG_LICENSE,
 			DIALOG_LOG,
 			DIALOG_MANAGE_FEATURE_COLLECTIONS,
-			DIALOG_VELOCITY_DOMAIN_CITCOMS,
-			DIALOG_VELOCITY_DOMAIN_LAT_LON,
-			DIALOG_VELOCITY_DOMAIN_TERRA,
 			DIALOG_PREFERENCES,
 			DIALOG_READ_ERROR_ACCUMULATION,
 			DIALOG_SET_CAMERA_VIEWPOINT,
@@ -370,6 +375,9 @@ namespace GPlatesGui
 			DIALOG_SYMBOL_MANAGER,
 			DIALOG_TOTAL_RECONSTRUCTION_POLES,
 			DIALOG_TOTAL_RECONSTRUCTION_SEQUENCES,
+			DIALOG_VELOCITY_DOMAIN_CITCOMS,
+			DIALOG_VELOCITY_DOMAIN_LAT_LON,
+			DIALOG_VELOCITY_DOMAIN_TERRA,
 			DIALOG_VISUAL_LAYERS_DIALOG,
 
 			NUM_DIALOGS // NOTE: This must be last.

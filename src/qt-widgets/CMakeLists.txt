@@ -240,6 +240,9 @@ set(srcs
     FeatureSummaryWidget.h
     FeatureSummaryWidgetUi.ui
     FileDialogFilter.h
+    FiniteRotationCalculatorDialog.cc
+    FiniteRotationCalculatorDialog.h
+    FiniteRotationCalculatorDialogUi.ui
     FlowlinePropertiesWidget.cc
     FlowlinePropertiesWidget.h
     FlowlinePropertiesWidgetUi.ui

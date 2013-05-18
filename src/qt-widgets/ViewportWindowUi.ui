@@ -196,6 +196,7 @@
      <string>&amp;Utilities</string>
     </property>
     <addaction name="action_Calculate_Reconstruction_Pole"/>
+    <addaction name="action_Finite_Rotation_Calculator"/>
     <addaction name="separator"/>
     <addaction name="action_Open_Python_Console"/>
    </widget>
@@ -1093,6 +1094,11 @@
   <action name="action_Log_Dialog">
    <property name="text">
     <string>Lo&amp;g</string>
+   </property>
+  </action>
+  <action name="action_Finite_Rotation_Calculator">
+   <property name="text">
+    <string>Calculate Finite Rotation...</string>
    </property>
   </action>
   <action name="action_Generate_Terra_Velocity_Domain">
