@@ -675,7 +675,7 @@ GPlatesFileIO::MPRSHeaderLineSegment::get_pid() const
 			}
 		}
 	}
-	return 0;
+	return -1;
 }
 
 
