@@ -98,7 +98,8 @@ namespace
 			enable_external_syncing(false),
 			enable_data_mining(true),//Enable data mining by default
 			enable_symbol_table(false),
-			enable_deformation(false)
+			enable_deformation(false),
+			enable_scalar_field_import(false)
 		{
 #if defined(GPLATES_NO_PYTHON)
 			enable_python = false;
@@ -112,6 +113,7 @@ namespace
 		bool enable_data_mining;
 		bool enable_symbol_table;
 		bool enable_deformation;
+		bool enable_scalar_field_import;
 	};
 	
 	//! Option name for loading feature collection file(s).
@@ -134,8 +136,11 @@ namespace
 	//! Enable communication with external programs
 	const char *ENABLE_EXTERNAL_SYNCING_OPTION_NAME = "enable-external-syncing";
 
-	//! Enable communication with external programs
+	//! Enable deformation
 	const char *ENABLE_DEFORMATION_OPTION_NAME = "enable-deformation";
+
+	//! Enable import of 3D scalar fields.
+	const char *ENABLE_SCALAR_FIELD_IMPORT_OPTION_NAME = "enable-scalar-field-import";
 
 
 	/**
@@ -294,7 +299,11 @@ namespace
 
 		// Add enable-deformation options
 		input_options.hidden_options.add_options()
-			(ENABLE_DEFORMATION_OPTION_NAME, "Enable deformation and 'Build New Network Topology' tool.");
+			(ENABLE_DEFORMATION_OPTION_NAME, "Enable deformation and the 'Build New Network Topology' tool.");
+
+		// Add enable-scalar-field options
+		input_options.hidden_options.add_options()
+			(ENABLE_SCALAR_FIELD_IMPORT_OPTION_NAME, "Enable import of 3D scalar fields.");
 
 		boost::program_options::variables_map vm;
 
@@ -396,6 +405,11 @@ namespace
 		if (vm.count(ENABLE_DEFORMATION_OPTION_NAME))
 		{
 			command_line_options.enable_deformation = true;
+		}
+
+		if (vm.count(ENABLE_SCALAR_FIELD_IMPORT_OPTION_NAME))
+		{
+			command_line_options.enable_scalar_field_import = true;
 		}
 
 		// Disable python if command line option specified.
@@ -701,6 +715,13 @@ internal_main(int argc, char* argv[])
 	{
 		GPlatesUtils::ComponentManager::instance().enable(
 				GPlatesUtils::ComponentManager::Component::deformation());
+	}
+
+	// Enable import of 3D scalar fields if specified on the command-line.
+	if (gui_command_line_options->enable_scalar_field_import)
+	{
+		GPlatesUtils::ComponentManager::instance().enable(
+				GPlatesUtils::ComponentManager::Component::scalar_field_import());
 	}
 
 	// Enable or disable python as specified on command-line (and whether GPLATES_NO_PYTHON defined).

@@ -40,6 +40,7 @@ namespace GPlatesUtils
 			PYTHON,
 			SYMBOLOGY,
 			DEFORMATION,
+			SCALAR_FIELD_IMPORT,
 			COMP_NUM
 		};
 
@@ -73,6 +74,13 @@ namespace GPlatesUtils
 			deformation()
 			{
 				return Component(ComponentManager::DEFORMATION);
+			}
+
+			static
+			Component
+			scalar_field_import()
+			{
+				return Component(ComponentManager::SCALAR_FIELD_IMPORT);
 			}
 
 			operator 
