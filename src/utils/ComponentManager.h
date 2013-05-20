@@ -39,6 +39,7 @@ namespace GPlatesUtils
 			DATA_MINING = 0,
 			PYTHON,
 			SYMBOLOGY,
+			DEFORMATION,
 			COMP_NUM
 		};
 
@@ -65,6 +66,13 @@ namespace GPlatesUtils
 			symbology()
 			{
 				return Component(ComponentManager::SYMBOLOGY);
+			}
+
+			static
+			Component
+			deformation()
+			{
+				return Component(ComponentManager::DEFORMATION);
 			}
 
 			operator 

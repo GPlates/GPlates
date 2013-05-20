@@ -97,7 +97,8 @@ namespace
 			enable_python(true), // Enabled by default.
 			enable_external_syncing(false),
 			enable_data_mining(true),//Enable data mining by default
-			enable_symbol_table(false)
+			enable_symbol_table(false),
+			enable_deformation(false)
 		{
 #if defined(GPLATES_NO_PYTHON)
 			enable_python = false;
@@ -110,6 +111,7 @@ namespace
 		bool enable_external_syncing;
 		bool enable_data_mining;
 		bool enable_symbol_table;
+		bool enable_deformation;
 	};
 	
 	//! Option name for loading feature collection file(s).
@@ -131,6 +133,9 @@ namespace
 
 	//! Enable communication with external programs
 	const char *ENABLE_EXTERNAL_SYNCING_OPTION_NAME = "enable-external-syncing";
+
+	//! Enable communication with external programs
+	const char *ENABLE_DEFORMATION_OPTION_NAME = "enable-deformation";
 
 
 	/**
@@ -287,6 +292,10 @@ namespace
 		input_options.hidden_options.add_options()
 			(ENABLE_EXTERNAL_SYNCING_OPTION_NAME, "Enable external syncing.");
 
+		// Add enable-deformation options
+		input_options.hidden_options.add_options()
+			(ENABLE_DEFORMATION_OPTION_NAME, "Enable deformation and 'Build New Network Topology' tool.");
+
 		boost::program_options::variables_map vm;
 
 		try
@@ -382,6 +391,11 @@ namespace
 		if(vm.count(ENABLE_EXTERNAL_SYNCING_OPTION_NAME))
 		{
 			command_line_options.enable_external_syncing = true;
+		}
+
+		if (vm.count(ENABLE_DEFORMATION_OPTION_NAME))
+		{
+			command_line_options.enable_deformation = true;
 		}
 
 		// Disable python if command line option specified.
@@ -680,6 +694,13 @@ internal_main(int argc, char* argv[])
 	{
 		GPlatesUtils::ComponentManager::instance().enable(
 				GPlatesUtils::ComponentManager::Component::symbology());
+	}
+
+	// Enable deformation (and 'Build New Network Topology' tool) if specified on the command-line.
+	if (gui_command_line_options->enable_deformation)
+	{
+		GPlatesUtils::ComponentManager::instance().enable(
+				GPlatesUtils::ComponentManager::Component::deformation());
 	}
 
 	// Enable or disable python as specified on command-line (and whether GPLATES_NO_PYTHON defined).
