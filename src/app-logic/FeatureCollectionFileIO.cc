@@ -177,9 +177,22 @@ void
 GPlatesAppLogic::FeatureCollectionFileIO::unload_file(
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference loaded_file)
 {
+	// FIXME: Currently disabling the model notification guard because we are losing the
+	// publisher deactivated events in any model callbacks when the file is removed.
+	// This is because the model is delaying notification until the notification guard goes
+	// out of scope, and when that happens the model goes back over the feature store to flush
+	// pending notifications, but the removed feature collection is no longer a child of the
+	// feature store and hence is not visited to flush its pending events (so they get lost).
+	//
+	// This needs to be fixed in the model.
+	//
+	// NOTE: Until this is fixed we also have to be careful there are no notification guards
+	// higher up in the call chain (these guards can be nested).
+#if 0
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many in case we incrementally modify the features below.
 	GPlatesModel::NotificationGuard model_notification_guard(d_model.access_model());
+#endif
 
 	// Remove the loaded file from the file state - also removes it from the model.
 	d_file_state.remove_file(loaded_file);
