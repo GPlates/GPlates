@@ -707,6 +707,9 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 			// Clear the plate ID field.
 			field_moving_plate->clear();
 		}
+
+		// Since the plate id has changed the initial geometries will also have changed.
+		draw_initial_geometries();
 	}
 }
 
