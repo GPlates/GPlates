@@ -29,8 +29,16 @@
 
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
+
+#include "gui/Colour.h"
 #include "gui/ColourProxy.h"
+
+#include "maths/PointInPolygon.h"
+#include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
+#include "maths/PolylineProximityHitDetail.h"
+#include "maths/ProximityCriteria.h"
+
 
 namespace GPlatesViewOperations
 {
@@ -64,7 +72,44 @@ namespace GPlatesViewOperations
 		test_proximity(
 				const GPlatesMaths::ProximityCriteria &criteria) const
 		{
-			return d_polyline_on_sphere->test_proximity(criteria);
+			GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type hit =
+					d_polyline_on_sphere->test_proximity(criteria);
+			if (hit)
+			{
+				return hit;
+			}
+
+			// If the polyline is filled then see if the test point is inside the filled polyline's interior.
+			if (get_is_filled() &&
+				// Need at least three vertices for a polygon...
+				d_polyline_on_sphere->number_of_vertices() > 2)
+			{
+				// Create a temporary polygon from the polyline and test the point against it.
+				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type filled_polyline =
+						GPlatesMaths::PolygonOnSphere::create_on_heap(
+								d_polyline_on_sphere->vertex_begin(),
+								d_polyline_on_sphere->vertex_end());
+
+				// We don't need a fast point-in-polygon test since this is typically a user click
+				// point (ie, a single point tested against the polygon)...
+				const GPlatesMaths::PointInPolygon::Result point_in_polygon_result =
+						GPlatesMaths::PointInPolygon::is_point_in_polygon(
+								criteria.test_point(),
+								*filled_polyline);
+
+				if (point_in_polygon_result == GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+				{
+					// The point is inside the filled polygon, hence it touches the fill region and
+					// therefore has a closeness distance of zero (which is a dot product closeness of 1.0).
+					return make_maybe_null_ptr(
+							GPlatesMaths::PolylineProximityHitDetail::create(
+									d_polyline_on_sphere,
+									1.0/*closeness*/));
+				}
+			}
+
+			// No hit.
+			return GPlatesMaths::ProximityHitDetail::null;
 		}
 
 		virtual
