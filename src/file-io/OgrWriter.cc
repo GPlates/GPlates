@@ -138,7 +138,7 @@ namespace{
 	void
 	set_layer_field_names(
 		OGRLayer *ogr_layer,
-		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type &key_value_dictionary)
+		const GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type &key_value_dictionary)
 	{
 		element_type elements = key_value_dictionary->elements();
 		if (elements.empty())
@@ -277,11 +277,11 @@ namespace{
 	 */
 	void
 	setup_layer(
-		OGRDataSource *ogr_data_source_ptr,
+		OGRDataSource *&ogr_data_source_ptr,
 		boost::optional<OGRLayer*>& ogr_layer,
 		OGRwkbGeometryType wkb_type,
 		const QString &layer_name,
-		boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> key_value_dictionary)
+		const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
 	{
 		if (!ogr_data_source_ptr)
 		{
@@ -310,7 +310,7 @@ namespace{
 	 */
 	void
 	create_data_source(
-		OGRSFDriver *ogr_driver,
+		OGRSFDriver *&ogr_driver,
 		OGRDataSource *&data_source_ptr,
 		QString &data_source_name)
 	{
@@ -325,7 +325,7 @@ namespace{
 
 	void
 	remove_OGR_layers(
-		OGRSFDriver *ogr_driver,
+		OGRSFDriver *&ogr_driver,
 		const QString &filename)
 	{
 
