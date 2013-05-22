@@ -20,7 +20,7 @@ set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "GPlates is desktop software for the int
 
 # The GPlates package version.
 set(GPLATES_PACKAGE_VERSION_MAJOR "1")
-set(GPLATES_PACKAGE_VERSION_MINOR "2")
+set(GPLATES_PACKAGE_VERSION_MINOR "3")
 set(GPLATES_PACKAGE_VERSION_PATCH "0")
 
 # The GPlates package version.
@@ -107,7 +107,7 @@ set(GPLATES_BINARY_INSTALL_EXTRAS "")
 # Set to 'true' if this is a public code release (to non-developers).
 # Currently turns off warnings and any errors caused by them (because warnings are treated as errors).
 # And also defines a compiler flag GPLATES_PUBLIC_RELEASE.
-set(GPLATES_PUBLIC_RELEASE false)
+set(GPLATES_PUBLIC_RELEASE true)
 
 # Pre-compiled headers are turned off by default as they are not implicitly supported by CMake.
 # Developers of GPlates may want to turn them on in their 'ConfigUser.cmake' file to speed up build times.
