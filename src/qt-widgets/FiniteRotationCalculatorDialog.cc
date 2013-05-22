@@ -67,10 +67,10 @@ GPlatesQtWidgets::FiniteRotationCalculatorDialog::make_signal_slot_connections()
 		SLOT(handle_add_finite_rotations()));	
 
 	QGroupBox::connect(
-		subtract_finite_rotations_button,
+		compute_difference_rotation_button,
 		SIGNAL(clicked()),
 		this,
-		SLOT(handle_subtract_finite_rotations()));	
+		SLOT(handle_compute_difference_rotation()));	
 
 	QGroupBox::connect(
 		calc_rotation_between_points_button,
@@ -107,23 +107,23 @@ GPlatesQtWidgets::FiniteRotationCalculatorDialog::make_signal_slot_connections()
 
 	// Handle input changes to the 'subtract finite rotations' calculator.
 	QGroupBox::connect(
-		subtract_finite_rotations_rotation1_lat_spinbox, SIGNAL(valueChanged(double)),
-		this, SLOT(handle_subtract_finite_rotations_input_changed()));	
+		compute_difference_rotation_rotation1_lat_spinbox, SIGNAL(valueChanged(double)),
+		this, SLOT(handle_compute_difference_rotation_input_changed()));	
 	QGroupBox::connect(
-		subtract_finite_rotations_rotation1_lon_spinbox, SIGNAL(valueChanged(double)),
-		this, SLOT(handle_subtract_finite_rotations_input_changed()));	
+		compute_difference_rotation_rotation1_lon_spinbox, SIGNAL(valueChanged(double)),
+		this, SLOT(handle_compute_difference_rotation_input_changed()));	
 	QGroupBox::connect(
-		subtract_finite_rotations_rotation1_angle_spinbox, SIGNAL(valueChanged(double)),
-		this, SLOT(handle_subtract_finite_rotations_input_changed()));	
+		compute_difference_rotation_rotation1_angle_spinbox, SIGNAL(valueChanged(double)),
+		this, SLOT(handle_compute_difference_rotation_input_changed()));	
 	QGroupBox::connect(
-		subtract_finite_rotations_rotation2_lat_spinbox, SIGNAL(valueChanged(double)),
-		this, SLOT(handle_subtract_finite_rotations_input_changed()));	
+		compute_difference_rotation_rotation2_lat_spinbox, SIGNAL(valueChanged(double)),
+		this, SLOT(handle_compute_difference_rotation_input_changed()));	
 	QGroupBox::connect(
-		subtract_finite_rotations_rotation2_lon_spinbox, SIGNAL(valueChanged(double)),
-		this, SLOT(handle_subtract_finite_rotations_input_changed()));	
+		compute_difference_rotation_rotation2_lon_spinbox, SIGNAL(valueChanged(double)),
+		this, SLOT(handle_compute_difference_rotation_input_changed()));	
 	QGroupBox::connect(
-		subtract_finite_rotations_rotation2_angle_spinbox, SIGNAL(valueChanged(double)),
-		this, SLOT(handle_subtract_finite_rotations_input_changed()));	
+		compute_difference_rotation_rotation2_angle_spinbox, SIGNAL(valueChanged(double)),
+		this, SLOT(handle_compute_difference_rotation_input_changed()));	
 
 	// Handle input changes to the 'finite rotation between points' calculator.
 	QGroupBox::connect(
@@ -172,12 +172,12 @@ GPlatesQtWidgets::FiniteRotationCalculatorDialog::install_event_filters()
 	add_finite_rotations_rotation2_lon_spinbox->installEventFilter(this);
 	add_finite_rotations_rotation2_angle_spinbox->installEventFilter(this);
 
-	subtract_finite_rotations_rotation1_lat_spinbox->installEventFilter(this);
-	subtract_finite_rotations_rotation1_lon_spinbox->installEventFilter(this);
-	subtract_finite_rotations_rotation1_angle_spinbox->installEventFilter(this);
-	subtract_finite_rotations_rotation2_lat_spinbox->installEventFilter(this);
-	subtract_finite_rotations_rotation2_lon_spinbox->installEventFilter(this);
-	subtract_finite_rotations_rotation2_angle_spinbox->installEventFilter(this);
+	compute_difference_rotation_rotation1_lat_spinbox->installEventFilter(this);
+	compute_difference_rotation_rotation1_lon_spinbox->installEventFilter(this);
+	compute_difference_rotation_rotation1_angle_spinbox->installEventFilter(this);
+	compute_difference_rotation_rotation2_lat_spinbox->installEventFilter(this);
+	compute_difference_rotation_rotation2_lon_spinbox->installEventFilter(this);
+	compute_difference_rotation_rotation2_angle_spinbox->installEventFilter(this);
 
 	calc_rotation_between_points_initial_point_lat_spinbox->installEventFilter(this);
 	calc_rotation_between_points_initial_point_lon_spinbox->installEventFilter(this);
@@ -211,14 +211,14 @@ GPlatesQtWidgets::FiniteRotationCalculatorDialog::eventFilter(
 			add_finite_rotations_button->setDefault(true);
 		}
 
-		if (watched == subtract_finite_rotations_rotation1_lat_spinbox ||
-			watched == subtract_finite_rotations_rotation1_lon_spinbox ||
-			watched == subtract_finite_rotations_rotation1_angle_spinbox ||
-			watched == subtract_finite_rotations_rotation2_lat_spinbox ||
-			watched == subtract_finite_rotations_rotation2_lon_spinbox ||
-			watched == subtract_finite_rotations_rotation2_angle_spinbox)
+		if (watched == compute_difference_rotation_rotation1_lat_spinbox ||
+			watched == compute_difference_rotation_rotation1_lon_spinbox ||
+			watched == compute_difference_rotation_rotation1_angle_spinbox ||
+			watched == compute_difference_rotation_rotation2_lat_spinbox ||
+			watched == compute_difference_rotation_rotation2_lon_spinbox ||
+			watched == compute_difference_rotation_rotation2_angle_spinbox)
 		{
-			subtract_finite_rotations_button->setDefault(true);
+			compute_difference_rotation_button->setDefault(true);
 		}
 
 		if (watched == calc_rotation_between_points_initial_point_lat_spinbox ||
@@ -268,8 +268,8 @@ GPlatesQtWidgets::FiniteRotationCalculatorDialog::handle_add_finite_rotations()
 	const GPlatesMaths::Rotation rotation2 =
 			GPlatesMaths::Rotation::create(rotation2_axis, rotation2_angle);
 
-	// Apply 'rotation2' first (ie, on the right side) since the GUI states that we are calculating
-	// 'rotation1 + rotation2' which means a point is first rotated by 'rotation2' and then 'rotation1'.
+	// Apply 'rotation1' first since the GUI states that we are calculating 'rotation1 + rotation2'
+	// which means a point is first rotated by 'rotation1' and then 'rotation2'.
 	const GPlatesMaths::Rotation final_rotation = rotation2 * rotation1;
 
 	const GPlatesMaths::LatLonPoint final_rotation_axis =
@@ -288,17 +288,17 @@ GPlatesQtWidgets::FiniteRotationCalculatorDialog::handle_add_finite_rotations()
 
 
 void
-GPlatesQtWidgets::FiniteRotationCalculatorDialog::handle_subtract_finite_rotations()
+GPlatesQtWidgets::FiniteRotationCalculatorDialog::handle_compute_difference_rotation()
 {
-	const double rotation1_lat = subtract_finite_rotations_rotation1_lat_spinbox->value();
-	const double rotation1_lon = subtract_finite_rotations_rotation1_lon_spinbox->value();
+	const double rotation1_lat = compute_difference_rotation_rotation1_lat_spinbox->value();
+	const double rotation1_lon = compute_difference_rotation_rotation1_lon_spinbox->value();
 	const double rotation1_angle =
-			GPlatesMaths::convert_deg_to_rad(subtract_finite_rotations_rotation1_angle_spinbox->value());
+			GPlatesMaths::convert_deg_to_rad(compute_difference_rotation_rotation1_angle_spinbox->value());
 
-	const double rotation2_lat = subtract_finite_rotations_rotation2_lat_spinbox->value();
-	const double rotation2_lon = subtract_finite_rotations_rotation2_lon_spinbox->value();
+	const double rotation2_lat = compute_difference_rotation_rotation2_lat_spinbox->value();
+	const double rotation2_lon = compute_difference_rotation_rotation2_lon_spinbox->value();
 	const double rotation2_angle =
-			GPlatesMaths::convert_deg_to_rad(subtract_finite_rotations_rotation2_angle_spinbox->value());
+			GPlatesMaths::convert_deg_to_rad(compute_difference_rotation_rotation2_angle_spinbox->value());
 
 	const GPlatesMaths::UnitVector3D rotation1_axis = make_point_on_sphere(
 			GPlatesMaths::LatLonPoint(rotation1_lat, rotation1_lon)).position_vector();
@@ -312,9 +312,9 @@ GPlatesQtWidgets::FiniteRotationCalculatorDialog::handle_subtract_finite_rotatio
 	const GPlatesMaths::Rotation rotation2 =
 			GPlatesMaths::Rotation::create(rotation2_axis, rotation2_angle);
 
-	// Apply '-rotation2' first (ie, on the right side) since the GUI states that we are calculating
-	// 'rotation1 - rotation2' which means a point is first rotated by '-rotation2' and then 'rotation1'.
-	const GPlatesMaths::Rotation final_rotation = rotation2.get_reverse() * rotation1;
+	// Apply '-rotation1' first since the GUI states that we are calculating 'reverse(rotation1) + rotation2'
+	// which means a point is first rotated by '-rotation1' and then 'rotation2'.
+	const GPlatesMaths::Rotation final_rotation = rotation2 * rotation1.get_reverse();
 
 	const GPlatesMaths::LatLonPoint final_rotation_axis =
 			make_lat_lon_point(GPlatesMaths::PointOnSphere(final_rotation.axis()));
@@ -322,11 +322,11 @@ GPlatesQtWidgets::FiniteRotationCalculatorDialog::handle_subtract_finite_rotatio
 	const double final_rotation_angle =
 			GPlatesMaths::convert_rad_to_deg(final_rotation.angle().dval());
 
-	subtract_finite_rotations_final_rotation_lat_lineedit->setText(
+	compute_difference_rotation_final_rotation_lat_lineedit->setText(
 			QString::number(final_rotation_axis.latitude(), 'f', 4));
-	subtract_finite_rotations_final_rotation_lon_lineedit->setText(
+	compute_difference_rotation_final_rotation_lon_lineedit->setText(
 			QString::number(final_rotation_axis.longitude(), 'f', 4));
-	subtract_finite_rotations_final_rotation_angle_lineedit->setText(
+	compute_difference_rotation_final_rotation_angle_lineedit->setText(
 			QString::number(final_rotation_angle, 'f', 4));
 }
 
@@ -403,11 +403,11 @@ GPlatesQtWidgets::FiniteRotationCalculatorDialog::handle_add_finite_rotations_in
 
 
 void
-GPlatesQtWidgets::FiniteRotationCalculatorDialog::handle_subtract_finite_rotations_input_changed()
+GPlatesQtWidgets::FiniteRotationCalculatorDialog::handle_compute_difference_rotation_input_changed()
 {
-	subtract_finite_rotations_final_rotation_lat_lineedit->clear();
-	subtract_finite_rotations_final_rotation_lon_lineedit->clear();
-	subtract_finite_rotations_final_rotation_angle_lineedit->clear();
+	compute_difference_rotation_final_rotation_lat_lineedit->clear();
+	compute_difference_rotation_final_rotation_lon_lineedit->clear();
+	compute_difference_rotation_final_rotation_angle_lineedit->clear();
 }
 
 

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>757</width>
-    <height>445</height>
+    <height>452</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -31,9 +31,16 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
+         <widget class="QLabel" name="label_33">
+          <property name="text">
+           <string>The accumulation of Rotation1 followed by Rotation2:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QLabel" name="label">
           <property name="text">
-           <string>Rotation = Rotation1 + Rotation2:</string>
+           <string>Rotation = Rotation1 + Rotation2</string>
           </property>
          </widget>
         </item>
@@ -290,7 +297,7 @@
           <item>
            <widget class="QPushButton" name="add_finite_rotations_button">
             <property name="text">
-             <string>Add</string>
+             <string>Compute</string>
             </property>
            </widget>
           </item>
@@ -313,23 +320,33 @@
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QGroupBox" name="subtract_finite_rotations_groupbox">
+      <widget class="QGroupBox" name="compute_difference_rotation_groupbox">
        <property name="font">
         <font>
          <pointsize>9</pointsize>
         </font>
        </property>
        <property name="title">
-        <string>Subtract Finite Rotations</string>
+        <string>Compute Difference Rotation</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
+         <widget class="QLabel" name="label_34">
+          <property name="text">
+           <string>The difference rotation from Rotation1 to Rotation2:</string>
+          </property>
+          <property name="textFormat">
+           <enum>Qt::AutoText</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QLabel" name="label_9">
           <property name="text">
-           <string>Rotation = Rotation1 - Rotation2:</string>
+           <string>Rotation = reverse(Rotation1) + Rotation2</string>
           </property>
          </widget>
         </item>
@@ -393,7 +410,7 @@
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QDoubleSpinBox" name="subtract_finite_rotations_rotation1_lat_spinbox">
+           <widget class="QDoubleSpinBox" name="compute_difference_rotation_rotation1_lat_spinbox">
             <property name="alignment">
              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
@@ -409,7 +426,7 @@
            </widget>
           </item>
           <item row="1" column="2">
-           <widget class="QDoubleSpinBox" name="subtract_finite_rotations_rotation1_lon_spinbox">
+           <widget class="QDoubleSpinBox" name="compute_difference_rotation_rotation1_lon_spinbox">
             <property name="alignment">
              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
@@ -425,7 +442,7 @@
            </widget>
           </item>
           <item row="1" column="3">
-           <widget class="QDoubleSpinBox" name="subtract_finite_rotations_rotation1_angle_spinbox">
+           <widget class="QDoubleSpinBox" name="compute_difference_rotation_rotation1_angle_spinbox">
             <property name="alignment">
              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
@@ -453,7 +470,7 @@
            </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QDoubleSpinBox" name="subtract_finite_rotations_rotation2_lat_spinbox">
+           <widget class="QDoubleSpinBox" name="compute_difference_rotation_rotation2_lat_spinbox">
             <property name="alignment">
              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
@@ -469,7 +486,7 @@
            </widget>
           </item>
           <item row="2" column="2">
-           <widget class="QDoubleSpinBox" name="subtract_finite_rotations_rotation2_lon_spinbox">
+           <widget class="QDoubleSpinBox" name="compute_difference_rotation_rotation2_lon_spinbox">
             <property name="alignment">
              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
@@ -485,7 +502,7 @@
            </widget>
           </item>
           <item row="2" column="3">
-           <widget class="QDoubleSpinBox" name="subtract_finite_rotations_rotation2_angle_spinbox">
+           <widget class="QDoubleSpinBox" name="compute_difference_rotation_rotation2_angle_spinbox">
             <property name="alignment">
              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
@@ -528,7 +545,7 @@
            </widget>
           </item>
           <item row="4" column="1">
-           <widget class="QLineEdit" name="subtract_finite_rotations_final_rotation_lat_lineedit">
+           <widget class="QLineEdit" name="compute_difference_rotation_final_rotation_lat_lineedit">
             <property name="focusPolicy">
              <enum>Qt::ClickFocus</enum>
             </property>
@@ -541,7 +558,7 @@
            </widget>
           </item>
           <item row="4" column="2">
-           <widget class="QLineEdit" name="subtract_finite_rotations_final_rotation_lon_lineedit">
+           <widget class="QLineEdit" name="compute_difference_rotation_final_rotation_lon_lineedit">
             <property name="focusPolicy">
              <enum>Qt::ClickFocus</enum>
             </property>
@@ -554,7 +571,7 @@
            </widget>
           </item>
           <item row="4" column="3">
-           <widget class="QLineEdit" name="subtract_finite_rotations_final_rotation_angle_lineedit">
+           <widget class="QLineEdit" name="compute_difference_rotation_final_rotation_angle_lineedit">
             <property name="focusPolicy">
              <enum>Qt::ClickFocus</enum>
             </property>
@@ -584,9 +601,9 @@
            </spacer>
           </item>
           <item>
-           <widget class="QPushButton" name="subtract_finite_rotations_button">
+           <widget class="QPushButton" name="compute_difference_rotation_button">
             <property name="text">
-             <string>Subtract</string>
+             <string>Compute</string>
             </property>
            </widget>
           </item>
@@ -850,7 +867,7 @@
           <item>
            <widget class="QPushButton" name="calc_rotation_between_points_button">
             <property name="text">
-             <string>Calculate</string>
+             <string>Compute</string>
             </property>
            </widget>
           </item>
@@ -1126,7 +1143,7 @@
           <item>
            <widget class="QPushButton" name="rotate_a_point_button">
             <property name="text">
-             <string>Rotate</string>
+             <string>Compute</string>
             </property>
            </widget>
           </item>

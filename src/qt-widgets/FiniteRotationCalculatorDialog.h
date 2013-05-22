@@ -69,7 +69,7 @@ namespace GPlatesQtWidgets
 		handle_add_finite_rotations();
 
 		void
-		handle_subtract_finite_rotations();
+		handle_compute_difference_rotation();
 
 		void
 		handle_calc_rotation_between_points();
@@ -79,7 +79,7 @@ namespace GPlatesQtWidgets
 		handle_add_finite_rotations_input_changed();
 
 		void
-		handle_subtract_finite_rotations_input_changed();
+		handle_compute_difference_rotation_input_changed();
 
 		void
 		handle_calc_rotation_between_points_input_changed();
