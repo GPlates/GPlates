@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>525</width>
-    <height>303</height>
+    <height>306</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -138,6 +138,9 @@
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
+            </property>
+            <property name="minimum">
+             <double>0.010000000000000</double>
             </property>
             <property name="maximum">
              <double>1000.000000000000000</double>

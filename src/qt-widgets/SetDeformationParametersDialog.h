@@ -90,6 +90,17 @@ namespace GPlatesQtWidgets
 				bool state);
 #endif
 		
+		void
+		handle_begin_time_spinbox_changed(
+				double value);
+
+		void
+		handle_end_time_spinbox_changed(
+				double value);
+
+		void
+		handle_time_increment_spinbox_changed(
+				double value);
 
 		void
 		react_show_strain_accumulation_changed(

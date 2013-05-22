@@ -126,10 +126,48 @@ GPlatesQtWidgets::SetDeformationParametersDialog::setup_connections()
 			SLOT(reject()));
 
 	QObject::connect(
+			spinbox_begin_time, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_begin_time_spinbox_changed(double)));
+	QObject::connect(
+			spinbox_end_time, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_end_time_spinbox_changed(double)));
+	QObject::connect(
+			spinbox_time_increment, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_time_increment_spinbox_changed(double)));
+
+	QObject::connect(
 			show_strain_accumulation_checkbox,
 			SIGNAL(stateChanged(int)),
 			this,
 			SLOT(react_show_strain_accumulation_changed(int)));
+}
+
+
+void
+GPlatesQtWidgets::SetDeformationParametersDialog::handle_begin_time_spinbox_changed(
+		double value)
+{
+	// Keep begin time from getting too close to end time (at the very least they should not be equal).
+	spinbox_end_time->setMaximum(value - spinbox_time_increment->value());
+}
+
+
+void
+GPlatesQtWidgets::SetDeformationParametersDialog::handle_end_time_spinbox_changed(
+		double value)
+{
+	// Keep begin time from getting too close to end time (at the very least they should not be equal).
+	spinbox_begin_time->setMinimum(value + spinbox_time_increment->value());
+}
+
+
+void
+GPlatesQtWidgets::SetDeformationParametersDialog::handle_time_increment_spinbox_changed(
+		double value)
+{
+	// Keep begin time from getting too close to end time (at the very least they should not be equal).
+	spinbox_begin_time->setMinimum(spinbox_end_time->value() + value);
+	spinbox_end_time->setMaximum(spinbox_begin_time->value() - value);
 }
 
 
