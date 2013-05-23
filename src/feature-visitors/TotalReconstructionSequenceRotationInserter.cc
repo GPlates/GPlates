@@ -175,7 +175,10 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 						d_moving_plate_id,
 						d_fixed_plate_id,
 						d_recon_time.value());
-			d_grot_proxy->update_pole(old_pole, new_pole);
+			if(d_grot_proxy)
+			{
+				d_grot_proxy->update_pole(old_pole, new_pole);
+			}
 		} else {
 			// The finite rotation needs to be interpolated and a new time-sample needs
 			// to be inserted.  That means this function will be called twice by
