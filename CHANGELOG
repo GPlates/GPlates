@@ -1,3 +1,76 @@
+GPlates 1.3
+===========
+
+Started at changeset 12849 on trunk.
+Currently up to changeset 13110 on trunk.
+
+Changes since 1.2:
+
+ * Calculate velocities by plate ID in "Calculated Velocity Fields" layer.
+ * Filled polygons in 2D map views.
+ * Improved filled polygon performance.
+ * Fixed filled polygons not always sorting by plate ID.
+ * Reconstructed feature geometries now sorted by plate ID.
+ * Fixed issues with low-resolution rasters:
+   * Fixed holes in rasters in the map views.
+   * Fixed assertion failure for rasters of dimension < 128 pixels.
+   * Fixed too low raster mesh tessellation.
+ * Merged command-line version of GPlates into main GUI version of GPlates.
+ * Added command-line command 'equivalent-total-rotation'.
+ * Fixed GPlates continually restarting itself if malfunctioning python installation set to GPlates->Preference->Python->Python Home.
+ * Fixed crash if quit GPlates just after splitting a feature.
+ * Copy python framework into MacOS bundle and fixup internal references.
+ * Workaround for pixmap corruption in Manage Colouring dialog when using VirtualGL.
+ * Fixed Click Geometry tool not sorting closest to furthest from mouse click position.
+ * Improved performance of geometry reconstruction on Windows platform.
+ * Completed raster co-registration data mining front-end.
+ * Fixed topological features being included in green "Reconstruct Geometries" layer.
+ * Fixed raster seam along bottom and right edges when reconstructed.
+ * Fixed incorrect view-frustum culling of lowest resolution raster level-of-detail.
+ * Fixed bug storing GDAL raster statistics in raster cache file.
+ * Fixes for trying to access rotation axis of a great circle arc in polyline intersection code.
+ * Fixed reconstructed raster with age grid showing regions outside age grid coverage once their plate ID rotation ran out and became identity.
+ * Fixed visual artifacts in age-masked reconstructed rasters due to combining source raster and age mask into a render texture before rendering to the screen.
+ * Exposed unexpected highest detail level in reconstructed raster (due to cube map non-uniformity).
+ * Age grid test done in hardware shader program for runtime systems that support OpenGL shaders.
+ * Using pre-multiplied alpha for rasters to solve the alpha-blending artifacts (due to intermediate render textures).
+ * Added surface relief lighting:
+   * A single channel height field raster is converted into a surface normal map.
+   * The diffuse lighting of this normal map modulates the colour of a second raster.
+   * Default heightfield scale based on raster statistics.
+   * User can adjust default heightfield scale to increase/decrease relief lighting effect.
+   * Currently lighting is non-directional.
+ * A layer can now connect to itself.
+ * Added age CPT button in raster layer (for when loaded raster is an age grid).
+ * Age grid masking now also works for un-reconstructed rasters.
+ * Support filled polylines (in addition to filled polygons).
+ * Added fill polygon opacity and intensity.
+ * Canvas tool workflows:
+   * Canvas tool bar has a tab for each workflow.
+     * Avoids running out of space for canvas tool buttons.
+	 * Groups workflow related tools together.
+   * Canvas tool bar is dockable.
+ * New resolved topological 'lines':
+   * Used to create dynamic polylines (instead of dynamic polygons).
+   * Can only reference static reconstructed features.
+   * Dynamic plate polygons and networks can reference dynamic lines in their boundaries (and interiors).
+ * Separated Build Topology tool into three tools (for lines, polygons and networks).
+ * Improved performance when building/editing a topology with lots of sections.
+ * Centralised GPlates Geological Information Model (GPGIM):
+   * GPGIM stored in a single XML file.
+   * GPGIM XML file stored in GPlates executable as resource and read in at startup.
+   * All dialogs, etc, in GPlates query the centralised GPGIM.
+   * Create Feature dialog provides list of non-common properties to add to created feature.
+     * Also forces user to create non-optional properties.
+   * Add Property dialog highlights those properties allowed by the feature's type.
+   * Change Feature Type dialog allows user to change property names of non-geometry properties.
+     * If property type is same in previous and new feature type.
+   * Topological lines/polygons no longer feature-type-specific.
+     * Can be used in place of regular static geometries.
+   * Support for upgrading a feature (such as merging topological network boundary and interior properties into single network property).
+   * Attempts to fix time-dependent property errors on reading by converting between time-dependent types where possible.
+   * 'gpml:UnclassifiedFeature' is now special case and can accept 'any' number of 'any' GPGIM properties.
+
 GPlates 1.2
 ===========
 
