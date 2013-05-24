@@ -31,7 +31,7 @@
                         <gml:OrientableCurve>
                             <gml:baseCurve>
                                 <gml:LineString>
-                                    <gml:posList gml:dimension="2">18.448311488723366 -27.213574721684235 17.06910502177719 3.9522127927934769 </gml:posList>
+                                    <gml:posList gml:dimension="2">18.448311488723366 -27.213574721684235 17.06910502177719 3.952212792793476 </gml:posList>
                                 </gml:LineString>
                             </gml:baseCurve>
                         </gml:OrientableCurve>
@@ -107,15 +107,20 @@
                     <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
                 </gpml:ConstantValue>
             </gpml:reconstructionPlateId>
-            <gpml:position>
-                <gml:OrientableCurve>
-                    <gml:baseCurve>
-                        <gml:LineString>
-                            <gml:posList gml:dimension="2">-2.9919198923574428 -50.699313678216065 -1.3292571705057885 41.289650412846079 -0.33228634553016478 45.864504398655754 </gml:posList>
-                        </gml:LineString>
-                    </gml:baseCurve>
-                </gml:OrientableCurve>
-            </gpml:position>
+            <gpml:unclassifiedGeometry>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve>
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">-2.9919198923574428 -50.699313678216065 -1.3292571705057885 41.289650412846072 -0.33228634553016478 45.864504398655754 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:unclassifiedGeometry>
         </gpml:HotSpot>
     </gml:featureMember>
     <gml:featureMember>
@@ -272,7 +277,7 @@
                         <gml:OrientableCurve>
                             <gml:baseCurve>
                                 <gml:LineString>
-                                    <gml:posList gml:dimension="2">-13.386959008539975 -23.618187465852134 -14.652742338168038 5.0518656802107262 </gml:posList>
+                                    <gml:posList gml:dimension="2">-13.386959008539975 -23.618187465852134 -14.652742338168038 5.0518656802107254 </gml:posList>
                                 </gml:LineString>
                             </gml:baseCurve>
                         </gml:OrientableCurve>
@@ -415,7 +420,7 @@
                         <gml:OrientableCurve>
                             <gml:baseCurve>
                                 <gml:LineString>
-                                    <gml:posList gml:dimension="2">-30.195652502205615 -26.194245651725371 -33.906240259299388 6.4789986759822895 </gml:posList>
+                                    <gml:posList gml:dimension="2">-30.195652502205615 -26.194245651725367 -33.906240259299388 6.4789986759822895 </gml:posList>
                                 </gml:LineString>
                             </gml:baseCurve>
                         </gml:OrientableCurve>
