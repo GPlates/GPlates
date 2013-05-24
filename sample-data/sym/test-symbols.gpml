@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0320" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
+<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0322" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
     <gml:featureMember>
         <gpml:HotSpot>
             <gpml:identity>GPlates-2491bceb-852b-40c8-9241-2176abf61b2a</gpml:identity>
@@ -155,7 +155,7 @@
             </gpml:reconstructionPlateId>
             <gpml:position>
                 <gml:Point>
-                    <gml:pos>-1.4672132589498363 -49.59005997027792</gml:pos>
+                    <gml:pos>-1.4672132589498363 -49.590059970277913</gml:pos>
                 </gml:Point>
             </gpml:position>
         </gpml:NavdatSampleIntermediate>
@@ -219,7 +219,7 @@
             </gpml:reconstructionPlateId>
             <gpml:position>
                 <gml:Point>
-                    <gml:pos>-1.9157546541132087 -37.827932345893032</gml:pos>
+                    <gml:pos>-1.9157546541132087 -37.827932345893039</gml:pos>
                 </gml:Point>
             </gpml:position>
         </gpml:NavdatSampleFelsicHigh>

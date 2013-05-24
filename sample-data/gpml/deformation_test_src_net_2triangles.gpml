@@ -6,7 +6,7 @@
             <gpml:revision>GPlates-e43ef67d-bd72-40ea-85de-21626afb8f6a</gpml:revision>
             <gpml:position>
                 <gml:Point>
-                    <gml:pos>1.0 0.0</gml:pos>
+                    <gml:pos>1 0</gml:pos>
                 </gml:Point>
             </gpml:position>
             <gpml:reconstructionPlateId>
@@ -40,7 +40,7 @@
                 <gpml:ConstantValue>
                     <gpml:value>
                         <gml:Point>
-                            <gml:pos>5.0 15.0</gml:pos>
+                            <gml:pos>5 14.999999999999998</gml:pos>
                         </gml:Point>
                     </gpml:value>
                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Point</gpml:valueType>
@@ -77,7 +77,7 @@
                 <gpml:ConstantValue>
                     <gpml:value>
                         <gml:Point>
-                            <gml:pos>11.0 0.0</gml:pos>
+                            <gml:pos>11 0</gml:pos>
                         </gml:Point>
                     </gpml:value>
                     <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Point</gpml:valueType>
@@ -198,7 +198,7 @@
             <gpml:revision>GPlates-e77eab08-a586-40f6-89b9-e54bfa38801e</gpml:revision>
             <gpml:position>
                 <gml:Point>
-                    <gml:pos>5.0 -15.0</gml:pos>
+                    <gml:pos>5 -14.999999999999998</gml:pos>
                 </gml:Point>
             </gpml:position>
             <gpml:reconstructionPlateId>

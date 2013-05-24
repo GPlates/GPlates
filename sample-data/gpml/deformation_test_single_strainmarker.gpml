@@ -59,7 +59,7 @@
             </gpml:reconstructionPlateId>
             <gpml:position>
                 <gml:Point>
-                    <gml:pos>5.4601015404808493 6.6268669549328836</gml:pos>
+                    <gml:pos>5.4601015404808493 6.6268669549328827</gml:pos>
                 </gml:Point>
             </gpml:position>
         </gpml:StrainMarker>
