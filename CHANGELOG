@@ -2,7 +2,7 @@ GPlates 1.3
 ===========
 
 Started at changeset 12849 on trunk.
-Currently up to changeset 13110 on trunk.
+Currently up to changeset 13441 on trunk.
 
 Changes since 1.2:
 
@@ -70,6 +70,41 @@ Changes since 1.2:
    * Support for upgrading a feature (such as merging topological network boundary and interior properties into single network property).
    * Attempts to fix time-dependent property errors on reading by converting between time-dependent types where possible.
    * 'gpml:UnclassifiedFeature' is now special case and can accept 'any' number of 'any' GPGIM properties.
+  * In co-registration, if seed is inactive at a reconstruction then seed row is NaN.
+  * Fixed issues with command-line assign-plate-ids command crashing and not assigning plate ids outside valid time period.
+  * Fixed export of resolved topologies to individual files (separated by plate id) only writing one resolved geometry per plate id file.
+  * Fixed colour-by-age should be relative to feature's begin time instead of present day.
+  * Fixed CPT parsing error at space in quoted strings.
+  * Fixed PLATES line format having multiple "<identity>" tags.
+  * Fixed lat/lon exception when importing rasters.
+  * Store all OpenGL shader source files as resources in GPlates executable.
+  * Volume visualisation:
+    * Extended OpenGL support for ray-tracing shader (multiple render targets, texture arrays, geometry shaders).
+    * Import sequence of 2D floating-point rasters (one per depth layer) representing scalar field.
+	* GPML file linked to GPSF file containing cube map format 3D scalar field data and statistics.
+	* Load colour palette used to convert scalar value or gradient magnitude to colour.
+	* Colour by depth (iso-surface only) or scalar value or gradient magnitude.
+	* Colour-by-depth:
+	  * Front side of iso-surface blends from blue at core to cyan at surface.
+	  * Back side of iso-surface blends from red at core to yellow at surface.
+	  * Front side faces regions with higher scalar value than the iso-surface.
+	* Render vertical cross-sections (depth-extruded surface polylines).
+	  * Interactively manipulate surface polylines to change cross-sections.
+    * Render surfaces of constant scalar value (iso-surfaces).
+	* Render single deviation window:
+	  * One opaque iso-surface and two surrounding (+/- delta) semi-transparent iso-surfaces.
+	* Render double deviation window:
+	  * Two single deviation windows at different isovalues.
+	* 'Surface' deviation window renders intersection of deviation window with surface of globe:
+	  * Rendered as solid fill or isolines.
+	* Supports limiting iso-surface rendering to a specific depth range.
+	* Supports limiting iso-surface rendering to regions under surface polygons:
+	  * Supports vertically-extruded walls at surface polygon boundaries.
+	  * Render iso-surface single/double deviation window on vertical walls as isolines.
+	* Globe is semi-transparent when rendering 3D scalar field:
+	  * Opaque surface geometries (polylines, rasters, filled polygons) can occlude scalar field.
+	  * Scalar field is not ray-traced for those pixels occluded by surface geometries.
+	  
 
 GPlates 1.2
 ===========
