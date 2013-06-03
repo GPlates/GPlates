@@ -73,7 +73,7 @@ namespace GPlatesGui
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
-				RenderSettings &render_settings,
+				const RenderSettings &render_settings,
 				ViewportZoom &viewport_zoom,
 				const ColourScheme::non_null_ptr_type &colour_scheme);
 
@@ -135,7 +135,7 @@ namespace GPlatesGui
 		const GPlatesPresentation::VisualLayers &d_visual_layers;
 
 		//! Flags to determine what data to show
-		GPlatesGui::RenderSettings &d_render_settings;
+		const GPlatesGui::RenderSettings &d_render_settings;
 
 		//! For zoom-dependent rendered objects.                                                                     
 		GPlatesGui::ViewportZoom &d_viewport_zoom;		

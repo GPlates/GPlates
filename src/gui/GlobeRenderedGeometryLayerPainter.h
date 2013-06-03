@@ -102,7 +102,7 @@ namespace GPlatesGui
 		GlobeRenderedGeometryLayerPainter(
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 				const double &inverse_viewport_zoom_factor,
-				RenderSettings &render_settings,
+				const RenderSettings &render_settings,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme,
 				PaintRegionType paint_region,
@@ -307,7 +307,7 @@ namespace GPlatesGui
 		const double d_inverse_zoom_factor;
 
 		//! Rendering flags for determining what gets shown
-		RenderSettings &d_render_settings;
+		const RenderSettings &d_render_settings;
 
 		//! For determining whether a particular point on the globe is visible or not
 		GlobeVisibilityTester d_visibility_tester;

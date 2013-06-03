@@ -101,7 +101,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollect
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const GPlatesPresentation::VisualLayers &visual_layers,
-		RenderSettings &render_settings,
+		const RenderSettings &render_settings,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_rendered_geometry_collection(rendered_geometry_collection),
@@ -207,10 +207,16 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 	}
 
 	// Draw the current rendered geometry layer.
+	RenderSettings default_render_settings;
 	GlobeRenderedGeometryLayerPainter rendered_geom_layer_painter(
 			rendered_geometry_layer,
 			d_paint_params->d_inverse_viewport_zoom_factor,
-			d_render_settings,
+			// If painting the reconstruction layer then use user-specified settings,
+			// otherwise the layer is for a canvas tool workflow and we should not hide its geometries...
+			(d_paint_params->d_main_rendered_layer_type ==
+				GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)
+					? d_render_settings
+					: default_render_settings,
 			d_visibility_tester,
 			d_colour_scheme,
 			d_paint_params->d_paint_region,
@@ -234,6 +240,19 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::set_scale(
 		float scale)
 {
 	d_scale = scale;
+}
+
+
+bool
+GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_main_rendered_layer(
+		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+		GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type)
+{
+	// We only want access to the main layer type.
+	d_paint_params->d_main_rendered_layer_type = main_rendered_layer_type;
+
+	// Use base class implementation.
+	return base_type::visit_main_rendered_layer(rendered_geometry_collection, main_rendered_layer_type);
 }
 
 
@@ -278,6 +297,8 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::PaintParams::PaintParams(
 	d_inverse_viewport_zoom_factor(1.0 / viewport_zoom_factor),
 	d_paint_region(paint_region),
 	d_surface_occlusion_texture(surface_occlusion_texture),
-	d_cache_handle(new std::vector<cache_handle_type>())
+	d_cache_handle(new std::vector<cache_handle_type>()),
+	// Default to RECONSTRUCTION_LAYER (we set it before visiting each layer anyway) ...
+	d_main_rendered_layer_type(GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)
 {
 }

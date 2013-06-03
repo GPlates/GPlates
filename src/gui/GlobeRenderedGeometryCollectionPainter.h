@@ -78,7 +78,7 @@ namespace GPlatesGui
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const GPlatesPresentation::VisualLayers &visual_layers,
-				RenderSettings &render_settings,
+				const RenderSettings &render_settings,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme);
 
@@ -142,13 +142,26 @@ namespace GPlatesGui
 				bool reversed);
 
 	private:
+
+		virtual
+		bool
+		visit_main_rendered_layer(
+				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type);
+
 		virtual
 		bool
 		visit_rendered_geometry_layer(
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer);
 
+
+		//! Typedef for the base class.
+		typedef GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<
+				GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type> base_type;
+
+
 		/**
-		 * Parameters that are only available when @a paint_surface is called.
+		 * Parameters that are only available when @a paint_surface or @a paint_sub_surface is called.
 		 */
 		struct PaintParams
 		{
@@ -166,10 +179,13 @@ namespace GPlatesGui
 
 			// Cache of rendered geometry layers.
 			boost::shared_ptr<std::vector<cache_handle_type> > d_cache_handle;
+
+			// The layer type of the main rendered layer currently being rendered.
+			GPlatesViewOperations::RenderedGeometryCollection::MainLayerType d_main_rendered_layer_type;
 		};
 
 
-		//! Parameters that are only available when @a paint_surface is called.
+		//! Parameters that are only available when @a paint_surface or @a paint_sub_surface is called.
 		boost::optional<PaintParams> d_paint_params;
 
 		const GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
@@ -182,7 +198,7 @@ namespace GPlatesGui
 		const GPlatesPresentation::VisualLayers &d_visual_layers;
 
 		//! Rendering flags to determine what gets shown
-		RenderSettings &d_render_settings;
+		const RenderSettings &d_render_settings;
 
 		//! Used to paint the layers.
 		LayerPainter d_layer_painter;

@@ -118,7 +118,7 @@ const float GPlatesGui::GlobeRenderedGeometryLayerPainter::STRAIN_LINE_WIDTH_ADJ
 GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter(
 		const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 		const double &inverse_viewport_zoom_factor,
-		RenderSettings &render_settings,
+		const RenderSettings &render_settings,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme,
 		PaintRegionType paint_region,

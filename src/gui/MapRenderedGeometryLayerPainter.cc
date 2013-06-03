@@ -210,7 +210,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::MapRenderedGeometryLayerPainter(
 		const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const double &inverse_viewport_zoom_factor,
-		RenderSettings &render_settings,
+		const RenderSettings &render_settings,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_map_projection(map_projection),
 	d_rendered_geometry_layer(rendered_geometry_layer),

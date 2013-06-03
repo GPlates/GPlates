@@ -51,7 +51,7 @@ GPlatesGui::Map::Map(
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		const GPlatesPresentation::VisualLayers &visual_layers,
-		RenderSettings &render_settings,
+		const RenderSettings &render_settings,
 		ViewportZoom &viewport_zoom,
 		const ColourScheme::non_null_ptr_type &colour_scheme) :
 	d_map_projection(MapProjection::create()),
