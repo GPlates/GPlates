@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>748</width>
+    <width>773</width>
     <height>495</height>
    </rect>
   </property>
@@ -297,6 +297,26 @@
          </property>
          <property name="text">
           <string>&amp;New Sequence</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_7">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="disable_enable_pole_button">
+         <property name="text">
+          <string>Disable Pole</string>
          </property>
         </widget>
        </item>

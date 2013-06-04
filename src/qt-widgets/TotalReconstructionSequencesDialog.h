@@ -153,7 +153,10 @@ namespace GPlatesQtWidgets
 		void
 		show_metadata();
 
-		/**
+		void
+                disable_enable_pole();
+
+                /**
 		 * Update the tree after a TRS feature has been edited. 
 		 *
 		 * Calls update(), but also restores the state of the tree.

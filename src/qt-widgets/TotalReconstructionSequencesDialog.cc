@@ -60,6 +60,7 @@
 #include "model/ModelUtils.h"
 
 Q_DECLARE_METATYPE( GPlatesModel::FeatureCollectionHandle * )
+Q_DECLARE_METATYPE( GPlatesPropertyValues::GpmlTimeSample * )
 
 namespace
 {
@@ -734,14 +735,20 @@ namespace
         QLocale locale_;
 
         using namespace GPlatesPropertyValues;
-
-        std::vector<GpmlTimeSample>::const_iterator iter =
-                irreg_sampling->time_samples().begin();
-        std::vector<GpmlTimeSample>::const_iterator end =
-                irreg_sampling->time_samples().end();
+        GpmlIrregularSampling *samples = 
+            const_cast<GpmlIrregularSampling*>(irreg_sampling); 
+        std::vector<GpmlTimeSample>::iterator iter =
+                samples->time_samples().begin();
+        std::vector<GpmlTimeSample>::iterator end =
+                samples->time_samples().end();
         for ( ; iter != end; ++iter) {
             // First, append a new tree-widget-item for this TimeSample.
-            QTreeWidgetItem *item_for_pole = new QTreeWidgetItem(parent_item_for_sequence, UserItemTypes::POLE_ITEM_TYPE);
+            QTreeWidgetItem *item_for_pole = new QTreeWidgetItem(
+                    parent_item_for_sequence, 
+                    UserItemTypes::POLE_ITEM_TYPE);
+            QVariant qv;
+            qv.setValue(&(*iter));
+            item_for_pole->setData(0,Qt::UserRole,qv);
 
 #if 0
             // Display an icon if the pole is disabled.
@@ -1122,10 +1129,16 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::make_signal_slot_connectio
 
     // Listen for feature collection changes so that we can update the tree.
     connect(
-        &(d_app_state.get_feature_collection_file_state()),
-        SIGNAL(file_state_changed(GPlatesAppLogic::FeatureCollectionFileState &)),
-        this,
-        SLOT(handle_feature_collection_file_state_changed()));
+            &(d_app_state.get_feature_collection_file_state()),
+            SIGNAL(file_state_changed(GPlatesAppLogic::FeatureCollectionFileState &)),
+            this,
+            SLOT(handle_feature_collection_file_state_changed()));
+
+    connect(
+            disable_enable_pole_button,
+            SIGNAL(clicked()),
+            this,
+            SLOT(disable_enable_pole()));
 }
 
 
@@ -1275,6 +1288,28 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::has_metadata(
 	return false;
 }
 
+void
+GPlatesQtWidgets::TotalReconstructionSequencesDialog::disable_enable_pole()
+{
+    QTreeWidgetItem *current_item = treewidget_seqs->currentItem();
+    if( current_item )
+    {
+        if( current_item->type() == UserItemTypes::POLE_ITEM_TYPE)
+        {
+            GPlatesPropertyValues::GpmlTimeSample* sample = 
+                current_item->data(0,Qt::UserRole).value<GPlatesPropertyValues::GpmlTimeSample*>();
+            if(sample->is_disabled())
+            {
+                sample->set_disabled(false);
+            }
+            else
+            {
+                sample->set_disabled(true);
+                set_row_background_to_show_disabled_pole(current_item);
+            }
+        }
+    }
+}
 
 void
 GPlatesQtWidgets::TotalReconstructionSequencesDialog::show_metadata()
