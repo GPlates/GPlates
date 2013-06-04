@@ -457,7 +457,8 @@ namespace GPlatesOpenGL
 			const std::vector<VertexElementType> &vertex_elements)
 	{
 		// Set up the vertex element buffer.
-		GLBuffer::shared_ptr_type vertex_element_buffer_data = GLBuffer::create(renderer);
+		GLBuffer::shared_ptr_type vertex_element_buffer_data =
+				GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX);
 		vertex_element_buffer_data->gl_buffer_data(
 				renderer,
 				GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
@@ -469,7 +470,8 @@ namespace GPlatesOpenGL
 				GLVertexElementBuffer::create(renderer, vertex_element_buffer_data));
 
 		// Set up the vertex buffer.
-		GLBuffer::shared_ptr_type vertex_buffer_data = GLBuffer::create(renderer);
+		GLBuffer::shared_ptr_type vertex_buffer_data =
+				GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX);
 		vertex_buffer_data->gl_buffer_data(
 				renderer,
 				GLBuffer::TARGET_ARRAY_BUFFER,

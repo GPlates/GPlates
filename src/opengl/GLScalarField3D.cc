@@ -180,7 +180,7 @@ namespace GPlatesOpenGL
 			const unsigned int buffer_size = texture->get_width().get() * texture->get_height().get() * 4;
 
 			// A pixel buffer object to read the texture array.
-			GLBuffer::shared_ptr_type buffer = GLBuffer::create(renderer);
+			GLBuffer::shared_ptr_type buffer = GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_PIXEL);
 			buffer->gl_buffer_data(
 					renderer,
 					GLBuffer::TARGET_PIXEL_PACK_BUFFER,
@@ -455,8 +455,10 @@ GPlatesOpenGL::GLScalarField3D::GLScalarField3D(
 	d_depth_radius_to_layer_texture(GLTexture::create(renderer)),
 	d_colour_palette_texture(GLTexture::create(renderer)),
 	d_surface_fill_mask_resolution(SURFACE_FILL_MASK_RESOLUTION),
-	d_streaming_vertex_element_buffer(GLVertexElementBuffer::create(renderer, GLBuffer::create(renderer))),
-	d_streaming_vertex_buffer(GLVertexBuffer::create(renderer, GLBuffer::create(renderer))),
+	d_streaming_vertex_element_buffer(
+			GLVertexElementBuffer::create(renderer, GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX))),
+	d_streaming_vertex_buffer(
+			GLVertexBuffer::create(renderer, GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX))),
 	d_cross_section_vertex_array(GLVertexArray::create(renderer)),
 	d_surface_fill_mask_vertex_array(GLVertexArray::create(renderer)),
 	d_volume_fill_boundary_vertex_array(GLVertexArray::create(renderer)),

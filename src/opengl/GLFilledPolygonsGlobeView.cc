@@ -1087,13 +1087,13 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_drawables_vertex_array(
 	d_drawables_vertex_array = GLVertexArray::create(renderer);
 
 	// Set up the vertex element buffer.
-	GLBuffer::shared_ptr_type vertex_element_buffer_data = GLBuffer::create(renderer);
+	GLBuffer::shared_ptr_type vertex_element_buffer_data = GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX);
 	d_drawables_vertex_element_buffer = GLVertexElementBuffer::create(renderer, vertex_element_buffer_data);
 	// Attach vertex element buffer to the vertex array.
 	d_drawables_vertex_array->set_vertex_element_buffer(renderer, d_drawables_vertex_element_buffer);
 
 	// Set up the vertex buffer.
-	GLBuffer::shared_ptr_type vertex_buffer_data = GLBuffer::create(renderer);
+	GLBuffer::shared_ptr_type vertex_buffer_data = GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX);
 	d_drawables_vertex_buffer = GLVertexBuffer::create(renderer, vertex_buffer_data);
 
 	// Attach drawables vertex buffer to the vertex array.

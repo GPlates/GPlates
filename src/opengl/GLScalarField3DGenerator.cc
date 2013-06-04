@@ -445,7 +445,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field(
 	const unsigned int buffer_size = tile_resolution * tile_resolution * 4 * sizeof(GLfloat);
 
 	// A pixel buffer object to read the cube map scalar field data.
-	GLBuffer::shared_ptr_type buffer = GLBuffer::create(renderer);
+	GLBuffer::shared_ptr_type buffer = GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_PIXEL);
 	buffer->gl_buffer_data(
 			renderer,
 			GLBuffer::TARGET_PIXEL_PACK_BUFFER,

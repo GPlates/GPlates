@@ -150,8 +150,10 @@ GPlatesOpenGL::GLRasterCoRegistration::is_supported(
 GPlatesOpenGL::GLRasterCoRegistration::GLRasterCoRegistration(
 		GLRenderer &renderer) :
 	d_framebuffer_object(renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(renderer)),
-	d_streaming_vertex_element_buffer(GLVertexElementBuffer::create(renderer, GLBuffer::create(renderer))),
-	d_streaming_vertex_buffer(GLVertexBuffer::create(renderer, GLBuffer::create(renderer))),
+	d_streaming_vertex_element_buffer(
+			GLVertexElementBuffer::create(renderer, GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX))),
+	d_streaming_vertex_buffer(
+			GLVertexBuffer::create(renderer, GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX))),
 	d_point_region_of_interest_vertex_array(GLVertexArray::create(renderer)),
 	d_line_region_of_interest_vertex_array(GLVertexArray::create(renderer)),
 	d_fill_region_of_interest_vertex_array(GLVertexArray::create(renderer)),
@@ -5441,7 +5443,7 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::ResultsQueue(
 	for (unsigned int n = 0; n < NUM_PIXEL_BUFFERS; ++n)
 	{
 		// Allocate enough memory in each pixel buffer to read back a floating-point texture.
-		GLBuffer::shared_ptr_type buffer = GLBuffer::create(renderer);
+		GLBuffer::shared_ptr_type buffer = GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_PIXEL);
 		buffer->gl_buffer_data(
 				renderer,
 				GLBuffer::TARGET_PIXEL_PACK_BUFFER,

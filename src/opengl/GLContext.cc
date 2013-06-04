@@ -220,6 +220,7 @@ GPlatesOpenGL::GLContext::disable_opengl_extensions()
 	// For testing different code paths.
 	//
 	//__GLEW_ARB_vertex_buffer_object = 0;
+	//__GLEW_ARB_pixel_buffer_object = 0;
 	//__GLEW_EXT_framebuffer_object = 0;
 	//__GLEW_EXT_packed_depth_stencil = 0;
 	//__GLEW_ARB_vertex_shader = 0;
@@ -404,7 +405,7 @@ GPlatesOpenGL::GLContext::SharedState::acquire_pixel_buffer(
 	}
 
 	// Create a new buffer with the specified parameters.
-	GLBuffer::shared_ptr_type buffer = GLBuffer::create(renderer);
+	GLBuffer::shared_ptr_type buffer = GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_PIXEL);
 	buffer->gl_buffer_data(
 			renderer,
 			// Could be 'TARGET_PIXEL_UNPACK_BUFFER' or 'TARGET_PIXEL_PACK_BUFFER'.

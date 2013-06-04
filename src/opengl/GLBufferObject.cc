@@ -75,7 +75,9 @@ GPlatesOpenGL::GLBufferObject::Allocator::deallocate(
 
 
 GPlatesOpenGL::GLBufferObject::GLBufferObject(
-		GLRenderer &renderer) :
+		GLRenderer &renderer,
+		const buffers_type &buffer_types) :
+	d_buffer_types(buffer_types),
 	d_resource(
 			resource_type::create(
 					renderer.get_capabilities(),
@@ -100,6 +102,10 @@ GPlatesOpenGL::GLBufferObject::gl_buffer_data(
 		const void* data,
 		usage_type usage)
 {
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			is_target_type_supported(target),
+			GPLATES_ASSERTION_SOURCE);
+
 	// Bind this buffer object.
 	// Revert our buffer binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
@@ -134,6 +140,10 @@ GPlatesOpenGL::GLBufferObject::gl_buffer_sub_data(
 		unsigned int size,
 		const void* data)
 {
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			is_target_type_supported(target),
+			GPLATES_ASSERTION_SOURCE);
+
 	// Range must fit within existing buffer.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			offset + size <= d_size,
@@ -169,6 +179,10 @@ GPlatesOpenGL::GLBufferObject::gl_get_buffer_sub_data(
 		unsigned int size,
 		void* data) const
 {
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			is_target_type_supported(target),
+			GPLATES_ASSERTION_SOURCE);
+
 	// Range must fit within existing buffer.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			offset + size <= d_size,
@@ -192,6 +206,10 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_static(
 		target_type target,
 		access_type access)
 {
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			is_target_type_supported(target),
+			GPLATES_ASSERTION_SOURCE);
+
 	// Bind this buffer object.
 	// Revert our buffer binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
@@ -241,6 +259,10 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_dynamic(
 		GLRenderer &renderer,
 		target_type target)
 {
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			is_target_type_supported(target),
+			GPLATES_ASSERTION_SOURCE);
+
 	const GLCapabilities &capabilities = renderer.get_capabilities();
 
 	// Bind this buffer object.
@@ -323,6 +345,10 @@ GPlatesOpenGL::GLBufferObject::gl_flush_buffer_dynamic(
 		unsigned int offset,
 		unsigned int length/*in bytes*/)
 {
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			is_target_type_supported(target),
+			GPLATES_ASSERTION_SOURCE);
+
 	const GLCapabilities &capabilities = renderer.get_capabilities();
 
 	// Range must fit within existing buffer.
@@ -388,6 +414,10 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_stream(
 		unsigned int &stream_bytes_available)
 {
 	//PROFILE_FUNC();
+
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			is_target_type_supported(target),
+			GPLATES_ASSERTION_SOURCE);
 
 	const GLCapabilities &capabilities = renderer.get_capabilities();
 
@@ -575,6 +605,10 @@ GPlatesOpenGL::GLBufferObject::gl_flush_buffer_stream(
 {
 	//PROFILE_FUNC();
 
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			is_target_type_supported(target),
+			GPLATES_ASSERTION_SOURCE);
+
 	const GLCapabilities &capabilities = renderer.get_capabilities();
 
 	// If no data was written then return early.
@@ -632,6 +666,10 @@ GPlatesOpenGL::GLBufferObject::gl_unmap_buffer(
 {
 	//PROFILE_FUNC();
 
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			is_target_type_supported(target),
+			GPLATES_ASSERTION_SOURCE);
+
 	const GLCapabilities &capabilities = renderer.get_capabilities();
 
 	// Bind this buffer object.
@@ -669,4 +707,27 @@ GPlatesOpenGL::GLBufferObject::gl_unmap_buffer(
 	}
 
 	return unmap_result;
+}
+
+
+bool
+GPlatesOpenGL::GLBufferObject::is_target_type_supported(
+		target_type target) const
+{
+	if (target == TARGET_ARRAY_BUFFER ||
+		target == TARGET_ELEMENT_ARRAY_BUFFER)
+	{
+		return d_buffer_types.test(VERTEX_BUFFER);
+	}
+
+	if (target == TARGET_PIXEL_UNPACK_BUFFER ||
+		target == TARGET_PIXEL_PACK_BUFFER)
+	{
+		return d_buffer_types.test(PIXEL_BUFFER);
+	}
+
+	// Shouldn't be able to get here.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+
+	return false;
 }

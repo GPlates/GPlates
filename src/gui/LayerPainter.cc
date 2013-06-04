@@ -80,11 +80,11 @@ GPlatesGui::LayerPainter::initialise(
 	// These are only created *once* and re-used across paint calls.
 	d_vertex_element_buffer = GPlatesOpenGL::GLVertexElementBuffer::create(
 			renderer,
-			GPlatesOpenGL::GLBuffer::create(renderer));
+			GPlatesOpenGL::GLBuffer::create(renderer, GPlatesOpenGL::GLBuffer::BUFFER_TYPE_VERTEX));
 
 	d_vertex_buffer = GPlatesOpenGL::GLVertexBuffer::create(
 			renderer,
-			GPlatesOpenGL::GLBuffer::create(renderer));
+			GPlatesOpenGL::GLBuffer::create(renderer, GPlatesOpenGL::GLBuffer::BUFFER_TYPE_VERTEX));
 
 	d_vertex_array = GPlatesOpenGL::GLVertexArray::create(renderer);
 

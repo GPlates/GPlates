@@ -2295,7 +2295,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_vertex_element_buffer(
 	}
 
 	// Set up the vertex element buffer.
-	GLBuffer::shared_ptr_type vertex_element_buffer_data = GLBuffer::create(renderer);
+	GLBuffer::shared_ptr_type vertex_element_buffer_data =
+			GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX);
 	vertex_element_buffer_data->gl_buffer_data(
 			renderer,
 			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,

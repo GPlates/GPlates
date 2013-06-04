@@ -436,13 +436,13 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 	// Create a single OpenGL vertex array to contain the vertices of *all* polygon meshes.
 	d_polygon_meshes_vertex_array = GLVertexArray::create(renderer);
 	// Set up the vertex element buffer - we'll fill it with data later.
-	GLBuffer::shared_ptr_type vertex_element_buffer_data = GLBuffer::create(renderer);
+	GLBuffer::shared_ptr_type vertex_element_buffer_data = GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX);
 	// Attach vertex element buffer to the vertex array.
 	d_polygon_meshes_vertex_array->set_vertex_element_buffer(
 			renderer,
 			GLVertexElementBuffer::create(renderer, vertex_element_buffer_data));
 	// Set up the vertex buffer - we'll fill it with data later.
-	GLBuffer::shared_ptr_type vertex_buffer_data = GLBuffer::create(renderer);
+	GLBuffer::shared_ptr_type vertex_buffer_data = GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX);
 	// Attach vertex buffer to the vertex array.
 	bind_vertex_buffer_to_vertex_array<GLVertex>(
 			renderer,

@@ -432,7 +432,10 @@ namespace GPlatesOpenGL
 			explicit
 			TileVertices(
 					GLRenderer &renderer_) :
-				vertex_buffer(GLVertexBuffer::create(renderer_, GLBuffer::create(renderer_))),
+				vertex_buffer(
+						GLVertexBuffer::create(
+								renderer_,
+								GLBuffer::create(renderer_, GLBuffer::BUFFER_TYPE_VERTEX))),
 				vertex_array(GLVertexArray::create(renderer_))
 			{  }
 

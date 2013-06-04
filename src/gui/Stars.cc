@@ -168,7 +168,8 @@ namespace
 				GPLATES_ASSERTION_SOURCE);
 
 		// Set up the vertex element buffer.
-		GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_element_buffer = GPlatesOpenGL::GLBuffer::create(renderer);
+		GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_element_buffer =
+				GPlatesOpenGL::GLBuffer::create(renderer, GPlatesOpenGL::GLBuffer::BUFFER_TYPE_VERTEX);
 		vertex_element_buffer->gl_buffer_data(
 				renderer,
 				GPlatesOpenGL::GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
@@ -180,7 +181,8 @@ namespace
 				GPlatesOpenGL::GLVertexElementBuffer::create(renderer, vertex_element_buffer));
 
 		// Set up the vertex buffer.
-		GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_buffer = GPlatesOpenGL::GLBuffer::create(renderer);
+		GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_buffer =
+				GPlatesOpenGL::GLBuffer::create(renderer, GPlatesOpenGL::GLBuffer::BUFFER_TYPE_VERTEX);
 		vertex_buffer->gl_buffer_data(
 				renderer,
 				GPlatesOpenGL::GLBuffer::TARGET_ARRAY_BUFFER,
