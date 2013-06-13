@@ -56,7 +56,6 @@ namespace GPlatesQtWidgets
         class HellingerEditPoint;
         class HellingerNewSegment;
         class HellingerEditSegment;
-        class HellingerErrorOrder;
         class HellingerErrorLatLonRho;
         class HellingerRemoveError;
         class HellingerThread;
@@ -175,7 +174,7 @@ namespace GPlatesQtWidgets
                         int &num_color);
 
                 void
-                reordering_picks();
+				reorder_picks();
 
                 void
                 reset_expanded_status();
@@ -286,7 +285,6 @@ namespace GPlatesQtWidgets
                 HellingerEditPoint *d_hellinger_edit_point;
                 HellingerNewSegment *d_hellinger_new_segment;
                 HellingerEditSegment *d_hellinger_edit_segment;
-                HellingerErrorOrder *d_hellinger_error_order;
                 HellingerErrorLatLonRho *d_hellinger_error_lat_lon_rho;
                 HellingerRemoveError *d_hellinger_remove_error;
                 HellingerThread *d_hellinger_thread;                

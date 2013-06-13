@@ -273,9 +273,6 @@ set(srcs
     HellingerErrorLatLonRho.cc
     HellingerErrorLatLonRho.h
     HellingerErrorLatLonRhoUi.ui
-    HellingerErrorOrder.cc
-    HellingerErrorOrder.h
-    HellingerErrorOrderUi.ui
     HellingerModel.cc
     HellingerModel.h
     HellingerNewPoint.cc

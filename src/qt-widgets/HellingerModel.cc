@@ -381,7 +381,7 @@ GPlatesQtWidgets::HellingerModel::reset_fit_struct()
 }
 
 void
-GPlatesQtWidgets::HellingerModel::reordering_picks()
+GPlatesQtWidgets::HellingerModel::reorder_picks()
 {
     model_type::const_iterator iter;
     model_type new_map;

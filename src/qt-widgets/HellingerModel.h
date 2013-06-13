@@ -170,7 +170,7 @@ namespace GPlatesQtWidgets
         reset_data_file();
 
         void
-        reordering_picks();
+		reorder_picks();
 
         void
         set_error_order(
