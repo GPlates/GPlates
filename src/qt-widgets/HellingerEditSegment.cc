@@ -23,9 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <fstream>
-#include <list>
-#include <iostream>
+
 #include <string>
 
 #include <QDebug>
@@ -142,9 +140,8 @@ GPlatesQtWidgets::HellingerEditSegment::check_picks(QStringList &picks)
 void
 GPlatesQtWidgets::HellingerEditSegment::edit()
 {
-//    int segment = spinbox_segment->value();
-    bool segment_exist = d_hellinger_model_ptr->get_segment_status(d_segment);
-    if (segment_exist)
+
+	if (d_hellinger_model_ptr->segment_number_exists(d_segment))
     {
         if (!d_hellinger_new_segment_error)
         {

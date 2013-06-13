@@ -462,8 +462,9 @@ GPlatesQtWidgets::HellingerModel::end() const
 	return d_hellinger_picks.end();
 }
 
+
 bool
-GPlatesQtWidgets::HellingerModel::get_segment_status(int &segment_num)
+GPlatesQtWidgets::HellingerModel::segment_number_exists(int segment_num)
 {
     model_type::const_iterator iter;
     int n = 0;

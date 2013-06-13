@@ -46,9 +46,6 @@
 #include "HellingerThread.h"
 #include "QtWidgetUtils.h"
 
-using namespace std;
-
-DISABLE_GCC_WARNING("-Wwrite-strings")
 
 GPlatesQtWidgets::HellingerThread::HellingerThread(
                 HellingerDialog *hellinger_dialog,
@@ -158,9 +155,8 @@ GPlatesQtWidgets::HellingerThread::run()
 
 			// Retrieve the main module.
 			boost::python::object main = boost::python::import("__main__");
-			// Retrieve the main module's namespace
-			boost::python::object global(main.attr("__dict__"));
-			// Define greet function in Python.
+
+			boost::python::object global(main.attr("__dict__"));		
 			boost::python::object ignored = boost::python::exec_file(d_python_file.toStdString().c_str(),global, global);
 			boost::python::object pythonCode = global["start"];
 			QFile::remove(temp_file_temp_result);
@@ -178,7 +174,9 @@ GPlatesQtWidgets::HellingerThread::run()
 			QFile::remove(temp_file_temp_result);
 			QFile::remove(temp_file_par);
 			QFile::remove(temp_file_res);     
+
 			GPlatesApi::PythonInterpreterLocker interpreter_locker;
+
 			boost::python::object main = boost::python::import("__main__");
 			boost::python::object global(main.attr("__dict__"));
 			boost::python::object ignored = boost::python::exec_file(d_python_file.toStdString().c_str(),global, global);
@@ -199,7 +197,5 @@ GPlatesQtWidgets::HellingerThread::run()
 
 }
 
-
-ENABLE_GCC_WARNING("-Wwrite-strings")
 
 

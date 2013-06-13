@@ -90,10 +90,9 @@ void
 GPlatesQtWidgets::HellingerNewSegment::add_segment()
 {
 
-//    double segment = spinbox_segment -> value();
     int segment = spinbox_segment->value();
-    bool segment_exist = d_hellinger_model_ptr->get_segment_status(segment);
-    if (segment_exist)
+
+	if (d_hellinger_model_ptr->segment_number_exists(segment))
     {
 		if (!d_hellinger_new_segment_error)
 		{

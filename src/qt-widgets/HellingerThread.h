@@ -58,8 +58,10 @@ namespace GPlatesQtWidgets
 
 		void
 		initialization_pole_part(QString &import_file_path, std::vector<double> &input_data, std::vector<int> &bool_data, int &iteration, QString &python_file, QString &temporary_folder, QString &temp_pick_file, QString &temp_result, QString &temp_par, QString &temp_res);
+
 		void
 		initialization_stats_part(QString &path_file, QString &file_name, QString &filename_dat, QString &filename_up, QString &filename_do, QString &python_file, QString &temporary_folder, QString &temp_pick_file, QString &temp_result, QString &temp_par, QString &temp_res);
+
 		void
 		set_python_script(ThreadType thread_type);
 

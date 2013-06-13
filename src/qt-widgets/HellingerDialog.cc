@@ -117,7 +117,10 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesQtWidgets::ReadErrorAccumulationDialog &read_error_accumulation_dialog,
 		QWidget *parent_):
-	GPlatesDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
+	GPlatesDialog(
+		parent_,
+		//Qt::Window),
+		Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_view_state(view_state),
 	d_hellinger_layer(*view_state.get_rendered_geometry_collection().get_main_rendered_layer(
 						  GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_TOOL_LAYER)),
@@ -741,7 +744,7 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 void
 GPlatesQtWidgets::HellingerDialog::update()
 {
-	treeWidget -> clear();
+	treeWidget->clear();
 	d_hellinger_model->reset_fit_struct();
 	d_hellinger_model->reset_data_file();
 	load_data_from_model();

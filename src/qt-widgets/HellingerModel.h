@@ -204,8 +204,8 @@ namespace GPlatesQtWidgets
 
 
         bool
-        get_segment_status(
-			int &segment_num);
+		segment_number_exists(
+			int segment_num);
 
         void
         reordering_segments(
