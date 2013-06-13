@@ -46,12 +46,9 @@ namespace GPlatesQtWidgets
     enum SegmentType
     {
         MOVING_SEGMENT_TYPE = 1,
-        FIXED_SEGMENT_TYPE
-    };
-    enum CommentType
-    {
-        COMMENT_MOVING_SEGMENT_TYPE = 31,
-        COMMENT_FIXED_SEGMENT_TYPE
+		FIXED_SEGMENT_TYPE,
+		DISABLED_MOVING_SEGMENT_TYPE = 31,
+		DISABLED_FIXED_SEGMENT_TYPE
     };
 
 	struct Pick{
@@ -87,8 +84,6 @@ namespace GPlatesQtWidgets
         double eps;
     };
 
-    typedef std::multimap<int,Pick> model_type;
-
     class HellingerModel
 	{
 
@@ -98,7 +93,7 @@ namespace GPlatesQtWidgets
 
         void
         add_pick(
-			QStringList &Pick);
+			const QStringList &Pick);
 
         void
         reset();
@@ -145,7 +140,7 @@ namespace GPlatesQtWidgets
 
         void
         add_results(
-			QStringList &fields);
+			const QStringList &fields);
 
         boost::optional<fit_struct>
         get_results();
@@ -158,7 +153,7 @@ namespace GPlatesQtWidgets
 
         void
         set_initialization_guess(
-			QStringList &com_list_fields);
+			const QStringList &com_list_fields);
 
         void
         reset_com_file_struct();
@@ -208,8 +203,8 @@ namespace GPlatesQtWidgets
 			int segment_num);
 
         void
-        reordering_segments(
-			int &segment);
+		reorder_segment(
+			int segment);
 
     private:
 

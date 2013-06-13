@@ -186,14 +186,14 @@ GPlatesQtWidgets::HellingerModel::get_data()
 
 
 void
-GPlatesQtWidgets::HellingerModel::add_pick(QStringList &pick)
+GPlatesQtWidgets::HellingerModel::add_pick(const QStringList &pick)
 {
 	Pick new_pick;
-    if (pick.at(0).toInt() == COMMENT_MOVING_SEGMENT_TYPE)
+	if (pick.at(0).toInt() == DISABLED_MOVING_SEGMENT_TYPE)
     {
         new_pick.segment_type = MOVING_SEGMENT_TYPE;
     }
-    else if (pick.at(0).toInt()==COMMENT_FIXED_SEGMENT_TYPE)
+	else if (pick.at(0).toInt()== DISABLED_FIXED_SEGMENT_TYPE)
     {
         new_pick.segment_type=FIXED_SEGMENT_TYPE;
     }
@@ -204,11 +204,11 @@ GPlatesQtWidgets::HellingerModel::add_pick(QStringList &pick)
         new_pick.lat = pick.at(2).toDouble();
         new_pick.lon = pick.at(3).toDouble();
         new_pick.uncert = pick.at(4).toDouble();
-        if (pick.at(0).toInt() == COMMENT_MOVING_SEGMENT_TYPE)
+		if (pick.at(0).toInt() == DISABLED_MOVING_SEGMENT_TYPE)
         {
             new_pick.is_enabled = false;
         }
-        else if (pick.at(0).toInt() == COMMENT_FIXED_SEGMENT_TYPE)
+		else if (pick.at(0).toInt() == DISABLED_FIXED_SEGMENT_TYPE)
         {
             new_pick.is_enabled = false;
         }
@@ -223,7 +223,7 @@ GPlatesQtWidgets::HellingerModel::add_pick(QStringList &pick)
 }
 
 void
-GPlatesQtWidgets::HellingerModel::add_results(QStringList &fields)
+GPlatesQtWidgets::HellingerModel::add_results(const QStringList &fields)
 {
 
       d_fit_struct.lat = fields.at(0).toDouble();
@@ -265,7 +265,7 @@ GPlatesQtWidgets::HellingerModel::get_results()
 }
 
 void
-GPlatesQtWidgets::HellingerModel::set_initialization_guess(QStringList &com_list_fields)
+GPlatesQtWidgets::HellingerModel::set_initialization_guess(const QStringList &com_list_fields)
 {
     d_active_com_file_struct.pick_file = com_list_fields.at(0);
     d_active_com_file_struct.lat = com_list_fields.at(1).toDouble();
@@ -412,7 +412,7 @@ GPlatesQtWidgets::HellingerModel::reorder_picks()
 }
 
 void
-GPlatesQtWidgets::HellingerModel::reordering_segments(int &segment)
+GPlatesQtWidgets::HellingerModel::reorder_segment(int segment)
 {
     model_type::const_iterator iter;
     model_type new_map;

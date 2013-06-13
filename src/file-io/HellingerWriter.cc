@@ -54,13 +54,13 @@ GPlatesFileIO::HellingerWriter::write_pick_file(
 					if (load_data.at(a+1).toInt() == GPlatesQtWidgets::MOVING_SEGMENT_TYPE)
 					{
 
-						pick_state = QString("%1").arg(GPlatesQtWidgets::COMMENT_MOVING_SEGMENT_TYPE);
+						pick_state = QString("%1").arg(GPlatesQtWidgets::DISABLED_MOVING_SEGMENT_TYPE);
 
 					}
 					else if (load_data.at(a+1).toInt() == GPlatesQtWidgets::FIXED_SEGMENT_TYPE)
 					{
 
-						pick_state = QString("%1").arg(GPlatesQtWidgets::COMMENT_FIXED_SEGMENT_TYPE);
+						pick_state = QString("%1").arg(GPlatesQtWidgets::DISABLED_FIXED_SEGMENT_TYPE);
 					}
 				}
 				else if (load_data.at(a+5).toInt(&ok))

@@ -117,7 +117,7 @@ GPlatesQtWidgets::HellingerNewSegment::add_segment()
         }
         else if (value_error == ERROR_INSERT_NEW_SEGMENT)
         {
-            d_hellinger_model_ptr->reordering_segments(segment);
+			d_hellinger_model_ptr->reorder_segment(segment);
             add_segment_to_model();
         }
         else

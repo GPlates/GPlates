@@ -5,7 +5,7 @@
  * $Revision: 254 $
  * $Date: 2012-03-01 13:00:21 +0100 (Thu, 01 Mar 2012) $
  *
- * Copyright (C) 2011, 2012 Geological Survey of Norway
+ * Copyright (C) 2011, 2012, 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -76,22 +76,22 @@ namespace GPlatesQtWidgets
 				QWidget *parent_ = NULL);
 
 		/**
-				 * Set initial values for dialog.
-				 */
+		 * Set initial values for dialog.
+		 */
 		void
 		initialise();
 
 		/**
-				 * Update dialog from hellinger-model.
-				 */
+		 * Update dialog from hellinger-model.
+		 */
 		void
 		update();
 
 	public Q_SLOTS:
 
 		/**
-				 * Renumber segments so that they are contiguous.
-				 */
+		 * Renumber segments so that they are contiguous.
+		 */
 		void
 		renumber_segments();
 
@@ -156,10 +156,10 @@ namespace GPlatesQtWidgets
 		void
 		update_initial_guess();
 
-		/*
-				 * Import the currently loaded hellinger pick data into the
-				 * main gplates model.
-				 */
+		/**
+		 * Import the currently loaded hellinger pick data into the
+		 * main gplates model.
+		 */
 		void
 		create_feature_collection();
 
@@ -262,14 +262,14 @@ namespace GPlatesQtWidgets
 	private:
 
 		/**
-				 * Draw the model contents on the globe/map.
-				 */
+		 * Draw the model contents on the globe/map.
+		 */
 		void
 		update_canvas();
 
 		/**
-				 * Reconstruct the moving picks
-				 */
+		 * Reconstruct the moving picks
+		 */
 		void
 		reconstruct_picks();
 

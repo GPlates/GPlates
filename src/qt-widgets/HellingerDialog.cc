@@ -283,7 +283,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 	{
 		if (move_fix == "1")
 		{
-			move_fix = QString("%1").arg(COMMENT_MOVING_SEGMENT_TYPE);
+			move_fix = QString("%1").arg(DISABLED_MOVING_SEGMENT_TYPE);
 			data_to_model << move_fix << segment_str << lat << lon << uncert;
 			d_hellinger_model->remove_line(segment_int,row);
 			d_hellinger_model->add_pick(data_to_model);
@@ -291,7 +291,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 		}
 		else if (move_fix == "2")
 		{
-			move_fix = QString("%1").arg(COMMENT_FIXED_SEGMENT_TYPE);
+			move_fix = QString("%1").arg(DISABLED_FIXED_SEGMENT_TYPE);
 			data_to_model << move_fix << segment_str << lat << lon << uncert;
 			d_hellinger_model->remove_line(segment_int,row);
 			d_hellinger_model->add_pick(data_to_model);
