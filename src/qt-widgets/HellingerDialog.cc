@@ -42,7 +42,6 @@
 #include "HellingerDialog.h"
 #include "HellingerEditPoint.h"
 #include "HellingerEditSegment.h"
-#include "HellingerErrorLatLonRho.h"
 #include "HellingerNewPoint.h"
 #include "HellingerNewSegment.h"
 #include "HellingerRemoveError.h"
@@ -129,7 +128,6 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_hellinger_edit_point(0),
 	d_hellinger_new_segment(0),
 	d_hellinger_edit_segment(0),
-	d_hellinger_error_lat_lon_rho(0),
 	d_hellinger_remove_error(0),
 	d_hellinger_thread(0),
 	d_moving_plate_id(0),
@@ -142,10 +140,12 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 {
 	setupUi(this);
 
-	set_up_connections();
+
 
 
 	d_hellinger_thread = new HellingerThread(this, d_hellinger_model);
+
+	set_up_connections();
 
 	//FIXME: think about when we should deactivate this layer....and/or do we make it an orthogonal layer?
 	d_view_state.get_rendered_geometry_collection().set_main_layer_active(
@@ -393,7 +393,6 @@ GPlatesQtWidgets::HellingerDialog::initialise()
 	update_buttons();
 	update();
 	reset_expanded_status();
-
 }
 
 void
@@ -564,12 +563,8 @@ GPlatesQtWidgets::HellingerDialog::handle_add_new_segment()
 void
 GPlatesQtWidgets::HellingerDialog::handle_calculate()
 {        
-
-	if (!d_hellinger_error_lat_lon_rho)
-	{
-		d_hellinger_error_lat_lon_rho = new GPlatesQtWidgets::HellingerErrorLatLonRho(this,d_hellinger_model);
-	}
-
+	// FIXME: This assumes that the state of the button always reflects the ordered state of the picks in the model. Check
+	// that this is indeed the case.
 	if (button_renumber->isEnabled())
 	{
 		QMessageBox message_box;
@@ -592,75 +587,76 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate()
 
 	}
 
-	if (!((spinbox_lat->value()>0) || (spinbox_lon->value()>0) || (spinbox_rho->value()>0)))
+	if (!(spinbox_rho->value()>0))
 	{
-		d_hellinger_error_lat_lon_rho->exec();
+
+		QMessageBox::critical(this,tr("Initial guess values"),
+							  tr("The value of rho in the initial guess is zero. Please enter a non-zero value"),
+							  QMessageBox::Ok,QMessageBox::Ok);
+		return;
 	}
 
-	bool continue_lat_lon_rho = d_hellinger_model->get_error_lat_lon_rho();
 	QFile python_code(d_python_file);
 	if (python_code.exists())
 	{
-		if (continue_lat_lon_rho)
+
+		QString path = d_python_path + d_temp_pick_file;
+		GPlatesFileIO::HellingerWriter::write_pick_file(path,*d_hellinger_model);
+		QString import_file_line = QString("%1").arg(line_import_file->text());
+		update_buttons();
+		std::vector<double> input_data;
+		std::vector<int>bool_data;
+		input_data.push_back(spinbox_lat->value());
+		input_data.push_back(spinbox_lon->value());
+		input_data.push_back(spinbox_rho->value());
+		input_data.push_back(spinbox_radius->value());
+		input_data.push_back(spinbox_sig_level->value());
+		int iteration;
+		if (checkbox_grid_search->isChecked())
 		{
-			QString path = d_python_path + d_temp_pick_file;
-			GPlatesFileIO::HellingerWriter::write_pick_file(path,*d_hellinger_model);
-			QString import_file_line = QString("%1").arg(line_import_file->text());
-			update_buttons();
-			std::vector<double> input_data;
-			std::vector<int>bool_data;
-			input_data.push_back(spinbox_lat->value());
-			input_data.push_back(spinbox_lon->value());
-			input_data.push_back(spinbox_rho->value());
-			input_data.push_back(spinbox_radius->value());
-			input_data.push_back(spinbox_sig_level->value());
-			int iteration;
-			if (checkbox_grid_search->isChecked())
-			{
-				int grid_search = 1;
-				iteration = spinbox_iteration->value();
-				bool_data.push_back(grid_search);
+			int grid_search = 1;
+			iteration = spinbox_iteration->value();
+			bool_data.push_back(grid_search);
 
-			}
-			else
-			{
-				int grid_search = 0;
-				iteration = 0;
-				bool_data.push_back(grid_search);
-
-			}
-			if (checkbox_kappa->isChecked())
-			{
-				int kappa = 1;
-				bool_data.push_back(kappa);
-			}
-			else
-			{
-				int kappa = 0;
-				bool_data.push_back(kappa);
-			}
-			if (checkbox_graphics->isChecked())
-			{
-				int graphics = 1;
-				bool_data.push_back(graphics);
-			}
-			else
-			{
-				int graphics = 0;
-				bool_data.push_back(graphics);
-			}
-
-			d_hellinger_thread->initialization_pole_part(import_file_line, input_data, bool_data, iteration, d_python_file, d_temporary_folder, d_temp_pick_file, d_temp_result, d_temp_par, d_temp_res);
-			int script_part = POLE_PART_SCRIPT;
-			d_thread_type = POLE_PART_SCRIPT;
-			d_hellinger_model->reset_data_file();
-			reset_picks_globe();
-			d_hellinger_thread->set_python_script(script_part);
-
-			progress_bar->setEnabled(true);
-			progress_bar->setMaximum(0.);
-			d_hellinger_thread->start();
 		}
+		else
+		{
+			int grid_search = 0;
+			iteration = 0;
+			bool_data.push_back(grid_search);
+
+		}
+		if (checkbox_kappa->isChecked())
+		{
+			int kappa = 1;
+			bool_data.push_back(kappa);
+		}
+		else
+		{
+			int kappa = 0;
+			bool_data.push_back(kappa);
+		}
+		if (checkbox_graphics->isChecked())
+		{
+			int graphics = 1;
+			bool_data.push_back(graphics);
+		}
+		else
+		{
+			int graphics = 0;
+			bool_data.push_back(graphics);
+		}
+
+		d_hellinger_thread->initialization_pole_part(import_file_line, input_data, bool_data, iteration, d_python_file, d_temporary_folder, d_temp_pick_file, d_temp_result, d_temp_par, d_temp_res);
+		int script_part = POLE_PART_SCRIPT;
+		d_thread_type = POLE_PART_SCRIPT;
+		d_hellinger_model->reset_data_file();
+		reset_picks_globe();
+		d_hellinger_thread->set_python_script(script_part);
+
+		progress_bar->setEnabled(true);
+		progress_bar->setMaximum(0.);
+		d_hellinger_thread->start();
 	}
 	else
 	{

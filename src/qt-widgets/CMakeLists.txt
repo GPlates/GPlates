@@ -270,9 +270,6 @@ set(srcs
     HellingerEditSegment.cc
     HellingerEditSegment.h
     HellingerEditSegmentUi.ui
-    HellingerErrorLatLonRho.cc
-    HellingerErrorLatLonRho.h
-    HellingerErrorLatLonRhoUi.ui
     HellingerModel.cc
     HellingerModel.h
     HellingerNewPoint.cc
