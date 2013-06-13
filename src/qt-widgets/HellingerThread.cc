@@ -57,7 +57,7 @@ GPlatesQtWidgets::HellingerThread::HellingerThread(
     d_hellinger_dialog_ptr(hellinger_dialog),
     d_hellinger_model_ptr(hellinger_model),
     d_iteration(0),
-    d_script_part(0)
+	d_thread_type(POLE_THREAD_TYPE)
 {
 }
 
@@ -138,9 +138,9 @@ GPlatesQtWidgets::HellingerThread::initialization_stats_part(QString &path_file,
 }
 
 void
-GPlatesQtWidgets::HellingerThread::set_python_script(int &script_part)
+GPlatesQtWidgets::HellingerThread::set_python_script(ThreadType thread_type)
 {
-    d_script_part = script_part;
+	d_thread_type = thread_type;
 }
 
 void
@@ -152,7 +152,7 @@ GPlatesQtWidgets::HellingerThread::run()
     QString temp_file_res = d_temporary_folder + d_temp_res;
     
 	try{
-		if (d_script_part == POLE_PART_SCRIPT)
+		if (d_thread_type == POLE_THREAD_TYPE)
 		{
 			GPlatesApi::PythonInterpreterLocker interpreter_locker;
 
@@ -173,7 +173,7 @@ GPlatesQtWidgets::HellingerThread::run()
 				d_bool_data[0], d_bool_data[1],d_bool_data[2], d_path.toStdString(), d_filename_dat.toStdString(),
 				d_filename_up.toStdString(), d_filename_do.toStdString() ));
 		}
-		else if (d_script_part == STATS_PART_SCRIPT)
+		else if (d_thread_type == STATS_THREAD_TYPE)
 		{
 			QFile::remove(temp_file_temp_result);
 			QFile::remove(temp_file_par);

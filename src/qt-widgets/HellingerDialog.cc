@@ -136,7 +136,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_chron_time(0.),
 	d_moving_symbol(GPlatesGui::Symbol::CROSS, 2, true),
 	d_fixed_symbol(GPlatesGui::Symbol::SQUARE,2, false),
-	d_thread_type(0)
+	d_thread_type(POLE_THREAD_TYPE)
 {
 	setupUi(this);
 
@@ -166,8 +166,8 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 
 	d_python_path.append(QDir::separator());
 	d_python_file = d_python_path + "py_hellinger.py";
-	d_temporary_folder = d_python_path;
-	d_temporary_folder.append(QDir::separator());
+	d_temporary_path = d_python_path;
+
 	d_temp_pick_file = QString("temp_file");
 	d_temp_result = QString("temp_file_temp_result");
 	d_temp_par = QString("temp_file_par");
@@ -505,11 +505,10 @@ GPlatesQtWidgets::HellingerDialog::update_initial_guess()
 void
 GPlatesQtWidgets::HellingerDialog::handle_calculate_stats()
 {
-	int script_part_stats = STATS_PART_SCRIPT;
-	d_thread_type = STATS_PART_SCRIPT;
+	d_thread_type = STATS_THREAD_TYPE;
 	update_buttons_statistics(false);
-	d_hellinger_thread->initialization_stats_part(d_path,d_file_name,d_filename_dat,d_filename_up,d_filename_do, d_python_file, d_temporary_folder, d_temp_pick_file, d_temp_result, d_temp_par, d_temp_res);
-	d_hellinger_thread->set_python_script(script_part_stats);
+	d_hellinger_thread->initialization_stats_part(d_path,d_file_name,d_filename_dat,d_filename_up,d_filename_do, d_python_file, d_temporary_path, d_temp_pick_file, d_temp_result, d_temp_par, d_temp_res);
+	d_hellinger_thread->set_python_script(d_thread_type);
 	progress_bar->setEnabled(true);
 	progress_bar->setMaximum(0.);
 	d_hellinger_thread->start();
@@ -647,12 +646,11 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate()
 			bool_data.push_back(graphics);
 		}
 
-		d_hellinger_thread->initialization_pole_part(import_file_line, input_data, bool_data, iteration, d_python_file, d_temporary_folder, d_temp_pick_file, d_temp_result, d_temp_par, d_temp_res);
-		int script_part = POLE_PART_SCRIPT;
-		d_thread_type = POLE_PART_SCRIPT;
+		d_hellinger_thread->initialization_pole_part(import_file_line, input_data, bool_data, iteration, d_python_file, d_temporary_path, d_temp_pick_file, d_temp_result, d_temp_par, d_temp_res);
+		d_thread_type = POLE_THREAD_TYPE;
 		d_hellinger_model->reset_data_file();
 		reset_picks_globe();
-		d_hellinger_thread->set_python_script(script_part);
+		d_hellinger_thread->set_python_script(d_thread_type);
 
 		progress_bar->setEnabled(true);
 		progress_bar->setMaximum(0.);
@@ -672,7 +670,7 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 {
 	progress_bar->setEnabled(false);
 	progress_bar->setMaximum(1.);
-	if (d_thread_type == POLE_PART_SCRIPT)
+	if (d_thread_type == POLE_THREAD_TYPE)
 	{
 		QString path = d_python_path + "temp_file_temp_result";
 		QFile data_file(path);
@@ -690,7 +688,7 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 			update_continue_button(continue_info);
 		}
 	}
-	else if(d_thread_type == STATS_PART_SCRIPT)
+	else if(d_thread_type == STATS_THREAD_TYPE)
 	{
 		bool result_info = true;
 		bool continue_info = false;
