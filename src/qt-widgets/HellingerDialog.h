@@ -58,7 +58,6 @@ namespace GPlatesQtWidgets
         class HellingerEditSegment;
         class HellingerErrorOrder;
         class HellingerErrorLatLonRho;
-        class HellingerErrorPythonFile;
         class HellingerRemoveError;
         class HellingerThread;
         class HellingerModel;
@@ -98,6 +97,8 @@ namespace GPlatesQtWidgets
 				renumber_segments();
 
 	private: 
+				void
+				set_up_connections();
 
                 void
                 add_point(
@@ -287,7 +288,6 @@ namespace GPlatesQtWidgets
                 HellingerEditSegment *d_hellinger_edit_segment;
                 HellingerErrorOrder *d_hellinger_error_order;
                 HellingerErrorLatLonRho *d_hellinger_error_lat_lon_rho;
-                HellingerErrorPythonFile *d_hellinger_error_python_file;
                 HellingerRemoveError *d_hellinger_remove_error;
                 HellingerThread *d_hellinger_thread;                
                 QString d_path;

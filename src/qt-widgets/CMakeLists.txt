@@ -276,9 +276,6 @@ set(srcs
     HellingerErrorOrder.cc
     HellingerErrorOrder.h
     HellingerErrorOrderUi.ui
-    HellingerErrorPythonFile.cc
-    HellingerErrorPythonFile.h
-    HellingerErrorPythonFileUi.ui
     HellingerModel.cc
     HellingerModel.h
     HellingerNewPoint.cc

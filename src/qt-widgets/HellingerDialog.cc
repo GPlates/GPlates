@@ -25,6 +25,7 @@
 #include <vector>
 
 #include <QDebug>
+#include <QMessageBox>
 #include <QProgressBar>
 #include <QTextStream>
 
@@ -43,7 +44,6 @@
 #include "HellingerEditSegment.h"
 #include "HellingerErrorOrder.h"
 #include "HellingerErrorLatLonRho.h"
-#include "HellingerErrorPythonFile.h"
 #include "HellingerNewPoint.h"
 #include "HellingerNewSegment.h"
 #include "HellingerRemoveError.h"
@@ -53,9 +53,6 @@
 
 #include "QtWidgetUtils.h"
 
-
-// FIXME: is this required here?
-DISABLE_GCC_WARNING("-Wwrite-strings")
 
 const double slider_multiplier = -10000.;
 
@@ -135,7 +132,6 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
     d_hellinger_edit_segment(0),
     d_hellinger_error_order(0),
     d_hellinger_error_lat_lon_rho(0),
-    d_hellinger_error_python_file(0),
     d_hellinger_remove_error(0),
     d_hellinger_thread(0),
     d_moving_plate_id(0),
@@ -148,67 +144,45 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 {
 	setupUi(this);
 
-    QObject::connect(button_apply_fit, SIGNAL(clicked()),this, SLOT(handle_calculate()));
-        QObject::connect(button_import_file, SIGNAL(clicked()), this, SLOT(import_pick_file()));
-        QObject::connect(button_details, SIGNAL(clicked()), this, SLOT(show_stat_details()));
-        QObject::connect(button_new_point, SIGNAL(clicked()), this, SLOT(handle_add_new_point()));
-        QObject::connect(button_export_file, SIGNAL(clicked()), this, SLOT(handle_export_file()));
-        QObject::connect(button_expand_all, SIGNAL(clicked()), this, SLOT(handle_expand_all()));
-        QObject::connect(button_collapse_all, SIGNAL(clicked()), this, SLOT(handle_collapse_all()));
-        QObject::connect(button_edit_point, SIGNAL(clicked()), this, SLOT(handle_edit_point()));
-        QObject::connect(button_remove_point, SIGNAL(clicked()), this, SLOT(handle_remove_point()));
-        QObject::connect(button_remove_segment, SIGNAL(clicked()), this, SLOT(handle_remove_segment()));
-        QObject::connect(button_new_segment, SIGNAL(clicked()), this, SLOT(handle_add_new_segment()));
-        QObject::connect(button_edit_segment, SIGNAL(clicked()), this, SLOT(handle_edit_segment()));
-        QObject::connect(button_stats, SIGNAL(clicked()), this, SLOT(handle_calculate_stats()));
-        QObject::connect(button_activate_pick, SIGNAL(clicked()), this, SLOT(handle_pick_state_changed()));
-        QObject::connect(button_deactivate_pick, SIGNAL(clicked()), this, SLOT(handle_pick_state_changed()));
-        QObject::connect(button_renumber, SIGNAL(clicked()), this, SLOT(renumber_segments()));
-        QObject::connect(button_close, SIGNAL(rejected()), this, SLOT(close_dialog()));
-        QObject::connect(spinbox_chron, SIGNAL(valueChanged(double)), this, SLOT(handle_chron_time_changed(double)));
-        QObject::connect(spinbox_recon_time, SIGNAL(valueChanged(double)), this, SLOT(handle_recon_time_spinbox_changed(double)));
-        QObject::connect(slider_recon_time, SIGNAL(valueChanged(int)), this, SLOT(handle_recon_time_slider_changed(int)));
-        QObject::connect(spinbox_result_lat, SIGNAL(valueChanged(double)), this, SLOT(handle_fit_spinboxes_changed()));
-        QObject::connect(spinbox_result_lon, SIGNAL(valueChanged(double)), this, SLOT(handle_fit_spinboxes_changed()));
-        QObject::connect(spinbox_result_angle, SIGNAL(valueChanged(double)), this, SLOT(handle_fit_spinboxes_changed()));
-        QObject::connect(spinbox_radius, SIGNAL(valueChanged(double)), this, SLOT(handle_spinbox_radius_changed()));
-        QObject::connect(checkbox_grid_search, SIGNAL(clicked()), this, SLOT(handle_checkbox_grid_search_changed()));
-        QObject::connect(treeWidget,SIGNAL(collapsed(QModelIndex)),this,SLOT(update_expanded_status()));
-
-		QObject::connect(treeWidget->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
-             this, SLOT(handle_selection_changed(const QItemSelection &, const QItemSelection &)));
-        d_hellinger_thread = new HellingerThread(this, d_hellinger_model);
-		QObject::connect(d_hellinger_thread, SIGNAL(finished()),this, SLOT(handle_thread_finished()));
+	set_up_connections();
 
 
-        //FIXME: think about when we should deactivate this layer....and/or do we make it an orthogonal layer?
-        d_view_state.get_rendered_geometry_collection().set_main_layer_active(
-                    GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_TOOL_LAYER);
-        d_hellinger_layer.set_active();
+	d_hellinger_thread = new HellingerThread(this, d_hellinger_model);
 
-		// Look in system-specific locations for supplied sample scripts, site-specific scripts, etc.
-		// The default location will be platform-dependent and is currently set up in UserPreferences.cc.
-		d_python_path = d_view_state.get_application_state().get_user_preferences().get_value("paths/python_system_script_dir").toString();
-		qDebug() << "python path: " << d_python_path;
+	//FIXME: think about when we should deactivate this layer....and/or do we make it an orthogonal layer?
+	d_view_state.get_rendered_geometry_collection().set_main_layer_active(
+				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_TOOL_LAYER);
+	d_hellinger_layer.set_active();
 
-        //d_python_path = QString("scripts");
-		d_python_path.append(QDir::separator());
-        d_python_file = d_python_path + "py_hellinger.py";
-        d_temporary_folder = d_python_path;
-        d_temporary_folder.append(QDir::separator());
-        d_temp_pick_file = QString("temp_file");
-        d_temp_result = QString("temp_file_temp_result");
-        d_temp_par = QString("temp_file_par");
-        d_temp_res = QString("temp_file_res");
+	// Path copied from PythonUtils / PythonManager.
 
-		d_hellinger_model = new HellingerModel(d_python_path);
+	// Look in system-specific locations for supplied sample scripts, site-specific scripts, etc.
+	// The default location will be platform-dependent and is currently set up in UserPreferences.cc.
+	// d_python_path = d_view_state.get_application_state().get_user_preferences().get_value("paths/python_system_script_dir").toString();
+	// d_python_path = "scripts";
 
-		progress_bar->setEnabled(false);
-        progress_bar->setMinimum(0.);
-        progress_bar->setMaximum(1.);
-        progress_bar->setValue(0.);
-        update();
-        groupbox_rotation->hide();
+	// Temporary path during development
+	d_python_path = "/home/robin/Desktop/Hellinger/scripts";
+
+	qDebug() << "python path: " << d_python_path;
+
+	d_python_path.append(QDir::separator());
+	d_python_file = d_python_path + "py_hellinger.py";
+	d_temporary_folder = d_python_path;
+	d_temporary_folder.append(QDir::separator());
+	d_temp_pick_file = QString("temp_file");
+	d_temp_result = QString("temp_file_temp_result");
+	d_temp_par = QString("temp_file_par");
+	d_temp_res = QString("temp_file_res");
+
+	d_hellinger_model = new HellingerModel(d_python_path);
+
+	progress_bar->setEnabled(false);
+	progress_bar->setMinimum(0.);
+	progress_bar->setMaximum(1.);
+	progress_bar->setValue(0.);
+	update();
+	groupbox_rotation->hide();
 
 }
 
@@ -600,10 +574,6 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate()
 	{
 		d_hellinger_error_lat_lon_rho = new GPlatesQtWidgets::HellingerErrorLatLonRho(this,d_hellinger_model);
 	}
-	if (!d_hellinger_error_python_file)
-	{
-		d_hellinger_error_python_file = new GPlatesQtWidgets::HellingerErrorPythonFile(this);
-	}
 
     if (button_renumber->isEnabled())
     {        
@@ -685,8 +655,10 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate()
     }
     else
     {
-        d_hellinger_error_python_file->exec();
-
+		QString message;
+		QTextStream(&message) << tr("The Hellinger python scripts could not be found.");
+		QMessageBox::critical(this,tr("Python scripts not found"),message,QMessageBox::Ok,QMessageBox::Ok);
+		qWarning() << message;
     }
 }
 
@@ -1166,7 +1138,42 @@ GPlatesQtWidgets::HellingerDialog::reordering_picks()
 void
 GPlatesQtWidgets::HellingerDialog::renumber_segments()
 {
-    reordering_picks();
+	reordering_picks();
+}
+
+void GPlatesQtWidgets::HellingerDialog::set_up_connections()
+{
+	QObject::connect(button_apply_fit, SIGNAL(clicked()),this, SLOT(handle_calculate()));
+	QObject::connect(button_import_file, SIGNAL(clicked()), this, SLOT(import_pick_file()));
+	QObject::connect(button_details, SIGNAL(clicked()), this, SLOT(show_stat_details()));
+	QObject::connect(button_new_point, SIGNAL(clicked()), this, SLOT(handle_add_new_point()));
+	QObject::connect(button_export_file, SIGNAL(clicked()), this, SLOT(handle_export_file()));
+	QObject::connect(button_expand_all, SIGNAL(clicked()), this, SLOT(handle_expand_all()));
+	QObject::connect(button_collapse_all, SIGNAL(clicked()), this, SLOT(handle_collapse_all()));
+	QObject::connect(button_edit_point, SIGNAL(clicked()), this, SLOT(handle_edit_point()));
+	QObject::connect(button_remove_point, SIGNAL(clicked()), this, SLOT(handle_remove_point()));
+	QObject::connect(button_remove_segment, SIGNAL(clicked()), this, SLOT(handle_remove_segment()));
+	QObject::connect(button_new_segment, SIGNAL(clicked()), this, SLOT(handle_add_new_segment()));
+	QObject::connect(button_edit_segment, SIGNAL(clicked()), this, SLOT(handle_edit_segment()));
+	QObject::connect(button_stats, SIGNAL(clicked()), this, SLOT(handle_calculate_stats()));
+	QObject::connect(button_activate_pick, SIGNAL(clicked()), this, SLOT(handle_pick_state_changed()));
+	QObject::connect(button_deactivate_pick, SIGNAL(clicked()), this, SLOT(handle_pick_state_changed()));
+	QObject::connect(button_renumber, SIGNAL(clicked()), this, SLOT(renumber_segments()));
+	QObject::connect(button_close, SIGNAL(rejected()), this, SLOT(close_dialog()));
+
+	QObject::connect(spinbox_chron, SIGNAL(valueChanged(double)), this, SLOT(handle_chron_time_changed(double)));
+	QObject::connect(spinbox_recon_time, SIGNAL(valueChanged(double)), this, SLOT(handle_recon_time_spinbox_changed(double)));
+	QObject::connect(slider_recon_time, SIGNAL(valueChanged(int)), this, SLOT(handle_recon_time_slider_changed(int)));
+	QObject::connect(spinbox_result_lat, SIGNAL(valueChanged(double)), this, SLOT(handle_fit_spinboxes_changed()));
+	QObject::connect(spinbox_result_lon, SIGNAL(valueChanged(double)), this, SLOT(handle_fit_spinboxes_changed()));
+	QObject::connect(spinbox_result_angle, SIGNAL(valueChanged(double)), this, SLOT(handle_fit_spinboxes_changed()));
+	QObject::connect(spinbox_radius, SIGNAL(valueChanged(double)), this, SLOT(handle_spinbox_radius_changed()));
+	QObject::connect(checkbox_grid_search, SIGNAL(clicked()), this, SLOT(handle_checkbox_grid_search_changed()));
+	QObject::connect(treeWidget,SIGNAL(collapsed(QModelIndex)),this,SLOT(update_expanded_status()));
+	QObject::connect(treeWidget->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
+					 this, SLOT(handle_selection_changed(const QItemSelection &, const QItemSelection &)));
+
+	QObject::connect(d_hellinger_thread, SIGNAL(finished()),this, SLOT(handle_thread_finished()));
 }
 
 void
@@ -1258,5 +1265,3 @@ GPlatesQtWidgets::HellingerDialog::reset_expanded_status()
     }
 }
 
-
-ENABLE_GCC_WARNING("-Wwrite-strings")
