@@ -44,7 +44,6 @@
 #include "HellingerEditSegment.h"
 #include "HellingerNewPoint.h"
 #include "HellingerNewSegment.h"
-#include "HellingerRemoveError.h"
 #include "HellingerStatsDialog.h"
 #include "HellingerThread.h"
 #include "ReadErrorAccumulationDialog.h"
@@ -131,7 +130,6 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_hellinger_edit_point(0),
 	d_hellinger_new_segment(0),
 	d_hellinger_edit_segment(0),
-	d_hellinger_remove_error(0),
 	d_hellinger_thread(0),
 	d_moving_plate_id(0),
 	d_fixed_plate_id(0),
@@ -351,14 +349,21 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_segment()
 
 void
 GPlatesQtWidgets::HellingerDialog::handle_remove_point()
-{
-	if (!d_hellinger_remove_error)
+{	
+	QMessageBox message_box;
+	message_box.setIcon(QMessageBox::Warning);
+	message_box.setWindowTitle(tr("Remove point"));
+	message_box.setText(
+				tr("Are you sure you want to remove the point?"));
+	message_box.setStandardButtons(QMessageBox::Cancel | QMessageBox::Ok);
+	message_box.setDefaultButton(QMessageBox::Ok);
+	int ret = message_box.exec();
+
+	if (ret == QMessageBox::Cancel)
 	{
-		d_hellinger_remove_error = new GPlatesQtWidgets::HellingerRemoveError(this);
+		return;
 	}
-	d_hellinger_remove_error->exec();
-	bool remove_ok = d_hellinger_remove_error->get_status();
-	if (remove_ok)
+	else
 	{
 		const QModelIndex index = treeWidget->selectionModel()->currentIndex();
 		QString segment = treeWidget->currentItem()->text(0);
@@ -373,13 +378,20 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_point()
 void
 GPlatesQtWidgets::HellingerDialog::handle_remove_segment()
 {
-	if (!d_hellinger_remove_error)
+	QMessageBox message_box;
+	message_box.setIcon(QMessageBox::Warning);
+	message_box.setWindowTitle(tr("Remove segment"));
+	message_box.setText(
+				tr("Are you sure you want to remove the segment?"));
+	message_box.setStandardButtons(QMessageBox::Cancel | QMessageBox::Ok);
+	message_box.setDefaultButton(QMessageBox::Ok);
+	int ret = message_box.exec();
+
+	if (ret == QMessageBox::Cancel)
 	{
-		d_hellinger_remove_error = new GPlatesQtWidgets::HellingerRemoveError(this);
+		return;
 	}
-	d_hellinger_remove_error->exec();
-	bool remove_ok = d_hellinger_remove_error->get_status();
-	if (remove_ok)
+	else
 	{
 		QString segment = treeWidget->currentItem()->text(0);
 		int segment_int = segment.toInt();

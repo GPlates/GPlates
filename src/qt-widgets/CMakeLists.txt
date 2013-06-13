@@ -281,9 +281,6 @@ set(srcs
     HellingerNewSegmentError.cc
     HellingerNewSegmentError.h
     HellingerNewSegmentErrorUi.ui
-    HellingerRemoveError.cc
-    HellingerRemoveError.h
-    HellingerRemoveErrorUi.ui
     HellingerStatsDialog.cc
     HellingerStatsDialog.h
     HellingerStatsDialogUi.ui
