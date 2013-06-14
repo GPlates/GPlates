@@ -286,7 +286,7 @@ namespace GPlatesQtWidgets
 		QString d_file_name;
 		QString d_filename_dat;
 		QString d_filename_up;
-		QString d_filename_do;
+		QString d_filename_down;
 		GPlatesModel::integer_plate_id_type d_moving_plate_id;
 		GPlatesModel::integer_plate_id_type d_fixed_plate_id;
 		double d_recon_time;

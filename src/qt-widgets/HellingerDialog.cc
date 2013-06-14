@@ -484,7 +484,7 @@ GPlatesQtWidgets::HellingerDialog::update_initial_guess()
 
 		d_filename_dat = com_file_data.get().data_filename;
 		d_filename_up = com_file_data.get().up_filename;
-		d_filename_do = com_file_data.get().down_filename;
+		d_filename_down = com_file_data.get().down_filename;
 	}
 
 }
@@ -494,8 +494,8 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_stats()
 {
 	d_thread_type = STATS_THREAD_TYPE;
 	update_buttons_statistics(false);
-	d_hellinger_thread->initialization_stats_part(d_path,d_file_name,d_filename_dat,d_filename_up,d_filename_do, d_python_file, d_temporary_path, d_temp_pick_file, d_temp_result, d_temp_par, d_temp_res);
-	d_hellinger_thread->set_python_script(d_thread_type);
+	d_hellinger_thread->initialization_stats_part(d_path,d_file_name,d_filename_dat,d_filename_up,d_filename_down, d_python_file, d_temporary_path, d_temp_pick_file, d_temp_result, d_temp_par, d_temp_res);
+	d_hellinger_thread->set_python_script_type(d_thread_type);
 	progress_bar->setEnabled(true);
 	progress_bar->setMaximum(0.);
 	d_hellinger_thread->start();
@@ -591,7 +591,7 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate()
 		QString import_file_line = QString("%1").arg(line_import_file->text());
 		update_buttons();
 		std::vector<double> input_data;
-		std::vector<int>bool_data;
+		std::vector<int> bool_data;
 		input_data.push_back(spinbox_lat->value());
 		input_data.push_back(spinbox_lon->value());
 		input_data.push_back(spinbox_rho->value());
@@ -635,9 +635,9 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate()
 
 		d_hellinger_thread->initialization_pole_part(import_file_line, input_data, bool_data, iteration, d_python_file, d_temporary_path, d_temp_pick_file, d_temp_result, d_temp_par, d_temp_res);
 		d_thread_type = POLE_THREAD_TYPE;
-		d_hellinger_model->reset_data_file();
+		d_hellinger_model->reset_points();
 		update_canvas();
-		d_hellinger_thread->set_python_script(d_thread_type);
+		d_hellinger_thread->set_python_script_type(d_thread_type);
 
 		progress_bar->setEnabled(true);
 		progress_bar->setMaximum(0.);
@@ -741,7 +741,7 @@ GPlatesQtWidgets::HellingerDialog::update_from_model()
 
 	// TODO: Check if we need these two reset functions called here.
 	d_hellinger_model->reset_fit_struct();
-	d_hellinger_model->reset_data_file();
+	d_hellinger_model->reset_points();
 
 	load_data_from_model();
 	update_canvas();
@@ -820,7 +820,7 @@ GPlatesQtWidgets::HellingerDialog::update_result()
 void
 GPlatesQtWidgets::HellingerDialog::show_data_points_on_globe()
 {
-	std::vector<GPlatesMaths::LatLonPoint> data_points = d_hellinger_model->get_data_file();
+	std::vector<GPlatesMaths::LatLonPoint> data_points = d_hellinger_model->get_points();
 	if (!data_points.empty())
 	{
 		std::vector<GPlatesMaths::LatLonPoint>::const_iterator iter;
@@ -1120,7 +1120,7 @@ GPlatesQtWidgets::HellingerDialog::handle_fit_spinboxes_changed()
 	QString angle_str = QString("%1").arg(spinbox_result_angle->value());
 	//    QString eps_str = QString("%1").arg(spinbox_result_eps->value());
 	fit_spinboxes<<lat_str<<lon_str<<angle_str;
-	d_hellinger_model->reset_data_file();
+	d_hellinger_model->reset_points();
 	d_hellinger_model->add_results(fit_spinboxes);
 	update_canvas();
 }

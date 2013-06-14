@@ -135,7 +135,7 @@ GPlatesQtWidgets::HellingerThread::initialization_stats_part(QString &path_file,
 }
 
 void
-GPlatesQtWidgets::HellingerThread::set_python_script(ThreadType thread_type)
+GPlatesQtWidgets::HellingerThread::set_python_script_type(ThreadType thread_type)
 {
 	d_thread_type = thread_type;
 }

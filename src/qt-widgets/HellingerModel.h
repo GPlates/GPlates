@@ -151,7 +151,7 @@ namespace GPlatesQtWidgets
 		add_data_file();
 
         std::vector<GPlatesMaths::LatLonPoint>
-        get_data_file();
+		get_points();
 
         void
         set_initialization_guess(
@@ -164,7 +164,7 @@ namespace GPlatesQtWidgets
         reset_fit_struct();
 
         void
-        reset_data_file();
+		reset_points();
 
         void
 		reorder_picks();
@@ -214,8 +214,12 @@ namespace GPlatesQtWidgets
 		fit_struct d_fit_struct;
 		model_type d_hellinger_picks;                
 		std::vector<GPlatesMaths::LatLonPoint> d_points;
+
+		// TODO: these two booleans, and their getter/setters, don't appear
+		// to be used. Check if we (will) need these.
 		bool d_error_order;
 		bool d_error_lat_lon_rho;
+
 		QString d_python_path;
 	};
 }

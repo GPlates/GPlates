@@ -63,7 +63,7 @@ namespace GPlatesQtWidgets
 		initialization_stats_part(QString &path_file, QString &file_name, QString &filename_dat, QString &filename_up, QString &filename_do, QString &python_file, QString &temporary_folder, QString &temp_pick_file, QString &temp_result, QString &temp_par, QString &temp_res);
 
 		void
-		set_python_script(ThreadType thread_type);
+		set_python_script_type(ThreadType thread_type);
 
 
 	private:

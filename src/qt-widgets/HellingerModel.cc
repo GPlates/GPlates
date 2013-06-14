@@ -331,13 +331,13 @@ GPlatesQtWidgets::HellingerModel::add_data_file()
 }
 
 std::vector <GPlatesMaths::LatLonPoint>
-GPlatesQtWidgets::HellingerModel::get_data_file()
+GPlatesQtWidgets::HellingerModel::get_points()
 {
     return d_points;
 }
 
 void
-GPlatesQtWidgets::HellingerModel::reset_data_file()
+GPlatesQtWidgets::HellingerModel::reset_points()
 {
 	if (!d_points.empty())
 	{
@@ -406,9 +406,8 @@ GPlatesQtWidgets::HellingerModel::reorder_picks()
 			new_map.insert(std::pair<int, Pick>(iter->first-miss_num, pick_part));
         }
       }
-      d_hellinger_picks.clear();
+
       d_hellinger_picks = new_map;
-      new_map.clear();
 }
 
 void
@@ -427,9 +426,9 @@ GPlatesQtWidgets::HellingerModel::reorder_segment(int segment)
 			new_map.insert(std::pair<int, Pick>(iter->first, pick_part));
         }
       }
-      d_hellinger_picks.clear();
+
       d_hellinger_picks = new_map;
-      new_map.clear();
+
 }
 
 boost::optional<GPlatesQtWidgets::Pick>
@@ -441,7 +440,7 @@ GPlatesQtWidgets::HellingerModel::get_line(
 	int n = 0;
 	for (iter = d_hellinger_picks.find(segment); iter != d_hellinger_picks.end(); ++iter )
 	{
-		if (iter->first == segment && n == row)
+		if ((iter->first == segment) && (n == row))
 		{
             return (iter->second);
 		}
@@ -493,4 +492,3 @@ GPlatesQtWidgets::HellingerModel::segment_end(
 	return d_hellinger_picks.equal_range(segment).second;
 }
 
-ENABLE_GCC_WARNING("-Wwrite-strings")
