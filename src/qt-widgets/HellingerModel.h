@@ -61,23 +61,25 @@ namespace GPlatesQtWidgets
 
     typedef std::multimap<int,Pick> model_type;
 
+	// Contents of a hellinger .com file.
     struct com_file_struct{
         QString pick_file;
-        double lat;
-        double lon;
-        double rho;
+		double lat;	// initial estimate
+		double lon; // initial estimate
+		double rho; // initial estimate
         double search_radius;
-        bool grid_search;
+		bool perform_grid_search;
         double significance_level;
-        bool estimated_kappa;
-        bool output_files;
-        QString dat_file;
-        QString up_file;
-        QString do_file;
+		bool estimate_kappa;
+		bool generate_output_files;
+		QString data_filename;
+		QString up_filename;
+		QString down_filename;
 
     };
 
-    struct fit_struct{
+	// The result of the fit.
+	struct fit_struct{
         double lat;
         double lon;
         double angle;
@@ -104,7 +106,7 @@ namespace GPlatesQtWidgets
             int &row);
 
         bool
-        get_state(
+		get_pick_state(
 			int &segment,
 			int &row);
 
@@ -146,7 +148,7 @@ namespace GPlatesQtWidgets
         get_results();
 
         void
-        add_dat_file();
+		add_data_file();
 
         std::vector<GPlatesMaths::LatLonPoint>
         get_data_file();
@@ -182,7 +184,7 @@ namespace GPlatesQtWidgets
         get_error_lat_lon_rho();
 
         boost::optional<com_file_struct>
-        get_initialization_guess();
+		get_com_file();
 
         QStringList
         get_data();

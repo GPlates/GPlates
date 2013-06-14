@@ -75,7 +75,7 @@ GPlatesQtWidgets::HellingerModel::set_state(int &segment, int &row)
 }
 
 bool
-GPlatesQtWidgets::HellingerModel::get_state(int &segment,int &row)
+GPlatesQtWidgets::HellingerModel::get_pick_state(int &segment,int &row)
 {
     model_type::const_iterator iter;
     int n = 0;
@@ -274,45 +274,45 @@ GPlatesQtWidgets::HellingerModel::set_initialization_guess(const QStringList &co
     d_active_com_file_struct.search_radius = com_list_fields.at(4).toDouble();
     if (com_list_fields.at(5).toStdString()=="y")
     {
-        d_active_com_file_struct.grid_search = true;
+		d_active_com_file_struct.perform_grid_search = true;
     }
     else if (com_list_fields.at(5).toStdString()=="n")
     {
-        d_active_com_file_struct.grid_search = false;
+		d_active_com_file_struct.perform_grid_search = false;
     }
     d_active_com_file_struct.significance_level = com_list_fields.at(6).toDouble();
     if (com_list_fields.at(7).toStdString()=="y")
     {
-        d_active_com_file_struct.estimated_kappa = true;
+		d_active_com_file_struct.estimate_kappa = true;
     }
     else if (com_list_fields.at(7).toStdString()=="n")
     {
-        d_active_com_file_struct.estimated_kappa = false;
+		d_active_com_file_struct.estimate_kappa = false;
     }
     if (com_list_fields.at(8)=="y")
     {
-        d_active_com_file_struct.output_files = true;
+		d_active_com_file_struct.generate_output_files = true;
     }
     else if (com_list_fields.at(8)=="n")
     {
-        d_active_com_file_struct.output_files = false;
+		d_active_com_file_struct.generate_output_files = false;
     }
-    d_active_com_file_struct.dat_file = com_list_fields.at(9);
-    d_active_com_file_struct.up_file = com_list_fields.at(10);
-    d_active_com_file_struct.do_file = com_list_fields.at(11);
+	d_active_com_file_struct.data_filename = com_list_fields.at(9);
+	d_active_com_file_struct.up_filename = com_list_fields.at(10);
+	d_active_com_file_struct.down_filename = com_list_fields.at(11);
 }
 
 boost::optional<GPlatesQtWidgets::com_file_struct>
-GPlatesQtWidgets::HellingerModel::get_initialization_guess()
+GPlatesQtWidgets::HellingerModel::get_com_file()
 {
     return d_active_com_file_struct;
 }
 
 void
-GPlatesQtWidgets::HellingerModel::add_dat_file()
+GPlatesQtWidgets::HellingerModel::add_data_file()
 {
 
-    QString path = d_python_path+d_active_com_file_struct.dat_file;
+	QString path = d_python_path+d_active_com_file_struct.data_filename;
     QFile data_file(path);
     std::vector<GPlatesMaths::LatLonPoint> points;
     if (data_file.open(QFile::ReadOnly))
@@ -362,13 +362,13 @@ GPlatesQtWidgets::HellingerModel::reset_com_file_struct()
     d_active_com_file_struct.lon = 0;
     d_active_com_file_struct.rho = 0;
     d_active_com_file_struct.search_radius = 0;
-    d_active_com_file_struct.grid_search = false;
+	d_active_com_file_struct.perform_grid_search = false;
     d_active_com_file_struct.significance_level = 0.95;
-    d_active_com_file_struct.estimated_kappa = true;
-    d_active_com_file_struct.output_files = false;
-    d_active_com_file_struct.dat_file = "";
-    d_active_com_file_struct.up_file = "";
-    d_active_com_file_struct.do_file = "";
+	d_active_com_file_struct.estimate_kappa = true;
+	d_active_com_file_struct.generate_output_files = false;
+	d_active_com_file_struct.data_filename = "";
+	d_active_com_file_struct.up_filename = "";
+	d_active_com_file_struct.down_filename = "";
 }
 
 void

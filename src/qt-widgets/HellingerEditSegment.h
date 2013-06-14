@@ -57,7 +57,7 @@ namespace GPlatesQtWidgets
                 void
                 initialization_table(QStringList &input_value);
                 void
-                initialization(int &segment);
+                initialise(int &segment);
 
 	private Q_SLOTS: 
 

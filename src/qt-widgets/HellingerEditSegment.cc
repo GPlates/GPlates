@@ -99,7 +99,7 @@ GPlatesQtWidgets::HellingerEditSegment::initialization_table(QStringList &input_
 }
 
 void
-GPlatesQtWidgets::HellingerEditSegment::initialization(int &segment)
+GPlatesQtWidgets::HellingerEditSegment::initialise(int &segment)
 {
     QStringList get_data_segment = d_hellinger_model_ptr->get_segment(segment);
     check_picks(get_data_segment);

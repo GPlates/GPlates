@@ -180,7 +180,10 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	progress_bar->setMinimum(0.);
 	progress_bar->setMaximum(1.);
 	progress_bar->setValue(0.);
-	update();
+
+	update_from_model();
+
+	// For eventual insertion of generated pole into the model.
 	groupbox_rotation->hide();
 
 }
@@ -191,23 +194,17 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 		const QItemSelection & old_selection)
 {
 
-	const QModelIndex index = treeWidget->selectionModel()->currentIndex();
-	QString segment = treeWidget->currentItem()->text(0);
+	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
+	QString segment = tree_widget_picks->currentItem()->text(0);
 	int row = index.row();
 	int segment_int = segment.toInt();
-	bool state = d_hellinger_model->get_state(segment_int, row);
-	if (state == 1)
-	{
-		button_activate_pick->setEnabled(false);
-		button_deactivate_pick->setEnabled(true);
-	}
-	else if (state == 0)
-	{
-		button_activate_pick->setEnabled(true);
-		button_deactivate_pick->setEnabled(false);
-	}
+	bool state = d_hellinger_model->get_pick_state(segment_int, row);
 
-	if (treeWidget->currentItem()->text(1) == 0)
+	button_activate_pick->setEnabled(!state);
+	button_deactivate_pick->setEnabled(state);
+
+
+	if (tree_widget_picks->currentItem()->text(1) == 0)
 	{
 		button_edit_point -> setEnabled(false);
 		button_edit_segment -> setEnabled(true);
@@ -227,18 +224,18 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 	d_hellinger_layer.clear_rendered_geometries();
 	update_canvas();
 
-	if (treeWidget->currentItem()->text(1) != 0)
+	if (tree_widget_picks->currentItem()->text(1) != 0)
 	{
-		double lat = treeWidget->currentItem()->text(2).toDouble();
-		double lon = treeWidget->currentItem()->text(3).toDouble();
-		int type_segment = treeWidget->currentItem()->text(1).toInt();
-		show_point_globe(lat, lon, type_segment);
+		double lat = tree_widget_picks->currentItem()->text(2).toDouble();
+		double lon = tree_widget_picks->currentItem()->text(3).toDouble();
+		int type_segment = tree_widget_picks->currentItem()->text(1).toInt();
+		show_point_on_globe(lat, lon, type_segment);
 
 	}
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::show_point_globe(
+GPlatesQtWidgets::HellingerDialog::show_point_on_globe(
 		const double &lat,
 		const double &lon,
 		const int &type_segment)
@@ -264,8 +261,8 @@ GPlatesQtWidgets::HellingerDialog::show_point_globe(
 void
 GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 {
-	const QModelIndex index = treeWidget->selectionModel()->currentIndex();
-	QString segment = treeWidget->currentItem()->text(0);
+	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
+	QString segment = tree_widget_picks->currentItem()->text(0);
 	int row = index.row();
 	int segment_int = segment.toInt();
 	QStringList get_data_line = d_hellinger_model->get_line(segment_int, row);
@@ -276,7 +273,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 	QString lon = get_data_line.at(3);
 	QString uncert = get_data_line.at(4);
 
-	bool state = d_hellinger_model->get_state(segment_int, row);
+	bool state = d_hellinger_model->get_pick_state(segment_int, row);
 	if (state)  // 1 = true
 	{
 		if (move_fix == "1")
@@ -285,7 +282,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 			data_to_model << move_fix << segment_str << lat << lon << uncert;
 			d_hellinger_model->remove_line(segment_int,row);
 			d_hellinger_model->add_pick(data_to_model);
-			update();
+			update_from_model();
 		}
 		else if (move_fix == "2")
 		{
@@ -293,7 +290,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 			data_to_model << move_fix << segment_str << lat << lon << uncert;
 			d_hellinger_model->remove_line(segment_int,row);
 			d_hellinger_model->add_pick(data_to_model);
-			update();
+			update_from_model();
 		}
 
 	}
@@ -304,30 +301,23 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 		//        qDebug()<<data_to_model<<change_state;
 		d_hellinger_model->remove_line(segment_int,row);
 		d_hellinger_model->add_pick(data_to_model);
-		update();
+		update_from_model();
 	}
 	reset_expanded_status();
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::reset_picks_globe()
-{
-	d_hellinger_layer.clear_rendered_geometries();
-	update_canvas();
-}
-
-void
 GPlatesQtWidgets::HellingerDialog::handle_edit_point()
 {
-	const QModelIndex index = treeWidget->selectionModel()->currentIndex();
+	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
 	if (!d_hellinger_edit_point)
 	{
 		d_hellinger_edit_point = new GPlatesQtWidgets::HellingerEditPoint(this, d_hellinger_model);
 	}
-	QString segment = treeWidget->currentItem()->text(0);
+	QString segment = tree_widget_picks->currentItem()->text(0);
 	int row = index.row();
 	int segment_int = segment.toInt();
-	//d_hellinger_model ->get_line(segment_int, row);
+
 	d_hellinger_edit_point->initialization(segment_int, row);
 	d_hellinger_edit_point->exec();
 	reset_expanded_status();
@@ -340,9 +330,9 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_segment()
 	{
 		d_hellinger_edit_segment = new GPlatesQtWidgets::HellingerEditSegment(this,d_hellinger_model);
 	}
-	QString segment = treeWidget->currentItem()->text(0);
+	QString segment = tree_widget_picks->currentItem()->text(0);
 	int segment_int = segment.toInt();
-	d_hellinger_edit_segment->initialization(segment_int);
+	d_hellinger_edit_segment->initialise(segment_int);
 	d_hellinger_edit_segment->exec();
 	reset_expanded_status();
 }
@@ -365,12 +355,12 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_point()
 	}
 	else
 	{
-		const QModelIndex index = treeWidget->selectionModel()->currentIndex();
-		QString segment = treeWidget->currentItem()->text(0);
+		const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
+		QString segment = tree_widget_picks->currentItem()->text(0);
 		int row = index.row();
 		int segment_int = segment.toInt();
 		d_hellinger_model->remove_line(segment_int, row);
-		update();
+		update_from_model();
 		reset_expanded_status();
 	}
 }
@@ -393,11 +383,11 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_segment()
 	}
 	else
 	{
-		QString segment = treeWidget->currentItem()->text(0);
+		QString segment = tree_widget_picks->currentItem()->text(0);
 		int segment_int = segment.toInt();
 		d_hellinger_model ->remove_segment(segment_int);
 		button_renumber->setEnabled(true);
-		update();
+		update_from_model();
 		reset_expanded_status();
 	}
 }
@@ -406,23 +396,22 @@ void
 GPlatesQtWidgets::HellingerDialog::initialise()
 {
 	update_buttons();
-	update();
+	update_from_model();
 	reset_expanded_status();
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::import_pick_file()
+GPlatesQtWidgets::HellingerDialog::import_hellinger_file()
 {
 	QString filters;
 	filters = QObject::tr("Hellinger Pick file (*.pick)");
 	filters += ";;";
 	filters += QObject::tr("Hellinger com file (*.com)");
-	//    filters += ";;";
-	//    filters += QObject::tr("All files (*)");
+
 
 	QString path = QFileDialog::getOpenFileName(
 				this,
-				QObject::tr("Open Hellinger Pick or Com file"),
+				QObject::tr("Open Hellinger .pick or .com file"),
 				d_view_state.get_last_open_directory(),
 				filters);
 
@@ -458,10 +447,11 @@ GPlatesQtWidgets::HellingerDialog::import_pick_file()
 		d_read_error_accumulation_dialog.show();
 	}
 
-	line_import_file -> setText(path);
+	line_import_file->setText(path);
 	d_hellinger_layer.clear_rendered_geometries();
+
 	update_buttons();
-	update();
+	update_from_model();
 	initialise();
 	handle_expand_all();
 
@@ -470,20 +460,15 @@ GPlatesQtWidgets::HellingerDialog::import_pick_file()
 void
 GPlatesQtWidgets::HellingerDialog::handle_spinbox_radius_changed()
 {
-	if (spinbox_radius->value()>0.0)
-	{
-		button_apply_fit->setEnabled(true);
-	}
-	else
-	{
-		button_apply_fit->setEnabled(false);
-	}
+
+	button_calculate_fit->setEnabled(spinbox_radius->value()>0.0);
+
 }
 
 void
 GPlatesQtWidgets::HellingerDialog::update_initial_guess()
 {
-	boost::optional<GPlatesQtWidgets::com_file_struct> com_file_data = d_hellinger_model->get_initialization_guess();
+	boost::optional<GPlatesQtWidgets::com_file_struct> com_file_data = d_hellinger_model->get_com_file();
 
 	if (com_file_data)
 	{
@@ -491,28 +476,15 @@ GPlatesQtWidgets::HellingerDialog::update_initial_guess()
 		spinbox_lon->setValue(com_file_data.get().lon);
 		spinbox_rho->setValue(com_file_data.get().rho);
 		spinbox_radius->setValue(com_file_data.get().search_radius);
-		checkbox_grid_search->setChecked(com_file_data.get().grid_search);
+		checkbox_grid_search->setChecked(com_file_data.get().perform_grid_search);
 		spinbox_sig_level->setValue(com_file_data.get().significance_level);
-		if (com_file_data.get().estimated_kappa)
-		{
-			checkbox_kappa->setChecked(true);
-		}
-		else
-		{
-			checkbox_kappa->setChecked(false);
-		}
 
-		if (com_file_data.get().output_files)
-		{
-			checkbox_graphics->setChecked(true);
-		}
-		else
-		{
-			checkbox_graphics->setChecked(false);
-		}
-		d_filename_dat = com_file_data.get().dat_file;
-		d_filename_up = com_file_data.get().up_file;
-		d_filename_do = com_file_data.get().do_file;
+		checkbox_kappa->setChecked(com_file_data.get().estimate_kappa);
+		checkbox_graphics->setChecked(com_file_data.get().generate_output_files);
+
+		d_filename_dat = com_file_data.get().data_filename;
+		d_filename_up = com_file_data.get().up_filename;
+		d_filename_do = com_file_data.get().down_filename;
 	}
 
 }
@@ -664,7 +636,7 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate()
 		d_hellinger_thread->initialization_pole_part(import_file_line, input_data, bool_data, iteration, d_python_file, d_temporary_path, d_temp_pick_file, d_temp_result, d_temp_par, d_temp_res);
 		d_thread_type = POLE_THREAD_TYPE;
 		d_hellinger_model->reset_data_file();
-		reset_picks_globe();
+		update_canvas();
 		d_hellinger_thread->set_python_script(d_thread_type);
 
 		progress_bar->setEnabled(true);
@@ -698,7 +670,7 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 			data_file.close();
 			bool result_info = true;
 			bool continue_info = true;
-			results_python();
+			update_result();
 			update_buttons_statistics(result_info);
 			update_continue_button(continue_info);
 		}
@@ -709,8 +681,8 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 		bool continue_info = false;
 		update_buttons_statistics(result_info);
 		update_continue_button(continue_info);
-		d_hellinger_model->add_dat_file();
-		show_data_points();
+		d_hellinger_model->add_data_file();
+		show_data_points_on_globe();
 	}
 }
 
@@ -718,12 +690,13 @@ void
 GPlatesQtWidgets::HellingerDialog::update_buttons()
 {
 
-	if (treeWidget->topLevelItemCount() == 0)
+
+	if (tree_widget_picks->topLevelItemCount() == 0)
 	{
 		button_expand_all -> setEnabled(false);
 		button_collapse_all -> setEnabled(false);
 		button_export_file -> setEnabled(false);
-		button_apply_fit -> setEnabled(false);
+		button_calculate_fit -> setEnabled(false);
 		button_details -> setEnabled(false);
 		button_apply_pole -> setEnabled(false);
 		button_remove_segment -> setEnabled(false);
@@ -736,11 +709,11 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 		button_export_file -> setEnabled(true);
 		if (spinbox_radius->value() > 0.0)
 		{
-			button_apply_fit -> setEnabled(true);
+			button_calculate_fit -> setEnabled(true);
 		}
 		else
 		{
-			button_apply_fit->setEnabled(false);
+			button_calculate_fit->setEnabled(false);
 		}
 		button_apply_pole -> setEnabled(true);
 		button_remove_segment -> setEnabled(true);
@@ -750,15 +723,26 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 	button_stats->setEnabled(false);
 	button_details->setEnabled(false);
 
-
+	button_expand_all -> setEnabled(false);
+	button_collapse_all -> setEnabled(false);
+	button_export_file -> setEnabled(false);
+	button_calculate_fit -> setEnabled(false);
+	button_details -> setEnabled(false);
+	button_apply_pole -> setEnabled(false);
+	button_remove_segment -> setEnabled(false);
+	button_remove_point -> setEnabled(false);
+	button_stats -> setEnabled(false);
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::update()
+GPlatesQtWidgets::HellingerDialog::update_from_model()
 {
-	treeWidget->clear();
+	tree_widget_picks->clear();
+
+	// TODO: Check if we need these two reset functions called here.
 	d_hellinger_model->reset_fit_struct();
 	d_hellinger_model->reset_data_file();
+
 	load_data_from_model();
 	update_canvas();
 	update_buttons();
@@ -798,7 +782,7 @@ GPlatesQtWidgets::HellingerDialog::update_continue_button(
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::show_results(
+GPlatesQtWidgets::HellingerDialog::show_pole_on_globe(
 		const double &lat,
 		const double &lon)
 {
@@ -819,7 +803,7 @@ GPlatesQtWidgets::HellingerDialog::show_results(
 
 
 void
-GPlatesQtWidgets::HellingerDialog::results_python()
+GPlatesQtWidgets::HellingerDialog::update_result()
 {
 	boost::optional<GPlatesQtWidgets::fit_struct> data_fit_struct = d_hellinger_model->get_results();
 
@@ -828,13 +812,13 @@ GPlatesQtWidgets::HellingerDialog::results_python()
 		spinbox_result_lat->setValue(data_fit_struct.get().lat);
 		spinbox_result_lon->setValue(data_fit_struct.get().lon);
 		spinbox_result_angle->setValue(data_fit_struct.get().angle);
-		show_results(data_fit_struct.get().lat, data_fit_struct.get().lon);
+		show_pole_on_globe(data_fit_struct.get().lat, data_fit_struct.get().lon);
 	}
 
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::show_data_points()
+GPlatesQtWidgets::HellingerDialog::show_data_points_on_globe()
 {
 	std::vector<GPlatesMaths::LatLonPoint> data_points = d_hellinger_model->get_data_file();
 	if (!data_points.empty())
@@ -874,7 +858,7 @@ GPlatesQtWidgets::HellingerDialog::load_data_from_model()
 
 	for (; iter != end ; ++iter)
 	{
-		add_pick_to_tree(iter->first,iter->second,treeWidget);
+		add_pick_to_tree(iter->first,iter->second,tree_widget_picks);
 	}
 	update_buttons();
 	update_initial_guess();
@@ -895,18 +879,18 @@ GPlatesQtWidgets::HellingerDialog::close_dialog()
 void
 GPlatesQtWidgets::HellingerDialog::update_canvas()
 {
-
+	d_hellinger_layer.clear_rendered_geometries();
 	draw_fixed_picks();
 	draw_moving_picks();
-	results_python();
-	show_data_points();
+	update_result();
+	show_data_points_on_globe();
 
 }
 
 
 void
-GPlatesQtWidgets::HellingerDialog::set_segment_colour(
-		int &num_colour)
+GPlatesQtWidgets::HellingerDialog::set_segment_colours(
+		int num_colour)
 {
 	num_colour = num_colour%7;
 	switch (num_colour)
@@ -955,7 +939,7 @@ GPlatesQtWidgets::HellingerDialog::draw_fixed_picks()
 				++num_segment;
 			}
 
-			set_segment_colour(num_colour);
+			set_segment_colours(num_colour);
 
 			if (it->second.segment_type == FIXED_SEGMENT_TYPE)
 			{
@@ -993,7 +977,7 @@ GPlatesQtWidgets::HellingerDialog::draw_moving_picks()
 				++num_segment;
 			}
 
-			set_segment_colour(num_colour);
+			set_segment_colours(num_colour);
 
 			if (it->second.segment_type == MOVING_SEGMENT_TYPE)
 			{
@@ -1022,7 +1006,7 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 
 	d_hellinger_layer.clear_rendered_geometries();
 	draw_fixed_picks();
-	results_python();
+	update_result();
 	boost::optional<GPlatesQtWidgets::fit_struct> data_fit_struct = d_hellinger_model->get_results();
 
 	double recon_time = spinbox_recon_time->value();
@@ -1053,7 +1037,7 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 					++num_segment;
 				}
 
-				set_segment_colour(num_colour);
+				set_segment_colours(num_colour);
 
 				if (it->second.segment_type == MOVING_SEGMENT_TYPE)
 				{
@@ -1107,7 +1091,7 @@ GPlatesQtWidgets::HellingerDialog::handle_chron_time_changed(
 
 	draw_fixed_picks();
 	draw_moving_picks();
-	results_python();
+	update_result();
 
 }
 
@@ -1138,7 +1122,7 @@ GPlatesQtWidgets::HellingerDialog::handle_fit_spinboxes_changed()
 	fit_spinboxes<<lat_str<<lon_str<<angle_str;
 	d_hellinger_model->reset_data_file();
 	d_hellinger_model->add_results(fit_spinboxes);
-	reset_picks_globe();
+	update_canvas();
 }
 
 void
@@ -1146,7 +1130,7 @@ GPlatesQtWidgets::HellingerDialog::reorder_picks()
 {
 
 	d_hellinger_model->reorder_picks();
-	treeWidget->clear();
+	tree_widget_picks->clear();
 	load_data_from_model();
 	button_renumber->setEnabled(false);
 	reset_expanded_status();
@@ -1161,7 +1145,7 @@ GPlatesQtWidgets::HellingerDialog::renumber_segments()
 
 void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 {
-	QObject::connect(button_apply_fit, SIGNAL(clicked()),this, SLOT(handle_calculate()));
+	QObject::connect(button_calculate_fit, SIGNAL(clicked()),this, SLOT(handle_calculate()));
 	QObject::connect(button_import_file, SIGNAL(clicked()), this, SLOT(import_pick_file()));
 	QObject::connect(button_details, SIGNAL(clicked()), this, SLOT(show_stat_details()));
 	QObject::connect(button_new_point, SIGNAL(clicked()), this, SLOT(handle_add_new_point()));
@@ -1187,8 +1171,8 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(spinbox_result_angle, SIGNAL(valueChanged(double)), this, SLOT(handle_fit_spinboxes_changed()));
 	QObject::connect(spinbox_radius, SIGNAL(valueChanged(double)), this, SLOT(handle_spinbox_radius_changed()));
 	QObject::connect(checkbox_grid_search, SIGNAL(clicked()), this, SLOT(handle_checkbox_grid_search_changed()));
-	QObject::connect(treeWidget,SIGNAL(collapsed(QModelIndex)),this,SLOT(update_expanded_status()));
-	QObject::connect(treeWidget->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
+	QObject::connect(tree_widget_picks,SIGNAL(collapsed(QModelIndex)),this,SLOT(update_expanded_status()));
+	QObject::connect(tree_widget_picks->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
 					 this, SLOT(handle_selection_changed(const QItemSelection &, const QItemSelection &)));
 
 	QObject::connect(d_hellinger_thread, SIGNAL(finished()),this, SLOT(handle_thread_finished()));
@@ -1197,14 +1181,14 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 void
 GPlatesQtWidgets::HellingerDialog::handle_expand_all()
 {
-	treeWidget->expandAll();
+	tree_widget_picks->expandAll();
 	update_expanded_status();
 }
 
 void
 GPlatesQtWidgets::HellingerDialog::handle_collapse_all()
 {
-	treeWidget->collapseAll();
+	tree_widget_picks->collapseAll();
 	update_expanded_status();
 }
 
@@ -1224,13 +1208,13 @@ GPlatesQtWidgets::HellingerDialog::handle_checkbox_grid_search_changed()
 void
 GPlatesQtWidgets::HellingerDialog::update_expanded_status()
 {
-	int amount = treeWidget->topLevelItemCount();
+	int amount = tree_widget_picks->topLevelItemCount();
 	d_expanded_segments.clear();
 	for (int i = 0; i<amount; i++)
 	{
-		if (treeWidget->topLevelItem(i)->isExpanded())
+		if (tree_widget_picks->topLevelItem(i)->isExpanded())
 		{
-			QString position = treeWidget->topLevelItem(i)->text(0);
+			QString position = tree_widget_picks->topLevelItem(i)->text(0);
 			d_expanded_segments.push_back(position);
 		}
 	}
@@ -1250,17 +1234,17 @@ GPlatesQtWidgets::HellingerDialog::reset_expanded_status()
 	int expended_size = d_expanded_segments.size();
 	if (!d_expanded_segments.empty())
 	{
-		int amount = treeWidget->topLevelItemCount();
+		int amount = tree_widget_picks->topLevelItemCount();
 		num = 0;
 		for (int i = 0; i<amount;i++)
 		{
-			int widget_count = treeWidget->topLevelItem(i)->text(0).toInt();
+			int widget_count = tree_widget_picks->topLevelItem(i)->text(0).toInt();
 			int vector_count = d_expanded_segments.at(num).toInt();
 			if (num+1< expended_size)
 			{
 				if (widget_count == vector_count)
 				{
-					treeWidget->topLevelItem(i)->setExpanded(true);
+					tree_widget_picks->topLevelItem(i)->setExpanded(true);
 					num++;
 				}
 				else if(widget_count>vector_count)
@@ -1269,7 +1253,7 @@ GPlatesQtWidgets::HellingerDialog::reset_expanded_status()
 					vector_count = d_expanded_segments.at(num).toInt();
 					if (widget_count == vector_count)
 					{
-						treeWidget->topLevelItem(i)->setExpanded(true);
+						tree_widget_picks->topLevelItem(i)->setExpanded(true);
 						num++;
 					}
 

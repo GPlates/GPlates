@@ -84,7 +84,7 @@ namespace GPlatesQtWidgets
 		 * Update dialog from hellinger-model.
 		 */
 		void
-		update();
+		update_from_model();
 
 	public Q_SLOTS:
 
@@ -95,6 +95,7 @@ namespace GPlatesQtWidgets
 		renumber_segments();
 
 	private:
+
 		void
 		set_up_connections();
 
@@ -106,6 +107,7 @@ namespace GPlatesQtWidgets
 		add_segment(
 				const QStringList &add_list);
 
+		// FIXME: what's happening here?? Where is the function body??
 		void
 		change_point(
 				const QString &point_value);
@@ -131,26 +133,21 @@ namespace GPlatesQtWidgets
 				const double &chron_time);
 
 		void
-		show_point_globe(
+		show_point_on_globe(
 				const double &lat,
 				const double &lon,
 				const int &type_segment);
 
 		void
-		show_results(
+		show_pole_on_globe(
 				const double &lat,
 				const double &lon);
 
 		void
-		results_python();
+		update_result();
 
 		void
-		show_data_points();
-
-		void
-		reset_picks_globe();
-
-
+		show_data_points_on_globe();
 
 		void
 		update_initial_guess();
@@ -169,8 +166,8 @@ namespace GPlatesQtWidgets
 		draw_moving_picks();
 
 		void
-		set_segment_colour(
-				int &num_color);
+		set_segment_colours(
+				int num_color);
 
 		void
 		reorder_picks();
@@ -190,7 +187,7 @@ namespace GPlatesQtWidgets
 		handle_calculate();
 
 		void
-		import_pick_file();
+		import_hellinger_file();
 
 		void
 		show_stat_details();
