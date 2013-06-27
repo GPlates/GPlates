@@ -141,14 +141,15 @@ GDAL
          NETCDF_SETTING=yes
          NETCDF_LIB=C:\SDK\netcdf\netcdf-4.1.1\netcdf.lib
          NETCDF_INC_DIR=C:\SDK\netcdf\netcdf-4.1.1
-    4. Generate a new Visual Studio solution file,
+	4. Uncomment "#WIN64=YES" in "nmake.opt" for 64-bit build.
+    5. Generate a new Visual Studio solution file,
        o Run "makegdal_gen.bat 8.00 > makegdal80.vcproj" if you are using Visual Studio 2005.
        o Run "makegdal_gen.bat 9.00 > makegdal90.vcproj" if you are using Visual Studio 2008.
-    5. Use Visual Studio to build GDAL.
+    6. Use Visual Studio to build GDAL.
        o For example, by opening the 'makegdal80.vcproj' project file with Visual Studio 2005.
        o Selecting 'Release' as the build type.
-    6. Set the 'GDAL_DIR' environment variable to the root path of GDAL (eg, "C:\SDK\gdal\gdal-1.9.0").
-    7. Also add the root path of GDAL to the PATH environment variable (so the GDAL DLL can be found at run-time).
+    7. Set the 'GDAL_DIR' environment variable to the root path of GDAL (eg, "C:\SDK\gdal\gdal-1.9.0").
+    8. Also add the root path of GDAL to the PATH environment variable (so the GDAL DLL can be found at run-time).
   
 CGAL
 
