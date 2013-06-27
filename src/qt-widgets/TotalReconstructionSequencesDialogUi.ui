@@ -6,22 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>773</width>
-    <height>495</height>
+    <width>733</width>
+    <height>481</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Total Reconstruction Sequences</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0">
-    <widget class="QLabel" name="label">
-     <property name="text">
-      <string>View and edit the total reconstruction sequences that are loaded in the application.</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0">
+  <layout class="QVBoxLayout" name="verticalLayout_3">
+   <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -244,8 +237,8 @@
          </property>
          <property name="sizeHint" stdset="0">
           <size>
-           <width>20</width>
-           <height>40</height>
+           <width>91</width>
+           <height>26</height>
           </size>
          </property>
         </spacer>
@@ -264,8 +257,8 @@
          </property>
          <property name="sizeHint" stdset="0">
           <size>
-           <width>20</width>
-           <height>40</height>
+           <width>91</width>
+           <height>26</height>
           </size>
          </property>
         </spacer>
@@ -277,6 +270,26 @@
          </property>
          <property name="text">
           <string>&amp;Edit Sequence</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="disable_seq_button">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="text">
+          <string>Disable Sequence</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="enable_seq_button">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="text">
+          <string>Enable Sequence</string>
          </property>
         </widget>
        </item>
@@ -301,34 +314,14 @@
         </widget>
        </item>
        <item>
-        <spacer name="verticalSpacer_7">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <widget class="QPushButton" name="disable_enable_pole_button">
-         <property name="text">
-          <string>Disable Pole</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <spacer name="verticalSpacer_4">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
          </property>
          <property name="sizeHint" stdset="0">
           <size>
-           <width>20</width>
-           <height>40</height>
+           <width>91</width>
+           <height>26</height>
           </size>
          </property>
         </spacer>
@@ -354,21 +347,8 @@
          </property>
          <property name="sizeHint" stdset="0">
           <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <spacer name="verticalSpacer_5">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
+           <width>91</width>
+           <height>25</height>
           </size>
          </property>
         </spacer>
@@ -380,8 +360,8 @@
          </property>
          <property name="sizeHint" stdset="0">
           <size>
-           <width>20</width>
-           <height>40</height>
+           <width>91</width>
+           <height>26</height>
           </size>
          </property>
         </spacer>
@@ -390,7 +370,14 @@
      </item>
     </layout>
    </item>
-   <item row="2" column="0">
+   <item>
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>View and edit the total reconstruction sequences that are loaded in the application.</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <spacer name="horizontalSpacer">

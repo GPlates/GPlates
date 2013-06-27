@@ -766,98 +766,43 @@ GPlatesModel::ModelUtils::create_gml_time_instant(
 
 const GPlatesModel::TopLevelProperty::non_null_ptr_type
 GPlatesModel::ModelUtils::create_total_reconstruction_pole(
-	const std::vector<TotalReconstructionPole> &five_tuples)
+		const std::vector<TotalReconstructionPole> &five_tuples,
+		bool is_grot)
 {
+	using namespace GPlatesPropertyValues;
 	std::vector<GPlatesPropertyValues::GpmlTimeSample> time_samples;
-	GPlatesPropertyValues::StructuralType value_type =
-		GPlatesPropertyValues::StructuralType::create_gpml("FiniteRotation");
-
-	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
-	XmlAttributeName xml_attribute_name = XmlAttributeName::create_gml("frame");
-	XmlAttributeValue xml_attribute_value("http://gplates.org/TRS/flat");
-	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
+	boost::optional<StructuralType> value_type;
+	if(is_grot)
+	{
+		value_type = StructuralType::create_gpml("TotalReconstructionPole");
+	}
+	else
+	{
+		value_type = StructuralType::create_gpml("FiniteRotation");
+	}
 
 	for (std::vector<TotalReconstructionPole>::const_iterator iter = five_tuples.begin(); 
 		iter != five_tuples.end(); ++iter) 
 	{
-		std::pair<double, double> gpml_euler_pole =
-			std::make_pair(iter->lon_of_euler_pole, iter->lat_of_euler_pole);
-		GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type gpml_finite_rotation =
-			GPlatesPropertyValues::GpmlFiniteRotation::create(gpml_euler_pole,
-			iter->rotation_angle);
-
-		GPlatesPropertyValues::GeoTimeInstant geo_time_instant(iter->time);
-		GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type gml_time_instant =
-			GPlatesPropertyValues::GmlTimeInstant::create(geo_time_instant, xml_attributes);
-
-		GPlatesUtils::UnicodeString comment_string(GPlatesUtils::make_icu_string_from_qstring(iter->comment));
-		GPlatesPropertyValues::XsString::non_null_ptr_type gml_description =
-			GPlatesPropertyValues::XsString::create(comment_string);
-
-		time_samples.push_back(GPlatesPropertyValues::GpmlTimeSample(gpml_finite_rotation, gml_time_instant,
-			get_intrusive_ptr(gml_description), value_type));
+		time_samples.push_back(create_gml_time_sample(*iter, is_grot));
 	}
 
-	GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
-		GPlatesPropertyValues::GpmlFiniteRotationSlerp::create(value_type);
-
 	PropertyValue::non_null_ptr_type gpml_irregular_sampling =
-		GPlatesPropertyValues::GpmlIrregularSampling::create(time_samples,
-		GPlatesUtils::get_intrusive_ptr(gpml_finite_rotation_slerp), value_type);
+		GpmlIrregularSampling::create(
+				time_samples,
+				GPlatesUtils::get_intrusive_ptr(
+						GpmlFiniteRotationSlerp::create(*value_type)), 
+				*value_type);
 
-	PropertyName property_name =
-		PropertyName::create_gpml("totalReconstructionPole");
-	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes2;
 	TopLevelProperty::non_null_ptr_type top_level_property_inline =
-		TopLevelPropertyInline::create(property_name,
-		gpml_irregular_sampling, xml_attributes2);
+		TopLevelPropertyInline::create(
+				PropertyName::create_gpml("totalReconstructionPole"),
+				gpml_irregular_sampling, 
+				std::map<XmlAttributeName, XmlAttributeValue>());
 
 	return top_level_property_inline;
 }
 
-const GPlatesModel::PropertyValue::non_null_ptr_type
-GPlatesModel::ModelUtils::create_irregular_sampling(
-	const std::vector<TotalReconstructionPole> &five_tuples)
-{
-	std::vector<GPlatesPropertyValues::GpmlTimeSample> time_samples;
-	GPlatesPropertyValues::StructuralType value_type =
-		GPlatesPropertyValues::StructuralType::create_gpml("FiniteRotation");
-
-	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
-	XmlAttributeName xml_attribute_name = XmlAttributeName::create_gml("frame");
-	XmlAttributeValue xml_attribute_value("http://gplates.org/TRS/flat");
-	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
-
-	for (std::vector<TotalReconstructionPole>::const_iterator iter = five_tuples.begin(); 
-		iter != five_tuples.end(); ++iter) 
-	{
-		std::pair<double, double> gpml_euler_pole =
-			std::make_pair(iter->lon_of_euler_pole, iter->lat_of_euler_pole);
-		GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type gpml_finite_rotation =
-			GPlatesPropertyValues::GpmlFiniteRotation::create(gpml_euler_pole,
-			iter->rotation_angle);
-
-		GPlatesPropertyValues::GeoTimeInstant geo_time_instant(iter->time);
-		GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type gml_time_instant =
-			GPlatesPropertyValues::GmlTimeInstant::create(geo_time_instant, xml_attributes);
-
-		GPlatesUtils::UnicodeString comment_string(GPlatesUtils::make_icu_string_from_qstring(iter->comment));
-		GPlatesPropertyValues::XsString::non_null_ptr_type gml_description =
-			GPlatesPropertyValues::XsString::create(comment_string);
-
-		time_samples.push_back(GPlatesPropertyValues::GpmlTimeSample(gpml_finite_rotation, gml_time_instant,
-			get_intrusive_ptr(gml_description), value_type));
-	}
-
-	GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
-		GPlatesPropertyValues::GpmlFiniteRotationSlerp::create(value_type);
-
-	PropertyValue::non_null_ptr_type gpml_irregular_sampling =
-		GPlatesPropertyValues::GpmlIrregularSampling::create(time_samples,
-		GPlatesUtils::get_intrusive_ptr(gpml_finite_rotation_slerp), value_type);
-
-	return gpml_irregular_sampling;
-}
 
 const GPlatesModel::FeatureHandle::weak_ref
 GPlatesModel::ModelUtils::create_total_recon_seq(
@@ -930,6 +875,52 @@ GPlatesModel::ModelUtils::get_mprs_attributes(
 		GPLATES_EXCEPTION_SOURCE,
 		"Cannot find MPRS attributes.");
 }
+
+
+GPlatesPropertyValues::GpmlTimeSample
+GPlatesModel::ModelUtils::create_gml_time_sample(
+		const GPlatesModel::ModelUtils::TotalReconstructionPole &trp,
+		bool is_grot)
+{
+	using namespace GPlatesModel;
+	using namespace GPlatesPropertyValues;
+
+	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
+	XmlAttributeName xml_attribute_name = XmlAttributeName::create_gml("frame");
+	XmlAttributeValue xml_attribute_value("http://gplates.org/TRS/flat");
+	xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
+
+	std::pair<double, double> gpml_euler_pole =
+		std::make_pair(trp.lon_of_euler_pole, trp.lat_of_euler_pole);
+	GpmlFiniteRotation::non_null_ptr_type gpml_finite_rotation =
+		GpmlFiniteRotation::create(gpml_euler_pole, trp.rotation_angle);
+
+	GmlTimeInstant::non_null_ptr_type gml_time_instant =
+		GmlTimeInstant::create(GeoTimeInstant(trp.time), xml_attributes);
+
+	XsString::non_null_ptr_type gml_description = 
+		XsString::create(GPlatesUtils::make_icu_string_from_qstring(trp.comment));
+
+	if(is_grot)
+	{
+		return GpmlTimeSample(
+				GpmlTotalReconstructionPole::non_null_ptr_type(
+						new GpmlTotalReconstructionPole(
+								gpml_finite_rotation->finite_rotation())), 
+				gml_time_instant,
+				get_intrusive_ptr(gml_description), 
+				StructuralType::create_gpml("TotalReconstructionPole"));
+	}
+	else
+	{
+		return GpmlTimeSample(
+				gpml_finite_rotation, 
+				gml_time_instant,
+				get_intrusive_ptr(gml_description), 
+				StructuralType::create_gpml("FiniteRotation"));
+	}
+}
+
 
 
 

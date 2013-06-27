@@ -213,6 +213,14 @@ namespace
     private:
         GPlatesModel::integer_plate_id_type d_plate_id_to_allow;
     };
+
+	inline
+	const GPlatesModel::PropertyName totalReconstructionPole_prop_name()
+	{
+		static const GPlatesModel::PropertyName prop_name =
+			GPlatesModel::PropertyName::create_gpml("totalReconstructionPole");
+		return prop_name;
+	}
 }
 
 
@@ -563,13 +571,14 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::TotalReconstructionSequenc
     treewidget_seqs->header()->resizeSection(ColumnNames::LONGITUDE, 70);
     
     show_metadata_button->setDisabled(true);
+	disable_seq_button->setVisible(false);
+	enable_seq_button->setVisible(false);
     
     make_signal_slot_connections();
 }
 
 GPlatesQtWidgets::TotalReconstructionSequencesDialog::~TotalReconstructionSequencesDialog()
 {
-
 }
 
 namespace
@@ -718,10 +727,11 @@ namespace
         bool found_non_disabled_pole = false;
 
         // Obtain the IrregularSampling that contains the TimeSamples.
-        static const GPlatesModel::PropertyName prop_name =
-                GPlatesModel::PropertyName::create_gpml("totalReconstructionPole");
         const GPlatesPropertyValues::GpmlIrregularSampling *irreg_sampling = NULL;
-        if ( ! GPlatesFeatureVisitors::get_property_value(feature_ref, prop_name, irreg_sampling)) {
+        if ( ! GPlatesFeatureVisitors::get_property_value(
+					feature_ref, 
+					totalReconstructionPole_prop_name(), 
+					irreg_sampling)) {
             // For some reason, we can't find an IrregularSampling.
             // This is particularly strange, because we should already have invoked
             // TotalReconstructionSequenceTimePeriodFinder, which should have obtained
@@ -758,7 +768,7 @@ namespace
             }
 #endif
             // Colour the background if the pole is disabled.
-            if (iter->is_disabled()) {
+            if (iter->is_disabled() || irreg_sampling->is_disabled()) {
                 set_row_background_to_show_disabled_pole(item_for_pole);
             } else {
                 // OK, we've found at least one non-disabled pole.
@@ -787,7 +797,7 @@ namespace
             }
         }
 
-        if ( ! found_non_disabled_pole) {
+        if ( ! found_non_disabled_pole || irreg_sampling->is_disabled()) {
             set_colspan_background_to_show_disabled_seq(parent_item_for_sequence);
         }
     }
@@ -999,6 +1009,8 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::handle_current_item_change
         QTreeWidgetItem *current,
         QTreeWidgetItem *previous)
 {
+	disable_seq_button->setVisible(false);
+	enable_seq_button->setVisible(false);
     if (current == 0)
     {
         return;
@@ -1040,12 +1052,12 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::handle_current_item_change
 		qWarning() << ostr.str().c_str();
 	}
 
-    QTreeWidgetItem *current_item = current;
+	QTreeWidgetItem *current_item = current;
     if(current_item->type() == UserItemTypes::FILE_ITEM_TYPE)
     {
         return;
     }
-
+	
     if (current_item->type() == UserItemTypes::POLE_ITEM_TYPE)
     {
         current_item = current_item->parent();
@@ -1075,6 +1087,20 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::handle_current_item_change
 
     button_Delete_Sequence->setEnabled
         (current->type() == UserItemTypes::SEQUENCE_ITEM_TYPE);
+
+	if(is_grot_sequence(feature_ref) && 
+		(current_item->type() == UserItemTypes::SEQUENCE_ITEM_TYPE))
+	{
+		if(is_seq_disabled(feature_ref))
+		{
+			enable_seq_button->setVisible(true);
+		}
+		else
+		{
+			disable_seq_button->setVisible(true);
+		}
+	}
+	
 }
 
 
@@ -1134,11 +1160,23 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::make_signal_slot_connectio
             this,
             SLOT(handle_feature_collection_file_state_changed()));
 
+	connect(
+            &(d_app_state.get_feature_collection_file_state()),
+            SIGNAL(file_reloaded(GPlatesAppLogic::FeatureCollectionFileState &)),
+            this,
+            SLOT(handle_file_reloaded()));
+
     connect(
-            disable_enable_pole_button,
+            disable_seq_button,
             SIGNAL(clicked()),
             this,
-            SLOT(disable_enable_pole()));
+            SLOT(disable_sequence()));
+
+	connect(
+            enable_seq_button,
+            SIGNAL(clicked()),
+            this,
+            SLOT(enable_sequence()));
 }
 
 
@@ -1287,6 +1325,23 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::has_metadata(
 	}
 	return false;
 }
+
+
+void
+GPlatesQtWidgets::TotalReconstructionSequencesDialog::disable_sequence()
+{
+	set_seq_disabled(get_current_feature(), true);
+	update();
+}
+
+
+void
+GPlatesQtWidgets::TotalReconstructionSequencesDialog::enable_sequence()
+{
+	set_seq_disabled(get_current_feature(), false);
+	update();
+}
+
 
 void
 GPlatesQtWidgets::TotalReconstructionSequencesDialog::disable_enable_pole()
@@ -1445,6 +1500,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::edit_sequence()
     d_edit_trs_dialog_ptr->exec();
 
 }
+
 
 void
 GPlatesQtWidgets::TotalReconstructionSequencesDialog::update_edited_feature()
@@ -1616,99 +1672,6 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::handle_feature_collection_
 }
 
 
-void
-GPlatesQtWidgets::TotalReconstructionSequencesDialog::update_irregular_sampling(
-        GPlatesModel::TopLevelProperty::non_null_ptr_type old_sample,
-        GPlatesModel::TopLevelProperty::non_null_ptr_type new_sample)
-{
-    using namespace GPlatesModel;
-    using namespace GPlatesPropertyValues;
-    
-    boost::optional<PropertyValue::non_null_ptr_to_const_type> val_old = 
-            ModelUtils::get_property_value(*old_sample);
-    boost::optional<PropertyValue::non_null_ptr_to_const_type> val_new = 
-            ModelUtils::get_property_value(*new_sample);
-    if(!(val_old && val_new) )
-    {
-        qWarning() << "Unable to get the property value of samplings.";
-        return;
-    }
-    const GpmlIrregularSampling *old_sampling_const = 
-        dynamic_cast<const GpmlIrregularSampling *>((*val_old).get()),
-                                *new_sampling_const = 
-        dynamic_cast<const GpmlIrregularSampling *>((*val_new).get());
-    if(!(old_sampling_const && new_sampling_const))
-    {
-        qWarning() << "Unable to convert the property values to GpmlIrregularSampling.";
-        return;
-    }
-    GpmlIrregularSampling *old_sampling = const_cast<GpmlIrregularSampling *>(old_sampling_const), 
-                          *new_sampling =  const_cast<GpmlIrregularSampling *>(new_sampling_const);
-    std::vector<GpmlTimeSample>::iterator
-        old_iter = old_sampling->time_samples().begin(),
-        old_end = old_sampling->time_samples().end(),
-        new_iter = new_sampling->time_samples().begin(),
-        new_end = new_sampling->time_samples().end();
-
-    if(!dynamic_cast<GpmlTotalReconstructionPole *>(old_iter->value().get()))
-    {
-        old_sampling->time_samples() =  new_sampling->time_samples();
-        return;
-    }
-
-    std::vector<GpmlTimeSample> updated_samplings;
-    for(;(new_iter != new_end); )
-    {
-        if(old_iter == old_end)
-        {
-            updated_samplings.insert(updated_samplings.end(), new_iter, new_end);
-            break;
-        }
-        
-        if(std::fabs(
-                new_iter->valid_time()->time_position().value() - 
-                old_iter->valid_time()->time_position().value()) < 
-                std::numeric_limits<double>::epsilon())
-        {
-            GpmlTotalReconstructionPole *new_trp = 
-                    dynamic_cast<GpmlTotalReconstructionPole *>(new_iter->value().get()),
-                                        *old_trp = 
-                    dynamic_cast<GpmlTotalReconstructionPole *>(old_iter->value().get());
-            if(!new_trp)
-            {
-                const GpmlFiniteRotation *finite_rotation =
-                    dynamic_cast<const GpmlFiniteRotation *>(new_iter->value().get());
-                if(finite_rotation)
-                {
-                    new_trp = new GpmlTotalReconstructionPole(
-                        finite_rotation->finite_rotation());
-                    new_iter->set_value(GpmlTotalReconstructionPole::non_null_ptr_type(new_trp));
-                }
-                else
-                {
-                    qWarning() << "Invalid time sample found.";
-                    continue;
-                }
-            }
-            new_trp->metadata() = old_trp->metadata();
-            updated_samplings.push_back(*new_iter);
-            new_iter++; old_iter++;
-        }
-        else if(new_iter->valid_time()->time_position().value() > 
-            old_iter->valid_time()->time_position().value())
-        {
-            old_iter++;
-        }
-        else
-        {
-            updated_samplings.push_back(*new_iter);
-            new_iter++;
-        }
-    }
-    old_sampling->time_samples() = updated_samplings;
-}
-
-
 bool
 GPlatesQtWidgets::TotalReconstructionSequencesDialog::is_grot_sequence(
         GPlatesModel::FeatureHandle::weak_ref feature_ref)
@@ -1716,31 +1679,27 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::is_grot_sequence(
     using namespace GPlatesModel;
     using namespace GPlatesPropertyValues;
     using namespace GPlatesFeatureVisitors;
-    bool ret = false;
-    static const PropertyName prop_name =
-        PropertyName::create_gpml("totalReconstructionPole");
+    
     const GpmlIrregularSampling *irreg_sampling_const = NULL;
-    if (get_property_value(feature_ref, prop_name, irreg_sampling_const)) 
+    if (!get_property_value(
+				feature_ref, 
+				totalReconstructionPole_prop_name(), 
+				irreg_sampling_const)) 
     {
-        GpmlIrregularSampling *irreg_sampling = 
-            const_cast<GpmlIrregularSampling *>(irreg_sampling_const);
-        std::vector<GpmlTimeSample>::iterator 
-            iter =	irreg_sampling->time_samples().begin(),
-            end =	irreg_sampling->time_samples().end();
-        for ( ; iter != end; ++iter) 
+		qWarning() << "No GpmlIrregularSampling property found.";
+		return false;
+	}
+    std::vector<GpmlTimeSample>::const_iterator 
+        iter =	irreg_sampling_const->time_samples().begin(),
+        end =	irreg_sampling_const->time_samples().end();
+    for ( ; iter != end; ++iter) 
+    {
+        if(!dynamic_cast<const GpmlTotalReconstructionPole *>(iter->value().get()))
         {
-            if(!dynamic_cast<GpmlTotalReconstructionPole *>(iter->value().get()))
-            {
-                ret = false;
-                break;
-            }
-        }
-        if(iter == end)
-        {
-            ret = true;
+            return false;
         }
     }
-    return ret;
+	return true;
 }
 
 
@@ -1753,30 +1712,25 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::update_current_sequence(
     using namespace GPlatesFileIO;
     using namespace GPlatesModel;
     using namespace GPlatesPropertyValues;
-    GPlatesModel::FeatureHandle::weak_ref feature_ref = get_current_feature();
+    FeatureHandle::weak_ref feature_ref = get_current_feature();
     if(!feature_ref)
     {
         qWarning() << "Invalid feature weak reference found in update_current_sequence()";
         return;
     }
-    if(is_grot_sequence(feature_ref))
-    {
-        transform_samples(trs);
-    }
+    
     std::vector<RotationPoleData> old_data = get_pole_data_from_feature(feature_ref);
-    //update the feature in model
+    //Step 1: update the feature in model
     GPlatesAppLogic::TRSUtils::TRSFinder trs_finder;
     trs_finder.visit_feature(feature_ref);
     if (trs_finder.can_process_trs())
     {
-        typedef GPlatesGlobal::PointerTraits<const TopLevelProperty>::non_null_ptr_type TLP_ptr;
-        TopLevelProperty *top_ptr = 
-            const_cast<TopLevelProperty *>(TLP_ptr(**trs_finder.irregular_sampling_property_iterator()).get());
-        update_irregular_sampling(TopLevelProperty::non_null_ptr_type(top_ptr),trs);
-        //**trs_finder.irregular_sampling_property_iterator() = trs;	
+        **trs_finder.irregular_sampling_property_iterator() = trs;	
         **trs_finder.moving_ref_frame_property_iterator() = moving_plate_id;
         **trs_finder.fixed_ref_frame_property_iterator() = fix_plate_id;
     }
+
+	//Step 2: update the pole data in PlatesRotationFileProxy
     std::vector<RotationPoleData> new_data = get_pole_data_from_feature(feature_ref);
     PlatesRotationFileProxy *proxy = get_current_rotation_file_proxy();
     if(proxy)
@@ -1815,41 +1769,6 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::update_current_sequence(
             {
                 proxy->insert_pole(*iter_new);
                 iter_new++;
-            }
-        }
-    }
-}
-
-
-void
-GPlatesQtWidgets::TotalReconstructionSequencesDialog::transform_samples(
-        GPlatesModel::TopLevelProperty::non_null_ptr_type trs)
-{
-    using namespace GPlatesModel;
-    using namespace GPlatesFeatureVisitors;
-    using namespace GPlatesPropertyValues;
-
-    boost::optional<PropertyValue::non_null_ptr_to_const_type> irreg_sampling_val=
-        ModelUtils::get_property_value(*trs);
-    if(irreg_sampling_val)
-    {
-        const GpmlIrregularSampling *irreg_sampling_const = 
-            dynamic_cast<const GpmlIrregularSampling *>((*irreg_sampling_val).get());
-        GpmlIrregularSampling *irreg_sampling = 
-            const_cast<GpmlIrregularSampling *>(irreg_sampling_const);
-        std::vector<GpmlTimeSample>::iterator 
-            iter =	irreg_sampling->time_samples().begin(),
-            end =	irreg_sampling->time_samples().end();
-        for ( ; iter != end; ++iter) 
-        {
-            const GpmlFiniteRotation *finite_rotation =
-                dynamic_cast<const GpmlFiniteRotation *>(iter->value().get());
-            if(finite_rotation)
-            {
-                iter->set_value(
-                    GpmlTotalReconstructionPole::non_null_ptr_type(
-                    new GpmlTotalReconstructionPole(
-                    finite_rotation->finite_rotation())));
             }
         }
     }
@@ -1904,23 +1823,17 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_pole_data_from_feature
     std::vector<RotationPoleData> ret;
     TotalReconstructionSequencePlateIdFinder id_finder;
     id_finder.visit_feature(feature_ref);
-    boost::optional<integer_plate_id_type> 
-        moving_plate_id = id_finder.moving_ref_frame_plate_id(),
-        fixed_plate_id = id_finder.fixed_ref_frame_plate_id();
-    if(!moving_plate_id)
-    {
-        moving_plate_id = 0;
+    integer_plate_id_type 
+        moving_plate_id = id_finder.moving_ref_frame_plate_id() ?  
+			*id_finder.moving_ref_frame_plate_id() : 0,
+        fixed_plate_id = id_finder.fixed_ref_frame_plate_id() ? 
+			*id_finder.fixed_ref_frame_plate_id() : 0;
 
-    }
-    if(!fixed_plate_id)
-    {
-        fixed_plate_id = 0;
-    }
-
-    static const PropertyName prop_name =
-        PropertyName::create_gpml("totalReconstructionPole");
     const GpmlIrregularSampling *irreg_sampling = NULL;
-    if (get_property_value(feature_ref, prop_name, irreg_sampling)) 
+    if (get_property_value(
+				feature_ref, 
+				totalReconstructionPole_prop_name(), 
+				irreg_sampling)) 
     {
         std::vector<GpmlTimeSample>::const_iterator 
             iter =	irreg_sampling->time_samples().begin(),
@@ -1933,9 +1846,10 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_pole_data_from_feature
             {
                 RotationPoleData pole(
                         time_sample_value->finite_rotation(),
-                        *moving_plate_id,
-                        *fixed_plate_id,
-                        iter->valid_time()->time_position().value());
+                        moving_plate_id,
+                        fixed_plate_id,
+                        iter->valid_time()->time_position().value(),
+						iter->is_disabled());
                 ret.push_back(pole);
             }
         }
@@ -2019,6 +1933,107 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_current_metadata_prope
     }
     return ret;
 }
+
+
+bool
+GPlatesQtWidgets::TotalReconstructionSequencesDialog::is_seq_disabled(
+		GPlatesModel::FeatureHandle::weak_ref feature_ref)
+{
+	bool ret = false;
+	if(feature_ref.is_valid())
+	{
+		const GPlatesPropertyValues::GpmlIrregularSampling *irreg_sampling_const = NULL;
+		if (GPlatesFeatureVisitors::get_property_value(
+					feature_ref, 
+					totalReconstructionPole_prop_name(), 
+					irreg_sampling_const)) 
+		{
+			return irreg_sampling_const->is_disabled();
+		}
+	}
+	return ret;
+}
+
+
+void
+GPlatesQtWidgets::TotalReconstructionSequencesDialog::set_seq_disabled(
+		GPlatesModel::FeatureHandle::weak_ref feature_ref,
+		bool flag)
+{
+	using namespace GPlatesPropertyValues;
+	using namespace GPlatesFeatureVisitors;
+	using namespace GPlatesModel;
+	if(!feature_ref.is_valid())
+	{
+		return;
+	}
+	//step 1: get GpmlIrregularSampling and set "disabled" in model.
+	GPlatesAppLogic::TRSUtils::TRSFinder trs_finder;
+	trs_finder.visit_feature(feature_ref);
+	if (trs_finder.can_process_trs())
+	{
+		TopLevelProperty::non_null_ptr_type
+			trs = (**trs_finder.irregular_sampling_property_iterator())->deep_clone();
+		boost::optional<PropertyValue::non_null_ptr_to_const_type> trs_value = 
+			ModelUtils::get_property_value(*trs);
+		if(trs_value)
+		{
+			PropertyValue *trs_value_ptr = const_cast<PropertyValue *>((*trs_value).get());
+			GpmlIrregularSampling *irreg_sampling = dynamic_cast<GpmlIrregularSampling *>(trs_value_ptr);
+			if(irreg_sampling)
+			{
+				irreg_sampling->set_disabled(flag);
+			}
+		}
+		(**trs_finder.irregular_sampling_property_iterator()) = trs;
+	}
+	
+	//step 2: update the pole metadata in PlatesRotationFileProxy so that
+	//the change can be saved to file.
+	GPlatesFileIO::PlatesRotationFileProxy *proxy = get_current_rotation_file_proxy();
+	if(proxy)
+	{
+		const GpmlIrregularSampling *irreg_sampling_const = NULL;
+		if (!get_property_value(
+				feature_ref, 
+				totalReconstructionPole_prop_name(), 
+				irreg_sampling_const)) 
+		{
+			qWarning() << "Failed to get GpmlIrregularSampling value. This is an impossible situation.";
+			return;
+		}
+		TotalReconstructionSequencePlateIdFinder plate_id_finder;
+		plate_id_finder.reset();
+		plate_id_finder.visit_feature(feature_ref);
+		if (( ! plate_id_finder.fixed_ref_frame_plate_id()) ||
+			( ! plate_id_finder.moving_ref_frame_plate_id())) 
+		{
+				return;
+		}
+		int fixed_plate_id = static_cast<int>(*plate_id_finder.fixed_ref_frame_plate_id());
+		int moving_plate_id =  static_cast<int>(*plate_id_finder.moving_ref_frame_plate_id());
+
+		const std::vector<GpmlTimeSample> samples =	irreg_sampling_const->time_samples();
+		BOOST_FOREACH(const GpmlTimeSample &sample, samples)
+		{
+			const GpmlTotalReconstructionPole *trs_pole = 
+				dynamic_cast<const GpmlTotalReconstructionPole *>(sample.value().get());
+			if(trs_pole)
+			{
+				double time = sample.valid_time()->time_position().value();
+				proxy->update_pole_metadata(
+						trs_pole->metadata(), 
+						GPlatesFileIO::RotationPoleData(
+								trs_pole->finite_rotation(),
+								moving_plate_id, 
+								fixed_plate_id,
+								time));
+			}
+		}
+	}
+}
+
+
 
 
 

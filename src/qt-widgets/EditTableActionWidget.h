@@ -69,7 +69,7 @@ namespace GPlatesQtWidgets
 		void
 		delete_row();
 		
-	private:
+	protected:
 	
 		EditTableWidget *d_table_widget_ptr;
 		

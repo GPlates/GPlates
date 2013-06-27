@@ -26,6 +26,7 @@
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QPushButton>
+#include <QMessageBox>
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"

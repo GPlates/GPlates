@@ -38,10 +38,12 @@
     <file>digitise_multipoint_35.png</file>
     <file>digitise_polygon_35.png</file>
     <file>digitise_polyline_35.png</file>
+	<file>disable_22.png</file>
     <file>discard_changes_22.png</file>
     <file>drag_globe_35.png</file>
     <file>drag_plate_35.png</file>
     <file>edit_feature_35.png</file>
+	<file>enable_22.png</file>
     <file>focus_feature_35.png</file>
     <file>globe_reconstruction_22.png</file>
     <file>globe_reconstructable_22.png</file>

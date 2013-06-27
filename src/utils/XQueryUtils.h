@@ -27,12 +27,12 @@
 #define GPLATES_UTILS_XQUERYUTILS_H
 
 #include <vector>
-#include <QBuffer>
 #include <QDebug>
 #include <QVariant>
 #include <boost/function.hpp>
 
 #include <QString>
+#include <QBuffer>
 #include <QByteArray>
 #include <QVariant>
 #include <QXmlStreamReader>

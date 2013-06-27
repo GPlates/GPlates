@@ -170,6 +170,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::reload_file(
 
 	// Read new features from the file into the feature collection.
 	read_feature_collection(file.get_file());
+	d_file_state.emit_file_reloaded();
 }
 
 

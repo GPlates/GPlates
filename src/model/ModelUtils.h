@@ -40,6 +40,7 @@
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlTimeSample.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
@@ -98,11 +99,9 @@ namespace GPlatesModel
 
 		const TopLevelProperty::non_null_ptr_type
 		create_total_reconstruction_pole(
-				const std::vector<TotalReconstructionPole> &five_tuples);
+				const std::vector<TotalReconstructionPole> &five_tuples,
+				bool is_grot = false);
 
-		const PropertyValue::non_null_ptr_type
-		create_irregular_sampling(
-				const std::vector<TotalReconstructionPole> &five_tuples);
 
 		const FeatureHandle::weak_ref
 		create_total_recon_seq(
@@ -113,6 +112,10 @@ namespace GPlatesModel
 				const std::vector<TotalReconstructionPole> &five_tuples);
 
 
+		GPlatesPropertyValues::GpmlTimeSample
+		create_gml_time_sample(
+				const GPlatesModel::ModelUtils::TotalReconstructionPole &trp,
+				bool is_grot = false);
 		//
 		// Time-dependent property value wrapper functions.
 		//

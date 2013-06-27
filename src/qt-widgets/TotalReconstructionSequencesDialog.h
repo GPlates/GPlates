@@ -154,9 +154,15 @@ namespace GPlatesQtWidgets
 		show_metadata();
 
 		void
-                disable_enable_pole();
+        disable_enable_pole();
 
-                /**
+		void
+		disable_sequence();
+
+		void
+		enable_sequence();
+
+        /**
 		 * Update the tree after a TRS feature has been edited. 
 		 *
 		 * Calls update(), but also restores the state of the tree.
@@ -170,6 +176,19 @@ namespace GPlatesQtWidgets
 		void
 		handle_feature_collection_file_state_changed();
 
+
+		void
+		handle_file_reloaded()
+		{
+			update();
+		}
+
+
+		/*
+		* This function should only be used to update pole data from EditTotalReconstructionSequenceDialog.
+		* The trs data from EditTotalReconstructionSequenceDialog does not contain metadata.
+		* Preserve the original metadata as possible as we could.
+		*/
 		void
 		update_current_sequence(
 				GPlatesModel::TopLevelProperty::non_null_ptr_type moving_plate_id,
@@ -194,6 +213,15 @@ namespace GPlatesQtWidgets
 		insert_feature_to_proxy(
 				GPlatesModel::FeatureHandle::weak_ref,
 				GPlatesFileIO::File::Reference&);
+
+		bool
+		is_seq_disabled(
+				GPlatesModel::FeatureHandle::weak_ref);
+
+		void
+		set_seq_disabled(
+				GPlatesModel::FeatureHandle::weak_ref,
+				bool flag);
 
 	protected:
 
@@ -231,17 +259,6 @@ namespace GPlatesQtWidgets
 				GPlatesModel::FeatureHandle::weak_ref,
 				GPlatesFileIO::PlatesRotationFileProxy&);
 
-
-		/*
-		* In ".grot" we use GpmlTotalReconstructionPole instead of 
-		* GpmlFiniteRotation as time sample.
-		* This function converts all GpmlFiniteRotation time sample to 
-		* GpmlTotalReconstructionPole for the input samples.
-		*/
-		void
-		transform_samples(
-				GPlatesModel::TopLevelProperty::non_null_ptr_type);
-
 		/*
 		*
 		*/
@@ -258,12 +275,6 @@ namespace GPlatesQtWidgets
 
 		GPlatesModel::FeatureHandle::iterator
 		get_current_metadata_property();
-
-
-		void
-		update_irregular_sampling(
-				GPlatesModel::TopLevelProperty::non_null_ptr_type old_sample,
-				GPlatesModel::TopLevelProperty::non_null_ptr_type new_sample);
 
 		boost::tuple<
 				bool, 

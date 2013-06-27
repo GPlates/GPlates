@@ -33,8 +33,11 @@
 #include <string>
 #include <QFile>
 
-#include "PlatesRotationFormatReader.h"
+#include <boost/shared_ptr.hpp>
+#include <boost/foreach.hpp>
 
+#include "PlatesRotationFormatReader.h"
+#include "PlatesRotationFileProxy.h"
 #include "LineReader.h"
 
 #include "maths/MathsUtils.h"

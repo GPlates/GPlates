@@ -118,14 +118,14 @@ namespace GPlatesPropertyValues
 		}
 
 		
-		std::vector<boost::shared_ptr<GPlatesModel::Metadata> >&
+		GPlatesModel::MetadataContainer&
 		metadata()
 		{
 			return d_meta;
 		}
 
-
-		const std::vector<boost::shared_ptr<GPlatesModel::Metadata> >&
+		
+		const GPlatesModel::MetadataContainer&
 		metadata() const 
 		{
 			return d_meta;
@@ -139,7 +139,7 @@ namespace GPlatesPropertyValues
 		}
 
 	protected:
-		std::vector<boost::shared_ptr< GPlatesModel::Metadata> > d_meta;
+		GPlatesModel::MetadataContainer d_meta;
 	};
 
 }

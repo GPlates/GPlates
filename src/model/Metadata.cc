@@ -32,6 +32,8 @@
 
 const QString GPlatesModel::FeatureCollectionMetadata::DC_NAMESPACE = "http://purl.org/dc/elements/1.1/";
 const QString GPlatesModel::FeatureCollectionMetadata::GPML_NAMESPACE = "http://www.gplates.org/gplates";
+const QString GPlatesModel::Metadata::DISABLED_SEQUENCE_FLAG("DISABLED_SEQUENCE");
+const QString GPlatesModel::Metadata::DELETE_MARK("~@%{DELETED_METADATA}~@%");
 
 GPlatesModel::FeatureCollectionMetadata::FeatureCollectionMetadata(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type elem)

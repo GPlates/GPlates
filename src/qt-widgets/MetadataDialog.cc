@@ -53,7 +53,6 @@ public:
 	}
 };
 
-const QString GPlatesQtWidgets::MetadataTextEditor::DELETE_MARK("@%{GPLATES_ABOUT_TO_BE_DELETED@%{");
 
 GPlatesQtWidgets::MetadataDialog::MetadataDialog(
 		QWidget *parent_):
@@ -620,6 +619,10 @@ GPlatesQtWidgets::MetadataDialog::show_pole()
 	for(std::size_t i=num_of_mprs; i<pole_data.size(); i++)
 	{
 		QString &name = pole_data[i]->get_name(), &content = pole_data[i]->get_content();
+		if(name == Metadata::DISABLED_SEQUENCE_FLAG) // make DISABLED_SEQUENCE_FLAG invisible.
+		{
+			continue;
+		}
 		meta_table->setItem(i,0,new QTableWidgetItem(name));
 		MetadataAttribute meta_attr = PlatesRotationFileProxy::get_metadata_registry().get(name);
 		if(meta_attr.type_flag & MetadataType::REFERENCE)
@@ -959,7 +962,7 @@ GPlatesQtWidgets::MetadataTextEditor::handle_edit_finished()
 void
 GPlatesQtWidgets::MetadataTextEditor::del_button_clicked()
 {
-	d_txt = DELETE_MARK;
+	d_txt = GPlatesModel::Metadata::DELETE_MARK;
 	d_dlg->delete_row(this);
 	d_dlg->save();
 	d_dlg->refresh_add_new_entry_combobox();
@@ -969,11 +972,12 @@ GPlatesQtWidgets::MetadataTextEditor::del_button_clicked()
 void
 GPlatesQtWidgets::MetadataDialog::save_fc_meta()
 {
+	using namespace GPlatesModel;
 	typedef boost::shared_ptr<QString> qstring_shared_ptr;
 	std::vector<qstring_shared_ptr> tmp;
 	BOOST_FOREACH(qstring_shared_ptr str, d_fc_meta.get_header_metadata().REVISIONHIST)
 	{
-		if(*str != MetadataTextEditor::DELETE_MARK)
+		if(*str != Metadata::DELETE_MARK)
 		{
 			tmp.push_back(str);
 		}
@@ -982,14 +986,14 @@ GPlatesQtWidgets::MetadataDialog::save_fc_meta()
 	tmp.clear();
 	BOOST_FOREACH(qstring_shared_ptr str, d_fc_meta.get_dc_data().date.modified)
 	{
-		if(*str != MetadataTextEditor::DELETE_MARK)
+		if(*str != Metadata::DELETE_MARK)
 		{
 			tmp.push_back(str);
 		}
 	}
 	d_fc_meta.get_dc_data().date.modified = tmp;
-	*d_feature_iter = GPlatesModel::TopLevelPropertyInline::create(
-		GPlatesModel::PropertyName::create_gpml("metadata"),
+	*d_feature_iter = TopLevelPropertyInline::create(
+		PropertyName::create_gpml("metadata"),
 		GPlatesPropertyValues::GpmlMetadata::create(d_fc_meta));
 
 	d_grot_proxy->update_header_metadata(d_fc_meta);
@@ -1008,7 +1012,7 @@ GPlatesQtWidgets::MetadataDialog::save_mprs_meta()
 	std::vector<Metadata::shared_ptr_type> tmp;
 	BOOST_FOREACH(Metadata::shared_ptr_type d, d_mprs_data)
 	{
-		if(d->get_content() != MetadataTextEditor::DELETE_MARK)
+		if(d->get_content() != Metadata::DELETE_MARK)
 		{
 			tmp.push_back(d);
 		}
@@ -1068,7 +1072,7 @@ GPlatesQtWidgets::MetadataDialog::save_pole_meta()
 	MetadataContainer not_empty_data;
 	BOOST_FOREACH(const MetadataContainer::value_type &v, d_pole_data)
 	{
-		if(v->get_content() != MetadataTextEditor::DELETE_MARK)
+		if(v->get_content() != Metadata::DELETE_MARK)
 		{
 			not_empty_data.push_back(v);
 		}
@@ -1150,7 +1154,8 @@ GPlatesQtWidgets::MetadataDialog::delete_row(
 	int row_count = meta_table->rowCount();
 	for(int i=0; i<row_count; i++)
 	{
-		MetadataTextEditor* editor_item = dynamic_cast<MetadataTextEditor*>(meta_table->cellWidget(i,1));
+		MetadataTextEditor* editor_item = 
+			dynamic_cast<MetadataTextEditor*>(meta_table->cellWidget(i,1));
 		if(editor_item == editor)
 		{
 			meta_table->removeRow(i);
