@@ -1146,7 +1146,7 @@ GPlatesQtWidgets::HellingerDialog::renumber_segments()
 void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 {
 	QObject::connect(button_calculate_fit, SIGNAL(clicked()),this, SLOT(handle_calculate()));
-	QObject::connect(button_import_file, SIGNAL(clicked()), this, SLOT(import_pick_file()));
+	QObject::connect(button_import_file, SIGNAL(clicked()), this, SLOT(import_hellinger_file()));
 	QObject::connect(button_details, SIGNAL(clicked()), this, SLOT(show_stat_details()));
 	QObject::connect(button_new_point, SIGNAL(clicked()), this, SLOT(handle_add_new_point()));
 	QObject::connect(button_export_file, SIGNAL(clicked()), this, SLOT(handle_export_file()));

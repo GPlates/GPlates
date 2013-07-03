@@ -1109,6 +1109,9 @@
    <property name="text">
     <string>Open &amp;Hellinger Fitting Tool</string>
    </property>
+   <property name="shortcut">
+    <string>F10</string>
+   </property>
   </action>
  </widget>
  <resources>
