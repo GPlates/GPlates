@@ -26,9 +26,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
 #include <cstring> // for strcmp
 #include <exception>
+#include <limits>
 #include <boost/bind.hpp>
+#include <boost/optional.hpp>
 #include <QDateTime>
 
 #ifdef HAVE_CONFIG_H
@@ -121,6 +124,8 @@ namespace
 			unsigned int region_width,
 			unsigned int region_height)
 	{
+		PROFILE_BLOCK("Read GDAL raster data");
+
 		int source_height = band->GetYSize();
 
 		// Read it in line by line.
@@ -140,7 +145,7 @@ namespace
 					line_index,
 					region_width,
 					1 /* read one row */,
-					result_buf + i * region_width,
+					result_buf + qint64(i) * region_width,
 					region_width,
 					1 /* one row of buffer */,
 					data_type,
@@ -193,15 +198,14 @@ namespace
 		return true;
 	}
 
-	template<typename RasterElementType>
-	boost::shared_array<RasterElementType>
+	template<class RawRasterType>
+	boost::optional<typename RawRasterType::non_null_ptr_type>
 	read_data(
 			GDALRasterBand *band,
 			bool flip,
-			GDALDataType data_type,
 			const QRect &region)
 	{
-		typedef RasterElementType raster_element_type;
+		typedef typename RawRasterType::element_type raster_element_type;
 
 		// Allocate the buffer to read into.
 		int source_width = band->GetXSize();
@@ -214,25 +218,27 @@ namespace
 					GPLATES_EXCEPTION_SOURCE, "Invalid region specified for GDAL raster.");
 		}
 
-		boost::shared_array<RasterElementType> result_buf;
+		boost::optional<typename RawRasterType::non_null_ptr_type> result;
 
 		try
 		{
-			result_buf.reset(
-					new RasterElementType[
-							// Using std::size_t in case 64-bit and in case uncompressed image is larger than 4Gb...
-							std::size_t(region_width) * region_height]);
+			result = RawRasterType::create(region_width, region_height);
 		}
 		catch (std::bad_alloc &)
 		{
 			// Memory allocation failure.
-			return boost::shared_array<RasterElementType>();
+			return boost::none;
 		}
 
-		add_data(result_buf.get(), band, flip, data_type,
+		GDALDataType data_type = band->GetRasterDataType();
+
+		add_data(result.get()->data(), band, flip, data_type,
 					region_x_offset, region_y_offset, region_width, region_height);
 
-		return result_buf;
+		// Add the no-data value after adding the data - it's needed to determine coverage.
+		add_no_data_value(*result.get(), band);
+
+		return result;
 	}
 }
 
@@ -890,31 +896,38 @@ GPlatesFileIO::GDALRasterReader::create_source_raster_file_cache(
 		switch (data_type)
 		{
 			case GDT_Byte:
-				write_source_raster_file_cache<quint8>(band_number, cache_filename.get(), read_errors);
+				write_source_raster_file_cache<GPlatesPropertyValues::UInt8RawRaster>(
+						band_number, cache_filename.get(), read_errors);
 				break;
 
 			case GDT_UInt16:
-				write_source_raster_file_cache<quint16>(band_number, cache_filename.get(), read_errors);
+				write_source_raster_file_cache<GPlatesPropertyValues::UInt16RawRaster>(
+						band_number, cache_filename.get(), read_errors);
 				break;
 
 			case GDT_Int16:
-				write_source_raster_file_cache<qint16>(band_number, cache_filename.get(), read_errors);
+				write_source_raster_file_cache<GPlatesPropertyValues::Int16RawRaster>(
+						band_number, cache_filename.get(), read_errors);
 				break;
 
 			case GDT_UInt32:
-				write_source_raster_file_cache<quint32>(band_number, cache_filename.get(), read_errors);
+				write_source_raster_file_cache<GPlatesPropertyValues::UInt32RawRaster>(
+						band_number, cache_filename.get(), read_errors);
 				break;
 
 			case GDT_Int32:
-				write_source_raster_file_cache<qint32>(band_number, cache_filename.get(), read_errors);
+				write_source_raster_file_cache<GPlatesPropertyValues::Int32RawRaster>(
+						band_number, cache_filename.get(), read_errors);
 				break;
 
 			case GDT_Float32:
-				write_source_raster_file_cache<float>(band_number, cache_filename.get(), read_errors);
+				write_source_raster_file_cache<GPlatesPropertyValues::FloatRawRaster>(
+						band_number, cache_filename.get(), read_errors);
 				break;
 
 			case GDT_Float64:
-				write_source_raster_file_cache<double>(band_number, cache_filename.get(), read_errors);
+				write_source_raster_file_cache<GPlatesPropertyValues::DoubleRawRaster>(
+						band_number, cache_filename.get(), read_errors);
 				break;
 
 			default:
@@ -952,7 +965,7 @@ GPlatesFileIO::GDALRasterReader::create_source_raster_file_cache(
 }
 
 
-template <typename RasterElementType>
+template <class RawRasterType>
 void
 GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache(
 		unsigned int band_number,
@@ -979,7 +992,7 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache(
 	}
 
 	// Write the file size - write zero for now and come back later to fill it in.
-	const qint64 file_size_offset = cache_file.pos();
+	const qint64 file_size_file_offset = cache_file.pos();
 	qint64 total_cache_file_size = 0;
 	out << static_cast<qint64>(total_cache_file_size);
 
@@ -987,7 +1000,7 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache(
 	out << static_cast<quint32>(RasterFileCacheFormat::VERSION_NUMBER);
 
 	// Write source raster type.
-	out << static_cast<quint32>(RasterFileCacheFormat::get_type_as_enum<RasterElementType>());
+	out << static_cast<quint32>(RasterFileCacheFormat::get_type_as_enum<RawRasterType::element_type>());
 
 	// TODO: Add coverage data.
 	out << static_cast<quint32>(false/*has_coverage*/);
@@ -1013,46 +1026,28 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache(
 	if (no_data_success)
 	{
 		out << static_cast<quint32>(true);
-		out << static_cast<RasterElementType>(no_data_value);
+		out << static_cast<RawRasterType::element_type>(no_data_value);
 	}
 	else
 	{
 		out << static_cast<quint32>(false);
-		out << RasterElementType(); // Doesn't matter what gets stored.
+		out << RawRasterType::element_type(); // Doesn't matter what gets stored.
 	}
 
-	// Write the (optional) raster statistics.
-	double min, max, mean, std_dev;
-	if (band->GetStatistics(
-			false /* approx ok */,
-			true /* force */,
-			&min, &max, &mean, &std_dev) == CE_None)
-	{
-		out << static_cast<quint32>(true); // has_raster_statistics
-		out << static_cast<quint32>(true); // has_raster_minimum
-		out << static_cast<quint32>(true); // has_raster_maximum
-		out << static_cast<quint32>(true); // has_raster_mean
-		out << static_cast<quint32>(true); // has_raster_standard_deviation
-		out << static_cast<double>(min); // raster_minimum - doesn't matter what gets read.
-		out << static_cast<double>(max); // raster_maximum - doesn't matter what gets read.
-		out << static_cast<double>(mean); // raster_mean - doesn't matter what gets read.
-		out << static_cast<double>(std_dev); // raster_standard_deviation - doesn't matter what gets read.
-	}
-	else
-	{
-		out << static_cast<quint32>(false); // has_raster_statistics
-		out << static_cast<quint32>(false); // has_raster_minimum
-		out << static_cast<quint32>(false); // has_raster_maximum
-		out << static_cast<quint32>(false); // has_raster_mean
-		out << static_cast<quint32>(false); // has_raster_standard_deviation
-		out << static_cast<double>(0); // raster_minimum - doesn't matter what gets read.
-		out << static_cast<double>(0); // raster_maximum - doesn't matter what gets read.
-		out << static_cast<double>(0); // raster_mean - doesn't matter what gets read.
-		out << static_cast<double>(0); // raster_standard_deviation - doesn't matter what gets read.
-	}
+	// Write the (optional) raster statistics as zeros for now and come back later to fill it in.
+	const qint64 statistics_file_offset = cache_file.pos();
+	out << static_cast<quint32>(false); // has_raster_statistics
+	out << static_cast<quint32>(false); // has_raster_minimum
+	out << static_cast<quint32>(false); // has_raster_maximum
+	out << static_cast<quint32>(false); // has_raster_mean
+	out << static_cast<quint32>(false); // has_raster_standard_deviation
+	out << static_cast<double>(0); // raster_minimum - doesn't matter what gets read.
+	out << static_cast<double>(0); // raster_maximum - doesn't matter what gets read.
+	out << static_cast<double>(0); // raster_mean - doesn't matter what gets read.
+	out << static_cast<double>(0); // raster_standard_deviation - doesn't matter what gets read.
 
 	// The block information will get written next.
-	const qint64 block_info_pos = cache_file.pos();
+	const qint64 block_info_file_offset = cache_file.pos();
 
 	unsigned int block_index;
 
@@ -1081,12 +1076,63 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache(
 			<< block_info.coverage_offset;
 	}
 
+	// Raster statistics to calculate as we write the source raster file cache.
+	//
+	// NOTE: We no longer use "GDALRasterBand::GetStatistics()" because it can scan the entire
+	// file and calculate the statistics if the file does not store statistics and for very large
+	// files this can take a very long time. So now we calculate them ourselves as we read the file.
+	//
+	double raster_min = (std::numeric_limits<double>::max)();
+	double raster_max = (std::numeric_limits<double>::min)();
+	double raster_sum = 0;
+	double raster_sum_squares = 0;
+	qint64 num_valid_raster_samples = 0;
+
 	// Write the source raster image to the cache file.
-	write_source_raster_file_cache_image_data<RasterElementType>(
-			band_number, cache_file, out, block_infos, read_errors);
+	write_source_raster_file_cache_image_data<RawRasterType>(
+			band_number, cache_file, out, block_infos, read_errors,
+			raster_min, raster_max, raster_sum, raster_sum_squares, num_valid_raster_samples);
+
+	// Calculate the raster statistics from the accumulated raster data.
+	//
+	// mean = M = sum(Ci * Xi) / sum(Ci)
+	// std_dev  = sqrt[sum(Ci * (Xi - M)^2) / sum(Ci)]
+	//          = sqrt[(sum(Ci * Xi^2) - 2 * M * sum(Ci * Xi) + M^2 * sum(Ci)) / sum(Ci)]
+	//          = sqrt[(sum(Ci * Xi^2) - 2 * M * M * sum(Ci) + M^2 * sum(Ci)) / sum(Ci)]
+	//          = sqrt[(sum(Ci * Xi^2) - M^2 * sum(Ci)) / sum(Ci)]
+	//          = sqrt[(sum(Ci * Xi^2) / sum(Ci) - M^2]
+	//
+	// For the raster the coverage (or mask) values Ci can be 0.0 or 1.0.
+	// So only the valid raster samples contribute.
+	//
+	// mean = M = sum(Xi) / N
+	// std_dev  = sqrt[(sum(Xi^2) / N - M^2]
+	//
+	// ...where N is number of 'valid' raster samples (ie, samples that are not "no-data" values).
+	//
+	const double raster_mean = (num_valid_raster_samples > 0)
+			? (raster_sum / num_valid_raster_samples)
+			: 0;
+	const double raster_variance = (num_valid_raster_samples > 0)
+			? (raster_sum_squares / num_valid_raster_samples - raster_mean * raster_mean)
+			: 0;
+	// Protect 'sqrt' in case variance is slightly negative due to numerical precision.
+	const double raster_std_dev = (raster_variance > 0) ? std::sqrt(raster_variance) : 0;
+
+	// Now that we've calculated the raster statistics we can go back and write it to the cache file.
+	cache_file.seek(statistics_file_offset);
+	out << static_cast<quint32>(true); // has_raster_statistics
+	out << static_cast<quint32>(true); // has_raster_minimum
+	out << static_cast<quint32>(true); // has_raster_maximum
+	out << static_cast<quint32>(true); // has_raster_mean
+	out << static_cast<quint32>(true); // has_raster_standard_deviation
+	out << static_cast<double>(raster_min);
+	out << static_cast<double>(raster_max);
+	out << static_cast<double>(raster_mean);
+	out << static_cast<double>(raster_std_dev);
 
 	// Now that we've initialised the block information we can go back and write it to the cache file.
-	cache_file.seek(block_info_pos);
+	cache_file.seek(block_info_file_offset);
 	for (block_index = 0; block_index < num_blocks; ++block_index)
 	{
 		const RasterFileCacheFormat::BlockInfo &block_info =
@@ -1103,20 +1149,25 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache(
 
 	// Write the total size of the cache file so the reader can verify that the
 	// file was not partially written.
-	cache_file.seek(file_size_offset);
+	cache_file.seek(file_size_file_offset);
 	total_cache_file_size = cache_file.size();
 	out << total_cache_file_size;
 }
 
 
-template <typename RasterElementType>
+template <class RawRasterType>
 void
 GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache_image_data(
 		unsigned int band_number,
 		QFile &cache_file,
 		QDataStream &out,
 		RasterFileCacheFormat::BlockInfos &block_infos,
-		ReadErrorAccumulation *read_errors)
+		ReadErrorAccumulation *read_errors,
+		double &raster_min,
+		double &raster_max,
+		double &raster_sum,
+		double &raster_sum_squares,
+		qint64 &num_valid_raster_samples)
 {
 	// Find the smallest power-of-two that is greater than (or equal to) both the source
 	// raster width and height - this will be used during the Hilbert curve traversal.
@@ -1149,11 +1200,18 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache_image_data(
 	// A depth of zero means read the entire raster once at the root of the quad tree.
 	unsigned int read_source_raster_depth = 0;
 
+	// For the reasons mentioned in the comment for 'MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT' we're
+	// not limiting the maximum image size (essentially the file seeks from one row of a sub-section
+	// to the next row - or GDAL reads the entire row of the full-size image even if a sub-section
+	// is requested - really slow down reading). In any case if an allocation fails then the
+	// next quarter size allocation will be attempted and so on until a minimum allocation size.
+#if 0
 	// If necessary read the source raster deeper in the quad tree which means sub-regions of the
 	// entire raster are read avoiding the possibility of memory allocation failures for very high
 	// resolution source rasters.
 	// Using 64-bit integer in case uncompressed image is larger than 4Gb.
-	const qint64 image_size_in_bytes = quint64(d_source_width) * d_source_height * sizeof(RasterElementType);
+	const qint64 image_size_in_bytes =
+			quint64(d_source_width) * d_source_height * sizeof(RawRasterType::element_type);
 
 	// Allocating higher than this is likely to cause memory to start paging to disk which
 	// will just slow things down - so limit the size of partial read that we first attempt.
@@ -1162,7 +1220,7 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache_image_data(
 		qint64 image_allocation_size =
 				// Using 64-bit integer in case uncompressed image is larger than 4Gb...
 				qint64(source_raster_dimension_next_power_of_two) * source_raster_dimension_next_power_of_two *
-					sizeof(RasterElementType);
+					sizeof(RawRasterType::element_type);
 		// Increase the read depth until the image allocation size is under the maximum.
 		while (read_source_raster_depth < write_source_raster_depth)
 		{
@@ -1174,6 +1232,7 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache_image_data(
 			}
 		}
 	}
+#endif
 
 	// Some rasters have dimensions less than RasterFileCacheFormat::BLOCK_SIZE.
 	const unsigned int dimension =
@@ -1183,7 +1242,7 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache_image_data(
 
 	// Traverse the Hilbert curve of blocks of the source raster using quad-tree recursion.
 	// The leaf nodes of the traversal correspond to the blocks in the source raster.
-	hilbert_curve_traversal(
+	hilbert_curve_traversal<RawRasterType>(
 			band_number,
 			0/*depth*/,
 			read_source_raster_depth,
@@ -1195,13 +1254,18 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache_image_data(
 			0/*hilbert_end_point*/,
 			out,
 			block_infos,
-			boost::shared_array<RasterElementType>(), // No source region data read yet.
+			boost::none, // No source region data read yet.
 			QRect(), // A null rectangle - no source region yet.
-			read_errors);
+			read_errors,
+			raster_min,
+			raster_max,
+			raster_sum,
+			raster_sum_squares,
+			num_valid_raster_samples);
 }
 
 
-template <typename RasterElementType>
+template <class RawRasterType>
 void
 GPlatesFileIO::GDALRasterReader::hilbert_curve_traversal(
 		unsigned int band_number,
@@ -1217,9 +1281,14 @@ GPlatesFileIO::GDALRasterReader::hilbert_curve_traversal(
 		RasterFileCacheFormat::BlockInfos &block_infos,
 		// The source raster data in the region covering the current quad tree node.
 		// NOTE: This is only initialised when 'depth == read_source_raster_depth'.
-		boost::shared_array<RasterElementType> source_region_data,
+		boost::optional<typename RawRasterType::non_null_ptr_type> source_region_data,
 		QRect source_region,
-		ReadErrorAccumulation *read_errors)
+		ReadErrorAccumulation *read_errors,
+		double &raster_min,
+		double &raster_max,
+		double &raster_sum,
+		double &raster_sum_squares,
+		qint64 &num_valid_raster_samples)
 {
 	// See if the current quad-tree region is outside the source raster.
 	// This can happen because the Hilbert traversal operates on power-of-two dimensions
@@ -1257,12 +1326,10 @@ GPlatesFileIO::GDALRasterReader::hilbert_curve_traversal(
 				band,
 				GPLATES_ASSERTION_SOURCE);
 
-		GDALDataType data_type = band->GetRasterDataType();
-
 		// Read the source raster data from the current region.
 		source_region = QRect(x_offset, y_offset, source_region_width, source_region_height);
 
-		source_region_data = read_data<RasterElementType>(band, d_flip, data_type, source_region);
+		source_region_data = read_data<RawRasterType>(band, d_flip, source_region);
 
 		// If there was a memory allocation failure.
 		if (!source_region_data)
@@ -1272,8 +1339,9 @@ GPlatesFileIO::GDALRasterReader::hilbert_curve_traversal(
 			//  - we're at the leaf quad tree node level,
 			// then report insufficient memory.
 			if (// Using 64-bit integer in case uncompressed image is larger than 4Gb...
-				qint64(source_region.width() / 2) * (source_region.height() / 2) * sizeof(RasterElementType) <
-					static_cast<qint64>(MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT) ||
+				qint64(source_region.width() / 2) * (source_region.height() / 2) *
+					sizeof(typename RawRasterType::element_type) <
+						static_cast<qint64>(MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT) ||
 				read_source_raster_depth == write_source_raster_depth)
 			{
 				// Report insufficient memory to load raster.
@@ -1291,6 +1359,41 @@ GPlatesFileIO::GDALRasterReader::hilbert_curve_traversal(
 
 			// Invalidate the source region again - the child level will re-specify it.
 			source_region = QRect();
+		}
+
+		// Update the raster statistics.
+		if (source_region_data)
+		{
+			boost::function<bool (typename RawRasterType::element_type)> is_no_data_value_function =
+					GPlatesPropertyValues::RawRasterUtils::get_is_no_data_value_function(
+							*source_region_data.get());
+
+			const typename RawRasterType::element_type *const source_region_data_array =
+					source_region_data.get()->data();
+
+			// Iterate over the source region.
+			const qint64 num_values_in_region =
+					source_region_data.get()->width() * source_region_data.get()->height();
+			for (qint64 n = 0; n < num_values_in_region; ++n)
+			{
+				const typename RawRasterType::element_type value = source_region_data_array[n];
+
+				// Only pixels with valid data contribute to the raster statistics.
+				if (!is_no_data_value_function(value))
+				{
+					if (value < raster_min)
+					{
+						raster_min = value;
+					}
+					if (value > raster_max)
+					{
+						raster_max = value;
+					}
+					raster_sum += value;
+					raster_sum_squares += value * value;
+					++num_valid_raster_samples;
+				}
+			}
 		}
 	}
 
@@ -1349,8 +1452,8 @@ GPlatesFileIO::GDALRasterReader::hilbert_curve_traversal(
 		// Write the current block from the source region to the output stream.
 		for (unsigned int y = 0; y < block_info.height; ++y)
 		{
-			const RasterElementType *const source_region_row =
-					source_region_data.get() +
+			const typename RawRasterType::element_type *const source_region_row =
+					source_region_data.get()->data() +
 						(block_info.y_offset - source_region.y() + y) * source_region.width() +
 						block_info.x_offset - source_region.x();
 
@@ -1368,7 +1471,7 @@ GPlatesFileIO::GDALRasterReader::hilbert_curve_traversal(
 
 	const unsigned int child_x_offset_hilbert0 = hilbert_start_point;
 	const unsigned int child_y_offset_hilbert0 = hilbert_start_point;
-	hilbert_curve_traversal(
+	hilbert_curve_traversal<RawRasterType>(
 			band_number,
 			child_depth,
 			read_source_raster_depth,
@@ -1382,11 +1485,16 @@ GPlatesFileIO::GDALRasterReader::hilbert_curve_traversal(
 			block_infos,
 			source_region_data,
 			source_region,
-			read_errors);
+			read_errors,
+			raster_min,
+			raster_max,
+			raster_sum,
+			raster_sum_squares,
+			num_valid_raster_samples);
 
 	const unsigned int child_x_offset_hilbert1 = hilbert_end_point;
 	const unsigned int child_y_offset_hilbert1 = 1 - hilbert_end_point;
-	hilbert_curve_traversal(
+	hilbert_curve_traversal<RawRasterType>(
 			band_number,
 			child_depth,
 			read_source_raster_depth,
@@ -1400,11 +1508,16 @@ GPlatesFileIO::GDALRasterReader::hilbert_curve_traversal(
 			block_infos,
 			source_region_data,
 			source_region,
-			read_errors);
+			read_errors,
+			raster_min,
+			raster_max,
+			raster_sum,
+			raster_sum_squares,
+			num_valid_raster_samples);
 
 	const unsigned int child_x_offset_hilbert2 = 1 - hilbert_start_point;
 	const unsigned int child_y_offset_hilbert2 = 1 - hilbert_start_point;
-	hilbert_curve_traversal(
+	hilbert_curve_traversal<RawRasterType>(
 			band_number,
 			child_depth,
 			read_source_raster_depth,
@@ -1418,11 +1531,16 @@ GPlatesFileIO::GDALRasterReader::hilbert_curve_traversal(
 			block_infos,
 			source_region_data,
 			source_region,
-			read_errors);
+			read_errors,
+			raster_min,
+			raster_max,
+			raster_sum,
+			raster_sum_squares,
+			num_valid_raster_samples);
 
 	const unsigned int child_x_offset_hilbert3 = 1 - hilbert_end_point;
 	const unsigned int child_y_offset_hilbert3 = hilbert_end_point;
-	hilbert_curve_traversal(
+	hilbert_curve_traversal<RawRasterType>(
 			band_number,
 			child_depth,
 			read_source_raster_depth,
@@ -1436,5 +1554,10 @@ GPlatesFileIO::GDALRasterReader::hilbert_curve_traversal(
 			block_infos,
 			source_region_data,
 			source_region,
-			read_errors);
+			read_errors,
+			raster_min,
+			raster_max,
+			raster_sum,
+			raster_sum_squares,
+			num_valid_raster_samples);
 }

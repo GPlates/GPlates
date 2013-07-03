@@ -625,6 +625,12 @@ GPlatesFileIO::RgbaRasterReader::write_source_raster_file_cache_image_data(
 	// raster more than once (in sub-regions).
 	unsigned int read_source_raster_depth = 0;
 
+	// For the reasons mentioned in the comment for 'MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT' we're
+	// not limiting the maximum image size (essentially the entire file is read for each clip rect
+	// request so limit the number of clip rect requests as much as possible). In any case if an
+	// allocation fails then the next quarter size allocation will be attempted and so on until
+	// a minimum allocation size.
+#if 0
 	// If the source raster file format supports partial reads (ie, not forced to read entire image)
 	// then we can read the source raster deeper in the quad tree which means sub-regions of the
 	// entire raster are read avoiding the possibility of memory allocation failures for very high
@@ -655,6 +661,7 @@ GPlatesFileIO::RgbaRasterReader::write_source_raster_file_cache_image_data(
 			}
 		}
 	}
+#endif
 
 	// Some rasters have dimensions less than RasterFileCacheFormat::BLOCK_SIZE.
 	const unsigned int dimension =
@@ -842,6 +849,7 @@ GPlatesFileIO::RgbaRasterReader::hilbert_curve_traversal(
 				out << source_region_row[x];
 			}
 #endif
+
 		}
 
 		return;

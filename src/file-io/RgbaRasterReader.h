@@ -39,6 +39,7 @@
 #include <QDataStream>
 #include <QImage>
 #include <QImageReader>
+#include <QtGlobal>
 
 #include "SourceRasterFileCacheFormatReader.h"
 #include "RasterReader.h"
@@ -168,13 +169,18 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation *read_errors);
 
 
-		// Any image bigger than this we should try to read in pieces to help avoid
-		// the possibility of a memory allocation failure.
+		// The minimum image allocation size to attempt - any image allocation lower than this size
+		// that fails will result in a thrown exception. Note that if an allocation fails then
+		// an allocation with half the dimensions will be attempted (and so on) unless the halved
+		// dimension image is less than the minimum allocation size.
 		static const int MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT = 100 * 1000 * 1000;
 
 		// The maximum memory allocation to attempt for an image.
 		// Going higher than this is likely to cause memory to start paging to disk
 		// which will just slow things down.
+		//
+		// If the allocation fails we will repeatedly reduce the allocation size until
+		// it reaches @a MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT.
 		//
 		// I'm setting this fairly high because currently (as of Qt 4.6.1 - see
 		// http://bugreports.qt.nokia.com/browse/QTBUG-3249) only JPEG supports this
@@ -184,10 +190,7 @@ namespace GPlatesFileIO
 		// returned QImage. So we don't really want to do lots of cliprect requests
 		// (each decoding the entire JPEG image) so we set the image size at which
 		// we start using cliprects to be as high as we can.
-		//
-		// If the allocation fails we will repeatedly reduce the allocation size until
-		// it reaches @a MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT.
-		static const int MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT = 500 * 1000 * 1000;
+		static const qint64 MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT = Q_UINT64_C(4000 * 1000 * 1000);
 
 
 		QString d_source_raster_filename;
