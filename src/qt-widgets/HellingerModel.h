@@ -52,38 +52,45 @@ namespace GPlatesQtWidgets
     };
 
 	struct Pick{
-        SegmentType segment_type;
-		double lat;
-		double lon;
-		double uncert;
-        bool is_enabled;
+		SegmentType d_segment_type;
+		double d_lat;
+		double d_lon;
+		double d_uncertainty;
+		bool d_is_enabled;
 	};
 
     typedef std::multimap<int,Pick> model_type;
 
 	// Contents of a hellinger .com file.
     struct com_file_struct{
-        QString pick_file;
-		double lat;	// initial estimate
-		double lon; // initial estimate
-		double rho; // initial estimate
-        double search_radius;
-		bool perform_grid_search;
-        double significance_level;
-		bool estimate_kappa;
-		bool generate_output_files;
-		QString data_filename;
-		QString up_filename;
-		QString down_filename;
+		QString d_pick_file;
+		double d_lat;	// initial estimate
+		double d_lon; // initial estimate
+		double d_rho; // initial estimate
+		double d_search_radius;
+		bool d_perform_grid_search;
+		double d_significance_level;
+		bool d_estimate_kappa;
+		bool d_generate_output_files;
+		QString d_data_filename;
+		QString d_up_filename;
+		QString d_down_filename;
 
     };
 
 	// The result of the fit.
 	struct fit_struct{
-        double lat;
-        double lon;
-        double angle;
-        double eps;
+		fit_struct(double lat, double lon, double angle, double eps=0):
+			d_lat(lat),
+			d_lon(lon),
+			d_angle(angle),
+			d_eps(eps)
+		{};
+
+		double d_lat;
+		double d_lon;
+		double d_angle;
+		double d_eps;
     };
 
     class HellingerModel
@@ -211,7 +218,7 @@ namespace GPlatesQtWidgets
     private:
 
 		com_file_struct d_active_com_file_struct;
-		fit_struct d_fit_struct;
+		boost::optional<fit_struct> d_fit_struct;
 		model_type d_hellinger_picks;                
 		std::vector<GPlatesMaths::LatLonPoint> d_points;
 

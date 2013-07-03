@@ -72,13 +72,13 @@ namespace{
 	{
 		QTreeWidgetItem *item = new QTreeWidgetItem();
 		item->setText(SEGMENT_NUMBER, QString::number(segment_number));
-		item->setText(SEGMENT_TYPE, QString::number(pick.segment_type));
-		item->setText(LAT, QString::number(pick.lat));
-		item->setText(LON, QString::number(pick.lon));
-		item->setText(UNCERTAINTY, QString::number(pick.uncert));
+		item->setText(SEGMENT_TYPE, QString::number(pick.d_segment_type));
+		item->setText(LAT, QString::number(pick.d_lat));
+		item->setText(LON, QString::number(pick.d_lon));
+		item->setText(UNCERTAINTY, QString::number(pick.d_uncertainty));
 		parent_item->addChild(item);
 
-		if (!pick.is_enabled)
+		if (!pick.d_is_enabled)
 		{
 			item->setTextColor(SEGMENT_NUMBER,Qt::gray);
 			item->setTextColor(SEGMENT_TYPE,Qt::gray);
@@ -118,8 +118,8 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 		QWidget *parent_):
 	GPlatesDialog(
 		parent_,
-		//Qt::Window),
-		Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
+		Qt::Window),
+		//Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_view_state(view_state),
 	d_hellinger_layer(*view_state.get_rendered_geometry_collection().get_main_rendered_layer(
 						  GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_TOOL_LAYER)),
@@ -140,9 +140,6 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_thread_type(POLE_THREAD_TYPE)
 {
 	setupUi(this);
-
-
-
 
 	d_hellinger_thread = new HellingerThread(this, d_hellinger_model);
 
@@ -274,7 +271,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 	QString uncert = get_data_line.at(4);
 
 	bool state = d_hellinger_model->get_pick_state(segment_int, row);
-	if (state)  // 1 = true
+	if (state)
 	{
 		if (move_fix == "1")
 		{
@@ -294,7 +291,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 		}
 
 	}
-	else if (!state)   // 2 = false
+	else if (!state)
 	{
 		QString change_state = "0";
 		data_to_model << move_fix << segment_str << lat << lon << uncert;
@@ -472,19 +469,19 @@ GPlatesQtWidgets::HellingerDialog::update_initial_guess()
 
 	if (com_file_data)
 	{
-		spinbox_lat->setValue(com_file_data.get().lat);
-		spinbox_lon->setValue(com_file_data.get().lon);
-		spinbox_rho->setValue(com_file_data.get().rho);
-		spinbox_radius->setValue(com_file_data.get().search_radius);
-		checkbox_grid_search->setChecked(com_file_data.get().perform_grid_search);
-		spinbox_sig_level->setValue(com_file_data.get().significance_level);
+		spinbox_lat->setValue(com_file_data.get().d_lat);
+		spinbox_lon->setValue(com_file_data.get().d_lon);
+		spinbox_rho->setValue(com_file_data.get().d_rho);
+		spinbox_radius->setValue(com_file_data.get().d_search_radius);
+		checkbox_grid_search->setChecked(com_file_data.get().d_perform_grid_search);
+		spinbox_sig_level->setValue(com_file_data.get().d_significance_level);
 
-		checkbox_kappa->setChecked(com_file_data.get().estimate_kappa);
-		checkbox_graphics->setChecked(com_file_data.get().generate_output_files);
+		checkbox_kappa->setChecked(com_file_data.get().d_estimate_kappa);
+		checkbox_graphics->setChecked(com_file_data.get().d_generate_output_files);
 
-		d_filename_dat = com_file_data.get().data_filename;
-		d_filename_up = com_file_data.get().up_filename;
-		d_filename_down = com_file_data.get().down_filename;
+		d_filename_dat = com_file_data.get().d_data_filename;
+		d_filename_up = com_file_data.get().d_up_filename;
+		d_filename_down = com_file_data.get().d_down_filename;
 	}
 
 }
@@ -719,19 +716,6 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 		button_remove_segment -> setEnabled(true);
 		button_remove_point -> setEnabled(true);
 	}
-
-	button_stats->setEnabled(false);
-	button_details->setEnabled(false);
-
-	button_expand_all -> setEnabled(false);
-	button_collapse_all -> setEnabled(false);
-	button_export_file -> setEnabled(false);
-	button_calculate_fit -> setEnabled(false);
-	button_details -> setEnabled(false);
-	button_apply_pole -> setEnabled(false);
-	button_remove_segment -> setEnabled(false);
-	button_remove_point -> setEnabled(false);
-	button_stats -> setEnabled(false);
 }
 
 void
@@ -809,10 +793,11 @@ GPlatesQtWidgets::HellingerDialog::update_result()
 
 	if (data_fit_struct)
 	{
-		spinbox_result_lat->setValue(data_fit_struct.get().lat);
-		spinbox_result_lon->setValue(data_fit_struct.get().lon);
-		spinbox_result_angle->setValue(data_fit_struct.get().angle);
-		show_pole_on_globe(data_fit_struct.get().lat, data_fit_struct.get().lon);
+		qDebug() << "Drawing pole at " << data_fit_struct.get().d_lat << ", " << data_fit_struct.get().d_lon;
+		spinbox_result_lat->setValue(data_fit_struct.get().d_lat);
+		spinbox_result_lon->setValue(data_fit_struct.get().d_lon);
+		spinbox_result_angle->setValue(data_fit_struct.get().d_angle);
+		show_pole_on_globe(data_fit_struct.get().d_lat, data_fit_struct.get().d_lon);
 	}
 
 }
@@ -931,7 +916,7 @@ GPlatesQtWidgets::HellingerDialog::draw_fixed_picks()
 
 	for (; it != d_hellinger_model->end(); ++it)
 	{
-		if (it->second.is_enabled)
+		if (it->second.d_is_enabled)
 		{
 			if (num_segment != it->first)
 			{
@@ -941,10 +926,10 @@ GPlatesQtWidgets::HellingerDialog::draw_fixed_picks()
 
 			set_segment_colours(num_colour);
 
-			if (it->second.segment_type == FIXED_SEGMENT_TYPE)
+			if (it->second.d_segment_type == FIXED_SEGMENT_TYPE)
 			{
 				GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
-							GPlatesMaths::LatLonPoint(it->second.lat,it->second.lon));
+							GPlatesMaths::LatLonPoint(it->second.d_lat,it->second.d_lon));
 
 				GPlatesViewOperations::RenderedGeometry pick_geometry =
 						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
@@ -953,7 +938,7 @@ GPlatesQtWidgets::HellingerDialog::draw_fixed_picks()
 							2, /* point thickness */
 							2, /* line thickness */
 							false /* fill */,
-							it->second.segment_type == MOVING_SEGMENT_TYPE ? d_moving_symbol : d_fixed_symbol);
+							it->second.d_segment_type == MOVING_SEGMENT_TYPE ? d_moving_symbol : d_fixed_symbol);
 
 				d_hellinger_layer.add_rendered_geometry(pick_geometry);
 			}
@@ -969,7 +954,7 @@ GPlatesQtWidgets::HellingerDialog::draw_moving_picks()
 	int num_colour = 0;
 	for (; it != d_hellinger_model->end(); ++it)
 	{
-		if (it->second.is_enabled)
+		if (it->second.d_is_enabled)
 		{
 			if (num_segment != it->first)
 			{
@@ -979,10 +964,10 @@ GPlatesQtWidgets::HellingerDialog::draw_moving_picks()
 
 			set_segment_colours(num_colour);
 
-			if (it->second.segment_type == MOVING_SEGMENT_TYPE)
+			if (it->second.d_segment_type == MOVING_SEGMENT_TYPE)
 			{
 				GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
-							GPlatesMaths::LatLonPoint(it->second.lat,it->second.lon));
+							GPlatesMaths::LatLonPoint(it->second.d_lat,it->second.d_lon));
 
 				GPlatesViewOperations::RenderedGeometry pick_geometry =
 						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
@@ -991,7 +976,7 @@ GPlatesQtWidgets::HellingerDialog::draw_moving_picks()
 							2, /* point thickness */
 							2, /* line thickness */
 							false /* fill */,
-							it->second.segment_type == MOVING_SEGMENT_TYPE ? d_moving_symbol : d_fixed_symbol);
+							it->second.d_segment_type == MOVING_SEGMENT_TYPE ? d_moving_symbol : d_fixed_symbol);
 
 				d_hellinger_layer.add_rendered_geometry(pick_geometry);
 			}
@@ -1011,12 +996,12 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 
 	double recon_time = spinbox_recon_time->value();
 
-	double lat = data_fit_struct.get().lat;
-	double lon = data_fit_struct.get().lon;
+	double lat = data_fit_struct.get().d_lat;
+	double lon = data_fit_struct.get().d_lon;
 	double angle;
 	if (recon_time > 0 )
 	{
-		angle = (recon_time/spinbox_chron->value())*data_fit_struct.get().angle;
+		angle = (recon_time/spinbox_chron->value())*data_fit_struct.get().d_angle;
 		double convert_angle = GPlatesMaths::convert_deg_to_rad(angle);
 		model_type::const_iterator it = d_hellinger_model->begin();
 
@@ -1029,7 +1014,7 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 		int num_colour = 0;
 		for (; it != d_hellinger_model->end(); ++it)
 		{
-			if (it->second.is_enabled)
+			if (it->second.d_is_enabled)
 			{
 				if (num_segment != it->first)
 				{
@@ -1039,10 +1024,10 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 
 				set_segment_colours(num_colour);
 
-				if (it->second.segment_type == MOVING_SEGMENT_TYPE)
+				if (it->second.d_segment_type == MOVING_SEGMENT_TYPE)
 				{
 
-					GPlatesMaths::LatLonPoint llp_move(it->second.lat,it->second.lon);
+					GPlatesMaths::LatLonPoint llp_move(it->second.d_lat,it->second.d_lon);
 					GPlatesMaths::PointOnSphere point_move = make_point_on_sphere(llp_move);
 					GPlatesMaths::PointOnSphere rotated_point = rotation*point_move;
 					GPlatesMaths::LatLonPoint transform_llp = make_lat_lon_point(rotated_point);
@@ -1057,7 +1042,7 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 								2, /* point thickness */
 								2, /* line thickness */
 								false /* fill */,
-								it->second.segment_type == MOVING_SEGMENT_TYPE ? d_moving_symbol : d_fixed_symbol);
+								it->second.d_segment_type == MOVING_SEGMENT_TYPE ? d_moving_symbol : d_fixed_symbol);
 
 					d_hellinger_layer.add_rendered_geometry(pick_geometry);
 				}
