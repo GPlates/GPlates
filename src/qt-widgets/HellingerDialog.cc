@@ -402,9 +402,11 @@ void
 GPlatesQtWidgets::HellingerDialog::import_hellinger_file()
 {
 	QString filters;
-	filters = QObject::tr("Hellinger Pick file (*.pick)");
+	filters = QObject::tr("Hellinger pick file (*.pick)");
 	filters += ";;";
 	filters += QObject::tr("Hellinger com file (*.com)");
+	filters += ";;";
+	filters += QObject::tr("All Hellinger files (*.pick *.com)");
 
 
 	QString path = QFileDialog::getOpenFileName(

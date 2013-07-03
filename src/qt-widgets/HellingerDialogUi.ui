@@ -76,17 +76,17 @@
         </column>
         <column>
          <property name="text">
-          <string>Lat</string>
+          <string>Latitude</string>
          </property>
         </column>
         <column>
          <property name="text">
-          <string>Long</string>
+          <string>Longitude</string>
          </property>
         </column>
         <column>
          <property name="text">
-          <string>Uncertain</string>
+          <string>Uncertainty (km)</string>
          </property>
         </column>
        </widget>

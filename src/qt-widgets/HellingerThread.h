@@ -107,9 +107,6 @@ namespace GPlatesQtWidgets
 		QString d_temp_result;
 		QString d_temp_par;
 		QString d_temp_res;
-
-
-
 	};
 }
 

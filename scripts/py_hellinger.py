@@ -212,7 +212,6 @@ class Hellinger():
                 self.outputFilePar.write("Results from Hellinger1 using "+str(self.input)+" \n")
                 self.outputFilePar.write("Fitted rotation--alat,along,rho: \n")
                 self.outputFilePar.write(str(self.alat)+", "+str(self.along)+", "+str(self.rho)+" \n")
-                self.outputFilePar.write("\nFor more statistics informations click on CONTINUE button.")
                 for i in range(len(self.qhati)):
                     self.tempQhati.write(str(self.qhati[i])+"\n")
                 for i in range(len(self.qhat)):
