@@ -51,7 +51,8 @@
 #include "QtWidgetUtils.h"
 
 
-const double slider_multiplier = -10000.;
+const double SLIDER_MULTIPLIER = -10000.;
+const int SYMBOL_SIZE = 2;
 
 namespace{
 
@@ -135,8 +136,8 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_fixed_plate_id(0),
 	d_recon_time(0.),
 	d_chron_time(0.),
-	d_moving_symbol(GPlatesGui::Symbol::CROSS, 2, true),
-	d_fixed_symbol(GPlatesGui::Symbol::SQUARE,2, false),
+	d_moving_symbol(GPlatesGui::Symbol::CROSS, SYMBOL_SIZE, true),
+	d_fixed_symbol(GPlatesGui::Symbol::SQUARE, SYMBOL_SIZE, false),
 	d_thread_type(POLE_THREAD_TYPE)
 {
 	setupUi(this);
@@ -238,8 +239,8 @@ GPlatesQtWidgets::HellingerDialog::show_point_on_globe(
 		const int &type_segment)
 {
 
-	GPlatesGui::Symbol moving_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, 2, true);
-	GPlatesGui::Symbol fixed_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::SQUARE, 2, false);
+	GPlatesGui::Symbol moving_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, SYMBOL_SIZE, true);
+	GPlatesGui::Symbol fixed_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::SQUARE, SYMBOL_SIZE, false);
 	GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
 				GPlatesMaths::LatLonPoint(lat,lon));
 	GPlatesViewOperations::RenderedGeometry pick_geometry =
@@ -457,9 +458,7 @@ GPlatesQtWidgets::HellingerDialog::import_hellinger_file()
 void
 GPlatesQtWidgets::HellingerDialog::handle_spinbox_radius_changed()
 {
-
-	button_calculate_fit->setEnabled(spinbox_radius->value()>0.0);
-
+	button_calculate_fit->setEnabled(spinbox_radius->value() > 0.0);
 }
 
 void
@@ -491,7 +490,18 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_stats()
 {
 	d_thread_type = STATS_THREAD_TYPE;
 	update_buttons_statistics(false);
-	d_hellinger_thread->initialization_stats_part(d_path,d_file_name,d_filename_dat,d_filename_up,d_filename_down, d_python_file, d_temporary_path, d_temp_pick_file, d_temp_result, d_temp_par, d_temp_res);
+	d_hellinger_thread->initialise_stats_calculation(
+				d_path,
+				d_file_name,
+				d_filename_dat,
+				d_filename_up,
+				d_filename_down,
+				d_python_file,
+				d_temporary_path,
+				d_temp_pick_file,
+				d_temp_result,
+				d_temp_par,
+				d_temp_res);
 	d_hellinger_thread->set_python_script_type(d_thread_type);
 	progress_bar->setEnabled(true);
 	progress_bar->setMaximum(0.);
@@ -570,9 +580,8 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate()
 
 	}
 
-	if (!(spinbox_rho->value()>0))
+	if (!(spinbox_rho->value() > 0))
 	{
-
 		QMessageBox::critical(this,tr("Initial guess values"),
 							  tr("The value of rho in the initial guess is zero. Please enter a non-zero value"),
 							  QMessageBox::Ok,QMessageBox::Ok);
@@ -582,11 +591,12 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate()
 	QFile python_code(d_python_file);
 	if (python_code.exists())
 	{
-
 		QString path = d_python_path + d_temp_pick_file;
 		GPlatesFileIO::HellingerWriter::write_pick_file(path,*d_hellinger_model);
-		QString import_file_line = QString("%1").arg(line_import_file->text());
+		QString import_file_line = line_import_file->text();
+		// TODO: check if we actually need to update the buttons here.
 		update_buttons();
+
 		std::vector<double> input_data;
 		std::vector<int> bool_data;
 		input_data.push_back(spinbox_lat->value());
@@ -595,42 +605,48 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate()
 		input_data.push_back(spinbox_radius->value());
 		input_data.push_back(spinbox_sig_level->value());
 		int iteration;
+
 		if (checkbox_grid_search->isChecked())
 		{
-			int grid_search = 1;
 			iteration = spinbox_iteration->value();
-			bool_data.push_back(grid_search);
+			bool_data.push_back(1);
 
 		}
 		else
 		{
-			int grid_search = 0;
 			iteration = 0;
-			bool_data.push_back(grid_search);
-
+			bool_data.push_back(0);
 		}
+
 		if (checkbox_kappa->isChecked())
 		{
-			int kappa = 1;
-			bool_data.push_back(kappa);
+			bool_data.push_back(1);
 		}
 		else
 		{
-			int kappa = 0;
-			bool_data.push_back(kappa);
-		}
-		if (checkbox_graphics->isChecked())
-		{
-			int graphics = 1;
-			bool_data.push_back(graphics);
-		}
-		else
-		{
-			int graphics = 0;
-			bool_data.push_back(graphics);
+			bool_data.push_back(0);
 		}
 
-		d_hellinger_thread->initialization_pole_part(import_file_line, input_data, bool_data, iteration, d_python_file, d_temporary_path, d_temp_pick_file, d_temp_result, d_temp_par, d_temp_res);
+		if (checkbox_graphics->isChecked())
+		{
+			bool_data.push_back(1);
+		}
+		else
+		{
+			bool_data.push_back(0);
+		}
+
+		d_hellinger_thread->initialise_pole_calculation(
+					import_file_line,
+					input_data,
+					bool_data,
+					iteration,
+					d_python_file,
+					d_temporary_path,
+					d_temp_pick_file,
+					d_temp_result,
+					d_temp_par,
+					d_temp_res);
 		d_thread_type = POLE_THREAD_TYPE;
 		d_hellinger_model->reset_points();
 		update_canvas();
@@ -665,19 +681,16 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 			QStringList fields = line.split(" ",QString::SkipEmptyParts);
 			d_hellinger_model->add_results(fields);
 			data_file.close();
-			bool result_info = true;
-			bool continue_info = true;
 			update_result();
-			update_buttons_statistics(result_info);
-			update_continue_button(continue_info);
+			update_buttons_statistics(true);
+			update_continue_button(true);
 		}
 	}
 	else if(d_thread_type == STATS_THREAD_TYPE)
 	{
-		bool result_info = true;
-		bool continue_info = false;
-		update_buttons_statistics(result_info);
-		update_continue_button(continue_info);
+		update_buttons_statistics(true);
+		update_continue_button(false);
+		// TODO: check if we need this add_data_file here.....
 		d_hellinger_model->add_data_file();
 		show_data_points_on_globe();
 	}
@@ -686,35 +699,27 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 void
 GPlatesQtWidgets::HellingerDialog::update_buttons()
 {
-
-
 	if (tree_widget_picks->topLevelItemCount() == 0)
 	{
-		button_expand_all -> setEnabled(false);
-		button_collapse_all -> setEnabled(false);
-		button_export_file -> setEnabled(false);
-		button_calculate_fit -> setEnabled(false);
-		button_details -> setEnabled(false);
-		button_apply_pole -> setEnabled(false);
-		button_remove_segment -> setEnabled(false);
-		button_remove_point -> setEnabled(false);
-		button_stats -> setEnabled(false);
-
-	}else{
-		button_expand_all -> setEnabled(true);
-		button_collapse_all -> setEnabled(true);
-		button_export_file -> setEnabled(true);
-		if (spinbox_radius->value() > 0.0)
-		{
-			button_calculate_fit -> setEnabled(true);
-		}
-		else
-		{
-			button_calculate_fit->setEnabled(false);
-		}
-		button_apply_pole -> setEnabled(true);
-		button_remove_segment -> setEnabled(true);
-		button_remove_point -> setEnabled(true);
+		button_expand_all->setEnabled(false);
+		button_collapse_all->setEnabled(false);
+		button_export_file->setEnabled(false);
+		button_calculate_fit->setEnabled(false);
+		button_details->setEnabled(false);
+		button_apply_pole->setEnabled(false);
+		button_remove_segment->setEnabled(false);
+		button_remove_point->setEnabled(false);
+		button_stats->setEnabled(false);
+	}
+	else
+	{
+		button_expand_all->setEnabled(true);
+		button_collapse_all->setEnabled(true);
+		button_export_file->setEnabled(true);
+		button_calculate_fit->setEnabled(spinbox_radius->value() > 0.0);
+		button_apply_pole->setEnabled(true);
+		button_remove_segment->setEnabled(true);
+		button_remove_point->setEnabled(true);
 	}
 }
 
@@ -789,6 +794,8 @@ GPlatesQtWidgets::HellingerDialog::show_pole_on_globe(
 void
 GPlatesQtWidgets::HellingerDialog::update_result()
 {
+	// FIXME: sort out the sequence of calling update_canvas, update_result etc... this function (update_result) is getting
+	// called 5 times after a fit is completed. On the second call, the lon is always zero for some reason. Investigate.
 	boost::optional<GPlatesQtWidgets::fit_struct> data_fit_struct = d_hellinger_model->get_results();
 
 	if (data_fit_struct)
@@ -815,7 +822,7 @@ GPlatesQtWidgets::HellingerDialog::show_data_points_on_globe()
 			GPlatesMaths::LatLonPoint llp = *iter;
 			double lat = llp.latitude();
 			double lon = llp.longitude();
-			GPlatesGui::Symbol results_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, 2, true);
+			GPlatesGui::Symbol results_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, SYMBOL_SIZE, true);
 			GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
 						GPlatesMaths::LatLonPoint(lat,lon));
 			GPlatesViewOperations::RenderedGeometry pick_results =
@@ -1062,7 +1069,7 @@ GPlatesQtWidgets::HellingerDialog::handle_chron_time_changed(
 		const double &time)
 {
 	d_chron_time = spinbox_chron->value();
-	slider_recon_time->setMinimum(d_chron_time*slider_multiplier);
+	slider_recon_time->setMinimum(d_chron_time*SLIDER_MULTIPLIER);
 	slider_recon_time->setMaximum(0.);
 
 	spinbox_recon_time->setMaximum(time);
@@ -1084,7 +1091,7 @@ void
 GPlatesQtWidgets::HellingerDialog::handle_recon_time_spinbox_changed(
 		const double &time)
 {
-	slider_recon_time->setValue(slider_multiplier*time);
+	slider_recon_time->setValue(SLIDER_MULTIPLIER*time);
 
 	reconstruct_picks();
 }
@@ -1093,7 +1100,7 @@ void
 GPlatesQtWidgets::HellingerDialog::handle_recon_time_slider_changed(
 		const int &value)
 {
-	spinbox_recon_time->setValue(static_cast<double>(value)/slider_multiplier);
+	spinbox_recon_time->setValue(static_cast<double>(value)/SLIDER_MULTIPLIER);
 }
 
 void
@@ -1103,6 +1110,8 @@ GPlatesQtWidgets::HellingerDialog::handle_fit_spinboxes_changed()
 	QString lat_str = QString("%1").arg(spinbox_result_lat->value());
 	QString lon_str = QString("%1").arg(spinbox_result_lon->value());
 	QString angle_str = QString("%1").arg(spinbox_result_angle->value());
+
+	// FIXME: why is this eps value not grabbed and displayed?
 	//    QString eps_str = QString("%1").arg(spinbox_result_eps->value());
 	fit_spinboxes<<lat_str<<lon_str<<angle_str;
 	d_hellinger_model->reset_points();
@@ -1125,6 +1134,7 @@ GPlatesQtWidgets::HellingerDialog::reorder_picks()
 void
 GPlatesQtWidgets::HellingerDialog::renumber_segments()
 {
+	// TODO: check the distinction between "renumber_segments" and "reorder_picks" - do we need them both?
 	reorder_picks();
 }
 
@@ -1180,14 +1190,7 @@ GPlatesQtWidgets::HellingerDialog::handle_collapse_all()
 void
 GPlatesQtWidgets::HellingerDialog::handle_checkbox_grid_search_changed()
 {
-	if (checkbox_grid_search->isChecked())
-	{
-		spinbox_iteration->setEnabled(true);
-	}
-	else
-	{
-		spinbox_iteration->setEnabled(false);
-	}
+	spinbox_iteration->setEnabled(checkbox_grid_search->isChecked());
 }
 
 void

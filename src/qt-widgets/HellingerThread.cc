@@ -5,7 +5,7 @@
  * $Revision: 10957 $
  * $Date: 2011-02-09 08:53:12 +0100 (St, 09 úno 2011) $ 
  * 
- * Copyright (C) 2011, 2012 Geological Survey of Norway
+ * Copyright (C) 2011, 2012, 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -59,7 +59,17 @@ GPlatesQtWidgets::HellingerThread::HellingerThread(
 }
 
 void
-GPlatesQtWidgets::HellingerThread::initialization_pole_part(QString &import_file_path, std::vector<double> &input_data, std::vector<int> &bool_data, int &iteration, QString &python_file, QString &temporary_folder, QString &temp_pick_file, QString &temp_result, QString &temp_par, QString &temp_res)
+GPlatesQtWidgets::HellingerThread::initialise_pole_calculation(
+		const QString &import_file_path,
+		const std::vector<double> &input_data,
+		const std::vector<int> &bool_data,
+		const int &iteration,
+		const QString &python_file,
+		const QString &temporary_folder,
+		const QString &temp_pick_file,
+		const QString &temp_result,
+		const QString &temp_par,
+		const QString &temp_res)
 {
     d_input_data = input_data;
     d_import_file_path = import_file_path;
@@ -72,13 +82,21 @@ GPlatesQtWidgets::HellingerThread::initialization_pole_part(QString &import_file
     d_temp_result = temp_result;
     d_temp_par = temp_par;
     d_temp_res = temp_res;
-
-
-
 }
 
 void
-GPlatesQtWidgets::HellingerThread::initialization_stats_part(QString &path_file,QString &file_name,QString &filename_dat, QString &filename_up, QString &filename_do, QString &python_file, QString &temporary_folder, QString &temp_pick_file, QString &temp_result, QString &temp_par, QString &temp_res)
+GPlatesQtWidgets::HellingerThread::initialise_stats_calculation(
+		const QString &path_file,
+		const QString &file_name,
+		const QString &filename_dat,
+		const QString &filename_up,
+		const QString &filename_do,
+		const QString &python_file,
+		const QString &temporary_folder,
+		const QString &temp_pick_file,
+		const QString &temp_result,
+		const QString &temp_par,
+		const QString &temp_res)
 {
     d_temporary_folder = temporary_folder;
     d_temp_pick_file = temp_pick_file;
