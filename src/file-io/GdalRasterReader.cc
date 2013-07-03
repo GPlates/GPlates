@@ -1000,7 +1000,7 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache(
 	out << static_cast<quint32>(RasterFileCacheFormat::VERSION_NUMBER);
 
 	// Write source raster type.
-	out << static_cast<quint32>(RasterFileCacheFormat::get_type_as_enum<RawRasterType::element_type>());
+	out << static_cast<quint32>(RasterFileCacheFormat::get_type_as_enum<typename RawRasterType::element_type>());
 
 	// TODO: Add coverage data.
 	out << static_cast<quint32>(false/*has_coverage*/);
@@ -1026,12 +1026,12 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache(
 	if (no_data_success)
 	{
 		out << static_cast<quint32>(true);
-		out << static_cast<RawRasterType::element_type>(no_data_value);
+		out << static_cast<typename RawRasterType::element_type>(no_data_value);
 	}
 	else
 	{
 		out << static_cast<quint32>(false);
-		out << RawRasterType::element_type(); // Doesn't matter what gets stored.
+		out << typename RawRasterType::element_type(); // Doesn't matter what gets stored.
 	}
 
 	// Write the (optional) raster statistics as zeros for now and come back later to fill it in.
@@ -1211,7 +1211,7 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache_image_data(
 	// resolution source rasters.
 	// Using 64-bit integer in case uncompressed image is larger than 4Gb.
 	const qint64 image_size_in_bytes =
-			quint64(d_source_width) * d_source_height * sizeof(RawRasterType::element_type);
+			quint64(d_source_width) * d_source_height * sizeof(typename RawRasterType::element_type);
 
 	// Allocating higher than this is likely to cause memory to start paging to disk which
 	// will just slow things down - so limit the size of partial read that we first attempt.
@@ -1220,7 +1220,7 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache_image_data(
 		qint64 image_allocation_size =
 				// Using 64-bit integer in case uncompressed image is larger than 4Gb...
 				qint64(source_raster_dimension_next_power_of_two) * source_raster_dimension_next_power_of_two *
-					sizeof(RawRasterType::element_type);
+					sizeof(typename RawRasterType::element_type);
 		// Increase the read depth until the image allocation size is under the maximum.
 		while (read_source_raster_depth < write_source_raster_depth)
 		{
