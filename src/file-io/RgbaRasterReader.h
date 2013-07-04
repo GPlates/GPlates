@@ -175,22 +175,25 @@ namespace GPlatesFileIO
 		// dimension image is less than the minimum allocation size.
 		static const int MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT = 100 * 1000 * 1000;
 
-		// The maximum memory allocation to attempt for an image.
-		// Going higher than this is likely to cause memory to start paging to disk
-		// which will just slow things down.
-		//
-		// If the allocation fails we will repeatedly reduce the allocation size until
-		// it reaches @a MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT.
-		//
-		// I'm setting this fairly high because currently (as of Qt 4.6.1 - see
-		// http://bugreports.qt.nokia.com/browse/QTBUG-3249) only JPEG supports this
-		// and looking at the source code it actually reads the entire image for each
-		// cliprect request - it does it scanline-by-scanline so still uses low memory -
+		// Currently removing this upper limit regardless of paging because currently
+		// (as of Qt 4.6.1 - see http://bugreports.qt.nokia.com/browse/QTBUG-3249) only JPEG
+		// supports this and looking at the source code it actually reads the entire image for
+		// each cliprect request - it does it scanline-by-scanline so still uses low memory -
 		// and just copies the relevant parts (cliprect) of the entire image into the
 		// returned QImage. So we don't really want to do lots of cliprect requests
 		// (each decoding the entire JPEG image) so we set the image size at which
 		// we start using cliprects to be as high as we can.
-		static const qint64 MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT = Q_UINT64_C(4000 * 1000 * 1000);
+		//
+		// If the allocation fails we will repeatedly reduce the allocation size until
+		// it reaches @a MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT.
+#if 0
+		// The maximum memory allocation to attempt for an image.
+		// Going higher than this is likely to cause memory to start paging to disk
+		// which will just slow things down.
+		//
+		// The 32-bit limit is to avoid integer overflow in 32-bit programs.
+		static const quint64 MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT = Q_UINT64_C(0xffffffff);
+#endif
 
 
 		QString d_source_raster_filename;

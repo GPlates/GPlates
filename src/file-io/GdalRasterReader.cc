@@ -145,6 +145,7 @@ namespace
 					line_index,
 					region_width,
 					1 /* read one row */,
+					// Using qint64 in case reading file larger than 4Gb...
 					result_buf + qint64(i) * region_width,
 					region_width,
 					1 /* one row of buffer */,
@@ -1200,39 +1201,32 @@ GPlatesFileIO::GDALRasterReader::write_source_raster_file_cache_image_data(
 	// A depth of zero means read the entire raster once at the root of the quad tree.
 	unsigned int read_source_raster_depth = 0;
 
-	// For the reasons mentioned in the comment for 'MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT' we're
-	// not limiting the maximum image size (essentially the file seeks from one row of a sub-section
-	// to the next row - or GDAL reads the entire row of the full-size image even if a sub-section
-	// is requested - really slow down reading). In any case if an allocation fails then the
-	// next quarter size allocation will be attempted and so on until a minimum allocation size.
-#if 0
 	// If necessary read the source raster deeper in the quad tree which means sub-regions of the
 	// entire raster are read avoiding the possibility of memory allocation failures for very high
 	// resolution source rasters.
 	// Using 64-bit integer in case uncompressed image is larger than 4Gb.
-	const qint64 image_size_in_bytes =
+	const quint64 image_size_in_bytes =
 			quint64(d_source_width) * d_source_height * sizeof(typename RawRasterType::element_type);
 
-	// Allocating higher than this is likely to cause memory to start paging to disk which
-	// will just slow things down - so limit the size of partial read that we first attempt.
-	if (image_size_in_bytes > MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT)
+	// If we're not compiled for 64-bit and the image size is greater than 32 bits then reduce size.
+	if (sizeof(std::size_t) < 8 &&
+		image_size_in_bytes > Q_UINT64_C(0xffffffff))
 	{
-		qint64 image_allocation_size =
+		quint64 image_allocation_size =
 				// Using 64-bit integer in case uncompressed image is larger than 4Gb...
-				qint64(source_raster_dimension_next_power_of_two) * source_raster_dimension_next_power_of_two *
+				quint64(source_raster_dimension_next_power_of_two) * source_raster_dimension_next_power_of_two *
 					sizeof(typename RawRasterType::element_type);
 		// Increase the read depth until the image allocation size is under the maximum.
 		while (read_source_raster_depth < write_source_raster_depth)
 		{
 			++read_source_raster_depth;
 			image_allocation_size /= 4;
-			if (image_allocation_size < MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT)
+			if (image_allocation_size < Q_UINT64_C(0xffffffff))
 			{
 				break;
 			}
 		}
 	}
-#endif
 
 	// Some rasters have dimensions less than RasterFileCacheFormat::BLOCK_SIZE.
 	const unsigned int dimension =
@@ -1371,10 +1365,11 @@ GPlatesFileIO::GDALRasterReader::hilbert_curve_traversal(
 			const typename RawRasterType::element_type *const source_region_data_array =
 					source_region_data.get()->data();
 
+			// Using std::size_t in case 64-bit and in case source region is larger than 4Gb...
+			const std::size_t num_values_in_region =
+					std::size_t(source_region_data.get()->width()) * source_region_data.get()->height();
 			// Iterate over the source region.
-			const qint64 num_values_in_region =
-					source_region_data.get()->width() * source_region_data.get()->height();
-			for (qint64 n = 0; n < num_values_in_region; ++n)
+			for (std::size_t n = 0; n < num_values_in_region; ++n)
 			{
 				const typename RawRasterType::element_type value = source_region_data_array[n];
 
@@ -1452,9 +1447,10 @@ GPlatesFileIO::GDALRasterReader::hilbert_curve_traversal(
 		// Write the current block from the source region to the output stream.
 		for (unsigned int y = 0; y < block_info.height; ++y)
 		{
+			// Using std::size_t in case 64-bit and in case source region is larger than 4Gb...
 			const typename RawRasterType::element_type *const source_region_row =
 					source_region_data.get()->data() +
-						(block_info.y_offset - source_region.y() + y) * source_region.width() +
+						std::size_t(block_info.y_offset - source_region.y() + y) * source_region.width() +
 						block_info.x_offset - source_region.x();
 
 			for (unsigned int x = 0; x < block_info.width; ++x)

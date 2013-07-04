@@ -188,19 +188,22 @@ namespace GPlatesFileIO
 		// dimension image is less than the minimum allocation size.
 		static const int MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT = 50 * 1000 * 1000;
 
+		// Currently removing this upper limit regardless of paging problems because GDAL reads
+		// each row very slowly when requesting sections compared to just reading the entire file
+		// in one go (most likely due to the file seeks required at the end of each row to seek to
+		// the next row of the sub-section - or GDAL reads the entire row of the full-size image
+		// even if a sub-section is requested).
+		//
+		// If the allocation fails we will repeatedly reduce the allocation size until
+		// it reaches @a MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT.
+#if 0
 		// The maximum memory allocation to attempt for an image.
 		// Going higher than this is likely to cause memory to start paging to disk
 		// which will just slow things down.
 		//
-		// If the allocation fails we will repeatedly reduce the allocation size until
-		// it reaches @a MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT.
-		//
-		// Currently setting this close to the 32-bit (4Gb) boundary line regardless of paging
-		// problems because GDAL reads each row very slowly when requesting sections compared to
-		// just reading the entire file in one go (most likely due to the file seeks required
-		// at the end of each row to seek to the next row of the sub-section - or GDAL reads the
-		// entire row of the full-size image even if a sub-section is requested).
-		static const qint64 MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT = Q_UINT64_C(4000 * 1000 * 1000);
+		// The 32-bit limit is to avoid integer overflow in 32-bit programs.
+		static const quint64 MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT = Q_UINT64_C(0xffffffff);
+#endif
 
 
 		QString d_source_raster_filename;
