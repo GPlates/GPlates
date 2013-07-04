@@ -62,9 +62,10 @@ GPlatesQtWidgets::HellingerStatsDialog::update()
         do
         {
             line = in.readLine();
-            textEdit -> append(line);
+			textEdit->append(line);
         }
         while (!line.isNull());
+		textEdit->append("To calculate additional fit statistics, press the ""Calculate Statistics"" button");
     }
 }
 

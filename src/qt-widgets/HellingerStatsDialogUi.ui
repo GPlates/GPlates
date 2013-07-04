@@ -25,7 +25,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Statistics from Hellinger Calculation</string>
+      <string>Results from Hellinger Calculation</string>
      </property>
     </widget>
    </item>

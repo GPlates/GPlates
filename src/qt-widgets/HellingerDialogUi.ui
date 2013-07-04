@@ -703,6 +703,9 @@
             <height>0</height>
            </size>
           </property>
+          <property name="maximum">
+           <double>1000.000000000000000</double>
+          </property>
          </widget>
         </item>
         <item>
@@ -739,6 +742,9 @@
             <width>76</width>
             <height>0</height>
            </size>
+          </property>
+          <property name="maximum">
+           <double>1000.000000000000000</double>
           </property>
          </widget>
         </item>
