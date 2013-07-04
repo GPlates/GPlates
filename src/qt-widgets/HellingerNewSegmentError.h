@@ -49,9 +49,10 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 	public:
 
-        HellingerNewSegmentError(
-                        HellingerDialog *hellinger_dialog,
-            QWidget *parent_ = NULL);
+		HellingerNewSegmentError(
+				HellingerDialog *hellinger_dialog,
+				const int &segment_number,
+				QWidget *parent_ = NULL);
 
         int
         error_type_new_segment();
@@ -59,19 +60,23 @@ namespace GPlatesQtWidgets
 
 
 	private Q_SLOTS: 
-        void
-        continue_process();
-        void
-        close_application();
 
+        void
+		handle_ok();
 
+		void
+		handle_button_clicked();
 
 	private:
 	
-		void
-		update_buttons();
+
         HellingerDialog *d_hellinger_dialog_ptr;
+
         int d_type_error_new_segment;
+
+		QButtonGroup d_button_group;
+
+		int d_segment_number;
 	};
 }
 

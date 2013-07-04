@@ -6,25 +6,25 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>384</width>
+    <width>439</width>
     <height>220</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>New Segment Warning</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
-    <widget class="QLabel" name="label">
+    <widget class="QLabel" name="label_warning_text">
      <property name="font">
       <font>
        <family>Sans Serif</family>
-       <weight>75</weight>
-       <bold>true</bold>
+       <weight>50</weight>
+       <bold>false</bold>
       </font>
      </property>
      <property name="text">
-      <string>Segment Error</string>
+      <string>Warning text</string>
      </property>
     </widget>
    </item>
@@ -44,23 +44,23 @@
    <item row="2" column="0" colspan="2">
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
-      <widget class="QRadioButton" name="radiobutton_error_add">
+      <widget class="QRadioButton" name="radio_add">
        <property name="text">
-        <string>add to exist segment</string>
+        <string>add to existing segment</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QRadioButton" name="radiobutton_error_replace">
+      <widget class="QRadioButton" name="radio_replace">
        <property name="text">
         <string>replace existing segment</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QRadioButton" name="radiobutton_error_insert">
+      <widget class="QRadioButton" name="radio_insert">
        <property name="text">
-        <string>insert as new segment, automaticaly reordering</string>
+        <string>insert as new segment, and re-number following segments</string>
        </property>
       </widget>
      </item>
@@ -82,14 +82,26 @@
    <item row="4" column="1">
     <layout class="QFormLayout" name="formLayout">
      <item row="0" column="0">
-      <widget class="QPushButton" name="button_close">
+      <widget class="QPushButton" name="button_cancel">
+       <property name="minimumSize">
+        <size>
+         <width>90</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
-        <string>&amp;Close</string>
+        <string>&amp;Cancel</string>
        </property>
       </widget>
      </item>
      <item row="0" column="1">
       <widget class="QPushButton" name="button_ok">
+       <property name="minimumSize">
+        <size>
+         <width>90</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>&amp;Ok</string>
        </property>
@@ -97,12 +109,25 @@
      </item>
     </layout>
    </item>
+   <item row="4" column="0">
+    <spacer name="horizontalSpacer">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>40</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
   </layout>
  </widget>
  <resources/>
  <connections>
   <connection>
-   <sender>button_close</sender>
+   <sender>button_cancel</sender>
    <signal>clicked()</signal>
    <receiver>HellingerNewSegmentError</receiver>
    <slot>reject()</slot>

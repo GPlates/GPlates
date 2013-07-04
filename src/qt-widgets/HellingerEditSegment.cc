@@ -47,7 +47,7 @@ GPlatesQtWidgets::HellingerEditSegment::HellingerEditSegment(
         d_hellinger_dialog_ptr(hellinger_dialog),
         d_hellinger_model_ptr(hellinger_model),
         d_number_rows(0),
-        d_segment(0),
+		d_segment_number(0),
         d_disabled_picks(0),
         d_active_picks(0),
         d_hellinger_new_segment_error(0)
@@ -103,8 +103,8 @@ GPlatesQtWidgets::HellingerEditSegment::initialise(int &segment)
 {
     QStringList get_data_segment = d_hellinger_model_ptr->get_segment(segment);
     check_picks(get_data_segment);
-    d_segment = segment;
-    spinbox_segment->setValue(d_segment);
+	d_segment_number = segment;
+	spinbox_segment->setValue(d_segment_number);
 
 }
 
@@ -141,11 +141,13 @@ void
 GPlatesQtWidgets::HellingerEditSegment::edit()
 {
 
-	if (d_hellinger_model_ptr->segment_number_exists(d_segment))
+	if (d_hellinger_model_ptr->segment_number_exists(d_segment_number))
     {
         if (!d_hellinger_new_segment_error)
         {
-            d_hellinger_new_segment_error = new GPlatesQtWidgets::HellingerNewSegmentError(d_hellinger_dialog_ptr);
+			d_hellinger_new_segment_error = new GPlatesQtWidgets::HellingerNewSegmentError(
+						d_hellinger_dialog_ptr,
+						d_segment_number);
         }
 
         d_hellinger_new_segment_error->exec(); // necessary for applied changes!
@@ -156,13 +158,13 @@ GPlatesQtWidgets::HellingerEditSegment::edit()
         }
         else if (value_error == ERROR_REPLACE_NEW_SEGMENT)
         {
-            d_hellinger_model_ptr->remove_segment(d_segment);
+			d_hellinger_model_ptr->remove_segment(d_segment_number);
             edit_segment();
 
         }
         else if (value_error == ERROR_INSERT_NEW_SEGMENT)
         {
-			d_hellinger_model_ptr->reorder_segment(d_segment);
+			d_hellinger_model_ptr->reorder_segment(d_segment_number);
             edit_segment();
         }
         else

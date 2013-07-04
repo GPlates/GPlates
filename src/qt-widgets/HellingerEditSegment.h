@@ -94,7 +94,7 @@ namespace GPlatesQtWidgets
             HellingerModel *d_hellinger_model_ptr;
             QStandardItemModel *model;
             int d_number_rows;
-            int d_segment;
+			int d_segment_number;
             QStringList d_disabled_picks;
             QStringList d_active_picks;
             HellingerNewSegmentError *d_hellinger_new_segment_error;

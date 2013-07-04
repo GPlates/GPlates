@@ -23,18 +23,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <fstream>
-#include <iostream>
-#include <list>
-#include <string>
-
+#include <QButtonGroup>
 #include <QDebug>
-#include "QFileDialog"
+#include <QFileDialog>
+#include <QLabel>
 #include <QLocale>
 #include <QRadioButton>
 #include <QTextStream>
 
-#include "global/CompilerWarnings.h"
 #include "HellingerNewSegment.h"
 #include "HellingerNewSegmentError.h"
 #include "HellingerNewSegmentUi.h"
@@ -42,40 +38,47 @@
 
 GPlatesQtWidgets::HellingerNewSegmentError::HellingerNewSegmentError(
                 HellingerDialog *hellinger_dialog,
+				const int &segment_number,
                 QWidget *parent_):
     QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
     d_hellinger_dialog_ptr(hellinger_dialog),
-    d_type_error_new_segment(0)
+	d_type_error_new_segment(0),
+	d_segment_number(segment_number)
 {
 	setupUi(this);
 
-        QObject::connect(button_ok, SIGNAL(clicked()), this, SLOT(continue_process()));
-        QObject::connect(button_close, SIGNAL(clicked()), this, SLOT(close_application()));
-        update_buttons();
+	QString warning_text = QObject::tr("There already exists a segment with number %1").arg(d_segment_number);
+	label_warning_text->setText(warning_text);
+
+	d_button_group.addButton(radio_add);
+	d_button_group.addButton(radio_replace);
+	d_button_group.addButton(radio_insert);
+
+
+	QObject::connect(button_ok, SIGNAL(clicked()), this, SLOT(handle_ok()));
+	QObject::connect(button_cancel, SIGNAL(clicked()), this, SLOT(reject()));
+	QObject::connect(&d_button_group, SIGNAL(buttonClicked(QAbstractButton*)),this,SLOT(handle_button_clicked()));
+
+	button_ok->setEnabled(false);
 }
 
 
 void
-GPlatesQtWidgets::HellingerNewSegmentError::continue_process()
+GPlatesQtWidgets::HellingerNewSegmentError::handle_ok()
 {
-    if (radiobutton_error_add->isChecked())
+	if (radio_add->isChecked())
     {
         d_type_error_new_segment = ERROR_ADD_NEW_SEGMENT;
     }
-    else if (radiobutton_error_replace->isChecked())
+	else if (radio_replace->isChecked())
     {
         d_type_error_new_segment = ERROR_REPLACE_NEW_SEGMENT;
     }
-    else if (radiobutton_error_insert->isChecked())
+	else if (radio_insert->isChecked())
     {
         d_type_error_new_segment = ERROR_INSERT_NEW_SEGMENT;
     }
 
-}
-
-void GPlatesQtWidgets::HellingerNewSegmentError::close_application()
-{
-	reject();
 }
 
 int
@@ -85,11 +88,10 @@ GPlatesQtWidgets::HellingerNewSegmentError::error_type_new_segment()
 }
 
 void
-GPlatesQtWidgets::HellingerNewSegmentError::update_buttons()
+GPlatesQtWidgets::HellingerNewSegmentError::handle_button_clicked()
 {
- 
+	button_ok->setEnabled(true);
 }
-
 
 
 

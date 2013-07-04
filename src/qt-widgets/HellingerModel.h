@@ -67,7 +67,7 @@ namespace GPlatesQtWidgets
 		double d_lat;	// initial estimate
 		double d_lon; // initial estimate
 		double d_rho; // initial estimate
-		double d_search_radius;
+		double d_search_radius; //km
 		bool d_perform_grid_search;
 		double d_significance_level;
 		bool d_estimate_kappa;

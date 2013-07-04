@@ -90,13 +90,15 @@ void
 GPlatesQtWidgets::HellingerNewSegment::add_segment()
 {
 
-    int segment = spinbox_segment->value();
+	int segment_number = spinbox_segment->value();
 
-	if (d_hellinger_model_ptr->segment_number_exists(segment))
+	if (d_hellinger_model_ptr->segment_number_exists(segment_number))
     {
 		if (!d_hellinger_new_segment_error)
 		{
-            d_hellinger_new_segment_error = new GPlatesQtWidgets::HellingerNewSegmentError(d_hellinger_dialog_ptr);
+			d_hellinger_new_segment_error = new GPlatesQtWidgets::HellingerNewSegmentError(
+						d_hellinger_dialog_ptr,
+						segment_number);
 		}
 //        int return_type = d_hellinger_new_segment_error->exec();
 //		if (return_type == QDialog::Rejected)
@@ -111,13 +113,13 @@ GPlatesQtWidgets::HellingerNewSegment::add_segment()
         }
         else if (value_error == ERROR_REPLACE_NEW_SEGMENT)
         {
-            d_hellinger_model_ptr->remove_segment(segment);
+			d_hellinger_model_ptr->remove_segment(segment_number);
             add_segment_to_model();
 
         }
         else if (value_error == ERROR_INSERT_NEW_SEGMENT)
         {
-			d_hellinger_model_ptr->reorder_segment(segment);
+			d_hellinger_model_ptr->reorder_segment(segment_number);
             add_segment_to_model();
         }
         else
