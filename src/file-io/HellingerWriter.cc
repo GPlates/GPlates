@@ -51,17 +51,17 @@ GPlatesFileIO::HellingerWriter::write_pick_file(
 				bool ok;
 				if (!load_data.at(a+5).toInt(&ok))
 				{
-					if (load_data.at(a+1).toInt() == GPlatesQtWidgets::MOVING_SEGMENT_TYPE)
-					{
+//					if (load_data.at(a+1).toInt() == GPlatesQtWidgets::MOVING_SEGMENT_TYPE)
+//					{
 
-						pick_state = QString("%1").arg(GPlatesQtWidgets::DISABLED_MOVING_SEGMENT_TYPE);
+//						pick_state = QString("%1").arg(GPlatesQtWidgets::DISABLED_MOVING_SEGMENT_TYPE);
 
-					}
-					else if (load_data.at(a+1).toInt() == GPlatesQtWidgets::FIXED_SEGMENT_TYPE)
-					{
+//					}
+//					else if (load_data.at(a+1).toInt() == GPlatesQtWidgets::FIXED_SEGMENT_TYPE)
+//					{
 
-						pick_state = QString("%1").arg(GPlatesQtWidgets::DISABLED_FIXED_SEGMENT_TYPE);
-					}
+//						pick_state = QString("%1").arg(GPlatesQtWidgets::DISABLED_FIXED_SEGMENT_TYPE);
+//					}
 				}
 				else if (load_data.at(a+5).toInt(&ok))
 				{
@@ -69,6 +69,8 @@ GPlatesFileIO::HellingerWriter::write_pick_file(
 				}
 				out << pick_state<<" "<<load_data.at(a)<<" "<<load_data.at(a+2)
 					<<" "<<load_data.at(a+3)<<" "<<load_data.at(a+4)<<"\n";
+				qDebug() << pick_state<<" "<<load_data.at(a)<<" "<<load_data.at(a+2)
+						 <<" "<<load_data.at(a+3)<<" "<<load_data.at(a+4)<<"\n";
 				a=a+6;
 			}
 		}

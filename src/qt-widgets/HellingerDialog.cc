@@ -204,19 +204,19 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 
 	if (tree_widget_picks->currentItem()->text(1) == 0)
 	{
-		button_edit_point -> setEnabled(false);
-		button_edit_segment -> setEnabled(true);
-		button_remove_segment ->setEnabled(true);
-		button_remove_point -> setEnabled(false);
+		button_edit_point->setEnabled(false);
+		button_edit_segment->setEnabled(true);
+		button_remove_segment->setEnabled(true);
+		button_remove_point->setEnabled(false);
 		button_activate_pick->setEnabled(false);
 		button_deactivate_pick->setEnabled(false);
 	}
 	else
 	{
-		button_edit_point -> setEnabled(true);
-		button_edit_segment -> setEnabled(false);
-		button_remove_segment ->setEnabled(false);
-		button_remove_point -> setEnabled(true);
+		button_edit_point->setEnabled(true);
+		button_edit_segment->setEnabled(false);
+		button_remove_segment->setEnabled(false);
+		button_remove_point->setEnabled(true);
 	}
 
 	d_hellinger_layer.clear_rendered_geometries();
