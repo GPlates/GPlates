@@ -101,7 +101,7 @@ GPlatesQtWidgets::HellingerEditSegment::initialization_table(QStringList &input_
 void
 GPlatesQtWidgets::HellingerEditSegment::initialise(int &segment)
 {
-    QStringList get_data_segment = d_hellinger_model_ptr->get_segment(segment);
+	QStringList get_data_segment = d_hellinger_model_ptr->get_segment_as_string(segment);
     check_picks(get_data_segment);
 	d_segment_number = segment;
 	spinbox_segment->setValue(d_segment_number);

@@ -230,6 +230,7 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 		show_point_on_globe(lat, lon, type_segment);
 
 	}
+
 }
 
 void

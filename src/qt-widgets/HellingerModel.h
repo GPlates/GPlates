@@ -136,12 +136,15 @@ namespace GPlatesQtWidgets
 			const int &row) const;
 
         QStringList
-        get_segment(
-			int &segment) const;
+		get_segment_as_string(
+			const int &segment) const;
+
+		std::vector<HellingerPick>
+		get_segment(
+			const int &segment) const;
 
         int
-		num_rows_in_segment(
-			int &segment);
+		num_rows_in_segment(const int &segment);
 
         void
 		remove_pick(
@@ -176,8 +179,6 @@ namespace GPlatesQtWidgets
 		set_initial_guess(
 			const QStringList &com_list_fields);
 
-
-
 		boost::optional<hellinger_com_file_struct>
 		get_com_file() const;
 
@@ -194,10 +195,9 @@ namespace GPlatesQtWidgets
 		hellinger_model_type::const_iterator segment_end(
 			const int &segment) const;
 
-
         bool
 		segment_number_exists(
-			int segment_num);
+			int segment_num) const;
 
         void
 		reorder_segment(

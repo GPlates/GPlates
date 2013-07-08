@@ -108,20 +108,23 @@ GPlatesQtWidgets::HellingerModel::get_pick_state(const int &segment, const int &
 }
 
 int
-GPlatesQtWidgets::HellingerModel::num_rows_in_segment(int &segment)
+GPlatesQtWidgets::HellingerModel::num_rows_in_segment(
+		const int &segment)
 {
 	return d_hellinger_picks.count(segment);
 }
 
 QStringList
-GPlatesQtWidgets::HellingerModel::get_segment(int &segment) const
+GPlatesQtWidgets::HellingerModel::get_segment_as_string(
+		const int &segment) const
 {
-	hellinger_model_type::const_iterator iter;
+	std::pair<hellinger_model_type::const_iterator,hellinger_model_type::const_iterator> pair =
+			d_hellinger_picks.equal_range(segment);
+
+	hellinger_model_type::const_iterator iter = pair.first;
     QStringList segment_data_values;
-    for (iter = d_hellinger_picks.find(segment); iter != d_hellinger_picks.end(); ++iter )
+	for (; iter != pair.second; ++iter )
     {
-        if (iter->first == segment)
-        {
 			HellingerPick segment_values = iter->second;
 
 			GPlatesQtWidgets::HellingerSegmentType move_fix = segment_values.d_segment_type;
@@ -136,7 +139,6 @@ GPlatesQtWidgets::HellingerModel::get_segment(int &segment) const
             QString is_activated_str = QString("%1").arg(is_activated);
 
 			segment_data_values << move_fix_str << lat_str << lon_str << uncert_str<< is_activated_str;
-        }
     }
     return segment_data_values;
 }
@@ -144,16 +146,18 @@ GPlatesQtWidgets::HellingerModel::get_segment(int &segment) const
 void
 GPlatesQtWidgets::HellingerModel::remove_pick(int &segment, int &row)
 {
-	hellinger_model_type::iterator iter;
-    int n = 0;
+	std::pair<hellinger_model_type::iterator,hellinger_model_type::iterator> pair =
+			d_hellinger_picks.equal_range(segment);
 
-    for (iter = d_hellinger_picks.find(segment); iter != d_hellinger_picks.end(); ++iter )
+	hellinger_model_type::iterator iter = pair.first;
+
+	for (int n = 0;  iter != pair.second ; ++iter, ++n)
     {
-        if (iter->first == segment && n == row)
+		if (n == row)
         {
             d_hellinger_picks.erase(iter);
+			return;
         }
-        n++;
     }
 }
 
@@ -164,7 +168,7 @@ GPlatesQtWidgets::HellingerModel::remove_segment(int &segment)
 }
 
 QStringList
-GPlatesQtWidgets::HellingerModel::get_data() const
+GPlatesQtWidgets::HellingerModel::get_data_as_string() const
 {
 	hellinger_model_type::const_iterator iter;
     QStringList load_data;
@@ -236,11 +240,10 @@ GPlatesQtWidgets::HellingerModel::add_pick(
 
 void
 GPlatesQtWidgets::HellingerModel::set_fit(const QStringList &fields)
-{
-
-	  d_last_result.reset(hellinger_fit_struct(fields.at(0).toDouble(),
-									fields.at(1).toDouble(),
-									fields.at(2).toDouble()));
+{	
+	d_last_result.reset(hellinger_fit_struct(fields.at(0).toDouble(),
+											 fields.at(1).toDouble(),
+											 fields.at(2).toDouble()));
 }
 
 void
@@ -253,7 +256,6 @@ GPlatesQtWidgets::HellingerModel::set_fit(
 boost::optional<GPlatesQtWidgets::hellinger_fit_struct>
 GPlatesQtWidgets::HellingerModel::get_fit()
 {
-	// FIXME: return optional<> as appropriate.
 	return d_last_result;
 }
 
@@ -439,6 +441,13 @@ GPlatesQtWidgets::HellingerModel::get_pick(
 	return boost::none;
 }
 
+std::vector<GPlatesQtWidgets::HellingerPick>
+GPlatesQtWidgets::HellingerModel::get_segment(
+		const int &segment) const
+{
+	return std::vector<GPlatesQtWidgets::HellingerPick>();
+}
+
 GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::begin() const
 {
@@ -453,19 +462,9 @@ GPlatesQtWidgets::HellingerModel::end() const
 
 
 bool
-GPlatesQtWidgets::HellingerModel::segment_number_exists(int segment_num)
+GPlatesQtWidgets::HellingerModel::segment_number_exists(int segment_num) const
 {
-	hellinger_model_type::const_iterator iter;
-    int n = 0;
-    for (iter = d_hellinger_picks.begin(); iter != d_hellinger_picks.end(); ++iter )
-    {
-        if (iter->first == segment_num)
-        {
-            return true;
-        }
-        n++;
-    }
-    return false;
+	return d_hellinger_picks.count(segment_num) > 0;
 }
 
 GPlatesQtWidgets::hellinger_model_type::const_iterator
