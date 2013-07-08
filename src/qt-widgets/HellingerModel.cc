@@ -42,12 +42,16 @@ GPlatesQtWidgets::HellingerModel::HellingerModel(
 QStringList
 GPlatesQtWidgets::HellingerModel::get_line(int &segment, int &row) const
 {
-	hellinger_model_type::const_iterator iter;
-	int n = 0;
+
+	std::pair<hellinger_model_type::const_iterator,hellinger_model_type::const_iterator> pair =
+			d_hellinger_picks.equal_range(segment);
+
+	hellinger_model_type::const_iterator iter = pair.first;
+
 	QStringList get_data_line;
-	for (iter = d_hellinger_picks.find(segment); iter != d_hellinger_picks.end(); ++iter )
+	for (int n = 0;  iter != pair.second ; ++iter, ++n)
 	{
-		if (iter->first == segment && n == row)
+		if (n == row)
 		{
 			HellingerPick segment_num = iter->second;
 			GPlatesQtWidgets::HellingerSegmentType move_fix = segment_num.d_segment_type;
@@ -61,7 +65,6 @@ GPlatesQtWidgets::HellingerModel::get_line(int &segment, int &row) const
 			QString uncert_str = QString("%1").arg(uncert);
 			get_data_line << segment_str << move_fix_str << lat_str << lon_str << uncert_str;
 		}
-		n++;
 	}
 	return get_data_line;
 }
@@ -107,16 +110,7 @@ GPlatesQtWidgets::HellingerModel::get_pick_state(const int &segment, const int &
 int
 GPlatesQtWidgets::HellingerModel::num_rows_in_segment(int &segment)
 {
-    int n = 0;
-	hellinger_model_type::const_iterator iter;
-    for (iter = d_hellinger_picks.find(segment); iter != d_hellinger_picks.end(); ++iter )
-    {
-        if (iter->first == segment)
-        {
-            n++;
-        }
-     }
-    return n;
+	return d_hellinger_picks.count(segment);
 }
 
 QStringList

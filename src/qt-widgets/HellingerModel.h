@@ -52,6 +52,8 @@ namespace GPlatesQtWidgets
 		DISABLED_FIXED_SEGMENT_TYPE
 	};
 
+	// TODO: should the pick structure contain its segment number? Bear in mind that picks can be re-allocated to
+	// different segment numbers.
 	struct HellingerPick{
 		HellingerSegmentType d_segment_type;
 		double d_lat;
