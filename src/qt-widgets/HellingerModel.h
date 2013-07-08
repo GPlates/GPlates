@@ -109,7 +109,8 @@ namespace GPlatesQtWidgets
 			const QStringList &HellingerPick);
 
 		void
-		add_pick(const HellingerPick &pick);
+		add_pick(const HellingerPick &pick,
+				 const int &segment_number);
 
         QStringList
         get_line(

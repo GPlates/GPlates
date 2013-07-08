@@ -72,26 +72,36 @@ GPlatesQtWidgets::HellingerModel::set_pick_state(
 		const int &row,
 		bool enabled)
 {
-	//model_type
+	std::pair<hellinger_model_type::iterator,hellinger_model_type::iterator> pair =
+			d_hellinger_picks.equal_range(segment);
+
+	hellinger_model_type::iterator iter = pair.first;
+
+	for (int n = 0 ; iter != pair.second ; ++iter, ++n)
+	{
+		if (n == row){
+			iter->second.d_is_enabled = enabled;
+		}
+	}
 }
 
 bool
 GPlatesQtWidgets::HellingerModel::get_pick_state(const int &segment, const int &row) const
 {
-	hellinger_model_type::const_iterator iter;
-    int n = 0;
-    bool is_enabled = false;
-    for (iter = d_hellinger_picks.find(segment); iter != d_hellinger_picks.end(); ++iter )
-    {
-        if (iter->first == segment && n == row)
-        {
-		 HellingerPick segment_num = iter->second;
-		 is_enabled = segment_num.d_is_enabled;
+	std::pair<hellinger_model_type::const_iterator,hellinger_model_type::const_iterator> pair =
+			d_hellinger_picks.equal_range(segment);
 
+	hellinger_model_type::const_iterator iter = pair.first;
+
+	for (int n = 0; iter != pair.second; ++iter, ++n)
+    {
+		if (n == row){
+			return iter->second.d_is_enabled;
         }
         n++;
     }
-    return is_enabled;
+	//Should we really be sending an optional<bool> back from this function, and boost::none if it gets to this point?
+	return false;
 }
 
 int
@@ -178,7 +188,7 @@ GPlatesQtWidgets::HellingerModel::get_data() const
         QString uncert_str = QString("%1").arg(uncert);
         QString is_enabled_str = QString("%1").arg(is_enabled);
 		load_data << segment_str << move_fix_str << lat_str << lon_str << uncert_str << is_enabled_str;
-           }
+	}
 
     return load_data;
 }
@@ -224,9 +234,10 @@ GPlatesQtWidgets::HellingerModel::add_pick(const QStringList &pick)
 
 void
 GPlatesQtWidgets::HellingerModel::add_pick(
-		const HellingerPick &pick)
+		const HellingerPick &pick,
+		const int &segment_number)
 {
-
+	d_hellinger_picks.insert(std::pair<int,HellingerPick>(segment_number,pick));
 }
 
 void
