@@ -35,8 +35,6 @@
 
 GPlatesQtWidgets::HellingerModel::HellingerModel(
 		const QString &python_path):
-            d_error_order(true),
-            d_error_lat_lon_rho(true),
 			d_python_path(python_path)
 {     
 }
@@ -69,13 +67,16 @@ GPlatesQtWidgets::HellingerModel::get_line(int &segment, int &row)
 }
 
 void
-GPlatesQtWidgets::HellingerModel::set_state(int &segment, int &row)
+GPlatesQtWidgets::HellingerModel::set_pick_state(
+		const int &segment,
+		const int &row,
+		bool enabled)
 {
 
 }
 
 bool
-GPlatesQtWidgets::HellingerModel::get_pick_state(int &segment,int &row)
+GPlatesQtWidgets::HellingerModel::get_pick_state(const int &segment, const int &row)
 {
     model_type::const_iterator iter;
     int n = 0;
@@ -94,7 +95,7 @@ GPlatesQtWidgets::HellingerModel::get_pick_state(int &segment,int &row)
 }
 
 int
-GPlatesQtWidgets::HellingerModel::segment_number_row(int &segment)
+GPlatesQtWidgets::HellingerModel::num_rows_in_segment(int &segment)
 {
     int n = 0;
     model_type::const_iterator iter;
@@ -107,7 +108,6 @@ GPlatesQtWidgets::HellingerModel::segment_number_row(int &segment)
      }
     return n;
 }
-
 
 QStringList
 GPlatesQtWidgets::HellingerModel::get_segment(int &segment)
@@ -138,7 +138,7 @@ GPlatesQtWidgets::HellingerModel::get_segment(int &segment)
 }
 
 void
-GPlatesQtWidgets::HellingerModel::remove_line(int &segment, int &row)
+GPlatesQtWidgets::HellingerModel::remove_pick(int &segment, int &row)
 {
     model_type::iterator iter;
     int n = 0;
@@ -160,7 +160,7 @@ GPlatesQtWidgets::HellingerModel::remove_segment(int &segment)
 }
 
 QStringList
-GPlatesQtWidgets::HellingerModel::get_data()
+GPlatesQtWidgets::HellingerModel::get_data() const
 {
     model_type::const_iterator iter;
     QStringList load_data;
@@ -223,47 +223,37 @@ GPlatesQtWidgets::HellingerModel::add_pick(const QStringList &pick)
 }
 
 void
-GPlatesQtWidgets::HellingerModel::add_results(const QStringList &fields)
+GPlatesQtWidgets::HellingerModel::add_pick(
+		const Pick &pick)
 {
 
-	  d_fit_struct.reset(fit_struct(fields.at(0).toDouble(),
+}
+
+void
+GPlatesQtWidgets::HellingerModel::set_fit(const QStringList &fields)
+{
+
+	  d_last_result.reset(fit_struct(fields.at(0).toDouble(),
 									fields.at(1).toDouble(),
 									fields.at(2).toDouble()));
 }
 
 void
-GPlatesQtWidgets::HellingerModel::set_error_order(bool error_order)
+GPlatesQtWidgets::HellingerModel::set_fit(
+		const fit_struct &fit)
 {
-    d_error_order = error_order;
-}
-
-bool
-GPlatesQtWidgets::HellingerModel::get_error_order()
-{
-    return d_error_order;
-}
-
-void
-GPlatesQtWidgets::HellingerModel::set_error_lat_lon_rho(bool error_lat_lon_rho)
-{
-    d_error_lat_lon_rho = error_lat_lon_rho;
-}
-
-bool
-GPlatesQtWidgets::HellingerModel::get_error_lat_lon_rho()
-{
-    return d_error_lat_lon_rho;
+	d_last_result.reset(fit);
 }
 
 boost::optional<GPlatesQtWidgets::fit_struct>
-GPlatesQtWidgets::HellingerModel::get_results()
+GPlatesQtWidgets::HellingerModel::get_fit()
 {
 	// FIXME: return optional<> as appropriate.
-    return d_fit_struct;
+	return d_last_result;
 }
 
 void
-GPlatesQtWidgets::HellingerModel::set_initialization_guess(const QStringList &com_list_fields)
+GPlatesQtWidgets::HellingerModel::set_initial_guess(const QStringList &com_list_fields)
 {
 	d_active_com_file_struct.d_pick_file = com_list_fields.at(0);
 	d_active_com_file_struct.d_lat = com_list_fields.at(1).toDouble();
@@ -301,7 +291,7 @@ GPlatesQtWidgets::HellingerModel::set_initialization_guess(const QStringList &co
 }
 
 boost::optional<GPlatesQtWidgets::com_file_struct>
-GPlatesQtWidgets::HellingerModel::get_com_file()
+GPlatesQtWidgets::HellingerModel::get_com_file() const
 {
     return d_active_com_file_struct;
 }
@@ -329,7 +319,7 @@ GPlatesQtWidgets::HellingerModel::add_data_file()
 }
 
 std::vector <GPlatesMaths::LatLonPoint>
-GPlatesQtWidgets::HellingerModel::get_points()
+GPlatesQtWidgets::HellingerModel::get_pick_points()
 {
     return d_points;
 }
@@ -353,7 +343,7 @@ GPlatesQtWidgets::HellingerModel::reset_model()
 }
 
 void
-GPlatesQtWidgets::HellingerModel::reset_com_file_struct()
+GPlatesQtWidgets::HellingerModel:: reset_com_file_struct()
 {
 	d_active_com_file_struct.d_pick_file = "";
 	d_active_com_file_struct.d_lat = 0;
@@ -372,7 +362,7 @@ GPlatesQtWidgets::HellingerModel::reset_com_file_struct()
 void
 GPlatesQtWidgets::HellingerModel::reset_fit_struct()
 {
-	d_fit_struct.reset();
+	d_last_result.reset();
 }
 
 void
@@ -427,7 +417,7 @@ GPlatesQtWidgets::HellingerModel::reorder_segment(int segment)
 }
 
 boost::optional<GPlatesQtWidgets::Pick>
-GPlatesQtWidgets::HellingerModel::get_line(
+GPlatesQtWidgets::HellingerModel::get_pick(
 		const int &segment,
 		const int &row)
 {

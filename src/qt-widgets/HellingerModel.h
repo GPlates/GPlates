@@ -97,6 +97,7 @@ namespace GPlatesQtWidgets
 	{
 
 	public:
+
         HellingerModel(
 			const QString &python_path);
 
@@ -104,8 +105,8 @@ namespace GPlatesQtWidgets
         add_pick(
 			const QStringList &Pick);
 
-        void
-        reset();
+		void
+		add_pick(const Pick &pick);
 
         QStringList
         get_line(
@@ -114,16 +115,17 @@ namespace GPlatesQtWidgets
 
         bool
 		get_pick_state(
-			int &segment,
-			int &row);
+			const int &segment,
+			const int &row);
 
         void
-        set_state(
-			int &segment,
-			int &row);
+		set_pick_state(
+			const int &segment,
+			const int &row,
+			bool enabled);
 
 		boost::optional<Pick>
-		get_line(
+		get_pick(
 			const int &segment, 
 			const int &row);
 
@@ -132,11 +134,11 @@ namespace GPlatesQtWidgets
 			int &segment);
 
         int
-        segment_number_row(
+		num_rows_in_segment(
 			int &segment);
 
         void
-        remove_line(
+		remove_pick(
 			int &segment,
 			int &row);
 
@@ -148,20 +150,25 @@ namespace GPlatesQtWidgets
         reset_model();
 
         void
-        add_results(
+		set_fit(
 			const QStringList &fields);
 
+
+		void
+		set_fit(
+			const fit_struct &fields);
+
         boost::optional<fit_struct>
-        get_results();
+		get_fit();
 
         void
 		add_data_file();
 
         std::vector<GPlatesMaths::LatLonPoint>
-		get_points();
+		get_pick_points();
 
         void
-        set_initialization_guess(
+		set_initial_guess(
 			const QStringList &com_list_fields);
 
         void
@@ -176,25 +183,11 @@ namespace GPlatesQtWidgets
         void
 		reorder_picks();
 
-        void
-        set_error_order(
-			bool error_order);
-
-        bool
-        get_error_order();
-
-        void
-        set_error_lat_lon_rho(
-			bool error_lat_lon_rho);
-
-        bool
-        get_error_lat_lon_rho();
-
         boost::optional<com_file_struct>
-		get_com_file();
+		get_com_file() const;
 
         QStringList
-        get_data();
+		get_data() const;
 
         model_type::const_iterator begin() const;
 
@@ -218,15 +211,11 @@ namespace GPlatesQtWidgets
     private:
 
 		com_file_struct d_active_com_file_struct;
-		boost::optional<fit_struct> d_fit_struct;
+		boost::optional<fit_struct> d_last_result;
 		model_type d_hellinger_picks;                
 		std::vector<GPlatesMaths::LatLonPoint> d_points;
 
-		// TODO: these two booleans, and their getter/setters, don't appear
-		// to be used. Check if we (will) need these.
-		bool d_error_order;
-		bool d_error_lat_lon_rho;
-
+		// TODO: check if this path is required.
 		QString d_python_path;
 	};
 }

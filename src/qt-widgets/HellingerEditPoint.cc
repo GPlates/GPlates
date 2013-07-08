@@ -108,7 +108,7 @@ GPlatesQtWidgets::HellingerEditPoint::edit_point()
     QString unc_str = QString("%1").arg(unc);
     QString is_enabled = "1";
     edit_point_model << move_fixed_str << segment_str << lat_str << lon_str << unc_str<<is_enabled;
-    d_hellinger_model_ptr ->remove_line(d_segment,d_row);
+    d_hellinger_model_ptr ->remove_pick(d_segment,d_row);
     d_hellinger_model_ptr ->add_pick(edit_point_model);
     d_hellinger_dialog_ptr ->update();        
 }

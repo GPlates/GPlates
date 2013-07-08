@@ -246,7 +246,7 @@ namespace
                         if (d_com_fields.count()==MIN_NUM_COM_FIELDS)
                         {
                         GPlatesFileIO::HellingerReader::read_pick_file(path+"/"+d_com_fields.at(0),hellinger_model,read_errors);
-                        hellinger_model.set_initialization_guess(d_com_fields);
+                        hellinger_model.set_initial_guess(d_com_fields);
                         d_com_fields.clear();
                         }
                         else

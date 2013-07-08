@@ -278,7 +278,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 		{
 			move_fix = QString("%1").arg(DISABLED_MOVING_SEGMENT_TYPE);
 			data_to_model << move_fix << segment_str << lat << lon << uncert;
-			d_hellinger_model->remove_line(segment_int,row);
+			d_hellinger_model->remove_pick(segment_int,row);
 			d_hellinger_model->add_pick(data_to_model);
 			update_from_model();
 		}
@@ -286,7 +286,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 		{
 			move_fix = QString("%1").arg(DISABLED_FIXED_SEGMENT_TYPE);
 			data_to_model << move_fix << segment_str << lat << lon << uncert;
-			d_hellinger_model->remove_line(segment_int,row);
+			d_hellinger_model->remove_pick(segment_int,row);
 			d_hellinger_model->add_pick(data_to_model);
 			update_from_model();
 		}
@@ -297,7 +297,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 		QString change_state = "0";
 		data_to_model << move_fix << segment_str << lat << lon << uncert;
 		//        qDebug()<<data_to_model<<change_state;
-		d_hellinger_model->remove_line(segment_int,row);
+		d_hellinger_model->remove_pick(segment_int,row);
 		d_hellinger_model->add_pick(data_to_model);
 		update_from_model();
 	}
@@ -357,7 +357,7 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_point()
 		QString segment = tree_widget_picks->currentItem()->text(0);
 		int row = index.row();
 		int segment_int = segment.toInt();
-		d_hellinger_model->remove_line(segment_int, row);
+		d_hellinger_model->remove_pick(segment_int, row);
 		update_from_model();
 		reset_expanded_status();
 	}
@@ -683,7 +683,7 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 			QTextStream in(&data_file);
 			QString line = in.readLine();
 			QStringList fields = line.split(" ",QString::SkipEmptyParts);
-			d_hellinger_model->add_results(fields);
+			d_hellinger_model->set_fit(fields);
 			data_file.close();
 			update_result();
 			update_buttons_statistics(true);
@@ -695,7 +695,7 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 		update_buttons_statistics(true);
 		update_continue_button(false);
 		// TODO: check if we need this add_data_file here.....
-		d_hellinger_model->add_data_file();
+		//d_hellinger_model->add_data_file();
 		show_data_points_on_globe();
 	}
 }
@@ -800,7 +800,7 @@ GPlatesQtWidgets::HellingerDialog::update_result()
 {
 	// FIXME: sort out the sequence of calling update_canvas, update_result etc... this function (update_result) is getting
 	// called 5 times after a fit is completed. On the second call, the lon is always zero for some reason. Investigate.
-	boost::optional<GPlatesQtWidgets::fit_struct> data_fit_struct = d_hellinger_model->get_results();
+	boost::optional<GPlatesQtWidgets::fit_struct> data_fit_struct = d_hellinger_model->get_fit();
 
 	if (data_fit_struct)
 	{
@@ -816,7 +816,7 @@ GPlatesQtWidgets::HellingerDialog::update_result()
 void
 GPlatesQtWidgets::HellingerDialog::show_data_points_on_globe()
 {
-	std::vector<GPlatesMaths::LatLonPoint> data_points = d_hellinger_model->get_points();
+	std::vector<GPlatesMaths::LatLonPoint> data_points = d_hellinger_model->get_pick_points();
 	if (!data_points.empty())
 	{
 		std::vector<GPlatesMaths::LatLonPoint>::const_iterator iter;
@@ -1003,7 +1003,7 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 	d_hellinger_layer.clear_rendered_geometries();
 	draw_fixed_picks();
 	update_result();
-	boost::optional<GPlatesQtWidgets::fit_struct> data_fit_struct = d_hellinger_model->get_results();
+	boost::optional<GPlatesQtWidgets::fit_struct> data_fit_struct = d_hellinger_model->get_fit();
 
 	double recon_time = spinbox_recon_time->value();
 
@@ -1119,7 +1119,7 @@ GPlatesQtWidgets::HellingerDialog::handle_fit_spinboxes_changed()
 	//    QString eps_str = QString("%1").arg(spinbox_result_eps->value());
 	fit_spinboxes<<lat_str<<lon_str<<angle_str;
 	d_hellinger_model->reset_points();
-	d_hellinger_model->add_results(fit_spinboxes);
+	d_hellinger_model->set_fit(fit_spinboxes);
 	update_canvas();
 }
 
