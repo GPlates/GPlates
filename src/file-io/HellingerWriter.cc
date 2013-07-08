@@ -33,8 +33,9 @@
 
 void
 GPlatesFileIO::HellingerWriter::write_pick_file(
-	const QString &filename,
-	GPlatesQtWidgets::HellingerModel &hellinger_model)
+		const QString &filename,
+		GPlatesQtWidgets::HellingerModel &hellinger_model,
+		bool export_disabled_picks)
 {
 	QFile file(filename);
 	QTextStream out(&file);
@@ -48,29 +49,37 @@ GPlatesFileIO::HellingerWriter::write_pick_file(
 			int a = 0;
 			for (int i=0; i < (load_data.size()/6); i++)
 			{
+				bool should_export = true;
 				bool ok;
 				if (!load_data.at(a+5).toInt(&ok))
 				{
-//					if (load_data.at(a+1).toInt() == GPlatesQtWidgets::MOVING_SEGMENT_TYPE)
-//					{
+					if (!export_disabled_picks)
+					{
+						should_export = false;
+					}
+					if (load_data.at(a+1).toInt() == GPlatesQtWidgets::MOVING_SEGMENT_TYPE)
+					{
 
-//						pick_state = QString("%1").arg(GPlatesQtWidgets::DISABLED_MOVING_SEGMENT_TYPE);
+						pick_state = QString("%1").arg(GPlatesQtWidgets::DISABLED_MOVING_SEGMENT_TYPE);
 
-//					}
-//					else if (load_data.at(a+1).toInt() == GPlatesQtWidgets::FIXED_SEGMENT_TYPE)
-//					{
+					}
+					else if (load_data.at(a+1).toInt() == GPlatesQtWidgets::FIXED_SEGMENT_TYPE)
+					{
 
-//						pick_state = QString("%1").arg(GPlatesQtWidgets::DISABLED_FIXED_SEGMENT_TYPE);
-//					}
+						pick_state = QString("%1").arg(GPlatesQtWidgets::DISABLED_FIXED_SEGMENT_TYPE);
+					}
 				}
 				else if (load_data.at(a+5).toInt(&ok))
 				{
 					pick_state = load_data.at(a+1);
 				}
-				out << pick_state<<" "<<load_data.at(a)<<" "<<load_data.at(a+2)
-					<<" "<<load_data.at(a+3)<<" "<<load_data.at(a+4)<<"\n";
-				qDebug() << pick_state<<" "<<load_data.at(a)<<" "<<load_data.at(a+2)
-						 <<" "<<load_data.at(a+3)<<" "<<load_data.at(a+4)<<"\n";
+				if (should_export)
+				{
+					out << pick_state<<" "<<load_data.at(a)<<" "<<load_data.at(a+2)
+						<<" "<<load_data.at(a+3)<<" "<<load_data.at(a+4)<<"\n";
+					qDebug() << pick_state<<" "<<load_data.at(a)<<" "<<load_data.at(a+2)
+							 <<" "<<load_data.at(a+3)<<" "<<load_data.at(a+4)<<"\n";
+				}
 				a=a+6;
 			}
 		}

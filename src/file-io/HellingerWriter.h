@@ -47,7 +47,8 @@ public:
     void
     write_pick_file(
 			const QString &filename,
-            GPlatesQtWidgets::HellingerModel& hellinger_model);
+			GPlatesQtWidgets::HellingerModel& hellinger_model,
+			bool export_disabled_picks = true);
 
 
 };

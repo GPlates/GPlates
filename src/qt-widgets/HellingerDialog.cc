@@ -520,7 +520,7 @@ GPlatesQtWidgets::HellingerDialog::handle_export_file()
 	
 	if (file_name != "")
 	{
-		GPlatesFileIO::HellingerWriter::write_pick_file(file_name,*d_hellinger_model);
+		GPlatesFileIO::HellingerWriter::write_pick_file(file_name,*d_hellinger_model,true);
 	}
 }
 
@@ -596,7 +596,7 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate()
 	if (python_code.exists())
 	{
 		QString path = d_python_path + d_temp_pick_file;
-		GPlatesFileIO::HellingerWriter::write_pick_file(path,*d_hellinger_model);
+		GPlatesFileIO::HellingerWriter::write_pick_file(path,*d_hellinger_model,false);
 		QString import_file_line = line_import_file->text();
 		// TODO: check if we actually need to update the buttons here.
 		update_buttons();

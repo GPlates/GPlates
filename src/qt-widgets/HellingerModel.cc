@@ -226,10 +226,6 @@ void
 GPlatesQtWidgets::HellingerModel::add_results(const QStringList &fields)
 {
 
-//	  d_fit_struct->lat = fields.at(0).toDouble();
-//	  d_fit_struct->lon = fields.at(1).toDouble();
-//	  d_fit_struct->angle = fields.at(2).toDouble();
-//      d_fit_struct.eps = fields.at(3);
 	  d_fit_struct.reset(fit_struct(fields.at(0).toDouble(),
 									fields.at(1).toDouble(),
 									fields.at(2).toDouble()));
