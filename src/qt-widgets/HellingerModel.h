@@ -5,7 +5,7 @@
  * $Revision: 258 $
  * $Date: 2012-03-19 12:52:08 +0100 (Mon, 19 Mar 2012) $ 
  * 
- * Copyright (C) 2011, 2012 Geological Survey of Norway
+ * Copyright (C) 2011, 2012, 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -43,26 +43,27 @@
 
 namespace GPlatesQtWidgets
 {
-    enum SegmentType
-    {
-        MOVING_SEGMENT_TYPE = 1,
+
+	enum HellingerSegmentType
+	{
+		MOVING_SEGMENT_TYPE = 1,
 		FIXED_SEGMENT_TYPE,
 		DISABLED_MOVING_SEGMENT_TYPE = 31,
 		DISABLED_FIXED_SEGMENT_TYPE
-    };
+	};
 
-	struct Pick{
-		SegmentType d_segment_type;
+	struct HellingerPick{
+		HellingerSegmentType d_segment_type;
 		double d_lat;
 		double d_lon;
 		double d_uncertainty;
 		bool d_is_enabled;
 	};
 
-    typedef std::multimap<int,Pick> model_type;
+	typedef std::multimap<int,HellingerPick> hellinger_model_type;
 
 	// Contents of a hellinger .com file.
-    struct com_file_struct{
+	struct hellinger_com_file_struct{
 		QString d_pick_file;
 		double d_lat;	// initial estimate
 		double d_lon; // initial estimate
@@ -79,8 +80,8 @@ namespace GPlatesQtWidgets
     };
 
 	// The result of the fit.
-	struct fit_struct{
-		fit_struct(double lat, double lon, double angle, double eps=0):
+	struct hellinger_fit_struct{
+		hellinger_fit_struct(double lat, double lon, double angle, double eps=0):
 			d_lat(lat),
 			d_lon(lon),
 			d_angle(angle),
@@ -98,25 +99,27 @@ namespace GPlatesQtWidgets
 
 	public:
 
+
+
         HellingerModel(
 			const QString &python_path);
 
         void
         add_pick(
-			const QStringList &Pick);
+			const QStringList &HellingerPick);
 
 		void
-		add_pick(const Pick &pick);
+		add_pick(const HellingerPick &pick);
 
         QStringList
         get_line(
 			int &segment,
-            int &row);
+			int &row) const;
 
         bool
 		get_pick_state(
 			const int &segment,
-			const int &row);
+			const int &row) const ;
 
         void
 		set_pick_state(
@@ -124,14 +127,14 @@ namespace GPlatesQtWidgets
 			const int &row,
 			bool enabled);
 
-		boost::optional<Pick>
+		boost::optional<HellingerPick>
 		get_pick(
 			const int &segment, 
-			const int &row);
+			const int &row) const;
 
         QStringList
         get_segment(
-			int &segment);
+			int &segment) const;
 
         int
 		num_rows_in_segment(
@@ -153,50 +156,39 @@ namespace GPlatesQtWidgets
 		set_fit(
 			const QStringList &fields);
 
-
 		void
 		set_fit(
-			const fit_struct &fields);
+			const hellinger_fit_struct &fields);
 
-        boost::optional<fit_struct>
+		boost::optional<hellinger_fit_struct>
 		get_fit();
 
         void
 		add_data_file();
 
         std::vector<GPlatesMaths::LatLonPoint>
-		get_pick_points();
+		get_pick_points() const;
 
         void
 		set_initial_guess(
 			const QStringList &com_list_fields);
 
-        void
-        reset_com_file_struct();
 
-        void
-        reset_fit_struct();
 
-        void
-		reset_points();
-
-        void
-		reorder_picks();
-
-        boost::optional<com_file_struct>
+		boost::optional<hellinger_com_file_struct>
 		get_com_file() const;
 
         QStringList
 		get_data() const;
 
-        model_type::const_iterator begin() const;
+		hellinger_model_type::const_iterator begin() const;
 
-        model_type::const_iterator end() const;
+		hellinger_model_type::const_iterator end() const;
 
-		model_type::const_iterator segment_begin(
+		hellinger_model_type::const_iterator segment_begin(
 			const int &segment) const;
 
-		model_type::const_iterator segment_end(
+		hellinger_model_type::const_iterator segment_end(
 			const int &segment) const;
 
 
@@ -208,11 +200,25 @@ namespace GPlatesQtWidgets
 		reorder_segment(
 			int segment);
 
+		void
+		reorder_picks();
+
     private:
 
-		com_file_struct d_active_com_file_struct;
-		boost::optional<fit_struct> d_last_result;
-		model_type d_hellinger_picks;                
+		void
+		reset_com_file_struct();
+
+		void
+		reset_fit_struct();
+
+		void
+		reset_points();
+
+
+
+		hellinger_com_file_struct d_active_com_file_struct;
+		boost::optional<hellinger_fit_struct> d_last_result;
+		hellinger_model_type d_hellinger_picks;
 		std::vector<GPlatesMaths::LatLonPoint> d_points;
 
 		// TODO: check if this path is required.

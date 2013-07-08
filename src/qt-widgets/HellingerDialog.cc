@@ -69,7 +69,7 @@ namespace{
 	add_pick_to_segment(
 			QTreeWidgetItem *parent_item,
 			const int &segment_number,
-			const GPlatesQtWidgets::Pick &pick)
+			const GPlatesQtWidgets::HellingerPick &pick)
 	{
 		QTreeWidgetItem *item = new QTreeWidgetItem();
 		item->setText(SEGMENT_NUMBER, QString::number(segment_number));
@@ -92,7 +92,7 @@ namespace{
 	void
 	add_pick_to_tree(
 			const int &segment_number,
-			const GPlatesQtWidgets::Pick &pick,
+			const GPlatesQtWidgets::HellingerPick &pick,
 			QTreeWidget *tree)
 	{
 		QString segment_as_string = QString::number(segment_number);
@@ -468,7 +468,7 @@ GPlatesQtWidgets::HellingerDialog::handle_spinbox_radius_changed()
 void
 GPlatesQtWidgets::HellingerDialog::update_initial_guess()
 {
-	boost::optional<GPlatesQtWidgets::com_file_struct> com_file_data = d_hellinger_model->get_com_file();
+	boost::optional<GPlatesQtWidgets::hellinger_com_file_struct> com_file_data = d_hellinger_model->get_com_file();
 
 	if (com_file_data)
 	{
@@ -652,7 +652,7 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate()
 					d_temp_par,
 					d_temp_res);
 		d_thread_type = POLE_THREAD_TYPE;
-		d_hellinger_model->reset_points();
+
 		update_canvas();
 		d_hellinger_thread->set_python_script_type(d_thread_type);
 
@@ -732,10 +732,6 @@ GPlatesQtWidgets::HellingerDialog::update_from_model()
 {
 	tree_widget_picks->clear();
 
-	// TODO: Check if we need these two reset functions called here.
-	d_hellinger_model->reset_fit_struct();
-	d_hellinger_model->reset_points();
-
 	load_data_from_model();
 	update_canvas();
 	update_buttons();
@@ -800,7 +796,7 @@ GPlatesQtWidgets::HellingerDialog::update_result()
 {
 	// FIXME: sort out the sequence of calling update_canvas, update_result etc... this function (update_result) is getting
 	// called 5 times after a fit is completed. On the second call, the lon is always zero for some reason. Investigate.
-	boost::optional<GPlatesQtWidgets::fit_struct> data_fit_struct = d_hellinger_model->get_fit();
+	boost::optional<GPlatesQtWidgets::hellinger_fit_struct> data_fit_struct = d_hellinger_model->get_fit();
 
 	if (data_fit_struct)
 	{
@@ -848,7 +844,7 @@ void
 GPlatesQtWidgets::HellingerDialog::load_data_from_model()
 {    
 
-	model_type::const_iterator
+	hellinger_model_type::const_iterator
 			iter = d_hellinger_model->begin(),
 			end = d_hellinger_model->end();
 
@@ -920,7 +916,7 @@ GPlatesQtWidgets::HellingerDialog::set_segment_colours(
 void
 GPlatesQtWidgets::HellingerDialog::draw_fixed_picks()
 {
-	model_type::const_iterator it = d_hellinger_model->begin();
+	hellinger_model_type::const_iterator it = d_hellinger_model->begin();
 
 	int num_segment = 0;
 	int num_colour = 0;
@@ -960,7 +956,7 @@ GPlatesQtWidgets::HellingerDialog::draw_fixed_picks()
 void
 GPlatesQtWidgets::HellingerDialog::draw_moving_picks()
 {
-	model_type::const_iterator it = d_hellinger_model->begin();
+	hellinger_model_type::const_iterator it = d_hellinger_model->begin();
 	int num_segment = 0;
 	int num_colour = 0;
 	for (; it != d_hellinger_model->end(); ++it)
@@ -1003,7 +999,7 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 	d_hellinger_layer.clear_rendered_geometries();
 	draw_fixed_picks();
 	update_result();
-	boost::optional<GPlatesQtWidgets::fit_struct> data_fit_struct = d_hellinger_model->get_fit();
+	boost::optional<GPlatesQtWidgets::hellinger_fit_struct> data_fit_struct = d_hellinger_model->get_fit();
 
 	double recon_time = spinbox_recon_time->value();
 
@@ -1014,7 +1010,7 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 	{
 		angle = (recon_time/spinbox_chron->value())*data_fit_struct.get().d_angle;
 		double convert_angle = GPlatesMaths::convert_deg_to_rad(angle);
-		model_type::const_iterator it = d_hellinger_model->begin();
+		hellinger_model_type::const_iterator it = d_hellinger_model->begin();
 
 		GPlatesMaths::LatLonPoint llp(lat,lon);
 		GPlatesMaths::PointOnSphere point = make_point_on_sphere(llp);
@@ -1110,29 +1106,25 @@ GPlatesQtWidgets::HellingerDialog::handle_recon_time_slider_changed(
 void
 GPlatesQtWidgets::HellingerDialog::handle_fit_spinboxes_changed()
 {
-	QStringList fit_spinboxes;
-	QString lat_str = QString("%1").arg(spinbox_result_lat->value());
-	QString lon_str = QString("%1").arg(spinbox_result_lon->value());
-	QString angle_str = QString("%1").arg(spinbox_result_angle->value());
+	//TODO: think about if we want this behaviour - i.e. allowing a user to changed
+	// the "fit result" values and the corresponding display. I think I will disable
+	// this for now.
 
-	// FIXME: why is this eps value not grabbed and displayed?
-	//    QString eps_str = QString("%1").arg(spinbox_result_eps->value());
-	fit_spinboxes<<lat_str<<lon_str<<angle_str;
-	d_hellinger_model->reset_points();
-	d_hellinger_model->set_fit(fit_spinboxes);
+	GPlatesQtWidgets::hellinger_fit_struct fit(spinbox_result_lat->value(),
+											   spinbox_result_lon->value(),
+											   spinbox_result_angle->value());
+	d_hellinger_model->set_fit(fit);
 	update_canvas();
 }
 
 void
 GPlatesQtWidgets::HellingerDialog::reorder_picks()
 {
-
 	d_hellinger_model->reorder_picks();
 	tree_widget_picks->clear();
 	load_data_from_model();
 	button_renumber->setEnabled(false);
 	reset_expanded_status();
-
 }
 
 void

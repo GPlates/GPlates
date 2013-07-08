@@ -5,7 +5,7 @@
  * $Revision: 257 $
  * $Date: 2012-03-01 15:12:46 +0100 (Thu, 01 Mar 2012) $ 
  * 
- * Copyright (C) 2011, 2012 Geological Survey of Norway
+ * Copyright (C) 2011, 2012, 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -40,17 +40,17 @@ GPlatesQtWidgets::HellingerModel::HellingerModel(
 }
 
 QStringList
-GPlatesQtWidgets::HellingerModel::get_line(int &segment, int &row)
+GPlatesQtWidgets::HellingerModel::get_line(int &segment, int &row) const
 {
-	model_type::const_iterator iter;
+	hellinger_model_type::const_iterator iter;
 	int n = 0;
 	QStringList get_data_line;
 	for (iter = d_hellinger_picks.find(segment); iter != d_hellinger_picks.end(); ++iter )
 	{
 		if (iter->first == segment && n == row)
 		{
-			Pick segment_num = iter->second;
-			GPlatesQtWidgets::SegmentType move_fix = segment_num.d_segment_type;
+			HellingerPick segment_num = iter->second;
+			GPlatesQtWidgets::HellingerSegmentType move_fix = segment_num.d_segment_type;
 			double lat = segment_num.d_lat;
 			double lon = segment_num.d_lon;
 			double uncert = segment_num.d_uncertainty;
@@ -72,20 +72,20 @@ GPlatesQtWidgets::HellingerModel::set_pick_state(
 		const int &row,
 		bool enabled)
 {
-
+	//model_type
 }
 
 bool
-GPlatesQtWidgets::HellingerModel::get_pick_state(const int &segment, const int &row)
+GPlatesQtWidgets::HellingerModel::get_pick_state(const int &segment, const int &row) const
 {
-    model_type::const_iterator iter;
+	hellinger_model_type::const_iterator iter;
     int n = 0;
     bool is_enabled = false;
     for (iter = d_hellinger_picks.find(segment); iter != d_hellinger_picks.end(); ++iter )
     {
         if (iter->first == segment && n == row)
         {
-         Pick segment_num = iter->second;
+		 HellingerPick segment_num = iter->second;
 		 is_enabled = segment_num.d_is_enabled;
 
         }
@@ -98,7 +98,7 @@ int
 GPlatesQtWidgets::HellingerModel::num_rows_in_segment(int &segment)
 {
     int n = 0;
-    model_type::const_iterator iter;
+	hellinger_model_type::const_iterator iter;
     for (iter = d_hellinger_picks.find(segment); iter != d_hellinger_picks.end(); ++iter )
     {
         if (iter->first == segment)
@@ -110,17 +110,17 @@ GPlatesQtWidgets::HellingerModel::num_rows_in_segment(int &segment)
 }
 
 QStringList
-GPlatesQtWidgets::HellingerModel::get_segment(int &segment)
+GPlatesQtWidgets::HellingerModel::get_segment(int &segment) const
 {
-    model_type::const_iterator iter;
+	hellinger_model_type::const_iterator iter;
     QStringList segment_data_values;
     for (iter = d_hellinger_picks.find(segment); iter != d_hellinger_picks.end(); ++iter )
     {
         if (iter->first == segment)
         {
-            Pick segment_values = iter->second;
+			HellingerPick segment_values = iter->second;
 
-			GPlatesQtWidgets::SegmentType move_fix = segment_values.d_segment_type;
+			GPlatesQtWidgets::HellingerSegmentType move_fix = segment_values.d_segment_type;
 			double lat = segment_values.d_lat;
 			double lon = segment_values.d_lon;
 			double uncert = segment_values.d_uncertainty;
@@ -140,7 +140,7 @@ GPlatesQtWidgets::HellingerModel::get_segment(int &segment)
 void
 GPlatesQtWidgets::HellingerModel::remove_pick(int &segment, int &row)
 {
-    model_type::iterator iter;
+	hellinger_model_type::iterator iter;
     int n = 0;
 
     for (iter = d_hellinger_picks.find(segment); iter != d_hellinger_picks.end(); ++iter )
@@ -162,11 +162,11 @@ GPlatesQtWidgets::HellingerModel::remove_segment(int &segment)
 QStringList
 GPlatesQtWidgets::HellingerModel::get_data() const
 {
-    model_type::const_iterator iter;
+	hellinger_model_type::const_iterator iter;
     QStringList load_data;
     for (iter=d_hellinger_picks.begin(); iter != d_hellinger_picks.end(); ++iter) {
-        Pick s = iter->second;
-		GPlatesQtWidgets::SegmentType move_fix = s.d_segment_type;
+		HellingerPick s = iter->second;
+		GPlatesQtWidgets::HellingerSegmentType move_fix = s.d_segment_type;
 		double lat = s.d_lat;
 		double lon = s.d_lon;
 		double uncert = s.d_uncertainty;
@@ -188,7 +188,7 @@ GPlatesQtWidgets::HellingerModel::get_data() const
 void
 GPlatesQtWidgets::HellingerModel::add_pick(const QStringList &pick)
 {
-	Pick new_pick;
+	HellingerPick new_pick;
 	if (pick.at(0).toInt() == DISABLED_MOVING_SEGMENT_TYPE)
     {
 		new_pick.d_segment_type = MOVING_SEGMENT_TYPE;
@@ -199,7 +199,7 @@ GPlatesQtWidgets::HellingerModel::add_pick(const QStringList &pick)
     }
     else
     {
-		new_pick.d_segment_type = static_cast<GPlatesQtWidgets::SegmentType>(pick.at(0).toInt());
+		new_pick.d_segment_type = static_cast<GPlatesQtWidgets::HellingerSegmentType>(pick.at(0).toInt());
     }
 		new_pick.d_lat = pick.at(2).toDouble();
 		new_pick.d_lon = pick.at(3).toDouble();
@@ -217,14 +217,14 @@ GPlatesQtWidgets::HellingerModel::add_pick(const QStringList &pick)
 			new_pick.d_is_enabled = true;
         }
 
-		d_hellinger_picks.insert(std::pair<int, Pick>(pick.at(1).toInt(), new_pick));
+		d_hellinger_picks.insert(std::pair<int, HellingerPick>(pick.at(1).toInt(), new_pick));
 
 
 }
 
 void
 GPlatesQtWidgets::HellingerModel::add_pick(
-		const Pick &pick)
+		const HellingerPick &pick)
 {
 
 }
@@ -233,19 +233,19 @@ void
 GPlatesQtWidgets::HellingerModel::set_fit(const QStringList &fields)
 {
 
-	  d_last_result.reset(fit_struct(fields.at(0).toDouble(),
+	  d_last_result.reset(hellinger_fit_struct(fields.at(0).toDouble(),
 									fields.at(1).toDouble(),
 									fields.at(2).toDouble()));
 }
 
 void
 GPlatesQtWidgets::HellingerModel::set_fit(
-		const fit_struct &fit)
+		const hellinger_fit_struct &fit)
 {
 	d_last_result.reset(fit);
 }
 
-boost::optional<GPlatesQtWidgets::fit_struct>
+boost::optional<GPlatesQtWidgets::hellinger_fit_struct>
 GPlatesQtWidgets::HellingerModel::get_fit()
 {
 	// FIXME: return optional<> as appropriate.
@@ -290,7 +290,7 @@ GPlatesQtWidgets::HellingerModel::set_initial_guess(const QStringList &com_list_
 	d_active_com_file_struct.d_down_filename = com_list_fields.at(11);
 }
 
-boost::optional<GPlatesQtWidgets::com_file_struct>
+boost::optional<GPlatesQtWidgets::hellinger_com_file_struct>
 GPlatesQtWidgets::HellingerModel::get_com_file() const
 {
     return d_active_com_file_struct;
@@ -319,7 +319,7 @@ GPlatesQtWidgets::HellingerModel::add_data_file()
 }
 
 std::vector <GPlatesMaths::LatLonPoint>
-GPlatesQtWidgets::HellingerModel::get_pick_points()
+GPlatesQtWidgets::HellingerModel::get_pick_points() const
 {
     return d_points;
 }
@@ -368,12 +368,12 @@ GPlatesQtWidgets::HellingerModel::reset_fit_struct()
 void
 GPlatesQtWidgets::HellingerModel::reorder_picks()
 {
-    model_type::const_iterator iter;
-    model_type new_map;
+	hellinger_model_type::const_iterator iter;
+	hellinger_model_type new_map;
     int num_segment = 0;
     int miss_num = 0;
     for (iter=d_hellinger_picks.begin(); iter != d_hellinger_picks.end(); ++iter) {
-        Pick pick_part = iter->second;
+		HellingerPick pick_part = iter->second;
         if (iter->first>num_segment)
         {
             if (iter->first == num_segment+1)
@@ -388,7 +388,7 @@ GPlatesQtWidgets::HellingerModel::reorder_picks()
         }
         else
         {
-			new_map.insert(std::pair<int, Pick>(iter->first-miss_num, pick_part));
+			new_map.insert(std::pair<int, HellingerPick>(iter->first-miss_num, pick_part));
         }
       }
 
@@ -398,17 +398,17 @@ GPlatesQtWidgets::HellingerModel::reorder_picks()
 void
 GPlatesQtWidgets::HellingerModel::reorder_segment(int segment)
 {
-    model_type::const_iterator iter;
-    model_type new_map;
+	hellinger_model_type::const_iterator iter;
+	hellinger_model_type new_map;
     for (iter=d_hellinger_picks.begin(); iter != d_hellinger_picks.end(); ++iter) {
-        Pick pick_part = iter->second;
+		HellingerPick pick_part = iter->second;
         if (iter->first>=segment)
         {
-			new_map.insert(std::pair<int, Pick>(iter->first+1, pick_part));
+			new_map.insert(std::pair<int, HellingerPick>(iter->first+1, pick_part));
         }
         else
         {
-			new_map.insert(std::pair<int, Pick>(iter->first, pick_part));
+			new_map.insert(std::pair<int, HellingerPick>(iter->first, pick_part));
         }
       }
 
@@ -416,12 +416,12 @@ GPlatesQtWidgets::HellingerModel::reorder_segment(int segment)
 
 }
 
-boost::optional<GPlatesQtWidgets::Pick>
+boost::optional<GPlatesQtWidgets::HellingerPick>
 GPlatesQtWidgets::HellingerModel::get_pick(
 		const int &segment,
-		const int &row)
+		const int &row) const
 {
-    model_type::const_iterator iter;
+	hellinger_model_type::const_iterator iter;
 	int n = 0;
 	for (iter = d_hellinger_picks.find(segment); iter != d_hellinger_picks.end(); ++iter )
 	{
@@ -434,13 +434,13 @@ GPlatesQtWidgets::HellingerModel::get_pick(
 	return boost::none;
 }
 
-GPlatesQtWidgets::model_type::const_iterator
+GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::begin() const
 {
 	return d_hellinger_picks.begin();
 }
 
-GPlatesQtWidgets::model_type::const_iterator
+GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::end() const
 {
 	return d_hellinger_picks.end();
@@ -450,7 +450,7 @@ GPlatesQtWidgets::HellingerModel::end() const
 bool
 GPlatesQtWidgets::HellingerModel::segment_number_exists(int segment_num)
 {
-    model_type::const_iterator iter;
+	hellinger_model_type::const_iterator iter;
     int n = 0;
     for (iter = d_hellinger_picks.begin(); iter != d_hellinger_picks.end(); ++iter )
     {
@@ -463,14 +463,14 @@ GPlatesQtWidgets::HellingerModel::segment_number_exists(int segment_num)
     return false;
 }
 
-GPlatesQtWidgets::model_type::const_iterator
+GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::segment_begin(
 	const int &segment) const
 {
 	return d_hellinger_picks.equal_range(segment).first;
 }
 
-GPlatesQtWidgets::model_type::const_iterator
+GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::segment_end(
 	const int &segment) const
 {
