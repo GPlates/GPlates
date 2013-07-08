@@ -183,7 +183,7 @@ namespace GPlatesQtWidgets
 		get_com_file() const;
 
         QStringList
-		get_data() const;
+		get_data_as_string() const;
 
 		hellinger_model_type::const_iterator begin() const;
 

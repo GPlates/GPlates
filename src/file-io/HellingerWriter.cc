@@ -42,7 +42,7 @@ GPlatesFileIO::HellingerWriter::write_pick_file(
 
 	if (file.open(QIODevice::WriteOnly))
 	{
-		QStringList load_data = hellinger_model.get_data();
+		QStringList load_data = hellinger_model.get_data_as_string();
 		QString pick_state;
 		if (!load_data.isEmpty())
 		{

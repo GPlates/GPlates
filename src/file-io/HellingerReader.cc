@@ -195,19 +195,21 @@ namespace
                     GPlatesQtWidgets::HellingerModel &hellinger_model,
                     unsigned int &line_number,
                     GPlatesFileIO::ReadErrorAccumulation &read_errors,
-                    QString path
-                    )
-            {                
-                if (line_number == 0)
+                    QString path)
+			{
+
+				if (line_number == 0)
                 {
-                    if (!field.at(0).isEmpty())
-                    {
-                    d_com_fields<<field.at(0);
-                    }
-                    else
-                    {
-                     throw GPlatesFileIO::ReadErrors::HellingerPickFieldFormatError;
-                    }
+					// Line 0 should contain a single string representing the pick filename.
+					if (field.length() == 1)
+					{
+						d_com_fields<<field.at(0);
+					}
+					else
+					{
+						qDebug() << "Throwing";
+						throw GPlatesFileIO::ReadErrors::HellingerPickFieldFormatError;
+					}
                 }
                 else if (line_number == 1)
                 {
@@ -426,6 +428,7 @@ GPlatesFileIO::HellingerReader::read_com_file(
             }
             catch (GPlatesFileIO::ReadErrors::Description error)
             {
+				qDebug() << "Catching " << line_com_number;
                 const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
                     new LineNumber(line_com_number+1));
                 read_errors.d_recoverable_errors.push_back(GPlatesFileIO::ReadErrorOccurrence(
