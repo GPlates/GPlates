@@ -184,6 +184,8 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	// For eventual insertion of generated pole into the model.
 	groupbox_rotation->hide();
 
+	button_cancel->setEnabled(false);
+	button_cancel->setVisible(false);
 }
 
 void
@@ -230,6 +232,11 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 		show_point_on_globe(lat, lon, type_segment);
 
 	}
+
+}
+
+void GPlatesQtWidgets::HellingerDialog::handle_cancel()
+{
 
 }
 
@@ -511,6 +518,7 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_stats()
 	progress_bar->setEnabled(true);
 	progress_bar->setMaximum(0.);
 	d_hellinger_thread->start();
+	button_cancel->setEnabled(true);
 }
 
 void
@@ -660,6 +668,7 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate()
 		progress_bar->setEnabled(true);
 		progress_bar->setMaximum(0.);
 		d_hellinger_thread->start();
+		button_cancel->setEnabled(true);
 	}
 	else
 	{
@@ -1168,6 +1177,7 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 					 this, SLOT(handle_selection_changed(const QItemSelection &, const QItemSelection &)));
 
 	QObject::connect(d_hellinger_thread, SIGNAL(finished()),this, SLOT(handle_thread_finished()));
+	QObject::connect(button_cancel,SIGNAL(clicked()),this,SLOT(handle_cancel()));
 }
 
 void

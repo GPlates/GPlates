@@ -255,6 +255,9 @@ namespace GPlatesQtWidgets
 				const QItemSelection &,
 				const QItemSelection &);
 
+		void
+		handle_cancel();
+
 	private:
 
 		/**
