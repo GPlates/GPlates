@@ -58,14 +58,7 @@ public:
             const GPlatesModel::integer_plate_id_type &fixed_plate_id,
             const double &chron_time);
 #endif
-    /**
-     * 
-     */
-    static
-    void
-    read_configuration_file(
-            const QString &filename,
-            ReadErrorAccumulation &read_errors);
+
 
 	static
 	void

@@ -469,7 +469,7 @@ GPlatesQtWidgets::HellingerDialog::handle_spinbox_radius_changed()
 void
 GPlatesQtWidgets::HellingerDialog::update_initial_guess()
 {
-	boost::optional<GPlatesQtWidgets::hellinger_com_file_struct> com_file_data = d_hellinger_model->get_com_file();
+	boost::optional<GPlatesQtWidgets::HellingerComFileStructure> com_file_data = d_hellinger_model->get_com_file();
 
 	if (com_file_data)
 	{
@@ -797,7 +797,7 @@ GPlatesQtWidgets::HellingerDialog::update_result()
 {
 	// FIXME: sort out the sequence of calling update_canvas, update_result etc... this function (update_result) is getting
 	// called 5 times after a fit is completed. On the second call, the lon is always zero for some reason. Investigate.
-	boost::optional<GPlatesQtWidgets::hellinger_fit_struct> data_fit_struct = d_hellinger_model->get_fit();
+	boost::optional<GPlatesQtWidgets::HellingerFitStructure> data_fit_struct = d_hellinger_model->get_fit();
 
 	if (data_fit_struct)
 	{
@@ -1000,7 +1000,7 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 	d_hellinger_layer.clear_rendered_geometries();
 	draw_fixed_picks();
 	update_result();
-	boost::optional<GPlatesQtWidgets::hellinger_fit_struct> data_fit_struct = d_hellinger_model->get_fit();
+	boost::optional<GPlatesQtWidgets::HellingerFitStructure> data_fit_struct = d_hellinger_model->get_fit();
 
 	double recon_time = spinbox_recon_time->value();
 
@@ -1111,7 +1111,7 @@ GPlatesQtWidgets::HellingerDialog::handle_fit_spinboxes_changed()
 	// the "fit result" values and the corresponding display. I think I will disable
 	// this for now.
 
-	GPlatesQtWidgets::hellinger_fit_struct fit(spinbox_result_lat->value(),
+	GPlatesQtWidgets::HellingerFitStructure fit(spinbox_result_lat->value(),
 											   spinbox_result_lon->value(),
 											   spinbox_result_angle->value());
 	d_hellinger_model->set_fit(fit);

@@ -54,7 +54,21 @@ namespace GPlatesQtWidgets
 
 	// TODO: should the pick structure contain its segment number? Bear in mind that picks can be re-allocated to
 	// different segment numbers.
+	// FIXME: the "d_is_enabled" field is not strictly necessary as we encode this already in the
+	// HellingerSegmentType
 	struct HellingerPick{
+		HellingerPick(
+				const HellingerSegmentType &type,
+				const double &lat,
+				const double &lon,
+				const double &uncertainty,
+				const bool &enabled):
+			d_segment_type(type),
+			d_lat(lat),
+			d_lon(lon),
+			d_uncertainty(uncertainty),
+			d_is_enabled(enabled){};
+		HellingerPick(){};
 		HellingerSegmentType d_segment_type;
 		double d_lat;
 		double d_lon;
@@ -65,7 +79,7 @@ namespace GPlatesQtWidgets
 	typedef std::multimap<int,HellingerPick> hellinger_model_type;
 
 	// Contents of a hellinger .com file.
-	struct hellinger_com_file_struct{
+	struct HellingerComFileStructure{
 		QString d_pick_file;
 		double d_lat;	// initial estimate
 		double d_lon; // initial estimate
@@ -82,8 +96,8 @@ namespace GPlatesQtWidgets
     };
 
 	// The result of the fit.
-	struct hellinger_fit_struct{
-		hellinger_fit_struct(double lat, double lon, double angle, double eps=0):
+	struct HellingerFitStructure{
+		HellingerFitStructure(double lat, double lon, double angle, double eps=0):
 			d_lat(lat),
 			d_lon(lon),
 			d_angle(angle),
@@ -164,22 +178,22 @@ namespace GPlatesQtWidgets
 
 		void
 		set_fit(
-			const hellinger_fit_struct &fields);
+			const HellingerFitStructure &fields);
 
 		void
 		set_com_file_structure(
-				const hellinger_com_file_struct &com_file_structure)
+				const HellingerComFileStructure &com_file_structure)
 		{
 			d_active_com_file_struct = com_file_structure;
 		}
 
-		hellinger_com_file_struct&
+		HellingerComFileStructure&
 		get_hellinger_com_file_struct()
 		{
 			return d_active_com_file_struct;
 		}
 
-		boost::optional<hellinger_fit_struct>
+		boost::optional<HellingerFitStructure>
 		get_fit();
 
         void
@@ -192,7 +206,7 @@ namespace GPlatesQtWidgets
 		set_initial_guess(
 			const QStringList &com_list_fields);
 
-		boost::optional<hellinger_com_file_struct>
+		boost::optional<HellingerComFileStructure>
 		get_com_file() const;
 
         QStringList
@@ -232,8 +246,8 @@ namespace GPlatesQtWidgets
 
 
 
-		hellinger_com_file_struct d_active_com_file_struct;
-		boost::optional<hellinger_fit_struct> d_last_result;
+		HellingerComFileStructure d_active_com_file_struct;
+		boost::optional<HellingerFitStructure> d_last_result;
 		hellinger_model_type d_hellinger_picks;
 		std::vector<GPlatesMaths::LatLonPoint> d_points;
 

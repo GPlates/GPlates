@@ -34,6 +34,7 @@
 namespace
 {
             const int MIN_NUM_FIELDS = 5;
+			// FIXME: Currently unused, can probably remove.
             const int MIN_NUM_COM_FIELDS = 12;
 
 #if 0
@@ -133,41 +134,88 @@ namespace
 			}
 
             bool
-            fields_are_ok(
-                    const QStringList &fields)
+			pick_fields_are_ok(
+					const QStringList &fields,
+					GPlatesQtWidgets::HellingerPick &pick,
+					int &segment)
             {
                 /* here we should check that the fields are sensible,
                   e.g.
                     FIELD           POSSIBLE VALUES
-                    1               1, 2, 31, 32  (where the "3" indicated a commented out pick)
+					1               1, 2, 31, 32  (where the "3" indicates a commented out pick)
                     2               integer > 0
                     3               double in range -90 -> 90
                     4               double in range -360->360
                     5               double > 0.
                                                             */
-                if ((fields.at(0).toInt()== 1 || fields.at(0).toInt()==2 || fields.at(0).toInt()==31 ||
-                     fields.at(0).toInt()== 32)&&(fields.at(1).toInt()>0)&&
-                        ((fields.at(2).toDouble() <= 90)&&(fields.at(2).toDouble()>=-90))&&
-                        ((fields.at(3).toDouble() <= 360)&&(fields.at(3).toDouble()>=-360))&&
-                        (fields.at(4).toDouble() > 0))
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+				// Field 0: 1, 2, 31 or 32.
+				bool moving_fixed_ok = false;
+				bool ok;
+				int moving_or_fixed = fields.at(0).toInt(&ok);
+				if ((ok) && (
+							(moving_or_fixed == 1) ||
+							(moving_or_fixed == 2) ||
+							(moving_or_fixed == 31) ||
+							(moving_or_fixed == 32)))
+				{
+					moving_fixed_ok = true;
+				}
+
+				// Field 1: integer > 0
+				bool segment_ok = false;
+				segment = fields.at(1).toInt(&ok);
+				if ((ok) && (segment > 0)){
+					segment_ok = true;
+				}
+
+				// Field 2: latitude
+				bool lat_ok;
+				double lat = fields.at(2).toDouble(&ok);
+				if ((ok) && GPlatesMaths::LatLonPoint::is_valid_latitude(lat))
+				{
+					lat_ok = true;
+				}
+
+				// Field 3: longitude
+				bool lon_ok;
+				double lon = fields.at(3).toDouble(&ok);
+				if ((ok) && GPlatesMaths::LatLonPoint::is_valid_longitude(lon))
+				{
+					lon_ok = true;
+				}
+
+				// Field 4: uncertainty
+				bool uncert_ok;
+				double uncert = fields.at(4).toDouble(&ok);
+				if ((ok) && (uncert > 0.))
+				{
+					uncert_ok = true;
+				}
+
+				if(moving_fixed_ok && segment_ok && lat_ok && lon_ok && uncert_ok)
+				{
+					bool enabled = ((moving_or_fixed == GPlatesQtWidgets::FIXED_SEGMENT_TYPE) ||
+									(moving_or_fixed == GPlatesQtWidgets::MOVING_SEGMENT_TYPE));
+					pick = GPlatesQtWidgets::HellingerPick(static_cast<GPlatesQtWidgets::HellingerSegmentType>(moving_or_fixed),
+														   lat,lon,uncert,enabled);
+					return true;
+				}
+				return false;
             }
 
 			void
-			parse_line(
+			parse_pick_line(
 				const QString &line,
 				GPlatesQtWidgets::HellingerModel &hellinger_model)
 			{
 				QStringList fields = line.split(" ",QString::SkipEmptyParts);
-				if ((fields.size() >= MIN_NUM_FIELDS) && (fields_are_ok(fields)))
+
+				GPlatesQtWidgets::HellingerPick pick;
+				int segment;
+				if ((fields.size() >= MIN_NUM_FIELDS) && (pick_fields_are_ok(fields,pick,segment)))
 				{
-					hellinger_model.add_pick(fields);
+					hellinger_model.add_pick(pick,segment);
+					//hellinger_model.add_pick(fields);
 				}
 				else
 				{
@@ -183,7 +231,7 @@ namespace
                     unsigned int &line_number,
 					GPlatesFileIO::ReadErrorAccumulation &read_errors)
 			{
-				GPlatesQtWidgets::hellinger_com_file_struct &hellinger_com_file = hellinger_model.get_hellinger_com_file_struct();
+				GPlatesQtWidgets::HellingerComFileStructure &hellinger_com_file = hellinger_model.get_hellinger_com_file_struct();
 				bool line_ok = false;
 				switch(line_number){
 				case 0: // string representing pick filename
@@ -275,77 +323,8 @@ namespace
 }
 
 
-#if 0
-void
-GPlatesFileIO::PickFileReader::read_file(
-        File::Reference &file_ref,
-        GPlatesModel::ModelInterface &model,
-        ReadErrorAccumulation &read_errors,
-        const GPlatesModel::integer_plate_id_type &moving_plate_id,
-        const GPlatesModel::integer_plate_id_type &fixed_plate_id,
-        const double &chron_time)
-{
-    const FileInfo &fileinfo = file_ref.get_file_info();
 
-    // By placing all changes to the model under the one changeset, we ensure that
-    // feature revision ids don't get changed from what was loaded from file no
-    // matter what we do to the features.
-    GPlatesModel::ChangesetHandle changeset(
-            model.access_model(),
-            "open " + fileinfo.get_qfileinfo().fileName().toStdString());
 
-    QString filename = fileinfo.get_qfileinfo().absoluteFilePath();
-
-    QFile file(filename);
-
-    if ( ! file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
-    }
-
-    QTextStream input(&file);
-
-    boost::shared_ptr<DataSource> source(
-        new GPlatesFileIO::LocalFileDataSource(filename, DataFormats::Gmap));
-
-    GPlatesModel::FeatureCollectionHandle::weak_ref collection = file_ref.get_feature_collection();
-
-    // For error reporting.
-    unsigned int line_number = 0;
-
-    while(!input.atEnd())
-    {
-        QString line = input.readLine();
-        try
-        {
-            read_feature(model, collection, line, input, source, line_number, read_errors);
-        }
-        catch (GPlatesFileIO::ReadErrors::Description error)
-        {
-            const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
-                        new GPlatesFileIO::LineNumber(line_number));
-            read_errors.d_recoverable_errors.push_back(GPlatesFileIO::ReadErrorOccurrence(
-                                                           source, location, error, GPlatesFileIO::ReadErrors::GmapFeatureIgnored));
-        }
-
-        line_number++;
-    }
-    if (collection->begin() == collection->end())
-    {
-        const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
-            new GPlatesFileIO::LineNumber(0));
-        read_errors.d_failures_to_begin.push_back(GPlatesFileIO::ReadErrorOccurrence(
-                    source, location, GPlatesFileIO::ReadErrors::NoFeaturesFoundInFile,
-                    GPlatesFileIO::ReadErrors::FileNotLoaded));
-    }
-}
-#endif
-
-void
-GPlatesFileIO::HellingerReader::read_configuration_file(
-	const QString &filename, ReadErrorAccumulation &read_errors)
-{
-
-}
 
 void
 GPlatesFileIO::HellingerReader::read_pick_file(
@@ -379,7 +358,7 @@ GPlatesFileIO::HellingerReader::read_pick_file(
 		QString line = input.readLine();
 		try
 		{
-			parse_line(line,hellinger_model);
+			parse_pick_line(line,hellinger_model);
 		}
 		catch (GPlatesFileIO::ReadErrors::Description error)
 		{

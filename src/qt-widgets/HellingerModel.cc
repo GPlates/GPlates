@@ -241,19 +241,19 @@ GPlatesQtWidgets::HellingerModel::add_pick(
 void
 GPlatesQtWidgets::HellingerModel::set_fit(const QStringList &fields)
 {	
-	d_last_result.reset(hellinger_fit_struct(fields.at(0).toDouble(),
+	d_last_result.reset(HellingerFitStructure(fields.at(0).toDouble(),
 											 fields.at(1).toDouble(),
 											 fields.at(2).toDouble()));
 }
 
 void
 GPlatesQtWidgets::HellingerModel::set_fit(
-		const hellinger_fit_struct &fit)
+		const HellingerFitStructure &fit)
 {
 	d_last_result.reset(fit);
 }
 
-boost::optional<GPlatesQtWidgets::hellinger_fit_struct>
+boost::optional<GPlatesQtWidgets::HellingerFitStructure>
 GPlatesQtWidgets::HellingerModel::get_fit()
 {
 	return d_last_result;
@@ -297,7 +297,7 @@ GPlatesQtWidgets::HellingerModel::set_initial_guess(const QStringList &com_list_
 	d_active_com_file_struct.d_down_filename = com_list_fields.at(11);
 }
 
-boost::optional<GPlatesQtWidgets::hellinger_com_file_struct>
+boost::optional<GPlatesQtWidgets::HellingerComFileStructure>
 GPlatesQtWidgets::HellingerModel::get_com_file() const
 {
     return d_active_com_file_struct;
