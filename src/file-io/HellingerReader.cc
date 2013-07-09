@@ -23,7 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-
+#include <QDir>
 #include <QStringList>
 
 #include "qt-widgets/HellingerModel.h"
@@ -65,9 +65,29 @@ namespace
 
 			bool
 			latitude_ok(
-					const QString s, double &latitude)
+					const QString &s, double &latitude)
 			{
+				bool ok;
+				latitude = s.toDouble(&ok);
+				return((ok) && GPlatesMaths::LatLonPoint::is_valid_latitude(latitude));
+			}
 
+			bool
+			longitude_ok(
+					const QString &s, double &longitude)
+			{
+				bool ok;
+				longitude = s.toDouble(&ok);
+				return ((ok) && GPlatesMaths::LatLonPoint::is_valid_longitude(longitude));
+			}
+
+			bool
+			angle_ok(
+					const QString &s, double &angle)
+			{
+				bool ok;
+				angle = s.toDouble(&ok);
+				return ((ok) && (angle <= 360.) && (angle >= -360.));
 			}
 
 			/**
@@ -83,6 +103,9 @@ namespace
 			initial_guess_ok(const QString &line,double &lat, double &lon, double &rho)
 			{
 				QStringList fields = line.split(' ',QString::SkipEmptyParts);
+				if (fields.length() != 3){
+					return false;
+				}
 				if((latitude_ok(fields.at(0),lat) &&
 					longitude_ok(fields.at(1),lon) &&
 					angle_ok(fields.at(2),rho)))
@@ -93,8 +116,19 @@ namespace
 			}
 
 			bool
-			boolean_line_ok(const QString &line, bool result)
+			boolean_line_ok(const QString &line, bool &result)
 			{
+				if ((line == "y") ||
+						(line == "Y")){
+					result = true;
+					return true;
+				}
+				else if ((line == "n") ||
+						(line == "N"))
+				{
+					result = false;
+					return true;
+				}
 				return false;
 			}
 
@@ -154,6 +188,7 @@ namespace
 				switch(line_number){
 				case 0: // string representing pick filename
 					hellinger_com_file.d_pick_file = line;
+					line_ok = true;
 					break;
 				case 1: // three space-separated numerical values representing initial guesses of lat,lon,angle
 				{
@@ -177,7 +212,7 @@ namespace
 				case 3: // y or n - whether or not a grid search is performed.
 				{
 					bool grid_search;
-					if (boolean_line_ok(line,grid_search))
+					if ((line_ok = boolean_line_ok(line,grid_search)))
 					{
 						hellinger_com_file.d_perform_grid_search = grid_search;
 					}
@@ -212,20 +247,27 @@ namespace
 				case 7: // string - filename for .dat output
 				{
 					hellinger_com_file.d_data_filename = line;
+					line_ok = true;
 					break;
 				}
 				case 8: // string - filename for .up output
 				{
 					hellinger_com_file.d_up_filename = line;
+					line_ok = true;
 					break;
 				}
 				case 9: // string - filename for .down output
 				{
 					hellinger_com_file.d_down_filename = line;
+					line_ok = true;
 					break;
 				}
 				} // switch
 
+				if (!line_ok)
+				{
+					throw GPlatesFileIO::ReadErrors::InvalidHellingerComFileFormat;
+				}
 
             }
 
@@ -400,5 +442,9 @@ GPlatesFileIO::HellingerReader::read_com_file(
         }
 		++line_number;
      }
+
+	QString pick_file = file_info.absolutePath() + QDir::separator() + hellinger_model.get_hellinger_com_file_struct().d_pick_file;
+
+	read_pick_file(pick_file,hellinger_model,read_errors);
 
 }
