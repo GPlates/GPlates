@@ -465,6 +465,14 @@ namespace
 				QT_TR_NOOP("Pattern fill in line."),
 				QT_TR_NOOP("Pattern fills are not supported.") },
 
+		//Errors relating to Hellinger-fit files.
+		{ GPlatesFileIO::ReadErrors::InvalidHellingerComFileFormat,
+				QT_TR_NOOP("Invalid Hellinger .com file format."),
+				QT_TR_NOOP("The format of the Hellinger .com was not as expected.")	},
+		{ GPlatesFileIO::ReadErrors::HellingerPickFormatError,
+				QT_TR_NOOP("Hellinger pick format error."),
+				QT_TR_NOOP("The format of a Hellinger pick was not as expected.") },
+
 		// Generic file-related error descriptions:
 		{ GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,
 				QT_TR_NOOP("Error opening file."),
@@ -555,6 +563,13 @@ namespace
 		// The following apply to GMT CPT files
 		{ GPlatesFileIO::ReadErrors::CptLineIgnored,
 				QT_TR_NOOP("CPT line was ignored.") },
+
+		//Errors relating to Hellinger-fit files.
+		{ GPlatesFileIO::ReadErrors::HellingerComFileNotImported,
+				QT_TR_NOOP("The .com file was not imported.") },
+		{ GPlatesFileIO::ReadErrors::HellingerPickIgnored,
+				QT_TR_NOOP("The pick was ignored.") },
+
 
 		// Generic file-related errors:
 		{ GPlatesFileIO::ReadErrors::FileNotLoaded,

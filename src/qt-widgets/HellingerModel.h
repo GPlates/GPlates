@@ -166,6 +166,19 @@ namespace GPlatesQtWidgets
 		set_fit(
 			const hellinger_fit_struct &fields);
 
+		void
+		set_com_file_structure(
+				const hellinger_com_file_struct &com_file_structure)
+		{
+			d_active_com_file_struct = com_file_structure;
+		}
+
+		hellinger_com_file_struct&
+		get_hellinger_com_file_struct()
+		{
+			return d_active_com_file_struct;
+		}
+
 		boost::optional<hellinger_fit_struct>
 		get_fit();
 

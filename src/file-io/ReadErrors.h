@@ -199,10 +199,8 @@ namespace GPlatesFileIO
 			PatternFillInLine,
 
 			// The following are specific to Hellinger-fit-related file formats.
-			InvalidHellingerPickFileFormat,
-			HellingerPickFieldFormatError,
+			HellingerPickFormatError,
 			InvalidHellingerComFileFormat,
-			HellingerComFieldFormatError,
 
 			// The following are generic to all local files
 			ErrorOpeningFileForReading,
@@ -265,8 +263,8 @@ namespace GPlatesFileIO
 			CptLineIgnored,
 
 			// The following are specific to hellinger-fit-related files.
-			PickIgnored,
-			ComIgnored,
+			HellingerComFileNotImported,
+			HellingerPickIgnored,
 
 			// The following are generic to all local files
 			FileNotLoaded,

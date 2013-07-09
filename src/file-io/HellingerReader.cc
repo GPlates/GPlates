@@ -35,7 +35,7 @@ namespace
 {
             const int MIN_NUM_FIELDS = 5;
             const int MIN_NUM_COM_FIELDS = 12;
-            QStringList d_com_fields;
+
 #if 0
             void
             create_pick_feature(
@@ -62,6 +62,42 @@ namespace
             }
 
 #endif
+
+			bool
+			latitude_ok(
+					const QString s, double &latitude)
+			{
+
+			}
+
+			/**
+			 * @brief initial_guess_ok
+			 * @param line - string containing line to be parsed
+			 * @param lat - latitude, initial guess
+			 * @param lon - longitude, initial guess
+			 * @param rho - angle, initial guess
+			 * @return true if the fields lat,lon,rho can be parsed correctly from the QString line.
+			 * lat,lon and rho are filled with their parsed values on successful return.
+			 */
+			bool
+			initial_guess_ok(const QString &line,double &lat, double &lon, double &rho)
+			{
+				QStringList fields = line.split(' ',QString::SkipEmptyParts);
+				if((latitude_ok(fields.at(0),lat) &&
+					longitude_ok(fields.at(1),lon) &&
+					angle_ok(fields.at(2),rho)))
+				{
+					return true;
+				}
+				return false;
+			}
+
+			bool
+			boolean_line_ok(const QString &line, bool result)
+			{
+				return false;
+			}
+
             bool
             fields_are_ok(
                     const QStringList &fields)
@@ -89,179 +125,107 @@ namespace
                 }
             }
 
-            bool
-            fields_com_are_ok(
-                    const QStringList &fields)
-            {
-                /*
-                    FIELD      VALUE
-                    0          double in range -90 -> 90 | LAT
-                    1          double in range -360 -> 360 | LON
-                    2          double > 0 | RHO
-                */
-                bool ok1;
-                bool ok2;
-                bool ok3;
-                fields.at(0).toDouble(&ok1);
-                fields.at(1).toDouble(&ok2);
-                fields.at(2).toDouble(&ok3);
-                if (ok1 && ok2 && ok3)
-                {
-
-                    if (((fields.at(0).toDouble()<=90)&&(fields.at(0).toDouble()>=-90))&&
-                            ((fields.at(1).toDouble()<=360)&&(fields.at(1).toDouble()>=-360))&&
-                            (fields.at(2).toDouble()>0))
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-
-            bool
-            bool_data_com_ok(
-                    const QStringList &fields)
-            {
-               bool ok;
-               fields.at(0).toDouble(&ok);
-               if (ok)
-               {
-                   return true;
-               }
-               else
-               {
-                   return false;
-               }
-            }
-
-            bool
-            string_data_com_ok(
-                    const QStringList &fields)
-            {
-                bool ok;
-                fields.at(0).toDouble(&ok);
-                if (ok)
-                {
-                    return false;
-                }
-                else
-                {
-                    if (!fields.at(0).isEmpty())
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-            }
-
 			void
 			parse_line(
 				const QString &line,
 				GPlatesQtWidgets::HellingerModel &hellinger_model)
 			{
-                QStringList fields = line.split(" ",QString::SkipEmptyParts);
-                if (fields.size() >= MIN_NUM_FIELDS)
-                {
-                    if (fields_are_ok(fields))
-                    {
-                            hellinger_model.add_pick(fields);
-                    }
-                    else
-                    {
-                        throw GPlatesFileIO::ReadErrors::HellingerPickFieldFormatError;
-                    }
-                }
-                else
-                {
-                    throw GPlatesFileIO::ReadErrors::InvalidHellingerPickFileFormat;
-                }
+				QStringList fields = line.split(" ",QString::SkipEmptyParts);
+				if ((fields.size() >= MIN_NUM_FIELDS) && (fields_are_ok(fields)))
+				{
+					hellinger_model.add_pick(fields);
+				}
+				else
+				{
+					throw GPlatesFileIO::ReadErrors::HellingerPickFormatError;
+				}
 			}
 
 
             void
-            parse_com_fields(
-                    const QStringList &field,
+			parse_com_lines(
+					const QString &line,
                     GPlatesQtWidgets::HellingerModel &hellinger_model,
                     unsigned int &line_number,
-                    GPlatesFileIO::ReadErrorAccumulation &read_errors,
-                    QString path)
+					GPlatesFileIO::ReadErrorAccumulation &read_errors)
 			{
-
-				if (line_number == 0)
-                {
-					// Line 0 should contain a single string representing the pick filename.
-					if (field.length() == 1)
+				GPlatesQtWidgets::hellinger_com_file_struct &hellinger_com_file = hellinger_model.get_hellinger_com_file_struct();
+				bool line_ok = false;
+				switch(line_number){
+				case 0: // string representing pick filename
+					hellinger_com_file.d_pick_file = line;
+					break;
+				case 1: // three space-separated numerical values representing initial guesses of lat,lon,angle
+				{
+					double lat,lon,rho;
+					if ((line_ok = initial_guess_ok(line,lat,lon,rho)))
 					{
-						d_com_fields<<field.at(0);
+						hellinger_com_file.d_lat = lat;
+						hellinger_com_file.d_lon = lon;
+						hellinger_com_file.d_rho = rho;
 					}
-					else
+					break;
+				}
+				case 2: // double representing search radius
+				{
+					double radius = line.toDouble(&line_ok);
+					if (line_ok){
+						hellinger_com_file.d_search_radius = radius;
+					}
+					break;
+				}
+				case 3: // y or n - whether or not a grid search is performed.
+				{
+					bool grid_search;
+					if (boolean_line_ok(line,grid_search))
 					{
-						qDebug() << "Throwing";
-						throw GPlatesFileIO::ReadErrors::HellingerPickFieldFormatError;
+						hellinger_com_file.d_perform_grid_search = grid_search;
 					}
-                }
-                else if (line_number == 1)
-                {
+					break;
+				}
+				case 4: // double - significance level
+				{
+					double sig_level = line.toDouble(&line_ok);
+					if (line_ok){
+						hellinger_com_file.d_significance_level = sig_level;
+					}
+					break;
+				}
+				case 5:	// y or n - whether or not to estimate kappa
+				{
+					bool kappa;
+					if ((line_ok = boolean_line_ok(line,kappa)))
+					{
+						hellinger_com_file.d_estimate_kappa = kappa;
+					}
+					break;
+				}
+				case 6: // y or n - whether or not to "calculate graphics output"
+				{
+					bool graphics;
+					if ((line_ok = boolean_line_ok(line,graphics)))
+					{
+						hellinger_com_file.d_generate_output_files = graphics;
+					}
+					break;
+				}
+				case 7: // string - filename for .dat output
+				{
+					hellinger_com_file.d_data_filename = line;
+					break;
+				}
+				case 8: // string - filename for .up output
+				{
+					hellinger_com_file.d_up_filename = line;
+					break;
+				}
+				case 9: // string - filename for .down output
+				{
+					hellinger_com_file.d_down_filename = line;
+					break;
+				}
+				} // switch
 
-                    if (!fields_com_are_ok(field))
-                    {
-                        throw GPlatesFileIO::ReadErrors::HellingerComFieldFormatError;
-                    }
-                    else
-                    {
-                        d_com_fields<<field.at(0)<<field.at(1)<<field.at(2);
-                    }
-                }
-                else if ((line_number == 2) ||(line_number == 4))
-                {
-                    if (!bool_data_com_ok(field))
-                    {
-                        throw GPlatesFileIO::ReadErrors::HellingerComFieldFormatError;
-                    }
-                    else
-                    {
-                        d_com_fields<<field.at(0);
-                    }
-                }
-                else if ((line_number == 3) || (line_number == 5) ||
-                         (line_number == 6) || (line_number == 7) ||
-                         (line_number == 8) || (line_number == 9))
-                {
-                    if (!string_data_com_ok(field))
-                    {
-                        throw GPlatesFileIO::ReadErrors::HellingerComFieldFormatError;
-                    }
-                    else if (line_number==9)
-                    {
-                        d_com_fields<<field.at(0);                       
-                        if (d_com_fields.count()==MIN_NUM_COM_FIELDS)
-                        {
-                        GPlatesFileIO::HellingerReader::read_pick_file(path+"/"+d_com_fields.at(0),hellinger_model,read_errors);
-                        hellinger_model.set_initial_guess(d_com_fields);
-                        d_com_fields.clear();
-                        }
-                        else
-                        {
-                            throw GPlatesFileIO::ReadErrors::InvalidHellingerComFileFormat;
-                            d_com_fields.clear();
-                        }
-                    }
-                    else
-                    {
-                        d_com_fields<<field.at(0);
-                    }
-                }
 
             }
 
@@ -380,7 +344,7 @@ GPlatesFileIO::HellingerReader::read_pick_file(
 			const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
 				new LineNumber(line_number));
 			read_errors.d_recoverable_errors.push_back(GPlatesFileIO::ReadErrorOccurrence(
-				source, location, error, GPlatesFileIO::ReadErrors::PickIgnored));	
+				source, location, error, GPlatesFileIO::ReadErrors::HellingerPickIgnored));
 		}	
 		++line_number;
 
@@ -399,17 +363,16 @@ GPlatesFileIO::HellingerReader::read_com_file(
             filename,
             DataFormats::HellingerPick));
 
-    unsigned int line_com_number = 0;
+	unsigned int line_number = 0;
 
     QFileInfo file_info(file.fileName());
-    QString path = file_info.absolutePath();
 
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
     {
         read_errors.d_failures_to_begin.push_back(
             ReadErrorOccurrence(
                 source,
-                boost::shared_ptr<LocationInDataSource>(new LineNumber(line_com_number)),
+				boost::shared_ptr<LocationInDataSource>(new LineNumber(line_number)),
                 ReadErrors::ErrorOpeningFileForReading,
                 ReadErrors::FileNotLoaded));
         return;
@@ -419,23 +382,23 @@ GPlatesFileIO::HellingerReader::read_com_file(
     while(!input.atEnd())
     {
         line = input.readLine();
-        QStringList field = line.split(" ",QString::SkipEmptyParts);
-        if (!field.isEmpty())
+		if (!line.isEmpty())
         {
             try
             {
-                parse_com_fields(field,hellinger_model, line_com_number, read_errors, path);
+				parse_com_lines(line,hellinger_model,line_number,read_errors);
             }
             catch (GPlatesFileIO::ReadErrors::Description error)
             {
-				qDebug() << "Catching " << line_com_number;
                 const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
-                    new LineNumber(line_com_number+1));
+					new LineNumber(line_number+1));
                 read_errors.d_recoverable_errors.push_back(GPlatesFileIO::ReadErrorOccurrence(
-                    source, location, error, GPlatesFileIO::ReadErrors::ComIgnored));
+					source, location, error, GPlatesFileIO::ReadErrors::HellingerComFileNotImported));
+				return;
             }
-            ++line_com_number;
+
         }
+		++line_number;
      }
 
 }
