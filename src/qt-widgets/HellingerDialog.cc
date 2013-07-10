@@ -184,8 +184,19 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	// For eventual insertion of generated pole into the model.
 	groupbox_rotation->hide();
 
-	button_cancel->setEnabled(false);
-	button_cancel->setVisible(false);
+	// For eventual interruption of the python thread.
+	button_cancel->hide();
+
+	QStringList labels;
+	labels << "Segment" << "Moving(1)/Fixed(2)" << "Latitude" << "Longitude" << "Uncertainty (km)";
+	tree_widget_picks->setHeaderLabels(labels);
+
+
+	tree_widget_picks->header()->resizeSection(SEGMENT_NUMBER,90);
+	tree_widget_picks->header()->resizeSection(SEGMENT_TYPE,150);
+	tree_widget_picks->header()->resizeSection(LAT,90);
+	tree_widget_picks->header()->resizeSection(LON,90);
+	tree_widget_picks->header()->resizeSection(UNCERTAINTY,90);
 }
 
 void
