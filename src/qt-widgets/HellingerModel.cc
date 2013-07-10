@@ -355,8 +355,10 @@ GPlatesQtWidgets::HellingerModel:: reset_com_file_struct()
 	d_active_com_file_struct.d_pick_file = "";
 	d_active_com_file_struct.d_lat = 0;
 	d_active_com_file_struct.d_lon = 0;
-	d_active_com_file_struct.d_rho = 0;
-	d_active_com_file_struct.d_search_radius = 0;
+	d_active_com_file_struct.d_rho = 5.;
+
+
+	d_active_com_file_struct.d_search_radius = 0.2;
 	d_active_com_file_struct.d_perform_grid_search = false;
 	d_active_com_file_struct.d_significance_level = 0.95;
 	d_active_com_file_struct.d_estimate_kappa = true;

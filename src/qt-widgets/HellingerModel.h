@@ -56,6 +56,8 @@ namespace GPlatesQtWidgets
 	// different segment numbers.
 	// FIXME: the "d_is_enabled" field is not strictly necessary as we encode this already in the
 	// HellingerSegmentType
+	//
+
 	struct HellingerPick{
 		HellingerPick(
 				const HellingerSegmentType &type,
@@ -79,6 +81,24 @@ namespace GPlatesQtWidgets
 	typedef std::multimap<int,HellingerPick> hellinger_model_type;
 
 	// Contents of a hellinger .com file.
+	//
+	// FIXME:
+	// Note that the search radius is in RADIANS. (Although the interactive FORTRAN code asks for a
+	// value in degrees, the input value is then converted from radians to degrees).
+	//
+	// The python code behaves as per the fortran code.
+	//
+	// It's probably cleaner to use degrees here, but some of the .com files floating around provide
+	// this value in radians.
+	//
+	// So we maintain radians for now.
+	//
+	// TODO: 1) indicate somewhere on the interface that it's radians that is expeceted
+	//		2) sometime, somehow...let the user choose between the two.
+	//
+	// TODO: consider if "estimate kappa" and "output graphics" should be ditched / phased out / ignored.
+	// We should probably just take these two booleans as TRUE and go ahead and calculate stuff. It'll
+	// save a bit of space in the UI too.
 	struct HellingerComFileStructure{
 		HellingerComFileStructure(
 				const QString &file,
