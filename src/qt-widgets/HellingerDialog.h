@@ -81,7 +81,7 @@ namespace GPlatesQtWidgets
 		initialise();
 
 		/**
-		 * Update dialog from hellinger-model.
+		 * Update dialog from hellinger-model, and then update the canvas
 		 */
 		void
 		update_from_model();

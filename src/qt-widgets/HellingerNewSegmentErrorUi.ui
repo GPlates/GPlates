@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>439</width>
+    <width>468</width>
     <height>220</height>
    </rect>
   </property>
@@ -60,7 +60,7 @@
      <item>
       <widget class="QRadioButton" name="radio_insert">
        <property name="text">
-        <string>insert as new segment, and re-number following segments</string>
+        <string>insert as new segment, re-numbering the following segments</string>
        </property>
       </widget>
      </item>
