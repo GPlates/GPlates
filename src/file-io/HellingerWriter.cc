@@ -40,6 +40,7 @@ GPlatesFileIO::HellingerWriter::write_pick_file(
 	QFile file(filename);
 	QTextStream out(&file);
 
+	// TODO: Refactor this. Probably cleaner to grab the raw data from the model and convert to string as we go.
 	if (file.open(QIODevice::WriteOnly))
 	{
 		QStringList load_data = hellinger_model.get_data_as_string();
