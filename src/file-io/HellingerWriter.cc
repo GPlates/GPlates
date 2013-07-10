@@ -85,3 +85,10 @@ GPlatesFileIO::HellingerWriter::write_pick_file(
 		}
 	}
 }
+
+void GPlatesFileIO::HellingerWriter::write_com_file(
+		const QString &filename,
+		GPlatesQtWidgets::HellingerModel &hellinger_model)
+{
+
+}

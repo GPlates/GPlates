@@ -522,14 +522,26 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_stats()
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::handle_export_file()
+GPlatesQtWidgets::HellingerDialog::handle_export_pick_file()
 {
 	QString file_name = QFileDialog::getSaveFileName(this, tr("Save File"), "",
-													 tr("Text Files (*.txt);"));
+													 tr("Hellinger Pick Files (*.pick);"));
 	
-	if (file_name != "")
+	if (!file_name.isEmpty())
 	{
-		GPlatesFileIO::HellingerWriter::write_pick_file(file_name,*d_hellinger_model,true);
+		GPlatesFileIO::HellingerWriter::write_pick_file(file_name,*d_hellinger_model,true /*export disabled poles */);
+	}
+}
+
+void
+GPlatesQtWidgets::HellingerDialog::handle_export_com_file()
+{
+	QString file_name = QFileDialog::getSaveFileName(this,tr("Save settings file"),"",
+													 tr("Hellinger .com files (*.com);"));
+
+	if (!file_name.isEmpty())
+	{
+		GPlatesFileIO::HellingerWriter::write_com_file(file_name,*d_hellinger_model);
 	}
 }
 
@@ -717,7 +729,8 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 	{
 		button_expand_all->setEnabled(false);
 		button_collapse_all->setEnabled(false);
-		button_export_file->setEnabled(false);
+		button_export_pick_file->setEnabled(false);
+		button_export_com_file->setEnabled(false);
 		button_calculate_fit->setEnabled(false);
 		button_details->setEnabled(false);
 		button_apply_pole->setEnabled(false);
@@ -729,7 +742,8 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 	{
 		button_expand_all->setEnabled(true);
 		button_collapse_all->setEnabled(true);
-		button_export_file->setEnabled(true);
+		button_export_pick_file->setEnabled(true);
+		button_export_com_file->setEnabled(true);
 		button_calculate_fit->setEnabled(spinbox_radius->value() > 0.0);
 		button_apply_pole->setEnabled(true);
 		button_remove_segment->setEnabled(true);
@@ -1150,7 +1164,8 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(button_import_file, SIGNAL(clicked()), this, SLOT(import_hellinger_file()));
 	QObject::connect(button_details, SIGNAL(clicked()), this, SLOT(show_stat_details()));
 	QObject::connect(button_new_point, SIGNAL(clicked()), this, SLOT(handle_add_new_point()));
-	QObject::connect(button_export_file, SIGNAL(clicked()), this, SLOT(handle_export_file()));
+	QObject::connect(button_export_pick_file, SIGNAL(clicked()), this, SLOT(handle_export_pick_file()));
+	QObject::connect(button_export_com_file, SIGNAL(clicked()), this, SLOT(handle_export_com_file()));
 	QObject::connect(button_expand_all, SIGNAL(clicked()), this, SLOT(handle_expand_all()));
 	QObject::connect(button_collapse_all, SIGNAL(clicked()), this, SLOT(handle_collapse_all()));
 	QObject::connect(button_edit_point, SIGNAL(clicked()), this, SLOT(handle_edit_point()));

@@ -915,9 +915,16 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="button_export_file">
+         <widget class="QPushButton" name="button_export_pick_file">
           <property name="text">
-           <string>&amp;Export...</string>
+           <string>Export &amp;picks...</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_export_com_file">
+          <property name="text">
+           <string>Export co&amp;m..</string>
           </property>
          </widget>
         </item>

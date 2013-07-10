@@ -51,6 +51,12 @@ public:
 			bool export_disabled_picks = true);
 
 
+	static
+	void
+	write_com_file(
+			const QString &filename,
+			GPlatesQtWidgets::HellingerModel& hellinger_model);
+
 };
 
 }

@@ -197,7 +197,10 @@ namespace GPlatesQtWidgets
 		handle_add_new_point();
 
 		void
-		handle_export_file();
+		handle_export_pick_file();
+
+		void
+		handle_export_com_file();
 
 		void
 		handle_expand_all();
