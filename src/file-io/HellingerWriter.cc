@@ -77,8 +77,8 @@ GPlatesFileIO::HellingerWriter::write_pick_file(
 				{
 					out << pick_state<<" "<<load_data.at(a)<<" "<<load_data.at(a+2)
 						<<" "<<load_data.at(a+3)<<" "<<load_data.at(a+4)<<"\n";
-					qDebug() << pick_state<<" "<<load_data.at(a)<<" "<<load_data.at(a+2)
-							 <<" "<<load_data.at(a+3)<<" "<<load_data.at(a+4)<<"\n";
+//					qDebug() << pick_state<<" "<<load_data.at(a)<<" "<<load_data.at(a+2)
+//							 <<" "<<load_data.at(a+3)<<" "<<load_data.at(a+4)<<"\n";
 				}
 				a=a+6;
 			}
@@ -90,5 +90,61 @@ void GPlatesFileIO::HellingerWriter::write_com_file(
 		const QString &filename,
 		GPlatesQtWidgets::HellingerModel &hellinger_model)
 {
+	// We may want to set up a more informative .com file structure, but as this would mess up use of these files in users'
+	// FORTRAN routines, leave things as they are for now.
+	// Later we can export to one of 2 versions:
+	//		- legacy .com file for FORTRAN compliance
+	//		- GPlates .com (or some other suitable extension) for use with GPlates. Here we would have free reign
+	//			on the format, content etc.
+	boost::optional<GPlatesQtWidgets::HellingerComFileStructure> com_struct = hellinger_model.get_com_file();
+	if (com_struct)
+	{
+		QFile file(filename);
+		QTextStream out(&file);
 
+		if (file.open(QIODevice::WriteOnly))
+		{
+			// Pick file name
+			out << com_struct->d_pick_file << '\n';
+
+			// Initial guess: lat, lon, rho
+			out << com_struct->d_lat << " " << com_struct->d_lon << " " << com_struct->d_rho << '\n';
+
+			// Search radius
+			out << com_struct->d_search_radius << '\n';
+
+			// Perform grid search
+			QString grid_string = "n";
+			if (com_struct->d_perform_grid_search)
+			{
+				grid_string = "y";
+			}
+			out << grid_string << '\n';
+
+			// Significance level
+			out << com_struct->d_significance_level << '\n';
+
+			// Estimate kappa
+			QString kappa_string = "n";
+			if (com_struct->d_estimate_kappa)
+			{
+				kappa_string = "y";
+			}
+			out << kappa_string << '\n';
+
+			// Output graphics
+			QString graphics_string = "n";
+			if (com_struct->d_generate_output_files)
+			{
+				graphics_string = "y";
+			}
+			out << graphics_string << '\n';
+
+			// Dat file names
+			out << com_struct->d_data_filename << '\n';
+			out << com_struct->d_up_filename << '\n';
+			out << com_struct->d_down_filename << '\n';
+
+		}
+	}
 }

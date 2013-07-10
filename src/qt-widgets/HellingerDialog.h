@@ -97,6 +97,9 @@ namespace GPlatesQtWidgets
 	private:
 
 		void
+		update_model_with_com_data();
+
+		void
 		set_up_connections();
 
 		void

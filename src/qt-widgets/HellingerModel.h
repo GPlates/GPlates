@@ -80,6 +80,32 @@ namespace GPlatesQtWidgets
 
 	// Contents of a hellinger .com file.
 	struct HellingerComFileStructure{
+		HellingerComFileStructure(
+				const QString &file,
+				const double &lat,
+				const double &lon,
+				const double &rho,
+				const double &radius,
+				const bool &grid_search,
+				const double &significance,
+				const bool &kappa,
+				const bool &graphics,
+				const QString &file_dat,
+				const QString &file_up,
+				const QString &file_down):
+			d_pick_file(file),
+			d_lat(lat),
+			d_lon(lon),
+			d_rho(rho),
+			d_search_radius(radius),
+			d_perform_grid_search(grid_search),
+			d_significance_level(significance),
+			d_estimate_kappa(kappa),
+			d_generate_output_files(graphics),
+			d_data_filename(file_dat),
+			d_up_filename(file_up),
+			d_down_filename(file_down){};
+		HellingerComFileStructure(){};
 		QString d_pick_file;
 		double d_lat;	// initial estimate
 		double d_lon; // initial estimate

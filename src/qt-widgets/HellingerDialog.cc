@@ -541,6 +541,9 @@ GPlatesQtWidgets::HellingerDialog::handle_export_com_file()
 
 	if (!file_name.isEmpty())
 	{
+		// Update Hellinger model with data from UI
+		update_model_with_com_data();
+
 		GPlatesFileIO::HellingerWriter::write_com_file(file_name,*d_hellinger_model);
 	}
 }
@@ -1156,6 +1159,26 @@ GPlatesQtWidgets::HellingerDialog::renumber_segments()
 {
 	// TODO: check the distinction between "renumber_segments" and "reorder_picks" - do we need them both?
 	reorder_picks();
+}
+
+void GPlatesQtWidgets::HellingerDialog::update_model_with_com_data()
+{
+	HellingerComFileStructure com_file_struct;
+	com_file_struct.d_pick_file = line_import_file->text();
+	com_file_struct.d_lat = spinbox_lat->value();
+	com_file_struct.d_lon = spinbox_lon->value();
+	com_file_struct.d_rho = spinbox_rho->value();
+	com_file_struct.d_search_radius = spinbox_radius->value();
+	com_file_struct.d_perform_grid_search = checkbox_grid_search->isChecked();
+	com_file_struct.d_significance_level = spinbox_sig_level->value();
+	com_file_struct.d_estimate_kappa = checkbox_kappa->isChecked();
+	com_file_struct.d_generate_output_files = checkbox_graphics->isChecked();
+	// Remaining fields in the .com file are not currently configurable from the interface.
+	com_file_struct.d_data_filename = QString("hellinger.dat");
+	com_file_struct.d_up_filename = QString("hellinger.up");
+	com_file_struct.d_down_filename = QString("hellinger.do");
+
+	d_hellinger_model->set_com_file_structure(com_file_struct);
 }
 
 void GPlatesQtWidgets::HellingerDialog::set_up_connections()
