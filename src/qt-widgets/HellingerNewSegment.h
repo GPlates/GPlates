@@ -37,11 +37,13 @@
 
 namespace GPlatesQtWidgets
 {
-	enum ColumnValue{
+	enum ColumnType{
 		COLUMN_MOVE_FIX = 0,
 		COLUMN_LAT,
 		COLUMN_LON,
-		COLUMN_ERROR
+		COLUMN_ERROR,
+
+		NUM_COLUMNS
 	};
 
 	class HellingerDialog;
@@ -67,13 +69,13 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
-		add_segment();
+		handle_add_segment();
 
 		void
-		add_line();
+		handle_add_line();
 
 		void
-		remove_line();
+		handle_remove_line();
 
 		void
 		add_segment_to_model();

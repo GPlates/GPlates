@@ -5,7 +5,7 @@
  * $Revision: 132 $
  * $Date: 2012-01-24 16:39:28 +0100 (Tue, 24 Jan 2012) $ 
  * 
- * Copyright (C) 2012 Geological Survey of Norway
+ * Copyright (C) 2012. 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *

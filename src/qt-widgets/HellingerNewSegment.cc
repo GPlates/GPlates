@@ -47,12 +47,12 @@ GPlatesQtWidgets::HellingerNewSegment::HellingerNewSegment(
 	d_row_count(0)
 {
 	setupUi(this);
-	QObject::connect(button_add_segment, SIGNAL(clicked()), this, SLOT(add_segment()));
-	QObject::connect(button_add_line, SIGNAL(clicked()), this, SLOT(add_line()));
-	QObject::connect(button_remove_line, SIGNAL(clicked()), this, SLOT(remove_line()));
-	QObject::connect(radiobtn_move, SIGNAL(clicked()), this, SLOT(change_table_stats_pick()));
-	QObject::connect(radiobtn_fixed, SIGNAL(clicked()), this, SLOT(change_table_stats_pick()));
-	QObject::connect(radiobtn_custom, SIGNAL(clicked()), this, SLOT(change_table_stats_pick()));
+	QObject::connect(button_add_segment, SIGNAL(clicked()), this, SLOT(handle_add_segment()));
+	QObject::connect(button_add_line, SIGNAL(clicked()), this, SLOT(handle_add_line()));
+	QObject::connect(button_remove_line, SIGNAL(clicked()), this, SLOT(handle_remove_line()));
+	QObject::connect(radio_moving, SIGNAL(clicked()), this, SLOT(change_table_stats_pick()));
+	QObject::connect(radio_fixed, SIGNAL(clicked()), this, SLOT(change_table_stats_pick()));
+	QObject::connect(radio_custom, SIGNAL(clicked()), this, SLOT(change_table_stats_pick()));
 
 	update_buttons();
 	model = new QStandardItemModel(5,4, this);
@@ -63,14 +63,14 @@ GPlatesQtWidgets::HellingerNewSegment::HellingerNewSegment(
 
 	// Set one row of the table for starters.
 	d_row_count = 1;
-	for (double row = 0; row < d_row_count; ++row)
+	for (int row = 0; row < d_row_count; ++row)
 	{
-		for (double col = 0; col < 4; ++col)
+		for (int col = 0; col < NUM_COLUMNS; ++col)
 		{
-			QModelIndex index = model ->index(row, col, QModelIndex());
+			QModelIndex index = model->index(row, col, QModelIndex());
 			model ->setData(index, 0.00);
 		}
-		QModelIndex index_move_fix = model ->index(row, 0, QModelIndex());
+		QModelIndex index_move_fix = model->index(row, 0, QModelIndex());
 		model ->setData(index_move_fix, 1);
 	}
 	tableView->setModel(model);
@@ -80,7 +80,7 @@ GPlatesQtWidgets::HellingerNewSegment::HellingerNewSegment(
 }
 
 void
-GPlatesQtWidgets::HellingerNewSegment::add_segment()
+GPlatesQtWidgets::HellingerNewSegment::handle_add_segment()
 {
 
 	int segment_number = spinbox_segment->value();
@@ -92,6 +92,7 @@ GPlatesQtWidgets::HellingerNewSegment::add_segment()
 			d_hellinger_new_segment_error = new GPlatesQtWidgets::HellingerNewSegmentError(
 						d_hellinger_dialog_ptr,
 						segment_number);
+
 		}
 		//        int return_type = d_hellinger_new_segment_error->exec();
 		//		if (return_type == QDialog::Rejected)
@@ -156,7 +157,7 @@ GPlatesQtWidgets::HellingerNewSegment::add_segment_to_model()
 }
 
 void
-GPlatesQtWidgets::HellingerNewSegment::add_line()
+GPlatesQtWidgets::HellingerNewSegment::handle_add_line()
 {
 	//const QModelIndex index = treeWidget->selectionModel()->currentIndex();
 	const QModelIndex index = tableView->currentIndex();
@@ -174,7 +175,7 @@ GPlatesQtWidgets::HellingerNewSegment::add_line()
 }
 
 void
-GPlatesQtWidgets::HellingerNewSegment::remove_line()
+GPlatesQtWidgets::HellingerNewSegment::handle_remove_line()
 {
 	const QModelIndex index = tableView->currentIndex();
 	int row = index.row();
@@ -185,7 +186,7 @@ GPlatesQtWidgets::HellingerNewSegment::remove_line()
 void
 GPlatesQtWidgets::HellingerNewSegment::change_table_stats_pick()
 {
-	if (radiobtn_move->isChecked())
+	if (radio_moving->isChecked())
 	{
 		for (double row = 0; row < d_row_count; ++row)
 		{
@@ -194,9 +195,9 @@ GPlatesQtWidgets::HellingerNewSegment::change_table_stats_pick()
 			disconnect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(item_changed(QStandardItem*)));
 		}
 		connect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(item_changed(QStandardItem*)));
-		radiobtn_move->setChecked(true);
+		radio_moving->setChecked(true);
 	}
-	else if (radiobtn_fixed->isChecked())
+	else if (radio_fixed->isChecked())
 	{
 		for (double row = 0; row < d_row_count; ++row)
 		{
@@ -205,7 +206,7 @@ GPlatesQtWidgets::HellingerNewSegment::change_table_stats_pick()
 			disconnect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(item_changed(QStandardItem*)));
 		}
 		connect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(item_changed(QStandardItem*)));
-		radiobtn_fixed->setChecked(true);
+		radio_fixed->setChecked(true);
 	}
 }
 
@@ -282,7 +283,7 @@ GPlatesQtWidgets::HellingerNewSegment::change_quick_set_state()
 					tableView->model()->index( index_compare.row(), 0 ) ).toInt();
 		if (value != value_compare)
 		{
-			radiobtn_custom->setChecked(true);
+			radio_custom->setChecked(true);
 		}
 
 	}
