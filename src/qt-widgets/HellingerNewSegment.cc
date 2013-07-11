@@ -329,13 +329,45 @@ QWidget*
 GPlatesQtWidgets::SpinBoxDelegate::createEditor(
 		QWidget *parent_,
 		const QStyleOptionViewItem &/* option */,
-		const QModelIndex &/* index */) const
+		const QModelIndex &index) const
 {
-	QSpinBox *editor = new QSpinBox(parent_);
-	editor->setMinimum(0);
-	editor->setMaximum(100);
+	int column = index.column();
 
-	return editor;
+	switch(column){
+	case COLUMN_MOVING_FIXED:
+	{
+		QSpinBox *editor = new QSpinBox(parent_);
+		editor->setMinimum(1);
+		editor->setMaximum(2);
+		return editor;
+		break;
+	}
+	case COLUMN_LAT:
+	{
+		QDoubleSpinBox *editor = new QDoubleSpinBox(parent_);
+		editor->setMinimum(-90.);
+		editor->setMaximum(90.);
+		return editor;
+		break;
+	}
+	case COLUMN_LON:
+	{
+		QDoubleSpinBox *editor = new QDoubleSpinBox(parent_);
+		editor->setMinimum(-360.);
+		editor->setMaximum(360.);
+		return editor;
+		break;
+	}
+	case COLUMN_UNCERTAINTY:
+	default:
+	{
+		QDoubleSpinBox *editor = new QDoubleSpinBox(parent_);
+		editor->setMinimum(0.);
+		editor->setMaximum(1000.);
+		return editor;
+		break;
+	}
+	}
 }
 
 void
@@ -343,10 +375,29 @@ GPlatesQtWidgets::SpinBoxDelegate::setEditorData(
 		QWidget *editor,
 		const QModelIndex &index) const
 {
-	int value = index.model()->data(index, Qt::EditRole).toInt();
 
-	QSpinBox *spinBox = static_cast<QSpinBox*>(editor);
-	spinBox->setValue(value);
+	int column = index.column();
+
+	switch(column){
+	case COLUMN_MOVING_FIXED:
+	{
+		int value = index.model()->data(index, Qt::EditRole).toInt();
+		QSpinBox *spinbox = static_cast<QSpinBox*>(editor);
+		spinbox->setValue(value);
+		break;
+	}
+	case COLUMN_LAT:
+	case COLUMN_LON:
+	case COLUMN_UNCERTAINTY:
+	{
+		int value = index.model()->data(index, Qt::EditRole).toDouble();
+		QDoubleSpinBox *spinbox = static_cast<QDoubleSpinBox*>(editor);
+		spinbox->setValue(value);
+		break;
+	}
+
+	}
+
 }
 
 void
@@ -355,11 +406,27 @@ GPlatesQtWidgets::SpinBoxDelegate::setModelData(
 		QAbstractItemModel *model,
 		const QModelIndex &index) const
 {
-	QSpinBox *spinBox = static_cast<QSpinBox*>(editor);
-	spinBox->interpretText();
-	int value = spinBox->value();
+	int column = index.column();
 
-	model->setData(index, value, Qt::EditRole);
+	QVariant value;
+	switch(column){
+	case COLUMN_MOVING_FIXED:
+	{
+		QSpinBox *spinbox = static_cast<QSpinBox*>(editor);
+		value = spinbox->value();
+		break;
+	}
+	case COLUMN_LAT:
+	case COLUMN_LON:
+	case COLUMN_UNCERTAINTY:
+	{
+		QDoubleSpinBox *spinbox = static_cast<QDoubleSpinBox*>(editor);
+		value = spinbox->value();
+		break;
+	}
+	}
+	model->setData(index,value,Qt::EditRole);
+
 }
 
 void
