@@ -23,39 +23,46 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_QTWIDGETS_HELLINGERNEWSEGMENTERROR_H
-#define GPLATES_QTWIDGETS_HELLINGERNEWSEGMENTERROR_H
+#ifndef GPLATES_QTWIDGETS_HELLINGERNEWSEGMENTWARNING_H
+#define GPLATES_QTWIDGETS_HELLINGERNEWSEGMENTWARNING_H
 
 #include <QWidget>
 
-#include "HellingerNewSegmentErrorUi.h"
+#include "HellingerNewSegmentWarningUi.h"
 #include "HellingerNewSegment.h"
 
 
 namespace GPlatesQtWidgets
 {   
-    enum ErrorNewSegmentType
+	enum NewSegmentActionType
     {
-        ERROR_ADD_NEW_SEGMENT = 1,
-        ERROR_REPLACE_NEW_SEGMENT,
-        ERROR_INSERT_NEW_SEGMENT
+		ACTION_ADD_NEW_SEGMENT = 1,
+		ACTION_REPLACE_NEW_SEGMENT,
+		ACTION_INSERT_NEW_SEGMENT
     };
 
     class HellingerDialog;
-    class HellingerNewSegmentError:
+	class HellingerNewSegmentWarning:
 			public QDialog,
-            protected Ui_HellingerNewSegmentError
+			protected Ui_HellingerNewSegmentWarning
 	{
 		Q_OBJECT
 	public:
 
-		HellingerNewSegmentError(
+		HellingerNewSegmentWarning(
 				HellingerDialog *hellinger_dialog,
 				const int &segment_number,
 				QWidget *parent_ = NULL);
 
         int
         error_type_new_segment();
+
+		/**
+		 * @brief initialise_buttons
+		 * Uncheck all the radio buttons so the user is forced to make a choice.
+		 */
+		void
+		initialise_buttons();
 
 
 
@@ -80,4 +87,4 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif //GPLATES_QTWIDGETS_HELLINGERNEWSEGMENTERROR_H
+#endif //GPLATES_QTWIDGETS_HELLINGERNEWSEGMENTWARNING_H

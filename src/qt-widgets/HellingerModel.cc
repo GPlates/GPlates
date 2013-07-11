@@ -109,7 +109,7 @@ GPlatesQtWidgets::HellingerModel::get_pick_state(const int &segment, const int &
 
 int
 GPlatesQtWidgets::HellingerModel::num_rows_in_segment(
-		const int &segment)
+		const int &segment) const
 {
 	return d_hellinger_picks.count(segment);
 }
@@ -144,7 +144,7 @@ GPlatesQtWidgets::HellingerModel::get_segment_as_string(
 }
 
 void
-GPlatesQtWidgets::HellingerModel::remove_pick(int &segment, int &row)
+GPlatesQtWidgets::HellingerModel::remove_pick(const int &segment, const int &row)
 {
 	std::pair<hellinger_model_type::iterator,hellinger_model_type::iterator> pair =
 			d_hellinger_picks.equal_range(segment);
@@ -162,7 +162,7 @@ GPlatesQtWidgets::HellingerModel::remove_pick(int &segment, int &row)
 }
 
 void
-GPlatesQtWidgets::HellingerModel::remove_segment(int &segment)
+GPlatesQtWidgets::HellingerModel::remove_segment(const int &segment)
 {
     d_hellinger_picks.erase(segment);
 }

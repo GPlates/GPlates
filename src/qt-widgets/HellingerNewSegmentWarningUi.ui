@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>HellingerNewSegmentError</class>
- <widget class="QDialog" name="HellingerNewSegmentError">
+ <class>HellingerNewSegmentWarning</class>
+ <widget class="QDialog" name="HellingerNewSegmentWarning">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>468</width>
+    <width>469</width>
     <height>220</height>
    </rect>
   </property>
@@ -129,7 +129,7 @@
   <connection>
    <sender>button_cancel</sender>
    <signal>clicked()</signal>
-   <receiver>HellingerNewSegmentError</receiver>
+   <receiver>HellingerNewSegmentWarning</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -145,7 +145,7 @@
   <connection>
    <sender>button_ok</sender>
    <signal>clicked()</signal>
-   <receiver>HellingerNewSegmentError</receiver>
+   <receiver>HellingerNewSegmentWarning</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

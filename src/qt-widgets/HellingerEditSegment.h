@@ -39,7 +39,7 @@ namespace GPlatesQtWidgets
     class HellingerDialog;
     class HellingerModel;
     class HellingerNewSegment;
-    class HellingerNewSegmentError;
+	class HellingerNewSegmentWarning;
 
         class HellingerEditSegment:
 			public QDialog,
@@ -54,8 +54,10 @@ namespace GPlatesQtWidgets
 
                 void
                 reset();
+
                 void
-                initialization_table(QStringList &input_value);
+				initialise_table(QStringList &input_value);
+
                 void
                 initialise(int &segment);
 
@@ -97,7 +99,7 @@ namespace GPlatesQtWidgets
 			int d_segment_number;
             QStringList d_disabled_picks;
             QStringList d_active_picks;
-            HellingerNewSegmentError *d_hellinger_new_segment_error;
+			HellingerNewSegmentWarning *d_hellinger_new_segment_warning;
 
 	};
 }

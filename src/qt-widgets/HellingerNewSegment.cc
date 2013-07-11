@@ -24,16 +24,15 @@
  */
 
 #include <QDebug>
-#include <QFileDialog>
-#include <QLocale>
 #include <QRadioButton>
+#include <QTableView>
 #include <QTextStream>
 
 #include "HellingerDialog.h"
 #include "HellingerDialogUi.h"
 #include "HellingerModel.h"
 #include "HellingerNewSegment.h"
-#include "HellingerNewSegmentError.h"
+#include "HellingerNewSegmentWarning.h"
 #include "QtWidgetUtils.h"
 
 GPlatesQtWidgets::HellingerNewSegment::HellingerNewSegment(
@@ -43,8 +42,8 @@ GPlatesQtWidgets::HellingerNewSegment::HellingerNewSegment(
 	QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_hellinger_dialog_ptr(hellinger_dialog),
 	d_hellinger_model_ptr(hellinger_model),
-	d_hellinger_new_segment_error(0),
-	d_row_count(0)
+	d_hellinger_new_segment_warning(0),
+	d_row_count(1)
 {
 	setupUi(this);
 	QObject::connect(button_add_segment, SIGNAL(clicked()), this, SLOT(handle_add_segment()));
@@ -55,14 +54,14 @@ GPlatesQtWidgets::HellingerNewSegment::HellingerNewSegment(
 	QObject::connect(radio_custom, SIGNAL(clicked()), this, SLOT(change_table_stats_pick()));
 
 	update_buttons();
-	model = new QStandardItemModel(5,4, this);
-	model->setHorizontalHeaderItem(0,new QStandardItem("Moving(1)/Fixed(2)"));
-	model->setHorizontalHeaderItem(1, new QStandardItem("Lat"));
-	model->setHorizontalHeaderItem(2, new QStandardItem("Long"));
-	model->setHorizontalHeaderItem(3, new QStandardItem("Uncertainty (km)"));
+	model = new QStandardItemModel(NUM_COLUMNS,d_row_count, this);
+	model->setHorizontalHeaderItem(COLUMN_MOVING_FIXED,new QStandardItem("Moving(1)/Fixed(2)"));
+	model->setHorizontalHeaderItem(COLUMN_LAT, new QStandardItem("Lat"));
+	model->setHorizontalHeaderItem(COLUMN_LON, new QStandardItem("Long"));
+	model->setHorizontalHeaderItem(COLUMN_UNCERTAINTY, new QStandardItem("Uncertainty (km)"));
 
-	// Set one row of the table for starters.
-	d_row_count = 1;
+
+
 	for (int row = 0; row < d_row_count; ++row)
 	{
 		for (int col = 0; col < NUM_COLUMNS; ++col)
@@ -70,10 +69,18 @@ GPlatesQtWidgets::HellingerNewSegment::HellingerNewSegment(
 			QModelIndex index = model->index(row, col, QModelIndex());
 			model ->setData(index, 0.00);
 		}
-		QModelIndex index_move_fix = model->index(row, 0, QModelIndex());
+		QModelIndex index_move_fix = model->index(row, COLUMN_MOVING_FIXED, QModelIndex());
 		model ->setData(index_move_fix, 1);
 	}
-	tableView->setModel(model);
+	table_new_segment->setModel(model);
+
+	table_new_segment->horizontalHeader()->resizeSection(COLUMN_MOVING_FIXED,140);
+	table_new_segment->horizontalHeader()->resizeSection(COLUMN_LAT,100);
+	table_new_segment->horizontalHeader()->resizeSection(COLUMN_LON,100);
+	table_new_segment->horizontalHeader()->resizeSection(COLUMN_UNCERTAINTY,100);
+
+	table_new_segment->horizontalHeader()->setStretchLastSection(true);
+
 
 	connect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(item_changed(QStandardItem*)));
 
@@ -82,36 +89,37 @@ GPlatesQtWidgets::HellingerNewSegment::HellingerNewSegment(
 void
 GPlatesQtWidgets::HellingerNewSegment::handle_add_segment()
 {
-
+	// FIXME: We don't check for contiguous segment numbers here. It could be an idea to
+	// check for this here and suggest the next "available" segment number if the user has
+	// entered a value greater than (highest-so-far)+1. The contiguity is checked and corrected
+	// before performing the fit anyway, so it doesn't have to be here by any means.
 	int segment_number = spinbox_segment->value();
 
 	if (d_hellinger_model_ptr->segment_number_exists(segment_number))
 	{
-		if (!d_hellinger_new_segment_error)
+		// We have a clash: the desired segment number is already in the model. Warn the user
+		// and get their desired action.
+		if (!d_hellinger_new_segment_warning)
 		{
-			d_hellinger_new_segment_error = new GPlatesQtWidgets::HellingerNewSegmentError(
+			d_hellinger_new_segment_warning = new GPlatesQtWidgets::HellingerNewSegmentWarning(
 						d_hellinger_dialog_ptr,
 						segment_number);
 
 		}
-		//        int return_type = d_hellinger_new_segment_error->exec();
-		//		if (return_type == QDialog::Rejected)
-		//		{
-		//			return;
-		//		}
-		d_hellinger_new_segment_error->exec(); // necessary for applied changes!
-		int value_error = d_hellinger_new_segment_error->error_type_new_segment();
-		if (value_error == ERROR_ADD_NEW_SEGMENT)
+
+		d_hellinger_new_segment_warning->exec(); // necessary for applied changes!
+		int value_error = d_hellinger_new_segment_warning->error_type_new_segment();
+		if (value_error == ACTION_ADD_NEW_SEGMENT)
 		{
 			add_segment_to_model();
 		}
-		else if (value_error == ERROR_REPLACE_NEW_SEGMENT)
+		else if (value_error == ACTION_REPLACE_NEW_SEGMENT)
 		{
 			d_hellinger_model_ptr->remove_segment(segment_number);
 			add_segment_to_model();
 
 		}
-		else if (value_error == ERROR_INSERT_NEW_SEGMENT)
+		else if (value_error == ACTION_INSERT_NEW_SEGMENT)
 		{
 			d_hellinger_model_ptr->reorder_segment(segment_number);
 			add_segment_to_model();
@@ -123,6 +131,7 @@ GPlatesQtWidgets::HellingerNewSegment::handle_add_segment()
 	}
 	else
 	{
+		// Everything was cool.
 		add_segment_to_model();
 	}
 
@@ -137,13 +146,13 @@ GPlatesQtWidgets::HellingerNewSegment::add_segment_to_model()
 	QString segment_str = QString("%1").arg(segment);
 	QString is_enabled = "1";
 
-	for (double row = 0; row < d_row_count; ++row)
+	for (int row = 0; row < d_row_count; ++row)
 	{
-		for (double col = 0; col < 4; ++col)
+		for (int col = 0; col < NUM_COLUMNS; ++col)
 		{
-			QModelIndex index = model ->index(row, col, QModelIndex());
-			QString value = tableView->model()->data(
-						tableView->model()->index( index.row() , index.column() ) )
+			QModelIndex index = model->index(row, col, QModelIndex());
+			QString value = table_new_segment->model()->data(
+						table_new_segment->model()->index( index.row() , index.column() ) )
 					.toString();
 
 			value_on_row<< value;
@@ -160,7 +169,7 @@ void
 GPlatesQtWidgets::HellingerNewSegment::handle_add_line()
 {
 	//const QModelIndex index = treeWidget->selectionModel()->currentIndex();
-	const QModelIndex index = tableView->currentIndex();
+	const QModelIndex index = table_new_segment->currentIndex();
 	int row = index.row();
 	int col = index.column();
 	model->insertRow(row);
@@ -177,7 +186,7 @@ GPlatesQtWidgets::HellingerNewSegment::handle_add_line()
 void
 GPlatesQtWidgets::HellingerNewSegment::handle_remove_line()
 {
-	const QModelIndex index = tableView->currentIndex();
+	const QModelIndex index = table_new_segment->currentIndex();
 	int row = index.row();
 	model->removeRow(row);
 	d_row_count= d_row_count-1;
@@ -216,12 +225,12 @@ GPlatesQtWidgets::HellingerNewSegment::item_changed(QStandardItem *item)
 	int column = item->column();
 	int row = item->row();
 	QModelIndex index = model ->index(row, column, QModelIndex());
-	QString value = tableView->model()->data(
-				tableView->model()->index( index.row() , index.column() ) )
+	QString value = table_new_segment->model()->data(
+				table_new_segment->model()->index( index.row() , index.column() ) )
 			.toString();
 	double value_double = value.toDouble();
 
-	if (column == COLUMN_MOVE_FIX)
+	if (column == COLUMN_MOVING_FIXED)
 	{
 		if (value_double < MOVING_SEGMENT_TYPE)
 		{
@@ -255,7 +264,7 @@ GPlatesQtWidgets::HellingerNewSegment::item_changed(QStandardItem *item)
 			model->setData(index,360.00);
 		}
 	}
-	else if (column == COLUMN_ERROR)
+	else if (column == COLUMN_UNCERTAINTY)
 	{
 		if (value_double < 0.00)
 		{
@@ -273,14 +282,14 @@ void
 GPlatesQtWidgets::HellingerNewSegment::change_quick_set_state()
 {
 
-	int value = tableView->model()->data(
-				tableView->model()->index( 0, 0 ) ).toInt();
+	int value = table_new_segment->model()->data(
+				table_new_segment->model()->index( 0, 0 ) ).toInt();
 
 	for (double row = 0; row < d_row_count; ++row)
 	{
 		QModelIndex index_compare = model ->index(row, 0, QModelIndex());
-		int value_compare = tableView->model()->data(
-					tableView->model()->index( index_compare.row(), 0 ) ).toInt();
+		int value_compare = table_new_segment->model()->data(
+					table_new_segment->model()->index( index_compare.row(), 0 ) ).toInt();
 		if (value != value_compare)
 		{
 			radio_custom->setChecked(true);

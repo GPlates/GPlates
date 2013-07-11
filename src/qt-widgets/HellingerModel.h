@@ -28,13 +28,6 @@
 
 #include <vector>
 
-
-#include <QItemDelegate>
-#include <QModelIndex>
-#include <QSize>
-
-#include <QTextStream>
-
 #include "boost/optional.hpp"
 
 #include "maths/PointOnSphere.h"
@@ -174,6 +167,10 @@ namespace GPlatesQtWidgets
 		add_pick(const HellingerPick &pick,
 				 const int &segment_number);
 
+		void
+		add_segment(std::vector<HellingerPick> &picks,
+					const int &segment_number);
+
         QStringList
         get_line(
 			int &segment,
@@ -204,16 +201,16 @@ namespace GPlatesQtWidgets
 			const int &segment) const;
 
         int
-		num_rows_in_segment(const int &segment);
+		num_rows_in_segment(const int &segment) const;
 
         void
 		remove_pick(
-			int &segment,
-			int &row);
+			const int &segment,
+			const int &row);
 
         void
         remove_segment(
-			int &segment);
+			const int &segment);
 
         void
         reset_model();

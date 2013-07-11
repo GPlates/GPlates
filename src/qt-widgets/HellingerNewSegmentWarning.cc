@@ -32,11 +32,11 @@
 #include <QTextStream>
 
 #include "HellingerNewSegment.h"
-#include "HellingerNewSegmentError.h"
-#include "HellingerNewSegmentUi.h"
+#include "HellingerNewSegmentWarning.h"
+#include "HellingerNewSegmentWarningUi.h"
 #include "QtWidgetUtils.h"
 
-GPlatesQtWidgets::HellingerNewSegmentError::HellingerNewSegmentError(
+GPlatesQtWidgets::HellingerNewSegmentWarning::HellingerNewSegmentWarning(
                 HellingerDialog *hellinger_dialog,
 				const int &segment_number,
                 QWidget *parent_):
@@ -64,31 +64,39 @@ GPlatesQtWidgets::HellingerNewSegmentError::HellingerNewSegmentError(
 
 
 void
-GPlatesQtWidgets::HellingerNewSegmentError::handle_ok()
+GPlatesQtWidgets::HellingerNewSegmentWarning::handle_ok()
 {
 	if (radio_add->isChecked())
     {
-        d_type_error_new_segment = ERROR_ADD_NEW_SEGMENT;
+		d_type_error_new_segment = ACTION_ADD_NEW_SEGMENT;
     }
 	else if (radio_replace->isChecked())
     {
-        d_type_error_new_segment = ERROR_REPLACE_NEW_SEGMENT;
+		d_type_error_new_segment = ACTION_REPLACE_NEW_SEGMENT;
     }
 	else if (radio_insert->isChecked())
     {
-        d_type_error_new_segment = ERROR_INSERT_NEW_SEGMENT;
+		d_type_error_new_segment = ACTION_INSERT_NEW_SEGMENT;
     }
 
 }
 
 int
-GPlatesQtWidgets::HellingerNewSegmentError::error_type_new_segment()
+GPlatesQtWidgets::HellingerNewSegmentWarning::error_type_new_segment()
 {
-    return d_type_error_new_segment;
+	return d_type_error_new_segment;
+}
+
+void GPlatesQtWidgets::HellingerNewSegmentWarning::initialise_buttons()
+{
+	radio_add->setChecked(false);
+	radio_insert->setChecked(false);
+	radio_replace->setChecked(false);
+	button_ok->setEnabled(false);
 }
 
 void
-GPlatesQtWidgets::HellingerNewSegmentError::handle_button_clicked()
+GPlatesQtWidgets::HellingerNewSegmentWarning::handle_button_clicked()
 {
 	button_ok->setEnabled(true);
 }

@@ -38,17 +38,17 @@
 namespace GPlatesQtWidgets
 {
 	enum ColumnType{
-		COLUMN_MOVE_FIX = 0,
+		COLUMN_MOVING_FIXED = 0,
 		COLUMN_LAT,
 		COLUMN_LON,
-		COLUMN_ERROR,
+		COLUMN_UNCERTAINTY,
 
 		NUM_COLUMNS
 	};
 
 	class HellingerDialog;
 	class HellingerModel;
-	class HellingerNewSegmentError;
+	class HellingerNewSegmentWarning;
 
 	class HellingerNewSegment:
 			public QDialog,
@@ -89,6 +89,7 @@ namespace GPlatesQtWidgets
 
 
 	private:
+
 		void
 		change_quick_set_state();
 
@@ -98,7 +99,7 @@ namespace GPlatesQtWidgets
 		HellingerDialog *d_hellinger_dialog_ptr;
 		QStandardItemModel *model;
 		HellingerModel *d_hellinger_model_ptr;
-		HellingerNewSegmentError *d_hellinger_new_segment_error;
+		HellingerNewSegmentWarning *d_hellinger_new_segment_warning;
 
 		int d_row_count;
 

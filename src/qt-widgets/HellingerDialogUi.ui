@@ -700,10 +700,16 @@
    </item>
    <item row="1" column="1" colspan="2">
     <widget class="QGroupBox" name="groupbox_picks">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="minimumSize">
       <size>
        <width>0</width>
-       <height>300</height>
+       <height>412</height>
       </size>
      </property>
      <property name="maximumSize">
@@ -780,6 +786,12 @@
         </item>
         <item>
          <widget class="QPushButton" name="button_new_point">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>27</height>
+           </size>
+          </property>
           <property name="text">
            <string>New...</string>
           </property>
@@ -787,6 +799,12 @@
         </item>
         <item>
          <widget class="QPushButton" name="button_remove_point">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>27</height>
+           </size>
+          </property>
           <property name="text">
            <string>Remove...</string>
           </property>
@@ -796,6 +814,12 @@
          <widget class="QPushButton" name="button_edit_point">
           <property name="enabled">
            <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>27</height>
+           </size>
           </property>
           <property name="text">
            <string>Edit...</string>
@@ -807,6 +831,12 @@
           <property name="enabled">
            <bool>false</bool>
           </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>27</height>
+           </size>
+          </property>
           <property name="text">
            <string>Activate </string>
           </property>
@@ -816,6 +846,12 @@
          <widget class="QPushButton" name="button_deactivate_pick">
           <property name="enabled">
            <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>27</height>
+           </size>
           </property>
           <property name="text">
            <string>Deactivate </string>
@@ -838,6 +874,12 @@
         </item>
         <item>
          <widget class="QPushButton" name="button_new_segment">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>27</height>
+           </size>
+          </property>
           <property name="text">
            <string>New...</string>
           </property>
@@ -845,6 +887,12 @@
         </item>
         <item>
          <widget class="QPushButton" name="button_remove_segment">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>27</height>
+           </size>
+          </property>
           <property name="text">
            <string>Remove...</string>
           </property>
@@ -854,6 +902,12 @@
          <widget class="QPushButton" name="button_edit_segment">
           <property name="enabled">
            <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>27</height>
+           </size>
           </property>
           <property name="text">
            <string>Edit...</string>
@@ -868,6 +922,12 @@
         </item>
         <item>
          <widget class="QPushButton" name="button_expand_all">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>27</height>
+           </size>
+          </property>
           <property name="text">
            <string>E&amp;xpand </string>
           </property>
@@ -875,6 +935,12 @@
         </item>
         <item>
          <widget class="QPushButton" name="button_collapse_all">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>27</height>
+           </size>
+          </property>
           <property name="text">
            <string>&amp;Collapse</string>
           </property>
@@ -884,6 +950,12 @@
          <widget class="QPushButton" name="button_renumber">
           <property name="enabled">
            <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>27</height>
+           </size>
           </property>
           <property name="text">
            <string>Re-number</string>

@@ -24,18 +24,14 @@
  */
 
 
-#include <string>
-
 #include <QDebug>
-#include <QFileDialog>
 #include <QLocale>
 #include <QRadioButton>
 #include <QTextStream>
 
-#include "global/CompilerWarnings.h"
 #include "HellingerDialog.h"
 #include "HellingerEditSegment.h"
-#include "HellingerNewSegmentError.h"
+#include "HellingerNewSegmentWarning.h"
 #include "HellingerDialogUi.h"
 #include "QtWidgetUtils.h"
 
@@ -50,22 +46,22 @@ GPlatesQtWidgets::HellingerEditSegment::HellingerEditSegment(
 		d_segment_number(0),
         d_disabled_picks(0),
         d_active_picks(0),
-        d_hellinger_new_segment_error(0)
+		d_hellinger_new_segment_warning(0)
 
 {
 	setupUi(this);
 
-        QObject::connect(button_edit_segment, SIGNAL(clicked()), this, SLOT(edit()));
-        QObject::connect(button_add_line, SIGNAL(clicked()), this, SLOT(add_line()));
-        QObject::connect(button_remove_line, SIGNAL(clicked()), this, SLOT(remove_line()));
-        QObject::connect(radiobtn_move, SIGNAL(clicked()), this, SLOT(change_table_stats_pick()));
-        QObject::connect(radiobtn_fixed, SIGNAL(clicked()), this, SLOT(change_table_stats_pick()));
-        QObject::connect(radiobtn_custom, SIGNAL(clicked()), this, SLOT(change_table_stats_pick()));
-        update_buttons();
+	QObject::connect(button_edit_segment, SIGNAL(clicked()), this, SLOT(edit()));
+	QObject::connect(button_add_line, SIGNAL(clicked()), this, SLOT(add_line()));
+	QObject::connect(button_remove_line, SIGNAL(clicked()), this, SLOT(remove_line()));
+	QObject::connect(radiobtn_move, SIGNAL(clicked()), this, SLOT(change_table_stats_pick()));
+	QObject::connect(radiobtn_fixed, SIGNAL(clicked()), this, SLOT(change_table_stats_pick()));
+	QObject::connect(radiobtn_custom, SIGNAL(clicked()), this, SLOT(change_table_stats_pick()));
+	update_buttons();
 }
 
 void
-GPlatesQtWidgets::HellingerEditSegment::initialization_table(QStringList &input_value)
+GPlatesQtWidgets::HellingerEditSegment::initialise_table(QStringList &input_value)
 {
 
     model = new QStandardItemModel(d_number_rows,4, this);
@@ -133,7 +129,7 @@ GPlatesQtWidgets::HellingerEditSegment::check_picks(QStringList &picks)
     int model_column_count = 5;
     int count_picks = d_active_picks.count()/model_column_count;
     d_number_rows = count_picks;
-    initialization_table(d_active_picks);
+	initialise_table(d_active_picks);
 
 }
 
@@ -143,26 +139,26 @@ GPlatesQtWidgets::HellingerEditSegment::edit()
 
 	if (d_hellinger_model_ptr->segment_number_exists(d_segment_number))
     {
-        if (!d_hellinger_new_segment_error)
+		if (!d_hellinger_new_segment_warning)
         {
-			d_hellinger_new_segment_error = new GPlatesQtWidgets::HellingerNewSegmentError(
+			d_hellinger_new_segment_warning = new GPlatesQtWidgets::HellingerNewSegmentWarning(
 						d_hellinger_dialog_ptr,
 						d_segment_number);
         }
 
-        d_hellinger_new_segment_error->exec(); // necessary for applied changes!
-        int value_error = d_hellinger_new_segment_error->error_type_new_segment();
-        if (value_error == ERROR_ADD_NEW_SEGMENT)
+		d_hellinger_new_segment_warning->exec(); // necessary for applied changes!
+		int value_error = d_hellinger_new_segment_warning->error_type_new_segment();
+		if (value_error == ACTION_ADD_NEW_SEGMENT)
         {
             edit_segment();
         }
-        else if (value_error == ERROR_REPLACE_NEW_SEGMENT)
+		else if (value_error == ACTION_REPLACE_NEW_SEGMENT)
         {
 			d_hellinger_model_ptr->remove_segment(d_segment_number);
             edit_segment();
 
         }
-        else if (value_error == ERROR_INSERT_NEW_SEGMENT)
+		else if (value_error == ACTION_INSERT_NEW_SEGMENT)
         {
 			d_hellinger_model_ptr->reorder_segment(d_segment_number);
             edit_segment();
@@ -293,7 +289,7 @@ GPlatesQtWidgets::HellingerEditSegment::handle_item_changed(QStandardItem *item)
                 .toString();
     double value_double = value.toDouble();
 
-    if (column == COLUMN_MOVE_FIX)
+	if (column == COLUMN_MOVING_FIXED)
     {
         if (value_double < MOVING_SEGMENT_TYPE)
         {
@@ -327,7 +323,7 @@ GPlatesQtWidgets::HellingerEditSegment::handle_item_changed(QStandardItem *item)
             model->setData(index,360.00);
         }
     }
-    else if (column == COLUMN_ERROR)
+	else if (column == COLUMN_UNCERTAINTY)
     {
         if (value_double < 0.00)
         {

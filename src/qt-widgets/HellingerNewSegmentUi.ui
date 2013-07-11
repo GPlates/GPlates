@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>437</width>
+    <width>649</width>
     <height>350</height>
    </rect>
   </property>
@@ -79,7 +79,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QRadioButton" name="radiobtn_move">
+      <widget class="QRadioButton" name="radio_moving">
        <property name="text">
         <string>All Moving (1)</string>
        </property>
@@ -89,14 +89,14 @@
       </widget>
      </item>
      <item>
-      <widget class="QRadioButton" name="radiobtn_fixed">
+      <widget class="QRadioButton" name="radio_fixed">
        <property name="text">
         <string>All Fixed (2)</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QRadioButton" name="radiobtn_custom">
+      <widget class="QRadioButton" name="radio_custom">
        <property name="text">
         <string>Custom</string>
        </property>
@@ -178,7 +178,7 @@
     </layout>
    </item>
    <item row="1" column="0" rowspan="4" colspan="2">
-    <widget class="QTableView" name="tableView">
+    <widget class="QTableView" name="table_new_segment">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
        <horstretch>0</horstretch>
