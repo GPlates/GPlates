@@ -27,12 +27,15 @@
 #define GPLATES_QTWIDGETS_HELLINGERNEWSEGMENT_H
 
 #include <QAbstractTableModel>
+#include <QItemDelegate>
 #include <QtCore>
 #include <QtGui>
 #include <QWidget>
 
 #include "HellingerNewSegmentUi.h"
 #include "HellingerDialog.h"
+
+
 
 
 namespace GPlatesQtWidgets
@@ -49,6 +52,36 @@ namespace GPlatesQtWidgets
 	class HellingerDialog;
 	class HellingerModel;
 	class HellingerNewSegmentWarning;
+
+	/**
+	 * @brief The SpinBoxDelegate class
+	 *
+	 * This lets us customise the spinbox behaviour in the TableView. Borrowed largely from the
+	 * Qt example here:
+	 * http://qt-project.org/doc/qt-4.8/itemviews-spinboxdelegate.html
+	 *
+	 */
+	class SpinBoxDelegate : public QItemDelegate
+	{
+		Q_OBJECT
+
+	public:
+		SpinBoxDelegate(QObject *parent = 0);
+
+		QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option,
+							  const QModelIndex &index) const;
+
+		void setEditorData(QWidget *editor, const QModelIndex &index) const;
+		void setModelData(QWidget *editor, QAbstractItemModel *model,
+						  const QModelIndex &index) const;
+
+		void updateEditorGeometry(QWidget *editor,
+								  const QStyleOptionViewItem &option, const QModelIndex &index) const;
+	};
+
+
+
+
 
 	class HellingerNewSegment:
 			public QDialog,
@@ -84,7 +117,7 @@ namespace GPlatesQtWidgets
 		change_table_stats_pick();
 
 		void
-		item_changed(QStandardItem *item);
+		handle_item_changed(QStandardItem *item);
 
 
 
@@ -103,7 +136,7 @@ namespace GPlatesQtWidgets
 
 		int d_row_count;
 
-
+		SpinBoxDelegate d_spin_box_delegate;
 	};
 }
 

@@ -53,7 +53,8 @@ GPlatesQtWidgets::HellingerNewSegment::HellingerNewSegment(
 	QObject::connect(radio_fixed, SIGNAL(clicked()), this, SLOT(change_table_stats_pick()));
 	QObject::connect(radio_custom, SIGNAL(clicked()), this, SLOT(change_table_stats_pick()));
 
-	update_buttons();
+
+
 	model = new QStandardItemModel(NUM_COLUMNS,d_row_count, this);
 	model->setHorizontalHeaderItem(COLUMN_MOVING_FIXED,new QStandardItem("Moving(1)/Fixed(2)"));
 	model->setHorizontalHeaderItem(COLUMN_LAT, new QStandardItem("Lat"));
@@ -67,11 +68,14 @@ GPlatesQtWidgets::HellingerNewSegment::HellingerNewSegment(
 		for (int col = 0; col < NUM_COLUMNS; ++col)
 		{
 			QModelIndex index = model->index(row, col, QModelIndex());
-			model ->setData(index, 0.00);
+			model->setData(index, 0.00);
 		}
 		QModelIndex index_move_fix = model->index(row, COLUMN_MOVING_FIXED, QModelIndex());
-		model ->setData(index_move_fix, 1);
+		model->setData(index_move_fix, 1);
 	}
+
+	model->setRowCount(d_row_count);
+
 	table_new_segment->setModel(model);
 
 	table_new_segment->horizontalHeader()->resizeSection(COLUMN_MOVING_FIXED,140);
@@ -82,7 +86,13 @@ GPlatesQtWidgets::HellingerNewSegment::HellingerNewSegment(
 	table_new_segment->horizontalHeader()->setStretchLastSection(true);
 
 
-	connect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(item_changed(QStandardItem*)));
+	// TODO: check if this needs to be last, after some model initialisation for example, or
+	// if it can be put amongst the other connects.
+	connect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(handle_item_changed(QStandardItem*)));
+
+	update_buttons();
+
+	table_new_segment->setItemDelegate(&d_spin_box_delegate);
 
 }
 
@@ -201,9 +211,9 @@ GPlatesQtWidgets::HellingerNewSegment::change_table_stats_pick()
 		{
 			QModelIndex index_move_fix = model ->index(row, 0, QModelIndex());
 			model->setData(index_move_fix, 1);
-			disconnect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(item_changed(QStandardItem*)));
+			disconnect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(handle_item_changed(QStandardItem*)));
 		}
-		connect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(item_changed(QStandardItem*)));
+		connect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(handle_item_changed(QStandardItem*)));
 		radio_moving->setChecked(true);
 	}
 	else if (radio_fixed->isChecked())
@@ -212,19 +222,19 @@ GPlatesQtWidgets::HellingerNewSegment::change_table_stats_pick()
 		{
 			QModelIndex index_move_fix = model ->index(row, 0, QModelIndex());
 			model->setData(index_move_fix, 2);
-			disconnect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(item_changed(QStandardItem*)));
+			disconnect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(handle_item_changed(QStandardItem*)));
 		}
-		connect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(item_changed(QStandardItem*)));
+		connect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(handle_item_changed(QStandardItem*)));
 		radio_fixed->setChecked(true);
 	}
 }
 
 void
-GPlatesQtWidgets::HellingerNewSegment::item_changed(QStandardItem *item)
+GPlatesQtWidgets::HellingerNewSegment::handle_item_changed(QStandardItem *item)
 {
 	int column = item->column();
 	int row = item->row();
-	QModelIndex index = model ->index(row, column, QModelIndex());
+	QModelIndex index = model->index(row, column, QModelIndex());
 	QString value = table_new_segment->model()->data(
 				table_new_segment->model()->index( index.row() , index.column() ) )
 			.toString();
@@ -303,10 +313,61 @@ GPlatesQtWidgets::HellingerNewSegment::change_quick_set_state()
 void
 GPlatesQtWidgets::HellingerNewSegment::update_buttons()
 {
+	QModelIndexList indices = table_new_segment->selectionModel()->selection().indexes();
 
+	button_remove_line->setEnabled(!indices.isEmpty());
 }
 
 
+GPlatesQtWidgets::SpinBoxDelegate::SpinBoxDelegate(QObject *parent_):
+	QItemDelegate(parent_)
+{
 
+}
 
+QWidget*
+GPlatesQtWidgets::SpinBoxDelegate::createEditor(
+		QWidget *parent_,
+		const QStyleOptionViewItem &/* option */,
+		const QModelIndex &/* index */) const
+{
+	QSpinBox *editor = new QSpinBox(parent_);
+	editor->setMinimum(0);
+	editor->setMaximum(100);
+
+	return editor;
+}
+
+void
+GPlatesQtWidgets::SpinBoxDelegate::setEditorData(
+		QWidget *editor,
+		const QModelIndex &index) const
+{
+	int value = index.model()->data(index, Qt::EditRole).toInt();
+
+	QSpinBox *spinBox = static_cast<QSpinBox*>(editor);
+	spinBox->setValue(value);
+}
+
+void
+GPlatesQtWidgets::SpinBoxDelegate::setModelData(
+		QWidget *editor,
+		QAbstractItemModel *model,
+		const QModelIndex &index) const
+{
+	QSpinBox *spinBox = static_cast<QSpinBox*>(editor);
+	spinBox->interpretText();
+	int value = spinBox->value();
+
+	model->setData(index, value, Qt::EditRole);
+}
+
+void
+GPlatesQtWidgets::SpinBoxDelegate::updateEditorGeometry(
+		QWidget *editor,
+		const QStyleOptionViewItem &option,
+		const QModelIndex &/* index */) const
+{
+	editor->setGeometry(option.rect);
+}
 
