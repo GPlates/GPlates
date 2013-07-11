@@ -205,12 +205,13 @@ GPlatesQtWidgets::HellingerNewSegment::handle_remove_line()
 void
 GPlatesQtWidgets::HellingerNewSegment::change_table_stats_pick()
 {
+	// TODO: have a closer look at this, especially the connect/disconnect stuff.
 	if (radio_moving->isChecked())
 	{
 		for (double row = 0; row < d_row_count; ++row)
 		{
-			QModelIndex index_move_fix = model ->index(row, 0, QModelIndex());
-			model->setData(index_move_fix, 1);
+			QModelIndex index_move_fix = model ->index(row, COLUMN_MOVING_FIXED, QModelIndex());
+			model->setData(index_move_fix, GPlatesQtWidgets::MOVING_SEGMENT_TYPE);
 			disconnect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(handle_item_changed(QStandardItem*)));
 		}
 		connect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(handle_item_changed(QStandardItem*)));
@@ -220,8 +221,8 @@ GPlatesQtWidgets::HellingerNewSegment::change_table_stats_pick()
 	{
 		for (double row = 0; row < d_row_count; ++row)
 		{
-			QModelIndex index_move_fix = model ->index(row, 0, QModelIndex());
-			model->setData(index_move_fix, 2);
+			QModelIndex index_move_fix = model ->index(row, COLUMN_MOVING_FIXED, QModelIndex());
+			model->setData(index_move_fix, GPlatesQtWidgets::FIXED_SEGMENT_TYPE);
 			disconnect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(handle_item_changed(QStandardItem*)));
 		}
 		connect(model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(handle_item_changed(QStandardItem*)));
@@ -232,6 +233,8 @@ GPlatesQtWidgets::HellingerNewSegment::change_table_stats_pick()
 void
 GPlatesQtWidgets::HellingerNewSegment::handle_item_changed(QStandardItem *item)
 {
+// TODO: I think this is all redundant now.  Bin when satisfied that's the case.
+/*
 	int column = item->column();
 	int row = item->row();
 	QModelIndex index = model->index(row, column, QModelIndex());
@@ -285,6 +288,7 @@ GPlatesQtWidgets::HellingerNewSegment::handle_item_changed(QStandardItem *item)
 			model->setData(index,999.00);
 		}
 	}
+*/
 
 }
 
