@@ -99,7 +99,7 @@ GPlatesQtWidgets::HellingerNewSegment::HellingerNewSegment(
 void
 GPlatesQtWidgets::HellingerNewSegment::handle_add_segment()
 {
-	// FIXME: We don't check for contiguous segment numbers here. It could be an idea to
+	// NOTE: We don't check for contiguous segment numbers here. It could be an idea to
 	// check for this here and suggest the next "available" segment number if the user has
 	// entered a value greater than (highest-so-far)+1. The contiguity is checked and corrected
 	// before performing the fit anyway, so it doesn't have to be here by any means.
@@ -158,21 +158,34 @@ GPlatesQtWidgets::HellingerNewSegment::add_segment_to_model()
 
 	for (int row = 0; row < d_row_count; ++row)
 	{
-		for (int col = 0; col < NUM_COLUMNS; ++col)
-		{
-			QModelIndex index = model->index(row, col, QModelIndex());
-			QString value = table_new_segment->model()->data(
-						table_new_segment->model()->index( index.row() , index.column() ) )
-					.toString();
+		QModelIndex index;
+		QVariant variant;
 
-			value_on_row<< value;
-		}
-		value_from_table<<value_on_row.at(0)<<segment_str<<value_on_row.at(1)<<value_on_row.at(2)<<value_on_row.at(3)<<is_enabled;
-		d_hellinger_model_ptr->add_pick(value_from_table);
-		d_hellinger_dialog_ptr->update_from_model();
-		value_on_row.clear();
-		value_from_table.clear();
+		// Moving or fixed
+		index = model->index(row,COLUMN_MOVING_FIXED);
+		variant = table_new_segment->model()->data(index);
+		// The spinboxes should already ensure valid data types/values for each column.
+		HellingerSegmentType type = static_cast<HellingerSegmentType>(variant.toInt());
+
+		// Latitude
+		index = model->index(row,COLUMN_LAT);
+		variant = table_new_segment->model()->data(index);
+		double lat = variant.toDouble();
+
+		// Longitude
+		index = model->index(row,COLUMN_LON);
+		variant = table_new_segment->model()->data(index);
+		double lon = variant.toDouble();
+
+		// Uncertainty
+		index = model->index(row,COLUMN_UNCERTAINTY);
+		variant = table_new_segment->model()->data(index);
+		double uncertainty = variant.toDouble();
+
+		GPlatesQtWidgets::HellingerPick pick(type,lat,lon,uncertainty,true /* enabled */);
+		d_hellinger_model_ptr->add_pick(pick,segment);
 	}
+	d_hellinger_dialog_ptr->update_from_model();
 }
 
 void
@@ -233,63 +246,7 @@ GPlatesQtWidgets::HellingerNewSegment::change_table_stats_pick()
 void
 GPlatesQtWidgets::HellingerNewSegment::handle_item_changed(QStandardItem *item)
 {
-// TODO: I think this is all redundant now.  Bin when satisfied that's the case.
-/*
-	int column = item->column();
-	int row = item->row();
-	QModelIndex index = model->index(row, column, QModelIndex());
-	QString value = table_new_segment->model()->data(
-				table_new_segment->model()->index( index.row() , index.column() ) )
-			.toString();
-	double value_double = value.toDouble();
-
-	if (column == COLUMN_MOVING_FIXED)
-	{
-		if (value_double < MOVING_SEGMENT_TYPE)
-		{
-			model->setData(index,1);
-		}
-		else if (value_double > FIXED_SEGMENT_TYPE)
-		{
-			model->setData(index,2);
-		}
-		change_quick_set_state();
-	}
-	else if (column == COLUMN_LAT)
-	{
-		if (value_double < -90.00)
-		{
-			model->setData(index,-90.00);
-		}
-		else if (value_double > 90.00)
-		{
-			model->setData(index,90.00);
-		}
-	}
-	else if (column == COLUMN_LON)
-	{
-		if (value_double < -360.00)
-		{
-			model->setData(index,-360.00);
-		}
-		else if (value_double > 360.00)
-		{
-			model->setData(index,360.00);
-		}
-	}
-	else if (column == COLUMN_UNCERTAINTY)
-	{
-		if (value_double < 0.00)
-		{
-			model->setData(index,0.00);
-		}
-		else if (value_double > 999.00)
-		{
-			model->setData(index,999.00);
-		}
-	}
-*/
-
+// This is probably redundant now.
 }
 
 void

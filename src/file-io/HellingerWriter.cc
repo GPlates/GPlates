@@ -91,9 +91,9 @@ void GPlatesFileIO::HellingerWriter::write_com_file(
 		const QString &filename,
 		GPlatesQtWidgets::HellingerModel &hellinger_model)
 {
-	// We may want to set up a more informative .com file structure, but as this would mess up use of these files in users'
+	// NOTE: We may want to set up a more informative .com file structure, but as this would mess up use of these files in users'
 	// FORTRAN routines, leave things as they are for now.
-	// Later we can export to one of 2 versions:
+	// Later we can export to one of 2 versions (or both):
 	//		- legacy .com file for FORTRAN compliance
 	//		- GPlates .com (or some other suitable extension) for use with GPlates. Here we would have free reign
 	//			on the format, content etc.
