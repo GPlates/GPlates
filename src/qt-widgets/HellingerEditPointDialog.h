@@ -57,7 +57,7 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
-		edit_point();
+		handle_apply();
 
 	private:
 

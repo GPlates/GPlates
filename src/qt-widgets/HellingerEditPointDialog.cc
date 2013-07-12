@@ -60,6 +60,7 @@ GPlatesQtWidgets::HellingerEditPointDialog::initialise_with_pick(
 
 	if(pick)
 	{
+		// TODO: check if we need these member variables at all.
 		d_segment = segment;
 		d_row = row;
 
@@ -81,32 +82,33 @@ GPlatesQtWidgets::HellingerEditPointDialog::initialise_with_pick(
 }
 
 void
-GPlatesQtWidgets::HellingerEditPointDialog::edit_point()
+GPlatesQtWidgets::HellingerEditPointDialog::handle_apply()
 {
-	QStringList edit_point_model;
-	int segment = spinbox_segment -> value();
-	int move_fixed;
-	if (radio_moving -> isChecked())
+
+	int segment_number = spinbox_segment->value();
+	HellingerPickType type;
+	if (radio_moving->isChecked())
 	{
-		move_fixed = 1;
+		type = MOVING_PICK_TYPE;
 	}
 	else
 	{
-		move_fixed = 2;
+		type = FIXED_PICK_TYPE;
 	}
-	double lat = spinbox_lat -> value();
-	double lon = spinbox_long -> value();
-	double unc = spinbox_uncert -> value();
-	QString segment_str = QString("%1").arg(segment);
-	QString move_fixed_str = QString("%1").arg(move_fixed);
-	QString lat_str = QString("%1").arg(lat);
-	QString lon_str = QString("%1").arg(lon);
-	QString unc_str = QString("%1").arg(unc);
-	QString is_enabled = "1";
-	edit_point_model << move_fixed_str << segment_str << lat_str << lon_str << unc_str<<is_enabled;
-	d_hellinger_model_ptr ->remove_pick(d_segment,d_row);
-	d_hellinger_model_ptr ->add_pick(edit_point_model);
-	d_hellinger_dialog_ptr ->update();
+
+	double lat = spinbox_lat->value();
+	double lon = spinbox_long->value();
+	double uncertainty = spinbox_uncert->value();
+
+	d_hellinger_model_ptr->remove_pick(d_segment,d_row);
+	d_hellinger_model_ptr->add_pick(
+				HellingerPick(type,
+							  lat,
+							  lon,
+							  uncertainty,
+							  true),
+				segment_number);
+	d_hellinger_dialog_ptr->update_from_model();
 }
 
 
