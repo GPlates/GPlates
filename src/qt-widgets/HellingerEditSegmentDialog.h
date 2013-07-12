@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_QTWIDGETS_HELLINGERNEWSEGMENTDIALOG_H
-#define GPLATES_QTWIDGETS_HELLINGERNEWSEGMENTDIALOG_H
+#ifndef GPLATES_QTWIDGETS_HELLINGEREDITSEGMENTDIALOG_H
+#define GPLATES_QTWIDGETS_HELLINGEREDITSEGMENTDIALOG_H
 
 #include <QAbstractTableModel>
 #include <QItemDelegate>
@@ -32,7 +32,7 @@
 #include <QtGui>
 #include <QWidget>
 
-#include "HellingerNewSegmentDialogUi.h"
+#include "HellingerEditSegmentDialogUi.h"
 #include "HellingerDialog.h"
 #include "HellingerModel.h"
 
@@ -78,9 +78,9 @@ namespace GPlatesQtWidgets
 
 
 
-	class HellingerNewSegmentDialog:
+	class HellingerEditSegmentDialog:
 			public QDialog,
-			protected Ui_HellingerNewSegmentDialog
+			protected Ui_HellingerEditSegmentDialog
 	{
 		Q_OBJECT
 
@@ -95,7 +95,7 @@ namespace GPlatesQtWidgets
 			NUM_COLUMNS
 		};
 
-		HellingerNewSegmentDialog(
+		HellingerEditSegmentDialog(
 				HellingerDialog *hellinger_dialog,
 				HellingerModel *hellinger_model,
 				bool create_new_segment = false,
@@ -148,4 +148,4 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif //GPLATES_QTWIDGETS_HELLINGERNEWSEGMENTDIALOG_H
+#endif //GPLATES_QTWIDGETS_HELLINGEREDITSEGMENTDIALOG_H

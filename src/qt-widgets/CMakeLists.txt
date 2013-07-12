@@ -267,17 +267,14 @@ set(srcs
     HellingerEditPoint.cc
     HellingerEditPoint.h
     HellingerEditPointUi.ui
-    HellingerEditSegment.cc
-    HellingerEditSegment.h
-    HellingerEditSegmentUi.ui
     HellingerModel.cc
     HellingerModel.h
     HellingerNewPoint.cc
     HellingerNewPoint.h
     HellingerNewPointUi.ui
-    HellingerNewSegmentDialog.cc
-    HellingerNewSegmentDialog.h
-    HellingerNewSegmentDialogUi.ui
+    HellingerEditSegmentDialog.cc
+    HellingerEditSegmentDialog.h
+    HellingerEditSegmentDialogUi.ui
     HellingerNewSegmentWarning.cc
     HellingerNewSegmentWarning.h
     HellingerNewSegmentWarningUi.ui

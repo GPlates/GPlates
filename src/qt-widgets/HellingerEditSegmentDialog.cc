@@ -1,4 +1,4 @@
-/* $Id: HellingerNewSegmentDialog.cc 241 2012-02-28 11:28:13Z robin.watson@ngu.no $ */
+/* $Id: HellingerEditSegmentDialog.cc 241 2012-02-28 11:28:13Z robin.watson@ngu.no $ */
 
 /**
  * \file
@@ -31,11 +31,11 @@
 #include "HellingerDialog.h"
 #include "HellingerDialogUi.h"
 #include "HellingerModel.h"
-#include "HellingerNewSegmentDialog.h"
+#include "HellingerEditSegmentDialog.h"
 #include "HellingerNewSegmentWarning.h"
 #include "QtWidgetUtils.h"
 
-GPlatesQtWidgets::HellingerNewSegmentDialog::HellingerNewSegmentDialog(
+GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
 		HellingerDialog *hellinger_dialog,
 		HellingerModel *hellinger_model,
 		bool create_new_segment,
@@ -79,11 +79,6 @@ GPlatesQtWidgets::HellingerNewSegmentDialog::HellingerNewSegmentDialog(
 
 	table_new_segment->horizontalHeader()->setStretchLastSection(true);
 
-
-	// TODO: check if this needs to be last, after some model initialisation for example, or
-	// if it can be put amongst the other connects.
-	connect(d_model,SIGNAL(itemChanged(QStandardItem*)),this,SLOT(handle_item_changed(QStandardItem*)));
-
 	update_buttons();
 
 	// The spinbox delegate lets us customise spinbox behaviour for the different cells.
@@ -93,9 +88,14 @@ GPlatesQtWidgets::HellingerNewSegmentDialog::HellingerNewSegmentDialog(
 	QModelIndex index = d_model->index(0,COLUMN_MOVING_FIXED);
 	table_new_segment->selectionModel()->setCurrentIndex(index,QItemSelectionModel::NoUpdate);
 
+	if (!create_new_segment)
+	{
+		button_add_segment->setText(QObject::tr("Apply"));
+	}
+
 }
 
-void GPlatesQtWidgets::HellingerNewSegmentDialog::initialise_with_segment(
+void GPlatesQtWidgets::HellingerEditSegmentDialog::initialise_with_segment(
 		const hellinger_segment_type &picks,
 		const int &segment_number)
 {
@@ -103,11 +103,18 @@ void GPlatesQtWidgets::HellingerNewSegmentDialog::initialise_with_segment(
 
 	d_model->removeRows(0,d_model->rowCount());
 
-
+	hellinger_segment_type::const_iterator
+			iter = picks.begin(),
+			iter_end = picks.end();
+	for (; iter != iter_end ; ++iter)
+	{
+		d_model->insertRow(d_model->rowCount());
+		set_row_values(d_model->rowCount()-1,*iter);
+	}
 }
 
 void
-GPlatesQtWidgets::HellingerNewSegmentDialog::handle_add_segment()
+GPlatesQtWidgets::HellingerEditSegmentDialog::handle_add_segment()
 {
 	// NOTE: We don't check for contiguous segment numbers here. It could be an idea to
 	// check for this here and suggest the next "available" segment number if the user has
@@ -158,7 +165,7 @@ GPlatesQtWidgets::HellingerNewSegmentDialog::handle_add_segment()
 }
 
 void
-GPlatesQtWidgets::HellingerNewSegmentDialog::add_segment_to_model()
+GPlatesQtWidgets::HellingerEditSegmentDialog::add_segment_to_model()
 {
 	int segment = spinbox_segment->value();
 
@@ -195,7 +202,7 @@ GPlatesQtWidgets::HellingerNewSegmentDialog::add_segment_to_model()
 }
 
 void
-GPlatesQtWidgets::HellingerNewSegmentDialog::handle_add_line()
+GPlatesQtWidgets::HellingerEditSegmentDialog::handle_add_line()
 {
 
 	const QModelIndex index = table_new_segment->currentIndex();
@@ -206,7 +213,7 @@ GPlatesQtWidgets::HellingerNewSegmentDialog::handle_add_line()
 }
 
 void
-GPlatesQtWidgets::HellingerNewSegmentDialog::handle_remove_line()
+GPlatesQtWidgets::HellingerEditSegmentDialog::handle_remove_line()
 {
 	const QModelIndex index = table_new_segment->currentIndex();
 	int row = index.row();
@@ -214,7 +221,7 @@ GPlatesQtWidgets::HellingerNewSegmentDialog::handle_remove_line()
 }
 
 void
-GPlatesQtWidgets::HellingerNewSegmentDialog::change_pick_type_of_whole_table()
+GPlatesQtWidgets::HellingerEditSegmentDialog::change_pick_type_of_whole_table()
 {
 	if (radio_moving->isChecked())
 	{
@@ -235,14 +242,14 @@ GPlatesQtWidgets::HellingerNewSegmentDialog::change_pick_type_of_whole_table()
 }
 
 void
-GPlatesQtWidgets::HellingerNewSegmentDialog::update_buttons()
+GPlatesQtWidgets::HellingerEditSegmentDialog::update_buttons()
 {
 	QModelIndexList indices = table_new_segment->selectionModel()->selection().indexes();
 
 	button_remove_line->setEnabled(!indices.isEmpty());
 }
 
-void GPlatesQtWidgets::HellingerNewSegmentDialog::set_initial_row_values(const int &row)
+void GPlatesQtWidgets::HellingerEditSegmentDialog::set_initial_row_values(const int &row)
 {
 	QModelIndex index_move_fix = d_model->index(row, COLUMN_MOVING_FIXED);
 	d_model->setData(index_move_fix, 1);
@@ -255,11 +262,10 @@ void GPlatesQtWidgets::HellingerNewSegmentDialog::set_initial_row_values(const i
 
 }
 
-void GPlatesQtWidgets::HellingerNewSegmentDialog::set_row_values(
+void GPlatesQtWidgets::HellingerEditSegmentDialog::set_row_values(
 		const int &row,
 		const GPlatesQtWidgets::HellingerPick &pick)
 {
-
 	QModelIndex index = d_model->index(row,COLUMN_MOVING_FIXED);
 	d_model->setData(index,pick.d_segment_type);
 
@@ -272,11 +278,6 @@ void GPlatesQtWidgets::HellingerNewSegmentDialog::set_row_values(
 	index = d_model->index(row,COLUMN_UNCERTAINTY);
 	d_model->setData(index,pick.d_uncertainty);
 
-}
-
-void GPlatesQtWidgets::HellingerNewSegmentDialog::selectionChanged(const QItemSelection &selected, const QItemSelection &deselected)
-{
-	update_buttons();
 }
 
 
@@ -293,7 +294,7 @@ GPlatesQtWidgets::SpinBoxDelegate::createEditor(
 	int column = index.column();
 
 	switch(column){
-	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_MOVING_FIXED:
+	case GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_MOVING_FIXED:
 	{
 		QSpinBox *editor = new QSpinBox(parent_);
 		editor->setMinimum(1);
@@ -301,7 +302,7 @@ GPlatesQtWidgets::SpinBoxDelegate::createEditor(
 		return editor;
 		break;
 	}
-	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_LAT:
+	case GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_LAT:
 	{
 		QDoubleSpinBox *editor = new QDoubleSpinBox(parent_);
 		editor->setMinimum(-90.);
@@ -309,7 +310,7 @@ GPlatesQtWidgets::SpinBoxDelegate::createEditor(
 		return editor;
 		break;
 	}
-	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_LON:
+	case GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_LON:
 	{
 		QDoubleSpinBox *editor = new QDoubleSpinBox(parent_);
 		editor->setMinimum(-360.);
@@ -317,7 +318,7 @@ GPlatesQtWidgets::SpinBoxDelegate::createEditor(
 		return editor;
 		break;
 	}
-	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_UNCERTAINTY:
+	case GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_UNCERTAINTY:
 	default:
 	{
 		QDoubleSpinBox *editor = new QDoubleSpinBox(parent_);
@@ -338,16 +339,16 @@ GPlatesQtWidgets::SpinBoxDelegate::setEditorData(
 	int column = index.column();
 
 	switch(column){
-	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_MOVING_FIXED:
+	case GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_MOVING_FIXED:
 	{
 		int value = index.model()->data(index, Qt::EditRole).toInt();
 		QSpinBox *spinbox = static_cast<QSpinBox*>(editor);
 		spinbox->setValue(value);
 		break;
 	}
-	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_LAT:
-	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_LON:
-	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_UNCERTAINTY:
+	case GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_LAT:
+	case GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_LON:
+	case GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_UNCERTAINTY:
 	{
 		int value = index.model()->data(index, Qt::EditRole).toDouble();
 		QDoubleSpinBox *spinbox = static_cast<QDoubleSpinBox*>(editor);
@@ -369,15 +370,15 @@ GPlatesQtWidgets::SpinBoxDelegate::setModelData(
 
 	QVariant value;
 	switch(column){
-	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_MOVING_FIXED:
+	case GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_MOVING_FIXED:
 	{
 		QSpinBox *spinbox = static_cast<QSpinBox*>(editor);
 		value = spinbox->value();
 		break;
 	}
-	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_LAT:
-	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_LON:
-	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_UNCERTAINTY:
+	case GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_LAT:
+	case GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_LON:
+	case GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_UNCERTAINTY:
 	{
 		QDoubleSpinBox *spinbox = static_cast<QDoubleSpinBox*>(editor);
 		value = spinbox->value();

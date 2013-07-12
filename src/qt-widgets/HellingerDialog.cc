@@ -43,7 +43,7 @@
 #include "HellingerEditPoint.h"
 #include "HellingerEditSegment.h"
 #include "HellingerNewPoint.h"
-#include "HellingerNewSegmentDialog.h"
+#include "HellingerEditSegmentDialog.h"
 #include "HellingerStatsDialog.h"
 #include "HellingerThread.h"
 #include "ReadErrorAccumulationDialog.h"
@@ -278,6 +278,7 @@ GPlatesQtWidgets::HellingerDialog::show_point_on_globe(
 void
 GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 {
+	// TODO: Refactor this method.
 	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
 	QString segment = tree_widget_picks->currentItem()->text(0);
 	int row = index.row();
@@ -343,14 +344,18 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_point()
 void
 GPlatesQtWidgets::HellingerDialog::handle_edit_segment()
 {
-	if (!d_hellinger_edit_segment)
-	{
-		d_hellinger_edit_segment = new GPlatesQtWidgets::HellingerEditSegment(this,d_hellinger_model);
-	}
-	QString segment = tree_widget_picks->currentItem()->text(0);
-	int segment_int = segment.toInt();
-	d_hellinger_edit_segment->initialise(segment_int);
-	d_hellinger_edit_segment->exec();
+
+	QScopedPointer<GPlatesQtWidgets::HellingerEditSegmentDialog> dialog(
+				new GPlatesQtWidgets::HellingerEditSegmentDialog(this,d_hellinger_model,false /* create new segment */));
+
+	QString segment = tree_widget_picks->currentItem()->text(SEGMENT_NUMBER);
+	int segment_number = segment.toInt();
+
+	qDebug() << "Seg number" << segment_number;
+	dialog->initialise_with_segment(
+				d_hellinger_model->get_segment(segment_number),segment_number);
+
+	dialog->exec();
 	reset_expanded_status();
 }
 
@@ -584,11 +589,12 @@ GPlatesQtWidgets::HellingerDialog::handle_add_new_point()
 void
 GPlatesQtWidgets::HellingerDialog::handle_add_new_segment()
 {
-	if (!d_hellinger_new_segment_dialog)
-	{
-		d_hellinger_new_segment_dialog = new GPlatesQtWidgets::HellingerNewSegmentDialog(this,d_hellinger_model);
-	}
-	d_hellinger_new_segment_dialog->exec();
+	QScopedPointer<GPlatesQtWidgets::HellingerEditSegmentDialog> dialog(
+				new GPlatesQtWidgets::HellingerEditSegmentDialog(this,
+																d_hellinger_model,
+																true /*create new segment */));
+
+	dialog->exec();
 	reset_expanded_status();
 }
 
