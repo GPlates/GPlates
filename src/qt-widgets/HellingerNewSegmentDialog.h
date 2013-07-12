@@ -34,6 +34,7 @@
 
 #include "HellingerNewSegmentDialogUi.h"
 #include "HellingerDialog.h"
+#include "HellingerModel.h"
 
 
 
@@ -43,7 +44,6 @@ namespace GPlatesQtWidgets
 
 
 	class HellingerDialog;
-	class HellingerModel;
 	class HellingerNewSegmentWarning;
 
 	/**
@@ -98,12 +98,14 @@ namespace GPlatesQtWidgets
 		HellingerNewSegmentDialog(
 				HellingerDialog *hellinger_dialog,
 				HellingerModel *hellinger_model,
+				bool create_new_segment = false,
 				QWidget *parent_ = NULL);
 
 		void
-		reset();
+		initialise_with_segment(
+				const std::vector<HellingerPick> &picks,
+				const int &segment_number);
 
-		int d_type_new_segment_error;
 
 	private Q_SLOTS:
 
@@ -138,9 +140,6 @@ namespace GPlatesQtWidgets
 		QStandardItemModel *d_model;
 		HellingerModel *d_hellinger_model_ptr;
 		HellingerNewSegmentWarning *d_hellinger_new_segment_warning;
-
-		// TODO: we can probably remove this and use model->rowCount() where necessary. Check this.
-		int d_row_count;
 
 		SpinBoxDelegate d_spin_box_delegate;
 	};

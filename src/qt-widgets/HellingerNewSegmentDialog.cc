@@ -38,12 +38,12 @@
 GPlatesQtWidgets::HellingerNewSegmentDialog::HellingerNewSegmentDialog(
 		HellingerDialog *hellinger_dialog,
 		HellingerModel *hellinger_model,
+		bool create_new_segment,
 		QWidget *parent_):
 	QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_hellinger_dialog_ptr(hellinger_dialog),
 	d_hellinger_model_ptr(hellinger_model),
-	d_hellinger_new_segment_warning(0),
-	d_row_count(1)
+	d_hellinger_new_segment_warning(0)
 {
 	setupUi(this);
 	QObject::connect(button_add_segment, SIGNAL(clicked()), this, SLOT(handle_add_segment()));
@@ -92,6 +92,13 @@ GPlatesQtWidgets::HellingerNewSegmentDialog::HellingerNewSegmentDialog(
 	// Mark row 0 (or at least an item in row 0) as the current index.
 	QModelIndex index = d_model->index(0,COLUMN_MOVING_FIXED);
 	table_new_segment->selectionModel()->setCurrentIndex(index,QItemSelectionModel::NoUpdate);
+
+}
+
+void GPlatesQtWidgets::HellingerNewSegmentDialog::initialise_with_segment(
+		const std::vector<GPlatesQtWidgets::HellingerPick> &picks,
+		const int &segment_number)
+{
 
 }
 
