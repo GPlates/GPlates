@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+#include <iterator>
 #include <map>
 #include <vector>
 
@@ -54,7 +56,7 @@ GPlatesQtWidgets::HellingerModel::get_pick_as_string(int &segment, int &row) con
 		if (n == row)
 		{
 			HellingerPick segment_num = iter->second;
-			GPlatesQtWidgets::HellingerSegmentType move_fix = segment_num.d_segment_type;
+			GPlatesQtWidgets::HellingerPickType move_fix = segment_num.d_segment_type;
 			double lat = segment_num.d_lat;
 			double lon = segment_num.d_lon;
 			double uncert = segment_num.d_uncertainty;
@@ -127,7 +129,7 @@ GPlatesQtWidgets::HellingerModel::get_segment_as_string(
     {
 			HellingerPick segment_values = iter->second;
 
-			GPlatesQtWidgets::HellingerSegmentType move_fix = segment_values.d_segment_type;
+			GPlatesQtWidgets::HellingerPickType move_fix = segment_values.d_segment_type;
 			double lat = segment_values.d_lat;
 			double lon = segment_values.d_lon;
 			double uncert = segment_values.d_uncertainty;
@@ -174,7 +176,7 @@ GPlatesQtWidgets::HellingerModel::get_data_as_string() const
     QStringList load_data;
     for (iter=d_hellinger_picks.begin(); iter != d_hellinger_picks.end(); ++iter) {
 		HellingerPick s = iter->second;
-		GPlatesQtWidgets::HellingerSegmentType move_fix = s.d_segment_type;
+		GPlatesQtWidgets::HellingerPickType move_fix = s.d_segment_type;
 		double lat = s.d_lat;
 		double lon = s.d_lon;
 		double uncert = s.d_uncertainty;
@@ -197,26 +199,26 @@ void
 GPlatesQtWidgets::HellingerModel::add_pick(const QStringList &pick)
 {
 	HellingerPick new_pick;
-	if (pick.at(0).toInt() == DISABLED_MOVING_SEGMENT_TYPE)
+	if (pick.at(0).toInt() == DISABLED_MOVING_PICK_TYPE)
     {
-		new_pick.d_segment_type = MOVING_SEGMENT_TYPE;
+		new_pick.d_segment_type = MOVING_PICK_TYPE;
     }
-	else if (pick.at(0).toInt()== DISABLED_FIXED_SEGMENT_TYPE)
+	else if (pick.at(0).toInt()== DISABLED_FIXED_PICK_TYPE)
     {
-		new_pick.d_segment_type=FIXED_SEGMENT_TYPE;
+		new_pick.d_segment_type=FIXED_PICK_TYPE;
     }
     else
     {
-		new_pick.d_segment_type = static_cast<GPlatesQtWidgets::HellingerSegmentType>(pick.at(0).toInt());
+		new_pick.d_segment_type = static_cast<GPlatesQtWidgets::HellingerPickType>(pick.at(0).toInt());
     }
 		new_pick.d_lat = pick.at(2).toDouble();
 		new_pick.d_lon = pick.at(3).toDouble();
 		new_pick.d_uncertainty = pick.at(4).toDouble();
-		if (pick.at(0).toInt() == DISABLED_MOVING_SEGMENT_TYPE)
+		if (pick.at(0).toInt() == DISABLED_MOVING_PICK_TYPE)
         {
 			new_pick.d_is_enabled = false;
         }
-		else if (pick.at(0).toInt() == DISABLED_FIXED_SEGMENT_TYPE)
+		else if (pick.at(0).toInt() == DISABLED_FIXED_PICK_TYPE)
         {
 			new_pick.d_is_enabled = false;
         }
@@ -443,11 +445,19 @@ GPlatesQtWidgets::HellingerModel::get_pick(
 	return boost::none;
 }
 
-std::vector<GPlatesQtWidgets::HellingerPick>
+GPlatesQtWidgets::hellinger_segment_type
 GPlatesQtWidgets::HellingerModel::get_segment(
-		const int &segment) const
+		const int &segment_num) const
 {
-	return std::vector<GPlatesQtWidgets::HellingerPick>();
+	hellinger_model_type::const_iterator
+			iter = segment_begin(segment_num),
+			iter_end = segment_end(segment_num);
+	hellinger_segment_type segment;
+	for (; iter != iter_end; ++iter)
+	{
+		segment.push_back(iter->second);
+	}
+	return segment;
 }
 
 GPlatesQtWidgets::hellinger_model_type::const_iterator
@@ -473,13 +483,27 @@ GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::segment_begin(
 	const int &segment) const
 {
-	return d_hellinger_picks.equal_range(segment).first;
+	if (d_hellinger_picks.count(segment) > 0)
+	{
+		return d_hellinger_picks.equal_range(segment).first;
+	}
+	else
+	{
+		return d_hellinger_picks.end();
+	}
 }
 
 GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::segment_end(
 	const int &segment) const
 {
-	return d_hellinger_picks.equal_range(segment).second;
+	if (d_hellinger_picks.count(segment) > 0)
+	{
+		return d_hellinger_picks.equal_range(segment).second;
+	}
+	else
+	{
+		return d_hellinger_picks.end();
+	}
 }
 

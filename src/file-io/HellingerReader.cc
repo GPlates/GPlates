@@ -194,9 +194,9 @@ namespace
 
 				if(moving_fixed_ok && segment_ok && lat_ok && lon_ok && uncert_ok)
 				{
-					bool enabled = ((moving_or_fixed == GPlatesQtWidgets::FIXED_SEGMENT_TYPE) ||
-									(moving_or_fixed == GPlatesQtWidgets::MOVING_SEGMENT_TYPE));
-					pick = GPlatesQtWidgets::HellingerPick(static_cast<GPlatesQtWidgets::HellingerSegmentType>(moving_or_fixed),
+					bool enabled = ((moving_or_fixed == GPlatesQtWidgets::FIXED_PICK_TYPE) ||
+									(moving_or_fixed == GPlatesQtWidgets::MOVING_PICK_TYPE));
+					pick = GPlatesQtWidgets::HellingerPick(static_cast<GPlatesQtWidgets::HellingerPickType>(moving_or_fixed),
 														   lat,lon,uncert,enabled);
 					return true;
 				}

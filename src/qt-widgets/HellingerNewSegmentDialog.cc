@@ -96,9 +96,13 @@ GPlatesQtWidgets::HellingerNewSegmentDialog::HellingerNewSegmentDialog(
 }
 
 void GPlatesQtWidgets::HellingerNewSegmentDialog::initialise_with_segment(
-		const std::vector<GPlatesQtWidgets::HellingerPick> &picks,
+		const hellinger_segment_type &picks,
 		const int &segment_number)
 {
+	spinbox_segment->setValue(segment_number);
+
+	d_model->removeRows(0,d_model->rowCount());
+
 
 }
 
@@ -167,7 +171,7 @@ GPlatesQtWidgets::HellingerNewSegmentDialog::add_segment_to_model()
 		index = d_model->index(row,COLUMN_MOVING_FIXED);
 		variant = table_new_segment->model()->data(index);
 		// The spinboxes should already ensure valid data types/values for each column.
-		HellingerSegmentType type = static_cast<HellingerSegmentType>(variant.toInt());
+		HellingerPickType type = static_cast<HellingerPickType>(variant.toInt());
 
 		// Latitude
 		index = d_model->index(row,COLUMN_LAT);
@@ -217,7 +221,7 @@ GPlatesQtWidgets::HellingerNewSegmentDialog::change_pick_type_of_whole_table()
 		for (int row = 0; row < d_model->rowCount(); ++row)
 		{
 			QModelIndex index_move_fix = d_model->index(row, COLUMN_MOVING_FIXED);
-			d_model->setData(index_move_fix, GPlatesQtWidgets::MOVING_SEGMENT_TYPE);
+			d_model->setData(index_move_fix, GPlatesQtWidgets::MOVING_PICK_TYPE);
 		}
 	}
 	else if (radio_fixed->isChecked())
@@ -225,7 +229,7 @@ GPlatesQtWidgets::HellingerNewSegmentDialog::change_pick_type_of_whole_table()
 		for (int row = 0; row < d_model->rowCount(); ++row)
 		{
 			QModelIndex index_move_fix = d_model ->index(row, COLUMN_MOVING_FIXED, QModelIndex());
-			d_model->setData(index_move_fix, GPlatesQtWidgets::FIXED_SEGMENT_TYPE);
+			d_model->setData(index_move_fix, GPlatesQtWidgets::FIXED_PICK_TYPE);
 		}
 	}
 }
@@ -248,6 +252,25 @@ void GPlatesQtWidgets::HellingerNewSegmentDialog::set_initial_row_values(const i
 		QModelIndex index = d_model->index(row, col);
 		d_model->setData(index, 0.00);
 	}
+
+}
+
+void GPlatesQtWidgets::HellingerNewSegmentDialog::set_row_values(
+		const int &row,
+		const GPlatesQtWidgets::HellingerPick &pick)
+{
+
+	QModelIndex index = d_model->index(row,COLUMN_MOVING_FIXED);
+	d_model->setData(index,pick.d_segment_type);
+
+	index = d_model->index(row,COLUMN_LAT);
+	d_model->setData(index,pick.d_lat);
+
+	index = d_model->index(row,COLUMN_LON);
+	d_model->setData(index,pick.d_lon);
+
+	index = d_model->index(row,COLUMN_UNCERTAINTY);
+	d_model->setData(index,pick.d_uncertainty);
 
 }
 

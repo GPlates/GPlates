@@ -37,12 +37,12 @@
 namespace GPlatesQtWidgets
 {
 
-	enum HellingerSegmentType
+	enum HellingerPickType
 	{
-		MOVING_SEGMENT_TYPE = 1,
-		FIXED_SEGMENT_TYPE,
-		DISABLED_MOVING_SEGMENT_TYPE = 31,
-		DISABLED_FIXED_SEGMENT_TYPE
+		MOVING_PICK_TYPE = 1,
+		FIXED_PICK_TYPE,
+		DISABLED_MOVING_PICK_TYPE = 31,
+		DISABLED_FIXED_PICK_TYPE
 	};
 
 	// NOTE: should the pick structure contain its segment number? Bear in mind that picks can be re-allocated to
@@ -54,7 +54,7 @@ namespace GPlatesQtWidgets
 
 	struct HellingerPick{
 		HellingerPick(
-				const HellingerSegmentType &type,
+				const HellingerPickType &type,
 				const double &lat,
 				const double &lon,
 				const double &uncertainty,
@@ -65,7 +65,7 @@ namespace GPlatesQtWidgets
 			d_uncertainty(uncertainty),
 			d_is_enabled(enabled){};
 		HellingerPick(){};
-		HellingerSegmentType d_segment_type;
+		HellingerPickType d_segment_type;
 		double d_lat;
 		double d_lon;
 		double d_uncertainty;
@@ -74,7 +74,7 @@ namespace GPlatesQtWidgets
 
 	typedef std::multimap<int,HellingerPick> hellinger_model_type;
 
-
+	typedef std::vector<HellingerPick> hellinger_segment_type;
 
 	/**
 	 * @brief The HellingerComFileStructure struct
@@ -184,7 +184,7 @@ namespace GPlatesQtWidgets
 				 const int &segment_number);
 
 		void
-		add_segment(std::vector<HellingerPick> &picks,
+		add_segment(hellinger_segment_type &picks,
 					const int &segment_number);
 
         QStringList
@@ -212,7 +212,7 @@ namespace GPlatesQtWidgets
 		get_segment_as_string(
 			const int &segment) const;
 
-		std::vector<HellingerPick>
+		hellinger_segment_type
 		get_segment(
 			const int &segment) const;
 

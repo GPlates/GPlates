@@ -269,7 +269,7 @@ GPlatesQtWidgets::HellingerDialog::show_point_on_globe(
 				2, /* point thickness */
 				2, /* line thickness */
 				false /* fill */,
-				type_segment == MOVING_SEGMENT_TYPE ? moving_symbol : fixed_symbol);
+				type_segment == MOVING_PICK_TYPE ? moving_symbol : fixed_symbol);
 
 	d_hellinger_layer.add_rendered_geometry(pick_geometry);
 
@@ -295,7 +295,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 	{
 		if (move_fix == "1")
 		{
-			move_fix = QString("%1").arg(DISABLED_MOVING_SEGMENT_TYPE);
+			move_fix = QString("%1").arg(DISABLED_MOVING_PICK_TYPE);
 			data_to_model << move_fix << segment_str << lat << lon << uncert;
 			d_hellinger_model->remove_pick(segment_int,row);
 			d_hellinger_model->add_pick(data_to_model);
@@ -303,7 +303,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 		}
 		else if (move_fix == "2")
 		{
-			move_fix = QString("%1").arg(DISABLED_FIXED_SEGMENT_TYPE);
+			move_fix = QString("%1").arg(DISABLED_FIXED_PICK_TYPE);
 			data_to_model << move_fix << segment_str << lat << lon << uncert;
 			d_hellinger_model->remove_pick(segment_int,row);
 			d_hellinger_model->add_pick(data_to_model);
@@ -971,7 +971,7 @@ GPlatesQtWidgets::HellingerDialog::draw_fixed_picks()
 
 			set_segment_colours(num_colour);
 
-			if (it->second.d_segment_type == FIXED_SEGMENT_TYPE)
+			if (it->second.d_segment_type == FIXED_PICK_TYPE)
 			{
 				GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
 							GPlatesMaths::LatLonPoint(it->second.d_lat,it->second.d_lon));
@@ -983,7 +983,7 @@ GPlatesQtWidgets::HellingerDialog::draw_fixed_picks()
 							2, /* point thickness */
 							2, /* line thickness */
 							false /* fill */,
-							it->second.d_segment_type == MOVING_SEGMENT_TYPE ? d_moving_symbol : d_fixed_symbol);
+							it->second.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
 
 				d_hellinger_layer.add_rendered_geometry(pick_geometry);
 			}
@@ -1009,7 +1009,7 @@ GPlatesQtWidgets::HellingerDialog::draw_moving_picks()
 
 			set_segment_colours(num_colour);
 
-			if (it->second.d_segment_type == MOVING_SEGMENT_TYPE)
+			if (it->second.d_segment_type == MOVING_PICK_TYPE)
 			{
 				GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
 							GPlatesMaths::LatLonPoint(it->second.d_lat,it->second.d_lon));
@@ -1021,7 +1021,7 @@ GPlatesQtWidgets::HellingerDialog::draw_moving_picks()
 							2, /* point thickness */
 							2, /* line thickness */
 							false /* fill */,
-							it->second.d_segment_type == MOVING_SEGMENT_TYPE ? d_moving_symbol : d_fixed_symbol);
+							it->second.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
 
 				d_hellinger_layer.add_rendered_geometry(pick_geometry);
 			}
@@ -1069,7 +1069,7 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 
 				set_segment_colours(num_colour);
 
-				if (it->second.d_segment_type == MOVING_SEGMENT_TYPE)
+				if (it->second.d_segment_type == MOVING_PICK_TYPE)
 				{
 
 					GPlatesMaths::LatLonPoint llp_move(it->second.d_lat,it->second.d_lon);
@@ -1087,7 +1087,7 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 								2, /* point thickness */
 								2, /* line thickness */
 								false /* fill */,
-								it->second.d_segment_type == MOVING_SEGMENT_TYPE ? d_moving_symbol : d_fixed_symbol);
+								it->second.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
 
 					d_hellinger_layer.add_rendered_geometry(pick_geometry);
 				}

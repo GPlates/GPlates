@@ -207,13 +207,13 @@ GPlatesQtWidgets::HellingerEditSegment::edit_segment()
         for (int iter = 0; iter<count_disabled_picks;++iter)
         {
             QString is_disabled = "0";
-			QString comment_moving_segment_str = QString("%1").arg(DISABLED_MOVING_SEGMENT_TYPE);
-			QString comment_fixed_segment_str = QString("%1").arg(DISABLED_FIXED_SEGMENT_TYPE);
-            if (d_disabled_picks.at(position).toInt()==MOVING_SEGMENT_TYPE)
+			QString comment_moving_segment_str = QString("%1").arg(DISABLED_MOVING_PICK_TYPE);
+			QString comment_fixed_segment_str = QString("%1").arg(DISABLED_FIXED_PICK_TYPE);
+			if (d_disabled_picks.at(position).toInt()==MOVING_PICK_TYPE)
             {
                 data_to_model<<comment_moving_segment_str<<segment_str<<d_disabled_picks.at(position+1)<<d_disabled_picks.at(position+2)<<d_disabled_picks.at(position+3)<<is_disabled;
             }
-            else if(d_disabled_picks.at(position).toInt()==FIXED_SEGMENT_TYPE)
+			else if(d_disabled_picks.at(position).toInt()==FIXED_PICK_TYPE)
             {
                 data_to_model<<comment_fixed_segment_str<<segment_str<<d_disabled_picks.at(position+1)<<d_disabled_picks.at(position+2)<<d_disabled_picks.at(position+3)<<is_disabled;
             }
@@ -291,11 +291,11 @@ GPlatesQtWidgets::HellingerEditSegment::handle_item_changed(QStandardItem *item)
 
 	if (column == COLUMN_MOVING_FIXED)
     {
-        if (value_double < MOVING_SEGMENT_TYPE)
+		if (value_double < MOVING_PICK_TYPE)
         {
             model->setData(index,1);
         }
-        else if (value_double > FIXED_SEGMENT_TYPE)
+		else if (value_double > FIXED_PICK_TYPE)
         {
             model->setData(index,2);
         }

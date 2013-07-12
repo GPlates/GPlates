@@ -103,7 +103,7 @@ namespace GPlatesQtWidgets
 
 		void
 		initialise_with_segment(
-				const std::vector<HellingerPick> &picks,
+				const hellinger_segment_type &picks,
 				const int &segment_number);
 
 
@@ -131,6 +131,9 @@ namespace GPlatesQtWidgets
 
 		void
 		set_initial_row_values(const int &row);
+
+		void
+		set_row_values(const int &row, const GPlatesQtWidgets::HellingerPick &pick);
 
 		void
 		selectionChanged(const QItemSelection &selected,
