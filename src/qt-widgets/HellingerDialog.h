@@ -56,7 +56,7 @@ namespace GPlatesQtWidgets
 	class HellingerStatsDialog;
 	class HellingerNewPoint;
 	class HellingerEditPoint;
-	class HellingerNewSegment;
+	class HellingerNewSegmentDialog;
 	class HellingerEditSegment;
 	class HellingerModel;
 	class ReadErrorAccumulationDialog;
@@ -289,7 +289,7 @@ namespace GPlatesQtWidgets
 		HellingerStatsDialog *d_hellinger_stats_dialog;
 		HellingerNewPoint *d_hellinger_new_point;
 		HellingerEditPoint *d_hellinger_edit_point;
-		HellingerNewSegment *d_hellinger_new_segment;
+		HellingerNewSegmentDialog *d_hellinger_new_segment_dialog;
 		HellingerEditSegment *d_hellinger_edit_segment;
 		HellingerThread *d_hellinger_thread;
 		QString d_path;

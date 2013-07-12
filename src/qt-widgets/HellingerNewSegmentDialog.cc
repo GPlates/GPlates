@@ -110,7 +110,7 @@ GPlatesQtWidgets::HellingerNewSegmentDialog::handle_add_segment()
 		// and get their desired action.
 		if (!d_hellinger_new_segment_warning)
 		{
-			d_hellinger_new_segment_warning = new GPlatesQtWidgets::HellingerNewSegmentDialogWarning(
+			d_hellinger_new_segment_warning = new GPlatesQtWidgets::HellingerNewSegmentWarning(
 						d_hellinger_dialog_ptr,
 						segment_number);
 
@@ -263,7 +263,7 @@ GPlatesQtWidgets::SpinBoxDelegate::createEditor(
 	int column = index.column();
 
 	switch(column){
-	case COLUMN_MOVING_FIXED:
+	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_MOVING_FIXED:
 	{
 		QSpinBox *editor = new QSpinBox(parent_);
 		editor->setMinimum(1);
@@ -271,7 +271,7 @@ GPlatesQtWidgets::SpinBoxDelegate::createEditor(
 		return editor;
 		break;
 	}
-	case COLUMN_LAT:
+	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_LAT:
 	{
 		QDoubleSpinBox *editor = new QDoubleSpinBox(parent_);
 		editor->setMinimum(-90.);
@@ -279,7 +279,7 @@ GPlatesQtWidgets::SpinBoxDelegate::createEditor(
 		return editor;
 		break;
 	}
-	case COLUMN_LON:
+	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_LON:
 	{
 		QDoubleSpinBox *editor = new QDoubleSpinBox(parent_);
 		editor->setMinimum(-360.);
@@ -287,7 +287,7 @@ GPlatesQtWidgets::SpinBoxDelegate::createEditor(
 		return editor;
 		break;
 	}
-	case COLUMN_UNCERTAINTY:
+	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_UNCERTAINTY:
 	default:
 	{
 		QDoubleSpinBox *editor = new QDoubleSpinBox(parent_);
@@ -308,16 +308,16 @@ GPlatesQtWidgets::SpinBoxDelegate::setEditorData(
 	int column = index.column();
 
 	switch(column){
-	case COLUMN_MOVING_FIXED:
+	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_MOVING_FIXED:
 	{
 		int value = index.model()->data(index, Qt::EditRole).toInt();
 		QSpinBox *spinbox = static_cast<QSpinBox*>(editor);
 		spinbox->setValue(value);
 		break;
 	}
-	case COLUMN_LAT:
-	case COLUMN_LON:
-	case COLUMN_UNCERTAINTY:
+	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_LAT:
+	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_LON:
+	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_UNCERTAINTY:
 	{
 		int value = index.model()->data(index, Qt::EditRole).toDouble();
 		QDoubleSpinBox *spinbox = static_cast<QDoubleSpinBox*>(editor);
@@ -339,15 +339,15 @@ GPlatesQtWidgets::SpinBoxDelegate::setModelData(
 
 	QVariant value;
 	switch(column){
-	case COLUMN_MOVING_FIXED:
+	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_MOVING_FIXED:
 	{
 		QSpinBox *spinbox = static_cast<QSpinBox*>(editor);
 		value = spinbox->value();
 		break;
 	}
-	case COLUMN_LAT:
-	case COLUMN_LON:
-	case COLUMN_UNCERTAINTY:
+	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_LAT:
+	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_LON:
+	case GPlatesQtWidgets::HellingerNewSegmentDialog::COLUMN_UNCERTAINTY:
 	{
 		QDoubleSpinBox *spinbox = static_cast<QDoubleSpinBox*>(editor);
 		value = spinbox->value();

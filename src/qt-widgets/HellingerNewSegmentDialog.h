@@ -40,18 +40,11 @@
 
 namespace GPlatesQtWidgets
 {
-	enum ColumnType{
-		COLUMN_MOVING_FIXED = 0,
-		COLUMN_LAT,
-		COLUMN_LON,
-		COLUMN_UNCERTAINTY,
 
-		NUM_COLUMNS
-	};
 
 	class HellingerDialog;
 	class HellingerModel;
-	class HellingerNewSegmentDialogWarning;
+	class HellingerNewSegmentWarning;
 
 	/**
 	 * @brief The SpinBoxDelegate class
@@ -66,6 +59,8 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 
 	public:
+
+
 		SpinBoxDelegate(QObject *parent = 0);
 
 		QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option,
@@ -88,7 +83,18 @@ namespace GPlatesQtWidgets
 			protected Ui_HellingerNewSegmentDialog
 	{
 		Q_OBJECT
+
 	public:
+
+		enum ColumnType{
+			COLUMN_MOVING_FIXED = 0,
+			COLUMN_LAT,
+			COLUMN_LON,
+			COLUMN_UNCERTAINTY,
+
+			NUM_COLUMNS
+		};
+
 		HellingerNewSegmentDialog(
 				HellingerDialog *hellinger_dialog,
 				HellingerModel *hellinger_model,
@@ -131,7 +137,7 @@ namespace GPlatesQtWidgets
 		HellingerDialog *d_hellinger_dialog_ptr;
 		QStandardItemModel *d_model;
 		HellingerModel *d_hellinger_model_ptr;
-		HellingerNewSegmentDialogWarning *d_hellinger_new_segment_warning;
+		HellingerNewSegmentWarning *d_hellinger_new_segment_warning;
 
 		// TODO: we can probably remove this and use model->rowCount() where necessary. Check this.
 		int d_row_count;

@@ -1,10 +1,10 @@
 /* $Id: HellingerEditSegment.h 233 2012-02-27 10:16:37Z juraj.cirbus $ */
 
 /**
- * \file 
+ * \file
  * $Revision: 233 $
- * $Date: 2012-02-27 11:16:37 +0100 (Mon, 27 Feb 2012) $ 
- * 
+ * $Date: 2012-02-27 11:16:37 +0100 (Mon, 27 Feb 2012) $
+ *
  * Copyright (C) 2011, 2012 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -22,7 +22,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
+
 #ifndef GPLATES_QTWIDGETS_HELLINGEREDITSEGMENT_H
 #define GPLATES_QTWIDGETS_HELLINGEREDITSEGMENT_H
 
@@ -36,70 +36,82 @@
 
 namespace GPlatesQtWidgets
 {
-    class HellingerDialog;
-    class HellingerModel;
-    class HellingerNewSegment;
+
+
+	class HellingerDialog;
+	class HellingerModel;
 	class HellingerNewSegmentWarning;
 
-        class HellingerEditSegment:
+	class HellingerEditSegment:
 			public QDialog,
-                        protected Ui_HellingerEditSegment
+			protected Ui_HellingerEditSegment
 	{
 		Q_OBJECT
 	public:
-                HellingerEditSegment(
-                        HellingerDialog *hellinger_dialog,
-                        HellingerModel *hellinger_model,
-                        QWidget *parent_ = NULL);
 
-                void
-                reset();
+		enum ColumnType{
+			COLUMN_MOVING_FIXED = 0,
+			COLUMN_LAT,
+			COLUMN_LON,
+			COLUMN_UNCERTAINTY,
 
-                void
-				initialise_table(QStringList &input_value);
+			NUM_COLUMNS
+		};
 
-                void
-                initialise(int &segment);
 
-	private Q_SLOTS: 
+		HellingerEditSegment(
+				HellingerDialog *hellinger_dialog,
+				HellingerModel *hellinger_model,
+				QWidget *parent_ = NULL);
 
-            void
-            edit_segment();
+		void
+		reset();
 
-            void
-            add_line();
+		void
+		initialise_table(QStringList &input_value);
 
-            void
-            remove_line();
+		void
+		initialise(int &segment);
 
-            void
-            edit();
+	private Q_SLOTS:
 
-            void
-            change_table_stats_pick();
+		void
+		edit_segment();
 
-            void
-            handle_item_changed(QStandardItem *item);
- 
+		void
+		add_line();
+
+		void
+		remove_line();
+
+		void
+		edit();
+
+		void
+		change_table_stats_pick();
+
+		void
+		handle_item_changed(QStandardItem *item);
+
 	private:
-	
-            void
-            update_buttons();
 
-            void
-            change_quick_set_state();
+		void
+		update_buttons();
 
-            void
-            check_picks(QStringList &picks);
+		void
+		change_quick_set_state();
 
-            HellingerDialog *d_hellinger_dialog_ptr;
-            HellingerModel *d_hellinger_model_ptr;
-            QStandardItemModel *model;
-            int d_number_rows;
-			int d_segment_number;
-            QStringList d_disabled_picks;
-            QStringList d_active_picks;
-			HellingerNewSegmentWarning *d_hellinger_new_segment_warning;
+		void
+		check_picks(QStringList &picks);
+
+		HellingerDialog *d_hellinger_dialog_ptr;
+		HellingerModel *d_hellinger_model_ptr;
+		QStandardItemModel *model;
+		int d_number_rows;
+		int d_segment_number;
+		QStringList d_disabled_picks;
+		QStringList d_active_picks;
+		HellingerNewSegmentWarning *d_hellinger_new_segment_warning;
 
 	};
 }

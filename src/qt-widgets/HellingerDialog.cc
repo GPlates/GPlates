@@ -129,7 +129,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_hellinger_stats_dialog(0),
 	d_hellinger_new_point(0),
 	d_hellinger_edit_point(0),
-	d_hellinger_new_segment(0),
+	d_hellinger_new_segment_dialog(0),
 	d_hellinger_edit_segment(0),
 	d_hellinger_thread(0),
 	d_moving_plate_id(0),
@@ -584,11 +584,11 @@ GPlatesQtWidgets::HellingerDialog::handle_add_new_point()
 void
 GPlatesQtWidgets::HellingerDialog::handle_add_new_segment()
 {
-	if (!d_hellinger_new_segment)
+	if (!d_hellinger_new_segment_dialog)
 	{
-		d_hellinger_new_segment = new GPlatesQtWidgets::HellingerNewSegment(this,d_hellinger_model);
+		d_hellinger_new_segment_dialog = new GPlatesQtWidgets::HellingerNewSegmentDialog(this,d_hellinger_model);
 	}
-	d_hellinger_new_segment->exec();
+	d_hellinger_new_segment_dialog->exec();
 	reset_expanded_status();
 }
 
