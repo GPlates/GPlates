@@ -264,9 +264,9 @@ set(srcs
     HellingerDialog.cc
     HellingerDialog.h
     HellingerDialogUi.ui
-    HellingerEditPoint.cc
-    HellingerEditPoint.h
-    HellingerEditPointUi.ui
+    HellingerEditPointDialog.cc
+    HellingerEditPointDialog.h
+    HellingerEditPointDialogUi.ui
     HellingerModel.cc
     HellingerModel.h
     HellingerNewPoint.cc

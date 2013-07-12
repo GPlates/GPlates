@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>HellingerEditPoint</class>
- <widget class="QDialog" name="HellingerEditPoint">
+ <class>HellingerEditPointDialog</class>
+ <widget class="QDialog" name="HellingerEditPointDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>330</width>
+    <width>342</width>
     <height>223</height>
    </rect>
   </property>
@@ -60,7 +60,7 @@
         <bool>true</bool>
        </property>
        <attribute name="buttonGroup">
-        <string>buttonGroup</string>
+        <string notr="true">buttonGroup</string>
        </attribute>
       </widget>
      </item>
@@ -70,7 +70,7 @@
         <string>Fixed</string>
        </property>
        <attribute name="buttonGroup">
-        <string>buttonGroup</string>
+        <string notr="true">buttonGroup</string>
        </attribute>
       </widget>
      </item>
@@ -210,7 +210,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>HellingerEditPoint</receiver>
+   <receiver>HellingerEditPointDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -226,7 +226,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>HellingerEditPoint</receiver>
+   <receiver>HellingerEditPointDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -242,7 +242,7 @@
   <connection>
    <sender>button_edit_point</sender>
    <signal>clicked()</signal>
-   <receiver>HellingerEditPoint</receiver>
+   <receiver>HellingerEditPointDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

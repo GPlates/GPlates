@@ -1,4 +1,4 @@
-/* $Id: HellingerEditPoint.cc 255 2012-03-01 13:19:42Z robin.watson@ngu.no $ */
+/* $Id: HellingerEditPointDialog.cc 255 2012-03-01 13:19:42Z robin.watson@ngu.no $ */
 
 /**
  * \file 
@@ -23,24 +23,18 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <fstream>
-#include <iostream>
-#include <list>
-#include <string>
-
 #include <QDebug>
-#include "QFileDialog"
-#include <QLocale>
+
 #include <QRadioButton>
 #include <QTextStream>
 
-#include "global/CompilerWarnings.h"
+
 #include "HellingerDialog.h"
-#include "HellingerEditPoint.h"
-#include "HellingerDialogUi.h"
+#include "HellingerEditPointDialog.h"
+
 #include "QtWidgetUtils.h"
 
-GPlatesQtWidgets::HellingerEditPoint::HellingerEditPoint(
+GPlatesQtWidgets::HellingerEditPointDialog::HellingerEditPointDialog(
                 HellingerDialog *hellinger_dialog,
                 HellingerModel *hellinger_model,
                 QWidget *parent_):
@@ -58,7 +52,7 @@ GPlatesQtWidgets::HellingerEditPoint::HellingerEditPoint(
 }
 
 void
-GPlatesQtWidgets::HellingerEditPoint::initialization_table(QStringList &input_value)
+GPlatesQtWidgets::HellingerEditPointDialog::initialization_table(QStringList &input_value)
 {
     spinbox_segment -> setValue(input_value.at(0).toInt());
     if (input_value.at(1).toInt() == 1)
@@ -75,7 +69,7 @@ GPlatesQtWidgets::HellingerEditPoint::initialization_table(QStringList &input_va
 }
 
 void
-GPlatesQtWidgets::HellingerEditPoint::initialization(int &segment, int &row)
+GPlatesQtWidgets::HellingerEditPointDialog::initialise(int &segment, int &row)
 {
     QStringList get_data_line = d_hellinger_model_ptr->get_pick_as_string(segment, row);
     initialization_table(get_data_line);
@@ -85,7 +79,7 @@ GPlatesQtWidgets::HellingerEditPoint::initialization(int &segment, int &row)
 }
 
 void
-GPlatesQtWidgets::HellingerEditPoint::edit_point()
+GPlatesQtWidgets::HellingerEditPointDialog::edit_point()
 {
     QStringList edit_point_model;
     int segment = spinbox_segment -> value();
@@ -114,7 +108,7 @@ GPlatesQtWidgets::HellingerEditPoint::edit_point()
 }
 
 void
-GPlatesQtWidgets::HellingerEditPoint::update_buttons()
+GPlatesQtWidgets::HellingerEditPointDialog::update_buttons()
 {
  
 }

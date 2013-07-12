@@ -25,6 +25,8 @@
 #include <vector>
 
 #include <QDebug>
+#include <QDir>
+#include <QFileDialog>
 #include <QMessageBox>
 #include <QProgressBar>
 #include <QTextStream>
@@ -40,10 +42,9 @@
 #include "presentation/ViewState.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "HellingerDialog.h"
-#include "HellingerEditPoint.h"
-#include "HellingerEditSegment.h"
-#include "HellingerNewPoint.h"
+#include "HellingerEditPointDialog.h"
 #include "HellingerEditSegmentDialog.h"
+#include "HellingerNewPoint.h"
 #include "HellingerStatsDialog.h"
 #include "HellingerThread.h"
 #include "ReadErrorAccumulationDialog.h"
@@ -327,17 +328,17 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 void
 GPlatesQtWidgets::HellingerDialog::handle_edit_point()
 {
+
+	QScopedPointer<GPlatesQtWidgets::HellingerEditPointDialog> dialog(
+			new GPlatesQtWidgets::HellingerEditPointDialog(this,d_hellinger_model));
+
 	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
-	if (!d_hellinger_edit_point)
-	{
-		d_hellinger_edit_point = new GPlatesQtWidgets::HellingerEditPoint(this, d_hellinger_model);
-	}
 	QString segment = tree_widget_picks->currentItem()->text(0);
 	int row = index.row();
 	int segment_int = segment.toInt();
 
-	d_hellinger_edit_point->initialization(segment_int, row);
-	d_hellinger_edit_point->exec();
+	dialog->initialise(segment_int, row);
+	dialog->exec();
 	reset_expanded_status();
 }
 
@@ -407,7 +408,7 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_segment()
 	{
 		QString segment = tree_widget_picks->currentItem()->text(0);
 		int segment_int = segment.toInt();
-		d_hellinger_model ->remove_segment(segment_int);
+		d_hellinger_model->remove_segment(segment_int);
 		button_renumber->setEnabled(true);
 		update_from_model();
 		reset_expanded_status();

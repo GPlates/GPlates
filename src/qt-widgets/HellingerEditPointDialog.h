@@ -23,12 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_QTWIDGETS_HELLINGEREDITPOINT_H
-#define GPLATES_QTWIDGETS_HELLINGEREDITPOINT_H
+#ifndef GPLATES_QTWIDGETS_HELLINGEREDITPOINTDIALOG_H
+#define GPLATES_QTWIDGETS_HELLINGEREDITPOINTDIALOG_H
 
 #include <QWidget>
 
-#include "HellingerEditPointUi.h"
+#include "HellingerEditPointDialogUi.h"
 #include "HellingerDialog.h"
 
 namespace GPlatesQtWidgets
@@ -36,14 +36,14 @@ namespace GPlatesQtWidgets
     class HellingerDialog;
     class HellingerModel;
 
-	class HellingerEditPoint:
+	class HellingerEditPointDialog:
 			public QDialog,
-			protected Ui_HellingerEditPoint
+			protected Ui_HellingerEditPointDialog
 	{
 		Q_OBJECT
 	public:
 
-        HellingerEditPoint(
+		HellingerEditPointDialog(
                         HellingerDialog *hellinger_dialog,
                         HellingerModel *hellinger_model,
             QWidget *parent_ = NULL);
@@ -52,7 +52,7 @@ namespace GPlatesQtWidgets
                 void
                 initialization_table(QStringList &input_value);
                 void
-                initialization(int &segment, int &row);
+				initialise(int &segment, int &row);
                
 	private Q_SLOTS: 
 
@@ -72,4 +72,4 @@ namespace GPlatesQtWidgets
 	};
 }
 
-#endif //GPLATES_QTWIDGETS_HELLINGEREDITPOINT_H
+#endif //GPLATES_QTWIDGETS_HELLINGEREDITPOINTDIALOG_H

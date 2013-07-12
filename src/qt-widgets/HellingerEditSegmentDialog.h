@@ -26,11 +26,8 @@
 #ifndef GPLATES_QTWIDGETS_HELLINGEREDITSEGMENTDIALOG_H
 #define GPLATES_QTWIDGETS_HELLINGEREDITSEGMENTDIALOG_H
 
-#include <QAbstractTableModel>
-#include <QItemDelegate>
-#include <QtCore>
-#include <QtGui>
-#include <QWidget>
+#include <QItemDelegate> // for spinbox delegate
+#include <QStandardItemModel>
 
 #include "HellingerEditSegmentDialogUi.h"
 #include "HellingerDialog.h"
@@ -134,10 +131,6 @@ namespace GPlatesQtWidgets
 
 		void
 		set_row_values(const int &row, const GPlatesQtWidgets::HellingerPick &pick);
-
-		void
-		selectionChanged(const QItemSelection &selected,
-						 const QItemSelection &deselected);
 
 		HellingerDialog *d_hellinger_dialog_ptr;
 		QStandardItemModel *d_model;
