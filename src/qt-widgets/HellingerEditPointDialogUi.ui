@@ -109,7 +109,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QDoubleSpinBox" name="spinbox_long">
+        <widget class="QDoubleSpinBox" name="spinbox_lon">
          <property name="minimum">
           <double>-360.000000000000000</double>
          </property>
@@ -132,7 +132,7 @@
        <item>
         <widget class="QDoubleSpinBox" name="spinbox_uncert">
          <property name="minimum">
-          <double>-999.000000000000000</double>
+          <double>0.000000000000000</double>
          </property>
          <property name="maximum">
           <double>999.990000000000009</double>

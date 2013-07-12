@@ -1,4 +1,4 @@
-/* $Id: HellingerDialog.cc 260 2012-05-30 13:47:23Z robin.watson@ngu.no $ */
+ /* $Id: HellingerDialog.cc 260 2012-05-30 13:47:23Z robin.watson@ngu.no $ */
 
 /**
  * \file
@@ -579,10 +579,8 @@ GPlatesQtWidgets::HellingerDialog::show_stat_details()
 void
 GPlatesQtWidgets::HellingerDialog::handle_add_new_point()
 {    
-	if (!d_hellinger_new_point)
-	{
-		d_hellinger_new_point = new GPlatesQtWidgets::HellingerNewPoint(this, d_hellinger_model);
-	}
+	QScopedPointer<GPlatesQtWidgets::HellingerEditPointDialog> dialog(
+				new GPlatesQtWidgets::HellingerEditPointDialog(this,d_hellinger_model,true));
 	d_hellinger_new_point->exec();
 	reset_expanded_status();
 }

@@ -134,6 +134,10 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::handle_add_segment()
 
 		}
 
+
+		// TODO: if we came here via editing a segment, and we haven't changed the segment number,
+		// then we probably don't want to go through this warning dialog thing. Find a better way
+		// to do this.
 		d_hellinger_new_segment_warning->exec(); // necessary for applied changes!
 		int value_error = d_hellinger_new_segment_warning->error_type_new_segment();
 		if (value_error == ACTION_ADD_NEW_SEGMENT)

@@ -5,7 +5,7 @@
  * $Revision: 132 $
  * $Date: 2012-01-24 16:39:28 +0100 (Tue, 24 Jan 2012) $
  *
- * Copyright (C) 2011, 2012 Geological Survey of Norway
+ * Copyright (C) 2011, 2012, 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -46,6 +46,7 @@ namespace GPlatesQtWidgets
 		HellingerEditPointDialog(
 				HellingerDialog *hellinger_dialog,
 				HellingerModel *hellinger_model,
+				bool create_new_point = false,
 				QWidget *parent_ = NULL);
 
 		void
@@ -61,12 +62,16 @@ namespace GPlatesQtWidgets
 
 	private:
 
+		void
+		set_initial_values();
+
 		HellingerDialog *d_hellinger_dialog_ptr;
 		HellingerModel *d_hellinger_model_ptr;
+
 		int d_segment;
 		int d_row;
 
-
+		bool d_create_new_point;
 	};
 }
 

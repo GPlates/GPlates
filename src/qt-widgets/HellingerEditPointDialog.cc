@@ -5,7 +5,7 @@
  * $Revision: 255 $
  * $Date: 2012-03-01 14:19:42 +0100 (Thu, 01 Mar 2012) $
  *
- * Copyright (C) 2011, 2012 Geological Survey of Norway
+ * Copyright (C) 2011, 2012, 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -34,21 +34,28 @@
 
 #include "QtWidgetUtils.h"
 
-GPlatesQtWidgets::HellingerEditPointDialog::HellingerEditPointDialog(
-		HellingerDialog *hellinger_dialog,
+GPlatesQtWidgets::HellingerEditPointDialog::HellingerEditPointDialog(HellingerDialog *hellinger_dialog,
 		HellingerModel *hellinger_model,
+		bool create_new_point,
 		QWidget *parent_):
 	QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_hellinger_dialog_ptr(hellinger_dialog),
 	d_hellinger_model_ptr(hellinger_model),
 	d_segment(0),
-	d_row(0)
-
+	d_row(0),
+	d_create_new_point(create_new_point)
 {
 	setupUi(this);
 
+	set_initial_values();
+
 	QObject::connect(button_apply, SIGNAL(clicked()), this, SLOT(handle_apply()));
 	QObject::connect(button_cancel,SIGNAL(clicked()),this,SLOT(reject()));
+
+	if (d_create_new_point)
+	{
+		button_apply->setText(QObject::tr("&Add point"));
+	}
 }
 
 
@@ -60,7 +67,8 @@ GPlatesQtWidgets::HellingerEditPointDialog::initialise_with_pick(
 
 	if(pick)
 	{
-		// TODO: check if we need these member variables at all.
+		// We need to store these so that we can delete the correct pick
+		// before adding the new (edited) one.
 		d_segment = segment;
 		d_row = row;
 
@@ -75,7 +83,7 @@ GPlatesQtWidgets::HellingerEditPointDialog::initialise_with_pick(
 		}
 
 		spinbox_lat->setValue(pick->d_lat);
-		spinbox_long->setValue(pick->d_lon);
+		spinbox_lon->setValue(pick->d_lon);
 		spinbox_uncert->setValue(pick->d_uncertainty);
 	}
 
@@ -97,10 +105,13 @@ GPlatesQtWidgets::HellingerEditPointDialog::handle_apply()
 	}
 
 	double lat = spinbox_lat->value();
-	double lon = spinbox_long->value();
+	double lon = spinbox_lon->value();
 	double uncertainty = spinbox_uncert->value();
 
-	d_hellinger_model_ptr->remove_pick(d_segment,d_row);
+	if (!d_create_new_point)
+	{
+		d_hellinger_model_ptr->remove_pick(d_segment,d_row);
+	}
 	d_hellinger_model_ptr->add_pick(
 				HellingerPick(type,
 							  lat,
@@ -109,6 +120,14 @@ GPlatesQtWidgets::HellingerEditPointDialog::handle_apply()
 							  true),
 				segment_number);
 	d_hellinger_dialog_ptr->update_from_model();
+}
+
+void GPlatesQtWidgets::HellingerEditPointDialog::set_initial_values()
+{
+	spinbox_segment->setValue(1);
+	spinbox_lat->setValue(0.);
+	spinbox_lon->setValue(0.);
+	spinbox_uncert->setValue(0.);
 }
 
 
