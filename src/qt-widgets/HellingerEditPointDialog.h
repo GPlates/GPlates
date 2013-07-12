@@ -1,10 +1,10 @@
 /* $Id: HellingerEditPoint.h 132 2012-01-24 15:39:28Z juraj.cirbus $ */
 
 /**
- * \file 
+ * \file
  * $Revision: 132 $
- * $Date: 2012-01-24 16:39:28 +0100 (Tue, 24 Jan 2012) $ 
- * 
+ * $Date: 2012-01-24 16:39:28 +0100 (Tue, 24 Jan 2012) $
+ *
  * Copyright (C) 2011, 2012 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -22,7 +22,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
+
 #ifndef GPLATES_QTWIDGETS_HELLINGEREDITPOINTDIALOG_H
 #define GPLATES_QTWIDGETS_HELLINGEREDITPOINTDIALOG_H
 
@@ -33,8 +33,8 @@
 
 namespace GPlatesQtWidgets
 {
-    class HellingerDialog;
-    class HellingerModel;
+	class HellingerDialog;
+	class HellingerModel;
 
 	class HellingerEditPointDialog:
 			public QDialog,
@@ -44,29 +44,27 @@ namespace GPlatesQtWidgets
 	public:
 
 		HellingerEditPointDialog(
-                        HellingerDialog *hellinger_dialog,
-                        HellingerModel *hellinger_model,
-            QWidget *parent_ = NULL);
-                void
-                reset();
-                void
-                initialization_table(QStringList &input_value);
-                void
-				initialise(int &segment, int &row);
-               
-	private Q_SLOTS: 
+				HellingerDialog *hellinger_dialog,
+				HellingerModel *hellinger_model,
+				QWidget *parent_ = NULL);
 
-            void
-            edit_point();
+		void
+		initialise_with_pick(
+				const int &segment,
+				const int &row);
+
+
+	private Q_SLOTS:
+
+		void
+		edit_point();
 
 	private:
-	
-		void
-		update_buttons();
-        HellingerDialog *d_hellinger_dialog_ptr;
-        HellingerModel *d_hellinger_model_ptr;
-        int d_segment;
-        int d_row;
+
+		HellingerDialog *d_hellinger_dialog_ptr;
+		HellingerModel *d_hellinger_model_ptr;
+		int d_segment;
+		int d_row;
 
 
 	};

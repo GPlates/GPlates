@@ -337,7 +337,7 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_point()
 	int row = index.row();
 	int segment_int = segment.toInt();
 
-	dialog->initialise(segment_int, row);
+	dialog->initialise_with_pick(segment_int, row);
 	dialog->exec();
 	reset_expanded_status();
 }

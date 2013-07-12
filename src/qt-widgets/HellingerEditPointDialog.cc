@@ -1,10 +1,10 @@
 /* $Id: HellingerEditPointDialog.cc 255 2012-03-01 13:19:42Z robin.watson@ngu.no $ */
 
 /**
- * \file 
+ * \file
  * $Revision: 255 $
- * $Date: 2012-03-01 14:19:42 +0100 (Thu, 01 Mar 2012) $ 
- * 
+ * $Date: 2012-03-01 14:19:42 +0100 (Thu, 01 Mar 2012) $
+ *
  * Copyright (C) 2011, 2012 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -35,83 +35,80 @@
 #include "QtWidgetUtils.h"
 
 GPlatesQtWidgets::HellingerEditPointDialog::HellingerEditPointDialog(
-                HellingerDialog *hellinger_dialog,
-                HellingerModel *hellinger_model,
-                QWidget *parent_):
-    QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
-    d_hellinger_dialog_ptr(hellinger_dialog),
-    d_hellinger_model_ptr(hellinger_model),
-    d_segment(0),
-    d_row(0)
+		HellingerDialog *hellinger_dialog,
+		HellingerModel *hellinger_model,
+		QWidget *parent_):
+	QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
+	d_hellinger_dialog_ptr(hellinger_dialog),
+	d_hellinger_model_ptr(hellinger_model),
+	d_segment(0),
+	d_row(0)
 
 {
 	setupUi(this);
 
-        QObject::connect(button_edit_point, SIGNAL(clicked()), this, SLOT(edit_point()));
-        update_buttons();
+	QObject::connect(button_apply, SIGNAL(clicked()), this, SLOT(handle_apply()));
+	QObject::connect(button_cancel,SIGNAL(clicked()),this,SLOT(reject()));
 }
 
-void
-GPlatesQtWidgets::HellingerEditPointDialog::initialization_table(QStringList &input_value)
-{
-    spinbox_segment -> setValue(input_value.at(0).toInt());
-    if (input_value.at(1).toInt() == 1)
-    {        
-        radiobtn_move -> setChecked(true);
-    }
-    else if (input_value.at(1).toInt() == 2)
-    {        
-        radiobtn_fixed -> setChecked(true);
-    }
-    spinbox_lat -> setValue(input_value.at(2).toDouble());
-    spinbox_long -> setValue(input_value.at(3).toDouble());
-    spinbox_uncert -> setValue(input_value.at(4).toDouble());
-}
 
 void
-GPlatesQtWidgets::HellingerEditPointDialog::initialise(int &segment, int &row)
+GPlatesQtWidgets::HellingerEditPointDialog::initialise_with_pick(
+		const int &segment, const int &row)
 {
-    QStringList get_data_line = d_hellinger_model_ptr->get_pick_as_string(segment, row);
-    initialization_table(get_data_line);
-    d_segment = segment;
-    d_row = row;
+	boost::optional<HellingerPick> pick = d_hellinger_model_ptr->get_pick(segment,row);
+
+	if(pick)
+	{
+		d_segment = segment;
+		d_row = row;
+
+		spinbox_segment->setValue(segment);
+		if (pick->d_segment_type == MOVING_PICK_TYPE)
+		{
+			radio_moving->setChecked(true);
+		}
+		else
+		{
+			radio_fixed->setChecked(true);
+		}
+
+		spinbox_lat->setValue(pick->d_lat);
+		spinbox_long->setValue(pick->d_lon);
+		spinbox_uncert->setValue(pick->d_uncertainty);
+	}
 
 }
 
 void
 GPlatesQtWidgets::HellingerEditPointDialog::edit_point()
 {
-    QStringList edit_point_model;
-    int segment = spinbox_segment -> value();
-    int move_fixed;
-    if (radiobtn_move -> isChecked())
-    {
-        move_fixed = 1;
-    }
-    else
-    {
-        move_fixed = 2;
-    }
-    double lat = spinbox_lat -> value();
-    double lon = spinbox_long -> value();
-    double unc = spinbox_uncert -> value();
-    QString segment_str = QString("%1").arg(segment);
-    QString move_fixed_str = QString("%1").arg(move_fixed);
-    QString lat_str = QString("%1").arg(lat);
-    QString lon_str = QString("%1").arg(lon);
-    QString unc_str = QString("%1").arg(unc);
-    QString is_enabled = "1";
-    edit_point_model << move_fixed_str << segment_str << lat_str << lon_str << unc_str<<is_enabled;
-    d_hellinger_model_ptr ->remove_pick(d_segment,d_row);
-    d_hellinger_model_ptr ->add_pick(edit_point_model);
-    d_hellinger_dialog_ptr ->update();        
+	QStringList edit_point_model;
+	int segment = spinbox_segment -> value();
+	int move_fixed;
+	if (radio_moving -> isChecked())
+	{
+		move_fixed = 1;
+	}
+	else
+	{
+		move_fixed = 2;
+	}
+	double lat = spinbox_lat -> value();
+	double lon = spinbox_long -> value();
+	double unc = spinbox_uncert -> value();
+	QString segment_str = QString("%1").arg(segment);
+	QString move_fixed_str = QString("%1").arg(move_fixed);
+	QString lat_str = QString("%1").arg(lat);
+	QString lon_str = QString("%1").arg(lon);
+	QString unc_str = QString("%1").arg(unc);
+	QString is_enabled = "1";
+	edit_point_model << move_fixed_str << segment_str << lat_str << lon_str << unc_str<<is_enabled;
+	d_hellinger_model_ptr ->remove_pick(d_segment,d_row);
+	d_hellinger_model_ptr ->add_pick(edit_point_model);
+	d_hellinger_dialog_ptr ->update();
 }
 
-void
-GPlatesQtWidgets::HellingerEditPointDialog::update_buttons()
-{
- 
-}
 
 
 
