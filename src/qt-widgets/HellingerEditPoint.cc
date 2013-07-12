@@ -77,7 +77,7 @@ GPlatesQtWidgets::HellingerEditPoint::initialization_table(QStringList &input_va
 void
 GPlatesQtWidgets::HellingerEditPoint::initialization(int &segment, int &row)
 {
-    QStringList get_data_line = d_hellinger_model_ptr->get_line(segment, row);
+    QStringList get_data_line = d_hellinger_model_ptr->get_pick_as_string(segment, row);
     initialization_table(get_data_line);
     d_segment = segment;
     d_row = row;

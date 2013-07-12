@@ -45,11 +45,12 @@ namespace GPlatesQtWidgets
 		DISABLED_FIXED_SEGMENT_TYPE
 	};
 
-	// TODO: should the pick structure contain its segment number? Bear in mind that picks can be re-allocated to
-	// different segment numbers.
+	// NOTE: should the pick structure contain its segment number? Bear in mind that picks can be re-allocated to
+	// different segment numbers. We've gone for a structure without the segment no.
 	// FIXME: the "d_is_enabled" field is not strictly necessary as we encode this already in the
-	// HellingerSegmentType
-	//
+	// HellingerSegmentType. Having both is a little ugly actually, as we need to update both, and there's always
+	// the potential for them being out of sync.
+	// FIXME: we could of course use a GPlates llp here.
 
 	struct HellingerPick{
 		HellingerPick(
@@ -73,25 +74,31 @@ namespace GPlatesQtWidgets
 
 	typedef std::multimap<int,HellingerPick> hellinger_model_type;
 
-	// Contents of a hellinger .com file.
-	//
-	// FIXME:
-	// Note that the search radius is in RADIANS. (Although the interactive FORTRAN code asks for a
-	// value in degrees, the input value is then converted from radians to degrees).
-	//
-	// The python code behaves as per the fortran code.
-	//
-	// It's probably cleaner to use degrees here, but some of the .com files floating around provide
-	// this value in radians.
-	//
-	// So we maintain radians for now.
-	//
-	// TODO: 1) indicate somewhere on the interface that it's radians that is expeceted
-	//		2) sometime, somehow...let the user choose between the two.
-	//
-	// TODO: consider if "estimate kappa" and "output graphics" should be ditched / phased out / ignored.
-	// We should probably just take these two booleans as TRUE and go ahead and calculate stuff. It'll
-	// save a bit of space in the UI too.
+
+
+	/**
+	 * @brief The HellingerComFileStructure struct
+	 * This structure mirrors the content of a Hellinger .com file. The Hellinger .com file contains
+	 * a list of input parameters to the hellinger1 FORTRAN code.
+	 *
+	 *
+	 * NOTE: The search radius is in RADIANS. (Although the interactive FORTRAN code asks for a
+	 * value in degrees, the input value is then converted from radians to degrees).
+	 *
+	 * The python code behaves as per the fortran code.
+	 *
+	 * It's probably cleaner to use degrees here, but some of the .com files floating around provide
+	 * this value in radians.
+	 *
+	 * So we maintain radians for now.
+	 *
+	 * TODO: 1) indicate somewhere on the interface that it's radians that is expected.
+	 *		 2) sometime, somehow...let the user choose between the two.
+	 *
+	 * TODO: consider if "estimate kappa" and "output graphics" should be ditched / phased out / ignored.
+	 * We should probably just take these two booleans as TRUE and go ahead and calculate stuff. It'll
+	 * save a bit of space in the UI too.
+	 */
 	struct HellingerComFileStructure{
 		HellingerComFileStructure(
 				const QString &file,
@@ -149,6 +156,15 @@ namespace GPlatesQtWidgets
 		double d_eps;
     };
 
+	/**
+	 * @brief The HellingerModel class
+	 *
+	 * This class holds the input data for the hellinger fit (picks, initial guess etc) and
+	 * the output results (the pole, and associated uncertainty/goodness-of-fit info).
+	 *
+	 * FIXME: wait a minute, the stats don't seem to be even stored here. I think they should be.
+	 * Check where they are stored, and shift them in here.
+	 */
     class HellingerModel
 	{
 
@@ -172,7 +188,7 @@ namespace GPlatesQtWidgets
 					const int &segment_number);
 
         QStringList
-        get_line(
+		get_pick_as_string(
 			int &segment,
 			int &row) const;
 

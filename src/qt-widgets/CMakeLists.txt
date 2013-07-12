@@ -275,9 +275,9 @@ set(srcs
     HellingerNewPoint.cc
     HellingerNewPoint.h
     HellingerNewPointUi.ui
-    HellingerNewSegment.cc
-    HellingerNewSegment.h
-    HellingerNewSegmentUi.ui
+    HellingerNewSegmentDialog.cc
+    HellingerNewSegmentDialog.h
+    HellingerNewSegmentDialogUi.ui
     HellingerNewSegmentWarning.cc
     HellingerNewSegmentWarning.h
     HellingerNewSegmentWarningUi.ui

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>HellingerNewSegment</class>
- <widget class="QDialog" name="HellingerNewSegment">
+ <class>HellingerNewSegmentDialog</class>
+ <widget class="QDialog" name="HellingerNewSegmentDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -206,7 +206,7 @@
   <connection>
    <sender>button_add_segment</sender>
    <signal>clicked()</signal>
-   <receiver>HellingerNewSegment</receiver>
+   <receiver>HellingerNewSegmentDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -222,7 +222,7 @@
   <connection>
    <sender>button_close</sender>
    <signal>clicked()</signal>
-   <receiver>HellingerNewSegment</receiver>
+   <receiver>HellingerNewSegmentDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

@@ -29,6 +29,7 @@
 #include <vector>
 
 #include <QDialog>
+#include <QItemSelection>
 #include <QWidget>
 
 #include "gui/Colour.h"

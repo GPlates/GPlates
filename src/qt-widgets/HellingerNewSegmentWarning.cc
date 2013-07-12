@@ -31,7 +31,6 @@
 #include <QRadioButton>
 #include <QTextStream>
 
-#include "HellingerNewSegment.h"
 #include "HellingerNewSegmentWarning.h"
 #include "HellingerNewSegmentWarningUi.h"
 #include "QtWidgetUtils.h"

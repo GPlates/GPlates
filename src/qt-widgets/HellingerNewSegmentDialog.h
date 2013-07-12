@@ -1,4 +1,4 @@
-/* $Id: HellingerNewSegment.h 227 2012-02-24 14:46:55Z juraj.cirbus $ */
+/* $Id: HellingerNewSegmentDialog.h 227 2012-02-24 14:46:55Z juraj.cirbus $ */
 
 /**
  * \file
@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_QTWIDGETS_HELLINGERNEWSEGMENT_H
-#define GPLATES_QTWIDGETS_HELLINGERNEWSEGMENT_H
+#ifndef GPLATES_QTWIDGETS_HELLINGERNEWSEGMENTDIALOG_H
+#define GPLATES_QTWIDGETS_HELLINGERNEWSEGMENTDIALOG_H
 
 #include <QAbstractTableModel>
 #include <QItemDelegate>
@@ -32,7 +32,7 @@
 #include <QtGui>
 #include <QWidget>
 
-#include "HellingerNewSegmentUi.h"
+#include "HellingerNewSegmentDialogUi.h"
 #include "HellingerDialog.h"
 
 
@@ -51,7 +51,7 @@ namespace GPlatesQtWidgets
 
 	class HellingerDialog;
 	class HellingerModel;
-	class HellingerNewSegmentWarning;
+	class HellingerNewSegmentDialogWarning;
 
 	/**
 	 * @brief The SpinBoxDelegate class
@@ -76,20 +76,20 @@ namespace GPlatesQtWidgets
 						  const QModelIndex &index) const;
 
 		void updateEditorGeometry(QWidget *editor,
-								  const QStyleOptionViewItem &option, const QModelIndex &index) const;
+						const QStyleOptionViewItem &option, const QModelIndex &index) const;
 	};
 
 
 
 
 
-	class HellingerNewSegment:
+	class HellingerNewSegmentDialog:
 			public QDialog,
-			protected Ui_HellingerNewSegment
+			protected Ui_HellingerNewSegmentDialog
 	{
 		Q_OBJECT
 	public:
-		HellingerNewSegment(
+		HellingerNewSegmentDialog(
 				HellingerDialog *hellinger_dialog,
 				HellingerModel *hellinger_model,
 				QWidget *parent_ = NULL);
@@ -114,30 +114,30 @@ namespace GPlatesQtWidgets
 		add_segment_to_model();
 
 		void
-		change_table_stats_pick();
-
-		void
-		handle_item_changed(QStandardItem *item);
-
-
-
-	private:
-
-		void
-		change_quick_set_state();
+		change_pick_type_of_whole_table();
 
 		void
 		update_buttons();
 
-		HellingerDialog *d_hellinger_dialog_ptr;
-		QStandardItemModel *model;
-		HellingerModel *d_hellinger_model_ptr;
-		HellingerNewSegmentWarning *d_hellinger_new_segment_warning;
+	private:
 
+		void
+		set_initial_row_values(const int &row);
+
+		void
+		selectionChanged(const QItemSelection &selected,
+						 const QItemSelection &deselected);
+
+		HellingerDialog *d_hellinger_dialog_ptr;
+		QStandardItemModel *d_model;
+		HellingerModel *d_hellinger_model_ptr;
+		HellingerNewSegmentDialogWarning *d_hellinger_new_segment_warning;
+
+		// TODO: we can probably remove this and use model->rowCount() where necessary. Check this.
 		int d_row_count;
 
 		SpinBoxDelegate d_spin_box_delegate;
 	};
 }
 
-#endif //GPLATES_QTWIDGETS_HELLINGERNEWSEGMENT_H
+#endif //GPLATES_QTWIDGETS_HELLINGERNEWSEGMENTDIALOG_H

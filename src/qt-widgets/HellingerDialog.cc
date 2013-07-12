@@ -43,7 +43,7 @@
 #include "HellingerEditPoint.h"
 #include "HellingerEditSegment.h"
 #include "HellingerNewPoint.h"
-#include "HellingerNewSegment.h"
+#include "HellingerNewSegmentDialog.h"
 #include "HellingerStatsDialog.h"
 #include "HellingerThread.h"
 #include "ReadErrorAccumulationDialog.h"
@@ -282,7 +282,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 	QString segment = tree_widget_picks->currentItem()->text(0);
 	int row = index.row();
 	int segment_int = segment.toInt();
-	QStringList get_data_line = d_hellinger_model->get_line(segment_int, row);
+	QStringList get_data_line = d_hellinger_model->get_pick_as_string(segment_int, row);
 	QStringList data_to_model;
 	QString segment_str = get_data_line.at(0);
 	QString move_fix = get_data_line.at(1);

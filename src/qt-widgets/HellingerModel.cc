@@ -40,7 +40,7 @@ GPlatesQtWidgets::HellingerModel::HellingerModel(
 }
 
 QStringList
-GPlatesQtWidgets::HellingerModel::get_line(int &segment, int &row) const
+GPlatesQtWidgets::HellingerModel::get_pick_as_string(int &segment, int &row) const
 {
 
 	std::pair<hellinger_model_type::const_iterator,hellinger_model_type::const_iterator> pair =
