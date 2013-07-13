@@ -103,7 +103,6 @@ GPlatesQtWidgets::HellingerModel::get_pick_state(const int &segment, const int &
 		if (n == row){
 			return iter->second.d_is_enabled;
         }
-        n++;
     }
 	//Should we really be sending an optional<bool> back from this function, and boost::none if it gets to this point?
 	return false;

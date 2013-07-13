@@ -201,9 +201,11 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 		const QItemSelection & new_selection,
 		const QItemSelection & old_selection)
 {
-
+	//TODO: Refactor this method
+	qDebug() << "Selection changed.";
 	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
 	QString segment = tree_widget_picks->currentItem()->text(0);
+	qDebug() << "segment string: " << segment;
 	int row = index.row();
 	int segment_int = segment.toInt();
 	bool state = d_hellinger_model->get_pick_state(segment_int, row);
@@ -245,7 +247,7 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 
 void GPlatesQtWidgets::HellingerDialog::handle_cancel()
 {
-
+// TODO: This is where we would (if we can) interrupt the thread running the python code.
 }
 
 void
@@ -594,8 +596,9 @@ GPlatesQtWidgets::HellingerDialog::handle_add_new_segment()
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::handle_calculate()
+GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 {        
+	// TODO: Refactor this method.
 	// FIXME: This assumes that the state of the button always reflects the ordered state of the picks in the model. Check
 	// that this is indeed the case.
 	if (button_renumber->isEnabled())
@@ -748,7 +751,6 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 		button_export_com_file->setEnabled(false);
 		button_calculate_fit->setEnabled(false);
 		button_details->setEnabled(false);
-		button_apply_pole->setEnabled(false);
 		button_remove_segment->setEnabled(false);
 		button_remove_point->setEnabled(false);
 		button_stats->setEnabled(false);
@@ -760,10 +762,10 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 		button_export_pick_file->setEnabled(true);
 		button_export_com_file->setEnabled(true);
 		button_calculate_fit->setEnabled(spinbox_radius->value() > 0.0);
-		button_apply_pole->setEnabled(true);
-		button_remove_segment->setEnabled(true);
-		button_remove_point->setEnabled(true);
 	}
+
+	button_remove_segment->setEnabled(true);
+	button_remove_point->setEnabled(true);
 }
 
 void
@@ -1195,7 +1197,7 @@ void GPlatesQtWidgets::HellingerDialog::update_model_with_com_data()
 
 void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 {
-	QObject::connect(button_calculate_fit, SIGNAL(clicked()),this, SLOT(handle_calculate()));
+	QObject::connect(button_calculate_fit, SIGNAL(clicked()),this, SLOT(handle_calculate_fit()));
 	QObject::connect(button_import_file, SIGNAL(clicked()), this, SLOT(import_hellinger_file()));
 	QObject::connect(button_details, SIGNAL(clicked()), this, SLOT(show_stat_details()));
 	QObject::connect(button_new_point, SIGNAL(clicked()), this, SLOT(handle_add_new_point()));

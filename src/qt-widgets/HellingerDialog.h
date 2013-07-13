@@ -144,9 +144,12 @@ namespace GPlatesQtWidgets
 				const double &lat,
 				const double &lon);
 
+		// TODO: This appears to update the fit from the model, and also to draw the fit point on the
+		// canvas. Check this, and perhaps separate out the functionality.
 		void
 		update_result();
 
+		// TODO: I think this is for drawing the error-circle or error-ellipse. Check this.
 		void
 		show_data_points_on_globe();
 
@@ -185,7 +188,7 @@ namespace GPlatesQtWidgets
 		store_expanded_status();
 
 		void
-		handle_calculate();
+		handle_calculate_fit();
 
 		void
 		import_hellinger_file();
