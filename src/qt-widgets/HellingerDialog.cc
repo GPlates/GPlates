@@ -128,10 +128,6 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_read_error_accumulation_dialog(read_error_accumulation_dialog),
 	d_hellinger_model(0),
 	d_hellinger_stats_dialog(0),
-	d_hellinger_new_point(0),
-	d_hellinger_edit_point(0),
-	d_hellinger_new_segment_dialog(0),
-	d_hellinger_edit_segment(0),
 	d_hellinger_thread(0),
 	d_moving_plate_id(0),
 	d_fixed_plate_id(0),
@@ -581,7 +577,7 @@ GPlatesQtWidgets::HellingerDialog::handle_add_new_point()
 {    
 	QScopedPointer<GPlatesQtWidgets::HellingerEditPointDialog> dialog(
 				new GPlatesQtWidgets::HellingerEditPointDialog(this,d_hellinger_model,true));
-	d_hellinger_new_point->exec();
+	dialog->exec();
 	reset_expanded_status();
 }
 
