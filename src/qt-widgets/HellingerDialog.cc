@@ -289,6 +289,7 @@ GPlatesQtWidgets::HellingerDialog::highlight_selected_point(
 void
 GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 {
+	store_expanded_status();
 	// TODO: Refactor this method.
 	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
 	QString segment = tree_widget_picks->currentItem()->text(0);
@@ -333,6 +334,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 		update_from_model();
 	}
 	restore_expanded_status();
+
 }
 
 void
