@@ -318,7 +318,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 		d_hellinger_model->add_pick(data_to_model);
 		update_from_model();
 	}
-	reset_expanded_status();
+	restore_expanded_status();
 }
 
 void
@@ -335,7 +335,7 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_point()
 
 	dialog->initialise_with_pick(segment_int, row);
 	dialog->exec();
-	reset_expanded_status();
+	restore_expanded_status();
 }
 
 void
@@ -353,7 +353,7 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_segment()
 				d_hellinger_model->get_segment(segment_number),segment_number);
 
 	dialog->exec();
-	reset_expanded_status();
+	restore_expanded_status();
 }
 
 void
@@ -380,7 +380,7 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_point()
 		int segment_int = segment.toInt();
 		d_hellinger_model->remove_pick(segment_int, row);
 		update_from_model();
-		reset_expanded_status();
+		restore_expanded_status();
 	}
 }
 
@@ -407,7 +407,7 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_segment()
 		d_hellinger_model->remove_segment(segment_int);
 		button_renumber->setEnabled(true);
 		update_from_model();
-		reset_expanded_status();
+		restore_expanded_status();
 	}
 }
 
@@ -416,7 +416,7 @@ GPlatesQtWidgets::HellingerDialog::initialise()
 {
 	update_buttons();
 	update_from_model();
-	reset_expanded_status();
+	restore_expanded_status();
 }
 
 void
@@ -578,7 +578,7 @@ GPlatesQtWidgets::HellingerDialog::handle_add_new_point()
 	QScopedPointer<GPlatesQtWidgets::HellingerEditPointDialog> dialog(
 				new GPlatesQtWidgets::HellingerEditPointDialog(this,d_hellinger_model,true));
 	dialog->exec();
-	reset_expanded_status();
+	restore_expanded_status();
 }
 
 void
@@ -590,7 +590,7 @@ GPlatesQtWidgets::HellingerDialog::handle_add_new_segment()
 																true /*create new segment */));
 
 	dialog->exec();
-	reset_expanded_status();
+	restore_expanded_status();
 }
 
 void
@@ -1163,7 +1163,7 @@ GPlatesQtWidgets::HellingerDialog::reorder_picks()
 	tree_widget_picks->clear();
 	load_data_from_model();
 	button_renumber->setEnabled(false);
-	reset_expanded_status();
+	restore_expanded_status();
 }
 
 void
@@ -1222,7 +1222,8 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(spinbox_result_angle, SIGNAL(valueChanged(double)), this, SLOT(handle_fit_spinboxes_changed()));
 	QObject::connect(spinbox_radius, SIGNAL(valueChanged(double)), this, SLOT(handle_spinbox_radius_changed()));
 	QObject::connect(checkbox_grid_search, SIGNAL(clicked()), this, SLOT(handle_checkbox_grid_search_changed()));
-	QObject::connect(tree_widget_picks,SIGNAL(collapsed(QModelIndex)),this,SLOT(update_expanded_status()));
+	QObject::connect(tree_widget_picks,SIGNAL(collapsed(QModelIndex)),this,SLOT(store_expanded_status()));
+	QObject::connect(tree_widget_picks,SIGNAL(expanded(QModelIndex)),this,SLOT(store_expanded_status()));
 	QObject::connect(tree_widget_picks->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
 					 this, SLOT(handle_selection_changed(const QItemSelection &, const QItemSelection &)));
 
@@ -1234,14 +1235,14 @@ void
 GPlatesQtWidgets::HellingerDialog::handle_expand_all()
 {
 	tree_widget_picks->expandAll();
-	update_expanded_status();
+	store_expanded_status();
 }
 
 void
 GPlatesQtWidgets::HellingerDialog::handle_collapse_all()
 {
 	tree_widget_picks->collapseAll();
-	update_expanded_status();
+	store_expanded_status();
 }
 
 void
@@ -1251,64 +1252,37 @@ GPlatesQtWidgets::HellingerDialog::handle_checkbox_grid_search_changed()
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::update_expanded_status()
+GPlatesQtWidgets::HellingerDialog::store_expanded_status()
 {
 	int amount = tree_widget_picks->topLevelItemCount();
 	d_expanded_segments.clear();
-	for (int i = 0; i<amount; i++)
+	d_segment_expanded_statuses.clear();
+	for (int i = 0; i<amount; ++i)
 	{
+		d_segment_expanded_statuses.insert(std::make_pair<int,bool>(i,tree_widget_picks->topLevelItem(i)->isExpanded()));
 		if (tree_widget_picks->topLevelItem(i)->isExpanded())
 		{
 			QString position = tree_widget_picks->topLevelItem(i)->text(0);
 			d_expanded_segments.push_back(position);
+
 		}
-	}
-	std::vector<QString>::const_iterator iter;
-	int num = 0;
-	for (iter = d_expanded_segments.begin(); iter != d_expanded_segments.end(); ++iter)
-	{
-		++num;
 	}
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::reset_expanded_status()
+GPlatesQtWidgets::HellingerDialog::restore_expanded_status()
 {
-	std::vector<QString>::const_iterator iter;
-	int num = 0;
-	int expended_size = d_expanded_segments.size();
-	if (!d_expanded_segments.empty())
-	{
-		int amount = tree_widget_picks->topLevelItemCount();
-		num = 0;
-		for (int i = 0; i<amount;i++)
-		{
-			int widget_count = tree_widget_picks->topLevelItem(i)->text(0).toInt();
-			int vector_count = d_expanded_segments.at(num).toInt();
-			if (num+1< expended_size)
-			{
-				if (widget_count == vector_count)
-				{
-					tree_widget_picks->topLevelItem(i)->setExpanded(true);
-					num++;
-				}
-				else if(widget_count>vector_count)
-				{
-					num++;
-					vector_count = d_expanded_segments.at(num).toInt();
-					if (widget_count == vector_count)
-					{
-						tree_widget_picks->topLevelItem(i)->setExpanded(true);
-						num++;
-					}
+	int top_level_items = tree_widget_picks->topLevelItemCount();
 
-				}
-			}
-		}
-	}
-	else
+	for (int i = 0; i < top_level_items ; ++i)
 	{
-		handle_expand_all();
+		int segment = tree_widget_picks->topLevelItem(i)->text(0).toInt();
+		expanded_status_map_type::const_iterator iter = d_segment_expanded_statuses.find(segment);
+		if (iter != d_segment_expanded_statuses.end())
+		{
+			tree_widget_picks->topLevelItem(i)->setExpanded(iter->second);
+		}
+
 	}
 }
 

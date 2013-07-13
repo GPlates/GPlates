@@ -65,6 +65,7 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 	public:
 
+		typedef std::map<int,bool> expanded_status_map_type;
 
 		HellingerDialog(
 				GPlatesPresentation::ViewState &view_state,
@@ -173,7 +174,7 @@ namespace GPlatesQtWidgets
 		reorder_picks();
 
 		void
-		reset_expanded_status();
+		restore_expanded_status();
 
 	private Q_SLOTS:
 
@@ -181,7 +182,7 @@ namespace GPlatesQtWidgets
 		handle_thread_finished();
 
 		void
-		update_expanded_status();
+		store_expanded_status();
 
 		void
 		handle_calculate();
@@ -305,7 +306,8 @@ namespace GPlatesQtWidgets
 		QString d_temp_result;
 		QString d_temp_par;
 		QString d_temp_res;
-		std::vector<QString> d_expanded_segments;
+
+		expanded_status_map_type d_segment_expanded_statuses;
 
 
 	};
