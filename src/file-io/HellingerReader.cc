@@ -427,3 +427,11 @@ GPlatesFileIO::HellingerReader::read_com_file(
 	read_pick_file(pick_file,hellinger_model,read_errors);
 
 }
+
+void
+GPlatesFileIO::HellingerReader::read_error_ellipse(
+		const QString &filename,
+		GPlatesQtWidgets::HellingerModel &hellinger_model)
+{
+
+}

@@ -74,6 +74,12 @@ public:
             GPlatesQtWidgets::HellingerModel& hellinger_model,
             ReadErrorAccumulation &read_errors);
 
+
+	static
+	void
+	read_error_ellipse(
+			const QString &filename,
+			GPlatesQtWidgets::HellingerModel& hellinger_model);
 };
 
 }

@@ -203,44 +203,56 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 {
 	//TODO: Refactor this method
 	qDebug() << "Selection changed.";
-	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
-	QString segment = tree_widget_picks->currentItem()->text(0);
-	qDebug() << "segment string: " << segment;
-	int row = index.row();
-	int segment_int = segment.toInt();
-	bool state = d_hellinger_model->get_pick_state(segment_int, row);
 
-	button_activate_pick->setEnabled(!state);
-	button_deactivate_pick->setEnabled(state);
-
-
-	if (tree_widget_picks->currentItem()->text(1) == 0)
+	if (new_selection.empty())
 	{
-		button_edit_point->setEnabled(false);
-		button_edit_segment->setEnabled(true);
-		button_remove_segment->setEnabled(true);
-		button_remove_point->setEnabled(false);
-		button_activate_pick->setEnabled(false);
-		button_deactivate_pick->setEnabled(false);
+		// Nothing selected:
+		qDebug() << "Nothing selected";
+		set_buttons_for_no_selection();
 	}
-	else
+	else if (tree_widget_picks->currentItem()->text(1).isEmpty()) // Segment selected
 	{
-		button_edit_point->setEnabled(true);
-		button_edit_segment->setEnabled(false);
-		button_remove_segment->setEnabled(false);
-		button_remove_point->setEnabled(true);
+		qDebug() << "Segment selected";
+		set_buttons_for_segment_selected();
+	}
+	else // pick selected
+	{
+		qDebug() << "Pick selected";
+		const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
+		QString segment = tree_widget_picks->currentItem()->text(0);
+		int row = index.row();
+		int segment_int = segment.toInt();
+		bool state = d_hellinger_model->get_pick_state(segment_int, row);
+
+		set_buttons_for_pick_selected(state);
 	}
 
+	// if we have selected a pick:
+	//		get its state and update the enable/disable buttons
+	//		enable the edit/remove-pick buttons
+	//		disable the edit/remove segment buttons
+
+	// If we have selected a segment
+	//		disable both enable/disable buttons
+	//		enable the edit/remove semgnet buttons
+	//		disable the edit/remove pick buttons
+
+	// If nothing is selected:
+	//	 disable everything (except the new pick / new segment buttons - which are always enabled anyway)
+
+
+	// Update the highlighted (if any) point. Begin by resetting the hellinger layer
+	// on the canvas.
 	d_hellinger_layer.clear_rendered_geometries();
 	update_canvas();
 
-	if (tree_widget_picks->currentItem()->text(1) != 0)
+	if (!tree_widget_picks->currentItem()->text(1).isEmpty())
 	{
 		double lat = tree_widget_picks->currentItem()->text(2).toDouble();
 		double lon = tree_widget_picks->currentItem()->text(3).toDouble();
-		int type_segment = tree_widget_picks->currentItem()->text(1).toInt();
-		show_point_on_globe(lat, lon, type_segment);
-
+		HellingerPickType type =
+				static_cast<HellingerPickType>(tree_widget_picks->currentItem()->text(1).toInt());
+		highlight_selected_point(lat, lon, type);
 	}
 
 }
@@ -251,7 +263,7 @@ void GPlatesQtWidgets::HellingerDialog::handle_cancel()
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::show_point_on_globe(
+GPlatesQtWidgets::HellingerDialog::highlight_selected_point(
 		const double &lat,
 		const double &lon,
 		const int &type_segment)
@@ -516,7 +528,7 @@ void
 GPlatesQtWidgets::HellingerDialog::handle_calculate_stats()
 {
 	d_thread_type = STATS_THREAD_TYPE;
-	update_buttons_statistics(false);
+	button_stats->setEnabled(false);
 	d_hellinger_thread->initialise_stats_calculation(
 				d_path,
 				d_file_name,
@@ -640,6 +652,8 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 		// TODO: check if we actually need to update the buttons here.
 		update_buttons();
 
+		// TODO: is there a cleaner way of sending input data to python?
+		// Can we use a bitset or a vector of bools instead of std::vector<int> for example?
 		std::vector<double> input_data;
 		std::vector<int> bool_data;
 		input_data.push_back(spinbox_lat->value());
@@ -726,24 +740,23 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 			d_hellinger_model->set_fit(fields);
 			data_file.close();
 			update_result();
-			update_buttons_statistics(true);
-			update_continue_button(true);
+			button_stats->setEnabled(true);
 		}
 	}
 	else if(d_thread_type == STATS_THREAD_TYPE)
 	{
-		update_buttons_statistics(true);
-		update_continue_button(false);
-		// TODO: check if we need this add_data_file here.....
-		//d_hellinger_model->add_data_file();
-		show_data_points_on_globe();
+		button_stats->setEnabled(false);
+
+		d_hellinger_model->get_error_ellipse_points();
+		draw_error_ellipse();
 	}
 }
 
 void
 GPlatesQtWidgets::HellingerDialog::update_buttons()
 {
-	if (tree_widget_picks->topLevelItemCount() == 0)
+	// Update based on if we have some picks loaded or not.
+	if (!picks_loaded())
 	{
 		button_expand_all->setEnabled(false);
 		button_collapse_all->setEnabled(false);
@@ -763,9 +776,6 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 		button_export_com_file->setEnabled(true);
 		button_calculate_fit->setEnabled(spinbox_radius->value() > 0.0);
 	}
-
-	button_remove_segment->setEnabled(true);
-	button_remove_point->setEnabled(true);
 }
 
 void
@@ -798,21 +808,7 @@ GPlatesQtWidgets::HellingerDialog::update_buttons_statistics(bool info)
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::update_continue_button(
-		bool info)
-{
-	if (!info)
-	{
-		button_stats -> setEnabled(false);
-	}
-	else
-	{
-		button_stats->setEnabled(true);
-	}
-}
-
-void
-GPlatesQtWidgets::HellingerDialog::show_pole_on_globe(
+GPlatesQtWidgets::HellingerDialog::draw_pole(
 		const double &lat,
 		const double &lon)
 {
@@ -845,15 +841,15 @@ GPlatesQtWidgets::HellingerDialog::update_result()
 		spinbox_result_lat->setValue(data_fit_struct.get().d_lat);
 		spinbox_result_lon->setValue(data_fit_struct.get().d_lon);
 		spinbox_result_angle->setValue(data_fit_struct.get().d_angle);
-		show_pole_on_globe(data_fit_struct.get().d_lat, data_fit_struct.get().d_lon);
+		draw_pole(data_fit_struct.get().d_lat, data_fit_struct.get().d_lon);
 	}
 
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::show_data_points_on_globe()
+GPlatesQtWidgets::HellingerDialog::draw_error_ellipse()
 {
-	std::vector<GPlatesMaths::LatLonPoint> data_points = d_hellinger_model->get_error_ellipse_points();
+	const std::vector<GPlatesMaths::LatLonPoint> &data_points = d_hellinger_model->get_error_ellipse_points();
 	if (!data_points.empty())
 	{
 		std::vector<GPlatesMaths::LatLonPoint>::const_iterator iter;
@@ -916,7 +912,7 @@ GPlatesQtWidgets::HellingerDialog::update_canvas()
 	draw_fixed_picks();
 	draw_moving_picks();
 	update_result();
-	show_data_points_on_globe();
+	draw_error_ellipse();
 
 }
 
@@ -1102,6 +1098,43 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 		draw_moving_picks();
 	}
 
+
+}
+
+bool GPlatesQtWidgets::HellingerDialog::picks_loaded()
+{
+	return (tree_widget_picks->topLevelItemCount() != 0);
+}
+
+void GPlatesQtWidgets::HellingerDialog::set_buttons_for_no_selection()
+{
+	button_activate_pick->setEnabled(false);
+	button_deactivate_pick->setEnabled(false);
+	button_edit_point->setEnabled(false);
+	button_edit_segment->setEnabled(false);
+	button_remove_point->setEnabled(false);
+	button_remove_segment->setEnabled(false);
+}
+
+void GPlatesQtWidgets::HellingerDialog::set_buttons_for_segment_selected()
+{
+	button_activate_pick->setEnabled(false);
+	button_deactivate_pick->setEnabled(false);
+	button_edit_point->setEnabled(false);
+	button_edit_segment->setEnabled(true);
+	button_remove_point->setEnabled(false);
+	button_remove_segment->setEnabled(true);
+}
+
+void GPlatesQtWidgets::HellingerDialog::set_buttons_for_pick_selected(
+		bool state_is_active)
+{
+	button_activate_pick->setEnabled(!state_is_active);
+	button_deactivate_pick->setEnabled(state_is_active);
+	button_edit_point->setEnabled(true);
+	button_edit_segment->setEnabled(false);
+	button_remove_point->setEnabled(true);
+	button_remove_segment->setEnabled(false);
 
 }
 

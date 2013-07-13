@@ -327,7 +327,7 @@ GPlatesQtWidgets::HellingerModel::set_error_ellipse_points()
 
 }
 
-std::vector <GPlatesMaths::LatLonPoint>
+const std::vector <GPlatesMaths::LatLonPoint> &
 GPlatesQtWidgets::HellingerModel::get_error_ellipse_points() const
 {
 	return d_error_ellipse_points;
@@ -432,16 +432,16 @@ GPlatesQtWidgets::HellingerModel::get_pick(
 		const int &segment,
 		const int &row) const
 {
-	//TODO: refactor this.
-	hellinger_model_type::const_iterator iter;
-	int n = 0;
-	for (iter = d_hellinger_picks.find(segment); iter != d_hellinger_picks.end(); ++iter )
+	std::pair<hellinger_model_type::const_iterator,hellinger_model_type::const_iterator> range =
+			d_hellinger_picks.equal_range(segment);
+
+	hellinger_model_type::const_iterator iter = range.first;
+	for (int n = 0; iter != range.second; ++iter, ++n)
 	{
-		if ((iter->first == segment) && (n == row))
+		if (n == row)
 		{
             return (iter->second);
 		}
-		n++;
 	}
 	return boost::none;
 }

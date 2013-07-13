@@ -122,9 +122,6 @@ namespace GPlatesQtWidgets
 		void
 		update_buttons_statistics(bool info);
 
-		void
-		update_continue_button(bool info);
-
 
 		void
 		load_pick_file_to_model(
@@ -134,13 +131,13 @@ namespace GPlatesQtWidgets
 				const double &chron_time);
 
 		void
-		show_point_on_globe(
+		highlight_selected_point(
 				const double &lat,
 				const double &lon,
 				const int &type_segment);
 
 		void
-		show_pole_on_globe(
+		draw_pole(
 				const double &lat,
 				const double &lon);
 
@@ -149,9 +146,8 @@ namespace GPlatesQtWidgets
 		void
 		update_result();
 
-		// TODO: I think this is for drawing the error-circle or error-ellipse. Check this.
 		void
-		show_data_points_on_globe();
+		draw_error_ellipse();
 
 		void
 		update_initial_guess();
@@ -279,7 +275,18 @@ namespace GPlatesQtWidgets
 		void
 		reconstruct_picks();
 
+		bool
+		picks_loaded();
 
+		void
+		set_buttons_for_no_selection();
+
+		void
+		set_buttons_for_segment_selected();
+
+		void
+		set_buttons_for_pick_selected(
+				bool state_is_active);
 
 
 		GPlatesPresentation::ViewState &d_view_state;

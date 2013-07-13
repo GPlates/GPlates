@@ -258,7 +258,7 @@ namespace GPlatesQtWidgets
         void
 		set_error_ellipse_points();
 
-        std::vector<GPlatesMaths::LatLonPoint>
+		const std::vector<GPlatesMaths::LatLonPoint> &
 		get_error_ellipse_points() const;
 
 		// TODO: this seems to be redundant now. Check this.
