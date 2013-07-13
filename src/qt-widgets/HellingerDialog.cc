@@ -1254,18 +1254,12 @@ GPlatesQtWidgets::HellingerDialog::handle_checkbox_grid_search_changed()
 void
 GPlatesQtWidgets::HellingerDialog::store_expanded_status()
 {
-	int amount = tree_widget_picks->topLevelItemCount();
-	d_expanded_segments.clear();
+	int count = tree_widget_picks->topLevelItemCount();
+
 	d_segment_expanded_statuses.clear();
-	for (int i = 0; i<amount; ++i)
+	for (int i = 0; i < count; ++i)
 	{
 		d_segment_expanded_statuses.insert(std::make_pair<int,bool>(i,tree_widget_picks->topLevelItem(i)->isExpanded()));
-		if (tree_widget_picks->topLevelItem(i)->isExpanded())
-		{
-			QString position = tree_widget_picks->topLevelItem(i)->text(0);
-			d_expanded_segments.push_back(position);
-
-		}
 	}
 }
 
