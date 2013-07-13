@@ -853,7 +853,7 @@ GPlatesQtWidgets::HellingerDialog::update_result()
 void
 GPlatesQtWidgets::HellingerDialog::show_data_points_on_globe()
 {
-	std::vector<GPlatesMaths::LatLonPoint> data_points = d_hellinger_model->get_pick_points();
+	std::vector<GPlatesMaths::LatLonPoint> data_points = d_hellinger_model->get_error_ellipse_points();
 	if (!data_points.empty())
 	{
 		std::vector<GPlatesMaths::LatLonPoint>::const_iterator iter;

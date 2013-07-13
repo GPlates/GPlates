@@ -305,12 +305,13 @@ GPlatesQtWidgets::HellingerModel::get_com_file() const
 }
 
 void
-GPlatesQtWidgets::HellingerModel::add_data_file()
+GPlatesQtWidgets::HellingerModel::set_error_ellipse_points()
 {
-
+	// TODO:The file-io aspect of this should probably be moved out to
+	// the HellingerReader.
 	QString path = d_python_path+d_active_com_file_struct.d_data_filename;
     QFile data_file(path);
-    std::vector<GPlatesMaths::LatLonPoint> points;
+
     if (data_file.open(QFile::ReadOnly))
     {
 
@@ -320,24 +321,24 @@ GPlatesQtWidgets::HellingerModel::add_data_file()
             QString line = in.readLine();
             QStringList fields = line.split(" ",QString::SkipEmptyParts);
             GPlatesMaths::LatLonPoint llp(fields.at(1).toDouble(),fields.at(0).toDouble());
-            points.push_back(llp);
+			d_error_ellipse_points.push_back(llp);
         }
     }
-    d_points = points;
+
 }
 
 std::vector <GPlatesMaths::LatLonPoint>
-GPlatesQtWidgets::HellingerModel::get_pick_points() const
+GPlatesQtWidgets::HellingerModel::get_error_ellipse_points() const
 {
-    return d_points;
+	return d_error_ellipse_points;
 }
 
 void
 GPlatesQtWidgets::HellingerModel::reset_points()
 {
-	if (!d_points.empty())
+	if (!d_error_ellipse_points.empty())
 	{
-		d_points.clear();
+		d_error_ellipse_points.clear();
 	}
 }
 
@@ -345,7 +346,7 @@ void
 GPlatesQtWidgets::HellingerModel::reset_model()
 {
     d_hellinger_picks.clear();
-    d_points.clear();
+	d_error_ellipse_points.clear();
     reset_com_file_struct();
     reset_fit_struct();
 }
@@ -431,6 +432,7 @@ GPlatesQtWidgets::HellingerModel::get_pick(
 		const int &segment,
 		const int &row) const
 {
+	//TODO: refactor this.
 	hellinger_model_type::const_iterator iter;
 	int n = 0;
 	for (iter = d_hellinger_picks.find(segment); iter != d_hellinger_picks.end(); ++iter )

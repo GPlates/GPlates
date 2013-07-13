@@ -256,11 +256,12 @@ namespace GPlatesQtWidgets
 		get_fit();
 
         void
-		add_data_file();
+		set_error_ellipse_points();
 
         std::vector<GPlatesMaths::LatLonPoint>
-		get_pick_points() const;
+		get_error_ellipse_points() const;
 
+		// TODO: this seems to be redundant now. Check this.
         void
 		set_initial_guess(
 			const QStringList &com_list_fields);
@@ -308,7 +309,7 @@ namespace GPlatesQtWidgets
 		HellingerComFileStructure d_active_com_file_struct;
 		boost::optional<HellingerFitStructure> d_last_result;
 		hellinger_model_type d_hellinger_picks;
-		std::vector<GPlatesMaths::LatLonPoint> d_points;
+		std::vector<GPlatesMaths::LatLonPoint> d_error_ellipse_points;
 
 		// TODO: check if this path is required.
 		QString d_python_path;
