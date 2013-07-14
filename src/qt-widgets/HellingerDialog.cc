@@ -322,7 +322,11 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 	{
 		d_hellinger_model->set_pick_state(segment,row,true);
 	}
+	update_from_model();
 	restore_expanded_status();
+	// TODO: make the pick just activated/deactivated the "selected" pick again. For some reason
+	// this is resetting. Perhaps the "update_from_model" that's doing it; probably just need
+	// to store the index and restore it.
 
 }
 
@@ -421,7 +425,6 @@ GPlatesQtWidgets::HellingerDialog::initialise()
 {
 	update_buttons();
 	update_from_model();
-	restore_expanded_status();
 }
 
 void
@@ -775,8 +778,10 @@ GPlatesQtWidgets::HellingerDialog::update_from_model()
 	tree_widget_picks->clear();
 
 	load_data_from_model();
+
 	update_canvas();
 	update_buttons();
+
 }
 
 
@@ -1283,9 +1288,12 @@ GPlatesQtWidgets::HellingerDialog::store_expanded_status()
 	int count = tree_widget_picks->topLevelItemCount();
 
 	d_segment_expanded_statuses.clear();
-	for (int i = 0; i < count; ++i)
+	qDebug() << "Storing expanded status with" << count << " items.";
+	for (int i = 0 ; i < count; ++i)
 	{
-		d_segment_expanded_statuses.insert(std::make_pair<int,bool>(i,tree_widget_picks->topLevelItem(i)->isExpanded()));
+		int segment = tree_widget_picks->topLevelItem(i)->text(0).toInt();
+		qDebug() << "i: " << i << ", segment: " << segment << ", " << tree_widget_picks->topLevelItem(i)->isExpanded();
+		d_segment_expanded_statuses.insert(std::make_pair<int,bool>(segment,tree_widget_picks->topLevelItem(i)->isExpanded()));
 	}
 }
 
@@ -1294,15 +1302,23 @@ GPlatesQtWidgets::HellingerDialog::restore_expanded_status()
 {
 	int top_level_items = tree_widget_picks->topLevelItemCount();
 
+	qDebug() << "Restoring expanded status with " << top_level_items << " items.";
+	qDebug() << "Items in map: " << d_segment_expanded_statuses.size();
+	QObject::disconnect(tree_widget_picks,SIGNAL(collapsed(QModelIndex)),this,SLOT(store_expanded_status()));
+	QObject::disconnect(tree_widget_picks,SIGNAL(expanded(QModelIndex)),this,SLOT(store_expanded_status()));
 	for (int i = 0; i < top_level_items ; ++i)
 	{
 		int segment = tree_widget_picks->topLevelItem(i)->text(0).toInt();
+		qDebug() << "i: " << i << ", segment: " << segment << ", " << tree_widget_picks->topLevelItem(i)->isExpanded();
 		expanded_status_map_type::const_iterator iter = d_segment_expanded_statuses.find(segment);
 		if (iter != d_segment_expanded_statuses.end())
 		{
+
 			tree_widget_picks->topLevelItem(i)->setExpanded(iter->second);
 		}
 
 	}
+	QObject::connect(tree_widget_picks,SIGNAL(collapsed(QModelIndex)),this,SLOT(store_expanded_status()));
+	QObject::connect(tree_widget_picks,SIGNAL(expanded(QModelIndex)),this,SLOT(store_expanded_status()));
 }
 
