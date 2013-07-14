@@ -383,12 +383,12 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::react_target_layer_sel
 		attributes_list_widget->clear();
 
 		const QString message = tr(
-				"Raster co-registration requires roughly OpenGL 2.0/3.0 compliant graphics "
+				"Raster co-registration requires roughly OpenGL 2.0/3.0 compliant graphics hardware "
 				"(specifically floating-point textures and frame buffer objects).\n\n"
 				"Please select a non-raster layer instead.");
 		QMessageBox::warning(
 				this,
-				tr("Raster co-registration not supported on this system"),
+				tr("Raster co-registration not supported on this graphics hardware"),
 				message,
 				QMessageBox::Ok,
 				QMessageBox::Ok);

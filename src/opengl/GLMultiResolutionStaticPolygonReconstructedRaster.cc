@@ -51,6 +51,7 @@
 #include "GLRenderer.h"
 #include "GLProjectionUtils.h"
 #include "GLShaderProgramUtils.h"
+#include "GLShaderSource.h"
 #include "GLUtils.h"
 #include "GLVertex.h"
 #include "GLViewport.h"
@@ -123,7 +124,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::is_supported(
 			!capabilities.texture.gl_ARB_texture_env_dot3)
 		{
 			qWarning() <<
-					"RECONSTRUCTED rasters NOT supported by this OpenGL system - requires four texture units.\n"
+					"RECONSTRUCTED rasters NOT supported by this graphics hardware - requires four texture units.\n"
 					"  Most graphics hardware for over a decade supports this -\n"
 					"  most likely software renderer fallback has occurred - possibly via remote desktop software.";
 
@@ -213,15 +214,15 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_age_m
 			"#define SURFACE_LIGHTING\n"
 			"#define MAP_VIEW\n";
 
-		GLShaderProgramUtils::ShaderSource fragment_shader_source;
-		fragment_shader_source.add_shader_source_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
-		fragment_shader_source.add_shader_source(shader_defines);
-		fragment_shader_source.add_shader_source_from_file(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+		GLShaderSource fragment_shader_source;
+		fragment_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		fragment_shader_source.add_code_segment(shader_defines);
+		fragment_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
-		GLShaderProgramUtils::ShaderSource vertex_shader_source;
-		vertex_shader_source.add_shader_source_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
-		vertex_shader_source.add_shader_source(shader_defines);
-		vertex_shader_source.add_shader_source_from_file(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
+		GLShaderSource vertex_shader_source;
+		vertex_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		vertex_shader_source.add_code_segment(shader_defines);
+		vertex_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
 
 		// Attempt to create the test shader program.
 		if (!GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
@@ -283,15 +284,15 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::supports_norma
 			// Configure shader for active polygons as that increases complexity.
 			"#define ACTIVE_POLYGONS\n";
 
-		GLShaderProgramUtils::ShaderSource fragment_shader_source;
-		fragment_shader_source.add_shader_source_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
-		fragment_shader_source.add_shader_source(shader_defines);
-		fragment_shader_source.add_shader_source_from_file(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+		GLShaderSource fragment_shader_source;
+		fragment_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		fragment_shader_source.add_code_segment(shader_defines);
+		fragment_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 		
-		GLShaderProgramUtils::ShaderSource vertex_shader_source;
-		vertex_shader_source.add_shader_source_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
-		vertex_shader_source.add_shader_source(shader_defines);
-		vertex_shader_source.add_shader_source_from_file(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
+		GLShaderSource vertex_shader_source;
+		vertex_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		vertex_shader_source.add_code_segment(shader_defines);
+		vertex_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
 
 		// Attempt to create the test shader program.
 		if (!GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
@@ -2902,21 +2903,21 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create_shader_
 		const char *vertex_and_fragment_shader_defines)
 {
 	// Vertex shader source.
-	GLShaderProgramUtils::ShaderSource vertex_shader_source;
+	GLShaderSource vertex_shader_source;
 	// Add the '#define' statements first.
-	vertex_shader_source.add_shader_source(vertex_and_fragment_shader_defines);
+	vertex_shader_source.add_code_segment(vertex_and_fragment_shader_defines);
 	// Then add the GLSL function to rotate by quaternion.
-	vertex_shader_source.add_shader_source_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	vertex_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
 	// Then add the GLSL 'main()' function.
-	vertex_shader_source.add_shader_source_from_file(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
+	vertex_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME);
 
-	GLShaderProgramUtils::ShaderSource fragment_shader_source;
+	GLShaderSource fragment_shader_source;
 	// Add the '#define' statements first.
-	fragment_shader_source.add_shader_source(vertex_and_fragment_shader_defines);
+	fragment_shader_source.add_code_segment(vertex_and_fragment_shader_defines);
 	// Add the bilinear GLSL function for bilinear texture filtering and rotation by quaternion.
-	fragment_shader_source.add_shader_source_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	fragment_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
 	// Then add the GLSL 'main()' function.
-	fragment_shader_source.add_shader_source_from_file(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+	fragment_shader_source.add_code_segment_from_file(RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 	// Link the shader program.
 	boost::optional<GLProgramObject::shared_ptr_type> program_object =

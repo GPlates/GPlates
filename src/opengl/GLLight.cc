@@ -38,6 +38,7 @@
 #include "GLFrameBufferObject.h"
 #include "GLRenderer.h"
 #include "GLShaderProgramUtils.h"
+#include "GLShaderSource.h"
 #include "GLUtils.h"
 
 #include "global/AssertionFailureException.h"
@@ -95,12 +96,12 @@ GPlatesOpenGL::GLLight::is_supported(
 		// such as number of shader instructions allowed.
 		//
 
-		GLShaderProgramUtils::ShaderSource fragment_shader_source;
-		fragment_shader_source.add_shader_source_from_file(
+		GLShaderSource fragment_shader_source;
+		fragment_shader_source.add_code_segment_from_file(
 				RENDER_MAP_VIEW_LIGHT_DIRECTION_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 		
-		GLShaderProgramUtils::ShaderSource vertex_shader_source;
-		vertex_shader_source.add_shader_source_from_file(
+		GLShaderSource vertex_shader_source;
+		vertex_shader_source.add_code_segment_from_file(
 				RENDER_MAP_VIEW_LIGHT_DIRECTION_VERTEX_SHADER_SOURCE_FILE_NAME);
 
 		// Attempt to create the test shader program.
@@ -421,9 +422,9 @@ GPlatesOpenGL::GLLight::create_shader_programs(
 	d_render_map_view_light_direction_program_object =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
-					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+					GLShaderSource::create_shader_source_from_file(
 							RENDER_MAP_VIEW_LIGHT_DIRECTION_VERTEX_SHADER_SOURCE_FILE_NAME),
-					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+					GLShaderSource::create_shader_source_from_file(
 							RENDER_MAP_VIEW_LIGHT_DIRECTION_FRAGMENT_SHADER_SOURCE_FILE_NAME));
 
 	// The client should have called 'is_supported()' which verifies vertex/fragment shader support

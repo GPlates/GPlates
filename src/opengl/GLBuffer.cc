@@ -70,6 +70,11 @@ GPlatesOpenGL::GLBuffer::create_as_auto_ptr(
 		GLRenderer &renderer,
 		const buffers_type &buffer_types)
 {
+	// Make sure at least one buffer type was specified.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			buffer_types.any(),
+			GPLATES_ASSERTION_SOURCE);
+
 	const GLCapabilities &capabilities = renderer.get_capabilities();
 
 	// Create an OpenGL buffer object that supports the specified buffer types if we can.

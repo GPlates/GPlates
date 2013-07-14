@@ -41,7 +41,8 @@
 #include "utils/UnicodeStringUtils.h"
 
 const QString GPlatesAppLogic::ScalarField3DLayerTask::SCALAR_FIELD_FEATURE_CHANNEL_NAME = "Scalar field feature";
-const QString GPlatesAppLogic::ScalarField3DLayerTask::SURFACE_GEOMETRIES_CHANNEL_NAME = "Surface geometries";
+const QString GPlatesAppLogic::ScalarField3DLayerTask::CROSS_SECTIONS_CHANNEL_NAME = "Cross sections";
+const QString GPlatesAppLogic::ScalarField3DLayerTask::SURFACE_POLYGONS_MASK_CHANNEL_NAME = "Surface polygons mask";
 
 
 bool
@@ -79,19 +80,33 @@ GPlatesAppLogic::ScalarField3DLayerTask::get_input_channel_types() const
 					SCALAR_FIELD_FEATURE_CHANNEL_NAME,
 					LayerInputChannelType::ONE_DATA_IN_CHANNEL));
 
-	// Channel definition for the surface geometries:
+	// Channel definition for the cross sections:
 	// - reconstructed geometries, or
 	// - resolved topological dynamic polygons, or
 	// - resolved topological networks.
-	std::vector<LayerTaskType::Type> surface_geometries_input_channel_types;
-	surface_geometries_input_channel_types.push_back(LayerTaskType::RECONSTRUCT);
-	surface_geometries_input_channel_types.push_back(LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER);
-	surface_geometries_input_channel_types.push_back(LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
+	std::vector<LayerTaskType::Type> cross_sections_input_channel_types;
+	cross_sections_input_channel_types.push_back(LayerTaskType::RECONSTRUCT);
+	cross_sections_input_channel_types.push_back(LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER);
+	cross_sections_input_channel_types.push_back(LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					SURFACE_GEOMETRIES_CHANNEL_NAME,
+					CROSS_SECTIONS_CHANNEL_NAME,
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
-					surface_geometries_input_channel_types));
+					cross_sections_input_channel_types));
+
+	// Channel definition for the surface polygons mask:
+	// - reconstructed geometries, or
+	// - resolved topological dynamic polygons, or
+	// - resolved topological networks.
+	std::vector<LayerTaskType::Type> surface_polygons_mask_input_channel_types;
+	surface_polygons_mask_input_channel_types.push_back(LayerTaskType::RECONSTRUCT);
+	surface_polygons_mask_input_channel_types.push_back(LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER);
+	surface_polygons_mask_input_channel_types.push_back(LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
+	input_channel_types.push_back(
+			LayerInputChannelType(
+					SURFACE_POLYGONS_MASK_CHANNEL_NAME,
+					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
+					surface_polygons_mask_input_channel_types));
 
 	return input_channel_types;
 }
@@ -217,7 +232,7 @@ GPlatesAppLogic::ScalarField3DLayerTask::add_input_layer_proxy_connection(
 		const QString &input_channel_name,
 		const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == SURFACE_GEOMETRIES_CHANNEL_NAME)
+	if (input_channel_name == CROSS_SECTIONS_CHANNEL_NAME)
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct,
@@ -228,7 +243,7 @@ GPlatesAppLogic::ScalarField3DLayerTask::add_input_layer_proxy_connection(
 				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructLayerProxy>(layer_proxy);
 		if (reconstruct_layer_proxy)
 		{
-			d_scalar_field_layer_proxy->add_reconstructed_geometries_layer_proxy(
+			d_scalar_field_layer_proxy->add_cross_section_reconstructed_geometries_layer_proxy(
 					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
 		}
 
@@ -236,7 +251,7 @@ GPlatesAppLogic::ScalarField3DLayerTask::add_input_layer_proxy_connection(
 				LayerProxyUtils::get_layer_proxy_derived_type<TopologyGeometryResolverLayerProxy>(layer_proxy);
 		if (topological_boundary_resolver_layer_proxy)
 		{
-			d_scalar_field_layer_proxy->add_topological_boundary_resolver_layer_proxy(
+			d_scalar_field_layer_proxy->add_cross_section_topological_boundary_resolver_layer_proxy(
 					GPlatesUtils::get_non_null_pointer(topological_boundary_resolver_layer_proxy.get()));
 		}
 
@@ -244,7 +259,38 @@ GPlatesAppLogic::ScalarField3DLayerTask::add_input_layer_proxy_connection(
 				LayerProxyUtils::get_layer_proxy_derived_type<TopologyNetworkResolverLayerProxy>(layer_proxy);
 		if (topological_network_resolver_layer_proxy)
 		{
-			d_scalar_field_layer_proxy->add_topological_network_resolver_layer_proxy(
+			d_scalar_field_layer_proxy->add_cross_section_topological_network_resolver_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(topological_network_resolver_layer_proxy.get()));
+		}
+	}
+	else if (input_channel_name == SURFACE_POLYGONS_MASK_CHANNEL_NAME)
+	{
+		// The input layer proxy is one of the following layer proxy types:
+		// - reconstruct,
+		// - topological geometry resolver,
+		// - topological network resolver.
+
+		boost::optional<ReconstructLayerProxy *> reconstruct_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructLayerProxy>(layer_proxy);
+		if (reconstruct_layer_proxy)
+		{
+			d_scalar_field_layer_proxy->add_surface_polygons_mask_reconstructed_geometries_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
+		}
+
+		boost::optional<TopologyGeometryResolverLayerProxy *> topological_boundary_resolver_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<TopologyGeometryResolverLayerProxy>(layer_proxy);
+		if (topological_boundary_resolver_layer_proxy)
+		{
+			d_scalar_field_layer_proxy->add_surface_polygons_mask_topological_boundary_resolver_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(topological_boundary_resolver_layer_proxy.get()));
+		}
+
+		boost::optional<TopologyNetworkResolverLayerProxy *> topological_network_resolver_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<TopologyNetworkResolverLayerProxy>(layer_proxy);
+		if (topological_network_resolver_layer_proxy)
+		{
+			d_scalar_field_layer_proxy->add_surface_polygons_mask_topological_network_resolver_layer_proxy(
 					GPlatesUtils::get_non_null_pointer(topological_network_resolver_layer_proxy.get()));
 		}
 	}
@@ -256,7 +302,7 @@ GPlatesAppLogic::ScalarField3DLayerTask::remove_input_layer_proxy_connection(
 		const QString &input_channel_name,
 				const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == SURFACE_GEOMETRIES_CHANNEL_NAME)
+	if (input_channel_name == CROSS_SECTIONS_CHANNEL_NAME)
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct,
@@ -267,7 +313,7 @@ GPlatesAppLogic::ScalarField3DLayerTask::remove_input_layer_proxy_connection(
 				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructLayerProxy>(layer_proxy);
 		if (reconstruct_layer_proxy)
 		{
-			d_scalar_field_layer_proxy->remove_reconstructed_geometries_layer_proxy(
+			d_scalar_field_layer_proxy->remove_cross_section_reconstructed_geometries_layer_proxy(
 					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
 		}
 
@@ -275,7 +321,7 @@ GPlatesAppLogic::ScalarField3DLayerTask::remove_input_layer_proxy_connection(
 				LayerProxyUtils::get_layer_proxy_derived_type<TopologyGeometryResolverLayerProxy>(layer_proxy);
 		if (topological_boundary_resolver_layer_proxy)
 		{
-			d_scalar_field_layer_proxy->remove_topological_boundary_resolver_layer_proxy(
+			d_scalar_field_layer_proxy->remove_cross_section_topological_boundary_resolver_layer_proxy(
 					GPlatesUtils::get_non_null_pointer(topological_boundary_resolver_layer_proxy.get()));
 		}
 
@@ -283,7 +329,38 @@ GPlatesAppLogic::ScalarField3DLayerTask::remove_input_layer_proxy_connection(
 				LayerProxyUtils::get_layer_proxy_derived_type<TopologyNetworkResolverLayerProxy>(layer_proxy);
 		if (topological_network_resolver_layer_proxy)
 		{
-			d_scalar_field_layer_proxy->remove_topological_network_resolver_layer_proxy(
+			d_scalar_field_layer_proxy->remove_cross_section_topological_network_resolver_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(topological_network_resolver_layer_proxy.get()));
+		}
+	}
+	else if (input_channel_name == SURFACE_POLYGONS_MASK_CHANNEL_NAME)
+	{
+		// The input layer proxy is one of the following layer proxy types:
+		// - reconstruct,
+		// - topological geometry resolver,
+		// - topological network resolver.
+
+		boost::optional<ReconstructLayerProxy *> reconstruct_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructLayerProxy>(layer_proxy);
+		if (reconstruct_layer_proxy)
+		{
+			d_scalar_field_layer_proxy->remove_surface_polygons_mask_reconstructed_geometries_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
+		}
+
+		boost::optional<TopologyGeometryResolverLayerProxy *> topological_boundary_resolver_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<TopologyGeometryResolverLayerProxy>(layer_proxy);
+		if (topological_boundary_resolver_layer_proxy)
+		{
+			d_scalar_field_layer_proxy->remove_surface_polygons_mask_topological_boundary_resolver_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(topological_boundary_resolver_layer_proxy.get()));
+		}
+
+		boost::optional<TopologyNetworkResolverLayerProxy *> topological_network_resolver_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<TopologyNetworkResolverLayerProxy>(layer_proxy);
+		if (topological_network_resolver_layer_proxy)
+		{
+			d_scalar_field_layer_proxy->remove_surface_polygons_mask_topological_network_resolver_layer_proxy(
 					GPlatesUtils::get_non_null_pointer(topological_network_resolver_layer_proxy.get()));
 		}
 	}
@@ -337,6 +414,10 @@ GPlatesAppLogic::ScalarField3DLayerTask::Params::updated_scalar_field_feature()
 	d_scalar_max = boost::none;
 	d_scalar_mean = boost::none;
 	d_scalar_standard_deviation = boost::none;
+	d_gradient_magnitude_min = boost::none;
+	d_gradient_magnitude_max = boost::none;
+	d_gradient_magnitude_mean = boost::none;
+	d_gradient_magnitude_standard_deviation = boost::none;
 
 	// If there is no scalar field feature then clear everything.
 	if (!d_scalar_field_feature)
@@ -375,6 +456,10 @@ GPlatesAppLogic::ScalarField3DLayerTask::Params::updated_scalar_field_feature()
 		d_scalar_max = scalar_field_reader.get_scalar_max();
 		d_scalar_mean = scalar_field_reader.get_scalar_mean();
 		d_scalar_standard_deviation = scalar_field_reader.get_scalar_standard_deviation();
+		d_gradient_magnitude_min = scalar_field_reader.get_gradient_magnitude_min();
+		d_gradient_magnitude_max = scalar_field_reader.get_gradient_magnitude_max();
+		d_gradient_magnitude_mean = scalar_field_reader.get_gradient_magnitude_mean();
+		d_gradient_magnitude_standard_deviation = scalar_field_reader.get_gradient_magnitude_standard_deviation();
 	}
 	catch (GPlatesFileIO::ScalarField3DFileFormat::UnsupportedVersion &exc)
 	{

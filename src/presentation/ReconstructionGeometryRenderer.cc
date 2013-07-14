@@ -265,27 +265,7 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_scalar_field_3d_visual_layer_params(
 		const ScalarField3DVisualLayerParams &params)
 {
-	const GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters &isovalue_parameters =
-			params.get_isovalue_parameters()
-			? params.get_isovalue_parameters().get()
-			: GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters();
-
-	const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction =
-			params.get_depth_restriction()
-			? params.get_depth_restriction().get()
-			: GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction();
-
-	d_render_params.scalar_field_render_parameters =
-			GPlatesViewOperations::ScalarField3DRenderParameters(
-					params.get_render_mode(),
-					params.get_colour_mode(),
-					params.get_colour_palette(),
-					isovalue_parameters,
-					params.get_deviation_window_render_options(),
-					params.get_surface_polygons_mask(),
-					depth_restriction,
-					params.get_quality_performance(),
-					params.get_shader_test_variables());
+	d_render_params.scalar_field_render_parameters = params.get_scalar_field_3d_render_parameters();
 }
 
 

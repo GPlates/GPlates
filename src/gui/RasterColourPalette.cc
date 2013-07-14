@@ -142,21 +142,7 @@ namespace
 
 	const unsigned int NUM_DEFAULT_RASTER_COLOURS =
 		sizeof(DEFAULT_RASTER_COLOURS) / sizeof(Colour);
-
-	// These colours are arbitrary - maybe replace them with colours appropriate
-	// for the type of raster that we have.
-	const Colour USER_RASTER_COLOURS[] = {
-		Colour(0, 0, 1) /* blue - low */,
-		Colour(1, 1, 1) /* white - middle */,
-		Colour(1, 0, 0) /* red - high */
-	};
-
-	const unsigned int NUM_USER_RASTER_COLOURS =
-		sizeof(USER_RASTER_COLOURS) / sizeof(Colour);
 }
-
-
-
 
 
 GPlatesGui::DefaultRasterColourPalette::DefaultRasterColourPalette(
@@ -183,9 +169,9 @@ GPlatesGui::DefaultRasterColourPalette::DefaultRasterColourPalette(
 	for (unsigned int i = 0; i != NUM_DEFAULT_RASTER_COLOURS - 1; ++i)
 	{
 		ColourSlice colour_slice(
-				min + i * range / NUM_DEFAULT_RASTER_COLOURS,
+				min + i * range / (NUM_DEFAULT_RASTER_COLOURS - 1),
 				DEFAULT_RASTER_COLOURS[i],
-				min + (i + 1) * range / NUM_DEFAULT_RASTER_COLOURS,
+				min + (i + 1) * range / (NUM_DEFAULT_RASTER_COLOURS - 1),
 				DEFAULT_RASTER_COLOURS[i + 1]);
 		d_inner_palette->add_entry(colour_slice);
 	}
@@ -338,7 +324,7 @@ GPlatesGui::UserColourPalette::get_upper_bound() const
 }
 
 
-GPlatesGui::DefaultNormalisedRasterColourPalette::DefaultNormalisedRasterColourPalette() :
+GPlatesGui::DefaultScalarFieldScalarColourPalette::DefaultScalarFieldScalarColourPalette() :
 	d_inner_palette(RegularCptColourPalette::create())
 {
 	// [min, max] is the range [0, 1].
@@ -358,24 +344,68 @@ GPlatesGui::DefaultNormalisedRasterColourPalette::DefaultNormalisedRasterColourP
 	for (unsigned int i = 0; i != NUM_DEFAULT_RASTER_COLOURS - 1; ++i)
 	{
 		ColourSlice colour_slice(
-				min + i * range / NUM_DEFAULT_RASTER_COLOURS,
+				min + i * range / (NUM_DEFAULT_RASTER_COLOURS - 1),
 				DEFAULT_RASTER_COLOURS[i],
-				min + (i + 1) * range / NUM_DEFAULT_RASTER_COLOURS,
+				min + (i + 1) * range / (NUM_DEFAULT_RASTER_COLOURS - 1),
 				DEFAULT_RASTER_COLOURS[i + 1]);
 		d_inner_palette->add_entry(colour_slice);
 	}
 }
 
 
-GPlatesGui::DefaultNormalisedRasterColourPalette::non_null_ptr_type
-GPlatesGui::DefaultNormalisedRasterColourPalette::create()
+GPlatesGui::DefaultScalarFieldScalarColourPalette::non_null_ptr_type
+GPlatesGui::DefaultScalarFieldScalarColourPalette::create()
 {
-	return new DefaultNormalisedRasterColourPalette();
+	return new DefaultScalarFieldScalarColourPalette();
 }
 
 
 boost::optional<GPlatesGui::Colour>
-GPlatesGui::DefaultNormalisedRasterColourPalette::get_colour(
+GPlatesGui::DefaultScalarFieldScalarColourPalette::get_colour(
+		double value) const
+{
+	return d_inner_palette->get_colour(value);
+}
+
+
+GPlatesGui::DefaultScalarFieldGradientColourPalette::DefaultScalarFieldGradientColourPalette() :
+	d_inner_palette(RegularCptColourPalette::create())
+{
+	// Background colour, for values before -1.
+	d_inner_palette->set_background_colour(Colour(0, 0, 1) /* blue - high */);
+
+	// Foreground colour, for values after +1.
+	d_inner_palette->set_foreground_colour(Colour(1, 0, 1) /* magenta - high */);
+
+	// Add the colour slices for the range [-1,1].
+	d_inner_palette->add_entry(
+			ColourSlice(
+					-1, Colour(0, 0, 1) /* blue - high gradient magnitude */,
+					-0.5, Colour(0, 1, 1) /* cyan - mid gradient magnitude */));
+	d_inner_palette->add_entry(
+			ColourSlice(
+					-0.5, Colour(0, 1, 1) /* cyan - mid gradient magnitude */,
+					 0, Colour(0, 1, 0) /* green - low gradient magnitude */));
+	d_inner_palette->add_entry(
+			ColourSlice(
+					0, Colour(1, 1, 0) /* yellow - low gradient magnitude */,
+					0.5, Colour(1, 0, 0) /* red - mid gradient magnitude */));
+	d_inner_palette->add_entry(
+			ColourSlice(
+					0.5, Colour(1, 0, 0) /* red - mid gradient magnitude */,
+					1, Colour(1, 0, 1) /* magenta - high gradient magnitude */));
+}
+
+
+GPlatesGui::DefaultScalarFieldGradientColourPalette::non_null_ptr_type
+GPlatesGui::DefaultScalarFieldGradientColourPalette::create()
+{
+	return new DefaultScalarFieldGradientColourPalette();
+}
+
+
+boost::optional<GPlatesGui::Colour>
+GPlatesGui::DefaultScalarFieldGradientColourPalette::get_colour(
 		double value) const
 {
 	return d_inner_palette->get_colour(value);

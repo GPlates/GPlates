@@ -1169,9 +1169,9 @@ namespace GPlatesOpenGL
 		 */
 		void
 		gl_stencil_func(
-				GLenum func,
-				GLint ref,
-				GLuint mask)
+				GLenum func = GL_ALWAYS,
+				GLint ref = GLint(0),
+				GLuint mask = ~0/*all ones*/)
 		{
 			get_current_state()->set_stencil_func(func, ref, mask);
 		}
@@ -1181,9 +1181,9 @@ namespace GPlatesOpenGL
 		 */
 		void
 		gl_stencil_op(
-				GLenum fail,
-				GLenum zfail,
-				GLenum zpass)
+				GLenum fail = GL_KEEP,
+				GLenum zfail = GL_KEEP,
+				GLenum zpass = GL_KEEP)
 		{
 			get_current_state()->set_stencil_op(fail, zfail, zpass);
 		}

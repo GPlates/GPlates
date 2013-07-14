@@ -123,7 +123,7 @@ namespace GPlatesOpenGL
 		 *		   use glDrawBuffer() to switch rendering to different color attachments
 		 *
 		 * ...so we can optimize for the second case above having multiple render targets with
-		 * the same texture format and dimensions share a single frame buffer object.
+		 * the same texture format and dimensions by sharing a single frame buffer object.
 		 * These parameters are specified in this class (@a Classification).
 		 *
 		 */

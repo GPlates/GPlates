@@ -98,6 +98,8 @@ namespace GPlatesGui
 		 * @a surface_occlusion_texture is a viewport-size 2D texture containing the RGBA rendering
 		 * of the surface geometries/rasters on the *front* of the globe.
 		 * It is only used when rendering sub-surface geometries.
+		 * @a improve_performance_reduce_quality_hint a hint to improve performance by presumably
+		 * reducing quality - this is a temporary hint usually during globe rotation mouse drag.
 		 */
 		GlobeRenderedGeometryLayerPainter(
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
@@ -107,7 +109,8 @@ namespace GPlatesGui
 				ColourScheme::non_null_ptr_type colour_scheme,
 				PaintRegionType paint_region,
 				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type>
-						surface_occlusion_texture = boost::none);
+						surface_occlusion_texture = boost::none,
+				bool improve_performance_reduce_quality_hint = false);
 
 
 		/**
@@ -341,6 +344,14 @@ namespace GPlatesGui
 		 * It is only used when rendering sub-surface geometries.
 		 */
 		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> d_surface_occlusion_texture;
+
+		/**
+		 * A hint to improve performance presumably at the cost of quality.
+		 *
+		 * This is currently used to improve rendering performance of 3D scalar field iso-surfaces
+		 * during globe rotation (mouse drag).
+		 */
+		bool d_improve_performance_reduce_quality_hint;
 
 		/**
 		 * Location in cube quad tree (spatial partition) when traversing a rendered geometries spatial partition.

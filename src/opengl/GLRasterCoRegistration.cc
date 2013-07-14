@@ -47,6 +47,7 @@
 #include "GLDataRasterSource.h"
 #include "GLRenderer.h"
 #include "GLShaderProgramUtils.h"
+#include "GLShaderSource.h"
 #include "GLStreamPrimitives.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
@@ -134,7 +135,7 @@ GPlatesOpenGL::GLRasterCoRegistration::is_supported(
 			// It's most likely the graphics hardware doesn't support floating-point textures.
 			// Most hardware that supports it also supports the other OpenGL extensions also.
 			qWarning() <<
-					"Raster co-registration NOT supported by this OpenGL system - requires floating-point texture support.\n"
+					"Raster co-registration NOT supported by this graphics hardware - requires floating-point texture support.\n"
 					"  Your graphics hardware is most likely missing the 'GL_ARB_texture_float' OpenGL extension.";
 			emitted_warning = true;
 		}
@@ -731,11 +732,11 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 		GLRenderer &renderer)
 {
 	// Vertex shader to copy target raster moments into seed sub-viewport with region-of-interest masking.
-	GLShaderProgramUtils::ShaderSource mask_region_of_interest_moments_vertex_shader_source;
+	GLShaderSource mask_region_of_interest_moments_vertex_shader_source;
 	// Add the '#define' first.
-	mask_region_of_interest_moments_vertex_shader_source.add_shader_source("#define FILTER_MOMENTS\n");
+	mask_region_of_interest_moments_vertex_shader_source.add_code_segment("#define FILTER_MOMENTS\n");
 	// Then add the GLSL 'main()' function.
-	mask_region_of_interest_moments_vertex_shader_source.add_shader_source_from_file(
+	mask_region_of_interest_moments_vertex_shader_source.add_code_segment_from_file(
 			MASK_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE_FILE_NAME);
 	// Compile the vertex shader.
 	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_moments_vertex_shader =
@@ -747,11 +748,11 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 			GPLATES_ASSERTION_SOURCE);
 
 	// Fragment shader to copy target raster moments into seed sub-viewport with region-of-interest masking.
-	GLShaderProgramUtils::ShaderSource mask_region_of_interest_moments_fragment_shader_source;
+	GLShaderSource mask_region_of_interest_moments_fragment_shader_source;
 	// Add the '#define' first.
-	mask_region_of_interest_moments_fragment_shader_source.add_shader_source("#define FILTER_MOMENTS\n");
+	mask_region_of_interest_moments_fragment_shader_source.add_code_segment("#define FILTER_MOMENTS\n");
 	// Then add the GLSL 'main()' function.
-	mask_region_of_interest_moments_fragment_shader_source.add_shader_source_from_file(
+	mask_region_of_interest_moments_fragment_shader_source.add_code_segment_from_file(
 			MASK_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader.
 	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_moments_fragment_shader =
@@ -765,19 +766,19 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	boost::optional<GLProgramObject::shared_ptr_type> mask_region_of_interest_moments_program_object =
 			GLShaderProgramUtils::link_vertex_fragment_program(
 					renderer,
-					*mask_region_of_interest_moments_vertex_shader.get(),
-					*mask_region_of_interest_moments_fragment_shader.get());
+					mask_region_of_interest_moments_vertex_shader.get(),
+					mask_region_of_interest_moments_fragment_shader.get());
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			mask_region_of_interest_moments_program_object,
 			GPLATES_ASSERTION_SOURCE);
 	d_mask_region_of_interest_moments_program_object = mask_region_of_interest_moments_program_object.get();
 
 	// Vertex shader to copy target raster min/max into seed sub-viewport with region-of-interest masking.
-	GLShaderProgramUtils::ShaderSource mask_region_of_interest_minmax_vertex_shader_source;
+	GLShaderSource mask_region_of_interest_minmax_vertex_shader_source;
 	// Add the '#define' first.
-	mask_region_of_interest_minmax_vertex_shader_source.add_shader_source("#define FILTER_MIN_MAX\n");
+	mask_region_of_interest_minmax_vertex_shader_source.add_code_segment("#define FILTER_MIN_MAX\n");
 	// Then add the GLSL 'main()' function.
-	mask_region_of_interest_minmax_vertex_shader_source.add_shader_source_from_file(
+	mask_region_of_interest_minmax_vertex_shader_source.add_code_segment_from_file(
 			MASK_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE_FILE_NAME);
 	// Compile the vertex shader.
 	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_minmax_vertex_shader =
@@ -789,11 +790,11 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 			GPLATES_ASSERTION_SOURCE);
 
 	// Fragment shader to copy target raster min/max into seed sub-viewport with region-of-interest masking.
-	GLShaderProgramUtils::ShaderSource mask_region_of_interest_minmax_fragment_shader_source;
+	GLShaderSource mask_region_of_interest_minmax_fragment_shader_source;
 	// Add the '#define' first.
-	mask_region_of_interest_minmax_fragment_shader_source.add_shader_source("#define FILTER_MIN_MAX\n");
+	mask_region_of_interest_minmax_fragment_shader_source.add_code_segment("#define FILTER_MIN_MAX\n");
 	// Then add the GLSL 'main()' function.
-	mask_region_of_interest_minmax_fragment_shader_source.add_shader_source_from_file(
+	mask_region_of_interest_minmax_fragment_shader_source.add_code_segment_from_file(
 			MASK_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader.
 	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_minmax_fragment_shader =
@@ -807,8 +808,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	boost::optional<GLProgramObject::shared_ptr_type> mask_region_of_interest_minmax_program_object =
 			GLShaderProgramUtils::link_vertex_fragment_program(
 					renderer,
-					*mask_region_of_interest_minmax_vertex_shader.get(),
-					*mask_region_of_interest_minmax_fragment_shader.get());
+					mask_region_of_interest_minmax_vertex_shader.get(),
+					mask_region_of_interest_minmax_fragment_shader.get());
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			mask_region_of_interest_minmax_program_object,
 			GPLATES_ASSERTION_SOURCE);
@@ -924,21 +925,21 @@ GPlatesOpenGL::GLRasterCoRegistration::create_region_of_interest_shader_program(
 		const char *fragment_shader_defines)
 {
 	// Vertex shader source.
-	GLShaderProgramUtils::ShaderSource vertex_shader_source;
+	GLShaderSource vertex_shader_source;
 	// Add the '#define'.
-	vertex_shader_source.add_shader_source(vertex_shader_defines);
+	vertex_shader_source.add_code_segment(vertex_shader_defines);
 	// Then add the GLSL function to rotate by quaternion.
-	vertex_shader_source.add_shader_source_from_file(
+	vertex_shader_source.add_code_segment_from_file(
 			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
 	// Then add the GLSL 'main()' function.
-	vertex_shader_source.add_shader_source_from_file(
+	vertex_shader_source.add_code_segment_from_file(
 			RENDER_REGION_OF_INTEREST_GEOMETRIES_VERTEX_SHADER_SOURCE_FILE_NAME);
 
-	GLShaderProgramUtils::ShaderSource fragment_shader_source;
+	GLShaderSource fragment_shader_source;
 	// Add the '#define' first.
-	fragment_shader_source.add_shader_source(fragment_shader_defines);
+	fragment_shader_source.add_code_segment(fragment_shader_defines);
 	// Then add the GLSL 'main()' function.
-	fragment_shader_source.add_shader_source_from_file(
+	fragment_shader_source.add_code_segment_from_file(
 			RENDER_REGION_OF_INTEREST_GEOMETRIES_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 	// Link the shader program.
@@ -964,18 +965,18 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 	boost::optional<GLShaderObject::shared_ptr_type> reduction_vertex_shader =
 			GLShaderProgramUtils::compile_vertex_shader(
 					renderer,
-					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+					GLShaderSource::create_shader_source_from_file(
 							REDUCTION_OF_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE_FILE_NAME));
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			reduction_vertex_shader ,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Fragment shader to calculate the sum of region-of-interest filter results.
-	GLShaderProgramUtils::ShaderSource reduction_sum_fragment_shader_source;
+	GLShaderSource reduction_sum_fragment_shader_source;
 	// Add the '#define' first.
-	reduction_sum_fragment_shader_source.add_shader_source("#define REDUCTION_SUM\n");
+	reduction_sum_fragment_shader_source.add_code_segment("#define REDUCTION_SUM\n");
 	// Then add the GLSL 'main()' function.
-	reduction_sum_fragment_shader_source.add_shader_source_from_file(
+	reduction_sum_fragment_shader_source.add_code_segment_from_file(
 			REDUCTION_OF_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader to calculate the sum of region-of-interest filter results.
 	boost::optional<GLShaderObject::shared_ptr_type> reduction_sum_fragment_shader =
@@ -989,19 +990,19 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 	boost::optional<GLProgramObject::shared_ptr_type> reduction_sum_program_object =
 			GLShaderProgramUtils::link_vertex_fragment_program(
 					renderer,
-					*reduction_vertex_shader.get(),
-					*reduction_sum_fragment_shader.get());
+					reduction_vertex_shader.get(),
+					reduction_sum_fragment_shader.get());
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			reduction_sum_program_object,
 			GPLATES_ASSERTION_SOURCE);
 	d_reduction_sum_program_object = reduction_sum_program_object.get();
 
 	// Fragment shader to calculate the minimum of region-of-interest filter results.
-	GLShaderProgramUtils::ShaderSource reduction_min_fragment_shader_source;
+	GLShaderSource reduction_min_fragment_shader_source;
 	// Add the '#define' first.
-	reduction_min_fragment_shader_source.add_shader_source("#define REDUCTION_MIN\n");
+	reduction_min_fragment_shader_source.add_code_segment("#define REDUCTION_MIN\n");
 	// Then add the GLSL 'main()' function.
-	reduction_min_fragment_shader_source.add_shader_source_from_file(
+	reduction_min_fragment_shader_source.add_code_segment_from_file(
 			REDUCTION_OF_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader to calculate the minimum of region-of-interest filter results.
 	boost::optional<GLShaderObject::shared_ptr_type> reduction_min_fragment_shader =
@@ -1015,19 +1016,19 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 	boost::optional<GLProgramObject::shared_ptr_type> reduction_min_program_object =
 			GLShaderProgramUtils::link_vertex_fragment_program(
 					renderer,
-					*reduction_vertex_shader.get(),
-					*reduction_min_fragment_shader.get());
+					reduction_vertex_shader.get(),
+					reduction_min_fragment_shader.get());
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			reduction_min_program_object,
 			GPLATES_ASSERTION_SOURCE);
 	d_reduction_min_program_object = reduction_min_program_object.get();
 
 	// Fragment shader to calculate the maximum of region-of-interest filter results.
-	GLShaderProgramUtils::ShaderSource reduction_max_fragment_shader_source;
+	GLShaderSource reduction_max_fragment_shader_source;
 	// Add the '#define' first.
-	reduction_max_fragment_shader_source.add_shader_source("#define REDUCTION_MAX\n");
+	reduction_max_fragment_shader_source.add_code_segment("#define REDUCTION_MAX\n");
 	// Then add the GLSL 'main()' function.
-	reduction_max_fragment_shader_source.add_shader_source_from_file(
+	reduction_max_fragment_shader_source.add_code_segment_from_file(
 			REDUCTION_OF_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader to calculate the maximum of region-of-interest filter results.
 	boost::optional<GLShaderObject::shared_ptr_type> reduction_max_fragment_shader =
@@ -1041,8 +1042,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 	boost::optional<GLProgramObject::shared_ptr_type> reduction_max_program_object =
 			GLShaderProgramUtils::link_vertex_fragment_program(
 					renderer,
-					*reduction_vertex_shader.get(),
-					*reduction_max_fragment_shader.get());
+					reduction_vertex_shader.get(),
+					reduction_max_fragment_shader.get());
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			reduction_max_program_object,
 			GPLATES_ASSERTION_SOURCE);

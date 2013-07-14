@@ -49,7 +49,10 @@ GPlatesGui::GlobeCanvasTool::reorient_globe_by_drag_update(
 		d_globe_ptr->set_new_handle_pos(initial_pos_on_globe);
 		d_is_in_reorientation_op = true;
 	}
-	d_globe_ptr->update_handle_pos(current_pos_on_globe);
+	// Note that we only set 'in_mouse_drag' to true when we know the release event will
+	// set it back to false, otherwise it could get stuck in the mouse drag state.
+	// Which is why it's set to true here but not in 'rotate_globe_by_drag_update()'.
+	d_globe_ptr->update_handle_pos(current_pos_on_globe, true/*in_mouse_drag*/);
 }
 
 

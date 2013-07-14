@@ -121,12 +121,15 @@ namespace GPlatesGui
 		 * @param viewport_zoom_factor is used for rendering view-dependent geometries.
 		 * @param surface_occlusion_texture is a viewport-size 2D texture containing the RGBA rendering
 		 * of the surface geometries/rasters on the *front* of the globe.
+		 * @param improve_performance_reduce_quality_hint a hint to improve performance by presumably
+		 * reducing quality - this is a temporary hint usually during globe rotation mouse drag.
 		 */
 		cache_handle_type
 		paint_sub_surface(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const double &viewport_zoom_factor,
-				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture);
+				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture,
+				bool improve_performance_reduce_quality_hint = false);
 
 		void
 		set_scale(
@@ -170,12 +173,14 @@ namespace GPlatesGui
 					const double &viewport_zoom_factor,
 					GlobeRenderedGeometryLayerPainter::PaintRegionType paint_region,
 					boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type>
-							surface_occlusion_texture = boost::none);
+							surface_occlusion_texture = boost::none,
+					bool improve_performance_reduce_quality_hint = false);
 
 			GPlatesOpenGL::GLRenderer *d_renderer;
 			double d_inverse_viewport_zoom_factor;
 			GlobeRenderedGeometryLayerPainter::PaintRegionType d_paint_region;
 			boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> d_surface_occlusion_texture;
+			bool d_improve_performance_reduce_quality_hint;
 
 			// Cache of rendered geometry layers.
 			boost::shared_ptr<std::vector<cache_handle_type> > d_cache_handle;

@@ -139,7 +139,7 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 	if (!GPlatesOpenGL::GLDataRasterSource::is_supported(renderer))
 	{
 		qWarning() << "RasterLayerProxy::get_multi_resolution_data_raster: "
-			"Floating-point textures not supported on this OpenGL system.";
+			"Floating-point textures not supported on this graphics hardware.";
 		return boost::none;
 	}
 

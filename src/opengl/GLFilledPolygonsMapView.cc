@@ -78,7 +78,7 @@ GPlatesOpenGL::GLFilledPolygonsMapView::render(
 		if (!emitted_warning)
 		{
 			qWarning() <<
-					"Filled polygons NOT supported by this OpenGL system - \n"
+					"Filled polygons NOT supported by this graphics hardware - \n"
 					"  requires stencil buffer - Most graphics hardware for over a decade supports this.";
 			emitted_warning = true;
 		}

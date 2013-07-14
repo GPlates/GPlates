@@ -37,6 +37,7 @@
 #include "opengl/GLLight.h"
 #include "opengl/GLRenderer.h"
 #include "opengl/GLShaderProgramUtils.h"
+#include "opengl/GLShaderSource.h"
 #include "opengl/GLText.h"
 
 #include "utils/Profile.h"
@@ -101,18 +102,18 @@ GPlatesGui::LayerPainter::initialise(
 
 	const char *globe_view_shader_defines = "";
 
-	GPlatesOpenGL::GLShaderProgramUtils::ShaderSource globe_view_vertex_shader_source;
-	globe_view_vertex_shader_source.add_shader_source(globe_view_shader_defines);
-	globe_view_vertex_shader_source.add_shader_source_from_file(
+	GPlatesOpenGL::GLShaderSource globe_view_vertex_shader_source;
+	globe_view_vertex_shader_source.add_code_segment(globe_view_shader_defines);
+	globe_view_vertex_shader_source.add_code_segment_from_file(
 			GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
-	globe_view_vertex_shader_source.add_shader_source_from_file(
+	globe_view_vertex_shader_source.add_code_segment_from_file(
 			RENDER_POINT_LINE_POLYGON_LIGHTING_VERTEX_SHADER);
 
-	GPlatesOpenGL::GLShaderProgramUtils::ShaderSource globe_view_fragment_shader_source;
-	globe_view_fragment_shader_source.add_shader_source(globe_view_shader_defines);
-	globe_view_fragment_shader_source.add_shader_source_from_file(
+	GPlatesOpenGL::GLShaderSource globe_view_fragment_shader_source;
+	globe_view_fragment_shader_source.add_code_segment(globe_view_shader_defines);
+	globe_view_fragment_shader_source.add_code_segment_from_file(
 			GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
-	globe_view_fragment_shader_source.add_shader_source_from_file(
+	globe_view_fragment_shader_source.add_code_segment_from_file(
 			RENDER_POINT_LINE_POLYGON_LIGHTING_FRAGMENT_SHADER);
 
 	d_render_point_line_polygon_lighting_in_globe_view_program_object =
@@ -127,18 +128,18 @@ GPlatesGui::LayerPainter::initialise(
 
 	const char *map_view_shader_defines = "#define MAP_VIEW\n";
 
-	GPlatesOpenGL::GLShaderProgramUtils::ShaderSource map_view_vertex_shader_source;
-	map_view_vertex_shader_source.add_shader_source(map_view_shader_defines);
-	map_view_vertex_shader_source.add_shader_source_from_file(
+	GPlatesOpenGL::GLShaderSource map_view_vertex_shader_source;
+	map_view_vertex_shader_source.add_code_segment(map_view_shader_defines);
+	map_view_vertex_shader_source.add_code_segment_from_file(
 			GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
-	map_view_vertex_shader_source.add_shader_source_from_file(
+	map_view_vertex_shader_source.add_code_segment_from_file(
 			RENDER_POINT_LINE_POLYGON_LIGHTING_VERTEX_SHADER);
 
-	GPlatesOpenGL::GLShaderProgramUtils::ShaderSource map_view_fragment_shader_source;
-	map_view_fragment_shader_source.add_shader_source(map_view_shader_defines);
-	map_view_fragment_shader_source.add_shader_source_from_file(
+	GPlatesOpenGL::GLShaderSource map_view_fragment_shader_source;
+	map_view_fragment_shader_source.add_code_segment(map_view_shader_defines);
+	map_view_fragment_shader_source.add_code_segment_from_file(
 			GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
-	map_view_fragment_shader_source.add_shader_source_from_file(
+	map_view_fragment_shader_source.add_code_segment_from_file(
 			RENDER_POINT_LINE_POLYGON_LIGHTING_FRAGMENT_SHADER);
 
 	d_render_point_line_polygon_lighting_in_map_view_program_object =

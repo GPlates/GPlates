@@ -35,6 +35,8 @@
 #include "LayerOptionsWidget.h"
 #include "OpenFileDialog.h"
 
+#include "gui/ColourPalette.h"
+
 #include "view-operations/ScalarField3DRenderParameters.h"
 
 
@@ -95,14 +97,62 @@ namespace GPlatesQtWidgets
 				bool checked);
 
 		void
-		handle_colour_mode_button(
+		handle_isosurface_deviation_window_mode_button(
 				bool checked);
 
 		void
-		handle_select_palette_filename_button_clicked();
+		handle_isosurface_colour_mode_button(
+				bool checked);
 
 		void
-		handle_use_default_palette_button_clicked();
+		handle_cross_sections_colour_mode_button(
+				bool checked);
+
+		void
+		handle_select_scalar_palette_filename_button_clicked();
+
+		void
+		handle_use_default_scalar_palette_button_clicked();
+
+		void
+		handle_scalar_palette_range_check_box_changed();
+
+		void
+		handle_scalar_palette_spinbox_changed(
+				double value);
+
+		void
+		handle_scalar_palette_range_restore_min_max_button_clicked();
+
+		void
+		handle_scalar_palette_range_restore_mean_deviation_button_clicked();
+
+		void
+		handle_scalar_palette_range_restore_mean_deviation_spinbox_changed(
+				double value);
+
+		void
+		handle_select_gradient_palette_filename_button_clicked();
+
+		void
+		handle_use_default_gradient_palette_button_clicked();
+
+		void
+		handle_gradient_palette_range_check_box_changed();
+
+		void
+		handle_gradient_palette_spinbox_changed(
+				double value);
+
+		void
+		handle_gradient_palette_range_restore_min_max_button_clicked();
+
+		void
+		handle_gradient_palette_range_restore_mean_deviation_button_clicked();
+
+		void
+		handle_gradient_palette_range_restore_mean_deviation_spinbox_changed(
+				double value);
 
 		void
 		handle_isovalue_spinbox_changed(
@@ -156,6 +206,9 @@ namespace GPlatesQtWidgets
 				int value);
 
 		void
+		handle_improve_performance_during_globe_rotation_check_box_changed();
+
+		void
 		handle_test_variable_spinbox_changed(
 				double value);
 
@@ -168,10 +221,23 @@ namespace GPlatesQtWidgets
 				QWidget *parent_);
 
 		void
-		disable_options_for_default_visual_layer_params();
+		enable_disable_options_for_visual_layer_params(
+				const GPlatesViewOperations::ScalarField3DRenderParameters &scalar_field_render_parameters);
 
 		std::pair<double, double>
 		get_scalar_value_min_max(
+				GPlatesAppLogic::Layer &layer) const;
+
+		std::pair<double, double>
+		get_scalar_value_mean_std_dev(
+				GPlatesAppLogic::Layer &layer) const;
+
+		std::pair<double, double>
+		get_gradient_magnitude_min_max(
+				GPlatesAppLogic::Layer &layer) const;
+
+		std::pair<double, double>
+		get_gradient_magnitude_mean_std_dev(
 				GPlatesAppLogic::Layer &layer) const;
 
 		int
@@ -184,6 +250,11 @@ namespace GPlatesQtWidgets
 		get_depth_min_max(
 				GPlatesAppLogic::Layer &layer) const;
 
+		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type>
+		load_colour_palette(
+				const QString &palette_file_name,
+				std::pair<double, double> &colour_palette_range);
+
 
 		/**
 		 * The number of QDoubleSpinBox's used for shader test variables.
@@ -195,9 +266,11 @@ namespace GPlatesQtWidgets
 		GPlatesPresentation::ViewState &d_view_state;
 		ViewportWindow *d_viewport_window;
 
-		FriendlyLineEdit *d_palette_filename_lineedit;
+		FriendlyLineEdit *d_scalar_palette_filename_lineedit;
+		FriendlyLineEdit *d_gradient_palette_filename_lineedit;
 		OpenFileDialog d_open_file_dialog;
-		ColourScaleWidget *d_colour_scale_widget;
+		ColourScaleWidget *d_scalar_colour_scale_widget;
+		ColourScaleWidget *d_gradient_colour_scale_widget;
 
 		std::vector<float> d_shader_test_variables;
 

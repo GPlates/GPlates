@@ -323,20 +323,19 @@ namespace GPlatesOpenGL
 					const GPlatesAppLogic::ScalarField3DLayerProxy::non_null_ptr_type &scalar_field_layer_proxy);
 
 			/**
-			 * Set the colour palette looked up by the scalar values or the gradient magnitudes.
-			 */
-			void
-			set_scalar_field_colour_palette(
-					const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &scalar_field_colour_palette);
-
-			/**
 			 * Returns scalar field - rebuilds if out-of-date with respect to its dependencies.
+			 *
+			 * The colour palette can be for scalar values or gradient magnitude or none for colouring
+			 * modes that don't require a palette.
+			 * @a colour_palette_value_range specifies the [min, max] range of the values used in the palette.
 			 *
 			 * Returns false if the scalar field could not be uninitialised.
 			 */
 			boost::optional<GLScalarField3D::non_null_ptr_type>
 			get_scalar_field_3d(
 					GLRenderer &renderer,
+					boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type> colour_palette,
+					boost::optional< std::pair<double, double> > colour_palette_value_range,
 					boost::optional<GLLight::non_null_ptr_type> light);
 
 			virtual
@@ -349,8 +348,8 @@ namespace GPlatesOpenGL
 			GPlatesUtils::ObserverToken d_scalar_field_observer_token;
 			GPlatesUtils::ObserverToken d_scalar_field_feature_observer_token;
 
-			GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type d_colour_palette;
-			bool d_colour_palette_dirty;
+			boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type> d_colour_palette;
+			boost::optional< std::pair<double, double> > d_colour_palette_value_range;
 
 			boost::optional<GLScalarField3D::non_null_ptr_type> d_scalar_field;
 		};

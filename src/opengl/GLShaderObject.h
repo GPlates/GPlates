@@ -33,11 +33,11 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <opengl/OpenGL.h>
-#include <QByteArray>
 
 #include "GLObject.h"
 #include "GLObjectResource.h"
 #include "GLObjectResourceManager.h"
+#include "GLShaderSource.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -113,39 +113,40 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * GLSL shader versions.
+		 * Represents information of one (of potentially many) shader code segments.
 		 *
-		 * This is used instead of specifying "#version 120" for example.
-		 * This is because the "#version" directive must come before any non-commented source code.
-		 * But this becomes difficult with multiple source code segments because usually the
-		 * "#version" directive is placed in the segment defining the 'main()' shader function and
-		 * this usually is the last segment (because it uses other shader segments and hence they
-		 * must be defined first).
-		 * So the solution used here is this class will create a "#version" shader segment and add
-		 * it as the first shader segment which means it should not be defined in any supplied
-		 * shader segments.
+		 * This is primarily used to locate the source of compile errors.
 		 */
-		enum ShaderVersion
+		struct SourceCodeSegment
 		{
-			GLSL_1_1, // Corresponds to OpenGL version 2.0
-			GLSL_1_2, // Corresponds to OpenGL version 2.1
-			GLSL_1_3, // Corresponds to OpenGL version 3.0
-			GLSL_1_4, // Corresponds to OpenGL version 3.1
-			GLSL_1_5, // Corresponds to OpenGL version 3.2
-			GLSL_3_3, // Corresponds to OpenGL version 3.3
-			GLSL_4_0, // Corresponds to OpenGL version 4.0
-			GLSL_4_1, // Corresponds to OpenGL version 4.1
-			GLSL_4_2,  // Corresponds to OpenGL version 4.2
+			explicit
+			SourceCodeSegment(
+					const GLShaderSource::CodeSegment &source_code_segment);
 
-			NUM_SHADER_VERSIONS // This must be last.
+			unsigned int num_lines;
+
+			//! Source filename is valid if code segment loaded from a file, otherwise was loaded from a string.
+			boost::optional<QString> source_file_name;
 		};
 
 		/**
-		 * The default shader version to compile.
-		 *
-		 * Version 1.2 is chosen instead of 1.1 since most hardware supporting OpenGL 2.0 also supports OpenGL 2.1.
+		 * Locates a *file* code segment within the concatenated source code.
 		 */
-		static const ShaderVersion DEFAULT_SHADER_VERSION = GLSL_1_2;
+		struct FileCodeSegment
+		{
+			FileCodeSegment(
+					unsigned int first_line_number_,
+					unsigned int last_line_number_,
+					QString filename_) :
+				first_line_number(first_line_number_),
+				last_line_number(last_line_number_),
+				filename(filename_)
+			{  }
+
+			unsigned int first_line_number;
+			unsigned int last_line_number;
+			QString filename;
+		};
 
 
 		/**
@@ -194,46 +195,12 @@ namespace GPlatesOpenGL
 		/**
 		 * Performs same function as the glShaderSource OpenGL function.
 		 *
-		 * Each string in @a source_strings is an (ordered) subsection of the shader source code.
+		 * Each string, or code segment, in @a shader_source is an (ordered) subsection of the shader source code.
 		 */
 		void
 		gl_shader_source(
 				GLRenderer &renderer,
-				const std::vector<const char *> &source_strings,
-				ShaderVersion shader_version = DEFAULT_SHADER_VERSION);
-
-		/**
-		 * Performs same function as the glShaderSource OpenGL function.
-		 *
-		 * Each string in @a source_strings is an (ordered) subsection of the shader source code.
-		 */
-		void
-		gl_shader_source(
-				GLRenderer &renderer,
-				const std::vector<QByteArray> &source_strings,
-				ShaderVersion shader_version = DEFAULT_SHADER_VERSION);
-
-		/**
-		 * Performs same function as the glShaderSource OpenGL function.
-		 *
-		 * A convenience overload of @a gl_shader_source when only one source string is provided.
-		 */
-		void
-		gl_shader_source(
-				GLRenderer &renderer,
-				const char *source_string,
-				ShaderVersion shader_version = DEFAULT_SHADER_VERSION);
-
-		/**
-		 * Performs same function as the glShaderSource OpenGL function.
-		 *
-		 * A convenience overload of @a gl_shader_source when only one source string is provided.
-		 */
-		void
-		gl_shader_source(
-				GLRenderer &renderer,
-				const QByteArray &source_string,
-				ShaderVersion shader_version = DEFAULT_SHADER_VERSION);
+				const GLShaderSource &shader_source);
 
 
 		/**
@@ -249,6 +216,27 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Returns the shader source set with @a gl_shader_source, or boost::none if it hasn't been called.
+		 *
+		 * All shader source code segments of the shader source are returned (in compiled order).
+		 */
+		const boost::optional< std::vector<SourceCodeSegment> > &
+		get_source_code_segments() const
+		{
+			return d_source_code_segments;
+		}
+
+
+		/**
+		 * Similar to @a get_source_code_segments except only returns code segment that came
+		 * from files and returns the line number range of the code segment within the concatenated
+		 * shader source code.
+		 */
+		std::vector<FileCodeSegment>
+		get_file_code_segments() const;
+
+
+		/**
 		 * Returns the shader resource handle.
 		 *
 		 * NOTE: This is a lower-level function used to help implement the OpenGL framework.
@@ -260,16 +248,20 @@ namespace GPlatesOpenGL
 		}
 
 	private:
+
 		resource_type::non_null_ptr_to_const_type d_resource;
 
-		//! Shader source version strings.
-		static const char *SHADER_VERSION_STRINGS[NUM_SHADER_VERSIONS];
+		//! Source code segments set by @a gl_shader_source.
+		boost::optional< std::vector<SourceCodeSegment> > d_source_code_segments;
 
 
 		//! Constructor.
 		GLShaderObject(
 				GLRenderer &renderer,
 				GLenum shader_type);
+
+		void
+		output_info_log();
 	};
 }
 

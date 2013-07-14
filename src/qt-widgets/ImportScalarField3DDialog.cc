@@ -233,7 +233,8 @@ GPlatesQtWidgets::ImportScalarField3DDialog::display(
 	{
 		QString message;
 		QTextStream(&message)
-				<< tr("Error: Cannot import or render scalar fields on this system - necessary OpenGL functionality missing.\n");
+				<< tr("Error: Cannot import or render scalar fields on this graphics hardware - "
+					"necessary OpenGL functionality missing.\n");
 		QMessageBox::critical(&d_viewport_window, tr("Error Importing Scalar Field"), message,
 				QMessageBox::Ok, QMessageBox::Ok);
 		qWarning() << message; // Also log the detailed error message.

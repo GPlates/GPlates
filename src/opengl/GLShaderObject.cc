@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/scoped_array.hpp>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
  * Must be included before the OpenGL headers (which also means before Qt headers).
@@ -30,13 +31,13 @@
  */
 #include <GL/glew.h>
 #include <opengl/OpenGL.h>
-#include <boost/scoped_array.hpp>
 #include <QDebug>
 
 #include "GLShaderObject.h"
 
 #include "GLContext.h"
 #include "GLRenderer.h"
+#include "GLShaderSource.h"
 #include "OpenGLException.h"
 
 #include "global/AssertionFailureException.h"
@@ -75,20 +76,6 @@ GPlatesOpenGL::GLShaderObject::Allocator::deallocate(
 {
 	glDeleteObjectARB(shader_object);
 }
-
-
-const char *GPlatesOpenGL::GLShaderObject::SHADER_VERSION_STRINGS[GPlatesOpenGL::GLShaderObject::NUM_SHADER_VERSIONS] =
-{
-	"#version 110\n",
-	"#version 120\n",
-	"#version 130\n",
-	"#version 140\n",
-	"#version 150 compatibility\n",
-	"#version 330 compatibility\n",
-	"#version 400 compatibility\n",
-	"#version 410 compatibility\n",
-	"#version 420 compatibility\n"
-};
 
 
 bool
@@ -150,80 +137,34 @@ GPlatesOpenGL::GLShaderObject::GLShaderObject(
 void
 GPlatesOpenGL::GLShaderObject::gl_shader_source(
 		GLRenderer &renderer,
-		const std::vector<const char *> &source_strings,
-		ShaderVersion shader_version)
+		const GLShaderSource &shader_source)
 {
-	if (source_strings.empty())
-	{
-		return;
-	}
+	const std::vector<GLShaderSource::CodeSegment> &source_code_segments =
+			shader_source.get_code_segments();
 
-	// For some reason glShaderSourceARB accepts a *non*-const pointer to an array of strings.
-	// So we have to copy the caller's 'const' array.
-	// We have to do it anyway since we're also adding the shader version string.
-	std::vector<const char *> strings;
-	strings.reserve(source_strings.size() + 1);
-
-	// Add the shader version string first (it needs to come before any non-commented source code).
-	strings.push_back(SHADER_VERSION_STRINGS[shader_version]);
-
-	// Add the caller's shader source segments.
-	strings.insert(strings.end(), source_strings.begin(), source_strings.end());
-
-	// 'length' is NULL indicating the source strings are null-terminated.
-	glShaderSourceARB(get_shader_resource_handle(), strings.size(), &strings[0], NULL);
-}
-
-
-void
-GPlatesOpenGL::GLShaderObject::gl_shader_source(
-		GLRenderer &renderer,
-		const std::vector<QByteArray> &source_strings,
-		ShaderVersion shader_version)
-{
-	const GLsizei count = source_strings.size();
+	const GLsizei count = source_code_segments.size();
 	if (count == 0)
 	{
+		d_source_code_segments = boost::none;
 		return;
 	}
 
 	// Allocate an array of 'char' string pointers.
-	boost::scoped_array<const GLchar *> strings(new const GLchar *[count + 1]);
-
-	// Add the shader version string first (it needs to come before any non-commented source code).
-	strings[0] = SHADER_VERSION_STRINGS[shader_version];
+	boost::scoped_array<const GLchar *> strings(new const GLchar *[count]);
 
 	// Add the caller's shader source segments.
+	d_source_code_segments = std::vector<SourceCodeSegment>();
 	for (GLsizei n = 0; n < count; ++n)
 	{
-		strings[n + 1] = source_strings[n].constData();
+		strings[n] = source_code_segments[n].source_code.constData();
+
+		// Also keep track of relevant information about each source code segment in case
+		// we fail to compile (and hence can print out files and line numbers to lookup).
+		d_source_code_segments->push_back(SourceCodeSegment(source_code_segments[n]));
 	}
 
 	// 'length' is NULL indicating the source strings are null-terminated.
-	glShaderSourceARB(get_shader_resource_handle(), count + 1, strings.get(), NULL);
-}
-
-
-void
-GPlatesOpenGL::GLShaderObject::gl_shader_source(
-		GLRenderer &renderer,
-		const char *source_string,
-		ShaderVersion shader_version)
-{
-	gl_shader_source(
-			renderer,
-			std::vector<const char *>(1, source_string),
-			shader_version);
-}
-
-
-void
-GPlatesOpenGL::GLShaderObject::gl_shader_source(
-		GLRenderer &renderer,
-		const QByteArray &source_string,
-		ShaderVersion shader_version)
-{
-	gl_shader_source(renderer, source_string.constData(), shader_version);
+	glShaderSourceARB(get_shader_resource_handle(), count, strings.get(), NULL);
 }
 
 
@@ -231,6 +172,11 @@ bool
 GPlatesOpenGL::GLShaderObject::gl_compile_shader(
 		GLRenderer &renderer)
 {
+	// 'gl_shader_source()' should have been called first.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_source_code_segments,
+			GPLATES_ASSERTION_SOURCE);
+
 	const resource_handle_type shader_resource_handle = get_shader_resource_handle();
 
 	glCompileShaderARB(shader_resource_handle);
@@ -239,24 +185,104 @@ GPlatesOpenGL::GLShaderObject::gl_compile_shader(
 	GLint compile_status;
 	glGetObjectParameterivARB(shader_resource_handle, GL_OBJECT_COMPILE_STATUS_ARB, &compile_status);
 
-	// Log a compile diagnostic message if compilation was unsuccessful.
+	// If the compilation was unsuccessful then log a compile diagnostic message.
 	if (!compile_status)
 	{
-		// Determine the length of the info log message.
-		GLint info_log_length;
-		glGetObjectParameterivARB(shader_resource_handle, GL_OBJECT_INFO_LOG_LENGTH_ARB, &info_log_length);
-
-		// Allocate and read the info log message.
-		boost::scoped_array<GLcharARB> info_log(new GLcharARB[info_log_length]);
-		glGetInfoLogARB(shader_resource_handle, info_log_length, NULL, info_log.get());
-		// ...the returned string is null-terminated.
-
-		// Log the shader info log.
-		qDebug() << "Unable to compile OpenGL shader source code: ";
-		qDebug() << info_log.get();
+		output_info_log();
 
 		return false;
 	}
 
 	return true;
+}
+
+
+std::vector<GPlatesOpenGL::GLShaderObject::FileCodeSegment>
+GPlatesOpenGL::GLShaderObject::get_file_code_segments() const
+{
+	// 'gl_shader_source()' should have been called first.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_source_code_segments,
+			GPLATES_ASSERTION_SOURCE);
+
+	std::vector<FileCodeSegment> file_code_segments;
+
+	// Iterate over the source code segments that were compiled together (in order) and find
+	// any code segments that were loaded from a file.
+	unsigned int cumulative_line_number = 0;
+	const unsigned int num_code_segments = d_source_code_segments->size();
+	for (unsigned int code_segment_index = 0; code_segment_index < num_code_segments; ++code_segment_index)
+	{
+		const SourceCodeSegment &source_code_segment = d_source_code_segments->at(code_segment_index);
+
+		if (source_code_segment.source_file_name)
+		{
+			file_code_segments.push_back(
+					FileCodeSegment(
+							cumulative_line_number,
+							cumulative_line_number + source_code_segment.num_lines - 1,
+							source_code_segment.source_file_name.get()));
+		}
+
+		cumulative_line_number += source_code_segment.num_lines;
+	}
+
+	return file_code_segments;
+}
+
+
+void
+GPlatesOpenGL::GLShaderObject::output_info_log()
+{
+	// Iterate over the source code segments that were compiled together (in order) and find
+	// any code segments that were loaded from a file.
+	const std::vector<FileCodeSegment> file_code_segments = get_file_code_segments();
+
+	// Log the shader info log.
+
+	// If some of the shader code segments came from files then print that information to
+	// help locate the line number in GLSL error message.
+	if (!file_code_segments.empty())
+	{
+		qDebug() << "Unable to compile OpenGL shader source code consisting of the following file code segments: ";
+
+		const unsigned int num_file_code_segments = file_code_segments.size();
+		for (unsigned int file_code_segment_index = 0;
+			file_code_segment_index < num_file_code_segments;
+			++file_code_segment_index)
+		{
+			const FileCodeSegment &file_code_segment = file_code_segments[file_code_segment_index];
+
+			qDebug() << "  '" << file_code_segment.filename
+				<< "' maps to line range [" << file_code_segment.first_line_number
+				<< "," << file_code_segment.last_line_number
+				<< "] in concatenated shader source.";
+		}
+	}
+	else
+	{
+		qDebug() << "Unable to compile OpenGL shader source code consisting of string literals: ";
+	}
+
+	const resource_handle_type shader_resource_handle = get_shader_resource_handle();
+
+	// Determine the length of the info log message.
+	GLint info_log_length;
+	glGetObjectParameterivARB(shader_resource_handle, GL_OBJECT_INFO_LOG_LENGTH_ARB, &info_log_length);
+
+	// Allocate and read the info log message.
+	boost::scoped_array<GLcharARB> info_log(new GLcharARB[info_log_length]);
+	glGetInfoLogARB(shader_resource_handle, info_log_length, NULL, info_log.get());
+	// ...the returned string is null-terminated.
+
+	qDebug() << endl << info_log.get() << endl;
+}
+
+
+GPlatesOpenGL::GLShaderObject::SourceCodeSegment::SourceCodeSegment(
+		const GLShaderSource::CodeSegment &source_code_segment) :
+	num_lines(source_code_segment.num_lines),
+	source_file_name(source_code_segment.source_file_name)
+{
+	// We avoid copying the source code to save a little memory.
 }

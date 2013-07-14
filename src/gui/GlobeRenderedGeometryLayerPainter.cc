@@ -122,7 +122,8 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme,
 		PaintRegionType paint_region,
-		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture) :
+		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture,
+		bool improve_performance_reduce_quality_hint) :
 	d_rendered_geometry_layer(rendered_geometry_layer),
 	d_inverse_zoom_factor(inverse_viewport_zoom_factor),
 	d_render_settings(render_settings),
@@ -130,7 +131,8 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter
 	d_colour_scheme(colour_scheme),
 	d_scale(1.0f),
 	d_paint_region(paint_region),
-	d_surface_occlusion_texture(surface_occlusion_texture)
+	d_surface_occlusion_texture(surface_occlusion_texture),
+	d_improve_performance_reduce_quality_hint(improve_performance_reduce_quality_hint)
 {
 }
 
@@ -530,11 +532,34 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_resolved_scalar_fi
 		return;
 	}
 
+	GPlatesViewOperations::ScalarField3DRenderParameters render_params(
+			rendered_resolved_scalar_field.get_render_parameters());
+
+	// If we have been hinted to improve performance and the user has enabled this for the
+	// current layer then reduce the sampling rate (at the cost of quality).
+	// This is typically done during globe rotation when the mouse is dragged.
+	if (d_improve_performance_reduce_quality_hint)
+	{
+		GPlatesViewOperations::ScalarField3DRenderParameters::QualityPerformance quality_performance =
+				render_params.get_quality_performance();
+		if (quality_performance.enable_reduce_rate_during_drag_globe)
+		{
+			quality_performance.sampling_rate /= quality_performance.reduce_rate_during_drag_globe;
+
+			// Keep the sampling rate above a minimum threshold.
+			if (quality_performance.sampling_rate < 10)
+			{
+				quality_performance.sampling_rate = 10;
+			}
+		}
+		render_params.set_quality_performance(quality_performance);
+	}
+
 	// Queue the scalar field for painting.
 	d_layer_painter->scalar_fields.push_back(
 			LayerPainter::ScalarField3DDrawable(
 					rendered_resolved_scalar_field.get_resolved_scalar_field_3d(),
-					rendered_resolved_scalar_field.get_render_parameters()));
+					render_params));
 }
 
 

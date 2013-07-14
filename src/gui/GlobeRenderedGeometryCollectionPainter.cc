@@ -166,7 +166,8 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::cache_handle_type
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint_sub_surface(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const double &viewport_zoom_factor,
-		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture)
+		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture,
+		bool improve_performance_reduce_quality_hint)
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_globe_state_scope(renderer);
@@ -176,7 +177,8 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint_sub_surface(
 			renderer,
 			viewport_zoom_factor,
 			GlobeRenderedGeometryLayerPainter::PAINT_SUB_SURFACE,
-			surface_occlusion_texture);
+			surface_occlusion_texture,
+			improve_performance_reduce_quality_hint);
 
 	// Draw the layers.
 	d_rendered_geometry_collection.accept_visitor(*this);
@@ -220,7 +222,8 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 			d_visibility_tester,
 			d_colour_scheme,
 			d_paint_params->d_paint_region,
-			d_paint_params->d_surface_occlusion_texture);
+			d_paint_params->d_surface_occlusion_texture,
+			d_paint_params->d_improve_performance_reduce_quality_hint);
 	rendered_geom_layer_painter.set_scale(d_scale);
 
 	// Paint the layer.
@@ -292,11 +295,13 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::PaintParams::PaintParams(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const double &viewport_zoom_factor,
 		GlobeRenderedGeometryLayerPainter::PaintRegionType paint_region,
-		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture) :
+		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture,
+		bool improve_performance_reduce_quality_hint) :
 	d_renderer(&renderer),
 	d_inverse_viewport_zoom_factor(1.0 / viewport_zoom_factor),
 	d_paint_region(paint_region),
 	d_surface_occlusion_texture(surface_occlusion_texture),
+	d_improve_performance_reduce_quality_hint(improve_performance_reduce_quality_hint),
 	d_cache_handle(new std::vector<cache_handle_type>()),
 	// Default to RECONSTRUCTION_LAYER (we set it before visiting each layer anyway) ...
 	d_main_rendered_layer_type(GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)

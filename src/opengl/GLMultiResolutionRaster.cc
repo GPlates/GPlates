@@ -52,6 +52,7 @@
 #include "GLRenderer.h"
 #include "GLScalarFieldDepthLayersSource.h"
 #include "GLShaderProgramUtils.h"
+#include "GLShaderSource.h"
 #include "GLUtils.h"
 #include "GLVertex.h"
 
@@ -112,7 +113,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::supports_normal_map_source(
 			!renderer.get_capabilities().shader.gl_ARB_fragment_shader)
 		{
 			qWarning() <<
-					"Normal map raster lighting NOT supported by this OpenGL system.\n"
+					"Normal map raster lighting NOT supported by this graphics hardware.\n"
 					"  Requires vertex/fragment shader programs.";
 			return false;
 		}
@@ -125,16 +126,16 @@ GPlatesOpenGL::GLMultiResolutionRaster::supports_normal_map_source(
 		// program regardless on the complexity of the shader.
 		//
 
-		GLShaderProgramUtils::ShaderSource fragment_shader_source;
-		fragment_shader_source.add_shader_source("#define SURFACE_NORMALS\n");
-		fragment_shader_source.add_shader_source_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+		GLShaderSource fragment_shader_source;
+		fragment_shader_source.add_code_segment("#define SURFACE_NORMALS\n");
+		fragment_shader_source.add_code_segment_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 		// Attempt to create the test shader program.
 		if (!GLShaderProgramUtils::compile_and_link_fragment_program(
 				renderer, fragment_shader_source))
 		{
 			qWarning() <<
-					"Normal map raster lighting NOT supported by this OpenGL system.\n"
+					"Normal map raster lighting NOT supported by this graphics hardware.\n"
 					"  Unable to compile and link shader program.";
 			return false;
 		}
@@ -180,9 +181,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::supports_scalar_field_depth_layers_sourc
 		// complexity of the shader.
 		//
 
-		GLShaderProgramUtils::ShaderSource fragment_shader_source;
-		fragment_shader_source.add_shader_source("#define SCALAR_GRADIENT\n");
-		fragment_shader_source.add_shader_source_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+		GLShaderSource fragment_shader_source;
+		fragment_shader_source.add_code_segment("#define SCALAR_GRADIENT\n");
+		fragment_shader_source.add_code_segment_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 		// Attempt to create the test shader program.
 		if (!GLShaderProgramUtils::compile_and_link_fragment_program(
@@ -1386,13 +1387,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 	// in a cube raster (which is decoupled from the raster geo-referencing or tangent-space).
 	if (dynamic_cast<GLNormalMapSource *>(d_raster_source.get()))
 	{
-		GLShaderProgramUtils::ShaderSource fragment_shader_source;
+		GLShaderSource fragment_shader_source;
 
 		// Configure shader for converting tangent-space surface normals to world-space.
-		fragment_shader_source.add_shader_source("#define SURFACE_NORMALS\n");
+		fragment_shader_source.add_code_segment("#define SURFACE_NORMALS\n");
 
 		// Finally add the GLSL 'main()' function.
-		fragment_shader_source.add_shader_source_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+		fragment_shader_source.add_code_segment_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 		d_render_raster_program_object =
 				GLShaderProgramUtils::compile_and_link_fragment_program(
@@ -1407,13 +1408,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 	}
 	else if (dynamic_cast<GLScalarFieldDepthLayersSource *>(d_raster_source.get()))
 	{
-		GLShaderProgramUtils::ShaderSource fragment_shader_source;
+		GLShaderSource fragment_shader_source;
 
 		// Configure shader for completing the gradient calculation for a scalar field.
-		fragment_shader_source.add_shader_source("#define SCALAR_GRADIENT\n");
+		fragment_shader_source.add_code_segment("#define SCALAR_GRADIENT\n");
 
 		// Finally add the GLSL 'main()' function.
-		fragment_shader_source.add_shader_source_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+		fragment_shader_source.add_code_segment_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 		d_render_raster_program_object =
 				GLShaderProgramUtils::compile_and_link_fragment_program(
@@ -1446,13 +1447,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 		// (rectified in 10.6) so instead we'll just use the programmable pipeline whenever it's
 		// available (and all platforms that support GL_ARB_texture_float should also support shaders).
 
-		GLShaderProgramUtils::ShaderSource fragment_shader_source;
+		GLShaderSource fragment_shader_source;
 
 		// Configure shader for floating-point rasters.
-		fragment_shader_source.add_shader_source("#define SOURCE_RASTER_IS_FLOATING_POINT\n");
+		fragment_shader_source.add_code_segment("#define SOURCE_RASTER_IS_FLOATING_POINT\n");
 
 		// Finally add the GLSL 'main()' function.
-		fragment_shader_source.add_shader_source_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+		fragment_shader_source.add_code_segment_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 		d_render_raster_program_object =
 				GLShaderProgramUtils::compile_and_link_fragment_program(
@@ -2448,8 +2449,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::RenderSphereNormals
 		GLRenderer &renderer) :
 	d_vertex_array(GLVertexArray::create(renderer))
 {
-	GLShaderProgramUtils::ShaderSource fragment_shader_source;
-	fragment_shader_source.add_shader_source_from_file(RENDER_SPHERE_NORMALS_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+	GLShaderSource fragment_shader_source;
+	fragment_shader_source.add_code_segment_from_file(RENDER_SPHERE_NORMALS_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 	d_program_object =
 			GLShaderProgramUtils::compile_and_link_fragment_program(

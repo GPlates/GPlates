@@ -104,6 +104,34 @@ namespace GPlatesAppLogic
 				return d_scalar_standard_deviation;
 			}
 
+			//! Returns the minimum gradient magnitude across the entire scalar field or none if no field.
+			boost::optional<double>
+			get_gradient_magnitude_min() const
+			{
+				return d_gradient_magnitude_min;
+			}
+
+			//! Returns the maximum gradient magnitude across the entire scalar field or none if no field.
+			boost::optional<double>
+			get_gradient_magnitude_max() const
+			{
+				return d_gradient_magnitude_max;
+			}
+
+			//! Returns the mean gradient magnitude across the entire scalar field or none if no field.
+			boost::optional<double>
+			get_gradient_magnitude_mean() const
+			{
+				return d_gradient_magnitude_mean;
+			}
+
+			//! Returns the standard deviation of gradient magnitudes across the entire scalar field or none if no field.
+			boost::optional<double>
+			get_gradient_magnitude_standard_deviation() const
+			{
+				return d_gradient_magnitude_standard_deviation;
+			}
+
 		private:
 
 			//! The scalar field feature.
@@ -116,6 +144,11 @@ namespace GPlatesAppLogic
 			boost::optional<double> d_scalar_max;
 			boost::optional<double> d_scalar_mean;
 			boost::optional<double> d_scalar_standard_deviation;
+
+			boost::optional<double> d_gradient_magnitude_min;
+			boost::optional<double> d_gradient_magnitude_max;
+			boost::optional<double> d_gradient_magnitude_mean;
+			boost::optional<double> d_gradient_magnitude_standard_deviation;
 
 			Params();
 
@@ -227,7 +260,8 @@ namespace GPlatesAppLogic
 	private:
 
 		static const QString SCALAR_FIELD_FEATURE_CHANNEL_NAME;
-		static const QString SURFACE_GEOMETRIES_CHANNEL_NAME;
+		static const QString CROSS_SECTIONS_CHANNEL_NAME;
+		static const QString SURFACE_POLYGONS_MASK_CHANNEL_NAME;
 
 
 		/**

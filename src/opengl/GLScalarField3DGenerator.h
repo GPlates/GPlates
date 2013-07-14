@@ -28,13 +28,16 @@
 
 #include <vector>
 #include <boost/optional.hpp>
+#include <QDataStream>
 #include <QString>
 
 #include "GLMultiResolutionRaster.h"
+#include "GLPixelBuffer.h"
 #include "GLScalarFieldDepthLayersSource.h"
 #include "GLTexture.h"
 
 #include "file-io/ReadErrors.h"
+#include "file-io/ScalarField3DFileFormat.h"
 
 #include "property-values/Georeferencing.h"
 
@@ -156,11 +159,6 @@ namespace GPlatesOpenGL
 		initialise_cube_face_dimension(
 				GLRenderer &renderer);
 
-		GLTexture::shared_ptr_type
-		create_cube_tile_texture(
-				GLRenderer &renderer,
-				unsigned int tile_resolution);
-
 		void
 		report_recoverable_error(
 				GPlatesFileIO::ReadErrorAccumulation *read_errors,
@@ -170,6 +168,32 @@ namespace GPlatesOpenGL
 		report_failure_to_begin(
 				GPlatesFileIO::ReadErrorAccumulation *read_errors,
 				GPlatesFileIO::ReadErrors::Description description);
+
+		void
+		generate_scalar_field_depth_tile(
+				GLRenderer &renderer,
+				QDataStream &out,
+				unsigned int depth_layer_index,
+				const std::vector<GLMultiResolutionRaster::tile_handle_type> &source_raster_tile_handles,
+				const GLPixelBuffer::shared_ptr_type &pixel_buffer,
+				unsigned int tile_resolution,
+				double &tile_scalar_min,
+				double &tile_scalar_max,
+				double &scalar_min,
+				double &scalar_max,
+				double &scalar_sum,
+				double &scalar_sum_squares,
+				double &gradient_magnitude_min,
+				double &gradient_magnitude_max,
+				double &gradient_magnitude_sum,
+				double &gradient_magnitude_sum_squares);
+
+		void
+		generate_scalar_field_tile_mask(
+				GLRenderer &renderer,
+				const GLPixelBuffer::shared_ptr_type &pixel_buffer,
+				unsigned int tile_resolution,
+				std::vector<GPlatesFileIO::ScalarField3DFileFormat::MaskDataSample> &mask_data_array);
 	};
 }
 

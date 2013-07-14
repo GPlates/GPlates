@@ -30,6 +30,7 @@ set(srcs
     ColourNameSet.h
     ColourPalette.h
     ColourPaletteAdapter.h
+    ColourPaletteRangeRemapper.h
     ColourPaletteVisitor.h
     ColourProxy.cc
     ColourProxy.h
