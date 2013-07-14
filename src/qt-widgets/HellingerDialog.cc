@@ -143,7 +143,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 
 	set_up_connections();
 
-	//FIXME: think about when we should deactivate this layer....and/or do we make it an orthogonal layer?
+	//TODO: think about when we should deactivate this layer....and/or do we make it an orthogonal layer?
 	d_view_state.get_rendered_geometry_collection().set_main_layer_active(
 				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_TOOL_LAYER);
 	d_hellinger_layer.set_active();
@@ -201,32 +201,6 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 		const QItemSelection & new_selection,
 		const QItemSelection & old_selection)
 {
-	//TODO: Refactor this method
-	qDebug() << "Selection changed.";
-
-	if (new_selection.empty())
-	{
-		// Nothing selected:
-		qDebug() << "Nothing selected";
-		set_buttons_for_no_selection();
-	}
-	else if (tree_widget_picks->currentItem()->text(1).isEmpty()) // Segment selected
-	{
-		qDebug() << "Segment selected";
-		set_buttons_for_segment_selected();
-	}
-	else // pick selected
-	{
-		qDebug() << "Pick selected";
-		const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
-		QString segment = tree_widget_picks->currentItem()->text(0);
-		int row = index.row();
-		int segment_int = segment.toInt();
-		bool state = d_hellinger_model->get_pick_state(segment_int, row);
-
-		set_buttons_for_pick_selected(state);
-	}
-
 	// if we have selected a pick:
 	//		get its state and update the enable/disable buttons
 	//		enable the edit/remove-pick buttons
@@ -240,6 +214,25 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 	// If nothing is selected:
 	//	 disable everything (except the new pick / new segment buttons - which are always enabled anyway)
 
+	if (new_selection.empty())
+	{
+		// Nothing selected:
+		set_buttons_for_no_selection();
+	}
+	else if (tree_widget_picks->currentItem()->text(1).isEmpty()) // Segment selected
+	{
+		set_buttons_for_segment_selected();
+	}
+	else // pick selected
+	{
+		const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
+		QString segment = tree_widget_picks->currentItem()->text(0);
+		int row = index.row();
+		int segment_int = segment.toInt();
+		bool state = d_hellinger_model->get_pick_state(segment_int, row);
+
+		set_buttons_for_pick_selected(state);
+	}
 
 	// Update the highlighted (if any) point. Begin by resetting the hellinger layer
 	// on the canvas.
@@ -290,48 +283,19 @@ void
 GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 {
 	store_expanded_status();
-	// TODO: Refactor this method.
+
 	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
-	QString segment = tree_widget_picks->currentItem()->text(0);
+	int segment = tree_widget_picks->currentItem()->text(0).toInt();
 	int row = index.row();
-	int segment_int = segment.toInt();
-	QStringList get_data_line = d_hellinger_model->get_pick_as_string(segment_int, row);
-	QStringList data_to_model;
-	QString segment_str = get_data_line.at(0);
-	QString move_fix = get_data_line.at(1);
-	QString lat = get_data_line.at(2);
-	QString lon = get_data_line.at(3);
-	QString uncert = get_data_line.at(4);
 
-	bool state = d_hellinger_model->get_pick_state(segment_int, row);
-	if (state)
+	bool enabled = d_hellinger_model->get_pick_state(segment, row);
+	if (enabled)
 	{
-		if (move_fix == "1")
-		{
-			move_fix = QString("%1").arg(DISABLED_MOVING_PICK_TYPE);
-			data_to_model << move_fix << segment_str << lat << lon << uncert;
-			d_hellinger_model->remove_pick(segment_int,row);
-			d_hellinger_model->add_pick(data_to_model);
-			update_from_model();
-		}
-		else if (move_fix == "2")
-		{
-			move_fix = QString("%1").arg(DISABLED_FIXED_PICK_TYPE);
-			data_to_model << move_fix << segment_str << lat << lon << uncert;
-			d_hellinger_model->remove_pick(segment_int,row);
-			d_hellinger_model->add_pick(data_to_model);
-			update_from_model();
-		}
-
+		d_hellinger_model->set_pick_state(segment,row,false);
 	}
-	else if (!state)
+	else
 	{
-		QString change_state = "0";
-		data_to_model << move_fix << segment_str << lat << lon << uncert;
-		//        qDebug()<<data_to_model<<change_state;
-		d_hellinger_model->remove_pick(segment_int,row);
-		d_hellinger_model->add_pick(data_to_model);
-		update_from_model();
+		d_hellinger_model->set_pick_state(segment,row,true);
 	}
 	restore_expanded_status();
 
