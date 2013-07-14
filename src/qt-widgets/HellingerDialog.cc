@@ -66,6 +66,31 @@ namespace{
 		UNCERTAINTY
 	};
 
+	/**
+	 * @brief translate_segment_type
+	 *	Convert MOVING/DISABLED_MOVING types to a QString form of MOVING; similarly for FIXED/DISABLED_FIXED.
+	 * @param type
+	 * @return
+	 */
+	QString
+	translate_segment_type(
+			GPlatesQtWidgets::HellingerPickType type)
+	{
+		switch(type)
+		{
+		case GPlatesQtWidgets::MOVING_PICK_TYPE:
+		case GPlatesQtWidgets::DISABLED_MOVING_PICK_TYPE:
+			return QString::number(GPlatesQtWidgets::MOVING_PICK_TYPE);
+			break;
+		case GPlatesQtWidgets::FIXED_PICK_TYPE:
+		case GPlatesQtWidgets::DISABLED_FIXED_PICK_TYPE:
+			return QString::number(GPlatesQtWidgets::FIXED_PICK_TYPE);
+			break;
+		default:
+			return QString();
+		}
+	}
+
 	void
 	add_pick_to_segment(
 			QTreeWidgetItem *parent_item,
@@ -74,7 +99,7 @@ namespace{
 	{
 		QTreeWidgetItem *item = new QTreeWidgetItem();
 		item->setText(SEGMENT_NUMBER, QString::number(segment_number));
-		item->setText(SEGMENT_TYPE, QString::number(pick.d_segment_type));
+		item->setText(SEGMENT_TYPE, translate_segment_type(pick.d_segment_type));
 		item->setText(LAT, QString::number(pick.d_lat));
 		item->setText(LON, QString::number(pick.d_lon));
 		item->setText(UNCERTAINTY, QString::number(pick.d_uncertainty));
