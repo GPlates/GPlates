@@ -55,6 +55,15 @@
 const double SLIDER_MULTIPLIER = -10000.;
 const int SYMBOL_SIZE = 2;
 
+// TODO: when cancelling the "new segment" action, return to the new segment dialog instead of to the main dialog.
+// TODO: when inserting a new point, set the segment number to the current active segment number, or segment
+// number of the current active point.
+// TODO: when editing a segment, don't present the action dialog - just replace the current segment. Unless the user
+// has changed the segment number.
+// TODO: expand a newly editied / created segment.
+// TODO: expand a segment to which we've just added a point.
+// TODO: check that error ellipses are always displayed (Carmen reported this wasn't happening sometimes).
+
 namespace{
 
 	enum PickColumns
