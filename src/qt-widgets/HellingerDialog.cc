@@ -62,7 +62,6 @@ const int SYMBOL_SIZE = 2;
 // has changed the segment number.
 // TODO: expand a newly editied / created segment.
 // TODO: expand a segment to which we've just added a point.
-// TODO: check that error ellipses are always displayed (Carmen reported this wasn't happening sometimes).
 
 namespace{
 

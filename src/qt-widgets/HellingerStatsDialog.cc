@@ -43,7 +43,7 @@ GPlatesQtWidgets::HellingerStatsDialog::HellingerStatsDialog(
 		d_python_path(python_path)
 {
 	setupUi(this);
-    QObject::connect(button_save_file, SIGNAL(clicked()), this, SLOT(save_file()));		
+	QObject::connect(button_export, SIGNAL(clicked()), this, SLOT(save_file()));
 }
 
 void
