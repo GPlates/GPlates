@@ -55,7 +55,7 @@ GPlatesQtWidgets::HellingerNewSegmentWarning::HellingerNewSegmentWarning(
 
 
 	QObject::connect(button_ok, SIGNAL(clicked()), this, SLOT(handle_ok()));
-	QObject::connect(button_cancel, SIGNAL(clicked()), this, SLOT(reject()));
+	QObject::connect(button_cancel, SIGNAL(clicked()), this, SLOT(handle_cancel()));
 	QObject::connect(&d_button_group, SIGNAL(buttonClicked(QAbstractButton*)),this,SLOT(handle_button_clicked()));
 
 	button_ok->setEnabled(false);
@@ -100,6 +100,11 @@ GPlatesQtWidgets::HellingerNewSegmentWarning::handle_button_clicked()
 	button_ok->setEnabled(true);
 }
 
+void
+GPlatesQtWidgets::HellingerNewSegmentWarning::handle_cancel()
+{
+	d_type_error_new_segment = ACTION_CANCEL;
+}
 
 
 

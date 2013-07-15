@@ -55,7 +55,6 @@
 const double SLIDER_MULTIPLIER = -10000.;
 const int SYMBOL_SIZE = 2;
 
-// TODO: when cancelling the "new segment" action, return to the new segment dialog instead of to the main dialog.
 // TODO: when inserting a new point, set the segment number to the current active segment number, or segment
 // number of the current active point.
 // TODO: when editing a segment, don't present the action dialog - just replace the current segment. Unless the user
@@ -1184,6 +1183,9 @@ GPlatesQtWidgets::HellingerDialog::reorder_picks()
 	tree_widget_picks->clear();
 	load_data_from_model();
 	button_renumber->setEnabled(false);
+
+	// TODO: if we want to restore the expanded status here we'll need to
+	// correct it for the re-ordered segments.
 	restore_expanded_status();
 }
 

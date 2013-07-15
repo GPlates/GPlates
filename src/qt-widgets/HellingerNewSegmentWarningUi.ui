@@ -133,8 +133,8 @@
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>246</x>
-     <y>193</y>
+     <x>362</x>
+     <y>209</y>
     </hint>
     <hint type="destinationlabel">
      <x>191</x>
@@ -146,15 +146,15 @@
    <sender>button_ok</sender>
    <signal>clicked()</signal>
    <receiver>HellingerNewSegmentWarning</receiver>
-   <slot>reject()</slot>
+   <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>326</x>
-     <y>193</y>
+     <x>415</x>
+     <y>191</y>
     </hint>
     <hint type="destinationlabel">
-     <x>191</x>
-     <y>109</y>
+     <x>389</x>
+     <y>30</y>
     </hint>
    </hints>
   </connection>

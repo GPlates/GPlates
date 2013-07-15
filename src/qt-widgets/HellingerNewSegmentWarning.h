@@ -37,7 +37,8 @@ namespace GPlatesQtWidgets
     {
 		ACTION_ADD_NEW_SEGMENT = 1,
 		ACTION_REPLACE_NEW_SEGMENT,
-		ACTION_INSERT_NEW_SEGMENT
+		ACTION_INSERT_NEW_SEGMENT,
+		ACTION_CANCEL
     };
 
     class HellingerDialog;
@@ -72,6 +73,9 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_button_clicked();
+
+		void
+		handle_cancel();
 
 	private:
 	

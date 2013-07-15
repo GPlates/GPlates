@@ -5,7 +5,7 @@
  * $Revision: 240 $
  * $Date: 2012-02-27 17:30:31 +0100 (Mon, 27 Feb 2012) $ 
  * 
- * Copyright (C) 2011, 2012 Geological Survey of Norway
+ * Copyright (C) 2011, 2012, 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -52,7 +52,7 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS: 
 
 		void
-        save_file();
+		handle_export();
 
 	private:
 		QString d_python_path;

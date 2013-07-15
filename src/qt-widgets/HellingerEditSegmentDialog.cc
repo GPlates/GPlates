@@ -203,6 +203,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::add_segment_to_model()
 		d_hellinger_model_ptr->add_pick(pick,segment);
 	}
 	d_hellinger_dialog_ptr->update_from_model();
+	reject();
 }
 
 void

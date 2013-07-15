@@ -378,6 +378,7 @@ GPlatesQtWidgets::HellingerModel::reset_fit_struct()
 void
 GPlatesQtWidgets::HellingerModel::reorder_picks()
 {
+	// TODO: I suspect this algorithm could be simplified: investigate.
 	hellinger_model_type::const_iterator iter;
 	hellinger_model_type new_map;
     int num_segment = 0;

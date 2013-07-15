@@ -5,7 +5,7 @@
  * $Revision: 240 $
  * $Date: 2012-02-27 17:30:31 +0100 (Mon, 27 Feb 2012) $ 
  * 
- * Copyright (C) 2011, 2012 Geological Survey of Norway
+ * Copyright (C) 2011, 2012, 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -23,14 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <fstream>
-#include <iostream>
-#include <list>
-#include <string>
-
 #include <QDebug>
 #include <QFileDialog>
-#include <QLocale>
 #include <QTextStream>
 
 #include "HellingerStatsDialog.h"
@@ -43,7 +37,7 @@ GPlatesQtWidgets::HellingerStatsDialog::HellingerStatsDialog(
 		d_python_path(python_path)
 {
 	setupUi(this);
-	QObject::connect(button_export, SIGNAL(clicked()), this, SLOT(save_file()));
+	QObject::connect(button_export, SIGNAL(clicked()), this, SLOT(handle_export()));
 }
 
 void
@@ -65,14 +59,13 @@ GPlatesQtWidgets::HellingerStatsDialog::update()
 			textEdit->append(line);
         }
         while (!line.isNull());
-		textEdit->append("To calculate additional fit statistics, press the ""Calculate Statistics"" button");
     }
 }
 
 void
-GPlatesQtWidgets::HellingerStatsDialog::save_file()
+GPlatesQtWidgets::HellingerStatsDialog::handle_export()
 {
-    QString file_name = QFileDialog::getSaveFileName(this, tr("Save File"), "",
+	QString file_name = QFileDialog::getSaveFileName(this, tr("Export File"), "",
                                                      tr("Text Files (*.txt);"));
     QString path = file_name;
     QFile file_out(path);
@@ -88,7 +81,7 @@ GPlatesQtWidgets::HellingerStatsDialog::save_file()
             do
             {
                 line = in.readLine();
-                out<<line<<"\n";
+				out << line<< "\n";
             }
             while (!line.isNull());
         }
