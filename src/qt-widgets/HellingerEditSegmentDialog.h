@@ -129,6 +129,12 @@ namespace GPlatesQtWidgets
 	private:
 
 		void
+		handle_edited_segment();
+
+		void
+		handle_new_segment();
+
+		void
 		set_initial_row_values(const int &row);
 
 		void

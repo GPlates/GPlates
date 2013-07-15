@@ -124,72 +124,15 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::handle_add_segment()
 	// check for this here and suggest the next "available" segment number if the user has
 	// entered a value greater than (highest-so-far)+1. The contiguity is checked and corrected
 	// before performing the fit anyway, so it doesn't have to be here by any means.
-	int segment_number = spinbox_segment->value();
 
-	// If we are editing a segment and we haven't changed the segment number, just go
-	// ahead and add the new segment, and remove the old one.
+
 	if (!d_creating_new_segment && d_original_segment_number)
 	{
-		if (d_original_segment_number.get() == segment_number)
-		{
-			d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
-			add_segment_to_model();
-		}
-	}
-	else if (d_hellinger_model_ptr->segment_number_exists(segment_number))
-	{
-		// We have a clash: the desired segment number is already in the model. Warn the user
-		// and get their desired action.
-		if (!d_hellinger_new_segment_warning)
-		{
-			d_hellinger_new_segment_warning = new GPlatesQtWidgets::HellingerNewSegmentWarning(
-						d_hellinger_dialog_ptr,
-						segment_number);
-
-		}
-
-
-		// TODO: if we came here via editing a segment, and we haven't changed the segment number,
-		// then we probably don't want to go through this warning dialog thing. Find a better way
-		// to do this.
-		d_hellinger_new_segment_warning->exec(); // necessary for applied changes!
-		int value_error = d_hellinger_new_segment_warning->error_type_new_segment();
-		if (value_error == ACTION_ADD_NEW_SEGMENT)
-		{
-			if (!d_creating_new_segment && d_original_segment_number)
-			{
-				d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
-			}
-			add_segment_to_model();
-		}
-		else if (value_error == ACTION_REPLACE_NEW_SEGMENT)
-		{
-			if (!d_creating_new_segment && d_original_segment_number)
-			{
-				d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
-			}
-			d_hellinger_model_ptr->remove_segment(segment_number);
-			add_segment_to_model();
-
-		}
-		else if (value_error == ACTION_INSERT_NEW_SEGMENT)
-		{
-			if (!d_creating_new_segment && d_original_segment_number)
-			{
-				d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
-			}
-			d_hellinger_model_ptr->reorder_segment(segment_number);
-			add_segment_to_model();
-		}
-		else
-		{
-			return;
-		}
+		handle_edited_segment();
 	}
 	else
 	{
-		// Everything was cool.
-		add_segment_to_model();
+		handle_new_segment();
 	}
 
 }
@@ -229,7 +172,6 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::add_segment_to_model()
 		d_hellinger_model_ptr->add_pick(pick,segment);
 	}
 	d_hellinger_dialog_ptr->update_from_model();
-	reject();
 }
 
 void
@@ -278,6 +220,110 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::update_buttons()
 	QModelIndexList indices = table_new_segment->selectionModel()->selection().indexes();
 
 	button_remove_line->setEnabled(!indices.isEmpty());
+}
+
+void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_edited_segment()
+{
+	int segment_number = spinbox_segment->value();
+
+	if (d_original_segment_number.get() == segment_number)
+	{
+		d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
+		add_segment_to_model();
+	}
+	else if(d_hellinger_model_ptr->segment_number_exists(segment_number))
+	{
+		if (!d_hellinger_new_segment_warning)
+		{
+			d_hellinger_new_segment_warning = new GPlatesQtWidgets::HellingerNewSegmentWarning(
+						d_hellinger_dialog_ptr,
+						segment_number);
+
+		}
+
+		d_hellinger_new_segment_warning->exec();
+		int value_error = d_hellinger_new_segment_warning->error_type_new_segment();
+		if (value_error == ACTION_ADD_NEW_SEGMENT)
+		{
+			d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
+			add_segment_to_model();
+		}
+		else if (value_error == ACTION_REPLACE_NEW_SEGMENT)
+		{
+			d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
+			d_hellinger_model_ptr->remove_segment(segment_number);
+			add_segment_to_model();
+		}
+		else if (value_error == ACTION_INSERT_NEW_SEGMENT)
+		{
+			d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
+			d_hellinger_model_ptr->reorder_segment(segment_number);
+			add_segment_to_model();
+		}
+		else
+		{
+			// We should only get here if the user pressed cancel. In this case we return,
+			// which will keep this dialog open so that the user can adjust the fields in their
+			// prospective new segment and try again if they want to.
+			return;
+		}
+	}
+	else
+	{
+		// Everything was cool.
+		d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
+		add_segment_to_model();
+	}
+	reject();
+}
+
+void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_new_segment()
+{
+	int segment_number = spinbox_segment->value();
+
+	if(d_hellinger_model_ptr->segment_number_exists(segment_number))
+	{
+		if (!d_hellinger_new_segment_warning)
+		{
+			d_hellinger_new_segment_warning = new GPlatesQtWidgets::HellingerNewSegmentWarning(
+						d_hellinger_dialog_ptr,
+						segment_number);
+
+		}
+
+		d_hellinger_new_segment_warning->exec();
+		int value_error = d_hellinger_new_segment_warning->error_type_new_segment();
+		if (value_error == ACTION_ADD_NEW_SEGMENT)
+		{
+			d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
+			add_segment_to_model();
+		}
+		else if (value_error == ACTION_REPLACE_NEW_SEGMENT)
+		{
+			d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
+			d_hellinger_model_ptr->remove_segment(segment_number);
+			add_segment_to_model();
+		}
+		else if (value_error == ACTION_INSERT_NEW_SEGMENT)
+		{
+			d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
+			d_hellinger_model_ptr->reorder_segment(segment_number);
+			add_segment_to_model();
+		}
+		else
+		{
+			// We should only get here if the user pressed cancel. In this case we return,
+			// which will keep this dialog open so that the user can adjust the fields in their
+			// prospective new segment and try again if they want to.
+			return;
+		}
+	}
+	else
+	{
+		// Everything was cool.
+		add_segment_to_model();
+	}
+	reject();
 }
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::set_initial_row_values(const int &row)
