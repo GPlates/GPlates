@@ -409,6 +409,7 @@ GPlatesQtWidgets::HellingerModel::reorder_picks()
 void
 GPlatesQtWidgets::HellingerModel::reorder_segment(int segment)
 {
+	// TODO: see if we can simplify this behaviour.
 	hellinger_model_type::const_iterator iter;
 	hellinger_model_type new_map;
     for (iter=d_hellinger_picks.begin(); iter != d_hellinger_picks.end(); ++iter) {

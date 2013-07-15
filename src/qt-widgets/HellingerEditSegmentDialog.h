@@ -26,6 +26,8 @@
 #ifndef GPLATES_QTWIDGETS_HELLINGEREDITSEGMENTDIALOG_H
 #define GPLATES_QTWIDGETS_HELLINGEREDITSEGMENTDIALOG_H
 
+#include "boost/optional.hpp"
+
 #include <QItemDelegate> // for spinbox delegate
 #include <QStandardItemModel>
 
@@ -136,6 +138,10 @@ namespace GPlatesQtWidgets
 		QStandardItemModel *d_model;
 		HellingerModel *d_hellinger_model_ptr;
 		HellingerNewSegmentWarning *d_hellinger_new_segment_warning;
+
+		bool d_creating_new_segment;
+
+		boost::optional<int> d_original_segment_number;
 
 		SpinBoxDelegate d_spin_box_delegate;
 	};
