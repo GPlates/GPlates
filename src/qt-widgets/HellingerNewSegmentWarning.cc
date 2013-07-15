@@ -5,7 +5,7 @@
  * $Revision: 161 $
  * $Date: 2012-01-30 16:42:19 +0100 (Mon, 30 Jan 2012) $ 
  * 
- * Copyright (C) 2012 Geological Survey of Norway
+ * Copyright (C) 2012, 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -46,13 +46,22 @@ GPlatesQtWidgets::HellingerNewSegmentWarning::HellingerNewSegmentWarning(
 {
 	setupUi(this);
 
-	QString warning_text = QObject::tr("There already exists a segment with number %1").arg(d_segment_number);
+	QString warning_text = QObject::tr("There already exists a segment with number %1.").arg(d_segment_number);
 	label_warning_text->setText(warning_text);
 
 	d_button_group.addButton(radio_add);
 	d_button_group.addButton(radio_replace);
 	d_button_group.addButton(radio_insert);
 
+	QString add_string = QObject::tr("Add picks to segment %1").arg(segment_number);
+	QString replace_string = QObject::tr("Replace segment %1").arg(segment_number);
+	QString insert_string =
+			QObject::tr("Insert segment as segment %1, renumbering the \nfollowing segments from %2").
+			arg(segment_number).
+			arg(segment_number+1);
+	radio_add->setText(add_string);
+	radio_replace->setText(replace_string);
+	radio_insert->setText(insert_string);
 
 	QObject::connect(button_ok, SIGNAL(clicked()), this, SLOT(handle_ok()));
 	QObject::connect(button_cancel, SIGNAL(clicked()), this, SLOT(handle_cancel()));
