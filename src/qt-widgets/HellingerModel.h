@@ -256,7 +256,7 @@ namespace GPlatesQtWidgets
 		get_fit();
 
         void
-		set_error_ellipse_points();
+		read_error_ellipse_points();
 
 		const std::vector<GPlatesMaths::LatLonPoint> &
 		get_error_ellipse_points() const;

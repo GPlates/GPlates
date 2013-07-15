@@ -173,10 +173,6 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 {
 	setupUi(this);
 
-	d_hellinger_thread = new HellingerThread(this, d_hellinger_model);
-
-	set_up_connections();
-
 	//TODO: think about when we should deactivate this layer....and/or do we make it an orthogonal layer?
 	d_view_state.get_rendered_geometry_collection().set_main_layer_active(
 				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_TOOL_LAYER);
@@ -186,13 +182,18 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 
 	// Look in system-specific locations for supplied sample scripts, site-specific scripts, etc.
 	// The default location will be platform-dependent and is currently set up in UserPreferences.cc.
-	// d_python_path = d_view_state.get_application_state().get_user_preferences().get_value("paths/python_system_script_dir").toString();
+	//d_python_path = d_view_state.get_application_state().get_user_preferences().get_value("paths/python_system_script_dir").toString();
 	// d_python_path = "scripts";
 
 	// Temporary path during development
 	d_python_path = "/home/robin/Desktop/Hellinger/scripts";
 
 	qDebug() << "python path: " << d_python_path;
+
+	d_hellinger_model = new HellingerModel(d_python_path);
+	d_hellinger_thread = new HellingerThread(this, d_hellinger_model);
+
+	set_up_connections();
 
 	d_python_path.append(QDir::separator());
 	d_python_file = d_python_path + "py_hellinger.py";
@@ -203,7 +204,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_temp_par = QString("temp_file_par");
 	d_temp_res = QString("temp_file_res");
 
-	d_hellinger_model = new HellingerModel(d_python_path);
+
 
 	progress_bar->setEnabled(false);
 	progress_bar->setMinimum(0.);
@@ -744,14 +745,14 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 			data_file.close();
 			update_result();
 			button_stats->setEnabled(true);
+			button_details->setEnabled(true);
 		}
 	}
 	else if(d_thread_type == STATS_THREAD_TYPE)
 	{
-		button_stats->setEnabled(false);
-
-		d_hellinger_model->get_error_ellipse_points();
+		d_hellinger_model->read_error_ellipse_points();
 		draw_error_ellipse();
+		button_details->setEnabled(true);
 	}
 }
 
@@ -791,25 +792,6 @@ GPlatesQtWidgets::HellingerDialog::update_from_model()
 	update_canvas();
 	update_buttons();
 
-}
-
-
-void
-GPlatesQtWidgets::HellingerDialog::update_buttons_statistics(bool info)
-{
-	if (info)
-	{
-		spinbox_result_lat -> setEnabled(true);
-		spinbox_result_lon -> setEnabled(true);
-		spinbox_result_angle -> setEnabled(true);
-		//        spinbox_result_eps -> setEnabled(true);
-		button_details->setEnabled(true);
-
-	}
-	else
-	{
-		button_details->setEnabled(false);
-	}
 }
 
 void

@@ -305,7 +305,7 @@ GPlatesQtWidgets::HellingerModel::get_com_file() const
 }
 
 void
-GPlatesQtWidgets::HellingerModel::set_error_ellipse_points()
+GPlatesQtWidgets::HellingerModel::read_error_ellipse_points()
 {
 	// TODO:The file-io aspect of this should probably be moved out to
 	// the HellingerReader.

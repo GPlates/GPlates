@@ -119,9 +119,6 @@ namespace GPlatesQtWidgets
 		void
 		update_buttons();
 
-		void
-		update_buttons_statistics(bool info);
-
 
 		void
 		load_pick_file_to_model(
