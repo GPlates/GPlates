@@ -59,7 +59,6 @@ const int SYMBOL_SIZE = 2;
 // TODO: check tooltips throughout the whole Hellinger workflow.
 // TODO: check button/widget focus throughout Hellinger worlflow.
 // TODO: highlight (on globe) all points in segment when segment selected in table
-// TODO: find space on the main HellingerDialog. It's too cramped for a macbook screen at the moment.
 
 namespace{
 
@@ -178,8 +177,8 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 		QWidget *parent_):
 	GPlatesDialog(
 		parent_,
-		Qt::Window),
-		//Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
+		//Qt::Window),
+		Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_view_state(view_state),
 	d_hellinger_layer(*view_state.get_rendered_geometry_collection().get_main_rendered_layer(
 						  GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_TOOL_LAYER)),
@@ -928,7 +927,7 @@ GPlatesQtWidgets::HellingerDialog::create_feature_collection()
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::close_dialog()
+GPlatesQtWidgets::HellingerDialog::handle_close()
 {
 	d_hellinger_layer.clear_rendered_geometries();
 }
@@ -1299,7 +1298,7 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(button_activate_pick, SIGNAL(clicked()), this, SLOT(handle_pick_state_changed()));
 	QObject::connect(button_deactivate_pick, SIGNAL(clicked()), this, SLOT(handle_pick_state_changed()));
 	QObject::connect(button_renumber, SIGNAL(clicked()), this, SLOT(renumber_segments()));
-	QObject::connect(button_close, SIGNAL(rejected()), this, SLOT(close_dialog()));
+	QObject::connect(button_close, SIGNAL(rejected()), this, SLOT(handle_close()));
 
 	QObject::connect(spinbox_chron, SIGNAL(valueChanged(double)), this, SLOT(handle_chron_time_changed(double)));
 	QObject::connect(spinbox_recon_time, SIGNAL(valueChanged(double)), this, SLOT(handle_recon_time_spinbox_changed(double)));

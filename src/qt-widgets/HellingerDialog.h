@@ -237,7 +237,7 @@ namespace GPlatesQtWidgets
 		handle_pick_state_changed();
 
 		void
-		close_dialog();
+		handle_close();
 
 		void
 		handle_checkbox_grid_search_changed();
