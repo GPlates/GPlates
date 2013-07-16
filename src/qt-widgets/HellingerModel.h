@@ -74,6 +74,12 @@ namespace GPlatesQtWidgets
 
 	typedef std::multimap<int,HellingerPick> hellinger_model_type;
 
+	typedef std::pair<int,HellingerPick> hellinger_model_pair_type;
+
+	typedef std::pair<hellinger_model_type::const_iterator,hellinger_model_type::const_iterator> hellinger_model_const_range_type;
+
+	typedef std::pair<hellinger_model_type::iterator,hellinger_model_type::iterator> hellinger_model_range_type;
+
 	typedef std::vector<HellingerPick> hellinger_segment_type;
 
 	/**
