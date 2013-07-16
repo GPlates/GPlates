@@ -58,7 +58,8 @@ const int SYMBOL_SIZE = 2;
 // TODO: expand a segment to which we've just added a point.
 // TODO: check tooltips throughout the whole Hellinger workflow.
 // TODO: check button/widget focus throughout Hellinger worlflow.
-// TODO: highlight (on globe) all points in segment when segment selected in table
+// TODO: check consistency of "point"/"pick" terminology - I think I have
+// a mixture throughout the UI.
 
 namespace{
 
