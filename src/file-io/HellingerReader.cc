@@ -240,7 +240,7 @@ namespace
 					break;
 				case 1: // three space-separated numerical values representing initial guesses of lat,lon,angle
 				{
-					double lat,lon,rho;
+					double lat = 0., lon = 0., rho = 0.;
 					if ((line_ok = initial_guess_ok(line,lat,lon,rho)))
 					{
 						hellinger_com_file.d_lat = lat;
