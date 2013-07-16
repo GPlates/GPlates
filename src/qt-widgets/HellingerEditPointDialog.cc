@@ -89,6 +89,12 @@ GPlatesQtWidgets::HellingerEditPointDialog::initialise_with_pick(
 
 }
 
+void GPlatesQtWidgets::HellingerEditPointDialog::initialise_with_segment_number(
+		const int &segment_number)
+{
+	spinbox_segment->setValue(segment_number);
+}
+
 void
 GPlatesQtWidgets::HellingerEditPointDialog::handle_apply()
 {

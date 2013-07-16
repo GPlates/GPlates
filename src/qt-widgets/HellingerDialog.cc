@@ -54,8 +54,6 @@
 const double SLIDER_MULTIPLIER = -10000.;
 const int SYMBOL_SIZE = 2;
 
-// TODO: when inserting a new point, set the segment number to the current active segment number, or segment
-// number of the current active point.
 // TODO: expand a newly editied / created segment.
 // TODO: expand a segment to which we've just added a point.
 // TODO: check tooltips throughout the whole Hellinger workflow.
@@ -71,6 +69,19 @@ namespace{
 		LON,
 		UNCERTAINTY
 	};
+
+	boost::optional<int>
+	current_segment_number(
+			QTreeWidget *tree_widget)
+	{
+
+		if (tree_widget->currentItem())
+		{
+			int segment = tree_widget->currentItem()->text(0).toInt();
+			return boost::optional<int>(segment);
+		}
+		return boost::none;
+	}
 
 	/**
 	 * @brief translate_segment_type
@@ -592,6 +603,11 @@ GPlatesQtWidgets::HellingerDialog::handle_add_new_point()
 {    
 	QScopedPointer<GPlatesQtWidgets::HellingerEditPointDialog> dialog(
 				new GPlatesQtWidgets::HellingerEditPointDialog(this,d_hellinger_model,true));
+	if (boost::optional<int> segment = current_segment_number(tree_widget_picks))
+	{
+		dialog->initialise_with_segment_number(segment.get());
+	}
+
 	dialog->exec();
 	restore_expanded_status();
 }

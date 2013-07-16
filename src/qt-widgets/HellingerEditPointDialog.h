@@ -54,6 +54,10 @@ namespace GPlatesQtWidgets
 				const int &segment,
 				const int &row);
 
+		void
+		initialise_with_segment_number(
+				const int &segment_number);
+
 
 	private Q_SLOTS:
 

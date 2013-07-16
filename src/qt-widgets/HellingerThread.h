@@ -26,7 +26,8 @@
 #ifndef GPLATES_QTWIDGETS_HELLINGERTHREAD_H
 #define GPLATES_QTWIDGETS_HELLINGERTHREAD_H
 
-#include <QWidget>
+#include <vector>
+
 #include <QThread>
 
 namespace GPlatesQtWidgets
