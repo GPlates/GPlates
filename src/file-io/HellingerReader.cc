@@ -34,8 +34,6 @@
 namespace
 {
             const int MIN_NUM_FIELDS = 5;
-			// FIXME: Currently unused, can probably remove.
-            const int MIN_NUM_COM_FIELDS = 12;
 
 #if 0
             void
@@ -133,6 +131,11 @@ namespace
 				return false;
 			}
 
+			/**
+			 * @brief pick_fields_are_ok
+			 * Returns true if it was possible to build a pick structure from @param fields.
+			 * @param pick and @param int are filled on return.
+			 */
             bool
 			pick_fields_are_ok(
 					const QStringList &fields,

@@ -54,11 +54,15 @@
 const double SLIDER_MULTIPLIER = -10000.;
 const int SYMBOL_SIZE = 2;
 
-// TODO: expand a newly editied / created segment.
+// TODO: expand a newly edited / created segment.
 // TODO: expand a segment to which we've just added a point.
 // TODO: check tooltips throughout the whole Hellinger workflow.
 // TODO: check button/widget focus throughout Hellinger worlflow.
 // TODO: highlight (on globe) all points in segment when segment selected in table
+// TODO: find space on the main HellingerDialog. It's too cramped for a macbook screen at the moment.
+// TODO: sort out logic for updating initial-guess to/from the model. It's resetting sometimes
+// after editing operations.
+// TODO: complete work-in-progress on mods to re-ordering. Currently broken.
 
 namespace{
 
@@ -361,7 +365,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 void
 GPlatesQtWidgets::HellingerDialog::handle_edit_point()
 {
-
+	store_expanded_status();
 	QScopedPointer<GPlatesQtWidgets::HellingerEditPointDialog> dialog(
 			new GPlatesQtWidgets::HellingerEditPointDialog(this,d_hellinger_model));
 
@@ -378,7 +382,7 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_point()
 void
 GPlatesQtWidgets::HellingerDialog::handle_edit_segment()
 {
-
+	store_expanded_status();
 	QScopedPointer<GPlatesQtWidgets::HellingerEditSegmentDialog> dialog(
 				new GPlatesQtWidgets::HellingerEditSegmentDialog(this,d_hellinger_model,false /* create new segment */));
 
@@ -390,6 +394,11 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_segment()
 
 	dialog->exec();
 	restore_expanded_status();
+
+	if (!d_hellinger_model->segments_are_ordered())
+	{
+		button_renumber->setEnabled(true);
+	}
 }
 
 void
@@ -438,12 +447,17 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_segment()
 	}
 	else
 	{
+		store_expanded_status();
 		QString segment = tree_widget_picks->currentItem()->text(0);
 		int segment_int = segment.toInt();
 		d_hellinger_model->remove_segment(segment_int);
 		button_renumber->setEnabled(true);
 		update_from_model();
 		restore_expanded_status();
+		if (!d_hellinger_model->segments_are_ordered())
+		{
+			button_renumber->setEnabled(true);
+		}
 	}
 }
 
@@ -639,8 +653,7 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 	// TODO: Refactor this method.
 	// FIXME: This assumes that the state of the button always reflects the ordered state of the picks in the model. Check
 	// that this is indeed the case.
-
-	if (button_renumber->isEnabled())
+	if (!d_hellinger_model->segments_are_ordered())
 	{
 		QMessageBox message_box;
 		message_box.setIcon(QMessageBox::Information);

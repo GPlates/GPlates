@@ -309,6 +309,9 @@ namespace GPlatesQtWidgets
 		void
 		renumber_segments();
 
+		bool
+		segments_are_ordered() const;
+
     private:
 
 		void
@@ -318,13 +321,13 @@ namespace GPlatesQtWidgets
 		reset_fit_struct();
 
 		void
-		reset_points();
+		reset_error_ellipse_points();
 
 
 
 		HellingerComFileStructure d_active_com_file_struct;
 		boost::optional<HellingerFitStructure> d_last_result;
-		hellinger_model_type d_hellinger_picks;
+		hellinger_model_type d_model;
 		std::vector<GPlatesMaths::LatLonPoint> d_error_ellipse_points;
 
 		// TODO: check if this path is required.

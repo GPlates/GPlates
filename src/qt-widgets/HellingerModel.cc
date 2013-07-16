@@ -23,8 +23,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm> // copy
 #include <map>
 #include <vector>
+
+#include "boost/foreach.hpp"
 
 #include <QDebug>
 #include <QDir> // TODO: remove this when file-io moved out of this class.
@@ -45,7 +48,7 @@ GPlatesQtWidgets::HellingerModel::get_pick_as_string(int &segment, int &row) con
 {
 
 	hellinger_model_const_range_type pair =
-			d_hellinger_picks.equal_range(segment);
+			d_model.equal_range(segment);
 
 	hellinger_model_type::const_iterator iter = pair.first;
 
@@ -77,7 +80,7 @@ GPlatesQtWidgets::HellingerModel::set_pick_state(
 		bool enabled)
 {
 	hellinger_model_range_type pair =
-			d_hellinger_picks.equal_range(segment);
+			d_model.equal_range(segment);
 
 	hellinger_model_type::iterator iter = pair.first;
 
@@ -93,7 +96,7 @@ bool
 GPlatesQtWidgets::HellingerModel::get_pick_state(const int &segment, const int &row) const
 {
 	hellinger_model_const_range_type pair =
-			d_hellinger_picks.equal_range(segment);
+			d_model.equal_range(segment);
 
 	hellinger_model_type::const_iterator iter = pair.first;
 
@@ -111,7 +114,7 @@ int
 GPlatesQtWidgets::HellingerModel::num_rows_in_segment(
 		const int &segment) const
 {
-	return d_hellinger_picks.count(segment);
+	return d_model.count(segment);
 }
 
 QStringList
@@ -119,7 +122,7 @@ GPlatesQtWidgets::HellingerModel::get_segment_as_string(
 		const int &segment) const
 {
 	hellinger_model_const_range_type pair =
-			d_hellinger_picks.equal_range(segment);
+			d_model.equal_range(segment);
 
 	hellinger_model_type::const_iterator iter = pair.first;
     QStringList segment_data_values;
@@ -147,7 +150,7 @@ void
 GPlatesQtWidgets::HellingerModel::remove_pick(const int &segment, const int &row)
 {
 	hellinger_model_range_type pair =
-			d_hellinger_picks.equal_range(segment);
+			d_model.equal_range(segment);
 
 	hellinger_model_type::iterator iter = pair.first;
 
@@ -155,7 +158,7 @@ GPlatesQtWidgets::HellingerModel::remove_pick(const int &segment, const int &row
     {
 		if (n == row)
         {
-            d_hellinger_picks.erase(iter);
+			d_model.erase(iter);
 			return;
         }
     }
@@ -164,7 +167,7 @@ GPlatesQtWidgets::HellingerModel::remove_pick(const int &segment, const int &row
 void
 GPlatesQtWidgets::HellingerModel::remove_segment(const int &segment)
 {
-    d_hellinger_picks.erase(segment);
+	d_model.erase(segment);
 }
 
 QStringList
@@ -172,7 +175,7 @@ GPlatesQtWidgets::HellingerModel::get_data_as_string() const
 {
 	hellinger_model_type::const_iterator iter;
     QStringList load_data;
-    for (iter=d_hellinger_picks.begin(); iter != d_hellinger_picks.end(); ++iter) {
+	for (iter=d_model.begin(); iter != d_model.end(); ++iter) {
 		HellingerPick s = iter->second;
 		GPlatesQtWidgets::HellingerPickType move_fix = s.d_segment_type;
 		double lat = s.d_lat;
@@ -225,7 +228,7 @@ GPlatesQtWidgets::HellingerModel::add_pick(const QStringList &pick)
 			new_pick.d_is_enabled = true;
         }
 
-		d_hellinger_picks.insert(hellinger_model_pair_type(pick.at(1).toInt(), new_pick));
+		d_model.insert(hellinger_model_pair_type(pick.at(1).toInt(), new_pick));
 
 
 }
@@ -235,7 +238,7 @@ GPlatesQtWidgets::HellingerModel::add_pick(
 		const HellingerPick &pick,
 		const int &segment_number)
 {
-	d_hellinger_picks.insert(hellinger_model_pair_type(segment_number,pick));
+	d_model.insert(hellinger_model_pair_type(segment_number,pick));
 }
 
 void
@@ -333,7 +336,7 @@ GPlatesQtWidgets::HellingerModel::get_error_ellipse_points() const
 }
 
 void
-GPlatesQtWidgets::HellingerModel::reset_points()
+GPlatesQtWidgets::HellingerModel::reset_error_ellipse_points()
 {
 	if (!d_error_ellipse_points.empty())
 	{
@@ -344,7 +347,7 @@ GPlatesQtWidgets::HellingerModel::reset_points()
 void
 GPlatesQtWidgets::HellingerModel::reset_model()
 {
-    d_hellinger_picks.clear();
+	d_model.clear();
 	d_error_ellipse_points.clear();
     reset_com_file_struct();
     reset_fit_struct();
@@ -383,7 +386,7 @@ GPlatesQtWidgets::HellingerModel::renumber_segments()
 	hellinger_model_type new_map;
     int num_segment = 0;
     int miss_num = 0;
-    for (iter=d_hellinger_picks.begin(); iter != d_hellinger_picks.end(); ++iter) {
+	for (iter=d_model.begin(); iter != d_model.end(); ++iter) {
 		HellingerPick pick_part = iter->second;
         if (iter->first>num_segment)
         {
@@ -403,31 +406,51 @@ GPlatesQtWidgets::HellingerModel::renumber_segments()
         }
       }
 
-      d_hellinger_picks = new_map;
+	d_model = new_map;
+}
+
+bool GPlatesQtWidgets::HellingerModel::segments_are_ordered() const
+{
+	std::set<int> set;
+	BOOST_FOREACH(hellinger_model_pair_type pair,d_model)
+	{
+		set.insert(pair.first);
+	}
+	qDebug() << set.size() << " unique keys in map";
+
+	int unique_keys = static_cast<int>(set.size());
+	for (int i = 1; i <= unique_keys ; ++i)
+	{
+		if (d_model.find(i) == d_model.end())
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 void
 GPlatesQtWidgets::HellingerModel::make_space_for_new_segment(int segment)
 {
-	// TODO: see if we can simplify this algorithm.
+	hellinger_model_type result;
+	hellinger_model_range_type range = d_model.equal_range(segment-1);
 
+	hellinger_model_type::const_iterator
+			iter = d_model.begin(),
+			iter_end = range.second;
+	for (; iter != iter_end; ++iter)
+	{
+		result.insert(*iter);
+	}
 
-	hellinger_model_type::const_iterator iter;
-	hellinger_model_type new_map;
-    for (iter=d_hellinger_picks.begin(); iter != d_hellinger_picks.end(); ++iter) {
-		HellingerPick pick_part = iter->second;
-        if (iter->first>=segment)
-        {
-			new_map.insert(hellinger_model_pair_type(iter->first+1, pick_part));
-        }
-        else
-        {
-			new_map.insert(hellinger_model_pair_type(iter->first, pick_part));
-        }
-      }
+	iter = d_model.find(segment);
 
-      d_hellinger_picks = new_map;
+	for (; iter != d_model.end(); ++iter)
+	{
+		result.insert(hellinger_model_pair_type(iter->first+1, iter->second));
+	}
 
+	d_model = result;
 }
 
 boost::optional<GPlatesQtWidgets::HellingerPick>
@@ -436,7 +459,7 @@ GPlatesQtWidgets::HellingerModel::get_pick(
 		const int &row) const
 {
 	hellinger_model_const_range_type range =
-			d_hellinger_picks.equal_range(segment);
+			d_model.equal_range(segment);
 
 	hellinger_model_type::const_iterator iter = range.first;
 	for (int n = 0; iter != range.second; ++iter, ++n)
@@ -467,33 +490,33 @@ GPlatesQtWidgets::HellingerModel::get_segment(
 GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::begin() const
 {
-	return d_hellinger_picks.begin();
+	return d_model.begin();
 }
 
 GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::end() const
 {
-	return d_hellinger_picks.end();
+	return d_model.end();
 }
 
 
 bool
 GPlatesQtWidgets::HellingerModel::segment_number_exists(int segment_num) const
 {
-	return d_hellinger_picks.count(segment_num) > 0;
+	return d_model.count(segment_num) > 0;
 }
 
 GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::segment_begin(
 	const int &segment) const
 {
-	if (d_hellinger_picks.count(segment) > 0)
+	if (d_model.count(segment) > 0)
 	{
-		return d_hellinger_picks.equal_range(segment).first;
+		return d_model.equal_range(segment).first;
 	}
 	else
 	{
-		return d_hellinger_picks.end();
+		return d_model.end();
 	}
 }
 
@@ -501,13 +524,13 @@ GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::segment_end(
 	const int &segment) const
 {
-	if (d_hellinger_picks.count(segment) > 0)
+	if (d_model.count(segment) > 0)
 	{
-		return d_hellinger_picks.equal_range(segment).second;
+		return d_model.equal_range(segment).second;
 	}
 	else
 	{
-		return d_hellinger_picks.end();
+		return d_model.end();
 	}
 }
 
