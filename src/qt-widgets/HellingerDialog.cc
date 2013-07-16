@@ -58,6 +58,7 @@ const int SYMBOL_SIZE = 2;
 // TODO: expand a segment to which we've just added a point.
 // TODO: check tooltips throughout the whole Hellinger workflow.
 // TODO: check button/widget focus throughout Hellinger worlflow.
+// TODO: highlight (on globe) all points in segment when segment selected in table
 
 namespace{
 
@@ -69,6 +70,20 @@ namespace{
 		LON,
 		UNCERTAINTY
 	};
+
+	void
+	set_text_colour(
+			QTreeWidgetItem *item,
+			bool enabled)
+	{
+
+		Qt::GlobalColor colour = enabled? Qt::black : Qt::gray;
+		item->setTextColor(SEGMENT_NUMBER,colour);
+		item->setTextColor(SEGMENT_TYPE,colour);
+		item->setTextColor(LAT,colour);
+		item->setTextColor(LON,colour);
+		item->setTextColor(UNCERTAINTY,colour);
+	}
 
 	boost::optional<int>
 	current_segment_number(
@@ -325,7 +340,6 @@ GPlatesQtWidgets::HellingerDialog::highlight_selected_point(
 void
 GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 {
-	store_expanded_status();
 
 	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
 	int segment = tree_widget_picks->currentItem()->text(0).toInt();
@@ -340,12 +354,8 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 	{
 		d_hellinger_model->set_pick_state(segment,row,true);
 	}
-	update_from_model();
-	restore_expanded_status();
-	// TODO: make the pick just activated/deactivated the "selected" pick again. For some reason
-	// this is resetting. Perhaps the "update_from_model" that's doing it; probably just need
-	// to store the index and restore it.
 
+	set_text_colour(tree_widget_picks->currentItem(),!enabled);
 }
 
 void
@@ -375,7 +385,6 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_segment()
 	QString segment = tree_widget_picks->currentItem()->text(SEGMENT_NUMBER);
 	int segment_number = segment.toInt();
 
-	qDebug() << "Seg number" << segment_number;
 	dialog->initialise_with_segment(
 				d_hellinger_model->get_segment(segment_number),segment_number);
 
@@ -880,7 +889,7 @@ GPlatesQtWidgets::HellingerDialog::draw_error_ellipse()
 void
 GPlatesQtWidgets::HellingerDialog::load_data_from_model()
 {    
-
+// TODO: tidy up the distinction between this method and "update_from_model".
 	hellinger_model_type::const_iterator
 			iter = d_hellinger_model->begin(),
 			end = d_hellinger_model->end();
@@ -1295,11 +1304,11 @@ GPlatesQtWidgets::HellingerDialog::store_expanded_status()
 	int count = tree_widget_picks->topLevelItemCount();
 
 	d_segment_expanded_statuses.clear();
-	qDebug() << "Storing expanded status with" << count << " items.";
+	//qDebug() << "Storing expanded status with" << count << " items.";
 	for (int i = 0 ; i < count; ++i)
 	{
 		int segment = tree_widget_picks->topLevelItem(i)->text(0).toInt();
-		qDebug() << "i: " << i << ", segment: " << segment << ", " << tree_widget_picks->topLevelItem(i)->isExpanded();
+		//qDebug() << "i: " << i << ", segment: " << segment << ", " << tree_widget_picks->topLevelItem(i)->isExpanded();
 		d_segment_expanded_statuses.insert(std::make_pair<int,bool>(segment,tree_widget_picks->topLevelItem(i)->isExpanded()));
 	}
 }
@@ -1309,18 +1318,17 @@ GPlatesQtWidgets::HellingerDialog::restore_expanded_status()
 {
 	int top_level_items = tree_widget_picks->topLevelItemCount();
 
-	qDebug() << "Restoring expanded status with " << top_level_items << " items.";
-	qDebug() << "Items in map: " << d_segment_expanded_statuses.size();
+	//qDebug() << "Restoring expanded status with " << top_level_items << " items.";
+	//qDebug() << "Items in map: " << d_segment_expanded_statuses.size();
 	QObject::disconnect(tree_widget_picks,SIGNAL(collapsed(QModelIndex)),this,SLOT(store_expanded_status()));
 	QObject::disconnect(tree_widget_picks,SIGNAL(expanded(QModelIndex)),this,SLOT(store_expanded_status()));
 	for (int i = 0; i < top_level_items ; ++i)
 	{
 		int segment = tree_widget_picks->topLevelItem(i)->text(0).toInt();
-		qDebug() << "i: " << i << ", segment: " << segment << ", " << tree_widget_picks->topLevelItem(i)->isExpanded();
+		//qDebug() << "i: " << i << ", segment: " << segment << ", " << tree_widget_picks->topLevelItem(i)->isExpanded();
 		expanded_status_map_type::const_iterator iter = d_segment_expanded_statuses.find(segment);
 		if (iter != d_segment_expanded_statuses.end())
 		{
-
 			tree_widget_picks->topLevelItem(i)->setExpanded(iter->second);
 		}
 
