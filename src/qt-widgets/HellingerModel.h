@@ -304,7 +304,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * @brief renumber_segments
 		 * Reorganise the model such that segments numbers (i.e. the keys in the model multimap)
-		 * are contiguous from 1.
+		 * are contiguous from 1. Assumes that segment numbers are >= 1.
 		 */
 		void
 		renumber_segments();

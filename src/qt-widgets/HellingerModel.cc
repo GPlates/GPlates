@@ -37,6 +37,23 @@
 #include "maths/PointOnSphere.h"
 #include "HellingerModel.h"
 
+namespace{
+
+	int
+	unique_keys(
+			const GPlatesQtWidgets::hellinger_model_type &model)
+	{
+		std::set<int> set;
+		BOOST_FOREACH(GPlatesQtWidgets::hellinger_model_pair_type pair,model)
+		{
+			set.insert(pair.first);
+		}
+		qDebug() << set.size() << " unique keys in map";
+
+		return static_cast<int>(set.size());
+	}
+}
+
 GPlatesQtWidgets::HellingerModel::HellingerModel(
 		const QString &python_path):
 			d_python_path(python_path)
@@ -381,45 +398,27 @@ GPlatesQtWidgets::HellingerModel::reset_fit_struct()
 void
 GPlatesQtWidgets::HellingerModel::renumber_segments()
 {
-	// TODO: I suspect this algorithm could be simplified: investigate.
-	hellinger_model_type::const_iterator iter;
-	hellinger_model_type new_map;
-    int num_segment = 0;
-    int miss_num = 0;
-	for (iter=d_model.begin(); iter != d_model.end(); ++iter) {
-		HellingerPick pick_part = iter->second;
-        if (iter->first>num_segment)
-        {
-            if (iter->first == num_segment+1)
-            {
-                ++num_segment;
-            }
-            else
-            {
-                ++num_segment;
-                ++miss_num;
-            }
-        }
-        else
-        {
-			new_map.insert(hellinger_model_pair_type(iter->first-miss_num, pick_part));
-        }
-      }
+	hellinger_model_type result;
 
-	d_model = new_map;
+	int last_segment_number = 0;
+	int new_segment_number = 0;
+	BOOST_FOREACH(GPlatesQtWidgets::hellinger_model_pair_type pair, d_model)
+	{
+		if (pair.first != last_segment_number)
+		{
+			last_segment_number = pair.first;
+			new_segment_number ++;
+		}
+		result.insert(hellinger_model_pair_type(new_segment_number,pair.second));
+	}
+
+	d_model = result;
 }
 
 bool GPlatesQtWidgets::HellingerModel::segments_are_ordered() const
 {
-	std::set<int> set;
-	BOOST_FOREACH(hellinger_model_pair_type pair,d_model)
-	{
-		set.insert(pair.first);
-	}
-	qDebug() << set.size() << " unique keys in map";
 
-	int unique_keys = static_cast<int>(set.size());
-	for (int i = 1; i <= unique_keys ; ++i)
+	for (int i = 1; i <= unique_keys(d_model) ; ++i)
 	{
 		if (d_model.find(i) == d_model.end())
 		{
