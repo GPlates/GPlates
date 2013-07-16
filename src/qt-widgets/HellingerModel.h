@@ -237,6 +237,9 @@ namespace GPlatesQtWidgets
         void
         reset_model();
 
+		void
+		clear_all_picks();
+
         void
 		set_fit(
 			const QStringList &fields);

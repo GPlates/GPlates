@@ -379,7 +379,12 @@ GPlatesQtWidgets::HellingerModel::reset_model()
 	d_model.clear();
 	d_error_ellipse_points.clear();
     reset_com_file_struct();
-    reset_fit_struct();
+	reset_fit_struct();
+}
+
+void GPlatesQtWidgets::HellingerModel::clear_all_picks()
+{
+	d_model.clear();
 }
 
 void

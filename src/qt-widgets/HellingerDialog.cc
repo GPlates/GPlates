@@ -545,10 +545,10 @@ GPlatesQtWidgets::HellingerDialog::update_initial_guess()
 		spinbox_radius->setValue(com_file_data.get().d_search_radius);
 		checkbox_grid_search->setChecked(com_file_data.get().d_perform_grid_search);
 		spinbox_sig_level->setValue(com_file_data.get().d_significance_level);
-
+#if 0
 		checkbox_kappa->setChecked(com_file_data.get().d_estimate_kappa);
 		checkbox_graphics->setChecked(com_file_data.get().d_generate_output_files);
-
+#endif
 		d_filename_dat = com_file_data.get().d_data_filename;
 		d_filename_up = com_file_data.get().d_up_filename;
 		d_filename_down = com_file_data.get().d_down_filename;
@@ -717,7 +717,7 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 			iteration = 0;
 			bool_data.push_back(0);
 		}
-
+#if 0
 		if (checkbox_kappa->isChecked())
 		{
 			bool_data.push_back(1);
@@ -726,7 +726,6 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 		{
 			bool_data.push_back(0);
 		}
-
 		if (checkbox_graphics->isChecked())
 		{
 			bool_data.push_back(1);
@@ -735,6 +734,9 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 		{
 			bool_data.push_back(0);
 		}
+#endif
+		bool_data.push_back(1); // kappa
+		bool_data.push_back(1); // graphics
 
 		d_hellinger_thread->initialise_pole_calculation(
 					import_file_line,
@@ -810,6 +812,7 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 		button_remove_segment->setEnabled(false);
 		button_remove_point->setEnabled(false);
 		button_stats->setEnabled(false);
+		button_clear->setEnabled(false);
 	}
 	else
 	{
@@ -818,6 +821,7 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 		button_export_pick_file->setEnabled(true);
 		button_export_com_file->setEnabled(true);
 		button_calculate_fit->setEnabled(spinbox_radius->value() > 0.0);
+		button_clear->setEnabled(true);
 	}
 }
 
@@ -972,6 +976,29 @@ GPlatesQtWidgets::HellingerDialog::set_segment_colours(
 	default:
 		d_segment_colour = GPlatesGui::Colour::get_navy();
 	}
+}
+
+void GPlatesQtWidgets::HellingerDialog::handle_clear()
+{
+	QMessageBox message_box;
+	message_box.setIcon(QMessageBox::Warning);
+	message_box.setWindowTitle(tr("Clear all picks"));
+	message_box.setText(
+				tr("Are you sure you want to remove all the picks?"));
+	message_box.setStandardButtons(QMessageBox::Cancel | QMessageBox::Ok);
+	message_box.setDefaultButton(QMessageBox::Ok);
+	int ret = message_box.exec();
+
+	if (ret == QMessageBox::Cancel)
+	{
+		return;
+	}
+	else
+	{
+		d_hellinger_model->clear_all_picks();
+		update_tree_from_model();
+	}
+
 }
 
 void
@@ -1238,8 +1265,13 @@ void GPlatesQtWidgets::HellingerDialog::update_model_with_com_data()
 	com_file_struct.d_search_radius = spinbox_radius->value();
 	com_file_struct.d_perform_grid_search = checkbox_grid_search->isChecked();
 	com_file_struct.d_significance_level = spinbox_sig_level->value();
+#if 0
 	com_file_struct.d_estimate_kappa = checkbox_kappa->isChecked();
 	com_file_struct.d_generate_output_files = checkbox_graphics->isChecked();
+#endif
+	com_file_struct.d_estimate_kappa = true;
+	com_file_struct.d_generate_output_files = true;
+
 	// Remaining fields in the .com file are not currently configurable from the interface.
 	com_file_struct.d_data_filename = QString("hellinger.dat");
 	com_file_struct.d_up_filename = QString("hellinger.up");
@@ -1284,6 +1316,7 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 
 	QObject::connect(d_hellinger_thread, SIGNAL(finished()),this, SLOT(handle_thread_finished()));
 	QObject::connect(button_cancel,SIGNAL(clicked()),this,SLOT(handle_cancel()));
+	QObject::connect(button_clear,SIGNAL(clicked()),this,SLOT(handle_clear()));
 }
 
 void

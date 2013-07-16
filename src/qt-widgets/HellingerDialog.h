@@ -94,8 +94,7 @@ namespace GPlatesQtWidgets
 		void
 		restore_expanded_status();
 
-		void
-		store_expanded_status();
+
 
 	public Q_SLOTS:
 
@@ -104,6 +103,9 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		renumber_segments();
+
+		void
+		store_expanded_status();
 
 	private:
 
@@ -181,6 +183,9 @@ namespace GPlatesQtWidgets
 
 
 	private Q_SLOTS:
+
+		void
+		handle_clear();
 
 		void
 		handle_thread_finished();
