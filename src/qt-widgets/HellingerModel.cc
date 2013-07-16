@@ -376,7 +376,7 @@ GPlatesQtWidgets::HellingerModel::reset_fit_struct()
 }
 
 void
-GPlatesQtWidgets::HellingerModel::reorder_picks()
+GPlatesQtWidgets::HellingerModel::renumber_segments()
 {
 	// TODO: I suspect this algorithm could be simplified: investigate.
 	hellinger_model_type::const_iterator iter;
@@ -407,7 +407,7 @@ GPlatesQtWidgets::HellingerModel::reorder_picks()
 }
 
 void
-GPlatesQtWidgets::HellingerModel::reorder_segment(int segment)
+GPlatesQtWidgets::HellingerModel::make_space_for_new_segment(int segment)
 {
 	// TODO: see if we can simplify this behaviour.
 	hellinger_model_type::const_iterator iter;

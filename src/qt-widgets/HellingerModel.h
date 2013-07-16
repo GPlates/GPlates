@@ -286,12 +286,22 @@ namespace GPlatesQtWidgets
 		segment_number_exists(
 			int segment_num) const;
 
+		/**
+		 * @brief make_space_for_new_segment
+		 * Shifts the segments from @param segment down by one.
+		 * @param segment
+		 */
         void
-		reorder_segment(
+		make_space_for_new_segment(
 			int segment);
 
+		/**
+		 * @brief renumber_segments
+		 * Reorganise the model such that segments numbers (i.e. the keys in the model multimap)
+		 * are contiguous from 1.
+		 */
 		void
-		reorder_picks();
+		renumber_segments();
 
     private:
 

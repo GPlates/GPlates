@@ -167,9 +167,6 @@ namespace GPlatesQtWidgets
 				int num_color);
 
 		void
-		reorder_picks();
-
-		void
 		restore_expanded_status();
 
 	private Q_SLOTS:

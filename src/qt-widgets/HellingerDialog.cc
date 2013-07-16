@@ -72,7 +72,7 @@ namespace{
 	};
 
 	void
-	set_text_colour(
+	set_text_colour_according_to_state(
 			QTreeWidgetItem *item,
 			bool enabled)
 	{
@@ -355,7 +355,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 		d_hellinger_model->set_pick_state(segment,row,true);
 	}
 
-	set_text_colour(tree_widget_picks->currentItem(),!enabled);
+	set_text_colour_according_to_state(tree_widget_picks->currentItem(),!enabled);
 }
 
 void
@@ -639,6 +639,7 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 	// TODO: Refactor this method.
 	// FIXME: This assumes that the state of the button always reflects the ordered state of the picks in the model. Check
 	// that this is indeed the case.
+
 	if (button_renumber->isEnabled())
 	{
 		QMessageBox message_box;
@@ -656,7 +657,7 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 		}
 		else
 		{
-			reorder_picks();
+			renumber_segments();
 		}
 
 	}
@@ -1201,9 +1202,9 @@ GPlatesQtWidgets::HellingerDialog::handle_fit_spinboxes_changed()
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::reorder_picks()
+GPlatesQtWidgets::HellingerDialog::renumber_segments()
 {
-	d_hellinger_model->reorder_picks();
+	d_hellinger_model->renumber_segments();
 	tree_widget_picks->clear();
 	load_data_from_model();
 	button_renumber->setEnabled(false);
@@ -1211,13 +1212,6 @@ GPlatesQtWidgets::HellingerDialog::reorder_picks()
 	// TODO: if we want to restore the expanded status here we'll need to
 	// correct it for the re-ordered segments.
 	restore_expanded_status();
-}
-
-void
-GPlatesQtWidgets::HellingerDialog::renumber_segments()
-{
-	// TODO: check the distinction between "renumber_segments" and "reorder_picks" - do we need them both?
-	reorder_picks();
 }
 
 void GPlatesQtWidgets::HellingerDialog::update_model_with_com_data()

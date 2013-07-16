@@ -258,7 +258,7 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_edited_segment()
 		else if (value_error == ACTION_INSERT_NEW_SEGMENT)
 		{
 			d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
-			d_hellinger_model_ptr->reorder_segment(segment_number);
+			d_hellinger_model_ptr->make_space_for_new_segment(segment_number);
 			add_segment_to_model();
 		}
 		else
@@ -308,7 +308,7 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_new_segment()
 		else if (value_error == ACTION_INSERT_NEW_SEGMENT)
 		{
 			d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
-			d_hellinger_model_ptr->reorder_segment(segment_number);
+			d_hellinger_model_ptr->make_space_for_new_segment(segment_number);
 			add_segment_to_model();
 		}
 		else
