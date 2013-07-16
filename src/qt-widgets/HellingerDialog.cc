@@ -44,7 +44,6 @@
 #include "HellingerDialog.h"
 #include "HellingerEditPointDialog.h"
 #include "HellingerEditSegmentDialog.h"
-#include "HellingerNewPoint.h"
 #include "HellingerStatsDialog.h"
 #include "HellingerThread.h"
 #include "ReadErrorAccumulationDialog.h"
@@ -57,10 +56,10 @@ const int SYMBOL_SIZE = 2;
 
 // TODO: when inserting a new point, set the segment number to the current active segment number, or segment
 // number of the current active point.
-// TODO: when editing a segment, don't present the action dialog - just replace the current segment. Unless the user
-// has changed the segment number.
 // TODO: expand a newly editied / created segment.
 // TODO: expand a segment to which we've just added a point.
+// TODO: check tooltips throughout the whole Hellinger workflow.
+// TODO: check button/widget focus throughout Hellinger worlflow.
 
 namespace{
 

@@ -93,6 +93,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
 	if (!create_new_segment)
 	{
 		button_add_segment->setText(QObject::tr("Apply"));
+		setWindowTitle(QObject::tr("Edit Segment"));
 	}
 
 }
