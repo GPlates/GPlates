@@ -299,11 +299,23 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 
 	if (!tree_widget_picks->currentItem()->text(1).isEmpty())
 	{
+		const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
+		QString segment = tree_widget_picks->currentItem()->text(0);
+		int row = index.row();
+		int segment_int = segment.toInt();
+		bool state = d_hellinger_model->get_pick_state(segment_int, row);
+
 		double lat = tree_widget_picks->currentItem()->text(2).toDouble();
 		double lon = tree_widget_picks->currentItem()->text(3).toDouble();
 		HellingerPickType type =
 				static_cast<HellingerPickType>(tree_widget_picks->currentItem()->text(1).toInt());
-		highlight_selected_point(lat, lon, type);
+		highlight_selected_point(lat, lon, type, state);
+	}
+	else if (!tree_widget_picks->currentItem()->text(0).isEmpty())
+	{
+		// We have a segment. Highlight everything in the segment.
+		int segment = tree_widget_picks->currentItem()->text(0).toInt();
+		highlight_selected_segment(segment);
 	}
 
 }
@@ -317,7 +329,8 @@ void
 GPlatesQtWidgets::HellingerDialog::highlight_selected_point(
 		const double &lat,
 		const double &lon,
-		const int &type_segment)
+		const int &type_segment,
+		bool enabled)
 {
 
 	GPlatesGui::Symbol moving_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, SYMBOL_SIZE, true);
@@ -327,7 +340,7 @@ GPlatesQtWidgets::HellingerDialog::highlight_selected_point(
 	GPlatesViewOperations::RenderedGeometry pick_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 				point.get_non_null_pointer(),
-				GPlatesGui::Colour::get_yellow(),
+				enabled ? GPlatesGui::Colour::get_yellow() : GPlatesGui::Colour::get_grey(),
 				2, /* point thickness */
 				2, /* line thickness */
 				false /* fill */,
@@ -335,6 +348,20 @@ GPlatesQtWidgets::HellingerDialog::highlight_selected_point(
 
 	d_hellinger_layer.add_rendered_geometry(pick_geometry);
 
+}
+
+void GPlatesQtWidgets::HellingerDialog::highlight_selected_segment(
+		const int &segment_number)
+{
+	hellinger_segment_type segment = d_hellinger_model->get_segment(segment_number);
+
+	BOOST_FOREACH(HellingerPick pick, segment)
+	{
+		highlight_selected_point(pick.d_lat,
+								 pick.d_lon,
+								 static_cast<int>(pick.d_segment_type),
+								 pick.d_is_enabled);
+	}
 }
 
 void
@@ -750,7 +777,6 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 					d_temp_res);
 		d_thread_type = POLE_THREAD_TYPE;
 
-		update_canvas();
 		d_hellinger_thread->set_python_script_type(d_thread_type);
 
 		progress_bar->setEnabled(true);

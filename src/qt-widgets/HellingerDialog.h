@@ -145,7 +145,12 @@ namespace GPlatesQtWidgets
 		highlight_selected_point(
 				const double &lat,
 				const double &lon,
-				const int &type_segment);
+				const int &type_segment,
+				bool enabled);
+
+		void
+		highlight_selected_segment(
+				const int &segment_number);
 
 		void
 		draw_pole(
