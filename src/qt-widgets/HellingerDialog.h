@@ -79,10 +79,23 @@ namespace GPlatesQtWidgets
 		initialise();
 
 		/**
-		 * Update dialog from hellinger-model, and then update the canvas
+		 * Update whole dialog from model, and then update the canvas
 		 */
 		void
 		update_from_model();
+
+		/**
+		 * @brief update_tree_from_model
+		 * Update pick-widget from model, and then update the canvas
+		 */
+		void
+		update_tree_from_model();
+
+		void
+		restore_expanded_status();
+
+		void
+		store_expanded_status();
 
 	public Q_SLOTS:
 
@@ -113,8 +126,7 @@ namespace GPlatesQtWidgets
 		change_point(
 				const QString &point_value);
 
-		void
-		load_data_from_model();
+
 
 		void
 		update_buttons();
@@ -166,16 +178,12 @@ namespace GPlatesQtWidgets
 		set_segment_colours(
 				int num_color);
 
-		void
-		restore_expanded_status();
+
 
 	private Q_SLOTS:
 
 		void
 		handle_thread_finished();
-
-		void
-		store_expanded_status();
 
 		void
 		handle_calculate_fit();

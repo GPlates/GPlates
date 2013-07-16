@@ -272,6 +272,13 @@ namespace GPlatesQtWidgets
 		set_initial_guess(
 			const QStringList &com_list_fields);
 
+		void
+		set_initial_guess(
+				const double &lat,
+				const double &lon,
+				const double &rho,
+				const double &radius);
+
 		boost::optional<HellingerComFileStructure>
 		get_com_file() const;
 
@@ -331,6 +338,7 @@ namespace GPlatesQtWidgets
 		std::vector<GPlatesMaths::LatLonPoint> d_error_ellipse_points;
 
 		// TODO: check if this path is required.
+		// Required until we have shifted file-io to the reader class.
 		QString d_python_path;
 	};
 }

@@ -60,9 +60,6 @@ const int SYMBOL_SIZE = 2;
 // TODO: check button/widget focus throughout Hellinger worlflow.
 // TODO: highlight (on globe) all points in segment when segment selected in table
 // TODO: find space on the main HellingerDialog. It's too cramped for a macbook screen at the moment.
-// TODO: sort out logic for updating initial-guess to/from the model. It's resetting sometimes
-// after editing operations.
-// TODO: complete work-in-progress on mods to re-ordering. Currently broken.
 
 namespace{
 
@@ -424,7 +421,7 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_point()
 		int row = index.row();
 		int segment_int = segment.toInt();
 		d_hellinger_model->remove_pick(segment_int, row);
-		update_from_model();
+		update_tree_from_model();
 		restore_expanded_status();
 	}
 }
@@ -452,7 +449,7 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_segment()
 		int segment_int = segment.toInt();
 		d_hellinger_model->remove_segment(segment_int);
 		button_renumber->setEnabled(true);
-		update_from_model();
+		update_tree_from_model();
 		restore_expanded_status();
 		if (!d_hellinger_model->segments_are_ordered())
 		{
@@ -683,6 +680,12 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 		return;
 	}
 
+	d_hellinger_model->set_initial_guess(
+				spinbox_lat->value(),
+				spinbox_lon->value(),
+				spinbox_rho->value(),
+				spinbox_radius->value());
+
 	QFile python_code(d_python_file);
 	if (python_code.exists())
 	{
@@ -821,13 +824,9 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 void
 GPlatesQtWidgets::HellingerDialog::update_from_model()
 {
-	tree_widget_picks->clear();
+	update_tree_from_model();
 
-	load_data_from_model();
-
-	update_canvas();
-	update_buttons();
-
+	update_initial_guess();
 }
 
 void
@@ -901,9 +900,10 @@ GPlatesQtWidgets::HellingerDialog::draw_error_ellipse()
 
 
 void
-GPlatesQtWidgets::HellingerDialog::load_data_from_model()
+GPlatesQtWidgets::HellingerDialog::update_tree_from_model()
 {    
-// TODO: tidy up the distinction between this method and "update_from_model".
+	tree_widget_picks->clear();
+
 	hellinger_model_type::const_iterator
 			iter = d_hellinger_model->begin(),
 			end = d_hellinger_model->end();
@@ -912,8 +912,9 @@ GPlatesQtWidgets::HellingerDialog::load_data_from_model()
 	{
 		add_pick_to_tree(iter->first,iter->second,tree_widget_picks);
 	}
+
+	update_canvas();
 	update_buttons();
-	update_initial_guess();
 }
 
 void
@@ -1219,7 +1220,7 @@ GPlatesQtWidgets::HellingerDialog::renumber_segments()
 {
 	d_hellinger_model->renumber_segments();
 	tree_widget_picks->clear();
-	load_data_from_model();
+	update_tree_from_model();
 	button_renumber->setEnabled(false);
 
 	// TODO: if we want to restore the expanded status here we'll need to

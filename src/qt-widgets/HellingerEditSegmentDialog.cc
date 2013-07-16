@@ -141,6 +141,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::handle_add_segment()
 void
 GPlatesQtWidgets::HellingerEditSegmentDialog::add_segment_to_model()
 {
+	d_hellinger_dialog_ptr->store_expanded_status();
 	int segment = spinbox_segment->value();
 
 	for (int row = 0; row < d_model->rowCount(); ++row)
@@ -172,7 +173,8 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::add_segment_to_model()
 		GPlatesQtWidgets::HellingerPick pick(type,lat,lon,uncertainty,true /* enabled */);
 		d_hellinger_model_ptr->add_pick(pick,segment);
 	}
-	d_hellinger_dialog_ptr->update_from_model();
+	d_hellinger_dialog_ptr->update_tree_from_model();
+	d_hellinger_dialog_ptr->restore_expanded_status();
 }
 
 void

@@ -317,6 +317,18 @@ GPlatesQtWidgets::HellingerModel::set_initial_guess(const QStringList &com_list_
 	d_active_com_file_struct.d_down_filename = com_list_fields.at(11);
 }
 
+void GPlatesQtWidgets::HellingerModel::set_initial_guess(
+		const double &lat,
+		const double &lon,
+		const double &rho,
+		const double &radius)
+{
+	d_active_com_file_struct.d_lat = lat;
+	d_active_com_file_struct.d_lon = lon;
+	d_active_com_file_struct.d_rho = rho;
+	d_active_com_file_struct.d_search_radius = radius;
+}
+
 boost::optional<GPlatesQtWidgets::HellingerComFileStructure>
 GPlatesQtWidgets::HellingerModel::get_com_file() const
 {
