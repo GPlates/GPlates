@@ -1115,6 +1115,11 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 	update_result();
 	boost::optional<GPlatesQtWidgets::HellingerFitStructure> data_fit_struct = d_hellinger_model->get_fit();
 
+	if (!data_fit_struct)
+	{
+		return;
+	}
+
 	double recon_time = spinbox_recon_time->value();
 
 	double lat = data_fit_struct.get().d_lat;
