@@ -48,7 +48,7 @@ namespace{
 		{
 			set.insert(pair.first);
 		}
-		qDebug() << set.size() << " unique keys in map";
+		//qDebug() << set.size() << " unique keys in map";
 
 		return static_cast<int>(set.size());
 	}
@@ -341,11 +341,12 @@ GPlatesQtWidgets::HellingerModel::read_error_ellipse_points()
 	// TODO:The file-io aspect of this should probably be moved out to
 	// the HellingerReader.
 	QString path = d_python_path + QDir::separator() + d_active_com_file_struct.d_data_filename;
+	qDebug() << "Ellipse point file: " << path;
     QFile data_file(path);
 
     if (data_file.open(QFile::ReadOnly))
     {
-
+		qDebug() << "Ellipse point file opened.";
         QTextStream in(&data_file);
         while (!in.atEnd())
         {

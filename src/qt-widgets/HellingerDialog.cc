@@ -206,11 +206,11 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 
 	// Look in system-specific locations for supplied sample scripts, site-specific scripts, etc.
 	// The default location will be platform-dependent and is currently set up in UserPreferences.cc.
-	//d_python_path = d_view_state.get_application_state().get_user_preferences().get_value("paths/python_system_script_dir").toString();
+	d_python_path = d_view_state.get_application_state().get_user_preferences().get_value("paths/python_system_script_dir").toString();
 	// d_python_path = "scripts";
 
 	// Temporary path during development
-	d_python_path = "/home/robin/Desktop/Hellinger/scripts";
+	// d_python_path = "/home/robin/Desktop/Hellinger/scripts";
 
 	qDebug() << "python path: " << d_python_path;
 
