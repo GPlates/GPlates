@@ -32,12 +32,12 @@
 #include <boost/optional.hpp>
 
 #include "AppLogicFwd.h"
+#include "ReconstructionGeometry.h"
 
 #include "maths/PolygonIntersections.h"
 #include "maths/PolygonOnSphere.h"
 
 #include "model/types.h"
-
 
 namespace GPlatesAppLogic
 {

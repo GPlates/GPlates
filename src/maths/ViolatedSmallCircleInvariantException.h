@@ -47,7 +47,7 @@ namespace GPlatesMaths
 				: _msg(msg) {  }
 
 			virtual
-			~ViolatedSmallCircleInvariantException() {  }
+			~ViolatedSmallCircleInvariantException() throw() {  }
 
 		protected:
 			virtual const char *
