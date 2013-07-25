@@ -27,7 +27,7 @@
 
 #ifndef GPLATES_UTILS_SAFEBOOL_H
 #define GPLATES_UTILS_SAFEBOOL_H
-
+#include <stdlib.h>
 namespace GPlatesUtils
 {
 	/**

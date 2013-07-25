@@ -28,6 +28,7 @@
 #ifndef _GPLATES_MATHS_SPHERIALDISTANCE_H_
 #define _GPLATES_MATHS_SPHERIALDISTANCE_H_
 
+#include <boost/optional.hpp>
 #include <boost/mpl/assert.hpp>
 #include <boost/mpl/contains.hpp>
 #include <boost/mpl/vector.hpp>

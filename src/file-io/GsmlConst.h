@@ -28,6 +28,8 @@
 #ifndef GPLATES_FILEIO_GSMLCONST_H
 #define GPLATES_FILEIO_GSMLCONST_H
 
+#include <QString>
+
 namespace GPlatesFileIO
 {
 	namespace GsmlConst

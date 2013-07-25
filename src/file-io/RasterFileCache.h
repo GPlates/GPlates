@@ -28,6 +28,7 @@
 
 #include <exception>
 #include <boost/shared_ptr.hpp>
+#include <QDateTime>
 #include <QDebug>
 #include <QFile>
 #include <QFileInfo>
