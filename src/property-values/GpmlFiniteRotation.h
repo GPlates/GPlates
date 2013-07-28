@@ -32,8 +32,11 @@
 
 #include "GmlPoint.h"
 #include "GpmlMeasure.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "maths/FiniteRotation.h"
+
 #include "model/PropertyValue.h"
 
 
@@ -54,16 +57,15 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation> non_null_ptr_to_const_type;
+
 
 		virtual
 		~GpmlFiniteRotation()
@@ -75,7 +77,10 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				const GPlatesMaths::FiniteRotation &finite_rotation);
+				const GPlatesMaths::FiniteRotation &finite_rotation)
+		{
+			return non_null_ptr_type(new GpmlFiniteRotation(finite_rotation));
+		}
 
 		/**
 		 * Create a GpmlFiniteRotation instance from an Euler pole (longitude, latitude)
@@ -133,22 +138,12 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create_zero_rotation();
 
-		const GpmlFiniteRotation::non_null_ptr_type
+
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlFiniteRotation::non_null_ptr_type dup(new GpmlFiniteRotation(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GpmlFiniteRotation>(clone_impl());
 		}
-
-		const GpmlFiniteRotation::non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Return whether this GpmlFiniteRotation instance represents a "zero" rotation.
@@ -168,9 +163,9 @@ namespace GPlatesPropertyValues
 		 * this instance.
 		 */
 		const GPlatesMaths::FiniteRotation &
-		finite_rotation() const
+		get_finite_rotation() const
 		{
-			return d_finite_rotation;
+			return get_current_revision<Revision>().finite_rotation;
 		}
 
 		/**
@@ -178,11 +173,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_finite_rotation(
-				const GPlatesMaths::FiniteRotation &fr)
-		{
-			d_finite_rotation = fr;
-			update_instance_id();
-		}
+				const GPlatesMaths::FiniteRotation &fr);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -235,10 +226,15 @@ namespace GPlatesPropertyValues
 		explicit
 		GpmlFiniteRotation(
 				const GPlatesMaths::FiniteRotation &finite_rotation_):
-			PropertyValue(),
-			d_finite_rotation(finite_rotation_)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(finite_rotation_)))
 		{  }
 
+		// This constructor is used by derived classes.
+		explicit
+		GpmlFiniteRotation(
+				const Revision::non_null_ptr_type &revision_):
+			PropertyValue(revision_)
+		{  }
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
@@ -247,13 +243,56 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GpmlFiniteRotation(
 				const GpmlFiniteRotation &other):
-			PropertyValue(other), /* share instance id */
-			d_finite_rotation(other.d_finite_rotation)
+			PropertyValue(other)
 		{  }
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GpmlFiniteRotation(*this));
+		}
+
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					const GPlatesMaths::FiniteRotation &finite_rotation_) :
+				finite_rotation(finite_rotation_)
+			{  }
+
+			Revision(
+					const Revision &other) :
+				finite_rotation(other.finite_rotation)
+			{  }
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = static_cast<const Revision &>(other);
+
+				return finite_rotation == other_revision.finite_rotation &&
+					GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			GPlatesMaths::FiniteRotation finite_rotation;
+		};
 
 	private:
 
-		GPlatesMaths::FiniteRotation d_finite_rotation;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

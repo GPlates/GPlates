@@ -30,10 +30,20 @@
 #include "GpmlPlateId.h"
 
 
+void
+GPlatesPropertyValues::GpmlPlateId::set_value(
+		const GPlatesModel::integer_plate_id_type &p)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().value = p;
+	revision_handler.handle_revision_modification();
+}
+
+
 std::ostream &
 GPlatesPropertyValues::GpmlPlateId::print_to(
 		std::ostream &os) const
 {
-	return os << d_value;
+	return os << get_current_revision<Revision>().value;
 }
 

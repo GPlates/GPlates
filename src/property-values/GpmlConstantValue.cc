@@ -26,20 +26,27 @@
  */
 
 #include <iostream>
-#include <typeinfo>
 
 #include "GpmlConstantValue.h"
 
 
-const GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
-GPlatesPropertyValues::GpmlConstantValue::deep_clone() const
+void
+GPlatesPropertyValues::GpmlConstantValue::set_value(
+		GPlatesModel::PropertyValue::non_null_ptr_type v)
 {
-	GpmlConstantValue::non_null_ptr_type dup = clone();
-	GPlatesModel::PropertyValue::non_null_ptr_type cloned_value =
-			d_value->deep_clone_as_prop_val();
-	dup->d_value = cloned_value;
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().value = v;
+	revision_handler.handle_revision_modification();
+}
 
-	return dup;
+
+void
+GPlatesPropertyValues::GpmlConstantValue::set_description(
+		const GPlatesUtils::UnicodeString &new_description)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().description = new_description;
+	revision_handler.handle_revision_modification();
 }
 
 
@@ -47,24 +54,5 @@ std::ostream &
 GPlatesPropertyValues::GpmlConstantValue::print_to(
 		std::ostream &os) const
 {
-	return os << *d_value;
+	return os << get_current_revision<Revision>().value;
 }
-
-
-bool
-GPlatesPropertyValues::GpmlConstantValue::directly_modifiable_fields_equal(
-		const GPlatesModel::PropertyValue &other) const
-{
-	try
-	{
-		const GpmlConstantValue &other_casted =
-			dynamic_cast<const GpmlConstantValue &>(other);
-		return *d_value == *other_casted.d_value;
-	}
-	catch (const std::bad_cast &)
-	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
-	}
-}
-

@@ -29,10 +29,11 @@
 #define GPLATES_PROPERTYVALUES_GPMLTIMESAMPLE_H
 
 #include "GmlTimeInstant.h"
-#include "model/PropertyValue.h"
-#include "XsString.h"
+
 #include "StructuralType.h"
-#include "model/FeatureVisitor.h"
+#include "XsString.h"
+
+#include "model/PropertyValue.h"
 
 
 namespace GPlatesPropertyValues
@@ -60,6 +61,10 @@ namespace GPlatesPropertyValues
 			d_is_disabled(is_disabled_)
 		{  }
 
+		/**
+		 * Copy constructor performs a shallow copy - the internal property values are shared
+		 * between the original and copy-constructed objects.
+		 */
 		GpmlTimeSample(
 				const GpmlTimeSample &other) :
 			d_value(other.d_value),
@@ -69,11 +74,19 @@ namespace GPlatesPropertyValues
 			d_is_disabled(other.d_is_disabled)
 		{  }
 
+		/**
+		 * Returns a (deep-copy) clone of this GpmlTimeSample.
+		 *
+		 * Note that the copy constructor of GpmlTimeSample is a shallow copy.
+		 */
 		const GpmlTimeSample
-		deep_clone() const;
+		clone() const;
 
+		/**
+		 * Returns the time-dependent property value.
+		 */
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
-		value() const
+		get_value() const
 		{
 			return d_value;
 		}
@@ -83,6 +96,8 @@ namespace GPlatesPropertyValues
 		// assigned-to, which means that this function does not provide a means to directly
 		// switch the PropertyValue within this GpmlTimeSample instance.  (This
 		// restriction is intentional.)
+		// However the property value contained within can be modified, and this causes no
+		// revisioning problems because all property values take care of their own revisioning.
 		//
 		// To switch the PropertyValue within this GpmlTimeSample instance, use the
 		// function @a set_value below.
@@ -90,7 +105,7 @@ namespace GPlatesPropertyValues
 		// (This overload is provided to allow the referenced PropertyValue instance to
 		// accept a FeatureVisitor instance.)
 		const GPlatesModel::PropertyValue::non_null_ptr_type
-		value()
+		get_value()
 		{
 			return d_value;
 		}
@@ -102,8 +117,13 @@ namespace GPlatesPropertyValues
 			d_value = v;
 		}
 
+		/**
+		 * Note that the return time instant is a pointer to a 'const' time instant, otherwise
+		 * it would be possible to by-pass property value revisioning (eg, in GpmlIrregularSampling).
+		 * To set the time use @a set_valid_time.
+		 */
 		const GmlTimeInstant::non_null_ptr_to_const_type
-		valid_time() const
+		get_valid_time() const
 		{
 			return d_valid_time;
 		}
@@ -113,6 +133,8 @@ namespace GPlatesPropertyValues
 		// assigned-to, which means that this function does not provide a means to directly
 		// switch the GmlTimeInstant within this GpmlTimeSample instance.  (This
 		// restriction is intentional.)
+		// However the property value contained within can be modified, and this causes no
+		// revisioning problems because all property values take care of their own revisioning.
 		//
 		// To switch the GmlTimeInstant within this GpmlTimeSample instance, use the
 		// function @a set_valid_time below.
@@ -120,7 +142,7 @@ namespace GPlatesPropertyValues
 		// (This overload is provided to allow the referenced GmlTimeInstant instance to
 		// accept a FeatureVisitor instance.)
 		const GmlTimeInstant::non_null_ptr_type
-		valid_time()
+		get_valid_time()
 		{
 			return d_valid_time;
 		}
@@ -133,24 +155,7 @@ namespace GPlatesPropertyValues
 		}
 
 		const boost::intrusive_ptr<const XsString>
-		description() const
-		{
-			return d_description;
-		}
-
-		// Note that, because the copy-assignment operator of XsString is private, the
-		// XsString referenced by the return-value of this function cannot be assigned-to,
-		// which means that this function does not provide a means to directly switch the
-		// XsString within this GpmlTimeSample instance.  (This restriction is
-		// intentional.)
-		//
-		// To switch the XsString within this GpmlTimeSample instance, use the function
-		// @a set_value below.
-		//
-		// (This overload is provided to allow the referenced XsString instance to accept a
-		// FeatureVisitor instance.)
-		const boost::intrusive_ptr<XsString>
-		description()
+		get_description() const
 		{
 			return d_description;
 		}
@@ -165,7 +170,7 @@ namespace GPlatesPropertyValues
 		// Note that no "setter" is provided:  The value type of a GpmlTimeSample instance
 		// should never be changed.
 		const StructuralType &
-		value_type() const
+		get_value_type() const
 		{
 			return d_value_type;
 		}

@@ -49,14 +49,12 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlConstantValue>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlConstantValue>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlConstantValue> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlConstantValue>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlConstantValue>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlConstantValue> non_null_ptr_to_const_type;
 
@@ -65,26 +63,15 @@ namespace GPlatesPropertyValues
 		~GpmlConstantValue()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
 				GPlatesModel::PropertyValue::non_null_ptr_type value_,
 				const StructuralType &value_type_)
 		{
-			non_null_ptr_type ptr(new GpmlConstantValue(value_, value_type_));
-			return ptr;
+			return non_null_ptr_type(new GpmlConstantValue(value_, value_type_));
 		}
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
@@ -92,33 +79,28 @@ namespace GPlatesPropertyValues
 				const StructuralType &value_type_,
 				const GPlatesUtils::UnicodeString &description_)
 		{
-			non_null_ptr_type ptr(new GpmlConstantValue(value_, value_type_, description_));
-			return ptr;
+			return non_null_ptr_type(new GpmlConstantValue(value_, value_type_, description_));
 		}
 
-		const GpmlConstantValue::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlConstantValue::non_null_ptr_type dup(new GpmlConstantValue(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GpmlConstantValue>(clone_impl());
 		}
 
-		const GpmlConstantValue::non_null_ptr_type
-		deep_clone() const;
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
-		value() const
+		get_value() const
 		{
-			return d_value;
+			return get_current_revision<Revision>().value;
 		}
 
 		// Note that, because the copy-assignment operator of PropertyValue is private,
 		// the PropertyValue referenced by the return-value of this function cannot be
 		// assigned-to, which means that this function does not provide a means to directly
-		// switch the PropertyValue within this GpmlConstantValue instance.  (This
-		// restriction is intentional.)
+		// switch the PropertyValue within this GpmlConstantValue instance.  (This restriction
+		// is intentional.).
+		// However the property value contained within can be modified, and this causes no
+		// revisioning problems because all property values take care of their own revisioning.
 		//
 		// To switch the PropertyValue within this GpmlConstantValue instance, use the
 		// function @a set_value below.
@@ -126,39 +108,32 @@ namespace GPlatesPropertyValues
 		// (This overload is provided to allow the referenced PropertyValue instance to
 		// accept a FeatureVisitor instance.)
 		const GPlatesModel::PropertyValue::non_null_ptr_type
-		value()
+		get_value()
 		{
-			return d_value;
+			return get_current_revision<Revision>().value;
 		}
 
 		void
 		set_value(
-				GPlatesModel::PropertyValue::non_null_ptr_type v)
-		{
-			d_value = v;
-		}
+				GPlatesModel::PropertyValue::non_null_ptr_type v);
 
 		// Note that no "setter" is provided:  The value type of a GpmlConstantValue
 		// instance should never be changed.
 		const StructuralType &
-		value_type() const
+		get_value_type() const
 		{
 			return d_value_type;
 		}
 
 		const GPlatesUtils::UnicodeString &
-		description() const
+		get_description() const
 		{
-			return d_description;
+			return get_current_revision<Revision>().description;
 		}
 
 		void
 		set_description(
-				const GPlatesUtils::UnicodeString &new_description)
-		{
-			d_description = new_description;
-			update_instance_id();
-		}
+				const GPlatesUtils::UnicodeString &new_description);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -211,10 +186,8 @@ namespace GPlatesPropertyValues
 		GpmlConstantValue(
 				GPlatesModel::PropertyValue::non_null_ptr_type value_,
 				const StructuralType &value_type_):
-			PropertyValue(),
-			d_value(value_),
-			d_value_type(value_type_),
-			d_description("")
+			PropertyValue(Revision::non_null_ptr_type(new Revision(value_, ""))),
+			d_value_type(value_type_)
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -223,10 +196,8 @@ namespace GPlatesPropertyValues
 				GPlatesModel::PropertyValue::non_null_ptr_type value_,
 				const StructuralType &value_type_,
 				const GPlatesUtils::UnicodeString &description_):
-			PropertyValue(),
-			d_value(value_),
-			d_value_type(value_type_),
-			d_description(description_)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(value_, description_))),
+			d_value_type(value_type_)
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -236,22 +207,86 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GpmlConstantValue(
 				const GpmlConstantValue &other) :
-			PropertyValue(other), /* share instance id */
-			d_value(other.d_value),
-			d_value_type(other.d_value_type),
-			d_description(other.d_description)
+			PropertyValue(other),
+			d_value_type(other.d_value_type)
 		{  }
 
 		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GpmlConstantValue(*this));
+		}
+
+		virtual
 		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const;
+		equality(
+				const PropertyValue &other) const
+		{
+			const GpmlConstantValue &other_pv = static_cast<const GpmlConstantValue &>(other);
+
+			return d_value_type == other_pv.d_value_type &&
+					// The revisioned data comparisons are handled here...
+					GPlatesModel::PropertyValue::equality(other);
+		}
 
 	private:
 
-		GPlatesModel::PropertyValue::non_null_ptr_type d_value;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			Revision(
+					const GPlatesModel::PropertyValue::non_null_ptr_type value_,
+					const GPlatesUtils::UnicodeString &description_) :
+				value(value_),
+				description(description_)
+			{  }
+
+			Revision(
+					const Revision &other) :
+				value(other.value->clone()),
+				description(other.description)
+			{  }
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone_with_shared_nested_property_values() const
+			{
+				// Don't clone the property value - share it instead.
+				return non_null_ptr_type(new Revision(value, description));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = static_cast<const Revision &>(other);
+
+				// Note that we compare the property value contents (and not pointers).
+				return *value == *other_revision.value &&
+						description == other_revision.description &&
+						GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			GPlatesModel::PropertyValue::non_null_ptr_type value;
+			GPlatesUtils::UnicodeString description;
+		};
+
+
+		// Immutable, so doesn't need revisioning.
 		StructuralType d_value_type;
-		GPlatesUtils::UnicodeString d_description;
+
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

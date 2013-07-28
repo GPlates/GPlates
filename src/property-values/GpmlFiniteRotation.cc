@@ -28,23 +28,13 @@
 #include <iostream>
 #include <boost/none.hpp>
 
-#include "GpmlFiniteRotation.h"
 #include "GmlPoint.h"
+#include "GpmlFiniteRotation.h"
+
+#include "maths/FiniteRotation.h"
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
-#include "maths/FiniteRotation.h"
 #include "maths/PointOnSphere.h"
-
-
-const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
-GPlatesPropertyValues::GpmlFiniteRotation::create(
-		const GPlatesMaths::FiniteRotation &finite_rotation)
-{
-	non_null_ptr_type gpml_finite_rotation(
-			new GpmlFiniteRotation(finite_rotation));
-
-	return gpml_finite_rotation;
-}
 
 
 const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
@@ -74,8 +64,8 @@ GPlatesPropertyValues::GpmlFiniteRotation::create(
 {
 	GPlatesMaths::FiniteRotation fr =
 			GPlatesMaths::FiniteRotation::create(
-					*gpml_euler_pole->point(),
-					GPlatesMaths::convert_deg_to_rad(gml_angle_in_degrees->quantity()));
+					*gpml_euler_pole->get_point(),
+					GPlatesMaths::convert_deg_to_rad(gml_angle_in_degrees->get_quantity()));
 
 	return create(fr);
 }
@@ -90,15 +80,32 @@ GPlatesPropertyValues::GpmlFiniteRotation::create_zero_rotation()
 			UnitQuaternion3D::create_identity_rotation(),
 			boost::none);
 
-	non_null_ptr_type finite_rotation_ptr(new GpmlFiniteRotation(fr));
-	return finite_rotation_ptr;
+	return create(fr);
 }
 
 
 bool
 GPlatesPropertyValues::GpmlFiniteRotation::is_zero_rotation() const
 {
-	return ::GPlatesMaths::represents_identity_rotation(d_finite_rotation.unit_quat());
+	return ::GPlatesMaths::represents_identity_rotation(get_finite_rotation().unit_quat());
+}
+
+
+void
+GPlatesPropertyValues::GpmlFiniteRotation::set_finite_rotation(
+		const GPlatesMaths::FiniteRotation &fr)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().finite_rotation = fr;
+	revision_handler.handle_revision_modification();
+}
+
+
+std::ostream &
+GPlatesPropertyValues::GpmlFiniteRotation::print_to(
+		std::ostream &os) const
+{
+	return os << get_current_revision<Revision>().finite_rotation;
 }
 
 
@@ -111,8 +118,8 @@ GPlatesPropertyValues::calculate_euler_pole(
 
 	// If 'fr' is a zero rotation, this will throw an exception.
 	UnitQuaternion3D::RotationParams rp =
-			fr.finite_rotation().unit_quat().get_rotation_params(
-					fr.finite_rotation().axis_hint());
+			fr.get_finite_rotation().unit_quat().get_rotation_params(
+					fr.get_finite_rotation().axis_hint());
 	return GmlPoint::create(PointOnSphere(rp.axis));
 }
 
@@ -126,16 +133,7 @@ GPlatesPropertyValues::calculate_angle(
 
 	// If 'fr' is a zero rotation, this will throw an exception.
 	UnitQuaternion3D::RotationParams rp =
-			fr.finite_rotation().unit_quat().get_rotation_params(
-					fr.finite_rotation().axis_hint());
+			fr.get_finite_rotation().unit_quat().get_rotation_params(
+					fr.get_finite_rotation().axis_hint());
 	return GPlatesMaths::convert_rad_to_deg(rp.angle);
 }
-
-
-std::ostream &
-GPlatesPropertyValues::GpmlFiniteRotation::print_to(
-		std::ostream &os) const
-{
-	return os << d_finite_rotation;
-}
-

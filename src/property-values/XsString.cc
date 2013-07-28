@@ -30,10 +30,20 @@
 #include "XsString.h"
 
 
+void
+GPlatesPropertyValues::XsString::set_value(
+		const TextContent &tc)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().value = tc;
+	revision_handler.handle_revision_modification();
+}
+
+
 std::ostream &
 GPlatesPropertyValues::XsString::print_to(
 		std::ostream &os) const
 {
-	return os << d_value.get();
+	return os << get_current_revision<Revision>().value.get();
 }
 

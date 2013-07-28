@@ -25,50 +25,26 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/utility/compare_pointees.hpp>
+
 #include "GpmlTimeSample.h"
 
 
-namespace
-{
-	bool
-	intrusive_ptr_eq(
-			const boost::intrusive_ptr<GPlatesPropertyValues::XsString> &p1,
-			const boost::intrusive_ptr<GPlatesPropertyValues::XsString> &p2)
-	{
-		if (p1)
-		{
-			if (!p2)
-			{
-				return false;
-			}
-			return *p1 == *p2;
-		}
-		else
-		{
-			return !p2;
-		}
-	}
-}
-
-
 const GPlatesPropertyValues::GpmlTimeSample
-GPlatesPropertyValues::GpmlTimeSample::deep_clone() const
+GPlatesPropertyValues::GpmlTimeSample::clone() const
 {
-	GpmlTimeSample dup(*this);
-
-	GPlatesModel::PropertyValue::non_null_ptr_type cloned_value =
-			d_value->deep_clone_as_prop_val();
-	dup.d_value = cloned_value;
-
-	GmlTimeInstant::non_null_ptr_type cloned_valid_time = d_valid_time->deep_clone();
-	dup.d_valid_time = cloned_valid_time;
-
-	if (d_description) {
-		XsString::non_null_ptr_type cloned_description = d_description->deep_clone();
-		dup.d_description = boost::intrusive_ptr<XsString>(cloned_description.get());
+	boost::intrusive_ptr<XsString> cloned_description;
+	if (d_description)
+	{
+		cloned_description.reset(d_description.get()->clone().get());
 	}
 
-	return dup;
+	return GpmlTimeSample(
+			d_value->clone(),
+			d_valid_time->clone(),
+			cloned_description,
+			d_value_type,
+			d_is_disabled);
 }
 
 
@@ -78,7 +54,7 @@ GPlatesPropertyValues::GpmlTimeSample::operator==(
 {
 	return *d_value == *other.d_value &&
 		*d_valid_time == *other.d_valid_time &&
-		intrusive_ptr_eq(d_description, other.d_description) &&
+		boost::equal_pointees(d_description, other.d_description) &&
 		d_value_type == other.d_value_type &&
 		d_is_disabled == other.d_is_disabled;
 }

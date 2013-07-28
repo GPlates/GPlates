@@ -31,6 +31,7 @@
 #include <map>
 
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/PropertyValue.h"
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
@@ -56,20 +57,15 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlMeasure> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlMeasure>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlMeasure>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlMeasure> non_null_ptr_to_const_type;
+
 
 		virtual
 		~GpmlMeasure()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
@@ -77,27 +73,14 @@ namespace GPlatesPropertyValues
 				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
 						quantity_xml_attributes_)
 		{
-			non_null_ptr_type ptr(
-					new GpmlMeasure(quantity, quantity_xml_attributes_));
-			return ptr;
+			return non_null_ptr_type(new GpmlMeasure(quantity, quantity_xml_attributes_));
 		}
 
-		const GpmlMeasure::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlMeasure::non_null_ptr_type dup(new GpmlMeasure(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GpmlMeasure>(clone_impl());
 		}
-
-		const GpmlMeasure::non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Access the quantity contained in this GpmlMeasure.
@@ -108,43 +91,33 @@ namespace GPlatesPropertyValues
 		 * below.
 		 */
 		const double &
-		quantity() const
+		get_quantity() const
 		{
-			return d_quantity;
+			return get_current_revision<Revision>().quantity;
 		}
 
 		/**
 		 * Set the quantity of this GpmlMeasure to @a q.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_quantity(
-				const double &q)
-		{
-			d_quantity = q;
-			update_instance_id();
-		}
+				const double &q);
 
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map?  (For consistency with the non-const
 		// overload...)
 		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-		quantity_xml_attributes() const
+		get_quantity_xml_attributes() const
 		{
-			return d_quantity_xml_attributes;
+			return get_current_revision<Revision>().quantity_xml_attributes;
 		}
 
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map, as well as per-index assignment (setter) and
 		// removal operations?  This would ensure that revisioning is correctly handled...
-		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-		quantity_xml_attributes()
-		{
-			return d_quantity_xml_attributes;
-		}
+		void
+		set_quantity_xml_attributes(
+				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &qxa);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -198,9 +171,7 @@ namespace GPlatesPropertyValues
 				const double &quantity_,
 				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
 						quantity_xml_attributes_):
-			PropertyValue(),
-			d_quantity(quantity_),
-			d_quantity_xml_attributes(quantity_xml_attributes_)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(quantity_, quantity_xml_attributes_)))
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -210,21 +181,61 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GpmlMeasure(
 				const GpmlMeasure &other) :
-			PropertyValue(other), /* share instance id */
-			d_quantity(other.d_quantity),
-			d_quantity_xml_attributes(other.d_quantity_xml_attributes)
+			PropertyValue(other)
 		{  }
 
 		virtual
-		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const;
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GpmlMeasure(*this));
+		}
 
 	private:
 
-		double d_quantity;
-		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
-				d_quantity_xml_attributes;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			Revision(
+					const double &quantity_,
+					const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
+						quantity_xml_attributes_) :
+				quantity(quantity_),
+				quantity_xml_attributes(quantity_xml_attributes_)
+			{  }
+
+			Revision(
+					const Revision &other) :
+				quantity(other.quantity),
+				quantity_xml_attributes(other.quantity_xml_attributes)
+			{  }
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = static_cast<const Revision &>(other);
+
+				return quantity == other_revision.quantity &&
+						quantity_xml_attributes == other_revision.quantity_xml_attributes &&
+						GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			double quantity;
+			std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> quantity_xml_attributes;
+		};
+
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

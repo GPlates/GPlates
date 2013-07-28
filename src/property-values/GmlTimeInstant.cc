@@ -26,28 +26,28 @@
  */
 
 #include <iostream>
-#include <typeinfo>
 
 #include "GmlTimeInstant.h"
 
 
-GPlatesPropertyValues::GmlTimeInstant::GmlTimeInstant(
-		const GeoTimeInstant &time_position_,
-		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-				time_position_xml_attributes_):
-	PropertyValue(),
-	d_time_position(time_position_),
-	d_time_position_xml_attributes(time_position_xml_attributes_)
+void
+GPlatesPropertyValues::GmlTimeInstant::set_time_position(
+		const GeoTimeInstant &tp)
 {
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().time_position = tp;
+	revision_handler.handle_revision_modification();
 }
 
 
-GPlatesPropertyValues::GmlTimeInstant::GmlTimeInstant(
-		const GmlTimeInstant &other) :
-	PropertyValue(other), /* share instance id */
-	d_time_position(other.d_time_position),
-	d_time_position_xml_attributes(other.d_time_position_xml_attributes)
+void
+GPlatesPropertyValues::GmlTimeInstant::set_time_position_xml_attributes(
+		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
+				tpxa)
 {
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().time_position_xml_attributes = tpxa;
+	revision_handler.handle_revision_modification();
 }
 
 
@@ -55,24 +55,5 @@ std::ostream &
 GPlatesPropertyValues::GmlTimeInstant::print_to(
 		std::ostream &os) const
 {
-	return os << d_time_position;
+	return os << get_current_revision<Revision>().time_position;
 }
-
-
-bool
-GPlatesPropertyValues::GmlTimeInstant::directly_modifiable_fields_equal(
-		const PropertyValue &other) const
-{
-	try
-	{
-		const GmlTimeInstant &other_casted =
-			dynamic_cast<const GmlTimeInstant &>(other);
-		return d_time_position_xml_attributes == other_casted.d_time_position_xml_attributes;
-	}
-	catch (const std::bad_cast &)
-	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
-	}
-}
-

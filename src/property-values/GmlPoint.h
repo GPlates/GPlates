@@ -60,10 +60,10 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlPoint> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlPoint>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GmlPoint>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlPoint> non_null_ptr_to_const_type;
+
 
 		virtual
 		~GmlPoint()
@@ -100,11 +100,6 @@ namespace GPlatesPropertyValues
 		 * longitude value; the second is expected to be a latitude.  This is the form used
 		 * in GML.
 		 */
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
@@ -130,27 +125,14 @@ namespace GPlatesPropertyValues
 				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p,
 				GmlProperty gml_property_ = POS)
 		{
-			GmlPoint::non_null_ptr_type point_ptr(
-					new GmlPoint(p, gml_property_));
-			return point_ptr;
+			return non_null_ptr_type(new GmlPoint(p, gml_property_));
 		}
 
-		const GmlPoint::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GmlPoint::non_null_ptr_type dup(new GmlPoint(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GmlPoint>(clone_impl());
 		}
-
-		const GmlPoint::non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Access the GPlatesMaths::PointOnSphere which encodes the geometry of this
@@ -163,9 +145,9 @@ namespace GPlatesPropertyValues
 		 * function @a set_point below.
 		 */
 		const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere>
-		point() const
+		get_point() const
 		{
-			return d_point;
+			return get_current_revision<Revision>().point;
 		}
 
 		/**
@@ -182,33 +164,20 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the point within this instance to @a p.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_point(
-				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p)
-		{
-			d_point = p;
-			d_original_longitude = boost::none;
-			update_instance_id();
-		}
+				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p);
 
 		GmlProperty
 		gml_property() const
 		{
-			return d_gml_property;
+			return get_current_revision<Revision>().gml_property;
 		}
 
 		void
 		set_gml_property(
-				GmlProperty gml_property_)
-		{
-			d_gml_property = gml_property_;
-			update_instance_id();
-		}
+				GmlProperty gml_property_);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -261,12 +230,10 @@ namespace GPlatesPropertyValues
 		explicit
 		GmlPoint(
 				GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> point_,
-				GmlProperty gml_property_):
-			PropertyValue(),
-			d_point(point_),
-			d_gml_property(gml_property_)
+				GmlProperty gml_property_,
+				boost::optional<double> original_longitude_ = boost::none) :
+			PropertyValue(Revision::non_null_ptr_type(new Revision(point_, gml_property_, original_longitude_)))
 		{  }
-
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
@@ -275,28 +242,78 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GmlPoint(
 				const GmlPoint &other):
-			PropertyValue(other), /* share instance id */
-			d_point(other.d_point),
-			d_gml_property(other.d_gml_property)
+			PropertyValue(other)
 		{  }
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GmlPoint(*this));
+		}
 
 	private:
 
-		GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> d_point;
-		GmlProperty d_gml_property;
-
 		/**
-		 * This is a hack to remember the original longitude that we were given in the
-		 * version of create() that takes a std::pair<double, double>.
-		 *
-		 * This is necessary when the latitude is 90 or -90, because we lose longitude
-		 * information when the lat-lon gets converted to a 3D vector (all points with
-		 * latitude of 90 are the exact same point on the 3D sphere, the north pole).
-		 * While this might not matter in many cases, there are times when we care
-		 * about the original longitude, in particular in storing the origin of a
-		 * georeferenced raster.
+		 * Property value data that is mutable/revisionable.
 		 */
-		boost::optional<double> d_original_longitude;
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> &point_,
+					GmlProperty gml_property_,
+					boost::optional<double> original_longitude_):
+				point(point_),
+				gml_property(gml_property_),
+				original_longitude(original_longitude_)
+			{  }
+
+			Revision(
+					const Revision &other) :
+				point(other.point->clone_as_point()),
+				gml_property(other.gml_property),
+				original_longitude(other.original_longitude)
+			{  }
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = static_cast<const Revision &>(other);
+
+				return *point == *other_revision.point &&
+						gml_property == other_revision.gml_property &&
+						original_longitude == other_revision.original_longitude &&
+						GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> point;
+			GmlProperty gml_property;
+
+			/**
+			 * This is a hack to remember the original longitude that we were given in the
+			 * version of create() that takes a std::pair<double, double>.
+			 *
+			 * This is necessary when the latitude is 90 or -90, because we lose longitude
+			 * information when the lat-lon gets converted to a 3D vector (all points with
+			 * latitude of 90 are the exact same point on the 3D sphere, the north pole).
+			 * While this might not matter in many cases, there are times when we care
+			 * about the original longitude, in particular in storing the origin of a
+			 * georeferenced raster.
+			 */
+			boost::optional<double> original_longitude;
+		};
+
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

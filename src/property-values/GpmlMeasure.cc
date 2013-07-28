@@ -26,33 +26,34 @@
  */
 
 #include <iostream>
-#include <typeinfo>
 
 #include "GpmlMeasure.h"
+
+
+void
+GPlatesPropertyValues::GpmlMeasure::set_quantity(
+		const double &q)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().quantity = q;
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GpmlMeasure::set_quantity_xml_attributes(
+		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &qxa)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().quantity_xml_attributes = qxa;
+	revision_handler.handle_revision_modification();
+}
 
 
 std::ostream &
 GPlatesPropertyValues::GpmlMeasure::print_to(
 		std::ostream &os) const
 {
-	return os << d_quantity;
-}
-
-
-bool
-GPlatesPropertyValues::GpmlMeasure::directly_modifiable_fields_equal(
-		const GPlatesModel::PropertyValue &other) const
-{
-	try
-	{
-		const GpmlMeasure &other_casted =
-			dynamic_cast<const GpmlMeasure &>(other);
-		return d_quantity_xml_attributes == other_casted.d_quantity_xml_attributes;
-	}
-	catch (const std::bad_cast &)
-	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
-	}
+	return os << get_current_revision<Revision>().quantity;
 }
 

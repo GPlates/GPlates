@@ -58,20 +58,15 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlTimeInstant> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlTimeInstant>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GmlTimeInstant>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlTimeInstant> non_null_ptr_to_const_type;
+
 
 		virtual
 		~GmlTimeInstant()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
@@ -79,74 +74,50 @@ namespace GPlatesPropertyValues
 				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
 						time_position_xml_attributes_)
 		{
-			non_null_ptr_type ptr(
-					new GmlTimeInstant(time_position_, time_position_xml_attributes_));
-			return ptr;
+			return non_null_ptr_type(new GmlTimeInstant(time_position_, time_position_xml_attributes_));
 		}
 
-		const GmlTimeInstant::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GmlTimeInstant::non_null_ptr_type dup(new GmlTimeInstant(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GmlTimeInstant>(clone_impl());
 		}
-
-		const GmlTimeInstant::non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
-		 * Access the GeoTimeInstant which encodes the temporal position of this
-		 * GmlTimeInstant.
+		 * Access the GeoTimeInstant which encodes the temporal position of this GmlTimeInstant.
 		 *
 		 * Note that there is no accessor provided which returns a non-const
 		 * GeoTimeInstant. This is intentional. To modify this GmlTimeInstant,
 		 * set a new GeoTimeInstant using the method @a set_time_position()
 		 */
 		const GeoTimeInstant &
-		time_position() const
+		get_time_position() const
 		{
-			return d_time_position;
+			return get_current_revision<Revision>().time_position;
 		}
 
 		/**
 		 * Set the temporal position of this GmlTimeInstant to @a tp.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_time_position(
-				const GeoTimeInstant &tp)
-		{
-			d_time_position = tp;
-			update_instance_id();
-		}
+				const GeoTimeInstant &tp);
 
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map?  (For consistency with the non-const
 		// overload...)
 		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-		time_position_xml_attributes() const
+		get_time_position_xml_attributes() const
 		{
-			return d_time_position_xml_attributes;
+			return get_current_revision<Revision>().time_position_xml_attributes;
 		}
 
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map, as well as per-index assignment (setter) and
 		// removal operations?  This would ensure that revisioning is correctly handled...
-		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-		time_position_xml_attributes()
-		{
-			return d_time_position_xml_attributes;
-		}
+		void
+		set_time_position_xml_attributes(
+				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &tpxa);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -199,7 +170,9 @@ namespace GPlatesPropertyValues
 		GmlTimeInstant(
 				const GeoTimeInstant &time_position_,
 				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-						time_position_xml_attributes_);
+						time_position_xml_attributes_) :
+			PropertyValue(Revision::non_null_ptr_type(new Revision(time_position_, time_position_xml_attributes_)))
+		{  }
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
@@ -207,18 +180,60 @@ namespace GPlatesPropertyValues
 		// Note that this should act exactly the same as the default (auto-generated)
 		// copy-constructor, except it should not be public.
 		GmlTimeInstant(
-				const GmlTimeInstant &other);
+				const GmlTimeInstant &other) :
+			PropertyValue(other)
+		{  }
 
 		virtual
-		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const;
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GmlTimeInstant(*this));
+		}
 
 	private:
 
-		GeoTimeInstant d_time_position;
-		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
-				d_time_position_xml_attributes;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			Revision(
+					const GeoTimeInstant &time_position_,
+					const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
+							time_position_xml_attributes_) :
+				time_position(time_position_),
+				time_position_xml_attributes(time_position_xml_attributes_)
+			{  }
+
+			Revision(
+					const Revision &other);
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = static_cast<const Revision &>(other);
+
+				return time_position == other_revision.time_position &&
+						time_position_xml_attributes == other_revision.time_position_xml_attributes &&
+						GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			GeoTimeInstant time_position;
+			std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
+					time_position_xml_attributes;
+		};
+
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

@@ -26,55 +26,127 @@
  */
 #include <boost/foreach.hpp>
 #include <iostream>
-#include <typeinfo>
 
 #include "GpmlIrregularSampling.h"
 
-namespace
+#include "GpmlTotalReconstructionPole.h"
+
+#include "model/Metadata.h"
+#include "model/NotificationGuard.h"
+
+
+void
+GPlatesPropertyValues::GpmlIrregularSampling::set_time_samples(
+		const std::vector<GpmlTimeSample> &time_samples)
 {
-	bool
-	maybe_null_ptr_eq(
-			const GPlatesPropertyValues::GpmlInterpolationFunction::maybe_null_ptr_type &p1,
-			const GPlatesPropertyValues::GpmlInterpolationFunction::maybe_null_ptr_type &p2)
-	{
-		if (p1)
-		{
-			if (!p2)
-			{
-				return false;
-			}
-			return *p1 == *p2;
-		}
-		else
-		{
-			return !p2;
-		}
-	}
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().time_samples = time_samples;
+	revision_handler.handle_revision_modification();
 }
 
 
-const GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
-GPlatesPropertyValues::GpmlIrregularSampling::deep_clone() const
+void
+GPlatesPropertyValues::GpmlIrregularSampling::set_interpolation_function(
+		GpmlInterpolationFunction::maybe_null_ptr_type interpolation_function)
 {
-	GpmlIrregularSampling::non_null_ptr_type dup = clone();
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().interpolation_function = interpolation_function;
+	revision_handler.handle_revision_modification();
+}
 
-	// Now we need to clear the time sample vector in the duplicate, before we push-back the
-	// cloned time samples.
-	dup->d_time_samples.clear();
-	std::vector<GpmlTimeSample>::const_iterator iter, end = d_time_samples.end();
-	for (iter = d_time_samples.begin(); iter != end; ++iter) {
-		dup->d_time_samples.push_back((*iter).deep_clone());
+
+bool
+GPlatesPropertyValues::GpmlIrregularSampling::is_disabled() const
+{
+	return contains_disabled_sequence_flag();
+}
+
+
+void
+GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
+		bool flag)
+{
+	if (get_time_samples().empty())
+	{
+		qWarning() << "No time sample found in this GpmlIrregularSampling.";
+		return;
 	}
 
-	if (d_interpolation_function) {
-		GpmlInterpolationFunction::non_null_ptr_type cloned_interpolation_function =
-				d_interpolation_function->deep_clone_as_interp_func();
-		dup->d_interpolation_function =
-				GpmlInterpolationFunction::maybe_null_ptr_type(
-						cloned_interpolation_function.get());
+	// Merge model events across this scope to avoid excessive number of model callbacks
+	// when modifying the total reconstruction pole property values.
+	GPlatesModel::NotificationGuard model_notification_guard(model_ptr());
+
+	MutableRevisionHandler revision_handler(this);
+	Revision &mutable_revision = revision_handler.get_mutable_revision<Revision>();
+
+	using namespace GPlatesModel;
+	//first, remove all DISABLED_SEQUENCE_FLAG
+	BOOST_FOREACH(GpmlTimeSample &sample, mutable_revision.time_samples)
+	{
+		GpmlTotalReconstructionPole *trs_pole = 
+			dynamic_cast<GpmlTotalReconstructionPole *>(sample.get_value().get());
+		if(trs_pole)
+		{
+			const MetadataContainer &meta_data = trs_pole->get_metadata();
+			MetadataContainer new_meta_data;
+			BOOST_FOREACH(Metadata::shared_ptr_type m, meta_data)
+			{
+				if(m->get_name() != Metadata::DISABLED_SEQUENCE_FLAG)
+				{
+					new_meta_data.push_back(m);
+				}
+			}
+			trs_pole->set_metadata(new_meta_data);
+		}
 	}
 
-	return dup;
+	//then add new DISABLED_SEQUENCE_FLAG
+	GpmlTotalReconstructionPole *first_pole = 
+		dynamic_cast<GpmlTotalReconstructionPole *>(mutable_revision.time_samples[0].get_value().get());
+	if(flag && first_pole)
+	{
+		MetadataContainer first_pole_meta_data = first_pole->get_metadata();
+
+		first_pole_meta_data.insert(
+				first_pole_meta_data.begin(), 
+				Metadata::shared_ptr_type(
+						new Metadata(
+								Metadata::DISABLED_SEQUENCE_FLAG, 
+								"true")));
+
+		first_pole->set_metadata(first_pole_meta_data);
+	}
+
+	revision_handler.handle_revision_modification();
+}
+
+
+bool
+GPlatesPropertyValues::GpmlIrregularSampling::contains_disabled_sequence_flag() const 
+{
+	using namespace GPlatesModel;
+
+	const std::vector<GpmlTimeSample> &time_samples = get_time_samples();
+
+	BOOST_FOREACH(const GpmlTimeSample &sample, time_samples)
+	{
+		const GpmlTotalReconstructionPole *trs_pole = 
+			dynamic_cast<const GpmlTotalReconstructionPole *>(sample.get_value().get());
+		if(trs_pole)
+		{
+			const MetadataContainer &meta_data = trs_pole->get_metadata();
+			BOOST_FOREACH(const Metadata::shared_ptr_type m, meta_data)
+			{
+				if((m->get_name() == Metadata::DISABLED_SEQUENCE_FLAG) && 
+					!m->get_content().compare("true",Qt::CaseInsensitive))
+				{
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
 }
 
 
@@ -87,99 +159,18 @@ GPlatesPropertyValues::GpmlIrregularSampling::print_to(
 }
 
 
-bool
-GPlatesPropertyValues::GpmlIrregularSampling::directly_modifiable_fields_equal(
-		const GPlatesModel::PropertyValue &other) const
+GPlatesPropertyValues::GpmlIrregularSampling::Revision::Revision(
+		const Revision &other)
 {
-	try
+	// The copy constructor of GpmlTimeSample does *not* clone its members,
+	// instead it has a 'clone()' member function for that...
+	BOOST_FOREACH(const GpmlTimeSample &time_sample, other.time_samples)
 	{
-		const GpmlIrregularSampling &other_casted =
-			dynamic_cast<const GpmlIrregularSampling &>(other);
-		return d_time_samples == other_casted.d_time_samples &&
-			maybe_null_ptr_eq(d_interpolation_function, other_casted.d_interpolation_function);
+		time_samples.push_back(time_sample.clone());
 	}
-	catch (const std::bad_cast &)
+
+	if (other.interpolation_function)
 	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
+		interpolation_function.reset(other.interpolation_function->clone().get());
 	}
 }
-
-
-bool
-GPlatesPropertyValues::GpmlIrregularSampling::is_disabled() const
-{
-		return contain_disabled_sequence_flag();
-}
-
-
-void
-GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
-		bool flag)
-{
-	if(d_time_samples.empty())
-	{
-		qWarning() << "No time sample found in this GpmlIrregularSampling.";
-		return;
-	}
-	using namespace GPlatesModel;
-	//first, remove all DISABLED_SEQUENCE_FLAG
-	BOOST_FOREACH(GpmlTimeSample &sample, d_time_samples)
-	{
-		GpmlTotalReconstructionPole *trs_pole = 
-			dynamic_cast<GpmlTotalReconstructionPole *>(sample.value().get());
-		if(trs_pole)
-		{
-			MetadataContainer 
-				&meta_data = trs_pole->metadata(), new_meta_data;
-			BOOST_FOREACH(Metadata::shared_ptr_type m, meta_data)
-			{
-				if(m->get_name() != Metadata::DISABLED_SEQUENCE_FLAG)
-				{
-					new_meta_data.push_back(m);
-				}
-			}
-			trs_pole->metadata() = new_meta_data;
-		}
-	}
-	//then add new DISABLED_SEQUENCE_FLAG
-	GpmlTotalReconstructionPole *first_pole = 
-		dynamic_cast<GpmlTotalReconstructionPole *>(d_time_samples[0].value().get());
-	if(flag && first_pole)
-	{
-		first_pole->metadata().insert(
-				first_pole->metadata().begin(), 
-				Metadata::shared_ptr_type(
-						new Metadata(
-								Metadata::DISABLED_SEQUENCE_FLAG, 
-								"true")));
-	}
-}
-
-
-bool
-GPlatesPropertyValues::GpmlIrregularSampling::contain_disabled_sequence_flag() const 
-{
-	using namespace GPlatesModel;
-	BOOST_FOREACH(const GpmlTimeSample &sample, d_time_samples)
-	{
-		const GpmlTotalReconstructionPole *trs_pole = 
-			dynamic_cast<const GpmlTotalReconstructionPole *>(sample.value().get());
-		if(trs_pole)
-		{
-			const MetadataContainer &meta_data = trs_pole->metadata();
-			BOOST_FOREACH(const Metadata::shared_ptr_type m, meta_data)
-			{
-				if((m->get_name() == Metadata::DISABLED_SEQUENCE_FLAG) && 
-					!m->get_content().compare("true",Qt::CaseInsensitive))
-				{
-					return true;
-				}
-			}
-		}
-	}
-	return false;
-}
-
-
-

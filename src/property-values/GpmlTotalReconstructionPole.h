@@ -26,11 +26,15 @@
 
 #ifndef GPLATES_PROPERTYVALUES_GPMLTRS_H
 #define GPLATES_PROPERTYVALUES_GPMLTRS_H
+
+#include "GpmlFiniteRotation.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "maths/FiniteRotation.h"
+
 #include "model/Metadata.h"
 #include "model/PropertyValue.h"
-#include "property-values/GpmlFiniteRotation.h"
 
 
 // Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
@@ -40,60 +44,64 @@ DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlTotalReconstructionPole
 
 namespace GPlatesPropertyValues 
 {
-	class GpmlTotalReconstructionPole:
-		public GpmlFiniteRotation
+	class GpmlTotalReconstructionPole :
+			public GpmlFiniteRotation
 	{
 	public:
 
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlTotalReconstructionPole> non_null_ptr_type;
 
-		explicit
-		GpmlTotalReconstructionPole(
-				const GPlatesMaths::FiniteRotation &fr):
-			GpmlFiniteRotation(*GpmlFiniteRotation::create(fr))
-		{ }
+
+		static
+		const non_null_ptr_type
+		create(
+				const GPlatesMaths::FiniteRotation &finite_rotation)
+		{
+			return non_null_ptr_type(new GpmlTotalReconstructionPole(finite_rotation));
+		}
+
+		static
+		const non_null_ptr_type
+		create(
+				const GPlatesMaths::FiniteRotation &finite_rotation,
+				GPlatesModel::XmlElementNode::non_null_ptr_type xml_element)
+		{
+			return non_null_ptr_type(new GpmlTotalReconstructionPole(finite_rotation, xml_element));
+		}
+
+
+		const non_null_ptr_type
+		clone() const
+		{
+			return GPlatesUtils::dynamic_pointer_cast<GpmlTotalReconstructionPole>(clone_impl());
+		}
 
 		
-		GpmlTotalReconstructionPole(
-				const GPlatesMaths::FiniteRotation &fr, 
-				GPlatesModel::XmlElementNode::non_null_ptr_type xml_element):
-			GpmlFiniteRotation(*GpmlFiniteRotation::create(fr))
+		/**
+		 * FIXME: Re-implement MetadataContainer because it's currently possible to modify the
+		 * metadata in a 'const' MetadataContainer and this by-passes revisioning.
+		 */
+		const GPlatesModel::MetadataContainer &
+		get_metadata() const
 		{
-			static const GPlatesModel::XmlElementName META = 
-				GPlatesModel::XmlElementName::create_gpml("meta");
-			std::pair<
-				GPlatesModel::XmlElementNode::child_const_iterator, 
-				boost::optional<GPlatesModel::XmlElementNode::non_null_ptr_type> > child = 
-				xml_element->get_next_child_by_name(META, xml_element->children_begin());
-			while(child.second)
-			{
-				QString buf;
-				QXmlStreamWriter writer(&buf);
-				(*child.second)->write_to(writer);
-				QXmlStreamReader reader(buf);
-				GPlatesUtils::XQuery::next_start_element(reader);
-				QXmlStreamAttributes attr =	reader.attributes(); 
-				QStringRef name =attr.value("name");
-				QString value = reader.readElementText();
-				d_meta.push_back(
-						boost::shared_ptr<GPlatesModel::Metadata>(
-								new GPlatesModel::Metadata(name.toString(),value)));
-				++child.first;
-				child = xml_element->get_next_child_by_name(META, child.first);
-			}
-
-		}
-			
-		const GpmlTotalReconstructionPole::non_null_ptr_type
-		deep_clone() const
-		{
-			GpmlTotalReconstructionPole* p = new GpmlTotalReconstructionPole(finite_rotation());
-			p->metadata() = d_meta;
-			return non_null_ptr_type(p);
+			return get_current_revision<Revision>().meta;
 		}
 
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
+		
+		void
+		set_metadata(
+				const GPlatesModel::MetadataContainer &meta);
 
+
+		GPlatesPropertyValues::StructuralType
+		get_structural_type() const 
+		{
+			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gpml("TotalReconstructionPole");
+			return STRUCTURAL_TYPE;
+		}
+
+
+		virtual
 		void
 		accept_visitor(
 				GPlatesModel::FeatureVisitor &visitor) 
@@ -101,15 +109,7 @@ namespace GPlatesPropertyValues
 			visitor.visit_gpml_total_reconstruction_pole(*this);
 		}
 
-		std::ostream &
-		print_to(
-				std::ostream &os) const
-		{
-			qWarning() << "TODO: implement this function.";
-			os << "TODO: implement this function.";
-			return  os;
-		}
-
+		virtual
 		void
 		accept_visitor(
 				GPlatesModel::ConstFeatureVisitor &visitor) const
@@ -117,29 +117,73 @@ namespace GPlatesPropertyValues
 			visitor.visit_gpml_total_reconstruction_pole(*this);
 		}
 
-		
-		GPlatesModel::MetadataContainer&
-		metadata()
-		{
-			return d_meta;
-		}
-
-		
-		const GPlatesModel::MetadataContainer&
-		metadata() const 
-		{
-			return d_meta;
-		}
-
-		GPlatesPropertyValues::StructuralType
-		get_structural_type() const 
-		{
-			static const StructuralType STRUCTURAL_TYPE = StructuralType::create_gml("TotalReconstructionPole");
-			return STRUCTURAL_TYPE;
-		}
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const;
 
 	protected:
-		GPlatesModel::MetadataContainer d_meta;
+
+		explicit
+		GpmlTotalReconstructionPole(
+				const GPlatesMaths::FiniteRotation &finite_rotation) :
+			GpmlFiniteRotation(Revision::non_null_ptr_type(new Revision(finite_rotation)))
+		{ }
+
+		GpmlTotalReconstructionPole(
+				const GPlatesMaths::FiniteRotation &finite_rotation, 
+				GPlatesModel::XmlElementNode::non_null_ptr_type xml_element) :
+			GpmlFiniteRotation(Revision::non_null_ptr_type(new Revision(finite_rotation, xml_element)))
+		{ }
+
+		GpmlTotalReconstructionPole(
+				const GpmlTotalReconstructionPole &other) :
+			GpmlFiniteRotation(other)
+		{ }
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GpmlTotalReconstructionPole(*this));
+		}
+
+	private:
+
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GpmlFiniteRotation::Revision
+		{
+			explicit
+			Revision(
+					const GPlatesMaths::FiniteRotation &finite_rotation) :
+				GpmlFiniteRotation::Revision(finite_rotation)
+			{ }
+			
+			Revision(
+					const GPlatesMaths::FiniteRotation &finite_rotation, 
+					GPlatesModel::XmlElementNode::non_null_ptr_type xml_element);
+
+			Revision(
+					const Revision &other);
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const;
+
+			GPlatesModel::MetadataContainer meta;
+		};
+
 	};
 
 }

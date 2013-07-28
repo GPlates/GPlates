@@ -57,10 +57,10 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<XsString> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const XsString>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const XsString>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const XsString> non_null_ptr_to_const_type;
+
 
 		virtual
 		~XsString()
@@ -71,26 +71,14 @@ namespace GPlatesPropertyValues
 		create(
 				const GPlatesUtils::UnicodeString &s)
 		{
-			XsString::non_null_ptr_type ptr(new XsString(s));
-			return ptr;
+			return non_null_ptr_type(new XsString(s));
 		}
 
-		const XsString::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			XsString::non_null_ptr_type dup(new XsString(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<XsString>(clone_impl());
 		}
-
-		const XsString::non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Accesses the TextContent contained within this XsString.
@@ -102,25 +90,17 @@ namespace GPlatesPropertyValues
 		const TextContent &
 		value() const
 		{
-			return d_value;
+			return get_current_revision<Revision>().value;
 		}
 
 		/**
 		 * Set the TextContent contained within this XsString to @a tc.
 		 * TextContent can be created by passing a UnicodeString in to
 		 * TextContent's constructor.
-		 * 
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_value(
-				const TextContent &tc)
-		{
-			d_value = tc;
-			update_instance_id();
-		}
+				const TextContent &tc);
 
 
 		/**
@@ -174,8 +154,7 @@ namespace GPlatesPropertyValues
 		explicit
 		XsString(
 				const GPlatesUtils::UnicodeString &s) :
-			PropertyValue(),
-			d_value(s)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(s)))
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -185,13 +164,56 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		XsString(
 				const XsString &other) :
-			PropertyValue(other), /* share instance id */
-			d_value(other.d_value)
+			PropertyValue(other)
 		{  }
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new XsString(*this));
+		}
 
 	private:
 
-		TextContent d_value;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					const TextContent &value_) :
+				value(value_)
+			{  }
+
+			Revision(
+					const Revision &other) :
+				value(other.value)
+			{  }
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = static_cast<const Revision &>(other);
+
+				return value == other_revision.value &&
+					GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			TextContent value;
+		};
+
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

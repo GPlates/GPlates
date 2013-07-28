@@ -40,55 +40,39 @@ DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlFiniteRotationSlerp, vi
 namespace GPlatesPropertyValues {
 
 	class GpmlFiniteRotationSlerp:
-			public GpmlInterpolationFunction {
+			public GpmlInterpolationFunction
+	{
 
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotationSlerp>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotationSlerp>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotationSlerp> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotationSlerp>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotationSlerp>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotationSlerp> non_null_ptr_to_const_type;
 
-		virtual
-		~GpmlFiniteRotationSlerp() {  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
+		virtual
+		~GpmlFiniteRotationSlerp()
+		{  }
+
 		static
 		const non_null_ptr_type
 		create(
-				const StructuralType &value_type_) {
-			non_null_ptr_type ptr(new GpmlFiniteRotationSlerp(value_type_));
-			return ptr;
-		}
-
-		const GpmlFiniteRotationSlerp::non_null_ptr_type
-		clone() const {
-			GpmlFiniteRotationSlerp::non_null_ptr_type dup(new GpmlFiniteRotationSlerp(*this));
-			return dup;
-		}
-
-		const GpmlFiniteRotationSlerp::non_null_ptr_type
-		deep_clone() const
+				const StructuralType &value_type_)
 		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
+			return non_null_ptr_type(new GpmlFiniteRotationSlerp(value_type_));
 		}
 
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_INTERP_FUNC()
+		const non_null_ptr_type
+		clone() const
+		{
+			return GPlatesUtils::dynamic_pointer_cast<GpmlFiniteRotationSlerp>(clone_impl());
+		}
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -99,7 +83,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gpml_finite_rotation_slerp(*this);
 		}
 
@@ -112,7 +97,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gpml_finite_rotation_slerp(*this);
 		}
 
@@ -123,7 +109,7 @@ namespace GPlatesPropertyValues {
 		explicit
 		GpmlFiniteRotationSlerp(
 				const StructuralType &value_type_):
-			GpmlInterpolationFunction(value_type_)
+			GpmlInterpolationFunction(new GpmlInterpolationFunction::Revision(value_type_))
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -135,6 +121,13 @@ namespace GPlatesPropertyValues {
 				const GpmlFiniteRotationSlerp &other) :
 			GpmlInterpolationFunction(other)
 		{  }
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GpmlFiniteRotationSlerp(*this));
+		}
 
 	private:
 

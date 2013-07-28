@@ -47,11 +47,11 @@ GPlatesPropertyValues::GmlPoint::create(
 	LatLonPoint llp(lat, lon);
 	PointOnSphere p = make_point_on_sphere(llp);
 
-	non_null_ptr_type point_ptr(
-			new GmlPoint(PointOnSphere::create_on_heap(p.position_vector()), gml_property_));
-	point_ptr->d_original_longitude = lon;
-
-	return point_ptr;
+	return non_null_ptr_type(
+			new GmlPoint(
+					PointOnSphere::create_on_heap(p.position_vector()),
+					gml_property_,
+					lon));
 }
 
 
@@ -62,25 +62,28 @@ GPlatesPropertyValues::GmlPoint::create(
 {
 	using namespace ::GPlatesMaths;
 
-	GmlPoint::non_null_ptr_type point_ptr(
-			new GmlPoint(PointOnSphere::create_on_heap(p.position_vector()), gml_property_));
-	return point_ptr;
+	return non_null_ptr_type(
+			new GmlPoint(
+					PointOnSphere::create_on_heap(p.position_vector()),
+					gml_property_));
 }
 
 
 GPlatesMaths::LatLonPoint
 GPlatesPropertyValues::GmlPoint::point_in_lat_lon() const
 {
+	const Revision &current_revision = get_current_revision<Revision>();
+
 	// First convert it to lat-lon directly.
-	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*d_point);
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*current_revision.point);
 
 	// Fix up the lon if the lat is near 90 or -90.
-	if (d_original_longitude)
+	if (current_revision.original_longitude)
 	{
 		if (GPlatesMaths::are_almost_exactly_equal(llp.latitude(), 90.0) ||
 				GPlatesMaths::are_almost_exactly_equal(llp.latitude(), -90.0))
 		{
-			llp = GPlatesMaths::LatLonPoint(llp.latitude(), *d_original_longitude);
+			llp = GPlatesMaths::LatLonPoint(llp.latitude(), *current_revision.original_longitude);
 		}
 	}
 
@@ -88,10 +91,34 @@ GPlatesPropertyValues::GmlPoint::point_in_lat_lon() const
 }
 
 
+void
+GPlatesPropertyValues::GmlPoint::set_point(
+		GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p)
+{
+	MutableRevisionHandler revision_handler(this);
+	Revision &mutable_revision = revision_handler.get_mutable_revision<Revision>();
+
+	mutable_revision.point = p;
+	mutable_revision.original_longitude = boost::none;
+
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GmlPoint::set_gml_property(
+		GmlProperty gml_property_)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().gml_property = gml_property_;
+	revision_handler.handle_revision_modification();
+}
+
+
 std::ostream &
 GPlatesPropertyValues::GmlPoint::print_to(
 		std::ostream &os) const
 {
-	return os << *d_point;
+	return os << *get_current_revision<Revision>().point;
 }
 
