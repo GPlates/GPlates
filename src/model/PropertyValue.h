@@ -29,31 +29,17 @@
 #define GPLATES_MODEL_PROPERTYVALUE_H
 
 #include <iosfwd>
-#include <boost/cstdint.hpp>
+#include <boost/noncopyable.hpp>
+#include <boost/operators.hpp>
+
+#include "FeatureHandle.h"
+#include "ModelTransaction.h"
 
 #include "property-values/StructuralType.h"
 
 #include "utils/non_null_intrusive_ptr.h"
-#include "utils/NullIntrusivePointerHandler.h"
 #include "utils/QtStreamable.h"
 #include "utils/ReferenceCount.h"
-
-
-// This macro is used to define the virtual function 'deep_clone_as_prop_val' inside a class which
-// derives from PropertyValue.  The function definition is exactly identical in every PropertyValue
-// derivation, but the function must be defined in each derived class (rather than in the base)
-// because it invokes the non-virtual member function 'deep_clone' of that specific derived class.
-// (This function 'deep_clone' cannot be moved into the base class, because (i) its return type is
-// the type of the derived class, and (ii) it must perform different actions in different classes.)
-// To define the function, invoke the macro in the class definition.  The macro invocation will
-// expand to a definition of the function.
-#define DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()  \
-		virtual  \
-		const GPlatesModel::PropertyValue::non_null_ptr_type  \
-		deep_clone_as_prop_val() const  \
-		{  \
-			return deep_clone();  \
-		}
 
 
 namespace GPlatesModel
@@ -63,6 +49,7 @@ namespace GPlatesModel
 	template<class H> class FeatureVisitorBase;
 	typedef FeatureVisitorBase<FeatureHandle> FeatureVisitor;
 	typedef FeatureVisitorBase<const FeatureHandle> ConstFeatureVisitor;
+	class Model;
 
 	/**
 	 * This class is the abstract base of all property values.
@@ -73,63 +60,20 @@ namespace GPlatesModel
 	class PropertyValue :
 			public GPlatesUtils::ReferenceCount<PropertyValue>,
 			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
-			public GPlatesUtils::QtStreamable<PropertyValue>
+			public GPlatesUtils::QtStreamable<PropertyValue>,
+			public boost::equality_comparable<PropertyValue>
 	{
 	public:
 		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<PropertyValue,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<PropertyValue>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<PropertyValue,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<PropertyValue> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const PropertyValue,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const PropertyValue>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const PropertyValue,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const PropertyValue> non_null_ptr_to_const_type;
 
-		/**
-		 * Construct a PropertyValue instance.
-		 *
-		 * Since this class is an abstract class, this constructor can never be invoked
-		 * other than explicitly in the initialiser lists of derived classes. 
-		 * Nevertheless, the initialiser lists of derived classes @em do need to invoke it
-		 * explicitly, since this class contains members which need to be initialised.
-		 */
-		PropertyValue() :
-			GPlatesUtils::ReferenceCount<PropertyValue>(),
-			d_instance_id(s_next_instance_id)
-		{
-			++s_next_instance_id;
-		}
-
-		/**
-		 * Construct a PropertyValue instance which is a copy of @a other.
-		 *
-		 * Since this class is an abstract class, this constructor can never be invoked
-		 * other than explicitly in the initialiser lists of derived classes. 
-		 * Nevertheless, the initialiser lists of derived classes @em do need to invoke it
-		 * explicitly, since this class contains members which need to be initialised.
-		 *
-		 * This ctor should only be invoked by the @a clone member function (pure virtual
-		 * in this class; defined in derived classes), which will create a duplicate
-		 * instance and return a new intrusive_ptr reference to the new duplicate.  Since
-		 * initially the only reference to the new duplicate will be the one returned by
-		 * the @a clone function, *before* the new intrusive_ptr is created, the ref-count
-		 * of the new PropertyValue instance should be zero.
-		 *
-		 * Note that this ctor should act exactly the same as the default (auto-generated)
-		 * copy-ctor, except that it should initialise the ref-count to zero.
-		 */
-		PropertyValue(
-				const PropertyValue &other) :
-			GPlatesUtils::ReferenceCount<PropertyValue>(),
-			d_instance_id(other.d_instance_id)
-		{  }
 
 		virtual
 		~PropertyValue()
@@ -138,13 +82,12 @@ namespace GPlatesModel
 		/**
 		 * Create a duplicate of this PropertyValue instance, including a recursive copy
 		 * of any property values this instance might contain.
-		 *
-		 * The Bubble-Up revisioning system @em might make this function redundant
-		 * when it's fully operational.  Until then, however...
 		 */
-		virtual
 		const non_null_ptr_type
-		deep_clone_as_prop_val() const = 0;
+		clone() const
+		{
+			return clone_impl();
+		}
 
 		/**
 		 * Returns the structural type associated with the type of the derived property value class.
@@ -191,6 +134,32 @@ namespace GPlatesModel
 		print_to(
 				std::ostream &os) const = 0;
 
+		/**
+		 * Returns a (non-const) pointer to the Model to which this property value belongs.
+		 *
+		 * Returns NULL if this property value is not currently attached to the model - this can happen
+		 * if this property value has no parent (feature) or if the parent has no parent, etc.
+		 */
+		Model *
+		model_ptr();
+
+		/**
+		 * Returns a const pointer to the Model to which this handle belongs.
+		 *
+		 * Returns NULL if this property value is not currently attached to the model - this can happen
+		 * if this property value has no parent (feature) or if the parent has no parent, etc.
+		 */
+		const Model *
+		model_ptr() const;
+
+		/**
+		 * Value equality comparison operator.
+		 *
+		 * Returns false if the types of @a other and 'this' aren't the same type, otherwise
+		 * returns true if their values (tested recursively as needed) compare equal.
+		 *
+		 * Inequality provided by boost equality_comparable.
+		 */
 		bool
 		operator==(
 				const PropertyValue &other) const;
@@ -198,35 +167,163 @@ namespace GPlatesModel
 	protected:
 
 		/**
-		 * Give this PropertyValue instance a new instance id. If this shared
-		 * an instance id with another PropertyValue instance because this is a
-		 * clone of the other instance, the link between the instances is
-		 * thereby broken by getting a new instance id here.
+		 * Base class inherited by derived revision classes (in derived property values) where
+		 * mutable/revisionable property value state is stored so it can be revisioned.
 		 */
-		void
-		update_instance_id()
+		class Revision :
+				public GPlatesUtils::ReferenceCount<Revision>
 		{
-			d_instance_id = s_next_instance_id;
-			++s_next_instance_id;
+		public:
+			typedef GPlatesUtils::non_null_intrusive_ptr<Revision> non_null_ptr_type;
+			typedef GPlatesUtils::non_null_intrusive_ptr<const Revision> non_null_ptr_to_const_type;
+
+			virtual
+			~Revision()
+			{  }
+
+			/**
+			 * Create a duplicate of this Revision instance, including a recursive copy
+			 * of any property values this instance might contain.
+			 *
+			 * This is used when cloning a property value instance because we want an entirely
+			 * new property value instance that does not share anything with the original instance.
+			 * This is useful when cloning a feature to get an entirely new feature (and not a
+			 * revision of the feature).
+			 */
+			virtual
+			non_null_ptr_type
+			clone() const = 0;
+
+			/**
+			 * Same as @a clone but shares, instead of copies, any property values that this
+			 * revision instance might contain.
+			 *
+			 * This is used when cloning revisions *within* a property value instance because
+			 * any nested property values will have their own revisioning so we don't need to
+			 * do a full deep clone/copy in this situation.
+			 *
+			 * This defaults to @a clone when not implemented in derived class.
+			 */
+			virtual
+			non_null_ptr_type
+			clone_with_shared_nested_property_values() const
+			{
+				return clone();
+			}
+
+			/**
+			 * Determine if two Revision instances ('this' and 'other') value compare equal.
+			 *
+			 * This should recursively test for equality as needed.
+			 *
+			 * A precondition of this method is that the type of 'this' is the same as the type of 'object'
+			 * so static_cast can be used instead of dynamic_cast.
+			 */
+			virtual
+			bool
+			equality(
+					const Revision &other) const
+			{
+				return true; // Terminates recursion.
+			}
+		};
+
+
+		/**
+		 * A convenience helper class used by derived property value classes in their methods
+		 * that modify the property value state.
+		 */
+		class MutableRevisionHandler :
+				private boost::noncopyable
+		{
+		public:
+
+			explicit
+			MutableRevisionHandler(
+					const PropertyValue::non_null_ptr_type &property_value);
+
+			/**
+			 * Returns the current revision if property value not attached to model, otherwise
+			 * clones current revision and returns that. Derived property value classes modify
+			 * the data in the returned derived revision class.
+			 */
+			template <class RevisionType>
+			RevisionType &
+			get_mutable_revision()
+			{
+				return dynamic_cast<RevisionType &>(*d_mutable_revision);
+			}
+
+			/**
+			 * Handles committing of revision to the model (if attached) and signalling model events.
+			 */
+			void
+			handle_revision_modification();
+
+		private:
+			Model *d_model;
+			PropertyValue::non_null_ptr_type d_property_value;
+			Revision::non_null_ptr_type d_mutable_revision;
+		};
+
+
+		/**
+		 * Construct a PropertyValue instance.
+		 */
+		PropertyValue(
+				const Revision::non_null_ptr_type &revision) :
+			d_current_revision(revision)
+		{  }
+
+		/**
+		 * Copy-construct a PropertyValue instance.
+		 *
+		 * This ctor should only be invoked by the @a clone member function.
+		 * We don't copy the parent feature reference because a cloned property value does
+		 * not belong to the original feature (so initially it has no parent).
+		 */
+		PropertyValue(
+				const PropertyValue &other) :
+			d_current_revision(other.d_current_revision->clone())
+		{  }
+
+		/**
+		 * Returns the current 'const' revision as the specified derived revision type.
+		 *
+		 * Revisions are essentially immutable (when attached to model).
+		 * Use @a MutableRevisionHandler to modify revisions.
+		 */
+		template <class RevisionType>
+		const RevisionType &
+		get_current_revision() const
+		{
+			return dynamic_cast<const RevisionType &>(*d_current_revision);
 		}
 
 		/**
-		 * Reimplement in derived classes where there are instance variables that can
-		 * be modified by client code without using a set_*() function.
-		 * For example, if a derived class has an XML attributes map that can be
-		 * retrieved by non-const reference by client code, or if a derived class has
-		 * nested PropertyValues returned to client code as a non_null_intrusive_ptr,
-		 * it is necessary to reimplement this function, because these instance
-		 * variables may have been modified without the clear_cloned_from() function
-		 * getting called.
+		 * Create a duplicate of this PropertyValue instance, including a recursive copy
+		 * of any property values this instance might contain.
+		 */
+		virtual
+		const non_null_ptr_type
+		clone_impl() const = 0;
+
+		/**
+		 * Determine if two property value instances ('this' and 'other') value compare equal.
+		 *
+		 * This should recursively test for equality as needed.
+		 * Note that the revision testing is done by PropertyValue::equality(), since the revisions
+		 * are contained in class PropertyValue, so derived property values classes only need to test
+		 * any non-revisioned data that they may contain - and if there is none then this method
+		 * does not need to be implemented by that derived property value class.
+		 *
+		 * A precondition of this method is that the type of 'this' is the same as the type of 'object'
+		 * so static_cast can be used instead of dynamic_cast.
 		 */
 		virtual
 		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const
-		{
-			return true;
-		}
+		equality(
+				const PropertyValue &other) const;
 
 	private:
 
@@ -238,49 +335,58 @@ namespace GPlatesModel
 		operator=(
 				const PropertyValue &);
 
-#ifdef BOOST_NO_INT64_T
+
 		/**
-		 * Just in case we happen to run into a compiler without 64-bit integers.
+		 * Model transaction class specifically for property values.
 		 */
-		class instance_id_type
+		class Transaction :
+				public ModelTransaction
 		{
 		public:
-			instance_id_type() :
-				d_high(0),
-				d_low(0)
+
+			typedef GPlatesUtils::non_null_intrusive_ptr<Transaction> non_null_ptr_type;
+			typedef GPlatesUtils::non_null_intrusive_ptr<const Transaction> non_null_ptr_to_const_type;
+
+			static
+			non_null_ptr_type
+			create(
+					const PropertyValue::non_null_ptr_type &property_value,
+					const Revision::non_null_ptr_type &revision)
 			{
+				return non_null_ptr_type(new Transaction(property_value, revision));
 			}
 
-			instance_id_type &
-			operator++()
-			{
-				++d_low;
-				if (d_low == 0) // integer overflow
-				{
-					++d_high;
-				}
-				return *this;
-			}
+			virtual
+			void
+			commit();
 
-			bool
-			operator==(
-					const instance_id_type &other) const
-			{
-				return d_low == other.d_low && d_high == other.d_high;
-			}
+			virtual
+			void
+			rollback();
 
 		private:
-			boost::uint32_t d_high, d_low; // This should be portable.
+
+			Transaction(
+					const PropertyValue::non_null_ptr_type &property_value,
+					const Revision::non_null_ptr_type &revision) :
+				d_property_value(property_value),
+				d_revision(revision)
+			{  }
+
+			PropertyValue::non_null_ptr_type d_property_value;
+			Revision::non_null_ptr_type d_revision;
 		};
-#else
-		// Use built-in 64-bit integers where available.
-		typedef boost::uint64_t instance_id_type;
-#endif
 
-		// Assists in speeding up operator==.
-		instance_id_type d_instance_id;
 
-		static instance_id_type s_next_instance_id;
+		typedef FeatureHandle::weak_ref parent_feature_ref_type;
+
+
+		/**
+		 * The parent reference is non-null if we are currently attached (indirectly) to a feature.
+		 */
+		parent_feature_ref_type d_parent_feature_ref;
+
+		Revision::non_null_ptr_type d_current_revision;
 
 	};
 
