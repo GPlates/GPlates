@@ -359,7 +359,8 @@ namespace GPlatesModel
 			if (d_callback)
 			{
 				d_callback->publisher_modified(
-						WeakReferencePublisherModifiedEvent<H>(*this, type));
+						*this,
+						WeakReferencePublisherModifiedEvent<H>(type));
 			}
 		}
 
@@ -375,7 +376,8 @@ namespace GPlatesModel
 			if (d_callback)
 			{
 				d_callback->publisher_added(
-						WeakReferencePublisherAddedEvent<H>(*this, new_children));
+						*this,
+						WeakReferencePublisherAddedEvent<H>(new_children));
 			}
 		}
 
@@ -390,7 +392,8 @@ namespace GPlatesModel
 			if (d_callback)
 			{
 				d_callback->publisher_deactivated(
-						WeakReferencePublisherDeactivatedEvent<H>(*this));
+						*this,
+						WeakReferencePublisherDeactivatedEvent<H>());
 			}
 		}
 
@@ -405,7 +408,8 @@ namespace GPlatesModel
 			if (d_callback)
 			{
 				d_callback->publisher_reactivated(
-						WeakReferencePublisherReactivatedEvent<H>(*this));
+						*this,
+						WeakReferencePublisherReactivatedEvent<H>());
 			}
 		}
 
@@ -420,7 +424,8 @@ namespace GPlatesModel
 			if (d_callback)
 			{
 				d_callback->publisher_about_to_be_destroyed(
-						WeakReferencePublisherAboutToBeDestroyedEvent<H>(*this));
+						*this,
+						WeakReferencePublisherAboutToBeDestroyedEvent<H>());
 			}
 		}
 

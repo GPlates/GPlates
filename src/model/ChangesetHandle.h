@@ -67,7 +67,7 @@ namespace GPlatesModel
 	 *		void f()
 	 *		{
 	 *			ChangesetHandle changeset(feature_collection->model_ptr(), "Adding a feature");
-	 *			feature_collection->add(feature->deep_clone());
+	 *			feature_collection->add(feature);
 	 *		}
 	 *
 	 *		void g()

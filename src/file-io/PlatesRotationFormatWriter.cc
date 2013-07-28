@@ -68,11 +68,11 @@ namespace
 			const double &angle,
 			int fixed_plate_id,
 			const GPlatesUtils::UnicodeString &comment,
-			const std::vector<Metadata::shared_const_ptr_type> &metadata)
+			const std::vector<Metadata::shared_ptr_to_const_type> &metadata)
 	{
 		using namespace GPlatesUtils;
-		std::vector<Metadata::shared_const_ptr_type> multi_line_attr, single_line_attr;
-		BOOST_FOREACH(const Metadata::shared_const_ptr_type& data, metadata)
+		std::vector<Metadata::shared_ptr_to_const_type> multi_line_attr, single_line_attr;
+		BOOST_FOREACH(const Metadata::shared_ptr_to_const_type& data, metadata)
 		{
 			if(data->get_content().contains("\n"))
 			{
@@ -84,7 +84,7 @@ namespace
 			}
 		}
 
-		BOOST_FOREACH(const Metadata::shared_const_ptr_type& data, multi_line_attr)
+		BOOST_FOREACH(const Metadata::shared_ptr_to_const_type& data, multi_line_attr)
 		{
 			QString content = data->get_content(), sep ="\"";
 			QStringList l = content.split("\n");
@@ -120,7 +120,7 @@ namespace
 			}
 			else
 			{
-				BOOST_FOREACH(const Metadata::shared_const_ptr_type& data, single_line_attr)
+				BOOST_FOREACH(const Metadata::shared_ptr_to_const_type& data, single_line_attr)
 				{
 					(*os)<< " @" << data->get_name().toUtf8().data() << "\"" 
 						<< data->get_content().toUtf8().data()<< "\"";

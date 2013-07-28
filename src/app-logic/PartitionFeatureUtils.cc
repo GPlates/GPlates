@@ -795,10 +795,7 @@ GPlatesAppLogic::PartitionFeatureUtils::get_valid_time_from_feature(
 		return boost::none;
 	}
 
-	// FIXME: Probably should be a deep clone in case someone else modifies the time period.
-	return GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type(
-			time_period,
-			GPlatesUtils::NullIntrusivePointerHandler());
+	return GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type(time_period);
 }
 
 
@@ -820,7 +817,7 @@ GPlatesAppLogic::PartitionFeatureUtils::assign_valid_time_to_feature(
 	feature_ref->add(
 			GPlatesModel::TopLevelPropertyInline::create(
 				get_valid_time_property_name(),
-				valid_time.get()->deep_clone()));
+				valid_time.get()->clone()));
 }
 
 

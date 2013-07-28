@@ -66,6 +66,7 @@ namespace
 
 		void
 		publisher_modified(
+				const weak_reference_type &,
 				const modified_event_type &)
 		{
 			// The situation has changed, let everyone know.
@@ -74,16 +75,19 @@ namespace
 
 		void
 		publisher_deactivated(
+				const weak_reference_type &,
 				const deactivated_event_type &)
 		{  }
 
 		void
 		publisher_reactivated(
+				const weak_reference_type &,
 				const reactivated_event_type &)
 		{  }
 
 		void
 		publisher_about_to_be_destroyed(
+				const weak_reference_type &,
 				const about_to_be_destroyed_event_type &)
 		{  }
 

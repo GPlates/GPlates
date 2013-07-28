@@ -585,25 +585,6 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_feature_snapsh
 			GPlatesModel::FeatureType(value_type));
 }
 
-const GPlatesMaths::FiniteRotation
-GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_finite_rotation(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &xml_elem,
-		const GPlatesModel::GpgimVersion &gpml_version,
-		GPlatesFileIO::ReadErrorAccumulation &read_errors)
-{
-	static const GPlatesModel::XmlElementName
-			EULER_POLE = GPlatesModel::XmlElementName::create_gpml("eulerPole"),
-			ANGLE = GPlatesModel::XmlElementName::create_gpml("angle");
-		
-		GPlatesPropertyValues::GmlPoint::non_null_ptr_type euler_pole =
-				find_and_create_one(xml_elem, &create_gml_point,
-						EULER_POLE, gpml_version, read_errors);
-		GPlatesPropertyValues::GpmlMeasure::non_null_ptr_type angle =
-				find_and_create_one(xml_elem, &create_gpml_measure,
-						ANGLE, gpml_version, read_errors);
-		return GPlatesPropertyValues::GpmlFiniteRotation::create(euler_pole, angle)->finite_rotation();
-}
-
 GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
 GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_finite_rotation(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
@@ -615,7 +596,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_finite_rotatio
 			GPlatesModel::XmlElementName::create_gpml("AxisAngleFiniteRotation"),
 		ZERO_FINITE_ROTATION = 
 			GPlatesModel::XmlElementName::create_gpml("ZeroFiniteRotation"),
-		TRP = 
+		TOTAL_RECONSTRUCTION_POLE = 
 			GPlatesModel::XmlElementName::create_gpml("TotalReconstructionPole");
 	
 	if (parent->number_of_children() > 1) {
@@ -628,44 +609,56 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_finite_rotatio
 	bool is_trp = false;
 	GPlatesModel::XmlElementNode::non_null_ptr_type xml_elem = parent; 
 	boost::optional< GPlatesModel::XmlElementNode::non_null_ptr_type > structural_elem = 
-		parent->get_child_by_name(TRP);
+		parent->get_child_by_name(TOTAL_RECONSTRUCTION_POLE);
 	if (structural_elem) {
 		is_trp = true;
 		xml_elem = *structural_elem;
 	}
 
-	boost::optional<GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type> finate_rotation;
+	boost::optional<GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type> finite_rotation;
 
 	structural_elem = xml_elem->get_child_by_name(ZERO_FINITE_ROTATION);
-	if (structural_elem) {
-		finate_rotation = GPlatesPropertyValues::GpmlFiniteRotation::create_zero_rotation();
-	}else
+	if (structural_elem)
+	{
+		finite_rotation = GPlatesPropertyValues::GpmlFiniteRotation::create_zero_rotation();
+	}
+	else
 	{
 		structural_elem = xml_elem->get_child_by_name(AXIS_ANGLE_FINITE_ROTATION);
 		if (structural_elem)
 		{
-			finate_rotation = GPlatesPropertyValues::GpmlFiniteRotation::create(
-					create_finite_rotation(*structural_elem,gpml_version,read_errors));
+			static const GPlatesModel::XmlElementName
+					EULER_POLE = GPlatesModel::XmlElementName::create_gpml("eulerPole"),
+					ANGLE = GPlatesModel::XmlElementName::create_gpml("angle");
+			
+			GPlatesPropertyValues::GmlPoint::non_null_ptr_type euler_pole =
+					find_and_create_one(structural_elem.get(), &create_gml_point,
+							EULER_POLE, gpml_version, read_errors);
+			GPlatesPropertyValues::GpmlMeasure::non_null_ptr_type angle =
+					find_and_create_one(structural_elem.get(), &create_gpml_measure,
+							ANGLE, gpml_version, read_errors);
+			finite_rotation = GPlatesPropertyValues::GpmlFiniteRotation::create(euler_pole, angle);
 		}
 	}
 
-	if(!finate_rotation)
+	if (!finite_rotation)
 	{
 		// Invalid child!
 		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
 				parent, GPlatesFileIO::ReadErrors::UnrecognisedChildFound,
 				EXCEPTION_SOURCE);
-	}else
+	}
+	else
 	{
-		if(is_trp)
+		if (is_trp)
 		{
 			return new GPlatesPropertyValues::GpmlTotalReconstructionPole(
-					(*finate_rotation)->finite_rotation(),
-					*parent->get_child_by_name(TRP));
+					(*finite_rotation)->finite_rotation(),
+					*parent->get_child_by_name(TOTAL_RECONSTRUCTION_POLE));
 		}
 		else
 		{
-			return *finate_rotation;
+			return *finite_rotation;
 		}
 	}
 }
@@ -776,6 +769,17 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_measure(
 	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
 		xml_attrs(elem->attributes_begin(), elem->attributes_end());
 	return GPlatesPropertyValues::GpmlMeasure::create(quantity, xml_attrs);
+}
+
+
+GPlatesPropertyValues::GpmlMetadata::non_null_ptr_type
+GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_metadata(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		const GPlatesModel::GpgimVersion &gpml_version,
+		ReadErrorAccumulation &read_errors)
+{
+	GPlatesModel::FeatureCollectionMetadata meta(elem);
+	return GPlatesPropertyValues::GpmlMetadata::create(meta);
 }
 
 
@@ -1103,16 +1107,3 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_topological_po
 			exterior_sections.begin(),
 			exterior_sections.end());
 }
-
-
-GPlatesPropertyValues::GpmlMetadata::non_null_ptr_type
-GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_metadata(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
-		const GPlatesModel::GpgimVersion &gpml_version,
-		ReadErrorAccumulation &read_errors)
-{
-	GPlatesModel::FeatureCollectionMetadata meta(elem);
-	return GPlatesPropertyValues::GpmlMetadata::create(meta);
-}
-
-

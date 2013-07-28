@@ -984,6 +984,7 @@ namespace GPlatesFileIO
 
 			void
 			publisher_modified(
+					const weak_reference_type &reference,
 					const modified_event_type &event)
 			{
 				qDebug() << "TODO: feature collection modified."; 
@@ -991,6 +992,7 @@ namespace GPlatesFileIO
 
 			void
 			publisher_added(
+					const weak_reference_type &reference,
 					const added_event_type &event)
 			{
 				qDebug() << "TODO: new feature is added into this feature collection."; 
@@ -999,6 +1001,7 @@ namespace GPlatesFileIO
 		
 			void
 			publisher_deactivated(
+					const weak_reference_type &reference,
 					const deactivated_event_type &event)
 			{
 				//qDebug() << "TODO: feature is deleted from this feature collection."; 

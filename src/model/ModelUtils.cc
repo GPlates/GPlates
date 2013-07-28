@@ -904,9 +904,7 @@ GPlatesModel::ModelUtils::create_gml_time_sample(
 	if(is_grot)
 	{
 		return GpmlTimeSample(
-				GpmlTotalReconstructionPole::non_null_ptr_type(
-						new GpmlTotalReconstructionPole(
-								gpml_finite_rotation->finite_rotation())), 
+				GpmlTotalReconstructionPole::create(gpml_finite_rotation->finite_rotation()),
 				gml_time_instant,
 				get_intrusive_ptr(gml_description), 
 				StructuralType::create_gpml("TotalReconstructionPole"));

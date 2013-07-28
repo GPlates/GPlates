@@ -37,7 +37,6 @@
 #include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "model/PropertyValue.h"
-#include "model/TopLevelPropertyInline.h"
 #include "model/types.h"
 
 #include "property-values/GeoTimeInstant.h"

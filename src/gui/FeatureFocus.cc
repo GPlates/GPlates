@@ -77,6 +77,7 @@ namespace
 
 		void
 		publisher_deactivated(
+				const weak_reference_type &,
 				const deactivated_event_type &)
 		{
 			d_feature_focus.unset_focus();

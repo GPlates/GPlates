@@ -381,6 +381,7 @@ namespace GPlatesAppLogic
 
 			void
 			publisher_modified(
+					const weak_reference_type &reference,
 					const modified_event_type &event)
 			{
 				// Perform a reconstruction every time the model (feature store) is modified.

@@ -32,6 +32,7 @@
 #include "maths/PolylineOnSphere.h"
 
 #include "model/FeatureHandle.h"
+#include "model/NotificationGuard.h"
 
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
@@ -80,6 +81,9 @@ void
 GPlatesFeatureVisitors::GeometryRotator::visit_gml_polygon(
 		GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
+	// Merge model events across this scope to avoid excessive number of model callbacks.
+	GPlatesModel::NotificationGuard model_notification_guard(gml_polygon.model_ptr());
+
 	// Rotate the exterior polygon.
 	gml_polygon.set_exterior(
 			d_finite_rotation * gml_polygon.exterior());

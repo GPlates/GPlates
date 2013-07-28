@@ -55,9 +55,11 @@ namespace GPlatesModel
 	 */
 	class NotificationGuard
 	{
-
 	public:
 
+		/**
+		 * If @a model_ptr is NULL then this notification guard does nothing.
+		 */
 		explicit
 		NotificationGuard(
 				Model *model_ptr);

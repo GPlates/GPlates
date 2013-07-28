@@ -303,6 +303,13 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation &read_errors);
 
 
+		GPlatesPropertyValues::GpmlMetadata::non_null_ptr_type
+		create_gpml_metadata(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+				const GPlatesModel::GpgimVersion &gpml_version,
+				ReadErrorAccumulation &read_errors);
+
+
 		GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type
 		create_gpml_old_plates_header(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
@@ -379,18 +386,6 @@ namespace GPlatesFileIO
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 				const GPlatesModel::GpgimVersion &gpml_version,
 				ReadErrorAccumulation &read_errors);
-
-		GPlatesPropertyValues::GpmlMetadata::non_null_ptr_type
-		create_gpml_metadata(
-				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
-				const GPlatesModel::GpgimVersion &gpml_version,
-				ReadErrorAccumulation &read_errors);
-
-		const GPlatesMaths::FiniteRotation
-		create_finite_rotation(
-				const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
-				const GPlatesModel::GpgimVersion &gpml_version,
-				GPlatesFileIO::ReadErrorAccumulation &read_errors);
 	}
 }
 

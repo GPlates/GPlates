@@ -589,6 +589,7 @@ namespace GPlatesAppLogic
 
 				void
 				publisher_modified(
+						const weak_reference_type &reference,
 						const modified_event_type &event)
 				{
 					d_reconstruct_graph->modified_input_file(d_input_file);

@@ -209,15 +209,19 @@ namespace GPlatesModel
 		index_in_container();
 
 		/**
-		 * Returns a (non-const) pointer to the Model to which this Handle belongs. Returns NULL
-		 * if this Handle has no parent set.
+		 * Returns a (non-const) pointer to the Model to which this Handle belongs.
+		 *
+		 * Returns NULL if this Handle is not currently attached to the model - this can happen
+		 * if this Handle has no parent or if this Handle's parent has no parent, etc.
 		 */
 		Model *
 		model_ptr();
 
 		/**
-		 * Returns a const pointer to the Model to which this handle belongs. Returns NULL
-		 * if this Handle has no parent set.
+		 * Returns a const pointer to the Model to which this handle belongs.
+		 *
+		 * Returns NULL if this Handle is not currently attached to the model - this can happen
+		 * if this Handle has no parent or if this Handle's parent has no parent, etc.
 		 */
 		const Model *
 		model_ptr() const;
@@ -256,7 +260,7 @@ namespace GPlatesModel
 		/**
 		 * Flushes pending notifications that were held up due to an active NotificationGuard.
 		 *
-		 * This will call flush_children_pending_notifications() to recurively call
+		 * This will call flush_children_pending_notifications() to recursively call
 		 * flush_pending_notifications() in children objects.
 		 */
 		void

@@ -266,10 +266,10 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 		d_trp_time_matches_exactly = true;
 		iter->value()->accept_visitor(*this);
 
-                // And update the comment field.
-                boost::intrusive_ptr<XsString> description =
-                        XsString::create(GPlatesUtils::make_icu_string_from_qstring(d_comment)).get();
-                iter->set_description(description);
+		// And update the comment field.
+		boost::intrusive_ptr<XsString> description =
+				XsString::create(GPlatesUtils::make_icu_string_from_qstring(d_comment)).get();
+		iter->set_description(description);
 
 		// Did the visitor successfully collect the FiniteRotation?
 		if ( ! d_finite_rotation) {
@@ -376,8 +376,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			{
 				//if the rotation feature is from a .grot file, 
 				//we need to create GpmlTotalReconstructionPole instead of GpmlFiniteRotation.
-				value_opt = GpmlTotalReconstructionPole::non_null_ptr_type(
-					new GpmlTotalReconstructionPole(updated_finite_rotation));
+				value_opt = GpmlTotalReconstructionPole::create(updated_finite_rotation);
 			}
 			else
 			{

@@ -109,10 +109,7 @@ namespace GPlatesMaths
 		const GeometryOnSphere::non_null_ptr_to_const_type
 		clone_as_geometry() const
 		{
-			GeometryOnSphere::non_null_ptr_to_const_type dup(
-					new PointOnSphere(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return dup;
+			return GeometryOnSphere::non_null_ptr_to_const_type(new PointOnSphere(*this));
 		}
 
 
@@ -125,10 +122,7 @@ namespace GPlatesMaths
 		const non_null_ptr_to_const_type
 		clone_as_point() const
 		{
-			non_null_ptr_to_const_type dup(
-					new PointOnSphere(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return dup;
+			return non_null_ptr_to_const_type(new PointOnSphere(*this));
 		}
 
 

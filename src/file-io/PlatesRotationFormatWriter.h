@@ -161,7 +161,7 @@ namespace GPlatesFileIO
 				boost::optional<GPlatesUtils::UnicodeString> comment;
 				boost::optional<double> time;
 				boost::optional<bool> is_disabled;
-				std::vector<GPlatesModel::Metadata::shared_const_ptr_type > metadata;
+				std::vector<GPlatesModel::Metadata::shared_ptr_to_const_type > metadata;
 
 				/**
 				 * Test whether the rotation pole data has acquired enough information to
