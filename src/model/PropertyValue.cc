@@ -29,6 +29,7 @@
 
 #include "PropertyValue.h"
 
+#include "TopLevelProperty.h"
 #include "WeakReferenceCallback.h"
 
 
@@ -63,18 +64,104 @@ GPlatesModel::PropertyValue::equality(
 GPlatesModel::Model *
 GPlatesModel::PropertyValue::model_ptr()
 {
-	return d_parent_feature_ref
-			? d_parent_feature_ref->model_ptr()
-			: NULL;
+	// Re-use 'const' overload.
+	return const_cast<Model *>(
+			static_cast<const PropertyValue *>(this)->model_ptr());
 }
 
 
 const GPlatesModel::Model *
 GPlatesModel::PropertyValue::model_ptr() const
 {
-	return d_parent_feature_ref
-			? d_parent_feature_ref->model_ptr()
-			: NULL;
+	if (!d_parent)
+	{
+		return NULL;
+	}
+
+	boost::optional<const TopLevelProperty *> top_level_property_parent =
+			d_parent->get_top_level_property_parent();
+	if (top_level_property_parent)
+	{
+		return top_level_property_parent.get()->model_ptr();
+	}
+
+	boost::optional<const PropertyValue *> property_value_parent =
+			d_parent->get_property_value_parent();
+	if (property_value_parent)
+	{
+		return property_value_parent.get()->model_ptr();
+	}
+
+	// Shouldn't get here.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+	return NULL;
+}
+
+
+boost::optional<const GPlatesModel::TopLevelProperty *>
+GPlatesModel::PropertyValue::ParentReference::get_top_level_property_parent() const
+{
+	// See if boost variant contains a 'TopLevelProperty *'.
+	TopLevelProperty *const *ptr = boost::get<TopLevelProperty *>(&d_parent);
+	if (ptr == NULL)
+	{
+		return boost::none;
+	}
+
+	return *ptr;
+}
+
+
+boost::optional<GPlatesModel::TopLevelProperty *>
+GPlatesModel::PropertyValue::ParentReference::get_top_level_property_parent()
+{
+	// See if boost variant contains a 'TopLevelProperty *'.
+	TopLevelProperty **ptr = boost::get<TopLevelProperty *>(&d_parent);
+	if (ptr == NULL)
+	{
+		return boost::none;
+	}
+
+	return *ptr;
+}
+
+
+boost::optional<const GPlatesModel::PropertyValue *>
+GPlatesModel::PropertyValue::ParentReference::get_property_value_parent() const
+{
+	// See if boost variant contains a 'PropertyValue *'.
+	PropertyValue *const *ptr = boost::get<PropertyValue *>(&d_parent);
+	if (ptr == NULL)
+	{
+		return boost::none;
+	}
+
+	return *ptr;
+}
+
+
+boost::optional<GPlatesModel::PropertyValue *>
+GPlatesModel::PropertyValue::ParentReference::get_property_value_parent()
+{
+	// See if boost variant contains a 'PropertyValue *'.
+	PropertyValue **ptr = boost::get<PropertyValue *>(&d_parent);
+	if (ptr == NULL)
+	{
+		return boost::none;
+	}
+
+	return *ptr;
+}
+
+
+boost::optional<const GPlatesModel::PropertyValue::ParentReference>
+GPlatesModel::PropertyValue::RevisionedReference::get_parent() const
+{
+	if (!d_property_value->d_parent)
+	{
+		return boost::none;
+	}
+	return boost::optional<const ParentReference>(d_property_value->d_parent.get());
 }
 
 
@@ -113,6 +200,7 @@ GPlatesModel::PropertyValue::MutableRevisionHandler::handle_revision_modificatio
 	}
 	else // not attached to a model...
 	{
+#if 0
 		// We are not attached to a model so there's no need for model transactions, but
 		// if we belong to a parent feature then we should emit an event that signals
 		// the parent feature was modified (because one of its properties changed).
@@ -125,6 +213,7 @@ GPlatesModel::PropertyValue::MutableRevisionHandler::handle_revision_modificatio
 					WeakReferencePublisherModifiedEvent<const FeatureHandle>::PUBLISHER_MODIFIED);
 			d_property_value->d_parent_feature_ref->apply_const_weak_observer_visitor(const_visitor);
 		}
+#endif
 	}
 }
 

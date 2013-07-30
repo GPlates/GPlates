@@ -101,7 +101,10 @@ namespace GPlatesModel
 		create(
 				const PropertyName &property_name_,
 				const container_type &values_,
-				const xml_attributes_type &xml_attributes_ = xml_attributes_type());
+				const xml_attributes_type &xml_attributes_ = xml_attributes_type())
+		{
+			return non_null_ptr_type(new TopLevelPropertyInline(property_name_, values_, xml_attributes_));
+		}
 
 		template<class PropertyValueIterator>
 		static
@@ -117,7 +120,10 @@ namespace GPlatesModel
 		create(
 				const PropertyName &property_name_,
 				PropertyValue::non_null_ptr_type value_,
-				const xml_attributes_type &xml_attributes_ = xml_attributes_type());
+				const xml_attributes_type &xml_attributes_ = xml_attributes_type())
+		{
+			return non_null_ptr_type(new TopLevelPropertyInline(property_name_, value_, xml_attributes_));
+		}
 
 		static
 		const non_null_ptr_type
@@ -136,13 +142,11 @@ namespace GPlatesModel
 				const AttributeIterator &attributes_begin,
 				const AttributeIterator &attributes_end);
 
-		virtual
-		const TopLevelProperty::non_null_ptr_type
-		clone() const;
-
-		virtual
-		const TopLevelProperty::non_null_ptr_type
-		deep_clone() const;
+		const non_null_ptr_type
+		clone() const
+		{
+			return GPlatesUtils::dynamic_pointer_cast<TopLevelPropertyInline>(clone_impl());
+		}
 
 		const_iterator
 		begin() const
@@ -160,6 +164,14 @@ namespace GPlatesModel
 					make_const_ptr_fn_type(boost::lambda::constructor<PropertyValue::non_null_ptr_to_const_type>()));
 		}
 
+		/**
+		 * Begin iterator over 'non-const' property values.
+		 *
+		 * Although the property here is no setter method since @a TopLevelProperty (and derived classes)
+		 * have not implemented revisioning - if they are made mutable (excluding any
+		 * contained property values - which already have revisioning) then revisioning will
+		 * need to be implemented for @a TopLevelProperty (and derived classes).
+		 */
 		iterator
 		begin()
 		{
@@ -195,7 +207,7 @@ namespace GPlatesModel
 
 		virtual
 		bool
-		operator==(
+		equality(
 				const TopLevelProperty &other) const;
 
 	protected:
@@ -227,11 +239,18 @@ namespace GPlatesModel
 			d_values.push_back(value_);
 		}
 
+		/**
+		 * Copy constructor does a deep copy.
+		 */
 		TopLevelPropertyInline(
-				const TopLevelPropertyInline &other) :
-			TopLevelProperty(other),
-			d_values(other.d_values)
-		{  }
+				const TopLevelPropertyInline &other);
+
+		virtual
+		const GPlatesModel::TopLevelProperty::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new TopLevelPropertyInline(*this));
+		}
 
 	private:
 

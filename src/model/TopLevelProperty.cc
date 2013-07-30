@@ -25,7 +25,34 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <typeinfo>
+
 #include "TopLevelProperty.h"
+
+
+bool
+GPlatesModel::TopLevelProperty::operator==(
+		const TopLevelProperty &other) const
+{
+	// Both objects must have the same type before testing for equality.
+	// This also means derived classes need no type-checking.
+	if (typeid(*this) != typeid(other))
+	{
+		return false;
+	}
+
+	// Compare the derived type objects.
+	return equality(other);
+}
+
+
+bool
+GPlatesModel::TopLevelProperty::equality(
+		const TopLevelProperty &other) const
+{
+	return d_property_name == other.d_property_name &&
+			d_xml_attributes == other.d_xml_attributes;
+}
 
 
 std::ostream &

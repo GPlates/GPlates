@@ -25,7 +25,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <iostream>
-#include <typeinfo>
 #include <algorithm>
 
 // Suppress warning being emitted from Boost 1.35 header.
@@ -38,36 +37,6 @@ DISABLE_MSVC_WARNING(4181)
 #include "FeatureVisitor.h"
 
 #include "utils/UnicodeStringUtils.h"
-
-
-const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
-GPlatesModel::TopLevelPropertyInline::create(
-		const PropertyName &property_name_,
-		const container_type &values_,
-		const xml_attributes_type &xml_attributes_)
-{
-	non_null_ptr_type ptr(
-			new TopLevelPropertyInline(
-				property_name_,
-				values_,
-				xml_attributes_));
-	return ptr;
-}
-
-
-const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
-GPlatesModel::TopLevelPropertyInline::create(
-		const PropertyName &property_name_,
-		PropertyValue::non_null_ptr_type value_,
-		const xml_attributes_type &xml_attributes_)
-{
-	non_null_ptr_type ptr(
-			new TopLevelPropertyInline(
-				property_name_,
-				value_,
-				xml_attributes_));
-	return ptr;
-}
 
 
 const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
@@ -92,30 +61,18 @@ GPlatesModel::TopLevelPropertyInline::create(
 }
 
 
-const GPlatesModel::TopLevelProperty::non_null_ptr_type
-GPlatesModel::TopLevelPropertyInline::clone() const
+GPlatesModel::TopLevelPropertyInline::TopLevelPropertyInline(
+		const TopLevelPropertyInline &other) :
+	TopLevelProperty(other)
 {
-	TopLevelProperty::non_null_ptr_type dup(
-			new TopLevelPropertyInline(*this));
-	return dup;
-}
-
-
-const GPlatesModel::TopLevelProperty::non_null_ptr_type
-GPlatesModel::TopLevelPropertyInline::deep_clone() const 
-{
-	TopLevelPropertyInline::non_null_ptr_type dup = create(
-			property_name(),
-			container_type(),
-			xml_attributes());
-
-	container_type::const_iterator iter = d_values.begin(), end_ = d_values.end();
-	for ( ; iter != end_; ++iter)
+	// Clone the property values.
+	container_type::const_iterator other_iter = other.d_values.begin();
+	container_type::const_iterator other_end = other.d_values.end();
+	for ( ; other_iter != other_end; ++other_iter)
 	{
-		PropertyValue::non_null_ptr_type cloned_pval = (*iter)->deep_clone_as_prop_val();
-		dup->d_values.push_back(cloned_pval);
+		PropertyValue::non_null_ptr_type cloned_pval = (*other_iter)->clone();
+		d_values.push_back(cloned_pval);
 	}
-	return TopLevelProperty::non_null_ptr_type(dup);
 }
 
 
@@ -161,32 +118,19 @@ GPlatesModel::TopLevelPropertyInline::print_to(
 
 
 bool
-GPlatesModel::TopLevelPropertyInline::operator==(
+GPlatesModel::TopLevelPropertyInline::equality(
 		const TopLevelProperty &other) const
 {
-	try
-	{
-		const TopLevelPropertyInline &other_inline = dynamic_cast<const TopLevelPropertyInline &>(other);
-		if (property_name() == other.property_name() &&
-			xml_attributes() == other.xml_attributes() &&
-			d_values.size() == other_inline.d_values.size())
-		{
-			return std::equal(
+	const TopLevelPropertyInline &other_inline = dynamic_cast<const TopLevelPropertyInline &>(other);
+
+	return d_values.size() == other_inline.d_values.size() &&
+			std::equal(
 					d_values.begin(),
 					d_values.end(),
 					other_inline.d_values.begin(),
-					// Compare PropertyValues, not pointers to PropertyValues.
-					*boost::lambda::_1 == *boost::lambda::_2);
-		}
-		else
-		{
-			return false;
-		}
-	}
-	catch (const std::bad_cast &)
-	{
-		return false;
-	}
+					// Compare PropertyValues, not pointers to PropertyValues...
+					*boost::lambda::_1 == *boost::lambda::_2) &&
+			TopLevelProperty::equality(other);
 }
 
 
