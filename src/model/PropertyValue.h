@@ -34,9 +34,6 @@
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
 
-#include "ModelTransaction.h"
-#include "PropertyValueRevision.h"
-
 #include "property-values/StructuralType.h"
 
 #include "utils/non_null_intrusive_ptr.h"
@@ -52,6 +49,7 @@ namespace GPlatesModel
 	typedef FeatureVisitorBase<FeatureHandle> FeatureVisitor;
 	typedef FeatureVisitorBase<const FeatureHandle> ConstFeatureVisitor;
 	class Model;
+	class ModelTransaction;
 	class TopLevelProperty;
 
 	/**
@@ -76,100 +74,6 @@ namespace GPlatesModel
 		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const PropertyValue>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const PropertyValue> non_null_ptr_to_const_type;
-
-
-		class ParentReference
-		{
-		public:
-			explicit
-			ParentReference(
-					TopLevelProperty &parent) :
-				d_parent(&parent)
-			{  }
-
-			explicit
-			ParentReference(
-					PropertyValue &parent) :
-				d_parent(&parent)
-			{  }
-
-			boost::optional<const TopLevelProperty *>
-			get_top_level_property_parent() const;
-
-			boost::optional<TopLevelProperty *>
-			get_top_level_property_parent();
-
-			boost::optional<const PropertyValue *>
-			get_property_value_parent() const;
-
-			boost::optional<PropertyValue *>
-			get_property_value_parent();
-
-		private:
-			boost::variant<TopLevelProperty *, PropertyValue *> d_parent;
-		};
-
-
-		class RevisionedReference
-		{
-		public:
-			RevisionedReference(
-					const non_null_ptr_type &property_value,
-					const PropertyValueRevision::non_null_ptr_type revision) :
-				d_property_value(property_value),
-				d_revision(revision)
-			{  }
-
-			non_null_ptr_to_const_type
-			get_property_value() const
-			{
-				return d_property_value;
-			}
-
-			non_null_ptr_type
-			get_property_value()
-			{
-				return d_property_value;
-			}
-
-			PropertyValueRevision::non_null_ptr_to_const_type
-			get_revision() const
-			{
-				return d_revision;
-			}
-
-			PropertyValueRevision::non_null_ptr_type
-			get_revision()
-			{
-				return d_revision;
-			}
-
-			void
-			set_revision()
-			{
-				d_property_value->d_current_revision = d_revision;
-			}
-
-			boost::optional<const ParentReference>
-			get_parent() const;
-
-			boost::optional<ParentReference>
-			get_parent()
-			{
-				return d_property_value->d_parent;
-			}
-
-			void
-			set_parent(
-					boost::optional<ParentReference> parent = boost::none)
-			{
-				d_property_value->d_parent = parent;
-			}
-
-		private:
-			non_null_ptr_type d_property_value;
-			PropertyValueRevision::non_null_ptr_type d_revision;
-		};
 
 
 		virtual
@@ -232,24 +136,6 @@ namespace GPlatesModel
 				std::ostream &os) const = 0;
 
 		/**
-		 * Returns a (non-const) pointer to the Model to which this property value belongs.
-		 *
-		 * Returns NULL if this property value is not currently attached to the model - this can happen
-		 * if this property value has no parent (eg, top-level property) or if the parent has no parent, etc.
-		 */
-		Model *
-		model_ptr();
-
-		/**
-		 * Returns a const pointer to the Model to which this property value belongs.
-		 *
-		 * Returns NULL if this property value is not currently attached to the model - this can happen
-		 * if this property value has no parent (eg, top-level property) or if the parent has no parent, etc.
-		 */
-		const Model *
-		model_ptr() const;
-
-		/**
 		 * Value equality comparison operator.
 		 *
 		 * Returns false if the types of @a other and 'this' aren't the same type, otherwise
@@ -260,6 +146,244 @@ namespace GPlatesModel
 		bool
 		operator==(
 				const PropertyValue &other) const;
+
+		/**
+		 * Returns a (non-const) reference to the Model to which this property value belongs.
+		 *
+		 * Returns none if this property value is not currently attached to the model - this can happen
+		 * if this property value has no parent (eg, top-level property) or if the parent has no parent, etc.
+		 */
+		boost::optional<Model &>
+		get_model();
+
+		/**
+		 * Returns a const reference to the Model to which this property value belongs.
+		 *
+		 * Returns none if this property value is not currently attached to the model - this can happen
+		 * if this property value has no parent (eg, top-level property) or if the parent has no parent, etc.
+		 */
+		boost::optional<const Model &>
+		get_model() const;
+
+	protected:
+
+		/**
+		 * Reference to a parent - can be a @a TopLevelProperty - or a @a PropertyValue if
+		 * nested within another @a PropertyValue (ie, time-dependent property value).
+		 */
+		typedef boost::variant<TopLevelProperty *, PropertyValue *> parent_reference_type;
+
+		/**
+		 * Base class inherited by derived revision classes (in derived property values) where
+		 * mutable/revisionable property value state is stored so it can be revisioned.
+		 */
+		class Revision :
+				public GPlatesUtils::ReferenceCount<Revision>
+		{
+		public:
+			typedef GPlatesUtils::non_null_intrusive_ptr<Revision> non_null_ptr_type;
+			typedef GPlatesUtils::non_null_intrusive_ptr<const Revision> non_null_ptr_to_const_type;
+
+			virtual
+			~Revision()
+			{  }
+
+			/**
+			 * Create a duplicate of this Revision instance, including a recursive copy
+			 * of any property values this instance might contain.
+			 *
+			 * This is used when cloning a property value instance because we want an entirely
+			 * new property value instance that does not share anything with the original instance.
+			 * This is useful when cloning a feature to get an entirely new feature (and not a
+			 * revision of the feature).
+			 */
+			virtual
+			non_null_ptr_type
+			clone() const = 0;
+
+
+			/**
+			 * Same as @a clone but shares, instead of copies, any revisioned objects in preparation
+			 * for a modification followed by a bubble up through the model hierarchy potentially
+			 * reaching the feature store if connected all the way up.
+			 *
+			 * At this level of the model these shared revisioned objects are any nested property
+			 * values that this revision instance might contain.
+			 *
+			 * This defaults to @a clone when not implemented in derived class.
+			 */
+			virtual
+			non_null_ptr_type
+			clone_for_bubble_up_modification() const
+			{
+				return clone();
+			}
+
+
+			/**
+			 * Activate this revision and any children revisions (child nested property values).
+			 */
+			virtual
+			void
+			activate() const
+			{
+				// Default (do nothing) applies if there are no nested property values.
+			}
+
+
+			/**
+			 * Determine if two Revision instances ('this' and 'other') value compare equal.
+			 *
+			 * This should recursively test for equality as needed.
+			 *
+			 * A precondition of this method is that the type of 'this' is the same as the type of 'other'.
+			 */
+			virtual
+			bool
+			equality(
+					const Revision &other) const
+			{
+				return true; // Terminates derived-to-base recursion.
+			}
+
+			/**
+			 * Returns parent (if any).
+			 */
+			const boost::optional<parent_reference_type> &
+			get_parent() const
+			{
+				return d_parent;
+			}
+
+			/**
+			 * Sets, or removes, parent reference.
+			 */
+			void
+			set_parent(
+					boost::optional<parent_reference_type> parent = boost::none)
+			{
+				d_parent = parent;
+			}
+
+		protected:
+
+			/**
+			 * The default applies for properties than are (initially) created without a parent.
+			 */
+			explicit
+			Revision(
+					boost::optional<parent_reference_type> parent = boost::none) :
+				d_parent(parent)
+			{  }
+
+		private:
+
+			/**
+			 * The reference to the owning parent (is none if not owned/attached to a parent).
+			 */
+			boost::optional<parent_reference_type> d_parent;
+		};
+
+	public:
+		//
+		// This public interface is used by the model framework.
+		//
+
+
+		/**
+		 * Reference to a property value and one of its revision snapshots.
+		 *
+		 * Reference can later be used to restore the property value to the revision (eg, undo/redo).
+		 */
+		class RevisionedReference
+		{
+		public:
+			RevisionedReference(
+					const non_null_ptr_type &property_value,
+					const Revision::non_null_ptr_to_const_type &revision) :
+				d_property_value(property_value),
+				d_revision(revision)
+			{  }
+
+			non_null_ptr_to_const_type
+			get_property_value() const
+			{
+				return d_property_value;
+			}
+
+			non_null_ptr_type
+			get_property_value()
+			{
+				return d_property_value;
+			}
+
+			/**
+			 * Recursively activate the revision.
+			 */
+			void
+			activate_revision()
+			{
+				d_revision->activate();
+			}
+
+			/**
+			 * Sets the revision as the current revision of the property value.
+			 */
+			void
+			set_property_value_current_revision()
+			{
+				d_property_value->d_current_revision = d_revision;
+			}
+
+		private:
+			non_null_ptr_type d_property_value;
+			Revision::non_null_ptr_to_const_type d_revision;
+		};
+
+
+		/**
+		 * Returns the current revision of this property value.
+		 *
+		 * The returned revision is immutable since it has already been initialised and
+		 * once initialised it cannot be modified. A property value modification involves
+		 * creating a new revision object.
+		 */
+		RevisionedReference
+		get_current_revisioned_reference()
+		{
+			return RevisionedReference(this, d_current_revision);
+		}
+
+		void
+		bubble_up_modification(
+				const RevisionedReference &revision,
+				ModelTransaction &transaction);
+
+		/**
+		 * Sets current parent to a @a TopLevelProperty.
+		 *
+		 * Creates a new revision from the current revision, sets the new revision as the current
+		 * and returns reference to new current revision. The only difference between new current
+		 * and previous revisions is the parent reference.
+		 *
+		 * This method is useful when adding a property value to a parent.
+		 */
+		RevisionedReference
+		set_parent(
+				TopLevelProperty &parent);
+
+		/**
+		 * Same as other overload of @a set_parent except parent is a @a PropertyValue.
+		 */
+		RevisionedReference
+		set_parent(
+				PropertyValue &parent);
+
+		/**
+		 * Removes the parent reference (useful when removing a property value from a parent).
+		 */
+		void
+		unset_parent();
 
 	protected:
 
@@ -277,9 +401,17 @@ namespace GPlatesModel
 					const PropertyValue::non_null_ptr_type &property_value);
 
 			/**
-			 * Returns the current revision if property value not attached to model, otherwise
-			 * clones current revision and returns that. Derived property value classes modify
-			 * the data in the returned derived revision class.
+			 * Returns the new mutable (base class) revision.
+			 */
+			Revision::non_null_ptr_type
+			get_mutable_revision()
+			{
+				return d_mutable_revision;
+			}
+
+			/**
+			 * Returns the new mutable revision (cast to specified derived revision type).
+			 * Derived property value classes modify the data in the returned derived revision class.
 			 */
 			template <class RevisionType>
 			RevisionType &
@@ -295,9 +427,9 @@ namespace GPlatesModel
 			handle_revision_modification();
 
 		private:
-			Model *d_model;
+			boost::optional<Model &> d_model;
 			PropertyValue::non_null_ptr_type d_property_value;
-			PropertyValueRevision::non_null_ptr_type d_mutable_revision;
+			Revision::non_null_ptr_type d_mutable_revision;
 		};
 
 
@@ -305,7 +437,7 @@ namespace GPlatesModel
 		 * Construct a PropertyValue instance.
 		 */
 		PropertyValue(
-				const PropertyValueRevision::non_null_ptr_type &revision) :
+				const Revision::non_null_ptr_type &revision) :
 			d_current_revision(revision)
 		{  }
 
@@ -371,53 +503,15 @@ namespace GPlatesModel
 
 
 		/**
-		 * Model transaction class specifically for property values.
+		 * The current revision of this property value.
+		 *
+		 * The current revision is immutable since it has already been initialised and once
+		 * initialised it cannot be modified. A modification involves creating a new revision object.
+		 *
+		 * The revision also contains the current parent reference such that when a different
+		 * revision is swapped in (due to undo/redo) it will automatically reference the correct parent.
 		 */
-		class Transaction :
-				public ModelTransaction
-		{
-		public:
-
-			typedef GPlatesUtils::non_null_intrusive_ptr<Transaction> non_null_ptr_type;
-			typedef GPlatesUtils::non_null_intrusive_ptr<const Transaction> non_null_ptr_to_const_type;
-
-			static
-			non_null_ptr_type
-			create(
-					const PropertyValue::non_null_ptr_type &property_value,
-					const PropertyValueRevision::non_null_ptr_type &revision)
-			{
-				return non_null_ptr_type(new Transaction(property_value, revision));
-			}
-
-			virtual
-			void
-			commit();
-
-			virtual
-			void
-			rollback();
-
-		private:
-
-			Transaction(
-					const PropertyValue::non_null_ptr_type &property_value,
-					const PropertyValueRevision::non_null_ptr_type &revision) :
-				d_property_value(property_value),
-				d_revision(revision)
-			{  }
-
-			PropertyValue::non_null_ptr_type d_property_value;
-			PropertyValueRevision::non_null_ptr_type d_revision;
-		};
-
-
-		/**
-		 * The reference to the owning parent (is none if not owned/attached to a parent).
-		 */
-		boost::optional<ParentReference> d_parent;
-
-		PropertyValueRevision::non_null_ptr_type d_current_revision;
+		Revision::non_null_ptr_to_const_type d_current_revision;
 
 	};
 

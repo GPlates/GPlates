@@ -29,15 +29,22 @@
 
 #include "Model.h"
 
+
 GPlatesModel::NotificationGuard::NotificationGuard(
-		Model *model_ptr) :
-	d_model_ptr(model_ptr),
-	d_guard_released(false)
+		Model &model) :
+	d_model(model),
+	d_guard_released(true)
 {
-	if (model_ptr)
-	{
-		model_ptr->increment_notification_guard_count();
-	}
+	acquire_guard();
+}
+
+
+GPlatesModel::NotificationGuard::NotificationGuard(
+		boost::optional<Model &> model) :
+	d_model(model),
+	d_guard_released(true)
+{
+	acquire_guard();
 }
 
 
@@ -52,9 +59,9 @@ GPlatesModel::NotificationGuard::release_guard()
 {
 	if (!d_guard_released)
 	{
-		if (d_model_ptr)
+		if (d_model)
 		{
-			d_model_ptr->decrement_notification_guard_count();
+			d_model->decrement_notification_guard_count();
 		}
 
 		d_guard_released = true;
@@ -67,9 +74,9 @@ GPlatesModel::NotificationGuard::acquire_guard()
 {
 	if (d_guard_released)
 	{
-		if (d_model_ptr)
+		if (d_model)
 		{
-			d_model_ptr->increment_notification_guard_count();
+			d_model->increment_notification_guard_count();
 		}
 
 		d_guard_released = false;

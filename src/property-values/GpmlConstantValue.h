@@ -260,7 +260,7 @@ namespace GPlatesPropertyValues
 
 			virtual
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone_with_shared_nested_property_values() const
+			clone_for_bubble_up_modification() const
 			{
 				// Don't clone the property value - share it instead.
 				return non_null_ptr_type(new Revision(value, description));

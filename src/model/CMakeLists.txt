@@ -61,7 +61,6 @@ set(srcs
     PropertyName.h
     PropertyValue.cc
     PropertyValue.h
-    PropertyValueRevision.h
     QualifiedXmlName.h
     RevisionAwareIterator.cc
     RevisionAwareIterator.h

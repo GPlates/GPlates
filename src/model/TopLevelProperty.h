@@ -34,8 +34,10 @@
 #include <iosfwd>
 #include <map>
 #include <boost/operators.hpp>
+#include <boost/optional.hpp>
 
 #include "PropertyName.h"
+#include "PropertyValue.h"
 #include "XmlAttributeName.h"
 #include "XmlAttributeValue.h"
 #include "types.h"
@@ -54,6 +56,7 @@ namespace GPlatesModel
 	typedef FeatureVisitorBase<FeatureHandle> FeatureVisitor;
 	typedef FeatureVisitorBase<const FeatureHandle> ConstFeatureVisitor;
 	class Model;
+	class ModelTransaction;
 
 	/**
 	 * This abstract base class (ABC) represents the top-level property of a feature.
@@ -159,22 +162,22 @@ namespace GPlatesModel
 				std::ostream &os) const = 0;
 
 		/**
-		 * Returns a (non-const) pointer to the Model to which this property belongs.
+		 * Returns a (non-const) reference to the Model to which this property belongs.
 		 *
-		 * Returns NULL if this property is not currently attached to the model - this can happen
+		 * Returns none if this property is not currently attached to the model - this can happen
 		 * if this property has no parent (feature) or if the parent has no parent, etc.
 		 */
-		Model *
-		model_ptr();
+		boost::optional<Model &>
+		get_model();
 
 		/**
-		 * Returns a const pointer to the Model to which this property belongs.
+		 * Returns a const reference to the Model to which this property belongs.
 		 *
-		 * Returns NULL if this property is not currently attached to the model - this can happen
+		 * Returns none if this property is not currently attached to the model - this can happen
 		 * if this property has no parent (feature) or if the parent has no parent, etc.
 		 */
-		const Model *
-		model_ptr() const;
+		boost::optional<const Model &>
+		get_model() const;
 
 		/**
 		 * Value equality comparison operator.
@@ -187,6 +190,17 @@ namespace GPlatesModel
 		bool
 		operator==(
 				const TopLevelProperty &other) const;
+
+	public:
+		//
+		// This public interface is used by the model framework.
+		//
+
+
+		void
+		bubble_up_modification(
+				const PropertyValue::RevisionedReference &revision,
+				ModelTransaction &transaction);
 
 	protected:
 

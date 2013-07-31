@@ -26,54 +26,47 @@
 #ifndef GPLATES_MODEL_MODELTRANSACTION_H
 #define GPLATES_MODEL_MODELTRANSACTION_H
 
-#include "utils/ReferenceCount.h"
+#include <vector>
+#include <boost/noncopyable.hpp>
+
+#include "PropertyValue.h"
 
 
 namespace GPlatesModel
 {
 	/**
-	 * Base model transaction class to be inherited for different aspects of the model data.
+	 * A model transaction takes care of committing a revision to the model data.
 	 *
-	 * A model transaction takes care of committing or rolling back a revision to the model data.
-	 *
-	 * Each area of the model data hierarchy has a different derived transaction type.
-	 * The transaction/revision areas are feature collections, features, properties and property values.
+	 * A revision consists of a linear chain of (bubbled-up) revisions that follow the model data
+	 * hierarchy from the feature store level down to the property value level. In some situations
+	 * the revision chain does not reach the feature store level (eg, if creating a new feature
+	 * collection and populating it before adding it to the feature store).
 	 */
 	class ModelTransaction :
-			public GPlatesUtils::ReferenceCount<ModelTransaction>
+			private boost::noncopyable
 	{
 	public:
 
-		//! A convenience typedef for a shared pointer to a non-const @a ModelTransaction.
-		typedef GPlatesUtils::non_null_intrusive_ptr<ModelTransaction> non_null_ptr_type;
-
-		//! A convenience typedef for a shared pointer to a const @a ModelTransaction.
-		typedef GPlatesUtils::non_null_intrusive_ptr<const ModelTransaction> non_null_ptr_to_const_type;
-
-
-		virtual
-		~ModelTransaction()
-		{  }
+		/**
+		 * Adds a property value revisioned reference to this transaction.
+		 */
+		void
+		add_property_value_revision(
+				const PropertyValue::RevisionedReference &revision)
+		{
+			d_property_value_revisions.push_back(revision);
+		}
 
 
 		/**
-		 * Commit the revision stored in the transaction to the model data.
+		 * The final commit (of the revisions added to this transaction) to the model data.
 		 */
-		virtual
 		void
-		commit() = 0;
+		commit();
 
+	private:
 
-		/**
-		 * Roll back the revision stored in the transaction to the model data.
-		 *
-		 * Provided commits and roll backs have followed the correct undo/redo order then
-		 * the revision stored in this transaction before calling @a rollback should be the
-		 * previous revision and after calling @a rollback should be the current revision (undone).
-		 */
-		virtual
-		void
-		rollback() = 0;
+		std::vector<PropertyValue::RevisionedReference> d_property_value_revisions;
 	};
 }
 

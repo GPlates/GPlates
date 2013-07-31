@@ -28,6 +28,9 @@
 #ifndef GPLATES_MODEL_NOTIFICATIONGUARD_H
 #define GPLATES_MODEL_NOTIFICATIONGUARD_H
 
+#include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
+
 
 namespace GPlatesModel
 {
@@ -53,16 +56,23 @@ namespace GPlatesModel
 	 * collection FC was modified and feature G was added to FC, only one
 	 * modification notification will be sent by FC to its listeners.
 	 */
-	class NotificationGuard
+	class NotificationGuard :
+			private boost::noncopyable
 	{
 	public:
 
+		explicit
+		NotificationGuard(
+				Model &model);
+
 		/**
-		 * If @a model_ptr is NULL then this notification guard does nothing.
+		 * Constructor provided as a convenience since a lot of model data queries supply an optional model.
+		 *
+		 * If @a model is none then this notification guard does nothing.
 		 */
 		explicit
 		NotificationGuard(
-				Model *model_ptr);
+				boost::optional<Model &> model);
 
 		~NotificationGuard();
 
@@ -95,7 +105,7 @@ namespace GPlatesModel
 
 	private:
 
-		Model *d_model_ptr;
+		boost::optional<Model &> d_model;
 		bool d_guard_released;
 	};
 }
