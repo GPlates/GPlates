@@ -31,15 +31,18 @@
 #ifndef GPLATES_MODEL_TOPLEVELPROPERTYINLINE_H
 #define GPLATES_MODEL_TOPLEVELPROPERTYINLINE_H
 
+#include <iterator>
 #include <vector>
-#include <boost/optional.hpp>
 #include <boost/function.hpp>
-#include <boost/iterator/transform_iterator.hpp>
-#include <boost/lambda/construct.hpp>
+#include <boost/mpl/if.hpp>
+#include <boost/operators.hpp>
+#include <boost/optional.hpp>
+#include <boost/type_traits/is_const.hpp>
 
 #include "TopLevelProperty.h"
 #include "PropertyValue.h"
 
+#include "global/PointerTraits.h"
 #include "global/unicode.h"
 
 namespace GPlatesModel
@@ -51,6 +54,12 @@ namespace GPlatesModel
 	class TopLevelPropertyInline:
 			public TopLevelProperty
 	{
+	private:
+
+		/**
+		 * The type of our container of PropertyValue revisioned references.
+		 */
+		typedef std::vector<PropertyValue::RevisionedReference> container_type;
 
 	public:
 
@@ -64,47 +73,86 @@ namespace GPlatesModel
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const TopLevelPropertyInline> non_null_ptr_to_const_type;
 
-		/**
-		 * The type of our container of PropertyValue pointers.
-		 */
-		typedef std::vector<PropertyValue::non_null_ptr_type> container_type;
 
 		/**
-		 * The type of an iterator that iterates over the PropertyValue instances
-		 * contained in this TopLevelPropertyInline.
+		 * Iterator implementation.
+		 *
+		 * PropertyValueQualifiedType can be 'PropertyValue' or 'const PropertyValue'.
 		 */
-		typedef container_type::iterator iterator;
+		template <class PropertyValueQualifiedType>
+		class Iterator:
+				public std::iterator<std::bidirectional_iterator_tag, PropertyValueQualifiedType>,
+				public boost::bidirectional_iteratable<Iterator<PropertyValueQualifiedType>, PropertyValueQualifiedType *>
+		{
+		public:
 
-	private:
+			//! Typedef for the element list iterator.
+			typedef typename boost::mpl::if_<
+					boost::is_const<PropertyValueQualifiedType>,
+								typename container_type::const_iterator,
+								typename container_type::iterator>::type
+										iterator_type;
+
+			explicit
+			Iterator(
+					iterator_type iterator_) :
+				d_iterator(iterator_)
+			{  }
+
+			/**
+			 * Dereference operator.
+			 *
+			 * Note that this does not return a *reference* to a property value non_null_ptr_type and
+			 * hence clients cannot use '*iter = new_ptr' to swap one property value pointer for another.
+			 *
+			 * 'operator->()' provided by base class boost::bidirectional_iteratable.
+			 */
+			typename GPlatesGlobal::PointerTraits<PropertyValueQualifiedType>::non_null_ptr_type
+			operator*() const
+			{
+				return d_iterator->get_property_value();
+			}
+
+			//! Post-increment operator provided by base class boost::bidirectional_iteratable.
+			Iterator &
+			operator++()
+			{
+				++d_iterator;
+				return *this;
+			}
+
+			//! Inequality operator provided by base class boost::bidirectional_iteratable.
+			friend
+			bool
+			operator==(
+					const Iterator &lhs,
+					const Iterator &rhs)
+			{
+				return lhs.d_iterator == rhs.d_iterator;
+			}
+
+		private:
+			iterator_type d_iterator;
+		};
+
 
 		/**
-		 * The type of a function that converts a pointer to non-const
-		 * PropertyValue to a pointer to const.
+		 * Non-const iterator type.
+		 *
+		 * Dereferencing will return a PropertyValue::non_null_ptr_type.
 		 */
-		typedef boost::function< PropertyValue::non_null_ptr_to_const_type (
-				PropertyValue::non_null_ptr_type) > make_const_ptr_fn_type;
-
-	public:
+		typedef Iterator<PropertyValue> iterator;
 
 		/**
-		 * The type of an iterator that const-iterates over the PropertyValue instances
-		 * contained in this TopLevelPropertyInline.
+		 * Const iterator type.
+		 *
+		 * Dereferencing will return a PropertyValue::non_null_ptr_to_const_type.
 		 */
-		typedef boost::transform_iterator<make_const_ptr_fn_type, container_type::const_iterator> const_iterator;
+		typedef Iterator<const PropertyValue> const_iterator;
+
 
 		virtual
-		~TopLevelPropertyInline()
-		{  }
-
-		static
-		const non_null_ptr_type
-		create(
-				const PropertyName &property_name_,
-				const container_type &values_,
-				const xml_attributes_type &xml_attributes_ = xml_attributes_type())
-		{
-			return non_null_ptr_type(new TopLevelPropertyInline(property_name_, values_, xml_attributes_));
-		}
+		~TopLevelPropertyInline();
 
 		template<class PropertyValueIterator>
 		static
@@ -120,10 +168,7 @@ namespace GPlatesModel
 		create(
 				const PropertyName &property_name_,
 				PropertyValue::non_null_ptr_type value_,
-				const xml_attributes_type &xml_attributes_ = xml_attributes_type())
-		{
-			return non_null_ptr_type(new TopLevelPropertyInline(property_name_, value_, xml_attributes_));
-		}
+				const xml_attributes_type &xml_attributes_ = xml_attributes_type());
 
 		static
 		const non_null_ptr_type
@@ -148,40 +193,40 @@ namespace GPlatesModel
 			return GPlatesUtils::dynamic_pointer_cast<TopLevelPropertyInline>(clone_impl());
 		}
 
+		/**
+		 * Const iterator dereferences to give PropertyValue::non_null_ptr_to_const_type.
+		 */
 		const_iterator
 		begin() const
 		{
-			return boost::make_transform_iterator(
-					d_values.begin(),
-					make_const_ptr_fn_type(boost::lambda::constructor<PropertyValue::non_null_ptr_to_const_type>()));
+			return const_iterator(d_values.begin());
 		}
 
 		const_iterator
 		end() const
 		{
-			return boost::make_transform_iterator(
-					d_values.end(),
-					make_const_ptr_fn_type(boost::lambda::constructor<PropertyValue::non_null_ptr_to_const_type>()));
+			return const_iterator(d_values.end());
 		}
 
 		/**
-		 * Begin iterator over 'non-const' property values.
+		 * Non-const iterator dereferences to give PropertyValue::non_null_ptr_type.
 		 *
-		 * Although the property here is no setter method since @a TopLevelProperty (and derived classes)
-		 * have not implemented revisioning - if they are made mutable (excluding any
-		 * contained property values - which already have revisioning) then revisioning will
-		 * need to be implemented for @a TopLevelProperty (and derived classes).
+		 * Note that this iterator cannot be used to replace property value pointers in the internal
+		 * sequence using '*iter = new_ptr', but it is possible to modify the property value since
+		 * the iterator dereferences to give a pointer to a *non-const* property value.
+		 * This is supported since property values have their own revisioning and so modifications
+		 * to the property value will bubble up to this top-level property and get revisioned properly.
 		 */
 		iterator
 		begin()
 		{
-			return d_values.begin();
+			return iterator(d_values.begin());
 		}
 
 		iterator
 		end()
 		{
-			return d_values.end();
+			return iterator(d_values.end());
 		}
 
 		size_t
@@ -212,32 +257,12 @@ namespace GPlatesModel
 
 	protected:
 
-		TopLevelPropertyInline(
-				const PropertyName &property_name_,
-				const container_type &values_,
-				const xml_attributes_type &xml_attributes_) :
-			TopLevelProperty(property_name_, xml_attributes_),
-			d_values(values_)
-		{  }
-
 		template<class PropertyValueIterator>
 		TopLevelPropertyInline(
 				const PropertyName &property_name_,
 				const PropertyValueIterator &values_begin_,
 				const PropertyValueIterator &values_end_,
-				const xml_attributes_type &xml_attributes_) :
-			TopLevelProperty(property_name_, xml_attributes_),
-			d_values(values_begin_, values_end_)
-		{  }
-
-		TopLevelPropertyInline(
-				const PropertyName &property_name_,
-				PropertyValue::non_null_ptr_type value_,
-				const xml_attributes_type &xml_attributes_) :
-			TopLevelProperty(property_name_, xml_attributes_)
-		{
-			d_values.push_back(value_);
-		}
+				const xml_attributes_type &xml_attributes_);
 
 		/**
 		 * Copy constructor does a deep copy.
@@ -254,8 +279,6 @@ namespace GPlatesModel
 
 	private:
 
-		container_type d_values;
-
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
 		// (which will in turn use the copy-constructor); all "assignment" should really
@@ -263,6 +286,9 @@ namespace GPlatesModel
 		TopLevelPropertyInline &
 		operator=(
 				const TopLevelPropertyInline &);
+
+
+		container_type d_values;
 
 	};
 
@@ -301,6 +327,34 @@ namespace GPlatesModel
 				xml_attributes_);
 	}
 
+
+	template<class PropertyValueIterator>
+	TopLevelPropertyInline::TopLevelPropertyInline(
+			const PropertyName &property_name_,
+			const PropertyValueIterator &values_begin_,
+			const PropertyValueIterator &values_end_,
+			const xml_attributes_type &xml_attributes_) :
+		TopLevelProperty(property_name_, xml_attributes_)
+	{
+		PropertyValueIterator values_iter = values_begin_;
+		for ( ; values_iter != values_end_; ++values_iter)
+		{
+			const PropertyValue::non_null_ptr_type &property_value = *values_iter;
+
+			// A revisioned reference to the property value enables us to switch to its
+			// revision later (eg, during undo/redo).
+			PropertyValue::RevisionedReference revisioned_property_value =
+					property_value->get_current_revisioned_reference();
+
+			// Enable property value modifications to bubble up to us.
+			// Note that we didn't clone the property value - so an external client could modify
+			// it (if it has a pointer to the property value) and this modification will bubble up
+			// to us and cause us to create a new TopLevelProperty revision.
+			revisioned_property_value.get_property_value()->set_parent(*this);
+
+			d_values.push_back(revisioned_property_value);
+		}
+	}
 }
 
 #endif  // GPLATES_MODEL_TOPLEVELPROPERTYINLINE_H

@@ -43,6 +43,16 @@ const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
 GPlatesModel::TopLevelPropertyInline::create(
 		const PropertyName &property_name_,
 		PropertyValue::non_null_ptr_type value_,
+		const xml_attributes_type &xml_attributes_)
+{
+	return create(property_name_, &value_, &value_ + 1, xml_attributes_);
+}
+
+
+const GPlatesModel::TopLevelPropertyInline::non_null_ptr_type
+GPlatesModel::TopLevelPropertyInline::create(
+		const PropertyName &property_name_,
+		PropertyValue::non_null_ptr_type value_,
 		const GPlatesUtils::UnicodeString &attribute_name_string,
 		const GPlatesUtils::UnicodeString &attribute_value_string)
 {
@@ -70,8 +80,24 @@ GPlatesModel::TopLevelPropertyInline::TopLevelPropertyInline(
 	container_type::const_iterator other_end = other.d_values.end();
 	for ( ; other_iter != other_end; ++other_iter)
 	{
-		PropertyValue::non_null_ptr_type cloned_pval = (*other_iter)->clone();
-		d_values.push_back(cloned_pval);
+		PropertyValue::non_null_ptr_type cloned_pval = other_iter->get_property_value()->clone();
+		d_values.push_back(cloned_pval->get_current_revisioned_reference());
+	}
+}
+
+
+GPlatesModel::TopLevelPropertyInline::~TopLevelPropertyInline()
+{
+	// Remove parent references from property values to us.
+	// This is in case one or more property values outlive us, eg, because a client is holding
+	// an intrusive pointer to the property value(s).
+	container_type::iterator values_iter = d_values.begin();
+	container_type::iterator values_end = d_values.end();
+	for ( ; values_iter != values_end; ++values_iter)
+	{
+		PropertyValue::RevisionedReference &revisioned_property_value = *values_iter;
+
+		revisioned_property_value.get_property_value()->unset_parent();
 	}
 }
 
@@ -109,7 +135,7 @@ GPlatesModel::TopLevelPropertyInline::print_to(
 		{
 			os << " , ";
 		}
-		os << **iter;
+		os << *iter->get_property_value();
 	}
 	os << " ]";
 
@@ -124,10 +150,12 @@ GPlatesModel::TopLevelPropertyInline::equality(
 	const TopLevelPropertyInline &other_inline = dynamic_cast<const TopLevelPropertyInline &>(other);
 
 	return d_values.size() == other_inline.d_values.size() &&
+			// Use the client iterator (instead of internal iterator) in order to compare
+			// property values and not revisioned property values...
 			std::equal(
-					d_values.begin(),
-					d_values.end(),
-					other_inline.d_values.begin(),
+					begin(),
+					end(),
+					other_inline.begin(),
 					// Compare PropertyValues, not pointers to PropertyValues...
 					*boost::lambda::_1 == *boost::lambda::_2) &&
 			TopLevelProperty::equality(other);
