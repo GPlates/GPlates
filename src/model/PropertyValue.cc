@@ -66,88 +66,30 @@ GPlatesModel::PropertyValue::equality(
 boost::optional<GPlatesModel::Model &>
 GPlatesModel::PropertyValue::get_model()
 {
-	// Re-use 'const' overload.
-	boost::optional<const GPlatesModel::Model &> model =
-			static_cast<const PropertyValue *>(this)->get_model();
-	if (!model)
+	if (!d_current_parent)
 	{
 		return boost::none;
 	}
 
-	return const_cast<Model &>(model.get());
+	return d_current_parent->get_model();
 }
 
 
 boost::optional<const GPlatesModel::Model &>
 GPlatesModel::PropertyValue::get_model() const
 {
-	boost::optional<parent_reference_type> parent = d_current_revision->get_parent();
-	if (!parent)
+	if (!d_current_parent)
 	{
 		return boost::none;
 	}
 
-	// Our parent could be one of two different types...
-	struct ModelPtrVisitor :
-			public boost::static_visitor<>
+	boost::optional<GPlatesModel::Model &> model = d_current_parent->get_model();
+	if (!model)
 	{
-		void
-		operator()(
-				const TopLevelProperty *parent)
-		{
-			model = parent->get_model();
-		}
+		return boost::none;
+	}
 
-		void
-		operator()(
-				const PropertyValue *parent)
-		{
-			model = parent->get_model();
-		}
-
-		boost::optional<const Model &> model;
-	};
-
-	ModelPtrVisitor visitor;
-	boost::apply_visitor(visitor, parent.get());
-
-	return visitor.model;
-}
-
-
-GPlatesModel::PropertyValue::RevisionedReference
-GPlatesModel::PropertyValue::set_parent(
-		TopLevelProperty &parent)
-{
-	// Create a new revision to set the parent reference in.
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision()->set_parent(parent_reference_type(&parent));
-	revision_handler.handle_revision_modification();
-
-	return get_current_revisioned_reference();
-}
-
-
-GPlatesModel::PropertyValue::RevisionedReference
-GPlatesModel::PropertyValue::set_parent(
-		PropertyValue &parent)
-{
-	// Create a new revision to set the parent reference in.
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision()->set_parent(parent_reference_type(&parent));
-	revision_handler.handle_revision_modification();
-
-	return get_current_revisioned_reference();
-}
-
-
-void
-GPlatesModel::PropertyValue::unset_parent()
-{
-	// Create a new revision to unset the parent reference in.
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision()->set_parent();
-	revision_handler.handle_revision_modification();
+	return model.get();
 }
 
 
@@ -172,42 +114,13 @@ GPlatesModel::PropertyValue::MutableRevisionHandler::handle_revision_modificatio
 	RevisionedReference revision(d_property_value, d_mutable_revision);
 	transaction.add_property_value_revision(revision);
 
-	// If we have a parent then bubble up our modification towards the root (feature store).
-	boost::optional<parent_reference_type> parent = d_mutable_revision->get_parent();
-	if (parent)
+	// If the property value has a parent then bubble up the modification towards the root (feature store).
+	if (!d_property_value->d_current_parent)
 	{
-		// Our parent could be one of two different types...
-		struct BubbleUpVisitor :
-				public boost::static_visitor<>
-		{
-			BubbleUpVisitor(
-					const RevisionedReference &revision_,
-					ModelTransaction &transaction_) :
-				revision(revision_),
-				transaction(transaction_)
-			{  }
-
-			void
-			operator()(
-					TopLevelProperty *parent)
-			{
-				parent->bubble_up_modification(revision, transaction);
-			}
-
-			void
-			operator()(
-					PropertyValue *parent)
-			{
-				parent->bubble_up_modification(revision, transaction);
-			}
-
-			const RevisionedReference &revision;
-			ModelTransaction &transaction;
-		};
-
-		BubbleUpVisitor visitor(revision, transaction);
-		boost::apply_visitor(visitor, parent.get());
+		return;
 	}
+
+	d_property_value->d_current_parent->bubble_up_modification(revision, transaction);
 
 	// If the bubble-up reaches the top of the model hierarchy (ie, connected all the way up to the model)
 	// then the model will store the new version in the undo/redo queue.

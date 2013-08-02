@@ -32,7 +32,6 @@
 #include <boost/noncopyable.hpp>
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
-#include <boost/variant.hpp>
 
 #include "property-values/StructuralType.h"
 
@@ -168,12 +167,6 @@ namespace GPlatesModel
 	protected:
 
 		/**
-		 * Reference to a parent - can be a @a TopLevelProperty - or a @a PropertyValue if
-		 * nested within another @a PropertyValue (ie, time-dependent property value).
-		 */
-		typedef boost::variant<TopLevelProperty *, PropertyValue *> parent_reference_type;
-
-		/**
 		 * Base class inherited by derived revision classes (in derived property values) where
 		 * mutable/revisionable property value state is stored so it can be revisioned.
 		 */
@@ -203,12 +196,13 @@ namespace GPlatesModel
 
 
 			/**
-			 * Same as @a clone but shares, instead of copies, any revisioned objects in preparation
-			 * for a modification followed by a bubble up through the model hierarchy potentially
-			 * reaching the feature store if connected all the way up.
+			 * Same as @a clone but only clones those sub-objects that it can, or will be, modified
+			 * in preparation (to be followed by a bubble up through the model hierarchy
+			 * potentially reaching the feature store if connected all the way up).
 			 *
-			 * At this level of the model these shared revisioned objects are any nested property
-			 * values that this revision instance might contain.
+			 * An example of sub-objects that might not be cloned are nested property values when
+			 * those property values cannot be (or not allowed to be) modified. This just makes
+			 * revisioned modifications and bubble up cheaper in terms of CPU and memory.
 			 *
 			 * This defaults to @a clone when not implemented in derived class.
 			 */
@@ -217,17 +211,6 @@ namespace GPlatesModel
 			clone_for_bubble_up_modification() const
 			{
 				return clone();
-			}
-
-
-			/**
-			 * Activate this revision and any children revisions (child nested property values).
-			 */
-			virtual
-			void
-			activate() const
-			{
-				// Default (do nothing) applies if there are no nested property values.
 			}
 
 
@@ -245,43 +228,6 @@ namespace GPlatesModel
 			{
 				return true; // Terminates derived-to-base recursion.
 			}
-
-			/**
-			 * Returns parent (if any).
-			 */
-			const boost::optional<parent_reference_type> &
-			get_parent() const
-			{
-				return d_parent;
-			}
-
-			/**
-			 * Sets, or removes, parent reference.
-			 */
-			void
-			set_parent(
-					boost::optional<parent_reference_type> parent = boost::none)
-			{
-				d_parent = parent;
-			}
-
-		protected:
-
-			/**
-			 * The default applies for properties than are (initially) created without a parent.
-			 */
-			explicit
-			Revision(
-					boost::optional<parent_reference_type> parent = boost::none) :
-				d_parent(parent)
-			{  }
-
-		private:
-
-			/**
-			 * The reference to the owning parent (is none if not owned/attached to a parent).
-			 */
-			boost::optional<parent_reference_type> d_parent;
 		};
 
 	public:
@@ -318,19 +264,10 @@ namespace GPlatesModel
 			}
 
 			/**
-			 * Recursively activate the revision.
-			 */
-			void
-			activate_revision()
-			{
-				d_revision->activate();
-			}
-
-			/**
 			 * Sets the revision as the current revision of the property value.
 			 */
 			void
-			set_property_value_current_revision()
+			set_current_revision()
 			{
 				d_property_value->d_current_revision = d_revision;
 			}
@@ -360,30 +297,25 @@ namespace GPlatesModel
 				ModelTransaction &transaction);
 
 		/**
-		 * Sets current parent to a @a TopLevelProperty.
-		 *
-		 * Creates a new revision from the current revision, sets the new revision as the current
-		 * and returns reference to new current revision. The only difference between new current
-		 * and previous revisions is the parent reference.
+		 * Sets current parent to the specified @a TopLevelProperty.
 		 *
 		 * This method is useful when adding a property value to a parent.
 		 */
-		RevisionedReference
+		void
 		set_parent(
-				TopLevelProperty &parent);
-
-		/**
-		 * Same as other overload of @a set_parent except parent is a @a PropertyValue.
-		 */
-		RevisionedReference
-		set_parent(
-				PropertyValue &parent);
+				TopLevelProperty &parent)
+		{
+			d_current_parent = parent;
+		}
 
 		/**
 		 * Removes the parent reference (useful when removing a property value from a parent).
 		 */
 		void
-		unset_parent();
+		unset_parent()
+		{
+			d_current_parent = boost::none;
+		}
 
 	protected:
 
@@ -513,6 +445,10 @@ namespace GPlatesModel
 		 */
 		Revision::non_null_ptr_to_const_type d_current_revision;
 
+		/**
+		 * The reference to the owning parent (is none if not owned/attached to a parent).
+		 */
+		boost::optional<TopLevelProperty &> d_current_parent;
 	};
 
 
