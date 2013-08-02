@@ -301,14 +301,7 @@ namespace GPlatesPropertyValues
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
-			{
-				const Revision &other_revision = static_cast<const Revision &>(other);
-
-				return time_samples == other_revision.time_samples &&
-						boost::equal_pointees(interpolation_function, other_revision.interpolation_function) &&
-						GPlatesModel::PropertyValue::Revision::equality(other);
-			}
+					const GPlatesModel::PropertyValue::Revision &other) const;
 
 			std::vector<GpmlTimeSample> time_samples;
 			GpmlInterpolationFunction::maybe_null_ptr_type interpolation_function;

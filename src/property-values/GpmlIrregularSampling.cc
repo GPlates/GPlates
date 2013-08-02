@@ -74,7 +74,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
 
 	// Merge model events across this scope to avoid excessive number of model callbacks
 	// when modifying the total reconstruction pole property values.
-	GPlatesModel::NotificationGuard model_notification_guard(model_ptr());
+	GPlatesModel::NotificationGuard model_notification_guard(get_model());
 
 	MutableRevisionHandler revision_handler(this);
 	Revision &mutable_revision = revision_handler.get_mutable_revision<Revision>();
@@ -173,4 +173,16 @@ GPlatesPropertyValues::GpmlIrregularSampling::Revision::Revision(
 	{
 		interpolation_function.reset(other.interpolation_function->clone().get());
 	}
+}
+
+
+bool
+GPlatesPropertyValues::GpmlIrregularSampling::Revision::equality(
+		const GPlatesModel::PropertyValue::Revision &other) const
+{
+	const Revision &other_revision = static_cast<const Revision &>(other);
+
+	return time_samples == other_revision.time_samples &&
+			boost::equal_pointees(interpolation_function, other_revision.interpolation_function) &&
+			GPlatesModel::PropertyValue::Revision::equality(other);
 }

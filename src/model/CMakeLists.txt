@@ -53,6 +53,7 @@ set(srcs
     Model.h
     ModelInterface.cc
     ModelInterface.h
+    ModelTransaction.cc
     ModelTransaction.h
     ModelUtils.cc
     ModelUtils.h

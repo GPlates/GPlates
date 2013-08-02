@@ -26,10 +26,11 @@
 #ifndef GPLATES_MODEL_MODELTRANSACTION_H
 #define GPLATES_MODEL_MODELTRANSACTION_H
 
-#include <vector>
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 
 #include "PropertyValue.h"
+#include "TopLevelProperty.h"
 
 
 namespace GPlatesModel
@@ -37,10 +38,12 @@ namespace GPlatesModel
 	/**
 	 * A model transaction takes care of committing a revision to the model data.
 	 *
-	 * A revision consists of a linear chain of (bubbled-up) revisions that follow the model data
-	 * hierarchy from the feature store level down to the property value level. In some situations
+	 * A revision consists of a linear chain of (bubbled-up) revisions that can follow the model data
+	 * hierarchy from the property value level up to the feature store level. In some situations
 	 * the revision chain does not reach the feature store level (eg, if creating a new feature
-	 * collection and populating it before adding it to the feature store).
+	 * collection and populating it before adding it to the feature store). Also in some situations
+	 * the revision chain does not start at the property value level (eg, if adding a feature to a
+	 * feature collection).
 	 */
 	class ModelTransaction :
 			private boost::noncopyable
@@ -48,25 +51,39 @@ namespace GPlatesModel
 	public:
 
 		/**
-		 * Adds a property value revisioned reference to this transaction.
+		 * Sets the property value revisioned reference for this transaction.
 		 */
 		void
-		add_property_value_revision(
+		set_property_value_revision(
 				const PropertyValue::RevisionedReference &revision)
 		{
-			d_property_value_revisions.push_back(revision);
+			d_property_value_revision = revision;
+		}
+
+		/**
+		 * Sets the top level property revisioned reference for this transaction.
+		 */
+		void
+		set_top_level_property_revision(
+				const TopLevelProperty::RevisionedReference &revision)
+		{
+			d_top_level_property_revision = revision;
 		}
 
 
 		/**
 		 * The final commit (of the revisions added to this transaction) to the model data.
+		 *
+		 * This points the relevant model data (property value, top level property, feature,
+		 * feature collection, feature store) at their new revisions.
 		 */
 		void
 		commit();
 
 	private:
 
-		std::vector<PropertyValue::RevisionedReference> d_property_value_revisions;
+		boost::optional<PropertyValue::RevisionedReference> d_property_value_revision;
+		boost::optional<TopLevelProperty::RevisionedReference> d_top_level_property_revision;
 	};
 }
 

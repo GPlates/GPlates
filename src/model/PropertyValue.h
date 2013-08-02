@@ -196,13 +196,12 @@ namespace GPlatesModel
 
 
 			/**
-			 * Same as @a clone but only clones those sub-objects that it can, or will be, modified
+			 * Same as @a clone but only clones those sub-objects that can, or will be, modified
 			 * in preparation (to be followed by a bubble up through the model hierarchy
 			 * potentially reaching the feature store if connected all the way up).
 			 *
-			 * An example of sub-objects that might not be cloned are nested property values when
-			 * those property values cannot be (or not allowed to be) modified. This just makes
-			 * revisioned modifications and bubble up cheaper in terms of CPU and memory.
+			 * Any sub-objects that will never be modified are considered immutable from a revisioning
+			 * perspective and hence can be shared.
 			 *
 			 * This defaults to @a clone when not implemented in derived class.
 			 */
@@ -291,15 +290,10 @@ namespace GPlatesModel
 			return RevisionedReference(this, d_current_revision);
 		}
 
-		void
-		bubble_up_modification(
-				const RevisionedReference &revision,
-				ModelTransaction &transaction);
-
 		/**
 		 * Sets current parent to the specified @a TopLevelProperty.
 		 *
-		 * This method is useful when adding a property value to a parent.
+		 * This method is useful when adding a property value to a top level property.
 		 */
 		void
 		set_parent(
@@ -309,7 +303,7 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Removes the parent reference (useful when removing a property value from a parent).
+		 * Removes the parent reference (useful when removing a property value from a top level property).
 		 */
 		void
 		unset_parent()
@@ -330,7 +324,7 @@ namespace GPlatesModel
 
 			explicit
 			MutableRevisionHandler(
-					const PropertyValue::non_null_ptr_type &property_value);
+					const non_null_ptr_type &property_value);
 
 			/**
 			 * Returns the new mutable (base class) revision.
@@ -353,14 +347,14 @@ namespace GPlatesModel
 			}
 
 			/**
-			 * Handles committing of revision to the model (if attached) and signalling model events.
+			 * Handles committing of revision to the model (if attached) and signaling model events.
 			 */
 			void
 			handle_revision_modification();
 
 		private:
 			boost::optional<Model &> d_model;
-			PropertyValue::non_null_ptr_type d_property_value;
+			non_null_ptr_type d_property_value;
 			Revision::non_null_ptr_type d_mutable_revision;
 		};
 
@@ -446,7 +440,7 @@ namespace GPlatesModel
 		Revision::non_null_ptr_to_const_type d_current_revision;
 
 		/**
-		 * The reference to the owning parent (is none if not owned/attached to a parent).
+		 * The reference to the owning top level property (is none if not owned/attached).
 		 */
 		boost::optional<TopLevelProperty &> d_current_parent;
 	};

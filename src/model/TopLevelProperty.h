@@ -105,7 +105,7 @@ namespace GPlatesModel
 		// Note that no "setter" is provided:  The property name of a TopLevelProperty
 		// instance should never be changed.
 		const PropertyName &
-		property_name() const
+		get_property_name() const
 		{
 			return d_property_name;
 		}
@@ -113,20 +113,21 @@ namespace GPlatesModel
 		/**
 		 * Return the XML attributes.
 		 *
-		 * There is no setter method since @a TopLevelProperty (and derived classes)
-		 * have not implemented revisioning - if they are made mutable (excluding any
-		 * contained property values - which already have revisioning) then revisioning will
-		 * need to be implemented for @a TopLevelProperty (and derived classes).
-		 *
 		 * @b FIXME:  Should this function be replaced with per-index const-access to
-		 * elements of the XML attribute map?  (For consistency with the non-const
-		 * overload...)
+		 * elements of the XML attribute map?
 		 */
 		const xml_attributes_type &
 		get_xml_attributes() const
 		{
-			return d_xml_attributes;
+			return get_current_revision<Revision>().xml_attributes;
 		}
+
+		/**
+		 * Set the XML attributes.
+		 */
+		void
+		set_xml_attributes(
+				const xml_attributes_type &xml_attributes);
 
 		/**
 		 * Accept a ConstFeatureVisitor instance.
@@ -162,6 +163,18 @@ namespace GPlatesModel
 				std::ostream &os) const = 0;
 
 		/**
+		 * Value equality comparison operator.
+		 *
+		 * Returns false if the types of @a other and 'this' aren't the same type, otherwise
+		 * returns true if their values (tested recursively as needed) compare equal.
+		 *
+		 * Inequality provided by boost equality_comparable.
+		 */
+		bool
+		operator==(
+				const TopLevelProperty &other) const;
+
+		/**
 		 * Returns a (non-const) reference to the Model to which this property belongs.
 		 *
 		 * Returns none if this property is not currently attached to the model - this can happen
@@ -179,17 +192,89 @@ namespace GPlatesModel
 		boost::optional<const Model &>
 		get_model() const;
 
+	protected:
+
 		/**
-		 * Value equality comparison operator.
-		 *
-		 * Returns false if the types of @a other and 'this' aren't the same type, otherwise
-		 * returns true if their values (tested recursively as needed) compare equal.
-		 *
-		 * Inequality provided by boost equality_comparable.
+		 * Base class inherited by derived revision classes (in derived properties) where
+		 * mutable/revisionable property state is stored so it can be revisioned.
 		 */
-		bool
-		operator==(
-				const TopLevelProperty &other) const;
+		class Revision :
+				public GPlatesUtils::ReferenceCount<Revision>
+		{
+		public:
+			typedef GPlatesUtils::non_null_intrusive_ptr<Revision> non_null_ptr_type;
+			typedef GPlatesUtils::non_null_intrusive_ptr<const Revision> non_null_ptr_to_const_type;
+
+			virtual
+			~Revision()
+			{  }
+
+			/**
+			 * Create a duplicate of this Revision instance, including a recursive copy
+			 * of any property values in this instance.
+			 *
+			 * This is used when cloning a property instance because we want an entirely
+			 * new property instance that does not share anything with the original instance.
+			 * This is useful when cloning a feature to get an entirely new feature (and not a
+			 * revision of the feature).
+			 */
+			virtual
+			non_null_ptr_type
+			clone() const = 0;
+
+
+			/**
+			 * Same as @a clone but does not clone property values since they are independently revisioned.
+			 *
+			 * This defaults to @a clone when not implemented in derived class.
+			 */
+			virtual
+			non_null_ptr_type
+			clone_for_bubble_up_modification() const
+			{
+				return clone();
+			}
+
+
+			/**
+			 * Changes this revision so that it references the new bubbled-up property value revision.
+			 */
+			virtual
+			void
+			reference_bubbled_up_property_value_revision(
+					const PropertyValue::RevisionedReference &property_value_revisioned_reference) = 0;
+
+
+			/**
+			 * Determine if two Revision instances ('this' and 'other') value compare equal.
+			 *
+			 * This should recursively test for equality as needed.
+			 *
+			 * A precondition of this method is that the type of 'this' is the same as the type of 'other'.
+			 */
+			virtual
+			bool
+			equality(
+					const Revision &other) const
+			{
+				return xml_attributes == other.xml_attributes;
+			}
+
+			xml_attributes_type xml_attributes;
+
+		protected:
+
+			explicit
+			Revision(
+					const xml_attributes_type &xml_attributes_) :
+				xml_attributes(xml_attributes_)
+			{  }
+
+			Revision(
+					const Revision &other) :
+				xml_attributes(other.xml_attributes)
+			{  }
+		};
 
 	public:
 		//
@@ -197,21 +282,150 @@ namespace GPlatesModel
 		//
 
 
+		/**
+		 * Reference to a top level property and one of its revision snapshots.
+		 *
+		 * Reference can later be used to restore the property to the revision (eg, undo/redo).
+		 */
+		class RevisionedReference
+		{
+		public:
+			RevisionedReference(
+					const non_null_ptr_type &top_level_property,
+					const Revision::non_null_ptr_type &revision) :
+				d_top_level_property(top_level_property),
+				d_revision(revision)
+			{  }
+
+			non_null_ptr_to_const_type
+			get_top_level_property() const
+			{
+				return d_top_level_property;
+			}
+
+			non_null_ptr_type
+			get_top_level_property()
+			{
+				return d_top_level_property;
+			}
+
+			/**
+			 * Sets the revision as the current revision of the property.
+			 */
+			void
+			set_current_revision()
+			{
+				d_top_level_property->d_current_revision = d_revision;
+			}
+
+		private:
+			non_null_ptr_type d_top_level_property;
+			Revision::non_null_ptr_type d_revision;
+		};
+
+
+		/**
+		 * Returns the current revision of this top level property.
+		 *
+		 * The returned revision is immutable since it has already been initialised and
+		 * once initialised it cannot be modified. A top level property modification involves
+		 * creating a new revision object.
+		 */
+		RevisionedReference
+		get_current_revisioned_reference()
+		{
+			return RevisionedReference(this, d_current_revision);
+		}
+
+		/**
+		 * Sets current parent to the specified @a FeatureHandle.
+		 *
+		 * This method is useful when adding a top level property to a feature.
+		 */
+		void
+		set_parent(
+				FeatureHandle &parent)
+		{
+			d_current_parent = parent;
+		}
+
+		/**
+		 * Removes the parent reference (useful when removing a top level property from a feature).
+		 */
+		void
+		unset_parent()
+		{
+			d_current_parent = boost::none;
+		}
+
+		/**
+		 * Bubbles up a modification from a child property value (initiated by child).
+		 *
+		 * The bubble-up mechanism creates a new revision and then bubbles up to our parent and
+		 * so on to eventually reach the top of the model hierarchy (feature store) if connected
+		 * all the way up.
+		 */
 		void
 		bubble_up_modification(
-				const PropertyValue::RevisionedReference &revision,
+				const PropertyValue::RevisionedReference &property_value_revisioned_reference,
 				ModelTransaction &transaction);
 
 	protected:
 
 		/**
-		 * Construct a TopLevelProperty instance with the given property name.
+		 * A convenience helper class used by derived top level property classes in their methods
+		 * that modify the property state.
+		 */
+		class MutableRevisionHandler :
+				private boost::noncopyable
+		{
+		public:
+
+			explicit
+			MutableRevisionHandler(
+					const non_null_ptr_type &top_level_property);
+
+			/**
+			 * Returns the new mutable (base class) revision.
+			 */
+			Revision::non_null_ptr_type
+			get_mutable_revision()
+			{
+				return d_mutable_revision;
+			}
+
+			/**
+			 * Returns the new mutable revision (cast to specified derived revision type).
+			 * Derived top level property classes modify the data in the returned derived revision class.
+			 */
+			template <class RevisionType>
+			RevisionType &
+			get_mutable_revision()
+			{
+				return dynamic_cast<RevisionType &>(*d_mutable_revision);
+			}
+
+			/**
+			 * Handles committing of revision to the model (if attached) and signaling model events.
+			 */
+			void
+			handle_revision_modification();
+
+		private:
+			boost::optional<Model &> d_model;
+			non_null_ptr_type d_top_level_property;
+			Revision::non_null_ptr_type d_mutable_revision;
+		};
+
+
+		/**
+		 * Construct a TopLevelProperty instance.
 		 */
 		TopLevelProperty(
 				const PropertyName &property_name_,
-				const xml_attributes_type &xml_attributes_):
-			d_property_name(property_name_),
-			d_xml_attributes(xml_attributes_)
+				const Revision::non_null_ptr_type &revision_) :
+			d_property_name(property_name_), // immutable/unrevisioned
+			d_current_revision(revision_)
 		{  }
 
 		/**
@@ -222,9 +436,35 @@ namespace GPlatesModel
 		 */
 		TopLevelProperty(
 				const TopLevelProperty &other) :
-			d_property_name(other.d_property_name),
-			d_xml_attributes(other.d_xml_attributes)
+			d_property_name(other.d_property_name), // immutable/unrevisioned
+			d_current_revision(other.d_current_revision->clone())
 		{  }
+
+		/**
+		 * Returns the current 'const' revision as the specified derived revision type.
+		 *
+		 * Revisions are essentially immutable (when attached to model).
+		 * Use @a MutableRevisionHandler to modify revisions.
+		 */
+		template <class RevisionType>
+		const RevisionType &
+		get_current_revision() const
+		{
+			return dynamic_cast<const RevisionType &>(*d_current_revision);
+		}
+
+		/**
+		 * Returns the current 'non-const' revision as the specified derived revision type.
+		 *
+		 * NOTE: This should *not* be used to change the data in the current revision.
+		 * Use @a MutableRevisionHandler to modify revisions.
+		 */
+		template <class RevisionType>
+		RevisionType &
+		get_current_revision()
+		{
+			return dynamic_cast<RevisionType &>(*d_current_revision);
+		}
 
 		/**
 		 * Create a duplicate of this TopLevelProperty instance, including a recursive copy
@@ -249,9 +489,6 @@ namespace GPlatesModel
 
 	private:
 
-		PropertyName d_property_name;
-		xml_attributes_type d_xml_attributes;
-
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
 		// (which will in turn use the copy-constructor); all "assignment" should really
@@ -259,6 +496,28 @@ namespace GPlatesModel
 		TopLevelProperty &
 		operator=(
 				const TopLevelProperty &);
+
+
+		/**
+		 * The property name is not revisioned since it doesn't change - is essentially immutable.
+		 */
+		PropertyName d_property_name;
+
+		/**
+		 * The current revision of this property value.
+		 *
+		 * The current revision is immutable since it has already been initialised and once
+		 * initialised it cannot be modified. A modification involves creating a new revision object.
+		 * However we use a pointer to 'non-const' revision because there are some situations
+		 * where we need 'non-const' access to the property values even though we're not
+		 * modifying the @a Revision object itself.
+		 */
+		Revision::non_null_ptr_type d_current_revision;
+
+		/**
+		 * The reference to the owning feature (is none if not owned/attached).
+		 */
+		boost::optional<FeatureHandle &> d_current_parent;
 
 	};
 

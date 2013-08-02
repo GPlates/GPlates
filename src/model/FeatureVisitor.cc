@@ -39,7 +39,7 @@ namespace GPlatesModel
 		// TopLevelProperty::non_null_ptr_to_const_type. To modify properties in a
 		// feature, you need to make a deep clone of the property, modify the clone
 		// and then call set on the feature.
-		TopLevelProperty::non_null_ptr_type prop_clone = (*feature_iterator)->deep_clone();
+		TopLevelProperty::non_null_ptr_type prop_clone = (*feature_iterator)->clone();
 		prop_clone->accept_visitor(*this);
 		*feature_iterator = prop_clone;
 	}

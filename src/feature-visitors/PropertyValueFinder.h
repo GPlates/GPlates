@@ -301,7 +301,7 @@ namespace GPlatesFeatureVisitors
 			initialise_pre_property_values(
 					typename FeatureVisitorType::top_level_property_inline_type &top_level_property_inline)
 			{
-				const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
+				const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.get_property_name();
 
 				if ( ! d_property_names_to_allow.empty())
 				{

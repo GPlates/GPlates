@@ -795,7 +795,7 @@ namespace GPlatesModel
 		for ( ; iter != end; ++iter)
 		{
 			d_current_top_level_propiter = iter;
-			d_current_top_level_propname = (*iter)->property_name();
+			d_current_top_level_propname = (*iter)->get_property_name();
 
 			visit_feature_property(iter);
 

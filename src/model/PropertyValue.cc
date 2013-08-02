@@ -108,65 +108,31 @@ GPlatesModel::PropertyValue::MutableRevisionHandler::MutableRevisionHandler(
 void
 GPlatesModel::PropertyValue::MutableRevisionHandler::handle_revision_modification()
 {
-	// Create a model transaction that will switch the new revision with the current one.
+	// Create a model transaction that will switch the current revision to the new one.
 	ModelTransaction transaction;
 
 	RevisionedReference revision(d_property_value, d_mutable_revision);
-	transaction.add_property_value_revision(revision);
+	transaction.set_property_value_revision(revision);
 
 	// If the property value has a parent then bubble up the modification towards the root (feature store).
-	if (!d_property_value->d_current_parent)
+	if (d_property_value->d_current_parent)
 	{
-		return;
+		d_property_value->d_current_parent->bubble_up_modification(revision, transaction);
 	}
-
-	d_property_value->d_current_parent->bubble_up_modification(revision, transaction);
 
 	// If the bubble-up reaches the top of the model hierarchy (ie, connected all the way up to the model)
 	// then the model will store the new version in the undo/redo queue.
-	// The commit also takes care of model events - either emitting an event immediately
-	// or queuing it if a model notification guard is currently active.
 	transaction.commit();
 
+	// Emit the model events if either there's no model (ie, not attached to model), or
+	// we are attached to the model but the model notification guard is currently active
+	// (in which case the events will be re-determined and then emitted when the notification
+	// guard is released).
 	if (!d_model ||
 		!d_model->has_notification_guard())
 	{
+		// TODO: Emit model events.
 	}
-
-#if 0
-	if (d_model)
-	{
-		// Create a transaction that will switch the new revision with the current one.
-		// After it's committed the transaction can later be rolled back, re-committed, etc, if the
-		// user performs undo, redo, etc, without requiring this property value to be involved.
-		Transaction::non_null_ptr_type transaction =
-				Transaction::create(d_property_value, d_mutable_revision);
-
-		// The model will commit the transaction and store it in the undo/redo queue.
-		// The commit also takes care of model events - either emitting an event immediately
-		// or queuing it if a model notification guard is currently active.
-#if 0
-		d_model->commit_transaction(transaction);
-#endif
-	}
-	else // not attached to a model...
-	{
-#if 0
-		// We are not attached to a model so there's no need for model transactions, but
-		// if we belong to a parent feature then we should emit an event that signals
-		// the parent feature was modified (because one of its properties changed).
-		if (d_property_value->d_parent_feature_ref)
-		{
-			WeakReferencePublisherModifiedVisitor<FeatureHandle> visitor(
-					WeakReferencePublisherModifiedEvent<FeatureHandle>::PUBLISHER_MODIFIED);
-			d_property_value->d_parent_feature_ref->apply_weak_observer_visitor(visitor);
-			WeakReferencePublisherModifiedVisitor<const FeatureHandle> const_visitor(
-					WeakReferencePublisherModifiedEvent<const FeatureHandle>::PUBLISHER_MODIFIED);
-			d_property_value->d_parent_feature_ref->apply_const_weak_observer_visitor(const_visitor);
-		}
-#endif
-	}
-#endif
 }
 
 
