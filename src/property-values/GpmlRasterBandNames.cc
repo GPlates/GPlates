@@ -30,11 +30,16 @@
 #include "GpmlRasterBandNames.h"
 
 
-const GPlatesPropertyValues::GpmlRasterBandNames::non_null_ptr_type
-GPlatesPropertyValues::GpmlRasterBandNames::create(
+void
+GPlatesPropertyValues::GpmlRasterBandNames::set_band_names(
 		const band_names_list_type &band_names_)
 {
-	return new GpmlRasterBandNames(band_names_);
+	MutableRevisionHandler revision_handler(this);
+	// To keep our revision state immutable we clone the time instant so that the client
+	// can no longer modify it indirectly...
+	revision_handler.get_mutable_revision<Revision>()
+			.set_cloned_band_names(band_names_.begin(), band_names_.end());
+	revision_handler.handle_revision_modification();
 }
 
 
@@ -45,3 +50,37 @@ GPlatesPropertyValues::GpmlRasterBandNames::print_to(
 	return os << "GpmlRasterBandNames";
 }
 
+
+GPlatesPropertyValues::GpmlRasterBandNames::Revision::Revision(
+		const Revision &other)
+{
+	// Clone the band names.
+	BOOST_FOREACH(const XsString::non_null_ptr_to_const_type &other_band_name, other.band_names)
+	{
+		band_names.push_back(other_band_name->clone());
+	}
+}
+
+
+bool
+GPlatesPropertyValues::GpmlRasterBandNames::Revision::equality(
+		const GPlatesModel::PropertyValue::Revision &other) const
+{
+	const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+	if (band_names.size() != other_revision.band_names.size())
+	{
+		return false;
+	}
+
+	for (unsigned int n = 0; n < band_names.size(); ++n)
+	{
+		// Compare PropertyValues, not pointers to PropertyValues...
+		if (*band_names[n] != *other_revision.band_names[n])
+		{
+			return false;
+		}
+	}
+
+	return GPlatesModel::PropertyValue::Revision::equality(other);
+}

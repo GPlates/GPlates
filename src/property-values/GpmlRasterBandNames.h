@@ -63,11 +63,13 @@ namespace GPlatesPropertyValues
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlRasterBandNames> non_null_ptr_to_const_type;
 
+		//! Typedef for a sequence of band names.
+		typedef std::vector<XsString::non_null_ptr_to_const_type> band_names_list_type;
+
+
 		virtual
 		~GpmlRasterBandNames()
 		{  }
-
-		typedef std::vector<XsString::non_null_ptr_to_const_type> band_names_list_type;
 
 		/**
 		 * Create a GpmlRasterBandNames instance from a collection of @a band_names_.
@@ -75,7 +77,10 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				const band_names_list_type &band_names_);
+				const band_names_list_type &band_names_)
+		{
+			return create(band_names_.begin(), band_names_.end());
+		}
 
 		template<typename ForwardIterator>
 		static
@@ -90,33 +95,18 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		clone() const
 		{
-			non_null_ptr_type dup(new GpmlRasterBandNames(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GpmlRasterBandNames>(clone_impl());
 		}
-
-		const non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		const band_names_list_type &
-		band_names() const
+		get_band_names() const
 		{
-			return d_band_names;
+			return get_current_revision<Revision>().band_names;
 		}
 
 		void
 		set_band_names(
-				const band_names_list_type &band_names_)
-		{
-			d_band_names = band_names_;
-			update_instance_id();
-		}
+				const band_names_list_type &band_names_);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -166,20 +156,11 @@ namespace GPlatesPropertyValues
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		explicit
-		GpmlRasterBandNames(
-				const band_names_list_type &band_names_) :
-			PropertyValue(),
-			d_band_names(band_names_)
-		{  }
-
-
 		template<typename ForwardIterator>
 		GpmlRasterBandNames(
 				ForwardIterator begin,
 				ForwardIterator end) :
-			PropertyValue(),
-			d_band_names(begin, end)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(begin, end)))
 		{  }
 
 
@@ -190,13 +171,83 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GpmlRasterBandNames(
 				const GpmlRasterBandNames &other) :
-			PropertyValue(other), /* share instance id */
-			d_band_names(other.d_band_names)
+			PropertyValue(other)
 		{  }
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GpmlRasterBandNames(*this));
+		}
 
 	private:
 
-		band_names_list_type d_band_names;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			template<typename ForwardIterator>
+			Revision(
+					ForwardIterator begin_,
+					ForwardIterator end_,
+					bool deep_copy = true)
+			{
+				if (deep_copy)
+				{
+					set_cloned_band_names(begin_, end_);
+				}
+				else
+				{
+					band_names.insert(band_names.end(), begin_, end_);
+				}
+			}
+
+			Revision(
+					const Revision &other);
+
+			// To keep our revision state immutable we clone the band names so that the client
+			// can no longer modify them indirectly...
+			template<typename ForwardIterator>
+			void
+			set_cloned_band_names(
+					ForwardIterator begin_,
+					ForwardIterator end_)
+			{
+				band_names.clear();
+				ForwardIterator band_names_iter_ = begin_;
+				for ( ; band_names_iter_ != end_; ++band_names_iter_)
+				{
+					const XsString::non_null_ptr_to_const_type &band_name_ = *band_names_iter_;
+					band_names.push_back(band_name_->clone());
+				}
+			}
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone_for_bubble_up_modification() const
+			{
+				// Don't clone the band name property values.
+				return non_null_ptr_type(new Revision(band_names.begin(), band_names.end(), false/*deep_copy*/));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const;
+
+			band_names_list_type band_names;
+		};
+
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

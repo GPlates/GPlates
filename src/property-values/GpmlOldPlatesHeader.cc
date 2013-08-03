@@ -30,35 +30,167 @@
 #include "GpmlOldPlatesHeader.h"
 
 
+void
+GPlatesPropertyValues::GpmlOldPlatesHeader::set_region_number(
+		const unsigned int &i)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().region_number = i;
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GpmlOldPlatesHeader::set_reference_number(
+		const unsigned int &i)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().reference_number = i;
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GpmlOldPlatesHeader::set_string_number(
+		const unsigned int &i)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().string_number = i;
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GpmlOldPlatesHeader::set_geographic_description(
+		const GPlatesUtils::UnicodeString &us)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().geographic_description = us;
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GpmlOldPlatesHeader::set_plate_id_number(
+		const GPlatesModel::integer_plate_id_type &i)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().plate_id_number = i;
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GpmlOldPlatesHeader::set_age_of_appearance(
+		const double &d)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().age_of_appearance = d;
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GpmlOldPlatesHeader::set_age_of_disappearance(
+		const double &d)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().age_of_disappearance = d;
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GpmlOldPlatesHeader::set_data_type_code(
+		const GPlatesUtils::UnicodeString &us)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().data_type_code = TextContent(us);
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GpmlOldPlatesHeader::set_data_type_code_number(
+		const unsigned int &i)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().data_type_code_number = i;
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GpmlOldPlatesHeader::set_data_type_code_number_additional(
+		const GPlatesUtils::UnicodeString &us)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().data_type_code_number_additional = TextContent(us);
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GpmlOldPlatesHeader::set_conjugate_plate_id_number(
+		const GPlatesModel::integer_plate_id_type &i)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().conjugate_plate_id_number = i;
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GpmlOldPlatesHeader::set_colour_code(
+		const unsigned int &i)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().colour_code = i;
+	revision_handler.handle_revision_modification();
+}
+
+	
+void
+GPlatesPropertyValues::GpmlOldPlatesHeader::set_number_of_points(
+		const unsigned int &i)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().number_of_points = i;
+	revision_handler.handle_revision_modification();
+}
+
+
 std::string
 GPlatesPropertyValues::GpmlOldPlatesHeader::old_feature_id() const
 {
+	const Revision &revision = get_current_revision<Revision>();
+
 	std::ostringstream oss;
 	oss << "gplates";
 	oss << "_";
 
 	oss.width(2);
 	oss.fill('0'); // NOTE: pad the field with ZERO
-	oss << d_region_number;
+	oss << revision.region_number;
 	oss << "_";
 
 	oss.width(2);
 	oss.fill('0'); // NOTE: pad the field with ZERO
-	oss << d_reference_number;
+	oss << revision.reference_number;
 	oss << "_";
 
 	oss.width(4);
 	oss.fill('0'); // NOTE: pad the field with ZERO
-	oss << d_string_number;
+	oss << revision.string_number;
 	oss << "_";
 
 	// NOTE: this string may have spaces in it; that's acceptable 
-	oss << GPlatesUtils::make_qstring( d_geographic_description ).toStdString();
+	oss << GPlatesUtils::make_qstring( revision.geographic_description ).toStdString();
 	oss << "_";
 
 	oss.width(3);
 	oss.fill('0'); // NOTE: pad the field with ZERO in case the plate id is single digit
-	oss << d_plate_id_number;
+	oss << revision.plate_id_number;
 	oss << "_";
 
 	oss.setf(std::ios::showpoint);
@@ -66,7 +198,7 @@ GPlatesPropertyValues::GpmlOldPlatesHeader::old_feature_id() const
 	oss.precision(1); // old_id's only have 1 decimal of precision
 	oss.width(6);
 	oss.fill(' '); // NOTE: DO NOT pad the field ; old_id's have spaces around ages
-	oss << d_age_of_appearance;
+	oss << revision.age_of_appearance;
 	oss << "_";
 
 	oss.setf(std::ios::fixed);
@@ -74,20 +206,20 @@ GPlatesPropertyValues::GpmlOldPlatesHeader::old_feature_id() const
 	oss.precision(1); // old_id's only have 1 decimal of precision
 	oss.width(6);
 	oss.fill(' '); // NOTE: pad the field with SPACE ; old_id's have spaces around ages
-	oss << d_age_of_disappearance;
+	oss << revision.age_of_disappearance;
 	oss << "_";
 
-	oss << GPlatesUtils::make_qstring( d_data_type_code ).toStdString();
+	oss << GPlatesUtils::make_qstring( revision.data_type_code ).toStdString();
 	oss << "_";
 
 	oss.width(4);
 	oss.fill('0'); // NOTE: pad the field with ZERO
-	oss << d_data_type_code_number;
+	oss << revision.data_type_code_number;
 	oss << "_";
 
 	oss.width(3);
 	oss.fill('0'); // NOTE: pad the field with ZERO in case the plate id is single digit
-	oss << d_conjugate_plate_id_number;
+	oss << revision.conjugate_plate_id_number;
 
 	oss << "_";
 

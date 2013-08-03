@@ -56,16 +56,17 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlScalarField3DFile> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlScalarField3DFile>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlScalarField3DFile>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlScalarField3DFile> non_null_ptr_to_const_type;
+
+		//! Typedef for the scalar field filename.
+		typedef XsString::non_null_ptr_to_const_type file_name_type;
+
 
 		virtual
 		~GpmlScalarField3DFile()
 		{  }
-
-		typedef XsString::non_null_ptr_to_const_type file_name_type;
 
 		/**
 		 * Create a GpmlScalarField3DFile instance from a filename.
@@ -73,38 +74,26 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				const file_name_type &filename_);
+				const file_name_type &filename_)
+		{
+			return new GpmlScalarField3DFile(filename_);
+		}
 
 		const non_null_ptr_type
 		clone() const
 		{
-			non_null_ptr_type dup(new GpmlScalarField3DFile(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GpmlScalarField3DFile>(clone_impl());
 		}
-
-		const non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		const file_name_type &
-		file_name() const
+		get_file_name() const
 		{
-			return d_filename;
+			return get_current_revision<Revision>().filename;
 		}
 
 		void
 		set_file_name(
-				const file_name_type &filename_)
-		{
-			d_filename = filename_;
-			update_instance_id();
-		}
+				const file_name_type &filename_);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -157,8 +146,7 @@ namespace GPlatesPropertyValues
 		explicit
 		GpmlScalarField3DFile(
 				const file_name_type &filename_) :
-			PropertyValue(),
-			d_filename(filename_)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(filename_)))
 		{  }
 
 
@@ -169,13 +157,67 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GpmlScalarField3DFile(
 				const GpmlScalarField3DFile &other) :
-			PropertyValue(other), /* share instance id */
-			d_filename(other.d_filename)
+			PropertyValue(other)
 		{  }
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GpmlScalarField3DFile(*this));
+		}
 
 	private:
 
-		file_name_type d_filename;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			// To keep our revision state immutable we clone the filename property value so that
+			// the client can no longer modify it indirectly...
+			explicit
+			Revision(
+					const file_name_type &filename_,
+					bool deep_copy = true) :
+				filename(deep_copy ? file_name_type(filename_->clone()) : filename_)
+			{  }
+
+			Revision(
+					const Revision &other) :
+				filename(other.filename->clone())
+			{  }
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone_for_bubble_up_modification() const
+			{
+				// Don't clone the filename property value - share them instead.
+				return non_null_ptr_type(new Revision(filename, false/*deep_copy*/));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return *filename == *other_revision.filename &&
+					GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			file_name_type filename;
+		};
+
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

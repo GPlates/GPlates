@@ -32,6 +32,7 @@
 #include <QString>
 
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/PropertyValue.h"
 
 
@@ -52,26 +53,20 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlPolarityChronId>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlPolarityChronId>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPolarityChronId> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPolarityChronId>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlPolarityChronId>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPolarityChronId> non_null_ptr_to_const_type;
+
 
 		virtual
 		~GpmlPolarityChronId()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		/**
 		 * Create a GpmlPolarityChronId instance.  Note that all of the parameters 
 		 * are boost::optional.
@@ -83,27 +78,14 @@ namespace GPlatesPropertyValues
 				boost::optional<unsigned int> major_region,
 				boost::optional<QString> minor_region)
 		{
-			GpmlPolarityChronId::non_null_ptr_type ptr(
-					new GpmlPolarityChronId(era, major_region, minor_region));
-			return ptr;
+			return non_null_ptr_type(new GpmlPolarityChronId(era, major_region, minor_region));
 		}
 
-		const GpmlPolarityChronId::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlPolarityChronId::non_null_ptr_type dup(new GpmlPolarityChronId(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GpmlPolarityChronId>(clone_impl());
 		}
-
-		const GpmlPolarityChronId::non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Return the "era" attribute of this GpmlPolarityChronId instance.
@@ -111,23 +93,15 @@ namespace GPlatesPropertyValues
 		const boost::optional<QString> &
 		get_era() const
 		{
-			return d_era;
+			return get_current_revision<Revision>().era;
 		}
 
 		/**
 		 * Set the "era" attribute of this GpmlPolarityChronId instance.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_era(
-				const QString &era)
-		{
-			d_era = era;
-			update_instance_id();
-		}
+				const QString &era);
 
 		/**
 		 * Return the "major region" attribute of this GpmlPolarityChronId instance.
@@ -135,23 +109,15 @@ namespace GPlatesPropertyValues
 		const boost::optional<unsigned int> &
 		get_major_region() const
 		{
-			return d_major_region;
+			return get_current_revision<Revision>().major_region;
 		}
 
 		/**
 		 * Set the "major region" attribute of this GpmlPolarityChronId instance.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_major_region(
-				unsigned int major_region)
-		{
-			d_major_region = major_region;
-			update_instance_id();
-		}
+				unsigned int major_region);
 
 		/**
 		 * Return the "minor region" attribute of this GpmlPolarityChronId instance.
@@ -159,23 +125,15 @@ namespace GPlatesPropertyValues
 		const boost::optional<QString> &
 		get_minor_region() const
 		{
-			return d_minor_region;
+			return get_current_revision<Revision>().minor_region;
 		}
 
 		/**
 		 * Set the "minor region" attribute of this GpmlPolarityChronId instance.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_minor_region(
-				const QString &minor_region)
-		{
-			d_minor_region = minor_region;
-			update_instance_id();
-		}
+				const QString &minor_region);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -229,10 +187,7 @@ namespace GPlatesPropertyValues
 				boost::optional<QString> era,
 				boost::optional<unsigned int> major_region,
 				boost::optional<QString> minor_region):
-			PropertyValue(),
-			d_era(era),
-			d_major_region(major_region),
-			d_minor_region(minor_region)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(era, major_region, minor_region)))
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -242,17 +197,65 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GpmlPolarityChronId(
 				const GpmlPolarityChronId &other) :
-			PropertyValue(other), /* share instance id */
-			d_era(other.d_era),
-			d_major_region(other.d_major_region),
-			d_minor_region(other.d_minor_region)
+			PropertyValue(other)
 		{  }
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GpmlPolarityChronId(*this));
+		}
 
 	private:
 
-		boost::optional<QString> d_era;
-		boost::optional<unsigned int> d_major_region;
-		boost::optional<QString> d_minor_region;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			Revision(
+					boost::optional<QString> era_,
+					boost::optional<unsigned int> major_region_,
+					boost::optional<QString> minor_region_) :
+				era(era_),
+				major_region(major_region_),
+				minor_region(minor_region_)
+			{  }
+
+			Revision(
+					const Revision &other) :
+				era(other.era),
+				major_region(other.major_region),
+				minor_region(other.minor_region)
+			{  }
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return era == other_revision.era &&
+						major_region == other_revision.major_region &&
+						minor_region == other_revision.minor_region &&
+						GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			boost::optional<QString> era;
+			boost::optional<unsigned int> major_region;
+			boost::optional<QString> minor_region;
+		};
+
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

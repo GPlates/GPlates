@@ -28,11 +28,15 @@
 #include "GpmlScalarField3DFile.h"
 
 
-const GPlatesPropertyValues::GpmlScalarField3DFile::non_null_ptr_type
-GPlatesPropertyValues::GpmlScalarField3DFile::create(
+void
+GPlatesPropertyValues::GpmlScalarField3DFile::set_file_name(
 		const file_name_type &filename_)
 {
-	return new GpmlScalarField3DFile(filename_);
+	MutableRevisionHandler revision_handler(this);
+	// To keep our revision state immutable we clone the filename property value so that the client
+	// can no longer modify it indirectly...
+	revision_handler.get_mutable_revision<Revision>().filename = filename_->clone();
+	revision_handler.handle_revision_modification();
 }
 
 
