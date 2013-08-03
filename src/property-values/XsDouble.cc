@@ -30,10 +30,20 @@
 #include "XsDouble.h"
 
 
+void
+GPlatesPropertyValues::XsDouble::set_value(
+		const double &d)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().value = d;
+	revision_handler.handle_revision_modification();
+}
+
+
 std::ostream &
 GPlatesPropertyValues::XsDouble::print_to(
 		std::ostream &os) const
 {
-	return os << d_value;
+	return os << get_current_revision<Revision>().value;
 }
 

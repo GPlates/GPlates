@@ -58,10 +58,10 @@ namespace GPlatesPropertyValues
 		//! A convenience typedef for a shared pointer to a const @a UninterpretedPropertyValue.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const UninterpretedPropertyValue> non_null_ptr_to_const_type;
 
+
 		virtual
 		~UninterpretedPropertyValue()
 		{  }
-
 
 		static
 		const non_null_ptr_type
@@ -71,24 +71,14 @@ namespace GPlatesPropertyValues
 			return non_null_ptr_type(new UninterpretedPropertyValue(value));
 		}
 
-		const UninterpretedPropertyValue::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new UninterpretedPropertyValue(*this));
+			return GPlatesUtils::dynamic_pointer_cast<UninterpretedPropertyValue>(clone_impl());
 		}
-
-		const UninterpretedPropertyValue::non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		const GPlatesModel::XmlElementNode::non_null_ptr_to_const_type &
-		value() const
+		get_value() const
 		{
 			return d_value;
 		}
@@ -144,7 +134,8 @@ namespace GPlatesPropertyValues
 		explicit
 		UninterpretedPropertyValue(
 				const GPlatesModel::XmlElementNode::non_null_ptr_to_const_type &value_) :
-			PropertyValue(),
+			// We don't actually need revisioning so just create an empty base class revision...
+			PropertyValue(GPlatesModel::PropertyValue::Revision::non_null_ptr_type(new Revision())),
 			d_value(value_)
 		{  }
 
@@ -155,13 +146,33 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		UninterpretedPropertyValue(
 				const UninterpretedPropertyValue &other) :
-			PropertyValue(other), /* share instance id */
+			PropertyValue(other),
 			d_value(other.d_value)
 		{  }
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new UninterpretedPropertyValue(*this));
+		}
+
+		virtual
+		bool
+		equality(
+				const PropertyValue &other) const
+		{
+			const UninterpretedPropertyValue &other_pv = dynamic_cast<const UninterpretedPropertyValue &>(other);
+
+			// TODO: Compare XML element nodes instead of pointers.
+			return d_value == other_pv.d_value &&
+				GPlatesModel::PropertyValue::equality(other);
+		}
 
 	private:
 
 		GPlatesModel::XmlElementNode::non_null_ptr_to_const_type d_value;
+
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

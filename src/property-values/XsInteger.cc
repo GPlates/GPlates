@@ -30,10 +30,20 @@
 #include "XsInteger.h"
 
 
+void
+GPlatesPropertyValues::XsInteger::set_value(
+		int i)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().value = i;
+	revision_handler.handle_revision_modification();
+}
+
+
 std::ostream &
 GPlatesPropertyValues::XsInteger::print_to(
 		std::ostream &os) const
 {
-	return os << d_value;
+	return os << get_current_revision<Revision>().value;
 }
 

@@ -29,6 +29,9 @@
 #define GPLATES_PROPERTYVALUES_XSDOUBLE_H
 
 #include "feature-visitors/PropertyValueFinder.h"
+
+#include "maths/MathsUtils.h"
+
 #include "model/PropertyValue.h"
 
 
@@ -52,10 +55,10 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<XsDouble> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const XsDouble>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const XsDouble>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const XsDouble> non_null_ptr_to_const_type;
+
 
 		virtual
 		~XsDouble()
@@ -66,50 +69,30 @@ namespace GPlatesPropertyValues
 		create(
 				double value)
 		{
-			XsDouble::non_null_ptr_type ptr(new XsDouble(value));
-			return ptr;
+			return non_null_ptr_type(new XsDouble(value));
 		}
 
-		const XsDouble::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			XsDouble::non_null_ptr_type dup(new XsDouble(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<XsDouble>(clone_impl());
 		}
-
-		const XsDouble::non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Accesses the double contained within this XsDouble.
 		 */
 		double
-		value() const
+		get_value() const
 		{
-			return d_value;
+			return get_current_revision<Revision>().value;
 		}
 		
 		/**
 		 * Set the double value contained within this XsDouble to @a d.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_value(
-				const double &d)
-		{
-			d_value = d;
-			update_instance_id();
-		}
+				const double &d);
 
 
 		/**
@@ -162,9 +145,8 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		explicit
 		XsDouble(
-				double value_) :
-			PropertyValue(),
-			d_value(value_)
+				const double &value_) :
+			PropertyValue(Revision::non_null_ptr_type(new Revision(value_)))
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -174,13 +156,56 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		XsDouble(
 				const XsDouble &other) :
-			PropertyValue(other), /* share instance id */
-			d_value(other.d_value)
+			PropertyValue(other)
 		{  }
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new XsDouble(*this));
+		}
 
 	private:
 
-		double d_value;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					const double &value_) :
+				value(value_)
+			{  }
+
+			Revision(
+					const Revision &other) :
+				value(other.value)
+			{  }
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return GPlatesMaths::are_almost_exactly_equal(value, other_revision.value) &&
+						GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			double value;
+		};
+
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

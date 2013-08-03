@@ -30,10 +30,20 @@
 #include "XsBoolean.h"
 
 
+void
+GPlatesPropertyValues::XsBoolean::set_value(
+		bool b)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().value = b;
+	revision_handler.handle_revision_modification();
+}
+
+
 std::ostream &
 GPlatesPropertyValues::XsBoolean::print_to(
 		std::ostream &os) const
 {
-	return os << (d_value ? "true" : "false");
+	return os << (get_current_revision<Revision>().value ? "true" : "false");
 }
 

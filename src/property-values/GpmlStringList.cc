@@ -30,17 +30,42 @@
 #include "GpmlStringList.h"
 
 
+void
+GPlatesPropertyValues::GpmlStringList::set_string_list(
+		const string_list_type &strings_)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().strings = strings_;
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GpmlStringList::swap(
+		string_list_type &strings_)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().strings.swap(strings_);
+	revision_handler.handle_revision_modification();
+}
+
+
 std::ostream &
 GPlatesPropertyValues::GpmlStringList::print_to(
 		std::ostream &os) const
 {
 	os << "GpmlStringList{";
-	string_list_type::const_iterator iter = begin();
-	string_list_type::const_iterator end_ = end();
-	for ( ; iter != end_; ++iter) {
-		os << "\"" << (*iter).get() << "\",";
-	}
+
+		const string_list_type &strings = get_string_list();
+		string_list_type::const_iterator iter = strings.begin();
+		string_list_type::const_iterator end_ = strings.end();
+		for ( ; iter != end_; ++iter)
+		{
+			os << "\"" << (*iter).get() << "\",";
+		}
+
 	os << "}";
+
 	return os;
 }
 

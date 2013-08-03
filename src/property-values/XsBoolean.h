@@ -52,10 +52,10 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<XsBoolean> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const XsBoolean>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const XsBoolean>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const XsBoolean> non_null_ptr_to_const_type;
+
 
 		virtual
 		~XsBoolean()
@@ -66,50 +66,30 @@ namespace GPlatesPropertyValues
 		create(
 				bool value)
 		{
-			XsBoolean::non_null_ptr_type ptr(new XsBoolean(value));
-			return ptr;
+			return non_null_ptr_type(new XsBoolean(value));
 		}
 
-		const XsBoolean::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const 
 		{
-			XsBoolean::non_null_ptr_type dup(new XsBoolean(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<XsBoolean>(clone_impl());
 		}
-
-		const XsBoolean::non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Accesses the bool contained within this XsBoolean.
 		 */
 		bool
-		value() const
+		get_value() const
 		{
-			return d_value;
+			return get_current_revision<Revision>().value;
 		}
 		
 		/**
 		 * Set the bool value contained within this XsBoolean to @a b.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_value(
-				const bool &b)
-		{
-			d_value = b;
-			update_instance_id();
-		}
+				bool b);
 		
 
 		/**
@@ -163,8 +143,7 @@ namespace GPlatesPropertyValues
 		explicit
 		XsBoolean(
 				bool value_) :
-			PropertyValue(),
-			d_value(value_)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(value_)))
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -174,13 +153,56 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		XsBoolean(
 				const XsBoolean &other) :
-			PropertyValue(other), /* share instance id */
-			d_value(other.d_value)
+			PropertyValue(other)
 		{  }
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new XsBoolean(*this));
+		}
 
 	private:
 
-		bool d_value;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					bool value_) :
+				value(value_)
+			{  }
+
+			Revision(
+					const Revision &other) :
+				value(other.value)
+			{  }
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return value == other_revision.value &&
+						GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			bool value;
+		};
+
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

@@ -52,10 +52,10 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<XsInteger> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const XsInteger>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const XsInteger>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const XsInteger> non_null_ptr_to_const_type;
+
 
 		virtual
 		~XsInteger()
@@ -66,50 +66,30 @@ namespace GPlatesPropertyValues
 		create(
 				int value)
 		{
-			XsInteger::non_null_ptr_type ptr(new XsInteger(value));
-			return ptr;
+			return non_null_ptr_type(new XsInteger(value));
 		}
 
-		const XsInteger::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			XsInteger::non_null_ptr_type dup(new XsInteger(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<XsInteger>(clone_impl());
 		}
-
-		const XsInteger::non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Accesses the int contained within this XsInteger.
 		 */
 		int
-		value() const
+		get_value() const
 		{
-			return d_value;
+			return get_current_revision<Revision>().value;
 		}
 
 		/**
 		 * Set the int value contained within this XsInteger to @a i.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_value(
-				const int &i)
-		{
-			d_value = i;
-			update_instance_id();
-		}
+				int i);
 
 
 		/**
@@ -163,8 +143,7 @@ namespace GPlatesPropertyValues
 		explicit
 		XsInteger(
 				int value_) :
-			PropertyValue(),
-			d_value(value_)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(value_)))
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -174,13 +153,56 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		XsInteger(
 				const XsInteger &other) :
-			PropertyValue(other), /* share instance id */
-			d_value(other.d_value)
+			PropertyValue(other)
 		{  }
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new XsInteger(*this));
+		}
 
 	private:
 
-		int d_value;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					int value_) :
+				value(value_)
+			{  }
+
+			Revision(
+					const Revision &other) :
+				value(other.value)
+			{  }
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return value == other_revision.value &&
+					GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			int value;
+		};
+
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

@@ -58,16 +58,15 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlStringList>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlStringList>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlStringList> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlStringList>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlStringList>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlStringList> non_null_ptr_to_const_type;
+
 
 		/**
 		 * The type used to contain the list of strings.
@@ -80,11 +79,6 @@ namespace GPlatesPropertyValues
 		 */
 		typedef std::vector<TextContent> string_list_type;
 
-		/**
-		 * The type used to iterate over the list of strings.
-		 */
-		typedef string_list_type::const_iterator const_iterator;
-		typedef string_list_type::iterator iterator;
 
 		virtual
 		~GpmlStringList()
@@ -99,8 +93,7 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create_empty()
 		{
-			non_null_ptr_type ptr(new GpmlStringList);
-			return ptr;
+			return non_null_ptr_type(new GpmlStringList);
 		}
 
 		/**
@@ -133,8 +126,7 @@ namespace GPlatesPropertyValues
 				StringIter strings_begin_,
 				StringIter strings_end_)
 		{
-			non_null_ptr_type ptr(new GpmlStringList(strings_begin_, strings_end_));
-			return ptr;
+			return non_null_ptr_type(new GpmlStringList(strings_begin_, strings_end_));
 		}
 
 		/**
@@ -147,113 +139,44 @@ namespace GPlatesPropertyValues
 		create_swap(
 				string_list_type &strings_to_swap)
 		{
-			non_null_ptr_type ptr(new GpmlStringList);
-			ptr->d_strings.swap(strings_to_swap);
-			return ptr;
+			return non_null_ptr_type(new GpmlStringList(strings_to_swap));
 		}
 
-		const GpmlStringList::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlStringList::non_null_ptr_type dup(new GpmlStringList(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GpmlStringList>(clone_impl());
 		}
 
-		const GpmlStringList::non_null_ptr_type
-		deep_clone() const
+
+		/**
+		 * Returns the string list.
+		 *
+		 * To modify any strings:
+		 * (1) make a copy of the returned vector,
+		 * (2) make additions/removals/modifications to the returned vector, and
+		 * (3) use @a set_string_list to set them.
+		 */
+		const string_list_type &
+		get_string_list() const
 		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular 'clone' will suffice.
-			return clone();
+			return get_current_revision<Revision>().strings;
 		}
 
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
-		bool
-		is_empty() const
-		{
-			return d_strings.empty();
-		}
-
-		string_list_type::size_type
-		size() const
-		{
-			return d_strings.size();
-		}
-
-		const_iterator
-		begin() const
-		{
-			return d_strings.begin();
-		}
-
-		const_iterator
-		end() const
-		{
-			return d_strings.end();
-		}
-
+		/**
+		 * Sets the string list.
+		 */
 		void
-		push_back(
-				const GPlatesUtils::UnicodeString &s)
-		{
-			push_back(TextContent(s));
-		}
+		set_string_list(
+				const string_list_type &strings_);
 
-		void
-		push_back(
-				const TextContent &tc)
-		{
-			d_strings.push_back(tc);
-			update_instance_id();
-		}
-
-		const_iterator
-		insert(
-				const_iterator pos,
-				const GPlatesUtils::UnicodeString &s)
-		{
-			return insert(pos, TextContent(s));
-		}
-
-		const_iterator
-		insert(
-				const_iterator pos,
-				const TextContent &tc)
-		{
-			string_list_type::iterator nc_pos = convert_to_non_const(pos);
-			string_list_type::iterator new_pos = d_strings.insert(nc_pos, tc);
-			update_instance_id();
-			return new_pos;
-		}
-
-		const_iterator
-		erase(
-				string_list_type::const_iterator pos)
-		{
-			string_list_type::iterator nc_pos = convert_to_non_const(pos);
-			string_list_type::iterator next_pos = d_strings.erase(nc_pos);
-			update_instance_id();
-			return next_pos;
-		}
-
-		void
-		clear()
-		{
-			d_strings.clear();
-			update_instance_id();
-		}
 
 		/**
 		 * Swap the contents of @a strings with the contents of the GpmlStringList.
 		 */
 		void
 		swap(
-				string_list_type &strings_)
-		{
-			d_strings.swap(strings_);
-			update_instance_id();
-		}
+				string_list_type &strings_);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -303,8 +226,8 @@ namespace GPlatesPropertyValues
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		GpmlStringList():
-			PropertyValue()
+		GpmlStringList() :
+			PropertyValue(Revision::non_null_ptr_type(new Revision()))
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -313,8 +236,14 @@ namespace GPlatesPropertyValues
 		GpmlStringList(
 				StringIter strings_begin_,
 				StringIter strings_end_):
-			PropertyValue(),
-			d_strings(strings_begin_, strings_end_)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(strings_begin_, strings_end_)))
+		{  }
+
+		// This constructor is used by @a create_swap.
+		explicit
+		GpmlStringList(
+				string_list_type &strings_to_swap_) :
+			PropertyValue(Revision::non_null_ptr_type(new Revision(strings_to_swap_)))
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -324,26 +253,74 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GpmlStringList(
 				const GpmlStringList &other) :
-			PropertyValue(other), /* share instance id */
-			d_strings(other.d_strings)
+			PropertyValue(other)
 		{  }
 
-		string_list_type::iterator
-		convert_to_non_const(
-				const_iterator iter)
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
 		{
-			string_list_type::iterator nc_iter = d_strings.begin();
-
-			// Since string_list_type is a std::vector, both 'std::distance' and
-			// 'std::advance' should be O(1) operations.
-			string_list_type::size_type n_steps = std::distance(begin(), iter);
-			std::advance(nc_iter, n_steps);
-
-			return nc_iter;
+			return non_null_ptr_type(new GpmlStringList(*this));
 		}
 
 	private:
-		string_list_type d_strings;
+
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			Revision()
+			{  }
+
+			template<typename StringIter>
+			Revision(
+					StringIter strings_begin_,
+					StringIter strings_end_) :
+				strings(strings_begin_, strings_end_)
+			{  }
+
+			explicit
+			Revision(
+					string_list_type &strings_to_swap_)
+			{
+				swap_strings(strings_to_swap_);
+			}
+
+			Revision(
+					const Revision &other) :
+				strings(other.strings)
+			{  }
+
+			void
+			swap_strings(
+					string_list_type &strings_to_swap_)
+			{
+				strings.swap(strings_to_swap_);
+			}
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return strings == other_revision.strings &&
+					GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			string_list_type strings;
+		};
+
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

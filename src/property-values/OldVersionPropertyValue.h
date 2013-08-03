@@ -85,25 +85,20 @@ namespace GPlatesPropertyValues
 			return non_null_ptr_type(new OldVersionPropertyValue(structural_type, value_));
 		}
 
-		const OldVersionPropertyValue::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new OldVersionPropertyValue(*this));
+			return GPlatesUtils::dynamic_pointer_cast<OldVersionPropertyValue>(clone_impl());
 		}
 
-		const OldVersionPropertyValue::non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
 
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
-
+		/**
+		 * Returns the value.
+		 *
+		 * Note: Since there are no setters methods on this class we don't need revisioning.
+		 */
 		const value_type &
-		value() const
+		get_value() const
 		{
 			return d_value;
 		}
@@ -159,7 +154,8 @@ namespace GPlatesPropertyValues
 		OldVersionPropertyValue(
 				const StructuralType &structural_type,
 				const value_type &value_) :
-			PropertyValue(),
+			// We don't actually need revisioning so just create an empty base class revision...
+			PropertyValue(GPlatesModel::PropertyValue::Revision::non_null_ptr_type(new Revision())),
 			d_structural_type(structural_type),
 			d_value(value_)
 		{  }
@@ -171,10 +167,26 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		OldVersionPropertyValue(
 				const OldVersionPropertyValue &other) :
-			PropertyValue(other), /* share instance id */
+			PropertyValue(other),
 			d_structural_type(other.d_structural_type),
 			d_value(other.d_value)
 		{  }
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new OldVersionPropertyValue(*this));
+		}
+
+		virtual
+		bool
+		equality(
+				const PropertyValue &other) const
+		{
+			// TODO: Compare values, but this requires knowing the value type.
+			return false;
+		}
 
 	private:
 

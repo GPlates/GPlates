@@ -26,7 +26,6 @@
  */
 
 #include <iostream>
-#include <typeinfo>
 
 #include "UninterpretedPropertyValue.h"
 
