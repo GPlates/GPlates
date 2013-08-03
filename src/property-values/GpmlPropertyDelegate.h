@@ -52,26 +52,12 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for boost::intrusive_ptr<GpmlPropertyDelegate>.
-		 */
-		typedef boost::intrusive_ptr<GpmlPropertyDelegate>
-				maybe_null_ptr_type;
-
-		/**
-		 * A convenience typedef for boost::intrusive_ptr<const GpmlPropertyDelegate>.
-		 */
-		typedef boost::intrusive_ptr<const GpmlPropertyDelegate>
-				maybe_null_ptr_to_const_type;
-
-		/**
-		 * A convenience typedef for 
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlPropertyDelegate>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlPropertyDelegate>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPropertyDelegate> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPropertyDelegate>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlPropertyDelegate>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPropertyDelegate> non_null_ptr_to_const_type;
 
@@ -80,56 +66,38 @@ namespace GPlatesPropertyValues
 		~GpmlPropertyDelegate()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
 				const GPlatesModel::FeatureId &feature_,
-				const GPlatesModel::PropertyName &property_,
+				const GPlatesModel::PropertyName &property_name_,
 				const StructuralType &value_type_)
 		{
-			non_null_ptr_type ptr(
-					new GpmlPropertyDelegate(feature_, property_, value_type_));
-			return ptr;
+			return non_null_ptr_type(new GpmlPropertyDelegate(feature_, property_name_, value_type_));
 		}
 
-		const GpmlPropertyDelegate::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlPropertyDelegate::non_null_ptr_type dup(new GpmlPropertyDelegate(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GpmlPropertyDelegate>(clone_impl());
 		}
-
-		const GpmlPropertyDelegate::non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		const GPlatesModel::FeatureId &
-		feature_id() const
+		get_feature_id() const
 		{
 			return d_feature;
 		}
 
 		const GPlatesModel::PropertyName &
-		target_property() const
+		get_target_property_name() const
 		{
-			return d_property;
+			return d_property_name;
 		}
 
 		// Note that no "setter" is provided:  The value type of a GpmlPropertyDelegate
 		// instance should never be changed.
 		const StructuralType &
-		value_type() const
+		get_value_type() const
 		{
 			return d_value_type;
 		}
@@ -184,11 +152,12 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		GpmlPropertyDelegate(
 				const GPlatesModel::FeatureId &feature_,
-				const GPlatesModel::PropertyName &property_,
+				const GPlatesModel::PropertyName &property_name_,
 				const StructuralType &value_type_):
-			PropertyValue(),
+			// We don't actually need revisioning so just create an empty base class revision...
+			PropertyValue(GPlatesModel::PropertyValue::Revision::non_null_ptr_type(new Revision())),
 			d_feature(feature_),
-			d_property(property_),
+			d_property_name(property_name_),
 			d_value_type(value_type_)
 		{  }
 
@@ -199,16 +168,36 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GpmlPropertyDelegate(
 				const GpmlPropertyDelegate &other) :
-			PropertyValue(other), /* share instance id */
+			PropertyValue(other),
 			d_feature(other.d_feature),
-			d_property(other.d_property),
+			d_property_name(other.d_property_name),
 			d_value_type(other.d_value_type)
 		{  }
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GpmlPropertyDelegate(*this));
+		}
+
+		virtual
+		bool
+		equality(
+				const PropertyValue &other) const
+		{
+			const GpmlPropertyDelegate &other_pv = dynamic_cast<const GpmlPropertyDelegate &>(other);
+
+			return d_feature == other_pv.d_feature &&
+					d_property_name == other_pv.d_property_name &&
+					d_value_type == other_pv.d_value_type &&
+					GPlatesModel::PropertyValue::equality(other);
+		}
 
 	private:
 
 		GPlatesModel::FeatureId d_feature;
-		GPlatesModel::PropertyName d_property;
+		GPlatesModel::PropertyName d_property_name;
 		StructuralType d_value_type;
 
 		// This operator should never be defined, because we don't want/need to allow

@@ -33,31 +33,11 @@
 #include "utils/UnicodeStringUtils.h"
 
 
-// This macro is used to define the virtual function 'deep_clone_as_topo_section' inside a class
-// which derives from TopologicalSection.  The function definition is exactly identical in every
-// TopologicalSection derivation, but the function must be defined in each derived class (rather
-// than in the base) because it invokes the non-virtual member function 'deep_clone' of that
-// specific derived class.
-// (This function 'deep_clone' cannot be moved into the base class, because (i) its return type is
-// the type of the derived class, and (ii) it must perform different actions in different classes.)
-// To define the function, invoke the macro in the class definition.  The macro invocation will
-// expand to a definition of the function.
-#define DEFINE_FUNCTION_DEEP_CLONE_AS_TOPO_SECTION()  \
-		virtual  \
-		const GpmlTopologicalSection::non_null_ptr_type  \
-		deep_clone_as_topo_section() const  \
-		{  \
-			return deep_clone();  \
-		}
-
-
 namespace GPlatesPropertyValues
 {
 
 	/**
-	 * This is an abstract class, because it derives from class PropertyValue, which contains
-	 * the pure virtual member functions @a clone and @a accept_visitor, which this class does
-	 * not override with non-pure-virtual definitions.
+	 * Base class for topological section derived types.
 	 */
 	class GpmlTopologicalSection:
 			public GPlatesModel::PropertyValue
@@ -66,91 +46,49 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for boost::intrusive_ptr<GpmlTopologicalSection>.
-		 */
-		typedef boost::intrusive_ptr<GpmlTopologicalSection>
-				maybe_null_ptr_type;
-
-		/**
-		 * A convenience typedef for boost::intrusive_ptr<const GpmlTopologicalSection>.
-		 */
-		typedef boost::intrusive_ptr<const GpmlTopologicalSection>
-				maybe_null_ptr_to_const_type;
-
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalSection>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalSection>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalSection> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalSection>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalSection>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalSection> non_null_ptr_to_const_type;
 
-		/**
-		 * Construct a GpmlTopologicalSection instance.
-		 *
-		 * Since this class is an abstract class, this constructor can never be invoked
-		 * other than explicitly in the initialiser lists of derived classes.
-		 * Nevertheless, the initialiser lists of derived classes @em do need to invoke it
-		 * explicitly, since this class contains members which need to be initialised.
-		 */
-		explicit
-		GpmlTopologicalSection():
-			PropertyValue()
-		{  }
-
-		/**
-		 * Construct a GpmlTopologicalSection instance which is a copy of @a other.
-		 *
-		 * Since this class is an abstract class, this constructor can never be invoked
-		 * other than explicitly in the initialiser lists of derived classes.
-		 * Nevertheless, the initialiser lists of derived classes @em do need to invoke it
-		 * explicitly, since this class contains members which need to be initialised.
-		 */
-		GpmlTopologicalSection(
-				const GpmlTopologicalSection &other) :
-			PropertyValue(other) /* share instance id */
-		{  }
 
 		virtual
 		~GpmlTopologicalSection()
 		{  }
 
-		virtual
-		const GpmlTopologicalSection::non_null_ptr_type
-		deep_clone_as_topo_section() const = 0;
-
-		/**
-		 * Accept a ConstFeatureVisitor instance.
-		 *
-		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
-		 * this function.
-		 */
-		virtual
-		void
-		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const
-		{ }
-
-		/**
-		 * Accept a FeatureVisitor instance.
-		 *
-		 * See the Visitor pattern (p.331) in Gamma95 for information on the purpose of
-		 * this function.
-		 */
-		virtual
-		void
-		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor)
-		{ }
+		const non_null_ptr_type
+		clone() const
+		{
+			return GPlatesUtils::dynamic_pointer_cast<GpmlTopologicalSection>(clone_impl());
+		}
 
 		virtual
 		std::ostream &
 		print_to(
 				std::ostream &os) const;
+
+	protected:
+
+		/**
+		 * Construct a GpmlTopologicalSection instance.
+		 */
+		explicit
+		GpmlTopologicalSection(
+				const GPlatesModel::PropertyValue::Revision::non_null_ptr_type &revision) :
+			PropertyValue(revision)
+		{  }
+
+		/**
+		 * Construct a GpmlTopologicalSection instance which is a copy of @a other.
+		 */
+		GpmlTopologicalSection(
+				const GpmlTopologicalSection &other) :
+			PropertyValue(other)
+		{  }
 
 	private:
 

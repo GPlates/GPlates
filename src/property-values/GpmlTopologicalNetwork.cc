@@ -23,55 +23,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iostream>
-#include <typeinfo>
 #include <algorithm>
+#include <iostream>
 
 #include "GpmlTopologicalNetwork.h"
-
-
-namespace
-{
-	bool
-	section_eq(
-			const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type &p1,
-			const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type &p2)
-	{
-		return *p1 == *p2;
-	}
-}
-
-
-const GPlatesPropertyValues::GpmlTopologicalNetwork::non_null_ptr_type
-GPlatesPropertyValues::GpmlTopologicalNetwork::deep_clone() const
-{
-	GpmlTopologicalNetwork::non_null_ptr_type dup = clone();
-
-	// Now we need to clear the boundary-sections vector in the duplicate, before we
-	// push-back the cloned sections.
-	dup->d_boundary_sections.clear();
-	boundary_sections_const_iterator boundary_sections_iter = d_boundary_sections.begin();
-	const boundary_sections_const_iterator boundary_sections_iter_end = d_boundary_sections.end();
-	for ( ; boundary_sections_iter != boundary_sections_iter_end; ++boundary_sections_iter)
-	{
-		GpmlTopologicalSection::non_null_ptr_type cloned_section =
-				(*boundary_sections_iter)->deep_clone_as_topo_section();
-		dup->d_boundary_sections.push_back(cloned_section);
-	}
-
-	// Now we need to clear the interior-geometries vector in the duplicate, before we
-	// push-back the cloned geometries.
-	dup->d_interior_geometries.clear();
-	interior_geometries_const_iterator interior_geometries_iter = d_interior_geometries.begin();
-	const interior_geometries_const_iterator interior_geometries_iter_end = d_interior_geometries.end();
-	for ( ; interior_geometries_iter != interior_geometries_iter_end; ++interior_geometries_iter)
-	{
-		const Interior &cloned_interior_geometry = interior_geometries_iter->deep_clone();
-		dup->d_interior_geometries.push_back(cloned_interior_geometry);
-	}
-
-	return dup;
-}
 
 
 std::ostream &
@@ -82,9 +37,10 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::print_to(
 
 		os << "{ ";
 
-			for (boundary_sections_const_iterator boundary_sections_iter = d_boundary_sections.begin();
-				boundary_sections_iter != d_boundary_sections.end();
-				++boundary_sections_iter)
+			const boundary_sections_seq_type &boundary_sections = get_boundary_sections();
+			boundary_sections_seq_type::const_iterator boundary_sections_iter = boundary_sections.begin();
+			boundary_sections_seq_type::const_iterator boundary_sections_end = boundary_sections.end();
+			for ( ; boundary_sections_iter != boundary_sections_end; ++boundary_sections_iter)
 			{
 				os << **boundary_sections_iter;
 			}
@@ -93,9 +49,10 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::print_to(
 
 		os << "{ ";
 
-			for (interior_geometries_const_iterator interior_geometries_iter = d_interior_geometries.begin();
-				interior_geometries_iter != d_interior_geometries.end();
-				++interior_geometries_iter)
+			const interior_geometry_seq_type &interior_geometries = get_interior_geometries();
+			interior_geometry_seq_type::const_iterator interior_geometries_iter = interior_geometries.begin();
+			interior_geometry_seq_type::const_iterator interior_geometries_end = interior_geometries.end();
+			for ( ; interior_geometries_iter != interior_geometries_end; ++interior_geometries_iter)
 			{
 				os << *interior_geometries_iter;
 			}
@@ -106,61 +63,56 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::print_to(
 }
 
 
-bool
-GPlatesPropertyValues::GpmlTopologicalNetwork::directly_modifiable_fields_equal(
-		const GPlatesModel::PropertyValue &other) const
+GPlatesPropertyValues::GpmlTopologicalNetwork::Revision::Revision(
+		const Revision &other)
 {
-	try
+	// Clone the boundary sections.
+	BOOST_FOREACH(
+			const GpmlTopologicalSection::non_null_ptr_to_const_type &other_boundary_section,
+			other.boundary_sections)
 	{
-		const GpmlTopologicalNetwork &other_casted =
-			dynamic_cast<const GpmlTopologicalNetwork &>(other);
-		if (d_boundary_sections.size() == other_casted.d_boundary_sections.size() &&
-			d_interior_geometries.size() == other_casted.d_interior_geometries.size())
-		{
-			return
-					std::equal(
-							d_boundary_sections.begin(),
-							d_boundary_sections.end(),
-							other_casted.d_boundary_sections.begin(),
-							&section_eq) &&
-					std::equal(
-							d_interior_geometries.begin(),
-							d_interior_geometries.end(),
-							other_casted.d_interior_geometries.begin());
-		}
-		else
+		boundary_sections.push_back(other_boundary_section->clone());
+	}
+
+	// Clone the interior geometries.
+	BOOST_FOREACH(const Interior &other_interior_geometry, other.interior_geometries)
+	{
+		interior_geometries.push_back(other_interior_geometry.clone());
+	}
+}
+
+
+bool
+GPlatesPropertyValues::GpmlTopologicalNetwork::Revision::equality(
+		const GPlatesModel::PropertyValue::Revision &other) const
+{
+	const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+	if (boundary_sections.size() != other_revision.boundary_sections.size() ||
+		interior_geometries.size() != other_revision.interior_geometries.size())
+	{
+		return false;
+	}
+
+	for (unsigned int n = 0; n < boundary_sections.size(); ++n)
+	{
+		// Compare PropertyValues, not pointers to PropertyValues...
+		if (*boundary_sections[n] != *other_revision.boundary_sections[n])
 		{
 			return false;
 		}
 	}
-	catch (const std::bad_cast &)
+
+	for (unsigned int m = 0; m < interior_geometries.size(); ++m)
 	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
+		if (interior_geometries[m] != other_revision.interior_geometries[m])
+		{
+			return false;
+		}
 	}
+
+	return GPlatesModel::PropertyValue::Revision::equality(other);
 }
-
-
-const GPlatesPropertyValues::GpmlTopologicalNetwork::Interior
-GPlatesPropertyValues::GpmlTopologicalNetwork::Interior::deep_clone() const
-{
-	Interior dup(*this);
-
-	const GpmlPropertyDelegate::non_null_ptr_type cloned_source_geometry =
-			d_source_geometry->deep_clone();
-	dup.d_source_geometry = cloned_source_geometry;
-
-	return dup;
-}
-
-
-bool
-GPlatesPropertyValues::GpmlTopologicalNetwork::Interior::operator==(
-		const GpmlTopologicalNetwork::Interior &other) const
-{
-	return *d_source_geometry == *other.d_source_geometry;
-}
-
 
 
 std::ostream &

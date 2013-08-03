@@ -25,44 +25,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iostream>
-#include <typeinfo>
 #include <algorithm>
+#include <iostream>
+#include <boost/foreach.hpp>
 
 #include "GpmlTopologicalLine.h"
-
-
-namespace
-{
-	bool
-	section_eq(
-			const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type &p1,
-			const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type &p2)
-	{
-		return *p1 == *p2;
-	}
-}
-
-
-const GPlatesPropertyValues::GpmlTopologicalLine::non_null_ptr_type
-GPlatesPropertyValues::GpmlTopologicalLine::deep_clone() const
-{
-	GpmlTopologicalLine::non_null_ptr_type dup = clone();
-
-	// Now we need to clear the topological-section vector in the duplicate, before we
-	// push-back the cloned sections.
-	dup->d_sections.clear();
-	sections_const_iterator iter = d_sections.begin();
-	sections_const_iterator end = d_sections.end();
-	for ( ; iter != end; ++iter)
-	{
-		GpmlTopologicalSection::non_null_ptr_type cloned_section =
-				(*iter)->deep_clone_as_topo_section();
-		dup->d_sections.push_back(cloned_section);
-	}
-
-	return dup;
-}
 
 
 std::ostream &
@@ -71,39 +38,48 @@ GPlatesPropertyValues::GpmlTopologicalLine::print_to(
 {
 	os << "[ ";
 
-	for (sections_const_iterator iter = d_sections.begin(); iter != d_sections.end(); ++iter)
+	const sections_seq_type &sections = get_sections();
+	sections_seq_type::const_iterator sections_iter = sections.begin();
+	sections_seq_type::const_iterator sections_end = sections.end();
+	for ( ; sections_iter != sections_end; ++sections_iter)
 	{
-		os << **iter;
+		os << **sections_iter;
 	}
 
 	return os << " ]";
 }
 
 
-bool
-GPlatesPropertyValues::GpmlTopologicalLine::directly_modifiable_fields_equal(
-		const GPlatesModel::PropertyValue &other) const
+GPlatesPropertyValues::GpmlTopologicalLine::Revision::Revision(
+		const Revision &other)
 {
-	try
+	// Clone the sections.
+	BOOST_FOREACH(const GpmlTopologicalSection::non_null_ptr_to_const_type &other_section, other.sections)
 	{
-		const GpmlTopologicalLine &other_casted =
-				dynamic_cast<const GpmlTopologicalLine &>(other);
-		if (d_sections.size() == other_casted.d_sections.size())
-		{
-			return std::equal(
-					d_sections.begin(),
-					d_sections.end(),
-					other_casted.d_sections.begin(),
-					&section_eq);
-		}
-		else
+		sections.push_back(other_section->clone());
+	}
+}
+
+
+bool
+GPlatesPropertyValues::GpmlTopologicalLine::Revision::equality(
+		const GPlatesModel::PropertyValue::Revision &other) const
+{
+	const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+	if (sections.size() != other_revision.sections.size())
+	{
+		return false;
+	}
+
+	for (unsigned int n = 0; n < sections.size(); ++n)
+	{
+		// Compare PropertyValues, not pointers to PropertyValues...
+		if (*sections[n] != *other_revision.sections[n])
 		{
 			return false;
 		}
 	}
-	catch (const std::bad_cast &)
-	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
-	}
+
+	return GPlatesModel::PropertyValue::Revision::equality(other);
 }

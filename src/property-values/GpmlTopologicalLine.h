@@ -28,7 +28,6 @@
 #define GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALLINE_H
 
 #include <vector>
-#include <boost/intrusive_ptr.hpp>
 
 #include "GpmlTopologicalSection.h"
 
@@ -50,7 +49,6 @@ namespace GPlatesPropertyValues
 	class GpmlTopologicalLine:
 			public GPlatesModel::PropertyValue
 	{
-
 	public:
 
 		//! A convenience typedef for a shared pointer to a non-const @a GpmlTopologicalLine.
@@ -59,11 +57,9 @@ namespace GPlatesPropertyValues
 		//! A convenience typedef for a shared pointer to a const @a GpmlTopologicalLine.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalLine> non_null_ptr_to_const_type;
 
-		//! Typedef for a sequence of topological sections.
-		typedef std::vector<GpmlTopologicalSection::non_null_ptr_type> sections_seq_type;
 
-		//! Typedef for a const iterator over the topological sections.
-		typedef sections_seq_type::const_iterator sections_const_iterator;
+		//! Typedef for a sequence of topological sections.
+		typedef std::vector<GpmlTopologicalSection::non_null_ptr_to_const_type> sections_seq_type;
 
 
 		virtual
@@ -81,38 +77,39 @@ namespace GPlatesPropertyValues
 				const TopologicalSectionsIterator &sections_begin_,
 				const TopologicalSectionsIterator &sections_end_)
 		{
-			return non_null_ptr_type(
-					new GpmlTopologicalLine(sections_begin_, sections_end_));
+			return non_null_ptr_type(new GpmlTopologicalLine(sections_begin_, sections_end_));
 		}
 
-		const GpmlTopologicalLine::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GpmlTopologicalLine(*this));
-		}
-
-		const GpmlTopologicalLine::non_null_ptr_type
-		deep_clone() const;
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-		
-
-		/**
-		 * Return the "begin" const iterator to iterate over the topological sections.
-		 */
-		sections_const_iterator
-		sections_begin() const
-		{
-			return d_sections.begin();
+			return GPlatesUtils::dynamic_pointer_cast<GpmlTopologicalLine>(clone_impl());
 		}
 
 		/**
-		 * Return the "end" const iterator for iterating over the topological sections.
+		 * Returns the topological sections.
+		 *
+		 * The returned sections are each 'const' objects so that they cannot be modified and
+		 * bypass the revisioning system.
 		 */
-		sections_const_iterator
-		sections_end() const
+		const sections_seq_type &
+		get_sections() const
 		{
-			return d_sections.end();
+			return get_current_revision<Revision>().sections;
+		}
+
+		/**
+		 * Set the sequence of topological sections.
+		 */
+		template <typename TopologicalSectionsIterator>
+		void
+		set_sections(
+				const TopologicalSectionsIterator &sections_begin_,
+				const TopologicalSectionsIterator &sections_end_)
+		{
+			MutableRevisionHandler revision_handler(this);
+			revision_handler.get_mutable_revision<Revision>().set_sections(sections_begin_, sections_end_);
+			revision_handler.handle_revision_modification();
 		}
 
 
@@ -168,8 +165,7 @@ namespace GPlatesPropertyValues
 		GpmlTopologicalLine(
 				const TopologicalSectionsIterator &sections_begin_,
 				const TopologicalSectionsIterator &sections_end_) :
-			PropertyValue(), 
-			d_sections(sections_begin_, sections_end_)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(sections_begin_, sections_end_)))
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -179,26 +175,82 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GpmlTopologicalLine(
 				const GpmlTopologicalLine &other) :
-			PropertyValue(other), /* share instance id */
-			d_sections(other.d_sections)
+			PropertyValue(other)
 		{  }
 
-		/**
-		 * Need to compare all data members (recursively) since our sections are
-		 * *non-const* non_null_intrusive_ptr and hence can be modified by clients.
-		 *
-		 * FIXME: Use *const* non_null_intrusive_ptr to avoid this.
-		 * Although that means use *const* feature visitors which is currently means changes
-		 * will propagate quite far across GPlates - ie, won't be a trivial task to make this change.
-		 */
 		virtual
-		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const;
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GpmlTopologicalLine(*this));
+		}
 
 	private:
 
-		sections_seq_type d_sections;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			template <typename TopologicalSectionsIterator>
+			Revision(
+					const TopologicalSectionsIterator &sections_begin_,
+					const TopologicalSectionsIterator &sections_end_)
+			{
+				set_sections(sections_begin_, sections_end_);
+			}
+
+			// This constructor used only by @a clone_for_bubble_up_modification - it does not clone.
+			explicit
+			Revision(
+					const sections_seq_type &sections_) :
+				sections(sections_)
+			{  }
+
+			Revision(
+					const Revision &other);
+
+			// To keep our revision state immutable we clone the sections so that the client
+			// can no longer modify them indirectly...
+			template <typename TopologicalSectionsIterator>
+			void
+			set_sections(
+					const TopologicalSectionsIterator &sections_begin_,
+					const TopologicalSectionsIterator &sections_end_) :
+			{
+				sections.clear();
+				TopologicalSectionsIterator sections_iter_ = sections_begin_;
+				for ( ; sections_iter_ != sections_end_; ++sections_iter_)
+				{
+					GpmlTopologicalSection::non_null_ptr_to_const_type section_ = *sections_iter_;
+					sections.push_back(section_->clone());
+				}
+			}
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone_for_bubble_up_modification() const
+			{
+				// Don't clone the sections - share them instead.
+				return non_null_ptr_type(new Revision(sections));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const;
+
+			sections_seq_type sections;
+		};
+
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

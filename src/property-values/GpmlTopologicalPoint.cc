@@ -25,38 +25,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <typeinfo>
-
 #include "GpmlTopologicalPoint.h"
 
 
-const GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_type
-GPlatesPropertyValues::GpmlTopologicalPoint::deep_clone() const
+void
+GPlatesPropertyValues::GpmlTopologicalPoint::set_source_geometry(
+		GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry)
 {
-	GpmlTopologicalPoint::non_null_ptr_type dup = clone();
-
-	GpmlPropertyDelegate::non_null_ptr_type cloned_source_geometry =
-			d_source_geometry->deep_clone();
-	dup->d_source_geometry = cloned_source_geometry;
-
-	return dup;
+	MutableRevisionHandler revision_handler(this);
+	// To keep our revision state immutable we clone the property value so that the client
+	// can no longer modify it indirectly...
+	revision_handler.get_mutable_revision<Revision>().source_geometry = source_geometry->clone();
+	revision_handler.handle_revision_modification();
 }
-
-
-bool
-GPlatesPropertyValues::GpmlTopologicalPoint::directly_modifiable_fields_equal(
-		const GPlatesModel::PropertyValue &other) const
-{
-	try
-	{
-		const GpmlTopologicalPoint &other_casted =
-			dynamic_cast<const GpmlTopologicalPoint &>(other);
-		return *d_source_geometry == *other_casted.d_source_geometry;
-	}
-	catch (const std::bad_cast &)
-	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
-	}
-}
-

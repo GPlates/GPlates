@@ -25,38 +25,26 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <typeinfo>
-
 #include "GpmlTopologicalLineSection.h"
 
 
-const GPlatesPropertyValues::GpmlTopologicalLineSection::non_null_ptr_type
-GPlatesPropertyValues::GpmlTopologicalLineSection::deep_clone() const
+void
+GPlatesPropertyValues::GpmlTopologicalLineSection::set_source_geometry(
+		GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry)
 {
-	GpmlTopologicalLineSection::non_null_ptr_type dup = clone();
-
-	GpmlPropertyDelegate::non_null_ptr_type cloned_source_geometry =
-			d_source_geometry->deep_clone();
-	dup->d_source_geometry = cloned_source_geometry;
-
-	return dup;
+	MutableRevisionHandler revision_handler(this);
+	// To keep our revision state immutable we clone the property value so that the client
+	// can no longer modify it indirectly...
+	revision_handler.get_mutable_revision<Revision>().source_geometry = source_geometry->clone();
+	revision_handler.handle_revision_modification();
 }
 
 
-bool
-GPlatesPropertyValues::GpmlTopologicalLineSection::directly_modifiable_fields_equal(
-		const PropertyValue &other) const
+void
+GPlatesPropertyValues::GpmlTopologicalLineSection::set_reverse_order(
+		bool reverse_order)
 {
-	try
-	{
-		const GpmlTopologicalLineSection &other_casted =
-			dynamic_cast<const GpmlTopologicalLineSection &>(other);
-		return *d_source_geometry == *other_casted.d_source_geometry;
-	}
-	catch (const std::bad_cast &)
-	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
-	}
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().reverse_order = reverse_order;
+	revision_handler.handle_revision_modification();
 }
-

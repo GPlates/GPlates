@@ -55,6 +55,7 @@ namespace GPlatesPropertyValues
 		//! A convenience typedef for a shared pointer to a const @a GpmlTopologicalLineSection.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalLineSection> non_null_ptr_to_const_type;
 
+
 		virtual
 		~GpmlTopologicalLineSection()
 		{  }
@@ -62,27 +63,43 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				GpmlPropertyDelegate::non_null_ptr_type source_geometry,
+				GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry,
 				const bool reverse_order) 
 		{
-			return non_null_ptr_type(
-					new GpmlTopologicalLineSection(
-							source_geometry, 
-							reverse_order));
+			return non_null_ptr_type(new GpmlTopologicalLineSection(source_geometry, reverse_order));
 		}
 
-		const GpmlTopologicalLineSection::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GpmlTopologicalLineSection(*this));
+			return GPlatesUtils::dynamic_pointer_cast<GpmlTopologicalLineSection>(clone_impl());
 		}
 
-		const GpmlTopologicalLineSection::non_null_ptr_type
-		deep_clone() const;
+		//! Returns the source geometry.
+		GpmlPropertyDelegate::non_null_ptr_to_const_type
+		get_source_geometry() const
+		{
+			return get_current_revision<Revision>().source_geometry;
+		}
 
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
+		/**
+		 * Sets the internal property delegate to a clone of @a source_geometry.
+		 */
+		void
+		set_source_geometry(
+				GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry);
 
-		DEFINE_FUNCTION_DEEP_CLONE_AS_TOPO_SECTION()
+		//! Returns the reverse order.
+		bool
+		get_reverse_order() const
+		{
+			return get_current_revision<Revision>().reverse_order;
+		}
+
+		//! Sets the reverse order.
+		void
+		set_reverse_order(
+				bool reverse_order);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -123,50 +140,16 @@ namespace GPlatesPropertyValues
 			visitor.visit_gpml_topological_line_section(*this);
 		}
 
-
-
-		//! Returns the source geometry.
-		GpmlPropertyDelegate::non_null_ptr_type
-		get_source_geometry() const
-		{
-			return d_source_geometry;
-		}
-
-		//! Sets the source geometry.
-		void
-		set_source_geometry(
-				const GpmlPropertyDelegate::non_null_ptr_type &source_geometry)
-		{
-			d_source_geometry = source_geometry;
-			update_instance_id();
-		} 
-
-		//! Returns the reverse order.
-		bool
-		get_reverse_order() const
-		{
-			return d_reverse_order;
-		}
-
-		//! Sets the reverse order.
-		void
-		set_reverse_order(
-				bool reverse_order)
-		{
-			d_reverse_order = reverse_order;
-			update_instance_id();
-		}
-
 	protected:
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GpmlTopologicalLineSection(
-				GpmlPropertyDelegate::non_null_ptr_type source_geometry,
+				GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry,
 				const bool reverse_order) :
-			GpmlTopologicalSection(),
-			d_source_geometry( source_geometry ),
-			d_reverse_order( reverse_order ) 
+			// To keep our revision state immutable we clone the source geometry so that the client
+			// can no longer modify it indirectly...
+			GpmlTopologicalSection(Revision::non_null_ptr_type(new Revision(source_geometry->clone(), reverse_order)))
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -176,17 +159,70 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GpmlTopologicalLineSection(
 				const GpmlTopologicalLineSection &other) :
-			GpmlTopologicalSection(other),
-			d_source_geometry(other.d_source_geometry),
-			d_reverse_order(other.d_reverse_order)
+			GpmlTopologicalSection(other)
 		{  }
 
 		virtual
-		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const;
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GpmlTopologicalLineSection(*this));
+		}
 
 	private:
+
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GpmlTopologicalSection::Revision
+		{
+			explicit
+			Revision(
+					GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry_,
+					bool reverse_order_) :
+				source_geometry(source_geometry_),
+				reverse_order(reverse_order_)
+			{  }
+
+			Revision(
+					const Revision &other) :
+				source_geometry(other.source_geometry->clone()),
+				reverse_order(other.reverse_order)
+			{  }
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone_for_bubble_up_modification() const
+			{
+				// Don't clone the property value - share it instead.
+				return non_null_ptr_type(new Revision(source_geometry, reverse_order));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				// Compare property delegate objects not pointers.
+				return *source_geometry == *other_revision.source_geometry &&
+						reverse_order == other_revision.reverse_order &&
+						GpmlTopologicalSection::Revision::equality(other);
+			}
+
+			GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry;
+			bool reverse_order;
+		};
+
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
@@ -195,9 +231,6 @@ namespace GPlatesPropertyValues
 		GpmlTopologicalLineSection &
 		operator=(
 				const GpmlTopologicalLineSection &);
-
-		GpmlPropertyDelegate::non_null_ptr_type d_source_geometry;
-		bool d_reverse_order;
 
 	};
 }

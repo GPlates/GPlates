@@ -25,44 +25,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iostream>
-#include <typeinfo>
 #include <algorithm>
+#include <iostream>
+#include <boost/foreach.hpp>
 
 #include "GpmlTopologicalPolygon.h"
-
-
-namespace
-{
-	bool
-	section_eq(
-			const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type &p1,
-			const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type &p2)
-	{
-		return *p1 == *p2;
-	}
-}
-
-
-const GPlatesPropertyValues::GpmlTopologicalPolygon::non_null_ptr_type
-GPlatesPropertyValues::GpmlTopologicalPolygon::deep_clone() const
-{
-	GpmlTopologicalPolygon::non_null_ptr_type dup = clone();
-
-	// Now we need to clear the topological-section vector in the duplicate, before we
-	// push-back the cloned sections.
-	dup->d_exterior_sections.clear();
-	sections_const_iterator iter = d_exterior_sections.begin();
-	sections_const_iterator end = d_exterior_sections.end();
-	for ( ; iter != end; ++iter)
-	{
-		GpmlTopologicalSection::non_null_ptr_type cloned_section =
-				(*iter)->deep_clone_as_topo_section();
-		dup->d_exterior_sections.push_back(cloned_section);
-	}
-
-	return dup;
-}
 
 
 std::ostream &
@@ -71,40 +38,50 @@ GPlatesPropertyValues::GpmlTopologicalPolygon::print_to(
 {
 	os << "[ ";
 
-	for (sections_const_iterator iter = d_exterior_sections.begin(); iter != d_exterior_sections.end(); ++iter)
+	const sections_seq_type &exterior_sections = get_exterior_sections();
+	sections_seq_type::const_iterator exterior_sections_iter = exterior_sections.begin();
+	sections_seq_type::const_iterator exterior_sections_end = exterior_sections.end();
+	for ( ; exterior_sections_iter != exterior_sections_end; ++exterior_sections_iter)
 	{
-		os << **iter;
+		os << **exterior_sections_iter;
 	}
 
 	return os << " ]";
 }
 
 
-bool
-GPlatesPropertyValues::GpmlTopologicalPolygon::directly_modifiable_fields_equal(
-		const GPlatesModel::PropertyValue &other) const
+GPlatesPropertyValues::GpmlTopologicalPolygon::Revision::Revision(
+		const Revision &other)
 {
-	try
+	// Clone the exterior sections.
+	BOOST_FOREACH(
+			const GpmlTopologicalSection::non_null_ptr_to_const_type &other_exterior_section,
+			other.exterior_sections)
 	{
-		const GpmlTopologicalPolygon &other_casted =
-				dynamic_cast<const GpmlTopologicalPolygon &>(other);
-		if (d_exterior_sections.size() == other_casted.d_exterior_sections.size())
-		{
-			return std::equal(
-					d_exterior_sections.begin(),
-					d_exterior_sections.end(),
-					other_casted.d_exterior_sections.begin(),
-					&section_eq);
-		}
-		else
+		exterior_sections.push_back(other_exterior_section->clone());
+	}
+}
+
+
+bool
+GPlatesPropertyValues::GpmlTopologicalPolygon::Revision::equality(
+		const GPlatesModel::PropertyValue::Revision &other) const
+{
+	const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+	if (exterior_sections.size() != other_revision.exterior_sections.size())
+	{
+		return false;
+	}
+
+	for (unsigned int n = 0; n < exterior_sections.size(); ++n)
+	{
+		// Compare PropertyValues, not pointers to PropertyValues...
+		if (*exterior_sections[n] != *other_revision.exterior_sections[n])
 		{
 			return false;
 		}
 	}
-	catch (const std::bad_cast &)
-	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
-	}
-}
 
+	return GPlatesModel::PropertyValue::Revision::equality(other);
+}

@@ -28,8 +28,8 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALPOINT_H
 #define GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALPOINT_H
 
-#include "GpmlTopologicalSection.h"
 #include "GpmlPropertyDelegate.h"
+#include "GpmlTopologicalSection.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -47,51 +47,46 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalPoint>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalPoint>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalPoint> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalPoint>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalPoint>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalPoint> non_null_ptr_to_const_type;
+
 
 		virtual
 		~GpmlTopologicalPoint()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
-				GpmlPropertyDelegate::non_null_ptr_type source_geometry) 
+				GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry) 
 		{
-			non_null_ptr_type ptr(
-				new GpmlTopologicalPoint(
-					source_geometry));
-			return ptr;
+			return non_null_ptr_type(new GpmlTopologicalPoint(source_geometry));
 		}
 
-		const GpmlTopologicalPoint::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlTopologicalPoint::non_null_ptr_type dup(
-					new GpmlTopologicalPoint(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GpmlTopologicalPoint>(clone_impl());
 		}
 
-		const GpmlTopologicalPoint::non_null_ptr_type
-		deep_clone() const;
+		GpmlPropertyDelegate::non_null_ptr_to_const_type
+		get_source_geometry() const
+		{
+			return get_current_revision<Revision>().source_geometry;
+		}
 
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_TOPO_SECTION()
+		/**
+		 * Sets the internal property delegate to a clone of @a source_geometry.
+		 */
+		void
+		set_source_geometry(
+				GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -132,33 +127,17 @@ namespace GPlatesPropertyValues
 			visitor.visit_gpml_topological_point(*this);
 		}
 
-
-		// access to d_source_geometry
-		GpmlPropertyDelegate::non_null_ptr_type
-		get_source_geometry() const
-		{
-			return d_source_geometry;
-		}
-
-		void
-		set_source_geometry(
-				GpmlPropertyDelegate::non_null_ptr_type intersection_geom)
-		{
-			d_source_geometry = intersection_geom;
-			update_instance_id();
-		} 
-
 	protected:
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GpmlTopologicalPoint(
-				GpmlPropertyDelegate::non_null_ptr_type source_geometry) :
-			GpmlTopologicalSection(),
-			d_source_geometry( source_geometry )
+				GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry) :
+			// To keep our revision state immutable we clone the source geometry so that the client
+			// can no longer modify it indirectly...
+			GpmlTopologicalSection(Revision::non_null_ptr_type(new Revision(source_geometry->clone())))
 		{  }
 
-#if 0
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		//
@@ -166,17 +145,65 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GpmlTopologicalPoint(
 				const GpmlTopologicalPoint &other) :
-			GpmlTopologicalSection(other),
-			d_source_geometry(other.d_source_geometry) // will get overwritten in deep_clone() later.
+			GpmlTopologicalSection(other)
 		{  }
-#endif
 
 		virtual
-		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const;
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GpmlTopologicalPoint(*this));
+		}
 
 	private:
+
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GpmlTopologicalSection::Revision
+		{
+			explicit
+			Revision(
+					GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry_) :
+				source_geometry(source_geometry_)
+			{  }
+
+			Revision(
+					const Revision &other) :
+				source_geometry(other.source_geometry->clone())
+			{  }
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone_for_bubble_up_modification() const
+			{
+				// Don't clone the property value - share it instead.
+				return non_null_ptr_type(new Revision(source_geometry));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				// Compare property delegate objects not pointers.
+				return *source_geometry == *other_revision.source_geometry &&
+					GpmlTopologicalSection::Revision::equality(other);
+			}
+
+			GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry;
+		};
+
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
@@ -184,8 +211,6 @@ namespace GPlatesPropertyValues
 		// only be assignment of one intrusive_ptr to another.
 		GpmlTopologicalPoint &
 		operator=(const GpmlTopologicalPoint &);
-
-		GpmlPropertyDelegate::non_null_ptr_type d_source_geometry;
 
 	};
 
