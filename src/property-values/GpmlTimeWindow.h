@@ -62,6 +62,10 @@ namespace GPlatesPropertyValues
 			d_value_type(value_type_)
 		{  }
 
+		/**
+		 * Copy constructor performs a shallow copy - the internal property values are shared
+		 * between the original and copy-constructed objects.
+		 */
 		GpmlTimeWindow(
 				const GpmlTimeWindow &other) :
 			d_time_dependent_value(other.d_time_dependent_value),
@@ -69,28 +73,28 @@ namespace GPlatesPropertyValues
 			d_value_type(other.d_value_type)
 		{  }
 
+		/**
+		 * Returns a (deep-copy) clone of this GpmlTimeWindow.
+		 *
+		 * Note that the copy constructor of GpmlTimeWindow is a shallow copy.
+		 */
 		const GpmlTimeWindow
-		deep_clone() const;
+		clone() const;
 
+		/**
+		 * Returns the 'const' time-dependent property value.
+		 */
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
-		time_dependent_value() const
+		get_time_dependent_value() const
 		{
 			return d_time_dependent_value;
 		}
 
-		// Note that, because the copy-assignment operator of PropertyValue is private,
-		// the PropertyValue referenced by the return-value of this function cannot be
-		// assigned-to, which means that this function does not provide a means to directly
-		// switch the PropertyValue within this GpmlTimeWindow instance.  (This
-		// restriction is intentional.)
-		//
-		// To switch the PropertyValue within this GpmlTimeWindow instance, use the
-		// function @a set_time_dependent_value below.
-		//
-		// (This overload is provided to allow the referenced PropertyValue instance to
-		// accept a FeatureVisitor instance.)
+		/**
+		 * Returns the 'non-const' time-dependent property value.
+		 */
 		const GPlatesModel::PropertyValue::non_null_ptr_type
-		time_dependent_value()
+		get_time_dependent_value()
 		{
 			return d_time_dependent_value;
 		}
@@ -102,25 +106,20 @@ namespace GPlatesPropertyValues
 			d_time_dependent_value = v;
 		}
 
+		/**
+		 * Returns the 'const' time period.
+		 */
 		const GmlTimePeriod::non_null_ptr_to_const_type
-		valid_time() const
+		get_valid_time() const
 		{
 			return d_valid_time;
 		}
 
-		// Note that, because the copy-assignment operator of GmlTimePeriod is private,
-		// the GmlTimePeriod referenced by the return-value of this function cannot be
-		// assigned-to, which means that this function does not provide a means to directly
-		// switch the GmlTimePeriod within this GpmlTimeWindow instance.  (This
-		// restriction is intentional.)
-		//
-		// To switch the GmlTimePeriod within this GpmlTimeWindow instance, use the
-		// function @a set_valid_time below.
-		//
-		// (This overload is provided to allow the referenced GmlTimePeriod instance to
-		// accept a FeatureVisitor instance.)
+		/**
+		 * Returns the 'non-const' time period.
+		 */
 		const GmlTimePeriod::non_null_ptr_type
-		valid_time()
+		get_valid_time()
 		{
 			return d_valid_time;
 		}
@@ -135,7 +134,7 @@ namespace GPlatesPropertyValues
 		// Note that no "setter" is provided:  The value type of a GpmlTimeWindow instance
 		// should never be changed.
 		const StructuralType &
-		value_type() const
+		get_value_type() const
 		{
 			return d_value_type;
 		}

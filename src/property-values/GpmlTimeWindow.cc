@@ -31,18 +31,12 @@
 
 
 const GPlatesPropertyValues::GpmlTimeWindow
-GPlatesPropertyValues::GpmlTimeWindow::deep_clone() const
+GPlatesPropertyValues::GpmlTimeWindow::clone() const
 {
-	GpmlTimeWindow dup(*this);
-
-	GPlatesModel::PropertyValue::non_null_ptr_type cloned_time_dependent_value =
-			d_time_dependent_value->deep_clone_as_prop_val();
-	dup.d_time_dependent_value = cloned_time_dependent_value;
-
-	GmlTimePeriod::non_null_ptr_type cloned_valid_time = d_valid_time->deep_clone();
-	dup.d_valid_time = cloned_valid_time;
-
-	return dup;
+	return GpmlTimeWindow(
+		d_time_dependent_value->clone(),
+		d_valid_time->clone(),
+		d_value_type);
 }
 
 
@@ -51,7 +45,7 @@ GPlatesPropertyValues::operator<<(
 		std::ostream &os,
 		const GpmlTimeWindow &time_window)
 {
-	return os << *time_window.time_dependent_value();
+	return os << *time_window.get_time_dependent_value();
 }
 
 

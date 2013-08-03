@@ -26,25 +26,43 @@
  */
 
 #include <iostream>
-#include <typeinfo>
+#include <boost/foreach.hpp>
 
 #include "GpmlPiecewiseAggregation.h"
 
 
-const GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type
-GPlatesPropertyValues::GpmlPiecewiseAggregation::deep_clone() const
+std::vector<GPlatesPropertyValues::GpmlTimeWindow>
+GPlatesPropertyValues::GpmlPiecewiseAggregation::get_time_windows() const
 {
-	GpmlPiecewiseAggregation::non_null_ptr_type dup = clone();
+	// To keep our revision state immutable we clone the time windows so that the client
+	// is unable modify them indirectly. If we didn't clone the time windows then the client
+	// could copy the returned vector of time windows and then get access to pointers to 'non-const'
+	// property values (from a GpmlTimeWindow) and then modify our internal immutable revision state.
+	// And returning 'const' GpmlTimeWindows doesn't help us here - so cloning is the only solution.
+	std::vector<GpmlTimeWindow> time_windows;
 
-	// Now we need to clear the time sample vector in the duplicate, before we push-back the
-	// cloned time samples.
-	dup->d_time_windows.clear();
-	std::vector<GpmlTimeWindow>::const_iterator iter, end = d_time_windows.end();
-	for (iter = d_time_windows.begin(); iter != end; ++iter) {
-		dup->d_time_windows.push_back((*iter).deep_clone());
+	const Revision &revision = get_current_revision<Revision>();
+
+	// The copy constructor of GpmlTimeWindow does *not* clone its members,
+	// instead it has a 'clone()' member function for that...
+	BOOST_FOREACH(const GpmlTimeWindow &time_window, revision.time_windows)
+	{
+		time_windows.push_back(time_window.clone());
 	}
 
-	return dup;
+	return time_windows;
+}
+
+
+void
+GPlatesPropertyValues::GpmlPiecewiseAggregation::set_time_windows(
+		const std::vector<GpmlTimeWindow> &time_windows)
+{
+	MutableRevisionHandler revision_handler(this);
+	// To keep our revision state immutable we clone the time windows so that the client
+	// can no longer modify them indirectly...
+	revision_handler.get_mutable_revision<Revision>().set_cloned_time_windows(time_windows);
+	revision_handler.handle_revision_modification();
 }
 
 
@@ -52,10 +70,13 @@ std::ostream &
 GPlatesPropertyValues::GpmlPiecewiseAggregation::print_to(
 		std::ostream &os) const
 {
+	const Revision &revision = get_current_revision<Revision>();
+
 	os << "[ ";
 
-	typedef std::vector<GpmlTimeWindow>::const_iterator iterator_type;
-	for (iterator_type iter = d_time_windows.begin(); iter != d_time_windows.end(); ++iter)
+	for (std::vector<GpmlTimeWindow>::const_iterator iter = revision.time_windows.begin();
+		iter != revision.time_windows.end();
+		++iter)
 	{
 		os << *iter;
 	}
@@ -64,20 +85,41 @@ GPlatesPropertyValues::GpmlPiecewiseAggregation::print_to(
 }
 
 
-bool
-GPlatesPropertyValues::GpmlPiecewiseAggregation::directly_modifiable_fields_equal(
-		const GPlatesModel::PropertyValue &other) const
+GPlatesPropertyValues::GpmlPiecewiseAggregation::Revision::Revision(
+		const Revision &other)
 {
-	try
+	// The copy constructor of GpmlTimeWindow does *not* clone its members,
+	// instead it has a 'clone()' member function for that...
+	BOOST_FOREACH(const GpmlTimeWindow &other_time_window, other.time_windows)
 	{
-		const GpmlPiecewiseAggregation &other_casted =
-			dynamic_cast<const GpmlPiecewiseAggregation &>(other);
-		return d_time_windows == other_casted.d_time_windows;
-	}
-	catch (const std::bad_cast &)
-	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
+		time_windows.push_back(other_time_window.clone());
 	}
 }
 
+
+void
+GPlatesPropertyValues::GpmlPiecewiseAggregation::Revision::set_cloned_time_windows(
+		const std::vector<GpmlTimeWindow> &time_windows_)
+{
+	// To keep our revision state immutable we clone the time windows so that the client
+	// can no longer modify them indirectly...
+	time_windows.clear();
+	std::vector<GpmlTimeWindow>::const_iterator time_windows_iter_ = time_windows_.begin();
+	std::vector<GpmlTimeWindow>::const_iterator time_windows_end_ = time_windows_.end();
+	for ( ; time_windows_iter_ != time_windows_end_; ++time_windows_iter_)
+	{
+		const GpmlTimeWindow &time_window_ = *time_windows_iter_;
+		time_windows.push_back(time_window_.clone());
+	}
+}
+
+
+bool
+GPlatesPropertyValues::GpmlPiecewiseAggregation::Revision::equality(
+		const GPlatesModel::PropertyValue::Revision &other) const
+{
+	const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+	return time_windows == other_revision.time_windows &&
+		GPlatesModel::PropertyValue::Revision::equality(other);
+}

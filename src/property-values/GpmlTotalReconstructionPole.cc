@@ -28,9 +28,6 @@
 
 #include "GpmlTotalReconstructionPole.h"
 
-#include "global/GPlatesAssert.h"
-#include "global/NotYetImplementedException.h"
-
 
 void
 GPlatesPropertyValues::GpmlTotalReconstructionPole::set_metadata(
@@ -104,13 +101,8 @@ bool
 GPlatesPropertyValues::GpmlTotalReconstructionPole::Revision::equality(
 		const GPlatesModel::PropertyValue::Revision &other) const
 {
-	const Revision &other_revision = static_cast<const Revision &>(other);
-
 	// Compare each metadata entry (ie, dereferenced smart pointer).
 	// TODO: Implement - may need to sort by metadata name (and type) before can compare.
-	GPlatesGlobal::Assert<GPlatesGlobal::NotYetImplementedException>(
-			false,
-			GPLATES_ASSERTION_SOURCE);
-
-	return GpmlFiniteRotation::Revision::equality(other);
+	qWarning() << "GpmlTotalReconstructionPole::Revision::equality not implemented";
+	return false;
 }

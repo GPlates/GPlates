@@ -59,20 +59,15 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlTimePeriod> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod> non_null_ptr_to_const_type;
+
 
 		virtual
 		~GmlTimePeriod()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		/**
 		 * Create a GmlTimePeriod instance which begins at @a begin_ and ends at @a end_.
 		 *
@@ -87,55 +82,28 @@ namespace GPlatesPropertyValues
 				GmlTimeInstant::non_null_ptr_type begin_,
 				GmlTimeInstant::non_null_ptr_type end_)
 		{
-			GmlTimePeriod::non_null_ptr_type ptr(new GmlTimePeriod(begin_, end_));
-			return ptr;
+			return non_null_ptr_type(new GmlTimePeriod(begin_, end_));
 		}
 
-		const GmlTimePeriod::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GmlTimePeriod::non_null_ptr_type dup(new GmlTimePeriod(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GmlTimePeriod>(clone_impl());
 		}
-
-		const GmlTimePeriod::non_null_ptr_type
-		deep_clone() const;
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
 		 * Return the "begin" attribute of this GmlTimePeriod instance.
 		 *
 		 * Note that it is an invariant of this class that the "begin" attribute must not
 		 * be later than the "end" attribute.
+		 *
+		 * The returned property value is 'const' so that it cannot be modified and
+		 * bypass the revisioning system.
 		 */
 		const GmlTimeInstant::non_null_ptr_to_const_type
-		begin() const
+		get_begin() const
 		{
-			return d_begin;
-		}
-
-		// Note that, because the copy-assignment operator of GmlTimeInstant is private,
-		// the GmlTimeInstant referenced by the return-value of this function cannot be
-		// assigned-to, which means that this function does not provide a means to directly
-		// switch the GmlTimeInstant within this GmlTimePeriod instance.  (This
-		// restriction is intentional.)
-		//
-		// To switch the GmlTimeInstant within this GmlTimePeriod instance, use the
-		// function @a set_begin below.
-		//
-		// (This overload is provided to allow the referenced GmlTimeInstant instance to
-		// accept a FeatureVisitor instance.)
-		/**
-		 * Return the "begin" attribute of this GmlTimePeriod instance.
-		 *
-		 * Note that it is an invariant of this class that the "begin" attribute must not
-		 * be later than the "end" attribute.
-		 */
-		const GmlTimeInstant::non_null_ptr_type
-		begin()
-		{
-			return d_begin;
+			return get_current_revision<Revision>().begin;
 		}
 
 		/**
@@ -143,52 +111,24 @@ namespace GPlatesPropertyValues
 		 *
 		 * Note that it is an invariant of this class that the "begin" attribute must not
 		 * be later than the "end" attribute.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_begin(
-				GmlTimeInstant::non_null_ptr_type b)
-		{
-			d_begin = b;
-			update_instance_id();
-		}
+				GmlTimeInstant::non_null_ptr_to_const_type begin);
 
 		/**
 		 * Return the "end" attribute of this GmlTimePeriod instance.
 		 *
 		 * Note that it is an invariant of this class that the "end" attribute must not
 		 * be earlier than the "begin" attribute.
+		 *
+		 * The returned property value is 'const' so that it cannot be modified and
+		 * bypass the revisioning system.
 		 */
 		const GmlTimeInstant::non_null_ptr_to_const_type
-		end() const
+		get_end() const
 		{
-			return d_end;
-		}
-
-		// Note that, because the copy-assignment operator of GmlTimeInstant is private,
-		// the GmlTimeInstant referenced by the return-value of this function cannot be
-		// assigned-to, which means that this function does not provide a means to directly
-		// switch the GmlTimeInstant within this GmlTimePeriod instance.  (This
-		// restriction is intentional.)
-		//
-		// To switch the GmlTimeInstant within this GmlTimePeriod instance, use the
-		// function @a set_end below.
-		//
-		// (This overload is provided to allow the referenced GmlTimeInstant instance to
-		// accept a FeatureVisitor instance.)
-		/**
-		 * Return the "end" attribute of this GmlTimePeriod instance.
-		 *
-		 * Note that it is an invariant of this class that the "end" attribute must not
-		 * be earlier than the "begin" attribute.
-		 */
-		const GmlTimeInstant::non_null_ptr_type
-		end()
-		{
-			return d_end;
+			return get_current_revision<Revision>().end;
 		}
 
 		/**
@@ -196,18 +136,10 @@ namespace GPlatesPropertyValues
 		 *
 		 * Note that it is an invariant of this class that the "end" attribute must not
 		 * be earlier than the "begin" attribute.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_end(
-				GmlTimeInstant::non_null_ptr_type e)
-		{
-			d_end = e;
-			update_instance_id();
-		}
+				GmlTimeInstant::non_null_ptr_to_const_type end);
 
 		/**
 		 * Determine whether @a geo_time lies within the temporal span of this
@@ -221,8 +153,8 @@ namespace GPlatesPropertyValues
 		contains(
 				const GeoTimeInstant &geo_time) const
 		{
-			return (begin()->time_position().is_earlier_than_or_coincident_with(geo_time) &&
-					geo_time.is_earlier_than_or_coincident_with(end()->time_position()));
+			return get_begin()->get_time_position().is_earlier_than_or_coincident_with(geo_time) &&
+					geo_time.is_earlier_than_or_coincident_with(get_end()->get_time_position());
 		}
 
 		/**
@@ -287,11 +219,9 @@ namespace GPlatesPropertyValues
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GmlTimePeriod(
-				GmlTimeInstant::non_null_ptr_type begin_,
-				GmlTimeInstant::non_null_ptr_type end_):
-			PropertyValue(),
-			d_begin(begin_),
-			d_end(end_)
+				GmlTimeInstant::non_null_ptr_to_const_type begin_,
+				GmlTimeInstant::non_null_ptr_to_const_type end_):
+			PropertyValue(Revision::non_null_ptr_type(new Revision(begin_, end_)))
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -301,20 +231,71 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GmlTimePeriod(
 				const GmlTimePeriod &other) :
-			PropertyValue(other), /* share instance id */
-			d_begin(other.d_begin),
-			d_end(other.d_end)
+			PropertyValue(other)
 		{  }
 
 		virtual
-		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const;
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GmlTimePeriod(*this));
+		}
 
 	private:
 
-		GmlTimeInstant::non_null_ptr_type d_begin;
-		GmlTimeInstant::non_null_ptr_type d_end;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			// To keep our revision state immutable we clone the time instants so that the client
+			// can no longer modify them indirectly...
+			Revision(
+					const GmlTimeInstant::non_null_ptr_to_const_type &begin_,
+					const GmlTimeInstant::non_null_ptr_to_const_type &end_,
+					bool deep_copy = true) :
+				begin(deep_copy ? GmlTimeInstant::non_null_ptr_to_const_type(begin_->clone()) : begin_),
+				end(deep_copy ? GmlTimeInstant::non_null_ptr_to_const_type(end_->clone()) : end_)
+			{  }
+
+			Revision(
+					const Revision &other) :
+				begin(other.begin->clone()),
+				end(other.end->clone())
+			{  }
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone_for_bubble_up_modification() const
+			{
+				// Don't clone the time instants - share them instead.
+				return non_null_ptr_type(new Revision(begin, end, false/*deep_copy*/));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return *begin == *other_revision.begin &&
+						*end == *other_revision.end &&
+						GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			GmlTimeInstant::non_null_ptr_to_const_type begin;
+			GmlTimeInstant::non_null_ptr_to_const_type end;
+		};
+
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

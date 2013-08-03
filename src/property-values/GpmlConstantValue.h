@@ -66,18 +66,9 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesModel::PropertyValue::non_null_ptr_type value_,
-				const StructuralType &value_type_)
-		{
-			return non_null_ptr_type(new GpmlConstantValue(value_, value_type_));
-		}
-
-		static
-		const non_null_ptr_type
-		create(
-				GPlatesModel::PropertyValue::non_null_ptr_type value_,
+				GPlatesModel::PropertyValue::non_null_ptr_to_const_type value_,
 				const StructuralType &value_type_,
-				const GPlatesUtils::UnicodeString &description_)
+				const GPlatesUtils::UnicodeString &description_ = "")
 		{
 			return non_null_ptr_type(new GpmlConstantValue(value_, value_type_, description_));
 		}
@@ -88,34 +79,22 @@ namespace GPlatesPropertyValues
 			return GPlatesUtils::dynamic_pointer_cast<GpmlConstantValue>(clone_impl());
 		}
 
+		/**
+		 * The returned property value is 'const' so that it cannot be modified and
+		 * bypass the revisioning system.
+		 */
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
 		get_value() const
 		{
 			return get_current_revision<Revision>().value;
 		}
 
-		// Note that, because the copy-assignment operator of PropertyValue is private,
-		// the PropertyValue referenced by the return-value of this function cannot be
-		// assigned-to, which means that this function does not provide a means to directly
-		// switch the PropertyValue within this GpmlConstantValue instance.  (This restriction
-		// is intentional.).
-		// However the property value contained within can be modified, and this causes no
-		// revisioning problems because all property values take care of their own revisioning.
-		//
-		// To switch the PropertyValue within this GpmlConstantValue instance, use the
-		// function @a set_value below.
-		//
-		// (This overload is provided to allow the referenced PropertyValue instance to
-		// accept a FeatureVisitor instance.)
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		get_value()
-		{
-			return get_current_revision<Revision>().value;
-		}
-
+		/**
+		 * Sets the internal property value to a clone of @a v.
+		 */
 		void
 		set_value(
-				GPlatesModel::PropertyValue::non_null_ptr_type v);
+				GPlatesModel::PropertyValue::non_null_ptr_to_const_type v);
 
 		// Note that no "setter" is provided:  The value type of a GpmlConstantValue
 		// instance should never be changed.
@@ -184,19 +163,12 @@ namespace GPlatesPropertyValues
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GpmlConstantValue(
-				GPlatesModel::PropertyValue::non_null_ptr_type value_,
-				const StructuralType &value_type_):
-			PropertyValue(Revision::non_null_ptr_type(new Revision(value_, ""))),
-			d_value_type(value_type_)
-		{  }
-
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		GpmlConstantValue(
-				GPlatesModel::PropertyValue::non_null_ptr_type value_,
+				GPlatesModel::PropertyValue::non_null_ptr_to_const_type value_,
 				const StructuralType &value_type_,
 				const GPlatesUtils::UnicodeString &description_):
-			PropertyValue(Revision::non_null_ptr_type(new Revision(value_, description_))),
+			// To keep our revision state immutable we clone the property value so that the client
+			// can no longer modify it indirectly...
+			PropertyValue(Revision::non_null_ptr_type(new Revision(value_->clone(), description_))),
 			d_value_type(value_type_)
 		{  }
 
@@ -223,7 +195,7 @@ namespace GPlatesPropertyValues
 		equality(
 				const PropertyValue &other) const
 		{
-			const GpmlConstantValue &other_pv = static_cast<const GpmlConstantValue &>(other);
+			const GpmlConstantValue &other_pv = dynamic_cast<const GpmlConstantValue &>(other);
 
 			return d_value_type == other_pv.d_value_type &&
 					// The revisioned data comparisons are handled here...
@@ -239,7 +211,7 @@ namespace GPlatesPropertyValues
 				public GPlatesModel::PropertyValue::Revision
 		{
 			Revision(
-					const GPlatesModel::PropertyValue::non_null_ptr_type value_,
+					const GPlatesModel::PropertyValue::non_null_ptr_to_const_type value_,
 					const GPlatesUtils::UnicodeString &description_) :
 				value(value_),
 				description(description_)
@@ -271,7 +243,7 @@ namespace GPlatesPropertyValues
 			equality(
 					const GPlatesModel::PropertyValue::Revision &other) const
 			{
-				const Revision &other_revision = static_cast<const Revision &>(other);
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				// Note that we compare the property value contents (and not pointers).
 				return *value == *other_revision.value &&
@@ -279,7 +251,7 @@ namespace GPlatesPropertyValues
 						GPlatesModel::PropertyValue::Revision::equality(other);
 			}
 
-			GPlatesModel::PropertyValue::non_null_ptr_type value;
+			GPlatesModel::PropertyValue::non_null_ptr_to_const_type value;
 			GPlatesUtils::UnicodeString description;
 		};
 

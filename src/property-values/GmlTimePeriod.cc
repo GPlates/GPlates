@@ -26,22 +26,31 @@
  */
 
 #include <iostream>
-#include <typeinfo>
 
 #include "GmlTimePeriod.h"
 
 
-const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type
-GPlatesPropertyValues::GmlTimePeriod::deep_clone() const
+void
+GPlatesPropertyValues::GmlTimePeriod::set_begin(
+		GmlTimeInstant::non_null_ptr_to_const_type begin)
 {
-	GmlTimePeriod::non_null_ptr_type dup = clone();
+	MutableRevisionHandler revision_handler(this);
+	// To keep our revision state immutable we clone the time instant so that the client
+	// can no longer modify it indirectly...
+	revision_handler.get_mutable_revision<Revision>().begin = begin->clone();
+	revision_handler.handle_revision_modification();
+}
 
-	GmlTimeInstant::non_null_ptr_type cloned_begin = d_begin->deep_clone();
-	dup->d_begin = cloned_begin;
-	GmlTimeInstant::non_null_ptr_type cloned_end = d_end->deep_clone();
-	dup->d_end = cloned_end;
 
-	return dup;
+void
+GPlatesPropertyValues::GmlTimePeriod::set_end(
+		GmlTimeInstant::non_null_ptr_to_const_type end)
+{
+	MutableRevisionHandler revision_handler(this);
+	// To keep our revision state immutable we clone the time instant so that the client
+	// can no longer modify it indirectly...
+	revision_handler.get_mutable_revision<Revision>().end = end->clone();
+	revision_handler.handle_revision_modification();
 }
 
 
@@ -49,25 +58,5 @@ std::ostream &
 GPlatesPropertyValues::GmlTimePeriod::print_to(
 		std::ostream &os) const
 {
-	return os << *d_begin << " - " << *d_end;
+	return os << *get_begin() << " - " << *get_end();
 }
-
-
-bool
-GPlatesPropertyValues::GmlTimePeriod::directly_modifiable_fields_equal(
-		const GPlatesModel::PropertyValue &other) const
-{
-	try
-	{
-		const GmlTimePeriod &other_casted =
-			dynamic_cast<const GmlTimePeriod &>(other);
-		return *d_begin == *other_casted.d_begin &&
-			*d_end == *other_casted.d_end;
-	}
-	catch (const std::bad_cast &)
-	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
-	}
-}
-
