@@ -33,9 +33,7 @@ GPlatesPropertyValues::GpmlTopologicalLineSection::set_source_geometry(
 		GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry)
 {
 	MutableRevisionHandler revision_handler(this);
-	// To keep our revision state immutable we clone the property value so that the client
-	// can no longer modify it indirectly...
-	revision_handler.get_mutable_revision<Revision>().source_geometry = source_geometry->clone();
+	revision_handler.get_mutable_revision<Revision>().source_geometry = source_geometry;
 	revision_handler.handle_revision_modification();
 }
 

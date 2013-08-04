@@ -36,6 +36,8 @@
 
 #include "model/PropertyValue.h"
 
+#include "utils/CopyOnWrite.h"
+
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -63,8 +65,14 @@ namespace GPlatesPropertyValues
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlRasterBandNames> non_null_ptr_to_const_type;
 
-		//! Typedef for a sequence of band names.
-		typedef std::vector<XsString::non_null_ptr_to_const_type> band_names_list_type;
+		/**
+		 * Typedef for a sequence of band names.
+		 *
+		 * Get the non_null_intrusive_ptr using 'CopyOnWrite::get_const()' or 'CopyOnWrite::get_non_const()'.
+		 */
+		typedef std::vector<
+				GPlatesUtils::CopyOnWrite<XsString::non_null_ptr_type> >
+						band_names_list_type;
 
 
 		virtual
@@ -192,38 +200,9 @@ namespace GPlatesPropertyValues
 			template<typename ForwardIterator>
 			Revision(
 					ForwardIterator begin_,
-					ForwardIterator end_,
-					bool deep_copy = true)
-			{
-				if (deep_copy)
-				{
-					set_cloned_band_names(begin_, end_);
-				}
-				else
-				{
-					band_names.insert(band_names.end(), begin_, end_);
-				}
-			}
-
-			Revision(
-					const Revision &other);
-
-			// To keep our revision state immutable we clone the band names so that the client
-			// can no longer modify them indirectly...
-			template<typename ForwardIterator>
-			void
-			set_cloned_band_names(
-					ForwardIterator begin_,
-					ForwardIterator end_)
-			{
-				band_names.clear();
-				ForwardIterator band_names_iter_ = begin_;
-				for ( ; band_names_iter_ != end_; ++band_names_iter_)
-				{
-					const XsString::non_null_ptr_to_const_type &band_name_ = *band_names_iter_;
-					band_names.push_back(band_name_->clone());
-				}
-			}
+					ForwardIterator end_) :
+				band_names(begin_, end_)
+			{  }
 
 			virtual
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
@@ -232,13 +211,7 @@ namespace GPlatesPropertyValues
 				return non_null_ptr_type(new Revision(*this));
 			}
 
-			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone_for_bubble_up_modification() const
-			{
-				// Don't clone the band name property values.
-				return non_null_ptr_type(new Revision(band_names.begin(), band_names.end(), false/*deep_copy*/));
-			}
+			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
 
 			virtual
 			bool

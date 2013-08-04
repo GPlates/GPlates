@@ -32,6 +32,8 @@
 #include "GpmlPropertyDelegate.h"
 #include "GpmlTopologicalSection.h"
 
+#include "utils/CopyOnWrite.h"
+
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -75,11 +77,14 @@ namespace GPlatesPropertyValues
 			return GPlatesUtils::dynamic_pointer_cast<GpmlTopologicalLineSection>(clone_impl());
 		}
 
-		//! Returns the source geometry.
+		/**
+		 * Returns the 'const' property delegate - which is 'const' so that it cannot be
+		 * modified and bypass the revisioning system.
+		 */
 		GpmlPropertyDelegate::non_null_ptr_to_const_type
 		get_source_geometry() const
 		{
-			return get_current_revision<Revision>().source_geometry;
+			return get_current_revision<Revision>().source_geometry.get();
 		}
 
 		/**
@@ -147,9 +152,7 @@ namespace GPlatesPropertyValues
 		GpmlTopologicalLineSection(
 				GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry,
 				const bool reverse_order) :
-			// To keep our revision state immutable we clone the source geometry so that the client
-			// can no longer modify it indirectly...
-			GpmlTopologicalSection(Revision::non_null_ptr_type(new Revision(source_geometry->clone(), reverse_order)))
+			GpmlTopologicalSection(Revision::non_null_ptr_type(new Revision(source_geometry, reverse_order)))
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -185,12 +188,6 @@ namespace GPlatesPropertyValues
 				reverse_order(reverse_order_)
 			{  }
 
-			Revision(
-					const Revision &other) :
-				source_geometry(other.source_geometry->clone()),
-				reverse_order(other.reverse_order)
-			{  }
-
 			virtual
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
 			clone() const
@@ -198,13 +195,7 @@ namespace GPlatesPropertyValues
 				return non_null_ptr_type(new Revision(*this));
 			}
 
-			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone_for_bubble_up_modification() const
-			{
-				// Don't clone the property value - share it instead.
-				return non_null_ptr_type(new Revision(source_geometry, reverse_order));
-			}
+			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
 
 			virtual
 			bool
@@ -214,12 +205,12 @@ namespace GPlatesPropertyValues
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				// Compare property delegate objects not pointers.
-				return *source_geometry == *other_revision.source_geometry &&
+				return *source_geometry.get_const() == *other_revision.source_geometry.get_const() &&
 						reverse_order == other_revision.reverse_order &&
 						GpmlTopologicalSection::Revision::equality(other);
 			}
 
-			GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry;
+			GPlatesUtils::CopyOnWrite<GpmlPropertyDelegate::non_null_ptr_to_const_type> source_geometry;
 			bool reverse_order;
 		};
 

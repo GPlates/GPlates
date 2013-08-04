@@ -135,14 +135,7 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
-		 * Access the GPlatesMaths::PointOnSphere which encodes the geometry of this
-		 * instance.
-		 *
-		 * Note that there is no accessor provided which returns a boost::intrusive_ptr to
-		 * a non-const GPlatesMaths::PointOnSphere.  The GPlatesMaths::PointOnSphere within
-		 * this instance should not be modified directly; to alter the
-		 * GPlatesMaths::PointOnSphere within this instance, set a new value using the
-		 * function @a set_point below.
+		 * Access the GPlatesMaths::PointOnSphere which encodes the geometry of this instance.
 		 */
 		const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere>
 		get_point() const
@@ -270,13 +263,6 @@ namespace GPlatesPropertyValues
 				original_longitude(original_longitude_)
 			{  }
 
-			Revision(
-					const Revision &other) :
-				point(other.point->clone_as_point()),
-				gml_property(other.gml_property),
-				original_longitude(other.original_longitude)
-			{  }
-
 			virtual
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
 			clone() const
@@ -289,7 +275,7 @@ namespace GPlatesPropertyValues
 			equality(
 					const GPlatesModel::PropertyValue::Revision &other) const
 			{
-				const Revision &other_revision = static_cast<const Revision &>(other);
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return *point == *other_revision.point &&
 						gml_property == other_revision.gml_property &&
@@ -297,6 +283,7 @@ namespace GPlatesPropertyValues
 						GPlatesModel::PropertyValue::Revision::equality(other);
 			}
 
+			// PointOnSphere is inherently immutable so we can share it across revisions.
 			GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> point;
 			GmlProperty gml_property;
 

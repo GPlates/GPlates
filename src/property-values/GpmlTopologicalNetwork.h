@@ -39,6 +39,7 @@
 
 #include "property-values/GpmlPropertyDelegate.h"
 
+#include "utils/CopyOnWrite.h"
 #include "utils/QtStreamable.h"
 
 
@@ -65,8 +66,67 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalNetwork> non_null_ptr_to_const_type;
 
 
+		/**
+		 * Topological reference to a boundary section of the network.
+		 */
+		class BoundarySection :
+				// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+				public GPlatesUtils::QtStreamable<BoundarySection>,
+				public boost::equality_comparable<BoundarySection>
+		{
+		public:
+
+			/**
+			 * BoundarySection has value semantics where each @a BoundarySection instance has its own state.
+			 * So if you create a copy and modify the copy's state then it will not modify the state
+			 * of the original object.
+			 *
+			 * The constructor first clones the property delegate since copy-on-write is used to allow
+			 * multiple @a BoundarySection objects to share the same state (until the state is modified).
+			 */
+			explicit
+			BoundarySection(
+					const GpmlTopologicalSection::non_null_ptr_type &source_section) :
+				d_source_section(source_section)
+			{  }
+
+			/**
+			 * Returns the 'const' source section.
+			 */
+			GpmlTopologicalSection::non_null_ptr_to_const_type
+			get_source_section() const
+			{
+				return d_source_section.get();
+			}
+
+			/**
+			 * Returns the 'non-const' source section.
+			 */
+			GpmlTopologicalSection::non_null_ptr_type
+			get_source_section()
+			{
+				return d_source_section.get();
+			}
+
+			/**
+			 * Value equality comparison operator.
+			 *
+			 * Inequality provided by boost equality_comparable.
+			 */
+			bool
+			operator==(
+					const BoundarySection &other) const
+			{
+				return *d_source_section.get_const() == *other.d_source_section.get_const();
+			}
+
+		private:
+
+			GPlatesUtils::CopyOnWrite<GpmlTopologicalSection::non_null_ptr_type> d_source_section;
+		};
+
 		//! Typedef for a sequence of boundary sections.
-		typedef std::vector<GpmlTopologicalSection::non_null_ptr_to_const_type> boundary_sections_seq_type;
+		typedef std::vector<BoundarySection> boundary_sections_seq_type;
 
 
 		/**
@@ -79,30 +139,37 @@ namespace GPlatesPropertyValues
 		{
 		public:
 
+			/**
+			 * Interior has value semantics where each @a Interior instance has its own state.
+			 * So if you create a copy and modify the copy's state then it will not modify the state
+			 * of the original object.
+			 *
+			 * The constructor first clones the property delegate since copy-on-write is used to allow
+			 * multiple @a Interior objects to share the same state (until the state is modified).
+			 */
 			explicit
 			Interior(
-					const GpmlPropertyDelegate::non_null_ptr_to_const_type &source_geometry) :
+					const GpmlPropertyDelegate::non_null_ptr_type &source_geometry) :
 				d_source_geometry(source_geometry)
 			{  }
 
 			/**
-			 * Returns the source geometry.
-			 *
-			 * The returned property delegate is a 'const' object so that it cannot be modified and
-			 * bypass the revisioning system.
+			 * Returns the 'const' source geometry.
 			 */
 			GpmlPropertyDelegate::non_null_ptr_to_const_type
 			get_source_geometry() const
 			{
-				return d_source_geometry;
+				return d_source_geometry.get();
 			}
 
-			const Interior
-			clone() const
+			/**
+			 * Returns the 'non-const' source geometry.
+			 */
+			GpmlPropertyDelegate::non_null_ptr_type
+			get_source_geometry()
 			{
-				return Interior(d_source_geometry->clone());
+				return d_source_geometry.get();
 			}
-
 
 			/**
 			 * Value equality comparison operator.
@@ -113,12 +180,12 @@ namespace GPlatesPropertyValues
 			operator==(
 					const Interior &other) const
 			{
-				return *d_source_geometry == *other.d_source_geometry;
+				return *d_source_geometry.get_const() == *other.d_source_geometry.get_const();
 			}
 
 		private:
 
-			GpmlPropertyDelegate::non_null_ptr_to_const_type d_source_geometry;
+			GPlatesUtils::CopyOnWrite<GpmlPropertyDelegate::non_null_ptr_type> d_source_geometry;
 		};
 
 		//! Typedef for a sequence of interior geometries.
@@ -171,8 +238,12 @@ namespace GPlatesPropertyValues
 		/**
 		 * Returns the boundary sections.
 		 *
-		 * The returned sections are each 'const' objects so that they cannot be modified and
-		 * bypass the revisioning system.
+		 * To modify any boundary sections:
+		 * (1) make additions/removals/modifications to a copy of the returned vector, and
+		 * (2) use @a set_boundary_sections to set them.
+		 *
+		 * The returned boundary sections implement copy-on-write to promote resource sharing (until write)
+		 * and to ensure our internal state cannot be modified and bypass the revisioning system.
 		 */
 		const boundary_sections_seq_type &
 		get_boundary_sections() const
@@ -183,21 +254,20 @@ namespace GPlatesPropertyValues
 		/**
 		 * Set the sequence of boundary sections.
 		 */
-		template <typename BoundaryTopologicalSectionsIterator>
 		void
 		set_boundary_sections(
-				const BoundaryTopologicalSectionsIterator &boundary_sections_begin_,
-				const BoundaryTopologicalSectionsIterator &boundary_sections_end_)
-		{
-			MutableRevisionHandler revision_handler(this);
-			revision_handler.get_mutable_revision<Revision>()
-					.set_boundary_sections(boundary_sections_begin_, boundary_sections_end_);
-			revision_handler.handle_revision_modification();
-		}
+				const boundary_sections_seq_type &boundary_sections);
 
 
 		/**
 		 * Returns the interior geometries.
+		 *
+		 * To modify any interior geometries:
+		 * (1) make additions/removals/modifications to a copy of the returned vector, and
+		 * (2) use @a set_interior_geometries to set them.
+		 *
+		 * The returned interior geometries implement copy-on-write to promote resource sharing (until write)
+		 * and to ensure our internal state cannot be modified and bypass the revisioning system.
 		 */
 		const interior_geometry_seq_type &
 		get_interior_geometries() const
@@ -208,17 +278,9 @@ namespace GPlatesPropertyValues
 		/**
 		 * Set the sequence of interior geometries.
 		 */
-		template <typename InteriorGeometriesIterator>
 		void
 		set_interior_geometries(
-				const InteriorGeometriesIterator &interior_geometries_begin_,
-				const InteriorGeometriesIterator &interior_geometries_end_)
-		{
-			MutableRevisionHandler revision_handler(this);
-			revision_handler.get_mutable_revision<Revision>()
-					.set_interior_geometries(interior_geometries_begin_, interior_geometries_end_);
-			revision_handler.handle_revision_modification();
-		}
+				const interior_geometry_seq_type &interior_geometries);
 
 
 		/**
@@ -321,67 +383,19 @@ namespace GPlatesPropertyValues
 			template <typename BoundaryTopologicalSectionsIterator>
 			Revision(
 					const BoundaryTopologicalSectionsIterator &boundary_sections_begin_,
-					const BoundaryTopologicalSectionsIterator &boundary_sections_end_)
-			{
-				set_boundary_sections(boundary_sections_begin_, boundary_sections_end_);
-			}
+					const BoundaryTopologicalSectionsIterator &boundary_sections_end_) :
+				boundary_sections(boundary_sections_begin_, boundary_sections_end_)
+			{  }
 
 			template <typename BoundaryTopologicalSectionsIterator, typename InteriorGeometriesIterator>
 			Revision(
 					const BoundaryTopologicalSectionsIterator &boundary_sections_begin_,
 					const BoundaryTopologicalSectionsIterator &boundary_sections_end_,
 					const InteriorGeometriesIterator &interior_geometries_begin_,
-					const InteriorGeometriesIterator &interior_geometries_end_)
-			{
-				set_boundary_sections(boundary_sections_begin_, boundary_sections_end_);
-				set_interior_geometries(interior_geometries_begin_, interior_geometries_end_);
-			}
-
-			// This constructor used only by @a clone_for_bubble_up_modification - it does not clone.
-			explicit
-			Revision(
-					const boundary_sections_seq_type &boundary_sections_,
-					const interior_geometry_seq_type &interior_geometries_) :
-				boundary_sections(boundary_sections_),
-				interior_geometries(interior_geometries_)
+					const InteriorGeometriesIterator &interior_geometries_end_) :
+				boundary_sections(boundary_sections_begin_, boundary_sections_end_),
+				interior_geometries(interior_geometries_begin_, interior_geometries_end_)
 			{  }
-
-			Revision(
-					const Revision &other);
-
-			// To keep our revision state immutable we clone the sections so that the client
-			// can no longer modify them indirectly...
-			template <typename BoundaryTopologicalSectionsIterator>
-			void
-			set_boundary_sections(
-					const BoundaryTopologicalSectionsIterator &boundary_sections_begin_,
-					const BoundaryTopologicalSectionsIterator &boundary_sections_end_) :
-			{
-				boundary_sections.clear();
-				BoundaryTopologicalSectionsIterator boundary_sections_iter_ = boundary_sections_begin_;
-				for ( ; boundary_sections_iter_ != boundary_sections_end_; ++boundary_sections_iter_)
-				{
-					GpmlTopologicalSection::non_null_ptr_to_const_type boundary_section_ = *boundary_sections_iter_;
-					boundary_sections.push_back(boundary_section_->clone());
-				}
-			}
-
-			// To keep our revision state immutable we clone the sections so that the client
-			// can no longer modify them indirectly...
-			template <typename InteriorGeometriesIterator>
-			void
-			set_interior_geometries(
-					const InteriorGeometriesIterator &interior_geometries_begin_,
-					const InteriorGeometriesIterator &interior_geometries_end_)
-			{
-				interior_geometries.clear();
-				InteriorGeometriesIterator interior_geometries_iter_ = interior_geometries_begin_;
-				for ( ; interior_geometries_iter_ != interior_geometries_end_; ++interior_geometries_iter_)
-				{
-					const Interior &interior_geometry_ = *interior_geometries_iter_;
-					interior_geometries.push_back(interior_geometry_.clone());
-				}
-			}
 
 			virtual
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
@@ -390,13 +404,7 @@ namespace GPlatesPropertyValues
 				return non_null_ptr_type(new Revision(*this));
 			}
 
-			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone_for_bubble_up_modification() const
-			{
-				// Don't clone the boundary sections and interior geometries - share them instead.
-				return non_null_ptr_type(new Revision(boundary_sections, interior_geometries));
-			}
+			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
 
 			virtual
 			bool
@@ -418,6 +426,12 @@ namespace GPlatesPropertyValues
 
 	};
 
+
+	// operator<< for GpmlTopologicalNetwork::BoundarySection.
+	std::ostream &
+	operator<<(
+			std::ostream &os,
+			const GpmlTopologicalNetwork::BoundarySection &topological_network_boundary_section);
 
 	// operator<< for GpmlTopologicalNetwork::Interior.
 	std::ostream &

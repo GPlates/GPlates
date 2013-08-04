@@ -350,7 +350,7 @@ namespace GPlatesModel
 				PropertyValueIterator values_iter = values_begin_;
 				for ( ; values_iter != values_end_; ++values_iter)
 				{
-					const PropertyValue::non_null_ptr_type &property_value = *values_iter;
+					PropertyValue::non_null_ptr_type property_value = *values_iter;
 
 					// A revisioned reference to the property value enables us to switch to its
 					// revision later (eg, during undo/redo).

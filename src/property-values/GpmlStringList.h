@@ -288,11 +288,6 @@ namespace GPlatesPropertyValues
 				swap_strings(strings_to_swap_);
 			}
 
-			Revision(
-					const Revision &other) :
-				strings(other.strings)
-			{  }
-
 			void
 			swap_strings(
 					string_list_type &strings_to_swap_)

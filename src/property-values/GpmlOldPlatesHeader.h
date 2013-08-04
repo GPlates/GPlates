@@ -423,23 +423,6 @@ namespace GPlatesPropertyValues
 				number_of_points(number_of_points_)
 			{  }
 
-			Revision(
-					const Revision &other) :
-				region_number(other.region_number),
-				reference_number(other.reference_number),
-				string_number(other.string_number),
-				geographic_description(other.geographic_description),
-				plate_id_number(other.plate_id_number),
-				age_of_appearance(other.age_of_appearance),
-				age_of_disappearance(other.age_of_disappearance),
-				data_type_code(other.data_type_code),
-				data_type_code_number(other.data_type_code_number),
-				data_type_code_number_additional(other.data_type_code_number_additional),
-				conjugate_plate_id_number(other.conjugate_plate_id_number),
-				colour_code(other.colour_code),
-				number_of_points(other.number_of_points)
-			{  }
-
 			virtual
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
 			clone() const

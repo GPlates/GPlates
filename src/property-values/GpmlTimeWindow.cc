@@ -30,13 +30,13 @@
 #include "GpmlTimeWindow.h"
 
 
-const GPlatesPropertyValues::GpmlTimeWindow
-GPlatesPropertyValues::GpmlTimeWindow::clone() const
+bool
+GPlatesPropertyValues::GpmlTimeWindow::operator==(
+		const GpmlTimeWindow &other) const
 {
-	return GpmlTimeWindow(
-		d_time_dependent_value->clone(),
-		d_valid_time->clone(),
-		d_value_type);
+	return *d_time_dependent_value.get_const() == *other.d_time_dependent_value.get_const() &&
+		*d_valid_time.get_const() == *other.d_valid_time.get_const() &&
+		d_value_type == other.d_value_type;
 }
 
 
@@ -47,14 +47,3 @@ GPlatesPropertyValues::operator<<(
 {
 	return os << *time_window.get_time_dependent_value();
 }
-
-
-bool
-GPlatesPropertyValues::GpmlTimeWindow::operator==(
-		const GpmlTimeWindow &other) const
-{
-	return *d_time_dependent_value == *other.d_time_dependent_value &&
-		*d_valid_time == *other.d_valid_time &&
-		d_value_type == other.d_value_type;
-}
-

@@ -194,7 +194,7 @@ bool
 GPlatesModel::TopLevelPropertyInline::Revision::equality(
 		const TopLevelProperty::Revision &other) const
 {
-	const Revision &other_revision = static_cast<const Revision &>(other);
+	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 	if (values.size() != other_revision.values.size())
 	{

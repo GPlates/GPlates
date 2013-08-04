@@ -177,11 +177,6 @@ namespace GPlatesPropertyValues
 				value(value_)
 			{  }
 
-			Revision(
-					const Revision &other) :
-				value(other.value)
-			{  }
-
 			virtual
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
 			clone() const

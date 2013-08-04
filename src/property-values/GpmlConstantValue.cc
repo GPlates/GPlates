@@ -35,9 +35,7 @@ GPlatesPropertyValues::GpmlConstantValue::set_value(
 		GPlatesModel::PropertyValue::non_null_ptr_to_const_type v)
 {
 	MutableRevisionHandler revision_handler(this);
-	// To keep our revision state immutable we clone the property value so that the client
-	// can no longer modify it indirectly...
-	revision_handler.get_mutable_revision<Revision>().value = v->clone();
+	revision_handler.get_mutable_revision<Revision>().value = v;
 	revision_handler.handle_revision_modification();
 }
 
@@ -56,5 +54,5 @@ std::ostream &
 GPlatesPropertyValues::GpmlConstantValue::print_to(
 		std::ostream &os) const
 {
-	return os << *get_current_revision<Revision>().value;
+	return os << *get_current_revision<Revision>().value.get_const();
 }

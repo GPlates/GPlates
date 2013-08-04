@@ -147,7 +147,7 @@ namespace GPlatesPropertyValues
 			equality(
 					const GPlatesModel::PropertyValue::Revision &other) const
 			{
-				const Revision &other_revision = static_cast<const Revision &>(other);
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return value_type == other_revision.value_type &&
 					GPlatesModel::PropertyValue::Revision::equality(other);
@@ -161,11 +161,6 @@ namespace GPlatesPropertyValues
 			Revision(
 					const StructuralType &value_type_) :
 				value_type(value_type_)
-			{  }
-
-			Revision(
-					const Revision &other) :
-				value_type(other.value_type)
 			{  }
 		};
 

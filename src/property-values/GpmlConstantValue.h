@@ -29,9 +29,13 @@
 #define GPLATES_PROPERTYVALUES_GPMLCONSTANTVALUE_H
 
 #include "StructuralType.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
+
+#include "utils/CopyOnWrite.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -80,13 +84,13 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
-		 * The returned property value is 'const' so that it cannot be modified and
-		 * bypass the revisioning system.
+		 * Returns the 'const' property value - which is 'const' so that it cannot be
+		 * modified and bypass the revisioning system.
 		 */
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
 		get_value() const
 		{
-			return get_current_revision<Revision>().value;
+			return get_current_revision<Revision>().value.get();
 		}
 
 		/**
@@ -165,10 +169,8 @@ namespace GPlatesPropertyValues
 		GpmlConstantValue(
 				GPlatesModel::PropertyValue::non_null_ptr_to_const_type value_,
 				const StructuralType &value_type_,
-				const GPlatesUtils::UnicodeString &description_):
-			// To keep our revision state immutable we clone the property value so that the client
-			// can no longer modify it indirectly...
-			PropertyValue(Revision::non_null_ptr_type(new Revision(value_->clone(), description_))),
+				const GPlatesUtils::UnicodeString &description_) :
+			PropertyValue(Revision::non_null_ptr_type(new Revision(value_, description_))),
 			d_value_type(value_type_)
 		{  }
 
@@ -217,12 +219,6 @@ namespace GPlatesPropertyValues
 				description(description_)
 			{  }
 
-			Revision(
-					const Revision &other) :
-				value(other.value->clone()),
-				description(other.description)
-			{  }
-
 			virtual
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
 			clone() const
@@ -230,13 +226,7 @@ namespace GPlatesPropertyValues
 				return non_null_ptr_type(new Revision(*this));
 			}
 
-			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone_for_bubble_up_modification() const
-			{
-				// Don't clone the property value - share it instead.
-				return non_null_ptr_type(new Revision(value, description));
-			}
+			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
 
 			virtual
 			bool
@@ -246,12 +236,12 @@ namespace GPlatesPropertyValues
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				// Note that we compare the property value contents (and not pointers).
-				return *value == *other_revision.value &&
+				return *value.get_const() == *other_revision.value.get_const() &&
 						description == other_revision.description &&
 						GPlatesModel::PropertyValue::Revision::equality(other);
 			}
 
-			GPlatesModel::PropertyValue::non_null_ptr_to_const_type value;
+			GPlatesUtils::CopyOnWrite<GPlatesModel::PropertyValue::non_null_ptr_to_const_type> value;
 			GPlatesUtils::UnicodeString description;
 		};
 

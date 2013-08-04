@@ -181,11 +181,6 @@ namespace GPlatesPropertyValues
 				value(value_)
 			{  }
 
-			Revision(
-					const Revision &other) :
-				value(other.value)
-			{  }
-
 			virtual
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
 			clone() const
@@ -198,7 +193,7 @@ namespace GPlatesPropertyValues
 			equality(
 					const GPlatesModel::PropertyValue::Revision &other) const
 			{
-				const Revision &other_revision = static_cast<const Revision &>(other);
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return value == other_revision.value &&
 					GPlatesModel::PropertyValue::Revision::equality(other);

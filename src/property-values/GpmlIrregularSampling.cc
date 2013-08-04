@@ -35,37 +35,12 @@
 #include "model/NotificationGuard.h"
 
 
-std::vector<GPlatesPropertyValues::GpmlTimeSample>
-GPlatesPropertyValues::GpmlIrregularSampling::get_time_samples() const
-{
-	// To keep our revision state immutable we clone the time samples so that the client
-	// is unable modify them indirectly. If we didn't clone the time samples then the client
-	// could copy the returned vector of time samples and then get access to pointers to 'non-const'
-	// property values (from a GpmlTimeSample) and then modify our internal immutable revision state.
-	// And returning 'const' GpmlTimeSamples doesn't help us here - so cloning is the only solution.
-	std::vector<GpmlTimeSample> time_samples;
-
-	const Revision &revision = get_current_revision<Revision>();
-
-	// The copy constructor of GpmlTimeSample does *not* clone its members,
-	// instead it has a 'clone()' member function for that...
-	BOOST_FOREACH(const GpmlTimeSample &time_sample, revision.time_samples)
-	{
-		time_samples.push_back(time_sample.clone());
-	}
-
-	return time_samples;
-}
-
-
 void
 GPlatesPropertyValues::GpmlIrregularSampling::set_time_samples(
 		const std::vector<GpmlTimeSample> &time_samples)
 {
 	MutableRevisionHandler revision_handler(this);
-	// To keep our revision state immutable we clone the time samples so that the client
-	// can no longer modify them indirectly...
-	revision_handler.get_mutable_revision<Revision>().set_cloned_time_samples(time_samples);
+	revision_handler.get_mutable_revision<Revision>().time_samples = time_samples;
 	revision_handler.handle_revision_modification();
 }
 
@@ -75,9 +50,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_interpolation_function(
 		GpmlInterpolationFunction::maybe_null_ptr_to_const_type interpolation_function)
 {
 	MutableRevisionHandler revision_handler(this);
-	// To keep our revision state immutable we clone the interpolation function so that the client
-	// can no longer modify it indirectly...
-	revision_handler.get_mutable_revision<Revision>().set_cloned_interpolation_function(interpolation_function);
+	revision_handler.get_mutable_revision<Revision>().interpolation_function = interpolation_function;
 	revision_handler.handle_revision_modification();
 }
 
@@ -181,25 +154,18 @@ std::ostream &
 GPlatesPropertyValues::GpmlIrregularSampling::print_to(
 		std::ostream &os) const
 {
-	// FIXME: Implement properly when actually needed for debugging.
-	return os << "{ GpmlIrregularSampling }";
-}
+	const std::vector<GpmlTimeSample> &time_samples = get_time_samples();
 
+	os << "[ ";
 
-GPlatesPropertyValues::GpmlIrregularSampling::Revision::Revision(
-		const Revision &other)
-{
-	// The copy constructor of GpmlTimeSample does *not* clone its members,
-	// instead it has a 'clone()' member function for that...
-	BOOST_FOREACH(const GpmlTimeSample &other_time_sample, other.time_samples)
+	for (std::vector<GpmlTimeSample>::const_iterator time_samples_iter = time_samples.begin();
+		time_samples_iter != time_samples.end();
+		++time_samples_iter)
 	{
-		time_samples.push_back(other_time_sample.clone());
+		os << *time_samples_iter;
 	}
 
-	if (other.interpolation_function)
-	{
-		interpolation_function = other.interpolation_function->clone().get();
-	}
+	return os << " ]";
 }
 
 
@@ -210,6 +176,6 @@ GPlatesPropertyValues::GpmlIrregularSampling::Revision::equality(
 	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 	return time_samples == other_revision.time_samples &&
-			boost::equal_pointees(interpolation_function, other_revision.interpolation_function) &&
+			boost::equal_pointees(interpolation_function.get_const(), other_revision.interpolation_function.get_const()) &&
 			GPlatesModel::PropertyValue::Revision::equality(other);
 }

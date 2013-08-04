@@ -29,8 +29,12 @@
 #define GPLATES_PROPERTYVALUES_GMLTIMEPERIOD_H
 
 #include "GmlTimeInstant.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/PropertyValue.h"
+
+#include "utils/CopyOnWrite.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -103,7 +107,7 @@ namespace GPlatesPropertyValues
 		const GmlTimeInstant::non_null_ptr_to_const_type
 		get_begin() const
 		{
-			return get_current_revision<Revision>().begin;
+			return get_current_revision<Revision>().begin.get();
 		}
 
 		/**
@@ -128,7 +132,7 @@ namespace GPlatesPropertyValues
 		const GmlTimeInstant::non_null_ptr_to_const_type
 		get_end() const
 		{
-			return get_current_revision<Revision>().end;
+			return get_current_revision<Revision>().end.get();
 		}
 
 		/**
@@ -249,20 +253,11 @@ namespace GPlatesPropertyValues
 		struct Revision :
 				public GPlatesModel::PropertyValue::Revision
 		{
-			// To keep our revision state immutable we clone the time instants so that the client
-			// can no longer modify them indirectly...
 			Revision(
 					const GmlTimeInstant::non_null_ptr_to_const_type &begin_,
-					const GmlTimeInstant::non_null_ptr_to_const_type &end_,
-					bool deep_copy = true) :
-				begin(deep_copy ? GmlTimeInstant::non_null_ptr_to_const_type(begin_->clone()) : begin_),
-				end(deep_copy ? GmlTimeInstant::non_null_ptr_to_const_type(end_->clone()) : end_)
-			{  }
-
-			Revision(
-					const Revision &other) :
-				begin(other.begin->clone()),
-				end(other.end->clone())
+					const GmlTimeInstant::non_null_ptr_to_const_type &end_) :
+				begin(begin_),
+				end(end_)
 			{  }
 
 			virtual
@@ -272,13 +267,7 @@ namespace GPlatesPropertyValues
 				return non_null_ptr_type(new Revision(*this));
 			}
 
-			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone_for_bubble_up_modification() const
-			{
-				// Don't clone the time instants - share them instead.
-				return non_null_ptr_type(new Revision(begin, end, false/*deep_copy*/));
-			}
+			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
 
 			virtual
 			bool
@@ -287,13 +276,13 @@ namespace GPlatesPropertyValues
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
-				return *begin == *other_revision.begin &&
-						*end == *other_revision.end &&
+				return *begin.get_const() == *other_revision.begin.get_const() &&
+						*end.get_const() == *other_revision.end.get_const() &&
 						GPlatesModel::PropertyValue::Revision::equality(other);
 			}
 
-			GmlTimeInstant::non_null_ptr_to_const_type begin;
-			GmlTimeInstant::non_null_ptr_to_const_type end;
+			GPlatesUtils::CopyOnWrite<GmlTimeInstant::non_null_ptr_to_const_type> begin;
+			GPlatesUtils::CopyOnWrite<GmlTimeInstant::non_null_ptr_to_const_type> end;
 		};
 
 

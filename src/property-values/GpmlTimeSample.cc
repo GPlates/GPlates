@@ -25,37 +25,28 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <iostream>
 #include <boost/utility/compare_pointees.hpp>
 
 #include "GpmlTimeSample.h"
-
-
-const GPlatesPropertyValues::GpmlTimeSample
-GPlatesPropertyValues::GpmlTimeSample::clone() const
-{
-	boost::intrusive_ptr<XsString> cloned_description;
-	if (d_description)
-	{
-		cloned_description.reset(d_description.get()->clone().get());
-	}
-
-	return GpmlTimeSample(
-			d_value->clone(),
-			d_valid_time->clone(),
-			cloned_description,
-			d_value_type,
-			d_is_disabled);
-}
 
 
 bool
 GPlatesPropertyValues::GpmlTimeSample::operator==(
 		const GpmlTimeSample &other) const
 {
-	return *d_value == *other.d_value &&
-		*d_valid_time == *other.d_valid_time &&
-		boost::equal_pointees(d_description, other.d_description) &&
+	return *d_value.get_const() == *other.d_value.get_const() &&
+		*d_valid_time.get_const() == *other.d_valid_time.get_const() &&
+		boost::equal_pointees(d_description.get_const(), other.d_description.get_const()) &&
 		d_value_type == other.d_value_type &&
 		d_is_disabled == other.d_is_disabled;
 }
 
+
+std::ostream &
+GPlatesPropertyValues::operator<<(
+		std::ostream &os,
+		const GpmlTimeSample &time_sample)
+{
+	return os << *time_sample.get_value();
+}

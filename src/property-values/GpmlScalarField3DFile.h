@@ -34,6 +34,8 @@
 
 #include "model/PropertyValue.h"
 
+#include "utils/CopyOnWrite.h"
+
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -85,10 +87,14 @@ namespace GPlatesPropertyValues
 			return GPlatesUtils::dynamic_pointer_cast<GpmlScalarField3DFile>(clone_impl());
 		}
 
-		const file_name_type &
+		/**
+		 * Returns the 'const' file name - which is 'const' so that it cannot be
+		 * modified and bypass the revisioning system.
+		 */
+		file_name_type
 		get_file_name() const
 		{
-			return get_current_revision<Revision>().filename;
+			return get_current_revision<Revision>().filename.get();
 		}
 
 		void
@@ -175,18 +181,10 @@ namespace GPlatesPropertyValues
 		struct Revision :
 				public GPlatesModel::PropertyValue::Revision
 		{
-			// To keep our revision state immutable we clone the filename property value so that
-			// the client can no longer modify it indirectly...
 			explicit
 			Revision(
-					const file_name_type &filename_,
-					bool deep_copy = true) :
-				filename(deep_copy ? file_name_type(filename_->clone()) : filename_)
-			{  }
-
-			Revision(
-					const Revision &other) :
-				filename(other.filename->clone())
+					const file_name_type &filename_) :
+				filename(filename_)
 			{  }
 
 			virtual
@@ -196,13 +194,7 @@ namespace GPlatesPropertyValues
 				return non_null_ptr_type(new Revision(*this));
 			}
 
-			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone_for_bubble_up_modification() const
-			{
-				// Don't clone the filename property value - share them instead.
-				return non_null_ptr_type(new Revision(filename, false/*deep_copy*/));
-			}
+			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
 
 			virtual
 			bool
@@ -211,11 +203,11 @@ namespace GPlatesPropertyValues
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
-				return *filename == *other_revision.filename &&
+				return *filename.get_const() == *other_revision.filename.get_const() &&
 					GPlatesModel::PropertyValue::Revision::equality(other);
 			}
 
-			file_name_type filename;
+			GPlatesUtils::CopyOnWrite<file_name_type> filename;
 		};
 
 

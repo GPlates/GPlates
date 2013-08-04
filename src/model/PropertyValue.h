@@ -181,6 +181,15 @@ namespace GPlatesModel
 			~Revision()
 			{  }
 
+			//! Default constructor - is needed since no implicit constructor generated because copy constructor defined.
+			Revision()
+			{  }
+
+			//! Copy constructor - calls default constructor of ReferenceCount (non-copyable) base class.
+			Revision(
+					const Revision &other)
+			{  }
+
 			/**
 			 * Create a duplicate of this Revision instance, including a recursive copy
 			 * of any property values this instance might contain.
@@ -192,7 +201,10 @@ namespace GPlatesModel
 			 */
 			virtual
 			non_null_ptr_type
-			clone() const = 0;
+			clone() const
+			{
+				return non_null_ptr_type(new Revision());
+			}
 
 
 			/**

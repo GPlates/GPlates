@@ -84,19 +84,21 @@ namespace GPlatesPropertyValues
 		/**
 		 * Returns the time windows.
 		 *
-		 * The returned time windows are clones of the internal revisioned state so that the
-		 * internal state cannot be modified and bypass the revisioning system.
-		 * Just returning 'const' GpmlTimeWindow references is not sufficient protection.
-		 *
 		 * To modify any time windows:
-		 * (1) make additions/removals/modifications to the returned vector, and
+		 * (1) make additions/removals/modifications to a copy of the returned vector, and
 		 * (2) use @a set_time_windows to set them.
+		 *
+		 * The returned time samples implement copy-on-write to promote resource sharing (until write)
+		 * and to ensure our internal state cannot be modified and bypass the revisioning system.
 		 */
-		std::vector<GpmlTimeWindow>
-		get_time_windows() const;
+		const std::vector<GpmlTimeWindow> &
+		get_time_windows() const
+		{
+			return get_current_revision<Revision>().time_windows;
+		}
 
 		/**
-		 * Sets the internal time windows to clones of those in @a time_windows.
+		 * Sets the internal time windows.
 		 */
 		void
 		set_time_windows(
@@ -205,27 +207,9 @@ namespace GPlatesPropertyValues
 		{
 			explicit
 			Revision(
-					const std::vector<GpmlTimeWindow> &time_windows_,
-					bool deep_copy = true)
-			{
-				if (deep_copy)
-				{
-					set_cloned_time_windows(time_windows_);
-				}
-				else
-				{
-					time_windows = time_windows_;
-				}
-			}
-
-			Revision(
-					const Revision &other);
-
-			// To keep our revision state immutable we clone the time windows so that the client
-			// can no longer modify them indirectly...
-			void
-			set_cloned_time_windows(
-					const std::vector<GpmlTimeWindow> &time_windows_);
+					const std::vector<GpmlTimeWindow> &time_windows_) :
+				time_windows(time_windows_)
+			{  }
 
 			virtual
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
@@ -234,19 +218,18 @@ namespace GPlatesPropertyValues
 				return non_null_ptr_type(new Revision(*this));
 			}
 
-			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone_for_bubble_up_modification() const
-			{
-				// Don't clone the property values in the time samples and
-				// don't clone the interpolation function property value.
-				return non_null_ptr_type(new Revision(time_windows, false/*deep_copy*/));
-			}
+			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const;
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return time_windows == other_revision.time_windows &&
+					GPlatesModel::PropertyValue::Revision::equality(other);
+			}
 
 			std::vector<GpmlTimeWindow> time_windows;
 		};

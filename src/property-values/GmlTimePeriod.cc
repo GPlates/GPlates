@@ -35,9 +35,7 @@ GPlatesPropertyValues::GmlTimePeriod::set_begin(
 		GmlTimeInstant::non_null_ptr_to_const_type begin)
 {
 	MutableRevisionHandler revision_handler(this);
-	// To keep our revision state immutable we clone the time instant so that the client
-	// can no longer modify it indirectly...
-	revision_handler.get_mutable_revision<Revision>().begin = begin->clone();
+	revision_handler.get_mutable_revision<Revision>().begin = begin;
 	revision_handler.handle_revision_modification();
 }
 
@@ -47,9 +45,7 @@ GPlatesPropertyValues::GmlTimePeriod::set_end(
 		GmlTimeInstant::non_null_ptr_to_const_type end)
 {
 	MutableRevisionHandler revision_handler(this);
-	// To keep our revision state immutable we clone the time instant so that the client
-	// can no longer modify it indirectly...
-	revision_handler.get_mutable_revision<Revision>().end = end->clone();
+	revision_handler.get_mutable_revision<Revision>().end = end;
 	revision_handler.handle_revision_modification();
 }
 

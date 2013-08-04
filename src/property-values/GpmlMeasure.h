@@ -207,12 +207,6 @@ namespace GPlatesPropertyValues
 				quantity_xml_attributes(quantity_xml_attributes_)
 			{  }
 
-			Revision(
-					const Revision &other) :
-				quantity(other.quantity),
-				quantity_xml_attributes(other.quantity_xml_attributes)
-			{  }
-
 			virtual
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
 			clone() const
@@ -225,7 +219,7 @@ namespace GPlatesPropertyValues
 			equality(
 					const GPlatesModel::PropertyValue::Revision &other) const
 			{
-				const Revision &other_revision = static_cast<const Revision &>(other);
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return quantity == other_revision.quantity &&
 						quantity_xml_attributes == other_revision.quantity_xml_attributes &&

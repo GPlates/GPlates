@@ -265,11 +265,6 @@ namespace GPlatesPropertyValues
 				finite_rotation(finite_rotation_)
 			{  }
 
-			Revision(
-					const Revision &other) :
-				finite_rotation(other.finite_rotation)
-			{  }
-
 			virtual
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
 			clone() const
@@ -282,7 +277,7 @@ namespace GPlatesPropertyValues
 			equality(
 					const GPlatesModel::PropertyValue::Revision &other) const
 			{
-				const Revision &other_revision = static_cast<const Revision &>(other);
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return finite_rotation == other_revision.finite_rotation &&
 					GPlatesModel::PropertyValue::Revision::equality(other);

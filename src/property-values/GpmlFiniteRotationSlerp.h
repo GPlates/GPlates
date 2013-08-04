@@ -109,7 +109,9 @@ namespace GPlatesPropertyValues {
 		explicit
 		GpmlFiniteRotationSlerp(
 				const StructuralType &value_type_):
-			GpmlInterpolationFunction(new GpmlInterpolationFunction::Revision(value_type_))
+			GpmlInterpolationFunction(
+					GPlatesModel::PropertyValue::Revision::non_null_ptr_type(
+							new GpmlInterpolationFunction::Revision(value_type_)))
 		{  }
 
 		// This constructor should not be public, because we don't want to allow

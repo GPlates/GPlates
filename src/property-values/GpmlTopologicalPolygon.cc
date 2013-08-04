@@ -32,6 +32,16 @@
 #include "GpmlTopologicalPolygon.h"
 
 
+void
+GPlatesPropertyValues::GpmlTopologicalPolygon::set_exterior_sections(
+		const sections_seq_type &exterior_sections)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().exterior_sections = exterior_sections;
+	revision_handler.handle_revision_modification();
+}
+
+
 std::ostream &
 GPlatesPropertyValues::GpmlTopologicalPolygon::print_to(
 		std::ostream &os) const
@@ -43,23 +53,10 @@ GPlatesPropertyValues::GpmlTopologicalPolygon::print_to(
 	sections_seq_type::const_iterator exterior_sections_end = exterior_sections.end();
 	for ( ; exterior_sections_iter != exterior_sections_end; ++exterior_sections_iter)
 	{
-		os << **exterior_sections_iter;
+		os << *exterior_sections_iter;
 	}
 
 	return os << " ]";
-}
-
-
-GPlatesPropertyValues::GpmlTopologicalPolygon::Revision::Revision(
-		const Revision &other)
-{
-	// Clone the exterior sections.
-	BOOST_FOREACH(
-			const GpmlTopologicalSection::non_null_ptr_to_const_type &other_exterior_section,
-			other.exterior_sections)
-	{
-		exterior_sections.push_back(other_exterior_section->clone());
-	}
 }
 
 
@@ -76,12 +73,20 @@ GPlatesPropertyValues::GpmlTopologicalPolygon::Revision::equality(
 
 	for (unsigned int n = 0; n < exterior_sections.size(); ++n)
 	{
-		// Compare PropertyValues, not pointers to PropertyValues...
-		if (*exterior_sections[n] != *other_revision.exterior_sections[n])
+		if (exterior_sections[n] != other_revision.exterior_sections[n])
 		{
 			return false;
 		}
 	}
 
 	return GPlatesModel::PropertyValue::Revision::equality(other);
+}
+
+
+std::ostream &
+GPlatesPropertyValues::operator<<(
+		std::ostream &os,
+		const GpmlTopologicalPolygon::Section &topological_polygon_section)
+{
+	return os << *topological_polygon_section.get_source_section();
 }

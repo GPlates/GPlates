@@ -224,13 +224,6 @@ namespace GPlatesPropertyValues
 				minor_region(minor_region_)
 			{  }
 
-			Revision(
-					const Revision &other) :
-				era(other.era),
-				major_region(other.major_region),
-				minor_region(other.minor_region)
-			{  }
-
 			virtual
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
 			clone() const

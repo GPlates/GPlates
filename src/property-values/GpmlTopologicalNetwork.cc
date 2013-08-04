@@ -29,6 +29,26 @@
 #include "GpmlTopologicalNetwork.h"
 
 
+void
+GPlatesPropertyValues::GpmlTopologicalNetwork::set_boundary_sections(
+		const boundary_sections_seq_type &boundary_sections)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().boundary_sections = boundary_sections;
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GpmlTopologicalNetwork::set_interior_geometries(
+		const interior_geometry_seq_type &interior_geometries)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().interior_geometries = interior_geometries;
+	revision_handler.handle_revision_modification();
+}
+
+
 std::ostream &
 GPlatesPropertyValues::GpmlTopologicalNetwork::print_to(
 		std::ostream &os) const
@@ -42,7 +62,7 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::print_to(
 			boundary_sections_seq_type::const_iterator boundary_sections_end = boundary_sections.end();
 			for ( ; boundary_sections_iter != boundary_sections_end; ++boundary_sections_iter)
 			{
-				os << **boundary_sections_iter;
+				os << *boundary_sections_iter;
 			}
 
 		os << " }, ";
@@ -63,25 +83,6 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::print_to(
 }
 
 
-GPlatesPropertyValues::GpmlTopologicalNetwork::Revision::Revision(
-		const Revision &other)
-{
-	// Clone the boundary sections.
-	BOOST_FOREACH(
-			const GpmlTopologicalSection::non_null_ptr_to_const_type &other_boundary_section,
-			other.boundary_sections)
-	{
-		boundary_sections.push_back(other_boundary_section->clone());
-	}
-
-	// Clone the interior geometries.
-	BOOST_FOREACH(const Interior &other_interior_geometry, other.interior_geometries)
-	{
-		interior_geometries.push_back(other_interior_geometry.clone());
-	}
-}
-
-
 bool
 GPlatesPropertyValues::GpmlTopologicalNetwork::Revision::equality(
 		const GPlatesModel::PropertyValue::Revision &other) const
@@ -96,8 +97,7 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::Revision::equality(
 
 	for (unsigned int n = 0; n < boundary_sections.size(); ++n)
 	{
-		// Compare PropertyValues, not pointers to PropertyValues...
-		if (*boundary_sections[n] != *other_revision.boundary_sections[n])
+		if (boundary_sections[n] != other_revision.boundary_sections[n])
 		{
 			return false;
 		}
@@ -112,6 +112,15 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::Revision::equality(
 	}
 
 	return GPlatesModel::PropertyValue::Revision::equality(other);
+}
+
+
+std::ostream &
+GPlatesPropertyValues::operator<<(
+		std::ostream &os,
+		const GpmlTopologicalNetwork::BoundarySection &topological_network_boundary_section)
+{
+	return os << *topological_network_boundary_section.get_source_section();
 }
 
 

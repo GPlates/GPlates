@@ -27,6 +27,7 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALPOLYGON_H
 #define GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALPOLYGON_H
 
+#include <iosfwd>
 #include <vector>
 #include <boost/intrusive_ptr.hpp>
 
@@ -36,6 +37,8 @@
 
 #include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
+
+#include "utils/CopyOnWrite.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -61,8 +64,67 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalPolygon> non_null_ptr_to_const_type;
 
 
-		//! Typedef for a sequence of boundary sections.
-		typedef std::vector<GpmlTopologicalSection::non_null_ptr_to_const_type> sections_seq_type;
+		/**
+		 * Topological reference to a section of the topological polygon.
+		 */
+		class Section :
+				// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+				public GPlatesUtils::QtStreamable<Section>,
+				public boost::equality_comparable<Section>
+		{
+		public:
+
+			/**
+			 * Section has value semantics where each @a Section instance has its own state.
+			 * So if you create a copy and modify the copy's state then it will not modify the state
+			 * of the original object.
+			 *
+			 * The constructor first clones the property delegate since copy-on-write is used to allow
+			 * multiple @a Section objects to share the same state (until the state is modified).
+			 */
+			explicit
+			Section(
+					const GpmlTopologicalSection::non_null_ptr_type &source_section) :
+				d_source_section(source_section)
+			{  }
+
+			/**
+			 * Returns the 'const' source section.
+			 */
+			GpmlTopologicalSection::non_null_ptr_to_const_type
+			get_source_section() const
+			{
+				return d_source_section.get();
+			}
+
+			/**
+			 * Returns the 'non-const' source section.
+			 */
+			GpmlTopologicalSection::non_null_ptr_type
+			get_source_section()
+			{
+				return d_source_section.get();
+			}
+
+			/**
+			 * Value equality comparison operator.
+			 *
+			 * Inequality provided by boost equality_comparable.
+			 */
+			bool
+			operator==(
+					const Section &other) const
+			{
+				return *d_source_section.get_const() == *other.d_source_section.get_const();
+			}
+
+		private:
+
+			GPlatesUtils::CopyOnWrite<GpmlTopologicalSection::non_null_ptr_type> d_source_section;
+		};
+
+		//! Typedef for a sequence of sections.
+		typedef std::vector<Section> sections_seq_type;
 
 
 		virtual
@@ -97,8 +159,12 @@ namespace GPlatesPropertyValues
 		/**
 		 * Returns the exterior topological sections.
 		 *
-		 * The returned sections are each 'const' objects so that they cannot be modified and
-		 * bypass the revisioning system.
+		 * To modify any exterior topological sections:
+		 * (1) make additions/removals/modifications to a copy of the returned vector, and
+		 * (2) use @a get_exterior_sections to set them.
+		 *
+		 * The returned exterior topological sections implement copy-on-write to promote resource sharing (until write)
+		 * and to ensure our internal state cannot be modified and bypass the revisioning system.
 		 */
 		const sections_seq_type &
 		get_exterior_sections() const
@@ -109,17 +175,9 @@ namespace GPlatesPropertyValues
 		/**
 		 * Set the sequence of exterior topological sections.
 		 */
-		template <typename TopologicalSectionsIterator>
 		void
 		set_exterior_sections(
-				const TopologicalSectionsIterator &exterior_sections_begin_,
-				const TopologicalSectionsIterator &exterior_sections_end_)
-		{
-			MutableRevisionHandler revision_handler(this);
-			revision_handler.get_mutable_revision<Revision>()
-					.set_exterior_sections(exterior_sections_begin_, exterior_sections_end_);
-			revision_handler.handle_revision_modification();
-		}
+				const sections_seq_type &exterior_sections);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -206,37 +264,9 @@ namespace GPlatesPropertyValues
 			template <typename TopologicalSectionsIterator>
 			Revision(
 					const TopologicalSectionsIterator &exterior_sections_begin_,
-					const TopologicalSectionsIterator &exterior_sections_end_)
-			{
-				set_exterior_sections(exterior_sections_begin_, exterior_sections_end_);
-			}
-
-			// This constructor used only by @a clone_for_bubble_up_modification - it does not clone.
-			explicit
-			Revision(
-					const sections_seq_type &exterior_sections_) :
-				exterior_sections(exterior_sections_)
-			{  }
-
-			Revision(
-					const Revision &other);
-
-			// To keep our revision state immutable we clone the sections so that the client
-			// can no longer modify them indirectly...
-			template <typename TopologicalSectionsIterator>
-			void
-			set_exterior_sections(
-					const TopologicalSectionsIterator &exterior_sections_begin_,
 					const TopologicalSectionsIterator &exterior_sections_end_) :
-			{
-				exterior_sections.clear();
-				TopologicalSectionsIterator exterior_sections_iter_ = exterior_sections_begin_;
-				for ( ; exterior_sections_iter_ != exterior_sections_end_; ++exterior_sections_iter_)
-				{
-					GpmlTopologicalSection::non_null_ptr_to_const_type exterior_section_ = *exterior_sections_iter_;
-					exterior_sections.push_back(exterior_section_->clone());
-				}
-			}
+				exterior_sections(exterior_sections_begin_, exterior_sections_end_)
+			{  }
 
 			virtual
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
@@ -245,13 +275,7 @@ namespace GPlatesPropertyValues
 				return non_null_ptr_type(new Revision(*this));
 			}
 
-			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone_for_bubble_up_modification() const
-			{
-				// Don't clone the sections - share them instead.
-				return non_null_ptr_type(new Revision(exterior_sections));
-			}
+			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
 
 			virtual
 			bool
@@ -271,6 +295,13 @@ namespace GPlatesPropertyValues
 				const GpmlTopologicalPolygon &);
 
 	};
+
+
+	// operator<< for GpmlTopologicalPolygon::Section.
+	std::ostream &
+	operator<<(
+			std::ostream &os,
+			const GpmlTopologicalPolygon::Section &topological_polygon_section);
 }
 
 #endif  // GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALPOLYGON_H

@@ -32,6 +32,16 @@
 #include "GpmlTopologicalLine.h"
 
 
+void
+GPlatesPropertyValues::GpmlTopologicalLine::set_sections(
+		const sections_seq_type &sections)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().sections = sections;
+	revision_handler.handle_revision_modification();
+}
+
+
 std::ostream &
 GPlatesPropertyValues::GpmlTopologicalLine::print_to(
 		std::ostream &os) const
@@ -43,21 +53,10 @@ GPlatesPropertyValues::GpmlTopologicalLine::print_to(
 	sections_seq_type::const_iterator sections_end = sections.end();
 	for ( ; sections_iter != sections_end; ++sections_iter)
 	{
-		os << **sections_iter;
+		os << *sections_iter;
 	}
 
 	return os << " ]";
-}
-
-
-GPlatesPropertyValues::GpmlTopologicalLine::Revision::Revision(
-		const Revision &other)
-{
-	// Clone the sections.
-	BOOST_FOREACH(const GpmlTopologicalSection::non_null_ptr_to_const_type &other_section, other.sections)
-	{
-		sections.push_back(other_section->clone());
-	}
 }
 
 
@@ -74,12 +73,20 @@ GPlatesPropertyValues::GpmlTopologicalLine::Revision::equality(
 
 	for (unsigned int n = 0; n < sections.size(); ++n)
 	{
-		// Compare PropertyValues, not pointers to PropertyValues...
-		if (*sections[n] != *other_revision.sections[n])
+		if (sections[n] != other_revision.sections[n])
 		{
 			return false;
 		}
 	}
 
 	return GPlatesModel::PropertyValue::Revision::equality(other);
+}
+
+
+std::ostream &
+GPlatesPropertyValues::operator<<(
+		std::ostream &os,
+		const GpmlTopologicalLine::Section &topological_line_section)
+{
+	return os << *topological_line_section.get_source_section();
 }

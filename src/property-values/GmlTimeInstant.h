@@ -207,9 +207,6 @@ namespace GPlatesPropertyValues
 				time_position_xml_attributes(time_position_xml_attributes_)
 			{  }
 
-			Revision(
-					const Revision &other);
-
 			virtual
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
 			clone() const
@@ -222,7 +219,7 @@ namespace GPlatesPropertyValues
 			equality(
 					const GPlatesModel::PropertyValue::Revision &other) const
 			{
-				const Revision &other_revision = static_cast<const Revision &>(other);
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return time_position == other_revision.time_position &&
 						time_position_xml_attributes == other_revision.time_position_xml_attributes &&

@@ -28,9 +28,11 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLIRREGULARSAMPLING_H
 #define GPLATES_PROPERTYVALUES_GPMLIRREGULARSAMPLING_H
 
+#include <iterator>
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/intrusive_ptr.hpp>
+#include <boost/operators.hpp>
 #include <boost/utility/compare_pointees.hpp>
 
 #include "GpmlInterpolationFunction.h"
@@ -53,6 +55,10 @@ namespace GPlatesPropertyValues
 	class GpmlIrregularSampling:
 			public GPlatesModel::PropertyValue
 	{
+	private:
+
+		//! Typedef for sequence of time samples.
+		typedef std::vector<GpmlTimeSample> time_samples_seq_type;
 
 	public:
 
@@ -100,19 +106,21 @@ namespace GPlatesPropertyValues
 		/**
 		 * Returns the time samples.
 		 *
-		 * The returned time samples are clones of the internal revisioned state so that the
-		 * internal state cannot be modified and bypass the revisioning system.
-		 * Just returning 'const' GpmlTimeSample references is not sufficient protection.
-		 *
 		 * To modify any time samples:
-		 * (1) make additions/removals/modifications to the returned vector, and
+		 * (1) make additions/removals/modifications to a copy of the returned vector, and
 		 * (2) use @a set_time_samples to set them.
+		 *
+		 * The returned time samples implement copy-on-write to promote resource sharing (until write)
+		 * and to ensure our internal state cannot be modified and bypass the revisioning system.
 		 */
-		std::vector<GpmlTimeSample>
-		get_time_samples() const;
+		const std::vector<GpmlTimeSample> &
+		get_time_samples() const
+		{
+			return get_current_revision<Revision>().time_samples;
+		}
 
 		/**
-		 * Sets the internal time samples to clones of those in @a time_samples.
+		 * Sets the internal time samples.
 		 */
 		void
 		set_time_samples(
@@ -126,7 +134,7 @@ namespace GPlatesPropertyValues
 		const GpmlInterpolationFunction::maybe_null_ptr_to_const_type
 		get_interpolation_function() const
 		{
-			return get_current_revision<Revision>().interpolation_function;
+			return get_current_revision<Revision>().interpolation_function.get();
 		}
 
 		/**
@@ -251,50 +259,10 @@ namespace GPlatesPropertyValues
 		{
 			Revision(
 					const std::vector<GpmlTimeSample> &time_samples_,
-					const GpmlInterpolationFunction::maybe_null_ptr_to_const_type &interpolation_function_,
-					bool deep_copy = true)
-			{
-				if (deep_copy)
-				{
-					set_cloned_time_samples(time_samples_);
-					set_cloned_interpolation_function(interpolation_function_);
-				}
-				else
-				{
-					time_samples = time_samples_;
-					interpolation_function = interpolation_function_;
-				}
-			}
-
-			Revision(
-					const Revision &other);
-
-			// To keep our revision state immutable we clone the time samples so that the client
-			// can no longer modify them indirectly...
-			void
-			set_cloned_time_samples(
-					const std::vector<GpmlTimeSample> &time_samples_)
-			{
-				time_samples.clear();
-				std::vector<GpmlTimeSample>::const_iterator time_samples_iter_ = time_samples_.begin();
-				std::vector<GpmlTimeSample>::const_iterator time_samples_end_ = time_samples_.end();
-				for ( ; time_samples_iter_ != time_samples_end_; ++time_samples_iter_)
-				{
-					const GpmlTimeSample &time_sample_ = *time_samples_iter_;
-					time_samples.push_back(time_sample_.clone());
-				}
-			}
-
-			void
-			set_cloned_interpolation_function(
-					const GpmlInterpolationFunction::maybe_null_ptr_to_const_type &interpolation_function_)
-			{
-				// To keep our revision state immutable we clone the interpolation function so
-				// that the client can no longer modify them indirectly...
-				interpolation_function = interpolation_function_
-						? interpolation_function_->clone().get()
-						: NULL;
-			}
+					const GpmlInterpolationFunction::maybe_null_ptr_to_const_type &interpolation_function_) :
+				time_samples(time_samples_),
+				interpolation_function(interpolation_function_)
+			{  }
 
 			virtual
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
@@ -303,22 +271,15 @@ namespace GPlatesPropertyValues
 				return non_null_ptr_type(new Revision(*this));
 			}
 
-			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone_for_bubble_up_modification() const
-			{
-				// Don't clone the property values in the time samples and
-				// don't clone the interpolation function property value.
-				return non_null_ptr_type(new Revision(time_samples, interpolation_function, false/*deep_copy*/));
-			}
+			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
 
 			virtual
 			bool
 			equality(
 					const GPlatesModel::PropertyValue::Revision &other) const;
 
-			std::vector<GpmlTimeSample> time_samples;
-			GpmlInterpolationFunction::maybe_null_ptr_to_const_type interpolation_function;
+			std::vector<GpmlTimeSample> time_samples; // Internally GpmlTimeSample uses CopyOnWrite.
+			GPlatesUtils::CopyOnWrite<GpmlInterpolationFunction::maybe_null_ptr_to_const_type> interpolation_function;
 		};
 
 
