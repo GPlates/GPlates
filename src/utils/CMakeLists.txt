@@ -26,6 +26,7 @@ set(srcs
     ConfigBundleUtils.h
     ConfigInterface.h
     CopyConst.h
+    CopyOnWrite.h
     Counter64.h
     DeferredCallEvent.cc
     DeferredCallEvent.h
