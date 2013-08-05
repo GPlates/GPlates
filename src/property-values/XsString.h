@@ -88,7 +88,7 @@ namespace GPlatesPropertyValues
 		 * TextContent using the @a set_value function below.
 		 */
 		const TextContent &
-		value() const
+		get_value() const
 		{
 			return get_current_revision<Revision>().value;
 		}

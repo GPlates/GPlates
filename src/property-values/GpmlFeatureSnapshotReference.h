@@ -55,14 +55,12 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for 
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureSnapshotReference>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureSnapshotReference>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureSnapshotReference> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureSnapshotReference>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureSnapshotReference>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureSnapshotReference> non_null_ptr_to_const_type;
 
@@ -71,11 +69,6 @@ namespace GPlatesPropertyValues
 		~GpmlFeatureSnapshotReference()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
@@ -83,45 +76,39 @@ namespace GPlatesPropertyValues
 				const GPlatesModel::RevisionId &revision_,
 				const GPlatesModel::FeatureType &value_type_)
 		{
-			non_null_ptr_type ptr(
-					new GpmlFeatureSnapshotReference(feature_, revision_, value_type_));
-			return ptr;
+			return non_null_ptr_type(new GpmlFeatureSnapshotReference(feature_, revision_, value_type_));
 		}
 
-		const GpmlFeatureSnapshotReference::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlFeatureSnapshotReference::non_null_ptr_type dup(
-					new GpmlFeatureSnapshotReference(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GpmlFeatureSnapshotReference>(clone_impl());
 		}
 
-		const GpmlFeatureSnapshotReference::non_null_ptr_type
-		deep_clone() const
+		const GPlatesModel::FeatureId &
+		get_feature_id() const
 		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
+			return get_current_revision<Revision>().feature;
 		}
 
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
+		void
+		set_feature_id(
+				const GPlatesModel::FeatureId &feature);
 
-		const GPlatesModel::FeatureId
-		feature_id() const
+		const GPlatesModel::RevisionId &
+		get_revision_id() const
 		{
-			return d_feature;
+			return get_current_revision<Revision>().revision;
 		}
 
-		const GPlatesModel::RevisionId
-		revision_id() const
-		{
-			return d_revision;
-		}
+		void
+		set_revision_id(
+				const GPlatesModel::RevisionId &revision);
 
 		// Note that no "setter" is provided:  The value type of a GpmlFeatureSnapshotReference
 		// instance should never be changed.
 		const GPlatesModel::FeatureType &
-		value_type() const
+		get_value_type() const
 		{
 			return d_value_type;
 		}
@@ -178,9 +165,7 @@ namespace GPlatesPropertyValues
 				const GPlatesModel::FeatureId &feature_,
 				const GPlatesModel::RevisionId &revision_,
 				const GPlatesModel::FeatureType &value_type_):
-			PropertyValue(),
-			d_feature(feature_),
-			d_revision(revision_),
+			PropertyValue(Revision::non_null_ptr_type(new Revision(feature_, revision_))),
 			d_value_type(value_type_)
 		{  }
 
@@ -191,24 +176,70 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GpmlFeatureSnapshotReference(
 				const GpmlFeatureSnapshotReference &other) :
-			PropertyValue(other), /* share instance id */
-			d_feature(other.d_feature),
-			d_revision(other.d_revision),
+			PropertyValue(other),
 			d_value_type(other.d_value_type)
 		{  }
 
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GpmlFeatureSnapshotReference(*this));
+		}
+
+		virtual
+		bool
+		equality(
+				const PropertyValue &other) const
+		{
+			const GpmlFeatureSnapshotReference &other_pv =
+					dynamic_cast<const GpmlFeatureSnapshotReference &>(other);
+
+			return d_value_type == other_pv.d_value_type &&
+					// The revisioned data comparisons are handled here...
+					GPlatesModel::PropertyValue::equality(other);
+		}
+
 	private:
 
-		GPlatesModel::FeatureId d_feature;
-		GPlatesModel::RevisionId d_revision;
-		GPlatesModel::FeatureType d_value_type;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			Revision(
+					const GPlatesModel::FeatureId &feature_,
+					const GPlatesModel::RevisionId &revision_) :
+				feature(feature_),
+				revision(revision_)
+			{  }
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlFeatureSnapshotReference &
-		operator=(const GpmlFeatureSnapshotReference &);
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return feature == other_revision.feature &&
+						revision == other_revision.revision &&
+						GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			GPlatesModel::FeatureId feature;
+			GPlatesModel::RevisionId revision;
+		};
+
+		// Immutable, so doesn't need revisioning.
+		GPlatesModel::FeatureType d_value_type;
 
 	};
 

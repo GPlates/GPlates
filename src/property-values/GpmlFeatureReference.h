@@ -54,14 +54,12 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureReference>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureReference>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureReference> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureReference>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureReference>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureReference> non_null_ptr_to_const_type;
 
@@ -70,66 +68,36 @@ namespace GPlatesPropertyValues
 		~GpmlFeatureReference()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
 				const GPlatesModel::FeatureId &feature_,
 				const GPlatesModel::FeatureType &value_type_)
 		{
-			non_null_ptr_type ptr(new GpmlFeatureReference(feature_, value_type_));
-			return ptr;
+			return non_null_ptr_type(new GpmlFeatureReference(feature_, value_type_));
 		}
 
-		const GpmlFeatureReference::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlFeatureReference::non_null_ptr_type dup(new GpmlFeatureReference(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GpmlFeatureReference>(clone_impl());
 		}
 
-		const GpmlFeatureReference::non_null_ptr_type
-		deep_clone() const
+		const GPlatesModel::FeatureId &
+		get_feature_id() const
 		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
+			return get_current_revision<Revision>().feature;
 		}
 
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
-		const GPlatesModel::FeatureId
-		feature_id() const
-		{
-			return d_feature;
-		}
-
-		// Note that, because the copy-assignment operator of PropertyValue is private,
-		// the PropertyValue referenced by the return-value of this function cannot be
-		// assigned-to, which means that this function does not provide a means to directly
-		// switch the PropertyValue within this GpmlFeatureReference instance.  (This
-		// restriction is intentional.)
-		//
-		// To switch the PropertyValue within this GpmlFeatureReference instance, use the
-		// function @a set_value below.
-		//
-		// (This overload is provided to allow the referenced PropertyValue instance to
-		// accept a FeatureVisitor instance.)
-		const GPlatesModel::FeatureId
-		feature_id()
-		{
-			return d_feature;
-		}
+		void
+		set_feature_id(
+				const GPlatesModel::FeatureId &feature);
 
 
 		// Note that no "setter" is provided:  The value type of a GpmlFeatureReference
 		// instance should never be changed.
 		const GPlatesModel::FeatureType &
-		value_type() const
+		get_value_type() const
 		{
 			return d_value_type;
 		}
@@ -185,19 +153,7 @@ namespace GPlatesPropertyValues
 		GpmlFeatureReference(
 				const GPlatesModel::FeatureId &feature_,
 				const GPlatesModel::FeatureType &value_type_):
-			PropertyValue(),
-			d_feature(feature_),
-			d_value_type(value_type_)
-		{  }
-
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		GpmlFeatureReference(
-				const GPlatesModel::FeatureId &feature_,
-				const GPlatesModel::FeatureType &value_type_,
-				const GPlatesUtils::UnicodeString &description_):
-			PropertyValue(),
-			d_feature(feature_),
+			PropertyValue(Revision::non_null_ptr_type(new Revision(feature_))),
 			d_value_type(value_type_)
 		{  }
 
@@ -208,22 +164,66 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GpmlFeatureReference(
 				const GpmlFeatureReference &other) :
-			PropertyValue(other), /* share instance id */
-			d_feature(other.d_feature),
+			PropertyValue(other),
 			d_value_type(other.d_value_type)
 		{  }
 
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GpmlFeatureReference(*this));
+		}
+
+		virtual
+		bool
+		equality(
+				const PropertyValue &other) const
+		{
+			const GpmlFeatureReference &other_pv = dynamic_cast<const GpmlFeatureReference &>(other);
+
+			return d_value_type == other_pv.d_value_type &&
+					// The revisioned data comparisons are handled here...
+					GPlatesModel::PropertyValue::equality(other);
+		}
+
 	private:
 
-		GPlatesModel::FeatureId d_feature;
-		GPlatesModel::FeatureType d_value_type;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					const GPlatesModel::FeatureId &feature_) :
+				feature(feature_)
+			{  }
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlFeatureReference &
-		operator=(const GpmlFeatureReference &);
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return feature == other_revision.feature &&
+						GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			GPlatesModel::FeatureId feature;
+		};
+
+		// Immutable, so doesn't need revisioning.
+		GPlatesModel::FeatureType d_value_type;
 
 	};
 

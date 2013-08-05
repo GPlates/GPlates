@@ -186,13 +186,6 @@ namespace GPlatesPropertyValues
 
 		tuple_list_type d_tuple_list;
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GmlDataBlock &
-		operator=(const GmlDataBlock &);
-
 	};
 
 

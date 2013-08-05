@@ -248,14 +248,6 @@ namespace GPlatesPropertyValues
 		// It's not the nicest OO, but this vector must be of the same size as d_multipoint.
 		std::vector<GmlPoint::GmlProperty> d_gml_properties;
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GmlMultiPoint &
-		operator=(
-				const GmlMultiPoint &);
-
 	};
 
 }

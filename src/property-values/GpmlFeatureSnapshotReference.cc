@@ -30,10 +30,32 @@
 #include "GpmlFeatureSnapshotReference.h"
 
 
+void
+GPlatesPropertyValues::GpmlFeatureSnapshotReference::set_feature_id(
+		const GPlatesModel::FeatureId &feature)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().feature = feature;
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GpmlFeatureSnapshotReference::set_revision_id(
+		const GPlatesModel::RevisionId &revision)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().revision = revision;
+	revision_handler.handle_revision_modification();
+}
+
+
 std::ostream &
 GPlatesPropertyValues::GpmlFeatureSnapshotReference::print_to(
 		std::ostream &os) const
 {
-	return os << d_feature.get() << "@" << d_revision.get();
+	const Revision &revision = get_current_revision<Revision>();
+
+	return os << revision.feature.get() << "@" << revision.revision.get();
 }
 

@@ -56,6 +56,7 @@
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalLineSection.h"
 #include "property-values/GpmlTopologicalPoint.h"
+#include "property-values/GpmlTotalReconstructionPole.h"
 #include "property-values/StructuralType.h"
 
 namespace
@@ -220,7 +221,7 @@ GPlatesModel::ModelUtils::get_top_level_property_ref(
 		FeatureHandle::iterator it = feature->begin();
 		for(;it != feature->end(); it++)
 		{
-			if((*it)->property_name() == name)
+			if((*it)->get_property_name() == name)
 			{
 				ret.push_back(it);
 			}
@@ -373,7 +374,7 @@ GPlatesModel::ModelUtils::rename_feature_properties(
 	FeatureHandle::iterator properties_end = feature.end();
 	while (properties_iter != properties_end)
 	{
-		if ((*properties_iter)->property_name() == old_property_name)
+		if ((*properties_iter)->get_property_name() == old_property_name)
 		{
 			// We can't actually rename a (top-level) property of a feature.
 			// So we need to create a new top-level property and remove the existing one.
@@ -458,7 +459,7 @@ GPlatesModel::ModelUtils::rename_property(
 
 	// Clone property value to convert from 'const' to 'non-const' which we need
 	// when creating a new top-level property.
-	PropertyValue::non_null_ptr_type property_value = (*tlpi->begin())->deep_clone_as_prop_val();
+	PropertyValue::non_null_ptr_type property_value = (*tlpi->begin())->clone();
 
 	// Add or remove the time-dependent wrapper as dictated by the GPGIM.
 	boost::optional<PropertyValue::non_null_ptr_type> converted_property_value =
@@ -473,7 +474,7 @@ GPlatesModel::ModelUtils::rename_property(
 			TopLevelPropertyInline::create(
 					new_gpgim_property.get_property_name(),
 					converted_property_value.get(),
-					tlpi->xml_attributes()));
+					tlpi->get_xml_attributes()));
 }
 
 
@@ -509,11 +510,11 @@ GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(
 
 	if (structural_type == CONSTANT_VALUE_TYPE)
 	{
-		return dynamic_cast<const GPlatesPropertyValues::GpmlConstantValue &>(property_value).value_type();
+		return dynamic_cast<const GPlatesPropertyValues::GpmlConstantValue &>(property_value).get_value_type();
 	}
 	if (structural_type == IRREGULAR_SAMPLING_TYPE)
 	{
-		return dynamic_cast<const GPlatesPropertyValues::GpmlIrregularSampling &>(property_value).value_type();
+		return dynamic_cast<const GPlatesPropertyValues::GpmlIrregularSampling &>(property_value).get_value_type();
 	}
 	if (structural_type == PIECEWISE_AGGREGATION_TYPE)
 	{
@@ -565,7 +566,7 @@ GPlatesModel::ModelUtils::add_remove_or_convert_time_dependent_wrapper(
 		// If the GPGIM specifies a non-time-dependent property then unwrap the property value.
 		if (!time_dependent_flags.any())
 		{
-			return gpml_constant_value->value();
+			return gpml_constant_value->get_value();
 		}
 
 		// ...else we cannot convert a constant-value property to an irregularly-sampled property.
@@ -615,8 +616,8 @@ GPlatesModel::ModelUtils::add_remove_or_convert_time_dependent_wrapper(
 
 			// If the there's a single time window that covers all time and it's a constant-value...
 			if (time_windows.size() == 1 &&
-				time_windows.front().valid_time()->begin()->time_position().is_distant_past() &&
-				time_windows.front().valid_time()->end()->time_position().is_distant_future() &&
+				time_windows.front().valid_time()->begin()->get_time_position().is_distant_past() &&
+				time_windows.front().valid_time()->end()->get_time_position().is_distant_future() &&
 				time_windows.front().time_dependent_value()->get_structural_type() == CONSTANT_VALUE_TYPE)
 			{
 				GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type gpml_constant_value =
@@ -632,7 +633,7 @@ GPlatesModel::ModelUtils::add_remove_or_convert_time_dependent_wrapper(
 				// If the GPGIM specifies a non-time-dependent property then unwrap the property value.
 				if (!time_dependent_flags.any())
 				{
-					return gpml_constant_value->value();
+					return gpml_constant_value->get_value();
 				}
 			}
 		}
@@ -694,7 +695,8 @@ const GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type
 GPlatesModel::ModelUtils::create_gpml_piecewise_aggregation(
 		const GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type &constant_value_property_value)
 {
-	const GPlatesPropertyValues::StructuralType structural_type = constant_value_property_value->value_type();
+	const GPlatesPropertyValues::StructuralType structural_type =
+			constant_value_property_value->get_value_type();
 
 	// Create a time period property that spans *all* time (distant past to distant future).
 	const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type time_period =
@@ -852,7 +854,7 @@ GPlatesModel::ModelUtils::get_mprs_attributes(
 		FeatureHandle::const_iterator	it = f->begin();
 		for(;it != f->end(); it++)
 		{
-			if((*it)->property_name() == mprs_attrs)
+			if((*it)->get_property_name() == mprs_attrs)
 			{
 				const TopLevelPropertyInline *p_inline = dynamic_cast<const TopLevelPropertyInline*>((*it).get());
 				if(p_inline && p_inline->size() >= 1)
@@ -904,7 +906,7 @@ GPlatesModel::ModelUtils::create_gml_time_sample(
 	if(is_grot)
 	{
 		return GpmlTimeSample(
-				GpmlTotalReconstructionPole::create(gpml_finite_rotation->finite_rotation()),
+				GpmlTotalReconstructionPole::create(gpml_finite_rotation->get_finite_rotation()),
 				gml_time_instant,
 				get_intrusive_ptr(gml_description), 
 				StructuralType::create_gpml("TotalReconstructionPole"));

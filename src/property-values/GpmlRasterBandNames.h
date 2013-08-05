@@ -85,6 +85,17 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
+				const std::vector<XsString::non_null_ptr_type> &band_names_)
+		{
+			return create(band_names_.begin(), band_names_.end());
+		}
+
+		/**
+		 * Create a GpmlRasterBandNames instance from a collection of @a band_names_.
+		 */
+		static
+		const non_null_ptr_type
+		create(
 				const band_names_list_type &band_names_)
 		{
 			return create(band_names_.begin(), band_names_.end());
@@ -97,7 +108,7 @@ namespace GPlatesPropertyValues
 				ForwardIterator begin,
 				ForwardIterator end)
 		{
-			return new GpmlRasterBandNames(begin, end);
+			return non_null_ptr_type(new GpmlRasterBandNames(begin, end));
 		}
 
 		const non_null_ptr_type
@@ -106,12 +117,25 @@ namespace GPlatesPropertyValues
 			return GPlatesUtils::dynamic_pointer_cast<GpmlRasterBandNames>(clone_impl());
 		}
 
+		/**
+		 * Returns the band names.
+		 *
+		 * To modify any band names:
+		 * (1) make additions/removals/modifications to a copy of the returned vector, and
+		 * (2) use @a set_band_names to set them.
+		 *
+		 * The returned band names implement copy-on-write to promote resource sharing (until write)
+		 * and to ensure our internal state cannot be modified and bypass the revisioning system.
+		 */
 		const band_names_list_type &
 		get_band_names() const
 		{
 			return get_current_revision<Revision>().band_names;
 		}
 
+		/**
+		 * Sets the internal band names.
+		 */
 		void
 		set_band_names(
 				const band_names_list_type &band_names_);
@@ -220,15 +244,6 @@ namespace GPlatesPropertyValues
 
 			band_names_list_type band_names;
 		};
-
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlRasterBandNames &
-		operator=(
-				const GpmlRasterBandNames &);
 
 	};
 

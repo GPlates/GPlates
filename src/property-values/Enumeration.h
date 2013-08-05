@@ -170,9 +170,6 @@ namespace GPlatesPropertyValues
 		EnumerationType d_type;
 		EnumerationContent d_value;
 
-		Enumeration &
-		operator=(const Enumeration &);
-
 	};
 
 }

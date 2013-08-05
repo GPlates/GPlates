@@ -44,7 +44,18 @@ std::ostream &
 GPlatesPropertyValues::GpmlRasterBandNames::print_to(
 		std::ostream &os) const
 {
-	return os << "GpmlRasterBandNames";
+	const band_names_list_type &band_names = get_band_names();
+
+	os << "[ ";
+
+	for (band_names_list_type::const_iterator band_names_iter = band_names.begin();
+		band_names_iter != band_names.end();
+		++band_names_iter)
+	{
+		os << band_names_iter->get_const()->get_value().get();
+	}
+
+	return os << " ]";
 }
 
 

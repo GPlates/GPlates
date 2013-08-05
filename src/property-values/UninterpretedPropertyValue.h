@@ -173,15 +173,6 @@ namespace GPlatesPropertyValues
 
 		GPlatesModel::XmlElementNode::non_null_ptr_to_const_type d_value;
 
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		UninterpretedPropertyValue &
-		operator=(
-				const UninterpretedPropertyValue &);
-
 	};
 
 }

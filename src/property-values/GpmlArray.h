@@ -27,11 +27,15 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLARRAY_H
 #define GPLATES_PROPERTYVALUES_GPMLARRAY_H
 
+#include <vector>
+
 #include "StructuralType.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "model/PropertyValue.h"
+
+#include "utils/CopyOnWrite.h"
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -47,16 +51,23 @@ namespace GPlatesPropertyValues
 
 	public:
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlArray>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlArray>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlArray> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlArray>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlArray>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlArray> non_null_ptr_to_const_type;
+
+		/**
+		 * Typedef for a sequence of property values.
+		 *
+		 * Get the non_null_intrusive_ptr using 'CopyOnWrite::get_const()' or 'CopyOnWrite::get_non_const()'.
+		 */
+		typedef std::vector<
+				GPlatesUtils::CopyOnWrite<GPlatesModel::PropertyValue::non_null_ptr_type> >
+						member_array_type;
 
 
 		virtual
@@ -64,51 +75,70 @@ namespace GPlatesPropertyValues
 		{  }
 
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
-			const StructuralType &value_type_,		
-                        const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &members)
+			const StructuralType &value_type,		
+			const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &members)
 		{
-			non_null_ptr_type ptr(new GpmlArray(
-					value_type_,
-					members));
-			return ptr;
+			return create(value_type, members.begin(), members.end());
 		}
 
-		const GpmlArray::non_null_ptr_type
+		static
+		const non_null_ptr_type
+		create(
+			const StructuralType &value_type,		
+			const member_array_type &members)
+		{
+			return create(value_type, members.begin(), members.end());
+		}
+
+		template<typename ForwardIterator>
+		static
+		const non_null_ptr_type
+		create(
+				const StructuralType &value_type,		
+				ForwardIterator begin,
+				ForwardIterator end)
+		{
+			return non_null_ptr_type(new GpmlArray(value_type, begin, end));
+		}
+
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlArray::non_null_ptr_type dup(new GpmlArray(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GpmlArray>(clone_impl());
 		}
 
-		const GpmlArray::non_null_ptr_type
-		deep_clone() const;
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
-		const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &
-		members() const
+		/**
+		 * Returns the members.
+		 *
+		 * To modify any members:
+		 * (1) make additions/removals/modifications to a copy of the returned vector, and
+		 * (2) use @a set_members to set them.
+		 *
+		 * The returned members implement copy-on-write to promote resource sharing (until write)
+		 * and to ensure our internal state cannot be modified and bypass the revisioning system.
+		 */
+		const member_array_type &
+		get_members() const
 		{
-			return d_members;
+			return get_current_revision<Revision>().members;
 		}
 
-		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &
-		members()
-		{
-			return d_members;
-		}
+		/**
+		 * Sets the internal members.
+		 */
+		void
+		set_members(
+				const member_array_type &members);
 
-		const StructuralType &
-		type() const
+		// Note that no "setter" is provided:  The value type of a GpmlArray
+		// instance should never be changed.
+		StructuralType
+		get_value_type() const
 		{
-			return d_type;
+			return d_value_type;
 		}
 
 		/**
@@ -150,40 +180,23 @@ namespace GPlatesPropertyValues
 			visitor.visit_gpml_array(*this);
 		}
 
-		bool
-		is_empty() const
-		{
-			return d_members.empty();
-		}
-
-		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type>::size_type
-		num_elements() const
-		{
-		    return d_members.size();
-		}
-
 		virtual
 		std::ostream &
 		print_to(
 				std::ostream &os) const;
-
-
-		virtual
-		bool
-		directly_modifiable_fields_equal(
-			const PropertyValue &other) const;
 
 	protected:
 
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
+		template<typename ForwardIterator>
 		GpmlArray(
-			const StructuralType &value_type_,
-			const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &members_):
-				PropertyValue(),
-				d_type(value_type_),
-				d_members(members_)
+				const StructuralType &value_type,
+				ForwardIterator begin,
+				ForwardIterator end) :
+			PropertyValue(Revision::non_null_ptr_type(new Revision(begin, end))),
+			d_value_type(value_type)
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -192,25 +205,64 @@ namespace GPlatesPropertyValues
 		// Note that this should act exactly the same as the default (auto-generated)
 		// copy-constructor, except it should not be public.
 		GpmlArray(
-			const GpmlArray &other) :
-				PropertyValue(other),
-				d_type(other.d_type),
-				d_members(other.d_members)
+				const GpmlArray &other) :
+			PropertyValue(other),
+			d_value_type(other.d_value_type)
 		{  }
 
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GpmlArray(*this));
+		}
+
+		virtual
+		bool
+		equality(
+				const PropertyValue &other) const
+		{
+			const GpmlArray &other_pv = dynamic_cast<const GpmlArray &>(other);
+
+			return d_value_type == other_pv.d_value_type &&
+					// The revisioned data comparisons are handled here...
+					GPlatesModel::PropertyValue::equality(other);
+		}
 
 	private:
 
-		StructuralType d_type;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			template<typename ForwardIterator>
+			Revision(
+					ForwardIterator begin_,
+					ForwardIterator end_) :
+				members(begin_, end_)
+			{  }
 
-		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> d_members;
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlArray &
-			operator=(const GpmlArray &);
+			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const;
+
+			std::vector<GPlatesUtils::CopyOnWrite<GPlatesModel::PropertyValue::non_null_ptr_type> > members;
+		};
+
+		StructuralType d_value_type;
+
 	};
 }
 

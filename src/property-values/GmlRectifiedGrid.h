@@ -43,6 +43,8 @@
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
 
+#include "utils/CopyOnWrite.h"
+
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -65,15 +67,16 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlRectifiedGrid> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlRectifiedGrid>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GmlRectifiedGrid>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlRectifiedGrid> non_null_ptr_to_const_type;
 
-		typedef std::vector<XsString::non_null_ptr_to_const_type> axes_list_type;
+
+		typedef std::vector<GPlatesUtils::CopyOnWrite<XsString::non_null_ptr_to_const_type> > axes_list_type;
 		typedef std::vector<double> offset_vector_type;
 		typedef std::vector<offset_vector_type> offset_vector_list_type;
 		typedef std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes_type;
+
 
 		virtual
 		~GmlRectifiedGrid()
@@ -114,22 +117,11 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		clone() const
 		{
-			non_null_ptr_type dup(new GmlRectifiedGrid(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GmlRectifiedGrid>(clone_impl());
 		}
-
-		const non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		const GmlGridEnvelope::non_null_ptr_to_const_type &
-		limits() const
+		get_limits() const
 		{
 			return d_limits;
 		}
@@ -143,7 +135,7 @@ namespace GPlatesPropertyValues
 		}
 
 		const axes_list_type &
-		axes() const
+		get_axes() const
 		{
 			return d_axes;
 		}
@@ -157,7 +149,7 @@ namespace GPlatesPropertyValues
 		}
 
 		const GmlPoint::non_null_ptr_to_const_type &
-		origin() const
+		get_origin() const
 		{
 			return d_origin;
 		}
@@ -175,7 +167,7 @@ namespace GPlatesPropertyValues
 		}
 
 		const offset_vector_list_type &
-		offset_vectors() const
+		get_offset_vectors() const
 		{
 			return d_offset_vectors;
 		}
@@ -194,7 +186,7 @@ namespace GPlatesPropertyValues
 		}
 
 		const xml_attributes_type &
-		xml_attributes() const
+		get_xml_attributes() const
 		{
 			return d_xml_attributes;
 		}
@@ -300,14 +292,6 @@ namespace GPlatesPropertyValues
 		xml_attributes_type d_xml_attributes;
 
 		mutable boost::optional<Georeferencing::non_null_ptr_to_const_type> d_cached_georeferencing;
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GmlRectifiedGrid &
-		operator=(
-				const GmlRectifiedGrid &);
 
 	};
 

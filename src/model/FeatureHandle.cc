@@ -174,7 +174,7 @@ GPlatesModel::FeatureHandle::set(
 	const boost::intrusive_ptr<child_type> &existing_child = current_revision()->get(iter.index());
 	if (existing_child && !new_child_equals_existing(new_child, existing_child))
 	{
-		current_revision()->set(iter.index(), new_child->deep_clone());
+		current_revision()->set(iter.index(), new_child->clone());
 
 		notify_listeners_of_modification(false, true);
 
@@ -197,7 +197,7 @@ GPlatesModel::FeatureHandle::remove_properties_by_name(
 {
 	for (iterator iter = begin(); iter != end(); ++iter)
 	{
-		if ((*iter)->property_name() == property_name)
+		if ((*iter)->get_property_name() == property_name)
 		{
 			remove(iter);
 		}

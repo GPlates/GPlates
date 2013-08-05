@@ -29,65 +29,55 @@
 
 #include "model/PropertyValue.h"
 
-const GPlatesPropertyValues::GpmlArray::non_null_ptr_type
-GPlatesPropertyValues::GpmlArray::deep_clone() const
+
+void
+GPlatesPropertyValues::GpmlArray::set_members(
+		const member_array_type &members)
 {
-	GpmlArray::non_null_ptr_type dup = clone();
-
-	// Now we need to clear the property value vector in the duplicate, before we push-back the
-	// cloned property values.
-	dup->d_members.clear();
-
-	std::vector<GPlatesModel::PropertyValue::non_null_ptr_type>::const_iterator iter, end = d_members.end();
-	for (iter = d_members.begin(); iter != end; ++iter) {
-		dup->d_members.push_back((*iter)->deep_clone_as_prop_val());
-	}
-
-    return dup;
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().members = members;
+	revision_handler.handle_revision_modification();
 }
+
 
 std::ostream &
 GPlatesPropertyValues::GpmlArray::print_to(
                 std::ostream &os) const
 {
-        return os;
+	const member_array_type &members = get_members();
+
+	os << "[ ";
+
+	for (member_array_type::const_iterator members_iter = members.begin();
+		members_iter != members.end();
+		++members_iter)
+	{
+		os << *members_iter->get_const();
+	}
+
+	return os << " ]";
 }
 
+
 bool
-GPlatesPropertyValues::GpmlArray::directly_modifiable_fields_equal(
-	const PropertyValue &other) const
+GPlatesPropertyValues::GpmlArray::Revision::equality(
+		const GPlatesModel::PropertyValue::Revision &other) const
 {
+	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
-	try
+	if (members.size() != other_revision.members.size())
 	{
-		const GpmlArray &other_casted =
-			dynamic_cast<const GpmlArray &>(other);
-
-		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type>::const_iterator
-			iter = d_members.begin(),
-			end = d_members.end(),
-			o_iter = other_casted.d_members.begin();
-			//o_end = other_casted.d_members.end();
-
-		if (d_members.size() != other_casted.d_members.size())
-		{
-		    return false;
-		}
-		for (; iter != end ; ++iter, ++o_iter)
-		{
-		    if (! (**iter == **o_iter))
-		    {
-			return false;
-		    }
-		}
-		return true;
-
-	}
-	catch (const std::bad_cast &)
-	{
-		// Should never get here, but doesn't hurt to check.
 		return false;
 	}
 
-}
+	for (unsigned int n = 0; n < members.size(); ++n)
+	{
+		// Compare PropertyValues, not pointers to PropertyValues...
+		if (*members[n].get_const() != *other_revision.members[n].get_const())
+		{
+			return false;
+		}
+	}
 
+	return GPlatesModel::PropertyValue::Revision::equality(other);
+}

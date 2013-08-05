@@ -30,10 +30,22 @@
 #include "GpmlFeatureReference.h"
 
 
+void
+GPlatesPropertyValues::GpmlFeatureReference::set_feature_id(
+		const GPlatesModel::FeatureId &feature)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().feature = feature;
+	revision_handler.handle_revision_modification();
+}
+
+
 std::ostream &
 GPlatesPropertyValues::GpmlFeatureReference::print_to(
 		std::ostream &os) const
 {
-	return os << d_feature.get();
+	const Revision &revision = get_current_revision<Revision>();
+
+	return os << revision.feature.get();
 }
 
