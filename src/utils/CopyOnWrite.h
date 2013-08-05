@@ -131,6 +131,7 @@ namespace GPlatesUtils
 	// 		ValueType &
 	// 		get_non_const()
 	// 		{
+	//          d_value = CopyPolicy<ValueType>::copy(d_value);
 	// 			return d_value;
 	// 		}
 	// 

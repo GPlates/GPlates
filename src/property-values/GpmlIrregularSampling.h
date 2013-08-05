@@ -33,7 +33,6 @@
 #include <boost/foreach.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/operators.hpp>
-#include <boost/utility/compare_pointees.hpp>
 
 #include "GpmlInterpolationFunction.h"
 #include "GpmlTimeSample.h"
@@ -55,11 +54,6 @@ namespace GPlatesPropertyValues
 	class GpmlIrregularSampling:
 			public GPlatesModel::PropertyValue
 	{
-	private:
-
-		//! Typedef for sequence of time samples.
-		typedef std::vector<GpmlTimeSample> time_samples_seq_type;
-
 	public:
 
 		/**
@@ -282,17 +276,8 @@ namespace GPlatesPropertyValues
 			GPlatesUtils::CopyOnWrite<GpmlInterpolationFunction::maybe_null_ptr_to_const_type> interpolation_function;
 		};
 
-
 		// Immutable, so doesn't need revisioning.
 		StructuralType d_value_type;
-
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlIrregularSampling &
-		operator=(const GpmlIrregularSampling &);
 
 	};
 

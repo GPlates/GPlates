@@ -34,6 +34,7 @@
 #include "property-values/StructuralType.h"
 #include "property-values/XsString.h"
 
+#include "utils/CopyOnWrite.h"
 #include "utils/QtStreamable.h"
 
 
@@ -47,50 +48,52 @@ namespace GPlatesPropertyValues
 
 	public:
 
+		/**
+		 * GpmlKeyValueDictionaryElement has value semantics where each @a GpmlKeyValueDictionaryElement
+		 * instance has its own state.
+		 * So if you create a copy and modify the copy's state then it will not modify the state
+		 * of the original object.
+		 *
+		 * The constructor first clones the property values since copy-on-write is used to allow
+		 * multiple @a GpmlKeyValueDictionaryElement objects to share the same state (until the state is modified).
+		 */
 		GpmlKeyValueDictionaryElement(
-			GPlatesPropertyValues::XsString::non_null_ptr_type key_,
-			GPlatesModel::PropertyValue::non_null_ptr_type value_,
-			const StructuralType &value_type_):
-				d_key(key_),
-				d_value(value_),
-				d_value_type(value_type_)
+				XsString::non_null_ptr_type key_,
+				GPlatesModel::PropertyValue::non_null_ptr_type value_,
+				const StructuralType &value_type_):
+			d_key(key_),
+			d_value(value_),
+			d_value_type(value_type_)
 		{  }
 
-		virtual
-		~GpmlKeyValueDictionaryElement()
-		{  }
-
-		const GpmlKeyValueDictionaryElement
-		deep_clone() const;
-
-		const GPlatesPropertyValues::XsString::non_null_ptr_to_const_type
+		const XsString::non_null_ptr_to_const_type
 		key() const
 		{
-				return d_key;
+			return d_key.get();
 		}
 
-		const GPlatesPropertyValues::XsString::non_null_ptr_type
+		const XsString::non_null_ptr_type
 		key()
 		{
-				return d_key;
+			return d_key.get();
 		}		
 
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
 		value() const
 		{
-				return d_value;
+			return d_value.get();
 		}
 
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		value()
 		{
-				return d_value;
+			return d_value.get();
 		}
 
 		const StructuralType &
 		value_type() const
 		{
-			return d_value_type;		
+			return d_value_type;
 		}
 
 		bool
@@ -99,8 +102,8 @@ namespace GPlatesPropertyValues
 
 	private:
 
-		XsString::non_null_ptr_type d_key;
-		GPlatesModel::PropertyValue::non_null_ptr_type d_value;
+		GPlatesUtils::CopyOnWrite<XsString::non_null_ptr_type> d_key;
+		GPlatesUtils::CopyOnWrite<GPlatesModel::PropertyValue::non_null_ptr_type> d_value;
 		StructuralType d_value_type;
 
 	};

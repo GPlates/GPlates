@@ -30,13 +30,14 @@
 
 #include <boost/optional.hpp>
 
+#include "GmlPoint.h"
 #include "GmlTimeInstant.h"
 #include "GmlTimePeriod.h"
-#include "GmlPoint.h"
 #include "GpmlMeasure.h"
 #include "feature-visitors/PropertyValueFinder.h"
-#include "model/PropertyValue.h"
 #include "model/FeatureVisitor.h"
+#include "model/PropertyValue.h"
+#include "utils/CopyOnWrite.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -54,164 +55,93 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlHotSpotTrailMark>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlHotSpotTrailMark>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlHotSpotTrailMark> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlHotSpotTrailMark>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlHotSpotTrailMark>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlHotSpotTrailMark> non_null_ptr_to_const_type;
+
 
 		virtual
 		~GpmlHotSpotTrailMark()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
-				const GmlPoint::non_null_ptr_type &position_,
-				const boost::optional<GpmlMeasure::non_null_ptr_type> &trail_width_,
-				const boost::optional<GmlTimeInstant::non_null_ptr_type> &measured_age_,
-				const boost::optional<GmlTimePeriod::non_null_ptr_type> &measured_age_range_)
+				const GmlPoint::non_null_ptr_to_const_type &position_,
+				const boost::optional<GpmlMeasure::non_null_ptr_to_const_type> &trail_width_,
+				const boost::optional<GmlTimeInstant::non_null_ptr_to_const_type> &measured_age_,
+				const boost::optional<GmlTimePeriod::non_null_ptr_to_const_type> &measured_age_range_)
 		{
-			non_null_ptr_type ptr(
-					new GpmlHotSpotTrailMark( position_, trail_width_,
-							measured_age_, measured_age_range_));
-			return ptr;
+			return non_null_ptr_type(
+					new GpmlHotSpotTrailMark(position_, trail_width_, measured_age_, measured_age_range_));
 		}
 
-		const GpmlHotSpotTrailMark::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlHotSpotTrailMark::non_null_ptr_type dup(new GpmlHotSpotTrailMark(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GpmlHotSpotTrailMark>(clone_impl());
 		}
 
-		const GpmlHotSpotTrailMark::non_null_ptr_type
-		deep_clone() const;
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
+		/**
+		 * Returns the 'const' position - which is 'const' so that it cannot be
+		 * modified and bypass the revisioning system.
+		 */
 		const GmlPoint::non_null_ptr_to_const_type
-		position() const
-		{
-			return d_position;
-		}
+		get_position() const;
 
-		// Note that, because the copy-assignment operator of GmlPoint is private,
-		// the GmlPoint referenced by the return-value of this function cannot be
-		// assigned-to, which means that this function does not provide a means to directly
-		// switch the GmlPoint within this GpmlHotSpotTrailMark instance.  (This
-		// restriction is intentional.)
-		//
-		// To switch the GmlPoint within this GpmlHotSpotTrailMark instance, use the
-		// function @a set_position below.
-		//
-		// (This overload is provided to allow the referenced GmlPoint instance to
-		// accept a FeatureVisitor instance.)
-		const GmlPoint::non_null_ptr_type
-		position()
-		{
-			return d_position;
-		}
-
+		/**
+		 * Sets the internal position to a clone of @a pos.
+		 */
 		void
 		set_position(
-				GmlPoint::non_null_ptr_type pos)
-		{
-			d_position = pos;
-			update_instance_id();
-		}
+				GmlPoint::non_null_ptr_to_const_type pos);
 
-		const boost::optional<GpmlMeasure::non_null_ptr_type>
-		trail_width() const
-		{
-			return d_trail_width;
-		}
+		/**
+		 * Returns the 'const' trail width - which is 'const' so that it cannot be
+		 * modified and bypass the revisioning system.
+		 */
+		const boost::optional<GpmlMeasure::non_null_ptr_to_const_type>
+		get_trail_width() const;
 
-		// Note that, because the copy-assignment operator of GpmlMeasure is private,
-		// the GpmlMeasure referenced by the return-value of this function cannot be
-		// assigned-to, which means that this function does not provide a means to directly
-		// switch the GpmlMeasure within this GpmlHotSpotTrailMark instance.  (This
-		// restriction is intentional.)
-		//
-		// To switch the GpmlMeasure within this GpmlHotSpotTrailMark instance, use the
-		// function @a set_trail_width below.
-		//
-		// (This overload is provided to allow the referenced GpmlMeasure instance to
-		// accept a FeatureVisitor instance.)
-		const boost::optional<GpmlMeasure::non_null_ptr_type>
-		trail_width()
-		{
-			return d_trail_width;
-		}
-
+		/**
+		 * Sets the internal trail width to a clone of @a tw.
+		 */
 		void
 		set_trail_width(
-				GpmlMeasure::non_null_ptr_type tw)
-		{
-			d_trail_width = tw;
-			update_instance_id();
-		}
+				GpmlMeasure::non_null_ptr_to_const_type tw);
 
-		const boost::optional<GmlTimeInstant::non_null_ptr_type>
-		measured_age() const
-		{
-			return d_measured_age;
-		}
+		/**
+		 * Returns the 'const' measured age - which is 'const' so that it cannot be
+		 * modified and bypass the revisioning system.
+		 */
+		const boost::optional<GmlTimeInstant::non_null_ptr_to_const_type>
+		get_measured_age() const;
 
-		// Note that, because the copy-assignment operator of GmlTimeInstant is private, the
-		// GmlTimeInstant referenced by the return-value of this function cannot be assigned-to,
-		// which means that this function does not provide a means to directly switch the
-		// GmlTimeInstant within this GpmlHotSpotTrailMark instance.  (This restriction is
-		// intentional.)
-		//
-		// To switch the GmlTimeInstant within this GpmlHotSpotTrailMark instance, use the function
-		// @a set_position below.
-		//
-		// (This overload is provided to allow the referenced GmlTimeInstant instance to accept a
-		// FeatureVisitor instance.)
-		const boost::optional<GmlTimeInstant::non_null_ptr_type>
-		measured_age()
-		{
-			return d_measured_age;
-		}
-
+		/**
+		 * Sets the internal measured age to a clone of @a ti.
+		 */
 		void
 		set_measured_age(
-				GmlTimeInstant::non_null_ptr_type ti)
-		{
-			d_measured_age = ti;
-			update_instance_id();
-		}
+				GmlTimeInstant::non_null_ptr_to_const_type ti);
 
-		const boost::optional<GmlTimePeriod::non_null_ptr_type>
-		measured_age_range() const
-		{
-			return d_measured_age_range;
-		}
+		/**
+		 * Returns the 'const' measured age range - which is 'const' so that it cannot be
+		 * modified and bypass the revisioning system.
+		 */
+		const boost::optional<GmlTimePeriod::non_null_ptr_to_const_type>
+		get_measured_age_range() const;
 
-		const boost::optional<GmlTimePeriod::non_null_ptr_type>
-		measured_age_range()
-		{
-			return d_measured_age_range;
-		}
-
+		/**
+		 * Sets the internal measured age range to a clone of @a tp.
+		 */
 		void
 		set_measured_age_range(
-				GmlTimePeriod::non_null_ptr_type tp)
-		{
-			d_measured_age_range = tp;
-			update_instance_id();
-		}
+				GmlTimePeriod::non_null_ptr_to_const_type tp);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -257,46 +187,66 @@ namespace GPlatesPropertyValues
 
 	protected:
 
-		virtual
-		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const;
-
 		GpmlHotSpotTrailMark(
-				const GmlPoint::non_null_ptr_type &position_,
-				const boost::optional<GpmlMeasure::non_null_ptr_type> &trail_width_,
-				const boost::optional<GmlTimeInstant::non_null_ptr_type> &measured_age_,
-				const boost::optional<GmlTimePeriod::non_null_ptr_type> &measured_age_range_) :
-			PropertyValue(),
-			d_position(position_),
-			d_trail_width(trail_width_),
-			d_measured_age(measured_age_),
-			d_measured_age_range(measured_age_range_)
+				const GmlPoint::non_null_ptr_to_const_type &position_,
+				const boost::optional<GpmlMeasure::non_null_ptr_to_const_type> &trail_width_,
+				const boost::optional<GmlTimeInstant::non_null_ptr_to_const_type> &measured_age_,
+				const boost::optional<GmlTimePeriod::non_null_ptr_to_const_type> &measured_age_range_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(position_, trail_width_, measured_age_, measured_age_range_)))
 		{  }
 
 		GpmlHotSpotTrailMark(
 				const GpmlHotSpotTrailMark &other) :
-			PropertyValue(other), /* share instance id */
-			d_position(other.d_position),
-			d_trail_width(other.d_trail_width),
-			d_measured_age(other.d_measured_age),
-			d_measured_age_range(other.d_measured_age_range)
+			PropertyValue(other)
 		{  }
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GpmlHotSpotTrailMark(*this));
+		}
 
 	private:
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlPlateId &
-		operator=(const GpmlPlateId &);
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			Revision(
+					const GmlPoint::non_null_ptr_to_const_type &position_,
+					const boost::optional<GpmlMeasure::non_null_ptr_to_const_type> &trail_width_,
+					const boost::optional<GmlTimeInstant::non_null_ptr_to_const_type> &measured_age_,
+					const boost::optional<GmlTimePeriod::non_null_ptr_to_const_type> &measured_age_range_) :
+				position(position_),
+				trail_width(trail_width_),
+				measured_age(measured_age_),
+				measured_age_range(measured_age_range_)
+			{  }
 
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
 
-		GmlPoint::non_null_ptr_type d_position;
-		boost::optional<GpmlMeasure::non_null_ptr_type> d_trail_width;
-		boost::optional<GmlTimeInstant::non_null_ptr_type> d_measured_age;
-		boost::optional<GmlTimePeriod::non_null_ptr_type> d_measured_age_range;
+			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const;
+
+			GPlatesUtils::CopyOnWrite<GmlPoint::non_null_ptr_to_const_type> position;
+			boost::optional<GPlatesUtils::CopyOnWrite<GpmlMeasure::non_null_ptr_to_const_type> > trail_width;
+			boost::optional<GPlatesUtils::CopyOnWrite<GmlTimeInstant::non_null_ptr_to_const_type> > measured_age;
+			boost::optional<GPlatesUtils::CopyOnWrite<GmlTimePeriod::non_null_ptr_to_const_type> > measured_age_range;
+		};
 
 	};
 

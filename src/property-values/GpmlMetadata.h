@@ -27,8 +27,12 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLMETADATA_H
 #define GPLATES_PROPERTYVALUES_GPMLMETADATA_H
 
+#include <QDebug>
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "file-io/XmlWriter.h"
+
 #include "model/Metadata.h"
 #include "model/PropertyValue.h"
 
@@ -41,58 +45,68 @@ DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlMetadata, visit_gpml_me
 namespace GPlatesPropertyValues 
 {
 	class GpmlMetadata:
-		public GPlatesModel::PropertyValue
+			public GPlatesModel::PropertyValue
 	{
 	public:
 
+		/**
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlMetadata>.
+		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlMetadata> non_null_ptr_type;
 
-		explicit
-		GpmlMetadata(
-				const GPlatesModel::FeatureCollectionMetadata& metadata):
-			d_metadata(metadata)
-		{ }
+		/**
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlMetadata>.
+		 */
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlMetadata> non_null_ptr_to_const_type;
+
 
 		static
 		const non_null_ptr_type
 		create(
-				const GPlatesModel::FeatureCollectionMetadata& metadata)
+				const GPlatesModel::FeatureCollectionMetadata &metadata)
 		{
-
 			return non_null_ptr_type(new GpmlMetadata(metadata));
 		}
 
-		const GpmlMetadata::non_null_ptr_type
-		deep_clone() const
+		const non_null_ptr_type
+		clone() const
 		{
-			GpmlMetadata* p = new GpmlMetadata(d_metadata);
-			return non_null_ptr_type(p);
+			return GPlatesUtils::dynamic_pointer_cast<GpmlMetadata>(clone_impl());
 		}
 
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
-		void
-		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) 
+		const GPlatesModel::FeatureCollectionMetadata &
+		get_data() const
 		{
-			visitor.visit_gpml_metadata(*this);
-			return;
-		}
-
-		std::ostream &
-		print_to(
-				std::ostream &os) const
-		{
-			qWarning() << "TODO: implement this function.";
-			os << "TODO: implement this function.";
-			return  os;
+			return get_current_revision<Revision>().metadata;
 		}
 
 		void
-		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const
+		set_data(
+				const GPlatesModel::FeatureCollectionMetadata &metadata)
 		{
-			visitor.visit_gpml_metadata(*this);
+			MutableRevisionHandler revision_handler(this);
+			revision_handler.get_mutable_revision<Revision>().metadata = metadata;
+			revision_handler.handle_revision_modification();
+		}
+
+		std::multimap<QString, QString>
+		get_feature_collection_metadata_as_map() const
+		{
+			return get_data().get_metadata_as_map();
+		}
+
+		QString
+		get_feature_collection_metadata_as_xml() const
+		{
+			return get_data().to_xml();
+		}
+
+		void
+		serialize(
+				GPlatesFileIO::XmlWriter& writer) const
+		{
+			get_data().serialize(writer);
 		}
 
 		GPlatesPropertyValues::StructuralType
@@ -102,39 +116,90 @@ namespace GPlatesPropertyValues
 			return STRUCTURAL_TYPE;
 		}
 
-		std::multimap<QString, QString>
-		get_feature_collection_metadata_as_map() const
-		{
-			return d_metadata.get_metadata_as_map();
-		}
-
-		QString
-		get_feature_collection_metadata_as_xml() const
-		{
-			return d_metadata.to_xml();
-		}
-
+		virtual
 		void
-		serialize(
-				GPlatesFileIO::XmlWriter& writer) const
+		accept_visitor(
+				GPlatesModel::FeatureVisitor &visitor) 
 		{
-			d_metadata.serialize(writer);
+			visitor.visit_gpml_metadata(*this);
+			return;
 		}
 
-		GPlatesModel::FeatureCollectionMetadata
-		get_data() const
+		virtual
+		void
+		accept_visitor(
+				GPlatesModel::ConstFeatureVisitor &visitor) const
 		{
-			return d_metadata;
+			visitor.visit_gpml_metadata(*this);
 		}
 
-		GPlatesModel::FeatureCollectionMetadata&
-		get_data() 
+		virtual
+		std::ostream &
+		print_to(
+				std::ostream &os) const
 		{
-			return d_metadata;
+			qWarning() << "TODO: implement this function.";
+			os << "TODO: implement this function.";
+			return  os;
 		}
 
 	protected:
-		GPlatesModel::FeatureCollectionMetadata d_metadata;
+
+		// This constructor should not be public, because we don't want to allow
+		// instantiation of this type on the stack.
+		explicit
+		GpmlMetadata(
+				const GPlatesModel::FeatureCollectionMetadata &metadata) :
+			PropertyValue(Revision::non_null_ptr_type(new Revision(metadata)))
+		{ }
+
+		GpmlMetadata(
+				const GpmlMetadata &other) :
+			PropertyValue(other)
+		{  }
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GpmlMetadata(*this));
+		}
+
+	private:
+
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					const GPlatesModel::FeatureCollectionMetadata &metadata_) :
+				metadata(metadata_)
+			{  }
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				// Compare the feature collectin metadata.
+				// TODO: Implement.
+				qWarning() << "GpmlMetadata::Revision::equality not implemented";
+				return false;
+			}
+
+			GPlatesModel::FeatureCollectionMetadata metadata;
+		};
+
 	};
 
 }

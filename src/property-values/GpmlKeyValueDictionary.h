@@ -29,6 +29,7 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLKEYVALUEDICTIONARY_H
 #define GPLATES_PROPERTYVALUES_GPMLKEYVALUEDICTIONARY_H
 
+#include <cstddef>
 #include <vector>
 
 #include "feature-visitors/PropertyValueFinder.h"
@@ -52,14 +53,12 @@ namespace GPlatesPropertyValues
 
 	public:
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlKeyValueDictionary>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlKeyValueDictionary>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlKeyValueDictionary> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlKeyValueDictionary>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlKeyValueDictionary>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlKeyValueDictionary> non_null_ptr_to_const_type;
 
@@ -68,57 +67,49 @@ namespace GPlatesPropertyValues
 		~GpmlKeyValueDictionary()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create()
 		{
-			non_null_ptr_type ptr(new GpmlKeyValueDictionary());
-			return ptr;
+			return create(std::vector<GpmlKeyValueDictionaryElement>());
 		}
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
 			const std::vector<GpmlKeyValueDictionaryElement> &elements)
 		{
-			non_null_ptr_type ptr(new GpmlKeyValueDictionary(
-					elements));
-			return ptr;
+			return non_null_ptr_type(new GpmlKeyValueDictionary(elements));
 		}
 
-		const GpmlKeyValueDictionary::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlKeyValueDictionary::non_null_ptr_type dup(new GpmlKeyValueDictionary(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GpmlKeyValueDictionary>(clone_impl());
 		}
 
-		const GpmlKeyValueDictionary::non_null_ptr_type
-		deep_clone() const;
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
+		/**
+		 * Returns the dictionary elements.
+		 *
+		 * To modify any dictionary elements:
+		 * (1) make additions/removals/modifications to a copy of the returned vector, and
+		 * (2) use @a set_elements to set them.
+		 *
+		 * The returned dictionary elements implement copy-on-write to promote resource sharing (until write)
+		 * and to ensure our internal state cannot be modified and bypass the revisioning system.
+		 */
 		const std::vector<GpmlKeyValueDictionaryElement> &
-		elements() const
+		get_elements() const
 		{
-				return d_elements;
+			return get_current_revision<Revision>().elements;
 		}
 
-		std::vector<GpmlKeyValueDictionaryElement> &
-		elements()
-		{
-				return d_elements;
-		}
+		/**
+		 * Sets the internal dictionary elements.
+		 */
+		void
+		set_elements(
+				const std::vector<GpmlKeyValueDictionaryElement> &elements);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -159,19 +150,6 @@ namespace GPlatesPropertyValues
 			visitor.visit_gpml_key_value_dictionary(*this);
 		}
 
-		bool
-		is_empty() const
-		{
-			return d_elements.empty();
-		}
-
-		// FIXME: Why does this return an 'int', rather than a 'std::vector<T>::size_type'?
-		int
-		num_elements() const
-		{
-			return d_elements.size();
-		}
-
 		virtual
 		std::ostream &
 		print_to(
@@ -181,16 +159,9 @@ namespace GPlatesPropertyValues
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		GpmlKeyValueDictionary():
-			PropertyValue()
-		{  }
-
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
 		GpmlKeyValueDictionary(
-			const std::vector<GpmlKeyValueDictionaryElement> &elements_):
-			PropertyValue(),
-			d_elements(elements_)
+				const std::vector<GpmlKeyValueDictionaryElement> &elements_):
+			PropertyValue(Revision::non_null_ptr_type(new Revision(elements_)))
 		{  }
 
 		// This constructor should not be public, because we don't want to allow
@@ -200,24 +171,52 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GpmlKeyValueDictionary(
 				const GpmlKeyValueDictionary &other) :
-			PropertyValue(other) /* share instance id */
+			PropertyValue(other)
 		{  }
 
 		virtual
-		bool
-		directly_modifiable_fields_equal(
-				const PropertyValue &other) const;
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GpmlKeyValueDictionary(*this));
+		}
 
 	private:
 
-		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> d_elements;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					const std::vector<GpmlKeyValueDictionaryElement> &elements_) :
+				elements(elements_)
+			{  }
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlKeyValueDictionary &
-		operator=(const GpmlKeyValueDictionary &);
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return elements == other_revision.elements &&
+					GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			std::vector<GpmlKeyValueDictionaryElement> elements;
+		};
 
 	};
 

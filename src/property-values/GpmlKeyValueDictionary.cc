@@ -26,25 +26,17 @@
  */
 
 #include <iostream>
-#include <typeinfo>
 
 #include "GpmlKeyValueDictionary.h"
 
 
-const GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type
-GPlatesPropertyValues::GpmlKeyValueDictionary::deep_clone() const
+void
+GPlatesPropertyValues::GpmlKeyValueDictionary::set_elements(
+		const std::vector<GpmlKeyValueDictionaryElement> &elements)
 {
-	GpmlKeyValueDictionary::non_null_ptr_type dup = clone();
-
-	// Now we need to clear the dictionary-element vector in the duplicate, before we push-back
-	// the cloned elements.
-	dup->d_elements.clear();
-	std::vector<GpmlKeyValueDictionaryElement>::const_iterator iter, end = d_elements.end();
-	for (iter = d_elements.begin(); iter != end; ++iter) {
-		dup->d_elements.push_back((*iter).deep_clone());
-	}
-
-	return dup;
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().elements = elements;
+	revision_handler.handle_revision_modification();
 }
 
 
@@ -52,32 +44,16 @@ std::ostream &
 GPlatesPropertyValues::GpmlKeyValueDictionary::print_to(
 		std::ostream &os) const
 {
+	const std::vector<GpmlKeyValueDictionaryElement> &elements = get_elements();
+
 	os << "[ ";
 
-	typedef std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator iterator_type;
-	for (iterator_type iter = d_elements.begin(); iter != d_elements.end(); ++iter)
+	for (std::vector<GpmlKeyValueDictionaryElement>::const_iterator elements_iter = elements.begin();
+		elements_iter != elements.end();
+		++elements_iter)
 	{
-		os << *iter;
+		os << *elements_iter;
 	}
 
 	return os << " ]";
 }
-
-
-bool
-GPlatesPropertyValues::GpmlKeyValueDictionary::directly_modifiable_fields_equal(
-		const GPlatesModel::PropertyValue &other) const
-{
-	try
-	{
-		const GpmlKeyValueDictionary &other_casted =
-			dynamic_cast<const GpmlKeyValueDictionary &>(other);
-		return d_elements == other_casted.d_elements;
-	}
-	catch (const std::bad_cast &)
-	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
-	}
-}
-

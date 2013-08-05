@@ -200,13 +200,6 @@ namespace GPlatesPropertyValues
 		GPlatesModel::PropertyName d_property_name;
 		StructuralType d_value_type;
 
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		GpmlPropertyDelegate &
-		operator=(const GpmlPropertyDelegate &);
-
 	};
 
 }

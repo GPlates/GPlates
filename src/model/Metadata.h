@@ -563,7 +563,8 @@ namespace GPlatesModel
 			if(qualified_name(reader) == name)
 			{
 				(this->*func)(reader.readElementText());
-			}else
+			}
+			else
 			{
 				qWarning() << QString("Expecting xml element %2, but got %1.").arg(
 					qualified_name(reader)).arg(name);

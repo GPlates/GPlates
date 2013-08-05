@@ -30,19 +30,13 @@
 #include "GpmlKeyValueDictionaryElement.h"
 
 
-const GPlatesPropertyValues::GpmlKeyValueDictionaryElement
-GPlatesPropertyValues::GpmlKeyValueDictionaryElement::deep_clone() const
+bool
+GPlatesPropertyValues::GpmlKeyValueDictionaryElement::operator==(
+		const GpmlKeyValueDictionaryElement &other) const
 {
-	GpmlKeyValueDictionaryElement dup(*this);
-
-	XsString::non_null_ptr_type cloned_key = d_key->deep_clone();
-	dup.d_key = cloned_key;
-
-	GPlatesModel::PropertyValue::non_null_ptr_type cloned_value =
-			d_value->deep_clone_as_prop_val();
-	dup.d_value = cloned_value;
-
-	return dup;
+	return *d_key.get_const() == *other.d_key.get_const() &&
+		*d_value.get_const() == *other.d_value.get_const() &&
+		d_value_type == other.d_value_type;
 }
 
 
@@ -51,16 +45,6 @@ GPlatesPropertyValues::operator<<(
 		std::ostream &os,
 		const GpmlKeyValueDictionaryElement &element)
 {
-	return os << *(element.key()) << ":" << *(element.value());
-}
-
-
-bool
-GPlatesPropertyValues::GpmlKeyValueDictionaryElement::operator==(
-		const GpmlKeyValueDictionaryElement &other) const
-{
-	return *d_key == *other.d_key &&
-		*d_value == *other.d_value &&
-		d_value_type == other.d_value_type;
+	return os << *element.key() << ":" << *element.value();
 }
 
