@@ -28,20 +28,16 @@
 #include <iostream>
 
 #include "GmlMultiPoint.h"
+
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
 #include "maths/MultiPointOnSphere.h"
 
 
 const GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type
 GPlatesPropertyValues::GmlMultiPoint::create(
-		const internal_multipoint_type &multipoint_)
-{
-	return new GmlMultiPoint(multipoint_);
-}
-
-
-const GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type
-GPlatesPropertyValues::GmlMultiPoint::create(
-		const internal_multipoint_type &multipoint_,
+		const multipoint_type &multipoint_,
 		const std::vector<GmlPoint::GmlProperty> &gml_properties_)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -51,28 +47,41 @@ GPlatesPropertyValues::GmlMultiPoint::create(
 	// Because MultiPointOnSphere can only ever be handled via a non_null_ptr_to_const_type,
 	// there is no way a MultiPointOnSphere instance can be changed.  Hence, it is safe to store
 	// a pointer to the instance which was passed into this 'create' function.
-	GmlMultiPoint::non_null_ptr_type gml_multi_point_ptr(
-			new GmlMultiPoint(multipoint_, gml_properties_));
-	return gml_multi_point_ptr;
+	return GmlMultiPoint::non_null_ptr_type(new GmlMultiPoint(multipoint_, gml_properties_));
 }
 
 
-GPlatesPropertyValues::GmlMultiPoint::GmlMultiPoint(
-		const internal_multipoint_type &multipoint_) :
-	PropertyValue(),
-	d_multipoint(multipoint_)
+void
+GPlatesPropertyValues::GmlMultiPoint::set_multipoint(
+		const multipoint_type &p)
 {
-	fill_gml_properties();
+	MutableRevisionHandler revision_handler(this);
+
+	Revision &revision = revision_handler.get_mutable_revision<Revision>();
+
+	revision.multipoint = p;
+	revision.fill_gml_properties();
+
+	revision_handler.handle_revision_modification();
 }
 
 
-GPlatesPropertyValues::GmlMultiPoint::GmlMultiPoint(
-		const internal_multipoint_type &multipoint_,
-		const std::vector<GmlPoint::GmlProperty> &gml_properties_) :
-	PropertyValue(),
-	d_multipoint(multipoint_),
-	d_gml_properties(gml_properties_)
-{  }
+void
+GPlatesPropertyValues::GmlMultiPoint::set_gml_properties(
+		const std::vector<GmlPoint::GmlProperty> &gml_properties_)
+{
+	MutableRevisionHandler revision_handler(this);
+
+	Revision &revision = revision_handler.get_mutable_revision<Revision>();
+
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			revision.multipoint->number_of_points() == gml_properties_.size(),
+			GPLATES_ASSERTION_SOURCE);
+
+	revision.gml_properties = gml_properties_;
+
+	revision_handler.handle_revision_modification();
+}
 
 
 std::ostream &
@@ -85,16 +94,16 @@ GPlatesPropertyValues::GmlMultiPoint::print_to(
 
 
 void
-GPlatesPropertyValues::GmlMultiPoint::fill_gml_properties()
+GPlatesPropertyValues::GmlMultiPoint::Revision::fill_gml_properties()
 {
-	d_gml_properties.clear();
+	gml_properties.clear();
 
-	std::size_t number_of_points = d_multipoint->number_of_points();
-	d_gml_properties.reserve(number_of_points);
+	std::size_t number_of_points = multipoint->number_of_points();
+	gml_properties.reserve(number_of_points);
 
 	for (std::size_t i = 0; i != number_of_points; ++i)
 	{
-		d_gml_properties.push_back(GmlPoint::POS);
+		gml_properties.push_back(GmlPoint::POS);
 	}
 }
 

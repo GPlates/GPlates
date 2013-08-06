@@ -30,6 +30,7 @@
 
 #include <vector>
 #include <map>
+#include <boost/operators.hpp>
 #include <boost/optional.hpp>
 
 #include "Georeferencing.h"
@@ -72,7 +73,71 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlRectifiedGrid> non_null_ptr_to_const_type;
 
 
-		typedef std::vector<GPlatesUtils::CopyOnWrite<XsString::non_null_ptr_to_const_type> > axes_list_type;
+		/**
+		 * An axis.
+		 */
+		class Axis :
+				public boost::equality_comparable<Axis>
+		{
+		public:
+
+			/**
+			 * Axis has value semantics where each @a Axis instance has its own state.
+			 * So if you create a copy and modify the copy's state then it will not modify the state
+			 * of the original object.
+			 *
+			 * The constructor first clones the property value and then copy-on-write is used to allow
+			 * multiple @a Axis objects to share the same state (until the state is modified).
+			 */
+			Axis(
+					XsString::non_null_ptr_type name) :
+				d_name(name)
+			{  }
+
+			/**
+			 * Returns the 'const' band name.
+			 */
+			const XsString::non_null_ptr_to_const_type
+			get_name() const
+			{
+				return d_name.get();
+			}
+
+			/**
+			 * Returns the 'non-const' band name.
+			 */
+			const XsString::non_null_ptr_type
+			get_name()
+			{
+				return d_name.get();
+			}
+
+			void
+			set_name(
+					XsString::non_null_ptr_type name)
+			{
+				d_name = name;
+			}
+
+			/**
+			 * Value equality comparison operator.
+			 *
+			 * Inequality provided by boost equality_comparable.
+			 */
+			bool
+			operator==(
+					const Axis &other) const
+			{
+				return *d_name.get_const() == *other.d_name.get_const();
+			}
+
+		private:
+			GPlatesUtils::CopyOnWrite<XsString::non_null_ptr_type> d_name;
+		};
+
+		//! Typedef for a sequence of axes.
+		typedef std::vector<Axis> axes_list_type;
+
 		typedef std::vector<double> offset_vector_type;
 		typedef std::vector<offset_vector_type> offset_vector_list_type;
 		typedef std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes_type;
@@ -100,7 +165,10 @@ namespace GPlatesPropertyValues
 				const axes_list_type &axes_,
 				const GmlPoint::non_null_ptr_to_const_type &origin_,
 				const offset_vector_list_type &offset_vectors_,
-				const xml_attributes_type &xml_attributes_);
+				const xml_attributes_type &xml_attributes_)
+		{
+			return non_null_ptr_type(new GmlRectifiedGrid(limits_, axes_, origin_, offset_vectors_, xml_attributes_));
+		}
 
 		/**
 		 * Convenience function for creating a GmlRectifiedGrid from georeferencing
@@ -120,86 +188,94 @@ namespace GPlatesPropertyValues
 			return GPlatesUtils::dynamic_pointer_cast<GmlRectifiedGrid>(clone_impl());
 		}
 
-		const GmlGridEnvelope::non_null_ptr_to_const_type &
+		/**
+		 * Returns the 'const' limits - which is 'const' so that it cannot be
+		 * modified and bypass the revisioning system.
+		 */
+		const GmlGridEnvelope::non_null_ptr_to_const_type
 		get_limits() const
 		{
-			return d_limits;
+			return get_current_revision<Revision>().limits;
 		}
 
+		/**
+		 * Sets the internal limits to a clone of @a limits_.
+		 */
 		void
 		set_limits(
-				const GmlGridEnvelope::non_null_ptr_to_const_type &limits_)
-		{
-			d_limits = limits_;
-			update_instance_id();
-		}
+				const GmlGridEnvelope::non_null_ptr_to_const_type &limits_);
 
+		/**
+		 * Returns the axes.
+		 *
+		 * To modify any members:
+		 * (1) make additions/removals/modifications to a copy of the returned vector, and
+		 * (2) use @a set_axes to set them.
+		 *
+		 * The returned axes implement copy-on-write to promote resource sharing (until write)
+		 * and to ensure our internal state cannot be modified and bypass the revisioning system.
+		 */
 		const axes_list_type &
 		get_axes() const
 		{
-			return d_axes;
+			return get_current_revision<Revision>().axes;
 		}
 
+		/**
+		 * Sets the internal axes.
+		 */
 		void
 		set_axes(
-				const axes_list_type &axes_)
-		{
-			d_axes = axes_;
-			update_instance_id();
-		}
+				const axes_list_type &axes_);
 
-		const GmlPoint::non_null_ptr_to_const_type &
+		/**
+		 * Returns the 'const' origin - which is 'const' so that it cannot be
+		 * modified and bypass the revisioning system.
+		 */
+		const GmlPoint::non_null_ptr_to_const_type
 		get_origin() const
 		{
-			return d_origin;
+			return get_current_revision<Revision>().origin;
 		}
 
+		/**
+		 * Sets the internal origin to a clone of @a origin_.
+		 */
 		void
 		set_origin(
-				const GmlPoint::non_null_ptr_to_const_type &origin_)
-		{
-			d_origin = origin_;
+				const GmlPoint::non_null_ptr_to_const_type &origin_);
 
-			// Invalidate the georeferencing cache because that's calculated using the origin.
-			d_cached_georeferencing = boost::none;
-
-			update_instance_id();
-		}
-
+		/**
+		 * Returns the offset vectors.
+		 *
+		 * To modify any offset vectors:
+		 * (1) make additions/removals/modifications to a copy of the returned vector, and
+		 * (2) use @a set_offset_vectors to set them.
+		 *
+		 * The returned offset vectors implement copy-on-write to promote resource sharing (until write)
+		 * and to ensure our internal state cannot be modified and bypass the revisioning system.
+		 */
 		const offset_vector_list_type &
 		get_offset_vectors() const
 		{
-			return d_offset_vectors;
+			return get_current_revision<Revision>().offset_vectors;
 		}
 
 		void
 		set_offset_vectors(
-				const offset_vector_list_type &offset_vectors_)
-		{
-			d_offset_vectors = offset_vectors_;
-
-			// Invalidate the georeferencing cache because that's calculated using the
-			// offset vectors.
-			d_cached_georeferencing = boost::none;
-
-			update_instance_id();
-		}
+				const offset_vector_list_type &offset_vectors_);
 
 		const xml_attributes_type &
 		get_xml_attributes() const
 		{
-			return d_xml_attributes;
+			return get_current_revision<Revision>().xml_attributes;
 		}
 
 		void
 		set_xml_attributes(
-				const xml_attributes_type &xml_attributes_)
-		{
-			d_xml_attributes = xml_attributes_;
-			update_instance_id();
-		}
+				const xml_attributes_type &xml_attributes_);
 
-		const boost::optional<Georeferencing::non_null_ptr_to_const_type> &
+		const boost::optional<Georeferencing::non_null_ptr_to_const_type>
 		convert_to_georeferencing() const;
 
 		/**
@@ -257,12 +333,9 @@ namespace GPlatesPropertyValues
 				const GmlPoint::non_null_ptr_to_const_type &origin_,
 				const offset_vector_list_type &offset_vectors_,
 				const xml_attributes_type xml_attributes_) :
-			PropertyValue(),
-			d_limits(limits_),
-			d_axes(axes_),
-			d_origin(origin_),
-			d_offset_vectors(offset_vectors_),
-			d_xml_attributes(xml_attributes_)
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(limits_, axes_, origin_, offset_vectors_, xml_attributes_)))
 		{  }
 
 
@@ -273,25 +346,60 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GmlRectifiedGrid(
 				const GmlRectifiedGrid &other) :
-			PropertyValue(other), /* share instance id */
-			d_limits(other.d_limits),
-			d_axes(other.d_axes),
-			d_origin(other.d_origin),
-			d_offset_vectors(other.d_offset_vectors),
-			d_xml_attributes(other.d_xml_attributes),
-			d_cached_georeferencing(other.d_cached_georeferencing)
+			PropertyValue(other)
 		{  }
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GmlRectifiedGrid(*this));
+		}
 
 	private:
 
-		GmlGridEnvelope::non_null_ptr_to_const_type d_limits;
-		axes_list_type d_axes;
-		GmlPoint::non_null_ptr_to_const_type d_origin;
-		offset_vector_list_type d_offset_vectors;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			Revision(
+					const GmlGridEnvelope::non_null_ptr_to_const_type &limits_,
+					const axes_list_type &axes_,
+					const GmlPoint::non_null_ptr_to_const_type &origin_,
+					const offset_vector_list_type &offset_vectors_,
+					const xml_attributes_type xml_attributes_) :
+				limits(limits_),
+				axes(axes_),
+				origin(origin_),
+				offset_vectors(offset_vectors_),
+				xml_attributes(xml_attributes_)
+			{  }
 
-		xml_attributes_type d_xml_attributes;
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
 
-		mutable boost::optional<Georeferencing::non_null_ptr_to_const_type> d_cached_georeferencing;
+			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const;
+
+			GmlGridEnvelope::non_null_ptr_to_const_type limits;
+			axes_list_type axes;
+			GmlPoint::non_null_ptr_to_const_type origin;
+			offset_vector_list_type offset_vectors;
+
+			xml_attributes_type xml_attributes;
+
+			mutable boost::optional<Georeferencing::non_null_ptr_to_const_type> cached_georeferencing;
+		};
 
 	};
 

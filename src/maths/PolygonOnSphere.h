@@ -606,11 +606,25 @@ namespace GPlatesMaths
 				const real_t &latitude_exclusion_threshold,
 				real_t &closeness) const;
 
+
+		/**
+		 * Equality operator compares great circle arc subsegments.
+		 */
 		bool
 		operator==(
 				const PolygonOnSphere &other) const
 		{
 			return d_seq == other.d_seq;
+		}
+
+		/**
+		 * Inequality operator.
+		 */
+		bool
+		operator!=(
+				const PolygonOnSphere &other) const
+		{
+			return !operator==(other);
 		}
 
 

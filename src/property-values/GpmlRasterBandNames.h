@@ -29,6 +29,7 @@
 #define GPLATES_PROPERTYVALUES_GPMLRASTERBANDNAMES_H
 
 #include <vector>
+#include <boost/operators.hpp>
 
 #include "XsString.h"
 
@@ -65,30 +66,76 @@ namespace GPlatesPropertyValues
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlRasterBandNames> non_null_ptr_to_const_type;
 
+
 		/**
-		 * Typedef for a sequence of band names.
-		 *
-		 * Get the non_null_intrusive_ptr using 'CopyOnWrite::get_const()' or 'CopyOnWrite::get_non_const()'.
+		 * Raster band name.
 		 */
-		typedef std::vector<
-				GPlatesUtils::CopyOnWrite<XsString::non_null_ptr_type> >
-						band_names_list_type;
+		class BandName :
+				public boost::equality_comparable<BandName>
+		{
+		public:
+
+			/**
+			 * BandName has value semantics where each @a BandName instance has its own state.
+			 * So if you create a copy and modify the copy's state then it will not modify the state
+			 * of the original object.
+			 *
+			 * The constructor first clones the property value and then copy-on-write is used to allow
+			 * multiple @a BandName objects to share the same state (until the state is modified).
+			 */
+			BandName(
+					XsString::non_null_ptr_type name) :
+				d_name(name)
+			{  }
+
+			/**
+			 * Returns the 'const' band name.
+			 */
+			const XsString::non_null_ptr_to_const_type
+			get_name() const
+			{
+				return d_name.get();
+			}
+
+			/**
+			 * Returns the 'non-const' band name.
+			 */
+			const XsString::non_null_ptr_type
+			get_name()
+			{
+				return d_name.get();
+			}
+
+			void
+			set_name(
+					XsString::non_null_ptr_type name)
+			{
+				d_name = name;
+			}
+
+			/**
+			 * Value equality comparison operator.
+			 *
+			 * Inequality provided by boost equality_comparable.
+			 */
+			bool
+			operator==(
+					const BandName &other) const
+			{
+				return *d_name.get_const() == *other.d_name.get_const();
+			}
+
+		private:
+			GPlatesUtils::CopyOnWrite<XsString::non_null_ptr_type> d_name;
+		};
+
+		//! Typedef for a sequence of band names.
+		typedef std::vector<BandName> band_names_list_type;
 
 
 		virtual
 		~GpmlRasterBandNames()
 		{  }
-
-		/**
-		 * Create a GpmlRasterBandNames instance from a collection of @a band_names_.
-		 */
-		static
-		const non_null_ptr_type
-		create(
-				const std::vector<XsString::non_null_ptr_type> &band_names_)
-		{
-			return create(band_names_.begin(), band_names_.end());
-		}
 
 		/**
 		 * Create a GpmlRasterBandNames instance from a collection of @a band_names_.

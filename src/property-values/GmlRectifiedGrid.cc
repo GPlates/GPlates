@@ -34,23 +34,6 @@
 
 const GPlatesPropertyValues::GmlRectifiedGrid::non_null_ptr_type
 GPlatesPropertyValues::GmlRectifiedGrid::create(
-		const GmlGridEnvelope::non_null_ptr_to_const_type &limits_,
-		const axes_list_type &axes_,
-		const GmlPoint::non_null_ptr_to_const_type &origin_,
-		const offset_vector_list_type &offset_vectors_,
-		const xml_attributes_type &xml_attributes_)
-{
-	return new GmlRectifiedGrid(
-			limits_,
-			axes_,
-			origin_,
-			offset_vectors_,
-			xml_attributes_);
-}
-
-
-const GPlatesPropertyValues::GmlRectifiedGrid::non_null_ptr_type
-GPlatesPropertyValues::GmlRectifiedGrid::create(
 		const Georeferencing::non_null_ptr_to_const_type &georeferencing,
 		unsigned int raster_width,
 		unsigned int raster_height,
@@ -95,9 +78,75 @@ GPlatesPropertyValues::GmlRectifiedGrid::create(
 			origin_,
 			offset_vectors_,
 			xml_attributes_);
-	result->d_cached_georeferencing = georeferencing;
+
+	const Revision &revision = result->get_current_revision<Revision>();
+	revision.cached_georeferencing = georeferencing;
 
 	return result;
+}
+
+
+void
+GPlatesPropertyValues::GmlRectifiedGrid::set_limits(
+		const GmlGridEnvelope::non_null_ptr_to_const_type &limits_)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().limits = limits_;
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GmlRectifiedGrid::set_axes(
+		const axes_list_type &axes_)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().axes = axes_;
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GmlRectifiedGrid::set_origin(
+		const GmlPoint::non_null_ptr_to_const_type &origin_)
+{
+	MutableRevisionHandler revision_handler(this);
+
+	Revision &revision = revision_handler.get_mutable_revision<Revision>();
+
+	revision.origin = origin_;
+
+	// Invalidate the georeferencing cache because that's calculated using the origin.
+	revision.cached_georeferencing = boost::none;
+
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GmlRectifiedGrid::set_offset_vectors(
+		const offset_vector_list_type &offset_vectors_)
+{
+	MutableRevisionHandler revision_handler(this);
+
+	Revision &revision = revision_handler.get_mutable_revision<Revision>();
+
+	revision.offset_vectors = offset_vectors_;
+
+	// Invalidate the georeferencing cache because that's calculated using the offset vectors.
+	revision.cached_georeferencing = boost::none;
+
+	revision_handler.handle_revision_modification();
+}
+
+
+void
+GPlatesPropertyValues::GmlRectifiedGrid::set_xml_attributes(
+		const xml_attributes_type &xml_attributes_)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().xml_attributes = xml_attributes_;
+	revision_handler.handle_revision_modification();
 }
 
 
@@ -109,24 +158,26 @@ GPlatesPropertyValues::GmlRectifiedGrid::print_to(
 }
 
 
-const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
+const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type>
 GPlatesPropertyValues::GmlRectifiedGrid::convert_to_georeferencing() const
 {
-	if (d_cached_georeferencing)
+	const Revision &revision = get_current_revision<Revision>();
+
+	if (revision.cached_georeferencing)
 	{
 		// Already calculated, just use it.
-		return d_cached_georeferencing;
+		return revision.cached_georeferencing;
 	}
 
-	if (d_offset_vectors.size() != 2)
+	if (revision.offset_vectors.size() != 2)
 	{
-		return d_cached_georeferencing /* = boost::none */;
+		return revision.cached_georeferencing /* = boost::none */;
 	}
 
-	const offset_vector_type &longitude_offset_vector = d_offset_vectors[0];
-	const offset_vector_type &latitude_offset_vector = d_offset_vectors[1];
+	const offset_vector_type &longitude_offset_vector = revision.offset_vectors[0];
+	const offset_vector_type &latitude_offset_vector = revision.offset_vectors[1];
 
-	GPlatesMaths::LatLonPoint llp = d_origin->point_in_lat_lon();
+	GPlatesMaths::LatLonPoint llp = revision.origin->point_in_lat_lon();
 
 	Georeferencing::parameters_type params = {{{
 		llp.longitude(),
@@ -138,8 +189,22 @@ GPlatesPropertyValues::GmlRectifiedGrid::convert_to_georeferencing() const
 	}}};
 
 	Georeferencing::non_null_ptr_type georeferencing = Georeferencing::create(params);
-	d_cached_georeferencing = Georeferencing::non_null_ptr_to_const_type(georeferencing.get());
+	revision.cached_georeferencing = Georeferencing::non_null_ptr_to_const_type(georeferencing.get());
 
-	return d_cached_georeferencing;
+	return revision.cached_georeferencing;
 }
 
+
+bool
+GPlatesPropertyValues::GmlRectifiedGrid::Revision::equality(
+		const GPlatesModel::PropertyValue::Revision &other) const
+{
+	const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+	return *limits == *other_revision.limits &&
+			axes == other_revision.axes &&
+			*origin == *other_revision.origin &&
+			offset_vectors == other_revision.offset_vectors &&
+			xml_attributes == other_revision.xml_attributes &&
+			GPlatesModel::PropertyValue::Revision::equality(other);
+}

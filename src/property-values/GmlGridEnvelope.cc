@@ -41,7 +41,7 @@ GPlatesPropertyValues::GmlGridEnvelope::create(
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			low_.size() == high_.size(), GPLATES_ASSERTION_SOURCE);
 
-	return new GmlGridEnvelope(low_, high_);
+	return non_null_ptr_type(new GmlGridEnvelope(low_, high_));
 }
 
 
@@ -53,10 +53,14 @@ GPlatesPropertyValues::GmlGridEnvelope::set_low_and_high(
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			low_.size() == high_.size(), GPLATES_ASSERTION_SOURCE);
 
-	d_low = low_;
-	d_high = high_;
+	MutableRevisionHandler revision_handler(this);
 
-	update_instance_id();
+	Revision &revision = revision_handler.get_mutable_revision<Revision>();
+
+	revision.low = low_;
+	revision.high = high_;
+
+	revision_handler.handle_revision_modification();
 }
 
 
@@ -64,16 +68,18 @@ std::ostream &
 GPlatesPropertyValues::GmlGridEnvelope::print_to(
 		std::ostream &os) const
 {
+	const Revision &revision = get_current_revision<Revision>();
+
 	os << "{ ";
 
-	BOOST_FOREACH(int d, d_low)
+	BOOST_FOREACH(int d, revision.low)
 	{
 		os << d << " ";
 	}
 
 	os << "} { ";
 
-	BOOST_FOREACH(int d, d_high)
+	BOOST_FOREACH(int d, revision.high)
 	{
 		os << d << " ";
 	}

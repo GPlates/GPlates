@@ -52,7 +52,7 @@ GPlatesPropertyValues::GpmlArray::print_to(
 		members_iter != members.end();
 		++members_iter)
 	{
-		os << *members_iter->get_const();
+		os << *members_iter->get_value();
 	}
 
 	return os << " ]";
@@ -72,8 +72,7 @@ GPlatesPropertyValues::GpmlArray::Revision::equality(
 
 	for (unsigned int n = 0; n < members.size(); ++n)
 	{
-		// Compare PropertyValues, not pointers to PropertyValues...
-		if (*members[n].get_const() != *other_revision.members[n].get_const())
+		if (members[n] != other_revision.members[n])
 		{
 			return false;
 		}

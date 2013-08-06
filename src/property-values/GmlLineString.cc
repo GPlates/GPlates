@@ -31,15 +31,13 @@
 #include "maths/PolylineOnSphere.h"
 
 
-const GPlatesPropertyValues::GmlLineString::non_null_ptr_type
-GPlatesPropertyValues::GmlLineString::create(
-		const internal_polyline_type &polyline_)
+void
+GPlatesPropertyValues::GmlLineString::set_polyline(
+		const polyline_type &p)
 {
-	// Because PolylineOnSphere can only ever be handled via a non_null_ptr_to_const_type,
-	// there is no way a PolylineOnSphere instance can be changed.  Hence, it is safe to store
-	// a pointer to the instance which was passed into this 'create' function.
-	GmlLineString::non_null_ptr_type line_string_ptr(new GmlLineString(polyline_));
-	return line_string_ptr;
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().polyline = p;
+	revision_handler.handle_revision_modification();
 }
 
 

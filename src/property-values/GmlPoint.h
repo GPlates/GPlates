@@ -267,6 +267,8 @@ namespace GPlatesPropertyValues
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
 			clone() const
 			{
+				// Note that the default copy constructor (shallow copy) is fine because
+				// PointOnSphere is immutable and hence can be shared without copy-on-write.
 				return non_null_ptr_type(new Revision(*this));
 			}
 

@@ -861,6 +861,27 @@ namespace GPlatesMaths
 				real_t &closeness) const;
 
 
+		/**
+		 * Equality operator compares great circle arc subsegments.
+		 */
+		bool
+		operator==(
+				const PolylineOnSphere &other) const
+		{
+			return d_seq == other.d_seq;
+		}
+
+		/**
+		 * Inequality operator.
+		 */
+		bool
+		operator!=(
+				const PolylineOnSphere &other) const
+		{
+			return !operator==(other);
+		}
+
+
 		//
 		// The following are cached calculations on the geometry data.
 		//

@@ -52,7 +52,7 @@ GPlatesPropertyValues::GpmlRasterBandNames::print_to(
 		band_names_iter != band_names.end();
 		++band_names_iter)
 	{
-		os << band_names_iter->get_const()->get_value().get();
+		os << band_names_iter->get_name().get();
 	}
 
 	return os << " ]";
@@ -72,8 +72,7 @@ GPlatesPropertyValues::GpmlRasterBandNames::Revision::equality(
 
 	for (unsigned int n = 0; n < band_names.size(); ++n)
 	{
-		// Compare PropertyValues, not pointers to PropertyValues...
-		if (*band_names[n].get_const() != *other_revision.band_names[n].get_const())
+		if (band_names[n] != other_revision.band_names[n])
 		{
 			return false;
 		}

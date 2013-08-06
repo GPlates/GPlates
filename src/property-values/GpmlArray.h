@@ -28,6 +28,7 @@
 #define GPLATES_PROPERTYVALUES_GPMLARRAY_H
 
 #include <vector>
+#include <boost/operators.hpp>
 
 #include "StructuralType.h"
 
@@ -60,29 +61,77 @@ namespace GPlatesPropertyValues
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlArray> non_null_ptr_to_const_type;
 
+
 		/**
-		 * Typedef for a sequence of property values.
-		 *
-		 * Get the non_null_intrusive_ptr using 'CopyOnWrite::get_const()' or 'CopyOnWrite::get_non_const()'.
+		 * A member of the array.
 		 */
-		typedef std::vector<
-				GPlatesUtils::CopyOnWrite<GPlatesModel::PropertyValue::non_null_ptr_type> >
-						member_array_type;
+		class Member :
+				public boost::equality_comparable<Member>
+		{
+		public:
+
+			/**
+			 * Member has value semantics where each @a Member instance has its own state.
+			 * So if you create a copy and modify the copy's state then it will not modify the state
+			 * of the original object.
+			 *
+			 * The constructor first clones the property value and then copy-on-write is used to allow
+			 * multiple @a Member objects to share the same state (until the state is modified).
+			 */
+			Member(
+					GPlatesModel::PropertyValue::non_null_ptr_type value) :
+				d_value(value)
+			{  }
+
+			/**
+			 * Returns the 'const' property value.
+			 */
+			const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
+			get_value() const
+			{
+				return d_value.get();
+			}
+
+			/**
+			 * Returns the 'non-const' property value.
+			 */
+			const GPlatesModel::PropertyValue::non_null_ptr_type
+			get_value()
+			{
+				return d_value.get();
+			}
+
+			void
+			set_value(
+					GPlatesModel::PropertyValue::non_null_ptr_type value)
+			{
+				d_value = value;
+			}
+
+			/**
+			 * Value equality comparison operator.
+			 *
+			 * Inequality provided by boost equality_comparable.
+			 */
+			bool
+			operator==(
+					const Member &other) const
+			{
+				return *d_value.get_const() == *other.d_value.get_const();
+			}
+
+		private:
+			GPlatesUtils::CopyOnWrite<GPlatesModel::PropertyValue::non_null_ptr_type> d_value;
+		};
+
+		//! Typedef for a sequence of array members.
+		typedef std::vector<Member> member_array_type;
 
 
 		virtual
 		~GpmlArray()
 		{  }
 
-
-		static
-		const non_null_ptr_type
-		create(
-			const StructuralType &value_type,		
-			const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &members)
-		{
-			return create(value_type, members.begin(), members.end());
-		}
 
 		static
 		const non_null_ptr_type
@@ -258,7 +307,7 @@ namespace GPlatesPropertyValues
 			equality(
 					const GPlatesModel::PropertyValue::Revision &other) const;
 
-			std::vector<GPlatesUtils::CopyOnWrite<GPlatesModel::PropertyValue::non_null_ptr_type> > members;
+			member_array_type members;
 		};
 
 		StructuralType d_value_type;

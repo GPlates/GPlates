@@ -62,6 +62,7 @@ namespace GPlatesPropertyValues
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlScalarField3DFile> non_null_ptr_to_const_type;
 
+
 		//! Typedef for the scalar field filename.
 		typedef XsString::non_null_ptr_to_const_type file_name_type;
 

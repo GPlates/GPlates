@@ -25,9 +25,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/utility/compare_pointees.hpp>
-#include <boost/foreach.hpp>
 #include <iostream>
+#include <boost/foreach.hpp>
+#include <boost/utility/compare_pointees.hpp>
 
 #include "GpmlIrregularSampling.h"
 

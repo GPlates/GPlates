@@ -405,12 +405,27 @@ namespace GPlatesMaths
 				const real_t &closeness_inclusion_threshold,
 				real_t &closeness) const;
 
+
+		/**
+		 * Equality operator compares points in order.
+		 */
 		bool
 		operator==(
 				const MultiPointOnSphere &other) const
 		{
 			return d_points == other.d_points;
 		}
+
+		/**
+		 * Inequality operator.
+		 */
+		bool
+		operator!=(
+				const MultiPointOnSphere &other) const
+		{
+			return !operator==(other);
+		}
+
 
 		//
 		// The following are cached calculations on the geometry data.

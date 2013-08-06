@@ -76,12 +76,11 @@ namespace GPlatesPropertyValues
 			 * So if you create a copy and modify the copy's state then it will not modify the state
 			 * of the original object.
 			 *
-			 * The constructor first clones the property delegate since copy-on-write is used to allow
+			 * The constructor first clones the property delegate and then copy-on-write is used to allow
 			 * multiple @a Section objects to share the same state (until the state is modified).
 			 */
-			explicit
 			Section(
-					const GpmlTopologicalSection::non_null_ptr_type &source_section) :
+					GpmlTopologicalSection::non_null_ptr_type source_section) :
 				d_source_section(source_section)
 			{  }
 

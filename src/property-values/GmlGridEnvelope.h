@@ -56,16 +56,17 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlGridEnvelope> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlGridEnvelope>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GmlGridEnvelope>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlGridEnvelope> non_null_ptr_to_const_type;
+
+
+		typedef std::vector<int> integer_list_type;
+
 
 		virtual
 		~GmlGridEnvelope()
 		{  }
-
-		typedef std::vector<int> integer_list_type;
 
 		/**
 		 * Create a GmlGridEnvelope instance from @a low_ and @a high_ positions.
@@ -81,30 +82,19 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		clone() const
 		{
-			non_null_ptr_type dup(new GmlGridEnvelope(*this));
-			return dup;
-		}
-
-		const non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular clone will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
-		const integer_list_type &
-		low() const
-		{
-			return d_low;
+			return GPlatesUtils::dynamic_pointer_cast<GmlGridEnvelope>(clone_impl());
 		}
 
 		const integer_list_type &
-		high() const
+		get_low() const
 		{
-			return d_high;
+			return get_current_revision<Revision>().low;
+		}
+
+		const integer_list_type &
+		get_high() const
+		{
+			return get_current_revision<Revision>().high;
 		}
 
 		void
@@ -164,9 +154,7 @@ namespace GPlatesPropertyValues
 		GmlGridEnvelope(
 				const integer_list_type &low_,
 				const integer_list_type &high_) :
-			PropertyValue(),
-			d_low(low_),
-			d_high(high_)
+			PropertyValue(Revision::non_null_ptr_type(new Revision(low_, high_)))
 		{  }
 
 
@@ -177,15 +165,55 @@ namespace GPlatesPropertyValues
 		// copy-constructor, except it should not be public.
 		GmlGridEnvelope(
 				const GmlGridEnvelope &other) :
-			PropertyValue(other), /* share instance id */
-			d_low(other.d_low),
-			d_high(other.d_high)
+			PropertyValue(other)
 		{  }
+
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GmlGridEnvelope(*this));
+		}
 
 	private:
 
-		integer_list_type d_low;
-		integer_list_type d_high;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			Revision(
+					const integer_list_type &low_,
+					const integer_list_type &high_) :
+				low(low_),
+				high(high_)
+			{  }
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return low == other_revision.low &&
+						high == other_revision.high &&
+						GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			integer_list_type low;
+			integer_list_type high;
+		};
 
 	};
 

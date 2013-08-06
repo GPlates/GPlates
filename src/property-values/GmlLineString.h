@@ -57,15 +57,16 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlLineString> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlLineString>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GmlLineString>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlLineString> non_null_ptr_to_const_type;
+
 
 		/**
 		 * A convenience typedef for the internal polyline representation.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> internal_polyline_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolylineOnSphere> polyline_type;
+
 
 		virtual
 		~GmlLineString()
@@ -77,55 +78,35 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				const internal_polyline_type &polyline_);
+				const polyline_type &polyline_)
+		{
+			// Because PolylineOnSphere can only ever be handled via a non_null_ptr_to_const_type,
+			// there is no way a PolylineOnSphere instance can be changed.  Hence, it is safe to store
+			// a pointer to the instance which was passed into this 'create' function.
+			return non_null_ptr_type(new GmlLineString(polyline_));
+		}
 
-		const GmlLineString::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GmlLineString::non_null_ptr_type dup(new GmlLineString(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GmlLineString>(clone_impl());
 		}
-
-		const GmlLineString::non_null_ptr_type
-		deep_clone() const
-		{
-			// This class doesn't reference any mutable objects by pointer, so there's
-			// no need for any recursive cloning.  Hence, regular 'clone' will suffice.
-			return clone();
-		}
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
-		 * Access the GPlatesMaths::PolylineOnSphere which encodes the geometry of this
-		 * instance.
-		 *
-		 * Note that there is no accessor provided which returns a boost::intrusive_ptr to
-		 * a non-const GPlatesMaths::PolylineOnSphere.  The GPlatesMaths::PolylineOnSphere
-		 * within this instance should not be modified directly; to alter the
-		 * GPlatesMaths::PolylineOnSphere within this instance, set a new value using the
-		 * function @a set_polyline below.
+		 * Access the GPlatesMaths::PolylineOnSphere which encodes the geometry of this instance.
 		 */
-		const internal_polyline_type
-		polyline() const
+		const polyline_type
+		get_polyline() const
 		{
-			return d_polyline;
+			return get_current_revision<Revision>().polyline;
 		}
 
 		/**
 		 * Set the polyline within this instance to @a p.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_polyline(
-				const internal_polyline_type &p)
-		{
-			d_polyline = p;
-			update_instance_id();
-		}
+				const polyline_type &p);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -177,26 +158,53 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		explicit
 		GmlLineString(
-				const internal_polyline_type &polyline_):
-			PropertyValue(),
-			d_polyline(polyline_)
+				const polyline_type &polyline_):
+			PropertyValue(Revision::non_null_ptr_type(new Revision(polyline_)))
 		{  }
 
-
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
-		GmlLineString(
-				const GmlLineString &other):
-			PropertyValue(other), /* share instance id */
-			d_polyline(other.d_polyline)
-		{  }
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GmlLineString(*this));
+		}
 
 	private:
 
-		internal_polyline_type d_polyline;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					const polyline_type &polyline_) :
+				polyline(polyline_)
+			{  }
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				// Note that the default copy constructor (shallow copy) is fine because
+				// PolylineOnSphere is immutable and hence can be shared without copy-on-write.
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return *polyline == *other_revision.polyline &&
+					GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			polyline_type polyline;
+		};
 
 	};
 
