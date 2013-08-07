@@ -261,7 +261,7 @@ namespace
 
 					// Set the reverse reconstructed (present day) geometry back onto the feature's geometry property.
 					GPlatesModel::TopLevelProperty::non_null_ptr_type geom_top_level_prop_clone = 
-							(*feature_reconstructed_geometry.property_iterator)->deep_clone();
+							(*feature_reconstructed_geometry.property_iterator)->clone();
 					GPlatesFeatureVisitors::GeometrySetter(present_day_geometry).set_geometry(
 							geom_top_level_prop_clone.get());
 					*feature_reconstructed_geometry.property_iterator = geom_top_level_prop_clone;

@@ -107,7 +107,7 @@ GPlatesApi::Feature::get_properties_by_name(
 	FeatureHandle::const_iterator it = d_handle->begin(), it_end = d_handle->end();
 	for(; it != it_end; it++)
 	{
-		if((*it)->property_name() == (*p_name))
+		if((*it)->get_property_name() == (*p_name))
 		{
 			if(!is_shapefile_attr)
 			{
@@ -177,7 +177,7 @@ GPlatesApi::Feature::get_all_property_names()
 	for(; it != it_end; it++)
 	{
 		const static PropertyName shape_file_attr_name = PropertyName::create_gpml("shapefileAttributes");
-		PropertyName name = (*it)->property_name();
+		PropertyName name = (*it)->get_property_name();
 		
 		if(shape_file_attr_name == name)//shape file attributes
 		{
@@ -191,13 +191,13 @@ GPlatesApi::Feature::get_all_property_names()
 					*(finder.found_key_value_dictionaries_begin());
 
 				std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-					iter = dictionary->elements().begin(),
-					end = dictionary->elements().end();
+					iter = dictionary->get_elements().begin(),
+					end = dictionary->get_elements().end();
 
 				for (; iter != end; ++iter)
 				{
 					const QByteArray buf = (shape_file_attr_name.build_aliased_name().qstring() + ":" + 
-						GPlatesUtils::make_qstring_from_icu_string(iter->key()->value().get())).toUtf8();
+						GPlatesUtils::make_qstring_from_icu_string(iter->key()->get_value().get())).toUtf8();
 					//qDebug() << "name: " << QString(buf);
 					ret.append(bp::str(buf.data()));
 				}

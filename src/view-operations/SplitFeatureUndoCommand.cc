@@ -47,7 +47,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many as we incrementally modify the feature below.
-	GPlatesModel::NotificationGuard model_notification_guard(d_model_interface.access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(*d_model_interface.access_model());
 
 	d_old_feature =  d_feature_focus->focused_feature();
 	if (!(*d_old_feature).is_valid())
@@ -91,8 +91,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 			*geometry_on_sphere,
 			points);
 
-	GPlatesModel::PropertyName property_name = 
-		(*property_iter)->property_name(); 
+	GPlatesModel::PropertyName property_name = (*property_iter)->get_property_name(); 
 
 	//keep the old geometry property for "Undo"
 	GPlatesModel::PropertyValue::non_null_ptr_type old_geometry_property_value =
@@ -296,7 +295,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::undo()
 	
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many as we incrementally modify the feature below.
-	GPlatesModel::NotificationGuard model_notification_guard(d_model_interface.access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(*d_model_interface.access_model());
 
 	//restore the old geometry
 	GPlatesAppLogic::GeometryUtils::remove_geometry_properties_from_feature(*d_old_feature);

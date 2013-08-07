@@ -93,7 +93,7 @@ GPlatesViewOperations::CloneOperation::clone_focused_feature(
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many as we incrementally modify the feature below.
 	GPlatesModel::NotificationGuard model_notification_guard(
-			d_view_state.get_application_state().get_model_interface().access_model());
+			*d_view_state.get_application_state().get_model_interface().access_model());
 
 	GPlatesModel::FeatureHandle::weak_ref feature_ref = 
 			d_view_state.get_feature_focus().focused_feature();

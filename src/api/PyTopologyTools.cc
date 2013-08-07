@@ -51,7 +51,7 @@ namespace GPlatesApi
 			for(;b_iter != b_end; b_iter++)
 			{
 				const QByteArray id = b_iter->get_feature_id().get().qstring().toUtf8();
-				const QByteArray prop_name = (*b_iter->get_geometry_property())->property_name().get_name().qstring().toUtf8();
+				const QByteArray prop_name = (*b_iter->get_geometry_property())->get_property_name().get_name().qstring().toUtf8();
 				ret.append(bp::make_tuple(bp::str(id.data()),bp::str(prop_name.data()),bp::str("boundary")));
 			}
 
@@ -61,7 +61,7 @@ namespace GPlatesApi
 			for(;i_iter != i_end; i_iter++)
 			{
 				const QByteArray id = i_iter->get_feature_id().get().qstring().toUtf8();
-				const QByteArray prop_name = (*i_iter->get_geometry_property())->property_name().get_name().qstring().toUtf8();
+				const QByteArray prop_name = (*i_iter->get_geometry_property())->get_property_name().get_name().qstring().toUtf8();
 				ret.append(bp::make_tuple(bp::str(id.data()),bp::str(prop_name.data()),bp::str("interior")));
 			}
 			return ret;
