@@ -79,14 +79,14 @@ void
 GPlatesDataMining::GetValueFromPropertyVisitor::visit_gpml_constant_value(
 		gpml_constant_value_type &gpml_constant_value)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
+	gpml_constant_value.get_value()->accept_visitor(*this);
 }
 
 void
 GPlatesDataMining::GetValueFromPropertyVisitor::visit_gpml_plate_id(
 		gpml_plate_id_type &gpml_plate_id)
 {
-	d_data.push_back(QString().setNum(gpml_plate_id.value()));
+	d_data.push_back(QString().setNum(gpml_plate_id.get_value()));
 }
 
 void 

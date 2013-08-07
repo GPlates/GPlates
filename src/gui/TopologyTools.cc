@@ -3649,7 +3649,7 @@ GPlatesGui::TopologyTools::show_numbers()
 		if ( GPlatesFeatureVisitors::get_property_value(
 			d_feature_focus_ptr->focused_feature(), name_property_name, name) )
 		{
-			qDebug() << "d_feature_focus_ptr name = " << GPlatesUtils::make_qstring(name->value());
+			qDebug() << "d_feature_focus_ptr name = " << GPlatesUtils::make_qstring(name->get_value());
 		}
 		else 
 		{

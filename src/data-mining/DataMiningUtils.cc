@@ -145,7 +145,7 @@ GPlatesDataMining::DataMiningUtils::get_property_value_by_name(
 
 	for(; it != it_end; it++)
 	{
-		if((*it)->property_name().get_name() == UnicodeString(name))
+		if((*it)->get_property_name().get_name() == UnicodeString(name))
 		{
 			GetValueFromPropertyVisitor visitor;
 			(*it)->accept_visitor(visitor);
@@ -193,7 +193,7 @@ GPlatesDataMining::DataMiningUtils::get_shape_file_value_by_name(
 	
 	for(; it != it_end; it++)
 	{
-		if((*it)->property_name().get_name() == "shapefileAttributes")
+		if((*it)->get_property_name().get_name() == "shapefileAttributes")
 		{
 			GPlatesFeatureVisitors::ShapefileAttributeFinder visitor(name);
 			(*it)->accept_visitor(visitor);

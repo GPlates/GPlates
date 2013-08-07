@@ -523,7 +523,7 @@ GPlatesGui::FileIOFeedback::reload_file(
 		if (prop_iter.is_still_valid())
 		{
 			focused_feature_id = focused_feature->feature_id();
-			focused_property_name = (*prop_iter)->property_name();
+			focused_property_name = (*prop_iter)->get_property_name();
 		}
 	}
 
@@ -547,7 +547,7 @@ GPlatesGui::FileIOFeedback::reload_file(
 				for (GPlatesModel::FeatureHandle::iterator iter = feature->begin();
 						iter != feature->end(); ++iter)
 				{
-					if ((*iter)->property_name() == focused_property_name)
+					if ((*iter)->get_property_name() == focused_property_name)
 					{
 						d_feature_focus.set_focus(feature->reference(), iter);
 						found = true;

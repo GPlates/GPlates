@@ -81,7 +81,7 @@ namespace
 			if (GPlatesFeatureVisitors::get_property_value(
 					table_row.get_feature_ref(), valid_time_property_name, time_period))
 			{
-				return time_period->begin()->time_position();
+				return time_period->get_begin()->get_time_position();
 			}
 		}
 
@@ -116,7 +116,7 @@ namespace
 			if (GPlatesFeatureVisitors::get_property_value(
 					table_row.get_feature_ref(), valid_time_property_name, time_period))
 			{
-				return time_period->end()->time_position();
+				return time_period->get_end()->get_time_position();
 			}
 		}
 
@@ -232,7 +232,7 @@ namespace
 					plate_id_property_name,
 					property_return_value)) {
 				// Convert it to something Qt can display.
-				const GPlatesModel::integer_plate_id_type &plate_id = property_return_value->value();
+				const GPlatesModel::integer_plate_id_type &plate_id = property_return_value->get_value();
 				cell.setData(Qt::DisplayRole, QVariant(static_cast<quint32>(plate_id)));
 			} else {
 				// Feature resolves, but no reconstructionPlateId.
@@ -265,7 +265,7 @@ namespace
 					gml_name_property_name,
 					property_return_value)) {
 				// Convert it to something Qt can display.
-				QString name_qstr = GPlatesUtils::make_qstring(property_return_value->value());
+				QString name_qstr = GPlatesUtils::make_qstring(property_return_value->get_value());
 				cell.setData(Qt::DisplayRole, name_qstr);
 			} else {
 				// Feature resolves, but no name property.

@@ -56,7 +56,7 @@ GPlatesDataMining::PopulateShapeFileAttributesVisitor::initialise_pre_property_v
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	static const GPlatesModel::PropertyName n = GPlatesModel::PropertyName::create_gpml("shapefileAttributes");
-	return top_level_property_inline.property_name() == n;
+	return top_level_property_inline.get_property_name() == n;
 }
 
 
@@ -65,11 +65,11 @@ GPlatesDataMining::PopulateShapeFileAttributesVisitor::visit_gpml_key_value_dict
 		const GPlatesPropertyValues::GpmlKeyValueDictionary &dictionary)
 {
 	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-		iter = dictionary.elements().begin(),
-		end = dictionary.elements().end();
+		iter = dictionary.get_elements().begin(),
+		end = dictionary.get_elements().end();
 	for ( ; iter != end; ++iter) 
 	{
-		d_names.push_back(iter->key()->value().get().qstring() );
+		d_names.push_back(iter->key()->get_value().get().qstring() );
 	}
 }
 

@@ -115,7 +115,7 @@ namespace GPlatesDataMining
 		visit_gpml_constant_value(
 			gpml_constant_value_type &gpml_constant_value)
 		{
-			gpml_constant_value.value()->accept_visitor(*this);
+			gpml_constant_value.get_value()->accept_visitor(*this);
 		}
 
 		virtual
@@ -160,13 +160,14 @@ namespace GPlatesDataMining
 				gpml_key_value_dictionary_type &gpml_key_value_dictionary)
 		{ 
 			using namespace GPlatesPropertyValues;
-			const std::vector< GpmlKeyValueDictionaryElement > elements = gpml_key_value_dictionary.elements();
+			const std::vector< GpmlKeyValueDictionaryElement > &elements =
+					gpml_key_value_dictionary.get_elements();
 			std::vector< GpmlKeyValueDictionaryElement >::const_iterator ele_it = elements.begin();
 			std::vector< GpmlKeyValueDictionaryElement >::const_iterator ele_it_end = elements.end();
 			for(; ele_it != ele_it_end; ++ele_it)
 			{
 				ele_it->value()->accept_visitor(*this);
-				QString ele_name = GPlatesUtils::make_qstring_from_icu_string(ele_it->key()->value().get());
+				QString ele_name = GPlatesUtils::make_qstring_from_icu_string(ele_it->key()->get_value().get());
 				d_map.insert(
 						std::pair< QString, AttributeTypeEnum >(
 								ele_name, this->type() ) );

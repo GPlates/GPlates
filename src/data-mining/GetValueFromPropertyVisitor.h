@@ -104,24 +104,24 @@ namespace GPlatesDataMining
 		inline
 		void visit_xs_boolean(xs_boolean_type &xs_boolean)
 		{
-			d_data.push_back(xs_boolean.value());
+			d_data.push_back(xs_boolean.get_value());
 		}
 
 		inline
 		void visit_xs_double(xs_double_type &xs_double)
 		{
-			d_data.push_back(xs_double.value());
+			d_data.push_back(xs_double.get_value());
 		}
 		
 		inline
 		void visit_xs_integer(xs_integer_type &xs_integer)
 		{
-			d_data.push_back(xs_integer.value());
+			d_data.push_back(xs_integer.get_value());
 		}
 
 		void visit_xs_string(xs_string_type &xs_string)
 		{
-			d_data.push_back(xs_string.value().get().qstring());
+			d_data.push_back(xs_string.get_value().get().qstring());
 		}
 
 		inline

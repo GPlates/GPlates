@@ -257,7 +257,7 @@ GPlatesGui::FeaturePropertyTableModel::setData(
 	
 	// Convert the supplied QVariant to a PropertyValue.
 	GPlatesFeatureVisitors::FromQvariantConverter fromqv_converter(value);
-	GPlatesModel::TopLevelProperty::non_null_ptr_type top_level_prop_clone = (*it)->deep_clone();
+	GPlatesModel::TopLevelProperty::non_null_ptr_type top_level_prop_clone = (*it)->clone();
 	top_level_prop_clone->accept_visitor(fromqv_converter);
 	*it = top_level_prop_clone;
 	
@@ -398,11 +398,11 @@ GPlatesGui::FeaturePropertyTableModel::refresh_data()
 				int row_to_be_added = static_cast<int>(d_property_info_cache.size());
 				beginInsertRows(QModelIndex(), row_to_be_added, row_to_be_added);
 				
-				const GPlatesModel::PropertyName property_name = (*add_it)->property_name();
+				const GPlatesModel::PropertyName property_name = (*add_it)->get_property_name();
 				// To work out if property is editable inline, we do a dry-run of the FromQvariantConverter.
 				QVariant dummy;
 				GPlatesFeatureVisitors::FromQvariantConverter qvariant_converter(dummy);
-				GPlatesModel::TopLevelProperty::non_null_ptr_type top_level_prop_clone = (*add_it)->deep_clone();
+				GPlatesModel::TopLevelProperty::non_null_ptr_type top_level_prop_clone = (*add_it)->clone();
 				top_level_prop_clone->accept_visitor(qvariant_converter);
 				*add_it = top_level_prop_clone;
 				bool can_convert_inline = qvariant_converter.get_property_value();
