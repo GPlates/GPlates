@@ -155,12 +155,12 @@ namespace GPlatesFileIO
 					}
 
 					name = GPlatesUtils::make_qstring_from_icu_string(
-							gpml_old_plates_header->geographic_description());
+							gpml_old_plates_header->get_geographic_description());
 
 					return true;
 				}
 
-				name = GPlatesUtils::make_qstring_from_icu_string(feature_name->value().get());
+				name = GPlatesUtils::make_qstring_from_icu_string(feature_name->get_value().get());
 
 				return true;
 			}
@@ -186,7 +186,7 @@ namespace GPlatesFileIO
 					return false;
 				}
 
-				name = GPlatesUtils::make_qstring_from_icu_string(feature_name->value().get());
+				name = GPlatesUtils::make_qstring_from_icu_string(feature_name->get_value().get());
 				return true;
 			}
 
@@ -208,7 +208,7 @@ namespace GPlatesFileIO
 				{
 					return false;
 				}
-				double d = property_value->value();
+				double d = property_value->get_value();
 				std::string s = GPlatesUtils::formatted_double_to_string(d, 9, 1);
 				QString qs( s.c_str() );
 				age = qs;
@@ -232,7 +232,7 @@ namespace GPlatesFileIO
 				{
 					return false;
 				}
-				double d = property_value->value();
+				double d = property_value->get_value();
 				std::string s = GPlatesUtils::formatted_double_to_string(d, 9, 1);
 				QString qs( s.c_str() );
 				age = qs;
@@ -257,7 +257,7 @@ namespace GPlatesFileIO
 				{
 					return false;
 				}
-				double d = property_value->value();
+				double d = property_value->get_value();
 				std::string s = GPlatesUtils::formatted_double_to_string(d, 9, 1);
 				QString qs( s.c_str() );
 				dip = qs;
@@ -282,7 +282,7 @@ namespace GPlatesFileIO
 					return false;
 				}
 
-				double d = property_value->value();
+				double d = property_value->get_value();
 				QString d_as_str( GPlatesUtils::formatted_double_to_string(d, 6, 1).c_str() );
 				depth = d_as_str;
 
@@ -308,7 +308,7 @@ namespace GPlatesFileIO
 					return false;
 				}
 
-				rhea_fault = GPlatesUtils::make_qstring_from_icu_string(property_value->value().get());
+				rhea_fault = GPlatesUtils::make_qstring_from_icu_string(property_value->get_value().get());
 				return true;
 			}
 
@@ -329,7 +329,7 @@ namespace GPlatesFileIO
 				{
 					return false;
 				}
-				flat = property_value->value() ? QString("True") : QString("False");
+				flat = property_value->get_value() ? QString("True") : QString("False");
 				return true;
 			}
 
@@ -350,7 +350,7 @@ namespace GPlatesFileIO
 				{
 					return false;
 				}
-				double d = property_value->value();
+				double d = property_value->get_value();
 				std::string s = GPlatesUtils::formatted_double_to_string(d, 9, 1);
 				QString qs( s.c_str() );
 				value = qs;
@@ -419,7 +419,7 @@ namespace GPlatesFileIO
 				if (source_feature_old_plates_header)
 				{
 					return GPlatesUtils::make_qstring_from_icu_string(
-							source_feature_old_plates_header->data_type_code());
+							source_feature_old_plates_header->get_data_type_code());
 				}
 
 				// It's not a subduction zone and it doesn't have an old plates header

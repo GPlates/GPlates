@@ -313,8 +313,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_polygon(
 
 	// FIXME: We need to give the srsName et al. attributes from the posList 
 	// (or the gml:FeatureCollection tag?) to the GmlPolygon (or the FeatureCollection)!
-	return GPlatesPropertyValues::GmlPolygon::create<
-			std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> >(exterior, interiors);
+	return GPlatesPropertyValues::GmlPolygon::create(exterior, interiors);
 }
 
 
@@ -432,7 +431,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_array(
 	find_and_create_one_or_more_from_type(mem, type, MEMBER, members,
 			structural_type_reader, gpml_version, read_errors);
 
-	return GPlatesPropertyValues::GpmlArray::create(type,members);
+	return GPlatesPropertyValues::GpmlArray::create(type, members.begin(), members.end());
 }
 
 
@@ -652,8 +651,8 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_finite_rotatio
 	{
 		if (is_trp)
 		{
-			return new GPlatesPropertyValues::GpmlTotalReconstructionPole(
-					(*finite_rotation)->finite_rotation(),
+			return GPlatesPropertyValues::GpmlTotalReconstructionPole::create(
+					(*finite_rotation)->get_finite_rotation(),
 					*parent->get_child_by_name(TOTAL_RECONSTRUCTION_POLE));
 		}
 		else
@@ -692,8 +691,24 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_hot_spot_trail
 		measured_age_range = find_and_create_optional(elem, &create_gml_time_period, 
 				MEASURED_AGE_RANGE, gpml_version, read_errors);
 
+	boost::optional< GPlatesPropertyValues::GpmlMeasure::non_null_ptr_to_const_type > const_trail_width;
+	if (trail_width)
+	{
+		const_trail_width = trail_width.get();
+	}
+	boost::optional< GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_to_const_type > const_measured_age;
+	if (measured_age)
+	{
+		const_measured_age = measured_age.get();
+	}
+	boost::optional< GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type > const_measured_age_range;
+	if (measured_age_range)
+	{
+		const_measured_age_range = measured_age_range.get();
+	}
+
 	return GPlatesPropertyValues::GpmlHotSpotTrailMark::create(
-			position, trail_width, measured_age, measured_age_range);
+			position, const_trail_width, const_measured_age, const_measured_age_range);
 }
 
 
@@ -934,7 +949,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_raster_band_na
 	std::set<GPlatesUtils::UnicodeString> band_name_set;
 	BOOST_FOREACH(const XsString::non_null_ptr_type &band_name, band_names)
 	{
-		if (!band_name_set.insert(band_name->value().get()).second)
+		if (!band_name_set.insert(band_name->get_value().get()).second)
 		{
 			throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
 					elem, GPlatesFileIO::ReadErrors::DuplicateRasterBandName,

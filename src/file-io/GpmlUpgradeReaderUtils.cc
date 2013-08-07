@@ -170,7 +170,7 @@ namespace GPlatesFileIO
 			visit_gpml_constant_value(
 					const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 			{
-				gpml_constant_value.value()->accept_visitor(*this);
+				gpml_constant_value.get_value()->accept_visitor(*this);
 			}
 
 			virtual
@@ -178,13 +178,13 @@ namespace GPlatesFileIO
 			visit_gpml_piecewise_aggregation(
 					const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 			{
-				if (gpml_piecewise_aggregation.time_windows().empty())
+				if (gpml_piecewise_aggregation.get_time_windows().empty())
 				{
 					return;
 				}
 
 				// Just visit the first time window - there should only be one window.
-				gpml_piecewise_aggregation.time_windows().front().time_dependent_value()->accept_visitor(*this);
+				gpml_piecewise_aggregation.get_time_windows().front().get_time_dependent_value()->accept_visitor(*this);
 			}
 
 			virtual
@@ -598,7 +598,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 			// Retrieve the topological sections from the old version property value.
 			boundary_topological_sections =
 					boost::any_cast<const topological_sections_seq_type &>(
-							old_version_property_value->value());
+							old_version_property_value->get_value());
 		}
 	}
 
@@ -632,7 +632,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 			// Retrieve the topological sections from the old version property value.
 			const topological_sections_seq_type &interior_topological_sections =
 					boost::any_cast<const topological_sections_seq_type &>(
-							old_version_property_value->value());
+							old_version_property_value->get_value());
 
 			// Convert the topological sections to topological interiors by only retaining the
 			// source geometry property delegate - the other section information was never needed.
@@ -647,13 +647,13 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 				{
 					topological_interiors->push_back(
 							GPlatesPropertyValues::GpmlTopologicalNetwork::Interior(
-									topological_line_section->get_source_geometry()));
+									topological_line_section->get_source_geometry()->clone()));
 				}
 				else if (GPlatesFeatureVisitors::get_property_value(*interior_topological_section, topological_point))
 				{
 					topological_interiors->push_back(
 							GPlatesPropertyValues::GpmlTopologicalNetwork::Interior(
-									topological_point->get_source_geometry()));
+									topological_point->get_source_geometry()->clone()));
 				}
 			}
 		}

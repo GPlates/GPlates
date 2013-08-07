@@ -439,7 +439,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		static const boost::int32_t identity_start_tag_length = identity_start_tag.length();
 		static const boost::int32_t identity_end_tag_length = identity_end_tag.length();
 
-		GPlatesUtils::UnicodeString geog_description = header->geographic_description();
+		GPlatesUtils::UnicodeString geog_description = header->get_geographic_description();
 
 		// Search for the identity start tag.
 		// For some reason some files have two "<identity>" tags followed by one "</identity>" tag.
@@ -619,11 +619,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		GPlatesModel::FeatureHandle::weak_ref feature_handle =
 				create_feature(model, feature_type, collection, header);
 
-		const integer_plate_id_type plate_id = header->plate_id_number();
+		const integer_plate_id_type plate_id = header->get_plate_id_number();
 		const GeoTimeInstant geo_time_instant_begin(
-				create_geo_time_instant(header->age_of_appearance()));
+				create_geo_time_instant(header->get_age_of_appearance()));
 		const GeoTimeInstant geo_time_instant_end(
-				create_geo_time_instant(header->age_of_disappearance()));
+				create_geo_time_instant(header->get_age_of_disappearance()));
 
 		// Wrap a "gpml:plateId" in a "gpml:ConstantValue" and append it as the
 		// "gpml:reconstructionPlateId" property.
@@ -648,7 +648,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 		// Use the PLATES4 geographic description as the "gml:name" property.
 		XsString::non_null_ptr_type gml_name = 
-				XsString::create(header->geographic_description());
+				XsString::create(header->get_geographic_description());
 		feature_handle->add(
 				TopLevelPropertyInline::create(
 					PropertyName::create_gml("name"),
@@ -1120,7 +1120,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				GPlatesModel::FeatureType::create_gpml("Isochron"),
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 		const GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type conj_plate_id =
-				GPlatesPropertyValues::GpmlPlateId::create(header->conjugate_plate_id_number());
+				GPlatesPropertyValues::GpmlPlateId::create(header->get_conjugate_plate_id_number());
 		feature->add(
 				GPlatesModel::TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
@@ -2057,7 +2057,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		static const warning_map_type &warning_map = build_feature_specific_warning_map();
 		warning_function_type warning_function = null_warning_function;
 
-		warning_map_const_iterator warning_result = warning_map.find(old_plates_header->data_type_code());
+		warning_map_const_iterator warning_result = warning_map.find(old_plates_header->get_data_type_code());
 		if (warning_result != warning_map.end()) {
 			warning_function = warning_result->second;
 		}
@@ -2067,7 +2067,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		static const creation_map_type &creation_map = build_feature_creation_map();
 		creation_function_type creation_function = create_unclassified_feature;
 
-		creation_map_const_iterator creation_result = creation_map.find(old_plates_header->data_type_code());	
+		creation_map_const_iterator creation_result = creation_map.find(old_plates_header->get_data_type_code());	
 		if (creation_result != creation_map.end()) {
 			creation_function = creation_result->second;
 		} else {
@@ -2076,7 +2076,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 
 		// Short-cut for Platepolygons (geometry to be resolved each reconstruction)
-		if (old_plates_header->data_type_code() == "PP") 
+		if (old_plates_header->get_data_type_code() == "PP") 
 		{
 			// Empty list of points to make create_common a happy litte function 
 			geometry_seq_type geometry_seq;

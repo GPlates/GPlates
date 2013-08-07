@@ -158,7 +158,7 @@ void
 GPlatesFileIO::GMTFormatWriter::visit_gml_line_string(
 	const GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
-	d_feature_accumulator.add_geometry(gml_line_string.polyline());
+	d_feature_accumulator.add_geometry(gml_line_string.get_polyline());
 }
 
 
@@ -166,7 +166,7 @@ void
 GPlatesFileIO::GMTFormatWriter::visit_gml_multi_point(
 	const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
-	d_feature_accumulator.add_geometry(gml_multi_point.multipoint());
+	d_feature_accumulator.add_geometry(gml_multi_point.get_multipoint());
 }
 
 
@@ -174,7 +174,7 @@ void
 GPlatesFileIO::GMTFormatWriter::visit_gml_orientable_curve(
 	const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
-	gml_orientable_curve.base_curve()->accept_visitor(*this);
+	gml_orientable_curve.get_base_curve()->accept_visitor(*this);
 }
 
 
@@ -182,7 +182,7 @@ void
 GPlatesFileIO::GMTFormatWriter::visit_gml_point(
 	const GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	d_feature_accumulator.add_geometry(gml_point.point());
+	d_feature_accumulator.add_geometry(gml_point.get_point());
 }
 
 
@@ -191,7 +191,7 @@ GPlatesFileIO::GMTFormatWriter::visit_gml_polygon(
 	const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
 	// FIXME: Handle interior rings. Requires a bit of restructuring.
-	d_feature_accumulator.add_geometry(gml_polygon.exterior());
+	d_feature_accumulator.add_geometry(gml_polygon.get_exterior());
 }
 
 
@@ -199,5 +199,5 @@ void
 GPlatesFileIO::GMTFormatWriter::visit_gpml_constant_value(
 	const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
+	gpml_constant_value.get_value()->accept_visitor(*this);
 }

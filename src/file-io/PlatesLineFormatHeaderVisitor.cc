@@ -236,8 +236,8 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_gml_time_instant(
 	}
 
 	if ( ! d_accum.age_of_appearance) {
-		d_accum.age_of_appearance = gml_time_instant.time_position();
-		d_accum.age_of_disappearance = gml_time_instant.time_position();
+		d_accum.age_of_appearance = gml_time_instant.get_time_position();
+		d_accum.age_of_disappearance = gml_time_instant.get_time_position();
 	} else {
 		// The age of appearance was already set, which means that there was already a
 		// "gml:validTime" property which contains a "gml:TimeInstant" or "gml:TimePeriod".
@@ -258,8 +258,8 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_gml_time_period(
 	}
 
 	if ( ! d_accum.age_of_appearance) {
-		d_accum.age_of_appearance = gml_time_period.begin()->time_position();
-		d_accum.age_of_disappearance = gml_time_period.end()->time_position();
+		d_accum.age_of_appearance = gml_time_period.get_begin()->get_time_position();
+		d_accum.age_of_disappearance = gml_time_period.get_end()->get_time_position();
 	} else {
 		// The age of appearance was already set, which means that there was already a
 		// "gml:validTime" property which contains a "gml:TimeInstant" or "gml:TimePeriod".
@@ -272,7 +272,7 @@ void
 GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_gpml_constant_value(
 	const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
+	gpml_constant_value.get_value()->accept_visitor(*this);
 }
 
 
@@ -294,7 +294,7 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_gpml_plate_id(
 
 	if (*current_top_level_propname() == reconstructionPlateId) {
 		if ( ! d_accum.plate_id) {
-			d_accum.plate_id = gpml_plate_id.value();
+			d_accum.plate_id = gpml_plate_id.get_value();
 		} else {
 			// The plate ID was already set, which means that there was already a
 			// "gpml:reconstructionPlateId" property which contains a "gpml:PlateId".
@@ -302,7 +302,7 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_gpml_plate_id(
 		}
 	} else if (*current_top_level_propname() == conjugatePlateId) {
 		if ( ! d_accum.conj_plate_id) {
-			d_accum.conj_plate_id = gpml_plate_id.value();
+			d_accum.conj_plate_id = gpml_plate_id.get_value();
 		} else {
 			// The conjugate plate ID was already set, which means that there was
 			// already a "gpml:conjugatePlateId" property which contains a
@@ -323,19 +323,19 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_gpml_old_plates_header(
 	const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
 {
 	d_accum.old_plates_header = OldPlatesHeader(
-		gpml_old_plates_header.region_number(),
-		gpml_old_plates_header.reference_number(),
-		gpml_old_plates_header.string_number(),
-		gpml_old_plates_header.geographic_description(),
-		gpml_old_plates_header.plate_id_number(),
-		gpml_old_plates_header.age_of_appearance(),
-		gpml_old_plates_header.age_of_disappearance(),
-		gpml_old_plates_header.data_type_code(),
-		gpml_old_plates_header.data_type_code_number(),
-		gpml_old_plates_header.data_type_code_number_additional(),
-		gpml_old_plates_header.conjugate_plate_id_number(),
-		gpml_old_plates_header.colour_code(),
-		gpml_old_plates_header.number_of_points());
+		gpml_old_plates_header.get_region_number(),
+		gpml_old_plates_header.get_reference_number(),
+		gpml_old_plates_header.get_string_number(),
+		gpml_old_plates_header.get_geographic_description(),
+		gpml_old_plates_header.get_plate_id_number(),
+		gpml_old_plates_header.get_age_of_appearance(),
+		gpml_old_plates_header.get_age_of_disappearance(),
+		gpml_old_plates_header.get_data_type_code(),
+		gpml_old_plates_header.get_data_type_code_number(),
+		gpml_old_plates_header.get_data_type_code_number_additional(),
+		gpml_old_plates_header.get_conjugate_plate_id_number(),
+		gpml_old_plates_header.get_colour_code(),
+		gpml_old_plates_header.get_number_of_points());
 }
 
 void
@@ -351,7 +351,7 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_xs_string(
 	// Only store 'gml:name' property in geographic description if it exists
 	// and it not empty.
 	if ( ! d_accum.geographic_description) {
-		const GPlatesUtils::UnicodeString &name = xs_string.value().get();
+		const GPlatesUtils::UnicodeString &name = xs_string.get_value().get();
 		if (!name.isEmpty())
 		{
 			d_accum.geographic_description = name;

@@ -435,7 +435,7 @@ namespace
 
 		for ( ; p_iter != p_iter_end ; ++p_iter)
 		{
-			GPlatesModel::PropertyName property_name = (*p_iter)->property_name();
+			GPlatesModel::PropertyName property_name = (*p_iter)->get_property_name();
 			QString q_prop_name = GPlatesUtils::make_qstring_from_icu_string(property_name.get_name());
 			if (property_name_list.contains(q_prop_name))
 			{
@@ -1319,9 +1319,8 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 	// Can there be zero attributes? I dunno. 
 	if (n == 0) return;
 
-	// Create a key-value dictionary. This is empty and needs to have elements pushed back onto its d_elements vector. 
-	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary = 
-		GPlatesPropertyValues::GpmlKeyValueDictionary::create();
+	// The key-value dictionary elements.
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> dictionary_elements;
 
 	// If for any reason we've found more attributes than we have field names, only 
 	// go as far as the number of field names. 
@@ -1355,7 +1354,7 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 						key,
 						value,
 						GPlatesPropertyValues::StructuralType::create_xsi("integer"));
-					dictionary->elements().push_back(element);
+					dictionary_elements.push_back(element);
 				}
 			}
 			break;
@@ -1370,7 +1369,7 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 						key,
 						value,
 						GPlatesPropertyValues::StructuralType::create_xsi("double"));
-					dictionary->elements().push_back(element);
+					dictionary_elements.push_back(element);
 				}
 			}
 			break;
@@ -1383,11 +1382,15 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 					key,
 					value,
 					GPlatesPropertyValues::StructuralType::create_xsi("string"));
-				dictionary->elements().push_back(element);
+				dictionary_elements.push_back(element);
 				break;
 		}
 
 	} // loop over number of attributes
+
+	// Create a key-value dictionary.
+	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary = 
+		GPlatesPropertyValues::GpmlKeyValueDictionary::create(dictionary_elements);
 
 	// Add the dictionary to the model.
 	feature->add(
@@ -2095,7 +2098,7 @@ GPlatesFileIO::OgrReader::remap_shapefile_attributes(
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many in case we incrementally modify the features below.
 	// Probably won't be modifying the model so much when loading but we should keep this anyway.
-	GPlatesModel::NotificationGuard model_notification_guard(model.access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(*model.access_model());
 
 	const FileInfo &file_info = file.get_file_info();
 

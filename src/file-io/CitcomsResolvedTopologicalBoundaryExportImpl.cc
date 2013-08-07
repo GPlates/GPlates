@@ -145,7 +145,7 @@ namespace GPlatesFileIO
 			visit_gpml_constant_value(
 					const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 			{
-				gpml_constant_value.value()->accept_visitor(*this);
+				gpml_constant_value.get_value()->accept_visitor(*this);
 			}
 
 
@@ -156,14 +156,14 @@ namespace GPlatesFileIO
 					const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 			{
 				std::vector< GPlatesPropertyValues::GpmlTimeSample >::const_iterator 
-					iter = gpml_irregular_sampling.time_samples().begin(),
-					end = gpml_irregular_sampling.time_samples().end();
+					iter = gpml_irregular_sampling.get_time_samples().begin(),
+					end = gpml_irregular_sampling.get_time_samples().end();
 				for ( ; iter != end; ++iter)
 				{
 					// If time of time sample matches our reconstruction time then visit.
-					if (d_recon_time.is_coincident_with(iter->valid_time()->time_position()))
+					if (d_recon_time.is_coincident_with(iter->get_valid_time()->get_time_position()))
 					{
-						iter->value()->accept_visitor(*this);
+						iter->get_value()->accept_visitor(*this);
 					}
 				}
 			}
@@ -176,15 +176,15 @@ namespace GPlatesFileIO
 					const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation) 
 			{
 				std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-					gpml_piecewise_aggregation.time_windows().begin();
+					gpml_piecewise_aggregation.get_time_windows().begin();
 				std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-					gpml_piecewise_aggregation.time_windows().end();
+					gpml_piecewise_aggregation.get_time_windows().end();
 				for ( ; iter != end; ++iter)
 				{
 					// If the time window covers our reconstruction time then visit.
-					if (iter->valid_time()->contains(d_recon_time))
+					if (iter->get_valid_time()->contains(d_recon_time))
 					{
-						iter->time_dependent_value()->accept_visitor(*this);
+						iter->get_time_dependent_value()->accept_visitor(*this);
 					}
 				}
 			}
@@ -198,20 +198,20 @@ namespace GPlatesFileIO
 				static const GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type =
 						GPlatesPropertyValues::EnumerationType::create_gpml("SubductionPolarityEnumeration");
 
-				if (!subduction_polarity_enumeration_type.is_equal_to(enumeration.type()))
+				if (!subduction_polarity_enumeration_type.is_equal_to(enumeration.get_type()))
 				{
 					return;
 				}
 
 				static const GPlatesPropertyValues::EnumerationContent unknown("Unknown");
-				if (unknown.is_equal_to(enumeration.value()))
+				if (unknown.is_equal_to(enumeration.get_value()))
 				{
 					d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN;
 					return;
 				}
 
 				static const GPlatesPropertyValues::EnumerationContent left("Left");
-				d_sub_segment_type = left.is_equal_to(enumeration.value())
+				d_sub_segment_type = left.is_equal_to(enumeration.get_value())
 						? SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT
 						: SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT;
 			}
@@ -231,13 +231,13 @@ namespace GPlatesFileIO
 						old_plates_header_property_name,
 						old_plates_header ) )
 				{
-					if ( old_plates_header->data_type_code() == "sL" )
+					if ( old_plates_header->get_data_type_code() == "sL" )
 					{
 						// set the type
 						d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT;
 					}
 
-					if ( old_plates_header->data_type_code() == "sR" )
+					if ( old_plates_header->get_data_type_code() == "sR" )
 					{
 						// set the type
 						d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT;
@@ -350,7 +350,7 @@ namespace GPlatesFileIO
 			visit_gpml_constant_value(
 					const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 			{
-				gpml_constant_value.value()->accept_visitor(*this);
+				gpml_constant_value.get_value()->accept_visitor(*this);
 			}
 
 
@@ -361,14 +361,14 @@ namespace GPlatesFileIO
 					const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 			{
 				std::vector< GPlatesPropertyValues::GpmlTimeSample >::const_iterator 
-					iter = gpml_irregular_sampling.time_samples().begin(),
-					end = gpml_irregular_sampling.time_samples().end();
+					iter = gpml_irregular_sampling.get_time_samples().begin(),
+					end = gpml_irregular_sampling.get_time_samples().end();
 				for ( ; iter != end; ++iter)
 				{
 					// If time of time sample matches our reconstruction time then visit.
-					if (d_recon_time.is_coincident_with(iter->valid_time()->time_position()))
+					if (d_recon_time.is_coincident_with(iter->get_valid_time()->get_time_position()))
 					{
-						iter->value()->accept_visitor(*this);
+						iter->get_value()->accept_visitor(*this);
 					}
 				}
 			}
@@ -381,15 +381,15 @@ namespace GPlatesFileIO
 					const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation) 
 			{
 				std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-					gpml_piecewise_aggregation.time_windows().begin();
+					gpml_piecewise_aggregation.get_time_windows().begin();
 				std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-					gpml_piecewise_aggregation.time_windows().end();
+					gpml_piecewise_aggregation.get_time_windows().end();
 				for ( ; iter != end; ++iter)
 				{
 					// If the time window covers our reconstruction time then visit.
-					if (iter->valid_time()->contains(d_recon_time))
+					if (iter->get_valid_time()->contains(d_recon_time))
 					{
-						iter->time_dependent_value()->accept_visitor(*this);
+						iter->get_time_dependent_value()->accept_visitor(*this);
 					}
 				}
 			}
@@ -403,20 +403,20 @@ namespace GPlatesFileIO
 				static const GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type =
 						GPlatesPropertyValues::EnumerationType::create_gpml("SubductionPolarityEnumeration");
 
-				if (!subduction_polarity_enumeration_type.is_equal_to(enumeration.type()))
+				if (!subduction_polarity_enumeration_type.is_equal_to(enumeration.get_type()))
 				{
 					return;
 				}
 
 				static const GPlatesPropertyValues::EnumerationContent unknown("Unknown");
-				if (unknown.is_equal_to(enumeration.value()))
+				if (unknown.is_equal_to(enumeration.get_value()))
 				{
 					d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN;
 					return;
 				}
 
 				static const GPlatesPropertyValues::EnumerationContent left("Left");
-				d_sub_segment_type = left.is_equal_to(enumeration.value())
+				d_sub_segment_type = left.is_equal_to(enumeration.get_value())
 						? SUB_SEGMENT_TYPE_SLAB_EDGE_LEADING_LEFT
 						: SUB_SEGMENT_TYPE_SLAB_EDGE_LEADING_RIGHT;
 			}
@@ -451,7 +451,7 @@ GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl::get_slab_sub_segmen
 
 	if ( GPlatesFeatureVisitors::get_property_value( feature, property_name, property_value) )
 	{
-		slabEdgeType = GPlatesUtils::make_qstring_from_icu_string( property_value->value().get() );
+		slabEdgeType = GPlatesUtils::make_qstring_from_icu_string( property_value->get_value().get() );
 
 		if (slabEdgeType == QString("Leading") ) 
 		{

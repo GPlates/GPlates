@@ -374,8 +374,8 @@ namespace
 		TupleListIter tuple_list_iter = tuple_list_begin;
 		for ( ; tuple_list_iter != tuple_list_end; ++tuple_list_iter) {
 			coordinates_iterator_ranges.push_back(std::make_pair(
-						(*tuple_list_iter)->coordinates_begin(),
-						(*tuple_list_iter)->coordinates_end()));
+						tuple_list_iter->get_coordinate_list()->coordinates_begin(),
+						tuple_list_iter->get_coordinate_list()->coordinates_end()));
 		}
 	}
 
@@ -721,7 +721,7 @@ void
 GPlatesFileIO::GpmlOutputVisitor::visit_top_level_property_inline(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	bool pop = d_output.writeStartElement(top_level_property_inline.property_name());
+	bool pop = d_output.writeStartElement(top_level_property_inline.get_property_name());
 
 	// Top-level properties which also contain xml attributes
 	// may be having their attributes written twice (at both the property
@@ -748,7 +748,7 @@ void
 GPlatesFileIO::GpmlOutputVisitor::visit_enumeration(
 		const GPlatesPropertyValues::Enumeration &enumeration)
 {
-	d_output.writeText(enumeration.value().get());
+	d_output.writeText(enumeration.get_value().get());
 }
 
 
@@ -757,6 +757,8 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_data_block(
 		const GPlatesPropertyValues::GmlDataBlock &gml_data_block)
 {
 	using namespace GPlatesPropertyValues;
+
+	const GmlDataBlock::tuple_list_type &tuple_list = gml_data_block.get_tuple_list();
 
 	d_output.writeStartGmlElement("DataBlock");
 
@@ -768,10 +770,10 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_data_block(
 			// Output each value-component in the composite-value.
 			// If the tuple-list is empty, the body of the for-loop will never be entered, so the
 			// <gml:CompositeValue> will be empty.
-			GmlDataBlock::tuple_list_type::const_iterator iter = gml_data_block.tuple_list_begin();
-			GmlDataBlock::tuple_list_type::const_iterator end = gml_data_block.tuple_list_end();
+			GmlDataBlock::tuple_list_type::const_iterator iter = tuple_list.begin();
+			GmlDataBlock::tuple_list_type::const_iterator end = tuple_list.end();
 			for ( ; iter != end; ++iter) {
-				write_gml_data_block_value_component_value_object_template(d_output, *iter);
+				write_gml_data_block_value_component_value_object_template(d_output, iter->get_coordinate_list());
 			}
 
 			d_output.writeEndElement(); // </gml:CompositeValue>
@@ -781,8 +783,8 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_data_block(
 	d_output.writeStartGmlElement("tupleList");
 		write_gml_data_block_tuple_list(
 				d_output,
-				gml_data_block.tuple_list_begin(),
-				gml_data_block.tuple_list_end());
+				tuple_list.begin(),
+				tuple_list.end());
 	d_output.writeEndElement(); // </gml:tupleList>
 
 	d_output.writeEndElement(); // </gml:DataBlock>
@@ -805,7 +807,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_file(
 				// Output each value-component in the composite-value with its attributes.
 				// The following code is based on write_gml_data_block_value_component_value_object_template
 				// in the anonymous namespace above; see the comments there for an explanation.
-				const GmlFile::composite_value_type &range_parameters = gml_file.range_parameters();
+				const GmlFile::composite_value_type &range_parameters = gml_file.get_range_parameters();
 				BOOST_FOREACH(const GmlFile::value_component_type &value_component, range_parameters)
 				{
 					d_output.writeStartGmlElement("valueComponent");
@@ -825,15 +827,15 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_file(
 		d_output.writeEndElement(); // </gml:rangeParameters>
 
 		d_output.writeStartGmlElement("fileName");
-			d_output.writeRelativeFilePath(gml_file.file_name()->value().get());
+			d_output.writeRelativeFilePath(gml_file.get_file_name()->get_value().get());
 		d_output.writeEndElement(); // </gml:fileName>
 
 		d_output.writeStartGmlElement("fileStructure");
-			visit_xs_string(*gml_file.file_structure());
+			visit_xs_string(*gml_file.get_file_structure());
 		d_output.writeEndElement(); // </gml:fileStructure>
 
 		// The next two are optional.
-		const boost::optional<XsString::non_null_ptr_to_const_type> &mime_type = gml_file.mime_type();
+		const boost::optional<XsString::non_null_ptr_to_const_type> &mime_type = gml_file.get_mime_type();
 		if (mime_type)
 		{
 			d_output.writeStartGmlElement("mimeType");
@@ -841,7 +843,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_file(
 			d_output.writeEndElement(); // </gml:mimeType>
 		}
 
-		const boost::optional<XsString::non_null_ptr_to_const_type> &compression = gml_file.compression();
+		const boost::optional<XsString::non_null_ptr_to_const_type> &compression = gml_file.get_compression();
 		if (compression)
 		{
 			d_output.writeStartGmlElement("compression");
@@ -859,8 +861,8 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_grid_envelope(
 {
 	d_output.writeStartGmlElement("GridEnvelope");
 
-	const GPlatesPropertyValues::GmlGridEnvelope::integer_list_type &low = gml_grid_envelope.low();
-	const GPlatesPropertyValues::GmlGridEnvelope::integer_list_type &high = gml_grid_envelope.high();
+	const GPlatesPropertyValues::GmlGridEnvelope::integer_list_type &low = gml_grid_envelope.get_low();
+	const GPlatesPropertyValues::GmlGridEnvelope::integer_list_type &high = gml_grid_envelope.get_high();
 
 	d_output.writeStartGmlElement("low");
 	d_output.writeNumericalSequence(low.begin(), low.end());
@@ -901,7 +903,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_line_string(
 	// (ii) it's file I/O, it's slow anyway; and (iii) we can cut it down to a single memory
 	// allocation if we reserve the size of the vector in advance.
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_ptr =
-			gml_line_string.polyline();
+			gml_line_string.get_polyline();
 	std::vector<double> pos_list;
 	// Reserve enough space for the coordinates, to avoid the need to reallocate.
 	//
@@ -939,9 +941,9 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_multi_point(
 	d_output.writeStartGmlElement("MultiPoint");
 
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multipoint_ptr =
-			gml_multi_point.multipoint();
+			gml_multi_point.get_multipoint();
 	typedef std::vector<GPlatesPropertyValues::GmlPoint::GmlProperty> gml_properties_type;
-	const gml_properties_type &gml_properties = gml_multi_point.gml_properties();
+	const gml_properties_type &gml_properties = gml_multi_point.get_gml_properties();
 
 	GPlatesMaths::MultiPointOnSphere::const_iterator iter = multipoint_ptr->begin();
 	GPlatesMaths::MultiPointOnSphere::const_iterator end = multipoint_ptr->end();
@@ -966,11 +968,11 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_orientable_curve(
 {
 	d_output.writeStartGmlElement("OrientableCurve");
 		d_output.writeAttributes(
-				gml_orientable_curve.xml_attributes().begin(),
-				gml_orientable_curve.xml_attributes().end());
+				gml_orientable_curve.get_xml_attributes().begin(),
+				gml_orientable_curve.get_xml_attributes().end());
 
 		d_output.writeStartGmlElement("baseCurve");
-			gml_orientable_curve.base_curve()->accept_visitor(*this);
+			gml_orientable_curve.get_base_curve()->accept_visitor(*this);
 		d_output.writeEndElement();  // </gml:base_curve>
 
 	d_output.writeEndElement();  // </gml:OrientableCurve>
@@ -993,12 +995,13 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_polygon(
 	
 	// GmlPolygon has exactly one exterior ring.
 	d_output.writeStartGmlElement("exterior");
-	write_gml_linear_ring(d_output, gml_polygon.exterior());
+	write_gml_linear_ring(d_output, gml_polygon.get_exterior());
 	d_output.writeEndElement(); // </gml:exterior>
 	
 	// GmlPolygon has zero or more interior rings.
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator it = gml_polygon.interiors_begin();
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator end = gml_polygon.interiors_end();
+	const GPlatesPropertyValues::GmlPolygon::ring_sequence_type &interiors = gml_polygon.get_interiors();
+	GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator it = interiors.begin();
+	GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator end = interiors.end();
 	for ( ; it != end; ++it) {
 		d_output.writeStartGmlElement("interior");
 		write_gml_linear_ring(d_output, *it);
@@ -1016,27 +1019,27 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_rectified_grid(
 	using namespace GPlatesPropertyValues;
 
 	d_output.writeStartGmlElement("RectifiedGrid");
-	const GmlRectifiedGrid::xml_attributes_type &xml_attributes = gml_rectified_grid.xml_attributes();
+	const GmlRectifiedGrid::xml_attributes_type &xml_attributes = gml_rectified_grid.get_xml_attributes();
 	d_output.writeAttributes(xml_attributes.begin(), xml_attributes.end());
 
 		d_output.writeStartGmlElement("limits");
-			visit_gml_grid_envelope(*gml_rectified_grid.limits());
+			visit_gml_grid_envelope(*gml_rectified_grid.get_limits());
 		d_output.writeEndElement(); // </gml:limits>
 
-		const GmlRectifiedGrid::axes_list_type &axes = gml_rectified_grid.axes();
-		BOOST_FOREACH(const XsString::non_null_ptr_to_const_type &axis, axes)
+		const GmlRectifiedGrid::axes_list_type &axes = gml_rectified_grid.get_axes();
+		BOOST_FOREACH(const GmlRectifiedGrid::Axis &axis, axes)
 		{
 			d_output.writeStartGmlElement("axisName");
-				visit_xs_string(*axis);
+				visit_xs_string(*axis.get_name());
 			d_output.writeEndElement(); // </gml:axisName>
 		}
 
 		d_output.writeStartGmlElement("origin");
-			visit_gml_point(*gml_rectified_grid.origin());
+			visit_gml_point(*gml_rectified_grid.get_origin());
 		d_output.writeEndElement(); // </gml:origin>
 
-		const GmlRectifiedGrid::offset_vector_list_type offset_vectors =
-			gml_rectified_grid.offset_vectors();
+		const GmlRectifiedGrid::offset_vector_list_type &offset_vectors =
+			gml_rectified_grid.get_offset_vectors();
 		BOOST_FOREACH(const GmlRectifiedGrid::offset_vector_type &offset_vector, offset_vectors)
 		{
 			d_output.writeStartGmlElement("offsetVector");
@@ -1055,11 +1058,11 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_time_instant(
 	d_output.writeStartGmlElement("TimeInstant");
 	d_output.writeStartGmlElement("timePosition");
 		d_output.writeAttributes(
-				gml_time_instant.time_position_xml_attributes().begin(),
-				gml_time_instant.time_position_xml_attributes().end());
+				gml_time_instant.get_time_position_xml_attributes().begin(),
+				gml_time_instant.get_time_position_xml_attributes().end());
 
 		const GPlatesPropertyValues::GeoTimeInstant &time_position = 
-			gml_time_instant.time_position();
+			gml_time_instant.get_time_position();
 		if (time_position.is_real()) {
 			d_output.writeDecimal(time_position.value());
 		} else if (time_position.is_distant_past()) {
@@ -1079,11 +1082,11 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_time_period(
 {
 	d_output.writeStartGmlElement("TimePeriod");
 		d_output.writeStartGmlElement("begin");
-			gml_time_period.begin()->accept_visitor(*this);
+			gml_time_period.get_begin()->accept_visitor(*this);
 		d_output.writeEndElement();
 
 		d_output.writeStartGmlElement("end");
-			gml_time_period.end()->accept_visitor(*this);
+			gml_time_period.get_end()->accept_visitor(*this);
 		d_output.writeEndElement();
 	d_output.writeEndElement(); // </gml:TimePeriod>
 }
@@ -1096,16 +1099,16 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_array(
 
 	d_output.writeStartGpmlElement("Array");
 		d_output.writeStartGpmlElement("valueType");
-			writeTemplateTypeParameterType(d_output, gpml_array.type());
+			writeTemplateTypeParameterType(d_output, gpml_array.get_value_type());
 		d_output.writeEndElement();
 	
 	//d_output.writeStartGpmlElement("members");
-		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type>::const_iterator 
-			iter = gpml_array.members().begin(),
-			end = gpml_array.members().end();
+		std::vector<GPlatesPropertyValues::GpmlArray::Member>::const_iterator 
+			iter = gpml_array.get_members().begin(),
+			end = gpml_array.get_members().end();
 		for ( ; iter != end; ++iter) {
 			d_output.writeStartGpmlElement("member");
-				(*iter)->accept_visitor(*this);
+				iter->get_value()->accept_visitor(*this);
 			d_output.writeEndElement();
 		}
 	d_output.writeEndElement();
@@ -1143,12 +1146,12 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_constant_value(
 {
 	d_output.writeStartGpmlElement("ConstantValue");
 		d_output.writeStartGpmlElement("value");
-			gpml_constant_value.value()->accept_visitor(*this);
+			gpml_constant_value.get_value()->accept_visitor(*this);
 		d_output.writeEndElement();
 
 
 		d_output.writeStartGpmlElement("valueType");
-			writeTemplateTypeParameterType(d_output, gpml_constant_value.value_type());
+			writeTemplateTypeParameterType(d_output, gpml_constant_value.get_value_type());
 		d_output.writeEndElement();
 	d_output.writeEndElement();
 }
@@ -1160,12 +1163,12 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_feature_reference(
 {
 	d_output.writeStartGpmlElement("FeatureReference");
 		d_output.writeStartGpmlElement("targetFeature");
-			d_output.writeText(gpml_feature_reference.feature_id().get());
+			d_output.writeText(gpml_feature_reference.get_feature_id().get());
 		d_output.writeEndElement();
 
 
 		d_output.writeStartGpmlElement("valueType");
-			writeTemplateTypeParameterType(d_output, gpml_feature_reference.value_type());
+			writeTemplateTypeParameterType(d_output, gpml_feature_reference.get_value_type());
 		d_output.writeEndElement();
 	d_output.writeEndElement();
 }
@@ -1177,15 +1180,15 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_feature_snapshot_reference(
 {
 	d_output.writeStartGpmlElement("FeatureSnapshotReference");
 		d_output.writeStartGpmlElement("targetFeature");
-			d_output.writeText(gpml_feature_snapshot_reference.feature_id().get());
+			d_output.writeText(gpml_feature_snapshot_reference.get_feature_id().get());
 		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("targetRevision");
-			d_output.writeText(gpml_feature_snapshot_reference.revision_id().get());
+			d_output.writeText(gpml_feature_snapshot_reference.get_revision_id().get());
 		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("valueType");
-			writeTemplateTypeParameterType(d_output, gpml_feature_snapshot_reference.value_type());
+			writeTemplateTypeParameterType(d_output, gpml_feature_snapshot_reference.get_value_type());
 		d_output.writeEndElement();
 	d_output.writeEndElement();
 }
@@ -1197,15 +1200,15 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_property_delegate(
 {
 	d_output.writeStartGpmlElement("PropertyDelegate");
 		d_output.writeStartGpmlElement("targetFeature");
-			d_output.writeText(gpml_property_delegate.feature_id().get());
+			d_output.writeText(gpml_property_delegate.get_feature_id().get());
 		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("targetProperty");
-			writeTemplateTypeParameterType(d_output, gpml_property_delegate.target_property());
+			writeTemplateTypeParameterType(d_output, gpml_property_delegate.get_target_property_name());
 		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("valueType");
-			writeTemplateTypeParameterType(d_output, gpml_property_delegate.value_type());
+			writeTemplateTypeParameterType(d_output, gpml_property_delegate.get_value_type());
 		d_output.writeEndElement();
 	d_output.writeEndElement();
 }
@@ -1242,7 +1245,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_total_reconstruction_pole(
 		const GPlatesPropertyValues::GpmlTotalReconstructionPole &pole)
 {
 	d_output.writeStartGpmlElement("TotalReconstructionPole");
-	const std::vector<boost::shared_ptr<GPlatesModel::Metadata> >& meta_data= pole.metadata();
+	const std::vector<boost::shared_ptr<GPlatesModel::Metadata> >& meta_data= pole.get_metadata();
 	BOOST_FOREACH(boost::shared_ptr<GPlatesModel::Metadata> data, meta_data)
 	{
 		d_output.writeStartGpmlElement("meta");
@@ -1261,7 +1264,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_finite_rotation_slerp(
 {
 	d_output.writeStartGpmlElement("FiniteRotationSlerp");
 		d_output.writeStartGpmlElement("valueType");
-			writeTemplateTypeParameterType(d_output, gpml_finite_rotation_slerp.value_type());
+			writeTemplateTypeParameterType(d_output, gpml_finite_rotation_slerp.get_value_type());
 		d_output.writeEndElement();
 	d_output.writeEndElement();
 }
@@ -1273,8 +1276,8 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_key_value_dictionary(
 	d_output.writeStartGpmlElement("KeyValueDictionary");
 		//d_output.writeStartGpmlElement("elements");
 			std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-				iter = gpml_key_value_dictionary.elements().begin(),
-				end = gpml_key_value_dictionary.elements().end();
+				iter = gpml_key_value_dictionary.get_elements().begin(),
+				end = gpml_key_value_dictionary.get_elements().end();
 			for ( ; iter != end; ++iter) {
 				d_output.writeStartGpmlElement("element");
 				write_gpml_key_value_dictionary_element(*iter);
@@ -1290,13 +1293,13 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_piecewise_aggregation(
 {
 	d_output.writeStartGpmlElement("PiecewiseAggregation");
 		d_output.writeStartGpmlElement("valueType");
-			writeTemplateTypeParameterType(d_output, gpml_piecewise_aggregation.value_type());
+			writeTemplateTypeParameterType(d_output, gpml_piecewise_aggregation.get_value_type());
 		d_output.writeEndElement();
 
 		std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-				gpml_piecewise_aggregation.time_windows().begin();
+				gpml_piecewise_aggregation.get_time_windows().begin();
 		std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-				gpml_piecewise_aggregation.time_windows().end();
+				gpml_piecewise_aggregation.get_time_windows().end();
 		for ( ; iter != end; ++iter) 
 		{
 			d_output.writeStartGpmlElement("timeWindow");
@@ -1316,24 +1319,28 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_network(
 		d_output.writeStartGpmlElement("boundary");
 			d_output.writeStartGpmlElement("TopologicalSections");
 				// Write the boundary topological sections.
-				GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_const_iterator
-						boundary_sections_iter = gpml_toplogical_network.boundary_sections_begin();
-				GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_const_iterator
-						boundary_sections_end = gpml_toplogical_network.boundary_sections_end();
+				const GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_seq_type &
+						boundary_sections = gpml_toplogical_network.get_boundary_sections();
+				GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_seq_type::const_iterator
+						boundary_sections_iter = boundary_sections.begin();
+				GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_seq_type::const_iterator
+						boundary_sections_end = boundary_sections.end();
 				for ( ; boundary_sections_iter != boundary_sections_end; ++boundary_sections_iter) 
 				{
 					d_output.writeStartGpmlElement("section");
-					(*boundary_sections_iter)->accept_visitor(*this);
+					boundary_sections_iter->get_source_section()->accept_visitor(*this);
 					d_output.writeEndElement();
 				}
 			d_output.writeEndElement();  // </gpml:TopologicalSections>
 		d_output.writeEndElement();  // </gpml:boundary>
 
 		// Write the network interior geometries.
-		GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometries_const_iterator
-				interior_geometries_iter = gpml_toplogical_network.interior_geometries_begin();
-		GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometries_const_iterator
-				interior_geometries_end = gpml_toplogical_network.interior_geometries_end();
+		const GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometry_seq_type &
+				interior_geometries = gpml_toplogical_network.get_interior_geometries();
+		GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometry_seq_type::const_iterator
+				interior_geometries_iter = interior_geometries.begin();
+		GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometry_seq_type::const_iterator
+				interior_geometries_end = interior_geometries.end();
 		for ( ; interior_geometries_iter != interior_geometries_end; ++interior_geometries_iter) 
 		{
 			d_output.writeStartGpmlElement("interior");
@@ -1353,14 +1360,16 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_polygon(
 		// Write the exterior topological sections.
 		d_output.writeStartGpmlElement("exterior");
 			d_output.writeStartGpmlElement("TopologicalSections");
-				GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator iter =
-						gpml_toplogical_polygon.exterior_sections_begin();
-				GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator end =
-						gpml_toplogical_polygon.exterior_sections_end();
+				const GPlatesPropertyValues::GpmlTopologicalPolygon::sections_seq_type &
+						exterior_sections = gpml_toplogical_polygon.get_exterior_sections();
+				GPlatesPropertyValues::GpmlTopologicalPolygon::sections_seq_type::const_iterator iter =
+						exterior_sections.begin();
+				GPlatesPropertyValues::GpmlTopologicalPolygon::sections_seq_type::const_iterator end =
+						exterior_sections.end();
 				for ( ; iter != end; ++iter) 
 				{
 					d_output.writeStartGpmlElement("section");
-					(*iter)->accept_visitor(*this);
+					iter->get_source_section()->accept_visitor(*this);
 					d_output.writeEndElement();
 				}
 			d_output.writeEndElement();  // </gpml:TopologicalSections>
@@ -1378,14 +1387,16 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_line(
 {
 	d_output.writeStartGpmlElement("TopologicalLine");
 
-	GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator iter =
-			gpml_toplogical_line.sections_begin();
-	GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator end =
-			gpml_toplogical_line.sections_end();
+	const GPlatesPropertyValues::GpmlTopologicalLine::sections_seq_type &sections =
+			gpml_toplogical_line.get_sections();
+	GPlatesPropertyValues::GpmlTopologicalLine::sections_seq_type::const_iterator iter =
+			sections.begin();
+	GPlatesPropertyValues::GpmlTopologicalLine::sections_seq_type::const_iterator end =
+			sections.end();
 	for ( ; iter != end; ++iter) 
 	{
 		d_output.writeStartGpmlElement("section");
-		(*iter)->accept_visitor(*this);
+		iter->get_source_section()->accept_visitor(*this);
 		d_output.writeEndElement();
 	}
 
@@ -1430,22 +1441,22 @@ GPlatesFileIO::GpmlOutputVisitor::visit_hot_spot_trail_mark(
 {
 	d_output.writeStartGpmlElement("HotSpotTrailMark");
 		d_output.writeStartGpmlElement("position");
-			gpml_hot_spot_trail_mark.position()->accept_visitor(*this);
+			gpml_hot_spot_trail_mark.get_position()->accept_visitor(*this);
 		d_output.writeEndElement();
 
-		if (gpml_hot_spot_trail_mark.trail_width()) {
+		if (gpml_hot_spot_trail_mark.get_trail_width()) {
 			d_output.writeStartGpmlElement("trailWidth");
-				(*gpml_hot_spot_trail_mark.trail_width())->accept_visitor(*this);
+				(*gpml_hot_spot_trail_mark.get_trail_width())->accept_visitor(*this);
 			d_output.writeEndElement();
 		}
-		if (gpml_hot_spot_trail_mark.measured_age()) {
+		if (gpml_hot_spot_trail_mark.get_measured_age()) {
 			d_output.writeStartGpmlElement("measuredAge");
-				(*gpml_hot_spot_trail_mark.measured_age())->accept_visitor(*this);
+				(*gpml_hot_spot_trail_mark.get_measured_age())->accept_visitor(*this);
 			d_output.writeEndElement();
 		}
-		if (gpml_hot_spot_trail_mark.measured_age_range()) {
+		if (gpml_hot_spot_trail_mark.get_measured_age_range()) {
 			d_output.writeStartGpmlElement("measuredAgeRange");
-				(*gpml_hot_spot_trail_mark.measured_age_range())->accept_visitor(*this);
+				(*gpml_hot_spot_trail_mark.get_measured_age_range())->accept_visitor(*this);
 			d_output.writeEndElement();
 		}
 	d_output.writeEndElement();  // </gpml:HotSpotTrailMark>
@@ -1457,9 +1468,9 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_measure(
 		const GPlatesPropertyValues::GpmlMeasure &gpml_measure)
 {
 	d_output.writeAttributes(
-			gpml_measure.quantity_xml_attributes().begin(),
-			gpml_measure.quantity_xml_attributes().end());
-	d_output.writeDecimal(gpml_measure.quantity());
+			gpml_measure.get_quantity_xml_attributes().begin(),
+			gpml_measure.get_quantity_xml_attributes().end());
+	d_output.writeDecimal(gpml_measure.get_quantity());
 }
 
 
@@ -1477,13 +1488,13 @@ GPlatesFileIO::GpmlOutputVisitor::write_gpml_time_window(
 {
 	d_output.writeStartGpmlElement("TimeWindow");
 		d_output.writeStartGpmlElement("timeDependentPropertyValue");
-			gpml_time_window.time_dependent_value()->accept_visitor(*this);
+			gpml_time_window.get_time_dependent_value()->accept_visitor(*this);
 		d_output.writeEndElement();
 		d_output.writeStartGpmlElement("validTime");
-			gpml_time_window.valid_time()->accept_visitor(*this);
+			gpml_time_window.get_valid_time()->accept_visitor(*this);
 		d_output.writeEndElement();
 		d_output.writeStartGpmlElement("valueType");
-			writeTemplateTypeParameterType(d_output, gpml_time_window.value_type());
+			writeTemplateTypeParameterType(d_output, gpml_time_window.get_value_type());
 		d_output.writeEndElement();
 	d_output.writeEndElement(); // </gpml:TimeWindow>
 }
@@ -1495,9 +1506,9 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_irregular_sampling(
 {
 	d_output.writeStartGpmlElement("IrregularSampling");
 		std::vector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator iter =
-				gpml_irregular_sampling.time_samples().begin();
+				gpml_irregular_sampling.get_time_samples().begin();
 		std::vector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator end =
-				gpml_irregular_sampling.time_samples().end();
+				gpml_irregular_sampling.get_time_samples().end();
 		for ( ; iter != end; ++iter) 
 		{
 			d_output.writeStartGpmlElement("timeSample");
@@ -1506,15 +1517,15 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_irregular_sampling(
 		}
 
 		// The interpolation function is optional.
-		if (gpml_irregular_sampling.interpolation_function() != NULL)
+		if (gpml_irregular_sampling.get_interpolation_function() != NULL)
 		{
 			d_output.writeStartGpmlElement("interpolationFunction");
-				gpml_irregular_sampling.interpolation_function()->accept_visitor(*this);
+				gpml_irregular_sampling.get_interpolation_function()->accept_visitor(*this);
 			d_output.writeEndElement();
 		}
 
 		d_output.writeStartGpmlElement("valueType");
-			writeTemplateTypeParameterType(d_output, gpml_irregular_sampling.value_type());
+			writeTemplateTypeParameterType(d_output, gpml_irregular_sampling.get_value_type());
 		d_output.writeEndElement();
 	d_output.writeEndElement();  // </gpml:IrregularSampling>
 }
@@ -1524,7 +1535,7 @@ void
 GPlatesFileIO::GpmlOutputVisitor::visit_gpml_plate_id(
 		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
-	d_output.writeInteger(gpml_plate_id.value());
+	d_output.writeInteger(gpml_plate_id.get_value());
 }
 
 
@@ -1535,11 +1546,11 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_raster_band_names(
 	d_output.writeStartGpmlElement("RasterBandNames");
 
 		const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &band_names =
-			gpml_raster_band_names.band_names();
-		BOOST_FOREACH(const GPlatesPropertyValues::XsString::non_null_ptr_to_const_type &band_name, band_names)
+			gpml_raster_band_names.get_band_names();
+		BOOST_FOREACH(const GPlatesPropertyValues::GpmlRasterBandNames::BandName &band_name, band_names)
 		{
 			d_output.writeStartGpmlElement("bandName");
-				visit_xs_string(*band_name);
+				visit_xs_string(*band_name.get_name());
 			d_output.writeEndElement(); // <gpml:bandName>
 		}
 
@@ -1551,7 +1562,7 @@ void
 GPlatesFileIO::GpmlOutputVisitor::visit_gpml_revision_id(
 		const GPlatesPropertyValues::GpmlRevisionId &gpml_revision_id)
 {
-	d_output.writeText(gpml_revision_id.value().get());
+	d_output.writeText(gpml_revision_id.get_value().get());
 }
 
 
@@ -1562,7 +1573,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_scalar_field_3d_file(
 	d_output.writeStartGpmlElement("ScalarField3DFile");
 
 		d_output.writeStartGpmlElement("fileName");
-			d_output.writeRelativeFilePath(gpml_scalar_field_3d_file.file_name()->value().get());
+			d_output.writeRelativeFilePath(gpml_scalar_field_3d_file.get_file_name()->get_value().get());
 		d_output.writeEndElement(); // <gpml:fileName>
 
 	d_output.writeEndElement(); // </gpml:ScalarField3DFile>
@@ -1575,23 +1586,23 @@ GPlatesFileIO::GpmlOutputVisitor::write_gpml_time_sample(
 {
 	d_output.writeStartGpmlElement("TimeSample");
 		d_output.writeStartGpmlElement("value");
-			gpml_time_sample.value()->accept_visitor(*this);
+			gpml_time_sample.get_value()->accept_visitor(*this);
 		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("validTime");
-			gpml_time_sample.valid_time()->accept_visitor(*this);
+			gpml_time_sample.get_valid_time()->accept_visitor(*this);
 		d_output.writeEndElement();
 
 		// The description is optional.
-		if (gpml_time_sample.description() != NULL) 
+		if (gpml_time_sample.get_description() != NULL) 
 		{
 			d_output.writeStartGmlElement("description");
-				gpml_time_sample.description()->accept_visitor(*this);
+				gpml_time_sample.get_description()->accept_visitor(*this);
 			d_output.writeEndElement();
 		}
 
 		d_output.writeStartGpmlElement("valueType");
-			writeTemplateTypeParameterType(d_output, gpml_time_sample.value_type());
+			writeTemplateTypeParameterType(d_output, gpml_time_sample.get_value_type());
 		d_output.writeEndElement();
 
 	d_output.writeEndElement();  // </gpml:TimeSample>
@@ -1604,55 +1615,55 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_old_plates_header(
 	d_output.writeStartGpmlElement("OldPlatesHeader");
 
 		d_output.writeStartGpmlElement("regionNumber");
- 		d_output.writeInteger(gpml_old_plates_header.region_number());
+ 		d_output.writeInteger(gpml_old_plates_header.get_region_number());
 		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("referenceNumber");
- 		d_output.writeInteger(gpml_old_plates_header.reference_number());
+ 		d_output.writeInteger(gpml_old_plates_header.get_reference_number());
 		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("stringNumber");
- 		d_output.writeInteger(gpml_old_plates_header.string_number());
+ 		d_output.writeInteger(gpml_old_plates_header.get_string_number());
 		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("geographicDescription");
- 		d_output.writeText(gpml_old_plates_header.geographic_description());
+ 		d_output.writeText(gpml_old_plates_header.get_geographic_description());
 		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("plateIdNumber");
- 		d_output.writeInteger(gpml_old_plates_header.plate_id_number());
+ 		d_output.writeInteger(gpml_old_plates_header.get_plate_id_number());
 		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("ageOfAppearance");
- 		d_output.writeDecimal(gpml_old_plates_header.age_of_appearance());
+ 		d_output.writeDecimal(gpml_old_plates_header.get_age_of_appearance());
 		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("ageOfDisappearance");
- 		d_output.writeDecimal(gpml_old_plates_header.age_of_disappearance());
+ 		d_output.writeDecimal(gpml_old_plates_header.get_age_of_disappearance());
 		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("dataTypeCode");
- 		d_output.writeText(gpml_old_plates_header.data_type_code());
+ 		d_output.writeText(gpml_old_plates_header.get_data_type_code());
 		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("dataTypeCodeNumber");
- 		d_output.writeInteger(gpml_old_plates_header.data_type_code_number());
+ 		d_output.writeInteger(gpml_old_plates_header.get_data_type_code_number());
 		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("dataTypeCodeNumberAdditional");
- 		d_output.writeText(gpml_old_plates_header.data_type_code_number_additional());
+ 		d_output.writeText(gpml_old_plates_header.get_data_type_code_number_additional());
 		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("conjugatePlateIdNumber");
- 		d_output.writeInteger(gpml_old_plates_header.conjugate_plate_id_number());
+ 		d_output.writeInteger(gpml_old_plates_header.get_conjugate_plate_id_number());
 		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("colourCode");
- 		d_output.writeInteger(gpml_old_plates_header.colour_code());
+ 		d_output.writeInteger(gpml_old_plates_header.get_colour_code());
 		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("numberOfPoints");
- 		d_output.writeInteger(gpml_old_plates_header.number_of_points());
+ 		d_output.writeInteger(gpml_old_plates_header.get_number_of_points());
 		d_output.writeEndElement();
 
 	d_output.writeEndElement();  // </gpml:OldPlatesHeader>
@@ -1665,7 +1676,9 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_string_list(
 {
 	d_output.writeStartGpmlElement("StringList");
 
-		BOOST_FOREACH(const GPlatesPropertyValues::TextContent &text_content, gpml_string_list)
+		BOOST_FOREACH(
+				const GPlatesPropertyValues::TextContent &text_content,
+				gpml_string_list.get_string_list())
 		{
 			d_output.writeStartGpmlElement("element");
 				d_output.writeText(text_content.get());
@@ -1679,7 +1692,7 @@ void
 GPlatesFileIO::GpmlOutputVisitor::visit_xs_string(
 		const GPlatesPropertyValues::XsString &xs_string)
 {
-	d_output.writeText(xs_string.value().get());
+	d_output.writeText(xs_string.get_value().get());
 }
 
 
@@ -1705,7 +1718,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_uninterpreted_property_value(
 	// XXX: Uncomment to indicate which property values weren't interpreted.
 	//d_output.get_writer().writeEmptyElement("Uninterpreted");
 	const GPlatesModel::XmlElementNode::non_null_ptr_to_const_type elem = 
-		uninterpreted_prop_val.value();
+		uninterpreted_prop_val.get_value();
 
 	std::for_each(elem->children_begin(), elem->children_end(),
 			boost::bind(&GPlatesModel::XmlNode::write_to, _1, 
@@ -1717,7 +1730,7 @@ void
 GPlatesFileIO::GpmlOutputVisitor::visit_xs_boolean(
 		const GPlatesPropertyValues::XsBoolean &xs_boolean)
 {
-	d_output.writeBoolean(xs_boolean.value());
+	d_output.writeBoolean(xs_boolean.get_value());
 }
 
 
@@ -1725,7 +1738,7 @@ void
 GPlatesFileIO::GpmlOutputVisitor::visit_xs_double(
 		const GPlatesPropertyValues::XsDouble &xs_double)
 {
-	d_output.writeDecimal(xs_double.value());
+	d_output.writeDecimal(xs_double.get_value());
 }
 
 
@@ -1733,7 +1746,7 @@ void
 GPlatesFileIO::GpmlOutputVisitor::visit_xs_integer(
 		const GPlatesPropertyValues::XsInteger &xs_integer)
 {
-	d_output.writeInteger(xs_integer.value());
+	d_output.writeInteger(xs_integer.get_value());
 }
 
 

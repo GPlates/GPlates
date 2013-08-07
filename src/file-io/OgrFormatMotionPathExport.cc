@@ -95,8 +95,7 @@ namespace
 		finder.visit_feature(feature_ref);
 
 
-		GpmlKeyValueDictionary::non_null_ptr_type dictionary = 
-			GpmlKeyValueDictionary::create();
+		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements;
 
 		// (Shapefile attribute fields are limited to 10 characters in length).
 
@@ -109,7 +108,7 @@ namespace
 			key,
 			name_value,
 			StructuralType::create_xsi("string"));
-		dictionary->elements().push_back(name_element);	
+		elements.push_back(name_element);	
 
 		// Seed points.
 		key = XsString::create("SEED");
@@ -121,7 +120,7 @@ namespace
 			key,
 			motion_path_seeds_value,
 			StructuralType::create_xsi("string"));
-		dictionary->elements().push_back(motion_path_seeds_element);
+		elements.push_back(motion_path_seeds_element);
 
 		// Anchor plate.
 		key = XsString::create("ANCHOR");
@@ -132,7 +131,7 @@ namespace
 			key,
 			anchor_value,
 			StructuralType::create_xsi("integer"));
-		dictionary->elements().push_back(anchor_element);	
+		elements.push_back(anchor_element);	
 
 		// Reconstruction time.
 		key = XsString::create("TIME");
@@ -143,7 +142,7 @@ namespace
 			key,
 			time_value,
 			StructuralType::create_xsi("double"));
-		dictionary->elements().push_back(time_element);	
+		elements.push_back(time_element);	
 
 		if (should_add_referenced_files)
 		{
@@ -184,11 +183,12 @@ namespace
 					key,
 					file_value,
 					StructuralType::create_xsi("string"));
-				dictionary->elements().push_back(element);	
+				elements.push_back(element);	
 			}
 		}
 
-		return dictionary;
+
+		return GpmlKeyValueDictionary::create(elements);
 
 	}
 }

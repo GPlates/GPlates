@@ -89,8 +89,7 @@ namespace
 		// complicated if features came from shapefiles with different attribute fields. 
 		// For now, I'm just adding plateID, anchor plate, time, and referenced files to the kvd. 
 	
-		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary = 
-			GPlatesPropertyValues::GpmlKeyValueDictionary::create();
+		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements;
 
 		static const GPlatesModel::PropertyName plate_id_property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
@@ -105,13 +104,13 @@ namespace
 			GPlatesPropertyValues::XsString::non_null_ptr_type key = 
 				GPlatesPropertyValues::XsString::create("PLATE_ID");
 			GPlatesPropertyValues::XsInteger::non_null_ptr_type plateid_value = 
-				GPlatesPropertyValues::XsInteger::create(recon_plate_id->value());	
+				GPlatesPropertyValues::XsInteger::create(recon_plate_id->get_value());	
 
 			GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
 				key,
 				plateid_value,
 				GPlatesPropertyValues::StructuralType::create_xsi("integer"));
-			dictionary->elements().push_back(element);
+			elements.push_back(element);
 		}
 
 		// Anchor plate.
@@ -126,7 +125,7 @@ namespace
 			key,
 			anchor_value,
 			GPlatesPropertyValues::StructuralType::create_xsi("integer"));
-		dictionary->elements().push_back(anchor_element);	
+		elements.push_back(anchor_element);	
 
 		// Reconstruction time.
 		key = GPlatesPropertyValues::XsString::create("TIME");
@@ -137,7 +136,7 @@ namespace
 			key,
 			time_value,
 			GPlatesPropertyValues::StructuralType::create_xsi("double"));
-		dictionary->elements().push_back(time_element);	
+		elements.push_back(time_element);	
 
 		// Referenced files.
 		// As this info is output on a geometry by geometry basis (there's no place in a shapefile 
@@ -176,11 +175,11 @@ namespace
 				key,
 				file_value,
 				GPlatesPropertyValues::StructuralType::create_xsi("string"));
-			dictionary->elements().push_back(element);	
+			elements.push_back(element);	
 		}
 
 
-		return dictionary;
+		return GPlatesPropertyValues::GpmlKeyValueDictionary::create(elements);
 
 	}
 
@@ -189,16 +188,18 @@ namespace
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type &output_kvd,
 		const GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type &feature_kvd)
 	{
+		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> output_elements =
+				output_kvd->get_elements();
 
 		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-			it = feature_kvd->elements().begin(),
-			end = feature_kvd->elements().end();
-
+			it = feature_kvd->get_elements().begin(),
+			end = feature_kvd->get_elements().end();
 		for (; it != end ; ++it)
 		{
-			output_kvd->elements().push_back(*it);
+			output_elements.push_back(*it);
 		}
 
+		output_kvd->set_elements(output_elements);
 	}
 		
 }

@@ -59,7 +59,7 @@ namespace
 		if (GPlatesFeatureVisitors::get_property_value(
 				feature, is_active_property_name, is_active_property_value))
 		{
-			return is_active_property_value->value() ? active_data_type_code : inactive_data_type_code;
+			return is_active_property_value->get_value() ? active_data_type_code : inactive_data_type_code;
 		}
 
 		// No "isActive" property on feature so assume inactive.
@@ -145,13 +145,13 @@ namespace
 			static const GPlatesPropertyValues::EnumerationContent
 					dipslip_enumeration_value_extension("Extension");
 
-			if (dipslip_enumeration_type.is_equal_to(dipslip_property_value->type()))
+			if (dipslip_enumeration_type.is_equal_to(dipslip_property_value->get_type()))
 			{
-				if (dipslip_enumeration_value_compression.is_equal_to(dipslip_property_value->value()))
+				if (dipslip_enumeration_value_compression.is_equal_to(dipslip_property_value->get_value()))
 				{
 					return "NF";
 				}
-				if (dipslip_enumeration_value_extension.is_equal_to(dipslip_property_value->value()))
+				if (dipslip_enumeration_value_extension.is_equal_to(dipslip_property_value->get_value()))
 				{
 					static const GPlatesModel::PropertyName subcategory_property_name = 
 						GPlatesModel::PropertyName::create_gpml("subcategory");
@@ -162,7 +162,7 @@ namespace
 					{
 						static const GPlatesPropertyValues::TextContent thrust_string("Thrust");
 
-						if (subcategory_property_value->value().is_equal_to(thrust_string))
+						if (subcategory_property_value->get_value().is_equal_to(thrust_string))
 						{
 							return "TH";
 						}
@@ -185,9 +185,9 @@ namespace
 			static const GPlatesPropertyValues::EnumerationContent
 					strike_slip_enumeration_value_unknown("Unknown");
 
-			if (strike_slip_enumeration_type.is_equal_to(strike_slip_property_value->type()))
+			if (strike_slip_enumeration_type.is_equal_to(strike_slip_property_value->get_type()))
 			{
-				if (strike_slip_enumeration_value_unknown.is_equal_to(strike_slip_property_value->value()))
+				if (strike_slip_enumeration_value_unknown.is_equal_to(strike_slip_property_value->get_value()))
 				{
 					return "SS";
 				}
@@ -391,15 +391,15 @@ namespace
 			static const GPlatesPropertyValues::EnumerationContent
 					subduction_polarity_enumeration_value_right("Right");
 
-			if (subduction_polarity_enumeration_type.is_equal_to(subduction_polarity_property_value->type()))
+			if (subduction_polarity_enumeration_type.is_equal_to(subduction_polarity_property_value->get_type()))
 			{
 				if (subduction_polarity_enumeration_value_left.is_equal_to(
-						subduction_polarity_property_value->value()))
+						subduction_polarity_property_value->get_value()))
 				{
 					return "sL";
 				}
 				if (subduction_polarity_enumeration_value_right.is_equal_to(
-						subduction_polarity_property_value->value()))
+						subduction_polarity_property_value->get_value()))
 				{
 					return "sR";
 				}
@@ -416,7 +416,7 @@ namespace
 		if (GPlatesFeatureVisitors::get_property_value(
 				feature, is_active_property_name, is_active_property_value))
 		{
-			return is_active_property_value->value() ? "TR" : "XT";
+			return is_active_property_value->get_value() ? "TR" : "XT";
 		}
 
 		// No "isActive" property on feature so assume inactive.

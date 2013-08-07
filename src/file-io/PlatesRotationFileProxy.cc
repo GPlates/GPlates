@@ -75,9 +75,9 @@ namespace
 		visit_gpml_irregular_sampling(
 				gpml_irregular_sampling_type &gpml_irregular_sampling)
 		{
-			BOOST_FOREACH(const GpmlTimeSample& sample, gpml_irregular_sampling.time_samples())
+			BOOST_FOREACH(const GpmlTimeSample& sample, gpml_irregular_sampling.get_time_samples())
 			{
-				const GpmlFiniteRotation* fr = dynamic_cast<const GpmlFiniteRotation*>(sample.value().get());
+				const GpmlFiniteRotation* fr = dynamic_cast<const GpmlFiniteRotation*>(sample.get_value().get());
 				if(fr)
 				{
 					d_finite_rotations.push_back(fr);
@@ -697,7 +697,7 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::visit(
 	if(d_current_sampling)
 	{
 		d_current_sample = create_time_sample(data);
-		GPlatesModel::PropertyValue::non_null_ptr_type fr = d_current_sample->value();
+		GPlatesModel::PropertyValue::non_null_ptr_type fr = d_current_sample->get_value();
 		seg.set_finite_rotation(fr.get());
 	}
 		
@@ -712,19 +712,23 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::visit(
 	if(d_current_sample)
 	{
 		GPlatesPropertyValues::GpmlTotalReconstructionPole* trp = 
-			dynamic_cast<GPlatesPropertyValues::GpmlTotalReconstructionPole*>(d_current_sample->value().get());
+			dynamic_cast<GPlatesPropertyValues::GpmlTotalReconstructionPole*>(d_current_sample->get_value().get());
 		if(trp)
 		{
-			std::vector<boost::shared_ptr<GPlatesModel::Metadata> >& meta = trp->metadata();
+			std::vector<boost::shared_ptr<GPlatesModel::Metadata> > meta = trp->get_metadata();
 			BOOST_FOREACH(const AttributeSegment&attr, d_attrs)
 			{
 				meta.push_back(
 						boost::shared_ptr<GPlatesModel::Metadata>(
 								new GPlatesModel::PoleMetadata(attr.get_name(), attr.get_value())));
 			}
+			trp->set_metadata(meta);
 			d_attrs.clear();
 		}
-		(*d_current_sampling)->time_samples().push_back(*d_current_sample);
+
+		std::vector<GpmlTimeSample> time_samples = (*d_current_sampling)->get_time_samples();
+		time_samples.push_back(*d_current_sample);
+		(*d_current_sampling)->set_time_samples(time_samples);
 	}
 
 }
@@ -822,7 +826,7 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_time_sample(
 	GpmlTotalReconstructionPole::non_null_ptr_type trp =
 		GpmlTotalReconstructionPole::create(GpmlFiniteRotation::create(
 				lon_lat_euler_pole, 
-				data.angle)->finite_rotation());
+				data.angle)->get_finite_rotation());
 
 	GeoTimeInstant geo_time_instant(data.time);
 	GmlTimeInstant::non_null_ptr_type valid_time =
@@ -868,12 +872,12 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_new_trs_feature(
 	//create GpmlIrregularSampling
 	GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
 		GpmlFiniteRotationSlerp::create(
-				time_sample.value_type());
+				time_sample.get_value_type());
 	d_current_sampling =
 		GpmlIrregularSampling::create(
 				time_sample,
 				GPlatesUtils::get_intrusive_ptr(gpml_finite_rotation_slerp),
-				time_sample.value_type());
+				time_sample.get_value_type());
 	
 	//add fixed reference frame
 	GpmlPlateId::non_null_ptr_type fixed_ref_frame =
@@ -890,10 +894,7 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_new_trs_feature(
 			TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gpml("movingReferenceFrame"),
 					moving_ref_frame));
-	
-	GpmlKeyValueDictionary::non_null_ptr_type dictionary = 
-		GpmlKeyValueDictionary::create();
-	
+
 	if(moving_plate_id == static_cast<unsigned long>(d_last_pole.moving_plate_id))
 	{
 		d_mprs_attrs = d_last_mprs;
@@ -913,18 +914,21 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_new_trs_feature(
 				StructuralType::create_xsi("string"));
 		d_mprs_attrs.push_back(element);
 	}
-	dictionary->elements() = d_mprs_attrs;
+
+	GpmlKeyValueDictionary::non_null_ptr_type dictionary = 
+			GpmlKeyValueDictionary::create(d_mprs_attrs);
 	d_last_mprs = d_mprs_attrs;
 	d_mprs_attrs.clear();
-	if(dictionary->num_elements() > 0)
+	if (dictionary->get_elements().size() > 0)
 	{
 		d_current_feature->add(
 				TopLevelPropertyInline::create(
 						GPlatesModel::PropertyName::create_gpml("mprsAttributes"),
 						dictionary));
 	}
-	
-	(*d_current_sampling)->time_samples().clear(); //clear dummy sample
+
+	(*d_current_sampling)->set_time_samples(
+			std::vector<GpmlTimeSample>()); //clear dummy sample
 }
 
 
@@ -1029,7 +1033,7 @@ void
 GPlatesFileIO::GrotWriterWithoutCfg::visit_gpml_total_reconstruction_pole(
 	const GPlatesPropertyValues::GpmlTotalReconstructionPole &trs)
 {
-	const std::vector<boost::shared_ptr<GPlatesModel::Metadata> >& metadata = trs.metadata();
+	const std::vector<boost::shared_ptr<GPlatesModel::Metadata> >& metadata = trs.get_metadata();
 	for(std::size_t i=0; i<metadata.size(); i++)
 	{
 		d_accum.current_pole().metadata.push_back(metadata[i]);
@@ -1061,33 +1065,33 @@ GPlatesFileIO::GrotWriterWithoutCfg::initialise_pre_feature_properties(
 		using namespace GPlatesPropertyValues;
 		GpmlKeyValueDictionary::non_null_ptr_type mprs_values = 
 		ModelUtils::get_mprs_attributes(feature_handle.reference());
-		BOOST_FOREACH(const GpmlKeyValueDictionaryElement& element, mprs_values->elements())
+		BOOST_FOREACH(const GpmlKeyValueDictionaryElement& element, mprs_values->get_elements())
 		{
 			QString output_str;
 			const XsString *key_val = element.key().get(),
 				*val = dynamic_cast<const XsString*>(element.value().get());
 			
 			//Check if the MPRS metadata has already been written out. If so, skip this iteration.
-			if("MPRS:pid" == key_val->value().get().qstring())
+			if("MPRS:pid" == key_val->get_value().get().qstring())
 			{
-				if(val->value().get().qstring().toUInt() == d_mprs_id)
+				if(val->get_value().get().qstring().toUInt() == d_mprs_id)
 				{
 					return true;
 				}
 				else
 				{
-					d_mprs_id = val->value().get().qstring().toUInt();
+					d_mprs_id = val->get_value().get().qstring().toUInt();
 				}
 			}
 			
-			QString content = val->value().get().qstring(), sep = "\"";
+			QString content = val->get_value().get().qstring(), sep = "\"";
 			if(content.contains("\n"))
 			{
 				sep = "\"\"\"";
 			}
 			output_str += QString(QString("> @%1") + sep + "%2" + sep +"\n").
-					arg(key_val->value().get().qstring()).
-					arg(val->value().get().qstring());
+					arg(key_val->get_value().get().qstring()).
+					arg(val->get_value().get().qstring());
 			
 			(*d_output) << output_str.toUtf8().data();
 		}

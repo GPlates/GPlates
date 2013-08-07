@@ -172,7 +172,7 @@ namespace
 				feature->add(
 						GPlatesModel::TopLevelPropertyInline::create(
 								DOMAIN_RECONSTRUCTION_PLATE_ID_PROPERTY_NAME,
-								domain_reconstruction_plate_id_property_value->deep_clone_as_prop_val()));
+								domain_reconstruction_plate_id_property_value->clone()));
 			}
 		}
 
@@ -201,7 +201,7 @@ namespace
 				feature->add(
 						GPlatesModel::TopLevelPropertyInline::create(
 								DOMAIN_NAME_PROPERTY_NAME,
-								name_property_value->deep_clone_as_prop_val()));
+								name_property_value->clone()));
 			}
 		}
 
@@ -225,8 +225,7 @@ namespace
 		//
 		// Set up GmlDataBlock 
 		//
-		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type gml_data_block =
-				GPlatesPropertyValues::GmlDataBlock::create();
+		GPlatesPropertyValues::GmlDataBlock::tuple_list_type gml_data_block_tuple_list;
 
 		GPlatesPropertyValues::ValueObjectType velocity_colat_type =
 				GPlatesPropertyValues::ValueObjectType::create_gpml("VelocityColat");
@@ -267,6 +266,7 @@ namespace
 						velocity_colat_type, xml_attrs_velocity_colat,
 						colat_velocity_components.begin(),
 						colat_velocity_components.end());
+		gml_data_block_tuple_list.push_back( velocity_colat );
 
 		GPlatesPropertyValues::ValueObjectType velocity_lon_type =
 				GPlatesPropertyValues::ValueObjectType::create_gpml("VelocityLon");
@@ -278,9 +278,14 @@ namespace
 						velocity_lon_type, xml_attrs_velocity_lon,
 						lon_velocity_components.begin(),
 						lon_velocity_components.end());
+		gml_data_block_tuple_list.push_back( velocity_lon );
 
-		gml_data_block->tuple_list_push_back( velocity_colat );
-		gml_data_block->tuple_list_push_back( velocity_lon );
+		//
+		// Create the GmlDataBlock property
+		//
+
+		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type gml_data_block =
+				GPlatesPropertyValues::GmlDataBlock::create(gml_data_block_tuple_list);
 
 		//
 		// append the GmlDataBlock property 
@@ -311,7 +316,7 @@ GPlatesFileIO::GpmlFormatMultiPointVectorFieldExport::export_velocity_vector_fie
 {
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many in case we incrementally modify the features below.
-	GPlatesModel::NotificationGuard model_notification_guard(model.access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(*model.access_model());
 
 	// NOTE: We don't add to the feature store otherwise it'll remain there but
 	// we want to release it (and its memory) after export.

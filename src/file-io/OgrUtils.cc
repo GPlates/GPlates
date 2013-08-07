@@ -44,13 +44,13 @@ namespace
         const GPlatesPropertyValues::GmlTimeInstant &time_instant)
     {
 
-        if (time_instant.time_position().is_real()) {
-            return time_instant.time_position().value();
+        if (time_instant.get_time_position().is_real()) {
+            return time_instant.get_time_position().value();
         }
-        else if (time_instant.time_position().is_distant_past()) {
+        else if (time_instant.get_time_position().is_distant_past()) {
             return 999.;
         }
-        else if (time_instant.time_position().is_distant_future()) {
+        else if (time_instant.get_time_position().is_distant_future()) {
             return -999.;
         }
         else {
@@ -201,7 +201,7 @@ GPlatesFileIO::OgrUtils::create_default_kvd_from_collection(
 				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type found_kvd =
 					*(finder.found_key_value_dictionaries_begin());
 				default_key_value_dictionary = GPlatesPropertyValues::GpmlKeyValueDictionary::create(
-					found_kvd->elements());
+					found_kvd->get_elements());
 			}
 
 			++iter;
@@ -215,6 +215,8 @@ GPlatesFileIO::OgrUtils::add_plate_id_to_kvd(
 	const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements = kvd->get_elements();
+
 	static const GPlatesModel::PropertyName plate_id_property_name =
 		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
@@ -231,7 +233,7 @@ GPlatesFileIO::OgrUtils::add_plate_id_to_kvd(
 	// If we found a plate id, add it. 
 	if (GPlatesFeatureVisitors::get_property_value(feature,plate_id_property_name,recon_plate_id))
     {
-		plate_id_value = recon_plate_id->value();
+		plate_id_value = recon_plate_id->get_value();
     }
 
 	GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
@@ -241,7 +243,9 @@ GPlatesFileIO::OgrUtils::add_plate_id_to_kvd(
 		key,
 		value,
 		GPlatesPropertyValues::StructuralType::create_xsi("integer"));
-	kvd->elements().push_back(element);
+	elements.push_back(element);
+
+	kvd->set_elements(elements);
 }
 
 void
@@ -250,6 +254,8 @@ GPlatesFileIO::OgrUtils::add_reconstruction_fields_to_kvd(
 	const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 	const double &reconstruction_time)
 {
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements = kvd->get_elements();
+
 	// There should always be an anchor plate and a reconstruction time, so
 	// default values are not appropriate here.
 
@@ -265,7 +271,7 @@ GPlatesFileIO::OgrUtils::add_reconstruction_fields_to_kvd(
 		key,
 		anchor_value,
 		GPlatesPropertyValues::StructuralType::create_xsi("integer"));
-	kvd->elements().push_back(anchor_element);	
+	elements.push_back(anchor_element);	
 
 	// Reconstruction time.
 	key = GPlatesPropertyValues::XsString::create("TIME");
@@ -276,7 +282,9 @@ GPlatesFileIO::OgrUtils::add_reconstruction_fields_to_kvd(
 		key,
 		time_value,
 		GPlatesPropertyValues::StructuralType::create_xsi("double"));
-	kvd->elements().push_back(time_element);	
+	elements.push_back(time_element);
+
+	kvd->set_elements(elements);
 }
 
 void
@@ -284,6 +292,8 @@ GPlatesFileIO::OgrUtils::add_referenced_files_to_kvd(
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd,
 	const referenced_files_collection_type &referenced_files)
 {
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements = kvd->get_elements();
+
 	// Referenced files. 
 
 	// Attribute field names will have the form "FILE1", "FILE2" etc...
@@ -318,8 +328,10 @@ GPlatesFileIO::OgrUtils::add_referenced_files_to_kvd(
 			key,
 			file_value,
 			GPlatesPropertyValues::StructuralType::create_xsi("string"));
-		kvd->elements().push_back(element);	
+		elements.push_back(element);
 	}
+
+	kvd->set_elements(elements);
 
 }
 
@@ -374,6 +386,8 @@ GPlatesFileIO::OgrUtils::add_feature_type_to_kvd(
     }
 
 
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements = kvd->get_elements();
+
     GPlatesModel::PropertyValue::non_null_ptr_type value =
         GPlatesPropertyValues::XsString::create(
             GPlatesUtils::make_icu_string_from_qstring(feature_type_key));
@@ -387,7 +401,7 @@ GPlatesFileIO::OgrUtils::add_feature_type_to_kvd(
                 value,
                 GPlatesPropertyValues::StructuralType::create_xsi("string"));
 
-	kvd->elements().push_back(two_letter_element);
+	elements.push_back(two_letter_element);
 
 	// Export the gpgim form to GPGIM_TYPE field.
 	QString gpgim_feature_type = convert_qualified_xml_name_to_qstring(
@@ -402,7 +416,9 @@ GPlatesFileIO::OgrUtils::add_feature_type_to_kvd(
 				gpgim_value,
 				GPlatesPropertyValues::StructuralType::create_xsi("string"));
 
-	kvd->elements().push_back(gpgim_element);
+	elements.push_back(gpgim_element);
+
+	kvd->set_elements(elements);
 }
 
 void
@@ -410,6 +426,8 @@ GPlatesFileIO::OgrUtils::add_begin_and_end_time_to_kvd(
 	const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements = kvd->get_elements();
+
     static const GPlatesModel::PropertyName valid_time_property_name =
         GPlatesModel::PropertyName::create_gml("validTime");
 
@@ -423,8 +441,8 @@ GPlatesFileIO::OgrUtils::add_begin_and_end_time_to_kvd(
     if (GPlatesFeatureVisitors::get_property_value(
         feature,valid_time_property_name,time_period))
     {
-		begin_time = get_time_from_time_period(*(time_period->begin()));
-		end_time = get_time_from_time_period(*(time_period->end()));
+		begin_time = get_time_from_time_period(*(time_period->get_begin()));
+		end_time = get_time_from_time_period(*(time_period->get_end()));
     }
 
 	GPlatesPropertyValues::XsDouble::non_null_ptr_type begin_value =
@@ -441,7 +459,7 @@ GPlatesFileIO::OgrUtils::add_begin_and_end_time_to_kvd(
 				begin_value,
 				GPlatesPropertyValues::StructuralType::create_xsi("double"));
 
-	kvd->elements().push_back(begin_element);
+	elements.push_back(begin_element);
 
 	GPlatesPropertyValues::XsString::non_null_ptr_type end_key =
 			GPlatesPropertyValues::XsString::create("TOAGE");
@@ -451,7 +469,9 @@ GPlatesFileIO::OgrUtils::add_begin_and_end_time_to_kvd(
 				end_value,
 				GPlatesPropertyValues::StructuralType::create_xsi("double"));
 
-	kvd->elements().push_back(end_element);
+	elements.push_back(end_element);
+
+	kvd->set_elements(elements);
 }
 
 void
@@ -459,6 +479,8 @@ GPlatesFileIO::OgrUtils::add_name_to_kvd(
 	const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements = kvd->get_elements();
+
     static const GPlatesModel::PropertyName name_property_name =
         GPlatesModel::PropertyName::create_gml("name");
 
@@ -482,7 +504,9 @@ GPlatesFileIO::OgrUtils::add_name_to_kvd(
 				value,
 				GPlatesPropertyValues::StructuralType::create_xsi("string"));
 
-	kvd->elements().push_back(element);
+	elements.push_back(element);
+
+	kvd->set_elements(elements);
 }
 
 void
@@ -490,6 +514,8 @@ GPlatesFileIO::OgrUtils::add_description_to_kvd(
 	const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements = kvd->get_elements();
+
 	static const GPlatesModel::PropertyName desc_property_name =
 		GPlatesModel::PropertyName::create_gml("description");
 
@@ -513,7 +539,9 @@ GPlatesFileIO::OgrUtils::add_description_to_kvd(
 				value,
 				GPlatesPropertyValues::StructuralType::create_xsi("string"));
 
-	kvd->elements().push_back(element);
+	elements.push_back(element);
+
+	kvd->set_elements(elements);
 }
 
 void
@@ -521,6 +549,8 @@ GPlatesFileIO::OgrUtils::add_feature_id_to_kvd(
 	const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements = kvd->get_elements();
+
 	// There should always be a feature-id,so a default value is not appropriate here.
 
     GPlatesModel::PropertyValue::non_null_ptr_type feature_id_value =
@@ -534,7 +564,9 @@ GPlatesFileIO::OgrUtils::add_feature_id_to_kvd(
                 feature_id_value,
                 GPlatesPropertyValues::StructuralType::create_xsi("string"));
 
-    kvd->elements().push_back(element);
+    elements.push_back(element);
+
+	kvd->set_elements(elements);
 
 }
 
@@ -543,6 +575,8 @@ GPlatesFileIO::OgrUtils::add_conjugate_plate_id_to_kvd(
 	const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements = kvd->get_elements();
+
 	static const GPlatesModel::PropertyName property_name =
 		GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
 
@@ -557,7 +591,7 @@ GPlatesFileIO::OgrUtils::add_conjugate_plate_id_to_kvd(
 	// If we found a plate id, add it.
 	if (GPlatesFeatureVisitors::get_property_value(feature,property_name,plate_id))
 	{
-		plate_id_value = plate_id->value();
+		plate_id_value = plate_id->get_value();
 	}
 
 	GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
@@ -567,7 +601,9 @@ GPlatesFileIO::OgrUtils::add_conjugate_plate_id_to_kvd(
 				key,
 				value,
 				GPlatesPropertyValues::StructuralType::create_xsi("integer"));
-	kvd->elements().push_back(element);
+	elements.push_back(element);
+
+	kvd->set_elements(elements);
 }
 
 
@@ -577,6 +613,8 @@ GPlatesFileIO::OgrUtils::add_left_plate_to_kvd(
 	const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements = kvd->get_elements();
+
 	static const GPlatesModel::PropertyName property_name =
 		GPlatesModel::PropertyName::create_gpml("leftPlate");
 
@@ -591,7 +629,7 @@ GPlatesFileIO::OgrUtils::add_left_plate_to_kvd(
 	// If we found a plate id, add it.
 	if (GPlatesFeatureVisitors::get_property_value(feature,property_name,plate_id))
 	{
-		plate_id_value = plate_id->value();
+		plate_id_value = plate_id->get_value();
 	}
 
 	GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
@@ -601,7 +639,9 @@ GPlatesFileIO::OgrUtils::add_left_plate_to_kvd(
 				key,
 				value,
 				GPlatesPropertyValues::StructuralType::create_xsi("integer"));
-	kvd->elements().push_back(element);
+	elements.push_back(element);
+
+	kvd->set_elements(elements);
 }
 
 void
@@ -609,6 +649,8 @@ GPlatesFileIO::OgrUtils::add_right_plate_to_kvd(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements = kvd->get_elements();
+
 	static const GPlatesModel::PropertyName property_name =
 		GPlatesModel::PropertyName::create_gpml("rightPlate");
 
@@ -623,7 +665,7 @@ GPlatesFileIO::OgrUtils::add_right_plate_to_kvd(
 	// If we found a plate id, add it.
 	if (GPlatesFeatureVisitors::get_property_value(feature,property_name,plate_id))
 	{
-		plate_id_value = plate_id->value();
+		plate_id_value = plate_id->get_value();
 	}
 
 	GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
@@ -633,7 +675,9 @@ GPlatesFileIO::OgrUtils::add_right_plate_to_kvd(
 				key,
 				value,
 				GPlatesPropertyValues::StructuralType::create_xsi("integer"));
-	kvd->elements().push_back(element);
+	elements.push_back(element);
+
+	kvd->set_elements(elements);
 }
 
 
@@ -642,6 +686,8 @@ GPlatesFileIO::OgrUtils::add_reconstruction_method_to_kvd(
 	const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
 {
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements = kvd->get_elements();
+
 	static const GPlatesModel::PropertyName reconstruction_method_property_name =
 		GPlatesModel::PropertyName::create_gpml("reconstructionMethod");
 
@@ -653,7 +699,7 @@ GPlatesFileIO::OgrUtils::add_reconstruction_method_to_kvd(
 	// If we found a reconstruction method, add it.
 	if (GPlatesFeatureVisitors::get_property_value(feature,reconstruction_method_property_name,reconstruction_method))
 	{
-		value = GPlatesPropertyValues::XsString::create(reconstruction_method->value().get());
+		value = GPlatesPropertyValues::XsString::create(reconstruction_method->get_value().get());
 	}
 	GPlatesPropertyValues::XsString::non_null_ptr_type key =
 		GPlatesPropertyValues::XsString::create("RECON_METH");
@@ -662,7 +708,9 @@ GPlatesFileIO::OgrUtils::add_reconstruction_method_to_kvd(
 		key,
 		value,
 		GPlatesPropertyValues::StructuralType::create_xsi("string"));
-	kvd->elements().push_back(element);
+	elements.push_back(element);
+
+	kvd->set_elements(elements);
 }
 
 bool

@@ -74,33 +74,33 @@ namespace GPlatesPropertyValues
 			 * multiple @a CoordinateList objects to share the same state (until the state is modified).
 			 */
 			CoordinateList(
-					GmlDataBlockCoordinateList::non_null_ptr_type value) :
-				d_value(value)
+					GmlDataBlockCoordinateList::non_null_ptr_type coordinate_list) :
+				d_coordinate_list(d_coordinate_list)
 			{  }
 
 			/**
 			 * Returns the 'const' coordinate list.
 			 */
 			const GmlDataBlockCoordinateList::non_null_ptr_to_const_type
-			get_value() const
+			get_coordinate_list() const
 			{
-				return d_value.get();
+				return d_coordinate_list.get();
 			}
 
 			/**
 			 * Returns the 'non-const' coordinate list.
 			 */
 			const GmlDataBlockCoordinateList::non_null_ptr_type
-			get_value()
+			get_coordinate_list()
 			{
-				return d_value.get();
+				return d_coordinate_list.get();
 			}
 
 			void
-			set_value(
-					GmlDataBlockCoordinateList::non_null_ptr_type value)
+			set_coordinate_list(
+					GmlDataBlockCoordinateList::non_null_ptr_type coordinate_list)
 			{
-				d_value = value;
+				d_coordinate_list = coordinate_list;
 			}
 
 			/**
@@ -112,11 +112,11 @@ namespace GPlatesPropertyValues
 			operator==(
 					const CoordinateList &other) const
 			{
-				return *d_value.get_const() == *other.d_value.get_const();
+				return *d_coordinate_list.get_const() == *other.d_coordinate_list.get_const();
 			}
 
 		private:
-			GPlatesUtils::CopyOnWrite<GmlDataBlockCoordinateList::non_null_ptr_type> d_value;
+			GPlatesUtils::CopyOnWrite<GmlDataBlockCoordinateList::non_null_ptr_type> d_coordinate_list;
 		};
 
 		//! Typedef for a sequence of coordinate lists.
