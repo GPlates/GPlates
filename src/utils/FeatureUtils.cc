@@ -65,22 +65,22 @@ public:
 	visit_gpml_plate_id(
 			ConstFeatureVisitor::gpml_plate_id_type& id) 
 	{
-		d_plate_id = id.value();
+		d_plate_id = id.get_value();
 	}
 
 	void
 	visit_gpml_constant_value(
 			ConstFeatureVisitor::gpml_constant_value_type &v)
 	{
-		v.value()->accept_visitor(*this);
+		v.get_value()->accept_visitor(*this);
 	}
 
 	void
 	visit_gml_time_period(
 			ConstFeatureVisitor::gml_time_period_type &gml_time_period)
 	{
-		d_start_time = gml_time_period.begin()->time_position();
-		d_end_time   = gml_time_period.end()->time_position();
+		d_start_time = gml_time_period.get_begin()->get_time_position();
+		d_end_time   = gml_time_period.get_end()->get_time_position();
 	}
 
 private:
@@ -103,7 +103,7 @@ GPlatesUtils::get_recon_plate_id_as_int(
 		FeatureHandle::const_iterator iter = feature_ptr->begin(), end = feature_ptr->end();
 		for ( ; iter != end; ++iter)
 		{
-			if((*iter)->property_name() == recon_pid_name)
+			if((*iter)->get_property_name() == recon_pid_name)
 			{
 				(*iter)->accept_visitor(finder);
 				id = finder.int_plate_id();

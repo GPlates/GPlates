@@ -238,6 +238,12 @@ namespace GPlatesModel
 				const TopLevelProperty &top_level_property,
 				TopLevelPropertyError::Type *error_code = NULL);
 
+		//! Non-const overload.
+		boost::optional<TopLevelPropertyInline &>
+		get_top_level_property_inline(
+				TopLevelProperty &top_level_property,
+				TopLevelPropertyError::Type *error_code = NULL);
+
 
 		/**
 		 * Returns the property value of the specified top-level property.
@@ -248,6 +254,13 @@ namespace GPlatesModel
 		get_property_value(
 				const TopLevelProperty &top_level_property,
 				TopLevelPropertyError::Type *error_code = NULL);
+
+		//! Non-const overload.
+		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
+		get_property_value(
+				TopLevelProperty &top_level_property,
+				TopLevelPropertyError::Type *error_code = NULL);
+
 
 		/**
 		 * Returns the TopLevelPropertyRef(s) of the given name in a feature.

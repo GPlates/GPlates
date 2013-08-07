@@ -126,7 +126,9 @@ GPlatesModel::TopLevelProperty::bubble_up_modification(
 	// If we have a parent feature then bubble up the modification towards the root (feature store).
 	if (d_current_parent)
 	{
+#if 0 // TODO: Add this back once implemented in BasicHandle.
 		d_current_parent->bubble_up_modification(top_level_property_revisioned_reference, transaction);
+#endif
 	}
 }
 
@@ -154,7 +156,9 @@ GPlatesModel::TopLevelProperty::MutableRevisionHandler::handle_revision_modifica
 	// If the top level property has a parent then bubble up the modification towards the root (feature store).
 	if (d_top_level_property->d_current_parent)
 	{
+#if 0 // TODO: Add this back once implemented in BasicHandle.
 		d_top_level_property->d_current_parent->bubble_up_modification(revision, transaction);
+#endif
 	}
 
 	// If the bubble-up reaches the top of the model hierarchy (ie, connected all the way up to the model)

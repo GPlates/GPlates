@@ -99,7 +99,6 @@ GPlatesModel::PropertyValue::MutableRevisionHandler::MutableRevisionHandler(
 	d_property_value(property_value),
 	d_mutable_revision(
 		// The current property value revision is immutable so we create a new revision by cloning it.
-		// But we don't clone nested property values because (being property values) they are already revisioned...
 		d_property_value->d_current_revision->clone_for_bubble_up_modification())
 {
 }

@@ -112,7 +112,7 @@ namespace GPlatesUtils
 		visit_gpml_constant_value(
 				gpml_constant_value_type &gpml_constant_value)
 		{
-			gpml_constant_value.value()->accept_visitor(*this);
+			gpml_constant_value.get_value()->accept_visitor(*this);
 		}
 
 
@@ -205,7 +205,7 @@ namespace GPlatesUtils
 		visit_xs_boolean(
 				xs_boolean_type &v)
 		{
-			d_val = bp::object(v.value());
+			d_val = bp::object(v.get_value());
 		}
 
 
@@ -213,7 +213,7 @@ namespace GPlatesUtils
 		visit_xs_double(
 				xs_double_type &v)
 		{
-			d_val = bp::object(v.value());
+			d_val = bp::object(v.get_value());
 		}
 		
 
@@ -221,7 +221,7 @@ namespace GPlatesUtils
 		visit_xs_integer(
 				xs_integer_type &v)
 		{
-			d_val = bp::object(v.value());
+			d_val = bp::object(v.get_value());
 		}
 
 
@@ -229,7 +229,7 @@ namespace GPlatesUtils
 		visit_xs_string(
 				xs_string_type &xs_string)
 		{
-			const QByteArray buf = xs_string.value().get().qstring().toUtf8();
+			const QByteArray buf = xs_string.get_value().get().qstring().toUtf8();
 			d_val = bp::object(bp::str(buf.constData()));
 		}
 

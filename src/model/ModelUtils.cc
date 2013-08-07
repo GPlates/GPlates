@@ -61,6 +61,68 @@
 
 namespace
 {
+	/**
+	 * 'QualifiedTopLevelPropertyInline' can be 'const TopLevelPropertyInline' or 'TopLevelPropertyInline'.
+	 * 'QualifiedTopLevelProperty' can be 'const TopLevelProperty' or 'TopLevelProperty'.
+	 */
+	template <class QualifiedTopLevelPropertyInline, class QualifiedTopLevelProperty>
+	boost::optional<QualifiedTopLevelPropertyInline &>
+	get_top_level_property_inline(
+			QualifiedTopLevelProperty &top_level_property,
+			GPlatesModel::ModelUtils::TopLevelPropertyError::Type *error_code)
+	{
+		try
+		{
+			QualifiedTopLevelPropertyInline &tlpi =
+					dynamic_cast<QualifiedTopLevelPropertyInline &>(top_level_property);
+			if (tlpi.size() != 1)
+			{
+				if (error_code)
+				{
+					*error_code = GPlatesModel::ModelUtils::TopLevelPropertyError::NOT_ONE_PROPERTY_VALUE;
+				}
+				return boost::none;
+			}
+
+			return tlpi;
+		}
+		catch (const std::bad_cast &)
+		{
+			if (error_code)
+			{
+				*error_code = GPlatesModel::ModelUtils::TopLevelPropertyError::NOT_TOP_LEVEL_PROPERTY_INLINE;
+			}
+		}
+
+		return boost::none;
+	}
+
+
+	/**
+	 * 'QualifiedTopLevelPropertyInline' can be 'const TopLevelPropertyInline' or 'TopLevelPropertyInline'.
+	 * 'QualifiedTopLevelProperty' can be 'const TopLevelProperty' or 'TopLevelProperty'.
+	 */
+	template <class QualifiedTopLevelPropertyInline, class QualifiedPropertyValue, class QualifiedTopLevelProperty>
+	boost::optional<GPlatesUtils::non_null_intrusive_ptr<QualifiedPropertyValue> >
+	get_property_value(
+			QualifiedTopLevelProperty &top_level_property,
+			GPlatesModel::ModelUtils::TopLevelPropertyError::Type *error_code)
+	{
+		boost::optional<QualifiedTopLevelPropertyInline &> tlpi =
+				get_top_level_property_inline<QualifiedTopLevelPropertyInline>(
+						top_level_property,
+						error_code);
+		if (!tlpi)
+		{
+			return boost::none;
+		}
+
+		const GPlatesUtils::non_null_intrusive_ptr<QualifiedPropertyValue> property_value = *tlpi->begin();
+
+		return property_value;
+	}
+
+
 	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
 	add_remove_or_convert_time_dependent_wrapper(
 			const GPlatesModel::PropertyValue::non_null_ptr_type &property_value,
@@ -165,30 +227,16 @@ GPlatesModel::ModelUtils::get_top_level_property_inline(
 		const TopLevelProperty &top_level_property,
 		TopLevelPropertyError::Type *error_code)
 {
-	try
-	{
-		const TopLevelPropertyInline &tlpi =
-				dynamic_cast<const TopLevelPropertyInline &>(top_level_property);
-		if (tlpi.size() != 1)
-		{
-			if (error_code)
-			{
-				*error_code = TopLevelPropertyError::NOT_ONE_PROPERTY_VALUE;
-			}
-			return boost::none;
-		}
+	return ::get_top_level_property_inline<const TopLevelPropertyInline>(top_level_property, error_code);
+}
 
-		return tlpi;
-	}
-	catch (const std::bad_cast &)
-	{
-		if (error_code)
-		{
-			*error_code = TopLevelPropertyError::NOT_TOP_LEVEL_PROPERTY_INLINE;
-		}
-	}
 
-	return boost::none;
+boost::optional<GPlatesModel::TopLevelPropertyInline &>
+GPlatesModel::ModelUtils::get_top_level_property_inline(
+		TopLevelProperty &top_level_property,
+		TopLevelPropertyError::Type *error_code)
+{
+	return ::get_top_level_property_inline<TopLevelPropertyInline>(top_level_property, error_code);
 }
 
 
@@ -197,16 +245,16 @@ GPlatesModel::ModelUtils::get_property_value(
 		const TopLevelProperty &top_level_property,
 		TopLevelPropertyError::Type *error_code)
 {
-	boost::optional<const TopLevelPropertyInline &> tlpi =
-			get_top_level_property_inline(top_level_property, error_code);
-	if (!tlpi)
-	{
-		return boost::none;
-	}
+	return ::get_property_value<const TopLevelPropertyInline, const PropertyValue>(top_level_property, error_code);
+}
 
-	const PropertyValue::non_null_ptr_to_const_type property_value = *tlpi->begin();
 
-	return property_value;
+boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
+GPlatesModel::ModelUtils::get_property_value(
+		TopLevelProperty &top_level_property,
+		TopLevelPropertyError::Type *error_code)
+{
+	return ::get_property_value<TopLevelPropertyInline, PropertyValue>(top_level_property, error_code);
 }
 
 
@@ -518,7 +566,7 @@ GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(
 	}
 	if (structural_type == PIECEWISE_AGGREGATION_TYPE)
 	{
-		return dynamic_cast<const GPlatesPropertyValues::GpmlPiecewiseAggregation &>(property_value).value_type();
+		return dynamic_cast<const GPlatesPropertyValues::GpmlPiecewiseAggregation &>(property_value).get_value_type();
 	}
 
 	return structural_type;
@@ -566,7 +614,7 @@ GPlatesModel::ModelUtils::add_remove_or_convert_time_dependent_wrapper(
 		// If the GPGIM specifies a non-time-dependent property then unwrap the property value.
 		if (!time_dependent_flags.any())
 		{
-			return gpml_constant_value->get_value();
+			return gpml_constant_value->get_value()->clone();
 		}
 
 		// ...else we cannot convert a constant-value property to an irregularly-sampled property.
@@ -611,29 +659,29 @@ GPlatesModel::ModelUtils::add_remove_or_convert_time_dependent_wrapper(
 		if (time_dependent_flags.test(GpgimProperty::CONSTANT_VALUE) ||
 			!time_dependent_flags.any())
 		{
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
-					gpml_piecewise_aggregation->time_windows();
+			const std::vector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
+					gpml_piecewise_aggregation->get_time_windows();
 
 			// If the there's a single time window that covers all time and it's a constant-value...
 			if (time_windows.size() == 1 &&
-				time_windows.front().valid_time()->begin()->get_time_position().is_distant_past() &&
-				time_windows.front().valid_time()->end()->get_time_position().is_distant_future() &&
-				time_windows.front().time_dependent_value()->get_structural_type() == CONSTANT_VALUE_TYPE)
+				time_windows.front().get_valid_time()->get_begin()->get_time_position().is_distant_past() &&
+				time_windows.front().get_valid_time()->get_end()->get_time_position().is_distant_future() &&
+				time_windows.front().get_time_dependent_value()->get_structural_type() == CONSTANT_VALUE_TYPE)
 			{
-				GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type gpml_constant_value =
-						GPlatesUtils::dynamic_pointer_cast<GPlatesPropertyValues::GpmlConstantValue>(
-								time_windows.front().time_dependent_value());
+				GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_to_const_type gpml_constant_value =
+						GPlatesUtils::dynamic_pointer_cast<const GPlatesPropertyValues::GpmlConstantValue>(
+								time_windows.front().get_time_dependent_value());
 
 				// Return the constant-value wrapped property value if the GPGIM allows this.
 				if (time_dependent_flags.test(GpgimProperty::CONSTANT_VALUE))
 				{
-					return PropertyValue::non_null_ptr_type(gpml_constant_value);
+					return PropertyValue::non_null_ptr_type(gpml_constant_value->clone());
 				}
 
 				// If the GPGIM specifies a non-time-dependent property then unwrap the property value.
 				if (!time_dependent_flags.any())
 				{
-					return gpml_constant_value->get_value();
+					return gpml_constant_value->get_value()->clone();
 				}
 			}
 		}
