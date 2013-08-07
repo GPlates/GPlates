@@ -30,10 +30,20 @@
 #include "Enumeration.h"
 
 
+void
+GPlatesPropertyValues::Enumeration::set_value(
+		const EnumerationContent &new_value)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().value = new_value;
+	revision_handler.handle_revision_modification();
+}
+
+
 std::ostream &
 GPlatesPropertyValues::Enumeration::print_to(
 		std::ostream &os) const
 {
-	return os << d_value.get();
+	return os << get_current_revision<Revision>().value.get();
 }
 

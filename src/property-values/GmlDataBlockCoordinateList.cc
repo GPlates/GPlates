@@ -26,6 +26,7 @@
 #include <algorithm>
 
 #include "GmlDataBlockCoordinateList.h"
+
 #include "maths/Real.h"
 
 

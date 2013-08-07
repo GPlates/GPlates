@@ -353,16 +353,6 @@ namespace GPlatesPropertyValues
 									interior_geometries_begin_, interior_geometries_end_)))
 		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
-		GpmlTopologicalNetwork(
-				const GpmlTopologicalNetwork &other) :
-			PropertyValue(other)
-		{  }
-
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone_impl() const
@@ -399,6 +389,7 @@ namespace GPlatesPropertyValues
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
 			clone() const
 			{
+				// The default copy constructor is fine since we use CopyOnWrite.
 				return non_null_ptr_type(new Revision(*this));
 			}
 

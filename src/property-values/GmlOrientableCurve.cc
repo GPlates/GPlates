@@ -28,15 +28,23 @@
 #include "GmlOrientableCurve.h"
 
 
-const GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type
-GPlatesPropertyValues::GmlOrientableCurve::deep_clone() const
+void
+GPlatesPropertyValues::GmlOrientableCurve::set_base_curve(
+		GPlatesModel::PropertyValue::non_null_ptr_to_const_type bc)
 {
-	GmlOrientableCurve::non_null_ptr_type dup = clone();
-	GPlatesModel::PropertyValue::non_null_ptr_type cloned_base_curve =
-			d_base_curve->deep_clone_as_prop_val();
-	dup->d_base_curve = cloned_base_curve;
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().base_curve = bc;
+	revision_handler.handle_revision_modification();
+}
 
-	return dup;
+
+void
+GPlatesPropertyValues::GmlOrientableCurve::set_xml_attributes(
+		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &xml_attributes)
+{
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().xml_attributes = xml_attributes;
+	revision_handler.handle_revision_modification();
 }
 
 
@@ -44,25 +52,5 @@ std::ostream &
 GPlatesPropertyValues::GmlOrientableCurve::print_to(
 		std::ostream &os) const
 {
-	return d_base_curve->print_to(os);
+	return get_current_revision<Revision>().base_curve.get_const()->print_to(os);
 }
-
-
-bool
-GPlatesPropertyValues::GmlOrientableCurve::directly_modifiable_fields_equal(
-		const GPlatesModel::PropertyValue &other) const
-{
-	try
-	{
-		const GmlOrientableCurve &other_casted =
-			dynamic_cast<const GmlOrientableCurve &>(other);
-		return *d_base_curve == *other_casted.d_base_curve &&
-			d_xml_attributes == other_casted.d_xml_attributes;
-	}
-	catch (const std::bad_cast &)
-	{
-		// Should never get here, but doesn't hurt to check.
-		return false;
-	}
-}
-

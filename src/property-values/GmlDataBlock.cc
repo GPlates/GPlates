@@ -30,22 +30,13 @@
 #include "GmlDataBlock.h"
 
 
-const GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type
-GPlatesPropertyValues::GmlDataBlock::deep_clone() const
+void
+GPlatesPropertyValues::GmlDataBlock::set_tuple_list(
+		const tuple_list_type &tuple_list)
 {
-	GmlDataBlock::non_null_ptr_type dup = clone();
-
-	// Now we need to clear the tuple-list in the duplicate, before we push-back the cloned
-	// coordinate lists.
-	dup->tuple_list_clear();
-	tuple_list_type::const_iterator iter, end = tuple_list_end();
-	for (iter = tuple_list_begin(); iter != end; ++iter) {
-		// GmlDataBlockCoordinateList doesn't contain any nested property values, so
-		// regular 'clone' is fine.
-		GmlDataBlockCoordinateList::non_null_ptr_type cloned_coord_list = (*iter)->clone();
-		dup->tuple_list_push_back(cloned_coord_list);
-	}
-	return dup;
+	MutableRevisionHandler revision_handler(this);
+	revision_handler.get_mutable_revision<Revision>().tuple_list = tuple_list;
+	revision_handler.handle_revision_modification();
 }
 
 

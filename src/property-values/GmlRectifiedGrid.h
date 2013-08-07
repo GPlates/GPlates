@@ -195,7 +195,7 @@ namespace GPlatesPropertyValues
 		const GmlGridEnvelope::non_null_ptr_to_const_type
 		get_limits() const
 		{
-			return get_current_revision<Revision>().limits;
+			return get_current_revision<Revision>().limits.get();
 		}
 
 		/**
@@ -235,7 +235,7 @@ namespace GPlatesPropertyValues
 		const GmlPoint::non_null_ptr_to_const_type
 		get_origin() const
 		{
-			return get_current_revision<Revision>().origin;
+			return get_current_revision<Revision>().origin.get();
 		}
 
 		/**
@@ -338,17 +338,6 @@ namespace GPlatesPropertyValues
 							new Revision(limits_, axes_, origin_, offset_vectors_, xml_attributes_)))
 		{  }
 
-
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
-		GmlRectifiedGrid(
-				const GmlRectifiedGrid &other) :
-			PropertyValue(other)
-		{  }
-
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone_impl() const
@@ -381,6 +370,7 @@ namespace GPlatesPropertyValues
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
 			clone() const
 			{
+				// The default copy constructor is fine since we use CopyOnWrite.
 				return non_null_ptr_type(new Revision(*this));
 			}
 
@@ -391,9 +381,9 @@ namespace GPlatesPropertyValues
 			equality(
 					const GPlatesModel::PropertyValue::Revision &other) const;
 
-			GmlGridEnvelope::non_null_ptr_to_const_type limits;
+			GPlatesUtils::CopyOnWrite<GmlGridEnvelope::non_null_ptr_to_const_type> limits;
 			axes_list_type axes;
-			GmlPoint::non_null_ptr_to_const_type origin;
+			GPlatesUtils::CopyOnWrite<GmlPoint::non_null_ptr_to_const_type> origin;
 			offset_vector_list_type offset_vectors;
 
 			xml_attributes_type xml_attributes;

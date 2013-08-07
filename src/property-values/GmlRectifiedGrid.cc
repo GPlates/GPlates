@@ -177,7 +177,7 @@ GPlatesPropertyValues::GmlRectifiedGrid::convert_to_georeferencing() const
 	const offset_vector_type &longitude_offset_vector = revision.offset_vectors[0];
 	const offset_vector_type &latitude_offset_vector = revision.offset_vectors[1];
 
-	GPlatesMaths::LatLonPoint llp = revision.origin->point_in_lat_lon();
+	GPlatesMaths::LatLonPoint llp = revision.origin.get_const()->point_in_lat_lon();
 
 	Georeferencing::parameters_type params = {{{
 		llp.longitude(),
@@ -201,9 +201,9 @@ GPlatesPropertyValues::GmlRectifiedGrid::Revision::equality(
 {
 	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
-	return *limits == *other_revision.limits &&
+	return *limits.get_const() == *other_revision.limits.get_const() &&
 			axes == other_revision.axes &&
-			*origin == *other_revision.origin &&
+			*origin.get_const() == *other_revision.origin.get_const() &&
 			offset_vectors == other_revision.offset_vectors &&
 			xml_attributes == other_revision.xml_attributes &&
 			GPlatesModel::PropertyValue::Revision::equality(other);

@@ -161,19 +161,6 @@ namespace GPlatesPropertyValues
 			d_value_type(value_type_)
 		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
-		GpmlPropertyDelegate(
-				const GpmlPropertyDelegate &other) :
-			PropertyValue(other),
-			d_feature(other.d_feature),
-			d_property_name(other.d_property_name),
-			d_value_type(other.d_value_type)
-		{  }
-
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone_impl() const

@@ -177,6 +177,7 @@ namespace GPlatesPropertyValues
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
 			clone() const
 			{
+				// The default copy constructor is fine since we use CopyOnWrite.
 				return non_null_ptr_type(new Revision(*this));
 			}
 

@@ -117,14 +117,6 @@ namespace GPlatesPropertyValues
 		{  }
 
 		/**
-		 * Construct a GpmlInterpolationFunction instance which is a copy of @a other.
-		 */
-		GpmlInterpolationFunction(
-				const GpmlInterpolationFunction &other) :
-			PropertyValue(other)
-		{  }
-
-		/**
 		 * Property value data that is mutable/revisionable.
 		 *
 		 * Derived revision classes must implement pure virtual methods from GPlatesModel::PropertyValue::Revision.
@@ -132,8 +124,11 @@ namespace GPlatesPropertyValues
 		struct Revision :
 				public GPlatesModel::PropertyValue::Revision
 		{
-			typedef GPlatesUtils::non_null_intrusive_ptr<Revision> non_null_ptr_type;
-			typedef GPlatesUtils::non_null_intrusive_ptr<const Revision> non_null_ptr_to_const_type;
+			explicit
+			Revision(
+					const StructuralType &value_type_) :
+				value_type(value_type_)
+			{  }
 
 			virtual
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
@@ -154,14 +149,6 @@ namespace GPlatesPropertyValues
 			}
 
 			StructuralType value_type;
-
-		protected:
-
-			explicit
-			Revision(
-					const StructuralType &value_type_) :
-				value_type(value_type_)
-			{  }
 		};
 
 	private:

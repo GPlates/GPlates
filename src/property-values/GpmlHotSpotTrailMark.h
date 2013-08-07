@@ -197,11 +197,6 @@ namespace GPlatesPropertyValues
 							new Revision(position_, trail_width_, measured_age_, measured_age_range_)))
 		{  }
 
-		GpmlHotSpotTrailMark(
-				const GpmlHotSpotTrailMark &other) :
-			PropertyValue(other)
-		{  }
-
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone_impl() const
@@ -232,6 +227,7 @@ namespace GPlatesPropertyValues
 			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
 			clone() const
 			{
+				// The default copy constructor is fine since we use CopyOnWrite.
 				return non_null_ptr_type(new Revision(*this));
 			}
 

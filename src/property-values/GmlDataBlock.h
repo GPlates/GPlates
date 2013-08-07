@@ -33,6 +33,7 @@
 #include "GmlDataBlockCoordinateList.h"
 #include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
+#include "utils/CopyOnWrite.h"
 
 
 namespace GPlatesPropertyValues
@@ -51,16 +52,76 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlDataBlock> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlock>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlock>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlock> non_null_ptr_to_const_type;
 
+
 		/**
-		 * The type of the sequence of GmlDataBlockCoordinateList instances.
+		 * A list of coordinates for a specific coordinate in the tuple list.
 		 */
-		typedef std::vector<GmlDataBlockCoordinateList::non_null_ptr_to_const_type>
-				tuple_list_type;
+		class CoordinateList :
+				public boost::equality_comparable<CoordinateList>
+		{
+		public:
+
+			/**
+			 * CoordinateList has value semantics where each @a CoordinateList instance has its own state.
+			 * So if you create a copy and modify the copy's state then it will not modify the state
+			 * of the original object.
+			 *
+			 * The constructor first clones the property value and then copy-on-write is used to allow
+			 * multiple @a CoordinateList objects to share the same state (until the state is modified).
+			 */
+			CoordinateList(
+					GmlDataBlockCoordinateList::non_null_ptr_type value) :
+				d_value(value)
+			{  }
+
+			/**
+			 * Returns the 'const' coordinate list.
+			 */
+			const GmlDataBlockCoordinateList::non_null_ptr_to_const_type
+			get_value() const
+			{
+				return d_value.get();
+			}
+
+			/**
+			 * Returns the 'non-const' coordinate list.
+			 */
+			const GmlDataBlockCoordinateList::non_null_ptr_type
+			get_value()
+			{
+				return d_value.get();
+			}
+
+			void
+			set_value(
+					GmlDataBlockCoordinateList::non_null_ptr_type value)
+			{
+				d_value = value;
+			}
+
+			/**
+			 * Value equality comparison operator.
+			 *
+			 * Inequality provided by boost equality_comparable.
+			 */
+			bool
+			operator==(
+					const CoordinateList &other) const
+			{
+				return *d_value.get_const() == *other.d_value.get_const();
+			}
+
+		private:
+			GPlatesUtils::CopyOnWrite<GmlDataBlockCoordinateList::non_null_ptr_type> d_value;
+		};
+
+		//! Typedef for a sequence of coordinate lists.
+		typedef std::vector<CoordinateList> tuple_list_type;
+
 
 		virtual
 		~GmlDataBlock()
@@ -70,54 +131,40 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create()
 		{
-			non_null_ptr_type ptr(new GmlDataBlock);
-			return ptr;
+			return non_null_ptr_type(new GmlDataBlock(tuple_list_type()));
 		}
 
-		const GmlDataBlock::non_null_ptr_type
+		static
+		const non_null_ptr_type
+		create(
+				const tuple_list_type &tuple_list)
+		{
+			return non_null_ptr_type(new GmlDataBlock(tuple_list));
+		}
+
+		const non_null_ptr_type
 		clone() const
 		{
-			GmlDataBlock::non_null_ptr_type dup(new GmlDataBlock(*this));
-			return dup;
+			return GPlatesUtils::dynamic_pointer_cast<GmlDataBlock>(clone_impl());
 		}
 
-		const GmlDataBlock::non_null_ptr_type
-		deep_clone() const;
-
-		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
-
-		bool
-		is_empty() const
+		/**
+		 * Returns the tuple list.
+		 *
+		 * To modify any tuples:
+		 * (1) make a copy of the returned vector,
+		 * (2) make additions/removals/modifications to the returned vector, and
+		 * (3) use @a set_tuple_list to set them.
+		 */
+		const tuple_list_type &
+		get_tuple_list() const
 		{
-			return d_tuple_list.empty();
-		}
-
-		tuple_list_type::const_iterator
-		tuple_list_begin() const
-		{
-			return d_tuple_list.begin();
-		}
-
-		tuple_list_type::const_iterator
-		tuple_list_end() const
-		{
-			return d_tuple_list.end();
+			return get_current_revision<Revision>().tuple_list;
 		}
 
 		void
-		tuple_list_clear()
-		{
-			d_tuple_list.clear();
-			update_instance_id();
-		}
-
-		void
-		tuple_list_push_back(
-				const GmlDataBlockCoordinateList::non_null_ptr_to_const_type &elem)
-		{
-			d_tuple_list.push_back(elem);
-			update_instance_id();
-		}
+		set_tuple_list(
+				const tuple_list_type &tuple_list);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -167,24 +214,54 @@ namespace GPlatesPropertyValues
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		GmlDataBlock():
-			PropertyValue()
+		explicit
+		GmlDataBlock(
+				const tuple_list_type &tuple_list) :
+			PropertyValue(Revision::non_null_ptr_type(new Revision(tuple_list)))
 		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
-		GmlDataBlock(
-				const GmlDataBlock &other):
-			PropertyValue(other), /* share instance id */
-			d_tuple_list(other.d_tuple_list)
-		{  }
+		virtual
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		clone_impl() const
+		{
+			return non_null_ptr_type(new GmlDataBlock(*this));
+		}
 
 	private:
 
-		tuple_list_type d_tuple_list;
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValue::Revision
+		{
+			explicit
+			Revision(
+					const tuple_list_type &tuple_list_) :
+				tuple_list(tuple_list_)
+			{  }
+
+			virtual
+			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			clone() const
+			{
+				// The default copy constructor is fine since we use CopyOnWrite.
+				return non_null_ptr_type(new Revision(*this));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::PropertyValue::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
+
+				return tuple_list == other_revision.tuple_list &&
+					GPlatesModel::PropertyValue::Revision::equality(other);
+			}
+
+			tuple_list_type tuple_list;
+		};
 
 	};
 

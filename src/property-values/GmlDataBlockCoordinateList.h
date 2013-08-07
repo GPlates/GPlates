@@ -70,27 +70,26 @@ namespace GPlatesPropertyValues
 	{
 	public:
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GmlDataBlockCoordinateList>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlDataBlockCoordinateList>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlDataBlockCoordinateList> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlockCoordinateList>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlockCoordinateList>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlockCoordinateList> non_null_ptr_to_const_type;
+
 
 		/**
 		 * The type which contains XML attribute names and values.
 		 */
-		typedef std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
-				xml_attributes_type;
+		typedef std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes_type;
 
 		/**
 		 * The type of the sequence of coordinates.
 		 */
 		typedef std::vector<double> coordinate_list_type;
+
 
 		~GmlDataBlockCoordinateList()
 		{  }
@@ -107,12 +106,9 @@ namespace GPlatesPropertyValues
 				const xml_attributes_type &value_object_xml_attributes_,
 				coordinate_list_type::size_type list_len)
 		{
-			non_null_ptr_type ptr(
+			return non_null_ptr_type(
 					new GmlDataBlockCoordinateList(
-							value_object_type_,
-							value_object_xml_attributes_,
-							list_len));
-			return ptr;
+							value_object_type_, value_object_xml_attributes_, list_len));
 		}
 
 		/**
@@ -129,13 +125,12 @@ namespace GPlatesPropertyValues
 				CoordinateIter coordinates_begin_,
 				CoordinateIter coordinates_end_)
 		{
-			non_null_ptr_type ptr(
+			return non_null_ptr_type(
 					new GmlDataBlockCoordinateList(
 							value_object_type_,
 							value_object_xml_attributes_,
 							coordinates_begin_,
 							coordinates_end_));
-			return ptr;
 		}
 
 		/**
@@ -161,8 +156,7 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		clone() const
 		{
-			non_null_ptr_type dup(new GmlDataBlockCoordinateList(*this));
-			return dup;
+			return non_null_ptr_type(new GmlDataBlockCoordinateList(*this));
 		}
 
 		const ValueObjectType &
@@ -171,18 +165,12 @@ namespace GPlatesPropertyValues
 			return d_value_object_type;
 		}
 
-		// @b FIXME:  Should this function be replaced with per-index const-access to
-		// elements of the XML attribute map?  (For consistency with the non-const
-		// overload...)
 		const xml_attributes_type &
 		value_object_xml_attributes() const
 		{
 			return d_value_object_xml_attributes;
 		}
 
-		// @b FIXME:  Should this function be replaced with per-index const-access to
-		// elements of the XML attribute map, as well as per-index assignment (setter) and
-		// removal operations?  This would ensure that revisioning is correctly handled...
 		xml_attributes_type &
 		value_object_xml_attributes()
 		{

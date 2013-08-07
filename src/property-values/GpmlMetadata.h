@@ -153,11 +153,6 @@ namespace GPlatesPropertyValues
 			PropertyValue(Revision::non_null_ptr_type(new Revision(metadata)))
 		{ }
 
-		GpmlMetadata(
-				const GpmlMetadata &other) :
-			PropertyValue(other)
-		{  }
-
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone_impl() const

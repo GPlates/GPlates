@@ -82,16 +82,6 @@ namespace GPlatesPropertyValues
 			PropertyValue(revision)
 		{  }
 
-		/**
-		 * Construct a GpmlTopologicalSection instance which is a copy of @a other.
-		 */
-		GpmlTopologicalSection(
-				const GpmlTopologicalSection &other) :
-			PropertyValue(other)
-		{  }
-
-	private:
-
 	};
 
 }

@@ -369,16 +369,6 @@ namespace GPlatesPropertyValues
 									conjugate_plate_id_number_, colour_code_, number_of_points_)))
 		{ }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
-		GpmlOldPlatesHeader(
-				const GpmlOldPlatesHeader &other) :
-			PropertyValue(other)
-		{ }
-
 		virtual
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		clone_impl() const
