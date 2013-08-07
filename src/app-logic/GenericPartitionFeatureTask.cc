@@ -57,7 +57,7 @@ GPlatesAppLogic::GenericPartitionFeatureTask::partition_feature(
 	//PROFILE_FUNC();
 
 	// Merge model events across this scope to avoid excessive number of model callbacks.
-	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
+	GPlatesModel::NotificationGuard model_notification_guard(*feature_ref->model_ptr());
 
 	// Partition the feature and get the partitioned results in return.
 	// NOTE: This does not modify the feature referenced by 'feature_ref'.

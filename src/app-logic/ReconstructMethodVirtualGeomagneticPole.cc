@@ -182,7 +182,7 @@ namespace GPlatesAppLogic
 				d_present_day_geometries.push_back(
 						ReconstructMethodInterface::Geometry(
 								*current_top_level_propiter(),
-								gml_point.point()));
+								gml_point.get_point()));
 			}
 
 			virtual
@@ -190,7 +190,10 @@ namespace GPlatesAppLogic
 			visit_gpml_constant_value(
 					GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 			{
-				gpml_constant_value.value()->accept_visitor(*this);
+				GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+						gpml_constant_value.get_value()->clone();
+				property_value->accept_visitor(*this);
+				gpml_constant_value.set_value(property_value);
 			}
 
 
@@ -311,7 +314,7 @@ namespace GPlatesAppLogic
 				GPlatesModel::FeatureHandle::iterator property = *current_top_level_propiter();
 
 				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type reconstructed_point =
-						d_reconstruction_rotation.get()->get_finite_rotation() * gml_point.point();
+						d_reconstruction_rotation.get()->get_finite_rotation() * gml_point.get_point();
 
 				if (current_top_level_propname() == site_name)
 				{
@@ -343,19 +346,19 @@ namespace GPlatesAppLogic
 
 				if (current_top_level_propname() == a95_name)
 				{
-					d_VGP_params.d_a95 = xs_double.value();
+					d_VGP_params.d_a95 = xs_double.get_value();
 				}
 				else if (current_top_level_propname() == dm_name)
 				{
-					d_VGP_params.d_dm = xs_double.value();
+					d_VGP_params.d_dm = xs_double.get_value();
 				}
 				else if (current_top_level_propname() == dp_name)
 				{
-					d_VGP_params.d_dp = xs_double.value();
+					d_VGP_params.d_dp = xs_double.get_value();
 				}
 				else if (current_top_level_propname() == age_name)
 				{
-					d_VGP_params.d_age = xs_double.value();
+					d_VGP_params.d_age = xs_double.get_value();
 				}
 			}
 
@@ -364,7 +367,10 @@ namespace GPlatesAppLogic
 			visit_gpml_constant_value(
 					GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 			{
-				gpml_constant_value.value()->accept_visitor(*this);
+				GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+						gpml_constant_value.get_value()->clone();
+				property_value->accept_visitor(*this);
+				gpml_constant_value.set_value(property_value);
 			}
 
 		private:

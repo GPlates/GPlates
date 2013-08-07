@@ -47,7 +47,7 @@ namespace
 			const GPlatesModel::PropertyName &property_name_to_match)
 	{
 		return rg.property().is_still_valid() &&
-			((*rg.property())->property_name() == property_name_to_match);
+			((*rg.property())->get_property_name() == property_name_to_match);
 	}
 
 

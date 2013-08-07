@@ -83,7 +83,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_files(
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many in case we incrementally modify the features below.
 	// Probably won't be modifying the model so much when loading but we should keep this anyway.
-	GPlatesModel::NotificationGuard model_notification_guard(d_model.access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(*d_model.access_model());
 
 	// Read all the files before we add them to the application state.
 	file_seq_type loaded_files = read_feature_collections(filenames);
@@ -105,7 +105,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_file(
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many in case we incrementally modify the features below.
 	// Probably won't be modifying the model so much when loading but we should keep this anyway.
-	GPlatesModel::NotificationGuard model_notification_guard(d_model.access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(*d_model.access_model());
 
 	const GPlatesFileIO::FileInfo file_info(filename);
 
@@ -146,7 +146,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::reload_file(
 			d_model.access_model(),
 			"reload " + file.get_file().get_file_info().get_qfileinfo().fileName().toStdString());
 	// Also want to merge model events across this scope.
-	GPlatesModel::NotificationGuard model_notification_guard(d_model.access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(*d_model.access_model());
 
 	//
 	// By removing all features and then reading new features from the file
@@ -207,7 +207,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::save_file(
 {
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many in case we incrementally modify the features below.
-	GPlatesModel::NotificationGuard model_notification_guard(d_model.access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(*d_model.access_model());
 
 	// The following check is commented out because it fails in certain circumstances
 	// on newer versions of Windows. We'll just try and open the file for writing

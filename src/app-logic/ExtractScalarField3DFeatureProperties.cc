@@ -75,7 +75,7 @@ namespace
 				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 		{
 			d_inside_constant_value = true;
-			gpml_constant_value.value()->accept_visitor(*this);
+			gpml_constant_value.get_value()->accept_visitor(*this);
 			d_inside_constant_value = false;
 		}
 
@@ -85,11 +85,11 @@ namespace
 				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 		{
 			d_inside_piecewise_aggregation = true;
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows =
-				gpml_piecewise_aggregation.time_windows();
+			const std::vector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
+					gpml_piecewise_aggregation.get_time_windows();
 			BOOST_FOREACH(const GPlatesPropertyValues::GpmlTimeWindow &time_window, time_windows)
 			{
-				time_window.time_dependent_value()->accept_visitor(*this);
+				time_window.get_time_dependent_value()->accept_visitor(*this);
 			}
 			d_inside_piecewise_aggregation = false;
 		}
@@ -179,7 +179,7 @@ GPlatesAppLogic::ExtractScalarField3DFeatureProperties::visit_gpml_constant_valu
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	d_inside_constant_value = true;
-	gpml_constant_value.value()->accept_visitor(*this);
+	gpml_constant_value.get_value()->accept_visitor(*this);
 	d_inside_constant_value = false;
 }
 
@@ -189,12 +189,12 @@ GPlatesAppLogic::ExtractScalarField3DFeatureProperties::visit_gpml_piecewise_agg
 		const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 {
 	d_inside_piecewise_aggregation = true;
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows =
-		gpml_piecewise_aggregation.time_windows();
+	const std::vector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
+			gpml_piecewise_aggregation.get_time_windows();
 	BOOST_FOREACH(const GPlatesPropertyValues::GpmlTimeWindow &time_window, time_windows)
 	{
 		const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period =
-				time_window.valid_time();
+				time_window.get_valid_time();
 
 		// If the time window period contains the current reconstruction time then visit.
 		// The time periods should be mutually exclusive - if we happen to be it
@@ -202,7 +202,7 @@ GPlatesAppLogic::ExtractScalarField3DFeatureProperties::visit_gpml_piecewise_agg
 		// and then it doesn't really matter which one we choose.
 		if (time_period->contains(d_reconstruction_time))
 		{
-			time_window.time_dependent_value()->accept_visitor(*this);
+			time_window.get_time_dependent_value()->accept_visitor(*this);
 		}
 	}
 	d_inside_piecewise_aggregation = false;
@@ -221,7 +221,7 @@ GPlatesAppLogic::ExtractScalarField3DFeatureProperties::visit_gpml_scalar_field_
 		const boost::optional<GPlatesModel::PropertyName> &propname = current_top_level_propname();
 		if (propname && *propname == SCALAR_FIELD_FILE)
 		{
-			d_filename = gpml_scalar_field_3d_file.file_name()->value();
+			d_filename = gpml_scalar_field_3d_file.get_file_name()->get_value();
 		}
 	}
 }

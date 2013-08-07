@@ -137,7 +137,7 @@ GPlatesAppLogic::TopologyNetworkResolver::initialise_pre_feature_properties(
 		}
 		else
 		{
-			d_shape_factor = property_value->value();
+			d_shape_factor = property_value->get_value();
 		}
 	}
 	// 
@@ -153,7 +153,7 @@ GPlatesAppLogic::TopologyNetworkResolver::initialise_pre_feature_properties(
 		}
 		else
 		{
-			d_max_edge = property_value->value();
+			d_max_edge = property_value->get_value();
 // FIXME: this is to account for older files with values like 3.0 
 			if (d_max_edge < 10000)
 			{
@@ -171,7 +171,10 @@ void
 GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
+	GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+			gpml_constant_value.get_value()->clone();
+	property_value->accept_visitor(*this);
+	gpml_constant_value.set_value(property_value);
 }
 
 
@@ -179,11 +182,11 @@ void
 GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_piecewise_aggregation(
 		GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 {
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator iter =
-			gpml_piecewise_aggregation.time_windows().begin();
+	std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows =
+			gpml_piecewise_aggregation.get_time_windows();
 
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator end =
-			gpml_piecewise_aggregation.time_windows().end();
+	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator iter = time_windows.begin();
+	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator end = time_windows.end();
 
 	for ( ; iter != end; ++iter) 
 	{
@@ -198,6 +201,8 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_piecewise_aggregation(
 		// create time-dependent topology (section) lists.
 		visit_gpml_time_window(*iter);
 	}
+
+	gpml_piecewise_aggregation.set_time_windows(time_windows);
 }
 
 
@@ -205,8 +210,8 @@ void
 GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_time_window(
 		GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
 {
-	gpml_time_window.time_dependent_value()->accept_visitor(*this);
-	gpml_time_window.valid_time()->accept_visitor(*this);
+	gpml_time_window.get_time_dependent_value()->accept_visitor(*this);
+	gpml_time_window.get_valid_time()->accept_visitor(*this);
 }
 
 void
@@ -249,18 +254,23 @@ void
 GPlatesAppLogic::TopologyNetworkResolver::record_topological_boundary_sections(
 		GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network)
 {
+	GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_seq_type boundary_sections =
+			gpml_topological_network.get_boundary_sections();
+
 	// Loop over all the boundary sections.
-	GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_const_iterator iter =
-			gpml_topological_network.boundary_sections_begin();
-	GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_const_iterator end =
-			gpml_topological_network.boundary_sections_end();
+	GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_seq_type::iterator iter =
+			boundary_sections.begin();
+	GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_seq_type::iterator end =
+			boundary_sections.end();
 	for ( ; iter != end; ++iter)
 	{
-		const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type &
-				topological_section = *iter;
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section =
+				iter->get_source_section();
 
 		topological_section->accept_visitor(*this);
 	}
+
+	gpml_topological_network.set_boundary_sections(boundary_sections);
 }
 
 
@@ -289,7 +299,7 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_line_section(
 
 	boost::optional<ResolvedNetwork::BoundarySection> boundary_section =
 			record_topological_boundary_section_reconstructed_geometry(
-					gpml_toplogical_line_section.get_source_geometry()->feature_id(),
+					gpml_toplogical_line_section.get_source_geometry()->get_feature_id(),
 					topological_reconstruction_geometry.get());
 	if (!boundary_section)
 	{
@@ -344,7 +354,7 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_point(
 
 	boost::optional<ResolvedNetwork::BoundarySection> boundary_section =
 			record_topological_boundary_section_reconstructed_geometry(
-					gpml_toplogical_point.get_source_geometry()->feature_id(),
+					gpml_toplogical_point.get_source_geometry()->get_feature_id(),
 					topological_reconstruction_geometry.get());
 	if (!boundary_section)
 	{
@@ -366,15 +376,20 @@ void
 GPlatesAppLogic::TopologyNetworkResolver::record_topological_interior_geometries(
 		GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network)
 {
+	GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometry_seq_type interior_geometries =
+			gpml_topological_network.get_interior_geometries();
+
 	// Loop over all the interior geometries.
-	GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometries_const_iterator iter =
-			gpml_topological_network.interior_geometries_begin();
-	GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometries_const_iterator end =
-			gpml_topological_network.interior_geometries_end();
+	GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometry_seq_type::const_iterator iter =
+			interior_geometries.begin();
+	GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometry_seq_type::const_iterator end =
+			interior_geometries.end();
 	for ( ; iter != end; ++iter)
 	{
 		record_topological_interior_geometry(*iter);
 	}
+
+	gpml_topological_network.set_interior_geometries(interior_geometries);
 }
 
 
@@ -408,7 +423,7 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_interior_geometry(
 
 	boost::optional<ResolvedNetwork::InteriorGeometry> interior_geometry =
 			record_topological_interior_reconstructed_geometry(
-					gpml_topological_interior.get_source_geometry()->feature_id(),
+					gpml_topological_interior.get_source_geometry()->get_feature_id(),
 					topological_reconstruction_geometry.get());
 	if (!interior_geometry)
 	{
@@ -1702,7 +1717,7 @@ GPlatesAppLogic::TopologyNetworkResolver::debug_output_topological_source_featur
 	static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
  	const GPlatesPropertyValues::XsString *name;
  	if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop, name) ) {
-		s.append(GPlatesUtils::make_qstring( name->value() ));
+		s.append(GPlatesUtils::make_qstring( name->get_value() ));
  	} else {
  		s.append("UNKNOWN");
  	}

@@ -427,7 +427,7 @@ GPlatesAppLogic::RasterLayerTask::Params::updated_raster_feature()
 	if (!band_name_index_opt)
 	{
 		// Set the band name using the default band index of zero.
-		d_band_name = d_band_names[0]->value();
+		d_band_name = d_band_names[0].get_name()->get_value();
 	}
 
 	// TODO: Notify observers (such as RasterVisualLayerParams) that the band name(s) have

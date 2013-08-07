@@ -110,7 +110,10 @@ void
 GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
+	GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+			gpml_constant_value.get_value()->clone();
+	property_value->accept_visitor(*this);
+	gpml_constant_value.set_value(property_value);
 }
 
 
@@ -118,11 +121,11 @@ void
 GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_piecewise_aggregation(
 		GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 {
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator iter =
-			gpml_piecewise_aggregation.time_windows().begin();
+	std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows =
+			gpml_piecewise_aggregation.get_time_windows();
 
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator end =
-			gpml_piecewise_aggregation.time_windows().end();
+	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator iter = time_windows.begin();
+	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator end = time_windows.end();
 
 	for ( ; iter != end; ++iter) 
 	{
@@ -137,6 +140,8 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_piecewise_aggregation(
 		// create time-dependent topology (section) lists.
 		visit_gpml_time_window(*iter);
 	}
+
+	gpml_piecewise_aggregation.set_time_windows(time_windows);
 }
 
 
@@ -144,8 +149,8 @@ void
 GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_time_window(
 		GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
 {
-	gpml_time_window.time_dependent_value()->accept_visitor(*this);
-	gpml_time_window.valid_time()->accept_visitor(*this);
+	gpml_time_window.get_time_dependent_value()->accept_visitor(*this);
+	gpml_time_window.get_valid_time()->accept_visitor(*this);
 }
 
 
@@ -171,9 +176,10 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_polygon(
 	// Visit the topological sections to gather needed information and store
 	// it internally in 'd_resolved_geometry'.
 	//
-	record_topological_sections(
-			gpml_topological_polygon.exterior_sections_begin(),
-			gpml_topological_polygon.exterior_sections_end());
+	GPlatesPropertyValues::GpmlTopologicalPolygon::sections_seq_type exterior_sections =
+			gpml_topological_polygon.get_exterior_sections();
+	record_topological_sections(exterior_sections.begin(), exterior_sections.end());
+	gpml_topological_polygon.set_exterior_sections(exterior_sections);
 
 	//
 	// Now iterate over our internal structure 'd_resolved_geometry' and
@@ -220,9 +226,10 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_line(
 	// Visit the topological sections to gather needed information and store
 	// it internally in 'd_resolved_geometry'.
 	//
-	record_topological_sections(
-			gpml_topological_line.sections_begin(),
-			gpml_topological_line.sections_end());
+	GPlatesPropertyValues::GpmlTopologicalLine::sections_seq_type sections =
+			gpml_topological_line.get_sections();
+	record_topological_sections(sections.begin(), sections.end());
+	gpml_topological_line.set_sections(sections);
 
 	//
 	// Now iterate over our internal structure 'd_resolved_geometry' and
@@ -258,7 +265,8 @@ GPlatesAppLogic::TopologyGeometryResolver::record_topological_sections(
 		sections_iter != sections_end;
 		++sections_iter)
 	{
-		GPlatesPropertyValues::GpmlTopologicalSection *topological_section = sections_iter->get();
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section =
+				sections_iter->get_source_section();
 
 		topological_section->accept_visitor(*this);
 	}
@@ -270,7 +278,7 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_line_section(
 		GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_topological_line_section)
 {  
 	const GPlatesModel::FeatureId source_feature_id =
-			gpml_topological_line_section.get_source_geometry()->feature_id();
+			gpml_topological_line_section.get_source_geometry()->get_feature_id();
 
 	boost::optional<ResolvedGeometry::Section> section =
 			record_topological_section_reconstructed_geometry(
@@ -295,7 +303,7 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_point(
 		GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
 {  
 	const GPlatesModel::FeatureId source_feature_id =
-			gpml_toplogical_point.get_source_geometry()->feature_id();
+			gpml_toplogical_point.get_source_geometry()->get_feature_id();
 
 	boost::optional<ResolvedGeometry::Section> section =
 			record_topological_section_reconstructed_geometry(

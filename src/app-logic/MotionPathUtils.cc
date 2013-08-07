@@ -73,11 +73,11 @@ GPlatesAppLogic::MotionPathUtils::MotionPathPropertyFinder::visit_gpml_plate_id(
 
 	if (current_top_level_propname() == reconstruction_plate_id_property_name)
 	{
-		d_reconstruction_plate_id.reset(gpml_plate_id.value());
+		d_reconstruction_plate_id.reset(gpml_plate_id.get_value());
 	}
 	else if (current_top_level_propname() == relative_plate_id_property_name)
 	{
-		d_relative_plate_id.reset(gpml_plate_id.value());
+		d_relative_plate_id.reset(gpml_plate_id.get_value());
 	}
 
 
@@ -189,8 +189,8 @@ GPlatesAppLogic::MotionPathUtils::MotionPathPropertyFinder::visit_gml_time_perio
 		    d_feature_is_defined_at_recon_time = false;
 	    }
 	    // Also, cache the time of appearance/dissappearance.
-	    d_time_of_appearance = gml_time_period.begin()->time_position();
-	    d_time_of_dissappearance = gml_time_period.end()->time_position();
+	    d_time_of_appearance = gml_time_period.get_begin()->get_time_position();
+	    d_time_of_dissappearance = gml_time_period.get_end()->get_time_position();
 	}
 }
 

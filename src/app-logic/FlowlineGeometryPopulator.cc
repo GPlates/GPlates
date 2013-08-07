@@ -239,14 +239,14 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_multi_point(
 	if (d_flowline_property_finder.can_process_flowline())
 	{
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_seed_geometry =
-			FlowlineUtils::reconstruct_flowline_seed_points(gml_multi_point.multipoint(),
+			FlowlineUtils::reconstruct_flowline_seed_points(gml_multi_point.get_multipoint(),
 			d_recon_time.value(),
 			d_reconstruction_tree_creator,
 			(current_top_level_propiter()->handle_weak_ref()));
 
 		GPlatesMaths::MultiPointOnSphere::const_iterator 
-			iter = gml_multi_point.multipoint()->begin(),
-			end = gml_multi_point.multipoint()->end();
+			iter = gml_multi_point.get_multipoint()->begin(),
+			end = gml_multi_point.get_multipoint()->end();
 
 		for (; iter != end ; ++iter)
 		{
@@ -255,7 +255,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_multi_point(
 	}
 	else
 	{
-		reconstruct_seed_geometry_with_recon_plate_id(gml_multi_point.multipoint());
+		reconstruct_seed_geometry_with_recon_plate_id(gml_multi_point.get_multipoint());
 	}
 
 }
@@ -282,16 +282,16 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_point(
 	if (d_flowline_property_finder.can_process_flowline())
 	{
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_seed_geometry =
-			FlowlineUtils::reconstruct_flowline_seed_points(gml_point.point(),
+			FlowlineUtils::reconstruct_flowline_seed_points(gml_point.get_point(),
 			d_recon_time.value(),
 			d_reconstruction_tree_creator,
 			(current_top_level_propiter()->handle_weak_ref()));
 
-		create_flowline_geometry(gml_point.point(),reconstructed_seed_geometry);	
+		create_flowline_geometry(gml_point.get_point(),reconstructed_seed_geometry);	
 	}
 	else
 	{
-		reconstruct_seed_geometry_with_recon_plate_id(gml_point.point());
+		reconstruct_seed_geometry_with_recon_plate_id(gml_point.get_point());
 	}
 		 
 }
@@ -302,7 +302,10 @@ void
 GPlatesAppLogic::FlowlineGeometryPopulator::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
+	GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+			gpml_constant_value.get_value()->clone();
+	property_value->accept_visitor(*this);
+	gpml_constant_value.set_value(property_value);
 }
 
 

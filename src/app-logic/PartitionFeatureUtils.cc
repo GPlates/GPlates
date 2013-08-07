@@ -90,7 +90,7 @@ namespace
 		visit_gml_line_string(
 				const GPlatesPropertyValues::GmlLineString &gml_line_string)
 		{
-			partition_geometry(gml_line_string.polyline());
+			partition_geometry(gml_line_string.get_polyline());
 		}
 
 
@@ -99,7 +99,7 @@ namespace
 		visit_gml_multi_point(
 				const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 		{
-			partition_geometry(gml_multi_point.multipoint());
+			partition_geometry(gml_multi_point.get_multipoint());
 		}
 
 
@@ -108,7 +108,7 @@ namespace
 		visit_gml_orientable_curve(
 				const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 		{
-			gml_orientable_curve.base_curve()->accept_visitor(*this);
+			gml_orientable_curve.get_base_curve()->accept_visitor(*this);
 		}
 
 
@@ -117,7 +117,7 @@ namespace
 		visit_gml_point(
 				const GPlatesPropertyValues::GmlPoint &gml_point)
 		{
-			partition_geometry(gml_point.point());
+			partition_geometry(gml_point.get_point());
 		}
 
 
@@ -131,7 +131,7 @@ namespace
 					partition_geometry_property = add_geometry_property();
 
 			// Partition the exterior polygon.
-			partition_geometry(gml_polygon.exterior(), partition_geometry_property);
+			partition_geometry(gml_polygon.get_exterior(), partition_geometry_property);
 
 			// Iterate over the interior polygons.
 			//
@@ -143,10 +143,9 @@ namespace
 			// an exterior polygon.
 			// For now this is adequate since at least the user don't lose there
 			// interior polygons (they just can reappear as exterior polygons).
-			GPlatesPropertyValues::GmlPolygon::ring_const_iterator interior_iter =
-					gml_polygon.interiors_begin();
-			GPlatesPropertyValues::GmlPolygon::ring_const_iterator interior_end =
-					gml_polygon.interiors_end();
+			const GPlatesPropertyValues::GmlPolygon::ring_sequence_type &interiors = gml_polygon.get_interiors();
+			GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator interior_iter = interiors.begin();
+			GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator interior_end = interiors.end();
 			for ( ; interior_iter != interior_end; ++interior_iter)
 			{
 				const GPlatesPropertyValues::GmlPolygon::ring_type &interior_polygon = *interior_iter;
@@ -162,7 +161,7 @@ namespace
 		visit_gpml_constant_value(
 				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 		{
-			gpml_constant_value.value()->accept_visitor(*this);
+			gpml_constant_value.get_value()->accept_visitor(*this);
 		}
 
 	private:
@@ -356,7 +355,7 @@ namespace
 	is_reconstruction_plate_id_property(
 			GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type top_level_prop_ptr)
 	{
-		return top_level_prop_ptr->property_name() == get_reconstruction_plate_id_property_name();
+		return top_level_prop_ptr->get_property_name() == get_reconstruction_plate_id_property_name();
 	}
 
 
@@ -428,7 +427,7 @@ GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::assign_p
 		boost::optional<GPlatesModel::FeatureHandle::const_weak_ref> partitioning_feature)
 {
 	// Merge model events across this scope to avoid excessive number of model callbacks.
-	GPlatesModel::NotificationGuard model_notification_guard(partitioned_feature->model_ptr());
+	GPlatesModel::NotificationGuard model_notification_guard(*partitioned_feature->model_ptr());
 
 	// Get the reconstruction plate id.
 	// Either from the partitioning feature or the default plate id.
@@ -569,7 +568,7 @@ GPlatesAppLogic::PartitionFeatureUtils::add_partitioned_geometry_to_feature(
 		GPlatesFeatureVisitors::GeometryRotator geometry_rotator(reverse_rotation.get());
 
 		const GPlatesModel::TopLevelProperty::non_null_ptr_type geometry_property_clone =
-				(*feature_iterator)->deep_clone();
+				(*feature_iterator)->clone();
 		geometry_property_clone->accept_visitor(geometry_rotator);
 		*feature_iterator = geometry_property_clone;
 	}
@@ -751,7 +750,7 @@ GPlatesAppLogic::PartitionFeatureUtils::get_reconstruction_plate_id_from_feature
 		return boost::none;
 	}
 
-	return recon_plate_id->value();
+	return recon_plate_id->get_value();
 }
 
 
@@ -761,7 +760,7 @@ GPlatesAppLogic::PartitionFeatureUtils::assign_reconstruction_plate_id_to_featur
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 {
 	// Merge model events across this scope to avoid excessive number of model callbacks.
-	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
+	GPlatesModel::NotificationGuard model_notification_guard(*feature_ref->model_ptr());
 
 	// First remove any that might already exist.
 	feature_ref->remove_properties_by_name(get_reconstruction_plate_id_property_name());

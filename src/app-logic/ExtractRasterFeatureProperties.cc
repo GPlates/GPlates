@@ -98,7 +98,7 @@ namespace
 				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 		{
 			d_inside_constant_value = true;
-			gpml_constant_value.value()->accept_visitor(*this);
+			gpml_constant_value.get_value()->accept_visitor(*this);
 			d_inside_constant_value = false;
 		}
 
@@ -108,11 +108,11 @@ namespace
 				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 		{
 			d_inside_piecewise_aggregation = true;
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows =
-				gpml_piecewise_aggregation.time_windows();
+			const std::vector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
+					gpml_piecewise_aggregation.get_time_windows();
 			BOOST_FOREACH(const GPlatesPropertyValues::GpmlTimeWindow &time_window, time_windows)
 			{
-				time_window.time_dependent_value()->accept_visitor(*this);
+				time_window.get_time_dependent_value()->accept_visitor(*this);
 			}
 			d_inside_piecewise_aggregation = false;
 		}
@@ -154,7 +154,7 @@ namespace
 					// If we have at least one then it means we can process something (even if
 					// it's only one band).
 					const std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> proxied_rasters =
-							gml_file.proxied_raw_rasters();
+							gml_file.get_proxied_raw_rasters();
 					BOOST_FOREACH(
 							const GPlatesPropertyValues::RawRaster::non_null_ptr_type &proxied_raster,
 							proxied_rasters)
@@ -272,7 +272,7 @@ GPlatesAppLogic::ExtractRasterFeatureProperties::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	d_inside_constant_value = true;
-	gpml_constant_value.value()->accept_visitor(*this);
+	gpml_constant_value.get_value()->accept_visitor(*this);
 	d_inside_constant_value = false;
 }
 
@@ -282,12 +282,12 @@ GPlatesAppLogic::ExtractRasterFeatureProperties::visit_gpml_piecewise_aggregatio
 		const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 {
 	d_inside_piecewise_aggregation = true;
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows =
-		gpml_piecewise_aggregation.time_windows();
+	const std::vector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
+			gpml_piecewise_aggregation.get_time_windows();
 	BOOST_FOREACH(const GPlatesPropertyValues::GpmlTimeWindow &time_window, time_windows)
 	{
 		const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period =
-				time_window.valid_time();
+				time_window.get_valid_time();
 
 		// If the time window period contains the current reconstruction time then visit.
 		// The time periods should be mutually exclusive - if we happen to be it
@@ -295,7 +295,7 @@ GPlatesAppLogic::ExtractRasterFeatureProperties::visit_gpml_piecewise_aggregatio
 		// and then it doesn't really matter which one we choose.
 		if (time_period->contains(d_reconstruction_time))
 		{
-			time_window.time_dependent_value()->accept_visitor(*this);
+			time_window.get_time_dependent_value()->accept_visitor(*this);
 		}
 	}
 	d_inside_piecewise_aggregation = false;
@@ -332,7 +332,7 @@ GPlatesAppLogic::ExtractRasterFeatureProperties::visit_gml_file(
 		const boost::optional<GPlatesModel::PropertyName> &propname = current_top_level_propname();
 		if (propname && *propname == RANGE_SET)
 		{
-			d_proxied_rasters = gml_file.proxied_raw_rasters();
+			d_proxied_rasters = gml_file.get_proxied_raw_rasters();
 		}
 	}
 }
@@ -350,7 +350,7 @@ GPlatesAppLogic::ExtractRasterFeatureProperties::visit_gpml_raster_band_names(
 		const boost::optional<GPlatesModel::PropertyName> &propname = current_top_level_propname();
 		if (propname && *propname == BAND_NAMES)
 		{
-			d_raster_band_names = gpml_raster_band_names.band_names();
+			d_raster_band_names = gpml_raster_band_names.get_band_names();
 		}
 	}
 }

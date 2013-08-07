@@ -81,8 +81,8 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_gml_time_period(
 			d_feature_is_defined_at_recon_time = false;
 		}
 		// Also, cache the time of appearance/dissappearance.
-		d_time_of_appearance = gml_time_period.begin()->time_position();
-		d_time_of_dissappearance = gml_time_period.end()->time_position();
+		d_time_of_appearance = gml_time_period.get_begin()->get_time_position();
+		d_time_of_dissappearance = gml_time_period.get_end()->get_time_position();
 	}
 }
 
@@ -91,7 +91,7 @@ void
 GPlatesAppLogic::ReconstructionFeatureProperties::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
+	gpml_constant_value.get_value()->accept_visitor(*this);
 }
 
 
@@ -112,15 +112,15 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_gpml_plate_id(
 	if (current_top_level_propname() == reconstruction_plate_id_property_name)
 	{
 		// This plate ID is the reconstruction plate ID.
-		d_recon_plate_id = gpml_plate_id.value();
+		d_recon_plate_id = gpml_plate_id.get_value();
 	}
 	else if (current_top_level_propname() == right_plate_id_property_name)
 	{
-		d_right_plate_id = gpml_plate_id.value();
+		d_right_plate_id = gpml_plate_id.get_value();
 	}
 	else if (current_top_level_propname() == left_plate_id_property_name)
 	{
-		d_left_plate_id = gpml_plate_id.value();
+		d_left_plate_id = gpml_plate_id.get_value();
 	}
 }
 
@@ -135,7 +135,7 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_enumeration(
 	if (current_top_level_propname() == reconstruction_method_name)
 	{
 		// Note that this returns boost::none if string is not recognised.
-		d_recon_method = ReconstructMethod::get_string_as_enum(enumeration.value());
+		d_recon_method = ReconstructMethod::get_string_as_enum(enumeration.get_value());
 	}
 }
 

@@ -313,7 +313,7 @@ GPlatesAppLogic::AssignPlateIds::assign_reconstruction_plate_id(
 
 	// Merge model events across this scope to avoid excessive number of model callbacks
 	// due to modifying features by partitioning them.
-	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
+	GPlatesModel::NotificationGuard model_notification_guard(*feature_ref->model_ptr());
 
 	// Iterate through the tasks until we find one that can partition the feature.
 	partition_feature_task_ptr_seq_type::const_iterator assign_task_iter =

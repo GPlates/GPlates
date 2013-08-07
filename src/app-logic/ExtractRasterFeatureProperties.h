@@ -170,7 +170,7 @@ namespace GPlatesAppLogic
 	{
 		for (std::size_t i = 0; i != band_names_list.size(); ++i)
 		{
-			if (band_names_list[i]->value() == band_name)
+			if (band_names_list[i].get_name()->get_value() == band_name)
 			{
 				return i;
 			}

@@ -127,7 +127,7 @@ namespace GPlatesAppLogic
 				d_present_day_geometries.push_back(
 						ReconstructMethodInterface::Geometry(
 								*current_top_level_propiter(),
-								gml_point.point()));
+								gml_point.get_point()));
 			}
 
 			virtual
@@ -135,7 +135,10 @@ namespace GPlatesAppLogic
 			visit_gpml_constant_value(
 					GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 			{
-				gpml_constant_value.value()->accept_visitor(*this);
+				GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+						gpml_constant_value.get_value()->clone();
+				property_value->accept_visitor(*this);
+				gpml_constant_value.set_value(property_value);
 			}
 
 

@@ -585,7 +585,7 @@ namespace
 		visit_gpml_constant_value(
 				const gpml_constant_value_type &gpml_constant_value)
 		{
-			gpml_constant_value.value()->accept_visitor(*this);
+			gpml_constant_value.get_value()->accept_visitor(*this);
 		}
 
 		virtual
@@ -594,15 +594,15 @@ namespace
 				const gpml_piecewise_aggregation_type &gpml_piecewise_aggregation)
 		{
 			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-				gpml_piecewise_aggregation.time_windows().begin();
+				gpml_piecewise_aggregation.get_time_windows().begin();
 			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-				gpml_piecewise_aggregation.time_windows().end();
+				gpml_piecewise_aggregation.get_time_windows().end();
 			for ( ; iter != end; ++iter)
 			{
 				// If the time window covers our reconstruction time then visit.
-				if (iter->valid_time()->contains(d_reconstruction_time.get()))
+				if (iter->get_valid_time()->contains(d_reconstruction_time.get()))
 				{
-					iter->time_dependent_value()->accept_visitor(*this);
+					iter->get_time_dependent_value()->accept_visitor(*this);
 
 					// Break out of loop since time windows should be non-overlapping.
 					return;
@@ -615,7 +615,7 @@ namespace
 		visit_gml_line_string(
 				const gml_line_string_type &gml_line_string)
 		{
-			d_geometry = gml_line_string.polyline();
+			d_geometry = gml_line_string.get_polyline();
 		}
 
 		virtual
@@ -623,7 +623,7 @@ namespace
 		visit_gml_multi_point(
 				const gml_multi_point_type &gml_multi_point)
 		{
-			d_geometry = gml_multi_point.multipoint();
+			d_geometry = gml_multi_point.get_multipoint();
 		}
 
 		virtual
@@ -631,7 +631,7 @@ namespace
 		visit_gml_orientable_curve(
 				const gml_orientable_curve_type &gml_orientable_curve)
 		{
-			gml_orientable_curve.base_curve()->accept_visitor(*this);
+			gml_orientable_curve.get_base_curve()->accept_visitor(*this);
 		}
 
 		virtual
@@ -639,7 +639,7 @@ namespace
 		visit_gml_point(
 				const gml_point_type &gml_point)
 		{
-			d_geometry = gml_point.point();
+			d_geometry = gml_point.get_point();
 		}
 
 		virtual
@@ -647,7 +647,7 @@ namespace
 		visit_gml_polygon(
 				const gml_polygon_type &gml_polygon)
 		{
-			d_geometry = gml_polygon.exterior();
+			d_geometry = gml_polygon.get_exterior();
 		}
 
 
@@ -933,7 +933,7 @@ GPlatesAppLogic::GeometryUtils::remove_geometry_properties_from_feature(
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 {
 	// Merge model events across this scope to avoid excessive number of model callbacks.
-	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
+	GPlatesModel::NotificationGuard model_notification_guard(*feature_ref->model_ptr());
 
 	// Iterate over the feature properties of the feature.
 	GPlatesModel::FeatureHandle::iterator feature_properties_iter =

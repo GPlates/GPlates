@@ -53,7 +53,7 @@ namespace
 	{
 		const GPlatesModel::FeatureHandle::iterator &iter = rfg.property();
 		return iter.is_still_valid() &&
-			((*iter)->property_name() == property_name_to_match);
+			((*iter)->get_property_name() == property_name_to_match);
 	}
 
 

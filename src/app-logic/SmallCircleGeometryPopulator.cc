@@ -106,7 +106,7 @@ GPlatesAppLogic::SmallCircleGeometryPopulator::visit_gml_point(
 		{
 			return;
 		}
-		d_centre.reset(gml_point.point());
+		d_centre.reset(gml_point.get_point());
 
 		d_geometry_iterator.reset(*(current_top_level_propiter()));
 	}	
@@ -150,7 +150,7 @@ GPlatesAppLogic::SmallCircleGeometryPopulator::visit_gpml_measure(
 			return;
 		}
 
-		d_radius_in_degrees.reset(gpml_measure.quantity());
+		d_radius_in_degrees.reset(gpml_measure.get_quantity());
 	}	
 }
 
@@ -158,12 +158,15 @@ void
 GPlatesAppLogic::SmallCircleGeometryPopulator::visit_gpml_constant_value(
 	GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
+	GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+			gpml_constant_value.get_value()->clone();
+	property_value->accept_visitor(*this);
+	gpml_constant_value.set_value(property_value);
 }
 
 void
 GPlatesAppLogic::SmallCircleGeometryPopulator::visit_gpml_plate_id(
 	GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
-	d_reconstruction_plate_id.reset(gpml_plate_id.value());
+	d_reconstruction_plate_id.reset(gpml_plate_id.get_value());
 }

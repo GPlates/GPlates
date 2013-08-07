@@ -51,14 +51,14 @@ void
 GPlatesAppLogic::PalaeomagUtils::VirtualGeomagneticPolePropertyFinder::visit_gpml_constant_value(
 	const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
+	gpml_constant_value.get_value()->accept_visitor(*this);
 }
 
 void
 GPlatesAppLogic::PalaeomagUtils::VirtualGeomagneticPolePropertyFinder::visit_gpml_plate_id(
 	const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
-	d_plate_id.reset(gpml_plate_id.value()); 
+	d_plate_id.reset(gpml_plate_id.get_value()); 
 }
 
 void
@@ -73,11 +73,11 @@ GPlatesAppLogic::PalaeomagUtils::VirtualGeomagneticPolePropertyFinder::visit_gml
 
 	if (current_top_level_propname() == site_name)
 	{
-		d_site_point.reset(gml_point.point());
+		d_site_point.reset(gml_point.get_point());
 	}
 	else if (current_top_level_propname() == vgp_name)
 	{
-		d_vgp_point.reset(gml_point.point());
+		d_vgp_point.reset(gml_point.get_point());
 	}
 }
 
@@ -90,7 +90,7 @@ GPlatesAppLogic::PalaeomagUtils::VirtualGeomagneticPolePropertyFinder::visit_xs_
 
 	if (current_top_level_propname() == age_name)
 	{
-		d_age.reset(xs_double.value());
+		d_age.reset(xs_double.get_value());
 	}
 }
 

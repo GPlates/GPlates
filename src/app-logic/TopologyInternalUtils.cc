@@ -101,7 +101,7 @@ namespace
 		visit_gpml_constant_value(
 				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 		{
-			gpml_constant_value.value()->accept_visitor(*this);
+			gpml_constant_value.get_value()->accept_visitor(*this);
 		}
 
 		virtual
@@ -110,15 +110,15 @@ namespace
 				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 		{
 			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator begin =
-					gpml_piecewise_aggregation.time_windows().begin();
+					gpml_piecewise_aggregation.get_time_windows().begin();
 			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-					gpml_piecewise_aggregation.time_windows().end();
+					gpml_piecewise_aggregation.get_time_windows().end();
 
 			// Only need to visit the first time window - all windows have the same template type.
 			if (begin != end)
 			{
 				const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window = *begin;
-				gpml_time_window.time_dependent_value()->accept_visitor(*this);
+				gpml_time_window.get_time_dependent_value()->accept_visitor(*this);
 			}
 		}
 
@@ -219,7 +219,7 @@ namespace
 			qWarning() << "FeatureId = " << GPlatesUtils::make_qstring_from_icu_string(
 					d_geometry_property.handle_weak_ref()->feature_id().get());
 			qWarning() << "PropertyName = " << GPlatesUtils::make_qstring_from_icu_string(
-					(*d_geometry_property)->property_name().get_name());
+					(*d_geometry_property)->get_property_name().get_name());
 		}
 
 
@@ -228,7 +228,7 @@ namespace
 		visit_gml_orientable_curve(
 			const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 		{
-			gml_orientable_curve.base_curve()->accept_visitor(*this);
+			gml_orientable_curve.get_base_curve()->accept_visitor(*this);
 		}
 
 
@@ -258,7 +258,7 @@ namespace
 		visit_gpml_constant_value(
 			const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 		{
-			gpml_constant_value.value()->accept_visitor(*this);
+			gpml_constant_value.get_value()->accept_visitor(*this);
 		}
 
 
@@ -268,14 +268,14 @@ namespace
 				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 		{
 			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-					gpml_piecewise_aggregation.time_windows().begin();
+					gpml_piecewise_aggregation.get_time_windows().begin();
 			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-					gpml_piecewise_aggregation.time_windows().end();
+					gpml_piecewise_aggregation.get_time_windows().end();
 
 			for ( ; iter != end; ++iter) 
 			{
 				const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window = *iter;
-				gpml_time_window.time_dependent_value()->accept_visitor(*this);
+				gpml_time_window.get_time_dependent_value()->accept_visitor(*this);
 
 				// Break out early if (first) time window has a topological line property.
 				// We only need to know there's a GpmlTopologicalLine present in order to reference it.
@@ -405,7 +405,7 @@ namespace
 		visit_gml_orientable_curve(
 				const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 		{
-			gml_orientable_curve.base_curve()->accept_visitor(*this);
+			gml_orientable_curve.get_base_curve()->accept_visitor(*this);
 		}
 
 
@@ -435,7 +435,7 @@ namespace
 		visit_gpml_constant_value(
 				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 		{
-			gpml_constant_value.value()->accept_visitor(*this);
+			gpml_constant_value.get_value()->accept_visitor(*this);
 		}
 
 
@@ -445,14 +445,14 @@ namespace
 				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 		{
 			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-					gpml_piecewise_aggregation.time_windows().begin();
+					gpml_piecewise_aggregation.get_time_windows().begin();
 			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-					gpml_piecewise_aggregation.time_windows().end();
+					gpml_piecewise_aggregation.get_time_windows().end();
 
 			for ( ; iter != end; ++iter) 
 			{
 				const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window = *iter;
-				gpml_time_window.time_dependent_value()->accept_visitor(*this);
+				gpml_time_window.get_time_dependent_value()->accept_visitor(*this);
 
 				// Break out early if (first) time window has a topological line property.
 				// We only need to know there's a GpmlTopologicalLine present in order to reference it.
@@ -529,7 +529,7 @@ namespace
 				static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
 				const GPlatesPropertyValues::XsString *name;
 				if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop, name) ) {
-					qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name->value() );
+					qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name->get_value() );
 				} else {
 					qWarning() << "  feature name = UNKNOWN";
 				}
@@ -550,7 +550,7 @@ namespace
 			static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
 			const GPlatesPropertyValues::XsString *name;
 			if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop, name) ) {
-				qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name->value() );
+				qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name->get_value() );
 			} else {
 				qWarning() << "  feature name = UNKNOWN";
 			}
@@ -859,7 +859,7 @@ GPlatesAppLogic::TopologyInternalUtils::create_geometry_property_delegate(
 
 	// Property name obtained from geometry property iterator.
 	const QString property_name = GPlatesUtils::make_qstring_from_icu_string(
-			(*geometry_property)->property_name().get_name());
+			(*geometry_property)->get_property_name().get_name());
 
 	const GPlatesModel::PropertyName prop_name =
 			GPlatesModel::PropertyName::create_gpml(property_name);
@@ -912,7 +912,7 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry
 		boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles)
 {
 	const GPlatesModel::FeatureHandle::weak_ref feature_ref = resolve_feature_id(
-			geometry_delegate.feature_id());
+			geometry_delegate.get_feature_id());
 
 	if (!feature_ref.is_valid())
 	{
@@ -921,7 +921,7 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry
 
 	// Create a property name from the target_propery.
 	const QString property_name_qstring = GPlatesUtils::make_qstring_from_icu_string(
-			geometry_delegate.target_property().get_name());
+			geometry_delegate.get_target_property_name().get_name());
 	const GPlatesModel::PropertyName property_name = GPlatesModel::PropertyName::create_gpml(
 			property_name_qstring);
 
@@ -964,7 +964,7 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry
 	return ::find_topological_section_reconstruction_geometry(
 			rg_finder,
 			feature_ref,
-			(*geometry_property)->property_name(),
+			(*geometry_property)->get_property_name(),
 			reconstruction_time);
 }
 
@@ -990,7 +990,7 @@ GPlatesAppLogic::TopologyInternalUtils::get_finite_rotation(
 	if ( GPlatesFeatureVisitors::get_property_value(
 		reconstruction_plateid_feature, plate_id_property_name, recon_plate_id ) )
 	{
-		reconstruction_plate_id = recon_plate_id->value();
+		reconstruction_plate_id = recon_plate_id->get_value();
 	}
 
 	// The feature has a reconstruction plate ID.

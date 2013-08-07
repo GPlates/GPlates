@@ -148,7 +148,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_multi_point(
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_seed_geometry =
 				reconstruction_tree->get_composed_absolute_rotation(
 					d_motion_track_property_finder.get_reconstruction_plate_id().get()).first *
-					gml_multi_point.multipoint();
+					gml_multi_point.get_multipoint();
 
 	try{
 
@@ -179,8 +179,8 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_multi_point(
 	if (d_motion_track_property_finder.can_process_motion_path())
 	{
 		GPlatesMaths::MultiPointOnSphere::const_iterator 
-			iter = gml_multi_point.multipoint()->begin(),
-			end = gml_multi_point.multipoint()->end();
+			iter = gml_multi_point.get_multipoint()->begin(),
+			end = gml_multi_point.get_multipoint()->end();
 
 		for (; iter != end ; ++iter)
 		{
@@ -215,7 +215,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_point(
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_seed_geometry =
 		reconstruction_tree->get_composed_absolute_rotation(
 			d_motion_track_property_finder.get_reconstruction_plate_id().get()).first *
-			gml_point.point();
+			gml_point.get_point();
 
 
 	try{
@@ -245,7 +245,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_point(
 
 	if (d_motion_track_property_finder.can_process_motion_path())
 	{
-		create_motion_path_geometry(gml_point.point(),reconstructed_seed_geometry);
+		create_motion_path_geometry(gml_point.get_point(),reconstructed_seed_geometry);
 	}
 
 }
@@ -256,7 +256,10 @@ void
 GPlatesAppLogic::MotionPathGeometryPopulator::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
+	GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+			gpml_constant_value.get_value()->clone();
+	property_value->accept_visitor(*this);
+	gpml_constant_value.set_value(property_value);
 }
 
 

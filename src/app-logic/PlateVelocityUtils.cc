@@ -218,7 +218,7 @@ namespace GPlatesAppLogic
 
 				GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type domain_set_gml_multi_point =
 						GPlatesPropertyValues::GmlMultiPoint::create(
-								gml_multi_point.multipoint());
+								gml_multi_point.get_multipoint());
 
 				d_velocity_field_feature->add(
 						GPlatesModel::TopLevelPropertyInline::create(
