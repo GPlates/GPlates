@@ -99,7 +99,10 @@ void
 GPlatesFeatureVisitors::GeometrySetter::visit_gml_orientable_curve(
 		GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
-	gml_orientable_curve.base_curve()->accept_visitor(*this);
+	GPlatesModel::PropertyValue::non_null_ptr_type base_curve =
+			gml_orientable_curve.get_base_curve()->clone();
+	base_curve->accept_visitor(*this);
+	gml_orientable_curve.set_base_curve(base_curve);
 }
 
 
@@ -145,7 +148,10 @@ void
 GPlatesFeatureVisitors::GeometrySetter::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
+	GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+			gpml_constant_value.get_value()->clone();
+	property_value->accept_visitor(*this);
+	gpml_constant_value.set_value(property_value);
 }
 
 

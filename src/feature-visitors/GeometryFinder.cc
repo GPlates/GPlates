@@ -61,7 +61,7 @@ bool
 GPlatesFeatureVisitors::GeometryFinder::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
+	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.get_property_name();
 
 	if ( ! d_property_names_to_allow.empty()) {
 		// We're not allowing all property names.
@@ -78,8 +78,8 @@ void
 GPlatesFeatureVisitors::GeometryFinder::visit_gml_line_string(
 		const GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
-	d_found_geometries.push_back(gml_line_string.polyline());
-	d_found_polyline_geometries.push_back(gml_line_string.polyline());
+	d_found_geometries.push_back(gml_line_string.get_polyline());
+	d_found_polyline_geometries.push_back(gml_line_string.get_polyline());
 }
 
 
@@ -87,8 +87,8 @@ void
 GPlatesFeatureVisitors::GeometryFinder::visit_gml_multi_point(
 		const GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
-	d_found_geometries.push_back(gml_multi_point.multipoint());
-	d_found_multi_point_geometries.push_back(gml_multi_point.multipoint());
+	d_found_geometries.push_back(gml_multi_point.get_multipoint());
+	d_found_multi_point_geometries.push_back(gml_multi_point.get_multipoint());
 }
 
 
@@ -96,7 +96,7 @@ void
 GPlatesFeatureVisitors::GeometryFinder::visit_gml_orientable_curve(
 		const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
-	gml_orientable_curve.base_curve()->accept_visitor(*this);
+	gml_orientable_curve.get_base_curve()->accept_visitor(*this);
 }
 
 
@@ -104,8 +104,8 @@ void
 GPlatesFeatureVisitors::GeometryFinder::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	d_found_geometries.push_back(gml_point.point());
-	d_found_point_geometries.push_back( gml_point.point() );
+	d_found_geometries.push_back(gml_point.get_point());
+	d_found_point_geometries.push_back( gml_point.get_point() );
 }
 
 
@@ -114,12 +114,13 @@ GPlatesFeatureVisitors::GeometryFinder::visit_gml_polygon(
 		const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
 	// First, the exterior ring.
-	d_found_geometries.push_back(gml_polygon.exterior());
-	d_found_polygon_geometries.push_back(gml_polygon.exterior());
+	d_found_geometries.push_back(gml_polygon.get_exterior());
+	d_found_polygon_geometries.push_back(gml_polygon.get_exterior());
 
 	// Next, the interior rings (if there are any).
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator iter = gml_polygon.interiors_begin();
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator end = gml_polygon.interiors_end();
+	const GPlatesPropertyValues::GmlPolygon::ring_sequence_type &interiors = gml_polygon.get_interiors();
+	GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator iter = interiors.begin();
+	GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator end = interiors.end();
 	for ( ; iter != end; ++iter) 
 	{
 		d_found_geometries.push_back(*iter);
@@ -132,7 +133,7 @@ void
 GPlatesFeatureVisitors::GeometryFinder::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
+	gpml_constant_value.get_value()->accept_visitor(*this);
 }
 
 

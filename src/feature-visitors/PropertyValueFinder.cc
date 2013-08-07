@@ -35,7 +35,7 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_constant_value(
 		GPlatesModel::ConstFeatureVisitor::gpml_constant_value_type &gpml_constant_value,
 		GPlatesModel::ConstFeatureVisitor &visitor)
 {
-	gpml_constant_value.value()->accept_visitor(visitor);
+	gpml_constant_value.get_value()->accept_visitor(visitor);
 }
 
 
@@ -44,7 +44,10 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_constant_value(
 		GPlatesModel::FeatureVisitor::gpml_constant_value_type &gpml_constant_value,
 		GPlatesModel::FeatureVisitor &visitor)
 {
-	gpml_constant_value.value()->accept_visitor(visitor);
+	GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+			gpml_constant_value.get_value()->clone();
+	property_value->accept_visitor(visitor);
+	gpml_constant_value.set_value(property_value);
 }
 
 
@@ -55,17 +58,17 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconst
 		const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
 {
 	std::vector< GPlatesPropertyValues::GpmlTimeSample >::const_iterator 
-		iter = gpml_irregular_sampling.time_samples().begin(),
-		end = gpml_irregular_sampling.time_samples().end();
+		iter = gpml_irregular_sampling.get_time_samples().begin(),
+		end = gpml_irregular_sampling.get_time_samples().end();
 	for ( ; iter != end; ++iter)
 	{
 		// If time of time sample matches our reconstruction time then visit.
 		//
 		// FIXME: Should really visit the two closest samples and interpolate them, but
 		// that's hard to do when the property being visited is a template type.
-		if (reconstruction_time.is_coincident_with(iter->valid_time()->time_position()))
+		if (reconstruction_time.is_coincident_with(iter->get_valid_time()->get_time_position()))
 		{
-			iter->value()->accept_visitor(visitor);
+			iter->get_value()->accept_visitor(visitor);
 			return;
 		}
 	}
@@ -78,21 +81,26 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconst
 		GPlatesModel::FeatureVisitor &visitor,
 		const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
 {
+	std::vector< GPlatesPropertyValues::GpmlTimeSample > time_samples =
+			gpml_irregular_sampling.get_time_samples();
+
 	std::vector< GPlatesPropertyValues::GpmlTimeSample >::iterator 
-		iter = gpml_irregular_sampling.time_samples().begin(),
-		end = gpml_irregular_sampling.time_samples().end();
+		iter = time_samples.begin(),
+		end = time_samples.end();
 	for ( ; iter != end; ++iter)
 	{
 		// If time of time sample matches our reconstruction time then visit.
 		//
 		// FIXME: Should really visit the two closest samples and interpolate them, but
 		// that's hard to do when the property being visited is a template type.
-		if (reconstruction_time.is_coincident_with(iter->valid_time()->time_position()))
+		if (reconstruction_time.is_coincident_with(iter->get_valid_time()->get_time_position()))
 		{
-			iter->value()->accept_visitor(visitor);
+			iter->get_value()->accept_visitor(visitor);
 			return;
 		}
 	}
+
+	gpml_irregular_sampling.set_time_samples(time_samples);
 }
 
 
@@ -103,15 +111,15 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_piecewise_aggregation_at_reco
 		const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
 {
 	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-		gpml_piecewise_aggregation.time_windows().begin();
+		gpml_piecewise_aggregation.get_time_windows().begin();
 	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-		gpml_piecewise_aggregation.time_windows().end();
+		gpml_piecewise_aggregation.get_time_windows().end();
 	for ( ; iter != end; ++iter)
 	{
 		// If the time window covers our reconstruction time then visit.
-		if (iter->valid_time()->contains(reconstruction_time))
+		if (iter->get_valid_time()->contains(reconstruction_time))
 		{
-			iter->time_dependent_value()->accept_visitor(visitor);
+			iter->get_time_dependent_value()->accept_visitor(visitor);
 
 			// Break out of loop since time windows should be non-overlapping.
 			// If we don't break out we might visit the property value twice if it
@@ -128,16 +136,19 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_piecewise_aggregation_at_reco
 		GPlatesModel::FeatureVisitor &visitor,
 		const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
 {
+	std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows =
+			gpml_piecewise_aggregation.get_time_windows();
+
 	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator iter =
-		gpml_piecewise_aggregation.time_windows().begin();
+		time_windows.begin();
 	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator end =
-		gpml_piecewise_aggregation.time_windows().end();
+		time_windows.end();
 	for ( ; iter != end; ++iter)
 	{
 		// If the time window covers our reconstruction time then visit.
-		if (iter->valid_time()->contains(reconstruction_time))
+		if (iter->get_valid_time()->contains(reconstruction_time))
 		{
-			iter->time_dependent_value()->accept_visitor(visitor);
+			iter->get_time_dependent_value()->accept_visitor(visitor);
 
 			// Break out of loop since time windows should be non-overlapping.
 			// If we don't break out we might visit the property value twice if it
@@ -145,4 +156,6 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_piecewise_aggregation_at_reco
 			return;
 		}
 	}
+
+	gpml_piecewise_aggregation.set_time_windows(time_windows);
 }

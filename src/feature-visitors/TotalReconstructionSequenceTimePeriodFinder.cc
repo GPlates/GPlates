@@ -61,7 +61,7 @@ bool
 GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
+	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.get_property_name();
 	if ( ! d_property_names_to_allow.empty()) {
 		// We're not allowing all property names.
 		if ( ! contains_elem(d_property_names_to_allow, curr_prop_name)) {
@@ -79,8 +79,8 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::visit_gpml_
 {
 	using namespace GPlatesPropertyValues;
 
-	std::vector<GpmlTimeSample>::const_iterator iter = gpml_irregular_sampling.time_samples().begin();
-	std::vector<GpmlTimeSample>::const_iterator end = gpml_irregular_sampling.time_samples().end();
+	std::vector<GpmlTimeSample>::const_iterator iter = gpml_irregular_sampling.get_time_samples().begin();
+	std::vector<GpmlTimeSample>::const_iterator end = gpml_irregular_sampling.get_time_samples().end();
 	for ( ; iter != end; ++iter) {
 		// First, skip over any disabled time samples (if the client code wants us to).
 		if (d_skip_over_disabled_samples) {
@@ -88,7 +88,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::visit_gpml_
 				continue;
 			}
 		}
-		const GeoTimeInstant &gti = iter->valid_time()->time_position();
+		const GeoTimeInstant &gti = iter->get_valid_time()->get_time_position();
 		if ( ! gti.is_real()) {
 			// This geo-time-instant seems to be in either the distant past or the
 			// distant future.  This should not be the case in an irregular sampling.

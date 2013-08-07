@@ -49,7 +49,7 @@ bool
 GPlatesFeatureVisitors::KeyValueDictionaryFinder::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
+	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.get_property_name();
 
 	if ( ! d_property_names_to_allow.empty()) {
 		// We're not allowing all property names.

@@ -326,7 +326,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::initialise_pre_pro
 	PropertyInfo info;
 	info.is_geometric_property = false;
 	info.item_handle = make_top_level_item_for_property(
-			d_tree_widget_builder, top_level_property_inline.property_name());
+			d_tree_widget_builder, top_level_property_inline.get_property_name());
 	d_property_info_vector.push_back(info);
 
 	// If the current property is the focused geometry then scroll to it
@@ -402,7 +402,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_line_str
 	item_handle_seq_type coordinate_widgets;
 	// The present-day polyline.
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type present_day_polyline =
-			gml_line_string.polyline();
+			gml_line_string.get_polyline();
 	populate_coordinates_from_polyline(d_tree_widget_builder,
 			coordinate_widgets, present_day_polyline,
 			CoordinatePeriods::PRESENT);
@@ -471,7 +471,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_multi_po
 	// The present-day polyline.
 
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type present_day_multi_point =
-			gml_multi_point.multipoint();
+			gml_multi_point.get_multipoint();
 	populate_coordinates_from_multi_point(d_tree_widget_builder,
 			coordinate_widgets, present_day_multi_point,
 			CoordinatePeriods::PRESENT);
@@ -528,8 +528,10 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_orientab
 	d_property_info_vector.back().is_geometric_property = true;
 
 	// FIXME:  Ensure that 'gml_orientable_curve.base_curve()' is not NULL.
-	add_child_then_visit_value(QObject::tr("gml:OrientableCurve"), QString(),
-			*gml_orientable_curve.base_curve());
+	GPlatesModel::PropertyValue::non_null_ptr_type base_curve =
+			gml_orientable_curve.get_base_curve()->clone();
+	add_child_then_visit_value(QObject::tr("gml:OrientableCurve"), QString(), *base_curve);
+	gml_orientable_curve.set_base_curve(base_curve);
 }
 
 
@@ -566,7 +568,7 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_point(
 	item_handle_seq_type coordinate_widgets;
 	// The present-day point.
 	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type present_day_point =
-			gml_point.point();
+			gml_point.get_point();
 	populate_coordinates_from_point(d_tree_widget_builder,
 			coordinate_widgets, present_day_point,
 			CoordinatePeriods::PRESENT);
@@ -639,15 +641,15 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_polygon(
 	d_tree_widget_builder.push_current_item(exterior_item_handle);
 
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr =
-			gml_polygon.exterior();
+			gml_polygon.get_exterior();
 
 	write_polygon_ring(polygon_ptr);
 
 	d_tree_widget_builder.pop_current_item();
 
 	// Now handle any internal rings.
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator iter = gml_polygon.interiors_begin();
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator end = gml_polygon.interiors_end();
+	GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator iter = gml_polygon.get_interiors().begin();
+	GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator end = gml_polygon.get_interiors().end();
 
 	for (unsigned ring_number = 1; iter != end ; ++iter, ++ring_number)
 	{
@@ -673,7 +675,10 @@ void
 GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
+	GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+			gpml_constant_value.get_value()->clone();
+	property_value->accept_visitor(*this);
+	gpml_constant_value.set_value(property_value);
 }
 
 

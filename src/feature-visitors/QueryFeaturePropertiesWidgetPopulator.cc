@@ -108,7 +108,7 @@ bool
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	const QString name = convert_qualified_xml_name_to_qstring(top_level_property_inline.property_name());
+	const QString name = convert_qualified_xml_name_to_qstring(top_level_property_inline.get_property_name());
 
 	const GPlatesGui::TreeWidgetBuilder::item_handle_type item_handle =
 			add_child_to_current_item(d_tree_widget_builder, name);
@@ -155,7 +155,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_enumeration
 		const GPlatesPropertyValues::Enumeration &enumeration)
 {
 	static const int which_column = 1;
-	QString qstring = GPlatesUtils::make_qstring_from_icu_string(enumeration.value().get());
+	QString qstring = GPlatesUtils::make_qstring_from_icu_string(enumeration.get_value().get());
 
 	// This assumes that the stack is non-empty.
 	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
@@ -188,7 +188,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_line_st
 	// Now, hang the coords (in (lon, lat) format, since that is how GML does things) off the
 	// "gml:posList" branch.
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_ptr =
-			gml_line_string.polyline();
+			gml_line_string.get_polyline();
 
 	GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter = polyline_ptr->vertex_begin();
 	GPlatesMaths::PolylineOnSphere::vertex_const_iterator end = polyline_ptr->vertex_end();
@@ -245,7 +245,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_multi_p
 					true));
 
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type 
-		multi_point_ptr = gml_multi_point.multipoint();
+		multi_point_ptr = gml_multi_point.get_multipoint();
 
 	GPlatesMaths::MultiPointOnSphere::const_iterator iter = multi_point_ptr->begin();
 	GPlatesMaths::MultiPointOnSphere::const_iterator end = multi_point_ptr->end();
@@ -292,8 +292,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_orienta
 	}
 
 	// FIXME:  Ensure that 'gml_orientable_curve.base_curve()' is not NULL.
-	add_child_then_visit_value(QObject::tr("gml:baseCurve"), QString(),
-			*gml_orientable_curve.base_curve());
+	add_child_then_visit_value(QObject::tr("gml:baseCurve"), QString(), *gml_orientable_curve.get_base_curve());
 #if 0
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gml:OrientableCurve",
 			gml_orientable_curve.xml_attributes().begin(),
@@ -332,7 +331,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_point(
 	// Now, hang the coords (in (lon, lat) format, since that is how GML does things) off the
 	// "gml:posList" branch.
 
-	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*(gml_point.point()));
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*(gml_point.get_point()));
 #if 0
 	GPlatesMaths::LatLonPoint llp =
 			GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(*(gml_point.point()));
@@ -388,15 +387,15 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_polygon
 	d_tree_widget_builder.push_current_item(exterior_item_handle);
 
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr =
-			gml_polygon.exterior();
+			gml_polygon.get_exterior();
 
 	write_polygon_ring(polygon_ptr);
 
 	d_tree_widget_builder.pop_current_item();
 
 	// Now handle any internal rings.
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator iter = gml_polygon.interiors_begin();
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator end = gml_polygon.interiors_end();
+	GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator iter = gml_polygon.get_interiors().begin();
+	GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator end = gml_polygon.get_interiors().end();
 
 	for (unsigned ring_number = 1; iter != end ; ++iter, ++ring_number)
 	{
@@ -425,7 +424,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_in
 	QLocale locale;
 	QString qstring;
 
-	const GPlatesPropertyValues::GeoTimeInstant &time_position = gml_time_instant.time_position();
+	const GPlatesPropertyValues::GeoTimeInstant &time_position = gml_time_instant.get_time_position();
 	if (time_position.is_real()) {
 		qstring = locale.toString(time_position.value());
 	} else if (time_position.is_distant_past()) {
@@ -467,8 +466,8 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_pe
 					true));
 
 	// FIXME:  Ensure that 'gml_time_period.begin()' and 'gml_time_period.end()' are not NULL.
-	add_child_then_visit_value(QObject::tr("gml:begin"), QString(), *gml_time_period.begin());
-	add_child_then_visit_value(QObject::tr("gml:end"), QString(), *gml_time_period.end());
+	add_child_then_visit_value(QObject::tr("gml:begin"), QString(), *gml_time_period.get_begin());
+	add_child_then_visit_value(QObject::tr("gml:end"), QString(), *gml_time_period.get_end());
 }
 
 
@@ -476,7 +475,7 @@ void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
+	gpml_constant_value.get_value()->accept_visitor(*this);
 }
 
 
@@ -568,8 +567,8 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_key_va
 	d_tree_widget_builder.push_current_item(item_handle);
 
 	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-		iter = gpml_key_value_dictionary.elements().begin(),
-		end = gpml_key_value_dictionary.elements().end();
+		iter = gpml_key_value_dictionary.get_elements().begin(),
+		end = gpml_key_value_dictionary.get_elements().end();
 	for ( ; iter != end; ++iter) {
 		add_gpml_key_value_dictionary_element(*iter);
 	}
@@ -581,7 +580,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_plate_
 		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
 	static const int which_column = 1;
-	QString qstring = QString::number(gpml_plate_id.value());
+	QString qstring = QString::number(gpml_plate_id.get_value());
 
 	// This assumes that the stack is non-empty.
 	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
@@ -592,7 +591,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_measur
 	const GPlatesPropertyValues::GpmlMeasure &gpml_measure)
 {
 	static const int which_column = 1;
-	QString qstring = QString::number(gpml_measure.quantity());
+	QString qstring = QString::number(gpml_measure.get_quantity());
 
 	// This assumes that the stack is non-empty.
 	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
@@ -606,22 +605,22 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_time_s
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:TimeSample");
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:value");
-		gpml_time_sample.value()->accept_visitor(*this);
+		gpml_time_sample.get_value()->accept_visitor(*this);
 	}
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:validTime");
-		gpml_time_sample.valid_time()->accept_visitor(*this);
+		gpml_time_sample.get_valid_time()->accept_visitor(*this);
 	}
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:description");
 		// The description is optional.
-		if (gpml_time_sample.description() != NULL) {
-			gpml_time_sample.description()->accept_visitor(*this);
+		if (gpml_time_sample.get_description() != NULL) {
+			gpml_time_sample.get_description()->accept_visitor(*this);
 		}
 	}
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:valueType");
-		d_output.write_line_of_string_content(gpml_time_sample.value_type().get());
+		d_output.write_line_of_string_content(gpml_time_sample.get_value_type().get());
 	}
 }
 #endif
@@ -640,22 +639,22 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_old_pl
 
 	QLocale locale;
 	const GPlatesPropertyValues::GpmlOldPlatesHeader &header = gpml_old_plates_header;
-	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:regionNumber"), locale.toString(header.region_number()));
-	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:referenceNumber"), QString::number(header.reference_number()));
-	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:stringNumber"), QString::number(header.string_number()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:regionNumber"), locale.toString(header.get_region_number()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:referenceNumber"), QString::number(header.get_reference_number()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:stringNumber"), QString::number(header.get_string_number()));
 	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:geographicDescription"),
-			GPlatesUtils::make_qstring_from_icu_string(header.geographic_description()));
-	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:plateIdNumber"), QString::number(header.plate_id_number()));
-	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:ageOfAppearance"), locale.toString(header.age_of_appearance()));
-	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:ageOfDisappearance"), locale.toString(header.age_of_disappearance()));
+			GPlatesUtils::make_qstring_from_icu_string(header.get_geographic_description()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:plateIdNumber"), QString::number(header.get_plate_id_number()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:ageOfAppearance"), locale.toString(header.get_age_of_appearance()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:ageOfDisappearance"), locale.toString(header.get_age_of_disappearance()));
 	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:dataTypeCode"),
-			GPlatesUtils::make_qstring_from_icu_string(header.data_type_code()));
-	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:dataTypeCodeNumber"), QString::number(header.data_type_code_number()));
+			GPlatesUtils::make_qstring_from_icu_string(header.get_data_type_code()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:dataTypeCodeNumber"), QString::number(header.get_data_type_code_number()));
 	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:dataTypeCodeNumberAdditional"),
-			GPlatesUtils::make_qstring_from_icu_string(header.data_type_code_number_additional()));
-	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:conjugatePlateIdNumber"), QString::number(header.conjugate_plate_id_number()));
-	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:colourCode"), QString::number(header.colour_code()));
-	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:numberOfPoints"), QString::number(header.number_of_points()));
+			GPlatesUtils::make_qstring_from_icu_string(header.get_data_type_code_number_additional()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:conjugatePlateIdNumber"), QString::number(header.get_conjugate_plate_id_number()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:colourCode"), QString::number(header.get_colour_code()));
+	add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:numberOfPoints"), QString::number(header.get_number_of_points()));
 }
 
 
@@ -676,8 +675,11 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_string
 			add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:element"));
 	d_tree_widget_builder.push_current_item(item_handle);
 
-	GPlatesPropertyValues::GpmlStringList::const_iterator iter = gpml_string_list.begin();
-	GPlatesPropertyValues::GpmlStringList::const_iterator end = gpml_string_list.end();
+	const GPlatesPropertyValues::GpmlStringList::string_list_type &string_list =
+			gpml_string_list.get_string_list();
+
+	GPlatesPropertyValues::GpmlStringList::string_list_type::const_iterator iter = string_list.begin();
+	GPlatesPropertyValues::GpmlStringList::string_list_type::const_iterator end = string_list.end();
 	for (unsigned elem_number = 1; iter != end; ++iter, ++elem_number) {
 		QLocale locale;
 		QString elem_id(QObject::tr("#"));
@@ -707,7 +709,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_boolean(
 		const GPlatesPropertyValues::XsBoolean &xs_boolean)
 {
 	static const int which_column = 1;
-	QString qstring = QVariant(xs_boolean.value()).toString();
+	QString qstring = QVariant(xs_boolean.get_value()).toString();
 
 	// This assumes that the stack is non-empty.
 	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
@@ -722,7 +724,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_double(
 
 	QLocale locale;
 
-	QString qstring = locale.toString(xs_double.value());
+	QString qstring = locale.toString(xs_double.get_value());
 
 	// This assumes that the stack is non-empty.
 	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
@@ -736,7 +738,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_integer(
 
 	QLocale locale;
 
-	QString qstring = locale.toString(xs_integer.value());
+	QString qstring = locale.toString(xs_integer.get_value());
 
 	// This assumes that the stack is non-empty.
 	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
@@ -747,7 +749,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_xs_string(
 		const GPlatesPropertyValues::XsString &xs_string)
 {
 	static const int which_column = 1;
-	QString qstring = GPlatesUtils::make_qstring(xs_string.value());
+	QString qstring = GPlatesUtils::make_qstring(xs_string.get_value());
 
 	// This assumes that the stack is non-empty.
 	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
@@ -773,7 +775,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::add_gpml_key_valu
 			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element)
 {
 
-	QString key_string = GPlatesUtils::make_qstring_from_icu_string(element.key()->value().get());
+	QString key_string = GPlatesUtils::make_qstring_from_icu_string(element.key()->get_value().get());
 
 	add_child_then_visit_value(key_string,QString(),*element.value());
 
@@ -856,11 +858,11 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_array(
 		add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:members"));
 	d_tree_widget_builder.push_current_item(item_handle);
 
-	std::vector<GPlatesModel::PropertyValue::non_null_ptr_type>::const_iterator 
-		iter = gpml_array.members().begin(),
-		end = gpml_array.members().end();
+	std::vector<GPlatesPropertyValues::GpmlArray::Member>::const_iterator 
+		iter = gpml_array.get_members().begin(),
+		end = gpml_array.get_members().end();
 	for ( ; iter != end; ++iter) {
-		(*iter)->accept_visitor(*this);
+		iter->get_value()->accept_visitor(*this);
 	}
 	d_tree_widget_builder.pop_current_item();
 }

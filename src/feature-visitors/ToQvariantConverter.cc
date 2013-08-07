@@ -94,7 +94,7 @@ void
 GPlatesFeatureVisitors::ToQvariantConverter::visit_enumeration(
 		const GPlatesPropertyValues::Enumeration &enumeration)
 {
-	QString qstring = GPlatesUtils::make_qstring_from_icu_string(enumeration.value().get());
+	QString qstring = GPlatesUtils::make_qstring_from_icu_string(enumeration.get_value().get());
 	d_found_values.push_back(QVariant(qstring));
 }
 
@@ -103,7 +103,7 @@ void
 GPlatesFeatureVisitors::ToQvariantConverter::visit_gml_time_instant(
 		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
 {
-	const GPlatesPropertyValues::GeoTimeInstant &time_position = gml_time_instant.time_position();
+	const GPlatesPropertyValues::GeoTimeInstant &time_position = gml_time_instant.get_time_position();
 	d_found_values.push_back(geo_time_instant_to_qvariant(time_position, d_role));
 }
 
@@ -112,8 +112,8 @@ void
 GPlatesFeatureVisitors::ToQvariantConverter::visit_gml_time_period(
 		const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
-	const GPlatesPropertyValues::GeoTimeInstant begin = gml_time_period.begin()->time_position();
-	const GPlatesPropertyValues::GeoTimeInstant end = gml_time_period.end()->time_position();
+	const GPlatesPropertyValues::GeoTimeInstant begin = gml_time_period.get_begin()->get_time_position();
+	const GPlatesPropertyValues::GeoTimeInstant end = gml_time_period.get_end()->get_time_position();
 	
 	if (d_role == Qt::EditRole) {
 		QList<QVariant> list;
@@ -134,7 +134,7 @@ GPlatesFeatureVisitors::ToQvariantConverter::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	d_found_time_dependencies.push_back(QVariant("ConstantValue"));
-	gpml_constant_value.value()->accept_visitor(*this);
+	gpml_constant_value.get_value()->accept_visitor(*this);
 }
 
 
@@ -142,7 +142,7 @@ void
 GPlatesFeatureVisitors::ToQvariantConverter::visit_gpml_plate_id(
 		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
-	d_found_values.push_back(QVariant(static_cast<quint32>(gpml_plate_id.value())));
+	d_found_values.push_back(QVariant(static_cast<quint32>(gpml_plate_id.get_value())));
 }
 
 
@@ -176,7 +176,7 @@ GPlatesFeatureVisitors::ToQvariantConverter::visit_gpml_measure(
 	// FIXME: Ideally we'd render things like the degrees symbol depending on the value of
 	// the uom attribute. (urn:ogc:def:uom:OGC:1.0:degree)
 	// Naturally this would be for DisplayRole only; EditRole would need the raw double value.
-	d_found_values.push_back(QVariant(gpml_measure.quantity()));
+	d_found_values.push_back(QVariant(gpml_measure.get_quantity()));
 }
 
 
@@ -189,19 +189,19 @@ GPlatesFeatureVisitors::ToQvariantConverter::visit_gpml_old_plates_header(
 	
 	const GPlatesPropertyValues::GpmlOldPlatesHeader &header = gpml_old_plates_header;
 	d_found_values.push_back(QVariant(QString("%L1 %2 %3 %4 %5 %L6 %L7 %8 %9 %10 %11 %12 %13")
-			.arg(header.region_number(), 2, 10, zero_padded)
-			.arg(header.reference_number(), 2, 10, zero_padded)
-			.arg(header.string_number(), 4, 10, zero_padded)
-			.arg(GPlatesUtils::make_qstring_from_icu_string(header.geographic_description()))
-			.arg(header.plate_id_number(), 3, 10, zero_padded)
-			.arg(header.age_of_appearance(), 6, 'f', 1, space_padded)
-			.arg(header.age_of_disappearance(), 6, 'f', 1, space_padded)
-			.arg(GPlatesUtils::make_qstring_from_icu_string(header.data_type_code()))
-			.arg(header.data_type_code_number(), 4, 10, zero_padded)
-			.arg(GPlatesUtils::make_qstring_from_icu_string(header.data_type_code_number_additional()))
-			.arg(header.conjugate_plate_id_number(), 3, 10, zero_padded)
-			.arg(header.colour_code(), 3, 10, zero_padded)
-			.arg(header.number_of_points(), 5, 10, zero_padded)
+			.arg(header.get_region_number(), 2, 10, zero_padded)
+			.arg(header.get_reference_number(), 2, 10, zero_padded)
+			.arg(header.get_string_number(), 4, 10, zero_padded)
+			.arg(GPlatesUtils::make_qstring_from_icu_string(header.get_geographic_description()))
+			.arg(header.get_plate_id_number(), 3, 10, zero_padded)
+			.arg(header.get_age_of_appearance(), 6, 'f', 1, space_padded)
+			.arg(header.get_age_of_disappearance(), 6, 'f', 1, space_padded)
+			.arg(GPlatesUtils::make_qstring_from_icu_string(header.get_data_type_code()))
+			.arg(header.get_data_type_code_number(), 4, 10, zero_padded)
+			.arg(GPlatesUtils::make_qstring_from_icu_string(header.get_data_type_code_number_additional()))
+			.arg(header.get_conjugate_plate_id_number(), 3, 10, zero_padded)
+			.arg(header.get_colour_code(), 3, 10, zero_padded)
+			.arg(header.get_number_of_points(), 5, 10, zero_padded)
 			));
 }
 
@@ -213,7 +213,7 @@ GPlatesFeatureVisitors::ToQvariantConverter::visit_uninterpreted_property_value(
 	QString buf;
 	QXmlStreamWriter writer(&buf);
 	writer.writeDefaultNamespace("http://www.gplates.org/gplates");
-	uninterpreted_prop_val.value()->write_to(writer);
+	uninterpreted_prop_val.get_value()->write_to(writer);
 	d_found_values.push_back(buf);
 }
 
@@ -222,7 +222,7 @@ void
 GPlatesFeatureVisitors::ToQvariantConverter::visit_xs_boolean(
 		const GPlatesPropertyValues::XsBoolean &xs_boolean)
 {
-	d_found_values.push_back(QVariant(xs_boolean.value()));
+	d_found_values.push_back(QVariant(xs_boolean.get_value()));
 }
 
 
@@ -230,21 +230,21 @@ void
 GPlatesFeatureVisitors::ToQvariantConverter::visit_xs_double(
 	const GPlatesPropertyValues::XsDouble& xs_double)
 {
-	d_found_values.push_back(QVariant(xs_double.value()));
+	d_found_values.push_back(QVariant(xs_double.get_value()));
 }
 
 void
 GPlatesFeatureVisitors::ToQvariantConverter::visit_xs_integer(
 	const GPlatesPropertyValues::XsInteger& xs_integer)
 {
-	d_found_values.push_back(QVariant(xs_integer.value()));
+	d_found_values.push_back(QVariant(xs_integer.get_value()));
 }
 
 void
 GPlatesFeatureVisitors::ToQvariantConverter::visit_xs_string(
 		const GPlatesPropertyValues::XsString &xs_string)
 {
-	QString qstring = GPlatesUtils::make_qstring(xs_string.value());
+	QString qstring = GPlatesUtils::make_qstring(xs_string.get_value());
 	d_found_values.push_back(QVariant(qstring));
 }
 

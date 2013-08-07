@@ -66,7 +66,7 @@ void
 GPlatesFeatureVisitors::GeometryTypeFinder::visit_gml_orientable_curve(
 		const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
-	gml_orientable_curve.base_curve()->accept_visitor(*this);
+	gml_orientable_curve.get_base_curve()->accept_visitor(*this);
 }
 
 
@@ -90,7 +90,7 @@ void
 GPlatesFeatureVisitors::GeometryTypeFinder::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
+	gpml_constant_value.get_value()->accept_visitor(*this);
 }
 
 

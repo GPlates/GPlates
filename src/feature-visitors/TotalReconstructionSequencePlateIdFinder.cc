@@ -61,7 +61,7 @@ bool
 GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::initialise_pre_property_values(
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
+	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.get_property_name();
 	if ( ! d_property_names_to_allow.empty()) {
 		// We're not allowing all property names.
 		if ( ! contains_elem(d_property_names_to_allow, curr_prop_name)) {
@@ -77,7 +77,7 @@ void
 GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
+	gpml_constant_value.get_value()->accept_visitor(*this);
 }
 
 
@@ -93,10 +93,10 @@ GPlatesFeatureVisitors::TotalReconstructionSequencePlateIdFinder::visit_gpml_pla
 	// Note that we're going to assume that we've read a property name...
 	if (*current_top_level_propname() == fixed_ref_frame_property_name) {
 		// We're dealing with the fixed ref-frame of the Total Reconstruction Sequence.
-		d_fixed_ref_frame_plate_id = gpml_plate_id.value();
+		d_fixed_ref_frame_plate_id = gpml_plate_id.get_value();
 	} else if (*current_top_level_propname() == moving_ref_frame_property_name) {
 		// We're dealing with the moving ref-frame of the Total Reconstruction Sequence.
-		d_moving_ref_frame_plate_id = gpml_plate_id.value();
+		d_moving_ref_frame_plate_id = gpml_plate_id.get_value();
 	}
 }
 

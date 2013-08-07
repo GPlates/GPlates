@@ -47,7 +47,7 @@ GPlatesFeatureVisitors::GeometryRotator::visit_gml_line_string(
 		GPlatesPropertyValues::GmlLineString &gml_line_string)
 {
 	gml_line_string.set_polyline(
-			d_finite_rotation * gml_line_string.polyline());
+			d_finite_rotation * gml_line_string.get_polyline());
 }
 
 
@@ -56,7 +56,7 @@ GPlatesFeatureVisitors::GeometryRotator::visit_gml_multi_point(
 		GPlatesPropertyValues::GmlMultiPoint &gml_multi_point)
 {
 	gml_multi_point.set_multipoint(
-			d_finite_rotation * gml_multi_point.multipoint());
+			d_finite_rotation * gml_multi_point.get_multipoint());
 }
 
 
@@ -64,7 +64,10 @@ void
 GPlatesFeatureVisitors::GeometryRotator::visit_gml_orientable_curve(
 		GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
-	gml_orientable_curve.base_curve()->accept_visitor(*this);
+	GPlatesModel::PropertyValue::non_null_ptr_type base_curve =
+			gml_orientable_curve.get_base_curve()->clone();
+	base_curve->accept_visitor(*this);
+	gml_orientable_curve.set_base_curve(base_curve);
 }
 
 
@@ -73,7 +76,7 @@ GPlatesFeatureVisitors::GeometryRotator::visit_gml_point(
 		GPlatesPropertyValues::GmlPoint &gml_point)
 {
 	gml_point.set_point(
-			d_finite_rotation * gml_point.point());
+			d_finite_rotation * gml_point.get_point());
 }
 
 
@@ -82,22 +85,25 @@ GPlatesFeatureVisitors::GeometryRotator::visit_gml_polygon(
 		GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
 	// Merge model events across this scope to avoid excessive number of model callbacks.
-	GPlatesModel::NotificationGuard model_notification_guard(gml_polygon.model_ptr());
+	GPlatesModel::NotificationGuard model_notification_guard(gml_polygon.get_model());
 
 	// Rotate the exterior polygon.
 	gml_polygon.set_exterior(
-			d_finite_rotation * gml_polygon.exterior());
+			d_finite_rotation * gml_polygon.get_exterior());
+
+	const GPlatesPropertyValues::GmlPolygon::ring_sequence_type &interior_polygons =
+			gml_polygon.get_interiors();
 
 	// Reserver space for rotated interior polygons.
 	GPlatesPropertyValues::GmlPolygon::ring_sequence_type rotated_interior_polygons;
 	rotated_interior_polygons.reserve(
-			std::distance(gml_polygon.interiors_begin(), gml_polygon.interiors_end()));
+			std::distance(interior_polygons.begin(), interior_polygons.end()));
 
 	// Rotate the interior polygons into temporary storage first.
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator interior_iter =
-			gml_polygon.interiors_begin();
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator interior_end =
-			gml_polygon.interiors_end();
+	GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator interior_iter =
+			interior_polygons.begin();
+	GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator interior_end =
+			interior_polygons.end();
 	for ( ; interior_iter != interior_end; ++interior_iter)
 	{
 		const GPlatesPropertyValues::GmlPolygon::ring_type &interior_polygon = *interior_iter;
@@ -108,20 +114,8 @@ GPlatesFeatureVisitors::GeometryRotator::visit_gml_polygon(
 		rotated_interior_polygons.push_back(rotated_interior_polygon);
 	}
 
-	gml_polygon.clear_interiors();
-
 	// Add the rotated interior polygons to the GmlPolygon.
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator rotated_interior_iter =
-			rotated_interior_polygons.begin();
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator rotated_interior_end =
-			rotated_interior_polygons.end();
-	for ( ; rotated_interior_iter != rotated_interior_end; ++rotated_interior_iter)
-	{
-		const GPlatesPropertyValues::GmlPolygon::ring_type &rotated_interior_polygon =
-				*rotated_interior_iter;
-
-		gml_polygon.add_interior(rotated_interior_polygon);
-	}
+	gml_polygon.set_interiors(rotated_interior_polygons);
 }
 
 
@@ -129,5 +123,8 @@ void
 GPlatesFeatureVisitors::GeometryRotator::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
+	GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+			gpml_constant_value.get_value()->clone();
+	property_value->accept_visitor(*this);
+	gpml_constant_value.set_value(property_value);
 }
