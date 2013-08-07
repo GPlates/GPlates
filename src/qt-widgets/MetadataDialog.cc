@@ -815,17 +815,17 @@ namespace
 			GpmlKeyValueDictionary::non_null_ptr_type dict)
 	{
 		std::vector<boost::shared_ptr<Metadata> > ret;
-		BOOST_FOREACH(const GpmlKeyValueDictionaryElement& ele, dict->elements())
+		BOOST_FOREACH(const GpmlKeyValueDictionaryElement& ele, dict->get_elements())
 		{
 			const XsString* val = 
 				dynamic_cast<const XsString*>(ele.value().get());
 			if(val)
 			{
-				QString name = ele.key()->value().get().qstring();
+				QString name = ele.key()->get_value().get().qstring();
 				ret.push_back(boost::shared_ptr<Metadata>(
 						new PoleMetadata(
 								name, 
-								val->value().get().qstring())));
+								val->get_value().get().qstring())));
 			}
 		}
 		return ret;
@@ -905,7 +905,7 @@ GPlatesQtWidgets::MetadataDialog::set_data(
 	FeatureHandle::iterator it = feature_ref->begin();
 	for(;it != feature_ref->end(); it++)
 	{
-		if((*it)->property_name() == mprs_attrs)
+		if((*it)->get_property_name() == mprs_attrs)
 		{
 			const TopLevelPropertyInline *p_inline = 
 				dynamic_cast<const TopLevelPropertyInline*>((*it).get());
@@ -937,7 +937,7 @@ GPlatesQtWidgets::MetadataDialog::set_data(
 		get_gpml_total_reconstruction_pole(*ModelUtils::get_property_value(**iters[0]));
 	if(trs)
 	{
-		d_pole_data = trs->metadata();
+		d_pole_data = trs->get_metadata();
 	}
 	refresh();
 }
@@ -1006,8 +1006,7 @@ GPlatesQtWidgets::MetadataDialog::save_mprs_meta()
 	using namespace GPlatesModel;
 	using namespace GPlatesPropertyValues;
 
-	GpmlKeyValueDictionary::non_null_ptr_type dictionary = 
-		GpmlKeyValueDictionary::create();
+	std::vector<GpmlKeyValueDictionaryElement> dictionary_elements;
 
 	std::vector<Metadata::shared_ptr_type> tmp;
 	BOOST_FOREACH(Metadata::shared_ptr_type d, d_mprs_data)
@@ -1032,10 +1031,13 @@ GPlatesQtWidgets::MetadataDialog::save_mprs_meta()
 				key, 
 				val,
 				StructuralType::create_xsi("string"));
-		dictionary->elements().push_back(new_element);
+		dictionary_elements.push_back(new_element);
 	}
-	if(dictionary->num_elements() > 0)
+	if (!dictionary_elements.empty())
 	{
+		GpmlKeyValueDictionary::non_null_ptr_type dictionary = 
+				GpmlKeyValueDictionary::create(dictionary_elements);
+
 		*d_feature_iter = 
 			TopLevelPropertyInline::create(
 					PropertyName::create_gpml("mprsAttributes"),
@@ -1060,7 +1062,7 @@ GPlatesQtWidgets::MetadataDialog::save_pole_meta()
 		qWarning() << "Unable to retrieve totalReconstructionPole property from the feature.";
 		return;
 	}
-	TopLevelProperty::non_null_ptr_type trp_copy = (*iters[0])->deep_clone();
+	TopLevelProperty::non_null_ptr_type trp_copy = (*iters[0])->clone();
 	
 	GPlatesPropertyValues::GpmlTotalReconstructionPole *gpml_trp = 
 		get_gpml_total_reconstruction_pole(*ModelUtils::get_property_value(*trp_copy));
@@ -1078,7 +1080,7 @@ GPlatesQtWidgets::MetadataDialog::save_pole_meta()
 		}
 	}
 	//update model
-	gpml_trp->metadata() = not_empty_data;
+	gpml_trp->set_metadata(not_empty_data);
 	
 	//update grot proxy for grot file.
 	if(d_grot_proxy)
@@ -1108,29 +1110,30 @@ GPlatesQtWidgets::MetadataDialog::get_gpml_total_reconstruction_pole(
 	{
 		return NULL;
 	}
-	GpmlIrregularSampling *irreg_sampling = const_cast<GpmlIrregularSampling *>(irreg_sampling_const);
 	QString time = d_trs_dlg_current_item->text(1), 
 			lat = d_trs_dlg_current_item->text(2), 
 			lon = d_trs_dlg_current_item->text(3), 
 			angle=d_trs_dlg_current_item->text(4);
 
-	std::vector<GpmlTimeSample>::iterator
-		iter = irreg_sampling->time_samples().begin(),
-		end = irreg_sampling->time_samples().end();
+	std::vector<GpmlTimeSample>::const_iterator
+		iter = irreg_sampling_const->get_time_samples().begin(),
+		end = irreg_sampling_const->get_time_samples().end();
 	
 	static const double EPSILON = 1.0e-6; // I have to use a less tight precision because of qt.
 	GpmlTotalReconstructionPole *trs = NULL;
 	for ( ; iter != end; ++iter) 
 	{
-		if(std::fabs(iter->valid_time()->time_position().value() - time.toDouble()) < EPSILON)
+		if(std::fabs(iter->get_valid_time()->get_time_position().value() - time.toDouble()) < EPSILON)
 		{
-			trs = dynamic_cast<GpmlTotalReconstructionPole *>(iter->value().get());
+			// FIXME: This const cast bypasses the model revisioning system.
+			trs = const_cast<GpmlTotalReconstructionPole *>(
+					dynamic_cast<const GpmlTotalReconstructionPole *>(iter->get_value().get()));
 			if(!trs)
 			{
 				qWarning() << "The time sample is not GpmlTotalReconstructionPole type.";
 				return NULL;
 			}
-			GPlatesFileIO::RotationPoleData pole_data(trs->finite_rotation(), 0, 0, time.toDouble());
+			GPlatesFileIO::RotationPoleData pole_data(trs->get_finite_rotation(), 0, 0, time.toDouble());
 			if((std::fabs(lat.toDouble() - pole_data.lat) < EPSILON)  &&
 				(std::fabs(lon.toDouble() - pole_data.lon) < EPSILON) &&
 				(std::fabs(angle.toDouble() - pole_data.angle) < EPSILON))

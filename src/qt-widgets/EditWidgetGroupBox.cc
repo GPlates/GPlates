@@ -292,7 +292,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::activate_appropriate_edit_widget(
 
 	// Note that we have to make a clone of the property in order to edit it.
 	// We also save the iterator so we can save the modified property back into the model.
-	GPlatesModel::TopLevelProperty::non_null_ptr_type property_clone = (*it)->deep_clone();
+	GPlatesModel::TopLevelProperty::non_null_ptr_type property_clone = (*it)->clone();
 
 	activate_appropriate_edit_widget(property_clone);
 
@@ -315,7 +315,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::refresh_edit_widget(
 	// Note that we have to make a clone of the property in order to edit it.
 	// We also save the iterator so we can save the modified property back into the model.
 	GPlatesQtWidgets::EditWidgetChooser chooser(*this);
-	GPlatesModel::TopLevelProperty::non_null_ptr_type property_clone = (*it)->deep_clone();
+	GPlatesModel::TopLevelProperty::non_null_ptr_type property_clone = (*it)->clone();
 	d_current_property = property_clone;
 	d_current_property_iterator = it;
 	property_clone->accept_visitor(chooser);

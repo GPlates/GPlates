@@ -63,7 +63,7 @@ GPlatesQtWidgets::EditBooleanWidget::update_widget_from_boolean(
 		GPlatesPropertyValues::XsBoolean &xs_boolean)
 {
 	d_boolean_ptr = &xs_boolean;
-	if (xs_boolean.value() == true) {
+	if (xs_boolean.get_value() == true) {
 		combobox_boolean->setCurrentIndex(0);
 	} else {
 		combobox_boolean->setCurrentIndex(1);

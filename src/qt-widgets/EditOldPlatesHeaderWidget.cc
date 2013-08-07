@@ -100,24 +100,24 @@ GPlatesQtWidgets::EditOldPlatesHeaderWidget::update_widget_from_old_plates_heade
 {
 	d_old_plates_header_ptr = &header;
 	// Line 1
-	spinbox_region_number->setValue(header.region_number());
-	spinbox_reference_number->setValue(header.reference_number());
-	spinbox_string_number->setValue(header.string_number());
+	spinbox_region_number->setValue(header.get_region_number());
+	spinbox_reference_number->setValue(header.get_reference_number());
+	spinbox_string_number->setValue(header.get_string_number());
 	lineedit_geographic_description->setText(
-			GPlatesUtils::make_qstring_from_icu_string(header.geographic_description()));
+			GPlatesUtils::make_qstring_from_icu_string(header.get_geographic_description()));
 	
 	// Line 2
-	spinbox_plate_id_number->setValue(header.plate_id_number());
-	doublespinbox_age_of_appearance->setValue(header.age_of_appearance());
-	doublespinbox_age_of_disappearance->setValue(header.age_of_disappearance());
+	spinbox_plate_id_number->setValue(header.get_plate_id_number());
+	doublespinbox_age_of_appearance->setValue(header.get_age_of_appearance());
+	doublespinbox_age_of_disappearance->setValue(header.get_age_of_disappearance());
 	lineedit_data_type_code->setText(
-			GPlatesUtils::make_qstring_from_icu_string(header.data_type_code()));
-	spinbox_data_type_code_number->setValue(header.data_type_code_number());
+			GPlatesUtils::make_qstring_from_icu_string(header.get_data_type_code()));
+	spinbox_data_type_code_number->setValue(header.get_data_type_code_number());
 	lineedit_data_type_code_number_additional->setText(
-			GPlatesUtils::make_qstring_from_icu_string(header.data_type_code_number_additional()));
-	spinbox_conjugate_plate_id_number->setValue(header.conjugate_plate_id_number());
-	spinbox_colour_code->setValue(header.colour_code());
-	label_number_of_points->setText(QString::number(header.number_of_points()));
+			GPlatesUtils::make_qstring_from_icu_string(header.get_data_type_code_number_additional()));
+	spinbox_conjugate_plate_id_number->setValue(header.get_conjugate_plate_id_number());
+	spinbox_colour_code->setValue(header.get_colour_code());
+	label_number_of_points->setText(QString::number(header.get_number_of_points()));
 	
 	set_clean();
 }

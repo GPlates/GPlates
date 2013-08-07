@@ -58,7 +58,7 @@ namespace
 		GPlatesModel::FeatureHandle::const_iterator end = feature_ref->end();
 		for ( ; iter != end; ++iter)
 		{
-			if ((*iter)->property_name() == property_name)
+			if ((*iter)->get_property_name() == property_name)
 			{
 				// Found a matching property name.
 				return true;

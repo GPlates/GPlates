@@ -63,11 +63,11 @@ namespace
 			const GPlatesPropertyValues::GmlTimeInstant &time_instant)
 	{
 		QLocale locale;
-		if (time_instant.time_position().is_real()) {
-			return locale.toString(time_instant.time_position().value());
-		} else if (time_instant.time_position().is_distant_past()) {
+		if (time_instant.get_time_position().is_real()) {
+			return locale.toString(time_instant.get_time_position().value());
+		} else if (time_instant.get_time_position().is_distant_past()) {
 			return QObject::tr("past");
-		} else if (time_instant.time_position().is_distant_future()) {
+		} else if (time_instant.get_time_position().is_distant_future()) {
 			return QObject::tr("future");
 		} else {
 			return QObject::tr("<invalid>");
@@ -90,7 +90,7 @@ namespace
 		{
 			// The feature has a plate ID of the desired kind.
 			
-			field->setText(QString::number(plate_id->value()));
+			field->setText(QString::number(plate_id->get_value()));
 		}
 	}
 	
@@ -279,9 +279,9 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	if (GPlatesFeatureVisitors::get_property_value(feature_ref, name_property_name, name))
 	{
 		// The feature has one or more name properties. Use the first one for now.
-		lineedit_name->setText(GPlatesUtils::make_qstring(name->value()));
+		lineedit_name->setText(GPlatesUtils::make_qstring(name->get_value()));
 		lineedit_name->setCursorPosition(0);
-		lineedit_name->setToolTip(GPlatesUtils::make_qstring(name->value()));
+		lineedit_name->setToolTip(GPlatesUtils::make_qstring(name->get_value()));
 	}
 
 	// Plate ID.
@@ -318,8 +318,8 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	{
 		// The feature has a gml:validTime property.
 		
-		lineedit_time_of_appearance->setText(format_time_instant(*(time_period->begin())));
-		lineedit_time_of_disappearance->setText(format_time_instant(*(time_period->end())));
+		lineedit_time_of_appearance->setText(format_time_instant(*(time_period->get_begin())));
+		lineedit_time_of_disappearance->setText(format_time_instant(*(time_period->get_end())));
 	}
 
 	if (associated_rg)
@@ -332,7 +332,7 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 		if (geometry_property)
 		{
 			lineedit_clicked_geometry->setText(
-					convert_qualified_xml_name_to_qstring((*geometry_property.get())->property_name()));
+					convert_qualified_xml_name_to_qstring((*geometry_property.get())->get_property_name()));
 		}
 		else
 		{

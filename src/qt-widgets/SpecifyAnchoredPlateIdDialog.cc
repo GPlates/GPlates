@@ -59,7 +59,7 @@ namespace
 		visit_gpml_constant_value(
 				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 		{
-			gpml_constant_value.value()->accept_visitor(*this);
+			gpml_constant_value.get_value()->accept_visitor(*this);
 		}
 
 		virtual
@@ -70,7 +70,7 @@ namespace
 			if (current_top_level_propname())
 			{
 				QString property_name = convert_qualified_xml_name_to_qstring(current_top_level_propname().get());
-				d_plate_ids.insert(std::make_pair(property_name, gpml_plate_id.value()));
+				d_plate_ids.insert(std::make_pair(property_name, gpml_plate_id.get_value()));
 			}
 		}
 

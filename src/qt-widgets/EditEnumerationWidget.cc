@@ -152,11 +152,11 @@ GPlatesQtWidgets::EditEnumerationWidget::update_widget_from_enumeration(
 {
 	d_enumeration_ptr = &enumeration;
 	// Get the type of Enumeration to use from the Enumeration property value.
-	const GPlatesPropertyValues::StructuralType enum_type(enumeration.type());
+	const GPlatesPropertyValues::StructuralType enum_type(enumeration.get_type());
 	configure_for_property_value_type(enum_type);
 	
 	QString enum_value = GPlatesUtils::make_qstring_from_icu_string(
-			enumeration.value().get());
+			enumeration.get_value().get());
 	int enum_index = combobox_enumeration->findText(enum_value);
 	if (enum_index != -1) {
 		// Present the user with the current enumeration value.

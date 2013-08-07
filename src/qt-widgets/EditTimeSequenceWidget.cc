@@ -405,7 +405,8 @@ GPlatesQtWidgets::EditTimeSequenceWidget::create_property_value_from_widget() co
 
 	return GPlatesPropertyValues::GpmlArray::create(
 		gml_time_period_type,
-		time_periods);		
+		time_periods.begin(),
+		time_periods.end());		
 
 }
 
@@ -445,15 +446,15 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_time_period_array(
     static const GPlatesPropertyValues::StructuralType gml_time_period_type =
             GPlatesPropertyValues::StructuralType::create_gml("TimePeriod");
 
-    if (gpml_array.type() != gml_time_period_type)
+    if (gpml_array.get_value_type() != gml_time_period_type)
     {
         return;
     }
 
 
-    std::vector<GPlatesModel::PropertyValue::non_null_ptr_type>::const_iterator
-            it = gpml_array.members().begin(),
-            end = gpml_array.members().end();
+	std::vector<GPlatesPropertyValues::GpmlArray::Member>::const_iterator
+            it = gpml_array.get_members().begin(),
+            end = gpml_array.get_members().end();
 
 
 
@@ -465,17 +466,17 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_time_period_array(
 #endif
 
     // We will use the last gml_time_period_ptr after the loop has completed so declare it now.
-    GPlatesPropertyValues::GmlTimePeriod* gml_time_period_ptr = NULL;
+    const GPlatesPropertyValues::GmlTimePeriod* gml_time_period_ptr = NULL;
 
     for (int row = 0; it != end ; ++it, ++row)
     {
 	try
 	{
 	    gml_time_period_ptr =
-		    dynamic_cast<GPlatesPropertyValues::GmlTimePeriod*>((*it).get());
+		    dynamic_cast<const GPlatesPropertyValues::GmlTimePeriod*>(it->get_value().get());
 
 	    GPlatesPropertyValues::GeoTimeInstant geo_time_instant =
-		    gml_time_period_ptr->end()->time_position();
+		    gml_time_period_ptr->get_end()->get_time_position();
 
 	    if (geo_time_instant.is_real())
 	    {
@@ -491,7 +492,8 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_time_period_array(
     // And finish off with the begin() time of the last (oldest) time period.
     if (gml_time_period_ptr)
     {
-        GPlatesPropertyValues::GeoTimeInstant geo_time_instant = gml_time_period_ptr->begin()->time_position();
+        GPlatesPropertyValues::GeoTimeInstant geo_time_instant =
+				gml_time_period_ptr->get_begin()->get_time_position();
         if (geo_time_instant.is_real())
         {
             attempt_to_populate_table_row_from_time(*this,*table_times,geo_time_instant.value());
@@ -507,7 +509,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_time_period_array(
 void
 GPlatesQtWidgets::EditTimeSequenceWidget::update_times()
 {
-	std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> time_periods;
+	std::vector<GPlatesPropertyValues::GpmlArray::Member> time_periods;
 
 	static const GPlatesPropertyValues::StructuralType gml_time_period_type =
 		GPlatesPropertyValues::StructuralType::create_gml("TimePeriod");
@@ -541,7 +543,8 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_times()
 			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_time_period =
 				GPlatesPropertyValues::GmlTimePeriod::create(begin_gml_instant,end_gml_instant);
 
-			time_periods.push_back(gml_time_period);
+			time_periods.push_back(
+					GPlatesPropertyValues::GpmlArray::Member(gml_time_period));
 
 			// Get ready for next iteration; use the current begin_time as the end_time for the next 
 			// time-period. 
@@ -550,7 +553,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_times()
 
 	}
 
-	d_array_ptr->members() = time_periods;
+	d_array_ptr->set_members(time_periods);
 
 }
 

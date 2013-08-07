@@ -318,8 +318,10 @@ GPlatesQtWidgets::EditStringListWidget::update_widget_from_string_list(
 	ensure_table_size(*table_elements, static_cast<int>(gpml_string_list.size()));	
 #endif
 
-	GPlatesPropertyValues::GpmlStringList::const_iterator iter = gpml_string_list.begin();
-	GPlatesPropertyValues::GpmlStringList::const_iterator end = gpml_string_list.end();
+	const GPlatesPropertyValues::GpmlStringList::string_list_type &string_list =
+			gpml_string_list.get_string_list();
+	GPlatesPropertyValues::GpmlStringList::string_list_type::const_iterator iter = string_list.begin();
+	GPlatesPropertyValues::GpmlStringList::string_list_type::const_iterator end = string_list.end();
 
 	for (int row = 0; iter != end ; ++iter, ++row) {
 		QString str = GPlatesUtils::make_qstring_from_icu_string(iter->get());

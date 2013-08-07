@@ -165,7 +165,7 @@ GPlatesQtWidgets::ChangeFeatureTypeDialog::handle_feature_type_changed(
 		{
 			const GPlatesModel::TopLevelProperty &curr_top_level_property = **iter;
 			const GPlatesModel::PropertyName &curr_property_name =
-					curr_top_level_property.property_name();
+					curr_top_level_property.get_property_name();
 
 			// Check whether the current property *name* is valid for the new feature type.
 			if (d_gpgim.get_feature_property(new_feature_type, curr_property_name))

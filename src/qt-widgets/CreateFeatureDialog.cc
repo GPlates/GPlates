@@ -981,7 +981,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 		// We want to merge model events across this scope so that only one model event
 		// is generated instead of multiple.
 		GPlatesModel::NotificationGuard model_notification_guard(
-				d_application_state_ptr->get_model_interface().access_model());
+				*d_application_state_ptr->get_model_interface().access_model());
 
 		// Add the feature to the feature collection.
 		feature_collection->add(feature);
@@ -1327,7 +1327,7 @@ GPlatesQtWidgets::CreateFeatureDialog::reverse_reconstruct_geometry_property(
 	// Store the geometry property value back into the geometry property (in the feature).
 	GPlatesFeatureVisitors::GeometrySetter geometry_setter(present_day_geometry);
 	GPlatesModel::TopLevelProperty::non_null_ptr_type geometry_property_clone =
-			(*geometry_property_iterator)->deep_clone();
+			(*geometry_property_iterator)->clone();
 	geometry_setter.set_geometry(geometry_property_clone.get());
 	*geometry_property_iterator = geometry_property_clone;
 
@@ -1410,7 +1410,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			continue;
 		}
 
-		const GPlatesModel::PropertyName &property_name = (*isochron_properties_iter)->property_name();
+		const GPlatesModel::PropertyName &property_name = (*isochron_properties_iter)->get_property_name();
 
 		if (property_name == RECONSTRUCTION_PLATE_ID)
 		{
@@ -1419,7 +1419,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			if (!GPlatesModel::ModelUtils::add_property(
 					conjugate_isochron_feature->reference(),
 					property_name,
-					conjugate_plate_id->deep_clone_as_prop_val(),
+					conjugate_plate_id->clone(),
 					d_gpgim,
 					true/*check_property_name_allowed_for_feature_type*/,
 					&add_property_error_code))
@@ -1442,7 +1442,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			if (!GPlatesModel::ModelUtils::add_property(
 					conjugate_isochron_feature->reference(),
 					property_name,
-					reconstruction_plate_id->deep_clone_as_prop_val(),
+					reconstruction_plate_id->clone(),
 					d_gpgim,
 					true/*check_property_name_allowed_for_feature_type*/,
 					&add_property_error_code))
@@ -1463,7 +1463,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			// Change the "gml:name" property.
 			// FIXME: we should give the user the chance to enter a new name.
 			QString conjugate_name_string =
-					GPlatesUtils::make_qstring_from_icu_string(name->value().get());
+					GPlatesUtils::make_qstring_from_icu_string(name->get_value().get());
 			conjugate_name_string.prepend("Conjugate of ");
 			GPlatesModel::PropertyValue::non_null_ptr_type conjugate_name_property_value =
 					GPlatesPropertyValues::XsString::create(
@@ -1491,7 +1491,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 
 		// Clone and add the current property to the conjugate isochron feature.
 		GPlatesModel::TopLevelProperty::non_null_ptr_type property_clone =
-				(*isochron_properties_iter)->deep_clone();
+				(*isochron_properties_iter)->clone();
 		conjugate_isochron_feature->add(property_clone);
 	}
 
@@ -1548,7 +1548,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type conjugate_present_day_geometry =
 			GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
 					reconstructed_geometry,
-					conjugate_plate_id->value(),
+					conjugate_plate_id->get_value(),
 					*default_reconstruction_tree,
 					true /*reverse_reconstruct*/);
 
@@ -1565,7 +1565,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 	GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
 	if (!GPlatesModel::ModelUtils::add_property(
 			conjugate_isochron_feature->reference(),
-			(*geometry_property_iterator)->property_name(),
+			(*geometry_property_iterator)->get_property_name(),
 			conjugate_geometry_property_value.get(),
 			d_gpgim,
 			true/*check_property_name_allowed_for_feature_type*/,

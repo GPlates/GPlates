@@ -76,11 +76,11 @@ namespace
 			const GPlatesPropertyValues::GmlTimeInstant &time_instant)
 	{
 		QLocale locale;
-		if (time_instant.time_position().is_real()) {
-			return locale.toString(time_instant.time_position().value());
-		} else if (time_instant.time_position().is_distant_past()) {
+		if (time_instant.get_time_position().is_real()) {
+			return locale.toString(time_instant.get_time_position().value());
+		} else if (time_instant.get_time_position().is_distant_past()) {
 			return QObject::tr("past");
-		} else if (time_instant.time_position().is_distant_future()) {
+		} else if (time_instant.get_time_position().is_distant_future()) {
 			return QObject::tr("future");
 		} else {
 			return QObject::tr("<invalid>");
@@ -103,7 +103,7 @@ namespace
 		{
 			// The feature has a plate ID of the desired kind.
 			
-			field->setText(QString::number(plate_id->value()));
+			field->setText(QString::number(plate_id->get_value()));
 		}
 	}
 
@@ -133,7 +133,7 @@ namespace
 				// first one encountered if this is not true.
 				if (!topology_geometry_property_name)
 				{
-					topology_geometry_property_name = (*iter)->property_name();
+					topology_geometry_property_name = (*iter)->get_property_name();
 				}
 				else
 				{
@@ -444,7 +444,7 @@ GPlatesQtWidgets::TopologyToolsWidget::display_topology(
 	if (GPlatesFeatureVisitors::get_property_value(feature_ref, name_property_name, name))
 	{
 		// The feature has one or more name properties. Use the first one for now.
-		lineedit_name->setText(GPlatesUtils::make_qstring(name->value()));
+		lineedit_name->setText(GPlatesUtils::make_qstring(name->get_value()));
 		lineedit_name->setCursorPosition(0);
 	}
 
@@ -462,8 +462,8 @@ GPlatesQtWidgets::TopologyToolsWidget::display_topology(
 			feature_ref, valid_time_property_name, time_period))
 	{
 		// The feature has a gml:validTime property.
-		lineedit_time_of_appearance->setText(format_time_instant(*(time_period->begin())));
-		lineedit_time_of_disappearance->setText(format_time_instant(*(time_period->end())));
+		lineedit_time_of_appearance->setText(format_time_instant(*(time_period->get_begin())));
+		lineedit_time_of_disappearance->setText(format_time_instant(*(time_period->get_end())));
 	}
 }
 

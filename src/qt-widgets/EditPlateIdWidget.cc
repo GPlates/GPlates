@@ -66,7 +66,7 @@ GPlatesQtWidgets::EditPlateIdWidget::update_widget_from_plate_id(
 		GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
 	d_plate_id_ptr = &gpml_plate_id;
-	spinbox_plate_id->setValue(gpml_plate_id.value());
+	spinbox_plate_id->setValue(gpml_plate_id.get_value());
 	set_clean();
 }
 

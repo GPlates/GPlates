@@ -153,7 +153,7 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::set_data(
 				layer_task_params->get_band_names();
 			for (int i = 0; i != static_cast<int>(band_names.size()); ++i)
 			{
-				const GPlatesPropertyValues::TextContent &curr_band_name = band_names[i]->value();
+				const GPlatesPropertyValues::TextContent &curr_band_name = band_names[i].get_name()->get_value();
 				if (curr_band_name == selected_band_name)
 				{
 					band_name_index = i;

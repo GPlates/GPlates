@@ -76,7 +76,7 @@ bool
 GPlatesQtWidgets::EditWidgetChooser::initialise_pre_property_values(
 		GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
-	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
+	const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.get_property_name();
 
 	if ( ! d_property_names_to_allow.empty()) {
 		// We're not allowing all property names.
@@ -119,7 +119,10 @@ GPlatesQtWidgets::EditWidgetChooser::visit_gml_orientable_curve(
 {
 	// FIXME: We might want to edit the OrientableCurve directly.
 	// For now, simply let the user edit the embedded LineString.
-	gml_orientable_curve.base_curve()->accept_visitor(*this);
+	GPlatesModel::PropertyValue::non_null_ptr_type base_curve =
+			gml_orientable_curve.get_base_curve()->clone();
+	base_curve->accept_visitor(*this);
+	gml_orientable_curve.set_base_curve(base_curve);
 }
 
 
@@ -165,7 +168,10 @@ void
 GPlatesQtWidgets::EditWidgetChooser::visit_gpml_constant_value(
 		GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.value()->accept_visitor(*this);
+	GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+			gpml_constant_value.get_value()->clone();
+	property_value->accept_visitor(*this);
+	gpml_constant_value.set_value(property_value);
 }
 
 #if 0

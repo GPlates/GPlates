@@ -647,7 +647,7 @@ namespace
             const GPlatesPropertyValues::GpmlFiniteRotation &finite_rotation,
             const QLocale &locale_)
     {
-        const GPlatesMaths::FiniteRotation &fr = finite_rotation.finite_rotation();
+        const GPlatesMaths::FiniteRotation &fr = finite_rotation.get_finite_rotation();
         const GPlatesMaths::UnitQuaternion3D &uq = fr.unit_quat();
         if (GPlatesMaths::represents_identity_rotation(uq)) {
             // It's an identity rotation (ie, a rotation of angle == 0.0), so there's
@@ -745,19 +745,19 @@ namespace
         QLocale locale_;
 
         using namespace GPlatesPropertyValues;
-        GpmlIrregularSampling *samples = 
-            const_cast<GpmlIrregularSampling*>(irreg_sampling); 
-        std::vector<GpmlTimeSample>::iterator iter =
-                samples->time_samples().begin();
-        std::vector<GpmlTimeSample>::iterator end =
-                samples->time_samples().end();
+		// FIXME: This const cast bypasses the model revisioning system.
+        std::vector<GpmlTimeSample>::const_iterator iter =
+                irreg_sampling->get_time_samples().begin();
+        std::vector<GpmlTimeSample>::const_iterator end =
+                irreg_sampling->get_time_samples().end();
         for ( ; iter != end; ++iter) {
             // First, append a new tree-widget-item for this TimeSample.
             QTreeWidgetItem *item_for_pole = new QTreeWidgetItem(
                     parent_item_for_sequence, 
                     UserItemTypes::POLE_ITEM_TYPE);
             QVariant qv;
-            qv.setValue(&(*iter));
+			// FIXME: This const cast bypasses the model revisioning system.
+            qv.setValue(&const_cast<GpmlTimeSample &>(*iter));
             item_for_pole->setData(0,Qt::UserRole,qv);
 
 #if 0
@@ -777,18 +777,18 @@ namespace
 
             // Now display the geo-time instant of the TimeSample.
             fill_tree_widget_pole_time_instant(item_for_pole,
-                    iter->valid_time()->time_position(),
+                    iter->get_valid_time()->get_time_position(),
                     locale_);
             
             // Display the pole's FiniteRotation (the expected value of the TimeSample).
             fill_tree_widget_pole_sample_value(item_for_pole,
-                    iter->value(),
+                    iter->get_value(),
                     locale_);
 
             // Display the pole comment (the TimeSample description), if present.
-            if (iter->description()) {
+            if (iter->get_description()) {
                 QString comment = GPlatesUtils::make_qstring_from_icu_string(
-                        iter->description()->value().get());
+                        iter->get_description()->get_value().get());
                 item_for_pole->setText(ColumnNames::COMMENT, comment);
                 sequence->append_new_pole(comment, item_for_pole);
             } else {
@@ -1406,7 +1406,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::show_metadata()
 						FeatureHandle::iterator it = feature_ref->begin();
 						for(;it != feature_ref->end(); it++)
 						{
-							if((*it)->property_name() == mprs_attrs)
+							if((*it)->get_property_name() == mprs_attrs)
 							{
 								d_metadata_dlg->set_data(it, current_item);
 							}
@@ -1690,11 +1690,11 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::is_grot_sequence(
 		return false;
 	}
     std::vector<GpmlTimeSample>::const_iterator 
-        iter =	irreg_sampling_const->time_samples().begin(),
-        end =	irreg_sampling_const->time_samples().end();
+        iter =	irreg_sampling_const->get_time_samples().begin(),
+        end =	irreg_sampling_const->get_time_samples().end();
     for ( ; iter != end; ++iter) 
     {
-        if(!dynamic_cast<const GpmlTotalReconstructionPole *>(iter->value().get()))
+        if(!dynamic_cast<const GpmlTotalReconstructionPole *>(iter->get_value().get()))
         {
             return false;
         }
@@ -1836,19 +1836,19 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_pole_data_from_feature
 				irreg_sampling)) 
     {
         std::vector<GpmlTimeSample>::const_iterator 
-            iter =	irreg_sampling->time_samples().begin(),
-            end =	irreg_sampling->time_samples().end();
+            iter =	irreg_sampling->get_time_samples().begin(),
+            end =	irreg_sampling->get_time_samples().end();
         for ( ; iter != end; ++iter) 
         {
             const GpmlFiniteRotation *time_sample_value =
-                dynamic_cast<const GpmlFiniteRotation*>(iter->value().get());
+                dynamic_cast<const GpmlFiniteRotation*>(iter->get_value().get());
             if(time_sample_value)
             {
                 RotationPoleData pole(
-                        time_sample_value->finite_rotation(),
+                        time_sample_value->get_finite_rotation(),
                         moving_plate_id,
                         fixed_plate_id,
-                        iter->valid_time()->time_position().value(),
+                        iter->get_valid_time()->get_time_position().value(),
 						iter->is_disabled());
                 ret.push_back(pole);
             }
@@ -1973,12 +1973,12 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::set_seq_disabled(
 	if (trs_finder.can_process_trs())
 	{
 		TopLevelProperty::non_null_ptr_type
-			trs = (**trs_finder.irregular_sampling_property_iterator())->deep_clone();
-		boost::optional<PropertyValue::non_null_ptr_to_const_type> trs_value = 
+			trs = (**trs_finder.irregular_sampling_property_iterator())->clone();
+		boost::optional<PropertyValue::non_null_ptr_type> trs_value = 
 			ModelUtils::get_property_value(*trs);
 		if(trs_value)
 		{
-			PropertyValue *trs_value_ptr = const_cast<PropertyValue *>((*trs_value).get());
+			PropertyValue *trs_value_ptr = trs_value->get();
 			GpmlIrregularSampling *irreg_sampling = dynamic_cast<GpmlIrregularSampling *>(trs_value_ptr);
 			if(irreg_sampling)
 			{
@@ -2013,18 +2013,18 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::set_seq_disabled(
 		int fixed_plate_id = static_cast<int>(*plate_id_finder.fixed_ref_frame_plate_id());
 		int moving_plate_id =  static_cast<int>(*plate_id_finder.moving_ref_frame_plate_id());
 
-		const std::vector<GpmlTimeSample> samples =	irreg_sampling_const->time_samples();
+		const std::vector<GpmlTimeSample> &samples = irreg_sampling_const->get_time_samples();
 		BOOST_FOREACH(const GpmlTimeSample &sample, samples)
 		{
 			const GpmlTotalReconstructionPole *trs_pole = 
-				dynamic_cast<const GpmlTotalReconstructionPole *>(sample.value().get());
+				dynamic_cast<const GpmlTotalReconstructionPole *>(sample.get_value().get());
 			if(trs_pole)
 			{
-				double time = sample.valid_time()->time_position().value();
+				double time = sample.get_valid_time()->get_time_position().value();
 				proxy->update_pole_metadata(
-						trs_pole->metadata(), 
+						trs_pole->get_metadata(), 
 						GPlatesFileIO::RotationPoleData(
-								trs_pole->finite_rotation(),
+								trs_pole->get_finite_rotation(),
 								moving_plate_id, 
 								fixed_plate_id,
 								time));

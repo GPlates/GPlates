@@ -308,12 +308,12 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::does_raster_layer_cont
 	const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &raster_band_names =
 			raster_layer_proxy.get()->get_raster_band_names();
 	BOOST_FOREACH(
-			const GPlatesPropertyValues::XsString::non_null_ptr_to_const_type &raster_band_name,
+			const GPlatesPropertyValues::GpmlRasterBandNames::BandName &raster_band_name,
 			raster_band_names)
 	{
 		// If the raster band contains numerical data (ie, it's not colour data) then we can
 		// use it for co-registration.
-		if (raster_layer_proxy.get()->does_raster_contain_numerical_data(raster_band_name->value()))
+		if (raster_layer_proxy.get()->does_raster_contain_numerical_data(raster_band_name.get_name()->get_value()))
 		{
 			return true;
 		}
@@ -583,7 +583,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::get_unique_attribute_n
 
 			for( ; properties_iter != properties_end; properties_iter++)
 			{
-				const GPlatesModel::PropertyName &property_name = (*properties_iter)->property_name();
+				const GPlatesModel::PropertyName &property_name = (*properties_iter)->get_property_name();
 
 				GPlatesDataMining::CheckAttrTypeVisitor visitor;
 				(*properties_iter)->accept_visitor(visitor);
@@ -641,18 +641,18 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::populate_raster_coregi
 	const GPlatesPropertyValues::GpmlRasterBandNames::band_names_list_type &raster_band_names =
 			raster_layer_proxy.get()->get_raster_band_names();
 	BOOST_FOREACH(
-			const GPlatesPropertyValues::XsString::non_null_ptr_to_const_type &raster_band_name,
+			const GPlatesPropertyValues::GpmlRasterBandNames::BandName &raster_band_name,
 			raster_band_names)
 	{
 		// If the raster band does not contain numerical data (ie, it's colour data) then we don't
 		// use it for co-registration.
-		if (!raster_layer_proxy.get()->does_raster_contain_numerical_data(raster_band_name->value()))
+		if (!raster_layer_proxy.get()->does_raster_contain_numerical_data(raster_band_name.get_name()->get_value()))
 		{
 			continue;
 		}
 
 		const QString raster_attr_name =
-				GPlatesUtils::make_qstring_from_icu_string(raster_band_name->value().get());
+				GPlatesUtils::make_qstring_from_icu_string(raster_band_name.get_name()->get_value().get());
 
 		QListWidgetItem *attr_item = 
 				new AttributeListItem(

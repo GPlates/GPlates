@@ -702,7 +702,7 @@ GPlatesQtWidgets::EditGeometryWidget::update_widget_from_line_string(
 	// Reset table, then fill with points.
 	table_points->clearContents();
 	table_points->setRowCount(0);
-	populate_table_rows_from_polyline(*this, *table_points, 0, gml_line_string.polyline());
+	populate_table_rows_from_polyline(*this, *table_points, 0, gml_line_string.get_polyline());
 
 	d_geometry_type = GPlatesMaths::GeometryType::POLYLINE;
 
@@ -723,7 +723,7 @@ GPlatesQtWidgets::EditGeometryWidget::update_widget_from_multi_point(
 	// Reset table, then fill with points.
 	table_points->clearContents();
 	table_points->setRowCount(0);
-	populate_table_rows_from_multi_point(*this, *table_points, 0, gml_multi_point.multipoint());
+	populate_table_rows_from_multi_point(*this, *table_points, 0, gml_multi_point.get_multipoint());
 	
 	d_geometry_type = GPlatesMaths::GeometryType::MULTIPOINT;
 
@@ -744,7 +744,7 @@ GPlatesQtWidgets::EditGeometryWidget::update_widget_from_point(
 	// Reset table, then fill with points.
 	table_points->clearContents();
 	table_points->setRowCount(0);
-	populate_table_rows_from_point(*this, *table_points, 0, gml_point.point());
+	populate_table_rows_from_point(*this, *table_points, 0, gml_point.get_point());
 	
 	d_geometry_type = GPlatesMaths::GeometryType::POINT;
 
@@ -765,7 +765,7 @@ GPlatesQtWidgets::EditGeometryWidget::update_widget_from_polygon(
 	// Reset table, then fill with points.
 	table_points->clearContents();
 	table_points->setRowCount(0);
-	populate_table_rows_from_polygon(*this, *table_points, 0, gml_polygon.exterior());
+	populate_table_rows_from_polygon(*this, *table_points, 0, gml_polygon.get_exterior());
 	
 	d_geometry_type = GPlatesMaths::GeometryType::POLYGON;
 

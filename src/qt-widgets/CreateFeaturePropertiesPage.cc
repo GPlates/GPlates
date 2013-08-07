@@ -123,7 +123,7 @@ namespace
 				feature_properties.end();
 		for ( ; iter != end; ++iter)
 		{
-			const GPlatesModel::PropertyName &feature_property_name = (*iter)->property_name();
+			const GPlatesModel::PropertyName &feature_property_name = (*iter)->get_property_name();
 
 			if (property_name == feature_property_name ||
 				property_name == geometry_property_name)
@@ -272,7 +272,7 @@ GPlatesQtWidgets::CreateFeaturePropertiesPage::add_to_existing_properties(
 	existing_properties_table_widget->insertRow(row);
 
 	const QString property_name_string =
-			convert_qualified_xml_name_to_qstring(feature_property->property_name());
+			convert_qualified_xml_name_to_qstring(feature_property->get_property_name());
 
 	// Put the feature property in a QVariant so we can store it in the table widget row.
 	QVariant feature_property_qvariant;

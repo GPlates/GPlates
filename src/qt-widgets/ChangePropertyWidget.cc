@@ -97,7 +97,7 @@ GPlatesQtWidgets::ChangePropertyWidget::populate(
 		// Set up the combobox.
 		d_property_destinations_widget->populate(new_feature_type, feature_property_type, feature_ref);
 
-		const GPlatesModel::PropertyName &curr_property_name = (*feature_property)->property_name();
+		const GPlatesModel::PropertyName &curr_property_name = (*feature_property)->get_property_name();
 
 		// Get the user-friendly property name from the GPGIM.
 		boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> curr_gpgim_property =

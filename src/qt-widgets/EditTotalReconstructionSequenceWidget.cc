@@ -124,7 +124,7 @@ namespace
 		QTableWidgetItem *lon_item = new QTableWidgetItem();
 		QTableWidgetItem *angle_item = new QTableWidgetItem();
 
-		const GPlatesMaths::FiniteRotation &fr = finite_rotation.finite_rotation();
+		const GPlatesMaths::FiniteRotation &fr = finite_rotation.get_finite_rotation();
 		const GPlatesMaths::UnitQuaternion3D &uq = fr.unit_quat();
 		if (GPlatesMaths::represents_identity_rotation(uq)) {
 			// It's an identity rotation (ie, a rotation of angle == 0.0), so there's
@@ -237,15 +237,15 @@ namespace
 			const QLocale &locale_)
 	{
 		table->insertRow(row_count);
-		fill_table_with_time_instant(table,row_count,time_sample.valid_time()->time_position(),locale_);
+		fill_table_with_time_instant(table,row_count,time_sample.get_valid_time()->get_time_position(),locale_);
 		
-		fill_table_with_pole(table,row_count,time_sample.value(),locale_);
+		fill_table_with_pole(table,row_count,time_sample.get_value(),locale_);
 
 		QString comment;
-		if (time_sample.description())
+		if (time_sample.get_description())
 		{
 			comment = GPlatesUtils::make_qstring_from_icu_string(
-				time_sample.description()->value().get());
+				time_sample.get_description()->get_value().get());
 		}
 		fill_table_with_comment(table, row_count, comment);
 		
@@ -561,13 +561,13 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::update_table_widget_fro
 	// been set up in QtDesigner) resulting in only numerical headers appearing. 
 	table_sequences->clearContents();
 	std::vector<GpmlTimeSample>::const_iterator iter =
-		irreg_sampling->time_samples().begin();
+		irreg_sampling->get_time_samples().begin();
 	std::vector<GpmlTimeSample>::const_iterator end =
-		irreg_sampling->time_samples().end();
+		irreg_sampling->get_time_samples().end();
 
 	for ( ; iter != end; ++iter) 
 	{
-		if(dynamic_cast<const GpmlTotalReconstructionPole*>(iter->value().get()))
+		if(dynamic_cast<const GpmlTotalReconstructionPole*>(iter->get_value().get()))
 		{
 			break;
 		}
@@ -577,7 +577,7 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::update_table_widget_fro
 		d_is_grot = true;
 		table_sequences->hideColumn(ColumnNames::COMMENT);
 	}
-	iter = irreg_sampling->time_samples().begin();
+	iter = irreg_sampling->get_time_samples().begin();
 	table_sequences->setRowCount(0);
 	unsigned int row_count = 0;
 
@@ -1011,11 +1011,11 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::make_irregular_sampling
 				new_time_sample.set_disabled(true);
 			}
 			GpmlTotalReconstructionPole 
-				*new_pole =	dynamic_cast<GpmlTotalReconstructionPole*>(new_time_sample.value().get()),
-				*old_pole = dynamic_cast<GpmlTotalReconstructionPole*>(original_sample->value().get());			
+				*new_pole =	dynamic_cast<GpmlTotalReconstructionPole*>(new_time_sample.get_value().get()),
+				*old_pole = dynamic_cast<GpmlTotalReconstructionPole*>(original_sample->get_value().get());			
 			if(new_pole && old_pole)
 			{
-				new_pole->metadata() = old_pole->metadata();
+				new_pole->set_metadata(old_pole->get_metadata());
 			}
 		}
 		time_samples.push_back(new_time_sample);

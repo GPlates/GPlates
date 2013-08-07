@@ -71,7 +71,7 @@ GPlatesQtWidgets::EditTimeInstantWidget::update_widget_from_time_instant(
 		GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
 {
 	d_time_instant_ptr = &gml_time_instant;
-	const GPlatesPropertyValues::GeoTimeInstant time = gml_time_instant.time_position();
+	const GPlatesPropertyValues::GeoTimeInstant time = gml_time_instant.get_time_position();
 	spinbox_time_position->setValue(time.value());
 	set_clean();
 }

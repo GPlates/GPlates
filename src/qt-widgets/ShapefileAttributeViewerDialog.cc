@@ -106,14 +106,14 @@ namespace
 					*(finder.found_key_value_dictionaries_begin());
 
 			std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-				iter = dictionary->elements().begin(),
-				end = dictionary->elements().end();
+				iter = dictionary->get_elements().begin(),
+				end = dictionary->get_elements().end();
 
 			QStringList header_list;
 
 			for (; iter != end; ++iter)
 			{
-				header_list << GPlatesUtils::make_qstring_from_icu_string(iter->key()->value().get());
+				header_list << GPlatesUtils::make_qstring_from_icu_string(iter->key()->get_value().get());
 				//std::cerr << GPlatesUtils::make_qstring_from_icu_string(iter->key()->value().get()).toStdString().c_str() << std::endl;
 			}
 			
@@ -149,8 +149,8 @@ namespace
 
 			// Loop over the dictionary elements.
 			std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-				iter = dictionary->elements().begin(),
-				end = dictionary->elements().end();
+				iter = dictionary->get_elements().begin(),
+				end = dictionary->get_elements().end();
 
 			for (int column = 0; iter != end ; ++iter, ++ column)
 			{

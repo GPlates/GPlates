@@ -121,7 +121,7 @@ GPlatesQtWidgets::CreateFeatureAddOrEditPropertyDialog::edit_property(
 	// Set the property name label.
 	property_name_line_edit->setText(
 			convert_qualified_xml_name_to_qstring(
-					feature_property->property_name()));
+					feature_property->get_property_name()));
 
 	// Populate the property type combobox with the single type of the specified feature property.
 	populate_edit_property_type_combobox(feature_property);
@@ -270,7 +270,7 @@ GPlatesQtWidgets::CreateFeatureAddOrEditPropertyDialog::populate_edit_property_t
 	// For example, the user cannot change the type from 'gml:Point' to 'gml:LineString'.
 	//
 
-	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_to_const_type> property_value =
+	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> property_value =
 			GPlatesModel::ModelUtils::get_property_value(*feature_property);
 	// Should always have a valid *inline* top-level property.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(

@@ -122,8 +122,10 @@ GPlatesQtWidgets::EditShapefileAttributesWidget::update_property_value_from_widg
 			const int row = table_elements->currentRow();
 			const int column = table_elements->currentColumn();
 
+			std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> dictionary_elements =
+					d_key_value_dictionary_ptr->get_elements();
 			GPlatesPropertyValues::GpmlKeyValueDictionaryElement &dictionary_element = 
-				d_key_value_dictionary_ptr->elements().at(row);
+				dictionary_elements.at(row);
 
 
 			static const GPlatesPropertyValues::StructuralType string_type =
@@ -184,7 +186,8 @@ GPlatesQtWidgets::EditShapefileAttributesWidget::update_property_value_from_widg
 				}
 			}
 
-			
+			d_key_value_dictionary_ptr->set_elements(dictionary_elements);
+		
 			if (!field_is_valid){
 				// An invalid field was entered, so reset the cell to the value in the dictionary element.
 				QString value_string = get_qvariant_from_element(dictionary_element).toString();
@@ -211,16 +214,16 @@ GPlatesQtWidgets::EditShapefileAttributesWidget::update_widget_from_key_value_di
 	d_key_value_dictionary_ptr = &gpml_key_value_dictionary;
 
 	table_elements->clearContents();
-	table_elements->setRowCount(gpml_key_value_dictionary.elements().size());
+	table_elements->setRowCount(gpml_key_value_dictionary.get_elements().size());
 
 	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator
-		 it = gpml_key_value_dictionary.elements().begin(),
-		 end = gpml_key_value_dictionary.elements().end();
+		 it = gpml_key_value_dictionary.get_elements().begin(),
+		 end = gpml_key_value_dictionary.get_elements().end();
 
 	for (int row = 0 ; it != end ; ++it, ++row)
 	{
 
-		QString key_string = GPlatesUtils::make_qstring_from_icu_string(it->key()->value().get());
+		QString key_string = GPlatesUtils::make_qstring_from_icu_string(it->key()->get_value().get());
 		QVariant value_variant = get_qvariant_from_element(*it);
 
 		// Key field.
