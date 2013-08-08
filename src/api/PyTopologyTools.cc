@@ -22,7 +22,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include "PyFeature.h"
+#include "PyOldFeature.h"
 #include "global/python.h"
 #include "gui/TopologySectionsContainer.h"
 #include "feature-visitors/TopologySectionsFinder.h"
@@ -39,7 +39,7 @@ namespace GPlatesApi
 	public:
 		static
 		bp::list
-		sections_info(Feature feaure)
+		sections_info(OldFeature feaure)
 		{
 			bp::list ret;
 			GPlatesFeatureVisitors::TopologySectionsFinder topo_sections_finder;

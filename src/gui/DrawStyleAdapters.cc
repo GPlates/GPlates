@@ -26,7 +26,7 @@
  */
 #include "ColourScheme.h"
 #include "DrawStyleAdapters.h"
-#include "api/PyFeature.h"
+#include "api/PyOldFeature.h"
 #include "api/PythonUtils.h"
 #include "utils/Profile.h"
 
@@ -43,7 +43,7 @@ GPlatesGui::PythonStyleAdapter::get_style(
 		d_cfg_dirty = false;
 	}
 
-	GPlatesApi::Feature py_feature(f);
+	GPlatesApi::OldFeature py_feature(f);
 	DrawStyle ds; 
 	try
 	{

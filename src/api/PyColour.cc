@@ -26,7 +26,7 @@
 #if !defined(GPLATES_NO_PYTHON)
 
 #include "PythonUtils.h"
-#include "PyFeature.h"
+#include "PyOldFeature.h"
 
 #include "gui/Colour.h"
 #include "gui/ColourPalette.h"

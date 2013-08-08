@@ -26,7 +26,7 @@
 #include <sstream>
 
 #include "PythonUtils.h"
-#include "PyFeature.h"
+#include "PyOldFeature.h"
 
 #include "global/CompilerWarnings.h"
 #include "global/python.h"
@@ -181,7 +181,7 @@ namespace GPlatesApi
 
 		void
 		set_focus(
-				Feature feature)
+				OldFeature feature)
 		{
 			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::set_focus, this, feature));
 
@@ -211,7 +211,7 @@ namespace GPlatesApi
 				{
 					if(feature->feature_id().get().qstring() == QString(boost::python::extract<const char*>(id)))
 					{
-						set_focus(Feature(feature->reference()));
+						set_focus(OldFeature(feature->reference()));
 					}
 				}
 			}

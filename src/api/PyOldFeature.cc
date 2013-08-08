@@ -22,7 +22,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include "PyFeature.h"
+#include "PyOldFeature.h"
 
 #include "feature-visitors/ShapefileAttributeFinder.h"
 #include "feature-visitors/KeyValueDictionaryFinder.h"
@@ -38,25 +38,25 @@ void
 export_feature()
 {
 	using namespace boost::python;
-	class_<GPlatesApi::Feature>("Feature", no_init )
-		.def("get_properties",				&GPlatesApi::Feature::get_properties)
-		.def("get_properties_by_name",		&GPlatesApi::Feature::get_properties_by_name)
-		.def("plate_id",					&GPlatesApi::Feature::plate_id)
-		.def("feature_id",					&GPlatesApi::Feature::feature_id)
-		.def("feature_type",				&GPlatesApi::Feature::feature_type)
-		.def("valid_time",					&GPlatesApi::Feature::valid_time)
-		.def("begin_time",					&GPlatesApi::Feature::begin_time)
-		.def("end_time",					&GPlatesApi::Feature::end_time)
-		.def("get_all_property_names",		&GPlatesApi::Feature::get_all_property_names)
-//  		.add_property("feature_id", &GPlatesApi::Feature::feature_id)
-//  		.add_property("feature_type", &GPlatesApi::Feature::feature_type)
-//  		.add_property("valid_time",&GPlatesApi::Feature::valid_time)
+	class_<GPlatesApi::OldFeature>("OldFeature", no_init )
+		.def("get_properties",				&GPlatesApi::OldFeature::get_properties)
+		.def("get_properties_by_name",		&GPlatesApi::OldFeature::get_properties_by_name)
+		.def("plate_id",					&GPlatesApi::OldFeature::plate_id)
+		.def("feature_id",					&GPlatesApi::OldFeature::feature_id)
+		.def("feature_type",				&GPlatesApi::OldFeature::feature_type)
+		.def("valid_time",					&GPlatesApi::OldFeature::valid_time)
+		.def("begin_time",					&GPlatesApi::OldFeature::begin_time)
+		.def("end_time",					&GPlatesApi::OldFeature::end_time)
+		.def("get_all_property_names",		&GPlatesApi::OldFeature::get_all_property_names)
+//  		.add_property("feature_id", &GPlatesApi::OldFeature::feature_id)
+//  		.add_property("feature_type", &GPlatesApi::OldFeature::feature_type)
+//  		.add_property("valid_time",&GPlatesApi::OldFeature::valid_time)
 		;
 }
 
 
 bp::list
-GPlatesApi::Feature::get_properties()
+GPlatesApi::OldFeature::get_properties()
 {
 	bp::list ret;
 	
@@ -75,7 +75,7 @@ GPlatesApi::Feature::get_properties()
 
 
 bp::list
-GPlatesApi::Feature::get_properties_by_name(
+GPlatesApi::OldFeature::get_properties_by_name(
 		bp::object prop_name)
 {
 	bp::list ret;
@@ -165,7 +165,7 @@ GPlatesApi::Feature::get_properties_by_name(
 
 
 bp::list
-GPlatesApi::Feature::get_all_property_names()
+GPlatesApi::OldFeature::get_all_property_names()
 {
 	using namespace GPlatesModel;
 	bp::list ret;
@@ -215,7 +215,39 @@ GPlatesApi::Feature::get_all_property_names()
 
 
 bp::object
-GPlatesApi::Feature::feature_id()
+GPlatesApi::OldFeature::get_property(bp::object name_)
+{
+	using namespace GPlatesDataMining;
+	QString name = QString::fromUtf8(bp::extract<const char*>(name_));
+	OpaqueData data = DataMiningUtils::get_property_value_by_name(d_handle, name);
+	
+	if(is_empty_opaque(data))
+	{
+		data = DataMiningUtils::get_shape_file_value_by_name(d_handle, name);
+
+		if(is_empty_opaque(data))
+			return bp::object();
+	}
+	
+	if(boost::optional<double> int_tmp = 
+		boost::apply_visitor(ConvertOpaqueDataToDouble(), data))
+	{
+		return bp::object(*int_tmp);
+	}
+
+	if(boost::optional<QString> str_tmp = 
+		boost::apply_visitor(ConvertOpaqueDataToString(), data))
+	{
+		const QByteArray buf = str_tmp->toUtf8();
+		return bp::str(buf.data());
+	}
+	
+	return bp::object();
+}
+
+
+bp::object
+GPlatesApi::OldFeature::feature_id()
 {
 	if(!d_handle.is_valid())
 		return bp::object();
@@ -226,7 +258,7 @@ GPlatesApi::Feature::feature_id()
 
 
 bp::tuple
-GPlatesApi::Feature::valid_time()
+GPlatesApi::OldFeature::valid_time()
 {
 	if(!d_handle.is_valid())
 		return bp::tuple();
@@ -238,7 +270,7 @@ GPlatesApi::Feature::valid_time()
 
 
 bp::object
-GPlatesApi::Feature::begin_time()
+GPlatesApi::OldFeature::begin_time()
 {
 	if(!d_handle.is_valid())
 		return bp::object();
@@ -248,7 +280,7 @@ GPlatesApi::Feature::begin_time()
 
 
 bp::object
-GPlatesApi::Feature::end_time()
+GPlatesApi::OldFeature::end_time()
 {
 	if(!d_handle.is_valid())
 		return bp::object();
@@ -259,7 +291,7 @@ GPlatesApi::Feature::end_time()
 
 
 bp::object
-GPlatesApi::Feature::feature_type()
+GPlatesApi::OldFeature::feature_type()
 {
 	if(!d_handle.is_valid())
 		return bp::object();
@@ -270,7 +302,7 @@ GPlatesApi::Feature::feature_type()
 
 
 unsigned long
-GPlatesApi::Feature::plate_id()
+GPlatesApi::OldFeature::plate_id()
 {
 	if(!d_handle.is_valid())
 		return 0;

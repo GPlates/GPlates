@@ -26,7 +26,7 @@
 #ifndef GPLATES_API_FEATURECOLLECTION_H
 #define GPLATES_API_FEATURECOLLECTION_H
 
-#include "PyFeature.h"
+#include "PyOldFeature.h"
 #include "global/python.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureCollectionHandle.h"
@@ -67,7 +67,7 @@ namespace GPlatesApi
 					it_end = d_feature_collection->end();
 				for(; it != it_end; it++)
 				{
-					result.append(Feature((*it)->reference()));
+					result.append(OldFeature((*it)->reference()));
 				}
 			}
 			return result;
