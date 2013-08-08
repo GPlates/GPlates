@@ -106,8 +106,8 @@ namespace GPlatesModel
 			//! Typedef for the top level property pointer.
 			typedef typename boost::mpl::if_<
 					boost::is_const<PropertyValueQualifiedType>,
-								typename const TopLevelPropertyInline *,
-								typename TopLevelPropertyInline *>::type
+								const TopLevelPropertyInline *,
+								TopLevelPropertyInline *>::type
 										top_level_property_ptr_type;
 
 			explicit

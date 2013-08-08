@@ -158,12 +158,12 @@ namespace GPlatesPropertyValues
 		{
 			explicit
 			Revision(
-					const GPlatesMaths::FiniteRotation &finite_rotation) :
-				GpmlFiniteRotation::Revision(finite_rotation)
+					const GPlatesMaths::FiniteRotation &finite_rotation_) :
+				GpmlFiniteRotation::Revision(finite_rotation_)
 			{ }
 			
 			Revision(
-					const GPlatesMaths::FiniteRotation &finite_rotation, 
+					const GPlatesMaths::FiniteRotation &finite_rotation_, 
 					GPlatesModel::XmlElementNode::non_null_ptr_type xml_element);
 
 			Revision(

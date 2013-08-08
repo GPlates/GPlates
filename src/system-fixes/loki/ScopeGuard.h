@@ -61,6 +61,14 @@ namespace Loki
         {
             dismissed_ = true;
         }
+
+		// Calling this avoids the 'unused variable' warning on some compilers.
+		// It is only needed if Dismiss() is not called - which is essentially
+		// what LOKI_ON_BLOCK_EXIT does - but LOKI_ON_BLOCK_EXIT does not
+		// currently silence this warning so an explicit ScopeGuard reference
+		// variable, followed by a call to this method, is needed.
+		void silence_unused_variable_warning() const
+		{ }
     };
     
     ////////////////////////////////////////////////////////////////

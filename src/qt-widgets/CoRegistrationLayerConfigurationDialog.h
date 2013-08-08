@@ -258,6 +258,7 @@ namespace GPlatesQtWidgets
 
 			void
 			publisher_modified(
+					const weak_reference_type &reference,
 					const modified_event_type &event)
 			{
 				// Update the GUI (mainly the attribute list) every time the model

@@ -281,8 +281,11 @@ GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 	std::vector<GpmlTimeSample> time_samples = gpml_irregular_sampling.get_time_samples();
 	// This needs to be set back onto the irregular sampling property when/if we're done making
 	// modifications - we do this automatically at scope exit (to cover all the 'return' paths).
-	LOKI_ON_BLOCK_EXIT(&GPlatesPropertyValues::GpmlIrregularSampling::set_time_samples,
-			gpml_irregular_sampling, boost::cref(time_samples));
+	Loki::ScopeGuard gpml_irregular_sampling_set_time_samples_guard = Loki::MakeGuard(
+			&GPlatesPropertyValues::GpmlIrregularSampling::set_time_samples,
+			gpml_irregular_sampling,
+			boost::cref(time_samples));
+	gpml_irregular_sampling_set_time_samples_guard.silence_unused_variable_warning();
 
 	// So, let's get to the most-recent non-disabled time sample.
 	std::vector<GpmlTimeSample>::iterator iter = time_samples.begin();

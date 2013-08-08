@@ -39,6 +39,8 @@
 
 #include "global/unicode.h"
 
+#include "maths/MathsUtils.h"
+
 #include "model/PropertyValue.h"
 #include "model/types.h"
 
@@ -432,8 +434,8 @@ namespace GPlatesPropertyValues
 						string_number == other_revision.string_number &&
 						geographic_description == other_revision.geographic_description &&
 						plate_id_number == other_revision.plate_id_number &&
-						age_of_appearance == other_revision.age_of_appearance &&
-						age_of_disappearance == other_revision.age_of_disappearance &&
+						GPlatesMaths::are_almost_exactly_equal(age_of_appearance, other_revision.age_of_appearance) &&
+						GPlatesMaths::are_almost_exactly_equal(age_of_disappearance, other_revision.age_of_disappearance) &&
 						data_type_code == other_revision.data_type_code &&
 						data_type_code_number == other_revision.data_type_code_number &&
 						data_type_code_number_additional == other_revision.data_type_code_number_additional &&

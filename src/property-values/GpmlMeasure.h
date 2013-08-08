@@ -32,6 +32,8 @@
 
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "maths/MathsUtils.h"
+
 #include "model/PropertyValue.h"
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
@@ -211,7 +213,7 @@ namespace GPlatesPropertyValues
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
-				return quantity == other_revision.quantity &&
+				return GPlatesMaths::are_almost_exactly_equal(quantity, other_revision.quantity) &&
 						quantity_xml_attributes == other_revision.quantity_xml_attributes &&
 						GPlatesModel::PropertyValue::Revision::equality(other);
 			}

@@ -59,7 +59,7 @@ namespace GPlatesApi
 		/**
 		 * Get the plate id.
 		 */
-		const GPlatesModel::integer_plate_id_type
+		GPlatesModel::integer_plate_id_type
 		get_value() const
 		{
 			return get_property_value<GPlatesPropertyValues::GpmlPlateId>().get_value();
