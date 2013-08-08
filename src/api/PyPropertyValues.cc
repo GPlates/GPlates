@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include "global/CompilerWarnings.h"
 #include "global/python.h"
 
 #include "property-values/GeoTimeInstant.h"
@@ -37,10 +38,14 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
+DISABLE_GCC_WARNING("-Wshadow")
+
 	// Default argument overloads of 'GPlatesPropertyValues::GmlTimeInstant::create'.
 	BOOST_PYTHON_FUNCTION_OVERLOADS(
 			gml_time_instant_create_overloads,
 			GPlatesPropertyValues::GmlTimeInstant::create, 1, 2)
+
+ENABLE_GCC_WARNING("-Wshadow")
 
 	/**
 	 * Returns a modifiable begin time instant from a time period.
