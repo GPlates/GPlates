@@ -42,8 +42,7 @@ GPlatesPropertyValues::GmlTimeInstant::set_time_position(
 
 void
 GPlatesPropertyValues::GmlTimeInstant::set_time_position_xml_attributes(
-		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-				tpxa)
+		const xml_attribute_map_type &tpxa)
 {
 	MutableRevisionHandler revision_handler(this);
 	revision_handler.get_mutable_revision<Revision>().time_position_xml_attributes = tpxa;

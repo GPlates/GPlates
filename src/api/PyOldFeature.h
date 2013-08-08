@@ -22,8 +22,8 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#ifndef GPLATES_API_FEATURE_H
-#define GPLATES_API_FEATURE_H
+#ifndef GPLATES_API_OLDFEATURE_H
+#define GPLATES_API_OLDFEATURE_H
 
 #include "global/python.h"
 #include "model/FeatureHandle.h"
@@ -107,5 +107,5 @@ namespace GPlatesApi
 	};
 }
 #endif   //GPLATES_NO_PYTHON
-#endif  // GPLATES_API_FEATURE_H
+#endif  // GPLATES_API_OLDFEATURE_H
 

@@ -82,7 +82,7 @@ namespace GPlatesPropertyValues
 		 * Note that this does not allow you to directly modify the plate id
 		 * inside this GpmlPlateId. For that, you should use @a set_value.
 		 */
-		const GPlatesModel::integer_plate_id_type &
+		GPlatesModel::integer_plate_id_type
 		get_value() const
 		{
 			return get_current_revision<Revision>().value;

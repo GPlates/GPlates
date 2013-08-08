@@ -27,12 +27,9 @@ set(srcs
     PyFeatureCollection.cc
     PyFeatureCollection.h
     PyFunctions.cc
-    PyGpmlPlateId.cc
-    PyGpmlPlateId.h
     PyOldFeature.cc
     PyOldFeature.h
-    PyPropertyValue.cc
-    PyPropertyValue.h
+    PyPropertyValues.cc
     Python.cc
     PythonExecutionMonitor.cc
     PythonExecutionMonitor.h

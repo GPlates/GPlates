@@ -63,6 +63,10 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlTimeInstant> non_null_ptr_to_const_type;
 
 
+		//! Typedef for an XML attribute (name/value) map.
+		typedef std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attribute_map_type;
+
+
 		virtual
 		~GmlTimeInstant()
 		{  }
@@ -71,8 +75,7 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create(
 				const GeoTimeInstant &time_position_,
-				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-						time_position_xml_attributes_)
+				const xml_attribute_map_type &time_position_xml_attributes_ = xml_attribute_map_type())
 		{
 			return non_null_ptr_type(new GmlTimeInstant(time_position_, time_position_xml_attributes_));
 		}
@@ -106,7 +109,7 @@ namespace GPlatesPropertyValues
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map?  (For consistency with the non-const
 		// overload...)
-		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
+		const xml_attribute_map_type &
 		get_time_position_xml_attributes() const
 		{
 			return get_current_revision<Revision>().time_position_xml_attributes;
@@ -117,7 +120,7 @@ namespace GPlatesPropertyValues
 		// removal operations?  This would ensure that revisioning is correctly handled...
 		void
 		set_time_position_xml_attributes(
-				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &tpxa);
+				const xml_attribute_map_type &tpxa);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -169,8 +172,7 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		GmlTimeInstant(
 				const GeoTimeInstant &time_position_,
-				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-						time_position_xml_attributes_) :
+				const xml_attribute_map_type &time_position_xml_attributes_) :
 			PropertyValue(Revision::non_null_ptr_type(new Revision(time_position_, time_position_xml_attributes_)))
 		{  }
 
@@ -191,8 +193,7 @@ namespace GPlatesPropertyValues
 		{
 			Revision(
 					const GeoTimeInstant &time_position_,
-					const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-							time_position_xml_attributes_) :
+					const xml_attribute_map_type &time_position_xml_attributes_) :
 				time_position(time_position_),
 				time_position_xml_attributes(time_position_xml_attributes_)
 			{  }
@@ -217,8 +218,7 @@ namespace GPlatesPropertyValues
 			}
 
 			GeoTimeInstant time_position;
-			std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
-					time_position_xml_attributes;
+			xml_attribute_map_type time_position_xml_attributes;
 		};
 
 	};
