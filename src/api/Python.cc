@@ -35,6 +35,7 @@
 void export_console_reader();
 void export_console_writer();
 void export_feature_collection();
+void export_property_values();
 
 // presentation directory.
 void export_instance();
@@ -75,6 +76,7 @@ BOOST_PYTHON_MODULE(pygplates)
 #endif	
 	export_feature_collection();
 	export_feature();
+	export_property_values();
 	//export_co_registration();
 	export_functions();
 	export_colour();
