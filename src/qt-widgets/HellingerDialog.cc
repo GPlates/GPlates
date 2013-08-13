@@ -344,7 +344,9 @@ GPlatesQtWidgets::HellingerDialog::highlight_selected_point(
 				enabled ? GPlatesGui::Colour::get_yellow() : GPlatesGui::Colour::get_grey(),
 				2, /* point thickness */
 				2, /* line thickness */
-				false /* fill */,
+				false, /* fill polygon */
+				false, /* fill polyline */
+				GPlatesGui::Colour::get_white(), // dummy colour argument
 				type_segment == MOVING_PICK_TYPE ? moving_symbol : fixed_symbol);
 
 	d_hellinger_layer.add_rendered_geometry(pick_geometry);
@@ -873,7 +875,9 @@ GPlatesQtWidgets::HellingerDialog::draw_pole(
 				GPlatesGui::Colour::get_red(),
 				2, /* point thickness */
 				2, /* line thickness */
-				false /* fill */,
+				false, /* fill polygon */
+				false, /* fill polyline */
+				GPlatesGui::Colour::get_white(), // dummy colour argument
 				results_symbol);
 
 	d_hellinger_layer.add_rendered_geometry(pick_results);
@@ -920,7 +924,9 @@ GPlatesQtWidgets::HellingerDialog::draw_error_ellipse()
 						GPlatesGui::Colour::get_red(),
 						2, /* point thickness */
 						2, /* line thickness */
-						false /* fill */,
+						false, /* fill polygon */
+						false, /* fill polyline */
+						GPlatesGui::Colour::get_white(), // dummy colour argument
 						results_symbol);
 			d_hellinger_layer.add_rendered_geometry(pick_results);
 		}
@@ -1058,7 +1064,9 @@ GPlatesQtWidgets::HellingerDialog::draw_fixed_picks()
 							d_segment_colour,
 							2, /* point thickness */
 							2, /* line thickness */
-							false /* fill */,
+							false, /* fill polygon */
+							false, /* fill polyline */
+							GPlatesGui::Colour::get_white(), // dummy colour argument
 							it->second.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
 
 				d_hellinger_layer.add_rendered_geometry(pick_geometry);
@@ -1096,7 +1104,9 @@ GPlatesQtWidgets::HellingerDialog::draw_moving_picks()
 							d_segment_colour,
 							2, /* point thickness */
 							2, /* line thickness */
-							false /* fill */,
+							false, /* fill polygon */
+							false, /* fill polyline */
+							GPlatesGui::Colour::get_white(), // dummy colour argument
 							it->second.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
 
 				d_hellinger_layer.add_rendered_geometry(pick_geometry);
@@ -1167,7 +1177,9 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 								d_segment_colour,
 								2, /* point thickness */
 								2, /* line thickness */
-								false /* fill */,
+								false, /* fill polygon */
+								false, /* fill polyline */
+								GPlatesGui::Colour::get_white(), // dummy colour argument
 								it->second.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
 
 					d_hellinger_layer.add_rendered_geometry(pick_geometry);
