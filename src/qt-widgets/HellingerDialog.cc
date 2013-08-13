@@ -244,7 +244,11 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	button_cancel->hide();
 
 	QStringList labels;
-	labels << "Segment" << "Moving(1)/Fixed(2)" << "Latitude" << "Longitude" << "Uncertainty (km)";
+	labels << QObject::tr("Segment")
+		   << QObject::tr("Moving(1)/Fixed(2)")
+		   << QObject::tr("Latitude")
+		   << QObject::tr("Longitude")
+		   << QObject::tr("Uncertainty (km)");
 	tree_widget_picks->setHeaderLabels(labels);
 
 
@@ -375,17 +379,13 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 	int segment = tree_widget_picks->currentItem()->text(0).toInt();
 	int row = index.row();
 
-	bool enabled = d_hellinger_model->get_pick_state(segment, row);
-	if (enabled)
-	{
-		d_hellinger_model->set_pick_state(segment,row,false);
-	}
-	else
-	{
-		d_hellinger_model->set_pick_state(segment,row,true);
-	}
+	bool new_enabled_state = !d_hellinger_model->get_pick_state(segment, row);
 
-	set_text_colour_according_to_state(tree_widget_picks->currentItem(),!enabled);
+	d_hellinger_model->set_pick_state(segment,row,new_enabled_state);
+
+	set_buttons_for_pick_selected(new_enabled_state);
+
+	set_text_colour_according_to_state(tree_widget_picks->currentItem(),new_enabled_state);
 }
 
 void
