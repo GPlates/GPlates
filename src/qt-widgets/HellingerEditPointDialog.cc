@@ -128,6 +128,7 @@ GPlatesQtWidgets::HellingerEditPointDialog::handle_apply()
 
 	d_hellinger_dialog_ptr->update_tree_from_model();
 	d_hellinger_dialog_ptr->restore_expanded_status();
+	d_hellinger_dialog_ptr->expand_segment(segment_number);
 }
 
 void GPlatesQtWidgets::HellingerEditPointDialog::set_initial_values()

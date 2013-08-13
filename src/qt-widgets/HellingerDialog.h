@@ -94,6 +94,9 @@ namespace GPlatesQtWidgets
 		void
 		restore_expanded_status();
 
+		void
+		expand_segment(
+				const int segment_number);
 
 
 	public Q_SLOTS:
@@ -206,7 +209,7 @@ namespace GPlatesQtWidgets
 
 
 		void
-		handle_add_new_point();
+		handle_add_new_pick();
 
 		void
 		handle_export_pick_file();

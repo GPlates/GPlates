@@ -648,7 +648,7 @@ GPlatesQtWidgets::HellingerDialog::show_stat_details()
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::handle_add_new_point()
+GPlatesQtWidgets::HellingerDialog::handle_add_new_pick()
 {    
 	QScopedPointer<GPlatesQtWidgets::HellingerEditPointDialog> dialog(
 				new GPlatesQtWidgets::HellingerEditPointDialog(this,d_hellinger_model,true));
@@ -1328,7 +1328,7 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(button_calculate_fit, SIGNAL(clicked()),this, SLOT(handle_calculate_fit()));
 	QObject::connect(button_import_file, SIGNAL(clicked()), this, SLOT(import_hellinger_file()));
 	QObject::connect(button_details, SIGNAL(clicked()), this, SLOT(show_stat_details()));
-	QObject::connect(button_new_point, SIGNAL(clicked()), this, SLOT(handle_add_new_point()));
+	QObject::connect(button_new_pick, SIGNAL(clicked()), this, SLOT(handle_add_new_pick()));
 	QObject::connect(button_export_pick_file, SIGNAL(clicked()), this, SLOT(handle_export_pick_file()));
 	QObject::connect(button_export_com_file, SIGNAL(clicked()), this, SLOT(handle_export_com_file()));
 	QObject::connect(button_expand_all, SIGNAL(clicked()), this, SLOT(handle_expand_all()));
@@ -1419,5 +1419,25 @@ GPlatesQtWidgets::HellingerDialog::restore_expanded_status()
 	}
 	QObject::connect(tree_widget_picks,SIGNAL(collapsed(QModelIndex)),this,SLOT(store_expanded_status()));
 	QObject::connect(tree_widget_picks,SIGNAL(expanded(QModelIndex)),this,SLOT(store_expanded_status()));
+}
+
+void GPlatesQtWidgets::HellingerDialog::expand_segment(
+		const int segment_number)
+{
+	int top_level_items = tree_widget_picks->topLevelItemCount();
+	for (int i = 0; i < top_level_items ; ++i)
+	{
+		int segment = tree_widget_picks->topLevelItem(i)->text(0).toInt();
+
+		if (segment == segment_number){
+			tree_widget_picks->topLevelItem(i)->setExpanded(true);
+			expanded_status_map_type::iterator iter = d_segment_expanded_statuses.find(segment);
+			if (iter != d_segment_expanded_statuses.end())
+			{
+				iter->second = true;
+			}
+			return;
+		}
+	}
 }
 

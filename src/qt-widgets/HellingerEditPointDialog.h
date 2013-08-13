@@ -59,6 +59,7 @@ namespace GPlatesQtWidgets
 				const int &segment_number);
 
 
+
 	private Q_SLOTS:
 
 		void
