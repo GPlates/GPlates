@@ -658,7 +658,7 @@ GPlatesQtWidgets::HellingerDialog::handle_add_new_pick()
 	}
 
 	dialog->exec();
-	restore_expanded_status();
+
 }
 
 void
@@ -670,7 +670,6 @@ GPlatesQtWidgets::HellingerDialog::handle_add_new_segment()
 																true /*create new segment */));
 
 	dialog->exec();
-	restore_expanded_status();
 }
 
 void
