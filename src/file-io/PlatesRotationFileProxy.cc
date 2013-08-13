@@ -358,16 +358,16 @@ GPlatesFileIO::RotationFileReaderV2::process_comment(
 		QIODevice& file, 
 		RotationFileSegmentContainer& container)
 {
- 	QString buf = peek_next_line(file);
-	if(is_valid_rotation_pole_line(buf))
+	if(is_valid_rotation_pole_line(peek_next_line(file)))
 	{
 		//This comment line is a disabled pole.
 		process_rotation_pole_line(file, d_segmetns);
 	}
-
-	QString comment = file.readLine();
-	container.push_back(boost::shared_ptr<RotationFileSegment>(new CommentSegment(comment)));
-//	qDebug() <<"Comments: \n" + comment; 
+	else
+	{
+		container.push_back(boost::shared_ptr<RotationFileSegment>(
+				new CommentSegment(file.readLine())));
+	}
 	return;
 }
 

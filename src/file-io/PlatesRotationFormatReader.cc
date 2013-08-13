@@ -560,7 +560,10 @@ namespace
 				ReadErrors::Result res = ReadErrors::MovingPlateIdChangedToMatchEarlierSequence;
 				ReadErrorOccurrence read_error(data_source, location, descr, res);
 				read_errors.d_warnings.push_back(read_error);
-
+				*(props_in_current_trs.d_irregular_sampling_iter) =
+					GPlatesModel::TopLevelPropertyInline::create(
+							GPlatesModel::PropertyName::create_gpml("totalReconstructionPole"),
+							props_in_current_trs.d_irregular_sampling.get());
 				return;
 			}
 
