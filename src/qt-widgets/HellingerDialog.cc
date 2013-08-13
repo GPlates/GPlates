@@ -389,7 +389,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::handle_edit_point()
+GPlatesQtWidgets::HellingerDialog::handle_edit_pick()
 {
 	store_expanded_status();
 	QScopedPointer<GPlatesQtWidgets::HellingerEditPointDialog> dialog(
@@ -428,13 +428,13 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_segment()
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::handle_remove_point()
+GPlatesQtWidgets::HellingerDialog::handle_remove_pick()
 {	
 	QMessageBox message_box;
 	message_box.setIcon(QMessageBox::Warning);
-	message_box.setWindowTitle(tr("Remove point"));
+	message_box.setWindowTitle(tr("Remove pick"));
 	message_box.setText(
-				tr("Are you sure you want to remove the point?"));
+				tr("Are you sure you want to remove the pick?"));
 	message_box.setStandardButtons(QMessageBox::Cancel | QMessageBox::Ok);
 	message_box.setDefaultButton(QMessageBox::Ok);
 	int ret = message_box.exec();
@@ -1333,8 +1333,8 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(button_export_com_file, SIGNAL(clicked()), this, SLOT(handle_export_com_file()));
 	QObject::connect(button_expand_all, SIGNAL(clicked()), this, SLOT(handle_expand_all()));
 	QObject::connect(button_collapse_all, SIGNAL(clicked()), this, SLOT(handle_collapse_all()));
-	QObject::connect(button_edit_point, SIGNAL(clicked()), this, SLOT(handle_edit_point()));
-	QObject::connect(button_remove_point, SIGNAL(clicked()), this, SLOT(handle_remove_point()));
+	QObject::connect(button_edit_point, SIGNAL(clicked()), this, SLOT(handle_edit_pick()));
+	QObject::connect(button_remove_point, SIGNAL(clicked()), this, SLOT(handle_remove_pick()));
 	QObject::connect(button_remove_segment, SIGNAL(clicked()), this, SLOT(handle_remove_segment()));
 	QObject::connect(button_new_segment, SIGNAL(clicked()), this, SLOT(handle_add_new_segment()));
 	QObject::connect(button_edit_segment, SIGNAL(clicked()), this, SLOT(handle_edit_segment()));

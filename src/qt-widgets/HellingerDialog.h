@@ -221,10 +221,10 @@ namespace GPlatesQtWidgets
 		handle_collapse_all();
 
 		void
-		handle_edit_point();
+		handle_edit_pick();
 
 		void
-		handle_remove_point();
+		handle_remove_pick();
 
 		void
 		handle_remove_segment();
